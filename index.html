@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CJS Phase 1 — System Test</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #222240;
+      --border: #333355;
+      --text: #e0e0f0;
+      --text-dim: #8888aa;
+      --accent: #a855f7;
+      --green: #22c55e;
+      --red: #ef4444;
+      --gold: #f59e0b;
+      --blue: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 { color: var(--accent); margin-bottom: 8px; font-size: 1.4em; }
+    h2 { color: var(--gold); margin: 20px 0 8px 0; font-size: 1.1em; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 10px 0;
+    }
+    .pass { color: var(--green); }
+    .fail { color: var(--red); }
+    .info { color: var(--blue); }
+    .dim { color: var(--text-dim); }
+    .test-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .test-row:last-child { border-bottom: none; }
+    .effect-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .effect-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 0.85em;
+    }
+    .effect-card .name { color: var(--accent); font-weight: bold; }
+    .effect-card .desc { color: var(--text-dim); margin-top: 4px; }
+    .effect-card .tags { margin-top: 6px; }
+    .tag {
+      display: inline-block;
+      background: var(--border);
+      color: var(--text-dim);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      margin: 2px;
+    }
+    .stat-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+    }
+    .stat-item {
+      background: var(--surface2);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9em;
+    }
+    .stat-item .label { color: var(--text-dim); }
+    .stat-item .val { color: var(--gold); font-weight: bold; }
+    #log { white-space: pre-wrap; font-size: 0.85em; }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      margin: 4px;
+    }
+    button:hover { opacity: 0.85; }
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    .filter-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+      font-family: inherit;
+    }
+    .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    input[type="text"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.9em;
+      width: 250px;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ CJS Combat Simulator — Phase 1 System Test</h1>
+  <p class="dim">Loading modules, importing master effects, running validation...</p>
+
+  <div id="test-results" class="card" style="margin-top:16px">
+    <div id="log"></div>
+  </div>
+
+  <h2>📊 Data Store Counts</h2>
+  <div class="stat-bar" id="counts"></div>
+
+  <h2>🧮 Formula Tests</h2>
+  <div class="card" id="formula-tests"></div>
+
+  <h2>🎲 Dice Tests</h2>
+  <div class="card" id="dice-tests"></div>
+
+  <h2>📦 Master Effect Library</h2>
+  <div>
+    <input type="text" id="search" placeholder="Search effects..." oninput="filterEffects()">
+  </div>
+  <div class="filter-bar" id="filter-bar"></div>
+  <div class="effect-grid" id="effect-grid"></div>
+
+  <h2>🔧 Actions</h2>
+  <div style="margin:10px 0">
+    <button onclick="exportData()">📥 Export JSON</button>
+    <button onclick="runDamageCalc()">⚔️ Sample Damage Calc</button>
+    <button onclick="runDiceRolls()">🎲 Roll 10x 2d6+3</button>
+  </div>
+  <div class="card" id="action-output" style="display:none"></div>
+
+  <!-- Load Phase 1 modules in dependency order -->
+  <script src="js/core/constants.js"></script>
+  <script src="js/core/formulas.js"></script>
+  <script src="js/core/dice.js"></script>
+  <script src="js/core/data-store.js"></script>
+  <script src="js/effects/value-calc.js"></script>
+  <script src="js/effects/conditions.js"></script>
+  <script src="js/effects/effect-registry.js"></script>
+
+  <script>
+    const log = document.getElementById('log');
+    const C = CJS.CONST;
+    const F = CJS.Formulas;
+    const D = CJS.Dice;
+    const DS = CJS.DataStore;
+    const VC = CJS.ValueCalc;
+    const Cond = CJS.Conditions;
+    const ER = CJS.EffectRegistry;
+
+    let testsPassed = 0;
+    let testsFailed = 0;
+
+    function assert(name, condition) {
+      if (condition) {
+        testsPassed++;
+        log.innerHTML += `<span class="pass">✓</span> ${name}\n`;
+      } else {
+        testsFailed++;
+        log.innerHTML += `<span class="fail">✗</span> ${name}\n`;
+      }
+    }
+
+    // ── MODULE LOAD TESTS ──────────────────────────────────────────
+    log.innerHTML += '<b>Module Loading</b>\n';
+    assert('constants.js loaded', !!C);
+    assert('formulas.js loaded', !!F);
+    assert('dice.js loaded', !!D);
+    assert('data-store.js loaded', !!DS);
+    assert('value-calc.js loaded', !!VC);
+    assert('conditions.js loaded', !!Cond);
+    assert('effect-registry.js loaded', !!ER);
+
+    // ── CONSTANTS TESTS ────────────────────────────────────────────
+    log.innerHTML += '\n<b>Constants Validation</b>\n';
+    assert('7 SPECIAL stats', C.STATS.length === 7);
+    assert('9 ranks', C.RANKS.length === 9);
+    assert('10 elements', C.ELEMENTS.length === 10);
+    assert('4 damage types', C.DAMAGE_TYPES.length === 4);
+    assert('Terrain types defined', Object.keys(C.TERRAIN_TYPES).length >= 10);
+    assert('QTE types include mash', C.QTE_TYPES.includes('mash'));
+    assert('Action economy baseAP = 2', C.ACTION_ECONOMY.baseAP === 2);
+
+    // ── FORMULA TESTS ──────────────────────────────────────────────
+    log.innerHTML += '\n<b>Formula Tests</b>\n';
+    const testStats = { S: 5, P: 6, E: 5, C: 8, I: 7, A: 6, L: 5 };
+    const hp = F.calcMaxHP(testStats, 'F');
+    const mp = F.calcMaxMP(testStats, 'F');
+    assert(`HP for Bin (F-rank): ${hp}`, hp === (5*5 + 5*2 + 20));
+    assert(`MP for Bin (F-rank): ${mp}`, mp === (7*4 + 6*2 + 20));
+
+    const physDR = F.calcPhysicalDR(testStats);
+    assert(`Physical DR: ${physDR}`, physDR === Math.floor((5+5)/2));
+
+    const movement = F.calcMovement(testStats.A, 0);
+    assert(`Movement (AGI 6): ${movement}`, movement === 2 + Math.floor(6/5));
+
+    const critChance = F.calcCritChance(5, 0);
+    assert(`Crit chance (LCK 5): ${critChance}%`, critChance === 7.5);
+
+    const dmg = F.calcFinalDamage({
+      skillPower: 18, primaryStat: 5, diceRoll: 7,
+      qteMultiplier: 1.25, elementMultiplier: 1.5, dr: 5,
+      bonusDamageFlat: 0, bonusDamagePercent: 0
+    });
+    assert(`Damage calc produces result: ${dmg.final}`, dmg.final > 0);
+    assert(`Damage breakdown has all fields`, dmg.base > 0 && dmg.final > 0);
+
+    // Display formula results
+    document.getElementById('formula-tests').innerHTML = `
+      <div class="test-row"><span>Bin's HP (F-rank, E5/S5)</span><span class="info">${hp}</span></div>
+      <div class="test-row"><span>Bin's MP (F-rank, I7/P6)</span><span class="info">${mp}</span></div>
+      <div class="test-row"><span>Physical DR (S5/E5)</span><span class="info">${physDR}</span></div>
+      <div class="test-row"><span>Movement (A6)</span><span class="info">${movement}</span></div>
+      <div class="test-row"><span>Crit Chance (L5)</span><span class="info">${critChance}%</span></div>
+      <div class="test-row"><span>Sample Damage (P18, Stat5, d7, QTE1.25, Weak, DR5)</span><span class="info">${dmg.final} (base ${dmg.base})</span></div>
+    `;
+
+    // ── DICE TESTS ─────────────────────────────────────────────────
+    log.innerHTML += '\n<b>Dice Tests</b>\n';
+    const parsed = D.parse('2d6+3');
+    assert('Parse "2d6+3"', parsed.count === 2 && parsed.sides === 6 && parsed.modifier === 3);
+
+    const rolled = D.roll('2d6+3');
+    assert(`Roll 2d6+3: ${rolled.total} (${rolled.rolls.join('+')})`, rolled.total >= 5 && rolled.total <= 15);
+
+    assert(`Min of 2d6+3: ${D.min('2d6+3')}`, D.min('2d6+3') === 5);
+    assert(`Max of 2d6+3: ${D.max('2d6+3')}`, D.max('2d6+3') === 15);
+    assert(`Avg of 2d6+3: ${D.average('2d6+3')}`, D.average('2d6+3') === 10);
+
+    const picked = D.weightedPick({ EASY: 0.7, MEDIUM: 0.3, HARD: 0 });
+    assert(`Weighted pick (EASY 70%, MEDIUM 30%): ${picked}`, picked === 'EASY' || picked === 'MEDIUM');
+
+    document.getElementById('dice-tests').innerHTML = `
+      <div class="test-row"><span>Parse "2d6+3"</span><span class="info">${JSON.stringify(parsed)}</span></div>
+      <div class="test-row"><span>Roll 2d6+3</span><span class="info">${rolled.total} [${rolled.rolls.join(', ')}] +${rolled.modifier}</span></div>
+      <div class="test-row"><span>Min / Max / Avg</span><span class="info">${D.min('2d6+3')} / ${D.max('2d6+3')} / ${D.average('2d6+3')}</span></div>
+      <div class="test-row"><span>d20 roll</span><span class="info">${D.d20()}</span></div>
+    `;
+
+    // ── LOAD MASTER EFFECTS ────────────────────────────────────────
+    log.innerHTML += '\n<b>Master Effects Import</b>\n';
+
+    fetch('data/master-effects.json')
+      .then(r => r.json())
+      .then(data => {
+        // Filter out comment keys
+        const effectEntries = Object.entries(data.effects)
+          .filter(([k]) => !k.startsWith('__COMMENT'));
+
+        // Load into DataStore
+        let loaded = 0;
+        for (const [id, effect] of effectEntries) {
+          DS.create('effects', { ...effect, id });
+          loaded++;
+        }
+
+        assert(`Loaded ${loaded} effects`, loaded > 80);
+
+        // Validate
+        const counts = DS.getCounts();
+        log.innerHTML += `\n<b>Data Store Status</b>\n`;
+        assert(`Effects in store: ${counts.effects}`, counts.effects === loaded);
+
+        // Display counts
+        document.getElementById('counts').innerHTML = Object.entries(counts)
+          .map(([k, v]) => `<div class="stat-item"><span class="label">${k}</span> <span class="val">${v}</span></div>`)
+          .join('');
+
+        // ── VALUE CALC TESTS ─────────────────────────────────────
+        log.innerHTML += '\n<b>Value Calculator Tests</b>\n';
+        const ctx = {
+          caster: { maxHP: 100, currentHP: 60, compiledStats: testStats },
+          target: { maxHP: 80, currentHP: 40, compiledStats: { S:3, P:3, E:3, C:3, I:3, A:3, L:3 } },
+          damageDealt: 25
+        };
+        assert('flat(10) = 10', VC.resolve(10, 'flat', ctx) === 10);
+        assert('max_hp(5) = 5', VC.resolve(5, 'max_hp', ctx) === 5);
+        assert('missing_hp(10) = 4', VC.resolve(10, 'missing_hp', ctx) === 4);
+        assert('damage_dealt(20) = 5', VC.resolve(20, 'damage_dealt', ctx) === 5);
+        assert('caster_I(2) = 14', VC.resolve(2, 'caster_I', ctx) === 14);
+        assert('describeValue works', VC.describeValue(10, 'damage_dealt') === '10% of damage dealt');
+
+        // ── CONDITION TESTS ──────────────────────────────────────
+        log.innerHTML += '\n<b>Condition Evaluator Tests</b>\n';
+        const condCtx = {
+          unit: { maxHP: 100, currentHP: 25, type: 'humanoid', activeStatuses: [{ statusId: 'burn' }] },
+          target: { maxHP: 80, currentHP: 70, type: 'beast' },
+          damageType: 'Physical',
+          element: 'Fire',
+          isCritical: false
+        };
+        assert('hp_below_30 = true (HP 25%)', Cond.evaluate('hp_below_30', condCtx));
+        assert('hp_above_50 = false', !Cond.evaluate('hp_above_50', condCtx));
+        assert('has_status_burn = true', Cond.evaluate('has_status_burn', condCtx));
+        assert('is_type_humanoid = true', Cond.evaluate('is_type_humanoid', condCtx));
+        assert('target_is_type_beast = true', Cond.evaluate('target_is_type_beast', condCtx));
+        assert('damage_type_is_Physical = true', Cond.evaluate('damage_type_is_Physical', condCtx));
+        assert('element_is_Fire = true', Cond.evaluate('element_is_Fire', condCtx));
+        assert('compound AND', Cond.evaluate('hp_below_30 AND has_status_burn', condCtx));
+        assert('compound OR', Cond.evaluate('hp_above_90 OR has_status_burn', condCtx));
+        assert('NOT_hp_above_50 = true', Cond.evaluate('NOT_hp_above_50', condCtx));
+        assert('empty conditions = true', Cond.evaluate([], condCtx));
+
+        // ── EFFECT REGISTRY TESTS ────────────────────────────────
+        log.innerHTML += '\n<b>Effect Registry Tests</b>\n';
+        const lifesteal = ER.getEffect('lifesteal');
+        assert('Can retrieve lifesteal effect', !!lifesteal);
+        assert('Lifesteal has correct trigger', lifesteal?.trigger === 'on_hit');
+
+        const merged = ER.mergeWithOverrides(lifesteal, { value: 25 });
+        assert('Override merging works', merged.value === 25 && merged.id === 'lifesteal');
+
+        const ref = ER.resolveRef({ effectId: 'lifesteal', overrides: { value: 30 } });
+        assert('resolveRef works', ref?.value === 30);
+
+        const grouped = ER.getEffectsGroupedByCategory();
+        const totalGrouped = Object.values(grouped).reduce((s, a) => s + a.length, 0);
+        assert(`Grouped effects total: ${totalGrouped}`, totalGrouped === loaded);
+
+        const searchResults = ER.searchEffects('lifesteal');
+        assert(`Search "lifesteal": ${searchResults.length} results`, searchResults.length >= 1);
+
+        // ── SUMMARY ──────────────────────────────────────────────
+        log.innerHTML += `\n<b>═══════════════════════════════</b>\n`;
+        log.innerHTML += `<b>Total: <span class="pass">${testsPassed} passed</span>`;
+        if (testsFailed > 0) log.innerHTML += `, <span class="fail">${testsFailed} failed</span>`;
+        log.innerHTML += `</b>\n`;
+
+        // ── RENDER EFFECT LIBRARY ────────────────────────────────
+        renderEffects(ER.getAllEffects());
+        buildFilterBar(ER.getAllEffects());
+      })
+      .catch(err => {
+        log.innerHTML += `<span class="fail">Failed to load master-effects.json: ${err.message}</span>\n`;
+        log.innerHTML += `<span class="dim">Make sure you're serving via HTTP (not file://). Use: python3 -m http.server</span>\n`;
+      });
+
+    // ── RENDER FUNCTIONS ───────────────────────────────────────────
+
+    let allEffects = [];
+    let activeFilter = 'all';
+
+    function renderEffects(effects) {
+      allEffects = effects;
+      const grid = document.getElementById('effect-grid');
+      grid.innerHTML = effects.map(eff => `
+        <div class="effect-card">
+          <div class="name">${eff.icon || '✦'} ${eff.name}</div>
+          <div class="dim" style="font-size:0.8em">${eff.id} · ${eff.category || '?'} · ${eff.trigger || '?'}</div>
+          <div class="desc">${eff.description || ER.autoDescribe(eff)}</div>
+          <div class="tags">${(eff.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        </div>
+      `).join('');
+    }
+
+    function buildFilterBar(effects) {
+      const categories = [...new Set(effects.map(e => e.category))].filter(Boolean);
+      const bar = document.getElementById('filter-bar');
+      bar.innerHTML = `<button class="filter-btn active" onclick="setFilter('all')">All (${effects.length})</button>` +
+        categories.map(cat => {
+          const count = effects.filter(e => e.category === cat).length;
+          return `<button class="filter-btn" onclick="setFilter('${cat}')">${cat} (${count})</button>`;
+        }).join('');
+    }
+
+    function setFilter(cat) {
+      activeFilter = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      filterEffects();
+    }
+
+    function filterEffects() {
+      const query = document.getElementById('search').value.toLowerCase();
+      let filtered = allEffects;
+      if (activeFilter !== 'all') {
+        filtered = filtered.filter(e => e.category === activeFilter);
+      }
+      if (query) {
+        filtered = filtered.filter(e => {
+          const searchable = [e.name, e.id, e.description, ...(e.tags || [])].join(' ').toLowerCase();
+          return searchable.includes(query);
+        });
+      }
+      const grid = document.getElementById('effect-grid');
+      grid.innerHTML = filtered.map(eff => `
+        <div class="effect-card">
+          <div class="name">${eff.icon || '✦'} ${eff.name}</div>
+          <div class="dim" style="font-size:0.8em">${eff.id} · ${eff.category || '?'} · ${eff.trigger || '?'}</div>
+          <div class="desc">${eff.description || ER.autoDescribe(eff)}</div>
+          <div class="tags">${(eff.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        </div>
+      `).join('');
+    }
+
+    // ── ACTION BUTTONS ─────────────────────────────────────────────
+
+    function exportData() {
+      DS.downloadJSON('cjs-gamedata.json');
+    }
+
+    function runDamageCalc() {
+      const out = document.getElementById('action-output');
+      out.style.display = 'block';
+      const result = F.calcFinalDamage({
+        skillPower: 18, primaryStat: 8, diceRoll: D.roll('1d6').total,
+        qteMultiplier: CJS.CONST.QTE_MULTIPLIERS.perfect,
+        elementMultiplier: 1.5, dr: 5,
+        bonusDamageFlat: 3, bonusDamagePercent: 10
+      });
+      out.innerHTML = `<b>⚔️ Damage Calc (Power 18, Stat 8, 1d6, Perfect QTE, Weakness, DR 5, +3 flat, +10%)</b>\n` +
+        Object.entries(result).map(([k,v]) => `  ${k}: ${v}`).join('\n');
+    }
+
+    function runDiceRolls() {
+      const out = document.getElementById('action-output');
+      out.style.display = 'block';
+      const results = D.rollMultiple('2d6+3', 10);
+      out.innerHTML = `<b>🎲 10x 2d6+3</b>\n` +
+        results.map((r, i) => `  Roll ${i+1}: ${r.total} [${r.rolls.join(', ')}] +${r.modifier}`).join('\n') +
+        `\n  Average: ${(results.reduce((s,r) => s + r.total, 0) / 10).toFixed(1)}`;
+    }
+  </script>
+</body>
+</html>
