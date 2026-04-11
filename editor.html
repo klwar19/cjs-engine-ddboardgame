@@ -190,32 +190,50 @@
         }
       }
 
-      // ── Load master effects from JSON ──────────────────────
-      function loadMasterEffects() {
-        return fetch('data/master-effects.json')
-          .then(r => r.json())
+      // ── Load data on boot ─────────────────────────────────
+      // Priority: data/gamedata.json (full save) → data/master-effects.json (effects only)
+      function loadData() {
+        return fetch('data/gamedata.json')
+          .then(r => {
+            if (!r.ok) throw new Error('Not found');
+            return r.json();
+          })
           .then(data => {
-            const entries = Object.entries(data.effects || {})
-              .filter(([k]) => !k.startsWith('__COMMENT'));
-            let count = 0;
-            for (const [id, effect] of entries) {
-              if (!DS.exists('effects', id)) {
-                DS.create('effects', { ...effect, id });
-                count++;
-              }
-            }
-            console.log(`Loaded ${count} master effects`);
+            const result = DS.loadData(data);
+            const counts = DS.getCounts();
+            const total = Object.values(counts).reduce((a, b) => a + b, 0);
+            console.log(`Loaded gamedata.json (${total} entries)`);
+            UI.toast(`Loaded save: ${counts.effects} effects, ${counts.skills} skills, ${counts.characters} chars, ${counts.monsters} mons`, 'success', 4000);
             updateCounts();
           })
-          .catch(err => {
-            console.warn('Could not load master-effects.json:', err.message);
-            console.log('(This is fine if you\'re importing your own data)');
+          .catch(() => {
+            // Fallback: load just master effects
+            console.log('No gamedata.json found, falling back to master-effects.json');
+            return fetch('data/master-effects.json')
+              .then(r => r.json())
+              .then(data => {
+                const entries = Object.entries(data.effects || {})
+                  .filter(([k]) => !k.startsWith('__COMMENT'));
+                let count = 0;
+                for (const [id, effect] of entries) {
+                  if (!DS.exists('effects', id)) {
+                    DS.create('effects', { ...effect, id });
+                    count++;
+                  }
+                }
+                console.log(`Loaded ${count} master effects`);
+                updateCounts();
+              })
+              .catch(err => {
+                console.warn('Could not load any data:', err.message);
+                UI.toast('No data files found. Create content or import a save.', 'info', 5000);
+              });
           });
       }
 
       // ── Import / Export ────────────────────────────────────
       document.getElementById('btn-export').addEventListener('click', () => {
-        DS.downloadJSON(`cjs-gamedata-${new Date().toISOString().slice(0,10)}.json`);
+        DS.downloadJSON('gamedata.json');
         document.getElementById('status-msg').textContent = 'Exported!';
         UI.toast('Data exported', 'success');
       });
@@ -292,7 +310,7 @@
       setInterval(updateCounts, 2000);
 
       // ── BOOT ───────────────────────────────────────────────
-      loadMasterEffects().then(() => {
+      loadData().then(() => {
         initEditor('effects');
         updateCounts();
         document.getElementById('status-msg').textContent = 'Ready';
