@@ -99,22 +99,91 @@ window.CJS.CONST = (() => {
   };
 
   // ── TERRAIN ────────────────────────────────────────────────────────
+  // moveCost: how many movement points to enter (1 = normal, 2 = difficult, 999 = impassable)
+  // blocksLoS: whether this terrain blocks line of sight for ranged attacks
   const TERRAIN_TYPES = {
-    empty:      { passable: true,  effect: null,                     icon: '',  color: '#1a1a2e' },
-    obstacle:   { passable: false, effect: null,                     icon: '🪨', color: '#374151' },
-    fire_zone:  { passable: true,  effect: 'terrain_burn',           icon: '🔥', color: '#7f1d1d' },
-    ice_zone:   { passable: true,  effect: 'terrain_slow',           icon: '🧊', color: '#1e3a5f' },
-    poison_zone:{ passable: true,  effect: 'terrain_poison',         icon: '☠️', color: '#14532d' },
-    heal_zone:  { passable: true,  effect: 'terrain_heal',           icon: '💚', color: '#064e3b' },
-    high_ground:{ passable: true,  effect: 'terrain_high_ground',    icon: '⬆️', color: '#4a3728' },
-    water:      { passable: true,  effect: 'terrain_water',          icon: '🌊', color: '#1e40af' },
-    lava:       { passable: true,  effect: 'terrain_lava',           icon: '🌋', color: '#9a3412' },
-    mud:        { passable: true,  effect: 'terrain_mud',            icon: '🟤', color: '#78350f' },
-    thorns:     { passable: true,  effect: 'terrain_thorns',         icon: '🌿', color: '#365314' },
-    electric:   { passable: true,  effect: 'terrain_shock',          icon: '⚡', color: '#854d0e' },
-    holy:       { passable: true,  effect: 'terrain_holy',           icon: '✨', color: '#fef3c7' },
-    dark:       { passable: true,  effect: 'terrain_dark',           icon: '🌑', color: '#1e1b4b' },
-    wind:       { passable: true,  effect: 'terrain_wind_push',      icon: '💨', color: '#ecfdf5' }
+    empty:      { passable: true,  moveCost: 1, blocksLoS: false, effect: null,                     icon: '',  color: '#1a1a2e' },
+    obstacle:   { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🪨', color: '#374151' },
+    fire_zone:  { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_burn',           icon: '🔥', color: '#7f1d1d' },
+    ice_zone:   { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_slow',           icon: '🧊', color: '#1e3a5f' },
+    poison_zone:{ passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_poison',         icon: '☠️', color: '#14532d' },
+    heal_zone:  { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_heal',           icon: '💚', color: '#064e3b' },
+    high_ground:{ passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_high_ground',    icon: '⬆️', color: '#4a3728' },
+    water:      { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_water',          icon: '🌊', color: '#1e40af' },
+    lava:       { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_lava',           icon: '🌋', color: '#9a3412' },
+    mud:        { passable: true,  moveCost: 3, blocksLoS: false, effect: 'terrain_mud',            icon: '🟤', color: '#78350f' },
+    thorns:     { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_thorns',         icon: '🌿', color: '#365314' },
+    electric:   { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_shock',          icon: '⚡', color: '#854d0e' },
+    holy:       { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_holy',           icon: '✨', color: '#fef3c7' },
+    dark:       { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_dark',           icon: '🌑', color: '#1e1b4b' },
+    wind:       { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_wind_push',      icon: '💨', color: '#ecfdf5' },
+    wall:       { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🧱', color: '#44403c' },
+    pillar:     { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🏛️', color: '#57534e' },
+    tree:       { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🌲', color: '#14532d' },
+    rubble:     { passable: true,  moveCost: 3, blocksLoS: false, effect: null,                     icon: '🪨', color: '#57534e' }
+  };
+
+  // ── UNIT SIZES ──────────────────────────────────────────────────────
+  // Units occupy a rectangular footprint on the grid.
+  // Position (pos) is always the top-left corner of the footprint.
+  // w = columns, h = rows the unit occupies.
+  const UNIT_SIZES = {
+    '1x1': { w: 1, h: 1, label: 'Small (1×1)' },
+    '2x1': { w: 2, h: 1, label: 'Wide (2×1)' },
+    '1x2': { w: 1, h: 2, label: 'Tall (1×2)' },
+    '2x2': { w: 2, h: 2, label: 'Large (2×2)' },
+    '3x3': { w: 3, h: 3, label: 'Huge (3×3)' }
+  };
+
+  // ── MOVEMENT RULES ──────────────────────────────────────────────────
+  // Movement is a FLAT number per unit. Not derived from stats.
+  // Only modifiable by passives, items, effects, skills, statuses.
+  const MOVEMENT_DEFAULTS = {
+    humanoid: 3,     // default for player characters
+    beast:    3,
+    undead:   2,
+    demon:    3,
+    dragon:   2,     // big, compensated by range/AoE
+    elemental:3,
+    construct:2,
+    plant:    1,
+    insect:   4,
+    spirit:   4,     // floaty, fast
+    fae:      3,
+    angel:    3,
+    slime:    2,
+    aquatic:  2
+  };
+
+  // ── COLLISION RULES (knockback / push) ─────────────────────────────
+  // When a unit is knocked back into something, what happens?
+  const COLLISION = {
+    // Knocked into obstacle/wall/off-grid:
+    // → Stop at last valid cell, take collision damage
+    wallDamageFlat:    5,       // flat damage for hitting a wall/obstacle
+    wallDamagePercent: 0,       // % of knockback source damage
+
+    // Knocked into another unit:
+    // → Both units take collision damage, knockback stops
+    unitCollisionDamageFlat:    3,
+    unitCollisionDamagePercent: 0,
+    // The "blocker" unit also takes damage and is pushed 0 cells (stands firm)
+    // If blocker is smaller size than the pushed unit → blocker is ALSO pushed 1 cell
+    sizeMatters: true,          // larger units push smaller ones on collision
+
+    // Knockback distance reduced by:
+    // - Target END/5 (rounded down) → "heavy" units resist knockback
+    knockbackResistPerEnd: 5    // every X points of END reduces knockback by 1
+  };
+
+  // ── LINE OF SIGHT RULES ────────────────────────────────────────────
+  const LINE_OF_SIGHT = {
+    // What blocks LoS for ranged attacks:
+    obstaclesBlock: true,       // terrain with blocksLoS: true
+    unitsBlock:     false,      // other units do NOT block LoS by default
+    // (can be overridden per-unit: large/boss units may block LoS)
+    largeUnitsBlock: true,      // 2x2+ units block LoS
+    highGroundIgnoresBlock: true // attacker on high ground ignores LoS blockers 1 cell away
   };
 
   // ── EFFECT SYSTEM ENUMS ────────────────────────────────────────────
@@ -300,7 +369,7 @@ window.CJS.CONST = (() => {
     ELEMENTS, ELEMENT_COLORS, ELEMENT_CHART, ELEMENT_MULTIPLIERS,
     DAMAGE_TYPES, UNIT_TYPES, EQUIPMENT_SLOTS,
     RARITIES, RARITY_COLORS,
-    TERRAIN_TYPES,
+    TERRAIN_TYPES, UNIT_SIZES, MOVEMENT_DEFAULTS, COLLISION, LINE_OF_SIGHT,
     EFFECT_TRIGGERS, EFFECT_ACTIONS, EFFECT_TARGETS, VALUE_SOURCES,
     STATUS_CATEGORIES,
     AI_ARCHETYPES, AI_TARGET_TYPES,
