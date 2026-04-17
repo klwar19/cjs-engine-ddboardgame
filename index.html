@@ -225,8 +225,8 @@
     const physDR = F.calcPhysicalDR(testStats);
     assert(`Physical DR: ${physDR}`, physDR === Math.floor((5+5)/2));
 
-    const movement = F.calcMovement(testStats.A, 0);
-    assert(`Movement (AGI 6): ${movement}`, movement === 2 + Math.floor(6/5));
+    const movement = F.calcMovement(3, 0);  // flat base 3 for humanoid, no bonus
+    assert(`Movement (base 3): ${movement}`, movement === 3);
 
     const critChance = F.calcCritChance(5, 0);
     assert(`Crit chance (LCK 5): ${critChance}%`, critChance === 7.5);
@@ -244,7 +244,7 @@
       <div class="test-row"><span>Bin's HP (F-rank, E5/S5)</span><span class="info">${hp}</span></div>
       <div class="test-row"><span>Bin's MP (F-rank, I7/P6)</span><span class="info">${mp}</span></div>
       <div class="test-row"><span>Physical DR (S5/E5)</span><span class="info">${physDR}</span></div>
-      <div class="test-row"><span>Movement (A6)</span><span class="info">${movement}</span></div>
+      <div class="test-row"><span>Movement (base 3, humanoid)</span><span class="info">${movement}</span></div>
       <div class="test-row"><span>Crit Chance (L5)</span><span class="info">${critChance}%</span></div>
       <div class="test-row"><span>Sample Damage (P18, Stat5, d7, QTE1.25, Weak, DR5)</span><span class="info">${dmg.final} (base ${dmg.base})</span></div>
     `;
