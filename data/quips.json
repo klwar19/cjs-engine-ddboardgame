@@ -1,0 +1,274 @@
+{
+  "fragments": [
+    {"id":"a_hit_01","layer":"action","text":"{actor.name} strikes {target.name}!","required_tags":["hit"],"weight":1},
+    {"id":"a_hit_02","layer":"action","text":"{actor.name} lands a clean blow on {target.name}.","required_tags":["hit"],"weight":1},
+    {"id":"a_hit_03","layer":"action","text":"{actor.name} connects with {target.name}.","required_tags":["hit"],"weight":1},
+    {"id":"a_hit_04","layer":"action","text":"{actor.name} slams into {target.name}.","required_tags":["hit"],"weight":2},
+    {"id":"a_hit_05","layer":"action","text":"{actor.name} smacks {target.name} with authority.","required_tags":["hit"],"weight":2},
+    {"id":"a_hit_06","layer":"action","text":"{actor.name}'s attack finds its mark.","required_tags":["hit"],"weight":1},
+
+    {"id":"a_hit_fire_01","layer":"action","text":"{actor.name} engulfs {target.name} in flame!","required_tags":["hit","element_fire"],"weight":6},
+    {"id":"a_hit_fire_02","layer":"action","text":"Fire erupts as {actor.name} scorches {target.name}!","required_tags":["hit","element_fire"],"weight":6},
+    {"id":"a_hit_fire_03","layer":"action","text":"{actor.name} sends a wave of fire crashing into {target.name}.","required_tags":["hit","element_fire"],"weight":6},
+
+    {"id":"a_hit_water_01","layer":"action","text":"{actor.name} blasts {target.name} with a surge of water!","required_tags":["hit","element_water"],"weight":6},
+    {"id":"a_hit_water_02","layer":"action","text":"Water crashes into {target.name} courtesy of {actor.name}.","required_tags":["hit","element_water"],"weight":6},
+
+    {"id":"a_hit_light_01","layer":"action","text":"A blinding flash as {actor.name} hits {target.name} with holy energy.","required_tags":["hit","element_light"],"weight":6},
+    {"id":"a_hit_light_02","layer":"action","text":"Radiant light sears {target.name}!","required_tags":["hit","element_light"],"weight":6},
+
+    {"id":"a_hit_dark_01","layer":"action","text":"Dark energy swirls as {actor.name} strikes {target.name}.","required_tags":["hit","element_dark"],"weight":6},
+    {"id":"a_hit_dark_02","layer":"action","text":"Shadow writhes around {actor.name}'s strike.","required_tags":["hit","element_dark"],"weight":6},
+
+    {"id":"a_hit_lightning_01","layer":"action","text":"Lightning arcs from {actor.name} into {target.name}!","required_tags":["hit","element_lightning"],"weight":6},
+    {"id":"a_hit_lightning_02","layer":"action","text":"{actor.name} electrifies {target.name} with a crackling bolt!","required_tags":["hit","element_lightning"],"weight":6},
+
+    {"id":"a_hit_nature_01","layer":"action","text":"Thorns and vines lash out as {actor.name} channels nature against {target.name}.","required_tags":["hit","element_nature"],"weight":6},
+
+    {"id":"a_hit_earth_01","layer":"action","text":"{actor.name} drives stone into {target.name} with crushing force.","required_tags":["hit","element_earth"],"weight":6},
+
+    {"id":"a_hit_wind_01","layer":"action","text":"A razor gust from {actor.name} slices into {target.name}!","required_tags":["hit","element_wind"],"weight":6},
+
+    {"id":"a_hit_chaos_01","layer":"action","text":"Reality bends as {actor.name}'s chaotic strike warps into {target.name}.","required_tags":["hit","element_chaos"],"weight":6},
+
+    {"id":"a_crit_01","layer":"action","text":"{actor.name} lands a DEVASTATING critical hit on {target.name}!","required_tags":["hit","crit"],"weight":10},
+    {"id":"a_crit_02","layer":"action","text":"CRITICAL! {actor.name} finds {target.name}'s weak point!","required_tags":["hit","crit"],"weight":10},
+    {"id":"a_crit_03","layer":"action","text":"{actor.name} scores a brutal critical on {target.name}!","required_tags":["hit","crit"],"weight":10},
+
+    {"id":"a_exploit_01","layer":"action","text":"{actor.name} exploits {target.name}'s elemental weakness!","required_tags":["hit","element_exploit"],"weight":8},
+    {"id":"a_exploit_02","layer":"action","text":"Super effective! {target.name} takes the full force of the element.","required_tags":["hit","element_exploit"],"weight":8},
+
+    {"id":"a_miss_01","layer":"action","text":"{actor.name}'s attack whiffs past {target.name}.","required_tags":["miss"],"weight":1},
+    {"id":"a_miss_02","layer":"action","text":"{actor.name} swings wide. Nothing but air.","required_tags":["miss"],"weight":1},
+    {"id":"a_miss_03","layer":"action","text":"{target.name} sidesteps {actor.name}'s attack effortlessly.","required_tags":["miss"],"weight":2},
+    {"id":"a_miss_04","layer":"action","text":"{actor.name} completely misses. Embarrassing.","required_tags":["miss"],"weight":2},
+
+    {"id":"a_dodge_01","layer":"action","text":"{actor.name} dodges with catlike reflexes!","required_tags":["dodge"],"weight":3},
+    {"id":"a_dodge_02","layer":"action","text":"{actor.name} weaves out of the way at the last second.","required_tags":["dodge"],"weight":3},
+    {"id":"a_dodge_03","layer":"action","text":"Clean dodge by {actor.name}. Untouchable.","required_tags":["dodge"],"weight":3},
+
+    {"id":"a_kill_01","layer":"action","text":"{actor.name} finishes off {target.name}!","required_tags":["kill"],"weight":3},
+    {"id":"a_kill_02","layer":"action","text":"{target.name} goes DOWN!","required_tags":["kill"],"weight":4},
+    {"id":"a_kill_03","layer":"action","text":"{actor.name} delivers the final blow to {target.name}!","required_tags":["kill"],"weight":3},
+    {"id":"a_kill_04","layer":"action","text":"{target.name} crumples. That's a wrap.","required_tags":["kill"],"weight":3},
+
+    {"id":"a_kill_revenge_01","layer":"action","text":"{actor.name} gets REVENGE on {target.name}! Payback time!","required_tags":["kill","revenge_kill"],"weight":12},
+    {"id":"a_kill_revenge_02","layer":"action","text":"That's for all those hits! {actor.name} avenges the beating with a kill!","required_tags":["kill","revenge_kill"],"weight":12},
+
+    {"id":"a_kill_comeback_01","layer":"action","text":"COMEBACK! {actor.name} clutches the kill at death's door!","required_tags":["kill","comeback"],"weight":14},
+    {"id":"a_kill_comeback_02","layer":"action","text":"Against all odds! {actor.name} defies death and takes {target.name} down!","required_tags":["kill","comeback"],"weight":14},
+
+    {"id":"a_kill_first_01","layer":"action","text":"FIRST BLOOD! {actor.name} draws first!","required_tags":["kill","first_blood"],"weight":12},
+
+    {"id":"a_heal_01","layer":"action","text":"{actor.name} heals {target.name}.","required_tags":["heal"],"weight":1},
+    {"id":"a_heal_02","layer":"action","text":"Green light washes over {target.name} as wounds close.","required_tags":["heal"],"weight":2},
+    {"id":"a_heal_03","layer":"action","text":"{target.name} is patched up. Back in the fight.","required_tags":["heal"],"weight":2},
+    {"id":"a_heal_clutch_01","layer":"action","text":"CLUTCH HEAL! {target.name} was on death's door!","required_tags":["heal","clutch_heal"],"weight":10},
+
+    {"id":"a_status_burn_01","layer":"action","text":"{target.name} catches fire! Burn applied!","required_tags":["status_applied","status_burn"],"weight":5},
+    {"id":"a_status_poison_01","layer":"action","text":"Poison seeps into {target.name}'s veins.","required_tags":["status_applied","status_poison"],"weight":5},
+    {"id":"a_status_bleed_01","layer":"action","text":"{target.name} starts bleeding. This is going to sting.","required_tags":["status_applied","status_bleed"],"weight":5},
+    {"id":"a_status_stun_01","layer":"action","text":"{target.name} is STUNNED! Can't move!","required_tags":["status_applied","status_stun"],"weight":7},
+    {"id":"a_status_freeze_01","layer":"action","text":"{target.name} is frozen solid!","required_tags":["status_applied","status_freeze"],"weight":7},
+    {"id":"a_status_sleep_01","layer":"action","text":"{target.name} falls into an enchanted sleep.","required_tags":["status_applied","status_sleep"],"weight":7},
+    {"id":"a_status_silence_01","layer":"action","text":"{target.name} has been silenced! No skills allowed.","required_tags":["status_applied","status_silence"],"weight":6},
+    {"id":"a_status_regen_01","layer":"action","text":"Regeneration pulses through {target.name}.","required_tags":["status_applied","status_regen"],"weight":4},
+    {"id":"a_status_shield_01","layer":"action","text":"A protective barrier forms around {target.name}!","required_tags":["status_applied","status_shield"],"weight":5},
+    {"id":"a_status_haste_01","layer":"action","text":"{target.name} accelerates! Haste applied!","required_tags":["status_applied","status_haste"],"weight":5},
+    {"id":"a_status_berserk_01","layer":"action","text":"{target.name}'s eyes go red — BERSERK MODE!","required_tags":["status_applied","status_berserk"],"weight":7},
+    {"id":"a_status_01","layer":"action","text":"{status} takes effect on {target.name}.","required_tags":["status_applied"],"weight":1},
+
+    {"id":"a_knockback_01","layer":"action","text":"{target.name} gets sent flying!","required_tags":["knockback"],"weight":4},
+    {"id":"a_knockback_wall_01","layer":"action","text":"{target.name} crashes into a wall! That had to hurt.","required_tags":["knockback","knockback_wall"],"weight":8},
+
+    {"id":"a_qte_perfect_01","layer":"action","text":"PERFECT execution by {actor.name}!","required_tags":["qte","qte_perfect"],"weight":8},
+    {"id":"a_qte_fail_01","layer":"action","text":"{actor.name} fumbles the execution. Ouch.","required_tags":["qte","qte_fail"],"weight":6},
+
+    {"id":"a_skill_01","layer":"action","text":"{actor.name} unleashes {skill.name}!","required_tags":["skill_used"],"weight":2},
+    {"id":"a_skill_02","layer":"action","text":"{actor.name} channels {skill.name}!","required_tags":["skill_used"],"weight":2},
+
+    {"id":"a_battlestart_01","layer":"action","text":"Combat begins!","required_tags":["battle_start"],"weight":3},
+    {"id":"a_battlestart_02","layer":"action","text":"The fight is ON!","required_tags":["battle_start"],"weight":3},
+    {"id":"a_battleend_win_01","layer":"action","text":"Victory! All enemies defeated!","required_tags":["battle_end","winner_player"],"weight":5},
+    {"id":"a_battleend_lose_01","layer":"action","text":"Defeat. The party has fallen.","required_tags":["battle_end","winner_enemy"],"weight":5},
+
+    {"id":"a_bin_hit_01","layer":"action","text":"Bin actually hits something! Mark the calendar.","required_tags":["hit","actor_bin"],"weight":5},
+    {"id":"a_bin_hit_02","layer":"action","text":"The Cosmic Jester connects!","required_tags":["hit","actor_bin"],"weight":5},
+    {"id":"a_bin_kill_01","layer":"action","text":"Bin finishes the job! The Durian Prince strikes again!","required_tags":["kill","actor_bin"],"weight":8},
+    {"id":"a_bin_miss_01","layer":"action","text":"Bin whiffs. The trash can incident had better aim.","required_tags":["miss","actor_bin"],"weight":6},
+    {"id":"a_bin_crit_01","layer":"action","text":"Bin crits! Somewhere, Ling Ling didn't feel a disturbance in the force.","required_tags":["hit","crit","actor_bin"],"weight":12},
+
+    {"id":"a_bowy_hit_01","layer":"action","text":"Thunder roars! Bowy's bolt hits home.","required_tags":["hit","actor_bowy"],"weight":7},
+    {"id":"a_bowy_kill_01","layer":"action","text":"Bowy grunts with satisfaction. Target eliminated.","required_tags":["kill","actor_bowy"],"weight":8},
+    {"id":"a_mitia_heal_01","layer":"action","text":"Mitia's gentle magic knits the wounds closed.","required_tags":["heal","actor_mitia"],"weight":7},
+    {"id":"a_mitia_hit_01","layer":"action","text":"Mitia channels her hidden power — ice crystallizes on impact.","required_tags":["hit","actor_mitia"],"weight":7},
+    {"id":"a_garr_hit_01","layer":"action","text":"Garr's experienced blade finds its mark. Not his first hunt.","required_tags":["hit","actor_garr"],"weight":7},
+
+    {"id":"d_light_01","layer":"damage","text":"{damage} damage.","required_tags":["hit"],"weight":1},
+    {"id":"d_light_02","layer":"damage","text":"Deals {damage} damage.","required_tags":["hit"],"weight":1},
+    {"id":"d_medium_01","layer":"damage","text":"{damage} damage! Solid hit.","required_tags":["hit","big_hit"],"weight":5},
+    {"id":"d_medium_02","layer":"damage","text":"That's {damage} damage. {target.name} is hurting.","required_tags":["hit","big_hit"],"weight":5},
+    {"id":"d_heavy_01","layer":"damage","text":"{damage} damage! MASSIVE blow!","required_tags":["hit","massive_hit"],"weight":8},
+    {"id":"d_heavy_02","layer":"damage","text":"A crushing {damage} damage! {target.name} is in serious trouble.","required_tags":["hit","massive_hit"],"weight":8},
+    {"id":"d_crit_01","layer":"damage","text":"Critical for {damage}! That's going to leave a mark.","required_tags":["hit","crit"],"weight":8},
+    {"id":"d_exploit_01","layer":"damage","text":"{damage} super-effective damage! Elemental weakness!","required_tags":["hit","element_exploit"],"weight":7},
+    {"id":"d_fire_01","layer":"damage","text":"{damage} fire damage. {target.name} smells like a barbecue.","required_tags":["hit","element_fire"],"weight":4},
+    {"id":"d_water_01","layer":"damage","text":"{damage} water damage. Soaked and sorry.","required_tags":["hit","element_water"],"weight":4},
+    {"id":"d_lightning_01","layer":"damage","text":"{damage} lightning damage. That's electrifying.","required_tags":["hit","element_lightning"],"weight":4},
+    {"id":"d_dark_01","layer":"damage","text":"{damage} dark damage seeps into {target.name}'s soul.","required_tags":["hit","element_dark"],"weight":4},
+    {"id":"d_nature_01","layer":"damage","text":"{damage} nature damage. Mother Nature sends her regards.","required_tags":["hit","element_nature"],"weight":4},
+    {"id":"d_heal_01","layer":"damage","text":"Restores {amount} HP.","required_tags":["heal"],"weight":1},
+    {"id":"d_heal_02","layer":"damage","text":"+{amount} HP. Back in business.","required_tags":["heal"],"weight":2},
+    {"id":"d_overkill_01","layer":"damage","text":"{damage} damage — {overkill} overkill! Excessive force.","required_tags":["hit","overkill"],"weight":8},
+    {"id":"d_kill_01","layer":"damage","text":"Lethal. {target.name} is done.","required_tags":["kill"],"weight":3},
+
+    {"id":"c_streak3_01","layer":"context","text":"That's {streak} in a row! Getting warmed up.","required_tags":["streak_3"],"weight":6},
+    {"id":"c_streak5_01","layer":"context","text":"{streak} consecutive hits! Unstoppable!","required_tags":["streak_5"],"weight":8},
+    {"id":"c_streak_broken_01","layer":"context","text":"And the streak ends. Reality check.","required_tags":["streak_broken"],"weight":6},
+
+    {"id":"c_dire_01","layer":"context","text":"{actor.name} is hanging by a thread.","required_tags":["dire_straits","actor_team_player"],"weight":6},
+    {"id":"c_dire_02","layer":"context","text":"The situation is dire. One more hit could end it.","required_tags":["dire_straits"],"weight":5},
+    {"id":"c_almost_01","layer":"context","text":"{target.name} is on death's door.","required_tags":["almost_dead"],"weight":5},
+    {"id":"c_almost_02","layer":"context","text":"The enemy can barely stand. Finish it!","required_tags":["almost_dead","target_team_enemy"],"weight":6},
+
+    {"id":"c_nemesis_01","layer":"context","text":"That enemy keeps targeting our hero. It's personal now.","required_tags":["nemesis"],"weight":7},
+    {"id":"c_revenge_01","layer":"context","text":"Payback is a dish best served with critical hits.","required_tags":["revenge_kill"],"weight":8},
+
+    {"id":"c_player_cc_01","layer":"context","text":"Being crowd-controlled is NOT fun. Hang in there.","required_tags":["player_cc"],"weight":5},
+    {"id":"c_qte_nailed_01","layer":"context","text":"Perfect timing! The QTE bonus damage is real.","required_tags":["qte_nailed"],"weight":6},
+    {"id":"c_qte_botched_01","layer":"context","text":"Fumbled the QTE. Damage penalty applied.","required_tags":["qte_botched"],"weight":5},
+
+    {"id":"c_firstblood_01","layer":"context","text":"First kill of the fight. The ice is broken.","required_tags":["first_blood"],"weight":7},
+    {"id":"c_comeback_01","layer":"context","text":"A comeback for the ages! Low HP, big heart.","required_tags":["comeback"],"weight":8},
+
+    {"id":"c_binwhiff_01","layer":"context","text":"Bin is struggling out there. Maybe try aiming?","required_tags":["bin_whiffing"],"weight":6},
+    {"id":"c_binembarrass_01","layer":"context","text":"Three misses in a row. The trash can is calling.","required_tags":["bin_embarrassing"],"weight":8},
+    {"id":"c_binredemption_01","layer":"context","text":"FINALLY! Bin was starting to worry us all.","required_tags":["bin_redemption"],"weight":7},
+
+    {"id":"c_beast_kill_01","layer":"context","text":"One less beast. The Frostwood is slightly safer.","required_tags":["kill","target_type_beast"],"weight":4},
+    {"id":"c_undead_kill_01","layer":"context","text":"Back to the grave with you. Stay this time.","required_tags":["kill","target_type_undead"],"weight":4},
+    {"id":"c_dragon_kill_01","layer":"context","text":"A DRAGON. Down. That's going in the history books.","required_tags":["kill","target_type_dragon"],"weight":10},
+    {"id":"c_demon_kill_01","layer":"context","text":"One less demon walking the mortal plane.","required_tags":["kill","target_type_demon"],"weight":5},
+
+    {"id":"c_battlestart_01","layer":"context","text":"Let's see what our heroes are made of.","required_tags":["battle_start"],"weight":3},
+
+    {"id":"e_generic_01","layer":"cjs_editorial","text":"[CJS] Well, that happened.","required_tags":["hit"],"weight":0},
+    {"id":"e_generic_02","layer":"cjs_editorial","text":"[CJS] Competent. Not exciting, but competent.","required_tags":["hit"],"weight":0},
+
+    {"id":"e_bored_01","layer":"cjs_editorial","text":"[CJS] *yawn* Can someone do something interesting? Peri's falling asleep up here.","required_tags":["peri_bored"],"weight":6},
+    {"id":"e_bored_02","layer":"cjs_editorial","text":"[CJS] This fight has the energy of a wet napkin. Peri is scrolling her phone.","required_tags":["peri_bored"],"weight":6},
+    {"id":"e_bored_03","layer":"cjs_editorial","text":"[CJS] Peri is considering switching to a different channel. Do better.","required_tags":["peri_bored"],"weight":6},
+    {"id":"e_bored_04","layer":"cjs_editorial","text":"[CJS] The cosmic ratings are dropping. Someone crit or something.","required_tags":["peri_bored"],"weight":5},
+    {"id":"e_bored_hit_01","layer":"cjs_editorial","text":"[CJS] Another basic hit. Peri's popcorn is getting cold.","required_tags":["hit","peri_bored"],"weight":7},
+    {"id":"e_bored_miss_01","layer":"cjs_editorial","text":"[CJS] A miss. At this rate, Peri might go watch paint dry instead.","required_tags":["miss","peri_bored"],"weight":7},
+
+    {"id":"e_excited_01","layer":"cjs_editorial","text":"[CJS] NOW we're talking! Peri leans forward in her cosmic theater seat.","required_tags":["peri_excited"],"weight":6},
+    {"id":"e_excited_02","layer":"cjs_editorial","text":"[CJS] The ratings are climbing! Peri approves!","required_tags":["peri_excited"],"weight":6},
+    {"id":"e_excited_03","layer":"cjs_editorial","text":"[CJS] This is what Peri signed up for. More of this, please.","required_tags":["peri_excited"],"weight":6},
+    {"id":"e_excited_hit_01","layer":"cjs_editorial","text":"[CJS] Peri's entertainment meter just ticked up. Keep it coming!","required_tags":["hit","peri_excited"],"weight":7},
+
+    {"id":"e_ecstatic_01","layer":"cjs_editorial","text":"[CJS] PERI IS ON HER FEET! This is PREMIUM cosmic entertainment!","required_tags":["peri_ecstatic"],"weight":8},
+    {"id":"e_ecstatic_02","layer":"cjs_editorial","text":"[CJS] Peri is literally throwing cosmic popcorn in excitement!","required_tags":["peri_ecstatic"],"weight":8},
+    {"id":"e_ecstatic_03","layer":"cjs_editorial","text":"[CJS] Peak content. Peri is doing a victory dance in her Gothic Lolita outfit.","required_tags":["peri_ecstatic"],"weight":8},
+
+    {"id":"e_miss_01","layer":"cjs_editorial","text":"[CJS] Missing: {actor.name}'s accuracy. If found, please return.","required_tags":["miss"],"weight":3},
+    {"id":"e_miss_02","layer":"cjs_editorial","text":"[CJS] That attack went to the same place as Bin's dating life.","required_tags":["miss","actor_bin"],"weight":7},
+    {"id":"e_miss_03","layer":"cjs_editorial","text":"[CJS] The air is thoroughly defeated. Unfortunately, the target isn't.","required_tags":["miss"],"weight":3},
+
+    {"id":"e_crit_01","layer":"cjs_editorial","text":"[CJS] That crit was so clean, even Peri clapped. She doesn't do that.","required_tags":["hit","crit"],"weight":9},
+    {"id":"e_crit_02","layer":"cjs_editorial","text":"[CJS] Critical hit! The kind that makes highlight reels across dimensions.","required_tags":["hit","crit"],"weight":9},
+
+    {"id":"e_kill_01","layer":"cjs_editorial","text":"[CJS] And the crowd goes wild! Well, Peri goes wild. Same thing.","required_tags":["kill"],"weight":4},
+    {"id":"e_kill_02","layer":"cjs_editorial","text":"[CJS] That's one less thing trying to eat our protagonist. Progress!","required_tags":["kill"],"weight":4},
+    {"id":"e_kill_03","layer":"cjs_editorial","text":"[CJS] Eliminated. Peri gives it a 7/10 on the entertainment scale.","required_tags":["kill"],"weight":4},
+
+    {"id":"e_kill_bin_01","layer":"cjs_editorial","text":"[CJS] The Durian Prince claims another victim. Smell the victory.","required_tags":["kill","actor_bin"],"weight":8},
+    {"id":"e_kill_bin_02","layer":"cjs_editorial","text":"[CJS] Bin kills! Somewhere, Lily is doing impressions of this moment.","required_tags":["kill","actor_bin"],"weight":8},
+    {"id":"e_kill_bin_03","layer":"cjs_editorial","text":"[CJS] Kill secured by your favorite F-rank Jester. Peri's investment pays off.","required_tags":["kill","actor_bin"],"weight":8},
+
+    {"id":"e_kill_bowy_01","layer":"cjs_editorial","text":"[CJS] Thunder delivers. Bowy doesn't celebrate — he's already reloading.","required_tags":["kill","actor_bowy"],"weight":8},
+    {"id":"e_kill_bowy_02","layer":"cjs_editorial","text":"[CJS] One bolt, one kill. That's the Bowy guarantee.","required_tags":["kill","actor_bowy"],"weight":8},
+
+    {"id":"e_streak_01","layer":"cjs_editorial","text":"[CJS] {streak} in a row! That's a combo meal with extra sauce.","required_tags":["streak_3"],"weight":7},
+    {"id":"e_streak_02","layer":"cjs_editorial","text":"[CJS] Consecutive hit counter: {streak}. The system is impressed. The system is never impressed.","required_tags":["streak_5"],"weight":10},
+    {"id":"e_streak_broken_01","layer":"cjs_editorial","text":"[CJS] Streak broken. Reality TV needs its setbacks for dramatic tension.","required_tags":["streak_broken"],"weight":6},
+
+    {"id":"e_comeback_01","layer":"cjs_editorial","text":"[CJS] COMEBACK OF THE CENTURY! Peri is standing on her throne! THIS is why she picked a Jester!","required_tags":["kill","comeback"],"weight":15},
+    {"id":"e_comeback_02","layer":"cjs_editorial","text":"[CJS] Nearly dead and still killing. That's main character energy right there.","required_tags":["kill","comeback"],"weight":14},
+
+    {"id":"e_revenge_01","layer":"cjs_editorial","text":"[CJS] REVENGE! Peri's favorite subplot is vindication. 10/10, would watch again.","required_tags":["kill","revenge_kill"],"weight":13},
+
+    {"id":"e_firstblood_01","layer":"cjs_editorial","text":"[CJS] First blood drawn! Peri crunches her first popcorn kernel. The show begins.","required_tags":["kill","first_blood"],"weight":10},
+
+    {"id":"e_qte_perfect_fish_01","layer":"cjs_editorial","text":"[CJS] Perfect fishing QTE! Someone's been practicing their timing minigames.","required_tags":["qte_perfect","qte_fishing"],"weight":10},
+    {"id":"e_qte_perfect_mash_01","layer":"cjs_editorial","text":"[CJS] {actor.name} just mashed that button like their life depended on it. Because it did. Peri's popcorn budget: justified.","required_tags":["qte_perfect","qte_mash","actor_bin"],"weight":14},
+    {"id":"e_qte_perfect_mash_02","layer":"cjs_editorial","text":"[CJS] That mash was INHUMAN. Someone's thumbs are going to hurt tomorrow.","required_tags":["qte_perfect","qte_mash"],"weight":10},
+    {"id":"e_qte_perfect_rhythm_01","layer":"cjs_editorial","text":"[CJS] Rhythm perfect! Musical talent: confirmed. Dating prospects: unchanged.","required_tags":["qte_perfect","qte_rhythm","actor_bin"],"weight":12},
+    {"id":"e_qte_perfect_rhythm_02","layer":"cjs_editorial","text":"[CJS] Every note hit! Flawless rhythm. Peri is impressed.","required_tags":["qte_perfect","qte_rhythm"],"weight":10},
+    {"id":"e_qte_perfect_quiz_01","layer":"cjs_editorial","text":"[CJS] Correct! Turns out studying English pays off in mortal combat. Who knew?","required_tags":["qte_perfect","qte_quiz"],"weight":10},
+    {"id":"e_qte_perfect_press_01","layer":"cjs_editorial","text":"[CJS] Lightning reflexes! That button didn't stand a chance.","required_tags":["qte_perfect","qte_quickpress"],"weight":9},
+
+    {"id":"e_qte_fail_01","layer":"cjs_editorial","text":"[CJS] QTE failed. Peri sighs. Loudly. Cosmically.","required_tags":["qte","qte_fail"],"weight":6},
+    {"id":"e_qte_fail_bin_01","layer":"cjs_editorial","text":"[CJS] Bin fumbles the QTE. The universe's favorite punchline strikes again.","required_tags":["qte","qte_fail","actor_bin"],"weight":9},
+    {"id":"e_qte_fail_quiz_01","layer":"cjs_editorial","text":"[CJS] Wrong answer! Maybe Bin should have paid more attention in class instead of delivering food.","required_tags":["qte_fail","qte_quiz","actor_bin"],"weight":11},
+
+    {"id":"e_dire_01","layer":"cjs_editorial","text":"[CJS] Things are looking grim. Peri leans forward — the best drama happens at the edge.","required_tags":["dire_straits"],"weight":7},
+    {"id":"e_dire_02","layer":"cjs_editorial","text":"[CJS] HP critical. This is the part where the protagonist either dies or does something incredible. No pressure.","required_tags":["dire_straits","actor_bin"],"weight":10},
+
+    {"id":"e_almost_01","layer":"cjs_editorial","text":"[CJS] The enemy's hanging on by a thread. Do the thing!","required_tags":["almost_dead"],"weight":5},
+
+    {"id":"e_nemesis_01","layer":"cjs_editorial","text":"[CJS] That enemy REALLY has it out for our hero. Peri loves a good rivalry subplot.","required_tags":["nemesis"],"weight":7},
+
+    {"id":"e_bin_whiff_01","layer":"cjs_editorial","text":"[CJS] Bin missing again. At this rate, the trash can will have a higher hit rate.","required_tags":["bin_whiffing"],"weight":7},
+    {"id":"e_bin_embarrass_01","layer":"cjs_editorial","text":"[CJS] THREE misses. Bin, buddy. Ling Ling's rejection had better accuracy than this.","required_tags":["bin_embarrassing"],"weight":10},
+    {"id":"e_bin_embarrass_02","layer":"cjs_editorial","text":"[CJS] Bin's miss streak continues. Even Leo would hit by now, and Leo's weapon is a sandwich.","required_tags":["bin_embarrassing"],"weight":10},
+    {"id":"e_bin_redemption_01","layer":"cjs_editorial","text":"[CJS] HE HITS! Bin breaks out of the slump! Peri uncrosses her arms.","required_tags":["bin_redemption"],"weight":8},
+
+    {"id":"e_heal_01","layer":"cjs_editorial","text":"[CJS] Healing. Not as exciting as explosions, but Peri respects the support role.","required_tags":["heal"],"weight":3},
+    {"id":"e_clutch_heal_01","layer":"cjs_editorial","text":"[CJS] Clutch heal! Someone almost died and someone else said 'not today.' Premium drama!","required_tags":["heal","clutch_heal"],"weight":10},
+
+    {"id":"e_status_burn_01","layer":"cjs_editorial","text":"[CJS] Burning. It's like a campfire but less cozy and more screaming.","required_tags":["status_applied","status_burn"],"weight":5},
+    {"id":"e_status_stun_01","layer":"cjs_editorial","text":"[CJS] Stunned! That's the face of someone who just realized they can't move.","required_tags":["status_applied","status_stun"],"weight":6},
+    {"id":"e_status_freeze_01","layer":"cjs_editorial","text":"[CJS] Frozen. Fitting for the Frostbitten region. Thematically appropriate agony.","required_tags":["status_applied","status_freeze"],"weight":6},
+
+    {"id":"e_battlestart_01","layer":"cjs_editorial","text":"[CJS] *microphone tap* Ladies, gentlemen, and cosmic entities — the show begins! Peri's watching.","required_tags":["battle_start"],"weight":5},
+    {"id":"e_battlestart_02","layer":"cjs_editorial","text":"[CJS] Combat initialized. Peri grabs her popcorn. The cosmic ratings better not disappoint.","required_tags":["battle_start"],"weight":5},
+    {"id":"e_battlestart_03","layer":"cjs_editorial","text":"[CJS] Another fight? Peri does love a good recurring show. Let's see if it gets renewed.","required_tags":["battle_start"],"weight":4},
+
+    {"id":"e_battleend_win_01","layer":"cjs_editorial","text":"[CJS] Victory! Peri's entertainment meter: {peri_meter}/100. Not bad for an F-ranker.","required_tags":["battle_end","winner_player"],"weight":6},
+    {"id":"e_battleend_win_02","layer":"cjs_editorial","text":"[CJS] Fight over! Our heroes survive another day. Peri awards points for style... maybe.","required_tags":["battle_end","winner_player"],"weight":6},
+    {"id":"e_battleend_win_03","layer":"cjs_editorial","text":"[CJS] All enemies down. Credits roll. Tip your Cosmic Jester on the way out.","required_tags":["battle_end","winner_player"],"weight":6},
+
+    {"id":"e_battleend_lose_01","layer":"cjs_editorial","text":"[CJS] Total party wipe. Peri... is actually quiet for a moment. Then: 'Again.'","required_tags":["battle_end","winner_enemy"],"weight":7},
+    {"id":"e_battleend_lose_02","layer":"cjs_editorial","text":"[CJS] Defeat. Even Peri's entertainment has limits. This was just sad.","required_tags":["battle_end","winner_enemy"],"weight":7},
+
+    {"id":"e_exploit_fire_01","layer":"cjs_editorial","text":"[CJS] Fire vs weakness! It's like bringing a flamethrower to a paper convention!","required_tags":["hit","element_exploit","element_fire"],"weight":10},
+    {"id":"e_exploit_01","layer":"cjs_editorial","text":"[CJS] Elemental weakness exploited! Smart play. Peri nods approvingly.","required_tags":["hit","element_exploit"],"weight":8},
+
+    {"id":"e_knockback_01","layer":"cjs_editorial","text":"[CJS] YEET. That's the technical combat term.","required_tags":["knockback"],"weight":6},
+    {"id":"e_knockback_wall_01","layer":"cjs_editorial","text":"[CJS] Wall slam! That's bonus damage AND humiliation. Two for one deal.","required_tags":["knockback","knockback_wall"],"weight":9},
+
+    {"id":"e_bin_hit_beast_01","layer":"cjs_editorial","text":"[CJS] Bin hits a beast. Not as hard as life hits Bin, but progress!","required_tags":["hit","actor_bin","target_type_beast"],"weight":9},
+    {"id":"e_bin_hit_undead_01","layer":"cjs_editorial","text":"[CJS] Bin hits an undead. That's one thing that can't ghost him... unlike Ling Ling.","required_tags":["hit","actor_bin","target_type_undead"],"weight":9},
+
+    {"id":"e_dragon_01","layer":"cjs_editorial","text":"[CJS] Fighting a dragon. Bold move for someone who can't even dodge a trash can.","required_tags":["hit","target_type_dragon","actor_bin"],"weight":11},
+
+    {"id":"e_playercc_bin_01","layer":"cjs_editorial","text":"[CJS] Bin got crowd controlled! He's used to life controlling him, so this is just Tuesday.","required_tags":["player_cc","actor_bin"],"weight":9},
+    {"id":"e_playercc_01","layer":"cjs_editorial","text":"[CJS] CC landed on a party member! Someone fix that!","required_tags":["player_cc"],"weight":5},
+
+    {"id":"e_hot_streak_01","layer":"cjs_editorial","text":"[CJS] HOT STREAK! {streak} hits! Is this person even F-rank? Peri demands a recount.","required_tags":["hot_streak","actor_bin"],"weight":12},
+    {"id":"e_hot_streak_02","layer":"cjs_editorial","text":"[CJS] {streak} consecutive hits! That's main character energy!","required_tags":["hot_streak"],"weight":9},
+
+    {"id":"e_bin_status_burn_01","layer":"cjs_editorial","text":"[CJS] Bin is on fire! Not the good kind. The painful kind. Peri finds this hilarious.","required_tags":["status_applied","status_burn","target_bin"],"weight":9},
+    {"id":"e_bin_status_poison_01","layer":"cjs_editorial","text":"[CJS] Poisoned! Bin's luck with substances is as bad as his luck with confessions.","required_tags":["status_applied","status_poison","target_bin"],"weight":9},
+
+    {"id":"e_monster_hit_big_01","layer":"cjs_editorial","text":"[CJS] The monster hits HARD. That's going to leave more than a mark — that's a life lesson.","required_tags":["hit","big_hit","actor_team_enemy"],"weight":7},
+
+    {"id":"e_bin_defend_01","layer":"cjs_editorial","text":"[CJS] Bin defends! A strategic choice, or just too scared to attack? Peri can't tell.","required_tags":["hit","actor_bin"],"excluded_tags":["crit","big_hit"],"weight":3},
+
+    {"id":"e_generic_calm_01","layer":"cjs_editorial","text":"[CJS] Combat proceeds normally. Peri checks her nails.","required_tags":["hit"],"excluded_tags":["crit","big_hit","massive_hit","element_exploit","streak_3","peri_excited","peri_ecstatic"],"weight":1},
+    {"id":"e_generic_calm_02","layer":"cjs_editorial","text":"[CJS] Standard exchange of blows. The cosmic audience yawns in unison.","required_tags":["hit"],"excluded_tags":["crit","big_hit","massive_hit","element_exploit","streak_3","peri_excited","peri_ecstatic"],"weight":1},
+
+    {"id":"e_overkill_01","layer":"cjs_editorial","text":"[CJS] Overkill by {overkill}! That was personal. Peri approves of excessive force.","required_tags":["kill","overkill"],"weight":10}
+  ]
+}
