@@ -96,7 +96,7 @@
 
         if (gameResp.ok) {
           const gameData = await gameResp.json();
-          DS.importAll(gameData);
+          DS.loadData(gameData);
           console.log('Game data loaded.');
         }
 
@@ -104,10 +104,10 @@
           const effects = await effectsResp.json();
           if (effects.effects) {
             for (const eff of effects.effects) {
-              DS.set('effects', eff.id, eff);
+              DS.replace('effects', eff.id, eff);
             }
           } else if (Array.isArray(effects)) {
-            for (const eff of effects) DS.set('effects', eff.id, eff);
+            for (const eff of effects) DS.replace('effects', eff.id, eff);
           }
           console.log('Master effects loaded.');
         }
@@ -123,6 +123,7 @@
     }
 
     // ── POPULATE ENCOUNTER SELECT ─────────────────────────────────
+    let _demoCreated = false;
     function populateEncounters() {
       const sel = document.getElementById('encounter-select');
       const encounters = DS.getAll('encounters') || {};
@@ -136,10 +137,11 @@
         sel.appendChild(opt);
       }
 
-      // If no encounters, add a demo option
-      if (Object.keys(encounters).length === 0) {
+      // If no encounters, add a demo option (once)
+      if (Object.keys(encounters).length === 0 && !_demoCreated) {
+        _demoCreated = true;
         _createDemoEncounter();
-        populateEncounters(); // recurse once
+        populateEncounters();
         return;
       }
     }
@@ -149,14 +151,14 @@
       // Create minimal demo characters if none exist
       const chars = DS.getAll('characters') || {};
       if (Object.keys(chars).length === 0) {
-        DS.set('characters', 'bin', {
+        DS.replace('characters', 'bin', {
           id: 'bin', name: 'Bin Chen', icon: '🃏', team: 'player',
           rank: 'F', type: 'humanoid',
           stats: { S: 5, P: 6, E: 5, C: 8, I: 7, A: 6, L: 5 },
           skills: [], equipment: [], innatePassives: [],
           movement: 3
         });
-        DS.set('characters', 'bowy', {
+        DS.replace('characters', 'bowy', {
           id: 'bowy', name: 'Bowy', icon: '🐗', team: 'player',
           rank: 'F', type: 'humanoid',
           stats: { S: 7, P: 7, E: 6, C: 4, I: 4, A: 5, L: 5 },
@@ -167,7 +169,7 @@
 
       const mons = DS.getAll('monsters') || {};
       if (Object.keys(mons).length === 0) {
-        DS.set('monsters', 'ice_wolf', {
+        DS.replace('monsters', 'ice_wolf', {
           id: 'ice_wolf', name: 'Ice Wolf', icon: '🐺', team: 'enemy',
           rank: 'F', type: 'beast',
           stats: { S: 6, P: 5, E: 4, C: 2, I: 3, A: 7, L: 3 },
@@ -179,7 +181,7 @@
             { priority: 2, condition: 'default', action: 'move_toward', target: 'nearest_enemy' }
           ]
         });
-        DS.set('monsters', 'frost_goblin', {
+        DS.replace('monsters', 'frost_goblin', {
           id: 'frost_goblin', name: 'Frost Goblin', icon: '👺', team: 'enemy',
           rank: 'F', type: 'humanoid',
           stats: { S: 4, P: 4, E: 3, C: 3, I: 5, A: 5, L: 4 },
@@ -199,7 +201,7 @@
       grid[3][6] = 'fire_zone';
       grid[4][1] = 'ice_zone';
 
-      DS.set('encounters', 'demo_frostwood', {
+      DS.replace('encounters', 'demo_frostwood', {
         id: 'demo_frostwood',
         name: 'Frostwood Patrol (Demo)',
         width: 8, height: 8,
@@ -224,7 +226,7 @@
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        DS.importAll(data);
+        DS.loadData(data);
         populateEncounters();
         console.log('Data imported successfully.');
       } catch (err) {
