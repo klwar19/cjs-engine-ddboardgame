@@ -4297,7 +4297,9 @@
       "weak": [],
       "resist": [],
       "immune": [],
-      "description": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon."
+      "description": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon.",
+      "movement": 3,
+      "size": "1x1"
     },
     "bowy": {
       "id": "bowy",
@@ -4333,7 +4335,9 @@
       "weak": [],
       "resist": [],
       "immune": [],
-      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride."
+      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
+      "movement": 2,
+      "size": "1x1"
     },
     "mitia": {
       "id": "mitia",
@@ -4372,7 +4376,9 @@
         "Water"
       ],
       "immune": [],
-      "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic."
+      "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
+      "movement": 3,
+      "size": "1x1"
     },
     "garr": {
       "id": "garr",
@@ -4407,7 +4413,9 @@
       "weak": [],
       "resist": [],
       "immune": [],
-      "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable."
+      "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
+      "movement": 3,
+      "size": "1x1"
     }
   },
   "monsters": {
@@ -4475,7 +4483,9 @@
           "target": "lowest_hp_enemy"
         }
       ],
-      "description": "Common predator of the Frostwood. Hunts in packs. Weak to fire."
+      "description": "Common predator of the Frostwood. Hunts in packs. Weak to fire.",
+      "movement": 4,
+      "size": "1x1"
     },
     "frost_sprite": {
       "id": "frost_sprite",
@@ -4542,7 +4552,9 @@
           "target": "furthest_enemy"
         }
       ],
-      "description": "Mischievous ice elemental. Fragile but dangerous magic. Stays at range."
+      "description": "Mischievous ice elemental. Fragile but dangerous magic. Stays at range.",
+      "movement": 3,
+      "size": "1x1"
     },
     "snow_bear": {
       "id": "snow_bear",
@@ -4609,7 +4621,9 @@
           "target": "nearest_enemy"
         }
       ],
-      "description": "Massive bear of the frozen north. Extremely tough. Don't let it reach you."
+      "description": "Massive bear of the frozen north. Extremely tough. Don't let it reach you.",
+      "movement": 2,
+      "size": "2x2"
     },
     "frostfire_chimera": {
       "id": "frostfire_chimera",
@@ -4685,7 +4699,9 @@
           "target": "lowest_hp_enemy"
         }
       ],
-      "description": "C-rank boss. Dual fire/ice heads. The first real challenge in Frostbitten. Resists both fire and water."
+      "description": "C-rank boss. Dual fire/ice heads. The first real challenge in Frostbitten. Resists both fire and water.",
+      "movement": 2,
+      "size": "2x2"
     }
   },
   "encounters": {
@@ -4782,49 +4798,56 @@
           "pos": [
             6,
             1
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "bowy",
           "pos": [
             7,
             0
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "mitia",
           "pos": [
             7,
             2
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "garr",
           "pos": [
             6,
             0
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "ice_wolf",
           "pos": [
             1,
             5
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "ice_wolf",
           "pos": [
             2,
             6
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "ice_wolf",
           "pos": [
             3,
             4
-          ]
+          ],
+          "size": "1x1"
         }
       ]
     },
@@ -4937,56 +4960,64 @@
           "pos": [
             6,
             2
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "bowy",
           "pos": [
             7,
             1
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "mitia",
           "pos": [
             7,
             3
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "garr",
           "pos": [
             6,
             1
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "ice_wolf",
           "pos": [
             1,
             3
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "ice_wolf",
           "pos": [
             2,
             7
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "frost_sprite",
           "pos": [
             1,
             6
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "frost_sprite",
           "pos": [
             3,
             8
-          ]
+          ],
+          "size": "1x1"
         }
       ]
     },
@@ -5123,49 +5154,202 @@
           "pos": [
             8,
             3
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "bowy",
           "pos": [
             8,
             6
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "mitia",
           "pos": [
             9,
             4
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "garr",
           "pos": [
             8,
             2
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "frostfire_chimera",
           "pos": [
-            2,
+            1,
             4
-          ]
+          ],
+          "size": "2x2"
         },
         {
           "id": "ice_wolf",
           "pos": [
             3,
             2
-          ]
+          ],
+          "size": "1x1"
         },
         {
           "id": "ice_wolf",
           "pos": [
             3,
             6
-          ]
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    "enc_bear_cave": {
+      "id": "enc_bear_cave",
+      "name": "Frostwood: Bear Cave",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        [
+          "obstacle",
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "bowy",
+          "pos": [
+            7,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "mitia",
+          "pos": [
+            7,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "garr",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "snow_bear",
+          "pos": [
+            1,
+            3
+          ],
+          "size": "2x2"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            6
+          ],
+          "size": "1x1"
         }
       ]
     }
