@@ -1,0 +1,367 @@
+{
+  "questions": [
+    {
+      "id": "pv_001",
+      "category": "phrasal_verb",
+      "difficulty": "C1",
+      "sentence": "The meeting was _____ due to bad weather.",
+      "options": ["called off", "called out", "called up", "called in"],
+      "correct": 0,
+      "explanation": "'Call off' means to cancel."
+    },
+    {
+      "id": "pv_002",
+      "category": "phrasal_verb",
+      "difficulty": "C1",
+      "sentence": "I can't _____ why she didn't show up.",
+      "options": ["work out", "work up", "work in", "work on"],
+      "correct": 0,
+      "explanation": "'Work out' = figure out / understand."
+    },
+    {
+      "id": "pv_003",
+      "category": "phrasal_verb",
+      "difficulty": "C1",
+      "sentence": "He's trying to _____ his addiction to sugar.",
+      "options": ["give in", "give up", "give out", "give off"],
+      "correct": 1,
+      "explanation": "'Give up' = stop or quit something."
+    },
+    {
+      "id": "pv_004",
+      "category": "phrasal_verb",
+      "difficulty": "C2",
+      "sentence": "The new policy was _____ after public backlash.",
+      "options": ["done away with", "done over", "done in", "done for"],
+      "correct": 0,
+      "explanation": "'Do away with' = abolish or eliminate."
+    },
+    {
+      "id": "pv_005",
+      "category": "phrasal_verb",
+      "difficulty": "C2",
+      "sentence": "Her argument didn't _____ under scrutiny.",
+      "options": ["stand out", "stand by", "stand for", "stand up"],
+      "correct": 3,
+      "explanation": "'Stand up' (to scrutiny) = hold true, remain valid."
+    },
+    {
+      "id": "pv_006",
+      "category": "phrasal_verb",
+      "difficulty": "C1",
+      "sentence": "Please _____ your shoes before entering the house.",
+      "options": ["take off", "take on", "take up", "take in"],
+      "correct": 0,
+      "explanation": "'Take off' = remove (clothing, etc.)."
+    },
+    {
+      "id": "pv_007",
+      "category": "phrasal_verb",
+      "difficulty": "C1",
+      "sentence": "You need to _____ with the times and learn new tech.",
+      "options": ["keep up", "keep on", "keep off", "keep in"],
+      "correct": 0,
+      "explanation": "'Keep up with' = stay current with."
+    },
+    {
+      "id": "pv_008",
+      "category": "phrasal_verb",
+      "difficulty": "C2",
+      "sentence": "The rumours about his resignation turned out to be _____.",
+      "options": ["made up", "made for", "made out", "made over"],
+      "correct": 0,
+      "explanation": "'Made up' = fabricated, invented."
+    },
+    {
+      "id": "pv_009",
+      "category": "phrasal_verb",
+      "difficulty": "C2",
+      "sentence": "Despite the setbacks, she _____ and finished the race.",
+      "options": ["soldiered on", "soldiered up", "soldiered through", "soldiered in"],
+      "correct": 0,
+      "explanation": "'Soldier on' = continue despite difficulty."
+    },
+    {
+      "id": "pv_010",
+      "category": "phrasal_verb",
+      "difficulty": "C1",
+      "sentence": "Could you _____ the music? I can't hear myself think.",
+      "options": ["turn down", "turn up", "turn off", "turn in"],
+      "correct": 0,
+      "explanation": "'Turn down' = lower the volume."
+    },
+
+    {
+      "id": "co_001",
+      "category": "collocation",
+      "difficulty": "C1",
+      "sentence": "She made a _____ effort to finish on time.",
+      "options": ["big", "strong", "heavy", "concerted"],
+      "correct": 3,
+      "explanation": "'Concerted effort' is the natural collocation here."
+    },
+    {
+      "id": "co_002",
+      "category": "collocation",
+      "difficulty": "C1",
+      "sentence": "He paid _____ attention to every detail.",
+      "options": ["strong", "close", "heavy", "deep"],
+      "correct": 1,
+      "explanation": "'Close attention' is the standard collocation."
+    },
+    {
+      "id": "co_003",
+      "category": "collocation",
+      "difficulty": "C1",
+      "sentence": "The new law was met with _____ criticism.",
+      "options": ["heavy", "fierce", "hard", "big"],
+      "correct": 1,
+      "explanation": "'Fierce criticism' is more natural than 'heavy' here."
+    },
+    {
+      "id": "co_004",
+      "category": "collocation",
+      "difficulty": "C2",
+      "sentence": "They reached a _____ agreement after long talks.",
+      "options": ["tentative", "shy", "quiet", "timid"],
+      "correct": 0,
+      "explanation": "'Tentative agreement' = preliminary, provisional."
+    },
+    {
+      "id": "co_005",
+      "category": "collocation",
+      "difficulty": "C2",
+      "sentence": "He bore a _____ resemblance to his grandfather.",
+      "options": ["big", "strong", "striking", "great"],
+      "correct": 2,
+      "explanation": "'Striking resemblance' is the idiomatic phrase."
+    },
+    {
+      "id": "co_006",
+      "category": "collocation",
+      "difficulty": "C1",
+      "sentence": "The professor made a _____ point about the experiment.",
+      "options": ["valid", "true", "real", "correct"],
+      "correct": 0,
+      "explanation": "'Valid point' is the natural collocation."
+    },
+    {
+      "id": "co_007",
+      "category": "collocation",
+      "difficulty": "C2",
+      "sentence": "Her testimony was _____ to the prosecution's case.",
+      "options": ["crucial", "big", "great", "large"],
+      "correct": 0,
+      "explanation": "'Crucial to' is the formal collocation."
+    },
+    {
+      "id": "co_008",
+      "category": "collocation",
+      "difficulty": "C2",
+      "sentence": "The CEO took a _____ stance on remote work.",
+      "options": ["firm", "fixed", "rigid", "solid"],
+      "correct": 0,
+      "explanation": "'Firm stance' is the idiomatic choice."
+    },
+    {
+      "id": "co_009",
+      "category": "collocation",
+      "difficulty": "C1",
+      "sentence": "We need to draw a _____ between facts and opinions.",
+      "options": ["distinction", "separation", "division", "difference"],
+      "correct": 0,
+      "explanation": "'Draw a distinction' is the standard phrase."
+    },
+    {
+      "id": "co_010",
+      "category": "collocation",
+      "difficulty": "C2",
+      "sentence": "The policy had _____ consequences that no one predicted.",
+      "options": ["far-reaching", "long-standing", "heavy-handed", "deep-seated"],
+      "correct": 0,
+      "explanation": "'Far-reaching consequences' = widespread effects."
+    },
+
+    {
+      "id": "ag_001",
+      "category": "advanced_grammar",
+      "difficulty": "C1",
+      "sentence": "Hardly _____ the door when the phone rang.",
+      "options": ["I had closed", "had I closed", "I closed", "did I close"],
+      "correct": 1,
+      "explanation": "After 'hardly' at the start of a clause, auxiliary inverts with subject."
+    },
+    {
+      "id": "ag_002",
+      "category": "advanced_grammar",
+      "difficulty": "C1",
+      "sentence": "Not only _____ the exam, but she also got the highest score.",
+      "options": ["she passed", "did she pass", "passed she", "she did pass"],
+      "correct": 1,
+      "explanation": "Inversion after negative adverbial 'not only'."
+    },
+    {
+      "id": "ag_003",
+      "category": "advanced_grammar",
+      "difficulty": "C2",
+      "sentence": "_____ he known about the meeting, he would have attended.",
+      "options": ["If", "Had", "Should", "Were"],
+      "correct": 1,
+      "explanation": "Inverted third conditional: 'Had he known' replaces 'If he had known'."
+    },
+    {
+      "id": "ag_004",
+      "category": "advanced_grammar",
+      "difficulty": "C2",
+      "sentence": "Little _____ that the company was about to collapse.",
+      "options": ["he knew", "did he know", "knew he", "he did know"],
+      "correct": 1,
+      "explanation": "'Little' at the start triggers subject-auxiliary inversion."
+    },
+    {
+      "id": "ag_005",
+      "category": "advanced_grammar",
+      "difficulty": "C1",
+      "sentence": "By this time next year, I _____ my degree.",
+      "options": ["will finish", "will have finished", "will be finishing", "finish"],
+      "correct": 1,
+      "explanation": "Future perfect for action completed before a future point."
+    },
+    {
+      "id": "ag_006",
+      "category": "advanced_grammar",
+      "difficulty": "C2",
+      "sentence": "It is essential that every candidate _____ on time.",
+      "options": ["arrives", "arrive", "will arrive", "is arriving"],
+      "correct": 1,
+      "explanation": "Subjunctive after 'essential that': bare infinitive form."
+    },
+    {
+      "id": "ag_007",
+      "category": "advanced_grammar",
+      "difficulty": "C1",
+      "sentence": "I wish I _____ more Spanish before the trip.",
+      "options": ["studied", "had studied", "would study", "was studying"],
+      "correct": 1,
+      "explanation": "'Wish' + past perfect for regrets about the past."
+    },
+    {
+      "id": "ag_008",
+      "category": "advanced_grammar",
+      "difficulty": "C2",
+      "sentence": "So great _____ that everyone fell silent.",
+      "options": ["was his anger", "his anger was", "he was angry", "his anger"],
+      "correct": 0,
+      "explanation": "Inversion after 'So + adjective' at clause start."
+    },
+    {
+      "id": "ag_009",
+      "category": "advanced_grammar",
+      "difficulty": "C1",
+      "sentence": "The contract, _____ by both parties, is now binding.",
+      "options": ["having signed", "signed", "was signed", "being signing"],
+      "correct": 1,
+      "explanation": "Reduced passive relative clause: 'which was signed' → 'signed'."
+    },
+    {
+      "id": "ag_010",
+      "category": "advanced_grammar",
+      "difficulty": "C2",
+      "sentence": "Only after the meeting _____ the full picture.",
+      "options": ["I understood", "did I understand", "I did understand", "understanding"],
+      "correct": 1,
+      "explanation": "Inversion after 'only after + adverbial'."
+    },
+
+    {
+      "id": "cp_001",
+      "category": "confusing_pair",
+      "difficulty": "C1",
+      "sentence": "The effect of the new policy is _____ to predict.",
+      "options": ["hard", "hardly", "hardness", "harden"],
+      "correct": 0,
+      "explanation": "'Hard' as adverb = difficult. 'Hardly' means 'barely'."
+    },
+    {
+      "id": "cp_002",
+      "category": "confusing_pair",
+      "difficulty": "C1",
+      "sentence": "Please _____ me when you arrive.",
+      "options": ["advise", "advice", "advised", "advising"],
+      "correct": 0,
+      "explanation": "'Advise' is the verb; 'advice' is the noun."
+    },
+    {
+      "id": "cp_003",
+      "category": "confusing_pair",
+      "difficulty": "C2",
+      "sentence": "His argument had no _____ on the jury.",
+      "options": ["effect", "affect", "effected", "affecting"],
+      "correct": 0,
+      "explanation": "'Effect' is the noun (result); 'affect' is usually the verb."
+    },
+    {
+      "id": "cp_004",
+      "category": "confusing_pair",
+      "difficulty": "C2",
+      "sentence": "The new rules will _____ everyone equally.",
+      "options": ["effect", "affect", "effective", "affected"],
+      "correct": 1,
+      "explanation": "'Affect' = to influence (verb). 'Effect' is usually a noun."
+    },
+    {
+      "id": "cp_005",
+      "category": "confusing_pair",
+      "difficulty": "C1",
+      "sentence": "She lay down to _____ for a few minutes.",
+      "options": ["lie", "lay", "laying", "lied"],
+      "correct": 0,
+      "explanation": "'Lie' (lie–lay–lain) = recline. 'Lay' needs an object."
+    },
+    {
+      "id": "cp_006",
+      "category": "confusing_pair",
+      "difficulty": "C2",
+      "sentence": "The evidence _____ her innocence beyond doubt.",
+      "options": ["implies", "infers", "imply", "infer"],
+      "correct": 0,
+      "explanation": "Evidence implies; a person infers from evidence."
+    },
+    {
+      "id": "cp_007",
+      "category": "confusing_pair",
+      "difficulty": "C1",
+      "sentence": "_____ you remember to lock the door?",
+      "options": ["Do", "Did", "Have", "Are"],
+      "correct": 1,
+      "explanation": "Past simple question — 'Did you remember' refers to a specific past moment."
+    },
+    {
+      "id": "cp_008",
+      "category": "confusing_pair",
+      "difficulty": "C2",
+      "sentence": "The committee is _____ of five members.",
+      "options": ["comprised", "composed", "consisted", "included"],
+      "correct": 1,
+      "explanation": "'Composed of' is correct; 'comprised of' is widely used but traditionally considered incorrect."
+    },
+    {
+      "id": "cp_009",
+      "category": "confusing_pair",
+      "difficulty": "C1",
+      "sentence": "There were _____ cookies left than I expected.",
+      "options": ["less", "fewer", "few", "little"],
+      "correct": 1,
+      "explanation": "'Fewer' for countable nouns; 'less' for uncountable."
+    },
+    {
+      "id": "cp_010",
+      "category": "confusing_pair",
+      "difficulty": "C2",
+      "sentence": "The book _____ of three distinct parts.",
+      "options": ["consists", "composes", "comprises", "contains"],
+      "correct": 0,
+      "explanation": "'Consists of' is the correct collocation. 'Comprises' would not take 'of'."
+    }
+  ]
+}
