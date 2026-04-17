@@ -102,6 +102,14 @@ window.CJS.MonsterEditor = (() => {
         <h3>SPECIAL Stats <span class="dim" style="font-size:0.8em">(${rd.statMin}–${rd.statMax})</span></h3>
         <div id="mon-stats-area"></div>
 
+        <div class="form-row mt-sm">
+          <div class="form-group" style="flex:0 0 140px"><label class="form-label">Base Movement</label><input type="number" id="mon-movement" value="${m.movement||3}" min="0" max="8" style="width:100%"></div>
+          <div class="form-group" style="flex:0 0 140px"><label class="form-label">Size</label>
+            <select id="mon-size">${Object.entries(C().UNIT_SIZES).map(([k,v])=>`<option value="${k}" ${(m.size||'1x1')===k?'selected':''}>${v.label}</option>`).join('')}</select>
+          </div>
+          <div class="dim" style="align-self:flex-end;padding-bottom:6px;font-size:0.82rem">Movement: cells/turn · Size: grid footprint (bosses: 2×2)</div>
+        </div>
+
         <h3>Derived Stats</h3>
         <div class="card" style="background:var(--surface2)" id="mon-derived"></div>
 
@@ -145,6 +153,9 @@ window.CJS.MonsterEditor = (() => {
       statsArea.appendChild(slider);
     }
     _updateDerived(sliders, m.rank||'F');
+
+    // Movement input → update derived
+    _formEl.querySelector('#mon-movement').onchange = () => _updateDerived(sliders, _formEl.querySelector('#mon-rank')?.value || 'F');
 
     // ── Skill/Passive pickers ──
     const skillPicker = _createRefPicker('skills', m.skills||[], 'skill');
@@ -194,6 +205,8 @@ window.CJS.MonsterEditor = (() => {
         type: _formEl.querySelector('#mon-type').value,
         behaviorAI: _formEl.querySelector('#mon-ai').value,
         stats: cs,
+        movement: Number(_formEl.querySelector('#mon-movement').value) || 3,
+        size: _formEl.querySelector('#mon-size').value || '1x1',
         skills: skillPicker.getIds(),
         equipment: [],
         innatePassives: passivePicker.getIds(),
@@ -218,7 +231,7 @@ window.CJS.MonsterEditor = (() => {
       <span><b style="color:var(--blue)">MP</b> ${F().calcMaxMP(st,rank)}</span>
       <span><b style="color:var(--text-dim)">Phys DR</b> ${F().calcPhysicalDR(st)}</span>
       <span><b style="color:var(--accent)">Mag DR</b> ${F().calcMagicDR(st)}</span>
-      <span><b style="color:var(--green)">Move</b> ${F().calcMovement(st.A,0)}</span>
+      <span><b style="color:var(--green)">Move</b> ${F().calcMovement(Number(_formEl.querySelector('#mon-movement')?.value)||3,0)}</span>
       <span><b style="color:var(--gold)">Crit</b> ${F().calcCritChance(st.L,0).toFixed(1)}%</span>
     </div>`;
   }
