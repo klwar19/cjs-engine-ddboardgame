@@ -248,6 +248,14 @@ window.CJS.ActionHandler = (() => {
       unit.turnState.cooldowns[action.skillId] = cd;
     }
 
+    // Pull QTE result from the action (set by UI layer), or default to neutral.
+    // Player flow: UI pops QTE → awaits result → submitAction({..., qteResult}).
+    // AI flow: combat-manager's AI path simulates a grade based on the unit's
+    // stats/archetype and stuffs it into the action before calling execute.
+    const qteResult = action.qteResult || _defaultQTEResult(skill);
+    const qteMultiplier = qteResult.multiplier || 1.0;
+    const qteGrade = qteResult.grade || 'ok';
+
     const target = action.targetId ? GE().getUnit(action.targetId) : null;
     Log().logSkillUse({ actor: unit, target, skill, apCost, mpCost });
 
@@ -270,7 +278,7 @@ window.CJS.ActionHandler = (() => {
     if (skill.power) {
       for (const t of targets) {
         const attack = DC().computeAttack({
-          attacker: unit, target: t, skill, qteMultiplier: ctx.qteMultiplier || 1.0
+          attacker: unit, target: t, skill, qteMultiplier, qteGrade
         });
         if (attack.miss) {
           Log().logMiss({ actor: unit, target: t, skill });
@@ -282,7 +290,7 @@ window.CJS.ActionHandler = (() => {
           damageType: skill.damageType || 'Physical',
           element:    skill.element    || 'Physical',
           skill, isCritical: attack.isCritical, breakdown: attack.breakdown,
-          qteGrade: ctx.qteGrade
+          qteGrade
         });
         hits.push({ target: t, damage: applied.applied, killed: applied.killed, critical: attack.isCritical });
 
@@ -387,6 +395,34 @@ window.CJS.ActionHandler = (() => {
     return { success: true, action: 'end_turn' };
   }
 
+  // ── DEFAULT QTE RESULT ─────────────────────────────────────────────
+  // When an action is executed without a pre-resolved qteResult, we assume
+  // a neutral "ok" multiplier. Combat-manager overrides this for AI units
+  // with a simulated result (so enemies still roll perfect/good/fail).
+  function _defaultQTEResult(skill) {
+    return { grade: 'ok', multiplier: 1.0, qteType: skill?.qte || 'none' };
+  }
+
+  // Simulate a QTE grade for AI units. Based on a simple roll: higher-rank
+  // monsters land better grades more often. Returns the same shape a real
+  // QTE would produce.
+  function simulateAIQTE(unit, skill) {
+    if (!skill || !skill.qte || skill.qte === 'none') {
+      return _defaultQTEResult(skill);
+    }
+    // Rank-based success chance
+    const RANK_SKILL = { F: 0.35, E: 0.45, D: 0.55, C: 0.65, B: 0.72, A: 0.80, S: 0.85, SR: 0.90, SSR: 0.95 };
+    const rankSkill = RANK_SKILL[unit?.rank] ?? 0.5;
+    const r = Math.random();
+    let grade;
+    if (r < rankSkill * 0.2)       grade = 'perfect';
+    else if (r < rankSkill * 0.6)  grade = 'good';
+    else if (r < rankSkill)        grade = 'ok';
+    else                           grade = 'fail';
+    const multiplier = { perfect: 1.5, good: 1.25, ok: 1.0, fail: 0.75 }[grade];
+    return { grade, multiplier, qteType: skill.qte, simulated: true };
+  }
+
   // ── QUERIES ────────────────────────────────────────────────────────
   // What actions can this unit take right now? Used by the UI to grey out buttons.
   function getAvailableActions(unit) {
@@ -429,6 +465,7 @@ window.CJS.ActionHandler = (() => {
 
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
-    validate, execute, getAvailableActions
+    validate, execute, getAvailableActions,
+    simulateAIQTE
   });
 })();
