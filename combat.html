@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CJS Combat Simulator</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/combat.css" />
+</head>
+<body>
+  <div id="combat-app">
+    <!-- Header -->
+    <header class="combat-header">
+      <a href="index.html" class="back-link">← Main Menu</a>
+      <h1>⚔️ CJS Combat Simulator</h1>
+      <div class="header-controls">
+        <select id="encounter-select">
+          <option value="">-- Select Encounter --</option>
+        </select>
+        <button id="btn-start" class="btn btn-primary">Start Combat</button>
+        <button id="btn-import" class="btn">📥 Import Data</button>
+        <input type="file" id="file-import" accept=".json" style="display:none" />
+      </div>
+    </header>
+
+    <!-- Main combat container (filled by CombatUI) -->
+    <main id="combat-container"></main>
+  </div>
+
+  <!-- Phase 1: Core -->
+  <script src="js/core/constants.js"></script>
+  <script src="js/core/formulas.js"></script>
+  <script src="js/core/dice.js"></script>
+  <script src="js/core/data-store.js"></script>
+
+  <!-- Phase 1: Effects -->
+  <script src="js/effects/value-calc.js"></script>
+  <script src="js/effects/conditions.js"></script>
+  <script src="js/effects/effect-registry.js"></script>
+  <script src="js/effects/effect-resolver.js"></script>
+
+  <!-- Phase 3: Grid -->
+  <script src="js/grid/grid-engine.js"></script>
+  <script src="js/grid/pathfinding.js"></script>
+  <script src="js/grid/aoe.js"></script>
+
+  <!-- Phase 3: Combat -->
+  <script src="js/combat/stat-compiler.js"></script>
+  <script src="js/combat/damage-calc.js"></script>
+  <script src="js/combat/dice-service.js"></script>
+  <script src="js/combat/status-manager.js"></script>
+  <script src="js/combat/action-handler.js"></script>
+  <script src="js/combat/combat-log.js"></script>
+  <script src="js/combat/combat-settings.js"></script>
+  <script src="js/combat/combat-manager.js"></script>
+
+  <!-- Phase 3: AI -->
+  <script src="js/ai/ai-conditions.js"></script>
+  <script src="js/ai/ai-targeting.js"></script>
+  <script src="js/ai/ai-controller.js"></script>
+
+  <!-- Phase 4: QTE -->
+  <script src="js/qte/qte-quickpress.js"></script>
+  <script src="js/qte/qte-mash.js"></script>
+  <script src="js/qte/qte-fishing.js"></script>
+  <script src="js/qte/qte-rhythm.js"></script>
+  <script src="js/qte/qte-quiz.js"></script>
+  <script src="js/qte/qte-manager.js"></script>
+
+  <!-- Phase 5: Narrator -->
+  <script src="js/narrator/narrator-state.js"></script>
+  <script src="js/narrator/narrator-data.js"></script>
+  <script src="js/narrator/narrator-engine.js"></script>
+
+  <!-- Phase 5: Visual / UI -->
+  <script src="js/grid/grid-renderer.js"></script>
+  <script src="js/ui/ui-helpers.js"></script>
+  <script src="js/ui/combat-ui.js"></script>
+  <script src="js/ui/loot-roller.js"></script>
+
+  <!-- App bootstrap -->
+  <script>
+  (async function() {
+    'use strict';
+    const DS = window.CJS.DataStore;
+    const ND = window.CJS.NarratorData;
+
+    // ── LOAD DATA ─────────────────────────────────────────────────
+    async function loadData() {
+      try {
+        const [gameResp, effectsResp, quipsResp] = await Promise.all([
+          fetch('data/gamedata.json'),
+          fetch('data/master-effects.json'),
+          fetch('data/quips.json')
+        ]);
+
+        if (gameResp.ok) {
+          const gameData = await gameResp.json();
+          DS.importAll(gameData);
+          console.log('Game data loaded.');
+        }
+
+        if (effectsResp.ok) {
+          const effects = await effectsResp.json();
+          if (effects.effects) {
+            for (const eff of effects.effects) {
+              DS.set('effects', eff.id, eff);
+            }
+          } else if (Array.isArray(effects)) {
+            for (const eff of effects) DS.set('effects', eff.id, eff);
+          }
+          console.log('Master effects loaded.');
+        }
+
+        if (quipsResp.ok) {
+          const quips = await quipsResp.json();
+          await ND.load(quips.fragments || quips);
+          console.log('Quips loaded:', ND.count(), 'fragments');
+        }
+      } catch (err) {
+        console.warn('Data load error (some files may be missing):', err.message);
+      }
+    }
+
+    // ── POPULATE ENCOUNTER SELECT ─────────────────────────────────
+    function populateEncounters() {
+      const sel = document.getElementById('encounter-select');
+      const encounters = DS.getAll('encounters') || {};
+      sel.innerHTML = '<option value="">-- Select Encounter --</option>';
+
+      for (const [id, enc] of Object.entries(encounters)) {
+        const name = enc.name || id;
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      }
+
+      // If no encounters, add a demo option
+      if (Object.keys(encounters).length === 0) {
+        _createDemoEncounter();
+        populateEncounters(); // recurse once
+        return;
+      }
+    }
+
+    // ── DEMO ENCOUNTER (fallback) ─────────────────────────────────
+    function _createDemoEncounter() {
+      // Create minimal demo characters if none exist
+      const chars = DS.getAll('characters') || {};
+      if (Object.keys(chars).length === 0) {
+        DS.set('characters', 'bin', {
+          id: 'bin', name: 'Bin Chen', icon: '🃏', team: 'player',
+          rank: 'F', type: 'humanoid',
+          stats: { S: 5, P: 6, E: 5, C: 8, I: 7, A: 6, L: 5 },
+          skills: [], equipment: [], innatePassives: [],
+          movement: 3
+        });
+        DS.set('characters', 'bowy', {
+          id: 'bowy', name: 'Bowy', icon: '🐗', team: 'player',
+          rank: 'F', type: 'humanoid',
+          stats: { S: 7, P: 7, E: 6, C: 4, I: 4, A: 5, L: 5 },
+          skills: [], equipment: [], innatePassives: [],
+          movement: 3
+        });
+      }
+
+      const mons = DS.getAll('monsters') || {};
+      if (Object.keys(mons).length === 0) {
+        DS.set('monsters', 'ice_wolf', {
+          id: 'ice_wolf', name: 'Ice Wolf', icon: '🐺', team: 'enemy',
+          rank: 'F', type: 'beast',
+          stats: { S: 6, P: 5, E: 4, C: 2, I: 3, A: 7, L: 3 },
+          skills: [], equipment: [], innatePassives: [],
+          movement: 4,
+          loot: [],
+          aiRules: [
+            { priority: 1, condition: 'any_adjacent_enemy', action: 'attack', target: 'lowest_hp' },
+            { priority: 2, condition: 'default', action: 'move_toward', target: 'nearest_enemy' }
+          ]
+        });
+        DS.set('monsters', 'frost_goblin', {
+          id: 'frost_goblin', name: 'Frost Goblin', icon: '👺', team: 'enemy',
+          rank: 'F', type: 'humanoid',
+          stats: { S: 4, P: 4, E: 3, C: 3, I: 5, A: 5, L: 4 },
+          skills: [], equipment: [], innatePassives: [],
+          movement: 3,
+          loot: [],
+          aiRules: [
+            { priority: 1, condition: 'default', action: 'attack', target: 'nearest_enemy' }
+          ]
+        });
+      }
+
+      // Create demo encounter
+      const grid = Array.from({ length: 8 }, () => Array(8).fill('empty'));
+      grid[2][3] = 'obstacle';
+      grid[5][4] = 'obstacle';
+      grid[3][6] = 'fire_zone';
+      grid[4][1] = 'ice_zone';
+
+      DS.set('encounters', 'demo_frostwood', {
+        id: 'demo_frostwood',
+        name: 'Frostwood Patrol (Demo)',
+        width: 8, height: 8,
+        grid: grid,
+        units: [
+          { id: 'bin', pos: [6, 1], size: '1x1' },
+          { id: 'bowy', pos: [6, 3], size: '1x1' },
+          { id: 'ice_wolf', pos: [1, 2], size: '1x1' },
+          { id: 'frost_goblin', pos: [1, 5], size: '1x1' }
+        ]
+      });
+    }
+
+    // ── IMPORT HANDLER ────────────────────────────────────────────
+    document.getElementById('btn-import').addEventListener('click', () => {
+      document.getElementById('file-import').click();
+    });
+
+    document.getElementById('file-import').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        DS.importAll(data);
+        populateEncounters();
+        console.log('Data imported successfully.');
+      } catch (err) {
+        alert('Import failed: ' + err.message);
+      }
+    });
+
+    // ── START COMBAT ──────────────────────────────────────────────
+    document.getElementById('btn-start').addEventListener('click', () => {
+      const encId = document.getElementById('encounter-select').value;
+      if (!encId) { alert('Select an encounter first.'); return; }
+
+      // Init CombatSettings
+      if (window.CJS.CombatSettings) {
+        window.CJS.CombatSettings.init();
+      }
+
+      // Init CombatUI
+      const container = document.getElementById('combat-container');
+      window.CJS.CombatUI.init(container);
+      window.CJS.CombatUI.startCombat(encId);
+    });
+
+    // ── BOOT ──────────────────────────────────────────────────────
+    await loadData();
+    populateEncounters();
+    console.log('CJS Combat Simulator ready.');
+  })();
+  </script>
+</body>
+</html>
