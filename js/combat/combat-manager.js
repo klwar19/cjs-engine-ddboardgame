@@ -281,6 +281,15 @@ window.CJS.CombatManager = (() => {
       return 'turn_end';
     }
 
+    // For AI-chosen skill actions, simulate the QTE since the AI can't play
+    // the minigame. Basic attacks don't use QTE.
+    if (decision.type === 'skill' && decision.skillId) {
+      const skill = DS().get('skills', decision.skillId);
+      if (skill && skill.qte && skill.qte !== 'none') {
+        decision.qteResult = AH().simulateAIQTE(unit, skill);
+      }
+    }
+
     const result = AH().execute(unit, decision, { turnNumber: _state.roundNumber });
     if (!result.success) {
       // AI picked an invalid action (edge case — pathing or range check failed).
