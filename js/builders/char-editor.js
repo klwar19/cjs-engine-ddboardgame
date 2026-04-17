@@ -98,6 +98,14 @@ window.CJS.CharEditor = (() => {
         <div id="chr-stats-area"></div>
         <div class="dim" style="font-size:0.82rem;margin-top:4px">Total: <b id="chr-stat-total">0</b> / ~${rankData.totalSpecial}</div>
 
+        <div class="form-row mt-sm">
+          <div class="form-group" style="flex:0 0 140px"><label class="form-label">Base Movement</label><input type="number" id="chr-movement" value="${c.movement||3}" min="0" max="8" style="width:100%"></div>
+          <div class="form-group" style="flex:0 0 140px"><label class="form-label">Size</label>
+            <select id="chr-size">${Object.entries(C().UNIT_SIZES).map(([k,v])=>`<option value="${k}" ${(c.size||'1x1')===k?'selected':''}>${v.label}</option>`).join('')}</select>
+          </div>
+          <div class="dim" style="align-self:flex-end;padding-bottom:6px;font-size:0.82rem">Movement: cells/turn · Size: grid footprint</div>
+        </div>
+
         <h3>Derived Stats</h3>
         <div class="card" style="background:var(--surface2)" id="chr-derived"></div>
 
@@ -135,6 +143,9 @@ window.CJS.CharEditor = (() => {
       statsArea.appendChild(slider);
     }
     _updateDerived(statSliders, c.rank || 'F');
+
+    // Movement input → update derived
+    _formEl.querySelector('#chr-movement').onchange = () => _updateDerived(statSliders, _formEl.querySelector('#chr-rank').value || 'F');
 
     // Rank change → update stat limits
     _formEl.querySelector('#chr-rank').onchange = (e) => {
@@ -178,6 +189,8 @@ window.CJS.CharEditor = (() => {
         rank: _formEl.querySelector('#chr-rank').value,
         type: _formEl.querySelector('#chr-type').value,
         stats: currentStats,
+        movement: Number(_formEl.querySelector('#chr-movement').value) || 3,
+        size: _formEl.querySelector('#chr-size').value || '1x1',
         skills: skillPicker.getIds(),
         equipment: equipPicker.getIds(),
         innatePassives: passivePicker.getIds(),
@@ -207,7 +220,7 @@ window.CJS.CharEditor = (() => {
     const pdr = F().calcPhysicalDR(stats);
     const mdr = F().calcMagicDR(stats);
     const cdr = F().calcChaosDR(stats);
-    const move = F().calcMovement(stats.A, 0);
+    const move = F().calcMovement(Number(_formEl.querySelector('#chr-movement')?.value) || 3, 0);
     const crit = F().calcCritChance(stats.L, 0);
     el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.88rem">
       <span><b style="color:var(--red)">HP</b> ${hp}</span>
