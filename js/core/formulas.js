@@ -141,9 +141,59 @@ window.CJS.Formulas = (() => {
   }
 
   // ── MOVEMENT ───────────────────────────────────────────────────────
-  // Base movement: 2 + floor(Agility / 5), minimum 2
-  function calcMovement(agility, movementBonus) {
-    return Math.max(2, 2 + Math.floor(agility / 5) + (movementBonus || 0));
+  // Flat base per unit. Only modified by passives/items/effects/skills.
+  // baseMovement is set on each character/monster (typically 2–4).
+  function calcMovement(baseMovement, movementBonus) {
+    return Math.max(0, (baseMovement || 3) + (movementBonus || 0));
+  }
+
+  // ── KNOCKBACK & COLLISION ─────────────────────────────────────────
+  // Effective knockback distance after END resistance
+  function calcKnockbackDistance(baseDistance, targetEndurance) {
+    const resist = Math.floor((targetEndurance || 0) / C().COLLISION.knockbackResistPerEnd);
+    return Math.max(0, baseDistance - resist);
+  }
+
+  // Collision damage when knocked into wall/obstacle
+  function calcWallCollisionDamage(knockbackSourceDamage) {
+    const col = C().COLLISION;
+    return col.wallDamageFlat + Math.floor((knockbackSourceDamage || 0) * col.wallDamagePercent / 100);
+  }
+
+  // Collision damage when knocked into another unit
+  function calcUnitCollisionDamage(knockbackSourceDamage) {
+    const col = C().COLLISION;
+    return col.unitCollisionDamageFlat + Math.floor((knockbackSourceDamage || 0) * col.unitCollisionDamagePercent / 100);
+  }
+
+  // Does the pushed unit push the blocker? (size comparison)
+  function doesKnockbackChain(pushedSize, blockerSize) {
+    if (!C().COLLISION.sizeMatters) return false;
+    const sizes = C().UNIT_SIZES;
+    const pArea = (sizes[pushedSize]?.w || 1) * (sizes[pushedSize]?.h || 1);
+    const bArea = (sizes[blockerSize]?.w || 1) * (sizes[blockerSize]?.h || 1);
+    return pArea > bArea;
+  }
+
+  // ── LINE OF SIGHT ─────────────────────────────────────────────────
+  // Check if a cell blocks LoS (for grid-engine to use in Bresenham walk)
+  function cellBlocksLoS(terrainType, unitOnCell) {
+    const los = C().LINE_OF_SIGHT;
+    const terrain = C().TERRAIN_TYPES[terrainType];
+    if (terrain && terrain.blocksLoS && los.obstaclesBlock) return true;
+    if (unitOnCell && los.largeUnitsBlock) {
+      const uSize = unitOnCell.size || '1x1';
+      const s = C().UNIT_SIZES[uSize];
+      if (s && (s.w >= 2 || s.h >= 2)) return true;
+    }
+    return false;
+  }
+
+  // ── TERRAIN MOVEMENT COST ─────────────────────────────────────────
+  // How many movement points does it cost to enter a cell?
+  function getTerrainMoveCost(terrainType) {
+    const terrain = C().TERRAIN_TYPES[terrainType];
+    return terrain ? terrain.moveCost : 1;
   }
 
   // ── LOOT DROP ──────────────────────────────────────────────────────
@@ -179,6 +229,8 @@ window.CJS.Formulas = (() => {
     getElementMultiplier,
     calcHitCheck, calcCritChance, calcCritMultiplier, rollCrit,
     calcInitiative, calcMovement,
+    calcKnockbackDistance, calcWallCollisionDamage, calcUnitCollisionDamage,
+    doesKnockbackChain, cellBlocksLoS, getTerrainMoveCost,
     calcDropChance,
     applyWorldCeiling, applyWorldCeilingToStats,
     calcSkillPowerAtLevel
