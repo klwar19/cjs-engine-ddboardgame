@@ -30,6 +30,22 @@
     }
     .status-bar .counts { display: flex; gap: 12px; }
     .status-bar .dirty { color: var(--gold); }
+    /* Hint boxes for effect suitability */
+    .hint-box { background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2); border-radius:6px; padding:8px 12px; font-size:0.8rem; color:var(--text); margin-bottom:10px; line-height:1.5; }
+    .hint-box.hint-info { background:rgba(59,130,246,0.08); border-color:rgba(59,130,246,0.2); }
+    /* Chip selectors */
+    .chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; font-size:0.78rem; color:var(--text); margin:2px; white-space:nowrap; }
+    .chip-x { background:none; border:none; color:var(--red); cursor:pointer; font-size:0.9rem; padding:0 2px; line-height:1; }
+    .chip-x:hover { color:#ff6b6b; }
+    .chip-and { font-size:0.7rem; color:var(--text-mute); margin:0 4px; font-weight:600; }
+    .chip-row { display:inline; }
+    .cond-add { font-size:0.8rem; margin-top:4px; }
+    /* Data browser table */
+    .db-table { width:100%; border-collapse:collapse; font-size:0.78rem; }
+    .db-table th { position:sticky; top:0; background:var(--surface); padding:6px 8px; text-align:left; border-bottom:2px solid var(--border); color:var(--accent); font-weight:600; white-space:nowrap; }
+    .db-table td { padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+    .db-table tr:hover td { background:rgba(255,255,255,0.03); }
+    .db-table tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
   </style>
 </head>
 <body>
@@ -42,6 +58,7 @@
         <button class="btn btn-ghost btn-sm" id="btn-export" title="Export JSON">💾 Export</button>
         <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">✅ Validate</button>
         <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">🧪 Tests</a>
+        <a href="combat.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#fca5a5">⚔️ Combat</a>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
@@ -83,6 +100,11 @@
           <span>🗺️</span> <span>Encounters</span>
           <span class="badge" id="count-encounters">0</span>
         </div>
+
+        <div class="nav-section">Tools</div>
+        <div class="nav-item" data-panel="browser">
+          <span>📊</span> <span>Data Browser</span>
+        </div>
       </div>
 
       <!-- MAIN CONTENT -->
@@ -94,6 +116,7 @@
         <div class="editor-panel" id="panel-characters"></div>
         <div class="editor-panel" id="panel-monsters"></div>
         <div class="editor-panel" id="panel-encounters"></div>
+        <div class="editor-panel" id="panel-browser"></div>
       </div>
     </div>
 
@@ -129,6 +152,7 @@
   <script src="js/builders/char-editor.js"></script>
   <script src="js/builders/monster-editor.js"></script>
   <script src="js/builders/encounter-editor.js"></script>
+  <script src="js/ui/data-browser.js"></script>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- APP INIT                                                  -->
@@ -175,7 +199,8 @@
         items:      CJS.ItemEditor,
         characters: CJS.CharEditor,
         monsters:   CJS.MonsterEditor,
-        encounters: CJS.EncounterEditor
+        encounters: CJS.EncounterEditor,
+        browser:    CJS.DataBrowser
       };
 
       function initEditor(name) {
