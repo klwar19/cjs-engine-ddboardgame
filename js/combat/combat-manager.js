@@ -26,6 +26,7 @@ window.CJS.CombatManager = (() => {
   const CS  = () => window.CJS.CombatSettings;
   const Log = () => window.CJS.CombatLog;
   const F   = () => window.CJS.Formulas;
+  const C   = () => window.CJS.CONST;
   const D   = () => window.CJS.DiceService || window.CJS.Dice;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
@@ -235,6 +236,29 @@ window.CJS.CombatManager = (() => {
       unit, allUnits: Object.values(_state.units),
       turnNumber: _state.roundNumber
     });
+
+    // ── Terrain effect at turn start (standing in fire, lava, etc.) ──
+    if (GE() && unit.pos) {
+      const _terrainType = GE().getTerrain(unit.pos[0], unit.pos[1]);
+      if (_terrainType && _terrainType !== 'empty') {
+        const _td = C() ? C().TERRAIN_TYPES[_terrainType] : null;
+        if (_td && _td.effect) {
+          const _tEffect = DS().get('effects', _td.effect);
+          if (_tEffect) {
+            ER().executeEffect(_tEffect, {
+              caster: null, unit, target: unit,
+              allUnits: Object.values(_state.units),
+              turnNumber: _state.roundNumber
+            });
+            Log().record({
+              type: 'terrain_effect', actor: null, target: unit,
+              tags: ['terrain', _terrainType],
+              data: { terrain: _terrainType, effectId: _td.effect }
+            });
+          }
+        }
+      }
+    }
 
     // Check HP threshold trigger
     if (unit.currentHP / unit.maxHP < 0.3) {
