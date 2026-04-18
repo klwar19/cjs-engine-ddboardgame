@@ -57,22 +57,33 @@ window.CJS.CombatManager = (() => {
     // Compile every unit referenced by the encounter
     const unitObjects = {};
     const initiative = [];
+    const idCounts = {};  // track duplicates: { 'ice_wolf': 2, ... }
+
+    // Build patched placements with unique instance IDs
+    const patchedUnits = [];
     for (const placement of (enc.units || [])) {
       const base = DS().get('characters', placement.id) || DS().get('monsters', placement.id);
       if (!base) {
         console.warn(`Unit ${placement.id} not found in data store`);
         continue;
       }
-      const instanceId = placement.id; // multiple copies → caller should suffix
+      // Generate unique instance ID for duplicates
+      idCounts[placement.id] = (idCounts[placement.id] || 0) + 1;
+      const instanceId = idCounts[placement.id] > 1
+        ? `${placement.id}_${idCounts[placement.id]}`
+        : placement.id;
+
       const compiled = SC().compileUnit(base, instanceId);
-      // Preserve explicit placement overrides
       if (placement.size) compiled.size = placement.size;
       unitObjects[instanceId] = compiled;
       initiative.push(instanceId);
+      // Patched placement for grid-engine (needs unique IDs too)
+      patchedUnits.push({ ...placement, id: instanceId });
     }
 
-    // Initialize grid
-    GE().init(enc, unitObjects);
+    // Initialize grid with patched unique-ID placements
+    const patchedEnc = { ...enc, units: patchedUnits };
+    GE().init(patchedEnc, unitObjects);
 
     // Roll initiative
     initiative.sort((a, b) => {
