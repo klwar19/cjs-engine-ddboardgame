@@ -87,38 +87,48 @@
 
     // ── LOAD DATA ─────────────────────────────────────────────────
     async function loadData() {
+      // Load gamedata
       try {
-        const [gameResp, effectsResp, quipsResp] = await Promise.all([
-          fetch('data/gamedata.json'),
-          fetch('data/master-effects.json'),
-          fetch('data/quips.json')
-        ]);
-
+        const gameResp = await fetch('data/gamedata.json');
         if (gameResp.ok) {
           const gameData = await gameResp.json();
           DS.loadData(gameData);
-          console.log('Game data loaded.');
+          console.log('Game data loaded:', DS.getCounts());
         }
+      } catch (err) {
+        console.warn('gamedata.json load error:', err.message);
+      }
 
+      // Load master effects (dict format: { effects: { id: {...}, ... } })
+      try {
+        const effectsResp = await fetch('data/master-effects.json');
         if (effectsResp.ok) {
-          const effects = await effectsResp.json();
-          if (effects.effects) {
-            for (const eff of effects.effects) {
+          const raw = await effectsResp.json();
+          const effectsObj = raw.effects || raw;
+          if (typeof effectsObj === 'object' && !Array.isArray(effectsObj)) {
+            for (const [id, eff] of Object.entries(effectsObj)) {
+              eff.id = eff.id || id;
               DS.replace('effects', eff.id, eff);
             }
-          } else if (Array.isArray(effects)) {
-            for (const eff of effects) DS.replace('effects', eff.id, eff);
+          } else if (Array.isArray(effectsObj)) {
+            for (const eff of effectsObj) DS.replace('effects', eff.id, eff);
           }
           console.log('Master effects loaded.');
         }
+      } catch (err) {
+        console.warn('master-effects.json load error:', err.message);
+      }
 
+      // Load quips
+      try {
+        const quipsResp = await fetch('data/quips.json');
         if (quipsResp.ok) {
           const quips = await quipsResp.json();
           await ND.load(quips.fragments || quips);
           console.log('Quips loaded:', ND.count(), 'fragments');
         }
       } catch (err) {
-        console.warn('Data load error (some files may be missing):', err.message);
+        console.warn('quips.json load error:', err.message);
       }
     }
 
@@ -239,15 +249,23 @@
       const encId = document.getElementById('encounter-select').value;
       if (!encId) { alert('Select an encounter first.'); return; }
 
-      // Init CombatSettings
-      if (window.CJS.CombatSettings) {
-        window.CJS.CombatSettings.init();
-      }
+      try {
+        // Reset CombatSettings and configure teams
+        const CS = window.CJS.CombatSettings;
+        if (CS) {
+          CS.reset();
+          CS.setTeamControl('player', 'manual');
+          CS.setTeamControl('enemy', 'ai');
+        }
 
-      // Init CombatUI
-      const container = document.getElementById('combat-container');
-      window.CJS.CombatUI.init(container);
-      window.CJS.CombatUI.startCombat(encId);
+        // Init CombatUI
+        const container = document.getElementById('combat-container');
+        window.CJS.CombatUI.init(container);
+        window.CJS.CombatUI.startCombat(encId);
+      } catch (err) {
+        console.error('Combat start failed:', err);
+        alert('Combat failed to start: ' + err.message + '\n\nCheck browser console (F12) for details.');
+      }
     });
 
     // ── BOOT ──────────────────────────────────────────────────────
