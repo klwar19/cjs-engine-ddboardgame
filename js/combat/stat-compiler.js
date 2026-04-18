@@ -124,7 +124,8 @@ window.CJS.StatCompiler = (() => {
       statusResist:  mods.statusResist || {},
 
       // References (for use by action-handler, etc.)
-      skills:        baseUnit.skills || [],
+      // Merge base skills + any skills granted by equipped items
+      skills:        _mergeSkills(baseUnit.skills || [], baseUnit.equipment || []),
       equipment:     baseUnit.equipment || [],
       innatePassives:baseUnit.innatePassives || [],
 
@@ -309,6 +310,18 @@ window.CJS.StatCompiler = (() => {
   function _mergeUnique(a, b) {
     const set = new Set([...(a || []), ...(b || [])]);
     return Array.from(set);
+  }
+
+  // Merge base skills with any skills granted by equipped items
+  function _mergeSkills(baseSkills, equipmentIds) {
+    const all = new Set(baseSkills);
+    for (const itemId of equipmentIds) {
+      const item = DS().get('items', itemId);
+      if (item?.grantedSkills) {
+        for (const sid of item.grantedSkills) all.add(sid);
+      }
+    }
+    return Array.from(all);
   }
 
   // ── RECOMPILE (for mid-combat buff/debuff changes) ────────────────
