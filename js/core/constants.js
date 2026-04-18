@@ -284,6 +284,158 @@ window.CJS.CONST = (() => {
     exotic:   { name: 'Exotic / Unique', color: '#a855f7' }
   };
 
+  // ── STATUS DEFINITIONS (mechanical behavior of each status) ────────
+  // These define what each status actually DOES in combat.
+  // preventsAction: can't attack/use skills
+  // preventsMovement: can't move
+  // breaksOnDamage: removed when unit takes damage
+  // breaksOnAction: removed after unit acts
+  // tickEffect: effect ID to fire each turn (DoT/HoT)
+  // statMod: {stat: amount} while active
+  // forcedTarget: must target this ('source'=taunter)
+  // randomTarget: attacks random instead of chosen
+  // absorbHP: damage shield (absorbs X before real HP takes damage)
+  // reflectPercent: reflects X% damage to attacker
+  // invisible: can't be targeted by enemies
+  const STATUS_DEFINITIONS = {
+    // ── DoTs ──
+    burn:      { name:'Burn',      icon:'🔥', category:'dot',      desc:'Takes fire damage each turn.',        tickDamageType:'Fire',     stackable:true,  maxStacks:3 },
+    poison:    { name:'Poison',    icon:'☠️', category:'dot',      desc:'Takes nature damage each turn. Stacks.', tickDamageType:'Nature', stackable:true,  maxStacks:5 },
+    bleed:     { name:'Bleed',     icon:'🩸', category:'dot',      desc:'Takes physical damage each turn. Worse when moving.', tickDamageType:'Physical', stackable:true, maxStacks:3 },
+    frostbite: { name:'Frostbite', icon:'🥶', category:'dot',      desc:'Takes water damage each turn. Slows movement by 1.', tickDamageType:'Water', statMod:{A:-2}, moveMod:-1 },
+    shock:     { name:'Shock',     icon:'⚡', category:'dot',      desc:'Takes lightning damage each turn. QTE difficulty +1.', tickDamageType:'Lightning' },
+    curse:     { name:'Curse',     icon:'💀', category:'dot',      desc:'Takes dark damage each turn. Cannot be healed.', tickDamageType:'Dark', preventsHealing:true },
+    corrode:   { name:'Corrode',   icon:'🧪', category:'dot',      desc:'Takes damage each turn. Reduces DR by 2 per stack.', tickDamageType:'Physical', stackable:true, maxStacks:5, drMod:-2 },
+
+    // ── Control / Disable ──
+    stun:      { name:'Stun',      icon:'💫', category:'control',  desc:'Cannot act or move. Does NOT break on damage.', preventsAction:true, preventsMovement:true },
+    freeze:    { name:'Freeze',    icon:'🧊', category:'control',  desc:'Cannot act or move. Takes 50% extra from Fire.', preventsAction:true, preventsMovement:true, elementWeak:'Fire' },
+    sleep:     { name:'Sleep',     icon:'💤', category:'control',  desc:'Cannot act or move. BREAKS when taking damage.', preventsAction:true, preventsMovement:true, breaksOnDamage:true },
+    petrify:   { name:'Petrify',   icon:'🪨', category:'control',  desc:'Cannot act or move. +10 Physical DR while petrified.', preventsAction:true, preventsMovement:true, drMod:10 },
+    charm:     { name:'Charm',     icon:'💕', category:'control',  desc:'Attacks own allies instead of enemies. Breaks if ally damages you.', forcedTarget:'ally', breaksOnAllyDamage:true },
+    confuse:   { name:'Confuse',   icon:'😵', category:'control',  desc:'Actions target randomly (friend or foe).', randomTarget:true },
+    silence:   { name:'Silence',   icon:'🤐', category:'control',  desc:'Cannot use skills (only basic attack/move/defend). Quiz QTE auto-fails.', preventsSkills:true },
+    blind:     { name:'Blind',     icon:'🌑', category:'control',  desc:'Accuracy reduced by 50%. Fishing/quickpress QTE harder.', accuracyMod:-50 },
+    taunt:     { name:'Taunt',     icon:'😤', category:'control',  desc:'Must target the taunter with attacks.', forcedTarget:'source' },
+    fear:      { name:'Fear',      icon:'😨', category:'control',  desc:'Must move away from the source. Cannot attack the source.', forcedMovement:'away', cannotTarget:'source' },
+
+    // ── Movement Debuffs ──
+    slow:      { name:'Slow',      icon:'🐌', category:'movement', desc:'Movement reduced by 2.', moveMod:-2 },
+    root:      { name:'Root',      icon:'🌿', category:'movement', desc:'Cannot move. Can still attack and use skills.', preventsMovement:true },
+    immobilize:{ name:'Immobilize', icon:'🔗', category:'movement', desc:'Cannot move. Same as Root but doesn\'t break.', preventsMovement:true },
+    web:       { name:'Web',       icon:'🕸️', category:'movement', desc:'Cannot move. Breaks on taking fire damage.', preventsMovement:true, breaksOnElement:'Fire' },
+
+    // ── Stat Debuffs ──
+    weakness:  { name:'Weakness',  icon:'📉', category:'statdown', desc:'Strength reduced.', statMod:{S:-3} },
+    fragile:   { name:'Fragile',   icon:'💔', category:'statdown', desc:'Endurance and DR reduced.', statMod:{E:-3}, drMod:-3 },
+    dull:      { name:'Dull',      icon:'🧠', category:'statdown', desc:'Intelligence reduced.', statMod:{I:-3} },
+    clumsy:    { name:'Clumsy',    icon:'🦶', category:'statdown', desc:'Agility reduced.', statMod:{A:-3} },
+    unlucky:   { name:'Unlucky',   icon:'🍀', category:'statdown', desc:'Luck reduced. Crit chance down.', statMod:{L:-3} },
+    exposed:   { name:'Exposed',   icon:'🎯', category:'statdown', desc:'All DR reduced by 5.', drMod:-5 },
+
+    // ── Buffs ──
+    haste:     { name:'Haste',     icon:'⚡', category:'buff',     desc:'Movement +2, Agility +3.', moveMod:2, statMod:{A:3} },
+    regen:     { name:'Regen',     icon:'💚', category:'buff',     desc:'Heals HP each turn.', tickHeal:true },
+    shield:    { name:'Shield',    icon:'🛡️', category:'buff',     desc:'Absorbs damage before HP. Shield has its own HP pool that depletes.', absorbHP:true },
+    barrier:   { name:'Barrier',   icon:'🔮', category:'buff',     desc:'Absorbs magic damage only.', absorbHP:true, absorbType:'Magic' },
+    berserk:   { name:'Berserk',   icon:'😡', category:'buff',     desc:'Damage +30%, but DR reduced by 5.', damageMod:30, drMod:-5 },
+    stealth:   { name:'Stealth',   icon:'👤', category:'buff',     desc:'Cannot be targeted. Breaks on attacking or taking AoE damage.', invisible:true, breaksOnAction:true },
+    focus:     { name:'Focus',     icon:'🎯', category:'buff',     desc:'Next attack has +50% crit chance.', critMod:50, breaksOnAction:true },
+    protect:   { name:'Protect',   icon:'🛡️', category:'buff',     desc:'Redirects attacks from adjacent allies to self.', redirectDamage:true },
+    counter_stance:{ name:'Counter Stance', icon:'⚔️', category:'buff', desc:'Automatically counter-attacks when hit.', autoCounter:true },
+
+    // ── Exotic ──
+    doom:      { name:'Doom',      icon:'💀', category:'exotic',   desc:'Dies when duration expires. Can be cleansed.', killOnExpire:true },
+    transform: { name:'Transform', icon:'🔄', category:'exotic',   desc:'Changed into another form. Stats replaced temporarily.' },
+    mark:      { name:'Mark',      icon:'🎯', category:'exotic',   desc:'Marked target takes bonus damage from the marker.' },
+    adapt:     { name:'Adapt',     icon:'🧬', category:'exotic',   desc:'Gains resistance to the last element that hit this unit.' },
+    link:      { name:'Link',      icon:'🔗', category:'exotic',   desc:'Damage taken is split between linked units.' }
+  };
+
+  // ── CONDITION DEFINITIONS (for dropdown builders) ──────────────────
+  // Each has: value (engine string), label (human), group, hasParam (needs number input), paramLabel
+  const CONDITION_DEFS = [
+    // HP / MP / AP
+    { v:'hp_below',        l:'HP below X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:30 },
+    { v:'hp_above',        l:'HP above X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:50 },
+    { v:'is_full_hp',      l:'HP is full (100%)',           g:'HP / MP / AP' },
+    { v:'mp_below',        l:'MP below X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:30 },
+    { v:'mp_above',        l:'MP above X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:50 },
+    { v:'ap_remaining_gte',l:'AP remaining ≥ X',           g:'HP / MP / AP', hasParam:true, paramLabel:'AP', paramDefault:2 },
+
+    // Chance / Probability
+    { v:'chance',          l:'X% chance to trigger',        g:'Chance',       hasParam:true, paramLabel:'%', paramDefault:25 },
+
+    // Stats
+    { v:'caster_stat_gte', l:'Caster [stat] ≥ X',          g:'Stats',        hasParam:true, paramLabel:'value', paramDefault:10, hasStat:true },
+    { v:'target_stat_gte', l:'Target [stat] ≥ X',          g:'Stats',        hasParam:true, paramLabel:'value', paramDefault:10, hasStat:true },
+    { v:'stat_higher',     l:'My [stat] > Target [stat]',  g:'Stats',        hasStat:true },
+
+    // Status
+    { v:'has_status',      l:'Has status [pick]',           g:'Status',       hasStatus:true },
+    { v:'not_has_status',  l:'Does NOT have status [pick]', g:'Status',       hasStatus:true },
+    { v:'target_has_status',l:'Target has status [pick]',   g:'Status',       hasStatus:true },
+    { v:'has_any_buff',    l:'Has any buff',                g:'Status' },
+    { v:'has_any_debuff',  l:'Has any debuff',              g:'Status' },
+    { v:'no_buffs',        l:'Has no buffs',                g:'Status' },
+    { v:'no_debuffs',      l:'Has no debuffs',              g:'Status' },
+
+    // Combat Situation
+    { v:'took_damage_this_turn',     l:'Took damage this turn',         g:'Combat' },
+    { v:'not_took_damage_this_turn', l:'Has NOT taken damage this turn',g:'Combat' },
+    { v:'has_killed_this_combat',    l:'Has killed an enemy this fight',g:'Combat' },
+    { v:'enemies_dead_gte',          l:'X+ enemies are dead',           g:'Combat', hasParam:true, paramLabel:'count', paramDefault:1 },
+    { v:'allies_dead_gte',           l:'X+ allies are dead',            g:'Combat', hasParam:true, paramLabel:'count', paramDefault:1 },
+    { v:'is_first_turn',             l:'First turn of combat',          g:'Combat' },
+    { v:'round_gte',                 l:'Round ≥ X',                     g:'Combat', hasParam:true, paramLabel:'round', paramDefault:3 },
+    { v:'moved_this_turn',           l:'Has moved this turn',           g:'Combat' },
+    { v:'not_moved_this_turn',       l:'Has NOT moved this turn',       g:'Combat' },
+
+    // Position / Range
+    { v:'any_adjacent_enemy',  l:'Any enemy adjacent (1 cell)',    g:'Position' },
+    { v:'no_adjacent_enemy',   l:'No enemy adjacent',              g:'Position' },
+    { v:'target_adjacent',     l:'Target is adjacent (melee)',     g:'Position' },
+    { v:'target_range_gte',    l:'Target is ≥ X cells away',      g:'Position', hasParam:true, paramLabel:'cells', paramDefault:3 },
+    { v:'isolated',            l:'No allies within 2 cells',       g:'Position' },
+    { v:'surrounded',          l:'3+ enemies within 2 cells',      g:'Position' },
+    { v:'on_terrain',          l:'Standing on [terrain type]',     g:'Position', hasTerrain:true },
+
+    // Turn Order
+    { v:'acted_first',    l:'Acted first this round',        g:'Turn Order' },
+    { v:'acted_last',     l:'Acted last this round',         g:'Turn Order' },
+    { v:'acted_before_target', l:'Acted before target this round', g:'Turn Order' },
+
+    // Target Type
+    { v:'target_type',    l:'Target is [type]',              g:'Target',       hasUnitType:true },
+    { v:'target_team_enemy', l:'Target is an enemy',         g:'Target' },
+    { v:'target_team_ally',  l:'Target is an ally',          g:'Target' },
+    { v:'target_hp_above_0', l:'Target is alive',            g:'Target' }
+  ];
+
+  // ── CLEANSE LABELS (human-readable) ────────────────────────────────
+  const CLEANSE_LABELS = {
+    Fire:          { icon:'🔥', label:'Fire damage removes this' },
+    Water:         { icon:'💧', label:'Water damage removes this' },
+    Lightning:     { icon:'⚡', label:'Lightning damage removes this' },
+    Earth:         { icon:'🪨', label:'Earth damage removes this' },
+    Wind:          { icon:'💨', label:'Wind damage removes this' },
+    Nature:        { icon:'🌿', label:'Nature damage removes this' },
+    Light:         { icon:'✨', label:'Light damage removes this' },
+    Dark:          { icon:'🌑', label:'Dark damage removes this' },
+    Physical:      { icon:'⚔️', label:'Physical damage removes this' },
+    Chaos:         { icon:'🌀', label:'Chaos damage removes this' },
+    purify:        { icon:'✨', label:'Any purify/cleanse skill removes this' },
+    dispel:        { icon:'💨', label:'Dispel removes this (targets buffs)' },
+    cleanse_dot:   { icon:'🧹', label:'"Cleanse DoTs" skills remove this' },
+    cleanse_cc:    { icon:'🧹', label:'"Cleanse CC" skills remove this' },
+    cleanse_all:   { icon:'🧹', label:'Any cleanse removes this' },
+    taking_damage: { icon:'💥', label:'Taking any damage removes this' },
+    moving:        { icon:'🦶', label:'Moving removes this' },
+    end_of_turn:   { icon:'⏰', label:'Auto-removed at end of turn' },
+    attacking:     { icon:'⚔️', label:'Attacking removes this' },
+    using_skill:   { icon:'✦', label:'Using any skill removes this' }
+  };
+
   // ── AI BEHAVIOR ARCHETYPES ─────────────────────────────────────────
   const AI_ARCHETYPES = [
     'aggressive', 'defensive', 'sniper', 'berserker',
@@ -371,7 +523,7 @@ window.CJS.CONST = (() => {
     RARITIES, RARITY_COLORS,
     TERRAIN_TYPES, UNIT_SIZES, MOVEMENT_DEFAULTS, COLLISION, LINE_OF_SIGHT,
     EFFECT_TRIGGERS, EFFECT_ACTIONS, EFFECT_TARGETS, VALUE_SOURCES,
-    STATUS_CATEGORIES,
+    STATUS_CATEGORIES, STATUS_DEFINITIONS, CONDITION_DEFS, CLEANSE_LABELS,
     AI_ARCHETYPES, AI_TARGET_TYPES,
     QTE_TYPES, QTE_DIFFICULTIES, QTE_MULTIPLIERS,
     GRID_DEFAULTS, ACTION_ECONOMY,
