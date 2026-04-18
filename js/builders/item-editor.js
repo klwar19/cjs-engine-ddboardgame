@@ -110,6 +110,10 @@ window.CJS.ItemEditor = (() => {
         <h3>Effects (active while equipped / on use)</h3>
         <div id="itm-effects-area"></div>
 
+        <h3>Granted Skills (item gives the user these active skills)</h3>
+        <div class="hint-box">💡 Skills listed here become available to any character who equips this item. Remove the item = lose the skill.</div>
+        <div id="itm-skills-area"></div>
+
         <div class="form-group mt-md"><label class="form-label">Description</label><textarea id="itm-desc" rows="2">${_esc(item.description||'')}</textarea></div>
 
         <div class="card" style="background:var(--surface2);margin-top:8px" id="itm-preview"></div>
@@ -124,11 +128,45 @@ window.CJS.ItemEditor = (() => {
 
     const effectBuilder = UI().createEffectListBuilder({ effects: item.effects || [], onChange: () => _preview(effectBuilder) });
     _formEl.querySelector('#itm-effects-area').appendChild(effectBuilder);
+
+    // Granted skills picker
+    const skillsArea = _formEl.querySelector('#itm-skills-area');
+    const grantedSkills = [...(item.grantedSkills || [])];
+    _renderSkillPicker(skillsArea, grantedSkills);
+
     _preview(effectBuilder);
 
-    _formEl.querySelector('#itm-save').onclick = () => _save(item.id, effectBuilder);
+    _formEl.querySelector('#itm-save').onclick = () => _save(item.id, effectBuilder, grantedSkills);
     _formEl.querySelector('#itm-dup').onclick = () => { const nid = DS().duplicate('items',item.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
     _formEl.querySelector('#itm-del').onclick = () => { UI().confirm(`Delete "${item.name}"?`,()=>{DS().remove('items',item.id);_activeId=null;_renderList();_formEl.innerHTML='<div class="card" style="text-align:center;color:var(--text-mute);padding:40px">Select an item</div>';UI().toast('Deleted','info');}); };
+  }
+
+  function _renderSkillPicker(area, grantedSkills) {
+    const render = () => {
+      area.innerHTML = '';
+      grantedSkills.forEach((sid, i) => {
+        const skill = DS().get('skills', sid);
+        const name = skill ? `${skill.icon||'⚔️'} ${skill.name}` : sid;
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.innerHTML = `${name} <button class="chip-x" data-i="${i}">×</button>`;
+        area.appendChild(chip);
+      });
+      // Add dropdown
+      const allSkills = DS().getAllAsArray('skills');
+      const available = allSkills.filter(s => !grantedSkills.includes(s.id));
+      if (available.length > 0) {
+        const sel = document.createElement('select');
+        sel.innerHTML = '<option value="">+ Add skill...</option>' +
+          available.map(s => `<option value="${s.id}">${s.icon||'⚔️'} ${s.name||s.id} (${s.ap||0}AP, ${s.mp||0}MP)</option>`).join('');
+        sel.onchange = () => { if (sel.value) { grantedSkills.push(sel.value); render(); } };
+        area.appendChild(sel);
+      }
+      area.querySelectorAll('.chip-x').forEach(btn => {
+        btn.onclick = () => { grantedSkills.splice(+btn.dataset.i, 1); render(); };
+      });
+    };
+    render();
   }
 
   function _preview(effectBuilder) {
@@ -139,13 +177,14 @@ window.CJS.ItemEditor = (() => {
     el.innerHTML = `<div class="dim" style="font-size:0.82rem"><b>Effects:</b> ${descs.join(', ')||'None'} | <b>ID:</b> ${_activeId}</div>`;
   }
 
-  function _save(id, effectBuilder) {
+  function _save(id, effectBuilder, grantedSkills) {
     const f = _formEl;
     const slot = f.querySelector('#itm-slot').value;
     const obj = {
       id, name: f.querySelector('#itm-name').value, icon: f.querySelector('#itm-icon').value,
       slot, rarity: f.querySelector('#itm-rarity').value,
       effects: effectBuilder._getEffects(),
+      grantedSkills: grantedSkills || [],
       weaponData: slot === 'weapon' ? {
         baseDamage: Number(f.querySelector('#itm-wdmg').value)||0,
         damageType: f.querySelector('#itm-wtype').value,
