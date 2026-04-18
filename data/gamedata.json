@@ -3160,6 +3160,363 @@
         "value"
       ],
       "description": "On kill: gain bonus Jester Points"
+    },
+    "terrain_burn": {
+      "id": "terrain_burn",
+      "name": "Terrain: Fire Zone",
+      "icon": "🔥",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 8,
+      "source": "flat",
+      "element": "Fire",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "fire",
+        "damage",
+        "dot"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Fire zone: take 8 Fire damage on enter / turn start"
+    },
+    "terrain_slow": {
+      "id": "terrain_slow",
+      "name": "Terrain: Ice Zone",
+      "icon": "🧊",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "ice",
+        "slow",
+        "movement"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Ice zone: apply Slow (-1 movement) for 1 turn"
+    },
+    "terrain_poison": {
+      "id": "terrain_poison",
+      "name": "Terrain: Poison Zone",
+      "icon": "☠️",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "poison",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "poison",
+        "dot",
+        "nature"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Poison zone: apply Poison (5/turn, 2 turns)"
+    },
+    "terrain_heal": {
+      "id": "terrain_heal",
+      "name": "Terrain: Heal Zone",
+      "icon": "💚",
+      "trigger": "terrain_effect",
+      "action": "heal",
+      "target": "self",
+      "value": 8,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "heal",
+        "regen",
+        "support"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Heal zone: restore 8% max HP on enter / turn start"
+    },
+    "terrain_high_ground": {
+      "id": "terrain_high_ground",
+      "name": "Terrain: High Ground",
+      "icon": "⬆️",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "focus",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "high_ground",
+        "accuracy",
+        "tactical"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "High ground: +2 accuracy while standing here (Focus, 1 turn)"
+    },
+    "terrain_water": {
+      "id": "terrain_water",
+      "name": "Terrain: Water",
+      "icon": "🌊",
+      "trigger": "terrain_effect",
+      "action": "status_remove",
+      "target": "self",
+      "statusId": "burn",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "water",
+        "cleanse",
+        "burn"
+      ],
+      "overridable": [],
+      "description": "Water: cleanse Burn on enter. Slowed by move cost."
+    },
+    "terrain_lava": {
+      "id": "terrain_lava",
+      "name": "Terrain: Lava",
+      "icon": "🌋",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 15,
+      "source": "flat",
+      "element": "Fire",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "burn",
+          "value": 8,
+          "source": "flat",
+          "target": "self",
+          "duration": 3
+        }
+      ],
+      "tags": [
+        "terrain",
+        "lava",
+        "fire",
+        "damage",
+        "deadly"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Lava: take 15 Fire damage + apply Burn (8/turn, 3 turns)"
+    },
+    "terrain_mud": {
+      "id": "terrain_mud",
+      "name": "Terrain: Mud",
+      "icon": "🟤",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "mud",
+        "slow",
+        "movement"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Mud: apply Slow (-1 movement) for 1 turn. Heavy move cost."
+    },
+    "terrain_thorns": {
+      "id": "terrain_thorns",
+      "name": "Terrain: Thorns",
+      "icon": "🌿",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "element": "Nature",
+      "damageType": "Physical",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "bleed",
+          "value": 3,
+          "source": "flat",
+          "target": "self",
+          "duration": 2
+        }
+      ],
+      "tags": [
+        "terrain",
+        "thorns",
+        "physical",
+        "bleed",
+        "nature"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Thorns: take 5 Physical damage + apply Bleed (3/turn, 2 turns)"
+    },
+    "terrain_shock": {
+      "id": "terrain_shock",
+      "name": "Terrain: Electric",
+      "icon": "⚡",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 6,
+      "source": "flat",
+      "element": "Lightning",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "shock",
+          "value": 4,
+          "source": "flat",
+          "target": "self",
+          "duration": 1
+        }
+      ],
+      "tags": [
+        "terrain",
+        "electric",
+        "lightning",
+        "damage",
+        "shock"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Electric: take 6 Lightning damage + Shock (4/turn, skip QTE chance)"
+    },
+    "terrain_holy": {
+      "id": "terrain_holy",
+      "name": "Terrain: Holy",
+      "icon": "✨",
+      "trigger": "terrain_effect",
+      "action": "heal",
+      "target": "self",
+      "value": 5,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "dispel_debuffs",
+          "value": 1,
+          "source": "flat",
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "terrain",
+        "holy",
+        "heal",
+        "cleanse",
+        "light"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Holy: heal 5% max HP + cleanse 1 debuff"
+    },
+    "terrain_dark": {
+      "id": "terrain_dark",
+      "name": "Terrain: Dark",
+      "icon": "🌑",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "curse",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "dark",
+        "curse",
+        "dot",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Dark: apply Curse (5 Dark damage/turn, -50% healing, 2 turns)"
+    },
+    "terrain_wind_push": {
+      "id": "terrain_wind_push",
+      "name": "Terrain: Wind",
+      "icon": "💨",
+      "trigger": "terrain_effect",
+      "action": "knockback",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "wind",
+        "knockback",
+        "push",
+        "position"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Wind: push unit 1 cell in wind direction on enter"
     }
   },
   "skills": {
