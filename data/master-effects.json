@@ -1,1130 +1,3544 @@
 {
   "effects": {
-
     "__COMMENT_STAT_MODS": "═══════════════════════════════════════════════════════════════ PASSIVE STAT MODIFIERS ═══",
-
     "stat_mod_str": {
-      "id": "stat_mod_str", "name": "Strength Mod", "icon": "💪",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "S", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "strength", "physical"], "overridable": ["value"],
+      "id": "stat_mod_str",
+      "name": "Strength Mod",
+      "icon": "💪",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "S",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "strength",
+        "physical"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "STR +3"
     },
     "stat_mod_per": {
-      "id": "stat_mod_per", "name": "Perception Mod", "icon": "👁️",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "P", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "perception", "accuracy"], "overridable": ["value"],
+      "id": "stat_mod_per",
+      "name": "Perception Mod",
+      "icon": "👁️",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "P",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "perception",
+        "accuracy"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "PER +3"
     },
     "stat_mod_end": {
-      "id": "stat_mod_end", "name": "Endurance Mod", "icon": "🛡️",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "E", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "endurance", "tank"], "overridable": ["value"],
+      "id": "stat_mod_end",
+      "name": "Endurance Mod",
+      "icon": "🛡️",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "E",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "endurance",
+        "tank"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "END +3"
     },
     "stat_mod_cha": {
-      "id": "stat_mod_cha", "name": "Charisma Mod", "icon": "🎭",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "C", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "charisma", "social"], "overridable": ["value"],
+      "id": "stat_mod_cha",
+      "name": "Charisma Mod",
+      "icon": "🎭",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "C",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "charisma",
+        "social"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "CHA +3"
     },
     "stat_mod_int": {
-      "id": "stat_mod_int", "name": "Intelligence Mod", "icon": "🧠",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "I", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "intelligence", "magic"], "overridable": ["value"],
+      "id": "stat_mod_int",
+      "name": "Intelligence Mod",
+      "icon": "🧠",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "I",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "intelligence",
+        "magic"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "INT +3"
     },
     "stat_mod_agi": {
-      "id": "stat_mod_agi", "name": "Agility Mod", "icon": "⚡",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "A", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "agility", "speed"], "overridable": ["value"],
+      "id": "stat_mod_agi",
+      "name": "Agility Mod",
+      "icon": "⚡",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "A",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "agility",
+        "speed"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "AGI +3"
     },
     "stat_mod_lck": {
-      "id": "stat_mod_lck", "name": "Luck Mod", "icon": "🍀",
-      "trigger": "stat_mod", "action": "stat_mod", "target": "self",
-      "stat": "L", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["stat", "luck", "crit"], "overridable": ["value"],
+      "id": "stat_mod_lck",
+      "name": "Luck Mod",
+      "icon": "🍀",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "L",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "luck",
+        "crit"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "LCK +3"
     },
-
     "__COMMENT_DR_MODS": "═══════════════════════════════════════════════════════════════ DR / DEFENSE MODS ═══",
-
     "dr_mod_physical": {
-      "id": "dr_mod_physical", "name": "Physical DR Mod", "icon": "🛡️",
-      "trigger": "dr_mod", "action": "dr_mod", "target": "self",
-      "drType": "physical", "value": 5, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["defense", "dr", "physical"], "overridable": ["value"],
+      "id": "dr_mod_physical",
+      "name": "Physical DR Mod",
+      "icon": "🛡️",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "physical",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "physical"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Physical DR +5"
     },
     "dr_mod_magic": {
-      "id": "dr_mod_magic", "name": "Magic DR Mod", "icon": "🔮",
-      "trigger": "dr_mod", "action": "dr_mod", "target": "self",
-      "drType": "magic", "value": 5, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["defense", "dr", "magic"], "overridable": ["value"],
+      "id": "dr_mod_magic",
+      "name": "Magic DR Mod",
+      "icon": "🔮",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "magic",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "magic"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Magic DR +5"
     },
     "dr_mod_chaos": {
-      "id": "dr_mod_chaos", "name": "Chaos DR Mod", "icon": "🌀",
-      "trigger": "dr_mod", "action": "dr_mod", "target": "self",
-      "drType": "chaos", "value": 5, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["defense", "dr", "chaos"], "overridable": ["value"],
+      "id": "dr_mod_chaos",
+      "name": "Chaos DR Mod",
+      "icon": "🌀",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "chaos",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "chaos"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Chaos DR +5"
     },
     "dr_mod_all": {
-      "id": "dr_mod_all", "name": "All DR Mod", "icon": "🏰",
-      "trigger": "dr_mod", "action": "dr_mod", "target": "self",
-      "drType": "all", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["defense", "dr", "all", "tank"], "overridable": ["value"],
+      "id": "dr_mod_all",
+      "name": "All DR Mod",
+      "icon": "🏰",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "all",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "all",
+        "tank"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "All DR +3"
     },
-
     "__COMMENT_COMBAT_MODS": "═══════════════════════════════════════════════════════════════ COMBAT STAT MODS ═══",
-
     "crit_rate_mod": {
-      "id": "crit_rate_mod", "name": "Crit Rate Mod", "icon": "🎯",
-      "trigger": "crit_mod", "action": "crit_mod", "target": "self",
-      "value": 5, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["crit", "offense"], "overridable": ["value"],
+      "id": "crit_rate_mod",
+      "name": "Crit Rate Mod",
+      "icon": "🎯",
+      "trigger": "crit_mod",
+      "action": "crit_mod",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "crit",
+        "offense"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Crit rate +5%"
     },
     "crit_damage_mod": {
-      "id": "crit_damage_mod", "name": "Crit Damage Mod", "icon": "💥",
-      "trigger": "crit_mod", "action": "crit_mod", "target": "self",
-      "value": 25, "source": "percent",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["crit", "offense", "damage"], "overridable": ["value"],
+      "id": "crit_damage_mod",
+      "name": "Crit Damage Mod",
+      "icon": "💥",
+      "trigger": "crit_mod",
+      "action": "crit_mod",
+      "target": "self",
+      "value": 25,
+      "source": "percent",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "crit",
+        "offense",
+        "damage"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Crit damage +25%"
     },
     "evasion_mod": {
-      "id": "evasion_mod", "name": "Evasion Mod", "icon": "💨",
-      "trigger": "evasion_mod", "action": "evasion_mod", "target": "self",
-      "value": 5, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["defense", "evasion", "agility"], "overridable": ["value"],
+      "id": "evasion_mod",
+      "name": "Evasion Mod",
+      "icon": "💨",
+      "trigger": "evasion_mod",
+      "action": "evasion_mod",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "evasion",
+        "agility"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Evasion +5"
     },
     "accuracy_mod": {
-      "id": "accuracy_mod", "name": "Accuracy Mod", "icon": "🎯",
-      "trigger": "accuracy_mod", "action": "accuracy_mod", "target": "self",
-      "value": 5, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["offense", "accuracy", "hit"], "overridable": ["value"],
+      "id": "accuracy_mod",
+      "name": "Accuracy Mod",
+      "icon": "🎯",
+      "trigger": "accuracy_mod",
+      "action": "accuracy_mod",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "offense",
+        "accuracy",
+        "hit"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Accuracy +5"
     },
     "ap_mod": {
-      "id": "ap_mod", "name": "AP Mod", "icon": "⚡",
-      "trigger": "ap_mod", "action": "ap_mod", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["ap", "action", "speed"], "overridable": ["value"],
+      "id": "ap_mod",
+      "name": "AP Mod",
+      "icon": "⚡",
+      "trigger": "ap_mod",
+      "action": "ap_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "ap",
+        "action",
+        "speed"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "AP +1 per turn"
     },
     "movement_mod": {
-      "id": "movement_mod", "name": "Movement Mod", "icon": "🏃",
-      "trigger": "movement_mod", "action": "movement_mod", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["movement", "speed", "mobility"], "overridable": ["value"],
+      "id": "movement_mod",
+      "name": "Movement Mod",
+      "icon": "🏃",
+      "trigger": "movement_mod",
+      "action": "movement_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "movement",
+        "speed",
+        "mobility"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Movement +1"
     },
     "range_mod": {
-      "id": "range_mod", "name": "Range Mod", "icon": "🏹",
-      "trigger": "range_mod", "action": "range_mod", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["range", "ranged", "attack"], "overridable": ["value"],
+      "id": "range_mod",
+      "name": "Range Mod",
+      "icon": "🏹",
+      "trigger": "range_mod",
+      "action": "range_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "range",
+        "ranged",
+        "attack"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Attack range +1"
     },
     "cost_mod_mp": {
-      "id": "cost_mod_mp", "name": "MP Cost Reduction", "icon": "💧",
-      "trigger": "cost_mod", "action": "cost_mod", "target": "self",
-      "value": -2, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["cost", "mp", "efficiency"], "overridable": ["value"],
+      "id": "cost_mod_mp",
+      "name": "MP Cost Reduction",
+      "icon": "💧",
+      "trigger": "cost_mod",
+      "action": "cost_mod",
+      "target": "self",
+      "value": -2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "cost",
+        "mp",
+        "efficiency"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Skill MP cost -2"
     },
     "cost_mod_ap": {
-      "id": "cost_mod_ap", "name": "AP Cost Reduction", "icon": "⏱️",
-      "trigger": "cost_mod", "action": "cost_mod", "target": "self",
-      "value": -1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["cost", "ap", "efficiency"], "overridable": ["value"],
+      "id": "cost_mod_ap",
+      "name": "AP Cost Reduction",
+      "icon": "⏱️",
+      "trigger": "cost_mod",
+      "action": "cost_mod",
+      "target": "self",
+      "value": -1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "cost",
+        "ap",
+        "efficiency"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Skill AP cost -1"
     },
     "cooldown_mod": {
-      "id": "cooldown_mod", "name": "Cooldown Reduction", "icon": "🔄",
-      "trigger": "cooldown_mod", "action": "cooldown_mod", "target": "self",
-      "value": -1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["cooldown", "efficiency"], "overridable": ["value"],
+      "id": "cooldown_mod",
+      "name": "Cooldown Reduction",
+      "icon": "🔄",
+      "trigger": "cooldown_mod",
+      "action": "cooldown_mod",
+      "target": "self",
+      "value": -1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "cooldown",
+        "efficiency"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Skill cooldowns -1"
     },
     "hp_mod_flat": {
-      "id": "hp_mod_flat", "name": "HP Bonus", "icon": "❤️",
-      "trigger": "hp_mod", "action": "hp_mod", "target": "self",
-      "value": 20, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["hp", "health", "tank"], "overridable": ["value"],
+      "id": "hp_mod_flat",
+      "name": "HP Bonus",
+      "icon": "❤️",
+      "trigger": "hp_mod",
+      "action": "hp_mod",
+      "target": "self",
+      "value": 20,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "hp",
+        "health",
+        "tank"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Max HP +20"
     },
     "mp_mod_flat": {
-      "id": "mp_mod_flat", "name": "MP Bonus", "icon": "💙",
-      "trigger": "mp_mod", "action": "mp_mod", "target": "self",
-      "value": 15, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["mp", "mana", "caster"], "overridable": ["value"],
+      "id": "mp_mod_flat",
+      "name": "MP Bonus",
+      "icon": "💙",
+      "trigger": "mp_mod",
+      "action": "mp_mod",
+      "target": "self",
+      "value": 15,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "mp",
+        "mana",
+        "caster"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Max MP +15"
     },
-
     "__COMMENT_DAMAGE_MODS": "═══════════════════════════════════════════════════════════════ DAMAGE MODS ═══",
-
     "damage_mod_all": {
-      "id": "damage_mod_all", "name": "Damage Bonus (All)", "icon": "⚔️",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 10, "source": "percent", "element": null,
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "offense", "all"], "overridable": ["value"],
+      "id": "damage_mod_all",
+      "name": "Damage Bonus (All)",
+      "icon": "⚔️",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 10,
+      "source": "percent",
+      "element": null,
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "offense",
+        "all"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "All damage +10%"
     },
     "damage_mod_fire": {
-      "id": "damage_mod_fire", "name": "Fire Damage Bonus", "icon": "🔥",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 15, "source": "percent", "element": "Fire",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "fire", "elemental"], "overridable": ["value", "element"],
+      "id": "damage_mod_fire",
+      "name": "Fire Damage Bonus",
+      "icon": "🔥",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "fire",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
       "description": "Fire damage +15%"
     },
     "damage_mod_water": {
-      "id": "damage_mod_water", "name": "Water Damage Bonus", "icon": "🌊",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 15, "source": "percent", "element": "Water",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "water", "elemental"], "overridable": ["value", "element"],
+      "id": "damage_mod_water",
+      "name": "Water Damage Bonus",
+      "icon": "🌊",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Water",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "water",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
       "description": "Water damage +15%"
     },
     "damage_mod_lightning": {
-      "id": "damage_mod_lightning", "name": "Lightning Damage Bonus", "icon": "⚡",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 15, "source": "percent", "element": "Lightning",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "lightning", "elemental"], "overridable": ["value", "element"],
+      "id": "damage_mod_lightning",
+      "name": "Lightning Damage Bonus",
+      "icon": "⚡",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Lightning",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "lightning",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
       "description": "Lightning damage +15%"
     },
     "damage_mod_dark": {
-      "id": "damage_mod_dark", "name": "Dark Damage Bonus", "icon": "🌑",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 15, "source": "percent", "element": "Dark",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "dark", "elemental"], "overridable": ["value", "element"],
+      "id": "damage_mod_dark",
+      "name": "Dark Damage Bonus",
+      "icon": "🌑",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Dark",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "dark",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
       "description": "Dark damage +15%"
     },
     "damage_mod_physical": {
-      "id": "damage_mod_physical", "name": "Physical Damage Bonus", "icon": "👊",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 10, "source": "percent",
+      "id": "damage_mod_physical",
+      "name": "Physical Damage Bonus",
+      "icon": "👊",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 10,
+      "source": "percent",
       "damageType": "Physical",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "physical", "melee"], "overridable": ["value"],
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "physical",
+        "melee"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Physical damage +10%"
     },
     "damage_mod_magic": {
-      "id": "damage_mod_magic", "name": "Magic Damage Bonus", "icon": "✨",
-      "trigger": "damage_mod", "action": "damage_mod", "target": "self",
-      "value": 10, "source": "percent",
+      "id": "damage_mod_magic",
+      "name": "Magic Damage Bonus",
+      "icon": "✨",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 10,
+      "source": "percent",
       "damageType": "Magic",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["damage", "magic", "caster"], "overridable": ["value"],
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "magic",
+        "caster"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Magic damage +10%"
     },
-
     "__COMMENT_ELEMENT_MODS": "═══════════════════════════════════════════════════════════════ ELEMENT MODS ═══",
-
     "element_resist_add": {
-      "id": "element_resist_add", "name": "Add Element Resist", "icon": "🛡️",
-      "trigger": "element_mod", "action": "element_mod", "target": "self",
-      "element": "Fire", "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["element", "resist", "defense"], "overridable": ["element"],
+      "id": "element_resist_add",
+      "name": "Add Element Resist",
+      "icon": "🛡️",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "resist",
+        "defense"
+      ],
+      "overridable": [
+        "element"
+      ],
       "description": "Gain Fire resistance"
     },
     "element_weak_add": {
-      "id": "element_weak_add", "name": "Add Element Weakness", "icon": "⚠️",
-      "trigger": "element_mod", "action": "element_mod", "target": "self",
-      "element": "Fire", "value": -1, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["element", "weakness", "debuff"], "overridable": ["element"],
+      "id": "element_weak_add",
+      "name": "Add Element Weakness",
+      "icon": "⚠️",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": -1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "weakness",
+        "debuff"
+      ],
+      "overridable": [
+        "element"
+      ],
       "description": "Gain Fire weakness"
     },
     "element_immune_add": {
-      "id": "element_immune_add", "name": "Add Element Immunity", "icon": "🏰",
-      "trigger": "element_mod", "action": "element_mod", "target": "self",
-      "element": "Fire", "value": 2, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["element", "immune", "defense"], "overridable": ["element"],
+      "id": "element_immune_add",
+      "name": "Add Element Immunity",
+      "icon": "🏰",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "immune",
+        "defense"
+      ],
+      "overridable": [
+        "element"
+      ],
       "description": "Gain Fire immunity"
     },
     "element_absorb": {
-      "id": "element_absorb", "name": "Element Absorb", "icon": "🔄",
-      "trigger": "element_mod", "action": "element_mod", "target": "self",
-      "element": "Fire", "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["element", "absorb", "heal"], "overridable": ["element"],
+      "id": "element_absorb",
+      "name": "Element Absorb",
+      "icon": "🔄",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "absorb",
+        "heal"
+      ],
+      "overridable": [
+        "element"
+      ],
       "description": "Absorb Fire damage as HP"
     },
-
     "status_resist_mod": {
-      "id": "status_resist_mod", "name": "Status Resist", "icon": "🧱",
-      "trigger": "status_resist_mod", "action": "status_resist", "target": "self",
-      "statusId": "stun", "value": 50, "source": "percent",
-      "conditions": [], "duration": null, "category": "passive",
-      "tags": ["resist", "status", "defense"], "overridable": ["statusId", "value"],
+      "id": "status_resist_mod",
+      "name": "Status Resist",
+      "icon": "🧱",
+      "trigger": "status_resist_mod",
+      "action": "status_resist",
+      "target": "self",
+      "statusId": "stun",
+      "value": 50,
+      "source": "percent",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "resist",
+        "status",
+        "defense"
+      ],
+      "overridable": [
+        "statusId",
+        "value"
+      ],
       "description": "50% resistance to Stun"
     },
-
     "__COMMENT_ACTION_MODS": "═══════════════════════════════════════════════════════════════ DOUBLE/TRIPLE ACTION ═══",
-
     "double_action": {
-      "id": "double_action", "name": "Double Action", "icon": "⚡⚡",
-      "trigger": "double_action", "action": "extra_action", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": ["chance_25"], "duration": null, "category": "passive",
-      "tags": ["action", "speed", "powerful", "mgqp"], "overridable": ["conditions"],
+      "id": "double_action",
+      "name": "Double Action",
+      "icon": "⚡⚡",
+      "trigger": "double_action",
+      "action": "extra_action",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_25"
+      ],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "action",
+        "speed",
+        "powerful",
+        "mgqp"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "25% chance to take an extra main action"
     },
     "triple_action": {
-      "id": "triple_action", "name": "Triple Action", "icon": "⚡⚡⚡",
-      "trigger": "triple_action", "action": "extra_action", "target": "self",
-      "value": 2, "source": "flat",
-      "conditions": ["chance_10"], "duration": null, "category": "passive",
-      "tags": ["action", "speed", "very powerful", "mgqp"], "overridable": ["conditions"],
+      "id": "triple_action",
+      "name": "Triple Action",
+      "icon": "⚡⚡⚡",
+      "trigger": "triple_action",
+      "action": "extra_action",
+      "target": "self",
+      "value": 2,
+      "source": "flat",
+      "conditions": [
+        "chance_10"
+      ],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "action",
+        "speed",
+        "very powerful",
+        "mgqp"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "10% chance to take two extra main actions"
     },
-
     "__COMMENT_ON_HIT": "═══════════════════════════════════════════════════════════════ ON-HIT EFFECTS ═══",
-
     "lifesteal": {
-      "id": "lifesteal", "name": "Lifesteal", "icon": "🩸",
-      "trigger": "on_hit", "action": "heal", "target": "self",
-      "value": 10, "source": "damage_dealt",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["drain", "heal", "sustain", "dota"], "overridable": ["value"],
+      "id": "lifesteal",
+      "name": "Lifesteal",
+      "icon": "🩸",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 10,
+      "source": "damage_dealt",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "drain",
+        "heal",
+        "sustain",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On hit: heal for 10% of damage dealt"
     },
     "lifesteal_physical": {
-      "id": "lifesteal_physical", "name": "Physical Lifesteal", "icon": "🩸",
-      "trigger": "on_hit", "action": "heal", "target": "self",
-      "value": 15, "source": "damage_dealt",
-      "conditions": ["is_physical_skill"], "duration": null, "category": "triggered",
-      "tags": ["drain", "heal", "physical", "sustain"], "overridable": ["value"],
+      "id": "lifesteal_physical",
+      "name": "Physical Lifesteal",
+      "icon": "🩸",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 15,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "drain",
+        "heal",
+        "physical",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On physical hit: heal for 15% of damage dealt"
     },
     "spell_lifesteal": {
-      "id": "spell_lifesteal", "name": "Spell Lifesteal", "icon": "💜",
-      "trigger": "on_hit", "action": "heal", "target": "self",
-      "value": 12, "source": "damage_dealt",
-      "conditions": ["is_magic_skill"], "duration": null, "category": "triggered",
-      "tags": ["drain", "heal", "magic", "sustain", "dota"], "overridable": ["value"],
+      "id": "spell_lifesteal",
+      "name": "Spell Lifesteal",
+      "icon": "💜",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 12,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_magic_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "drain",
+        "heal",
+        "magic",
+        "sustain",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On magic hit: heal for 12% of damage dealt"
     },
     "mana_drain": {
-      "id": "mana_drain", "name": "Mana Drain", "icon": "💧",
-      "trigger": "on_hit", "action": "mp_drain", "target": "target",
-      "value": 8, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
+      "id": "mana_drain",
+      "name": "Mana Drain",
+      "icon": "💧",
+      "trigger": "on_hit",
+      "action": "mp_drain",
+      "target": "target",
+      "value": 8,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
       "children": [
-        { "action": "mp_restore", "value": 100, "source": "stored:mp_drained", "target": "self", "storeResult": null }
+        {
+          "action": "mp_restore",
+          "value": 100,
+          "source": "stored:mp_drained",
+          "target": "self",
+          "storeResult": null
+        }
       ],
       "storeResult": "mp_drained",
-      "tags": ["drain", "mana", "anti-caster", "dota"], "overridable": ["value"],
+      "tags": [
+        "drain",
+        "mana",
+        "anti-caster",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On hit: drain 8 MP from target, restore to self"
     },
     "mana_burn": {
-      "id": "mana_burn", "name": "Mana Burn", "icon": "🔥💧",
-      "trigger": "on_hit", "action": "mp_drain", "target": "target",
-      "value": 12, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
+      "id": "mana_burn",
+      "name": "Mana Burn",
+      "icon": "🔥💧",
+      "trigger": "on_hit",
+      "action": "mp_drain",
+      "target": "target",
+      "value": 12,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
       "children": [
-        { "action": "damage", "value": 80, "source": "stored:mp_drained", "target": "target", "element": "Chaos" }
+        {
+          "action": "damage",
+          "value": 80,
+          "source": "stored:mp_drained",
+          "target": "target",
+          "element": "Chaos"
+        }
       ],
       "storeResult": "mp_drained",
-      "tags": ["burn", "mana", "anti-caster", "dota"], "overridable": ["value"],
+      "tags": [
+        "burn",
+        "mana",
+        "anti-caster",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On hit: burn 12 MP, deal 80% of burned MP as Chaos damage"
     },
     "bash": {
-      "id": "bash", "name": "Bash", "icon": "💫",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "stun", "value": 1, "source": "flat",
-      "conditions": ["chance_25", "is_physical_skill"], "duration": 1, "category": "triggered",
-      "tags": ["stun", "disable", "physical", "dota"], "overridable": ["conditions"],
+      "id": "bash",
+      "name": "Bash",
+      "icon": "💫",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "stun",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_25",
+        "is_physical_skill"
+      ],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "stun",
+        "disable",
+        "physical",
+        "dota"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "25% on physical hit: stun target for 1 turn"
     },
     "cleave": {
-      "id": "cleave", "name": "Cleave", "icon": "⚔️🌀",
-      "trigger": "on_hit", "action": "damage", "target": "adjacent_to_target",
-      "value": 35, "source": "damage_dealt",
-      "conditions": ["is_melee_attack"], "duration": null, "category": "triggered",
-      "tags": ["aoe", "melee", "cleave", "dota"], "overridable": ["value"],
+      "id": "cleave",
+      "name": "Cleave",
+      "icon": "⚔️🌀",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "adjacent_to_target",
+      "value": 35,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_melee_attack"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aoe",
+        "melee",
+        "cleave",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Melee hits deal 35% damage to units adjacent to target"
     },
     "chain_lightning_proc": {
-      "id": "chain_lightning_proc", "name": "Chain Lightning Proc", "icon": "⚡🔗",
-      "trigger": "on_hit", "action": "damage", "target": "random_enemy",
-      "value": 12, "source": "flat", "element": "Lightning",
-      "conditions": ["chance_30"], "duration": null, "category": "triggered",
-      "tags": ["lightning", "chain", "proc", "dota"], "overridable": ["value", "conditions"],
+      "id": "chain_lightning_proc",
+      "name": "Chain Lightning Proc",
+      "icon": "⚡🔗",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "random_enemy",
+      "value": 12,
+      "source": "flat",
+      "element": "Lightning",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "lightning",
+        "chain",
+        "proc",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "30% on hit: deal 12 Lightning damage to a random enemy"
     },
     "poison_on_hit": {
-      "id": "poison_on_hit", "name": "Poison on Hit", "icon": "☠️",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "poison", "value": 4, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["poison", "dot", "nature", "debuff"], "overridable": ["value", "duration", "conditions"],
+      "id": "poison_on_hit",
+      "name": "Poison on Hit",
+      "icon": "☠️",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "poison",
+      "value": 4,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "poison",
+        "dot",
+        "nature",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration",
+        "conditions"
+      ],
       "description": "On hit: apply Poison (4/turn, 3 turns)"
     },
     "burn_on_hit": {
-      "id": "burn_on_hit", "name": "Burn on Hit", "icon": "🔥",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "burn", "value": 5, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
-      "tags": ["burn", "dot", "fire", "debuff"], "overridable": ["value", "duration", "conditions"],
+      "id": "burn_on_hit",
+      "name": "Burn on Hit",
+      "icon": "🔥",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "burn",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "burn",
+        "dot",
+        "fire",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration",
+        "conditions"
+      ],
       "description": "On hit: apply Burn (5/turn, 2 turns)"
     },
     "bleed_on_hit": {
-      "id": "bleed_on_hit", "name": "Bleed on Hit", "icon": "🩸",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "bleed", "value": 4, "source": "flat",
-      "conditions": ["is_physical_skill"], "duration": 3, "category": "triggered",
-      "tags": ["bleed", "dot", "physical", "debuff"], "overridable": ["value", "duration"],
+      "id": "bleed_on_hit",
+      "name": "Bleed on Hit",
+      "icon": "🩸",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "bleed",
+      "value": 4,
+      "source": "flat",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "bleed",
+        "dot",
+        "physical",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On physical hit: apply Bleed (4/turn, 3 turns)"
     },
     "frostbite_on_hit": {
-      "id": "frostbite_on_hit", "name": "Frostbite on Hit", "icon": "🧊",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "frostbite", "value": 3, "source": "flat",
-      "conditions": ["element_is_Water"], "duration": 2, "category": "triggered",
-      "tags": ["frostbite", "dot", "water", "slow", "debuff"], "overridable": ["value", "duration"],
+      "id": "frostbite_on_hit",
+      "name": "Frostbite on Hit",
+      "icon": "🧊",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "frostbite",
+      "value": 3,
+      "source": "flat",
+      "conditions": [
+        "element_is_Water"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "frostbite",
+        "dot",
+        "water",
+        "slow",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On Water hit: apply Frostbite (3/turn, -1 move, 2 turns)"
     },
     "slow_on_hit": {
-      "id": "slow_on_hit", "name": "Slow on Hit", "icon": "🐌",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "slow", "value": 1, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
-      "tags": ["slow", "movement", "debuff", "dota"], "overridable": ["duration", "conditions"],
+      "id": "slow_on_hit",
+      "name": "Slow on Hit",
+      "icon": "🐌",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "slow",
+        "movement",
+        "debuff",
+        "dota"
+      ],
+      "overridable": [
+        "duration",
+        "conditions"
+      ],
       "description": "On hit: apply Slow (-1 movement, 2 turns)"
     },
     "root_on_hit": {
-      "id": "root_on_hit", "name": "Root on Hit", "icon": "🌿",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "root", "value": 1, "source": "flat",
-      "conditions": ["chance_20"], "duration": 1, "category": "triggered",
-      "tags": ["root", "disable", "nature", "dota"], "overridable": ["conditions", "duration"],
+      "id": "root_on_hit",
+      "name": "Root on Hit",
+      "icon": "🌿",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "root",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "root",
+        "disable",
+        "nature",
+        "dota"
+      ],
+      "overridable": [
+        "conditions",
+        "duration"
+      ],
       "description": "20% on hit: Root target for 1 turn"
     },
     "silence_on_hit": {
-      "id": "silence_on_hit", "name": "Silence on Hit", "icon": "🤫",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "silence", "value": 1, "source": "flat",
-      "conditions": ["chance_15"], "duration": 2, "category": "triggered",
-      "tags": ["silence", "disable", "anti-caster"], "overridable": ["conditions", "duration"],
+      "id": "silence_on_hit",
+      "name": "Silence on Hit",
+      "icon": "🤫",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "silence",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_15"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "silence",
+        "disable",
+        "anti-caster"
+      ],
+      "overridable": [
+        "conditions",
+        "duration"
+      ],
       "description": "15% on hit: Silence target for 2 turns"
     },
     "fury_swipes": {
-      "id": "fury_swipes", "name": "Fury Swipes", "icon": "🐾",
-      "trigger": "on_hit", "action": "damage", "target": "target",
-      "value": 3, "source": "stack_count",
-      "conditions": [], "duration": null, "stacks": true, "maxStacks": 10, "category": "triggered",
-      "tags": ["stacking", "damage", "ramp", "dota"], "overridable": ["value", "maxStacks"],
+      "id": "fury_swipes",
+      "name": "Fury Swipes",
+      "icon": "🐾",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "target",
+      "value": 3,
+      "source": "stack_count",
+      "conditions": [],
+      "duration": null,
+      "stacks": true,
+      "maxStacks": 10,
+      "category": "triggered",
+      "tags": [
+        "stacking",
+        "damage",
+        "ramp",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "maxStacks"
+      ],
       "description": "Each consecutive hit on same target: +3 bonus damage (stacks to 10)"
     },
     "desolation_armor_break": {
-      "id": "desolation_armor_break", "name": "Armor Break", "icon": "💔🛡️",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "fragile", "value": 3, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["armor break", "dr reduction", "debuff", "dota"], "overridable": ["value", "duration"],
+      "id": "desolation_armor_break",
+      "name": "Armor Break",
+      "icon": "💔🛡️",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "fragile",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "armor break",
+        "dr reduction",
+        "debuff",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On hit: reduce target DR by 3 for 3 turns"
     },
     "skadi_slow": {
-      "id": "skadi_slow", "name": "Frost Slow", "icon": "❄️🐌",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "slow", "value": 1, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
+      "id": "skadi_slow",
+      "name": "Frost Slow",
+      "icon": "❄️🐌",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
       "children": [
-        { "action": "status_apply", "statusId": "heal_reduction", "value": 40, "target": "target", "duration": 2 }
+        {
+          "action": "status_apply",
+          "statusId": "heal_reduction",
+          "value": 40,
+          "target": "target",
+          "duration": 2
+        }
       ],
-      "tags": ["slow", "heal reduction", "debuff", "dota"], "overridable": ["duration"],
+      "tags": [
+        "slow",
+        "heal reduction",
+        "debuff",
+        "dota"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "On hit: Slow + reduce healing received by 40% for 2 turns"
     },
     "mark_on_hit": {
-      "id": "mark_on_hit", "name": "Mark Target", "icon": "🎯",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "mark", "value": 15, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["mark", "debuff", "focus fire"], "overridable": ["value", "duration"],
+      "id": "mark_on_hit",
+      "name": "Mark Target",
+      "icon": "🎯",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "mark",
+      "value": 15,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "mark",
+        "debuff",
+        "focus fire"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On hit: Mark target (takes +15% damage from all sources, 3 turns)"
     },
-
     "__COMMENT_ON_TAKE": "═══════════════════════════════════════════════════════════════ ON-TAKE-DAMAGE EFFECTS ═══",
-
     "reflect_physical": {
-      "id": "reflect_physical", "name": "Physical Reflect", "icon": "🪞",
-      "trigger": "on_take_damage", "action": "reflect", "target": "attacker",
-      "value": 20, "source": "damage_received",
-      "conditions": ["damage_type_is_Physical"], "duration": null, "category": "triggered",
-      "tags": ["reflect", "thorns", "physical", "defense"], "overridable": ["value"],
+      "id": "reflect_physical",
+      "name": "Physical Reflect",
+      "icon": "🪞",
+      "trigger": "on_take_damage",
+      "action": "reflect",
+      "target": "attacker",
+      "value": 20,
+      "source": "damage_received",
+      "conditions": [
+        "damage_type_is_Physical"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "reflect",
+        "thorns",
+        "physical",
+        "defense"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Reflect 20% of physical damage received to attacker"
     },
     "reflect_magic": {
-      "id": "reflect_magic", "name": "Magic Reflect", "icon": "🪞✨",
-      "trigger": "on_take_damage", "action": "reflect", "target": "attacker",
-      "value": 30, "source": "damage_received",
-      "conditions": ["damage_type_is_Magic"], "duration": null, "category": "triggered",
-      "tags": ["reflect", "magic", "defense", "dota"], "overridable": ["value"],
+      "id": "reflect_magic",
+      "name": "Magic Reflect",
+      "icon": "🪞✨",
+      "trigger": "on_take_damage",
+      "action": "reflect",
+      "target": "attacker",
+      "value": 30,
+      "source": "damage_received",
+      "conditions": [
+        "damage_type_is_Magic"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "reflect",
+        "magic",
+        "defense",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Reflect 30% of magic damage received to attacker"
     },
     "reflect_all": {
-      "id": "reflect_all", "name": "Damage Reflect (All)", "icon": "🪞💀",
-      "trigger": "on_take_damage", "action": "reflect", "target": "attacker",
-      "value": 15, "source": "damage_received",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["reflect", "thorns", "all", "dota"], "overridable": ["value"],
+      "id": "reflect_all",
+      "name": "Damage Reflect (All)",
+      "icon": "🪞💀",
+      "trigger": "on_take_damage",
+      "action": "reflect",
+      "target": "attacker",
+      "value": 15,
+      "source": "damage_received",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "reflect",
+        "thorns",
+        "all",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Reflect 15% of all damage received to attacker"
     },
     "counter_melee": {
-      "id": "counter_melee", "name": "Melee Counter", "icon": "⚔️🔄",
-      "trigger": "on_take_damage", "action": "counter", "target": "attacker",
-      "value": 75, "source": "percent",
-      "conditions": ["damage_type_is_Physical", "attacker_adjacent"],
-      "duration": null, "category": "triggered",
-      "tags": ["counter", "melee", "physical", "retaliation"], "overridable": ["value", "conditions"],
+      "id": "counter_melee",
+      "name": "Melee Counter",
+      "icon": "⚔️🔄",
+      "trigger": "on_take_damage",
+      "action": "counter",
+      "target": "attacker",
+      "value": 75,
+      "source": "percent",
+      "conditions": [
+        "damage_type_is_Physical",
+        "attacker_adjacent"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "counter",
+        "melee",
+        "physical",
+        "retaliation"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "When hit by adjacent physical attacker: counter for 75% damage"
     },
     "counter_any": {
-      "id": "counter_any", "name": "Counter Attack", "icon": "🔄⚔️",
-      "trigger": "on_take_damage", "action": "counter", "target": "attacker",
-      "value": 50, "source": "percent",
-      "conditions": ["chance_30"],
-      "duration": null, "category": "triggered",
-      "tags": ["counter", "retaliation"], "overridable": ["value", "conditions"],
+      "id": "counter_any",
+      "name": "Counter Attack",
+      "icon": "🔄⚔️",
+      "trigger": "on_take_damage",
+      "action": "counter",
+      "target": "attacker",
+      "value": 50,
+      "source": "percent",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "counter",
+        "retaliation"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "30% chance when hit: counter for 50% damage"
     },
     "damage_block": {
-      "id": "damage_block", "name": "Damage Block", "icon": "🛑",
-      "trigger": "on_take_damage", "action": "damage_block", "target": "self",
-      "value": 8, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["block", "defense", "tank", "dota"], "overridable": ["value"],
+      "id": "damage_block",
+      "name": "Damage Block",
+      "icon": "🛑",
+      "trigger": "on_take_damage",
+      "action": "damage_block",
+      "target": "self",
+      "value": 8,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "block",
+        "defense",
+        "tank",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Block 8 flat damage from each hit"
     },
     "counter_helix": {
-      "id": "counter_helix", "name": "Counter Helix", "icon": "🌀⚔️",
-      "trigger": "on_take_damage", "action": "damage", "target": "adjacent_to_self",
-      "value": 10, "source": "flat", "element": "Physical",
-      "conditions": ["chance_20"], "duration": null, "category": "triggered",
-      "tags": ["counter", "aoe", "physical", "dota"], "overridable": ["value", "conditions"],
+      "id": "counter_helix",
+      "name": "Counter Helix",
+      "icon": "🌀⚔️",
+      "trigger": "on_take_damage",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 10,
+      "source": "flat",
+      "element": "Physical",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "counter",
+        "aoe",
+        "physical",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "20% when hit: deal 10 Physical damage to all adjacent units"
     },
     "backtrack": {
-      "id": "backtrack", "name": "Backtrack", "icon": "⏪",
-      "trigger": "on_take_damage", "action": "damage_block", "target": "self",
-      "value": 100, "source": "damage_received",
-      "conditions": ["chance_15"], "duration": null, "category": "triggered",
-      "tags": ["evade", "negate", "defense", "dota"], "overridable": ["conditions"],
+      "id": "backtrack",
+      "name": "Backtrack",
+      "icon": "⏪",
+      "trigger": "on_take_damage",
+      "action": "damage_block",
+      "target": "self",
+      "value": 100,
+      "source": "damage_received",
+      "conditions": [
+        "chance_15"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "evade",
+        "negate",
+        "defense",
+        "dota"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "15% chance to completely negate incoming damage"
     },
     "guardian_shield": {
-      "id": "guardian_shield", "name": "Guardian Shield", "icon": "🛡️💕",
-      "trigger": "on_ally_hit", "action": "damage_block", "target": "self",
-      "value": 50, "source": "damage_received",
-      "conditions": ["adjacent_to_ally"],
-      "duration": null, "category": "triggered",
-      "children": [
-        { "action": "damage", "value": 50, "source": "damage_received", "target": "self" }
+      "id": "guardian_shield",
+      "name": "Guardian Shield",
+      "icon": "🛡️💕",
+      "trigger": "on_ally_hit",
+      "action": "damage_block",
+      "target": "self",
+      "value": 50,
+      "source": "damage_received",
+      "conditions": [
+        "adjacent_to_ally"
       ],
-      "tags": ["protect", "guardian", "tank", "ally"], "overridable": ["value"],
+      "duration": null,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "damage",
+          "value": 50,
+          "source": "damage_received",
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "protect",
+        "guardian",
+        "tank",
+        "ally"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Intercept 50% of damage dealt to adjacent allies (you take it instead)"
     },
     "thorns_aura": {
-      "id": "thorns_aura", "name": "Thorns Aura", "icon": "🌹",
-      "trigger": "on_take_damage", "action": "damage", "target": "attacker",
-      "value": 5, "source": "flat", "element": "Nature",
-      "conditions": ["is_melee_attack"], "duration": null, "category": "triggered",
-      "tags": ["thorns", "reflect", "nature", "passive"], "overridable": ["value"],
+      "id": "thorns_aura",
+      "name": "Thorns Aura",
+      "icon": "🌹",
+      "trigger": "on_take_damage",
+      "action": "damage",
+      "target": "attacker",
+      "value": 5,
+      "source": "flat",
+      "element": "Nature",
+      "conditions": [
+        "is_melee_attack"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "thorns",
+        "reflect",
+        "nature",
+        "passive"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Melee attackers take 5 Nature damage"
     },
     "borrowed_time": {
-      "id": "borrowed_time", "name": "Borrowed Time", "icon": "⏰💀",
-      "trigger": "on_take_damage", "action": "heal", "target": "self",
-      "value": 100, "source": "damage_received",
-      "conditions": ["hp_below_25"],
-      "duration": 2, "category": "triggered",
-      "tags": ["heal", "invuln", "ultimate", "dota"], "overridable": ["conditions", "duration"],
+      "id": "borrowed_time",
+      "name": "Borrowed Time",
+      "icon": "⏰💀",
+      "trigger": "on_take_damage",
+      "action": "heal",
+      "target": "self",
+      "value": 100,
+      "source": "damage_received",
+      "conditions": [
+        "hp_below_25"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "heal",
+        "invuln",
+        "ultimate",
+        "dota"
+      ],
+      "overridable": [
+        "conditions",
+        "duration"
+      ],
       "description": "Below 25% HP: all damage heals you instead (2 turns)"
     },
-
     "__COMMENT_ON_KILL": "═══════════════════════════════════════════════════════════════ ON-KILL EFFECTS ═══",
-
     "heal_on_kill": {
-      "id": "heal_on_kill", "name": "Heal on Kill", "icon": "❤️💀",
-      "trigger": "on_kill", "action": "heal", "target": "self",
-      "value": 15, "source": "max_hp",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["heal", "kill", "sustain"], "overridable": ["value"],
+      "id": "heal_on_kill",
+      "name": "Heal on Kill",
+      "icon": "❤️💀",
+      "trigger": "on_kill",
+      "action": "heal",
+      "target": "self",
+      "value": 15,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "heal",
+        "kill",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On kill: heal 15% of max HP"
     },
     "mp_on_kill": {
-      "id": "mp_on_kill", "name": "MP on Kill", "icon": "💙💀",
-      "trigger": "on_kill", "action": "mp_restore", "target": "self",
-      "value": 10, "source": "max_mp",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["mana", "kill", "sustain"], "overridable": ["value"],
+      "id": "mp_on_kill",
+      "name": "MP on Kill",
+      "icon": "💙💀",
+      "trigger": "on_kill",
+      "action": "mp_restore",
+      "target": "self",
+      "value": 10,
+      "source": "max_mp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "mana",
+        "kill",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On kill: restore 10% of max MP"
     },
     "ap_on_kill": {
-      "id": "ap_on_kill", "name": "AP on Kill", "icon": "⚡💀",
-      "trigger": "on_kill", "action": "ap_grant", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["ap", "kill", "action", "tempo"], "overridable": ["value"],
+      "id": "ap_on_kill",
+      "name": "AP on Kill",
+      "icon": "⚡💀",
+      "trigger": "on_kill",
+      "action": "ap_grant",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "ap",
+        "kill",
+        "action",
+        "tempo"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On kill: gain 1 AP"
     },
     "haste_on_kill": {
-      "id": "haste_on_kill", "name": "Haste on Kill", "icon": "💨💀",
-      "trigger": "on_kill", "action": "status_apply", "target": "self",
-      "statusId": "haste", "value": 1, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
-      "tags": ["haste", "kill", "speed", "buff"], "overridable": ["duration"],
+      "id": "haste_on_kill",
+      "name": "Haste on Kill",
+      "icon": "💨💀",
+      "trigger": "on_kill",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "haste",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "haste",
+        "kill",
+        "speed",
+        "buff"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "On kill: gain Haste (+1 move, +5 initiative) for 2 turns"
     },
     "berserk_on_kill": {
-      "id": "berserk_on_kill", "name": "Berserk on Kill", "icon": "😤💀",
-      "trigger": "on_kill", "action": "status_apply", "target": "self",
-      "statusId": "berserk", "value": 20, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
-      "tags": ["berserk", "kill", "damage", "offense"], "overridable": ["value", "duration"],
+      "id": "berserk_on_kill",
+      "name": "Berserk on Kill",
+      "icon": "😤💀",
+      "trigger": "on_kill",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "berserk",
+      "value": 20,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "berserk",
+        "kill",
+        "damage",
+        "offense"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On kill: gain Berserk (+20% damage, -10% defense, 2 turns)"
     },
     "raise_dead": {
-      "id": "raise_dead", "name": "Raise Dead", "icon": "💀➡️👻",
-      "trigger": "on_kill", "action": "resurrect_as_ally", "target": "target",
-      "value": 30, "source": "percent",
-      "conditions": ["chance_20"], "duration": 5, "category": "triggered",
-      "tags": ["summon", "undead", "kill", "dark", "mgqp"], "overridable": ["value", "conditions"],
+      "id": "raise_dead",
+      "name": "Raise Dead",
+      "icon": "💀➡️👻",
+      "trigger": "on_kill",
+      "action": "resurrect_as_ally",
+      "target": "target",
+      "value": 30,
+      "source": "percent",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": 5,
+      "category": "triggered",
+      "tags": [
+        "summon",
+        "undead",
+        "kill",
+        "dark",
+        "mgqp"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "20% on kill: raise enemy as undead ally (30% HP, 5 turns)"
     },
     "soul_harvest": {
-      "id": "soul_harvest", "name": "Soul Harvest", "icon": "👻",
-      "trigger": "on_kill", "action": "status_apply", "target": "self",
-      "statusId": "soul_stack", "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "stacks": true, "maxStacks": 20, "category": "triggered",
+      "id": "soul_harvest",
+      "name": "Soul Harvest",
+      "icon": "👻",
+      "trigger": "on_kill",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "soul_stack",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "stacks": true,
+      "maxStacks": 20,
+      "category": "triggered",
       "children": [
-        { "action": "stat_mod", "stat": "I", "value": 1, "source": "stack_count", "target": "self" }
+        {
+          "action": "stat_mod",
+          "stat": "I",
+          "value": 1,
+          "source": "stack_count",
+          "target": "self"
+        }
       ],
-      "tags": ["stacking", "kill", "intelligence", "dark", "dota"], "overridable": ["maxStacks"],
+      "tags": [
+        "stacking",
+        "kill",
+        "intelligence",
+        "dark",
+        "dota"
+      ],
+      "overridable": [
+        "maxStacks"
+      ],
       "description": "On kill: gain a soul stack (+1 INT per stack, permanent)"
     },
     "cooldown_reset_on_kill": {
-      "id": "cooldown_reset_on_kill", "name": "Reset on Kill", "icon": "🔄💀",
-      "trigger": "on_kill", "action": "cooldown_reset", "target": "self",
-      "value": 0, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["cooldown", "kill", "reset", "tempo"], "overridable": [],
+      "id": "cooldown_reset_on_kill",
+      "name": "Reset on Kill",
+      "icon": "🔄💀",
+      "trigger": "on_kill",
+      "action": "cooldown_reset",
+      "target": "self",
+      "value": 0,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "cooldown",
+        "kill",
+        "reset",
+        "tempo"
+      ],
+      "overridable": [],
       "description": "On kill: reset all skill cooldowns"
     },
-
     "__COMMENT_ON_DEATH": "═══════════════════════════════════════════════════════════════ ON-DEATH EFFECTS ═══",
-
     "death_explosion": {
-      "id": "death_explosion", "name": "Death Explosion", "icon": "💥💀",
-      "trigger": "on_death", "action": "damage", "target": "adjacent_to_self",
-      "value": 20, "source": "max_hp", "element": "Fire",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["death", "explosion", "aoe", "fire"], "overridable": ["value", "element"],
+      "id": "death_explosion",
+      "name": "Death Explosion",
+      "icon": "💥💀",
+      "trigger": "on_death",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 20,
+      "source": "max_hp",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "explosion",
+        "aoe",
+        "fire"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
       "description": "On death: explode for 20% max HP Fire damage to adjacent units"
     },
     "death_curse": {
-      "id": "death_curse", "name": "Death Curse", "icon": "💀🔮",
-      "trigger": "on_death", "action": "status_apply", "target": "attacker",
-      "statusId": "curse", "value": 8, "source": "flat",
-      "conditions": [], "duration": 5, "category": "triggered",
-      "tags": ["death", "curse", "dark", "debuff"], "overridable": ["value", "duration"],
+      "id": "death_curse",
+      "name": "Death Curse",
+      "icon": "💀🔮",
+      "trigger": "on_death",
+      "action": "status_apply",
+      "target": "attacker",
+      "statusId": "curse",
+      "value": 8,
+      "source": "flat",
+      "conditions": [],
+      "duration": 5,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "curse",
+        "dark",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On death: curse killer (8 Dark damage/turn, -50% healing, 5 turns)"
     },
     "death_heal_allies": {
-      "id": "death_heal_allies", "name": "Martyrdom", "icon": "💀❤️",
-      "trigger": "on_death", "action": "heal", "target": "all_allies",
-      "value": 25, "source": "max_hp",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["death", "heal", "allies", "support", "sacrifice"], "overridable": ["value"],
+      "id": "death_heal_allies",
+      "name": "Martyrdom",
+      "icon": "💀❤️",
+      "trigger": "on_death",
+      "action": "heal",
+      "target": "all_allies",
+      "value": 25,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "heal",
+        "allies",
+        "support",
+        "sacrifice"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On death: heal all allies for 25% of your max HP"
     },
     "death_buff_allies": {
-      "id": "death_buff_allies", "name": "Vengeful Spirit", "icon": "💀⬆️",
-      "trigger": "on_death", "action": "status_apply", "target": "all_allies",
-      "statusId": "berserk", "value": 30, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["death", "buff", "allies", "berserk"], "overridable": ["value", "duration"],
+      "id": "death_buff_allies",
+      "name": "Vengeful Spirit",
+      "icon": "💀⬆️",
+      "trigger": "on_death",
+      "action": "status_apply",
+      "target": "all_allies",
+      "statusId": "berserk",
+      "value": 30,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "buff",
+        "allies",
+        "berserk"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On death: all allies gain Berserk +30% for 3 turns"
     },
-
     "__COMMENT_ON_CRIT": "═══════════════════════════════════════════════════════════════ ON-CRIT EFFECTS ═══",
-
     "crit_stun": {
-      "id": "crit_stun", "name": "Stunning Crit", "icon": "💫🎯",
-      "trigger": "on_crit", "action": "status_apply", "target": "target",
-      "statusId": "stun", "value": 1, "source": "flat",
-      "conditions": [], "duration": 1, "category": "triggered",
-      "tags": ["crit", "stun", "disable"], "overridable": ["duration"],
+      "id": "crit_stun",
+      "name": "Stunning Crit",
+      "icon": "💫🎯",
+      "trigger": "on_crit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "stun",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "crit",
+        "stun",
+        "disable"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "On critical hit: stun target for 1 turn"
     },
     "crit_bleed": {
-      "id": "crit_bleed", "name": "Hemorrhage Crit", "icon": "🩸🎯",
-      "trigger": "on_crit", "action": "status_apply", "target": "target",
-      "statusId": "bleed", "value": 6, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["crit", "bleed", "dot"], "overridable": ["value", "duration"],
+      "id": "crit_bleed",
+      "name": "Hemorrhage Crit",
+      "icon": "🩸🎯",
+      "trigger": "on_crit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "bleed",
+      "value": 6,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "crit",
+        "bleed",
+        "dot"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "On critical hit: apply heavy Bleed (6/turn, 3 turns)"
     },
     "crit_extra_action": {
-      "id": "crit_extra_action", "name": "Crit Extra Action", "icon": "⚡🎯",
-      "trigger": "on_crit", "action": "extra_action", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": ["chance_25"], "duration": null, "category": "triggered",
-      "tags": ["crit", "action", "tempo"], "overridable": ["conditions"],
+      "id": "crit_extra_action",
+      "name": "Crit Extra Action",
+      "icon": "⚡🎯",
+      "trigger": "on_crit",
+      "action": "extra_action",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_25"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "crit",
+        "action",
+        "tempo"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "25% on crit: gain an extra main action"
     },
-
     "__COMMENT_ON_DODGE": "═══════════════════════════════════════════════════════════════ ON-DODGE EFFECTS ═══",
-
     "counter_on_dodge": {
-      "id": "counter_on_dodge", "name": "Riposte", "icon": "💨⚔️",
-      "trigger": "on_dodge", "action": "counter", "target": "attacker",
-      "value": 80, "source": "percent",
-      "conditions": ["attacker_adjacent"], "duration": null, "category": "triggered",
-      "tags": ["dodge", "counter", "riposte", "melee"], "overridable": ["value"],
+      "id": "counter_on_dodge",
+      "name": "Riposte",
+      "icon": "💨⚔️",
+      "trigger": "on_dodge",
+      "action": "counter",
+      "target": "attacker",
+      "value": 80,
+      "source": "percent",
+      "conditions": [
+        "attacker_adjacent"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "dodge",
+        "counter",
+        "riposte",
+        "melee"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On dodging a melee attack: counter for 80% damage"
     },
     "haste_on_dodge": {
-      "id": "haste_on_dodge", "name": "Blur Dash", "icon": "💨💨",
-      "trigger": "on_dodge", "action": "status_apply", "target": "self",
-      "statusId": "haste", "value": 1, "source": "flat",
-      "conditions": [], "duration": 1, "category": "triggered",
-      "tags": ["dodge", "haste", "speed"], "overridable": ["duration"],
+      "id": "haste_on_dodge",
+      "name": "Blur Dash",
+      "icon": "💨💨",
+      "trigger": "on_dodge",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "haste",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "dodge",
+        "haste",
+        "speed"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "On dodge: gain Haste for 1 turn"
     },
-
     "__COMMENT_ON_MOVE": "═══════════════════════════════════════════════════════════════ ON-MOVE EFFECTS ═══",
-
     "fire_trail": {
-      "id": "fire_trail", "name": "Fire Trail", "icon": "🔥👣",
-      "trigger": "on_move", "action": "terrain_create", "target": "self",
-      "terrainType": "fire_zone", "value": 2, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["move", "terrain", "fire", "zone"], "overridable": ["duration"],
+      "id": "fire_trail",
+      "name": "Fire Trail",
+      "icon": "🔥👣",
+      "trigger": "on_move",
+      "action": "terrain_create",
+      "target": "self",
+      "terrainType": "fire_zone",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "move",
+        "terrain",
+        "fire",
+        "zone"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Leave fire terrain behind when moving (lasts 3 turns)"
     },
     "caltrops": {
-      "id": "caltrops", "name": "Caltrops", "icon": "📌👣",
-      "trigger": "on_move", "action": "terrain_create", "target": "self",
-      "terrainType": "thorns", "value": 1, "source": "flat",
-      "conditions": [], "duration": 5, "category": "triggered",
-      "tags": ["move", "terrain", "thorns", "trap"], "overridable": ["duration"],
+      "id": "caltrops",
+      "name": "Caltrops",
+      "icon": "📌👣",
+      "trigger": "on_move",
+      "action": "terrain_create",
+      "target": "self",
+      "terrainType": "thorns",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 5,
+      "category": "triggered",
+      "tags": [
+        "move",
+        "terrain",
+        "thorns",
+        "trap"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Leave thorns terrain behind when moving (lasts 5 turns)"
     },
-
     "__COMMENT_TURN_START": "═══════════════════════════════════════════════════════════════ TURN START/END EFFECTS ═══",
-
     "regen_hp": {
-      "id": "regen_hp", "name": "HP Regen", "icon": "💚",
-      "trigger": "on_turn_start", "action": "heal", "target": "self",
-      "value": 3, "source": "max_hp",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["regen", "heal", "passive", "sustain"], "overridable": ["value"],
+      "id": "regen_hp",
+      "name": "HP Regen",
+      "icon": "💚",
+      "trigger": "on_turn_start",
+      "action": "heal",
+      "target": "self",
+      "value": 3,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "regen",
+        "heal",
+        "passive",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Turn start: heal 3% of max HP"
     },
     "regen_mp": {
-      "id": "regen_mp", "name": "MP Regen", "icon": "💙",
-      "trigger": "on_turn_start", "action": "mp_restore", "target": "self",
-      "value": 3, "source": "max_mp",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["regen", "mana", "passive", "sustain"], "overridable": ["value"],
+      "id": "regen_mp",
+      "name": "MP Regen",
+      "icon": "💙",
+      "trigger": "on_turn_start",
+      "action": "mp_restore",
+      "target": "self",
+      "value": 3,
+      "source": "max_mp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "regen",
+        "mana",
+        "passive",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Turn start: restore 3% of max MP"
     },
     "burn_dot": {
-      "id": "burn_dot", "name": "Burn DoT", "icon": "🔥",
-      "trigger": "on_status_tick", "action": "damage", "target": "self",
-      "value": 5, "source": "flat", "element": "Fire",
-      "conditions": [], "duration": null, "category": "status",
-      "tags": ["burn", "dot", "fire", "tick"], "overridable": ["value"],
+      "id": "burn_dot",
+      "name": "Burn DoT",
+      "icon": "🔥",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "tags": [
+        "burn",
+        "dot",
+        "fire",
+        "tick"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Take 5 Fire damage per turn"
     },
     "poison_dot": {
-      "id": "poison_dot", "name": "Poison DoT", "icon": "☠️",
-      "trigger": "on_status_tick", "action": "damage", "target": "self",
-      "value": 4, "source": "flat", "element": "Nature",
-      "conditions": [], "duration": null, "stacks": true, "maxStacks": 3, "category": "status",
-      "tags": ["poison", "dot", "nature", "tick", "stacking"], "overridable": ["value", "maxStacks"],
+      "id": "poison_dot",
+      "name": "Poison DoT",
+      "icon": "☠️",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 4,
+      "source": "flat",
+      "element": "Nature",
+      "conditions": [],
+      "duration": null,
+      "stacks": true,
+      "maxStacks": 3,
+      "category": "status",
+      "tags": [
+        "poison",
+        "dot",
+        "nature",
+        "tick",
+        "stacking"
+      ],
+      "overridable": [
+        "value",
+        "maxStacks"
+      ],
       "description": "Take 4 Nature damage per turn (stacks up to 3)"
     },
     "bleed_dot": {
-      "id": "bleed_dot", "name": "Bleed DoT", "icon": "🩸",
-      "trigger": "on_status_tick", "action": "damage", "target": "self",
-      "value": 4, "source": "flat", "element": "Physical",
-      "conditions": [], "duration": null, "category": "status",
-      "tags": ["bleed", "dot", "physical", "tick"], "overridable": ["value"],
+      "id": "bleed_dot",
+      "name": "Bleed DoT",
+      "icon": "🩸",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 4,
+      "source": "flat",
+      "element": "Physical",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "tags": [
+        "bleed",
+        "dot",
+        "physical",
+        "tick"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Take 4 Physical damage per turn (worsens on movement)"
     },
     "shock_dot": {
-      "id": "shock_dot", "name": "Shock DoT", "icon": "⚡",
-      "trigger": "on_status_tick", "action": "damage", "target": "self",
-      "value": 4, "source": "flat", "element": "Lightning",
-      "conditions": [], "duration": null, "category": "status",
-      "tags": ["shock", "dot", "lightning", "tick"], "overridable": ["value"],
+      "id": "shock_dot",
+      "name": "Shock DoT",
+      "icon": "⚡",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 4,
+      "source": "flat",
+      "element": "Lightning",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "tags": [
+        "shock",
+        "dot",
+        "lightning",
+        "tick"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Take 4 Lightning damage per turn (chance to skip QTE)"
     },
     "curse_dot": {
-      "id": "curse_dot", "name": "Curse DoT", "icon": "💀",
-      "trigger": "on_status_tick", "action": "damage", "target": "self",
-      "value": 5, "source": "flat", "element": "Dark",
-      "conditions": [], "duration": null, "category": "status",
+      "id": "curse_dot",
+      "name": "Curse DoT",
+      "icon": "💀",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "element": "Dark",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
       "children": [
-        { "action": "status_apply", "statusId": "heal_reduction", "value": 50, "target": "self", "duration": 1 }
+        {
+          "action": "status_apply",
+          "statusId": "heal_reduction",
+          "value": 50,
+          "target": "self",
+          "duration": 1
+        }
       ],
-      "tags": ["curse", "dot", "dark", "tick", "heal reduction"], "overridable": ["value"],
+      "tags": [
+        "curse",
+        "dot",
+        "dark",
+        "tick",
+        "heal reduction"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Take 5 Dark damage per turn + healing reduced 50%"
     },
     "corrode_dot": {
-      "id": "corrode_dot", "name": "Corrode DoT", "icon": "🧪",
-      "trigger": "on_status_tick", "action": "damage", "target": "self",
-      "value": 3, "source": "flat", "element": "Earth",
-      "conditions": [], "duration": null, "category": "status",
+      "id": "corrode_dot",
+      "name": "Corrode DoT",
+      "icon": "🧪",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 3,
+      "source": "flat",
+      "element": "Earth",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
       "children": [
-        { "action": "dr_mod", "drType": "all", "value": -1, "target": "self" }
+        {
+          "action": "dr_mod",
+          "drType": "all",
+          "value": -1,
+          "target": "self"
+        }
       ],
-      "tags": ["corrode", "dot", "earth", "tick", "dr reduction"], "overridable": ["value"],
+      "tags": [
+        "corrode",
+        "dot",
+        "earth",
+        "tick",
+        "dr reduction"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Take 3 Earth damage per turn + DR reduced by 1/turn"
     },
     "radiance_burn": {
-      "id": "radiance_burn", "name": "Radiance Burn", "icon": "☀️",
-      "trigger": "on_turn_end", "action": "damage", "target": "adjacent_to_self",
-      "value": 6, "source": "flat", "element": "Fire",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["aura", "burn", "fire", "aoe", "dota"], "overridable": ["value"],
+      "id": "radiance_burn",
+      "name": "Radiance Burn",
+      "icon": "☀️",
+      "trigger": "on_turn_end",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 6,
+      "source": "flat",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aura",
+        "burn",
+        "fire",
+        "aoe",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Turn end: deal 6 Fire damage to all adjacent enemies"
     },
     "degen_aura": {
-      "id": "degen_aura", "name": "Degeneration Aura", "icon": "💀🌀",
-      "trigger": "on_turn_end", "action": "damage", "target": "adjacent_to_self",
-      "value": 2, "source": "max_hp", "element": "Dark",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["aura", "degen", "dark", "aoe", "dota"], "overridable": ["value"],
+      "id": "degen_aura",
+      "name": "Degeneration Aura",
+      "icon": "💀🌀",
+      "trigger": "on_turn_end",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 2,
+      "source": "max_hp",
+      "element": "Dark",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aura",
+        "degen",
+        "dark",
+        "aoe",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Turn end: adjacent enemies lose 2% max HP"
     },
-
     "__COMMENT_BATTLE_START": "═══════════════════════════════════════════════════════════════ BATTLE START EFFECTS ═══",
-
     "ambush_bonus": {
-      "id": "ambush_bonus", "name": "Ambush", "icon": "🗡️💨",
-      "trigger": "on_battle_start", "action": "status_apply", "target": "self",
-      "statusId": "haste", "value": 1, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
+      "id": "ambush_bonus",
+      "name": "Ambush",
+      "icon": "🗡️💨",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "haste",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
       "children": [
-        { "action": "status_apply", "statusId": "stealth", "value": 1, "target": "self", "duration": 1 }
+        {
+          "action": "status_apply",
+          "statusId": "stealth",
+          "value": 1,
+          "target": "self",
+          "duration": 1
+        }
       ],
-      "tags": ["ambush", "first strike", "haste", "stealth"], "overridable": ["duration"],
+      "tags": [
+        "ambush",
+        "first strike",
+        "haste",
+        "stealth"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Battle start: gain Haste (2 turns) + Stealth (1 turn)"
     },
     "opening_shield": {
-      "id": "opening_shield", "name": "Opening Shield", "icon": "🛡️✨",
-      "trigger": "on_battle_start", "action": "absorb", "target": "self",
-      "value": 20, "source": "max_hp",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["shield", "defense", "opening"], "overridable": ["value"],
+      "id": "opening_shield",
+      "name": "Opening Shield",
+      "icon": "🛡️✨",
+      "trigger": "on_battle_start",
+      "action": "absorb",
+      "target": "self",
+      "value": 20,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "shield",
+        "defense",
+        "opening"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Battle start: gain a shield for 20% max HP (3 turns)"
     },
     "battle_cry": {
-      "id": "battle_cry", "name": "Battle Cry", "icon": "📣",
-      "trigger": "on_battle_start", "action": "status_apply", "target": "all_allies",
-      "statusId": "focus", "value": 5, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["buff", "allies", "accuracy", "opening"], "overridable": ["value", "duration"],
+      "id": "battle_cry",
+      "name": "Battle Cry",
+      "icon": "📣",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "all_allies",
+      "statusId": "focus",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "buff",
+        "allies",
+        "accuracy",
+        "opening"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "Battle start: all allies gain Focus (+5 accuracy, +5% crit, 3 turns)"
     },
-
     "__COMMENT_LOW_HP": "═══════════════════════════════════════════════════════════════ LOW HP EFFECTS ═══",
-
     "berserk_low_hp": {
-      "id": "berserk_low_hp", "name": "Last Stand Berserk", "icon": "😤❤️",
-      "trigger": "on_low_hp", "action": "status_apply", "target": "self",
-      "statusId": "berserk", "value": 30, "source": "flat",
+      "id": "berserk_low_hp",
+      "name": "Last Stand Berserk",
+      "icon": "😤❤️",
+      "trigger": "on_low_hp",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "berserk",
+      "value": 30,
+      "source": "flat",
       "threshold": 30,
-      "conditions": ["hp_below_30"], "duration": null, "category": "triggered",
-      "tags": ["berserk", "low hp", "offense", "desperate"], "overridable": ["threshold", "value"],
+      "conditions": [
+        "hp_below_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "berserk",
+        "low hp",
+        "offense",
+        "desperate"
+      ],
+      "overridable": [
+        "threshold",
+        "value"
+      ],
       "description": "Below 30% HP: gain Berserk (+30% damage, -15% defense)"
     },
     "emergency_shield": {
-      "id": "emergency_shield", "name": "Emergency Shield", "icon": "🛡️🆘",
-      "trigger": "on_low_hp", "action": "absorb", "target": "self",
-      "value": 25, "source": "max_hp",
+      "id": "emergency_shield",
+      "name": "Emergency Shield",
+      "icon": "🛡️🆘",
+      "trigger": "on_low_hp",
+      "action": "absorb",
+      "target": "self",
+      "value": 25,
+      "source": "max_hp",
       "threshold": 20,
-      "conditions": ["hp_below_20"], "duration": 2, "category": "triggered",
-      "tags": ["shield", "low hp", "defense", "survival"], "overridable": ["threshold", "value"],
+      "conditions": [
+        "hp_below_20"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "shield",
+        "low hp",
+        "defense",
+        "survival"
+      ],
+      "overridable": [
+        "threshold",
+        "value"
+      ],
       "description": "Below 20% HP: gain shield for 25% max HP (once per battle)"
     },
     "auto_revive": {
-      "id": "auto_revive", "name": "Auto Revive", "icon": "💖✨",
-      "trigger": "on_death", "action": "revive", "target": "self",
-      "value": 30, "source": "max_hp",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["revive", "survival", "once", "mgqp"], "overridable": ["value"],
+      "id": "auto_revive",
+      "name": "Auto Revive",
+      "icon": "💖✨",
+      "trigger": "on_death",
+      "action": "revive",
+      "target": "self",
+      "value": 30,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "revive",
+        "survival",
+        "once",
+        "mgqp"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On death: revive at 30% HP (once per battle)"
     },
-
     "__COMMENT_COMPLEX": "═══════════════════════════════════════════════════════════════ COMPLEX / MULTI-ACTION EFFECTS ═══",
-
     "parasitic_seed": {
-      "id": "parasitic_seed", "name": "Parasitic Seed", "icon": "🌱",
-      "trigger": "on_turn_start", "action": "damage", "target": "host",
-      "value": 15, "source": "flat", "element": "Nature",
-      "conditions": ["target_hp_above_0"],
-      "duration": 5, "category": "complex",
+      "id": "parasitic_seed",
+      "name": "Parasitic Seed",
+      "icon": "🌱",
+      "trigger": "on_turn_start",
+      "action": "damage",
+      "target": "host",
+      "value": 15,
+      "source": "flat",
+      "element": "Nature",
+      "conditions": [
+        "target_hp_above_0"
+      ],
+      "duration": 5,
+      "category": "complex",
       "children": [
-        { "action": "heal", "value": 100, "source": "stored:seed_damage", "target": "all_allies" }
+        {
+          "action": "heal",
+          "value": 100,
+          "source": "stored:seed_damage",
+          "target": "all_allies"
+        }
       ],
       "storeResult": "seed_damage",
-      "cleansedBy": ["Fire", "purify"],
-      "tags": ["drain", "nature", "heal", "dot", "support", "mgqp"], "overridable": ["value", "duration"],
+      "cleansedBy": [
+        "Fire",
+        "purify"
+      ],
+      "tags": [
+        "drain",
+        "nature",
+        "heal",
+        "dot",
+        "support",
+        "mgqp"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "Attach a seed: drain 15 HP/turn, heal all allies for amount drained"
     },
     "vampiric_embrace": {
-      "id": "vampiric_embrace", "name": "Vampiric Embrace", "icon": "🧛",
-      "trigger": "on_hit", "action": "hp_drain", "target": "target",
-      "value": 20, "source": "damage_dealt",
-      "conditions": [], "duration": null, "category": "complex",
+      "id": "vampiric_embrace",
+      "name": "Vampiric Embrace",
+      "icon": "🧛",
+      "trigger": "on_hit",
+      "action": "hp_drain",
+      "target": "target",
+      "value": 20,
+      "source": "damage_dealt",
+      "conditions": [],
+      "duration": null,
+      "category": "complex",
       "children": [
-        { "action": "heal", "value": 100, "source": "stored:hp_drained", "target": "self" },
-        { "action": "mp_restore", "value": 30, "source": "stored:hp_drained", "target": "self" }
+        {
+          "action": "heal",
+          "value": 100,
+          "source": "stored:hp_drained",
+          "target": "self"
+        },
+        {
+          "action": "mp_restore",
+          "value": 30,
+          "source": "stored:hp_drained",
+          "target": "self"
+        }
       ],
       "storeResult": "hp_drained",
-      "tags": ["drain", "dark", "heal", "sustain", "vampire"], "overridable": ["value"],
+      "tags": [
+        "drain",
+        "dark",
+        "heal",
+        "sustain",
+        "vampire"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Drain 20% of damage dealt as HP, restore 30% of drain as MP"
     },
     "spell_steal": {
-      "id": "spell_steal", "name": "Spell Steal", "icon": "🔮🖐️",
-      "trigger": "on_take_damage", "action": "steal_buff", "target": "attacker",
-      "value": 1, "source": "flat",
-      "conditions": ["damage_type_is_Magic"], "duration": null, "category": "triggered",
-      "tags": ["steal", "buff", "anti-mage", "dota"], "overridable": [],
+      "id": "spell_steal",
+      "name": "Spell Steal",
+      "icon": "🔮🖐️",
+      "trigger": "on_take_damage",
+      "action": "steal_buff",
+      "target": "attacker",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "damage_type_is_Magic"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "steal",
+        "buff",
+        "anti-mage",
+        "dota"
+      ],
+      "overridable": [],
       "description": "When hit by magic: steal a random buff from the caster"
     },
     "doom_apply": {
-      "id": "doom_apply", "name": "Doom", "icon": "💀⏰",
-      "trigger": "on_hit", "action": "status_apply", "target": "target",
-      "statusId": "doom", "value": 3, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
+      "id": "doom_apply",
+      "name": "Doom",
+      "icon": "💀⏰",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "doom",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
       "children": [
-        { "action": "break_passives", "target": "target", "value": 1 }
+        {
+          "action": "break_passives",
+          "target": "target",
+          "value": 1
+        }
       ],
-      "cleansedBy": ["Light", "holy", "purify"],
-      "tags": ["doom", "disable", "dark", "ultimate", "dota"], "overridable": ["value"],
+      "cleansedBy": [
+        "Light",
+        "holy",
+        "purify"
+      ],
+      "tags": [
+        "doom",
+        "disable",
+        "dark",
+        "ultimate",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Apply Doom: die in 3 turns + all passives disabled. Cleanse with Light/Purify"
     },
     "link_share": {
-      "id": "link_share", "name": "Soul Link", "icon": "🔗",
-      "trigger": "on_take_damage", "action": "link_share_damage", "target": "target",
-      "value": 50, "source": "percent",
-      "conditions": [], "duration": 4, "category": "complex",
-      "tags": ["link", "share", "damage", "support", "mgqp"], "overridable": ["value", "duration"],
+      "id": "link_share",
+      "name": "Soul Link",
+      "icon": "🔗",
+      "trigger": "on_take_damage",
+      "action": "link_share_damage",
+      "target": "target",
+      "value": 50,
+      "source": "percent",
+      "conditions": [],
+      "duration": 4,
+      "category": "complex",
+      "tags": [
+        "link",
+        "share",
+        "damage",
+        "support",
+        "mgqp"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
       "description": "Link two units: share 50% of all damage taken between them (4 turns)"
     },
     "execute_low_hp": {
-      "id": "execute_low_hp", "name": "Execute", "icon": "⚰️",
-      "trigger": "on_hit", "action": "execute", "target": "target",
-      "value": 1, "source": "flat",
+      "id": "execute_low_hp",
+      "name": "Execute",
+      "icon": "⚰️",
+      "trigger": "on_hit",
+      "action": "execute",
+      "target": "target",
+      "value": 1,
+      "source": "flat",
       "threshold": 15,
-      "conditions": ["target_hp_below_15"], "duration": null, "category": "triggered",
-      "tags": ["execute", "kill", "finisher"], "overridable": ["threshold"],
+      "conditions": [
+        "target_hp_below_15"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "execute",
+        "kill",
+        "finisher"
+      ],
+      "overridable": [
+        "threshold"
+      ],
       "description": "On hit: instantly kill targets below 15% HP"
     },
     "adapt_element": {
-      "id": "adapt_element", "name": "Elemental Adaptation", "icon": "🔄🛡️",
-      "trigger": "on_take_damage", "action": "element_mod", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["adapt", "element", "resist", "reactive", "mgqp"], "overridable": ["duration"],
+      "id": "adapt_element",
+      "name": "Elemental Adaptation",
+      "icon": "🔄🛡️",
+      "trigger": "on_take_damage",
+      "action": "element_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "adapt",
+        "element",
+        "resist",
+        "reactive",
+        "mgqp"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "After taking elemental damage: gain resistance to that element (3 turns)"
     },
     "vampiric_aura": {
-      "id": "vampiric_aura", "name": "Vampiric Aura", "icon": "🧛🌀",
-      "trigger": "on_hit", "action": "heal", "target": "self",
-      "value": 8, "source": "damage_dealt",
-      "conditions": ["is_physical_skill"], "duration": null, "category": "triggered",
-      "tags": ["aura", "lifesteal", "physical", "allies", "dota"], "overridable": ["value"],
+      "id": "vampiric_aura",
+      "name": "Vampiric Aura",
+      "icon": "🧛🌀",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 8,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aura",
+        "lifesteal",
+        "physical",
+        "allies",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "Physical attacks heal for 8% of damage dealt (aura — affects nearby allies)"
     },
     "sacrifice_heal": {
-      "id": "sacrifice_heal", "name": "Blood Sacrifice", "icon": "🩸❤️",
-      "trigger": "on_skill_use", "action": "damage", "target": "self",
-      "value": 10, "source": "max_hp",
-      "conditions": [], "duration": null, "category": "triggered",
+      "id": "sacrifice_heal",
+      "name": "Blood Sacrifice",
+      "icon": "🩸❤️",
+      "trigger": "on_skill_use",
+      "action": "damage",
+      "target": "self",
+      "value": 10,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
       "children": [
-        { "action": "heal", "value": 200, "source": "stored:self_damage", "target": "lowest_hp_ally" }
+        {
+          "action": "heal",
+          "value": 200,
+          "source": "stored:self_damage",
+          "target": "lowest_hp_ally"
+        }
       ],
       "storeResult": "self_damage",
-      "tags": ["sacrifice", "heal", "blood", "support"], "overridable": ["value"],
+      "tags": [
+        "sacrifice",
+        "heal",
+        "blood",
+        "support"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On skill use: lose 10% max HP, heal lowest HP ally for 200% of that"
     },
     "echo_strike": {
-      "id": "echo_strike", "name": "Echo Strike", "icon": "⚔️⚔️",
-      "trigger": "on_hit", "action": "damage", "target": "target",
-      "value": 60, "source": "damage_dealt",
-      "conditions": ["chance_30"], "duration": null, "category": "triggered",
-      "tags": ["echo", "double hit", "proc", "dota"], "overridable": ["value", "conditions"],
+      "id": "echo_strike",
+      "name": "Echo Strike",
+      "icon": "⚔️⚔️",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "target",
+      "value": 60,
+      "source": "damage_dealt",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "echo",
+        "double hit",
+        "proc",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "30% on hit: repeat the attack for 60% damage"
     },
-
     "__COMMENT_TERRAIN": "═══════════════════════════════════════════════════════════════ TERRAIN EFFECTS ═══",
-
     "terrain_create_fire": {
-      "id": "terrain_create_fire", "name": "Create Fire Zone", "icon": "🔥",
-      "trigger": "on_hit", "action": "terrain_create", "target": "target",
-      "terrainType": "fire_zone", "value": 5, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["terrain", "fire", "zone", "aoe"], "overridable": ["terrainType", "duration"],
+      "id": "terrain_create_fire",
+      "name": "Create Fire Zone",
+      "icon": "🔥",
+      "trigger": "on_hit",
+      "action": "terrain_create",
+      "target": "target",
+      "terrainType": "fire_zone",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "terrain",
+        "fire",
+        "zone",
+        "aoe"
+      ],
+      "overridable": [
+        "terrainType",
+        "duration"
+      ],
       "description": "Create fire terrain at target location (3 turns)"
     },
     "terrain_create_ice": {
-      "id": "terrain_create_ice", "name": "Create Ice Zone", "icon": "🧊",
-      "trigger": "on_hit", "action": "terrain_create", "target": "target",
-      "terrainType": "ice_zone", "value": 1, "source": "flat",
-      "conditions": [], "duration": 3, "category": "triggered",
-      "tags": ["terrain", "ice", "zone", "slow"], "overridable": ["duration"],
+      "id": "terrain_create_ice",
+      "name": "Create Ice Zone",
+      "icon": "🧊",
+      "trigger": "on_hit",
+      "action": "terrain_create",
+      "target": "target",
+      "terrainType": "ice_zone",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "terrain",
+        "ice",
+        "zone",
+        "slow"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Create ice terrain at target location (-1 movement, 3 turns)"
     },
     "terrain_create_poison": {
-      "id": "terrain_create_poison", "name": "Create Poison Zone", "icon": "☠️",
-      "trigger": "on_hit", "action": "terrain_create", "target": "target",
-      "terrainType": "poison_zone", "value": 4, "source": "flat",
-      "conditions": [], "duration": 4, "category": "triggered",
-      "tags": ["terrain", "poison", "zone", "nature"], "overridable": ["duration"],
+      "id": "terrain_create_poison",
+      "name": "Create Poison Zone",
+      "icon": "☠️",
+      "trigger": "on_hit",
+      "action": "terrain_create",
+      "target": "target",
+      "terrainType": "poison_zone",
+      "value": 4,
+      "source": "flat",
+      "conditions": [],
+      "duration": 4,
+      "category": "triggered",
+      "tags": [
+        "terrain",
+        "poison",
+        "zone",
+        "nature"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Create poison terrain at target location (4 turns)"
     },
-
     "__COMMENT_POSITIONAL": "═══════════════════════════════════════════════════════════════ POSITIONAL EFFECTS ═══",
-
     "knockback_hit": {
-      "id": "knockback_hit", "name": "Knockback", "icon": "💨👊",
-      "trigger": "on_hit", "action": "knockback", "target": "target",
-      "value": 2, "source": "flat",
-      "conditions": ["is_physical_skill"], "duration": null, "category": "triggered",
-      "tags": ["knockback", "push", "position", "physical"], "overridable": ["value", "conditions"],
+      "id": "knockback_hit",
+      "name": "Knockback",
+      "icon": "💨👊",
+      "trigger": "on_hit",
+      "action": "knockback",
+      "target": "target",
+      "value": 2,
+      "source": "flat",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "knockback",
+        "push",
+        "position",
+        "physical"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
       "description": "On physical hit: push target back 2 cells"
     },
     "pull_on_hit": {
-      "id": "pull_on_hit", "name": "Hook Pull", "icon": "🪝",
-      "trigger": "on_hit", "action": "pull", "target": "target",
-      "value": 3, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["pull", "hook", "position", "dota"], "overridable": ["value"],
+      "id": "pull_on_hit",
+      "name": "Hook Pull",
+      "icon": "🪝",
+      "trigger": "on_hit",
+      "action": "pull",
+      "target": "target",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "pull",
+        "hook",
+        "position",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On hit: pull target 3 cells closer"
     },
     "swap_on_hit": {
-      "id": "swap_on_hit", "name": "Position Swap", "icon": "🔀",
-      "trigger": "on_hit", "action": "swap_position", "target": "target",
-      "value": 0, "source": "flat",
-      "conditions": ["chance_20"], "duration": null, "category": "triggered",
-      "tags": ["swap", "position", "trickster"], "overridable": ["conditions"],
+      "id": "swap_on_hit",
+      "name": "Position Swap",
+      "icon": "🔀",
+      "trigger": "on_hit",
+      "action": "swap_position",
+      "target": "target",
+      "value": 0,
+      "source": "flat",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "swap",
+        "position",
+        "trickster"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "20% on hit: swap positions with target"
     },
-
     "__COMMENT_DISPEL": "═══════════════════════════════════════════════════════════════ DISPEL / CLEANSE ═══",
-
     "dispel_buffs": {
-      "id": "dispel_buffs", "name": "Purge Buffs", "icon": "🧹",
-      "trigger": "on_hit", "action": "dispel_buffs", "target": "target",
-      "value": 2, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["dispel", "purge", "debuff", "anti-buff", "dota"], "overridable": ["value"],
+      "id": "dispel_buffs",
+      "name": "Purge Buffs",
+      "icon": "🧹",
+      "trigger": "on_hit",
+      "action": "dispel_buffs",
+      "target": "target",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "dispel",
+        "purge",
+        "debuff",
+        "anti-buff",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On hit: remove up to 2 buffs from target"
     },
     "self_cleanse": {
-      "id": "self_cleanse", "name": "Self Cleanse", "icon": "✨🧹",
-      "trigger": "on_turn_start", "action": "dispel_debuffs", "target": "self",
-      "value": 1, "source": "flat",
-      "conditions": ["chance_30"], "duration": null, "category": "triggered",
-      "tags": ["cleanse", "dispel", "self", "defense"], "overridable": ["conditions"],
+      "id": "self_cleanse",
+      "name": "Self Cleanse",
+      "icon": "✨🧹",
+      "trigger": "on_turn_start",
+      "action": "dispel_debuffs",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "cleanse",
+        "dispel",
+        "self",
+        "defense"
+      ],
+      "overridable": [
+        "conditions"
+      ],
       "description": "30% turn start: remove 1 debuff from self"
     },
     "ally_cleanse": {
-      "id": "ally_cleanse", "name": "Purify Ally", "icon": "✨❤️",
-      "trigger": "on_skill_use", "action": "dispel_debuffs", "target": "lowest_hp_ally",
-      "value": 2, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["cleanse", "dispel", "ally", "support"], "overridable": ["value"],
+      "id": "ally_cleanse",
+      "name": "Purify Ally",
+      "icon": "✨❤️",
+      "trigger": "on_skill_use",
+      "action": "dispel_debuffs",
+      "target": "lowest_hp_ally",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "cleanse",
+        "dispel",
+        "ally",
+        "support"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On skill use: remove up to 2 debuffs from the lowest HP ally"
     },
-
     "__COMMENT_MISC": "═══════════════════════════════════════════════════════════════ MISC / UTILITY ═══",
-
     "spell_immunity": {
-      "id": "spell_immunity", "name": "Spell Immunity", "icon": "🏰✨",
-      "trigger": "on_take_damage", "action": "damage_block", "target": "self",
-      "value": 100, "source": "damage_received",
-      "conditions": ["damage_type_is_Magic"], "duration": 2, "category": "triggered",
-      "tags": ["immunity", "magic", "defense", "dota"], "overridable": ["duration"],
+      "id": "spell_immunity",
+      "name": "Spell Immunity",
+      "icon": "🏰✨",
+      "trigger": "on_take_damage",
+      "action": "damage_block",
+      "target": "self",
+      "value": 100,
+      "source": "damage_received",
+      "conditions": [
+        "damage_type_is_Magic"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "immunity",
+        "magic",
+        "defense",
+        "dota"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Immune to magic damage (2 turns)"
     },
     "stealth_passive": {
-      "id": "stealth_passive", "name": "Stealth", "icon": "👤",
-      "trigger": "on_battle_start", "action": "status_apply", "target": "self",
-      "statusId": "stealth", "value": 1, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["stealth", "invisible", "rogue"], "overridable": [],
+      "id": "stealth_passive",
+      "name": "Stealth",
+      "icon": "👤",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "stealth",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "stealth",
+        "invisible",
+        "rogue"
+      ],
+      "overridable": [],
       "description": "Start battle in stealth (untargetable until you attack)"
     },
     "taunt_passive": {
-      "id": "taunt_passive", "name": "Taunt Aura", "icon": "😤🎯",
-      "trigger": "on_battle_start", "action": "status_apply", "target": "all_enemies",
-      "statusId": "taunt", "value": 1, "source": "flat",
-      "conditions": [], "duration": 2, "category": "triggered",
-      "tags": ["taunt", "tank", "aggro", "control"], "overridable": ["duration"],
+      "id": "taunt_passive",
+      "name": "Taunt Aura",
+      "icon": "😤🎯",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "all_enemies",
+      "statusId": "taunt",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "taunt",
+        "tank",
+        "aggro",
+        "control"
+      ],
+      "overridable": [
+        "duration"
+      ],
       "description": "Battle start: force all enemies to target you for 2 turns"
     },
     "gold_bonus": {
-      "id": "gold_bonus", "name": "Gold Bonus", "icon": "💰",
-      "trigger": "on_kill", "action": "heal", "target": "self",
-      "value": 0, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["gold", "loot", "economy"], "overridable": ["value"],
+      "id": "gold_bonus",
+      "name": "Gold Bonus",
+      "icon": "💰",
+      "trigger": "on_kill",
+      "action": "heal",
+      "target": "self",
+      "value": 0,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "gold",
+        "loot",
+        "economy"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On kill: gain bonus gold (value = bonus gold amount)"
     },
     "jp_bonus": {
-      "id": "jp_bonus", "name": "JP Bonus", "icon": "🃏",
-      "trigger": "on_kill", "action": "heal", "target": "self",
-      "value": 0, "source": "flat",
-      "conditions": [], "duration": null, "category": "triggered",
-      "tags": ["jp", "jester points", "cjs"], "overridable": ["value"],
+      "id": "jp_bonus",
+      "name": "JP Bonus",
+      "icon": "🃏",
+      "trigger": "on_kill",
+      "action": "heal",
+      "target": "self",
+      "value": 0,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "jp",
+        "jester points",
+        "cjs"
+      ],
+      "overridable": [
+        "value"
+      ],
       "description": "On kill: gain bonus Jester Points"
     }
+  },
+  "__COMMENT_TERRAIN_BEHAVIOR": "═══════════════════════════════════════════════════════════════ TERRAIN BEHAVIOR EFFECTS (what happens when you stand/walk on terrain) ═══",
+  "terrain_burn": {
+    "id": "terrain_burn",
+    "name": "Terrain: Fire Zone",
+    "icon": "🔥",
+    "trigger": "terrain_effect",
+    "action": "damage",
+    "target": "self",
+    "value": 8,
+    "source": "flat",
+    "element": "Fire",
+    "damageType": "Magic",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "fire",
+      "damage",
+      "dot"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Fire zone: take 8 Fire damage on enter / turn start"
+  },
+  "terrain_slow": {
+    "id": "terrain_slow",
+    "name": "Terrain: Ice Zone",
+    "icon": "🧊",
+    "trigger": "terrain_effect",
+    "action": "status_apply",
+    "target": "self",
+    "statusId": "slow",
+    "value": 1,
+    "source": "flat",
+    "conditions": [],
+    "duration": 1,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "ice",
+      "slow",
+      "movement"
+    ],
+    "overridable": [
+      "duration"
+    ],
+    "description": "Ice zone: apply Slow (-1 movement) for 1 turn"
+  },
+  "terrain_poison": {
+    "id": "terrain_poison",
+    "name": "Terrain: Poison Zone",
+    "icon": "☠️",
+    "trigger": "terrain_effect",
+    "action": "status_apply",
+    "target": "self",
+    "statusId": "poison",
+    "value": 5,
+    "source": "flat",
+    "conditions": [],
+    "duration": 2,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "poison",
+      "dot",
+      "nature"
+    ],
+    "overridable": [
+      "value",
+      "duration"
+    ],
+    "description": "Poison zone: apply Poison (5/turn, 2 turns)"
+  },
+  "terrain_heal": {
+    "id": "terrain_heal",
+    "name": "Terrain: Heal Zone",
+    "icon": "💚",
+    "trigger": "terrain_effect",
+    "action": "heal",
+    "target": "self",
+    "value": 8,
+    "source": "max_hp",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "heal",
+      "regen",
+      "support"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Heal zone: restore 8% max HP on enter / turn start"
+  },
+  "terrain_high_ground": {
+    "id": "terrain_high_ground",
+    "name": "Terrain: High Ground",
+    "icon": "⬆️",
+    "trigger": "terrain_effect",
+    "action": "status_apply",
+    "target": "self",
+    "statusId": "focus",
+    "value": 2,
+    "source": "flat",
+    "conditions": [],
+    "duration": 1,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "high_ground",
+      "accuracy",
+      "tactical"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "High ground: +2 accuracy while standing here (Focus, 1 turn)"
+  },
+  "terrain_water": {
+    "id": "terrain_water",
+    "name": "Terrain: Water",
+    "icon": "🌊",
+    "trigger": "terrain_effect",
+    "action": "status_remove",
+    "target": "self",
+    "statusId": "burn",
+    "value": 1,
+    "source": "flat",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "water",
+      "cleanse",
+      "burn"
+    ],
+    "overridable": [],
+    "description": "Water: cleanse Burn on enter. Slowed by move cost."
+  },
+  "terrain_lava": {
+    "id": "terrain_lava",
+    "name": "Terrain: Lava",
+    "icon": "🌋",
+    "trigger": "terrain_effect",
+    "action": "damage",
+    "target": "self",
+    "value": 15,
+    "source": "flat",
+    "element": "Fire",
+    "damageType": "Magic",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "children": [
+      {
+        "action": "status_apply",
+        "statusId": "burn",
+        "value": 8,
+        "source": "flat",
+        "target": "self",
+        "duration": 3
+      }
+    ],
+    "tags": [
+      "terrain",
+      "lava",
+      "fire",
+      "damage",
+      "deadly"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Lava: take 15 Fire damage + apply Burn (8/turn, 3 turns)"
+  },
+  "terrain_mud": {
+    "id": "terrain_mud",
+    "name": "Terrain: Mud",
+    "icon": "🟤",
+    "trigger": "terrain_effect",
+    "action": "status_apply",
+    "target": "self",
+    "statusId": "slow",
+    "value": 1,
+    "source": "flat",
+    "conditions": [],
+    "duration": 1,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "mud",
+      "slow",
+      "movement"
+    ],
+    "overridable": [
+      "duration"
+    ],
+    "description": "Mud: apply Slow (-1 movement) for 1 turn. Heavy move cost."
+  },
+  "terrain_thorns": {
+    "id": "terrain_thorns",
+    "name": "Terrain: Thorns",
+    "icon": "🌿",
+    "trigger": "terrain_effect",
+    "action": "damage",
+    "target": "self",
+    "value": 5,
+    "source": "flat",
+    "element": "Nature",
+    "damageType": "Physical",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "children": [
+      {
+        "action": "status_apply",
+        "statusId": "bleed",
+        "value": 3,
+        "source": "flat",
+        "target": "self",
+        "duration": 2
+      }
+    ],
+    "tags": [
+      "terrain",
+      "thorns",
+      "physical",
+      "bleed",
+      "nature"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Thorns: take 5 Physical damage + apply Bleed (3/turn, 2 turns)"
+  },
+  "terrain_shock": {
+    "id": "terrain_shock",
+    "name": "Terrain: Electric",
+    "icon": "⚡",
+    "trigger": "terrain_effect",
+    "action": "damage",
+    "target": "self",
+    "value": 6,
+    "source": "flat",
+    "element": "Lightning",
+    "damageType": "Magic",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "children": [
+      {
+        "action": "status_apply",
+        "statusId": "shock",
+        "value": 4,
+        "source": "flat",
+        "target": "self",
+        "duration": 1
+      }
+    ],
+    "tags": [
+      "terrain",
+      "electric",
+      "lightning",
+      "damage",
+      "shock"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Electric: take 6 Lightning damage + Shock (4/turn, skip QTE chance)"
+  },
+  "terrain_holy": {
+    "id": "terrain_holy",
+    "name": "Terrain: Holy",
+    "icon": "✨",
+    "trigger": "terrain_effect",
+    "action": "heal",
+    "target": "self",
+    "value": 5,
+    "source": "max_hp",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "children": [
+      {
+        "action": "dispel_debuffs",
+        "value": 1,
+        "source": "flat",
+        "target": "self"
+      }
+    ],
+    "tags": [
+      "terrain",
+      "holy",
+      "heal",
+      "cleanse",
+      "light"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Holy: heal 5% max HP + cleanse 1 debuff"
+  },
+  "terrain_dark": {
+    "id": "terrain_dark",
+    "name": "Terrain: Dark",
+    "icon": "🌑",
+    "trigger": "terrain_effect",
+    "action": "status_apply",
+    "target": "self",
+    "statusId": "curse",
+    "value": 5,
+    "source": "flat",
+    "conditions": [],
+    "duration": 2,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "dark",
+      "curse",
+      "dot",
+      "debuff"
+    ],
+    "overridable": [
+      "value",
+      "duration"
+    ],
+    "description": "Dark: apply Curse (5 Dark damage/turn, -50% healing, 2 turns)"
+  },
+  "terrain_wind_push": {
+    "id": "terrain_wind_push",
+    "name": "Terrain: Wind",
+    "icon": "💨",
+    "trigger": "terrain_effect",
+    "action": "knockback",
+    "target": "self",
+    "value": 1,
+    "source": "flat",
+    "conditions": [],
+    "duration": null,
+    "category": "terrain",
+    "tags": [
+      "terrain",
+      "wind",
+      "knockback",
+      "push",
+      "position"
+    ],
+    "overridable": [
+      "value"
+    ],
+    "description": "Wind: push unit 1 cell in wind direction on enter"
   }
 }
