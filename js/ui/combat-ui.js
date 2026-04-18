@@ -120,10 +120,15 @@ window.CJS.CombatUI = (() => {
   // ── START COMBAT ──────────────────────────────────────────────────
   function startCombat(encounterId) {
     // Init narrator
-    if (ND().isLoaded()) {
-      NE().init();
-      _unsubNarrator = NE().subscribe(_onNarration);
-    }
+    try {
+      if (ND().isLoaded()) {
+        NE().init();
+        _unsubNarrator = NE().subscribe(_onNarration);
+      }
+    } catch (e) { console.warn('Narrator init failed (non-fatal):', e.message); }
+
+    // Subscribe BEFORE starting so we don't miss the first events
+    _unsubLog = Log().subscribe(_onLogEntry);
 
     // Start the encounter
     CM().startEncounter(encounterId);
@@ -131,10 +136,10 @@ window.CJS.CombatUI = (() => {
 
     // Subscribe to state changes
     _unsubCM = CM().subscribe(_onStateChange);
-    _unsubLog = Log().subscribe(_onLogEntry);
 
     // Kick off the first step
-    CM().runUntilInput();
+    const phase = CM().runUntilInput();
+    console.log('Combat started, phase:', phase);
     _refresh();
   }
 
@@ -257,19 +262,19 @@ window.CJS.CombatUI = (() => {
     let html = '<div class="action-buttons">';
 
     // Move button
-    if (avail.canMove) {
+    if (avail.move) {
       html += `<button class="btn btn-action btn-move" data-action="move">
         🦶 Move</button>`;
     }
 
     // Basic Attack
-    if (avail.canAttack) {
+    if (avail.attack) {
       html += `<button class="btn btn-action btn-attack" data-action="attack">
         ⚔️ Attack</button>`;
     }
 
     // Defend
-    if (avail.canDefend) {
+    if (avail.defend) {
       html += `<button class="btn btn-action btn-defend" data-action="defend">
         🛡️ Defend</button>`;
     }
@@ -278,27 +283,25 @@ window.CJS.CombatUI = (() => {
     if (avail.skills?.length > 0) {
       html += '<div class="skill-list">';
       for (const sk of avail.skills) {
-        const skill = DS().get('skills', sk.skillId);
-        const name = skill?.name || sk.skillId;
-        const icon = skill?.icon || '✦';
-        const disabled = !sk.canUse ? 'disabled' : '';
-        const reason = sk.reason ? `title="${sk.reason}"` : '';
+        const name = sk.skill?.name || sk.id;
+        const icon = sk.skill?.icon || '✦';
+        const disabled = !sk.usable ? 'disabled' : '';
+        const reason = sk.cooldown > 0 ? `title="Cooldown: ${sk.cooldown} turns"` : '';
         html += `<button class="btn btn-action btn-skill" data-action="skill"
-          data-skill="${sk.skillId}" ${disabled} ${reason}>
+          data-skill="${sk.id}" ${disabled} ${reason}>
           ${icon} ${name} <span class="skill-cost">${sk.apCost || 0}AP ${sk.mpCost || 0}MP</span>
         </button>`;
       }
       html += '</div>';
     }
 
-    // Items
-    if (avail.canItem && avail.items?.length > 0) {
+    // Items (consumables)
+    if (avail.items?.length > 0) {
       html += '<div class="item-list">';
       for (const it of avail.items) {
-        const item = DS().get('items', it.itemId);
-        const name = item?.name || it.itemId;
+        const name = it.item?.name || it.id;
         html += `<button class="btn btn-action btn-item" data-action="item"
-          data-item="${it.itemId}">🎒 ${name}</button>`;
+          data-item="${it.id}">🎒 ${name}</button>`;
       }
       html += '</div>';
     }
@@ -358,10 +361,9 @@ window.CJS.CombatUI = (() => {
     _mode = 'move';
     const moves = GE().getValidMoves(unit.instanceId);
     const cells = [];
-    if (moves) {
-      for (const key of (moves instanceof Set ? moves : Object.keys(moves))) {
-        const [r, c] = (typeof key === 'string' ? key.split(',') : [key.r, key.c]);
-        cells.push({ r: +r, c: +c });
+    if (Array.isArray(moves)) {
+      for (const m of moves) {
+        cells.push({ r: m[0], c: m[1] });
       }
     }
     GR().setHighlights(cells, 'rgba(59,130,246,0.4)', 'move');
@@ -375,13 +377,14 @@ window.CJS.CombatUI = (() => {
 
     // Highlight valid targets
     const range = action.type === 'attack'
-      ? (unit.compiledStats?.attackRange || unit.attackRange || 1)
-      : (DS().get('skills', action.skillId)?.range || 1);
+      ? 1 + (unit.rangeBonus || 0)
+      : ((DS().get('skills', action.skillId)?.range || 1) + (unit.rangeBonus || 0));
 
-    const targets = GE().getUnitsInRange(unit.instanceId, range);
+    const targets = GE().getUnitsInRange(unit.pos[0], unit.pos[1], range, { excludeId: unit.instanceId });
     const cells = [];
-    for (const t of targets) {
-      if (t.instanceId !== unit.instanceId && t.currentHP > 0) {
+    for (const entry of targets) {
+      const t = entry.unit;
+      if (t.currentHP > 0) {
         cells.push({ r: t.pos[0], c: t.pos[1] });
       }
     }
@@ -395,11 +398,9 @@ window.CJS.CombatUI = (() => {
     _pendingAction = { type: 'skill', skillId: skill.id };
 
     // Highlight cells in range
-    const range = skill.range || 3;
-    const cells = GE().getCellsInRange(unit.pos[0], unit.pos[1], range);
-    const validCells = cells.filter(c =>
-      c.r >= 0 && c.c >= 0
-    );
+    const range = (skill.range || 3) + (unit.rangeBonus || 0);
+    const rawCells = GE().getCellsInRange(unit.pos[0], unit.pos[1], range);
+    const validCells = rawCells.map(c => ({ r: c[0], c: c[1] }));
     GR().setHighlights(validCells, 'rgba(168,85,247,0.3)', 'target');
     _setModeHint('Click a cell for AoE center, or press Esc to cancel.');
   }
@@ -407,7 +408,7 @@ window.CJS.CombatUI = (() => {
   // ── GRID CELL CLICK ───────────────────────────────────────────────
   function _onCellClick(r, c, e) {
     if (_mode === 'move') {
-      const result = CM().submitAction({ type: 'move', target: [r, c] });
+      const result = CM().submitAction({ type: 'move', targetPos: [r, c] });
       if (result.success) {
         GR().clearHighlights('move');
         _mode = 'idle';
@@ -421,7 +422,7 @@ window.CJS.CombatUI = (() => {
       if (_mode === 'target_single' && unitAt) {
         action.targetId = unitAt.instanceId || unitAt;
       } else if (_mode === 'target_aoe') {
-        action.targetCell = [r, c];
+        action.aoeCenter = [r, c];
         // Also set targetId if there's a unit there
         if (unitAt) action.targetId = unitAt.instanceId || unitAt;
       } else {
