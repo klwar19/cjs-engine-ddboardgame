@@ -46,6 +46,8 @@
     .db-table td { padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
     .db-table tr:hover td { background:rgba(255,255,255,0.03); }
     .db-table tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
+    /* Status editor */
+    .status-cat-header { padding:6px 12px; font-size:0.75rem; font-weight:700; color:var(--text-mute); text-transform:uppercase; letter-spacing:0.5px; margin-top:8px; }
   </style>
 </head>
 <body>
@@ -71,6 +73,9 @@
         <div class="nav-item active" data-panel="effects">
           <span>✦</span> <span>Effects</span>
           <span class="badge" id="count-effects">0</span>
+        </div>
+        <div class="nav-item" data-panel="statuses">
+          <span>💫</span> <span>Status Defs</span>
         </div>
         <div class="nav-item" data-panel="passives">
           <span>🛡️</span> <span>Passives</span>
@@ -110,6 +115,7 @@
       <!-- MAIN CONTENT -->
       <div class="app-content" id="main-content">
         <div class="editor-panel active" id="panel-effects"></div>
+        <div class="editor-panel" id="panel-statuses"></div>
         <div class="editor-panel" id="panel-passives"></div>
         <div class="editor-panel" id="panel-skills"></div>
         <div class="editor-panel" id="panel-items"></div>
@@ -146,6 +152,7 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <script src="js/ui/ui-helpers.js"></script>
   <script src="js/builders/effect-editor.js"></script>
+  <script src="js/builders/status-editor.js"></script>
   <script src="js/builders/passive-editor.js"></script>
   <script src="js/builders/skill-editor.js"></script>
   <script src="js/builders/item-editor.js"></script>
@@ -194,6 +201,7 @@
       // ── Editor initialization (lazy) ───────────────────────
       const editorMap = {
         effects:    CJS.EffectEditor,
+        statuses:   CJS.StatusEditor,
         passives:   CJS.PassiveEditor,
         skills:     CJS.SkillEditor,
         items:      CJS.ItemEditor,
