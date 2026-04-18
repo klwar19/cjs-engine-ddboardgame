@@ -31,6 +31,7 @@ window.CJS.GridRenderer = (() => {
   let _onCellHover = null;     // callback(r, c)
   let _pulsePhase = 0;         // 0–2π for pulsing highlights
   let _lastDamageFloats = [];  // [{ x, y, text, color, birth, dur }]
+  let _ready = false;          // true after resize() — safe to render
 
   // ── INIT ──────────────────────────────────────────────────────────
   function init(canvasEl, opts) {
@@ -69,6 +70,7 @@ window.CJS.GridRenderer = (() => {
     _canvas.style.width = (_width * _cellSize) + 'px';
     _canvas.style.height = (_height * _cellSize) + 'px';
     _ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    _ready = true;
   }
 
   function destroy() {
@@ -127,7 +129,7 @@ window.CJS.GridRenderer = (() => {
   }
 
   function _render(ts) {
-    if (!_ctx || !_canvas) return;
+    if (!_ctx || !_canvas || !_ready) return;
     const ctx = _ctx;
     const cs = _cellSize;
 
