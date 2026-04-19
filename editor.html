@@ -56,6 +56,9 @@
     <div class="app-header">
       <h1>⚡ CJS Editor</h1>
       <div class="btn-group" style="margin-left:auto">
+        <button class="btn btn-ghost btn-sm" id="btn-undo" title="Nothing to undo" disabled>↩️ Undo</button>
+        <button class="btn btn-ghost btn-sm" id="btn-redo" title="Nothing to redo" disabled>↪️ Redo</button>
+        <span style="border-left:1px solid rgba(255,255,255,0.1);margin:0 4px"></span>
         <button class="btn btn-ghost btn-sm" id="btn-import" title="Import JSON">📂 Import</button>
         <button class="btn btn-ghost btn-sm" id="btn-export" title="Export JSON">💾 Export</button>
         <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">✅ Validate</button>
@@ -142,6 +145,7 @@
   <script src="js/core/constants.js"></script>
   <script src="js/core/formulas.js"></script>
   <script src="js/core/dice.js"></script>
+  <script src="js/core/undo-manager.js"></script>
   <script src="js/core/data-store.js"></script>
   <script src="js/effects/value-calc.js"></script>
   <script src="js/effects/conditions.js"></script>
@@ -344,8 +348,10 @@
 
       // ── BOOT ───────────────────────────────────────────────
       loadData().then(() => {
-        // Seed built-in STATUS_DEFINITIONS so status-editor and combat can read them
+        // Seed built-in STATUS_DEFINITIONS (disable undo during bulk seed)
+        const UM = window.CJS.UndoManager;
         const CONST = window.CJS.CONST;
+        if (UM) UM.disable();
         if (CONST && CONST.STATUS_DEFINITIONS) {
           for (const [id, def] of Object.entries(CONST.STATUS_DEFINITIONS)) {
             if (!DS.exists('statuses', id)) {
@@ -353,9 +359,85 @@
             }
           }
         }
+        if (UM) { UM.enable(); UM.clear(); }
+
         initEditor('effects');
         updateCounts();
         document.getElementById('status-msg').textContent = 'Ready';
+
+        // ── UNDO / REDO WIRING ──────────────────────────────
+        if (UM) {
+          const btnUndo = document.getElementById('btn-undo');
+          const btnRedo = document.getElementById('btn-redo');
+
+          // Refresh the currently active editor panel after undo/redo
+          function refreshAfterUndoRedo() {
+            updateCounts();
+            // Re-init the active panel so its list and form reflect the change
+            const activeNav = document.querySelector('.nav-item.active');
+            if (activeNav) {
+              const panelName = activeNav.dataset.panel;
+              if (panelName) initEditor(panelName);
+            }
+          }
+
+          // Subscribe to undo state changes to update button states
+          UM.subscribe(function(state) {
+            btnUndo.disabled = !state.canUndo;
+            btnRedo.disabled = !state.canRedo;
+            btnUndo.title = state.undoLabel ? 'Undo: ' + state.undoLabel : 'Nothing to undo';
+            btnRedo.title = state.redoLabel ? 'Redo: ' + state.redoLabel : 'Nothing to redo';
+          });
+
+          // Button click handlers
+          btnUndo.addEventListener('click', function() {
+            const entry = UM.undo();
+            if (entry) {
+              UI.toast('↩️ Undid: ' + entry.label, 'info', 3000);
+              refreshAfterUndoRedo();
+            }
+          });
+
+          btnRedo.addEventListener('click', function() {
+            const entry = UM.redo();
+            if (entry) {
+              UI.toast('↪️ Redid: ' + entry.label, 'info', 3000);
+              refreshAfterUndoRedo();
+            }
+          });
+
+          // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Shift+Z = redo
+          document.addEventListener('keydown', function(e) {
+            // Don't intercept when typing in inputs/textareas
+            const tag = (e.target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+              e.preventDefault();
+              const entry = UM.undo();
+              if (entry) {
+                UI.toast('↩️ ' + entry.label, 'info', 2500);
+                refreshAfterUndoRedo();
+              }
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) {
+              e.preventDefault();
+              const entry = UM.redo();
+              if (entry) {
+                UI.toast('↪️ ' + entry.label, 'info', 2500);
+                refreshAfterUndoRedo();
+              }
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+              e.preventDefault();
+              const entry = UM.redo();
+              if (entry) {
+                UI.toast('↪️ ' + entry.label, 'info', 2500);
+                refreshAfterUndoRedo();
+              }
+            }
+          });
+        }
       });
 
     })();
