@@ -344,6 +344,15 @@
 
       // ── BOOT ───────────────────────────────────────────────
       loadData().then(() => {
+        // Seed built-in STATUS_DEFINITIONS so status-editor and combat can read them
+        const CONST = window.CJS.CONST;
+        if (CONST && CONST.STATUS_DEFINITIONS) {
+          for (const [id, def] of Object.entries(CONST.STATUS_DEFINITIONS)) {
+            if (!DS.exists('statuses', id)) {
+              DS.replace('statuses', id, { ...def, id });
+            }
+          }
+        }
         initEditor('effects');
         updateCounts();
         document.getElementById('status-msg').textContent = 'Ready';
