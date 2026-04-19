@@ -11,7 +11,15 @@ window.CJS = window.CJS || {};
 window.CJS.DataStore = (() => {
   'use strict';
 
-  const C = () => window.CJS.CONST;
+  const C  = () => window.CJS.CONST;
+  const UM = () => window.CJS.UndoManager;
+
+  // Push to undo stack if manager is loaded and enabled.
+  // Skips array types (quips, quizBank) — those aren't undoable entities.
+  function _undo(action, type, id, before, after) {
+    if (!UM() || Array.isArray(_data[type])) return;
+    UM().push(action, type, id, before, after);
+  }
 
   // ── INTERNAL STATE ─────────────────────────────────────────────────
   let _data = {
@@ -104,6 +112,7 @@ window.CJS.DataStore = (() => {
     obj.id = id;
     _data[type][id] = obj;
     _dirty = true;
+    _undo('create', type, id, null, obj);
     return id;
   }
 
@@ -113,25 +122,31 @@ window.CJS.DataStore = (() => {
       console.error(`DataStore.update: ${type}/${id} not found`);
       return false;
     }
+    const before = JSON.parse(JSON.stringify(_data[type][id]));
     Object.assign(_data[type][id], changes);
     _data[type][id].id = id; // never allow ID change
     _dirty = true;
+    _undo('update', type, id, before, _data[type][id]);
     return true;
   }
 
   // Replace: wholesale replace the object (keeps ID)
   function replace(type, id, obj) {
     if (!_data[type]) return false;
+    const before = _data[type][id] ? JSON.parse(JSON.stringify(_data[type][id])) : null;
     obj.id = id;
     _data[type][id] = obj;
     _dirty = true;
+    _undo('replace', type, id, before, obj);
     return true;
   }
 
   function remove(type, id) {
     if (!_data[type] || !_data[type][id]) return false;
+    const before = JSON.parse(JSON.stringify(_data[type][id]));
     delete _data[type][id];
     _dirty = true;
+    _undo('remove', type, id, before, null);
     return true;
   }
 
@@ -322,6 +337,9 @@ window.CJS.DataStore = (() => {
   }
 
   function loadData(obj) {
+    // Disable undo during bulk load
+    if (UM()) UM().disable();
+
     // Merge or replace each collection
     const collections = [
       'effects', 'skills', 'items', 'passives',
@@ -344,6 +362,9 @@ window.CJS.DataStore = (() => {
     // Validate
     const validation = validate();
     _dirty = false;
+
+    // Re-enable undo and clear stack (fresh start after load)
+    if (UM()) { UM().enable(); UM().clear(); }
 
     return { success: true, validation };
   }
@@ -383,6 +404,7 @@ window.CJS.DataStore = (() => {
     };
     _counters = {};
     _dirty = false;
+    if (UM()) UM().clear();
   }
 
   function isDirty() { return _dirty; }
