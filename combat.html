@@ -130,6 +130,25 @@
       } catch (err) {
         console.warn('quips.json load error:', err.message);
       }
+
+      // Seed built-in STATUS_DEFINITIONS into DataStore so status-manager
+      // can read behavior flags (preventsAction, tickDamageType, etc.).
+      // Only seeds entries that don't already exist (custom overrides win).
+      try {
+        const CONST = window.CJS.CONST;
+        if (CONST && CONST.STATUS_DEFINITIONS) {
+          let seeded = 0;
+          for (const [id, def] of Object.entries(CONST.STATUS_DEFINITIONS)) {
+            if (!DS.exists('statuses', id)) {
+              DS.replace('statuses', id, { ...def, id });
+              seeded++;
+            }
+          }
+          console.log('Built-in statuses seeded:', seeded);
+        }
+      } catch (err) {
+        console.warn('Status seeding error:', err.message);
+      }
     }
 
     // ── POPULATE ENCOUNTER SELECT ─────────────────────────────────
