@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CJS Editor — Cosmic Jester System</title>
+  <title>CJS Editor - Cosmic Jester System</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Editor-specific overrides */
     .app-sidebar .nav-section {
       padding: 8px 16px 4px;
       font-size: 0.7rem;
@@ -30,92 +29,100 @@
     }
     .status-bar .counts { display: flex; gap: 12px; }
     .status-bar .dirty { color: var(--gold); }
-    /* Hint boxes for effect suitability */
     .hint-box { background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2); border-radius:6px; padding:8px 12px; font-size:0.8rem; color:var(--text); margin-bottom:10px; line-height:1.5; }
     .hint-box.hint-info { background:rgba(59,130,246,0.08); border-color:rgba(59,130,246,0.2); }
-    /* Chip selectors */
     .chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; font-size:0.78rem; color:var(--text); margin:2px; white-space:nowrap; }
     .chip-x { background:none; border:none; color:var(--red); cursor:pointer; font-size:0.9rem; padding:0 2px; line-height:1; }
     .chip-x:hover { color:#ff6b6b; }
     .chip-and { font-size:0.7rem; color:var(--text-mute); margin:0 4px; font-weight:600; }
     .chip-row { display:inline; }
     .cond-add { font-size:0.8rem; margin-top:4px; }
-    /* Data browser table */
     .db-table { width:100%; border-collapse:collapse; font-size:0.78rem; }
     .db-table th { position:sticky; top:0; background:var(--surface); padding:6px 8px; text-align:left; border-bottom:2px solid var(--border); color:var(--accent); font-weight:600; white-space:nowrap; }
     .db-table td { padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
     .db-table tr:hover td { background:rgba(255,255,255,0.03); }
     .db-table tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
-    /* Status editor */
     .status-cat-header { padding:6px 12px; font-size:0.75rem; font-weight:700; color:var(--text-mute); text-transform:uppercase; letter-spacing:0.5px; margin-top:8px; }
+    .sync-meta { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+    #status-sync { color:var(--text-mute); }
+    #status-sync.sync-success { color:var(--green); }
+    #status-sync.sync-error { color:var(--red); }
+    #status-sync.sync-info { color:var(--text-mute); }
+    .sync-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .sync-modal-grid .full { grid-column:1 / -1; }
+    .sync-note { margin-top:12px; font-size:0.8rem; color:var(--text-dim); line-height:1.5; }
+    .sync-status-box { margin-top:12px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:rgba(255,255,255,0.03); font-size:0.82rem; min-height:18px; }
+    @media (max-width: 860px) {
+      .status-bar { flex-direction:column; align-items:flex-start; gap:6px; }
+      .sync-meta { justify-content:flex-start; }
+      .sync-modal-grid { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <!-- ── HEADER ──────────────────────────────────────────── -->
     <div class="app-header">
-      <h1>⚡ CJS Editor</h1>
+      <h1>CJS Editor</h1>
       <div class="btn-group" style="margin-left:auto">
-        <button class="btn btn-ghost btn-sm" id="btn-undo" title="Nothing to undo" disabled>↩️ Undo</button>
-        <button class="btn btn-ghost btn-sm" id="btn-redo" title="Nothing to redo" disabled>↪️ Redo</button>
+        <button class="btn btn-ghost btn-sm" id="btn-undo" title="Nothing to undo" disabled>Undo</button>
+        <button class="btn btn-ghost btn-sm" id="btn-redo" title="Nothing to redo" disabled>Redo</button>
         <span style="border-left:1px solid rgba(255,255,255,0.1);margin:0 4px"></span>
-        <button class="btn btn-ghost btn-sm" id="btn-import" title="Import JSON">📂 Import</button>
-        <button class="btn btn-ghost btn-sm" id="btn-export" title="Export JSON">💾 Export</button>
-        <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">✅ Validate</button>
-        <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">🧪 Tests</a>
-        <a href="combat.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#fca5a5">⚔️ Combat</a>
+        <button class="btn btn-primary btn-sm" id="btn-save" title="Save to GitHub if configured, otherwise download JSON">Save</button>
+        <button class="btn btn-ghost btn-sm" id="btn-github" title="Configure GitHub sync">GitHub</button>
+        <button class="btn btn-ghost btn-sm" id="btn-import" title="Import JSON">Import</button>
+        <button class="btn btn-ghost btn-sm" id="btn-export" title="Download JSON">Download</button>
+        <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">Validate</button>
+        <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">Tests</a>
+        <a href="combat.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#fca5a5">Combat</a>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
 
-    <!-- ── BODY ────────────────────────────────────────────── -->
     <div class="app-body">
-      <!-- SIDEBAR -->
       <div class="app-sidebar" id="sidebar">
         <div class="nav-section">Content</div>
         <div class="nav-item active" data-panel="effects">
-          <span>✦</span> <span>Effects</span>
+          <span>Effects</span>
           <span class="badge" id="count-effects">0</span>
         </div>
         <div class="nav-item" data-panel="statuses">
-          <span>💫</span> <span>Status Defs</span>
+          <span>Status Defs</span>
         </div>
         <div class="nav-item" data-panel="passives">
-          <span>🛡️</span> <span>Passives</span>
+          <span>Passives</span>
           <span class="badge" id="count-passives">0</span>
         </div>
         <div class="nav-item" data-panel="skills">
-          <span>⚔️</span> <span>Skills</span>
+          <span>Skills</span>
           <span class="badge" id="count-skills">0</span>
         </div>
         <div class="nav-item" data-panel="items">
-          <span>📦</span> <span>Items</span>
+          <span>Items</span>
           <span class="badge" id="count-items">0</span>
         </div>
 
         <div class="nav-section">Units</div>
         <div class="nav-item" data-panel="characters">
-          <span>🧑</span> <span>Characters</span>
+          <span>Characters</span>
           <span class="badge" id="count-characters">0</span>
         </div>
         <div class="nav-item" data-panel="monsters">
-          <span>👾</span> <span>Monsters</span>
+          <span>Monsters</span>
           <span class="badge" id="count-monsters">0</span>
         </div>
 
         <div class="nav-section">World</div>
         <div class="nav-item" data-panel="encounters">
-          <span>🗺️</span> <span>Encounters</span>
+          <span>Encounters</span>
           <span class="badge" id="count-encounters">0</span>
         </div>
 
         <div class="nav-section">Tools</div>
         <div class="nav-item" data-panel="browser">
-          <span>📊</span> <span>Data Browser</span>
+          <span>Data Browser</span>
         </div>
       </div>
 
-      <!-- MAIN CONTENT -->
       <div class="app-content" id="main-content">
         <div class="editor-panel active" id="panel-effects"></div>
         <div class="editor-panel" id="panel-statuses"></div>
@@ -129,32 +136,27 @@
       </div>
     </div>
 
-    <!-- ── STATUS BAR ──────────────────────────────────────── -->
     <div class="status-bar">
       <div class="counts" id="status-counts"></div>
-      <div>
+      <div class="sync-meta">
         <span id="status-dirty"></span>
         <span id="status-msg">Ready</span>
+        <span id="status-sync"></span>
       </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- SCRIPTS — Phase 1 (foundation) in dependency order       -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
   <script src="js/core/constants.js"></script>
   <script src="js/core/formulas.js"></script>
   <script src="js/core/dice.js"></script>
   <script src="js/core/undo-manager.js"></script>
   <script src="js/core/data-store.js"></script>
+  <script src="js/core/save-manager.js"></script>
   <script src="js/core/skill-resolver.js"></script>
   <script src="js/effects/value-calc.js"></script>
   <script src="js/effects/conditions.js"></script>
   <script src="js/effects/effect-registry.js"></script>
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- SCRIPTS — Phase 2 (editors) in dependency order           -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
   <script src="js/ui/ui-helpers.js"></script>
   <script src="js/builders/effect-editor.js"></script>
   <script src="js/builders/status-editor.js"></script>
@@ -166,55 +168,135 @@
   <script src="js/builders/encounter-editor.js"></script>
   <script src="js/ui/data-browser.js"></script>
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- APP INIT                                                  -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
   <script>
     (function() {
       'use strict';
 
       const DS = CJS.DataStore;
       const UI = CJS.UI;
+      const Save = CJS.SaveManager;
 
-      // ── Sidebar navigation ─────────────────────────────────
+      const DEFAULT_GITHUB_CONFIG = {
+        owner: 'klwar19',
+        repo: 'cjs-engine-ddboardgame',
+        branch: 'main',
+        path: 'data/gamedata.json',
+        commitMessage: 'Update gamedata from CJS Editor',
+        autoSave: false,
+        rememberToken: false
+      };
+
+      const editorMap = {
+        effects: CJS.EffectEditor,
+        statuses: CJS.StatusEditor,
+        passives: CJS.PassiveEditor,
+        skills: CJS.SkillEditor,
+        items: CJS.ItemEditor,
+        characters: CJS.CharEditor,
+        monsters: CJS.MonsterEditor,
+        encounters: CJS.EncounterEditor,
+        browser: CJS.DataBrowser
+      };
+
       const sidebar = document.getElementById('sidebar');
-      const navItems = sidebar.querySelectorAll('.nav-item');
-      const panels = document.querySelectorAll('.editor-panel');
+      const navItems = Array.from(sidebar.querySelectorAll('.nav-item'));
+      const panels = Array.from(document.querySelectorAll('.editor-panel'));
+      const statusCounts = document.getElementById('status-counts');
+      const statusDirty = document.getElementById('status-dirty');
+      const statusMsg = document.getElementById('status-msg');
+      const statusSync = document.getElementById('status-sync');
+      const btnSave = document.getElementById('btn-save');
+      const btnGitHub = document.getElementById('btn-github');
+      const btnImport = document.getElementById('btn-import');
+      const btnExport = document.getElementById('btn-export');
+      const btnValidate = document.getElementById('btn-validate');
+      const importFile = document.getElementById('import-file');
 
       let activePanel = 'effects';
       let editorsInitialized = {};
 
-      navItems.forEach(nav => {
-        nav.addEventListener('click', () => {
-          const panel = nav.dataset.panel;
-          if (panel === activePanel) return;
-
-          // Update nav
-          navItems.forEach(n => n.classList.remove('active'));
-          nav.classList.add('active');
-
-          // Update panels
-          panels.forEach(p => p.classList.remove('active'));
-          document.getElementById(`panel-${panel}`).classList.add('active');
-          activePanel = panel;
-
-          // Lazy-init editors
-          initEditor(panel);
-        });
-      });
-
-      // ── Editor initialization (lazy) ───────────────────────
-      const editorMap = {
-        effects:    CJS.EffectEditor,
-        statuses:   CJS.StatusEditor,
-        passives:   CJS.PassiveEditor,
-        skills:     CJS.SkillEditor,
-        items:      CJS.ItemEditor,
-        characters: CJS.CharEditor,
-        monsters:   CJS.MonsterEditor,
-        encounters: CJS.EncounterEditor,
-        browser:    CJS.DataBrowser
+      const syncState = {
+        pendingSnapshot: '',
+        pendingSince: 0,
+        saveInFlight: null,
+        lastGitHubSavedJson: '',
+        lastGitHubErrorAt: 0
       };
+
+      function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, (ch) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[ch]));
+      }
+
+      function getGitHubConfig() {
+        const stored = Save.getGitHubConfig();
+        return {
+          owner: stored.owner || DEFAULT_GITHUB_CONFIG.owner,
+          repo: stored.repo || DEFAULT_GITHUB_CONFIG.repo,
+          branch: stored.branch || DEFAULT_GITHUB_CONFIG.branch,
+          path: stored.path || DEFAULT_GITHUB_CONFIG.path,
+          commitMessage: stored.commitMessage || DEFAULT_GITHUB_CONFIG.commitMessage,
+          autoSave: !!stored.autoSave,
+          rememberToken: !!stored.rememberToken
+        };
+      }
+
+      function formatClock(value) {
+        if (!value) return '';
+        try {
+          return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function formatDateTime(value) {
+        if (!value) return '';
+        try {
+          return new Date(value).toLocaleString();
+        } catch (_) {
+          return String(value);
+        }
+      }
+
+      function setStatusMessage(message) {
+        statusMsg.textContent = message || 'Ready';
+      }
+
+      function setSyncMessage(message, tone = 'info') {
+        statusSync.textContent = message || '';
+        statusSync.className = tone ? `sync-${tone}` : '';
+      }
+
+      function refreshSyncBadge() {
+        const cfg = getGitHubConfig();
+        if (syncState.saveInFlight) {
+          setSyncMessage('Syncing GitHub...', 'info');
+          return;
+        }
+        if (Save.isGitHubReady(cfg)) {
+          setSyncMessage(
+            cfg.autoSave ? `GitHub autosave on (${cfg.owner}/${cfg.repo})` : `GitHub ready (${cfg.owner}/${cfg.repo})`,
+            cfg.autoSave ? 'success' : 'info'
+          );
+          return;
+        }
+        const draft = Save.getDraft();
+        if (draft && draft.savedAt) {
+          setSyncMessage(`Local draft ${formatClock(draft.savedAt)}`, 'info');
+          return;
+        }
+        setSyncMessage('Local only', 'info');
+      }
+
+      function resetEditors() {
+        editorsInitialized = {};
+      }
 
       function initEditor(name) {
         if (editorsInitialized[name]) {
@@ -222,136 +304,92 @@
           return;
         }
         const panel = document.getElementById(`panel-${name}`);
-        if (editorMap[name]) {
+        if (panel && editorMap[name]) {
           editorMap[name].init(panel);
           editorsInitialized[name] = true;
         }
       }
 
-      // ── Load data on boot ─────────────────────────────────
-      // Priority: data/gamedata.json (full save) → data/master-effects.json (effects only)
-      function loadData() {
-        return fetch('data/gamedata.json')
-          .then(r => {
-            if (!r.ok) throw new Error('Not found');
-            return r.json();
-          })
-          .then(data => {
-            const result = DS.loadData(data);
-            const counts = DS.getCounts();
-            const total = Object.values(counts).reduce((a, b) => a + b, 0);
-            console.log(`Loaded gamedata.json (${total} entries)`);
-            UI.toast(`Loaded save: ${counts.effects} effects, ${counts.skills} skills, ${counts.characters} chars, ${counts.monsters} mons`, 'success', 4000);
-            updateCounts();
-          })
-          .catch(() => {
-            // Fallback: load just master effects
-            console.log('No gamedata.json found, falling back to master-effects.json');
-            return fetch('data/master-effects.json')
-              .then(r => r.json())
-              .then(data => {
-                const entries = Object.entries(data.effects || {})
-                  .filter(([k]) => !k.startsWith('__COMMENT'));
-                let count = 0;
-                for (const [id, effect] of entries) {
-                  if (!DS.exists('effects', id)) {
-                    DS.create('effects', { ...effect, id });
-                    count++;
-                  }
-                }
-                console.log(`Loaded ${count} master effects`);
-                updateCounts();
-              })
-              .catch(err => {
-                console.warn('Could not load any data:', err.message);
-                UI.toast('No data files found. Create content or import a save.', 'info', 5000);
-              });
-          });
+      function refreshActiveEditor() {
+        const activeNav = document.querySelector('.nav-item.active');
+        const panelName = activeNav?.dataset?.panel || activePanel;
+        if (panelName) initEditor(panelName);
       }
 
-      // ── Import / Export ────────────────────────────────────
-      document.getElementById('btn-export').addEventListener('click', () => {
-        DS.downloadJSON('gamedata.json');
-        document.getElementById('status-msg').textContent = 'Exported!';
-        UI.toast('Data exported', 'success');
-      });
-
-      document.getElementById('btn-import').addEventListener('click', () => {
-        document.getElementById('import-file').click();
-      });
-
-      document.getElementById('import-file').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const result = DS.importJSON(ev.target.result);
-          if (result.success) {
-            UI.toast(`Imported! ${result.validation.errors.length} errors, ${result.validation.warnings.length} warnings`, result.validation.errors.length > 0 ? 'error' : 'success');
-            updateCounts();
-            // Refresh active editor
-            Object.keys(editorsInitialized).forEach(k => { editorsInitialized[k] = false; });
-            initEditor(activePanel);
-          } else {
-            UI.toast(`Import failed: ${result.error}`, 'error');
-          }
-        };
-        reader.readAsText(file);
-        e.target.value = ''; // reset
-      });
-
-      // ── Validate ───────────────────────────────────────────
-      document.getElementById('btn-validate').addEventListener('click', () => {
-        const result = DS.validate();
-        if (result.valid && result.warnings.length === 0) {
-          UI.toast('All references valid! ✅', 'success');
-        } else {
-          let msg = '';
-          if (result.errors.length > 0) msg += `${result.errors.length} errors:\n${result.errors.join('\n')}\n\n`;
-          if (result.warnings.length > 0) msg += `${result.warnings.length} warnings:\n${result.warnings.join('\n')}`;
-          UI.openModal({
-            title: `Validation: ${result.errors.length} errors, ${result.warnings.length} warnings`,
-            content: `<pre style="white-space:pre-wrap;font-size:0.82rem;max-height:400px;overflow:auto">${msg}</pre>`,
-            width: '650px'
-          });
-        }
-      });
-
-      // ── Update sidebar counts ──────────────────────────────
       function updateCounts() {
         const counts = DS.getCounts();
-        for (const [key, val] of Object.entries(counts)) {
-          const el = document.getElementById(`count-${key}`);
-          if (el) el.textContent = val;
+
+        for (const [key, value] of Object.entries(counts)) {
+          const badge = document.getElementById(`count-${key}`);
+          if (badge) badge.textContent = value;
         }
-        // Status bar
-        const statusCounts = document.getElementById('status-counts');
+
         statusCounts.innerHTML = Object.entries(counts)
-          .filter(([k]) => ['effects','skills','items','passives','characters','monsters','encounters'].includes(k))
-          .map(([k,v]) => `<span>${k}: <b>${v}</b></span>`)
+          .filter(([key]) => ['effects', 'skills', 'items', 'passives', 'characters', 'monsters', 'encounters'].includes(key))
+          .map(([key, value]) => `<span>${key}: <b>${value}</b></span>`)
           .join('');
 
-        const dirtyEl = document.getElementById('status-dirty');
-        dirtyEl.textContent = DS.isDirty() ? '● Unsaved changes' : '';
-        dirtyEl.className = DS.isDirty() ? 'dirty' : '';
+        statusDirty.textContent = DS.isDirty() ? 'Unsaved changes' : '';
+        statusDirty.className = DS.isDirty() ? 'dirty' : '';
       }
 
-      // ── Dirty check on page leave ──────────────────────────
-      window.addEventListener('beforeunload', (e) => {
-        if (DS.isDirty()) {
-          e.preventDefault();
-          e.returnValue = 'You have unsaved changes. Export before leaving?';
+      function rememberDirtySnapshot(json, source = 'autosave') {
+        if (!json || json === syncState.pendingSnapshot) return;
+        Save.saveDraft(json, { source });
+        syncState.pendingSnapshot = json;
+        syncState.pendingSince = Date.now();
+        if (source === 'autosave') setStatusMessage('Draft saved locally');
+        refreshSyncBadge();
+      }
+
+      function clearPendingDraftState(json) {
+        syncState.pendingSnapshot = '';
+        syncState.pendingSince = 0;
+        if (json !== undefined) {
+          syncState.lastGitHubSavedJson = json;
         }
-      });
+        Save.clearDraft();
+        refreshSyncBadge();
+      }
 
-      // ── Periodic count update ──────────────────────────────
-      setInterval(updateCounts, 2000);
+      async function loadData() {
+        try {
+          const response = await fetch('data/gamedata.json');
+          if (!response.ok) throw new Error('Not found');
+          const data = await response.json();
+          const result = DS.loadData(data);
+          const counts = DS.getCounts();
+          const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+          console.log(`Loaded gamedata.json (${total} entries)`);
+          UI.toast(`Loaded save: ${counts.effects} effects, ${counts.skills} skills, ${counts.characters} chars, ${counts.monsters} mons`, 'success', 4000);
+          return result;
+        } catch (_) {
+          console.log('No gamedata.json found, falling back to master-effects.json');
+          try {
+            const response = await fetch('data/master-effects.json');
+            const data = await response.json();
+            const entries = Object.entries(data.effects || {}).filter(([key]) => !key.startsWith('__COMMENT'));
+            let count = 0;
+            for (const [id, effect] of entries) {
+              if (!DS.exists('effects', id)) {
+                DS.create('effects', { ...effect, id });
+                count++;
+              }
+            }
+            DS.markClean();
+            console.log(`Loaded ${count} master effects`);
+          } catch (error) {
+            console.warn('Could not load any data:', error.message);
+            UI.toast('No data files found. Create content or import a save.', 'info', 5000);
+          }
+          return null;
+        }
+      }
 
-      // ── BOOT ───────────────────────────────────────────────
-      loadData().then(() => {
-        // Seed built-in STATUS_DEFINITIONS (disable undo during bulk seed)
+      function seedBuiltInStatuses() {
         const UM = window.CJS.UndoManager;
         const CONST = window.CJS.CONST;
+
         if (UM) UM.disable();
         if (CONST && CONST.STATUS_DEFINITIONS) {
           for (const [id, def] of Object.entries(CONST.STATUS_DEFINITIONS)) {
@@ -360,87 +398,466 @@
             }
           }
         }
-        if (UM) { UM.enable(); UM.clear(); }
-
-        initEditor('effects');
-        updateCounts();
-        document.getElementById('status-msg').textContent = 'Ready';
-
-        // ── UNDO / REDO WIRING ──────────────────────────────
         if (UM) {
-          const btnUndo = document.getElementById('btn-undo');
-          const btnRedo = document.getElementById('btn-redo');
+          UM.enable();
+          UM.clear();
+        }
+        DS.markClean();
+      }
 
-          // Refresh the currently active editor panel after undo/redo
-          function refreshAfterUndoRedo() {
+      async function downloadCurrentData() {
+        const json = DS.exportJSON();
+        DS.downloadJSON('gamedata.json');
+        clearPendingDraftState(json);
+        setStatusMessage('Downloaded gamedata.json');
+        UI.toast('Downloaded gamedata.json', 'success');
+        updateCounts();
+      }
+
+      async function saveCurrentData({ auto = false } = {}) {
+        const cfg = getGitHubConfig();
+        const json = DS.exportJSON();
+
+        if (!Save.isGitHubReady(cfg)) {
+          if (auto) return null;
+          if (cfg.owner || cfg.repo || Save.hasGitHubToken()) {
+            UI.toast('GitHub is not fully configured yet. Downloaded JSON instead.', 'info', 4500);
+          }
+          return downloadCurrentData();
+        }
+
+        if (syncState.saveInFlight) {
+          if (!auto) UI.toast('A save is already in progress', 'info');
+          return syncState.saveInFlight;
+        }
+
+        rememberDirtySnapshot(json, auto ? 'autosave' : 'manual');
+        setStatusMessage(auto ? 'Autosaving to GitHub...' : 'Saving to GitHub...');
+
+        const messageBase = cfg.commitMessage || DEFAULT_GITHUB_CONFIG.commitMessage;
+        const message = auto ? `${messageBase} (auto-save)` : messageBase;
+
+        syncState.saveInFlight = Save.saveJSONToGitHub(json, { config: cfg, message })
+          .then(() => {
+            DS.markClean();
+            clearPendingDraftState(json);
+            setStatusMessage(auto ? 'Autosaved to GitHub' : 'Saved to GitHub');
+            UI.toast(auto ? 'Autosaved to GitHub' : 'Saved to GitHub', 'success');
             updateCounts();
-            // Re-init the active panel so its list and form reflect the change
-            const activeNav = document.querySelector('.nav-item.active');
-            if (activeNav) {
-              const panelName = activeNav.dataset.panel;
-              if (panelName) initEditor(panelName);
+          })
+          .catch((error) => {
+            syncState.lastGitHubErrorAt = Date.now();
+            setStatusMessage('GitHub save failed');
+            refreshSyncBadge();
+            UI.toast(error.message || 'GitHub save failed', 'error', 5000);
+            throw error;
+          })
+          .finally(() => {
+            syncState.saveInFlight = null;
+            refreshSyncBadge();
+          });
+
+        return syncState.saveInFlight;
+      }
+
+      async function maybeAutoSaveToGitHub(json) {
+        const cfg = getGitHubConfig();
+        if (!cfg.autoSave || !Save.isGitHubReady(cfg) || syncState.saveInFlight) return;
+        if (!DS.isDirty() || !json) return;
+        if (json !== syncState.pendingSnapshot) return;
+        if (!syncState.pendingSince || Date.now() - syncState.pendingSince < 5000) return;
+        if (Date.now() - syncState.lastGitHubErrorAt < 15000) return;
+
+        try {
+          await saveCurrentData({ auto: true });
+        } catch (_) {
+          // Toast already shown.
+        }
+      }
+
+      function openGitHubModal() {
+        const cfg = getGitHubConfig();
+        const hasToken = Save.hasGitHubToken();
+
+        const body = document.createElement('div');
+        body.innerHTML = `
+          <div class="sync-modal-grid">
+            <div>
+              <label class="form-label" for="gh-owner">Owner</label>
+              <input type="text" id="gh-owner" value="${escapeHtml(cfg.owner)}" placeholder="klwar19">
+            </div>
+            <div>
+              <label class="form-label" for="gh-repo">Repo</label>
+              <input type="text" id="gh-repo" value="${escapeHtml(cfg.repo)}" placeholder="cjs-engine-ddboardgame">
+            </div>
+            <div>
+              <label class="form-label" for="gh-branch">Branch</label>
+              <input type="text" id="gh-branch" value="${escapeHtml(cfg.branch)}" placeholder="main">
+            </div>
+            <div>
+              <label class="form-label" for="gh-path">File Path</label>
+              <input type="text" id="gh-path" value="${escapeHtml(cfg.path)}" placeholder="data/gamedata.json">
+            </div>
+            <div class="full">
+              <label class="form-label" for="gh-message">Commit Message</label>
+              <input type="text" id="gh-message" value="${escapeHtml(cfg.commitMessage)}" placeholder="Update gamedata from CJS Editor">
+            </div>
+            <div class="full">
+              <label class="form-label" for="gh-token">GitHub Token</label>
+              <input type="password" id="gh-token" placeholder="${hasToken ? 'Stored token will be kept unless you replace it' : 'Paste a fine-grained token'}">
+            </div>
+            <label class="form-check full">
+              <input type="checkbox" id="gh-autosave" ${cfg.autoSave ? 'checked' : ''}>
+              <span>Auto-save to GitHub after a few idle seconds</span>
+            </label>
+            <label class="form-check full">
+              <input type="checkbox" id="gh-remember" ${cfg.rememberToken ? 'checked' : ''}>
+              <span>Remember token on this browser</span>
+            </label>
+          </div>
+          <div class="sync-note">
+            Use a GitHub fine-grained personal access token with Contents read and write permission for this repo.
+            The token stays in browser storage only and is never written into gamedata.json.
+          </div>
+          <div class="sync-status-box" id="gh-sync-status">${hasToken ? 'A token is already stored in this browser.' : 'Enter your GitHub settings, then test or save them.'}</div>
+        `;
+
+        const footer = document.createElement('div');
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn btn-ghost';
+        closeBtn.textContent = 'Close';
+
+        const disconnectBtn = document.createElement('button');
+        disconnectBtn.className = 'btn btn-danger';
+        disconnectBtn.textContent = 'Disconnect';
+
+        const testBtn = document.createElement('button');
+        testBtn.className = 'btn btn-ghost';
+        testBtn.textContent = 'Test';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-primary';
+        saveBtn.textContent = 'Save Settings';
+
+        footer.appendChild(closeBtn);
+        footer.appendChild(disconnectBtn);
+        footer.appendChild(testBtn);
+        footer.appendChild(saveBtn);
+
+        const overlay = UI.openModal({
+          title: 'GitHub Sync',
+          content: body,
+          footer,
+          width: '720px'
+        });
+
+        const ownerInput = body.querySelector('#gh-owner');
+        const repoInput = body.querySelector('#gh-repo');
+        const branchInput = body.querySelector('#gh-branch');
+        const pathInput = body.querySelector('#gh-path');
+        const messageInput = body.querySelector('#gh-message');
+        const tokenInput = body.querySelector('#gh-token');
+        const autoSaveInput = body.querySelector('#gh-autosave');
+        const rememberInput = body.querySelector('#gh-remember');
+        const syncStatusBox = body.querySelector('#gh-sync-status');
+
+        function collectConfig() {
+          const next = {
+            owner: ownerInput.value.trim(),
+            repo: repoInput.value.trim(),
+            branch: branchInput.value.trim() || 'main',
+            path: pathInput.value.trim() || 'data/gamedata.json',
+            commitMessage: messageInput.value.trim() || DEFAULT_GITHUB_CONFIG.commitMessage,
+            autoSave: autoSaveInput.checked,
+            rememberToken: rememberInput.checked
+          };
+          const newToken = tokenInput.value.trim();
+          if (newToken) {
+            next.token = newToken;
+          } else if (!Save.hasGitHubToken()) {
+            next.token = '';
+          }
+          return next;
+        }
+
+        closeBtn.onclick = () => UI.closeModal(overlay);
+
+        disconnectBtn.onclick = () => {
+          Save.clearGitHubConfig();
+          refreshSyncBadge();
+          setStatusMessage('GitHub sync disconnected');
+          UI.closeModal(overlay);
+          UI.toast('GitHub sync removed from this browser', 'info');
+        };
+
+        testBtn.onclick = async () => {
+          syncStatusBox.textContent = 'Testing GitHub connection...';
+          try {
+            const next = collectConfig();
+            const result = await Save.testGitHubConnection({
+              config: next,
+              token: next.token !== undefined ? next.token : Save.getGitHubToken()
+            });
+            syncStatusBox.textContent = result.fileExists
+              ? 'Connection OK. Remote gamedata.json found.'
+              : 'Connection OK. The file path is missing now, but the first save can create it.';
+          } catch (error) {
+            syncStatusBox.textContent = error.message || 'GitHub test failed';
+          }
+        };
+
+        saveBtn.onclick = () => {
+          const next = collectConfig();
+          Save.saveGitHubConfig(next);
+          refreshSyncBadge();
+          setStatusMessage('GitHub sync settings saved');
+          UI.closeModal(overlay);
+          UI.toast('GitHub sync settings saved', 'success');
+        };
+      }
+
+      function maybeOfferDraftRestore() {
+        const draft = Save.getDraft();
+        if (!draft || !draft.json) return Promise.resolve();
+
+        const currentJson = DS.exportJSON();
+        if (draft.json === currentJson) {
+          Save.clearDraft();
+          refreshSyncBadge();
+          return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+          const body = document.createElement('div');
+          body.innerHTML = `
+            <p style="margin-bottom:12px">A local draft backup from <b>${escapeHtml(formatDateTime(draft.savedAt))}</b> is available in this browser.</p>
+            <p style="margin:0;color:var(--text-dim)">Restore it to continue where you left off, or discard it if you no longer need it.</p>
+          `;
+
+          const footer = document.createElement('div');
+          const discardBtn = document.createElement('button');
+          discardBtn.className = 'btn btn-ghost';
+          discardBtn.textContent = 'Discard Draft';
+
+          const restoreBtn = document.createElement('button');
+          restoreBtn.className = 'btn btn-primary';
+          restoreBtn.textContent = 'Restore Draft';
+
+          footer.appendChild(discardBtn);
+          footer.appendChild(restoreBtn);
+
+          const overlay = UI.openModal({
+            title: 'Restore Local Draft?',
+            content: body,
+            footer,
+            width: '500px'
+          });
+
+          discardBtn.onclick = () => {
+            Save.clearDraft();
+            refreshSyncBadge();
+            setStatusMessage('Draft discarded');
+            UI.closeModal(overlay);
+            resolve();
+          };
+
+          restoreBtn.onclick = () => {
+            const result = DS.importJSON(draft.json);
+            if (result.success) {
+              DS.markDirty();
+              rememberDirtySnapshot(draft.json, 'restore');
+              resetEditors();
+              initEditor(activePanel);
+              updateCounts();
+              setStatusMessage('Restored local draft');
+              UI.toast('Restored local draft', 'success');
+            } else {
+              UI.toast(`Draft restore failed: ${result.error}`, 'error');
+            }
+            UI.closeModal(overlay);
+            resolve();
+          };
+        });
+      }
+
+      function bindUndoRedo() {
+        const UM = window.CJS.UndoManager;
+        if (!UM) return;
+
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
+
+        function refreshAfterUndoRedo() {
+          updateCounts();
+          refreshActiveEditor();
+        }
+
+        UM.subscribe((state) => {
+          btnUndo.disabled = !state.canUndo;
+          btnRedo.disabled = !state.canRedo;
+          btnUndo.title = state.undoLabel ? `Undo: ${state.undoLabel}` : 'Nothing to undo';
+          btnRedo.title = state.redoLabel ? `Redo: ${state.redoLabel}` : 'Nothing to redo';
+        });
+
+        btnUndo.addEventListener('click', () => {
+          const entry = UM.undo();
+          if (entry) {
+            UI.toast(`Undid: ${entry.label}`, 'info', 3000);
+            refreshAfterUndoRedo();
+          }
+        });
+
+        btnRedo.addEventListener('click', () => {
+          const entry = UM.redo();
+          if (entry) {
+            UI.toast(`Redid: ${entry.label}`, 'info', 3000);
+            refreshAfterUndoRedo();
+          }
+        });
+
+        document.addEventListener('keydown', (event) => {
+          const tag = (event.target.tagName || '').toLowerCase();
+          if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+          if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+            event.preventDefault();
+            const entry = UM.undo();
+            if (entry) {
+              UI.toast(`Undid: ${entry.label}`, 'info', 2500);
+              refreshAfterUndoRedo();
             }
           }
 
-          // Subscribe to undo state changes to update button states
-          UM.subscribe(function(state) {
-            btnUndo.disabled = !state.canUndo;
-            btnRedo.disabled = !state.canRedo;
-            btnUndo.title = state.undoLabel ? 'Undo: ' + state.undoLabel : 'Nothing to undo';
-            btnRedo.title = state.redoLabel ? 'Redo: ' + state.redoLabel : 'Nothing to redo';
-          });
-
-          // Button click handlers
-          btnUndo.addEventListener('click', function() {
-            const entry = UM.undo();
-            if (entry) {
-              UI.toast('↩️ Undid: ' + entry.label, 'info', 3000);
-              refreshAfterUndoRedo();
-            }
-          });
-
-          btnRedo.addEventListener('click', function() {
+          if ((event.ctrlKey || event.metaKey) && (event.key === 'Z' || (event.key === 'z' && event.shiftKey))) {
+            event.preventDefault();
             const entry = UM.redo();
             if (entry) {
-              UI.toast('↪️ Redid: ' + entry.label, 'info', 3000);
+              UI.toast(`Redid: ${entry.label}`, 'info', 2500);
               refreshAfterUndoRedo();
             }
-          });
+          }
 
-          // Keyboard shortcuts: Ctrl+Z = undo, Ctrl+Shift+Z = redo
-          document.addEventListener('keydown', function(e) {
-            // Don't intercept when typing in inputs/textareas
-            const tag = (e.target.tagName || '').toLowerCase();
-            if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+          if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+            event.preventDefault();
+            const entry = UM.redo();
+            if (entry) {
+              UI.toast(`Redid: ${entry.label}`, 'info', 2500);
+              refreshAfterUndoRedo();
+            }
+          }
+        });
+      }
 
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-              e.preventDefault();
-              const entry = UM.undo();
-              if (entry) {
-                UI.toast('↩️ ' + entry.label, 'info', 2500);
-                refreshAfterUndoRedo();
-              }
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) {
-              e.preventDefault();
-              const entry = UM.redo();
-              if (entry) {
-                UI.toast('↪️ ' + entry.label, 'info', 2500);
-                refreshAfterUndoRedo();
-              }
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-              e.preventDefault();
-              const entry = UM.redo();
-              if (entry) {
-                UI.toast('↪️ ' + entry.label, 'info', 2500);
-                refreshAfterUndoRedo();
-              }
-            }
-          });
+      function backgroundTick() {
+        updateCounts();
+        refreshSyncBadge();
+
+        if (!DS.isDirty()) return;
+
+        const json = DS.exportJSON();
+        rememberDirtySnapshot(json, 'autosave');
+        maybeAutoSaveToGitHub(json);
+      }
+
+      navItems.forEach((nav) => {
+        nav.addEventListener('click', () => {
+          const panel = nav.dataset.panel;
+          if (!panel || panel === activePanel) return;
+
+          navItems.forEach((item) => item.classList.remove('active'));
+          nav.classList.add('active');
+
+          panels.forEach((panelNode) => panelNode.classList.remove('active'));
+          document.getElementById(`panel-${panel}`).classList.add('active');
+          activePanel = panel;
+          initEditor(panel);
+        });
+      });
+
+      btnSave.addEventListener('click', () => {
+        saveCurrentData({ auto: false }).catch(() => {});
+      });
+      btnGitHub.addEventListener('click', openGitHubModal);
+
+      btnExport.addEventListener('click', () => {
+        downloadCurrentData();
+      });
+
+      btnImport.addEventListener('click', () => {
+        importFile.click();
+      });
+
+      importFile.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+          const result = DS.importJSON(loadEvent.target.result);
+          if (result.success) {
+            DS.markDirty();
+            rememberDirtySnapshot(DS.exportJSON(), 'import');
+            updateCounts();
+            resetEditors();
+            initEditor(activePanel);
+            setStatusMessage('Imported JSON');
+            UI.toast(`Imported! ${result.validation.errors.length} errors, ${result.validation.warnings.length} warnings`, result.validation.errors.length > 0 ? 'error' : 'success');
+          } else {
+            UI.toast(`Import failed: ${result.error}`, 'error');
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      });
+
+      btnValidate.addEventListener('click', () => {
+        const result = DS.validate();
+        if (result.valid && result.warnings.length === 0) {
+          UI.toast('All references valid!', 'success');
+          return;
+        }
+
+        let message = '';
+        if (result.errors.length > 0) {
+          message += `${result.errors.length} errors:\n${result.errors.join('\n')}\n\n`;
+        }
+        if (result.warnings.length > 0) {
+          message += `${result.warnings.length} warnings:\n${result.warnings.join('\n')}`;
+        }
+
+        UI.openModal({
+          title: `Validation: ${result.errors.length} errors, ${result.warnings.length} warnings`,
+          content: `<pre style="white-space:pre-wrap;font-size:0.82rem;max-height:400px;overflow:auto">${escapeHtml(message)}</pre>`,
+          width: '650px'
+        });
+      });
+
+      window.addEventListener('beforeunload', (event) => {
+        if (DS.isDirty()) {
+          event.preventDefault();
+          event.returnValue = 'You have unsaved changes. Save to GitHub or download before leaving.';
         }
       });
 
+      setInterval(backgroundTick, 2000);
+
+      async function boot() {
+        await loadData();
+        seedBuiltInStatuses();
+        bindUndoRedo();
+
+        initEditor('effects');
+        updateCounts();
+        syncState.lastGitHubSavedJson = DS.exportJSON();
+        setStatusMessage('Ready');
+        refreshSyncBadge();
+
+        await maybeOfferDraftRestore();
+        updateCounts();
+        refreshSyncBadge();
+      }
+
+      boot();
     })();
   </script>
 </body>

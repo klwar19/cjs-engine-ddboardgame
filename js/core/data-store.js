@@ -486,6 +486,7 @@ window.CJS.DataStore = (() => {
   }
 
   function isDirty() { return _dirty; }
+  function markDirty() { _dirty = true; }
   function markClean() { _dirty = false; }
 
   function getCounts() {
@@ -517,6 +518,6 @@ window.CJS.DataStore = (() => {
     // Import/Export
     exportJSON, exportBlob, downloadJSON, importJSON, loadData,
     // State
-    reset, isDirty, markClean, getCounts
+    reset, isDirty, markDirty, markClean, getCounts
   });
 })();
