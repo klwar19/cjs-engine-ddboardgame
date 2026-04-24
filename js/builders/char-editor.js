@@ -12,6 +12,7 @@ window.CJS.CharEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const F  = () => window.CJS.Formulas;
   const UI = () => window.CJS.UI;
+  const PP = () => window.CJS.PortraitPicker;
 
   let _container, _listEl, _formEl, _activeId = null;
 
@@ -49,6 +50,7 @@ window.CJS.CharEditor = (() => {
       stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
       skills: [], equipment: [], innatePassives: [],
       weak: [], resist: [], immune: [],
+      portrait: '',
       description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -81,6 +83,7 @@ window.CJS.CharEditor = (() => {
           <div class="form-group"><label class="form-label">Name</label><input type="text" id="chr-name" value="${_esc(c.name||'')}"></div>
           <div class="form-group" style="flex:0 0 80px"><label class="form-label">Icon</label><input type="text" id="chr-icon" value="${_esc(c.icon||'🧑')}" style="text-align:center;font-size:1.2em"></div>
         </div>
+        <div id="chr-portrait-area" style="margin-bottom:8px"></div>
 
         <div class="form-row">
           <div class="form-group"><label class="form-label">Team</label>
@@ -132,6 +135,22 @@ window.CJS.CharEditor = (() => {
     `;
 
     // ── Stat sliders ──
+    let portraitWidget = null;
+    const portraitArea = _formEl.querySelector('#chr-portrait-area');
+    if (portraitArea && PP()) {
+      portraitWidget = PP().createWidget({
+        currentPath: c.portrait || '',
+        category: 'characters',
+        fallbackIcon: c.icon || '?'
+      });
+      portraitArea.appendChild(portraitWidget.el);
+
+      const iconInput = _formEl.querySelector('#chr-icon');
+      const syncPortraitFallback = () => portraitWidget?.setFallbackIcon(iconInput?.value || '?');
+      iconInput?.addEventListener('input', syncPortraitFallback);
+      iconInput?.addEventListener('change', syncPortraitFallback);
+    }
+
     const statsArea = _formEl.querySelector('#chr-stats-area');
     const statSliders = {};
     for (const s of C().STATS) {
@@ -185,6 +204,7 @@ window.CJS.CharEditor = (() => {
         id: c.id,
         name: _formEl.querySelector('#chr-name').value,
         icon: _formEl.querySelector('#chr-icon').value,
+        portrait: portraitWidget ? portraitWidget.getValue() : (c.portrait || ''),
         team: _formEl.querySelector('#chr-team').value,
         rank: _formEl.querySelector('#chr-rank').value,
         type: _formEl.querySelector('#chr-type').value,

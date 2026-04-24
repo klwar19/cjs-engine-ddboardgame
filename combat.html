@@ -77,6 +77,7 @@
   <!-- Phase 5: Visual / UI -->
   <script src="js/grid/grid-renderer.js"></script>
   <script src="js/ui/ui-helpers.js"></script>
+  <script src="js/ui/portrait-picker.js"></script>
   <script src="js/ui/combat-ui.js"></script>
   <script src="js/ui/loot-roller.js"></script>
 
@@ -312,6 +313,9 @@
 
     // ── BOOT ──────────────────────────────────────────────────────
     await loadData();
+    if (window.CJS.PortraitPicker) {
+      await window.CJS.PortraitPicker.loadManifest().catch(() => {});
+    }
     populateEncounters();
     console.log('CJS Combat Simulator ready.');
   })();

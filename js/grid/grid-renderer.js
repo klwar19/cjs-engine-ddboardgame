@@ -231,13 +231,30 @@ window.CJS.GridRenderer = (() => {
     ctx.fillStyle = teamColor;
     ctx.fillRect(px + 3, py + 3, pw - 6, ph - 6);
 
-    // Unit icon (emoji)
-    const icon = unit.icon || (unit.team === 'player' ? '🟦' : '🟥');
-    const fontSize = Math.floor(Math.min(pw, ph) * 0.55);
-    ctx.font = `${fontSize}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(icon, px + pw / 2, py + ph / 2);
+    const PP = window.CJS.PortraitPicker;
+    let drewPortrait = false;
+    if (unit.portrait && PP) {
+      const img = PP.getCachedImage(unit.portrait);
+      if (img && img.complete && img.naturalWidth > 0) {
+        const pad = 4;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(px + pad, py + pad, pw - (pad * 2), ph - (pad * 2));
+        ctx.clip();
+        ctx.drawImage(img, px + pad, py + pad, pw - (pad * 2), ph - (pad * 2));
+        ctx.restore();
+        drewPortrait = true;
+      }
+    }
+
+    if (!drewPortrait) {
+      const icon = unit.icon || (unit.team === 'player' ? '🟦' : '🟥');
+      const fontSize = Math.floor(Math.min(pw, ph) * 0.55);
+      ctx.font = `${fontSize}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(icon, px + pw / 2, py + ph / 2);
+    }
 
     // Name label
     ctx.font = `bold ${Math.floor(cs * 0.17)}px sans-serif`;

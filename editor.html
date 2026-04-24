@@ -158,6 +158,7 @@
   <script src="js/effects/effect-registry.js"></script>
 
   <script src="js/ui/ui-helpers.js"></script>
+  <script src="js/ui/portrait-picker.js"></script>
   <script src="js/builders/effect-editor.js"></script>
   <script src="js/builders/status-editor.js"></script>
   <script src="js/builders/passive-editor.js"></script>
@@ -845,6 +846,10 @@
         await loadData();
         seedBuiltInStatuses();
         bindUndoRedo();
+
+        if (window.CJS.PortraitPicker) {
+          await window.CJS.PortraitPicker.loadManifest().catch(() => {});
+        }
 
         initEditor('effects');
         updateCounts();

@@ -12,6 +12,7 @@ window.CJS.ItemEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const ER = () => window.CJS.EffectRegistry;
   const UI = () => window.CJS.UI;
+  const PP = () => window.CJS.PortraitPicker;
 
   let _container, _listEl, _formEl, _activeId = null;
 
@@ -53,7 +54,7 @@ window.CJS.ItemEditor = (() => {
   function _createNew() {
     const id = DS().create('items', {
       name: 'New Item', icon: '📦', slot: 'weapon', rarity: 'Common',
-      effects: [], weaponData: null, description: ''
+      effects: [], weaponData: null, portrait: '', description: ''
     });
     _activeId = id; _renderList(); _load(id);
     UI().toast('Item created', 'success');
@@ -82,6 +83,7 @@ window.CJS.ItemEditor = (() => {
           <div class="form-group"><label class="form-label">Name</label><input type="text" id="itm-name" value="${_esc(item.name||'')}"></div>
           <div class="form-group" style="flex:0 0 80px"><label class="form-label">Icon</label><input type="text" id="itm-icon" value="${_esc(item.icon||'📦')}" style="text-align:center;font-size:1.2em"></div>
         </div>
+        <div id="itm-portrait-area" style="margin-bottom:8px"></div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Slot</label>
             <select id="itm-slot">${C().EQUIPMENT_SLOTS.map(s=>`<option value="${s}" ${item.slot===s?'selected':''}>${s}</option>`).join('')}
@@ -121,6 +123,22 @@ window.CJS.ItemEditor = (() => {
       </div>
     `;
 
+    let portraitWidget = null;
+    const portraitArea = _formEl.querySelector('#itm-portrait-area');
+    if (portraitArea && PP()) {
+      portraitWidget = PP().createWidget({
+        currentPath: item.portrait || '',
+        category: 'items',
+        fallbackIcon: item.icon || '?'
+      });
+      portraitArea.appendChild(portraitWidget.el);
+
+      const iconInput = _formEl.querySelector('#itm-icon');
+      const syncPortraitFallback = () => portraitWidget?.setFallbackIcon(iconInput?.value || '?');
+      iconInput?.addEventListener('input', syncPortraitFallback);
+      iconInput?.addEventListener('change', syncPortraitFallback);
+    }
+
     // Toggle weapon section on slot change
     _formEl.querySelector('#itm-slot').onchange = (e) => {
       _formEl.querySelector('#itm-weapon-section').style.display = e.target.value === 'weapon' ? 'block' : 'none';
@@ -136,7 +154,7 @@ window.CJS.ItemEditor = (() => {
 
     _preview(effectBuilder);
 
-    _formEl.querySelector('#itm-save').onclick = () => _save(item.id, effectBuilder, grantedSkills);
+    _formEl.querySelector('#itm-save').onclick = () => _save(item.id, effectBuilder, grantedSkills, portraitWidget, item.portrait || '');
     _formEl.querySelector('#itm-dup').onclick = () => { const nid = DS().duplicate('items',item.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
     _formEl.querySelector('#itm-del').onclick = () => { UI().confirm(`Delete "${item.name}"?`,()=>{DS().remove('items',item.id);_activeId=null;_renderList();_formEl.innerHTML='<div class="card" style="text-align:center;color:var(--text-mute);padding:40px">Select an item</div>';UI().toast('Deleted','info');}); };
   }
@@ -177,11 +195,12 @@ window.CJS.ItemEditor = (() => {
     el.innerHTML = `<div class="dim" style="font-size:0.82rem"><b>Effects:</b> ${descs.join(', ')||'None'} | <b>ID:</b> ${_activeId}</div>`;
   }
 
-  function _save(id, effectBuilder, grantedSkills) {
+  function _save(id, effectBuilder, grantedSkills, portraitWidget, currentPortrait) {
     const f = _formEl;
     const slot = f.querySelector('#itm-slot').value;
     const obj = {
       id, name: f.querySelector('#itm-name').value, icon: f.querySelector('#itm-icon').value,
+      portrait: portraitWidget ? portraitWidget.getValue() : currentPortrait,
       slot, rarity: f.querySelector('#itm-rarity').value,
       effects: effectBuilder._getEffects(),
       grantedSkills: grantedSkills || [],

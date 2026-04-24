@@ -12,6 +12,7 @@ window.CJS.MonsterEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const F  = () => window.CJS.Formulas;
   const UI = () => window.CJS.UI;
+  const PP = () => window.CJS.PortraitPicker;
 
   let _container, _listEl, _formEl, _activeId = null;
 
@@ -54,6 +55,7 @@ window.CJS.MonsterEditor = (() => {
       skills: [], equipment: [], innatePassives: [],
       weak: [], resist: [], immune: [],
       loot: [], behaviorAI: 'aggressive', aiRules: [],
+      portrait: '',
       description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -86,6 +88,7 @@ window.CJS.MonsterEditor = (() => {
           <div class="form-group"><label class="form-label">Name</label><input type="text" id="mon-name" value="${_esc(m.name||'')}"></div>
           <div class="form-group" style="flex:0 0 80px"><label class="form-label">Icon</label><input type="text" id="mon-icon" value="${_esc(m.icon||'👾')}" style="text-align:center;font-size:1.2em"></div>
         </div>
+        <div id="mon-portrait-area" style="margin-bottom:8px"></div>
 
         <div class="form-row">
           <div class="form-group"><label class="form-label">Rank</label>
@@ -142,6 +145,22 @@ window.CJS.MonsterEditor = (() => {
     `;
 
     // ── Stats ──
+    let portraitWidget = null;
+    const portraitArea = _formEl.querySelector('#mon-portrait-area');
+    if (portraitArea && PP()) {
+      portraitWidget = PP().createWidget({
+        currentPath: m.portrait || '',
+        category: 'monsters',
+        fallbackIcon: m.icon || '?'
+      });
+      portraitArea.appendChild(portraitWidget.el);
+
+      const iconInput = _formEl.querySelector('#mon-icon');
+      const syncPortraitFallback = () => portraitWidget?.setFallbackIcon(iconInput?.value || '?');
+      iconInput?.addEventListener('input', syncPortraitFallback);
+      iconInput?.addEventListener('change', syncPortraitFallback);
+    }
+
     const statsArea = _formEl.querySelector('#mon-stats-area');
     const sliders = {};
     for (const s of C().STATS) {
@@ -200,6 +219,7 @@ window.CJS.MonsterEditor = (() => {
         id: m.id,
         name: _formEl.querySelector('#mon-name').value,
         icon: _formEl.querySelector('#mon-icon').value,
+        portrait: portraitWidget ? portraitWidget.getValue() : (m.portrait || ''),
         team: 'enemy',
         rank: _formEl.querySelector('#mon-rank').value,
         type: _formEl.querySelector('#mon-type').value,

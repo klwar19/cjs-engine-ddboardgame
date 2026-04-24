@@ -452,3 +452,79 @@ input::placeholder { color: var(--text-mute); }
   .nav-item { border-left: none; border-bottom: 3px solid transparent; padding: 8px 12px; }
   .nav-item.active { border-left-color: transparent; border-bottom-color: var(--accent); }
 }
+
+/* Portrait picker widget */
+.portrait-widget {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.portrait-preview-wrap {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.portrait-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.portrait-fallback {
+  font-size: 2rem;
+  line-height: 1;
+}
+.portrait-controls {
+  flex: 1;
+  min-width: 0;
+}
+.portrait-path-input {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 3px 6px;
+}
+.portrait-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.portrait-grid-item {
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+  background: rgba(0,0,0,0.2);
+  transition: border-color 0.15s;
+  padding: 0;
+  color: inherit;
+}
+.portrait-grid-item:hover {
+  border-color: var(--accent);
+}
+.portrait-grid-item img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+.portrait-grid-name {
+  font-size: 0.65rem;
+  color: var(--text-mute);
+  padding: 2px 4px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

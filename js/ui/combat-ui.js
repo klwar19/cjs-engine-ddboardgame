@@ -29,6 +29,7 @@ window.CJS.CombatUI = (() => {
   const CS   = () => window.CJS.CombatSettings;
   const Log  = () => window.CJS.CombatLog;
   const C    = () => window.CJS.CONST;
+  const PP   = () => window.CJS.PortraitPicker;
 
   // ── STATE ──────────────────────────────────────────────────────────
   let _container = null;
@@ -202,6 +203,12 @@ window.CJS.CombatUI = (() => {
     CM().startEncounter(encounterId);
     GR().resize();
 
+    if (PP()) {
+      for (const unit of CM().getUnits()) {
+        if (unit?.portrait) PP().preloadImage(unit.portrait);
+      }
+    }
+
     // Subscribe to state changes
     _unsubCM = CM().subscribe(_onStateChange);
 
@@ -247,8 +254,9 @@ window.CJS.CombatUI = (() => {
       const teamClass = u.team === 'player' ? 'init-player' : 'init-enemy';
       const cls = `init-unit ${teamClass}${active ? ' init-active' : ''}${dead ? ' init-dead' : ''}`;
       const hpPct = Math.round((u.currentHP / (u.maxHP || 1)) * 100);
+      const portraitHtml = _renderPortraitMarkup(u.portrait, 'init-portrait', 'init-icon', u.icon || '?');
       html += `<div class="${cls}" title="${u.name || u.baseId} (${u.currentHP}/${u.maxHP} HP)">
-        <span class="init-icon">${u.icon || '?'}</span>
+        ${portraitHtml}
         <span class="init-name">${(u.name || u.baseId || '?').substring(0, 6)}</span>
         <div class="init-hp-bar"><div class="init-hp-fill" style="width:${hpPct}%"></div></div>
       </div>`;
@@ -272,11 +280,12 @@ window.CJS.CombatUI = (() => {
           `<span class="status-chip" title="${s.statusId} (${s.duration}t, ${s.stacks}stk)">${_statusIcon(s.statusId)} ${s.duration}t</span>`
         ).join('') + '</div>';
     }
+    const portraitHtml = _renderPortraitMarkup(unit.portrait, 'unit-portrait', 'unit-icon-lg', unit.icon || '?');
 
     $unitInfo.innerHTML = `
       <div class="unit-card ${unit.team}">
         <div class="unit-header">
-          <span class="unit-icon-lg">${unit.icon || '?'}</span>
+          ${portraitHtml}
           <div>
             <div class="unit-name">${unit.name || unit.baseId}</div>
             <div class="unit-rank">Rank ${unit.rank || '?'} ${unit.type || ''}</div>
@@ -857,6 +866,21 @@ window.CJS.CombatUI = (() => {
       fear:'😨', charm:'💕', doom:'💀', taunt:'😤', petrify:'🪨'
     };
     return map[id] || '✦';
+  }
+
+  function _renderPortraitMarkup(path, imageClass, fallbackClass, icon) {
+    if (!path) return `<span class="${fallbackClass}">${icon || '?'}</span>`;
+    return `<img src="${_escAttr(path)}" class="${imageClass}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt=""><span class="${fallbackClass}" style="display:none">${icon || '?'}</span>`;
+  }
+
+  function _escAttr(value) {
+    return String(value || '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
   }
 
   // ── DESTROY ───────────────────────────────────────────────────────
