@@ -61,6 +61,10 @@ window.CJS.EffectRegistry = (() => {
       // Cleansing
       cleansedBy:   [],         // elements or effect types that remove this
 
+      // Firing chance (% probability to fire when conditions pass)
+      // 100 = always fires. < 100 = random roll. Each instance rolls independently.
+      chance:       100,
+
       // Metadata
       tags:         [],         // for search/filter
       category:     'triggered',// "passive" | "triggered" | "status" | "complex"
@@ -174,6 +178,12 @@ window.CJS.EffectRegistry = (() => {
     // Duration
     if (effect.duration) {
       parts.push(`for ${effect.duration} turn${effect.duration > 1 ? 's' : ''}`);
+    }
+
+    // Chance (if not 100%)
+    const chance = effect.chance ?? 100;
+    if (chance < 100) {
+      parts.push(`(${chance}% chance)`);
     }
 
     return parts.join(' ');

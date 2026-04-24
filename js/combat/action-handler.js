@@ -56,7 +56,9 @@ window.CJS.ActionHandler = (() => {
         if ((ts.apRemaining || 0) < 1) return { valid: false, reason: 'no_ap' };
         const target = GE().getUnit(action.targetId);
         if (!target) return { valid: false, reason: 'no_target' };
-        if (GE().footprintDistance(unit, target) > 1) {
+        // Use weapon range (ranged weapons can basic-attack at distance)
+        const atkRange = getAttackRange(unit);
+        if (GE().footprintDistance(unit, target) > atkRange) {
           return { valid: false, reason: 'target_out_of_range' };
         }
         return { valid: true };
@@ -64,9 +66,18 @@ window.CJS.ActionHandler = (() => {
 
       case 'skill': {
         if (ts.mainActionUsed) return { valid: false, reason: 'main_action_used' };
-        const skill = DS().get('skills', action.skillId);
+        // Silence check: preventsSkills status blocks skill usage
+        if (SM() && SM().canUseSkills && !SM().canUseSkills(unit)) {
+          return { valid: false, reason: 'silenced' };
+        }
+        const skill = _resolveSkill(unit, action.skillId);
         if (!skill) return { valid: false, reason: 'unknown_skill' };
-        if (!(unit.skills || []).includes(action.skillId)) {
+        // Check skill is known (via SkillResolver — handles both formats)
+        const SR = window.CJS.SkillResolver;
+        const knownSkillIds = SR
+          ? SR.getSkillIds(unit.skills || [])
+          : (unit.skills || []).map(s => typeof s === 'string' ? s : s.skillId);
+        if (!knownSkillIds.includes(action.skillId)) {
           return { valid: false, reason: 'skill_not_known' };
         }
         if ((ts.cooldowns?.[action.skillId] || 0) > 0) {
@@ -76,6 +87,14 @@ window.CJS.ActionHandler = (() => {
         if ((unit.currentMP || 0) < mpCost) return { valid: false, reason: 'not_enough_mp' };
         const apCost = skill.ap || 1;
         if ((ts.apRemaining || 0) < apCost) return { valid: false, reason: 'not_enough_ap' };
+
+        // Stealth check: can't target invisible units
+        if (action.targetId && SM() && SM().isInvisible) {
+          const target = GE().getUnit(action.targetId);
+          if (target && SM().isInvisible(target) && target.team !== unit.team) {
+            return { valid: false, reason: 'target_invisible' };
+          }
+        }
 
         // Range check for single-target skills
         if (action.targetId && !skill.aoe) {
@@ -181,8 +200,12 @@ window.CJS.ActionHandler = (() => {
   // ── ATTACK (basic) ────────────────────────────────────────────────
   function _doAttack(unit, action, ctx) {
     const target = GE().getUnit(action.targetId);
+    // Get weapon data for element/damageType (null = fists → Physical)
+    const weaponData = _getWeaponData(unit);
     const attack = DC().computeAttack({
-      attacker: unit, target, skill: null, qteMultiplier: ctx.qteMultiplier || 1.0
+      attacker: unit, target, skill: null,
+      qteMultiplier: ctx.qteMultiplier || 1.0,
+      weaponData  // passed to damage-calc for baseDamage/element/damageType
     });
 
     unit.turnState.mainActionUsed = true;
@@ -197,9 +220,13 @@ window.CJS.ActionHandler = (() => {
       return { success: true, hit: false, missed: true };
     }
 
+    // Use weapon element/damageType if available
+    const atkElement    = weaponData?.element    || 'Physical';
+    const atkDamageType = weaponData?.damageType || 'Physical';
+
     const applied = DC().applyDamage({
       attacker: unit, target, amount: attack.damage,
-      damageType: 'Physical', element: 'Physical',
+      damageType: atkDamageType, element: atkElement,
       skill: null, isCritical: attack.isCritical, breakdown: attack.breakdown
     });
 
@@ -207,7 +234,7 @@ window.CJS.ActionHandler = (() => {
     ER().fireTrigger('on_hit', {
       unit, attacker: unit, target,
       damageDealt: applied.applied,
-      damageType: 'Physical', element: 'Physical',
+      damageType: atkDamageType, element: atkElement,
       isCritical: attack.isCritical,
       turnNumber: ctx.turnNumber, allUnits: GE().getAllUnits()
     });
@@ -234,7 +261,8 @@ window.CJS.ActionHandler = (() => {
 
   // ── SKILL ─────────────────────────────────────────────────────────
   function _doSkill(unit, action, ctx) {
-    const skill = DS().get('skills', action.skillId);
+    const skill = _resolveSkill(unit, action.skillId);
+    if (!skill) return { success: false, reason: 'unknown_skill' };
     const apCost = skill.ap || 1;
     const mpCost = Math.max(0, (skill.mp || 0) + (unit.costMod || 0));
     const cd     = Math.max(0, (skill.cooldown || 0) + (unit.cooldownMod || 0));
@@ -423,22 +451,59 @@ window.CJS.ActionHandler = (() => {
     return { grade, multiplier, qteType: skill.qte, simulated: true };
   }
 
+  // ── RESOLVE SKILL (uses shared SkillResolver) ──────────────────────
+  // Merges base skill from DataStore with per-unit overrides and level.
+  function _resolveSkill(unit, skillId) {
+    const SR = window.CJS.SkillResolver;
+    if (SR) return SR.resolveUnitSkill(unit, skillId);
+    // Fallback if SkillResolver not loaded
+    const base = DS().get('skills', skillId);
+    return base ? { ...base } : null;
+  }
+
+  // ── WEAPON DATA ───────────────────────────────────────────────────
+  // Get the equipped weapon's data (range, element, damageType, baseDamage).
+  // Returns null if no weapon equipped.
+  function _getWeaponData(unit) {
+    if (!unit.equipment) return null;
+    for (const iid of unit.equipment) {
+      const item = DS().get('items', iid);
+      if (item?.slot === 'weapon' && item.weaponData) {
+        return item.weaponData;
+      }
+    }
+    return null;
+  }
+
+  // Get the effective attack range for basic attacks.
+  // Weapon range + unit rangeBonus, or melee (1) if no weapon.
+  function getAttackRange(unit) {
+    const wd = _getWeaponData(unit);
+    return (wd?.range || 1) + (unit.rangeBonus || 0);
+  }
+
   // ── QUERIES ────────────────────────────────────────────────────────
   // What actions can this unit take right now? Used by the UI to grey out buttons.
   function getAvailableActions(unit) {
     const ts = unit.turnState || {};
+    const canAct = !SM() || SM().canAct(unit);
+    const canSkill = canAct && (!SM() || !SM().canUseSkills || SM().canUseSkills(unit));
+
     const available = {
       move:    !ts.hasMoved && (!SM() || SM().canMove(unit)),
-      attack:  !ts.mainActionUsed && (ts.apRemaining || 0) >= 1 && (!SM() || SM().canAct(unit)),
-      defend:  !ts.mainActionUsed && (!SM() || SM().canAct(unit)),
+      attack:  !ts.mainActionUsed && (ts.apRemaining || 0) >= 1 && canAct,
+      defend:  !ts.mainActionUsed && canAct,
       endTurn: true,
       skills:  [],
       items:   []
     };
 
-    if (!ts.mainActionUsed && (!SM() || SM().canAct(unit))) {
-      for (const skillId of (unit.skills || [])) {
-        const skill = DS().get('skills', skillId);
+    if (!ts.mainActionUsed && canAct) {
+      // Build skill list (via SkillResolver — handles both bare IDs and override objects)
+      const SR = window.CJS.SkillResolver;
+      for (const entry of (unit.skills || [])) {
+        const skillId = SR ? SR.getSkillId(entry) : (typeof entry === 'string' ? entry : entry.skillId);
+        const skill = _resolveSkill(unit, skillId);
         if (!skill) continue;
         const cdRemaining = ts.cooldowns?.[skillId] || 0;
         const mpCost = Math.max(0, (skill.mp || 0) + (unit.costMod || 0));
@@ -446,14 +511,18 @@ window.CJS.ActionHandler = (() => {
         available.skills.push({
           id: skillId,
           skill,
-          usable: cdRemaining === 0 &&
+          usable: canSkill &&
+                  cdRemaining === 0 &&
                   (unit.currentMP || 0) >= mpCost &&
                   (ts.apRemaining || 0) >= apCost,
+          silenced: !canSkill,
           cooldown: cdRemaining,
           apCost, mpCost
         });
       }
-      for (const itemId of (unit.equipment || [])) {
+
+      // Consumable items — check inventory (not equipment)
+      for (const itemId of (unit.inventory || [])) {
         const item = DS().get('items', itemId);
         if (!item || item.slot !== 'consumable') continue;
         available.items.push({ id: itemId, item, usable: true });
@@ -466,6 +535,7 @@ window.CJS.ActionHandler = (() => {
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     validate, execute, getAvailableActions,
-    simulateAIQTE
+    simulateAIQTE, getAttackRange
   });
 })();
+

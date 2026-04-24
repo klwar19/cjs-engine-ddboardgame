@@ -154,9 +154,9 @@ window.CJS.CharEditor = (() => {
       _updateDerived(statSliders, e.target.value);
     };
 
-    // ── Skills picker ──
+    // ── Skills picker (with override support) ──
     const skillsArea = _formEl.querySelector('#chr-skills-area');
-    const skillPicker = _createRefPicker('skills', c.skills || [], 'skill');
+    const skillPicker = _createSkillRefPicker(c.skills || []);
     skillsArea.appendChild(skillPicker.el);
 
     // ── Equipment picker ──
@@ -191,7 +191,7 @@ window.CJS.CharEditor = (() => {
         stats: currentStats,
         movement: Number(_formEl.querySelector('#chr-movement').value) || 3,
         size: _formEl.querySelector('#chr-size').value || '1x1',
-        skills: skillPicker.getIds(),
+        skills: skillPicker.getEntries(),
         equipment: equipPicker.getIds(),
         innatePassives: passivePicker.getIds(),
         weak: weakWidget._getTags(),
@@ -233,7 +233,7 @@ window.CJS.CharEditor = (() => {
     </div>`;
   }
 
-  // ── Reference Picker (for skills/items/passives) ────────────────
+  // ── Reference Picker (for items/passives — no overrides) ──────────
   function _createRefPicker(type, currentIds, label) {
     const el = document.createElement('div');
     let ids = [...currentIds];
@@ -268,6 +268,161 @@ window.CJS.CharEditor = (() => {
 
     render();
     return { el, getIds: () => [...ids] };
+  }
+
+  // ── Skill Override Picker (skills with optional overrides) ────────
+  // Stores as: [{ skillId: 'fire_slash', overrides: { power: 20 } }]
+  // Backwards-compatible: bare string IDs treated as { skillId, overrides: {} }
+  function _createSkillRefPicker(currentEntries) {
+    const el = document.createElement('div');
+    // Normalize: accept both bare IDs and { skillId, overrides }
+    let entries = (currentEntries || []).map(e =>
+      typeof e === 'string' ? { skillId: e, overrides: {} } : { ...e }
+    );
+
+    function render() {
+      el.innerHTML = '';
+      for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        const skill = DS().get('skills', entry.skillId);
+        const chip = document.createElement('div');
+        chip.className = 'effect-chip';
+
+        const hasOverrides = entry.overrides && Object.keys(entry.overrides).length > 0;
+
+        if (skill) {
+          const overrideHint = hasOverrides
+            ? `<span style="color:var(--gold);font-size:0.75em"> ✏️ ${Object.keys(entry.overrides).join(', ')}</span>`
+            : '';
+          chip.innerHTML = `<span class="chip-icon">${skill.icon||'⚔️'}</span><span class="chip-name">${skill.name}${overrideHint}</span><span class="chip-desc">${skill.ap||0}AP ${skill.mp||0}MP</span>`;
+        } else {
+          chip.innerHTML = `<span class="chip-icon">⚠️</span><span class="chip-name">${entry.skillId}</span><span class="chip-desc" style="color:var(--red)">Not found</span>`;
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'chip-actions';
+        actions.style.display = 'flex';
+        actions.style.gap = '2px';
+
+        // Edit overrides button
+        if (skill) {
+          const editBtn = document.createElement('button');
+          editBtn.className = 'btn-icon';
+          editBtn.textContent = '✏️';
+          editBtn.title = 'Edit overrides for this unit';
+          editBtn.onclick = () => _openSkillOverrideEditor(i, entry, skill);
+          actions.appendChild(editBtn);
+        }
+
+        // Remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-icon';
+        removeBtn.textContent = '❌';
+        removeBtn.onclick = () => { entries.splice(i, 1); render(); };
+        actions.appendChild(removeBtn);
+
+        chip.appendChild(actions);
+        el.appendChild(chip);
+      }
+
+      // Add skill button
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn btn-ghost btn-sm';
+      addBtn.textContent = '+ Add skill';
+      addBtn.onclick = () => _openRefPicker('skills', 'skill', (picked) => {
+        if (!entries.some(e => e.skillId === picked.id)) {
+          entries.push({ skillId: picked.id, overrides: {} });
+          render();
+        }
+      });
+      el.appendChild(addBtn);
+    }
+
+    function _openSkillOverrideEditor(index, entry, masterSkill) {
+      const form = document.createElement('div');
+      const current = { ...(entry.overrides || {}) };
+
+      // Overridable fields for skills
+      const fields = [
+        { key: 'power',    label: 'Power (base damage)', type: 'number', default: masterSkill.power || 0 },
+        { key: 'element',  label: 'Element',             type: 'select', options: ['', ...(C().ELEMENTS || [])], default: masterSkill.element || '' },
+        { key: 'ap',       label: 'AP Cost',             type: 'number', default: masterSkill.ap || 1 },
+        { key: 'mp',       label: 'MP Cost',             type: 'number', default: masterSkill.mp || 0 },
+        { key: 'range',    label: 'Range',               type: 'number', default: masterSkill.range || 1 },
+        { key: 'cooldown', label: 'Cooldown (turns)',     type: 'number', default: masterSkill.cooldown || 0 },
+        { key: 'scalingStat', label: 'Scaling Stat',      type: 'select', options: ['', ...C().STATS], default: masterSkill.scalingStat || '' }
+      ];
+
+      const hint = document.createElement('div');
+      hint.className = 'hint-box';
+      hint.innerHTML = '💡 Override values for <b>this unit only</b>. Leave blank/unchanged to use the skill\'s default.';
+      form.appendChild(hint);
+
+      for (const f of fields) {
+        const group = document.createElement('div');
+        group.className = 'form-group';
+        group.style.marginBottom = '8px';
+        const label = document.createElement('label');
+        label.className = 'form-label';
+        label.textContent = `${f.label} (default: ${f.default})`;
+        group.appendChild(label);
+
+        if (f.type === 'number') {
+          const inp = document.createElement('input');
+          inp.type = 'number';
+          inp.value = current[f.key] !== undefined ? current[f.key] : '';
+          inp.placeholder = String(f.default);
+          inp.onchange = () => {
+            if (inp.value === '' || inp.value === String(f.default)) {
+              delete current[f.key];
+            } else {
+              current[f.key] = Number(inp.value);
+            }
+          };
+          group.appendChild(inp);
+        } else if (f.type === 'select') {
+          const sel = document.createElement('select');
+          sel.innerHTML = f.options.map(o => `<option value="${o}" ${(current[f.key]||f.default)===o?'selected':''}>${o || '— Default —'}</option>`).join('');
+          sel.onchange = () => {
+            if (sel.value === '' || sel.value === f.default) {
+              delete current[f.key];
+            } else {
+              current[f.key] = sel.value;
+            }
+          };
+          group.appendChild(sel);
+        }
+
+        form.appendChild(group);
+      }
+
+      const footer = document.createElement('div');
+      const doneBtn = document.createElement('button');
+      doneBtn.className = 'btn btn-primary';
+      doneBtn.textContent = 'Done';
+      footer.appendChild(doneBtn);
+
+      const overlay = UI().openModal({
+        title: `Override: ${masterSkill.icon || '⚔️'} ${masterSkill.name}`,
+        content: form,
+        footer,
+        width: '450px'
+      });
+      doneBtn.onclick = () => {
+        entries[index].overrides = { ...current };
+        UI().closeModal(overlay);
+        render();
+      };
+    }
+
+    render();
+    return {
+      el,
+      // Return entries in the { skillId, overrides } format
+      getEntries: () => JSON.parse(JSON.stringify(entries)),
+      // Also support getIds for backwards compat — returns bare IDs
+      getIds: () => entries.map(e => e.skillId)
+    };
   }
 
   function _openRefPicker(type, label, onPick) {

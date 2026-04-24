@@ -264,10 +264,28 @@ window.CJS.Conditions = (() => {
     return unit.activeStatuses.some(s => s.statusId === statusId || s.id === statusId);
   }
 
+  // Normalize position: supports both [r, c] array and {x, y} object
+  function _getPos(unit) {
+    if (!unit || !unit.pos) return null;
+    if (Array.isArray(unit.pos)) {
+      return { x: unit.pos[0], y: unit.pos[1] };
+    }
+    if (typeof unit.pos === 'object') {
+      // Support both {x,y} and {row,col}
+      return {
+        x: unit.pos.x !== undefined ? unit.pos.x : (unit.pos.row !== undefined ? unit.pos.row : 0),
+        y: unit.pos.y !== undefined ? unit.pos.y : (unit.pos.col !== undefined ? unit.pos.col : 0)
+      };
+    }
+    return null;
+  }
+
   function _isAdjacent(unitA, unitB, gridEngine) {
-    if (!unitA.pos || !unitB.pos) return false;
-    const dx = Math.abs(unitA.pos.x - unitB.pos.x);
-    const dy = Math.abs(unitA.pos.y - unitB.pos.y);
+    const posA = _getPos(unitA);
+    const posB = _getPos(unitB);
+    if (!posA || !posB) return false;
+    const dx = Math.abs(posA.x - posB.x);
+    const dy = Math.abs(posA.y - posB.y);
     return dx <= 1 && dy <= 1 && (dx + dy > 0);
   }
 
@@ -288,18 +306,24 @@ window.CJS.Conditions = (() => {
   }
 
   function _onTerrain(unit, terrainType, gridEngine) {
-    if (!gridEngine || !unit.pos) return false;
-    const cell = gridEngine.getCell?.(unit.pos.x, unit.pos.y);
+    if (!gridEngine) return false;
+    const pos = _getPos(unit);
+    if (!pos) return false;
+    const cell = gridEngine.getCell?.(pos.x, pos.y);
     return cell?.terrain === terrainType;
   }
 
   function _distance(unitA, unitB) {
-    if (!unitA.pos || !unitB.pos) return 999;
-    return Math.abs(unitA.pos.x - unitB.pos.x) + Math.abs(unitA.pos.y - unitB.pos.y);
+    const posA = _getPos(unitA);
+    const posB = _getPos(unitB);
+    if (!posA || !posB) return 999;
+    return Math.abs(posA.x - posB.x) + Math.abs(posA.y - posB.y);
   }
 
   function _enemiesInRange(unit, range, ctx) {
-    if (!ctx.combatState?.units || !unit.pos) return 0;
+    if (!ctx.combatState?.units) return 0;
+    const pos = _getPos(unit);
+    if (!pos) return 0;
     return ctx.combatState.units.filter(u =>
       u.team !== unit.team && u.currentHP > 0 && _distance(unit, u) <= range
     ).length;

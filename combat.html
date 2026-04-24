@@ -33,6 +33,7 @@
   <script src="js/core/dice.js"></script>
   <script src="js/core/undo-manager.js"></script>
   <script src="js/core/data-store.js"></script>
+  <script src="js/core/skill-resolver.js"></script>
 
   <!-- Phase 1: Effects -->
   <script src="js/effects/value-calc.js"></script>
@@ -130,6 +131,24 @@
         }
       } catch (err) {
         console.warn('quips.json load error:', err.message);
+      }
+
+      // Load quiz bank (for quiz QTEs) if not already in gamedata
+      try {
+        const quizCount = DS.getAllAsArray('quizBank');
+        if (!quizCount || quizCount.length === 0) {
+          const quizResp = await fetch('data/quiz-bank.json');
+          if (quizResp.ok) {
+            const quizData = await quizResp.json();
+            const questions = quizData.questions || quizData;
+            if (Array.isArray(questions) && questions.length > 0) {
+              DS.loadData({ quizBank: questions });
+              console.log('Quiz bank loaded:', questions.length, 'questions');
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('quiz-bank.json load error:', err.message);
       }
 
       // Seed built-in STATUS_DEFINITIONS into DataStore so status-manager

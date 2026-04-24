@@ -319,7 +319,8 @@ window.CJS.CombatManager = (() => {
     // For AI-chosen skill actions, simulate the QTE since the AI can't play
     // the minigame. Basic attacks don't use QTE.
     if (decision.type === 'skill' && decision.skillId) {
-      const skill = DS().get('skills', decision.skillId);
+      const SR = window.CJS.SkillResolver;
+      const skill = SR ? SR.resolveUnitSkill(unit, decision.skillId) : DS().get('skills', decision.skillId);
       if (skill && skill.qte && skill.qte !== 'none') {
         decision.qteResult = AH().simulateAIQTE(unit, skill);
       }
@@ -361,6 +362,17 @@ window.CJS.CombatManager = (() => {
 
   // ── POST-ACTION HOOK ──────────────────────────────────────────────
   function _afterActionHook(unit, action, result) {
+    // Process any recompile requests IMMEDIATELY after each action.
+    // Without this, passive-stat-bearing statuses applied mid-turn
+    // (e.g. on_hit buff, on_take_damage debuff) would not change
+    // derived stats until the next turn_start — a full turn late.
+    if (SM()) {
+      const allUnits = Object.values(_state.units);
+      SM().processRecompileRequests(allUnits, (baseId) =>
+        DS().get('characters', baseId) || DS().get('monsters', baseId)
+      );
+    }
+
     // Check deaths on the board
     for (const u of Object.values(_state.units)) {
       if (u.currentHP <= 0 && !u._deathProcessed) {

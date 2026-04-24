@@ -57,13 +57,36 @@ window.CJS.EffectEditor = (() => {
   };
   const PASSIVE_SET = new Set(C().EFFECT_TRIGGERS.passive);
 
-  // Status list from STATUS_DEFINITIONS
-  function _statusList() { return Object.keys(C().STATUS_DEFINITIONS); }
+  // Status list: merge built-in STATUS_DEFINITIONS + custom from DataStore
+  function _statusList() {
+    const builtins = Object.keys(C().STATUS_DEFINITIONS);
+    const custom = DS().getAllAsArray('statuses').map(s => s.id).filter(Boolean);
+    const all = new Set([...builtins, ...custom]);
+    return Array.from(all);
+  }
 
-  // Get status tooltip
+  // Get status tooltip (checks DataStore first, then built-in)
   function _statusTip(id) {
+    const custom = DS().get('statuses', id);
+    if (custom) return `${custom.icon || '✦'} ${custom.name || id}: ${custom.desc || id}`;
     const d = C().STATUS_DEFINITIONS[id];
     return d ? `${d.icon} ${d.name}: ${d.desc}` : id;
+  }
+
+  // Get status icon (checks DataStore first, then built-in)
+  function _statusIcon(id) {
+    const custom = DS().get('statuses', id);
+    if (custom) return custom.icon || '✦';
+    const d = C().STATUS_DEFINITIONS[id];
+    return d?.icon || '✦';
+  }
+
+  // Get status display name
+  function _statusName(id) {
+    const custom = DS().get('statuses', id);
+    if (custom) return custom.name || id;
+    const d = C().STATUS_DEFINITIONS[id];
+    return d?.name || id;
   }
 
   let _container, _listEl, _formEl, _activeId = null, _activeFilter = 'all';
@@ -219,7 +242,7 @@ window.CJS.EffectEditor = (() => {
         </div>${H('eff-action',t)}${H('eff-target','self')}`; }
       case 'status_resist_mod': return `<div class="form-row">
         <div class="form-group"><label class="form-label">② Resist which?</label>
-          <select id="eff-statusid">${_statusList().map(s=>`<option value="${s}" ${e.statusId===s?'selected':''} title="${_statusTip(s)}">${C().STATUS_DEFINITIONS[s]?.icon||'✦'} ${s}</option>`).join('')}</select></div>
+          <select id="eff-statusid">${_statusList().map(s=>`<option value="${s}" ${e.statusId===s?'selected':''} title="${_statusTip(s)}">${_statusIcon(s)} ${s}</option>`).join('')}</select></div>
         <div class="form-group"><label class="form-label">③ Chance %</label>
           <input type="number" id="eff-value" value="${e.value??0}" min="0" max="100"></div>
         </div>${H('eff-action','status_resist')}${H('eff-source','flat')}${H('eff-target','self')}`;
@@ -273,8 +296,7 @@ window.CJS.EffectEditor = (() => {
       const tip = e.statusId ? _statusTip(e.statusId) : '';
       h += `<div class="form-group"><label class="form-label">Which status?</label>
         <select id="eff-statusid">${sList.map(s => {
-          const d = C().STATUS_DEFINITIONS[s];
-          return `<option value="${s}" ${e.statusId===s?'selected':''} title="${_statusTip(s)}">${d?.icon||'✦'} ${s} — ${d?.name||s}</option>`;
+          return `<option value="${s}" ${e.statusId===s?'selected':''} title="${_statusTip(s)}">${_statusIcon(s)} ${s} — ${_statusName(s)}</option>`;
         }).join('')}</select>
         ${tip ? `<div class="hint-box" style="margin-top:4px;font-size:0.8rem">${tip}</div>` : ''}
       </div>`;
@@ -298,13 +320,18 @@ window.CJS.EffectEditor = (() => {
   }
 
   function _buildDur(e) {
+    const isEvent = !PASSIVE_SET.has(e.trigger);
     _formEl.querySelector('#eff-dur').innerHTML = `<div class="form-row">
       <div class="form-group"><label class="form-label">Duration (0=permanent)</label>
         <input type="number" id="eff-duration" value="${e.duration??0}" min="0" max="99"></div>
       <div class="form-group"><label class="form-label">Max Stacks</label>
         <input type="number" id="eff-maxstacks" value="${e.maxStacks??1}" min="1" max="99"></div>
       <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:4px">
-        <label class="form-check"><input type="checkbox" id="eff-stacks" ${e.stacks?'checked':''}> Stackable</label></div></div>`;
+        <label class="form-check"><input type="checkbox" id="eff-stacks" ${e.stacks?'checked':''}> Stackable</label></div>
+      ${isEvent ? `<div class="form-group"><label class="form-label">Fire Chance %
+        <span style="font-weight:normal;font-size:0.78rem;color:var(--text-dim)">— probability this fires (each roll independent)</span></label>
+        <input type="number" id="eff-chance" value="${e.chance??100}" min="1" max="100" step="1"></div>` : ''}
+      </div>`;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -508,6 +535,7 @@ window.CJS.EffectEditor = (() => {
       interaction:v('#eff-interaction')||null,
       duration:n('#eff-duration'), stacks:f.querySelector('#eff-stacks')?.checked||false,
       maxStacks:n('#eff-maxstacks')||1, threshold:n('#eff-threshold')||null,
+      chance: n('#eff-chance') || 100,
       critDamageBonus:n('#eff-critdmg')||null, knockbackDistance:n('#eff-knockdist')||null,
       conditions:condArea?._getConds?.()||[], cleansedBy:clnsArea?._get_clns?.()||[],
       overridable:ovrArea?._get_ovr?.()||[], tags:tw._getTags(),

@@ -157,8 +157,8 @@ window.CJS.MonsterEditor = (() => {
     // Movement input → update derived
     _formEl.querySelector('#mon-movement').onchange = () => _updateDerived(sliders, _formEl.querySelector('#mon-rank')?.value || 'F');
 
-    // ── Skill/Passive pickers ──
-    const skillPicker = _createRefPicker('skills', m.skills||[], 'skill');
+    // ── Skill picker (with override support) ──
+    const skillPicker = _createSkillRefPicker(m.skills||[]);
     _formEl.querySelector('#mon-skills-area').appendChild(skillPicker.el);
 
     const passivePicker = _createRefPicker('passives', m.innatePassives||[], 'passive');
@@ -207,7 +207,7 @@ window.CJS.MonsterEditor = (() => {
         stats: cs,
         movement: Number(_formEl.querySelector('#mon-movement').value) || 3,
         size: _formEl.querySelector('#mon-size').value || '1x1',
-        skills: skillPicker.getIds(),
+        skills: skillPicker.getEntries(),
         equipment: [],
         innatePassives: passivePicker.getIds(),
         weak: weakW._getTags(), resist: resistW._getTags(), immune: immuneW._getTags(),
@@ -303,7 +303,7 @@ window.CJS.MonsterEditor = (() => {
     });
   }
 
-  // ── Ref Picker (same as char-editor) ──
+  // ── Ref Picker (for passives — no overrides) ──
   function _createRefPicker(type, currentIds, label) {
     const el = document.createElement('div');
     let ids = [...currentIds];
@@ -353,6 +353,119 @@ window.CJS.MonsterEditor = (() => {
     }
     render();
     return { el, getIds: () => [...ids] };
+  }
+
+  // ── Skill Override Picker (skills with optional overrides) ────────
+  function _createSkillRefPicker(currentEntries) {
+    const el = document.createElement('div');
+    let entries = (currentEntries || []).map(e =>
+      typeof e === 'string' ? { skillId: e, overrides: {} } : { ...e }
+    );
+
+    function render() {
+      el.innerHTML = '';
+      for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        const skill = DS().get('skills', entry.skillId);
+        const chip = document.createElement('div');
+        chip.className = 'effect-chip';
+        const hasOvr = entry.overrides && Object.keys(entry.overrides).length > 0;
+        if (skill) {
+          const hint = hasOvr ? `<span style="color:var(--gold);font-size:0.75em"> ✏️ ${Object.keys(entry.overrides).join(', ')}</span>` : '';
+          chip.innerHTML = `<span class="chip-icon">${skill.icon||'⚔️'}</span><span class="chip-name">${skill.name}${hint}</span><span class="chip-desc">${skill.ap||0}AP ${skill.mp||0}MP</span>`;
+        } else {
+          chip.innerHTML = `<span class="chip-icon">⚠️</span><span class="chip-name">${entry.skillId}</span><span class="chip-desc" style="color:var(--red)">Not found</span>`;
+        }
+        const acts = document.createElement('div');
+        acts.className = 'chip-actions'; acts.style.cssText = 'display:flex;gap:2px';
+        if (skill) {
+          const eb = document.createElement('button');
+          eb.className = 'btn-icon'; eb.textContent = '✏️'; eb.title = 'Edit overrides';
+          eb.onclick = () => _openSkillOvr(i, entry, skill);
+          acts.appendChild(eb);
+        }
+        const rb = document.createElement('button');
+        rb.className = 'btn-icon'; rb.textContent = '❌';
+        rb.onclick = () => { entries.splice(i,1); render(); };
+        acts.appendChild(rb);
+        chip.appendChild(acts);
+        el.appendChild(chip);
+      }
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn btn-ghost btn-sm';
+      addBtn.textContent = '+ Add skill';
+      addBtn.onclick = () => {
+        const body = document.createElement('div');
+        const search = document.createElement('input');
+        search.type = 'search'; search.placeholder = 'Search skills...';
+        search.style.cssText = 'width:100%;margin-bottom:8px';
+        const list = document.createElement('div');
+        list.className = 'data-list'; list.style.maxHeight = '300px';
+        function r(q) {
+          const all = q ? DS().search('skills',q) : DS().getAllAsArray('skills');
+          list.innerHTML = '';
+          if (!all.length) { list.innerHTML = '<div class="data-list-empty">None</div>'; return; }
+          for (const it of all) {
+            const row = document.createElement('div');
+            row.className = 'data-list-item';
+            row.innerHTML = `<span class="item-icon">${it.icon||'⚔️'}</span><div><div class="item-name">${it.name||it.id}</div></div>`;
+            row.onclick = () => { UI().closeModal(ov); if(!entries.some(e=>e.skillId===it.id)){entries.push({skillId:it.id,overrides:{}});render();} };
+            list.appendChild(row);
+          }
+        }
+        search.oninput = () => r(search.value);
+        body.appendChild(search); body.appendChild(list);
+        const ov = UI().openModal({title:'Pick skill',content:body,width:'500px'});
+        r(''); search.focus();
+      };
+      el.appendChild(addBtn);
+    }
+
+    function _openSkillOvr(index, entry, masterSkill) {
+      const form = document.createElement('div');
+      const cur = { ...(entry.overrides || {}) };
+      const fields = [
+        { key:'power',label:'Power',type:'number',def:masterSkill.power||0 },
+        { key:'element',label:'Element',type:'select',opts:['', ...(C().ELEMENTS||[])],def:masterSkill.element||'' },
+        { key:'ap',label:'AP Cost',type:'number',def:masterSkill.ap||1 },
+        { key:'mp',label:'MP Cost',type:'number',def:masterSkill.mp||0 },
+        { key:'range',label:'Range',type:'number',def:masterSkill.range||1 },
+        { key:'cooldown',label:'Cooldown',type:'number',def:masterSkill.cooldown||0 },
+        { key:'scalingStat',label:'Scaling Stat',type:'select',opts:['', ...C().STATS],def:masterSkill.scalingStat||'' }
+      ];
+      const hint = document.createElement('div');
+      hint.className = 'hint-box';
+      hint.innerHTML = '💡 Override values for <b>this monster only</b>.';
+      form.appendChild(hint);
+      for (const f of fields) {
+        const grp = document.createElement('div');
+        grp.className = 'form-group'; grp.style.marginBottom = '8px';
+        const lbl = document.createElement('label');
+        lbl.className = 'form-label'; lbl.textContent = `${f.label} (default: ${f.def})`;
+        grp.appendChild(lbl);
+        if (f.type === 'number') {
+          const inp = document.createElement('input'); inp.type = 'number';
+          inp.value = cur[f.key] !== undefined ? cur[f.key] : ''; inp.placeholder = String(f.def);
+          inp.onchange = () => { if (inp.value===''||inp.value===String(f.def)) delete cur[f.key]; else cur[f.key]=Number(inp.value); };
+          grp.appendChild(inp);
+        } else if (f.type === 'select') {
+          const sel = document.createElement('select');
+          sel.innerHTML = f.opts.map(o=>`<option value="${o}" ${(cur[f.key]||f.def)===o?'selected':''}>${o||'— Default —'}</option>`).join('');
+          sel.onchange = () => { if (sel.value===''||sel.value===f.def) delete cur[f.key]; else cur[f.key]=sel.value; };
+          grp.appendChild(sel);
+        }
+        form.appendChild(grp);
+      }
+      const footer = document.createElement('div');
+      const doneBtn = document.createElement('button');
+      doneBtn.className = 'btn btn-primary'; doneBtn.textContent = 'Done';
+      footer.appendChild(doneBtn);
+      const ov = UI().openModal({ title:`Override: ${masterSkill.icon||'⚔️'} ${masterSkill.name}`, content:form, footer, width:'450px' });
+      doneBtn.onclick = () => { entries[index].overrides={...cur}; UI().closeModal(ov); render(); };
+    }
+
+    render();
+    return { el, getEntries:()=>JSON.parse(JSON.stringify(entries)), getIds:()=>entries.map(e=>e.skillId) };
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

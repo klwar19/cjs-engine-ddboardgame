@@ -91,7 +91,12 @@ window.CJS.AIController = (() => {
 
   // ── TRY USE SKILL ──────────────────────────────────────────────────
   function _tryUseSkill(unit, skillId, targetSpec, ctx) {
-    const skill = DS().get('skills', skillId);
+    // Ownership check: does this unit actually have this skill?
+    const SR = window.CJS.SkillResolver;
+    if (SR && !SR.hasSkill(unit, skillId)) return null;
+
+    // Use SkillResolver for per-unit overrides (range, mp cost, etc.)
+    const skill = SR ? SR.resolveUnitSkill(unit, skillId) : DS().get('skills', skillId);
     if (!skill) return null;
 
     // Cooldown check
@@ -132,7 +137,10 @@ window.CJS.AIController = (() => {
   // ── TRY BASIC ATTACK ───────────────────────────────────────────────
   function _tryBasicAttack(unit, targetSpec, ctx) {
     if ((unit.turnState?.apRemaining || 0) < 1) return null;
-    const pick = AIT().pickTarget(targetSpec, unit, ctx.allUnits, { range: 1 });
+    // Use weapon range if available (ranged weapons can basic attack at distance)
+    const AH = window.CJS.ActionHandler;
+    const range = (AH && AH.getAttackRange) ? AH.getAttackRange(unit) : 1;
+    const pick = AIT().pickTarget(targetSpec, unit, ctx.allUnits, { range });
     if (!pick) return null;
     return {
       type: 'attack', targetId: pick.unit.instanceId,
@@ -268,15 +276,21 @@ window.CJS.AIController = (() => {
   function _archetypeDefault(unit, ctx) {
     const archetype = unit.behaviorAI || 'aggressive';
 
-    // Try to attack an adjacent enemy
-    const adjacent = AIT().pickTarget('nearest_enemy', unit, ctx.allUnits, { range: 1 });
+    // Try to attack an enemy in weapon range
+    const AH = window.CJS.ActionHandler;
+    const atkRange = (AH && AH.getAttackRange) ? AH.getAttackRange(unit) : 1;
+    const adjacent = AIT().pickTarget('nearest_enemy', unit, ctx.allUnits, { range: atkRange });
     if (adjacent && (unit.turnState?.apRemaining || 0) >= 1) {
       return { type: 'attack', targetId: adjacent.unit.instanceId, apCost: 1, mpCost: 0 };
     }
 
     // Try a ready skill (pick highest-power one)
+    const SR = window.CJS.SkillResolver;
     const readySkills = (unit.skills || [])
-      .map(id => DS().get('skills', id))
+      .map(entry => {
+        const sid = SR ? SR.getSkillId(entry) : (typeof entry === 'string' ? entry : entry.skillId);
+        return SR ? SR.resolveUnitSkill(unit, sid) : DS().get('skills', sid);
+      })
       .filter(s => s && _canUseSkill(unit, s));
     if (readySkills.length) {
       readySkills.sort((a, b) => (b.power || 0) - (a.power || 0));

@@ -38,6 +38,69 @@ window.CJS.DataStore = (() => {
   let _dirty = false;
   let _counters = {};  // { eff: 1, skl: 1, ... } for ID generation
 
+  // ── NORMALIZATION ──────────────────────────────────────────────────
+  // Phase 9: accept legacy string-form skill refs on load/import,
+  // but keep canonical object form in store/export.
+  function _normalizeSkillEntry(entry) {
+    const SR = window.CJS.SkillResolver;
+    if (SR && SR.normalize) return SR.normalize(entry);
+
+    if (!entry) return null;
+    if (typeof entry === 'string') {
+      return { skillId: entry, overrides: {}, level: 1 };
+    }
+    if (typeof entry === 'object' && entry.skillId) {
+      return {
+        skillId: entry.skillId,
+        overrides: entry.overrides || {},
+        level: entry.level || 1
+      };
+    }
+    return null;
+  }
+
+  function _normalizeSkillEntries(skills) {
+    if (!Array.isArray(skills)) return skills;
+    return skills.map(_normalizeSkillEntry).filter(Boolean);
+  }
+
+  function _normalizeForStorage(type, obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+
+    const normalized = { ...obj };
+    if (type === 'characters' || type === 'monsters') {
+      normalized.skills = _normalizeSkillEntries(normalized.skills || []);
+    }
+    return normalized;
+  }
+
+  function _normalizeCollection(type, collection) {
+    const out = {};
+    for (const [id, obj] of Object.entries(collection || {})) {
+      const normalized = _normalizeForStorage(type, obj);
+      if (normalized && typeof normalized === 'object' && !Array.isArray(normalized)) {
+        normalized.id = normalized.id || id;
+      }
+      out[id] = normalized;
+    }
+    return out;
+  }
+
+  function _exportSnapshot() {
+    return {
+      effects:    { ..._data.effects },
+      skills:     { ..._data.skills },
+      items:      { ..._data.items },
+      passives:   { ..._data.passives },
+      characters: _normalizeCollection('characters', _data.characters),
+      monsters:   _normalizeCollection('monsters', _data.monsters),
+      encounters: { ..._data.encounters },
+      statuses:   { ..._data.statuses },
+      quips:      [..._data.quips],
+      quizBank:   [..._data.quizBank]
+    };
+  }
+
   // ── ID GENERATION ──────────────────────────────────────────────────
   function _nextId(prefix) {
     if (!_counters[prefix]) _counters[prefix] = 1;
@@ -109,10 +172,11 @@ window.CJS.DataStore = (() => {
     const singularType = type.replace(/s$/, ''); // "effects" → "effect"
     const prefix = _getPrefixForType(singularType);
     const id = obj.id || _nextId(prefix);
-    obj.id = id;
-    _data[type][id] = obj;
+    const normalized = _normalizeForStorage(type, { ...obj, id });
+    normalized.id = id;
+    _data[type][id] = normalized;
     _dirty = true;
-    _undo('create', type, id, null, obj);
+    _undo('create', type, id, null, normalized);
     return id;
   }
 
@@ -123,8 +187,13 @@ window.CJS.DataStore = (() => {
       return false;
     }
     const before = JSON.parse(JSON.stringify(_data[type][id]));
-    Object.assign(_data[type][id], changes);
-    _data[type][id].id = id; // never allow ID change
+    const merged = _normalizeForStorage(type, {
+      ..._data[type][id],
+      ...changes,
+      id
+    });
+    merged.id = id; // never allow ID change
+    _data[type][id] = merged;
     _dirty = true;
     _undo('update', type, id, before, _data[type][id]);
     return true;
@@ -134,10 +203,11 @@ window.CJS.DataStore = (() => {
   function replace(type, id, obj) {
     if (!_data[type]) return false;
     const before = _data[type][id] ? JSON.parse(JSON.stringify(_data[type][id])) : null;
-    obj.id = id;
-    _data[type][id] = obj;
+    const normalized = _normalizeForStorage(type, { ...obj, id });
+    normalized.id = id;
+    _data[type][id] = normalized;
     _dirty = true;
-    _undo('replace', type, id, before, obj);
+    _undo('replace', type, id, before, normalized);
     return true;
   }
 
@@ -256,10 +326,14 @@ window.CJS.DataStore = (() => {
       }
     }
 
+    // Helper: extract skillId from string or { skillId, overrides } format
+    const _sid = (entry) => typeof entry === 'string' ? entry : (entry?.skillId || null);
+
     // Validate characters → skills, items, passives
     for (const [id, char] of Object.entries(_data.characters)) {
-      (char.skills || []).forEach(sid => {
-        if (!exists('skills', sid)) {
+      (char.skills || []).forEach(entry => {
+        const sid = _sid(entry);
+        if (sid && !exists('skills', sid)) {
           errors.push(`Character "${id}" references missing skill "${sid}"`);
         }
       });
@@ -277,15 +351,19 @@ window.CJS.DataStore = (() => {
 
     // Validate monsters → same as characters + AI skill refs
     for (const [id, mon] of Object.entries(_data.monsters)) {
-      (mon.skills || []).forEach(sid => {
-        if (!exists('skills', sid)) {
+      (mon.skills || []).forEach(entry => {
+        const sid = _sid(entry);
+        if (sid && !exists('skills', sid)) {
           errors.push(`Monster "${id}" references missing skill "${sid}"`);
         }
       });
       (mon.aiRules || []).forEach((rule, i) => {
         if (rule.action && rule.action.startsWith('use_skill:')) {
           const skillId = rule.action.split(':')[1];
-          if (!exists('skills', skillId) && !(mon.skills || []).includes(skillId)) {
+          const monSkillIds = (mon.skills || []).map(_sid);
+          if (!exists('skills', skillId)) {
+            errors.push(`Monster "${id}" AI rule ${i} references non-existent skill "${skillId}"`);
+          } else if (!monSkillIds.includes(skillId)) {
             warnings.push(`Monster "${id}" AI rule ${i} references skill "${skillId}" not in its skill list`);
           }
         }
@@ -307,7 +385,7 @@ window.CJS.DataStore = (() => {
   // ── IMPORT / EXPORT ────────────────────────────────────────────────
 
   function exportJSON() {
-    return JSON.stringify(_data, null, 2);
+    return JSON.stringify(_exportSnapshot(), null, 2);
   }
 
   function exportBlob() {
@@ -348,7 +426,7 @@ window.CJS.DataStore = (() => {
     for (const col of collections) {
       if (obj[col]) {
         if (typeof obj[col] === 'object' && !Array.isArray(obj[col])) {
-          _data[col] = { ..._data[col], ...obj[col] };
+          _data[col] = { ..._data[col], ..._normalizeCollection(col, obj[col]) };
         }
       }
     }

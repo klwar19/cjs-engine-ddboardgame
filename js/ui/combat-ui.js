@@ -10,7 +10,7 @@
 //   - Show loot screen on battle end
 //
 // Reads: CombatManager, GridEngine, GridRenderer, ActionHandler,
-//        NarratorEngine, QTEManager, CombatSettings, CombatLog
+//        NarratorEngine, QteManager, CombatSettings, CombatLog
 // ─────────────────────────────────────────────────────────────────────
 
 window.CJS = window.CJS || {};
@@ -25,7 +25,7 @@ window.CJS.CombatUI = (() => {
   const NE   = () => window.CJS.NarratorEngine;
   const ND   = () => window.CJS.NarratorData;
   const DS   = () => window.CJS.DataStore;
-  const QM   = () => window.CJS.QTEManager;
+  const QM   = () => window.CJS.QteManager;
   const CS   = () => window.CJS.CombatSettings;
   const Log  = () => window.CJS.CombatLog;
   const C    = () => window.CJS.CONST;
@@ -405,7 +405,8 @@ window.CJS.CombatUI = (() => {
         break;
       case 'skill': {
         const skillId = btn.dataset.skill;
-        const skill = DS().get('skills', skillId);
+        const SR = window.CJS.SkillResolver;
+        const skill = SR ? SR.resolveUnitSkill(unit, skillId) : DS().get('skills', skillId);
         if (skill?.aoe && skill.aoe !== 'none') {
           _enterAoETargetMode(unit, skill);
         } else {
@@ -443,10 +444,15 @@ window.CJS.CombatUI = (() => {
     _mode = 'target_single';
     _pendingAction = action;
 
-    // Highlight valid targets
-    const range = action.type === 'attack'
-      ? 1 + (unit.rangeBonus || 0)
-      : ((DS().get('skills', action.skillId)?.range || 1) + (unit.rangeBonus || 0));
+    // Highlight valid targets (use weapon range for attacks, SkillResolver for skills)
+    let range;
+    if (action.type === 'attack') {
+      range = AH() && AH().getAttackRange ? AH().getAttackRange(unit) : 1 + (unit.rangeBonus || 0);
+    } else {
+      const SR = window.CJS.SkillResolver;
+      const sk = SR ? SR.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
+      range = (sk?.range || 1) + (unit.rangeBonus || 0);
+    }
 
     const targets = GE().getUnitsInRange(unit.pos[0], unit.pos[1], range, { excludeId: unit.instanceId });
     const cells = [];
@@ -499,7 +505,9 @@ window.CJS.CombatUI = (() => {
 
       // Check if this skill needs QTE
       if (action.type === 'skill') {
-        const skill = DS().get('skills', action.skillId);
+        const SR = window.CJS.SkillResolver;
+        const unit = CM().getCurrentUnit();
+        const skill = (SR && unit) ? SR.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
         if (skill?.qte && skill.qte !== 'none' && QM()) {
           _runQTE(skill, action);
           return;
@@ -528,7 +536,7 @@ window.CJS.CombatUI = (() => {
 
     try {
       const unit = CM().getCurrentUnit();
-      const result = await QM().triggerQTE(skill, unit, $qteOverlay);
+      const result = await QM().trigger({ skill, attacker: unit, container: $qteOverlay });
       action.qteResult = result;
     } catch (err) {
       action.qteResult = { grade: 'ok', multiplier: 1.0 };

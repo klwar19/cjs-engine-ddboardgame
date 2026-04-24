@@ -58,6 +58,16 @@ window.CJS.EffectResolver = (() => {
         // Condition gate
         if (!Cond().evaluate(effect.conditions, { ...ctx, unit })) continue;
 
+        // ── CHANCE % GATE ──
+        // If the effect has a chance < 100, roll to see if it fires.
+        // Each effect instance rolls independently (not additive with other effects).
+        // Default is 100 (always fires if conditions pass).
+        const chance = effect.chance ?? 100;
+        if (chance < 100) {
+          const roll = Math.random() * 100;
+          if (roll >= chance) continue; // Failed chance roll — skip this effect
+        }
+
         const result = executeEffect(effect, { ...ctx, caster: unit, effectOwner: unit });
         results.push({ effect, result });
       }

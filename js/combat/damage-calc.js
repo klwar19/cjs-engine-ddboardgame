@@ -47,7 +47,7 @@ window.CJS.DamageCalc = (() => {
   //   damage: number, breakdown: {...}, attackScore, defendScore
   // }
   function computeAttack(args) {
-    const { attacker, target, skill, qteMultiplier, qteGrade } = args;
+    const { attacker, target, skill, qteMultiplier, qteGrade, weaponData } = args;
     if (!attacker || !target) return { hit: false, miss: true, damage: 0 };
 
     // ── 1. HIT CHECK ──────────────────────────────────────────────
@@ -103,14 +103,15 @@ window.CJS.DamageCalc = (() => {
     const qMult = qteMultiplier ?? 1.0;
 
     // Element multiplier: target's weak/resist/immune
-    const element = skill?.element || 'Physical';
+    // Falls back to weaponData for basic attacks, then Physical
+    const element = skill?.element || weaponData?.element || 'Physical';
     const elementMult = F().getElementMultiplier(element, target);
 
     // Crit multiplier
     const critMult = isCritical ? F().calcCritMultiplier(attacker.critDmgBonus || 0) : 1.0;
 
-    // DR
-    const damageType = skill?.damageType || 'Physical';
+    // DR — uses skill damageType, then weapon damageType, then Physical
+    const damageType = skill?.damageType || weaponData?.damageType || 'Physical';
     const drSources  = target.dr || {};
     let dr;
     switch (damageType) {
@@ -190,27 +191,40 @@ window.CJS.DamageCalc = (() => {
   // or on_kill — those are triggered by the caller (effect-resolver) so
   // the full context chain is right.
   //
-  // Returns: { applied, overkill, killed, newHP }
+  // Absorb shields are checked FIRST — damage is subtracted from shields
+  // before HP is reduced.
+  //
+  // Returns: { applied, absorbed, overkill, killed, newHP }
   function applyDamage({ attacker, target, amount, element, damageType, skill, isCritical, qteGrade, breakdown }) {
     if (!target || amount <= 0) {
-      return { applied: 0, overkill: 0, killed: false, newHP: target?.currentHP || 0 };
+      return { applied: 0, absorbed: 0, overkill: 0, killed: false, newHP: target?.currentHP || 0 };
     }
 
-    // Immunity / spell immunity checks go here (if target has a damage_block or spell_immunity passive)
-    // For now: direct application.
+    let remaining = amount;
+    let absorbed = 0;
+
+    // ── Absorb shield check ──
+    // Shield/Barrier statuses absorb damage before HP is reduced.
+    const _SM = window.CJS.StatusManager;
+    if (_SM && _SM.absorbDamage) {
+      const before = remaining;
+      remaining = _SM.absorbDamage(target, remaining, damageType);
+      absorbed = before - remaining;
+    }
 
     const prevHP = target.currentHP || 0;
-    const newHP  = Math.max(0, prevHP - amount);
+    const newHP  = Math.max(0, prevHP - remaining);
     target.currentHP = newHP;
 
-    const overkill = Math.max(0, amount - prevHP);
+    const overkill = Math.max(0, remaining - prevHP);
     const killed   = newHP === 0 && prevHP > 0;
     const applied  = prevHP - newHP;
 
     // Log the hit
     Log().logHit({
       actor: attacker, target,
-      damage: applied, element, damageType, skill, isCritical, qteGrade, breakdown
+      damage: applied + absorbed, element, damageType, skill, isCritical, qteGrade,
+      breakdown: { ...breakdown, absorbed }
     });
 
     // Log kill
@@ -218,18 +232,32 @@ window.CJS.DamageCalc = (() => {
       Log().logKill({ actor: attacker, target, overkill, finalBlowSkill: skill });
     }
 
-    return { applied, overkill, killed, newHP };
+    return { applied, absorbed, overkill, killed, newHP };
   }
 
   // ── APPLY HEALING ─────────────────────────────────────────────────
+  // Checks preventsHealing (curse status) before applying.
   function applyHeal({ actor, target, amount, source }) {
-    if (!target || amount <= 0) return { applied: 0, newHP: target?.currentHP || 0 };
+    if (!target || amount <= 0) return { applied: 0, newHP: target?.currentHP || 0, blocked: false };
+
+    // ── Prevents healing check (curse, etc.) ──
+    const _SM = window.CJS.StatusManager;
+    if (_SM && _SM.canBeHealed && !_SM.canBeHealed(target)) {
+      Log().record({
+        type: 'heal', actor, target,
+        tags: ['heal', 'heal_blocked', 'prevents_healing'],
+        data: { amount, source, blocked: true },
+        message: `${target.name || 'Target'} cannot be healed!`
+      });
+      return { applied: 0, newHP: target.currentHP, blocked: true };
+    }
+
     const prevHP = target.currentHP || 0;
     const newHP  = Math.min(target.maxHP || prevHP, prevHP + amount);
     target.currentHP = newHP;
     const applied = newHP - prevHP;
     Log().logHeal({ actor, target, amount: applied, source });
-    return { applied, newHP };
+    return { applied, newHP, blocked: false };
   }
 
   // ── APPLY MP CHANGE ───────────────────────────────────────────────
@@ -262,19 +290,28 @@ window.CJS.DamageCalc = (() => {
     }
 
     const raw   = Math.floor(amount * elementMult);
-    const final = Math.max(1, raw - Math.floor(dr / 2));  // DoTs ignore half DR
+    let final = Math.max(1, raw - Math.floor(dr / 2));  // DoTs ignore half DR
+
+    // ── Absorb shield check for DoT damage too ──
+    let absorbed = 0;
+    const _SM = window.CJS.StatusManager;
+    if (_SM && _SM.absorbDamage) {
+      const before = final;
+      final = _SM.absorbDamage(target, final, damageType);
+      absorbed = before - final;
+    }
 
     const prevHP = target.currentHP || 0;
     const newHP  = Math.max(0, prevHP - final);
     target.currentHP = newHP;
 
     const killed = newHP === 0 && prevHP > 0;
-    Log().logStatusTick({ target, statusId, effect: 'tick_damage', amount: final });
+    Log().logStatusTick({ target, statusId, effect: 'tick_damage', amount: final + absorbed });
     if (killed) {
       Log().logKill({ actor: source, target, overkill: final - prevHP, finalBlowSkill: null });
     }
 
-    return { applied: Math.min(final, prevHP), killed };
+    return { applied: Math.min(final, prevHP), absorbed, killed };
   }
 
   // ── OUT-OF-BAND DAMAGE (reflect, thorns, collision) ──────────────

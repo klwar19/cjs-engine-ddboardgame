@@ -20,18 +20,37 @@ window.CJS.StatusEditor = (() => {
   function _render() {
     const defs = C().STATUS_DEFINITIONS;
     const cats = C().STATUS_CATEGORIES;
-    const custom = DS().getAllAsArray('statuses');
 
-    const grouped = {};
-    for (const [id, def] of Object.entries(defs)) {
-      const cat = def.category || 'exotic';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push({ id, ...def, isBuiltin: true });
+    // ── Build single merged list: one entry per status ID ──
+    // DataStore is the runtime truth (built-ins are seeded at boot).
+    // Then add any built-in that somehow isn't in DataStore.
+    const merged = new Map(); // id → { ...def, _source }
+
+    // DataStore entries (includes seeded built-ins + custom)
+    const dsAll = DS().getAllAsArray('statuses');
+    for (const s of dsAll) {
+      if (!s.id) continue;
+      const isBuiltin = !!defs[s.id];
+      // "overridden" = built-in exists AND DataStore has a modified copy
+      // "custom" = no built-in counterpart
+      // "builtin" = built-in seeded into DataStore, unmodified
+      const source = isBuiltin ? 'builtin' : 'custom';
+      merged.set(s.id, { ...s, _source: source });
     }
-    for (const s of custom) {
+
+    // Any built-in not yet in DataStore (edge case: editor without combat boot)
+    for (const [id, def] of Object.entries(defs)) {
+      if (!merged.has(id)) {
+        merged.set(id, { id, ...def, _source: 'builtin' });
+      }
+    }
+
+    // Group by category
+    const grouped = {};
+    for (const [id, s] of merged) {
       const cat = s.category || 'exotic';
       if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push({ ...s, isBuiltin: false });
+      grouped[cat].push(s);
     }
 
     let listHtml = '';
@@ -40,9 +59,12 @@ window.CJS.StatusEditor = (() => {
       listHtml += '<div class="status-cat-header" style="border-left:3px solid ' + catInfo.color + '">' + catInfo.name + ' (' + items.length + ')</div>';
       for (const s of items) {
         const active = s.id === _activeId ? 'active' : '';
+        const badge = s._source === 'custom'
+          ? '<span class="badge" style="background:var(--accent)">custom</span>'
+          : '';
         listHtml += '<div class="data-list-item ' + active + '" data-id="' + s.id + '">'
           + '<span>' + (s.icon||'✦') + '</span> <span>' + (s.name||s.id) + '</span>'
-          + (s.isBuiltin ? '' : '<span class="badge" style="background:var(--accent)">custom</span>')
+          + badge
           + '</div>';
       }
     }
@@ -86,10 +108,13 @@ window.CJS.StatusEditor = (() => {
     const area = _container.querySelector('#sts-detail');
     const defs = C().STATUS_DEFINITIONS;
     const custom = DS().get('statuses', id);
-    const def = defs[id] || custom;
+    // DataStore-first (matches runtime: StatusManager, StatCompiler)
+    const def = custom || (defs[id] ? { id, ...defs[id] } : null);
     if (!def) { area.innerHTML = '<div class="card">Status not found</div>'; return; }
 
-    const isBuiltin = !!defs[id];
+    // If there's a custom version in DataStore, show editable form (even if
+    // a built-in with the same ID exists — the custom one overrides at runtime).
+    const isBuiltin = !!defs[id] && !custom;
 
     if (isBuiltin) {
       _showBuiltinDetail(area, id, def);
@@ -211,7 +236,8 @@ window.CJS.StatusEditor = (() => {
       + '</div>'
 
       // Dropdowns row
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:10px">'
+      +   '<div><label class="form-label">Duration (turns)</label><input type="number" id="sts-duration" value="' + (def.duration||3) + '" min="0" max="99" style="width:100%"></div>'
       +   '<div><label class="form-label">Max Stacks</label><input type="number" id="sts-maxStacks" value="' + (def.maxStacks||1) + '" min="1" max="99" style="width:100%"></div>'
       +   '<div><label class="form-label">Break Element</label><select id="sts-breaksOnElement" style="width:100%">' + elementOpts + '</select></div>'
       +   '<div><label class="form-label">Tick Damage Type</label><select id="sts-tickDamageType" style="width:100%">' + tickTypeOpts + '</select></div>'
@@ -266,6 +292,8 @@ window.CJS.StatusEditor = (() => {
   }
 
   // ── SAVE CUSTOM STATUS FROM FORM ──────────────────────────────────
+  // Auto-generates engine-compatible fields alongside editor-friendly ones.
+  // This bridges the gap between what the editor shows and what the engine needs.
   function _saveCustom(id) {
     var area = _container.querySelector('#sts-detail');
     var f = function(sel) { return area.querySelector(sel); };
@@ -280,19 +308,45 @@ window.CJS.StatusEditor = (() => {
       if (!isNaN(val) && val !== 0) statMod[stat] = val;
     });
 
+    // Read editor-friendly fields
+    var preventsAction   = ch('#sts-preventsAction');
+    var preventsMovement = ch('#sts-preventsMovement');
+    var preventsSkills   = ch('#sts-preventsSkills');
+    var preventsHealing  = ch('#sts-preventsHealing');
+    var breaksOnDamage   = ch('#sts-breaksOnDamage');
+    var breaksOnAction   = ch('#sts-breaksOnAction');
+    var breaksOnAllyDmg  = ch('#sts-breaksOnAllyDamage');
+    var stackable        = ch('#sts-stackable');
+    var tickDmgType      = v('#sts-tickDamageType') || null;
+    var category         = v('#sts-category') || 'exotic';
+
+    // ── Auto-generate breakOn array from checkbox flags ──
+    var breakOn = [];
+    if (breaksOnDamage)  breakOn.push('damage');
+    if (breaksOnAction)  breakOn.push('action');
+    if (breaksOnAllyDmg) breakOn.push('ally_damage');
+
+    // ── Determine isBuff from category ──
+    var isBuff = (category === 'buff');
+
+    // ── Determine element from tickDamageType ──
+    var element = tickDmgType || null;
+
     var updated = {
       id: id,
       name: v('#sts-name') || id,
       icon: v('#sts-icon') || '✦',
-      category: v('#sts-category') || 'exotic',
+      category: category,
       desc: v('#sts-desc') || '',
-      preventsAction:     ch('#sts-preventsAction'),
-      preventsMovement:   ch('#sts-preventsMovement'),
-      preventsSkills:     ch('#sts-preventsSkills'),
-      preventsHealing:    ch('#sts-preventsHealing'),
-      breaksOnDamage:     ch('#sts-breaksOnDamage'),
-      breaksOnAction:     ch('#sts-breaksOnAction'),
-      breaksOnAllyDamage: ch('#sts-breaksOnAllyDamage'),
+
+      // Editor-friendly flags (read by _buildFlagsList for display)
+      preventsAction:     preventsAction,
+      preventsMovement:   preventsMovement,
+      preventsSkills:     preventsSkills,
+      preventsHealing:    preventsHealing,
+      breaksOnDamage:     breaksOnDamage,
+      breaksOnAction:     breaksOnAction,
+      breaksOnAllyDamage: breaksOnAllyDmg,
       invisible:          ch('#sts-invisible'),
       autoCounter:        ch('#sts-autoCounter'),
       redirectDamage:     ch('#sts-redirectDamage'),
@@ -300,22 +354,43 @@ window.CJS.StatusEditor = (() => {
       absorbHP:           ch('#sts-absorbHP'),
       tickHeal:           ch('#sts-tickHeal'),
       randomTarget:       ch('#sts-randomTarget'),
-      stackable:          ch('#sts-stackable'),
+      stackable:          stackable,
       maxStacks:          parseInt(v('#sts-maxStacks'), 10) || 1,
       breaksOnElement:    v('#sts-breaksOnElement') || null,
-      tickDamageType:     v('#sts-tickDamageType') || null,
+      tickDamageType:     tickDmgType,
       forcedTarget:       v('#sts-forcedTarget') || null,
       absorbType:         v('#sts-absorbType') || null,
+
+      // Inline stat modifiers (read by stat-compiler bridge)
       statMod:     Object.keys(statMod).length > 0 ? statMod : null,
       moveMod:     n('#sts-moveMod') || null,
       drMod:       n('#sts-drMod') || null,
       accuracyMod: n('#sts-accuracyMod') || null,
       critMod:     n('#sts-critMod') || null,
-      damageMod:   n('#sts-damageMod') || null
+      damageMod:   n('#sts-damageMod') || null,
+
+      // ── ENGINE-COMPATIBLE FIELDS (auto-generated) ──
+      // These ensure the engine runtime can read the status correctly
+      // without needing to know about the editor's field names.
+      preventsActions: preventsAction, // engine uses plural form
+      stacks:          stackable,      // engine uses 'stacks' not 'stackable'
+      refreshOnReapply: true,          // default: refresh duration on reapply
+      isBuff:          isBuff,
+      element:         element,
+      breakOn:         breakOn.length > 0 ? breakOn : [],
+      tickPhase:       'turn_start',   // default tick phase
+      duration:        parseInt(v('#sts-duration'), 10) || 3,
+      // passiveEffects and tickEffects remain empty arrays — the engine
+      // bridges inline modifiers (statMod, etc.) via stat-compiler's
+      // _bridgeInlineModifiers, and ticks via tickDamageType/tickHeal.
+      passiveEffects:  [],
+      tickEffects:     []
     };
 
     // Clean falsy values for tidiness (keep essentials)
-    var keep = ['id','name','icon','category','desc','maxStacks','stackable'];
+    var keep = ['id','name','icon','category','desc','maxStacks','stackable',
+                'preventsActions','stacks','refreshOnReapply','isBuff','breakOn',
+                'tickPhase','duration','passiveEffects','tickEffects','element'];
     for (var k in updated) {
       if (keep.indexOf(k) >= 0) continue;
       if (updated[k] === null || updated[k] === false || updated[k] === 0) delete updated[k];
