@@ -92,6 +92,7 @@ const SM  = CJS.StatusManager;
 const AH  = CJS.ActionHandler;
 const AI  = CJS.AIController;
 const CM  = CJS.CombatManager;
+const Log = CJS.CombatLog;
 
 // ── MOCK COMBAT SYSTEMS ──────────────────────────────────────────────
 CJS.GridEngine = {
@@ -570,6 +571,45 @@ if (realSkill) {
 }
 const realExec = realAction ? AH.execute(realPlayer, realAction, { turnNumber: 1 }) : { success: false };
 assert('existing skill executes from real gamedata', !!realExec.success);
+
+// TEST 15: Burn tick logs only once
+console.log('\n── TEST 15: Burn tick display logging ──');
+
+Log.reset();
+Log.setTurn(1);
+Log.setPhase('turn_start');
+
+const burnProbe = {
+  name: 'Burn Probe',
+  team: 'enemy',
+  type: 'beast',
+  rank: 'F',
+  currentHP: 30,
+  maxHP: 30,
+  dr: { physical: 0, magic: 0, chaos: 0 },
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  compiledStats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  activeStatuses: []
+};
+
+const burnApply = SM.applyStatus({
+  target: burnProbe,
+  statusId: 'burn',
+  sourceUnit: null,
+  overrides: { value: 4, duration: 2 },
+  combatContext: { turnNumber: 1 }
+});
+assert('burn applied for display probe', !!burnApply.applied);
+
+const tickLogStart = Log.getAll().length;
+SM.tickStatuses(burnProbe, 'turn_start');
+const burnTickEntries = Log.getAll()
+  .slice(tickLogStart)
+  .filter(entry => entry.type === 'status_tick' && entry.data?.statusId === 'burn');
+
+assertEq('burn HP drops once from one tick', burnProbe.currentHP, 26);
+assertEq('burn produces one status_tick log entry', burnTickEntries.length, 1);
+assertEq('burn tick log keeps tick_damage effect', burnTickEntries[0]?.data?.effect, 'tick_damage');
 
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════

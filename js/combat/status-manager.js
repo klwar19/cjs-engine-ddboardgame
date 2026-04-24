@@ -293,11 +293,6 @@ window.CJS.StatusManager = (() => {
         damageType: _elementToDamageType(element),
         statusId: highest.statusId
       });
-
-      Log().logStatusTick({
-        target: unit, statusId: highest.statusId,
-        effect: 'damage', amount: highest.damage
-      });
     }
 
     // ── Execute heal ticks ──
