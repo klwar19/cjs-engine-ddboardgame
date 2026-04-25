@@ -1,57 +1,63 @@
 // combat-ui.js
 // Combat screen UI controller. Binds CombatManager, GridRenderer,
 // NarratorEngine, and QTE modules into a cohesive combat experience.
-//
-// Responsibilities:
-//   - Render initiative tracker, action buttons, HP/MP bars
-//   - Handle player targeting mode (click grid cell → submit action)
-//   - Display battle log with narrator commentary
-//   - Manage QTE modal overlays
-//   - Show loot screen on battle end
-//
-// Reads: CombatManager, GridEngine, GridRenderer, ActionHandler,
-//        NarratorEngine, QteManager, CombatSettings, CombatLog
-// ─────────────────────────────────────────────────────────────────────
 
 window.CJS = window.CJS || {};
 
 window.CJS.CombatUI = (() => {
   'use strict';
 
-  const CM   = () => window.CJS.CombatManager;
-  const GE   = () => window.CJS.GridEngine;
-  const GR   = () => window.CJS.GridRenderer;
-  const AH   = () => window.CJS.ActionHandler;
-  const NE   = () => window.CJS.NarratorEngine;
-  const ND   = () => window.CJS.NarratorData;
-  const DS   = () => window.CJS.DataStore;
-  const QM   = () => window.CJS.QteManager;
-  const CS   = () => window.CJS.CombatSettings;
-  const Log  = () => window.CJS.CombatLog;
-  const C    = () => window.CJS.CONST;
-  const PP   = () => window.CJS.PortraitPicker;
+  const CM = () => window.CJS.CombatManager;
+  const GE = () => window.CJS.GridEngine;
+  const GR = () => window.CJS.GridRenderer;
+  const AH = () => window.CJS.ActionHandler;
+  const NE = () => window.CJS.NarratorEngine;
+  const ND = () => window.CJS.NarratorData;
+  const DS = () => window.CJS.DataStore;
+  const QM = () => window.CJS.QteManager;
+  const CS = () => window.CJS.CombatSettings;
+  const Log = () => window.CJS.CombatLog;
 
-  // ── STATE ──────────────────────────────────────────────────────────
   let _container = null;
-  let _mode = 'idle';       // 'idle'|'move'|'target_single'|'target_aoe'|'qte'
-  let _pendingAction = null; // action being constructed
+  let _callbacks = {};
+  let _mode = 'idle';
+  let _pendingAction = null;
+  let _lastEncounterId = null;
+
   let _unsubCM = null;
   let _unsubLog = null;
   let _unsubNarrator = null;
-  let _qteResolve = null;   // resolve function for QTE promise
+  let _keyboardBound = false;
+  let _resizeBound = false;
 
-  // DOM references
-  let $grid, $log, $actions, $initiative, $unitInfo, $narrator, $qteOverlay;
-  let $diceModal, $diceControls;
+  let $grid = null;
+  let $log = null;
+  let $actions = null;
+  let $initiative = null;
+  let $unitInfo = null;
+  let $narrator = null;
+  let $qteOverlay = null;
+  let $diceModal = null;
 
-  // ── INIT ──────────────────────────────────────────────────────────
-  function init(containerEl) {
+  function init(containerEl, options = {}) {
+    destroy();
     _container = containerEl;
+    _callbacks = { ...options };
+    _mode = 'idle';
+    _pendingAction = null;
+
     _buildLayout();
     _bindEvents();
+    _bindWindowEvents();
+
+    if (CS()) {
+      _setDiceMode(CS().getDiceMode ? CS().getDiceMode() : 'auto');
+    }
   }
 
   function _buildLayout() {
+    if (!_container) return;
+
     _container.innerHTML = `
       <div class="combat-screen">
         <div class="combat-top">
@@ -64,9 +70,9 @@ window.CJS.CombatUI = (() => {
           <div class="combat-sidebar">
             <div id="cbt-unit-info" class="unit-info-panel"></div>
             <div id="cbt-actions" class="action-panel"></div>
-            <div class="dice-controls" id="cbt-dice-controls">
+            <div class="dice-controls">
               <div class="dice-mode-row">
-                <span class="dice-label">🎲 Dice:</span>
+                <span class="dice-label">Dice:</span>
                 <button id="btn-dice-auto" class="btn btn-sm dice-mode-btn active">Auto</button>
                 <button id="btn-dice-manual" class="btn btn-sm dice-mode-btn">Manual</button>
               </div>
@@ -90,13 +96,13 @@ window.CJS.CombatUI = (() => {
         <div id="cbt-qte-overlay" class="qte-overlay" style="display:none"></div>
         <div id="cbt-dice-modal" class="dice-modal-overlay" style="display:none">
           <div class="dice-modal">
-            <div class="dice-modal-title" id="dice-modal-title">🎲 Roll: 2d6+3</div>
-            <div class="dice-modal-source" id="dice-modal-source">for: Ember Slash</div>
-            <div class="dice-modal-range" id="dice-modal-range">Range: 5 — 15</div>
+            <div class="dice-modal-title" id="dice-modal-title">Roll</div>
+            <div class="dice-modal-source" id="dice-modal-source"></div>
+            <div class="dice-modal-range" id="dice-modal-range"></div>
             <input type="number" id="dice-modal-input" class="dice-modal-field" placeholder="Enter value...">
             <div class="dice-modal-buttons">
-              <button id="dice-modal-random" class="btn btn-sm">🎲 Random</button>
-              <button id="dice-modal-confirm" class="btn btn-primary btn-sm">✅ Confirm</button>
+              <button id="dice-modal-random" class="btn btn-sm">Random</button>
+              <button id="dice-modal-confirm" class="btn btn-primary btn-sm">Confirm</button>
             </div>
             <div class="dice-modal-error" id="dice-modal-error"></div>
           </div>
@@ -104,17 +110,15 @@ window.CJS.CombatUI = (() => {
       </div>
     `;
 
-    $grid      = _container.querySelector('.combat-grid-wrap');
-    $log       = _container.querySelector('#cbt-log');
-    $actions   = _container.querySelector('#cbt-actions');
-    $initiative= _container.querySelector('#cbt-initiative');
-    $unitInfo  = _container.querySelector('#cbt-unit-info');
-    $narrator  = _container.querySelector('#cbt-narrator');
-    $qteOverlay= _container.querySelector('#cbt-qte-overlay');
+    $grid = _container.querySelector('.combat-grid-wrap');
+    $log = _container.querySelector('#cbt-log');
+    $actions = _container.querySelector('#cbt-actions');
+    $initiative = _container.querySelector('#cbt-initiative');
+    $unitInfo = _container.querySelector('#cbt-unit-info');
+    $narrator = _container.querySelector('#cbt-narrator');
+    $qteOverlay = _container.querySelector('#cbt-qte-overlay');
     $diceModal = _container.querySelector('#cbt-dice-modal');
-    $diceControls = _container.querySelector('#cbt-dice-controls');
 
-    // Init grid renderer
     const canvas = _container.querySelector('#cbt-canvas');
     GR().init(canvas, {
       cellSize: 64,
@@ -124,27 +128,28 @@ window.CJS.CombatUI = (() => {
   }
 
   function _bindEvents() {
-    // ── DICE MODE CONTROLS ────────────────────────────────────────────
     _container.querySelector('#btn-dice-auto')?.addEventListener('click', () => {
       _setDiceMode('auto');
     });
+
     _container.querySelector('#btn-dice-manual')?.addEventListener('click', () => {
       _setDiceMode('prompt');
     });
+
     _container.querySelector('#btn-dice-queue')?.addEventListener('click', () => {
-      const inp = _container.querySelector('#dice-queue-input');
-      const vals = (inp?.value || '').split(/[,\s]+/).map(Number).filter(n => !isNaN(n) && n > 0);
-      if (vals.length > 0 && CS()) {
-        CS().queueDice(vals);
-        inp.value = '';
-        _addLogMessage(`🎲 Queued ${vals.length} dice: [${vals.join(', ')}]`, 'note');
+      const input = _container.querySelector('#dice-queue-input');
+      const values = (input?.value || '')
+        .split(/[,\s]+/)
+        .map(Number)
+        .filter((value) => !Number.isNaN(value) && value > 0);
+
+      if (values.length > 0 && CS()) {
+        CS().queueDice(values);
+        input.value = '';
+        _addLogMessage(`Queued ${values.length} dice: [${values.join(', ')}]`, 'note');
       }
     });
 
-    // Register the dice prompt function with CombatSettings.
-    // damage-calc uses sync DiceService.roll(), so this function must return
-    // a number (not a Promise) for the sync path. We use window.prompt() which
-    // is blocking. The fancy modal is available for DiceService.rollAsync() callers.
     if (CS()) {
       CS().setDicePromptFn((expression, source) => {
         const Dice = window.CJS.Dice;
@@ -153,32 +158,35 @@ window.CJS.CombatUI = (() => {
         const maxVal = Dice.max(parsed);
 
         const input = window.prompt(
-          `🎲 Roll: ${expression}  (for: ${source || 'roll'})\n`
-          + `Range: ${minVal} – ${maxVal}\n\n`
-          + `Enter a value, or leave blank for random:`
+          `Roll: ${expression} (for: ${source || 'roll'})\n`
+          + `Range: ${minVal} - ${maxVal}\n\n`
+          + 'Enter a value, or leave blank for random:'
         );
 
-        if (input === null || input.trim() === '') return null; // cancel → auto roll
-        const val = parseInt(input, 10);
-        if (isNaN(val) || val < minVal || val > maxVal) return null; // invalid → auto
-        return val;
+        if (input === null || input.trim() === '') return null;
+
+        const value = parseInt(input, 10);
+        if (Number.isNaN(value) || value < minVal || value > maxVal) return null;
+        return value;
       });
     }
 
-    // Auto-control buttons
     _container.querySelector('#btn-auto-turn')?.addEventListener('click', () => {
       CM().autoOneTurn();
       _refresh();
     });
+
     _container.querySelector('#btn-auto-round')?.addEventListener('click', () => {
       CM().autoOneRound();
       _refresh();
     });
+
     _container.querySelector('#btn-auto-all')?.addEventListener('click', () => {
       _container.querySelector('#btn-stop-auto').style.display = '';
       CM().autoUntilStop();
       _refresh();
     });
+
     _container.querySelector('#btn-stop-auto')?.addEventListener('click', () => {
       CM().stopAuto();
       _container.querySelector('#btn-stop-auto').style.display = 'none';
@@ -186,40 +194,80 @@ window.CJS.CombatUI = (() => {
     });
   }
 
-  // ── START COMBAT ──────────────────────────────────────────────────
+  function _bindWindowEvents() {
+    if (!_keyboardBound) {
+      document.addEventListener('keydown', _handleKeydown);
+      _keyboardBound = true;
+    }
+
+    if (!_resizeBound) {
+      window.addEventListener('resize', _handleResize);
+      _resizeBound = true;
+    }
+  }
+
+  function _detachSubscriptions() {
+    if (_unsubCM) {
+      _unsubCM();
+      _unsubCM = null;
+    }
+    if (_unsubLog) {
+      _unsubLog();
+      _unsubLog = null;
+    }
+    if (_unsubNarrator) {
+      _unsubNarrator();
+      _unsubNarrator = null;
+    }
+  }
+
+  function _clearFeedPanels() {
+    if ($log) $log.innerHTML = '';
+    if ($narrator) $narrator.innerHTML = '';
+  }
+
   function startCombat(encounterId) {
-    // Init narrator
+    if (!_container) {
+      throw new Error('CombatUI.init must be called before startCombat.');
+    }
+
+    _lastEncounterId = encounterId;
+    _mode = 'idle';
+    _pendingAction = null;
+    _clearModeHint();
+    _clearFeedPanels();
+
+    _detachSubscriptions();
+    try { NE().destroy(); } catch (_) {}
+
     try {
       if (ND().isLoaded()) {
         NE().init();
         _unsubNarrator = NE().subscribe(_onNarration);
       }
-    } catch (e) { console.warn('Narrator init failed (non-fatal):', e.message); }
+    } catch (error) {
+      console.warn('Narrator init failed (non-fatal):', error.message);
+    }
 
-    // Subscribe BEFORE starting so we don't miss the first events
     _unsubLog = Log().subscribe(_onLogEntry);
 
-    // Start the encounter
     CM().startEncounter(encounterId);
+    _unsubCM = CM().subscribe(_onStateChange);
     GR().resize();
 
-    if (PP()) {
+    const portraitPicker = window.CJS.PortraitPicker;
+    if (portraitPicker) {
       for (const unit of CM().getUnits()) {
-        if (unit?.portrait) PP().preloadImage(unit.portrait);
+        if (unit?.portrait) portraitPicker.preloadImage(unit.portrait);
       }
     }
 
-    // Subscribe to state changes
-    _unsubCM = CM().subscribe(_onStateChange);
-
-    // Kick off the first step
     const phase = CM().runUntilInput();
-    console.log('Combat started, phase:', phase);
     _refresh();
+    return phase;
   }
 
-  // ── STATE CHANGE HANDLER ──────────────────────────────────────────
-  function _onStateChange(state) {
+  function _onStateChange() {
     _refresh();
   }
 
@@ -232,63 +280,66 @@ window.CJS.CombatUI = (() => {
     _renderActions(state);
     _updateAutoButtons(state);
 
-    // Grid selection
     const unit = CM().getCurrentUnit();
     GR().setSelectedUnit(unit?.instanceId || null);
 
-    // Battle end
     if (state.phase === 'battle_end') {
       _showBattleEnd(state);
     }
   }
 
-  // ── INITIATIVE BAR ────────────────────────────────────────────────
   function _renderInitiative(state) {
     const order = CM().getInitiativeOrder();
     let html = '';
-    for (let i = 0; i < order.length; i++) {
-      const u = order[i];
-      if (!u) continue;
-      const active = u.instanceId === state.currentUnitId;
-      const dead = u.currentHP <= 0;
-      const teamClass = u.team === 'player' ? 'init-player' : 'init-enemy';
-      const cls = `init-unit ${teamClass}${active ? ' init-active' : ''}${dead ? ' init-dead' : ''}`;
-      const hpPct = Math.round((u.currentHP / (u.maxHP || 1)) * 100);
-      const portraitHtml = _renderPortraitMarkup(u.portrait, 'init-portrait', 'init-icon', u.icon || '?');
-      html += `<div class="${cls}" title="${u.name || u.baseId} (${u.currentHP}/${u.maxHP} HP)">
-        ${portraitHtml}
-        <span class="init-name">${(u.name || u.baseId || '?').substring(0, 6)}</span>
-        <div class="init-hp-bar"><div class="init-hp-fill" style="width:${hpPct}%"></div></div>
-      </div>`;
+
+    for (const unit of order) {
+      if (!unit) continue;
+
+      const active = unit.instanceId === state.currentUnitId;
+      const dead = unit.currentHP <= 0;
+      const teamClass = unit.team === 'player' ? 'init-player' : 'init-enemy';
+      const classes = `init-unit ${teamClass}${active ? ' init-active' : ''}${dead ? ' init-dead' : ''}`;
+      const hpPct = Math.round((unit.currentHP / (unit.maxHP || 1)) * 100);
+      const portraitHtml = _renderPortraitMarkup(unit.portrait, 'init-portrait', 'init-icon', unit.icon || '?');
+
+      html += `
+        <div class="${classes}" title="${_escAttr(unit.name || unit.baseId || '?')} (${unit.currentHP}/${unit.maxHP} HP)">
+          ${portraitHtml}
+          <span class="init-name">${_escHtml((unit.name || unit.baseId || '?').substring(0, 6))}</span>
+          <div class="init-hp-bar"><div class="init-hp-fill" style="width:${hpPct}%"></div></div>
+        </div>
+      `;
     }
+
     $initiative.innerHTML = html;
   }
 
-  // ── CURRENT UNIT INFO ─────────────────────────────────────────────
-  function _renderUnitInfo(state) {
+  function _renderUnitInfo() {
     const unit = CM().getCurrentUnit();
-    if (!unit) { $unitInfo.innerHTML = '<div class="unit-info-empty">Waiting...</div>'; return; }
+    if (!unit) {
+      $unitInfo.innerHTML = '<div class="unit-info-empty">Waiting...</div>';
+      return;
+    }
 
-    const ts = unit.turnState || {};
+    const turnState = unit.turnState || {};
     const hpPct = Math.round((unit.currentHP / (unit.maxHP || 1)) * 100);
     const mpPct = unit.maxMP ? Math.round(((unit.currentMP || 0) / unit.maxMP) * 100) : 0;
 
-    let statusHtml = '';
-    if (unit.activeStatuses?.length > 0) {
-      statusHtml = '<div class="unit-statuses">' +
-        unit.activeStatuses.map(s =>
-          `<span class="status-chip" title="${s.statusId} (${s.duration}t, ${s.stacks}stk)">${_statusIcon(s.statusId)} ${s.duration}t</span>`
-        ).join('') + '</div>';
-    }
+    const statusHtml = unit.activeStatuses?.length
+      ? `<div class="unit-statuses">${unit.activeStatuses.map((status) => (
+          `<span class="status-chip" title="${_escAttr(`${status.statusId} (${status.duration}t, ${status.stacks}stk)`)}">${_escHtml(_statusIcon(status.statusId))} ${status.duration}t</span>`
+        )).join('')}</div>`
+      : '';
+
     const portraitHtml = _renderPortraitMarkup(unit.portrait, 'unit-portrait', 'unit-icon-lg', unit.icon || '?');
 
     $unitInfo.innerHTML = `
-      <div class="unit-card ${unit.team}">
+      <div class="unit-card ${_escAttr(unit.team || 'player')}">
         <div class="unit-header">
           ${portraitHtml}
           <div>
-            <div class="unit-name">${unit.name || unit.baseId}</div>
-            <div class="unit-rank">Rank ${unit.rank || '?'} ${unit.type || ''}</div>
+            <div class="unit-name">${_escHtml(unit.name || unit.baseId || '?')}</div>
+            <div class="unit-rank">Rank ${_escHtml(unit.rank || '?')} ${_escHtml(unit.type || '')}</div>
           </div>
         </div>
         <div class="resource-bars">
@@ -304,19 +355,17 @@ window.CJS.CombatUI = (() => {
           </div>
         </div>
         <div class="turn-state">
-          <span class="${ts.hasMoved ? 'used' : 'available'}">Move: ${ts.hasMoved ? '✗' : '✓'}</span>
-          <span class="${ts.mainActionUsed ? 'used' : 'available'}">Action: ${ts.mainActionUsed ? '✗' : '✓'}</span>
-          <span>AP: ${ts.apRemaining || 0}</span>
+          <span class="${turnState.hasMoved ? 'used' : 'available'}">Move: ${turnState.hasMoved ? 'Used' : 'Ready'}</span>
+          <span class="${turnState.mainActionUsed ? 'used' : 'available'}">Action: ${turnState.mainActionUsed ? 'Used' : 'Ready'}</span>
+          <span>AP: ${turnState.apRemaining || 0}</span>
         </div>
         ${statusHtml}
       </div>
     `;
   }
 
-  // ── ACTION PANEL ──────────────────────────────────────────────────
   function _renderActions(state) {
     if (state.phase === 'battle_end') {
-      $actions.innerHTML = '';
       return;
     }
 
@@ -326,79 +375,77 @@ window.CJS.CombatUI = (() => {
     }
 
     const unit = CM().getCurrentUnit();
-    if (!unit) { $actions.innerHTML = ''; return; }
+    if (!unit) {
+      $actions.innerHTML = '';
+      return;
+    }
 
     if (!CM().isManualTurn()) {
       $actions.innerHTML = '<div class="action-wait">AI is thinking...</div>';
       return;
     }
 
-    const avail = CM().getAvailableActionsForCurrent();
-    if (!avail) { $actions.innerHTML = ''; return; }
+    const available = CM().getAvailableActionsForCurrent();
+    if (!available) {
+      $actions.innerHTML = '';
+      return;
+    }
 
     let html = '<div class="action-buttons">';
 
-    // Move button
-    if (avail.move) {
-      html += `<button class="btn btn-action btn-move" data-action="move">
-        🦶 Move</button>`;
+    if (available.move) {
+      html += '<button class="btn btn-action btn-move" data-action="move">Move</button>';
     }
 
-    // Basic Attack
-    if (avail.attack) {
-      html += `<button class="btn btn-action btn-attack" data-action="attack">
-        ⚔️ Attack</button>`;
+    if (available.attack) {
+      html += '<button class="btn btn-action btn-attack" data-action="attack">Attack</button>';
     }
 
-    // Defend
-    if (avail.defend) {
-      html += `<button class="btn btn-action btn-defend" data-action="defend">
-        🛡️ Defend</button>`;
+    if (available.defend) {
+      html += '<button class="btn btn-action btn-defend" data-action="defend">Defend</button>';
     }
 
-    // Skills
-    if (avail.skills?.length > 0) {
+    if (available.skills?.length > 0) {
       html += '<div class="skill-list">';
-      for (const sk of avail.skills) {
-        const name = sk.skill?.name || sk.id;
-        const icon = sk.skill?.icon || '✦';
-        const disabled = !sk.usable ? 'disabled' : '';
-        const reason = sk.cooldown > 0 ? `title="Cooldown: ${sk.cooldown} turns"` : '';
-        html += `<button class="btn btn-action btn-skill" data-action="skill"
-          data-skill="${sk.id}" ${disabled} ${reason}>
-          ${icon} ${name} <span class="skill-cost">${sk.apCost || 0}AP ${sk.mpCost || 0}MP</span>
-        </button>`;
+      for (const skillEntry of available.skills) {
+        const skillName = skillEntry.skill?.name || skillEntry.id;
+        const skillIcon = skillEntry.skill?.icon || '*';
+        const disabled = !skillEntry.usable ? 'disabled' : '';
+        const reason = skillEntry.cooldown > 0 ? `title="Cooldown: ${skillEntry.cooldown} turns"` : '';
+        html += `
+          <button class="btn btn-action btn-skill" data-action="skill" data-skill="${_escAttr(skillEntry.id)}" ${disabled} ${reason}>
+            ${_escHtml(skillIcon)} ${_escHtml(skillName)}
+            <span class="skill-cost">${skillEntry.apCost || 0}AP ${skillEntry.mpCost || 0}MP</span>
+          </button>
+        `;
       }
       html += '</div>';
     }
 
-    // Items (consumables)
-    if (avail.items?.length > 0) {
+    if (available.items?.length > 0) {
       html += '<div class="item-list">';
-      for (const it of avail.items) {
-        const name = it.item?.name || it.id;
-        html += `<button class="btn btn-action btn-item" data-action="item"
-          data-item="${it.id}">🎒 ${name}</button>`;
+      for (const itemEntry of available.items) {
+        const itemName = itemEntry.item?.name || itemEntry.id;
+        html += `
+          <button class="btn btn-action btn-item" data-action="item" data-item="${_escAttr(itemEntry.id)}">
+            Item ${_escHtml(itemName)}
+          </button>
+        `;
       }
       html += '</div>';
     }
 
-    // End Turn
-    html += `<button class="btn btn-action btn-end-turn" data-action="end_turn">
-      ⏭️ End Turn</button>`;
-
+    html += '<button class="btn btn-action btn-end-turn" data-action="end_turn">End Turn</button>';
     html += '</div>';
     $actions.innerHTML = html;
 
-    // Bind action buttons
-    $actions.querySelectorAll('[data-action]').forEach(btn => {
-      btn.addEventListener('click', () => _onActionClick(btn));
+    $actions.querySelectorAll('[data-action]').forEach((button) => {
+      button.addEventListener('click', () => _onActionClick(button));
     });
   }
 
-  // ── ACTION BUTTON HANDLER ─────────────────────────────────────────
-  function _onActionClick(btn) {
-    const type = btn.dataset.action;
+  function _onActionClick(button) {
+    const type = button.dataset.action;
     const unit = CM().getCurrentUnit();
     if (!unit) return;
 
@@ -413,9 +460,9 @@ window.CJS.CombatUI = (() => {
         _submitDirectAction({ type: 'defend' });
         break;
       case 'skill': {
-        const skillId = btn.dataset.skill;
-        const SR = window.CJS.SkillResolver;
-        const skill = SR ? SR.resolveUnitSkill(unit, skillId) : DS().get('skills', skillId);
+        const skillId = button.dataset.skill;
+        const resolver = window.CJS.SkillResolver;
+        const skill = resolver ? resolver.resolveUnitSkill(unit, skillId) : DS().get('skills', skillId);
         if (skill?.aoe && skill.aoe !== 'none') {
           _enterAoETargetMode(unit, skill);
         } else {
@@ -423,73 +470,64 @@ window.CJS.CombatUI = (() => {
         }
         break;
       }
-      case 'item': {
-        const itemId = btn.dataset.item;
-        _enterTargetMode(unit, { type: 'item', itemId });
+      case 'item':
+        _enterTargetMode(unit, { type: 'item', itemId: button.dataset.item });
         break;
-      }
       case 'end_turn':
         _submitDirectAction({ type: 'end_turn' });
+        break;
+      default:
         break;
     }
   }
 
-  // ── MOVEMENT MODE ─────────────────────────────────────────────────
   function _enterMoveMode(unit) {
     _mode = 'move';
     const moves = GE().getValidMoves(unit.instanceId);
-    const cells = [];
-    if (Array.isArray(moves)) {
-      for (const m of moves) {
-        cells.push({ r: m[0], c: m[1] });
-      }
-    }
+    const cells = Array.isArray(moves) ? moves.map(([r, c]) => ({ r, c })) : [];
     GR().setHighlights(cells, 'rgba(59,130,246,0.4)', 'move');
     _setModeHint('Click a blue cell to move, or press Esc to cancel.');
   }
 
-  // ── SINGLE TARGET MODE ────────────────────────────────────────────
   function _enterTargetMode(unit, action) {
     _mode = 'target_single';
     _pendingAction = action;
 
-    // Highlight valid targets (use weapon range for attacks, SkillResolver for skills)
-    let range;
-    if (action.type === 'attack') {
-      range = AH() && AH().getAttackRange ? AH().getAttackRange(unit) : 1 + (unit.rangeBonus || 0);
-    } else {
-      const SR = window.CJS.SkillResolver;
-      const sk = SR ? SR.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
-      range = (sk?.range || 1) + (unit.rangeBonus || 0);
+    let range = 1 + (unit.rangeBonus || 0);
+    if (action.type !== 'attack') {
+      const resolver = window.CJS.SkillResolver;
+      const skill = resolver ? resolver.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
+      range = (skill?.range || 1) + (unit.rangeBonus || 0);
+    } else if (AH() && AH().getAttackRange) {
+      range = AH().getAttackRange(unit);
     }
 
     const targets = GE().getUnitsInRange(unit.pos[0], unit.pos[1], range, { excludeId: unit.instanceId });
     const cells = [];
+
     for (const entry of targets) {
-      const t = entry.unit;
-      if (t.currentHP > 0) {
-        cells.push({ r: t.pos[0], c: t.pos[1] });
+      const target = entry.unit;
+      if (target.currentHP > 0) {
+        cells.push({ r: target.pos[0], c: target.pos[1] });
       }
     }
+
     GR().setHighlights(cells, 'rgba(239,68,68,0.4)', 'target');
-    _setModeHint('Click an enemy to target, or press Esc to cancel.');
+    _setModeHint('Click a valid target, or press Esc to cancel.');
   }
 
-  // ── AOE TARGET MODE ───────────────────────────────────────────────
   function _enterAoETargetMode(unit, skill) {
     _mode = 'target_aoe';
     _pendingAction = { type: 'skill', skillId: skill.id };
 
-    // Highlight cells in range
     const range = (skill.range || 3) + (unit.rangeBonus || 0);
     const rawCells = GE().getCellsInRange(unit.pos[0], unit.pos[1], range);
-    const validCells = rawCells.map(c => ({ r: c[0], c: c[1] }));
-    GR().setHighlights(validCells, 'rgba(168,85,247,0.3)', 'target');
-    _setModeHint('Click a cell for AoE center, or press Esc to cancel.');
+    const cells = rawCells.map(([r, c]) => ({ r, c }));
+    GR().setHighlights(cells, 'rgba(168,85,247,0.3)', 'target');
+    _setModeHint('Click a cell for the AoE center, or press Esc to cancel.');
   }
 
-  // ── GRID CELL CLICK ───────────────────────────────────────────────
-  function _onCellClick(r, c, e) {
+  function _onCellClick(r, c) {
     if (_mode === 'move') {
       const result = CM().submitAction({ type: 'move', targetPos: [r, c] });
       if (result.success) {
@@ -498,47 +536,48 @@ window.CJS.CombatUI = (() => {
         _clearModeHint();
         CM().runUntilInput();
       }
-    } else if (_mode === 'target_single' || _mode === 'target_aoe') {
-      const unitAt = GE().getUnitAt(r, c);
-      const action = { ..._pendingAction };
-
-      if (_mode === 'target_single' && unitAt) {
-        action.targetId = unitAt.instanceId || unitAt;
-      } else if (_mode === 'target_aoe') {
-        action.aoeCenter = [r, c];
-        // Also set targetId if there's a unit there
-        if (unitAt) action.targetId = unitAt.instanceId || unitAt;
-      } else {
-        return; // No valid target
-      }
-
-      // Check if this skill needs QTE
-      if (action.type === 'skill') {
-        const SR = window.CJS.SkillResolver;
-        const unit = CM().getCurrentUnit();
-        const skill = (SR && unit) ? SR.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
-        if (skill?.qte && skill.qte !== 'none' && QM()) {
-          _runQTE(skill, action);
-          return;
-        }
-      }
-
-      GR().clearHighlights('target');
-      _mode = 'idle';
-      _pendingAction = null;
-      _clearModeHint();
-
-      const result = CM().submitAction(action);
-      _handleActionResult(result, action);
-      CM().runUntilInput();
+      return;
     }
+
+    if (_mode !== 'target_single' && _mode !== 'target_aoe') {
+      return;
+    }
+
+    const unitAt = GE().getUnitAt(r, c);
+    const action = { ..._pendingAction };
+
+    if (_mode === 'target_single') {
+      if (!unitAt) return;
+      action.targetId = unitAt.instanceId || unitAt;
+    } else {
+      action.aoeCenter = [r, c];
+      if (unitAt) action.targetId = unitAt.instanceId || unitAt;
+    }
+
+    if (action.type === 'skill') {
+      const resolver = window.CJS.SkillResolver;
+      const unit = CM().getCurrentUnit();
+      const skill = (resolver && unit) ? resolver.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
+      if (skill?.qte && skill.qte !== 'none' && QM()) {
+        _runQTE(skill, action);
+        return;
+      }
+    }
+
+    GR().clearHighlights('target');
+    _mode = 'idle';
+    _pendingAction = null;
+    _clearModeHint();
+
+    const result = CM().submitAction(action);
+    _handleActionResult(result);
+    CM().runUntilInput();
   }
 
-  function _onCellHover(r, c) {
-    // Future: AoE preview on hover
+  function _onCellHover() {
+    // Reserved for future hover previews.
   }
 
-  // ── QTE INTEGRATION ───────────────────────────────────────────────
   async function _runQTE(skill, action) {
     _mode = 'qte';
     $qteOverlay.style.display = 'flex';
@@ -547,24 +586,23 @@ window.CJS.CombatUI = (() => {
       const unit = CM().getCurrentUnit();
       const result = await QM().trigger({ skill, attacker: unit, container: $qteOverlay });
       action.qteResult = result;
-    } catch (err) {
+    } catch (_) {
       action.qteResult = { grade: 'ok', multiplier: 1.0 };
     }
 
     $qteOverlay.style.display = 'none';
     $qteOverlay.innerHTML = '';
-
     GR().clearHighlights('target');
+
     _mode = 'idle';
     _pendingAction = null;
     _clearModeHint();
 
-    const res = CM().submitAction(action);
-    _handleActionResult(res, action);
+    const result = CM().submitAction(action);
+    _handleActionResult(result);
     CM().runUntilInput();
   }
 
-  // ── SUBMIT HELPERS ────────────────────────────────────────────────
   function _submitDirectAction(action) {
     _mode = 'idle';
     _pendingAction = null;
@@ -572,144 +610,132 @@ window.CJS.CombatUI = (() => {
     _clearModeHint();
 
     const result = CM().submitAction(action);
-    _handleActionResult(result, action);
+    _handleActionResult(result);
     CM().runUntilInput();
   }
 
-  function _handleActionResult(result, action) {
+  function _handleActionResult(result) {
     if (!result.success) {
       _addLogMessage(`Action failed: ${result.reason}`, 'error');
+      return;
     }
-    // Show damage float on grid
+
     if (result.damage && result.targetUnit?.pos) {
       const color = result.isCritical ? '#fbbf24' : '#ff4444';
-      GR().addDamageFloat(
-        result.targetUnit.pos[0],
-        result.targetUnit.pos[1],
-        result.damage,
-        color
-      );
+      GR().addDamageFloat(result.targetUnit.pos[0], result.targetUnit.pos[1], result.damage, color);
     }
+
     if (result.healing && result.targetUnit?.pos) {
-      GR().addDamageFloat(
-        result.targetUnit.pos[0],
-        result.targetUnit.pos[1],
-        '+' + result.healing,
-        '#22c55e'
-      );
+      GR().addDamageFloat(result.targetUnit.pos[0], result.targetUnit.pos[1], `+${result.healing}`, '#22c55e');
     }
+
     _refresh();
   }
 
-  // ── LOG & NARRATOR ────────────────────────────────────────────────
   function _onLogEntry(entry) {
     if (!entry) return;
 
-    // Format log entry
-    let msg = '';
-    const actor = entry.actor?.name || entry.actor?.baseId || '';
-    const target = entry.target?.name || entry.target?.baseId || '';
+    let message = '';
+    const actor = entry.actor?.name || entry.actor?.baseId || 'Someone';
+    const target = entry.target?.name || entry.target?.baseId || 'Target';
 
     switch (entry.type) {
       case 'hit':
-        msg = `${actor} hits ${target} for ${entry.data?.damage || '?'} damage${entry.tags?.includes('crit') ? ' (CRIT!)' : ''}.`;
+        message = `${actor} hits ${target} for ${entry.data?.damage || '?'} damage${entry.tags?.includes('crit') ? ' (crit)' : ''}.`;
         break;
       case 'miss':
-        msg = `${actor} misses ${target}.`;
+        message = `${actor} misses ${target}.`;
         break;
       case 'dodge':
-        msg = `${actor} dodges!`;
+        message = `${actor} dodges.`;
         break;
       case 'kill':
-        msg = `${target} is defeated!`;
+        message = `${target} is defeated.`;
         break;
       case 'heal':
-        msg = `${target} heals for ${entry.data?.amount || '?'} HP.`;
+        message = `${target} heals for ${entry.data?.amount || '?'} HP.`;
         break;
       case 'status_applied':
-        msg = `${entry.data?.statusId} applied to ${target}.`;
+        message = `${entry.data?.statusId} applied to ${target}.`;
         break;
       case 'status_tick':
-        msg = `${entry.data?.statusId} ticks on ${target} (${entry.data?.amount || '?'}).`;
+        message = `${entry.data?.statusId} ticks on ${target} (${entry.data?.amount || '?'}).`;
         break;
       case 'status_removed':
-        msg = `${entry.data?.statusId} removed from ${target}.`;
+        message = `${entry.data?.statusId} removed from ${target}.`;
         break;
       case 'move':
-        msg = `${actor} moves.`;
+        message = `${actor} moves.`;
         break;
       case 'skill_used':
-        msg = `${actor} uses ${entry.data?.skill || '???'}.`;
+        message = `${actor} uses ${entry.data?.skill || 'a skill'}.`;
         break;
       case 'qte_result':
-        msg = `QTE: ${entry.data?.grade} (×${entry.data?.multiplier}).`;
+        message = `QTE: ${entry.data?.grade || 'ok'} (${entry.data?.multiplier || 1}x).`;
         break;
       case 'turn_start':
-        msg = `── Turn ${entry.data?.turn}: ${actor}'s turn ──`;
+        message = `Turn ${entry.data?.turn}: ${actor}'s turn.`;
         break;
       case 'battle_start':
-        msg = '═══ BATTLE START ═══';
+        message = 'Battle start.';
         break;
       case 'battle_end':
-        msg = `═══ BATTLE END — ${entry.data?.winner} wins! ═══`;
+        message = `Battle end: ${entry.data?.winner || 'unknown'} wins.`;
         break;
       case 'terrain_effect':
-        msg = `🗺️ ${target} is affected by ${entry.data?.terrain || 'terrain'}.`;
+        message = `${target} is affected by ${entry.data?.terrain || 'terrain'}.`;
         break;
       default:
-        msg = entry.message || entry.type;
+        message = entry.message || entry.type;
+        break;
     }
 
-    if (msg) _addLogMessage(msg, entry.type);
+    if (message) _addLogMessage(message, entry.type);
 
-    // Damage float from log
     if (entry.type === 'hit' && entry.target?.pos) {
       GR().addDamageFloat(
-        entry.target.pos[0], entry.target.pos[1],
+        entry.target.pos[0],
+        entry.target.pos[1],
         entry.data?.damage || '?',
         entry.tags?.includes('crit') ? '#fbbf24' : '#ff4444'
       );
     }
+
     if (entry.type === 'heal' && entry.target?.pos) {
-      GR().addDamageFloat(
-        entry.target.pos[0], entry.target.pos[1],
-        '+' + (entry.data?.amount || '?'), '#22c55e'
-      );
+      GR().addDamageFloat(entry.target.pos[0], entry.target.pos[1], `+${entry.data?.amount || '?'}`, '#22c55e');
     }
+
     if (entry.type === 'status_tick' && entry.target?.pos && entry.data?.amount) {
-      GR().addDamageFloat(
-        entry.target.pos[0], entry.target.pos[1],
-        entry.data.amount, '#c084fc'
-      );
+      GR().addDamageFloat(entry.target.pos[0], entry.target.pos[1], entry.data.amount, '#c084fc');
     }
   }
 
-  function _onNarration(text, logEntry) {
-    if (!text) return;
-    const div = document.createElement('div');
-    div.className = 'narrator-line';
+  function _onNarration(text) {
+    if (!text || !$narrator) return;
 
-    // Split CJS editorial onto own line with special styling
-    const lines = text.split('\n');
-    for (const line of lines) {
-      const p = document.createElement('p');
+    const block = document.createElement('div');
+    block.className = 'narrator-line';
+
+    for (const line of text.split('\n')) {
+      const paragraph = document.createElement('p');
       if (line.startsWith('[CJS]')) {
-        p.className = 'narrator-cjs';
+        paragraph.className = 'narrator-cjs';
       }
-      p.textContent = line;
-      div.appendChild(p);
+      paragraph.textContent = line;
+      block.appendChild(paragraph);
     }
 
-    $narrator.appendChild(div);
+    $narrator.appendChild(block);
     $narrator.scrollTop = $narrator.scrollHeight;
 
-    // Trim old narration
     while ($narrator.children.length > 60) {
       $narrator.removeChild($narrator.firstChild);
     }
   }
 
   function _addLogMessage(text, type) {
+    if (!$log) return;
+
     const div = document.createElement('div');
     div.className = `log-entry log-${type || 'note'}`;
     div.textContent = text;
@@ -721,75 +747,22 @@ window.CJS.CombatUI = (() => {
     }
   }
 
-  // ── DICE MODE ──────────────────────────────────────────────────────
   function _setDiceMode(mode) {
     if (!CS()) return;
+
     CS().setDiceMode(mode);
 
     const btnAuto = _container.querySelector('#btn-dice-auto');
     const btnManual = _container.querySelector('#btn-dice-manual');
     const queueRow = _container.querySelector('#dice-queue-row');
 
-    if (btnAuto) btnAuto.classList.toggle('active', mode === 'auto');
-    if (btnManual) btnManual.classList.toggle('active', mode === 'prompt');
-    if (queueRow) queueRow.style.display = (mode === 'prompt') ? '' : 'none';
-  }
-
-  // ── DICE PROMPT MODAL ─────────────────────────────────────────────
-  function _showDicePromptModal(expression, source, resolve) {
-    if (!$diceModal) { resolve(null); return; }
-
-    const Dice = window.CJS.Dice;
-    const parsed = Dice.parse(expression);
-    const minVal = Dice.min(parsed);
-    const maxVal = Dice.max(parsed);
-
-    $diceModal.querySelector('#dice-modal-title').textContent = `🎲 Roll: ${expression}`;
-    $diceModal.querySelector('#dice-modal-source').textContent = source ? `for: ${source}` : '';
-    $diceModal.querySelector('#dice-modal-range').textContent = `Range: ${minVal} — ${maxVal}`;
-    const inp = $diceModal.querySelector('#dice-modal-input');
-    const errEl = $diceModal.querySelector('#dice-modal-error');
-    inp.value = '';
-    errEl.textContent = '';
-    inp.min = minVal;
-    inp.max = maxVal;
-    $diceModal.style.display = 'flex';
-    inp.focus();
-
-    let resolved = false;
-    function finish(val) {
-      if (resolved) return;
-      resolved = true;
-      $diceModal.style.display = 'none';
-      resolve(typeof val === 'number' ? val : null);
+    btnAuto?.classList.toggle('active', mode === 'auto');
+    btnManual?.classList.toggle('active', mode === 'prompt');
+    if (queueRow) {
+      queueRow.style.display = mode === 'prompt' ? '' : 'none';
     }
-
-    // Random button
-    const randomBtn = $diceModal.querySelector('#dice-modal-random');
-    const onRandom = () => {
-      const result = Dice.roll(expression);
-      inp.value = result.total;
-      errEl.textContent = `Rolled: ${result.rolls?.join(' + ') || result.total}${result.modifier ? ' + ' + result.modifier : ''} = ${result.total}`;
-    };
-    randomBtn.onclick = onRandom;
-
-    // Confirm button
-    const confirmBtn = $diceModal.querySelector('#dice-modal-confirm');
-    const onConfirm = () => {
-      const v = parseInt(inp.value, 10);
-      if (isNaN(v)) { errEl.textContent = 'Enter a number'; return; }
-      if (v < minVal || v > maxVal) { errEl.textContent = `Must be ${minVal}–${maxVal}`; return; }
-      finish(v);
-    };
-    confirmBtn.onclick = onConfirm;
-
-    // Enter key confirms
-    inp.onkeydown = (e) => {
-      if (e.key === 'Enter') onConfirm();
-    };
   }
 
-  // ── MODE HINT ─────────────────────────────────────────────────────
   function _setModeHint(text) {
     let hint = _container.querySelector('.mode-hint');
     if (!hint) {
@@ -797,107 +770,161 @@ window.CJS.CombatUI = (() => {
       hint.className = 'mode-hint';
       $actions.parentElement.insertBefore(hint, $actions.nextSibling);
     }
+
     hint.textContent = text;
     hint.style.display = 'block';
   }
 
   function _clearModeHint() {
-    const hint = _container.querySelector('.mode-hint');
+    const hint = _container?.querySelector('.mode-hint');
     if (hint) hint.style.display = 'none';
   }
 
-  // ── BATTLE END ────────────────────────────────────────────────────
   function _showBattleEnd(state) {
+    const showReturnButton = typeof _callbacks.onReturnToSetup === 'function';
+
     $actions.innerHTML = `
       <div class="battle-end-panel ${state.winner === 'player' ? 'victory' : 'defeat'}">
-        <h2>${state.winner === 'player' ? '⚔️ VICTORY!' : '💀 DEFEAT'}</h2>
+        <h2>${state.winner === 'player' ? 'Victory' : 'Defeat'}</h2>
         <p>Round ${state.roundNumber}</p>
         <div class="battle-end-buttons">
-          <button class="btn btn-primary" id="btn-show-loot">
-            ${state.winner === 'player' ? '🎁 Collect Loot' : '📋 Summary'}
-          </button>
-          <button class="btn" id="btn-restart-combat">🔄 Restart</button>
+          <button class="btn btn-primary" id="btn-show-loot">${state.winner === 'player' ? 'Collect Loot' : 'Summary'}</button>
+          <button class="btn" id="btn-restart-combat">Restart</button>
+          ${showReturnButton ? '<button class="btn" id="btn-return-setup">Back to Setup</button>' : ''}
         </div>
       </div>
     `;
 
     _container.querySelector('#btn-show-loot')?.addEventListener('click', () => {
       if (window.CJS.LootRoller && state.winner === 'player') {
-        const units = CM().getUnits().filter(u => u.team === 'enemy');
-        window.CJS.LootRoller.rollAndDisplay(units, $actions);
+        const enemies = CM().getUnits().filter((unit) => unit.team === 'enemy');
+        window.CJS.LootRoller.rollAndDisplay(enemies, $actions);
       }
     });
 
     _container.querySelector('#btn-restart-combat')?.addEventListener('click', () => {
-      CM().reset();
-      $log.innerHTML = '';
-      $narrator.innerHTML = '';
-      _refresh();
+      _restartCombat();
+    });
+
+    _container.querySelector('#btn-return-setup')?.addEventListener('click', () => {
+      _callbacks.onReturnToSetup?.();
     });
   }
 
-  // ── AUTO BUTTONS ──────────────────────────────────────────────────
+  function _restartCombat() {
+    if (!_lastEncounterId) return;
+    startCombat(_lastEncounterId);
+  }
+
   function _updateAutoButtons(state) {
     const stopBtn = _container.querySelector('#btn-stop-auto');
-    if (stopBtn && state.phase === 'battle_end') {
-      stopBtn.style.display = 'none';
+    if (!stopBtn) return;
+
+    stopBtn.style.display = state.phase === 'battle_end' ? 'none' : stopBtn.style.display;
+  }
+
+  function _handleResize() {
+    if (_container && CM().getState()) {
+      GR().resize();
     }
   }
 
-  // ── KEYBOARD ──────────────────────────────────────────────────────
-  function _handleKeydown(e) {
-    if (e.key === 'Escape') {
-      if (_mode !== 'idle' && _mode !== 'qte') {
-        _mode = 'idle';
-        _pendingAction = null;
-        GR().clearHighlights();
-        _clearModeHint();
-        _refresh();
-      }
+  function _handleKeydown(event) {
+    if (event.key !== 'Escape') return;
+
+    if (_mode !== 'idle' && _mode !== 'qte') {
+      _mode = 'idle';
+      _pendingAction = null;
+      GR().clearHighlights();
+      _clearModeHint();
+      _refresh();
     }
   }
 
-  // ── STATUS ICON HELPER ────────────────────────────────────────────
   function _statusIcon(id) {
-    const map = {
-      burn:'🔥', poison:'☠️', bleed:'🩸', stun:'💫', freeze:'🧊',
-      sleep:'💤', silence:'🤐', regen:'💚', shield:'🛡️', haste:'⚡',
-      berserk:'😡', slow:'🐌', root:'🌿', blind:'🌑', confuse:'😵',
-      fear:'😨', charm:'💕', doom:'💀', taunt:'😤', petrify:'🪨'
+    const icons = {
+      burn: 'B',
+      poison: 'P',
+      bleed: 'L',
+      stun: 'S',
+      freeze: 'F',
+      sleep: 'Z',
+      silence: 'Q',
+      regen: '+',
+      shield: '#',
+      haste: 'H',
+      berserk: '!',
+      slow: '-',
+      root: 'R',
+      blind: 'O',
+      confuse: '?',
+      fear: '!',
+      charm: 'C',
+      doom: 'D',
+      taunt: 'T',
+      petrify: 'X'
     };
-    return map[id] || '✦';
+    return icons[id] || '*';
   }
 
   function _renderPortraitMarkup(path, imageClass, fallbackClass, icon) {
-    if (!path) return `<span class="${fallbackClass}">${icon || '?'}</span>`;
-    return `<img src="${_escAttr(path)}" class="${imageClass}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt=""><span class="${fallbackClass}" style="display:none">${icon || '?'}</span>`;
+    if (!path) return `<span class="${fallbackClass}">${_escHtml(icon || '?')}</span>`;
+
+    return `
+      <img src="${_escAttr(path)}" class="${imageClass}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt="">
+      <span class="${fallbackClass}" style="display:none">${_escHtml(icon || '?')}</span>
+    `;
   }
 
-  function _escAttr(value) {
-    return String(value || '').replace(/[&<>"']/g, (ch) => ({
+  function _escHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
       "'": '&#39;'
-    }[ch]));
+    }[char]));
   }
 
-  // ── DESTROY ───────────────────────────────────────────────────────
+  function _escAttr(value) {
+    return _escHtml(value);
+  }
+
   function destroy() {
-    if (_unsubCM) _unsubCM();
-    if (_unsubLog) _unsubLog();
-    if (_unsubNarrator) _unsubNarrator();
-    GR().destroy();
-    NE().destroy();
-    document.removeEventListener('keydown', _handleKeydown);
-    if (_container) _container.innerHTML = '';
+    _detachSubscriptions();
+
+    try { NE().destroy(); } catch (_) {}
+    try { GR().destroy(); } catch (_) {}
+
+    if (_keyboardBound) {
+      document.removeEventListener('keydown', _handleKeydown);
+      _keyboardBound = false;
+    }
+
+    if (_resizeBound) {
+      window.removeEventListener('resize', _handleResize);
+      _resizeBound = false;
+    }
+
+    _mode = 'idle';
+    _pendingAction = null;
+    _callbacks = {};
+
+    if (_container) {
+      _container.innerHTML = '';
+    }
+
+    _container = null;
+    $grid = null;
+    $log = null;
+    $actions = null;
+    $initiative = null;
+    $unitInfo = null;
+    $narrator = null;
+    $qteOverlay = null;
+    $diceModal = null;
   }
 
-  // Bind keyboard globally
-  document.addEventListener('keydown', _handleKeydown);
-
-  // ── PUBLIC API ────────────────────────────────────────────────────
   return Object.freeze({
     init,
     startCombat,

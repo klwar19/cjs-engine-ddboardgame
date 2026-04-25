@@ -9,25 +9,25 @@
 </head>
 <body>
   <div id="combat-app">
-    <!-- Header -->
     <header class="combat-header">
-      <a href="index.html" class="back-link">← Main Menu</a>
-      <h1>⚔️ CJS Combat Simulator</h1>
+      <a href="index.html" class="back-link">Main Menu</a>
+      <h1>CJS Combat Simulator</h1>
       <div class="header-controls">
+        <button id="btn-battle-setup" class="btn btn-primary">Battle Setup</button>
+        <span class="header-divider">|</span>
         <select id="encounter-select">
-          <option value="">-- Select Encounter --</option>
+          <option value="">-- Start Existing Encounter --</option>
         </select>
-        <button id="btn-start" class="btn btn-primary">Start Combat</button>
-        <button id="btn-import" class="btn">📥 Import Data</button>
+        <button id="btn-start" class="btn">Start Encounter</button>
+        <button id="btn-import" class="btn">Import Data</button>
         <input type="file" id="file-import" accept=".json" style="display:none" />
       </div>
     </header>
 
-    <!-- Main combat container (filled by CombatUI) -->
-    <main id="combat-container"></main>
+    <main id="battle-setup-container"></main>
+    <main id="combat-container" style="display:none"></main>
   </div>
 
-  <!-- Phase 1: Core -->
   <script src="js/core/constants.js"></script>
   <script src="js/core/formulas.js"></script>
   <script src="js/core/dice.js"></script>
@@ -36,18 +36,16 @@
   <script src="js/core/content-manager.js"></script>
   <script src="js/core/skill-resolver.js"></script>
 
-  <!-- Phase 1: Effects -->
   <script src="js/effects/value-calc.js"></script>
   <script src="js/effects/conditions.js"></script>
   <script src="js/effects/effect-registry.js"></script>
   <script src="js/effects/effect-resolver.js"></script>
 
-  <!-- Phase 3: Grid -->
   <script src="js/grid/grid-engine.js"></script>
   <script src="js/grid/pathfinding.js"></script>
   <script src="js/grid/aoe.js"></script>
+  <script src="js/grid/map-generator.js"></script>
 
-  <!-- Phase 3: Combat -->
   <script src="js/combat/stat-compiler.js"></script>
   <script src="js/combat/damage-calc.js"></script>
   <script src="js/combat/dice-service.js"></script>
@@ -56,13 +54,12 @@
   <script src="js/combat/combat-log.js"></script>
   <script src="js/combat/combat-settings.js"></script>
   <script src="js/combat/combat-manager.js"></script>
+  <script src="js/combat/battle-setup.js"></script>
 
-  <!-- Phase 3: AI -->
   <script src="js/ai/ai-conditions.js"></script>
   <script src="js/ai/ai-targeting.js"></script>
   <script src="js/ai/ai-controller.js"></script>
 
-  <!-- Phase 4: QTE -->
   <script src="js/qte/qte-quickpress.js"></script>
   <script src="js/qte/qte-mash.js"></script>
   <script src="js/qte/qte-fishing.js"></script>
@@ -70,89 +67,161 @@
   <script src="js/qte/qte-quiz.js"></script>
   <script src="js/qte/qte-manager.js"></script>
 
-  <!-- Phase 5: Narrator -->
   <script src="js/narrator/narrator-state.js"></script>
   <script src="js/narrator/narrator-data.js"></script>
   <script src="js/narrator/narrator-engine.js"></script>
 
-  <!-- Phase 5: Visual / UI -->
   <script src="js/grid/grid-renderer.js"></script>
   <script src="js/ui/ui-helpers.js"></script>
   <script src="js/ui/portrait-picker.js"></script>
   <script src="js/ui/combat-ui.js"></script>
   <script src="js/ui/loot-roller.js"></script>
 
-  <!-- App bootstrap -->
   <script>
   (async function() {
     'use strict';
+
     const DS = window.CJS.DataStore;
     const ND = window.CJS.NarratorData;
     const CM = window.CJS.ContentManager;
+    const BS = window.CJS.BattleSetup;
 
-    // ── LOAD DATA ─────────────────────────────────────────────────
+    const setupEl = document.getElementById('battle-setup-container');
+    const combatEl = document.getElementById('combat-container');
+    const encounterSelect = document.getElementById('encounter-select');
+    const importInput = document.getElementById('file-import');
+
+    let demoCreated = false;
+    let battleSetupReady = false;
+    let activeEncounterId = null;
+
     async function loadData() {
       try {
         const result = await CM.loadDefaultData();
         await ND.load(DS.getAllAsArray('quips'));
         console.log('Combat data loaded:', result.mode, DS.getCounts());
-      } catch (err) {
-        console.warn('Combat load error:', err.message);
+      } catch (error) {
+        console.warn('Combat load error:', error.message);
       }
     }
 
-    // ── POPULATE ENCOUNTER SELECT ─────────────────────────────────
-    let _demoCreated = false;
+    function isRuntimeEncounter(encounter) {
+      return !!(encounter && (encounter._runtime || encounter._scope === 'runtime'));
+    }
+
+    function removeRuntimeEncounter(encounterId) {
+      if (!encounterId) return;
+      const encounter = DS.get('encounters', encounterId);
+      if (isRuntimeEncounter(encounter)) {
+        DS.remove('encounters', encounterId);
+      }
+    }
+
+    function teardownCombatView(options = {}) {
+      const removeActiveRuntime = options.removeActiveRuntime !== false;
+
+      try { window.CJS.CombatUI.destroy(); } catch (_) {}
+      try { window.CJS.CombatManager.reset(); } catch (_) {}
+
+      combatEl.innerHTML = '';
+      combatEl.style.display = 'none';
+
+      if (removeActiveRuntime) {
+        removeRuntimeEncounter(activeEncounterId);
+        activeEncounterId = null;
+      }
+    }
+
+    function ensureBattleSetup() {
+      if (battleSetupReady) return;
+      BS.init(setupEl, startCombat);
+      battleSetupReady = true;
+    }
+
+    function showSetup(options = {}) {
+      const resetSetup = options.resetSetup === true;
+      teardownCombatView();
+      ensureBattleSetup();
+      setupEl.style.display = '';
+      if (resetSetup) {
+        BS.reset();
+      } else {
+        BS.show();
+      }
+    }
+
+    function showCombat() {
+      setupEl.style.display = 'none';
+      combatEl.style.display = '';
+    }
+
     function populateEncounters() {
-      const sel = document.getElementById('encounter-select');
       const encounters = DS.getAll('encounters') || {};
-      sel.innerHTML = '<option value="">-- Select Encounter --</option>';
+      encounterSelect.innerHTML = '<option value="">-- Start Existing Encounter --</option>';
 
-      for (const [id, enc] of Object.entries(encounters)) {
-        const name = enc.name || id;
-        const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = name;
-        sel.appendChild(opt);
+      const visibleEntries = Object.entries(encounters)
+        .filter(([, encounter]) => !isRuntimeEncounter(encounter))
+        .sort(([, a], [, b]) => String(a?.name || a?.id).localeCompare(String(b?.name || b?.id)));
+
+      for (const [id, encounter] of visibleEntries) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = encounter.name || id;
+        encounterSelect.appendChild(option);
       }
 
-      // If no encounters, add a demo option (once)
-      if (Object.keys(encounters).length === 0 && !_demoCreated) {
-        _demoCreated = true;
-        _createDemoEncounter();
+      if (visibleEntries.length === 0 && !demoCreated) {
+        demoCreated = true;
+        createDemoEncounter();
         populateEncounters();
-        return;
       }
     }
 
-    // ── DEMO ENCOUNTER (fallback) ─────────────────────────────────
-    function _createDemoEncounter() {
-      // Create minimal demo characters if none exist
-      const chars = DS.getAll('characters') || {};
-      if (Object.keys(chars).length === 0) {
+    function createDemoEncounter() {
+      const characters = DS.getAll('characters') || {};
+      if (Object.keys(characters).length === 0) {
         DS.replace('characters', 'bin', {
-          id: 'bin', name: 'Bin Chen', icon: '🃏', team: 'player',
-          rank: 'F', type: 'humanoid',
+          id: 'bin',
+          name: 'Bin Chen',
+          icon: 'B',
+          team: 'player',
+          rank: 'F',
+          type: 'humanoid',
           stats: { S: 5, P: 6, E: 5, C: 8, I: 7, A: 6, L: 5 },
-          skills: [], equipment: [], innatePassives: [],
+          skills: [],
+          equipment: [],
+          innatePassives: [],
           movement: 3
         });
+
         DS.replace('characters', 'bowy', {
-          id: 'bowy', name: 'Bowy', icon: '🐗', team: 'player',
-          rank: 'F', type: 'humanoid',
+          id: 'bowy',
+          name: 'Bowy',
+          icon: 'W',
+          team: 'player',
+          rank: 'F',
+          type: 'humanoid',
           stats: { S: 7, P: 7, E: 6, C: 4, I: 4, A: 5, L: 5 },
-          skills: [], equipment: [], innatePassives: [],
+          skills: [],
+          equipment: [],
+          innatePassives: [],
           movement: 3
         });
       }
 
-      const mons = DS.getAll('monsters') || {};
-      if (Object.keys(mons).length === 0) {
+      const monsters = DS.getAll('monsters') || {};
+      if (Object.keys(monsters).length === 0) {
         DS.replace('monsters', 'ice_wolf', {
-          id: 'ice_wolf', name: 'Ice Wolf', icon: '🐺', team: 'enemy',
-          rank: 'F', type: 'beast',
+          id: 'ice_wolf',
+          name: 'Ice Wolf',
+          icon: 'W',
+          team: 'enemy',
+          rank: 'F',
+          type: 'beast',
           stats: { S: 6, P: 5, E: 4, C: 2, I: 3, A: 7, L: 3 },
-          skills: [], equipment: [], innatePassives: [],
+          skills: [],
+          equipment: [],
+          innatePassives: [],
           movement: 4,
           loot: [],
           aiRules: [
@@ -160,11 +229,18 @@
             { priority: 2, condition: 'default', action: 'move_toward', target: 'nearest_enemy' }
           ]
         });
+
         DS.replace('monsters', 'frost_goblin', {
-          id: 'frost_goblin', name: 'Frost Goblin', icon: '👺', team: 'enemy',
-          rank: 'F', type: 'humanoid',
+          id: 'frost_goblin',
+          name: 'Frost Goblin',
+          icon: 'G',
+          team: 'enemy',
+          rank: 'F',
+          type: 'humanoid',
           stats: { S: 4, P: 4, E: 3, C: 3, I: 5, A: 5, L: 4 },
-          skills: [], equipment: [], innatePassives: [],
+          skills: [],
+          equipment: [],
+          innatePassives: [],
           movement: 3,
           loot: [],
           aiRules: [
@@ -173,7 +249,6 @@
         });
       }
 
-      // Create demo encounter
       const grid = Array.from({ length: 8 }, () => Array(8).fill('empty'));
       grid[2][3] = 'obstacle';
       grid[5][4] = 'obstacle';
@@ -183,8 +258,9 @@
       DS.replace('encounters', 'demo_frostwood', {
         id: 'demo_frostwood',
         name: 'Frostwood Patrol (Demo)',
-        width: 8, height: 8,
-        grid: grid,
+        width: 8,
+        height: 8,
+        grid,
         units: [
           { id: 'bin', pos: [6, 1], size: '1x1' },
           { id: 'bowy', pos: [6, 3], size: '1x1' },
@@ -194,56 +270,85 @@
       });
     }
 
-    // ── IMPORT HANDLER ────────────────────────────────────────────
+    function configureCombatSettings() {
+      const settings = window.CJS.CombatSettings;
+      if (!settings) return;
+      settings.reset();
+      settings.setTeamControl('player', 'manual');
+      settings.setTeamControl('enemy', 'ai');
+    }
+
+    function startCombat(encounterId) {
+      if (!encounterId) {
+        alert('Select an encounter first.');
+        return;
+      }
+
+      const encounter = DS.get('encounters', encounterId);
+      if (!encounter) {
+        alert(`Encounter not found: ${encounterId}`);
+        return;
+      }
+
+      teardownCombatView();
+      configureCombatSettings();
+      showCombat();
+
+      activeEncounterId = encounterId;
+      window.CJS.CombatUI.init(combatEl, {
+        onReturnToSetup: () => showSetup()
+      });
+
+      try {
+        window.CJS.CombatUI.startCombat(encounterId);
+      } catch (error) {
+        console.error('Combat start failed:', error);
+        alert(`Combat failed to start: ${error.message}`);
+        showSetup();
+      }
+    }
+
     document.getElementById('btn-import').addEventListener('click', () => {
-      document.getElementById('file-import').click();
+      importInput.click();
     });
 
-    document.getElementById('file-import').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
+    importInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
       if (!file) return;
+
       try {
         const text = await file.text();
         const data = JSON.parse(text);
+        teardownCombatView();
         DS.loadData(data);
         await ND.load(DS.getAllAsArray('quips'));
         populateEncounters();
+        ensureBattleSetup();
+        showSetup({ resetSetup: true });
         console.log('Data imported successfully.');
-      } catch (err) {
-        alert('Import failed: ' + err.message);
+      } catch (error) {
+        alert(`Import failed: ${error.message}`);
+      } finally {
+        importInput.value = '';
       }
     });
 
-    // ── START COMBAT ──────────────────────────────────────────────
+    document.getElementById('btn-battle-setup').addEventListener('click', () => {
+      showSetup();
+    });
+
     document.getElementById('btn-start').addEventListener('click', () => {
-      const encId = document.getElementById('encounter-select').value;
-      if (!encId) { alert('Select an encounter first.'); return; }
-
-      try {
-        // Reset CombatSettings and configure teams
-        const CS = window.CJS.CombatSettings;
-        if (CS) {
-          CS.reset();
-          CS.setTeamControl('player', 'manual');
-          CS.setTeamControl('enemy', 'ai');
-        }
-
-        // Init CombatUI
-        const container = document.getElementById('combat-container');
-        window.CJS.CombatUI.init(container);
-        window.CJS.CombatUI.startCombat(encId);
-      } catch (err) {
-        console.error('Combat start failed:', err);
-        alert('Combat failed to start: ' + err.message + '\n\nCheck browser console (F12) for details.');
-      }
+      startCombat(encounterSelect.value);
     });
 
-    // ── BOOT ──────────────────────────────────────────────────────
     await loadData();
     if (window.CJS.PortraitPicker) {
       await window.CJS.PortraitPicker.loadManifest().catch(() => {});
     }
+
     populateEncounters();
+    ensureBattleSetup();
+    showSetup();
     console.log('CJS Combat Simulator ready.');
   })();
   </script>
