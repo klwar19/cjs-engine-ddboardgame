@@ -1,0 +1,66 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "materials",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_bear_claw",
+      "name": "Bear Claw",
+      "icon": "🦴",
+      "rarity": "Rare",
+      "subCategory": "material",
+      "description": "Bear Claw material drop (Rare).",
+      "value": 28
+    },
+    {
+      "id": "haven_bear_hide",
+      "name": "Bear Hide",
+      "icon": "🧶",
+      "rarity": "Uncommon",
+      "subCategory": "material",
+      "description": "Bear Hide material drop (Uncommon).",
+      "value": 16
+    },
+    {
+      "id": "haven_frost_fang",
+      "name": "Frost Fang",
+      "icon": "🦴",
+      "rarity": "Uncommon",
+      "subCategory": "material",
+      "description": "Frost Fang material drop (Uncommon).",
+      "value": 16
+    },
+    {
+      "id": "haven_ice_crystal",
+      "name": "Ice Crystal",
+      "icon": "💎",
+      "rarity": "Uncommon",
+      "subCategory": "material",
+      "description": "Ice Crystal material drop (Uncommon).",
+      "value": 16
+    },
+    {
+      "id": "haven_sprite_dust",
+      "name": "Sprite Dust",
+      "icon": "✨",
+      "rarity": "Common",
+      "subCategory": "material",
+      "description": "Sprite Dust material drop (Common).",
+      "value": 8
+    },
+    {
+      "id": "haven_wolf_pelt",
+      "name": "Wolf Pelt",
+      "icon": "🧶",
+      "rarity": "Common",
+      "subCategory": "material",
+      "description": "Wolf Pelt material drop (Common).",
+      "value": 8
+    }
+  ]
+}

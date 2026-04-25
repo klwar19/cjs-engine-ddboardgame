@@ -1,0 +1,660 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "encounters",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_enc_bear_cave",
+      "name": "Frostwood: Bear Cave",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        [
+          "obstacle",
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_bowy",
+          "pos": [
+            7,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_mitia",
+          "pos": [
+            7,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_garr",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_snow_bear",
+          "pos": [
+            1,
+            3
+          ],
+          "size": "2x2"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            3,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            3,
+            6
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    {
+      "id": "haven_enc_chimera_boss",
+      "name": "Frostfire Chimera Boss Fight",
+      "width": 10,
+      "height": 10,
+      "grid": [
+        [
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "fire_zone",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "fire_zone",
+          "empty",
+          "empty"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            8,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_bowy",
+          "pos": [
+            8,
+            6
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_mitia",
+          "pos": [
+            9,
+            4
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_garr",
+          "pos": [
+            8,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_frostfire_chimera",
+          "pos": [
+            1,
+            4
+          ],
+          "size": "2x2"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            3,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            3,
+            6
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    {
+      "id": "haven_enc_temple_floor1",
+      "name": "Frostbitten Temple: Floor 1",
+      "width": 10,
+      "height": 8,
+      "grid": [
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "ice_zone",
+          "ice_zone",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_bowy",
+          "pos": [
+            7,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_mitia",
+          "pos": [
+            7,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_garr",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            1,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            2,
+            7
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_frost_sprite",
+          "pos": [
+            1,
+            6
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_frost_sprite",
+          "pos": [
+            3,
+            8
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    {
+      "id": "haven_enc_wolf_pack",
+      "name": "Frostwood: Wolf Pack",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty"
+        ],
+        [
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_bowy",
+          "pos": [
+            7,
+            0
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_mitia",
+          "pos": [
+            7,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_garr",
+          "pos": [
+            6,
+            0
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            1,
+            5
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            2,
+            6
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "haven_ice_wolf",
+          "pos": [
+            3,
+            4
+          ],
+          "size": "1x1"
+        }
+      ]
+    }
+  ]
+}

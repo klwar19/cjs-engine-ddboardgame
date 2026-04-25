@@ -1,0 +1,246 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "items",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_adventurers_cloak",
+      "name": "Adventurer's Cloak",
+      "icon": "🧣",
+      "slot": "body",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "evasion_mod",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A warm travelling cloak. Slightly helps dodging.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_chimera_fang",
+      "name": "Chimera Fang Dagger",
+      "icon": "🗡️🔥",
+      "slot": "weapon",
+      "rarity": "Rare",
+      "effects": [
+        {
+          "effectId": "lifesteal",
+          "overrides": {
+            "value": 8
+          }
+        },
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 9,
+        "damageType": "Physical",
+        "element": "Fire",
+        "range": 1
+      },
+      "description": "Forged from a chimera's fang. Drains life and scorches.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_frost_staff",
+      "name": "Frost Staff",
+      "icon": "❄️🪄",
+      "slot": "weapon",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "damage_mod_water",
+          "overrides": {
+            "value": 8
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 4,
+        "damageType": "Magic",
+        "element": "Water",
+        "range": 3
+      },
+      "description": "A simple staff channeling ice magic.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_frostfire_core",
+      "name": "Frostfire Core",
+      "icon": "🔮",
+      "slot": "accessory1",
+      "rarity": "Epic",
+      "effects": [
+        {
+          "effectId": "damage_mod_fire",
+          "overrides": {
+            "value": 10
+          }
+        },
+        {
+          "effectId": "damage_mod_water",
+          "overrides": {
+            "value": 10
+          }
+        },
+        {
+          "effectId": "dr_mod_magic",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "The dual-element heart of the Frostfire Chimera. Radiates impossible warmth and cold.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_healers_pendant",
+      "name": "Healer's Pendant",
+      "icon": "💚📿",
+      "slot": "accessory1",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "mp_mod_flat",
+          "overrides": {
+            "value": 10
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A pendant that strengthens the wearer's mana reserves.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_hunters_blade",
+      "name": "Hunter's Blade",
+      "icon": "🔪",
+      "slot": "weapon",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 6,
+        "damageType": "Physical",
+        "element": null,
+        "range": 1
+      },
+      "description": "Garr's well-maintained hunting knife.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_leather_armor",
+      "name": "Leather Armor",
+      "icon": "🧥",
+      "slot": "body",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "Basic leather protection.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_lucky_coin",
+      "name": "Lucky Coin",
+      "icon": "🪙",
+      "slot": "accessory1",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "stat_mod_lck",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "Found in Bin's pocket on arrival. Suspiciously warm.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_rusty_sword",
+      "name": "Rusty Sword",
+      "icon": "🗡️",
+      "slot": "weapon",
+      "rarity": "Junk",
+      "effects": [],
+      "weaponData": {
+        "baseDamage": 5,
+        "damageType": "Physical",
+        "element": null,
+        "range": 1
+      },
+      "description": "A chipped, dull blade. Better than fists. Barely.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_thunder_crossbow",
+      "name": "Thunder",
+      "icon": "⚡🏹",
+      "slot": "weapon",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "accuracy_mod",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 7,
+        "damageType": "Physical",
+        "element": "Lightning",
+        "range": 5
+      },
+      "description": "Bowy's beloved crossbow. Named Thunder. Do NOT touch it.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_warm_boots",
+      "name": "Warm Boots",
+      "icon": "🥾",
+      "slot": "feet",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "movement_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "Fur-lined boots. Essential in Frostbitten.",
+      "grantedSkills": []
+    }
+  ]
+}

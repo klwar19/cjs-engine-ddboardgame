@@ -12,6 +12,7 @@ window.CJS.ItemEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const ER = () => window.CJS.EffectRegistry;
   const UI = () => window.CJS.UI;
+  const CM = () => window.CJS.ContentManager;
   const PP = () => window.CJS.PortraitPicker;
 
   let _container, _listEl, _formEl, _activeId = null;
@@ -40,7 +41,7 @@ window.CJS.ItemEditor = (() => {
   }
 
   function _renderList(q) {
-    const items = q ? DS().search('items', q) : DS().getAllAsArray('items');
+    const items = CM()?.getVisibleItems?.('items', q) || (q ? DS().search('items', q) : DS().getAllAsArray('items'));
     UI().renderDataList({
       container: _listEl, items, activeId: _activeId,
       onSelect: (i) => _load(i.id),

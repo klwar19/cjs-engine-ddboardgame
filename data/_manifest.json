@@ -1,0 +1,654 @@
+{
+  "_manifest": {
+    "version": 2,
+    "format": "cjs-multi-file",
+    "status": "active",
+    "activeLoader": "manifest",
+    "notes": [
+      "Manifest-first runtime is active for editor.html and combat.html.",
+      "data/gamedata.json remains as a legacy input only; data/_legacy_bundle.json is the migration backup."
+    ]
+  },
+  "legacy": [
+    "data/gamedata.json",
+    "data/master-effects.json",
+    "data/quips.json",
+    "data/quiz-bank.json",
+    "data/image-manifest.json"
+  ],
+  "files": [
+    {
+      "path": "data/system/master-effects.json",
+      "scope": "system",
+      "category": "effects"
+    },
+    {
+      "path": "data/system/statuses.json",
+      "scope": "system",
+      "category": "statuses"
+    },
+    {
+      "path": "data/system/quiz-bank.json",
+      "scope": "system",
+      "category": "quizBank"
+    },
+    {
+      "path": "data/system/quips.json",
+      "scope": "system",
+      "category": "quips"
+    },
+    {
+      "path": "data/universal/characters.json",
+      "scope": "universal",
+      "category": "characters"
+    },
+    {
+      "path": "data/universal/passives.json",
+      "scope": "universal",
+      "category": "passives"
+    },
+    {
+      "path": "data/universal/skills.json",
+      "scope": "universal",
+      "category": "skills"
+    },
+    {
+      "path": "data/universal/items.json",
+      "scope": "universal",
+      "category": "items"
+    },
+    {
+      "path": "data/universal/food.json",
+      "scope": "universal",
+      "category": "food"
+    },
+    {
+      "path": "data/worlds/haven/_meta.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/haven/characters.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/haven/passives.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/haven/monsters.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/haven/skills.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/haven/items.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/haven/materials.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/haven/crafting.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/haven/crops.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/haven/shops.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/haven/encounters.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/haven/zones.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/haven/stories.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/haven/quips.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "quips"
+    },
+    {
+      "path": "data/worlds/zombie/_meta.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/zombie/characters.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/zombie/passives.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/zombie/monsters.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/zombie/skills.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/zombie/items.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/zombie/materials.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/zombie/crafting.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/zombie/crops.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/zombie/shops.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/zombie/encounters.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/zombie/zones.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/zombie/stories.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/zombie/quips.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "quips"
+    },
+    {
+      "path": "data/worlds/cyberpunk/_meta.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/cyberpunk/characters.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/cyberpunk/passives.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/cyberpunk/monsters.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/cyberpunk/skills.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/cyberpunk/items.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/cyberpunk/materials.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/cyberpunk/crafting.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/cyberpunk/crops.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/cyberpunk/shops.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/cyberpunk/encounters.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/cyberpunk/zones.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/cyberpunk/stories.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/cyberpunk/quips.json",
+      "scope": "world",
+      "world": "cyberpunk",
+      "category": "quips"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/_meta.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/characters.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/passives.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/monsters.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/skills.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/items.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/materials.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/crafting.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/crops.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/shops.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/encounters.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/zones.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/stories.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/neo_starcraft/quips.json",
+      "scope": "world",
+      "world": "neo_starcraft",
+      "category": "quips"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/_meta.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/characters.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/passives.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/monsters.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/skills.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/items.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/materials.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/crafting.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/crops.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/shops.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/encounters.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/zones.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/stories.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/wuxia_jianghu/quips.json",
+      "scope": "world",
+      "world": "wuxia_jianghu",
+      "category": "quips"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/_meta.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/characters.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/passives.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/monsters.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/skills.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/items.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/materials.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/crafting.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/crops.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/shops.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/encounters.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/zones.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/stories.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/wuxia_immortal/quips.json",
+      "scope": "world",
+      "world": "wuxia_immortal",
+      "category": "quips"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/_meta.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/characters.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "characters"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/passives.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "passives"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/monsters.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "monsters"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/skills.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "skills"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/items.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "items"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/materials.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "materials"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/crafting.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "crafting"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/crops.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "crops"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/shops.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "shops"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/encounters.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "encounters"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/zones.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "zones"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/stories.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "stories"
+    },
+    {
+      "path": "data/worlds/fantasy_eldenring/quips.json",
+      "scope": "world",
+      "world": "fantasy_eldenring",
+      "category": "quips"
+    }
+  ]
+}

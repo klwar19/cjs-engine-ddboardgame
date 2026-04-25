@@ -8,6 +8,7 @@ window.CJS.DataBrowser = (() => {
   const C  = () => window.CJS.CONST;
   const DS = () => window.CJS.DataStore;
   const ER = () => window.CJS.EffectRegistry;
+  const CM = () => window.CJS.ContentManager;
 
   let _container, _activeTab = 'effects';
 
@@ -22,7 +23,7 @@ window.CJS.DataBrowser = (() => {
         <div class="flex gap-sm items-center" style="flex-shrink:0">
           <h3 style="margin:0;color:var(--accent)">📊 Data Browser</h3>
           <div class="btn-group" id="db-tabs">
-            ${['effects','skills','items','passives','characters','monsters','encounters'].map(t =>
+            ${['effects','skills','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds'].map(t =>
               `<button class="btn btn-sm ${t===_activeTab?'btn-primary':''}" data-tab="${t}">${t}</button>`
             ).join('')}
           </div>
@@ -53,10 +54,18 @@ window.CJS.DataBrowser = (() => {
       case 'effects':    _renderEffects(area, status, q); break;
       case 'skills':     _renderSkills(area, status, q); break;
       case 'items':      _renderItems(area, status, q); break;
+      case 'food':       _renderGeneric(area, status, 'food', q, ['ID','Name','Description','Scope','World','Origin']); break;
+      case 'materials':  _renderGeneric(area, status, 'materials', q, ['ID','Name','Description','Scope','World','Origin']); break;
       case 'passives':   _renderPassives(area, status, q); break;
       case 'characters': _renderChars(area, status, q); break;
       case 'monsters':   _renderMonsters(area, status, q); break;
       case 'encounters': _renderEncounters(area, status, q); break;
+      case 'crafting':   _renderGeneric(area, status, 'crafting', q, ['ID','Name','Description','Scope','World','Origin']); break;
+      case 'crops':      _renderGeneric(area, status, 'crops', q, ['ID','Name','Description','Scope','World','Origin']); break;
+      case 'shops':      _renderGeneric(area, status, 'shops', q, ['ID','Name','Description','Scope','World','Origin']); break;
+      case 'zones':      _renderGeneric(area, status, 'zones', q, ['ID','Name','Description','Scope','World','Origin']); break;
+      case 'stories':    _renderGeneric(area, status, 'stories', q, ['ID','Name','Description','Scope','World','Origin']); break;
+      case 'worlds':     _renderWorlds(area, status, q); break;
     }
   }
 
@@ -74,7 +83,7 @@ window.CJS.DataBrowser = (() => {
   }
 
   function _renderSkills(area, status, q) {
-    let items = DS().getAllAsArray('skills');
+    let items = CM()?.getVisibleItems?.('skills', q) || DS().getAllAsArray('skills');
     if (q) items = items.filter(e => _match(e, q));
     const cols = ['ID','Icon','Name','Power','AP','MP','CD','Type','Element','Scaling','Range','AoE','QTE','Effects#'];
     let rows = items.map(s => [
@@ -87,7 +96,7 @@ window.CJS.DataBrowser = (() => {
   }
 
   function _renderItems(area, status, q) {
-    let items = DS().getAllAsArray('items');
+    let items = CM()?.getVisibleItems?.('items', q) || DS().getAllAsArray('items');
     if (q) items = items.filter(e => _match(e, q));
     const cols = ['ID','Icon','Name','Slot','Rarity','Effects#','Granted Skills','Base Dmg','Element'];
     let rows = items.map(i => [
@@ -100,7 +109,7 @@ window.CJS.DataBrowser = (() => {
   }
 
   function _renderPassives(area, status, q) {
-    let items = DS().getAllAsArray('passives');
+    let items = CM()?.getVisibleItems?.('passives', q) || DS().getAllAsArray('passives');
     if (q) items = items.filter(e => _match(e, q));
     const cols = ['ID','Icon','Name','Effects#','Tags','Description'];
     let rows = items.map(p => [
@@ -112,7 +121,7 @@ window.CJS.DataBrowser = (() => {
   }
 
   function _renderChars(area, status, q) {
-    let items = DS().getAllAsArray('characters');
+    let items = CM()?.getVisibleItems?.('characters', q) || DS().getAllAsArray('characters');
     if (q) items = items.filter(e => _match(e, q));
     const cols = ['ID','Icon','Name','Team','Rank','Type','S','P','E','C','I','A','L','Skills#','Items#','Move'];
     let rows = items.map(c => {
@@ -126,7 +135,7 @@ window.CJS.DataBrowser = (() => {
   }
 
   function _renderMonsters(area, status, q) {
-    let items = DS().getAllAsArray('monsters');
+    let items = CM()?.getVisibleItems?.('monsters', q) || DS().getAllAsArray('monsters');
     if (q) items = items.filter(e => _match(e, q));
     const cols = ['ID','Icon','Name','Rank','Type','S','P','E','C','I','A','L','Skills#','AI Rules#','Loot#','Move'];
     let rows = items.map(m => {
@@ -140,7 +149,7 @@ window.CJS.DataBrowser = (() => {
   }
 
   function _renderEncounters(area, status, q) {
-    let items = DS().getAllAsArray('encounters');
+    let items = CM()?.getVisibleItems?.('encounters', q) || DS().getAllAsArray('encounters');
     if (q) items = items.filter(e => _match(e, q));
     const cols = ['ID','Name','Grid','Units#','Player Units','Enemy Units'];
     let rows = items.map(e => {
@@ -158,6 +167,38 @@ window.CJS.DataBrowser = (() => {
     });
     area.innerHTML = _table(cols, rows);
     status.textContent = `${items.length} encounters`;
+  }
+
+  function _renderGeneric(area, status, type, q, cols) {
+    let items = CM()?.getVisibleItems?.(type, q) || DS().getAllAsArray(type);
+    if (q) items = items.filter(e => _match(e, q));
+    const rows = items.map((item) => [
+      item.id || '',
+      item.name || '',
+      (item.description || item.desc || '').substring(0, 80),
+      item._scope || '',
+      item._world || '',
+      item._origin || ''
+    ]);
+    area.innerHTML = _table(cols, rows);
+    status.textContent = `${items.length} ${type}`;
+  }
+
+  function _renderWorlds(area, status, q) {
+    let items = DS().getAllAsArray('worlds');
+    if (q) items = items.filter(e => _match(e, q));
+    const cols = ['ID','Display Name','Ceiling','Order','Tone','Color','Status'];
+    const rows = items.map((world) => [
+      world.id || '',
+      world.displayName || '',
+      world.ceiling || '',
+      world.order || '',
+      world.tone || '',
+      world.color || '',
+      world.status || ''
+    ]);
+    area.innerHTML = _table(cols, rows);
+    status.textContent = `${items.length} worlds`;
   }
 
   function _match(obj, q) {

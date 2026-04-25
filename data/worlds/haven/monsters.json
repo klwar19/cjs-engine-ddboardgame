@@ -1,0 +1,296 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "monsters",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_frost_sprite",
+      "name": "Frost Sprite",
+      "icon": "✨❄️",
+      "team": "enemy",
+      "rank": "F",
+      "type": "elemental",
+      "stats": {
+        "S": 2,
+        "P": 5,
+        "E": 3,
+        "C": 3,
+        "I": 7,
+        "A": 6,
+        "L": 4
+      },
+      "skills": [
+        "haven_ice_shard",
+        "haven_chill_wind"
+      ],
+      "equipment": [],
+      "innatePassives": [],
+      "weak": [
+        "Fire",
+        "Lightning"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Sprite Dust",
+          "itemId": "haven_sprite_dust",
+          "rarity": "Common",
+          "chance": 0.8
+        },
+        {
+          "name": "Ice Crystal",
+          "itemId": "haven_ice_crystal",
+          "rarity": "Uncommon",
+          "chance": 0.15
+        }
+      ],
+      "behaviorAI": "sniper",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "enemies_in_range:3 >= 2 AND skill_off_cooldown:chill_wind",
+          "action": "use_skill:haven_chill_wind",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "use_skill:haven_ice_shard",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "any_adjacent_enemy",
+          "action": "move_toward",
+          "target": "furthest_enemy"
+        }
+      ],
+      "description": "Mischievous ice elemental. Fragile but dangerous magic. Stays at range.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_frostfire_chimera",
+      "name": "Frostfire Chimera",
+      "icon": "🐉",
+      "team": "enemy",
+      "rank": "C",
+      "type": "beast",
+      "stats": {
+        "S": 14,
+        "P": 10,
+        "E": 16,
+        "C": 3,
+        "I": 12,
+        "A": 6,
+        "L": 5
+      },
+      "skills": [
+        "haven_chimera_flame_wave",
+        "haven_chimera_frost_breath",
+        "haven_chimera_fire_swipe"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_frozen_carapace"
+      ],
+      "weak": [
+        "Lightning"
+      ],
+      "resist": [
+        "Fire",
+        "Water"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Chimera Fang Dagger",
+          "itemId": "haven_chimera_fang",
+          "rarity": "Rare",
+          "chance": 0.6
+        },
+        {
+          "name": "Frostfire Core",
+          "itemId": "haven_frostfire_core",
+          "rarity": "Epic",
+          "chance": 0.15
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "hp_below_30 AND skill_off_cooldown:chimera_frost_breath",
+          "action": "use_skill:haven_chimera_frost_breath",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 2,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_chimera_fire_swipe",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 3,
+          "condition": "enemies_in_range:3 >= 2 AND skill_off_cooldown:chimera_flame_wave",
+          "action": "use_skill:haven_chimera_flame_wave",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "C-rank boss. Dual fire/ice heads. The first real challenge in Frostbitten. Resists both fire and water.",
+      "movement": 2,
+      "size": "2x2"
+    },
+    {
+      "id": "haven_ice_wolf",
+      "name": "Ice Wolf",
+      "icon": "🐺",
+      "team": "enemy",
+      "rank": "F",
+      "type": "beast",
+      "stats": {
+        "S": 6,
+        "P": 5,
+        "E": 4,
+        "C": 2,
+        "I": 2,
+        "A": 7,
+        "L": 3
+      },
+      "skills": [
+        "haven_wolf_bite",
+        "haven_pack_howl"
+      ],
+      "equipment": [],
+      "innatePassives": [],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Wolf Pelt",
+          "itemId": "haven_wolf_pelt",
+          "rarity": "Common",
+          "chance": 0.7
+        },
+        {
+          "name": "Frost Fang",
+          "itemId": "haven_frost_fang",
+          "rarity": "Uncommon",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_wolf_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:pack_howl AND allies_alive_gt_1",
+          "action": "use_skill:haven_pack_howl",
+          "target": "nearest_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "Common predator of the Frostwood. Hunts in packs. Weak to fire.",
+      "movement": 4,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_snow_bear",
+      "name": "Snow Bear",
+      "icon": "🐻‍❄️",
+      "team": "enemy",
+      "rank": "E",
+      "type": "beast",
+      "stats": {
+        "S": 10,
+        "P": 4,
+        "E": 11,
+        "C": 2,
+        "I": 2,
+        "A": 4,
+        "L": 3
+      },
+      "skills": [
+        "haven_bear_maul",
+        "haven_bear_roar"
+      ],
+      "equipment": [],
+      "innatePassives": [],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water",
+        "Physical"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Bear Hide",
+          "itemId": "haven_bear_hide",
+          "rarity": "Uncommon",
+          "chance": 0.6
+        },
+        {
+          "name": "Bear Claw",
+          "itemId": "haven_bear_claw",
+          "rarity": "Rare",
+          "chance": 0.1
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:bear_maul",
+          "action": "use_skill:haven_bear_maul",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:bear_roar AND enemies_in_range:2 >= 2",
+          "action": "use_skill:haven_bear_roar",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Massive bear of the frozen north. Extremely tough. Don't let it reach you.",
+      "movement": 2,
+      "size": "2x2"
+    }
+  ]
+}

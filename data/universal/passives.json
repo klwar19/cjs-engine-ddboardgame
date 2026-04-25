@@ -1,0 +1,61 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "passives",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "comedy_armor",
+      "name": "Comedy Armor",
+      "icon": "😂",
+      "tags": [
+        "bin",
+        "defense",
+        "comedy"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_all",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "evasion_mod",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "If you're already the joke, nothing hits as hard. Minor DR and evasion."
+    },
+    {
+      "id": "jester_luck",
+      "name": "Jester's Luck",
+      "icon": "🃏",
+      "tags": [
+        "bin",
+        "luck",
+        "crit"
+      ],
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "stat_mod_lck",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "The universe finds Bin entertaining. Slightly better luck and crits."
+    }
+  ]
+}

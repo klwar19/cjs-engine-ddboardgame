@@ -11,6 +11,7 @@ window.CJS.UI = (() => {
   'use strict';
 
   const C = () => window.CJS.CONST;
+  const CM = () => window.CJS.ContentManager;
 
   // ── TOAST NOTIFICATIONS ─────────────────────────────────────────
   let _toastContainer = null;
@@ -606,14 +607,28 @@ window.CJS.UI = (() => {
     for (const item of items) {
       const el = document.createElement('div');
       el.className = `data-list-item${item.id === activeId ? ' active' : ''}`;
+      const issueCount = CM()?.getEntityIssueCount?.(item) || 0;
+      const issueLabel = issueCount ? `${issueCount} issue${issueCount === 1 ? '' : 's'}` : '';
+      const issueBadge = issueCount
+        ? `<span title="${issueLabel}" style="display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#ef4444;font-size:0.7rem;font-weight:700;white-space:nowrap">${issueLabel}</span>`
+        : '';
+      const scopeChip = CM()?.renderScopeChip?.(item) || '';
       if (renderItem) {
-        el.innerHTML = renderItem(item);
+        el.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">${renderItem(item)}</div>
+            ${(issueBadge || scopeChip) ? `<div style="display:flex;align-items:center;gap:6px;margin-left:auto">${issueBadge}${scopeChip}</div>` : ''}
+          </div>
+        `;
       } else {
         el.innerHTML = `
-          <span class="item-icon">${item.icon || '✦'}</span>
-          <div>
-            <div class="item-name">${item.name || item.id}</div>
-            ${item.description ? `<div class="item-sub">${item.description.substring(0, 60)}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <span class="item-icon">${item.icon || '✦'}</span>
+            <div style="min-width:0;flex:1">
+              <div class="item-name">${item.name || item.id}</div>
+              ${item.description ? `<div class="item-sub">${item.description.substring(0, 60)}</div>` : ''}
+            </div>
+            ${(issueBadge || scopeChip) ? `<div style="display:flex;align-items:center;gap:6px;margin-left:auto">${issueBadge}${scopeChip}</div>` : ''}
           </div>
         `;
       }

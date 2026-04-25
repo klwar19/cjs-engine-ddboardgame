@@ -1,0 +1,92 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "skills",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "basic_attack",
+      "name": "Basic Attack",
+      "icon": "⚔️",
+      "power": 8,
+      "ap": 0,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Standard melee attack."
+    },
+    {
+      "id": "jester_gambit",
+      "name": "Jester's Gambit",
+      "icon": "🃏",
+      "power": 15,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Chaos",
+      "element": "Chaos",
+      "scalingStat": "L",
+      "range": 2,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "fishing",
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 15
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Roll the cosmic dice. High variance chaos damage, boosted crit."
+    },
+    {
+      "id": "taunt_mock",
+      "name": "Taunt & Mock",
+      "icon": "🎭",
+      "power": 0,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "C",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quiz",
+      "effects": [
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz."
+    }
+  ]
+}

@@ -26,6 +26,14 @@ window.CJS.DataStore = (() => {
     effects:    {},   // id → effect object
     skills:     {},   // id → skill object
     items:      {},   // id → item object
+    food:       {},   // id -> food object
+    materials:  {},   // id -> material object
+    crafting:   {},   // id -> crafting recipe object
+    crops:      {},   // id -> crop object
+    shops:      {},   // id -> shop object
+    zones:      {},   // id -> zone object
+    stories:    {},   // id -> story object
+    worlds:     {},   // id -> world meta object
     passives:   {},   // id → passive object
     characters: {},   // id → character object
     monsters:   {},   // id → monster object
@@ -37,6 +45,48 @@ window.CJS.DataStore = (() => {
 
   let _dirty = false;
   let _counters = {};  // { eff: 1, skl: 1, ... } for ID generation
+  let _listeners = [];
+
+  function _stripMeta(value) {
+    if (Array.isArray(value)) return value.map(_stripMeta);
+    if (!value || typeof value !== 'object') return value;
+
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (key.startsWith('_')) continue;
+      out[key] = _stripMeta(val);
+    }
+    return out;
+  }
+
+  function _emitChange(change) {
+    for (const listener of _listeners) {
+      try { listener(change); }
+      catch (error) { console.error('DataStore listener error:', error); }
+    }
+  }
+
+  function _applyManifestDefaults(type, record) {
+    if (!record || typeof record !== 'object' || Array.isArray(record)) return record;
+    if (record._origin !== undefined) return record;
+
+    const CM = window.CJS.ContentManager;
+    if (!CM || !CM.getManifest || !CM.buildNewRecord) return record;
+    if (CM.getLoadMode?.() !== 'manifest' || !CM.getManifest()) return record;
+
+    return CM.buildNewRecord(type, record);
+  }
+
+  function _preserveMetaFields(previous, next) {
+    if (!previous || !next || typeof next !== 'object' || Array.isArray(next)) return next;
+
+    const merged = { ...next };
+    for (const [key, value] of Object.entries(previous)) {
+      if (!key.startsWith('_')) continue;
+      if (merged[key] === undefined) merged[key] = value;
+    }
+    return merged;
+  }
 
   // ── NORMALIZATION ──────────────────────────────────────────────────
   // Phase 9: accept legacy string-form skill refs on load/import,
@@ -81,23 +131,31 @@ window.CJS.DataStore = (() => {
       if (normalized && typeof normalized === 'object' && !Array.isArray(normalized)) {
         normalized.id = normalized.id || id;
       }
-      out[id] = normalized;
+      out[id] = _stripMeta(normalized);
     }
     return out;
   }
 
   function _exportSnapshot() {
     return {
-      effects:    { ..._data.effects },
-      skills:     { ..._data.skills },
-      items:      { ..._data.items },
-      passives:   { ..._data.passives },
+      effects:    _stripMeta({ ..._data.effects }),
+      skills:     _stripMeta({ ..._data.skills }),
+      items:      _stripMeta({ ..._data.items }),
+      food:       _stripMeta({ ..._data.food }),
+      materials:  _stripMeta({ ..._data.materials }),
+      crafting:   _stripMeta({ ..._data.crafting }),
+      crops:      _stripMeta({ ..._data.crops }),
+      shops:      _stripMeta({ ..._data.shops }),
+      zones:      _stripMeta({ ..._data.zones }),
+      stories:    _stripMeta({ ..._data.stories }),
+      worlds:     _stripMeta({ ..._data.worlds }),
+      passives:   _stripMeta({ ..._data.passives }),
       characters: _normalizeCollection('characters', _data.characters),
       monsters:   _normalizeCollection('monsters', _data.monsters),
-      encounters: { ..._data.encounters },
-      statuses:   { ..._data.statuses },
-      quips:      [..._data.quips],
-      quizBank:   [..._data.quizBank]
+      encounters: _stripMeta({ ..._data.encounters }),
+      statuses:   _stripMeta({ ..._data.statuses }),
+      quips:      _stripMeta([..._data.quips]),
+      quizBank:   _stripMeta([..._data.quizBank])
     };
   }
 
@@ -121,6 +179,14 @@ window.CJS.DataStore = (() => {
       eff: _data.effects,
       skl: _data.skills,
       itm: _data.items,
+      fod: _data.food,
+      mat: _data.materials,
+      rcp: _data.crafting,
+      crp: _data.crops,
+      shp: _data.shops,
+      zon: _data.zones,
+      sto: _data.stories,
+      wld: _data.worlds,
       pas: _data.passives,
       chr: _data.characters,
       mon: _data.monsters,
@@ -166,17 +232,20 @@ window.CJS.DataStore = (() => {
       // For arrays (quips, quizBank), just push
       _data[type].push(obj);
       _dirty = true;
+      _emitChange({ action: 'create', type, id: _data[type].length - 1, before: null, after: JSON.parse(JSON.stringify(obj)) });
       return _data[type].length - 1;
     }
 
     const singularType = type.replace(/s$/, ''); // "effects" → "effect"
     const prefix = _getPrefixForType(singularType);
     const id = obj.id || _nextId(prefix);
-    const normalized = _normalizeForStorage(type, { ...obj, id });
+    const withDefaults = _applyManifestDefaults(type, { ...obj, id });
+    const normalized = _normalizeForStorage(type, withDefaults);
     normalized.id = id;
     _data[type][id] = normalized;
     _dirty = true;
     _undo('create', type, id, null, normalized);
+    _emitChange({ action: 'create', type, id, before: null, after: JSON.parse(JSON.stringify(normalized)) });
     return id;
   }
 
@@ -196,6 +265,7 @@ window.CJS.DataStore = (() => {
     _data[type][id] = merged;
     _dirty = true;
     _undo('update', type, id, before, _data[type][id]);
+    _emitChange({ action: 'update', type, id, before, after: JSON.parse(JSON.stringify(_data[type][id])) });
     return true;
   }
 
@@ -203,11 +273,15 @@ window.CJS.DataStore = (() => {
   function replace(type, id, obj) {
     if (!_data[type]) return false;
     const before = _data[type][id] ? JSON.parse(JSON.stringify(_data[type][id])) : null;
-    const normalized = _normalizeForStorage(type, { ...obj, id });
+    const seeded = before
+      ? _preserveMetaFields(before, { ...obj, id })
+      : _applyManifestDefaults(type, { ...obj, id });
+    const normalized = _normalizeForStorage(type, seeded);
     normalized.id = id;
     _data[type][id] = normalized;
     _dirty = true;
     _undo('replace', type, id, before, normalized);
+    _emitChange({ action: 'replace', type, id, before, after: JSON.parse(JSON.stringify(normalized)) });
     return true;
   }
 
@@ -217,6 +291,7 @@ window.CJS.DataStore = (() => {
     delete _data[type][id];
     _dirty = true;
     _undo('remove', type, id, before, null);
+    _emitChange({ action: 'remove', type, id, before, after: null });
     return true;
   }
 
@@ -420,7 +495,8 @@ window.CJS.DataStore = (() => {
 
     // Merge or replace each collection
     const collections = [
-      'effects', 'skills', 'items', 'passives',
+      'effects', 'skills', 'items', 'food', 'materials', 'crafting',
+      'crops', 'shops', 'zones', 'stories', 'worlds', 'passives',
       'characters', 'monsters', 'encounters', 'statuses'
     ];
     for (const col of collections) {
@@ -453,6 +529,14 @@ window.CJS.DataStore = (() => {
       eff: _data.effects,
       skl: _data.skills,
       itm: _data.items,
+      fod: _data.food,
+      mat: _data.materials,
+      rcp: _data.crafting,
+      crp: _data.crops,
+      shp: _data.shops,
+      zon: _data.zones,
+      sto: _data.stories,
+      wld: _data.worlds,
       pas: _data.passives,
       chr: _data.characters,
       mon: _data.monsters,
@@ -476,7 +560,8 @@ window.CJS.DataStore = (() => {
 
   function reset() {
     _data = {
-      effects: {}, skills: {}, items: {}, passives: {},
+      effects: {}, skills: {}, items: {}, food: {}, materials: {}, crafting: {},
+      crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {},
       characters: {}, monsters: {}, encounters: {}, statuses: {},
       quips: [], quizBank: []
     };
@@ -494,6 +579,14 @@ window.CJS.DataStore = (() => {
       effects:    Object.keys(_data.effects).length,
       skills:     Object.keys(_data.skills).length,
       items:      Object.keys(_data.items).length,
+      food:       Object.keys(_data.food).length,
+      materials:  Object.keys(_data.materials).length,
+      crafting:   Object.keys(_data.crafting).length,
+      crops:      Object.keys(_data.crops).length,
+      shops:      Object.keys(_data.shops).length,
+      zones:      Object.keys(_data.zones).length,
+      stories:    Object.keys(_data.stories).length,
+      worlds:     Object.keys(_data.worlds).length,
       passives:   Object.keys(_data.passives).length,
       characters: Object.keys(_data.characters).length,
       monsters:   Object.keys(_data.monsters).length,
@@ -501,6 +594,15 @@ window.CJS.DataStore = (() => {
       statuses:   Object.keys(_data.statuses).length,
       quips:      _data.quips.length,
       quizBank:   _data.quizBank.length
+    };
+  }
+
+  function subscribe(listener) {
+    if (typeof listener !== 'function') return () => {};
+    _listeners.push(listener);
+    return () => {
+      const index = _listeners.indexOf(listener);
+      if (index >= 0) _listeners.splice(index, 1);
     };
   }
 
@@ -518,6 +620,8 @@ window.CJS.DataStore = (() => {
     // Import/Export
     exportJSON, exportBlob, downloadJSON, importJSON, loadData,
     // State
-    reset, isDirty, markDirty, markClean, getCounts
+    reset, isDirty, markDirty, markClean, getCounts,
+    // Events
+    subscribe
   });
 })();

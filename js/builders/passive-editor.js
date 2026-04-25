@@ -11,6 +11,7 @@ window.CJS.PassiveEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const ER = () => window.CJS.EffectRegistry;
   const UI = () => window.CJS.UI;
+  const CM = () => window.CJS.ContentManager;
 
   let _container = null, _listEl = null, _formEl = null, _activeId = null;
 
@@ -40,7 +41,7 @@ window.CJS.PassiveEditor = (() => {
   }
 
   function _renderList(query) {
-    let items = query ? DS().search('passives', query) : DS().getAllAsArray('passives');
+    let items = CM()?.getVisibleItems?.('passives', query) || (query ? DS().search('passives', query) : DS().getAllAsArray('passives'));
     UI().renderDataList({
       container: _listEl, items, activeId: _activeId,
       onSelect: (p) => _load(p.id)

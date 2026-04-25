@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "zombie"
+  },
+  "world": {
+    "id": "zombie",
+    "displayName": "Last Light",
+    "ceiling": "B",
+    "order": 2,
+    "tone": "horror_grim",
+    "color": "#ef4444",
+    "status": "stub"
+  }
+}

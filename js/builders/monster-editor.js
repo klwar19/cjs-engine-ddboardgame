@@ -12,6 +12,7 @@ window.CJS.MonsterEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const F  = () => window.CJS.Formulas;
   const UI = () => window.CJS.UI;
+  const CM = () => window.CJS.ContentManager;
   const PP = () => window.CJS.PortraitPicker;
 
   let _container, _listEl, _formEl, _activeId = null;
@@ -40,7 +41,7 @@ window.CJS.MonsterEditor = (() => {
   }
 
   function _renderList(q) {
-    const items = q ? DS().search('monsters', q) : DS().getAllAsArray('monsters');
+    const items = CM()?.getVisibleItems?.('monsters', q) || (q ? DS().search('monsters', q) : DS().getAllAsArray('monsters'));
     UI().renderDataList({
       container: _listEl, items, activeId: _activeId,
       onSelect: (m) => _load(m.id),

@@ -44,6 +44,23 @@
     .db-table tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
     .status-cat-header { padding:6px 12px; font-size:0.75rem; font-weight:700; color:var(--text-mute); text-transform:uppercase; letter-spacing:0.5px; margin-top:8px; }
     .sync-meta { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+    .status-filters { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .status-filter { display:flex; align-items:center; gap:6px; font-size:0.76rem; color:var(--text-mute); }
+    .status-filter select {
+      min-width:120px;
+      padding:4px 8px;
+      border-radius:6px;
+      border:1px solid var(--border);
+      background:var(--surface2);
+      color:var(--text);
+    }
+    #status-files {
+      max-width:420px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      color:var(--text-mute);
+    }
     #status-sync { color:var(--text-mute); }
     #status-sync.sync-success { color:var(--green); }
     #status-sync.sync-error { color:var(--red); }
@@ -67,10 +84,11 @@
         <button class="btn btn-ghost btn-sm" id="btn-undo" title="Nothing to undo" disabled>Undo</button>
         <button class="btn btn-ghost btn-sm" id="btn-redo" title="Nothing to redo" disabled>Redo</button>
         <span style="border-left:1px solid rgba(255,255,255,0.1);margin:0 4px"></span>
-        <button class="btn btn-primary btn-sm" id="btn-save" title="Save to GitHub if configured, otherwise download JSON">Save</button>
+        <button class="btn btn-ghost btn-sm" id="btn-migrate" title="Migrate legacy bundle into the multi-file layout">Migrate</button>
+        <button class="btn btn-primary btn-sm" id="btn-save" title="Review save options for the multi-file layout">Save</button>
         <button class="btn btn-ghost btn-sm" id="btn-github" title="Configure GitHub sync">GitHub</button>
         <button class="btn btn-ghost btn-sm" id="btn-import" title="Import JSON">Import</button>
-        <button class="btn btn-ghost btn-sm" id="btn-export" title="Download JSON">Download</button>
+        <button class="btn btn-ghost btn-sm" id="btn-export" title="Extract split files or download a bundle backup">Export</button>
         <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">Validate</button>
         <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">Tests</a>
         <a href="combat.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#fca5a5">Combat</a>
@@ -139,7 +157,23 @@
     <div class="status-bar">
       <div class="counts" id="status-counts"></div>
       <div class="sync-meta">
+        <div class="status-filters">
+          <label class="status-filter">Scope
+            <select id="filter-scope">
+              <option value="all">All scopes</option>
+              <option value="system">System</option>
+              <option value="universal">Universal</option>
+              <option value="world">World only</option>
+            </select>
+          </label>
+          <label class="status-filter">World
+            <select id="filter-world">
+              <option value="all">All worlds</option>
+            </select>
+          </label>
+        </div>
         <span id="status-dirty"></span>
+        <span id="status-files"></span>
         <span id="status-msg">Ready</span>
         <span id="status-sync"></span>
       </div>
@@ -152,6 +186,7 @@
   <script src="js/core/undo-manager.js"></script>
   <script src="js/core/data-store.js"></script>
   <script src="js/core/save-manager.js"></script>
+  <script src="js/core/content-manager.js"></script>
   <script src="js/core/skill-resolver.js"></script>
   <script src="js/effects/value-calc.js"></script>
   <script src="js/effects/conditions.js"></script>
@@ -176,6 +211,7 @@
       const DS = CJS.DataStore;
       const UI = CJS.UI;
       const Save = CJS.SaveManager;
+      const CM = CJS.ContentManager;
 
       const DEFAULT_GITHUB_CONFIG = {
         owner: 'klwar19',
@@ -204,8 +240,12 @@
       const panels = Array.from(document.querySelectorAll('.editor-panel'));
       const statusCounts = document.getElementById('status-counts');
       const statusDirty = document.getElementById('status-dirty');
+      const statusFiles = document.getElementById('status-files');
       const statusMsg = document.getElementById('status-msg');
       const statusSync = document.getElementById('status-sync');
+      const filterScope = document.getElementById('filter-scope');
+      const filterWorld = document.getElementById('filter-world');
+      const btnMigrate = document.getElementById('btn-migrate');
       const btnSave = document.getElementById('btn-save');
       const btnGitHub = document.getElementById('btn-github');
       const btnImport = document.getElementById('btn-import');
@@ -222,6 +262,12 @@
         saveInFlight: null,
         lastGitHubSavedJson: '',
         lastGitHubErrorAt: 0
+      };
+
+      const migrationState = {
+        pendingArtifacts: false,
+        legacyBundleJson: '',
+        report: ''
       };
 
       function escapeHtml(value) {
@@ -274,6 +320,55 @@
         statusSync.className = tone ? `sync-${tone}` : '';
       }
 
+      function getLoadMode() {
+        return CM?.getLoadMode?.() || 'legacy';
+      }
+
+      function populateWorldFilters() {
+        if (!filterWorld || !CM?.getWorldOptions) return;
+        const current = filterWorld.value || 'all';
+        const worlds = CM.getWorldOptions();
+        filterWorld.innerHTML = '<option value="all">All worlds</option>' +
+          worlds.map((world) => `<option value="${escapeHtml(world.id)}">${escapeHtml(world.displayName || world.id)}</option>`).join('');
+        filterWorld.value = worlds.some((world) => world.id === current) ? current : 'all';
+      }
+
+      function applyFilters() {
+        if (!CM?.setFilters) return;
+        CM.setFilters({
+          scope: filterScope?.value || 'all',
+          world: filterWorld?.value || 'all'
+        });
+        Object.values(editorMap).forEach((editor) => editor?.refresh?.());
+        updateCounts();
+      }
+
+      function refreshValidationState() {
+        if (CM?.getManifest) {
+          CM.validateReferencesDetailed();
+        }
+      }
+
+      function buildManifestFileMap(includeOnlyDirty = true) {
+        if (!CM?.getManifest?.()) return {};
+        const docs = CM.buildFileMap({ includeOnlyDirty });
+        const out = {};
+        for (const [path, doc] of Object.entries(docs)) {
+          out[path] = `${JSON.stringify(doc, null, 2)}\n`;
+        }
+        if (migrationState.pendingArtifacts) {
+          if (migrationState.report) out['MIGRATION_REPORT.md'] = migrationState.report.endsWith('\n') ? migrationState.report : `${migrationState.report}\n`;
+          if (migrationState.legacyBundleJson) out['data/_legacy_bundle.json'] = migrationState.legacyBundleJson.endsWith('\n') ? migrationState.legacyBundleJson : `${migrationState.legacyBundleJson}\n`;
+        }
+        return out;
+      }
+
+      function getDirtyFileMap() {
+        if (CM?.getManifest?.()) return buildManifestFileMap(true);
+        const cfg = getGitHubConfig();
+        return DS.isDirty() ? { [cfg.path || DEFAULT_GITHUB_CONFIG.path]: DS.exportJSON() } : {};
+      }
+
       function refreshSyncBadge() {
         const cfg = getGitHubConfig();
         if (syncState.saveInFlight) {
@@ -281,10 +376,7 @@
           return;
         }
         if (Save.isGitHubReady(cfg)) {
-          setSyncMessage(
-            cfg.autoSave ? `GitHub autosave on (${cfg.owner}/${cfg.repo})` : `GitHub ready (${cfg.owner}/${cfg.repo})`,
-            cfg.autoSave ? 'success' : 'info'
-          );
+          setSyncMessage(`GitHub ready (${cfg.owner}/${cfg.repo})`, 'info');
           return;
         }
         const draft = Save.getDraft();
@@ -319,6 +411,7 @@
 
       function updateCounts() {
         const counts = DS.getCounts();
+        const dirtyFiles = CM?.getDirtyFiles?.() || [];
 
         for (const [key, value] of Object.entries(counts)) {
           const badge = document.getElementById(`count-${key}`);
@@ -326,12 +419,15 @@
         }
 
         statusCounts.innerHTML = Object.entries(counts)
-          .filter(([key]) => ['effects', 'skills', 'items', 'passives', 'characters', 'monsters', 'encounters'].includes(key))
+          .filter(([key, value]) => ['effects', 'skills', 'items', 'food', 'materials', 'passives', 'characters', 'monsters', 'encounters', 'crafting', 'crops', 'shops', 'zones', 'stories'].includes(key) && value > 0)
           .map(([key, value]) => `<span>${key}: <b>${value}</b></span>`)
           .join('');
 
-        statusDirty.textContent = DS.isDirty() ? 'Unsaved changes' : '';
-        statusDirty.className = DS.isDirty() ? 'dirty' : '';
+        statusDirty.textContent = dirtyFiles.length
+          ? `${dirtyFiles.length} dirty file${dirtyFiles.length === 1 ? '' : 's'}`
+          : (DS.isDirty() ? 'Unsaved changes' : '');
+        statusDirty.className = (dirtyFiles.length || DS.isDirty()) ? 'dirty' : '';
+        statusFiles.textContent = dirtyFiles.length ? dirtyFiles.join(', ') : '';
       }
 
       function rememberDirtySnapshot(json, source = 'autosave') {
@@ -355,34 +451,17 @@
 
       async function loadData() {
         try {
-          const response = await fetch('data/gamedata.json');
-          if (!response.ok) throw new Error('Not found');
-          const data = await response.json();
-          const result = DS.loadData(data);
+          const result = await CM.loadDefaultData();
           const counts = DS.getCounts();
           const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
-          console.log(`Loaded gamedata.json (${total} entries)`);
-          UI.toast(`Loaded save: ${counts.effects} effects, ${counts.skills} skills, ${counts.characters} chars, ${counts.monsters} mons`, 'success', 4000);
+          populateWorldFilters();
+          refreshValidationState();
+          console.log(`Loaded ${getLoadMode()} data (${total} entries)`);
+          UI.toast(`Loaded ${getLoadMode()} data: ${counts.effects} effects, ${counts.skills} skills, ${counts.characters} chars, ${counts.monsters} mons`, 'success', 4000);
           return result;
-        } catch (_) {
-          console.log('No gamedata.json found, falling back to master-effects.json');
-          try {
-            const response = await fetch('data/master-effects.json');
-            const data = await response.json();
-            const entries = Object.entries(data.effects || {}).filter(([key]) => !key.startsWith('__COMMENT'));
-            let count = 0;
-            for (const [id, effect] of entries) {
-              if (!DS.exists('effects', id)) {
-                DS.create('effects', { ...effect, id });
-                count++;
-              }
-            }
-            DS.markClean();
-            console.log(`Loaded ${count} master effects`);
-          } catch (error) {
-            console.warn('Could not load any data:', error.message);
-            UI.toast('No data files found. Create content or import a save.', 'info', 5000);
-          }
+        } catch (error) {
+          console.warn('Could not load any data:', error.message);
+          UI.toast('No data files found. Create content or import a save.', 'info', 5000);
           return null;
         }
       }
@@ -407,43 +486,102 @@
       }
 
       async function downloadCurrentData() {
+        if (CM?.getManifest?.()) {
+          return extractCurrentFiles(false);
+        }
         const json = DS.exportJSON();
         DS.downloadJSON('gamedata.json');
         clearPendingDraftState(json);
-        setStatusMessage('Downloaded gamedata.json');
-        UI.toast('Downloaded gamedata.json', 'success');
+        setStatusMessage('Downloaded bundled gamedata snapshot');
+        UI.toast('Downloaded bundled gamedata snapshot', 'success');
         updateCounts();
       }
 
-      async function saveCurrentData({ auto = false } = {}) {
+      async function extractCurrentFiles(includeOnlyDirty = true) {
+        const fileMap = CM?.getManifest?.()
+          ? buildManifestFileMap(includeOnlyDirty)
+          : { [getGitHubConfig().path || DEFAULT_GITHUB_CONFIG.path]: `${DS.exportJSON()}\n` };
+        const paths = Object.keys(fileMap).sort();
+
+        if (paths.length === 0) {
+          UI.toast(includeOnlyDirty ? 'No changed files to extract' : 'No files available to export', 'info');
+          return null;
+        }
+
+        try {
+          const result = await Save.exportFilesToDirectory(fileMap, {
+            pickerId: includeOnlyDirty ? 'cjs-dirty-export' : 'cjs-full-export'
+          });
+          const target = result.directoryName ? ` to ${result.directoryName}` : '';
+          const message = includeOnlyDirty
+            ? `Extracted ${paths.length} changed file${paths.length === 1 ? '' : 's'}${target}`
+            : `Extracted ${paths.length} file${paths.length === 1 ? '' : 's'}${target}`;
+          setStatusMessage(message);
+          UI.toast(message, 'success', 4500);
+          return { mode: 'directory', ...result };
+        } catch (error) {
+          if (/cancelled/i.test(String(error?.message || ''))) {
+            UI.toast('Folder export cancelled', 'info');
+            return null;
+          }
+
+          const filename = includeOnlyDirty ? 'cjs-dirty-files-export.json' : 'cjs-full-file-export.json';
+          Save.downloadFileBundle(fileMap, { filename });
+          setStatusMessage('Folder export unavailable; downloaded a file bundle instead');
+          UI.toast('Folder export was unavailable, so a file bundle was downloaded instead. Unpack it into your repo root.', 'info', 6000);
+          return { mode: 'bundle', filename };
+        }
+      }
+
+      async function saveCurrentData(mode = 'single') {
         const cfg = getGitHubConfig();
         const json = DS.exportJSON();
+        const fileMap = getDirtyFileMap();
+
+        if (mode === 'local') {
+          rememberDirtySnapshot(json, 'manual');
+          setStatusMessage('Draft saved locally');
+          UI.toast('Saved locally in this browser', 'success');
+          updateCounts();
+          return { mode: 'local' };
+        }
+
+        if (Object.keys(fileMap).length === 0) {
+          UI.toast('No changed files to save', 'info');
+          return null;
+        }
 
         if (!Save.isGitHubReady(cfg)) {
-          if (auto) return null;
-          if (cfg.owner || cfg.repo || Save.hasGitHubToken()) {
-            UI.toast('GitHub is not fully configured yet. Downloaded JSON instead.', 'info', 4500);
-          }
-          return downloadCurrentData();
+          UI.toast('Configure GitHub first or choose Local only', 'error', 4500);
+          return null;
         }
 
         if (syncState.saveInFlight) {
-          if (!auto) UI.toast('A save is already in progress', 'info');
+          UI.toast('A save is already in progress', 'info');
           return syncState.saveInFlight;
         }
 
-        rememberDirtySnapshot(json, auto ? 'autosave' : 'manual');
-        setStatusMessage(auto ? 'Autosaving to GitHub...' : 'Saving to GitHub...');
+        rememberDirtySnapshot(json, 'manual');
+        setStatusMessage(mode === 'separate' ? 'Saving changed files separately...' : 'Saving all changed files in one commit...');
 
         const messageBase = cfg.commitMessage || DEFAULT_GITHUB_CONFIG.commitMessage;
-        const message = auto ? `${messageBase} (auto-save)` : messageBase;
+        const runner = mode === 'separate'
+          ? Save.saveFilesSeparatelyToGitHub(fileMap, { config: cfg, message: messageBase })
+          : Save.saveFilesAsSingleCommit(fileMap, { config: cfg, message: messageBase });
 
-        syncState.saveInFlight = Save.saveJSONToGitHub(json, { config: cfg, message })
+        syncState.saveInFlight = runner
           .then(() => {
             DS.markClean();
+            CM?.clearDirtyFiles?.();
+            if (migrationState.pendingArtifacts) {
+              migrationState.pendingArtifacts = false;
+              migrationState.legacyBundleJson = '';
+              migrationState.report = '';
+            }
             clearPendingDraftState(json);
-            setStatusMessage(auto ? 'Autosaved to GitHub' : 'Saved to GitHub');
-            UI.toast(auto ? 'Autosaved to GitHub' : 'Saved to GitHub', 'success');
+            refreshValidationState();
+            setStatusMessage(mode === 'separate' ? 'Saved changed files as separate commits' : 'Saved changed files in one commit');
+            UI.toast(mode === 'separate' ? 'Saved changed files separately' : 'Saved changed files in one commit', 'success');
             updateCounts();
           })
           .catch((error) => {
@@ -462,17 +600,118 @@
       }
 
       async function maybeAutoSaveToGitHub(json) {
-        const cfg = getGitHubConfig();
-        if (!cfg.autoSave || !Save.isGitHubReady(cfg) || syncState.saveInFlight) return;
-        if (!DS.isDirty() || !json) return;
-        if (json !== syncState.pendingSnapshot) return;
-        if (!syncState.pendingSince || Date.now() - syncState.pendingSince < 5000) return;
-        if (Date.now() - syncState.lastGitHubErrorAt < 15000) return;
+        return json;
+      }
+
+      function openSaveDialog() {
+        const fileMap = getDirtyFileMap();
+        const paths = Object.keys(fileMap).sort();
+        if (paths.length === 0) {
+          UI.toast('No changed files to save', 'info');
+          return;
+        }
+
+        const body = document.createElement('div');
+        body.innerHTML = `
+          <div class="hint-box hint-info">
+            <b>Load mode:</b> ${escapeHtml(getLoadMode())}. Save stays manual: choose how to write the current dirty files.
+          </div>
+          <div><b>${paths.length}</b> file(s) ready:</div>
+          <div class="sync-status-box" style="max-height:260px;overflow:auto;margin-top:8px">${paths.map((path) => escapeHtml(path)).join('<br>')}</div>
+          <div class="sync-note">For <b>Extract Files</b>, choose your repo root folder: the one that contains <code>editor.html</code>, <code>combat.html</code>, <code>data/</code>, <code>js/</code>, and <code>css/</code>.</div>
+          ${migrationState.pendingArtifacts ? '<div class="sync-note">This save also includes the one-time migration artifacts: <code>MIGRATION_REPORT.md</code> and <code>data/_legacy_bundle.json</code>.</div>' : ''}
+        `;
+
+        const footer = document.createElement('div');
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn btn-ghost';
+        closeBtn.textContent = 'Close';
+
+        const localBtn = document.createElement('button');
+        localBtn.className = 'btn btn-ghost';
+        localBtn.textContent = 'Local Only';
+
+        const extractBtn = document.createElement('button');
+        extractBtn.className = 'btn btn-ghost';
+        extractBtn.textContent = 'Extract Files';
+
+        const separateBtn = document.createElement('button');
+        separateBtn.className = 'btn btn-ghost';
+        separateBtn.textContent = 'GitHub: Separate';
+
+        const singleBtn = document.createElement('button');
+        singleBtn.className = 'btn btn-primary';
+        singleBtn.textContent = 'GitHub: One Commit';
+
+        footer.appendChild(closeBtn);
+        footer.appendChild(localBtn);
+        footer.appendChild(extractBtn);
+        footer.appendChild(separateBtn);
+        footer.appendChild(singleBtn);
+
+        const overlay = UI.openModal({
+          title: 'Save Changes',
+          content: body,
+          footer,
+          width: '760px'
+        });
+
+        closeBtn.onclick = () => UI.closeModal(overlay);
+        localBtn.onclick = async () => {
+          await saveCurrentData('local');
+          UI.closeModal(overlay);
+        };
+        extractBtn.onclick = async () => {
+          await extractCurrentFiles(true);
+          UI.closeModal(overlay);
+        };
+        separateBtn.onclick = async () => {
+          try {
+            await saveCurrentData('separate');
+            UI.closeModal(overlay);
+          } catch (_) {}
+        };
+        singleBtn.onclick = async () => {
+          try {
+            await saveCurrentData('single');
+            UI.closeModal(overlay);
+          } catch (_) {}
+        };
+      }
+
+      async function runLegacyMigration() {
+        if (!CM?.getManifest?.()) {
+          UI.toast('Manifest mode is required before running migration', 'error');
+          return;
+        }
+        if (!window.confirm('Migrate legacy data into the multi-file layout now? This will rewrite IDs in-memory, mark many files dirty, and wait for you to save manually.')) {
+          return;
+        }
 
         try {
-          await saveCurrentData({ auto: true });
-        } catch (_) {
-          // Toast already shown.
+          const legacyResponse = await fetch('data/gamedata.json');
+          migrationState.legacyBundleJson = legacyResponse.ok ? await legacyResponse.text() : '';
+          const result = await CM.applyLegacyMigration();
+          const lastMigration = CM.getLastMigration?.();
+          migrationState.pendingArtifacts = true;
+          migrationState.report = lastMigration?.report || '';
+          refreshValidationState();
+          populateWorldFilters();
+          resetEditors();
+          initEditor(activePanel);
+          updateCounts();
+          setStatusMessage(`Migration staged in ${result.counts.worlds || 0} worlds; review and save when ready`);
+          UI.toast('Legacy bundle migrated into the multi-file layout', 'success', 4500);
+
+          if (migrationState.report) {
+            UI.openModal({
+              title: 'Migration Report',
+              content: `<pre style="white-space:pre-wrap;font-size:0.8rem;max-height:420px;overflow:auto">${escapeHtml(migrationState.report)}</pre>`,
+              width: '780px'
+            });
+          }
+        } catch (error) {
+          UI.toast(error.message || 'Migration failed', 'error', 5000);
         }
       }
 
@@ -496,7 +735,7 @@
               <input type="text" id="gh-branch" value="${escapeHtml(cfg.branch)}" placeholder="main">
             </div>
             <div>
-              <label class="form-label" for="gh-path">File Path</label>
+              <label class="form-label" for="gh-path">Bundle Path</label>
               <input type="text" id="gh-path" value="${escapeHtml(cfg.path)}" placeholder="data/gamedata.json">
             </div>
             <div class="full">
@@ -508,8 +747,8 @@
               <input type="password" id="gh-token" placeholder="${hasToken ? 'Stored token will be kept unless you replace it' : 'Paste a fine-grained token'}">
             </div>
             <label class="form-check full">
-              <input type="checkbox" id="gh-autosave" ${cfg.autoSave ? 'checked' : ''}>
-              <span>Auto-save to GitHub after a few idle seconds</span>
+              <input type="checkbox" id="gh-autosave" disabled>
+              <span>Manual save only (GitHub autosave is disabled for the multi-file workflow)</span>
             </label>
             <label class="form-check full">
               <input type="checkbox" id="gh-remember" ${cfg.rememberToken ? 'checked' : ''}>
@@ -518,7 +757,7 @@
           </div>
           <div class="sync-note">
             Use a GitHub fine-grained personal access token with Contents read and write permission for this repo.
-            The token stays in browser storage only and is never written into gamedata.json.
+            The token stays in browser storage only and is never written into your data files.
           </div>
           <div class="sync-status-box" id="gh-sync-status">${hasToken ? 'A token is already stored in this browser.' : 'Enter your GitHub settings, then test or save them.'}</div>
         `;
@@ -569,7 +808,7 @@
             branch: branchInput.value.trim() || 'main',
             path: pathInput.value.trim() || 'data/gamedata.json',
             commitMessage: messageInput.value.trim() || DEFAULT_GITHUB_CONFIG.commitMessage,
-            autoSave: autoSaveInput.checked,
+            autoSave: false,
             rememberToken: rememberInput.checked
           };
           const newToken = tokenInput.value.trim();
@@ -600,8 +839,8 @@
               token: next.token !== undefined ? next.token : Save.getGitHubToken()
             });
             syncStatusBox.textContent = result.fileExists
-              ? 'Connection OK. Remote gamedata.json found.'
-              : 'Connection OK. The file path is missing now, but the first save can create it.';
+              ? 'Connection OK. The configured bundle path exists.'
+              : 'Connection OK. The configured bundle path is missing now, but the first save can create it.';
           } catch (error) {
             syncStatusBox.textContent = error.message || 'GitHub test failed';
           }
@@ -667,6 +906,7 @@
             if (result.success) {
               DS.markDirty();
               rememberDirtySnapshot(draft.json, 'restore');
+              refreshValidationState();
               resetEditors();
               initEditor(activePanel);
               updateCounts();
@@ -776,9 +1016,14 @@
       });
 
       btnSave.addEventListener('click', () => {
-        saveCurrentData({ auto: false }).catch(() => {});
+        openSaveDialog();
+      });
+      btnMigrate.addEventListener('click', () => {
+        runLegacyMigration();
       });
       btnGitHub.addEventListener('click', openGitHubModal);
+      filterScope.addEventListener('change', applyFilters);
+      filterWorld.addEventListener('change', applyFilters);
 
       btnExport.addEventListener('click', () => {
         downloadCurrentData();
@@ -798,6 +1043,7 @@
           if (result.success) {
             DS.markDirty();
             rememberDirtySnapshot(DS.exportJSON(), 'import');
+            refreshValidationState();
             updateCounts();
             resetEditors();
             initEditor(activePanel);
@@ -812,24 +1058,29 @@
       });
 
       btnValidate.addEventListener('click', () => {
-        const result = DS.validate();
-        if (result.valid && result.warnings.length === 0) {
+        refreshValidationState();
+        const storeResult = DS.validate();
+        const manifestResult = CM?.getManifest?.()
+          ? CM.validateReferencesDetailed()
+          : { valid: true, issues: [], byFile: {} };
+
+        if (storeResult.valid && storeResult.warnings.length === 0 && manifestResult.valid && manifestResult.issues.length === 0) {
           UI.toast('All references valid!', 'success');
           return;
         }
 
-        let message = '';
-        if (result.errors.length > 0) {
-          message += `${result.errors.length} errors:\n${result.errors.join('\n')}\n\n`;
-        }
-        if (result.warnings.length > 0) {
-          message += `${result.warnings.length} warnings:\n${result.warnings.join('\n')}`;
-        }
+        const storeLines = [];
+        if (storeResult.errors.length > 0) storeLines.push(`${storeResult.errors.length} store errors:\n${storeResult.errors.join('\n')}`);
+        if (storeResult.warnings.length > 0) storeLines.push(`${storeResult.warnings.length} store warnings:\n${storeResult.warnings.join('\n')}`);
+        const manifestReport = manifestResult.issues.length > 0
+          ? CM.formatValidationReport(manifestResult)
+          : 'No manifest/file reference issues found.';
+        const message = `${storeLines.join('\n\n')}\n\nManifest/file validation:\n${manifestReport}`.trim();
 
         UI.openModal({
-          title: `Validation: ${result.errors.length} errors, ${result.warnings.length} warnings`,
-          content: `<pre style="white-space:pre-wrap;font-size:0.82rem;max-height:400px;overflow:auto">${escapeHtml(message)}</pre>`,
-          width: '650px'
+          title: `Validation: ${storeResult.errors.length + manifestResult.issues.filter((issue) => issue.level === 'error').length} errors`,
+          content: `<pre style="white-space:pre-wrap;font-size:0.82rem;max-height:420px;overflow:auto">${escapeHtml(message)}</pre>`,
+          width: '760px'
         });
       });
 
@@ -844,17 +1095,18 @@
 
       async function boot() {
         await loadData();
-        seedBuiltInStatuses();
         bindUndoRedo();
 
         if (window.CJS.PortraitPicker) {
           await window.CJS.PortraitPicker.loadManifest().catch(() => {});
         }
 
+        populateWorldFilters();
+        applyFilters();
         initEditor('effects');
         updateCounts();
         syncState.lastGitHubSavedJson = DS.exportJSON();
-        setStatusMessage('Ready');
+        setStatusMessage(`Ready (${getLoadMode()})`);
         refreshSyncBadge();
 
         await maybeOfferDraftRestore();

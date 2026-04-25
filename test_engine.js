@@ -3,6 +3,7 @@
 // Run: node test_engine.js
 //
 // Tests:
+//   0. DataStore supports future multi-world categories
 //   1. SkillResolver normalization and resolution
 //   2. compileUnit preserves skills with overrides
 //   3. compileUnit preserves AI fields (behaviorAI, aiRules, loot)
@@ -141,6 +142,39 @@ function assertEq(label, actual, expected) {
   if (actual === expected) { _passed++; console.log(`  ✅ ${label} (${JSON.stringify(actual)})`); }
   else { _failed++; console.error(`  ❌ FAIL: ${label} — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); }
 }
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 0: DataStore future-category scaffold
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 0: DataStore future categories ──');
+
+DS.reset();
+
+const zoneId = DS.create('zones', { name: 'Test Zone' });
+const cropId = DS.create('crops', { name: 'Test Crop' });
+const shopId = DS.create('shops', { name: 'Test Shop' });
+const recipeId = DS.create('crafting', { name: 'Test Recipe' });
+const foodId = DS.create('food', { name: 'Test Food' });
+const materialId = DS.create('materials', { name: 'Test Material' });
+const storyId = DS.create('stories', { name: 'Test Story' });
+
+DS.replace('worlds', 'haven', { id: 'haven', name: 'Haven' });
+
+assertEq('zone ID prefix', zoneId, 'zon_001');
+assertEq('crop ID prefix', cropId, 'crp_001');
+assertEq('shop ID prefix', shopId, 'shp_001');
+assertEq('crafting ID prefix', recipeId, 'rcp_001');
+assertEq('food ID prefix', foodId, 'fod_001');
+assertEq('material ID prefix', materialId, 'mat_001');
+assertEq('story ID prefix', storyId, 'sto_001');
+assertEq('world count exposed', DS.getCounts().worlds, 1);
+assertEq('zone count exposed', DS.getCounts().zones, 1);
+assert('exportJSON includes future collections', (() => {
+  const exported = JSON.parse(DS.exportJSON());
+  return exported.worlds && exported.zones && exported.food && exported.materials && exported.crafting;
+})());
+
+DS.reset();
 
 // ── SEED TEST DATA ───────────────────────────────────────────────────
 DS.replace('skills', 'firebolt', {

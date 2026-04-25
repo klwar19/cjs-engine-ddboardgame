@@ -1,0 +1,128 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "characters",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_bowy",
+      "name": "Bowy",
+      "icon": "🐗",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 7,
+        "P": 8,
+        "E": 7,
+        "C": 4,
+        "I": 3,
+        "A": 5,
+        "L": 4
+      },
+      "skills": [
+        "haven_thunder_shot",
+        "haven_piercing_bolt",
+        "haven_suppressive_fire",
+        "basic_attack"
+      ],
+      "equipment": [
+        "haven_thunder_crossbow",
+        "haven_leather_armor",
+        "haven_warm_boots"
+      ],
+      "innatePassives": [
+        "haven_marksmans_eye",
+        "haven_iron_hide"
+      ],
+      "weak": [],
+      "resist": [],
+      "immune": [],
+      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_garr",
+      "name": "Garr",
+      "icon": "🐾",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 7,
+        "P": 7,
+        "E": 6,
+        "C": 5,
+        "I": 4,
+        "A": 5,
+        "L": 4
+      },
+      "skills": [
+        "haven_hunters_strike",
+        "haven_trap_set",
+        "haven_rally_cry",
+        "basic_attack"
+      ],
+      "equipment": [
+        "haven_hunters_blade",
+        "haven_leather_armor",
+        "haven_warm_boots"
+      ],
+      "innatePassives": [
+        "haven_veterans_instinct"
+      ],
+      "weak": [],
+      "resist": [],
+      "immune": [],
+      "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_mitia",
+      "name": "Mitia",
+      "icon": "🧊",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 3,
+        "P": 5,
+        "E": 4,
+        "C": 6,
+        "I": 8,
+        "A": 5,
+        "L": 5
+      },
+      "skills": [
+        "haven_frost_touch",
+        "haven_ice_shield",
+        "haven_healing_light"
+      ],
+      "equipment": [
+        "haven_frost_staff",
+        "haven_adventurers_cloak",
+        "haven_healers_pendant"
+      ],
+      "innatePassives": [
+        "haven_fae_blood",
+        "haven_gentle_heart"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [],
+      "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
+      "movement": 3,
+      "size": "1x1"
+    }
+  ]
+}

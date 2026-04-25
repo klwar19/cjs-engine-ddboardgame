@@ -1,0 +1,49 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "characters",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "bin",
+      "name": "Bin Chen",
+      "icon": "🃏",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 5,
+        "P": 6,
+        "E": 5,
+        "C": 8,
+        "I": 7,
+        "A": 6,
+        "L": 5
+      },
+      "skills": [
+        "haven_ember_slash",
+        "taunt_mock",
+        "jester_gambit",
+        "basic_attack"
+      ],
+      "equipment": [
+        "haven_rusty_sword",
+        "haven_leather_armor",
+        "haven_lucky_coin"
+      ],
+      "innatePassives": [
+        "jester_luck",
+        "comedy_armor"
+      ],
+      "weak": [],
+      "resist": [],
+      "immune": [],
+      "description": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon.",
+      "movement": 3,
+      "size": "1x1"
+    }
+  ]
+}

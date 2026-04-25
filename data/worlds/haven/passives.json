@@ -1,0 +1,187 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "passives",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_alpha_presence",
+      "name": "Alpha Presence",
+      "icon": "🐺👑",
+      "tags": [
+        "wolf",
+        "buff",
+        "pack"
+      ],
+      "effects": [
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 5
+          }
+        }
+      ],
+      "description": "Pack alpha. Nearby wolves deal more damage."
+    },
+    {
+      "id": "haven_fae_blood",
+      "name": "Fae Blood",
+      "icon": "🧚",
+      "tags": [
+        "mitia",
+        "magic",
+        "regen"
+      ],
+      "effects": [
+        {
+          "effectId": "regen_mp",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "dr_mod_magic",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "Hidden Fae heritage. Natural mana recovery and magic resistance."
+    },
+    {
+      "id": "haven_frozen_carapace",
+      "name": "Frozen Carapace",
+      "icon": "🧊🛡️",
+      "tags": [
+        "chimera",
+        "defense",
+        "boss"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 5
+          }
+        },
+        {
+          "effectId": "dr_mod_magic",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "reflect_physical",
+          "overrides": {
+            "value": 10
+          }
+        }
+      ],
+      "description": "The chimera's frostfire-hardened scales. High DR and reflects damage."
+    },
+    {
+      "id": "haven_gentle_heart",
+      "name": "Gentle Heart",
+      "icon": "💛",
+      "tags": [
+        "mitia",
+        "support",
+        "heal"
+      ],
+      "effects": [
+        {
+          "effectId": "stat_mod_int",
+          "overrides": {
+            "value": 1
+          }
+        },
+        {
+          "effectId": "stat_mod_cha",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Mitia's kindness strengthens her magic and charm."
+    },
+    {
+      "id": "haven_iron_hide",
+      "name": "Iron Hide",
+      "icon": "🐗",
+      "tags": [
+        "bowy",
+        "defense",
+        "physical"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "stat_mod_end",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Half-orc/half-boar toughness. Thick skin."
+    },
+    {
+      "id": "haven_marksmans_eye",
+      "name": "Marksman's Eye",
+      "icon": "🎯",
+      "tags": [
+        "bowy",
+        "accuracy",
+        "ranged"
+      ],
+      "effects": [
+        {
+          "effectId": "accuracy_mod",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "range_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Bowy's trained eye. Better accuracy and extended range."
+    },
+    {
+      "id": "haven_veterans_instinct",
+      "name": "Veteran's Instinct",
+      "icon": "🐾",
+      "tags": [
+        "garr",
+        "counter",
+        "initiative"
+      ],
+      "effects": [
+        {
+          "effectId": "counter_melee",
+          "overrides": {
+            "value": 40
+          }
+        },
+        {
+          "effectId": "stat_mod_per",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "Decades of hunting hone reflexes. Counter chance on melee + perception."
+    }
+  ]
+}

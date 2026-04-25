@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "neo_starcraft"
+  },
+  "world": {
+    "id": "neo_starcraft",
+    "displayName": "Sectors",
+    "ceiling": "SR",
+    "order": 4,
+    "tone": "techno_sterile",
+    "color": "#06b6d4",
+    "status": "stub"
+  }
+}

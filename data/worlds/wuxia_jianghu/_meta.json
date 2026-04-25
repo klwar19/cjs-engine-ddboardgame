@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "wuxia_jianghu"
+  },
+  "world": {
+    "id": "wuxia_jianghu",
+    "displayName": "Jianghu",
+    "ceiling": "A",
+    "order": 5,
+    "tone": "wuxia_classical",
+    "color": "#84cc16",
+    "status": "stub"
+  }
+}

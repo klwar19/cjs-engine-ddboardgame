@@ -1,0 +1,577 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "skills",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_bear_maul",
+      "name": "Maul",
+      "icon": "🐻💥",
+      "power": 16,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 5
+      },
+      "description": "Devastating swipe that knocks the target back."
+    },
+    {
+      "id": "haven_bear_roar",
+      "name": "Terrifying Roar",
+      "icon": "🐻🗯️",
+      "power": 0,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "S",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Roar that terrifies nearby enemies."
+    },
+    {
+      "id": "haven_chill_wind",
+      "name": "Chill Wind",
+      "icon": "💨❄️",
+      "power": 8,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "terrain_create_ice",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Blast of freezing wind in a cone. Creates ice terrain."
+    },
+    {
+      "id": "haven_chimera_fire_swipe",
+      "name": "Fire Swipe",
+      "icon": "🐉🔥👊",
+      "power": 16,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Fiery claw swipe. Basic melee attack of the chimera."
+    },
+    {
+      "id": "haven_chimera_flame_wave",
+      "name": "Flame Wave",
+      "icon": "🐉🔥",
+      "power": 22,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Fire",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 6,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_create_fire",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Cone of flame from the fire head. Burns and creates fire terrain."
+    },
+    {
+      "id": "haven_chimera_frost_breath",
+      "name": "Frost Breath",
+      "icon": "🐉❄️",
+      "power": 25,
+      "ap": 4,
+      "mp": 10,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": "line",
+      "aoeSize": 4,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 5,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_create_ice",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Devastating breath from the ice head. Line AoE, heavy frostbite."
+    },
+    {
+      "id": "haven_ember_slash",
+      "name": "Ember Slash",
+      "icon": "🔥⚔️",
+      "power": 12,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "A fiery slash. Chance to burn."
+    },
+    {
+      "id": "haven_frost_touch",
+      "name": "Frost Touch",
+      "icon": "❄️",
+      "power": 14,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "rhythm",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Gentle ice magic. Applies frostbite, slowing the target."
+    },
+    {
+      "id": "haven_healing_light",
+      "name": "Healing Light",
+      "icon": "💚✨",
+      "power": 0,
+      "ap": 2,
+      "mp": 8,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Light",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "regen_hp",
+          "overrides": {
+            "value": 5
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Warm healing magic. Restores HP and grants regen."
+    },
+    {
+      "id": "haven_hunters_strike",
+      "name": "Hunter's Strike",
+      "icon": "🗡️🐾",
+      "power": 14,
+      "ap": 2,
+      "mp": 2,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "mark_on_hit",
+          "overrides": {
+            "value": 10,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Precise strike that marks the target, increasing damage taken."
+    },
+    {
+      "id": "haven_ice_shard",
+      "name": "Ice Shard",
+      "icon": "❄️💎",
+      "power": 12,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 5
+      },
+      "description": "Ranged ice projectile."
+    },
+    {
+      "id": "haven_ice_shield",
+      "name": "Ice Shield",
+      "icon": "🧊🛡️",
+      "power": 0,
+      "ap": 2,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "opening_shield",
+          "overrides": {
+            "value": 20
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Creates an ice barrier on an ally that absorbs damage."
+    },
+    {
+      "id": "haven_pack_howl",
+      "name": "Pack Howl",
+      "icon": "🐺🌙",
+      "power": 0,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 8
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Howl that empowers nearby wolves."
+    },
+    {
+      "id": "haven_piercing_bolt",
+      "name": "Piercing Bolt",
+      "icon": "🔩",
+      "power": 18,
+      "ap": 3,
+      "mp": 5,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "P",
+      "range": 4,
+      "aoe": "line",
+      "aoeSize": 3,
+      "qte": "fishing",
+      "effects": [
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR."
+    },
+    {
+      "id": "haven_rally_cry",
+      "name": "Rally",
+      "icon": "📯",
+      "power": 0,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "battle_cry",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Garr rallies the party. Buffs all allies' damage."
+    },
+    {
+      "id": "haven_suppressive_fire",
+      "name": "Suppressive Fire",
+      "icon": "🏹💨",
+      "power": 8,
+      "ap": 3,
+      "mp": 7,
+      "cooldown": 3,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "P",
+      "range": 5,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "mash",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 10
+      },
+      "description": "Spray of bolts in a cone. Lower damage but slows enemies. QTE: Mash!"
+    },
+    {
+      "id": "haven_thunder_shot",
+      "name": "Thunder Shot",
+      "icon": "⚡🏹",
+      "power": 14,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Lightning",
+      "scalingStat": "P",
+      "range": 5,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "shock_dot",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Bowy's signature crossbow shot. Long range, lightning element."
+    },
+    {
+      "id": "haven_trap_set",
+      "name": "Set Trap",
+      "icon": "⚙️",
+      "power": 0,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 3,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "P",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "terrain_create_poison",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Place a trap that creates a poison zone. Veteran hunting tactic."
+    },
+    {
+      "id": "haven_wolf_bite",
+      "name": "Frost Bite",
+      "icon": "🐺❄️",
+      "power": 10,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Freezing bite that chills to the bone."
+    }
+  ]
+}

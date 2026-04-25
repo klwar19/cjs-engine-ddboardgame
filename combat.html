@@ -33,6 +33,7 @@
   <script src="js/core/dice.js"></script>
   <script src="js/core/undo-manager.js"></script>
   <script src="js/core/data-store.js"></script>
+  <script src="js/core/content-manager.js"></script>
   <script src="js/core/skill-resolver.js"></script>
 
   <!-- Phase 1: Effects -->
@@ -87,91 +88,16 @@
     'use strict';
     const DS = window.CJS.DataStore;
     const ND = window.CJS.NarratorData;
+    const CM = window.CJS.ContentManager;
 
     // ── LOAD DATA ─────────────────────────────────────────────────
     async function loadData() {
-      // Load gamedata
       try {
-        const gameResp = await fetch('data/gamedata.json');
-        if (gameResp.ok) {
-          const gameData = await gameResp.json();
-          DS.loadData(gameData);
-          console.log('Game data loaded:', DS.getCounts());
-        }
+        const result = await CM.loadDefaultData();
+        await ND.load(DS.getAllAsArray('quips'));
+        console.log('Combat data loaded:', result.mode, DS.getCounts());
       } catch (err) {
-        console.warn('gamedata.json load error:', err.message);
-      }
-
-      // Load master effects (dict format: { effects: { id: {...}, ... } })
-      try {
-        const effectsResp = await fetch('data/master-effects.json');
-        if (effectsResp.ok) {
-          const raw = await effectsResp.json();
-          const effectsObj = raw.effects || raw;
-          if (typeof effectsObj === 'object' && !Array.isArray(effectsObj)) {
-            for (const [id, eff] of Object.entries(effectsObj)) {
-              eff.id = eff.id || id;
-              DS.replace('effects', eff.id, eff);
-            }
-          } else if (Array.isArray(effectsObj)) {
-            for (const eff of effectsObj) DS.replace('effects', eff.id, eff);
-          }
-          console.log('Master effects loaded.');
-        }
-      } catch (err) {
-        console.warn('master-effects.json load error:', err.message);
-      }
-
-      // Load quips
-      try {
-        const quipsResp = await fetch('data/quips.json');
-        if (quipsResp.ok) {
-          const quips = await quipsResp.json();
-          await ND.load(quips.fragments || quips);
-          console.log('Quips loaded:', ND.count(), 'fragments');
-        }
-      } catch (err) {
-        console.warn('quips.json load error:', err.message);
-      }
-
-      // Load quiz bank (for quiz QTEs) if not already in gamedata
-      try {
-        const quizCount = DS.getAllAsArray('quizBank');
-        if (!quizCount || quizCount.length === 0) {
-          const quizResp = await fetch('data/quiz-bank.json');
-          if (quizResp.ok) {
-            const quizData = await quizResp.json();
-            const questions = quizData.questions || quizData;
-            if (Array.isArray(questions) && questions.length > 0) {
-              DS.loadData({ quizBank: questions });
-              console.log('Quiz bank loaded:', questions.length, 'questions');
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('quiz-bank.json load error:', err.message);
-      }
-
-      // Seed built-in STATUS_DEFINITIONS into DataStore so status-manager
-      // can read behavior flags (preventsAction, tickDamageType, etc.).
-      // Only seeds entries that don't already exist (custom overrides win).
-      try {
-        const UM = window.CJS.UndoManager;
-        const CONST = window.CJS.CONST;
-        if (UM) UM.disable();
-        if (CONST && CONST.STATUS_DEFINITIONS) {
-          let seeded = 0;
-          for (const [id, def] of Object.entries(CONST.STATUS_DEFINITIONS)) {
-            if (!DS.exists('statuses', id)) {
-              DS.replace('statuses', id, { ...def, id });
-              seeded++;
-            }
-          }
-          console.log('Built-in statuses seeded:', seeded);
-        }
-        if (UM) { UM.enable(); UM.clear(); }
-      } catch (err) {
-        console.warn('Status seeding error:', err.message);
+        console.warn('Combat load error:', err.message);
       }
     }
 
@@ -280,6 +206,7 @@
         const text = await file.text();
         const data = JSON.parse(text);
         DS.loadData(data);
+        await ND.load(DS.getAllAsArray('quips'));
         populateEncounters();
         console.log('Data imported successfully.');
       } catch (err) {

@@ -13,6 +13,7 @@ window.CJS.EncounterEditor = (() => {
   const C  = () => window.CJS.CONST;
   const DS = () => window.CJS.DataStore;
   const UI = () => window.CJS.UI;
+  const CM = () => window.CJS.ContentManager;
 
   let _container, _listEl, _formEl, _activeId = null;
 
@@ -75,7 +76,7 @@ window.CJS.EncounterEditor = (() => {
   }
 
   function _renderList() {
-    const items = DS().getAllAsArray('encounters');
+    const items = CM()?.getVisibleItems?.('encounters') || DS().getAllAsArray('encounters');
     UI().renderDataList({
       container: _listEl, items, activeId: _activeId,
       onSelect: (e) => _load(e.id),

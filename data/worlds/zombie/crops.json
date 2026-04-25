@@ -1,0 +1,11 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "zombie",
+    "category": "crops",
+    "status": "stub"
+  },
+  "entries": []
+}

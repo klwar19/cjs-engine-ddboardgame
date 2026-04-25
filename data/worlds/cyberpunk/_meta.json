@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "cyberpunk"
+  },
+  "world": {
+    "id": "cyberpunk",
+    "displayName": "Neo-Kowloon",
+    "ceiling": "A",
+    "order": 3,
+    "tone": "cyberpunk_neon",
+    "color": "#ec4899",
+    "status": "stub"
+  }
+}

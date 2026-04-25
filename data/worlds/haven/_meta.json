@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "haven"
+  },
+  "world": {
+    "id": "haven",
+    "displayName": "Haven",
+    "ceiling": "S",
+    "order": 1,
+    "tone": "fantasy_warm",
+    "color": "#3b82f6",
+    "status": "stub"
+  }
+}

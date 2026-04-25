@@ -12,6 +12,7 @@ window.CJS.CharEditor = (() => {
   const DS = () => window.CJS.DataStore;
   const F  = () => window.CJS.Formulas;
   const UI = () => window.CJS.UI;
+  const CM = () => window.CJS.ContentManager;
   const PP = () => window.CJS.PortraitPicker;
 
   let _container, _listEl, _formEl, _activeId = null;
@@ -40,7 +41,7 @@ window.CJS.CharEditor = (() => {
   }
 
   function _renderList(q) {
-    const items = q ? DS().search('characters', q) : DS().getAllAsArray('characters');
+    const items = CM()?.getVisibleItems?.('characters', q) || (q ? DS().search('characters', q) : DS().getAllAsArray('characters'));
     UI().renderDataList({ container: _listEl, items, activeId: _activeId, onSelect: (c) => _load(c.id) });
   }
 

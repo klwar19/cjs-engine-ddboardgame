@@ -1,0 +1,5717 @@
+{
+  "effects": {
+    "stat_mod_str": {
+      "id": "stat_mod_str",
+      "name": "Strength Mod",
+      "icon": "💪",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "S",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "strength",
+        "physical"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "STR +3"
+    },
+    "stat_mod_per": {
+      "id": "stat_mod_per",
+      "name": "Perception Mod",
+      "icon": "👁️",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "P",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "perception",
+        "accuracy"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "PER +3"
+    },
+    "stat_mod_end": {
+      "id": "stat_mod_end",
+      "name": "Endurance Mod",
+      "icon": "🛡️",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "E",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "endurance",
+        "tank"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "END +3"
+    },
+    "stat_mod_cha": {
+      "id": "stat_mod_cha",
+      "name": "Charisma Mod",
+      "icon": "🎭",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "C",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "charisma",
+        "social"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "CHA +3"
+    },
+    "stat_mod_int": {
+      "id": "stat_mod_int",
+      "name": "Intelligence Mod",
+      "icon": "🧠",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "I",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "intelligence",
+        "magic"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "INT +3"
+    },
+    "stat_mod_agi": {
+      "id": "stat_mod_agi",
+      "name": "Agility Mod",
+      "icon": "⚡",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "A",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "agility",
+        "speed"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "AGI +3"
+    },
+    "stat_mod_lck": {
+      "id": "stat_mod_lck",
+      "name": "Luck Mod",
+      "icon": "🍀",
+      "trigger": "stat_mod",
+      "action": "stat_mod",
+      "target": "self",
+      "stat": "L",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "stat",
+        "luck",
+        "crit"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "LCK +3"
+    },
+    "dr_mod_physical": {
+      "id": "dr_mod_physical",
+      "name": "Physical DR Mod",
+      "icon": "🛡️",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "physical",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "physical"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Physical DR +5"
+    },
+    "dr_mod_magic": {
+      "id": "dr_mod_magic",
+      "name": "Magic DR Mod",
+      "icon": "🔮",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "magic",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "magic"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Magic DR +5"
+    },
+    "dr_mod_chaos": {
+      "id": "dr_mod_chaos",
+      "name": "Chaos DR Mod",
+      "icon": "🌀",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "chaos",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "chaos"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Chaos DR +5"
+    },
+    "dr_mod_all": {
+      "id": "dr_mod_all",
+      "name": "All DR Mod",
+      "icon": "🏰",
+      "trigger": "dr_mod",
+      "action": "dr_mod",
+      "target": "self",
+      "drType": "all",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "dr",
+        "all",
+        "tank"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "All DR +3"
+    },
+    "crit_rate_mod": {
+      "id": "crit_rate_mod",
+      "name": "Crit Rate Mod",
+      "icon": "🎯",
+      "trigger": "crit_mod",
+      "action": "crit_mod",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "crit",
+        "offense"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Crit rate +5%"
+    },
+    "crit_damage_mod": {
+      "id": "crit_damage_mod",
+      "name": "Crit Damage Mod",
+      "icon": "💥",
+      "trigger": "crit_mod",
+      "action": "crit_mod",
+      "target": "self",
+      "value": 25,
+      "source": "percent",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "crit",
+        "offense",
+        "damage"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Crit damage +25%"
+    },
+    "evasion_mod": {
+      "id": "evasion_mod",
+      "name": "Evasion Mod",
+      "icon": "💨",
+      "trigger": "evasion_mod",
+      "action": "evasion_mod",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "defense",
+        "evasion",
+        "agility"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Evasion +5"
+    },
+    "accuracy_mod": {
+      "id": "accuracy_mod",
+      "name": "Accuracy Mod",
+      "icon": "🎯",
+      "trigger": "accuracy_mod",
+      "action": "accuracy_mod",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "offense",
+        "accuracy",
+        "hit"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Accuracy +5"
+    },
+    "ap_mod": {
+      "id": "ap_mod",
+      "name": "AP Mod",
+      "icon": "⚡",
+      "trigger": "ap_mod",
+      "action": "ap_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "ap",
+        "action",
+        "speed"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "AP +1 per turn"
+    },
+    "movement_mod": {
+      "id": "movement_mod",
+      "name": "Movement Mod",
+      "icon": "🏃",
+      "trigger": "movement_mod",
+      "action": "movement_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "movement",
+        "speed",
+        "mobility"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Movement +1"
+    },
+    "range_mod": {
+      "id": "range_mod",
+      "name": "Range Mod",
+      "icon": "🏹",
+      "trigger": "range_mod",
+      "action": "range_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "range",
+        "ranged",
+        "attack"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Attack range +1"
+    },
+    "cost_mod_mp": {
+      "id": "cost_mod_mp",
+      "name": "MP Cost Reduction",
+      "icon": "💧",
+      "trigger": "cost_mod",
+      "action": "cost_mod",
+      "target": "self",
+      "value": -2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "cost",
+        "mp",
+        "efficiency"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Skill MP cost -2"
+    },
+    "cost_mod_ap": {
+      "id": "cost_mod_ap",
+      "name": "AP Cost Reduction",
+      "icon": "⏱️",
+      "trigger": "cost_mod",
+      "action": "cost_mod",
+      "target": "self",
+      "value": -1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "cost",
+        "ap",
+        "efficiency"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Skill AP cost -1"
+    },
+    "cooldown_mod": {
+      "id": "cooldown_mod",
+      "name": "Cooldown Reduction",
+      "icon": "🔄",
+      "trigger": "cooldown_mod",
+      "action": "cooldown_mod",
+      "target": "self",
+      "value": -1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "cooldown",
+        "efficiency"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Skill cooldowns -1"
+    },
+    "hp_mod_flat": {
+      "id": "hp_mod_flat",
+      "name": "HP Bonus",
+      "icon": "❤️",
+      "trigger": "hp_mod",
+      "action": "hp_mod",
+      "target": "self",
+      "value": 20,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "hp",
+        "health",
+        "tank"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Max HP +20"
+    },
+    "mp_mod_flat": {
+      "id": "mp_mod_flat",
+      "name": "MP Bonus",
+      "icon": "💙",
+      "trigger": "mp_mod",
+      "action": "mp_mod",
+      "target": "self",
+      "value": 15,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "mp",
+        "mana",
+        "caster"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Max MP +15"
+    },
+    "damage_mod_all": {
+      "id": "damage_mod_all",
+      "name": "Damage Bonus (All)",
+      "icon": "⚔️",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 10,
+      "source": "percent",
+      "element": null,
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "offense",
+        "all"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "All damage +10%"
+    },
+    "damage_mod_fire": {
+      "id": "damage_mod_fire",
+      "name": "Fire Damage Bonus",
+      "icon": "🔥",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "fire",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
+      "description": "Fire damage +15%"
+    },
+    "damage_mod_water": {
+      "id": "damage_mod_water",
+      "name": "Water Damage Bonus",
+      "icon": "🌊",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Water",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "water",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
+      "description": "Water damage +15%"
+    },
+    "damage_mod_lightning": {
+      "id": "damage_mod_lightning",
+      "name": "Lightning Damage Bonus",
+      "icon": "⚡",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Lightning",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "lightning",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
+      "description": "Lightning damage +15%"
+    },
+    "damage_mod_dark": {
+      "id": "damage_mod_dark",
+      "name": "Dark Damage Bonus",
+      "icon": "🌑",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 15,
+      "source": "percent",
+      "element": "Dark",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "dark",
+        "elemental"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
+      "description": "Dark damage +15%"
+    },
+    "damage_mod_physical": {
+      "id": "damage_mod_physical",
+      "name": "Physical Damage Bonus",
+      "icon": "👊",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 10,
+      "source": "percent",
+      "damageType": "Physical",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "physical",
+        "melee"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Physical damage +10%"
+    },
+    "damage_mod_magic": {
+      "id": "damage_mod_magic",
+      "name": "Magic Damage Bonus",
+      "icon": "✨",
+      "trigger": "damage_mod",
+      "action": "damage_mod",
+      "target": "self",
+      "value": 10,
+      "source": "percent",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "damage",
+        "magic",
+        "caster"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Magic damage +10%"
+    },
+    "element_resist_add": {
+      "id": "element_resist_add",
+      "name": "Add Element Resist",
+      "icon": "🛡️",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "resist",
+        "defense"
+      ],
+      "overridable": [
+        "element"
+      ],
+      "description": "Gain Fire resistance"
+    },
+    "element_weak_add": {
+      "id": "element_weak_add",
+      "name": "Add Element Weakness",
+      "icon": "⚠️",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": -1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "weakness",
+        "debuff"
+      ],
+      "overridable": [
+        "element"
+      ],
+      "description": "Gain Fire weakness"
+    },
+    "element_immune_add": {
+      "id": "element_immune_add",
+      "name": "Add Element Immunity",
+      "icon": "🏰",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "immune",
+        "defense"
+      ],
+      "overridable": [
+        "element"
+      ],
+      "description": "Gain Fire immunity"
+    },
+    "element_absorb": {
+      "id": "element_absorb",
+      "name": "Element Absorb",
+      "icon": "🔄",
+      "trigger": "element_mod",
+      "action": "element_mod",
+      "target": "self",
+      "element": "Fire",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "element",
+        "absorb",
+        "heal"
+      ],
+      "overridable": [
+        "element"
+      ],
+      "description": "Absorb Fire damage as HP"
+    },
+    "status_resist_mod": {
+      "id": "status_resist_mod",
+      "name": "Status Resist",
+      "icon": "🧱",
+      "trigger": "status_resist_mod",
+      "action": "status_resist",
+      "target": "self",
+      "statusId": "stun",
+      "value": 50,
+      "source": "percent",
+      "conditions": [],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "resist",
+        "status",
+        "defense"
+      ],
+      "overridable": [
+        "statusId",
+        "value"
+      ],
+      "description": "50% resistance to Stun"
+    },
+    "double_action": {
+      "id": "double_action",
+      "name": "Double Action",
+      "icon": "⚡⚡",
+      "trigger": "double_action",
+      "action": "extra_action",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_25"
+      ],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "action",
+        "speed",
+        "powerful",
+        "mgqp"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "25% chance to take an extra main action"
+    },
+    "triple_action": {
+      "id": "triple_action",
+      "name": "Triple Action",
+      "icon": "⚡⚡⚡",
+      "trigger": "triple_action",
+      "action": "extra_action",
+      "target": "self",
+      "value": 2,
+      "source": "flat",
+      "conditions": [
+        "chance_10"
+      ],
+      "duration": null,
+      "category": "passive",
+      "tags": [
+        "action",
+        "speed",
+        "very powerful",
+        "mgqp"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "10% chance to take two extra main actions"
+    },
+    "lifesteal": {
+      "id": "lifesteal",
+      "name": "Lifesteal",
+      "icon": "🩸",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 10,
+      "source": "damage_dealt",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "drain",
+        "heal",
+        "sustain",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On hit: heal for 10% of damage dealt"
+    },
+    "lifesteal_physical": {
+      "id": "lifesteal_physical",
+      "name": "Physical Lifesteal",
+      "icon": "🩸",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 15,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "drain",
+        "heal",
+        "physical",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On physical hit: heal for 15% of damage dealt"
+    },
+    "spell_lifesteal": {
+      "id": "spell_lifesteal",
+      "name": "Spell Lifesteal",
+      "icon": "💜",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 12,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_magic_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "drain",
+        "heal",
+        "magic",
+        "sustain",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On magic hit: heal for 12% of damage dealt"
+    },
+    "mana_drain": {
+      "id": "mana_drain",
+      "name": "Mana Drain",
+      "icon": "💧",
+      "trigger": "on_hit",
+      "action": "mp_drain",
+      "target": "target",
+      "value": 8,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "mp_restore",
+          "value": 100,
+          "source": "stored:mp_drained",
+          "target": "self",
+          "storeResult": null
+        }
+      ],
+      "storeResult": "mp_drained",
+      "tags": [
+        "drain",
+        "mana",
+        "anti-caster",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On hit: drain 8 MP from target, restore to self"
+    },
+    "mana_burn": {
+      "id": "mana_burn",
+      "name": "Mana Burn",
+      "icon": "🔥💧",
+      "trigger": "on_hit",
+      "action": "mp_drain",
+      "target": "target",
+      "value": 12,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "damage",
+          "value": 80,
+          "source": "stored:mp_drained",
+          "target": "target",
+          "element": "Chaos"
+        }
+      ],
+      "storeResult": "mp_drained",
+      "tags": [
+        "burn",
+        "mana",
+        "anti-caster",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On hit: burn 12 MP, deal 80% of burned MP as Chaos damage"
+    },
+    "bash": {
+      "id": "bash",
+      "name": "Bash",
+      "icon": "💫",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "stun",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_25",
+        "is_physical_skill"
+      ],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "stun",
+        "disable",
+        "physical",
+        "dota"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "25% on physical hit: stun target for 1 turn"
+    },
+    "cleave": {
+      "id": "cleave",
+      "name": "Cleave",
+      "icon": "⚔️🌀",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "adjacent_to_target",
+      "value": 35,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_melee_attack"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aoe",
+        "melee",
+        "cleave",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Melee hits deal 35% damage to units adjacent to target"
+    },
+    "chain_lightning_proc": {
+      "id": "chain_lightning_proc",
+      "name": "Chain Lightning Proc",
+      "icon": "⚡🔗",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "random_enemy",
+      "value": 12,
+      "source": "flat",
+      "element": "Lightning",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "lightning",
+        "chain",
+        "proc",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "30% on hit: deal 12 Lightning damage to a random enemy"
+    },
+    "poison_on_hit": {
+      "id": "poison_on_hit",
+      "name": "Poison on Hit",
+      "icon": "☠️",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "poison",
+      "value": 4,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "poison",
+        "dot",
+        "nature",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration",
+        "conditions"
+      ],
+      "description": "On hit: apply Poison (4/turn, 3 turns)"
+    },
+    "burn_on_hit": {
+      "id": "burn_on_hit",
+      "name": "Burn on Hit",
+      "icon": "🔥",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "burn",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "burn",
+        "dot",
+        "fire",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration",
+        "conditions"
+      ],
+      "description": "On hit: apply Burn (5/turn, 2 turns)"
+    },
+    "bleed_on_hit": {
+      "id": "bleed_on_hit",
+      "name": "Bleed on Hit",
+      "icon": "🩸",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "bleed",
+      "value": 4,
+      "source": "flat",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "bleed",
+        "dot",
+        "physical",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On physical hit: apply Bleed (4/turn, 3 turns)"
+    },
+    "frostbite_on_hit": {
+      "id": "frostbite_on_hit",
+      "name": "Frostbite on Hit",
+      "icon": "🧊",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "frostbite",
+      "value": 3,
+      "source": "flat",
+      "conditions": [
+        "element_is_Water"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "frostbite",
+        "dot",
+        "water",
+        "slow",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On Water hit: apply Frostbite (3/turn, -1 move, 2 turns)"
+    },
+    "slow_on_hit": {
+      "id": "slow_on_hit",
+      "name": "Slow on Hit",
+      "icon": "🐌",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "slow",
+        "movement",
+        "debuff",
+        "dota"
+      ],
+      "overridable": [
+        "duration",
+        "conditions"
+      ],
+      "description": "On hit: apply Slow (-1 movement, 2 turns)"
+    },
+    "root_on_hit": {
+      "id": "root_on_hit",
+      "name": "Root on Hit",
+      "icon": "🌿",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "root",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "root",
+        "disable",
+        "nature",
+        "dota"
+      ],
+      "overridable": [
+        "conditions",
+        "duration"
+      ],
+      "description": "20% on hit: Root target for 1 turn"
+    },
+    "silence_on_hit": {
+      "id": "silence_on_hit",
+      "name": "Silence on Hit",
+      "icon": "🤫",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "silence",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_15"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "silence",
+        "disable",
+        "anti-caster"
+      ],
+      "overridable": [
+        "conditions",
+        "duration"
+      ],
+      "description": "15% on hit: Silence target for 2 turns"
+    },
+    "fury_swipes": {
+      "id": "fury_swipes",
+      "name": "Fury Swipes",
+      "icon": "🐾",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "target",
+      "value": 3,
+      "source": "stack_count",
+      "conditions": [],
+      "duration": null,
+      "stacks": true,
+      "maxStacks": 10,
+      "category": "triggered",
+      "tags": [
+        "stacking",
+        "damage",
+        "ramp",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "maxStacks"
+      ],
+      "description": "Each consecutive hit on same target: +3 bonus damage (stacks to 10)"
+    },
+    "desolation_armor_break": {
+      "id": "desolation_armor_break",
+      "name": "Armor Break",
+      "icon": "💔🛡️",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "fragile",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "armor break",
+        "dr reduction",
+        "debuff",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On hit: reduce target DR by 3 for 3 turns"
+    },
+    "skadi_slow": {
+      "id": "skadi_slow",
+      "name": "Frost Slow",
+      "icon": "❄️🐌",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "heal_reduction",
+          "value": 40,
+          "target": "target",
+          "duration": 2
+        }
+      ],
+      "tags": [
+        "slow",
+        "heal reduction",
+        "debuff",
+        "dota"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "On hit: Slow + reduce healing received by 40% for 2 turns"
+    },
+    "mark_on_hit": {
+      "id": "mark_on_hit",
+      "name": "Mark Target",
+      "icon": "🎯",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "mark",
+      "value": 15,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "mark",
+        "debuff",
+        "focus fire"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On hit: Mark target (takes +15% damage from all sources, 3 turns)"
+    },
+    "reflect_physical": {
+      "id": "reflect_physical",
+      "name": "Physical Reflect",
+      "icon": "🪞",
+      "trigger": "on_take_damage",
+      "action": "reflect",
+      "target": "attacker",
+      "value": 20,
+      "source": "damage_received",
+      "conditions": [
+        "damage_type_is_Physical"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "reflect",
+        "thorns",
+        "physical",
+        "defense"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Reflect 20% of physical damage received to attacker"
+    },
+    "reflect_magic": {
+      "id": "reflect_magic",
+      "name": "Magic Reflect",
+      "icon": "🪞✨",
+      "trigger": "on_take_damage",
+      "action": "reflect",
+      "target": "attacker",
+      "value": 30,
+      "source": "damage_received",
+      "conditions": [
+        "damage_type_is_Magic"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "reflect",
+        "magic",
+        "defense",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Reflect 30% of magic damage received to attacker"
+    },
+    "reflect_all": {
+      "id": "reflect_all",
+      "name": "Damage Reflect (All)",
+      "icon": "🪞💀",
+      "trigger": "on_take_damage",
+      "action": "reflect",
+      "target": "attacker",
+      "value": 15,
+      "source": "damage_received",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "reflect",
+        "thorns",
+        "all",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Reflect 15% of all damage received to attacker"
+    },
+    "counter_melee": {
+      "id": "counter_melee",
+      "name": "Melee Counter",
+      "icon": "⚔️🔄",
+      "trigger": "on_take_damage",
+      "action": "counter",
+      "target": "attacker",
+      "value": 75,
+      "source": "percent",
+      "conditions": [
+        "damage_type_is_Physical",
+        "attacker_adjacent"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "counter",
+        "melee",
+        "physical",
+        "retaliation"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "When hit by adjacent physical attacker: counter for 75% damage"
+    },
+    "counter_any": {
+      "id": "counter_any",
+      "name": "Counter Attack",
+      "icon": "🔄⚔️",
+      "trigger": "on_take_damage",
+      "action": "counter",
+      "target": "attacker",
+      "value": 50,
+      "source": "percent",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "counter",
+        "retaliation"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "30% chance when hit: counter for 50% damage"
+    },
+    "damage_block": {
+      "id": "damage_block",
+      "name": "Damage Block",
+      "icon": "🛑",
+      "trigger": "on_take_damage",
+      "action": "damage_block",
+      "target": "self",
+      "value": 8,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "block",
+        "defense",
+        "tank",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Block 8 flat damage from each hit"
+    },
+    "counter_helix": {
+      "id": "counter_helix",
+      "name": "Counter Helix",
+      "icon": "🌀⚔️",
+      "trigger": "on_take_damage",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 10,
+      "source": "flat",
+      "element": "Physical",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "counter",
+        "aoe",
+        "physical",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "20% when hit: deal 10 Physical damage to all adjacent units"
+    },
+    "backtrack": {
+      "id": "backtrack",
+      "name": "Backtrack",
+      "icon": "⏪",
+      "trigger": "on_take_damage",
+      "action": "damage_block",
+      "target": "self",
+      "value": 100,
+      "source": "damage_received",
+      "conditions": [
+        "chance_15"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "evade",
+        "negate",
+        "defense",
+        "dota"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "15% chance to completely negate incoming damage"
+    },
+    "guardian_shield": {
+      "id": "guardian_shield",
+      "name": "Guardian Shield",
+      "icon": "🛡️💕",
+      "trigger": "on_ally_hit",
+      "action": "damage_block",
+      "target": "self",
+      "value": 50,
+      "source": "damage_received",
+      "conditions": [
+        "adjacent_to_ally"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "damage",
+          "value": 50,
+          "source": "damage_received",
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "protect",
+        "guardian",
+        "tank",
+        "ally"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Intercept 50% of damage dealt to adjacent allies (you take it instead)"
+    },
+    "thorns_aura": {
+      "id": "thorns_aura",
+      "name": "Thorns Aura",
+      "icon": "🌹",
+      "trigger": "on_take_damage",
+      "action": "damage",
+      "target": "attacker",
+      "value": 5,
+      "source": "flat",
+      "element": "Nature",
+      "conditions": [
+        "is_melee_attack"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "thorns",
+        "reflect",
+        "nature",
+        "passive"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Melee attackers take 5 Nature damage"
+    },
+    "borrowed_time": {
+      "id": "borrowed_time",
+      "name": "Borrowed Time",
+      "icon": "⏰💀",
+      "trigger": "on_take_damage",
+      "action": "heal",
+      "target": "self",
+      "value": 100,
+      "source": "damage_received",
+      "conditions": [
+        "hp_below_25"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "heal",
+        "invuln",
+        "ultimate",
+        "dota"
+      ],
+      "overridable": [
+        "conditions",
+        "duration"
+      ],
+      "description": "Below 25% HP: all damage heals you instead (2 turns)"
+    },
+    "heal_on_kill": {
+      "id": "heal_on_kill",
+      "name": "Heal on Kill",
+      "icon": "❤️💀",
+      "trigger": "on_kill",
+      "action": "heal",
+      "target": "self",
+      "value": 15,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "heal",
+        "kill",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On kill: heal 15% of max HP"
+    },
+    "mp_on_kill": {
+      "id": "mp_on_kill",
+      "name": "MP on Kill",
+      "icon": "💙💀",
+      "trigger": "on_kill",
+      "action": "mp_restore",
+      "target": "self",
+      "value": 10,
+      "source": "max_mp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "mana",
+        "kill",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On kill: restore 10% of max MP"
+    },
+    "ap_on_kill": {
+      "id": "ap_on_kill",
+      "name": "AP on Kill",
+      "icon": "⚡💀",
+      "trigger": "on_kill",
+      "action": "ap_grant",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "ap",
+        "kill",
+        "action",
+        "tempo"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On kill: gain 1 AP"
+    },
+    "haste_on_kill": {
+      "id": "haste_on_kill",
+      "name": "Haste on Kill",
+      "icon": "💨💀",
+      "trigger": "on_kill",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "haste",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "haste",
+        "kill",
+        "speed",
+        "buff"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "On kill: gain Haste (+1 move, +5 initiative) for 2 turns"
+    },
+    "berserk_on_kill": {
+      "id": "berserk_on_kill",
+      "name": "Berserk on Kill",
+      "icon": "😤💀",
+      "trigger": "on_kill",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "berserk",
+      "value": 20,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "berserk",
+        "kill",
+        "damage",
+        "offense"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On kill: gain Berserk (+20% damage, -10% defense, 2 turns)"
+    },
+    "raise_dead": {
+      "id": "raise_dead",
+      "name": "Raise Dead",
+      "icon": "💀➡️👻",
+      "trigger": "on_kill",
+      "action": "resurrect_as_ally",
+      "target": "target",
+      "value": 30,
+      "source": "percent",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": 5,
+      "category": "triggered",
+      "tags": [
+        "summon",
+        "undead",
+        "kill",
+        "dark",
+        "mgqp"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "20% on kill: raise enemy as undead ally (30% HP, 5 turns)"
+    },
+    "soul_harvest": {
+      "id": "soul_harvest",
+      "name": "Soul Harvest",
+      "icon": "👻",
+      "trigger": "on_kill",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "soul_stack",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "stacks": true,
+      "maxStacks": 20,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "stat_mod",
+          "stat": "I",
+          "value": 1,
+          "source": "stack_count",
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "stacking",
+        "kill",
+        "intelligence",
+        "dark",
+        "dota"
+      ],
+      "overridable": [
+        "maxStacks"
+      ],
+      "description": "On kill: gain a soul stack (+1 INT per stack, permanent)"
+    },
+    "cooldown_reset_on_kill": {
+      "id": "cooldown_reset_on_kill",
+      "name": "Reset on Kill",
+      "icon": "🔄💀",
+      "trigger": "on_kill",
+      "action": "cooldown_reset",
+      "target": "self",
+      "value": 0,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "cooldown",
+        "kill",
+        "reset",
+        "tempo"
+      ],
+      "overridable": [],
+      "description": "On kill: reset all skill cooldowns"
+    },
+    "death_explosion": {
+      "id": "death_explosion",
+      "name": "Death Explosion",
+      "icon": "💥💀",
+      "trigger": "on_death",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 20,
+      "source": "max_hp",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "explosion",
+        "aoe",
+        "fire"
+      ],
+      "overridable": [
+        "value",
+        "element"
+      ],
+      "description": "On death: explode for 20% max HP Fire damage to adjacent units"
+    },
+    "death_curse": {
+      "id": "death_curse",
+      "name": "Death Curse",
+      "icon": "💀🔮",
+      "trigger": "on_death",
+      "action": "status_apply",
+      "target": "attacker",
+      "statusId": "curse",
+      "value": 8,
+      "source": "flat",
+      "conditions": [],
+      "duration": 5,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "curse",
+        "dark",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On death: curse killer (8 Dark damage/turn, -50% healing, 5 turns)"
+    },
+    "death_heal_allies": {
+      "id": "death_heal_allies",
+      "name": "Martyrdom",
+      "icon": "💀❤️",
+      "trigger": "on_death",
+      "action": "heal",
+      "target": "all_allies",
+      "value": 25,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "heal",
+        "allies",
+        "support",
+        "sacrifice"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On death: heal all allies for 25% of your max HP"
+    },
+    "death_buff_allies": {
+      "id": "death_buff_allies",
+      "name": "Vengeful Spirit",
+      "icon": "💀⬆️",
+      "trigger": "on_death",
+      "action": "status_apply",
+      "target": "all_allies",
+      "statusId": "berserk",
+      "value": 30,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "death",
+        "buff",
+        "allies",
+        "berserk"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On death: all allies gain Berserk +30% for 3 turns"
+    },
+    "crit_stun": {
+      "id": "crit_stun",
+      "name": "Stunning Crit",
+      "icon": "💫🎯",
+      "trigger": "on_crit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "stun",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "crit",
+        "stun",
+        "disable"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "On critical hit: stun target for 1 turn"
+    },
+    "crit_bleed": {
+      "id": "crit_bleed",
+      "name": "Hemorrhage Crit",
+      "icon": "🩸🎯",
+      "trigger": "on_crit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "bleed",
+      "value": 6,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "crit",
+        "bleed",
+        "dot"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "On critical hit: apply heavy Bleed (6/turn, 3 turns)"
+    },
+    "crit_extra_action": {
+      "id": "crit_extra_action",
+      "name": "Crit Extra Action",
+      "icon": "⚡🎯",
+      "trigger": "on_crit",
+      "action": "extra_action",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_25"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "crit",
+        "action",
+        "tempo"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "25% on crit: gain an extra main action"
+    },
+    "counter_on_dodge": {
+      "id": "counter_on_dodge",
+      "name": "Riposte",
+      "icon": "💨⚔️",
+      "trigger": "on_dodge",
+      "action": "counter",
+      "target": "attacker",
+      "value": 80,
+      "source": "percent",
+      "conditions": [
+        "attacker_adjacent"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "dodge",
+        "counter",
+        "riposte",
+        "melee"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On dodging a melee attack: counter for 80% damage"
+    },
+    "haste_on_dodge": {
+      "id": "haste_on_dodge",
+      "name": "Blur Dash",
+      "icon": "💨💨",
+      "trigger": "on_dodge",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "haste",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "triggered",
+      "tags": [
+        "dodge",
+        "haste",
+        "speed"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "On dodge: gain Haste for 1 turn"
+    },
+    "fire_trail": {
+      "id": "fire_trail",
+      "name": "Fire Trail",
+      "icon": "🔥👣",
+      "trigger": "on_move",
+      "action": "terrain_create",
+      "target": "self",
+      "terrainType": "fire_zone",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "move",
+        "terrain",
+        "fire",
+        "zone"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Leave fire terrain behind when moving (lasts 3 turns)"
+    },
+    "caltrops": {
+      "id": "caltrops",
+      "name": "Caltrops",
+      "icon": "📌👣",
+      "trigger": "on_move",
+      "action": "terrain_create",
+      "target": "self",
+      "terrainType": "thorns",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 5,
+      "category": "triggered",
+      "tags": [
+        "move",
+        "terrain",
+        "thorns",
+        "trap"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Leave thorns terrain behind when moving (lasts 5 turns)"
+    },
+    "regen_hp": {
+      "id": "regen_hp",
+      "name": "HP Regen",
+      "icon": "💚",
+      "trigger": "on_turn_start",
+      "action": "heal",
+      "target": "self",
+      "value": 3,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "regen",
+        "heal",
+        "passive",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Turn start: heal 3% of max HP"
+    },
+    "regen_mp": {
+      "id": "regen_mp",
+      "name": "MP Regen",
+      "icon": "💙",
+      "trigger": "on_turn_start",
+      "action": "mp_restore",
+      "target": "self",
+      "value": 3,
+      "source": "max_mp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "regen",
+        "mana",
+        "passive",
+        "sustain"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Turn start: restore 3% of max MP"
+    },
+    "burn_dot": {
+      "id": "burn_dot",
+      "name": "Burn DoT",
+      "icon": "🔥",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "tags": [
+        "burn",
+        "dot",
+        "fire",
+        "tick"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Take 5 Fire damage per turn"
+    },
+    "poison_dot": {
+      "id": "poison_dot",
+      "name": "Poison DoT",
+      "icon": "☠️",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 4,
+      "source": "flat",
+      "element": "Nature",
+      "conditions": [],
+      "duration": null,
+      "stacks": true,
+      "maxStacks": 3,
+      "category": "status",
+      "tags": [
+        "poison",
+        "dot",
+        "nature",
+        "tick",
+        "stacking"
+      ],
+      "overridable": [
+        "value",
+        "maxStacks"
+      ],
+      "description": "Take 4 Nature damage per turn (stacks up to 3)"
+    },
+    "bleed_dot": {
+      "id": "bleed_dot",
+      "name": "Bleed DoT",
+      "icon": "🩸",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 4,
+      "source": "flat",
+      "element": "Physical",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "tags": [
+        "bleed",
+        "dot",
+        "physical",
+        "tick"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Take 4 Physical damage per turn (worsens on movement)"
+    },
+    "shock_dot": {
+      "id": "shock_dot",
+      "name": "Shock DoT",
+      "icon": "⚡",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 4,
+      "source": "flat",
+      "element": "Lightning",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "tags": [
+        "shock",
+        "dot",
+        "lightning",
+        "tick"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Take 4 Lightning damage per turn (chance to skip QTE)"
+    },
+    "curse_dot": {
+      "id": "curse_dot",
+      "name": "Curse DoT",
+      "icon": "💀",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "element": "Dark",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "heal_reduction",
+          "value": 50,
+          "target": "self",
+          "duration": 1
+        }
+      ],
+      "tags": [
+        "curse",
+        "dot",
+        "dark",
+        "tick",
+        "heal reduction"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Take 5 Dark damage per turn + healing reduced 50%"
+    },
+    "corrode_dot": {
+      "id": "corrode_dot",
+      "name": "Corrode DoT",
+      "icon": "🧪",
+      "trigger": "on_status_tick",
+      "action": "damage",
+      "target": "self",
+      "value": 3,
+      "source": "flat",
+      "element": "Earth",
+      "conditions": [],
+      "duration": null,
+      "category": "status",
+      "children": [
+        {
+          "action": "dr_mod",
+          "drType": "all",
+          "value": -1,
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "corrode",
+        "dot",
+        "earth",
+        "tick",
+        "dr reduction"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Take 3 Earth damage per turn + DR reduced by 1/turn"
+    },
+    "radiance_burn": {
+      "id": "radiance_burn",
+      "name": "Radiance Burn",
+      "icon": "☀️",
+      "trigger": "on_turn_end",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 6,
+      "source": "flat",
+      "element": "Fire",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aura",
+        "burn",
+        "fire",
+        "aoe",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Turn end: deal 6 Fire damage to all adjacent enemies"
+    },
+    "degen_aura": {
+      "id": "degen_aura",
+      "name": "Degeneration Aura",
+      "icon": "💀🌀",
+      "trigger": "on_turn_end",
+      "action": "damage",
+      "target": "adjacent_to_self",
+      "value": 2,
+      "source": "max_hp",
+      "element": "Dark",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aura",
+        "degen",
+        "dark",
+        "aoe",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Turn end: adjacent enemies lose 2% max HP"
+    },
+    "ambush_bonus": {
+      "id": "ambush_bonus",
+      "name": "Ambush",
+      "icon": "🗡️💨",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "haste",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "stealth",
+          "value": 1,
+          "target": "self",
+          "duration": 1
+        }
+      ],
+      "tags": [
+        "ambush",
+        "first strike",
+        "haste",
+        "stealth"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Battle start: gain Haste (2 turns) + Stealth (1 turn)"
+    },
+    "opening_shield": {
+      "id": "opening_shield",
+      "name": "Opening Shield",
+      "icon": "🛡️✨",
+      "trigger": "on_battle_start",
+      "action": "absorb",
+      "target": "self",
+      "value": 20,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "shield",
+        "defense",
+        "opening"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Battle start: gain a shield for 20% max HP (3 turns)"
+    },
+    "battle_cry": {
+      "id": "battle_cry",
+      "name": "Battle Cry",
+      "icon": "📣",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "all_allies",
+      "statusId": "focus",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "buff",
+        "allies",
+        "accuracy",
+        "opening"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Battle start: all allies gain Focus (+5 accuracy, +5% crit, 3 turns)"
+    },
+    "berserk_low_hp": {
+      "id": "berserk_low_hp",
+      "name": "Last Stand Berserk",
+      "icon": "😤❤️",
+      "trigger": "on_low_hp",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "berserk",
+      "value": 30,
+      "source": "flat",
+      "threshold": 30,
+      "conditions": [
+        "hp_below_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "berserk",
+        "low hp",
+        "offense",
+        "desperate"
+      ],
+      "overridable": [
+        "threshold",
+        "value"
+      ],
+      "description": "Below 30% HP: gain Berserk (+30% damage, -15% defense)"
+    },
+    "emergency_shield": {
+      "id": "emergency_shield",
+      "name": "Emergency Shield",
+      "icon": "🛡️🆘",
+      "trigger": "on_low_hp",
+      "action": "absorb",
+      "target": "self",
+      "value": 25,
+      "source": "max_hp",
+      "threshold": 20,
+      "conditions": [
+        "hp_below_20"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "shield",
+        "low hp",
+        "defense",
+        "survival"
+      ],
+      "overridable": [
+        "threshold",
+        "value"
+      ],
+      "description": "Below 20% HP: gain shield for 25% max HP (once per battle)"
+    },
+    "auto_revive": {
+      "id": "auto_revive",
+      "name": "Auto Revive",
+      "icon": "💖✨",
+      "trigger": "on_death",
+      "action": "revive",
+      "target": "self",
+      "value": 30,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "revive",
+        "survival",
+        "once",
+        "mgqp"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On death: revive at 30% HP (once per battle)"
+    },
+    "parasitic_seed": {
+      "id": "parasitic_seed",
+      "name": "Parasitic Seed",
+      "icon": "🌱",
+      "trigger": "on_turn_start",
+      "action": "damage",
+      "target": "host",
+      "value": 15,
+      "source": "flat",
+      "element": "Nature",
+      "conditions": [
+        "target_hp_above_0"
+      ],
+      "duration": 5,
+      "category": "complex",
+      "children": [
+        {
+          "action": "heal",
+          "value": 100,
+          "source": "stored:seed_damage",
+          "target": "all_allies"
+        }
+      ],
+      "storeResult": "seed_damage",
+      "cleansedBy": [
+        "Fire",
+        "purify"
+      ],
+      "tags": [
+        "drain",
+        "nature",
+        "heal",
+        "dot",
+        "support",
+        "mgqp"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Attach a seed: drain 15 HP/turn, heal all allies for amount drained"
+    },
+    "vampiric_embrace": {
+      "id": "vampiric_embrace",
+      "name": "Vampiric Embrace",
+      "icon": "🧛",
+      "trigger": "on_hit",
+      "action": "hp_drain",
+      "target": "target",
+      "value": 20,
+      "source": "damage_dealt",
+      "conditions": [],
+      "duration": null,
+      "category": "complex",
+      "children": [
+        {
+          "action": "heal",
+          "value": 100,
+          "source": "stored:hp_drained",
+          "target": "self"
+        },
+        {
+          "action": "mp_restore",
+          "value": 30,
+          "source": "stored:hp_drained",
+          "target": "self"
+        }
+      ],
+      "storeResult": "hp_drained",
+      "tags": [
+        "drain",
+        "dark",
+        "heal",
+        "sustain",
+        "vampire"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Drain 20% of damage dealt as HP, restore 30% of drain as MP"
+    },
+    "spell_steal": {
+      "id": "spell_steal",
+      "name": "Spell Steal",
+      "icon": "🔮🖐️",
+      "trigger": "on_take_damage",
+      "action": "steal_buff",
+      "target": "attacker",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "damage_type_is_Magic"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "steal",
+        "buff",
+        "anti-mage",
+        "dota"
+      ],
+      "overridable": [],
+      "description": "When hit by magic: steal a random buff from the caster"
+    },
+    "doom_apply": {
+      "id": "doom_apply",
+      "name": "Doom",
+      "icon": "💀⏰",
+      "trigger": "on_hit",
+      "action": "status_apply",
+      "target": "target",
+      "statusId": "doom",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "break_passives",
+          "target": "target",
+          "value": 1
+        }
+      ],
+      "cleansedBy": [
+        "Light",
+        "holy",
+        "purify"
+      ],
+      "tags": [
+        "doom",
+        "disable",
+        "dark",
+        "ultimate",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Apply Doom: die in 3 turns + all passives disabled. Cleanse with Light/Purify"
+    },
+    "link_share": {
+      "id": "link_share",
+      "name": "Soul Link",
+      "icon": "🔗",
+      "trigger": "on_take_damage",
+      "action": "link_share_damage",
+      "target": "target",
+      "value": 50,
+      "source": "percent",
+      "conditions": [],
+      "duration": 4,
+      "category": "complex",
+      "tags": [
+        "link",
+        "share",
+        "damage",
+        "support",
+        "mgqp"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Link two units: share 50% of all damage taken between them (4 turns)"
+    },
+    "execute_low_hp": {
+      "id": "execute_low_hp",
+      "name": "Execute",
+      "icon": "⚰️",
+      "trigger": "on_hit",
+      "action": "execute",
+      "target": "target",
+      "value": 1,
+      "source": "flat",
+      "threshold": 15,
+      "conditions": [
+        "target_hp_below_15"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "execute",
+        "kill",
+        "finisher"
+      ],
+      "overridable": [
+        "threshold"
+      ],
+      "description": "On hit: instantly kill targets below 15% HP"
+    },
+    "adapt_element": {
+      "id": "adapt_element",
+      "name": "Elemental Adaptation",
+      "icon": "🔄🛡️",
+      "trigger": "on_take_damage",
+      "action": "element_mod",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "adapt",
+        "element",
+        "resist",
+        "reactive",
+        "mgqp"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "After taking elemental damage: gain resistance to that element (3 turns)"
+    },
+    "vampiric_aura": {
+      "id": "vampiric_aura",
+      "name": "Vampiric Aura",
+      "icon": "🧛🌀",
+      "trigger": "on_hit",
+      "action": "heal",
+      "target": "self",
+      "value": 8,
+      "source": "damage_dealt",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "aura",
+        "lifesteal",
+        "physical",
+        "allies",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Physical attacks heal for 8% of damage dealt (aura — affects nearby allies)"
+    },
+    "sacrifice_heal": {
+      "id": "sacrifice_heal",
+      "name": "Blood Sacrifice",
+      "icon": "🩸❤️",
+      "trigger": "on_skill_use",
+      "action": "damage",
+      "target": "self",
+      "value": 10,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "children": [
+        {
+          "action": "heal",
+          "value": 200,
+          "source": "stored:self_damage",
+          "target": "lowest_hp_ally"
+        }
+      ],
+      "storeResult": "self_damage",
+      "tags": [
+        "sacrifice",
+        "heal",
+        "blood",
+        "support"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On skill use: lose 10% max HP, heal lowest HP ally for 200% of that"
+    },
+    "echo_strike": {
+      "id": "echo_strike",
+      "name": "Echo Strike",
+      "icon": "⚔️⚔️",
+      "trigger": "on_hit",
+      "action": "damage",
+      "target": "target",
+      "value": 60,
+      "source": "damage_dealt",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "echo",
+        "double hit",
+        "proc",
+        "dota"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "30% on hit: repeat the attack for 60% damage"
+    },
+    "terrain_create_fire": {
+      "id": "terrain_create_fire",
+      "name": "Create Fire Zone",
+      "icon": "🔥",
+      "trigger": "on_hit",
+      "action": "terrain_create",
+      "target": "target",
+      "terrainType": "fire_zone",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "terrain",
+        "fire",
+        "zone",
+        "aoe"
+      ],
+      "overridable": [
+        "terrainType",
+        "duration"
+      ],
+      "description": "Create fire terrain at target location (3 turns)"
+    },
+    "terrain_create_ice": {
+      "id": "terrain_create_ice",
+      "name": "Create Ice Zone",
+      "icon": "🧊",
+      "trigger": "on_hit",
+      "action": "terrain_create",
+      "target": "target",
+      "terrainType": "ice_zone",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 3,
+      "category": "triggered",
+      "tags": [
+        "terrain",
+        "ice",
+        "zone",
+        "slow"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Create ice terrain at target location (-1 movement, 3 turns)"
+    },
+    "terrain_create_poison": {
+      "id": "terrain_create_poison",
+      "name": "Create Poison Zone",
+      "icon": "☠️",
+      "trigger": "on_hit",
+      "action": "terrain_create",
+      "target": "target",
+      "terrainType": "poison_zone",
+      "value": 4,
+      "source": "flat",
+      "conditions": [],
+      "duration": 4,
+      "category": "triggered",
+      "tags": [
+        "terrain",
+        "poison",
+        "zone",
+        "nature"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Create poison terrain at target location (4 turns)"
+    },
+    "knockback_hit": {
+      "id": "knockback_hit",
+      "name": "Knockback",
+      "icon": "💨👊",
+      "trigger": "on_hit",
+      "action": "knockback",
+      "target": "target",
+      "value": 2,
+      "source": "flat",
+      "conditions": [
+        "is_physical_skill"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "knockback",
+        "push",
+        "position",
+        "physical"
+      ],
+      "overridable": [
+        "value",
+        "conditions"
+      ],
+      "description": "On physical hit: push target back 2 cells"
+    },
+    "pull_on_hit": {
+      "id": "pull_on_hit",
+      "name": "Hook Pull",
+      "icon": "🪝",
+      "trigger": "on_hit",
+      "action": "pull",
+      "target": "target",
+      "value": 3,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "pull",
+        "hook",
+        "position",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On hit: pull target 3 cells closer"
+    },
+    "swap_on_hit": {
+      "id": "swap_on_hit",
+      "name": "Position Swap",
+      "icon": "🔀",
+      "trigger": "on_hit",
+      "action": "swap_position",
+      "target": "target",
+      "value": 0,
+      "source": "flat",
+      "conditions": [
+        "chance_20"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "swap",
+        "position",
+        "trickster"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "20% on hit: swap positions with target"
+    },
+    "dispel_buffs": {
+      "id": "dispel_buffs",
+      "name": "Purge Buffs",
+      "icon": "🧹",
+      "trigger": "on_hit",
+      "action": "dispel_buffs",
+      "target": "target",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "dispel",
+        "purge",
+        "debuff",
+        "anti-buff",
+        "dota"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On hit: remove up to 2 buffs from target"
+    },
+    "self_cleanse": {
+      "id": "self_cleanse",
+      "name": "Self Cleanse",
+      "icon": "✨🧹",
+      "trigger": "on_turn_start",
+      "action": "dispel_debuffs",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [
+        "chance_30"
+      ],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "cleanse",
+        "dispel",
+        "self",
+        "defense"
+      ],
+      "overridable": [
+        "conditions"
+      ],
+      "description": "30% turn start: remove 1 debuff from self"
+    },
+    "ally_cleanse": {
+      "id": "ally_cleanse",
+      "name": "Purify Ally",
+      "icon": "✨❤️",
+      "trigger": "on_skill_use",
+      "action": "dispel_debuffs",
+      "target": "lowest_hp_ally",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "cleanse",
+        "dispel",
+        "ally",
+        "support"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On skill use: remove up to 2 debuffs from the lowest HP ally"
+    },
+    "spell_immunity": {
+      "id": "spell_immunity",
+      "name": "Spell Immunity",
+      "icon": "🏰✨",
+      "trigger": "on_take_damage",
+      "action": "damage_block",
+      "target": "self",
+      "value": 100,
+      "source": "damage_received",
+      "conditions": [
+        "damage_type_is_Magic"
+      ],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "immunity",
+        "magic",
+        "defense",
+        "dota"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Immune to magic damage (2 turns)"
+    },
+    "stealth_passive": {
+      "id": "stealth_passive",
+      "name": "Stealth",
+      "icon": "👤",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "stealth",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "stealth",
+        "invisible",
+        "rogue"
+      ],
+      "overridable": [],
+      "description": "Start battle in stealth (untargetable until you attack)"
+    },
+    "taunt_passive": {
+      "id": "taunt_passive",
+      "name": "Taunt Aura",
+      "icon": "😤🎯",
+      "trigger": "on_battle_start",
+      "action": "status_apply",
+      "target": "all_enemies",
+      "statusId": "taunt",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "triggered",
+      "tags": [
+        "taunt",
+        "tank",
+        "aggro",
+        "control"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Battle start: force all enemies to target you for 2 turns"
+    },
+    "gold_bonus": {
+      "id": "gold_bonus",
+      "name": "Gold Bonus",
+      "icon": "💰",
+      "trigger": "on_kill",
+      "action": "heal",
+      "target": "self",
+      "value": 0,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "gold",
+        "loot",
+        "economy"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On kill: gain bonus gold (value = bonus gold amount)"
+    },
+    "jp_bonus": {
+      "id": "jp_bonus",
+      "name": "JP Bonus",
+      "icon": "🃏",
+      "trigger": "on_kill",
+      "action": "heal",
+      "target": "self",
+      "value": 0,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "triggered",
+      "tags": [
+        "jp",
+        "jester points",
+        "cjs"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "On kill: gain bonus Jester Points"
+    },
+    "terrain_burn": {
+      "id": "terrain_burn",
+      "name": "Terrain: Fire Zone",
+      "icon": "🔥",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 8,
+      "source": "flat",
+      "element": "Fire",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "fire",
+        "damage",
+        "dot"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Fire zone: take 8 Fire damage on enter / turn start"
+    },
+    "terrain_slow": {
+      "id": "terrain_slow",
+      "name": "Terrain: Ice Zone",
+      "icon": "🧊",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "ice",
+        "slow",
+        "movement"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Ice zone: apply Slow (-1 movement) for 1 turn"
+    },
+    "terrain_poison": {
+      "id": "terrain_poison",
+      "name": "Terrain: Poison Zone",
+      "icon": "☠️",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "poison",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "poison",
+        "dot",
+        "nature"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Poison zone: apply Poison (5/turn, 2 turns)"
+    },
+    "terrain_heal": {
+      "id": "terrain_heal",
+      "name": "Terrain: Heal Zone",
+      "icon": "💚",
+      "trigger": "terrain_effect",
+      "action": "heal",
+      "target": "self",
+      "value": 8,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "heal",
+        "regen",
+        "support"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Heal zone: restore 8% max HP on enter / turn start"
+    },
+    "terrain_high_ground": {
+      "id": "terrain_high_ground",
+      "name": "Terrain: High Ground",
+      "icon": "⬆️",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "focus",
+      "value": 2,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "high_ground",
+        "accuracy",
+        "tactical"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "High ground: +2 accuracy while standing here (Focus, 1 turn)"
+    },
+    "terrain_water": {
+      "id": "terrain_water",
+      "name": "Terrain: Water",
+      "icon": "🌊",
+      "trigger": "terrain_effect",
+      "action": "status_remove",
+      "target": "self",
+      "statusId": "burn",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "water",
+        "cleanse",
+        "burn"
+      ],
+      "overridable": [],
+      "description": "Water: cleanse Burn on enter. Slowed by move cost."
+    },
+    "terrain_lava": {
+      "id": "terrain_lava",
+      "name": "Terrain: Lava",
+      "icon": "🌋",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 15,
+      "source": "flat",
+      "element": "Fire",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "burn",
+          "value": 8,
+          "source": "flat",
+          "target": "self",
+          "duration": 3
+        }
+      ],
+      "tags": [
+        "terrain",
+        "lava",
+        "fire",
+        "damage",
+        "deadly"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Lava: take 15 Fire damage + apply Burn (8/turn, 3 turns)"
+    },
+    "terrain_mud": {
+      "id": "terrain_mud",
+      "name": "Terrain: Mud",
+      "icon": "🟤",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "slow",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": 1,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "mud",
+        "slow",
+        "movement"
+      ],
+      "overridable": [
+        "duration"
+      ],
+      "description": "Mud: apply Slow (-1 movement) for 1 turn. Heavy move cost."
+    },
+    "terrain_thorns": {
+      "id": "terrain_thorns",
+      "name": "Terrain: Thorns",
+      "icon": "🌿",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 5,
+      "source": "flat",
+      "element": "Nature",
+      "damageType": "Physical",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "bleed",
+          "value": 3,
+          "source": "flat",
+          "target": "self",
+          "duration": 2
+        }
+      ],
+      "tags": [
+        "terrain",
+        "thorns",
+        "physical",
+        "bleed",
+        "nature"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Thorns: take 5 Physical damage + apply Bleed (3/turn, 2 turns)"
+    },
+    "terrain_shock": {
+      "id": "terrain_shock",
+      "name": "Terrain: Electric",
+      "icon": "⚡",
+      "trigger": "terrain_effect",
+      "action": "damage",
+      "target": "self",
+      "value": 6,
+      "source": "flat",
+      "element": "Lightning",
+      "damageType": "Magic",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "status_apply",
+          "statusId": "shock",
+          "value": 4,
+          "source": "flat",
+          "target": "self",
+          "duration": 1
+        }
+      ],
+      "tags": [
+        "terrain",
+        "electric",
+        "lightning",
+        "damage",
+        "shock"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Electric: take 6 Lightning damage + Shock (4/turn, skip QTE chance)"
+    },
+    "terrain_holy": {
+      "id": "terrain_holy",
+      "name": "Terrain: Holy",
+      "icon": "✨",
+      "trigger": "terrain_effect",
+      "action": "heal",
+      "target": "self",
+      "value": 5,
+      "source": "max_hp",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "children": [
+        {
+          "action": "dispel_debuffs",
+          "value": 1,
+          "source": "flat",
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "terrain",
+        "holy",
+        "heal",
+        "cleanse",
+        "light"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Holy: heal 5% max HP + cleanse 1 debuff"
+    },
+    "terrain_dark": {
+      "id": "terrain_dark",
+      "name": "Terrain: Dark",
+      "icon": "🌑",
+      "trigger": "terrain_effect",
+      "action": "status_apply",
+      "target": "self",
+      "statusId": "curse",
+      "value": 5,
+      "source": "flat",
+      "conditions": [],
+      "duration": 2,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "dark",
+        "curse",
+        "dot",
+        "debuff"
+      ],
+      "overridable": [
+        "value",
+        "duration"
+      ],
+      "description": "Dark: apply Curse (5 Dark damage/turn, -50% healing, 2 turns)"
+    },
+    "terrain_wind_push": {
+      "id": "terrain_wind_push",
+      "name": "Terrain: Wind",
+      "icon": "💨",
+      "trigger": "terrain_effect",
+      "action": "knockback",
+      "target": "self",
+      "value": 1,
+      "source": "flat",
+      "conditions": [],
+      "duration": null,
+      "category": "terrain",
+      "tags": [
+        "terrain",
+        "wind",
+        "knockback",
+        "push",
+        "position"
+      ],
+      "overridable": [
+        "value"
+      ],
+      "description": "Wind: push unit 1 cell in wind direction on enter"
+    }
+  },
+  "skills": {
+    "ember_slash": {
+      "id": "ember_slash",
+      "name": "Ember Slash",
+      "icon": "🔥⚔️",
+      "power": 12,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "A fiery slash. Chance to burn."
+    },
+    "taunt_mock": {
+      "id": "taunt_mock",
+      "name": "Taunt & Mock",
+      "icon": "🎭",
+      "power": 0,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "C",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quiz",
+      "effects": [
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz."
+    },
+    "jester_gambit": {
+      "id": "jester_gambit",
+      "name": "Jester's Gambit",
+      "icon": "🃏",
+      "power": 15,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Chaos",
+      "element": "Chaos",
+      "scalingStat": "L",
+      "range": 2,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "fishing",
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 15
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Roll the cosmic dice. High variance chaos damage, boosted crit."
+    },
+    "basic_attack": {
+      "id": "basic_attack",
+      "name": "Basic Attack",
+      "icon": "⚔️",
+      "power": 8,
+      "ap": 0,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Standard melee attack."
+    },
+    "thunder_shot": {
+      "id": "thunder_shot",
+      "name": "Thunder Shot",
+      "icon": "⚡🏹",
+      "power": 14,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Lightning",
+      "scalingStat": "P",
+      "range": 5,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "shock_dot",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Bowy's signature crossbow shot. Long range, lightning element."
+    },
+    "piercing_bolt": {
+      "id": "piercing_bolt",
+      "name": "Piercing Bolt",
+      "icon": "🔩",
+      "power": 18,
+      "ap": 3,
+      "mp": 5,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "P",
+      "range": 4,
+      "aoe": "line",
+      "aoeSize": 3,
+      "qte": "fishing",
+      "effects": [
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR."
+    },
+    "suppressive_fire": {
+      "id": "suppressive_fire",
+      "name": "Suppressive Fire",
+      "icon": "🏹💨",
+      "power": 8,
+      "ap": 3,
+      "mp": 7,
+      "cooldown": 3,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "P",
+      "range": 5,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "mash",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 10
+      },
+      "description": "Spray of bolts in a cone. Lower damage but slows enemies. QTE: Mash!"
+    },
+    "frost_touch": {
+      "id": "frost_touch",
+      "name": "Frost Touch",
+      "icon": "❄️",
+      "power": 14,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "rhythm",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Gentle ice magic. Applies frostbite, slowing the target."
+    },
+    "ice_shield": {
+      "id": "ice_shield",
+      "name": "Ice Shield",
+      "icon": "🧊🛡️",
+      "power": 0,
+      "ap": 2,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "opening_shield",
+          "overrides": {
+            "value": 20
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Creates an ice barrier on an ally that absorbs damage."
+    },
+    "healing_light": {
+      "id": "healing_light",
+      "name": "Healing Light",
+      "icon": "💚✨",
+      "power": 0,
+      "ap": 2,
+      "mp": 8,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Light",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "regen_hp",
+          "overrides": {
+            "value": 5
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Warm healing magic. Restores HP and grants regen."
+    },
+    "hunters_strike": {
+      "id": "hunters_strike",
+      "name": "Hunter's Strike",
+      "icon": "🗡️🐾",
+      "power": 14,
+      "ap": 2,
+      "mp": 2,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "mark_on_hit",
+          "overrides": {
+            "value": 10,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Precise strike that marks the target, increasing damage taken."
+    },
+    "trap_set": {
+      "id": "trap_set",
+      "name": "Set Trap",
+      "icon": "⚙️",
+      "power": 0,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 3,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "P",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "terrain_create_poison",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Place a trap that creates a poison zone. Veteran hunting tactic."
+    },
+    "rally_cry": {
+      "id": "rally_cry",
+      "name": "Rally",
+      "icon": "📯",
+      "power": 0,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "battle_cry",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Garr rallies the party. Buffs all allies' damage."
+    },
+    "wolf_bite": {
+      "id": "wolf_bite",
+      "name": "Frost Bite",
+      "icon": "🐺❄️",
+      "power": 10,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Freezing bite that chills to the bone."
+    },
+    "pack_howl": {
+      "id": "pack_howl",
+      "name": "Pack Howl",
+      "icon": "🐺🌙",
+      "power": 0,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 8
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Howl that empowers nearby wolves."
+    },
+    "ice_shard": {
+      "id": "ice_shard",
+      "name": "Ice Shard",
+      "icon": "❄️💎",
+      "power": 12,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 5
+      },
+      "description": "Ranged ice projectile."
+    },
+    "chill_wind": {
+      "id": "chill_wind",
+      "name": "Chill Wind",
+      "icon": "💨❄️",
+      "power": 8,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "terrain_create_ice",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Blast of freezing wind in a cone. Creates ice terrain."
+    },
+    "bear_maul": {
+      "id": "bear_maul",
+      "name": "Maul",
+      "icon": "🐻💥",
+      "power": 16,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 5
+      },
+      "description": "Devastating swipe that knocks the target back."
+    },
+    "bear_roar": {
+      "id": "bear_roar",
+      "name": "Terrifying Roar",
+      "icon": "🐻🗯️",
+      "power": 0,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "S",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Roar that terrifies nearby enemies."
+    },
+    "chimera_flame_wave": {
+      "id": "chimera_flame_wave",
+      "name": "Flame Wave",
+      "icon": "🐉🔥",
+      "power": 22,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Fire",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 6,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_create_fire",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Cone of flame from the fire head. Burns and creates fire terrain."
+    },
+    "chimera_frost_breath": {
+      "id": "chimera_frost_breath",
+      "name": "Frost Breath",
+      "icon": "🐉❄️",
+      "power": 25,
+      "ap": 4,
+      "mp": 10,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": "line",
+      "aoeSize": 4,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 5,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_create_ice",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Devastating breath from the ice head. Line AoE, heavy frostbite."
+    },
+    "chimera_fire_swipe": {
+      "id": "chimera_fire_swipe",
+      "name": "Fire Swipe",
+      "icon": "🐉🔥👊",
+      "power": 16,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Fiery claw swipe. Basic melee attack of the chimera."
+    }
+  },
+  "items": {
+    "rusty_sword": {
+      "id": "rusty_sword",
+      "name": "Rusty Sword",
+      "icon": "🗡️",
+      "slot": "weapon",
+      "rarity": "Junk",
+      "effects": [],
+      "weaponData": {
+        "baseDamage": 5,
+        "damageType": "Physical",
+        "element": null,
+        "range": 1
+      },
+      "description": "A chipped, dull blade. Better than fists. Barely."
+    },
+    "leather_armor": {
+      "id": "leather_armor",
+      "name": "Leather Armor",
+      "icon": "🧥",
+      "slot": "body",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "Basic leather protection."
+    },
+    "thunder_crossbow": {
+      "id": "thunder_crossbow",
+      "name": "Thunder",
+      "icon": "⚡🏹",
+      "slot": "weapon",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "accuracy_mod",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 7,
+        "damageType": "Physical",
+        "element": "Lightning",
+        "range": 5
+      },
+      "description": "Bowy's beloved crossbow. Named Thunder. Do NOT touch it."
+    },
+    "frost_staff": {
+      "id": "frost_staff",
+      "name": "Frost Staff",
+      "icon": "❄️🪄",
+      "slot": "weapon",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "damage_mod_water",
+          "overrides": {
+            "value": 8
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 4,
+        "damageType": "Magic",
+        "element": "Water",
+        "range": 3
+      },
+      "description": "A simple staff channeling ice magic."
+    },
+    "hunters_blade": {
+      "id": "hunters_blade",
+      "name": "Hunter's Blade",
+      "icon": "🔪",
+      "slot": "weapon",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 6,
+        "damageType": "Physical",
+        "element": null,
+        "range": 1
+      },
+      "description": "Garr's well-maintained hunting knife."
+    },
+    "adventurers_cloak": {
+      "id": "adventurers_cloak",
+      "name": "Adventurer's Cloak",
+      "icon": "🧣",
+      "slot": "body",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "evasion_mod",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A warm travelling cloak. Slightly helps dodging."
+    },
+    "warm_boots": {
+      "id": "warm_boots",
+      "name": "Warm Boots",
+      "icon": "🥾",
+      "slot": "feet",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "movement_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "Fur-lined boots. Essential in Frostbitten."
+    },
+    "lucky_coin": {
+      "id": "lucky_coin",
+      "name": "Lucky Coin",
+      "icon": "🪙",
+      "slot": "accessory1",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "stat_mod_lck",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "Found in Bin's pocket on arrival. Suspiciously warm."
+    },
+    "healers_pendant": {
+      "id": "healers_pendant",
+      "name": "Healer's Pendant",
+      "icon": "💚📿",
+      "slot": "accessory1",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "mp_mod_flat",
+          "overrides": {
+            "value": 10
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A pendant that strengthens the wearer's mana reserves."
+    },
+    "chimera_fang": {
+      "id": "chimera_fang",
+      "name": "Chimera Fang Dagger",
+      "icon": "🗡️🔥",
+      "slot": "weapon",
+      "rarity": "Rare",
+      "effects": [
+        {
+          "effectId": "lifesteal",
+          "overrides": {
+            "value": 8
+          }
+        },
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 9,
+        "damageType": "Physical",
+        "element": "Fire",
+        "range": 1
+      },
+      "description": "Forged from a chimera's fang. Drains life and scorches."
+    },
+    "frostfire_core": {
+      "id": "frostfire_core",
+      "name": "Frostfire Core",
+      "icon": "🔮",
+      "slot": "accessory1",
+      "rarity": "Epic",
+      "effects": [
+        {
+          "effectId": "damage_mod_fire",
+          "overrides": {
+            "value": 10
+          }
+        },
+        {
+          "effectId": "damage_mod_water",
+          "overrides": {
+            "value": 10
+          }
+        },
+        {
+          "effectId": "dr_mod_magic",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "The dual-element heart of the Frostfire Chimera. Radiates impossible warmth and cold."
+    }
+  },
+  "passives": {
+    "jester_luck": {
+      "id": "jester_luck",
+      "name": "Jester's Luck",
+      "icon": "🃏",
+      "tags": [
+        "bin",
+        "luck",
+        "crit"
+      ],
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "stat_mod_lck",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "The universe finds Bin entertaining. Slightly better luck and crits."
+    },
+    "comedy_armor": {
+      "id": "comedy_armor",
+      "name": "Comedy Armor",
+      "icon": "😂",
+      "tags": [
+        "bin",
+        "defense",
+        "comedy"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_all",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "evasion_mod",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "If you're already the joke, nothing hits as hard. Minor DR and evasion."
+    },
+    "marksmans_eye": {
+      "id": "marksmans_eye",
+      "name": "Marksman's Eye",
+      "icon": "🎯",
+      "tags": [
+        "bowy",
+        "accuracy",
+        "ranged"
+      ],
+      "effects": [
+        {
+          "effectId": "accuracy_mod",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "range_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Bowy's trained eye. Better accuracy and extended range."
+    },
+    "iron_hide": {
+      "id": "iron_hide",
+      "name": "Iron Hide",
+      "icon": "🐗",
+      "tags": [
+        "bowy",
+        "defense",
+        "physical"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "stat_mod_end",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Half-orc/half-boar toughness. Thick skin."
+    },
+    "fae_blood": {
+      "id": "fae_blood",
+      "name": "Fae Blood",
+      "icon": "🧚",
+      "tags": [
+        "mitia",
+        "magic",
+        "regen"
+      ],
+      "effects": [
+        {
+          "effectId": "regen_mp",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "dr_mod_magic",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "Hidden Fae heritage. Natural mana recovery and magic resistance."
+    },
+    "gentle_heart": {
+      "id": "gentle_heart",
+      "name": "Gentle Heart",
+      "icon": "💛",
+      "tags": [
+        "mitia",
+        "support",
+        "heal"
+      ],
+      "effects": [
+        {
+          "effectId": "stat_mod_int",
+          "overrides": {
+            "value": 1
+          }
+        },
+        {
+          "effectId": "stat_mod_cha",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Mitia's kindness strengthens her magic and charm."
+    },
+    "veterans_instinct": {
+      "id": "veterans_instinct",
+      "name": "Veteran's Instinct",
+      "icon": "🐾",
+      "tags": [
+        "garr",
+        "counter",
+        "initiative"
+      ],
+      "effects": [
+        {
+          "effectId": "counter_melee",
+          "overrides": {
+            "value": 40
+          }
+        },
+        {
+          "effectId": "stat_mod_per",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "description": "Decades of hunting hone reflexes. Counter chance on melee + perception."
+    },
+    "alpha_presence": {
+      "id": "alpha_presence",
+      "name": "Alpha Presence",
+      "icon": "🐺👑",
+      "tags": [
+        "wolf",
+        "buff",
+        "pack"
+      ],
+      "effects": [
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 5
+          }
+        }
+      ],
+      "description": "Pack alpha. Nearby wolves deal more damage."
+    },
+    "frozen_carapace": {
+      "id": "frozen_carapace",
+      "name": "Frozen Carapace",
+      "icon": "🧊🛡️",
+      "tags": [
+        "chimera",
+        "defense",
+        "boss"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 5
+          }
+        },
+        {
+          "effectId": "dr_mod_magic",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "reflect_physical",
+          "overrides": {
+            "value": 10
+          }
+        }
+      ],
+      "description": "The chimera's frostfire-hardened scales. High DR and reflects damage."
+    }
+  },
+  "characters": {
+    "bin": {
+      "id": "bin",
+      "name": "Bin Chen",
+      "icon": "🃏",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 5,
+        "P": 6,
+        "E": 5,
+        "C": 8,
+        "I": 7,
+        "A": 6,
+        "L": 5
+      },
+      "skills": [
+        "ember_slash",
+        "taunt_mock",
+        "jester_gambit",
+        "basic_attack"
+      ],
+      "equipment": [
+        "rusty_sword",
+        "leather_armor",
+        "lucky_coin"
+      ],
+      "innatePassives": [
+        "jester_luck",
+        "comedy_armor"
+      ],
+      "weak": [],
+      "resist": [],
+      "immune": [],
+      "description": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    "bowy": {
+      "id": "bowy",
+      "name": "Bowy",
+      "icon": "🐗",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 7,
+        "P": 8,
+        "E": 7,
+        "C": 4,
+        "I": 3,
+        "A": 5,
+        "L": 4
+      },
+      "skills": [
+        "thunder_shot",
+        "piercing_bolt",
+        "suppressive_fire",
+        "basic_attack"
+      ],
+      "equipment": [
+        "thunder_crossbow",
+        "leather_armor",
+        "warm_boots"
+      ],
+      "innatePassives": [
+        "marksmans_eye",
+        "iron_hide"
+      ],
+      "weak": [],
+      "resist": [],
+      "immune": [],
+      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    "mitia": {
+      "id": "mitia",
+      "name": "Mitia",
+      "icon": "🧊",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 3,
+        "P": 5,
+        "E": 4,
+        "C": 6,
+        "I": 8,
+        "A": 5,
+        "L": 5
+      },
+      "skills": [
+        "frost_touch",
+        "ice_shield",
+        "healing_light"
+      ],
+      "equipment": [
+        "frost_staff",
+        "adventurers_cloak",
+        "healers_pendant"
+      ],
+      "innatePassives": [
+        "fae_blood",
+        "gentle_heart"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [],
+      "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    "garr": {
+      "id": "garr",
+      "name": "Garr",
+      "icon": "🐾",
+      "team": "player",
+      "rank": "F",
+      "type": "humanoid",
+      "stats": {
+        "S": 7,
+        "P": 7,
+        "E": 6,
+        "C": 5,
+        "I": 4,
+        "A": 5,
+        "L": 4
+      },
+      "skills": [
+        "hunters_strike",
+        "trap_set",
+        "rally_cry",
+        "basic_attack"
+      ],
+      "equipment": [
+        "hunters_blade",
+        "leather_armor",
+        "warm_boots"
+      ],
+      "innatePassives": [
+        "veterans_instinct"
+      ],
+      "weak": [],
+      "resist": [],
+      "immune": [],
+      "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
+      "movement": 3,
+      "size": "1x1"
+    }
+  },
+  "monsters": {
+    "ice_wolf": {
+      "id": "ice_wolf",
+      "name": "Ice Wolf",
+      "icon": "🐺",
+      "team": "enemy",
+      "rank": "F",
+      "type": "beast",
+      "stats": {
+        "S": 6,
+        "P": 5,
+        "E": 4,
+        "C": 2,
+        "I": 2,
+        "A": 7,
+        "L": 3
+      },
+      "skills": [
+        "wolf_bite",
+        "pack_howl"
+      ],
+      "equipment": [],
+      "innatePassives": [],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Wolf Pelt",
+          "itemId": "wolf_pelt",
+          "rarity": "Common",
+          "chance": 0.7
+        },
+        {
+          "name": "Frost Fang",
+          "itemId": "frost_fang",
+          "rarity": "Uncommon",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:wolf_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:pack_howl AND allies_alive_gt_1",
+          "action": "use_skill:pack_howl",
+          "target": "nearest_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "Common predator of the Frostwood. Hunts in packs. Weak to fire.",
+      "movement": 4,
+      "size": "1x1"
+    },
+    "frost_sprite": {
+      "id": "frost_sprite",
+      "name": "Frost Sprite",
+      "icon": "✨❄️",
+      "team": "enemy",
+      "rank": "F",
+      "type": "elemental",
+      "stats": {
+        "S": 2,
+        "P": 5,
+        "E": 3,
+        "C": 3,
+        "I": 7,
+        "A": 6,
+        "L": 4
+      },
+      "skills": [
+        "ice_shard",
+        "chill_wind"
+      ],
+      "equipment": [],
+      "innatePassives": [],
+      "weak": [
+        "Fire",
+        "Lightning"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Sprite Dust",
+          "itemId": "sprite_dust",
+          "rarity": "Common",
+          "chance": 0.8
+        },
+        {
+          "name": "Ice Crystal",
+          "itemId": "ice_crystal",
+          "rarity": "Uncommon",
+          "chance": 0.15
+        }
+      ],
+      "behaviorAI": "sniper",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "enemies_in_range:3 >= 2 AND skill_off_cooldown:chill_wind",
+          "action": "use_skill:chill_wind",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "use_skill:ice_shard",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "any_adjacent_enemy",
+          "action": "move_toward",
+          "target": "furthest_enemy"
+        }
+      ],
+      "description": "Mischievous ice elemental. Fragile but dangerous magic. Stays at range.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    "snow_bear": {
+      "id": "snow_bear",
+      "name": "Snow Bear",
+      "icon": "🐻‍❄️",
+      "team": "enemy",
+      "rank": "E",
+      "type": "beast",
+      "stats": {
+        "S": 10,
+        "P": 4,
+        "E": 11,
+        "C": 2,
+        "I": 2,
+        "A": 4,
+        "L": 3
+      },
+      "skills": [
+        "bear_maul",
+        "bear_roar"
+      ],
+      "equipment": [],
+      "innatePassives": [],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water",
+        "Physical"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Bear Hide",
+          "itemId": "bear_hide",
+          "rarity": "Uncommon",
+          "chance": 0.6
+        },
+        {
+          "name": "Bear Claw",
+          "itemId": "bear_claw",
+          "rarity": "Rare",
+          "chance": 0.1
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:bear_maul",
+          "action": "use_skill:bear_maul",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:bear_roar AND enemies_in_range:2 >= 2",
+          "action": "use_skill:bear_roar",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Massive bear of the frozen north. Extremely tough. Don't let it reach you.",
+      "movement": 2,
+      "size": "2x2"
+    },
+    "frostfire_chimera": {
+      "id": "frostfire_chimera",
+      "name": "Frostfire Chimera",
+      "icon": "🐉",
+      "team": "enemy",
+      "rank": "C",
+      "type": "beast",
+      "stats": {
+        "S": 14,
+        "P": 10,
+        "E": 16,
+        "C": 3,
+        "I": 12,
+        "A": 6,
+        "L": 5
+      },
+      "skills": [
+        "chimera_flame_wave",
+        "chimera_frost_breath",
+        "chimera_fire_swipe"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "frozen_carapace"
+      ],
+      "weak": [
+        "Lightning"
+      ],
+      "resist": [
+        "Fire",
+        "Water"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Chimera Fang Dagger",
+          "itemId": "chimera_fang",
+          "rarity": "Rare",
+          "chance": 0.6
+        },
+        {
+          "name": "Frostfire Core",
+          "itemId": "frostfire_core",
+          "rarity": "Epic",
+          "chance": 0.15
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "hp_below_30 AND skill_off_cooldown:chimera_frost_breath",
+          "action": "use_skill:chimera_frost_breath",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 2,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:chimera_fire_swipe",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 3,
+          "condition": "enemies_in_range:3 >= 2 AND skill_off_cooldown:chimera_flame_wave",
+          "action": "use_skill:chimera_flame_wave",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "C-rank boss. Dual fire/ice heads. The first real challenge in Frostbitten. Resists both fire and water.",
+      "movement": 2,
+      "size": "2x2"
+    }
+  },
+  "encounters": {
+    "enc_wolf_pack": {
+      "id": "enc_wolf_pack",
+      "name": "Frostwood: Wolf Pack",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty"
+        ],
+        [
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "bowy",
+          "pos": [
+            7,
+            0
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "mitia",
+          "pos": [
+            7,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "garr",
+          "pos": [
+            6,
+            0
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            1,
+            5
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            2,
+            6
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            4
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    "enc_temple_floor1": {
+      "id": "enc_temple_floor1",
+      "name": "Frostbitten Temple: Floor 1",
+      "width": 10,
+      "height": 8,
+      "grid": [
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "ice_zone",
+          "ice_zone",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "bowy",
+          "pos": [
+            7,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "mitia",
+          "pos": [
+            7,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "garr",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            1,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            2,
+            7
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "frost_sprite",
+          "pos": [
+            1,
+            6
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "frost_sprite",
+          "pos": [
+            3,
+            8
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    "enc_chimera_boss": {
+      "id": "enc_chimera_boss",
+      "name": "Frostfire Chimera Boss Fight",
+      "width": 10,
+      "height": 10,
+      "grid": [
+        [
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "fire_zone",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "ice_zone",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "fire_zone",
+          "empty",
+          "empty"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            8,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "bowy",
+          "pos": [
+            8,
+            6
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "mitia",
+          "pos": [
+            9,
+            4
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "garr",
+          "pos": [
+            8,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "frostfire_chimera",
+          "pos": [
+            1,
+            4
+          ],
+          "size": "2x2"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            6
+          ],
+          "size": "1x1"
+        }
+      ]
+    },
+    "enc_bear_cave": {
+      "id": "enc_bear_cave",
+      "name": "Frostwood: Bear Cave",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        [
+          "obstacle",
+          "obstacle",
+          "obstacle",
+          "empty",
+          "empty",
+          "obstacle",
+          "obstacle",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "obstacle",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "obstacle"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ],
+        [
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty",
+          "empty"
+        ]
+      ],
+      "units": [
+        {
+          "id": "bin",
+          "pos": [
+            6,
+            2
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "bowy",
+          "pos": [
+            7,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "mitia",
+          "pos": [
+            7,
+            3
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "garr",
+          "pos": [
+            6,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "snow_bear",
+          "pos": [
+            1,
+            3
+          ],
+          "size": "2x2"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            1
+          ],
+          "size": "1x1"
+        },
+        {
+          "id": "ice_wolf",
+          "pos": [
+            3,
+            6
+          ],
+          "size": "1x1"
+        }
+      ]
+    }
+  },
+  "statuses": {},
+  "quips": [],
+  "quizBank": []
+}

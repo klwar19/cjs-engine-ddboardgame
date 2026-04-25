@@ -1,0 +1,102 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "quips",
+    "status": "active"
+  },
+  "fragments": [
+    {
+      "id": "a_bowy_hit_01",
+      "layer": "action",
+      "text": "Thunder roars! Bowy's bolt hits home.",
+      "required_tags": [
+        "hit",
+        "actor_bowy"
+      ],
+      "weight": 7
+    },
+    {
+      "id": "a_bowy_kill_01",
+      "layer": "action",
+      "text": "Bowy grunts with satisfaction. Target eliminated.",
+      "required_tags": [
+        "kill",
+        "actor_bowy"
+      ],
+      "weight": 8
+    },
+    {
+      "id": "a_mitia_heal_01",
+      "layer": "action",
+      "text": "Mitia's gentle magic knits the wounds closed.",
+      "required_tags": [
+        "heal",
+        "actor_mitia"
+      ],
+      "weight": 7
+    },
+    {
+      "id": "a_mitia_hit_01",
+      "layer": "action",
+      "text": "Mitia channels her hidden power — ice crystallizes on impact.",
+      "required_tags": [
+        "hit",
+        "actor_mitia"
+      ],
+      "weight": 7
+    },
+    {
+      "id": "a_garr_hit_01",
+      "layer": "action",
+      "text": "Garr's experienced blade finds its mark. Not his first hunt.",
+      "required_tags": [
+        "hit",
+        "actor_garr"
+      ],
+      "weight": 7
+    },
+    {
+      "id": "c_beast_kill_01",
+      "layer": "context",
+      "text": "One less beast. The Frostwood is slightly safer.",
+      "required_tags": [
+        "kill",
+        "target_type_beast"
+      ],
+      "weight": 4
+    },
+    {
+      "id": "e_kill_bowy_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Thunder delivers. Bowy doesn't celebrate — he's already reloading.",
+      "required_tags": [
+        "kill",
+        "actor_bowy"
+      ],
+      "weight": 8
+    },
+    {
+      "id": "e_kill_bowy_02",
+      "layer": "cjs_editorial",
+      "text": "[CJS] One bolt, one kill. That's the Bowy guarantee.",
+      "required_tags": [
+        "kill",
+        "actor_bowy"
+      ],
+      "weight": 8
+    },
+    {
+      "id": "e_status_freeze_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Frozen. Fitting for the Frostbitten region. Thematically appropriate agony.",
+      "required_tags": [
+        "status_applied",
+        "status_freeze"
+      ],
+      "weight": 6
+    }
+  ]
+}

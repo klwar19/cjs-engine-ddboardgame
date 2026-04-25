@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "fantasy_eldenring"
+  },
+  "world": {
+    "id": "fantasy_eldenring",
+    "displayName": "Sundered Lands",
+    "ceiling": "S",
+    "order": 7,
+    "tone": "fantasy_dark",
+    "color": "#8b5cf6",
+    "status": "stub"
+  }
+}

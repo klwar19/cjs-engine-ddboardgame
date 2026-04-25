@@ -1,0 +1,17 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "wuxia_immortal"
+  },
+  "world": {
+    "id": "wuxia_immortal",
+    "displayName": "Immortal Realms",
+    "ceiling": "SSR",
+    "order": 6,
+    "tone": "xianxia_grand",
+    "color": "#f59e0b",
+    "status": "stub"
+  }
+}

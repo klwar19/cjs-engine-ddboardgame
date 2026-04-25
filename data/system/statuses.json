@@ -1,0 +1,377 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "system",
+    "category": "statuses",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "name": "Adapt",
+      "icon": "🧬",
+      "category": "exotic",
+      "desc": "Gains resistance to the last element that hit this unit.",
+      "id": "adapt"
+    },
+    {
+      "name": "Barrier",
+      "icon": "🔮",
+      "category": "buff",
+      "desc": "Absorbs magic damage only.",
+      "absorbHP": true,
+      "absorbType": "Magic",
+      "id": "barrier"
+    },
+    {
+      "name": "Berserk",
+      "icon": "😡",
+      "category": "buff",
+      "desc": "Damage +30%, but DR reduced by 5.",
+      "damageMod": 30,
+      "drMod": -5,
+      "id": "berserk"
+    },
+    {
+      "name": "Bleed",
+      "icon": "🩸",
+      "category": "dot",
+      "desc": "Takes physical damage each turn. Worse when moving.",
+      "tickDamageType": "Physical",
+      "stackable": true,
+      "maxStacks": 3,
+      "id": "bleed"
+    },
+    {
+      "name": "Blind",
+      "icon": "🌑",
+      "category": "control",
+      "desc": "Accuracy reduced by 50%. Fishing/quickpress QTE harder.",
+      "accuracyMod": -50,
+      "id": "blind"
+    },
+    {
+      "name": "Burn",
+      "icon": "🔥",
+      "category": "dot",
+      "desc": "Takes fire damage each turn.",
+      "tickDamageType": "Fire",
+      "stackable": true,
+      "maxStacks": 3,
+      "id": "burn"
+    },
+    {
+      "name": "Charm",
+      "icon": "💕",
+      "category": "control",
+      "desc": "Attacks own allies instead of enemies. Breaks if ally damages you.",
+      "forcedTarget": "ally",
+      "breaksOnAllyDamage": true,
+      "id": "charm"
+    },
+    {
+      "name": "Clumsy",
+      "icon": "🦶",
+      "category": "statdown",
+      "desc": "Agility reduced.",
+      "statMod": {
+        "A": -3
+      },
+      "id": "clumsy"
+    },
+    {
+      "name": "Confuse",
+      "icon": "😵",
+      "category": "control",
+      "desc": "Actions target randomly (friend or foe).",
+      "randomTarget": true,
+      "id": "confuse"
+    },
+    {
+      "name": "Corrode",
+      "icon": "🧪",
+      "category": "dot",
+      "desc": "Takes damage each turn. Reduces DR by 2 per stack.",
+      "tickDamageType": "Physical",
+      "stackable": true,
+      "maxStacks": 5,
+      "drMod": -2,
+      "id": "corrode"
+    },
+    {
+      "name": "Counter Stance",
+      "icon": "⚔️",
+      "category": "buff",
+      "desc": "Automatically counter-attacks when hit.",
+      "autoCounter": true,
+      "id": "counter_stance"
+    },
+    {
+      "name": "Curse",
+      "icon": "💀",
+      "category": "dot",
+      "desc": "Takes dark damage each turn. Cannot be healed.",
+      "tickDamageType": "Dark",
+      "preventsHealing": true,
+      "id": "curse"
+    },
+    {
+      "name": "Doom",
+      "icon": "💀",
+      "category": "exotic",
+      "desc": "Dies when duration expires. Can be cleansed.",
+      "killOnExpire": true,
+      "id": "doom"
+    },
+    {
+      "name": "Dull",
+      "icon": "🧠",
+      "category": "statdown",
+      "desc": "Intelligence reduced.",
+      "statMod": {
+        "I": -3
+      },
+      "id": "dull"
+    },
+    {
+      "name": "Exposed",
+      "icon": "🎯",
+      "category": "statdown",
+      "desc": "All DR reduced by 5.",
+      "drMod": -5,
+      "id": "exposed"
+    },
+    {
+      "name": "Fear",
+      "icon": "😨",
+      "category": "control",
+      "desc": "Must move away from the source. Cannot attack the source.",
+      "forcedMovement": "away",
+      "cannotTarget": "source",
+      "id": "fear"
+    },
+    {
+      "name": "Focus",
+      "icon": "🎯",
+      "category": "buff",
+      "desc": "Next attack has +50% crit chance.",
+      "critMod": 50,
+      "breaksOnAction": true,
+      "id": "focus"
+    },
+    {
+      "name": "Fragile",
+      "icon": "💔",
+      "category": "statdown",
+      "desc": "Endurance and DR reduced.",
+      "statMod": {
+        "E": -3
+      },
+      "drMod": -3,
+      "id": "fragile"
+    },
+    {
+      "name": "Freeze",
+      "icon": "🧊",
+      "category": "control",
+      "desc": "Cannot act or move. Takes 50% extra from Fire.",
+      "preventsAction": true,
+      "preventsMovement": true,
+      "elementWeak": "Fire",
+      "id": "freeze"
+    },
+    {
+      "name": "Frostbite",
+      "icon": "🥶",
+      "category": "dot",
+      "desc": "Takes water damage each turn. Slows movement by 1.",
+      "tickDamageType": "Water",
+      "statMod": {
+        "A": -2
+      },
+      "moveMod": -1,
+      "id": "frostbite"
+    },
+    {
+      "name": "Haste",
+      "icon": "⚡",
+      "category": "buff",
+      "desc": "Movement +2, Agility +3.",
+      "moveMod": 2,
+      "statMod": {
+        "A": 3
+      },
+      "id": "haste"
+    },
+    {
+      "name": "Immobilize",
+      "icon": "🔗",
+      "category": "movement",
+      "desc": "Cannot move. Same as Root but doesn't break.",
+      "preventsMovement": true,
+      "id": "immobilize"
+    },
+    {
+      "name": "Link",
+      "icon": "🔗",
+      "category": "exotic",
+      "desc": "Damage taken is split between linked units.",
+      "id": "link"
+    },
+    {
+      "name": "Mark",
+      "icon": "🎯",
+      "category": "exotic",
+      "desc": "Marked target takes bonus damage from the marker.",
+      "id": "mark"
+    },
+    {
+      "name": "Petrify",
+      "icon": "🪨",
+      "category": "control",
+      "desc": "Cannot act or move. +10 Physical DR while petrified.",
+      "preventsAction": true,
+      "preventsMovement": true,
+      "drMod": 10,
+      "id": "petrify"
+    },
+    {
+      "name": "Poison",
+      "icon": "☠️",
+      "category": "dot",
+      "desc": "Takes nature damage each turn. Stacks.",
+      "tickDamageType": "Nature",
+      "stackable": true,
+      "maxStacks": 5,
+      "id": "poison"
+    },
+    {
+      "name": "Protect",
+      "icon": "🛡️",
+      "category": "buff",
+      "desc": "Redirects attacks from adjacent allies to self.",
+      "redirectDamage": true,
+      "id": "protect"
+    },
+    {
+      "name": "Regen",
+      "icon": "💚",
+      "category": "buff",
+      "desc": "Heals HP each turn.",
+      "tickHeal": true,
+      "id": "regen"
+    },
+    {
+      "name": "Root",
+      "icon": "🌿",
+      "category": "movement",
+      "desc": "Cannot move. Can still attack and use skills.",
+      "preventsMovement": true,
+      "id": "root"
+    },
+    {
+      "name": "Shield",
+      "icon": "🛡️",
+      "category": "buff",
+      "desc": "Absorbs damage before HP. Shield has its own HP pool that depletes.",
+      "absorbHP": true,
+      "id": "shield"
+    },
+    {
+      "name": "Shock",
+      "icon": "⚡",
+      "category": "dot",
+      "desc": "Takes lightning damage each turn. QTE difficulty +1.",
+      "tickDamageType": "Lightning",
+      "id": "shock"
+    },
+    {
+      "name": "Silence",
+      "icon": "🤐",
+      "category": "control",
+      "desc": "Cannot use skills (only basic attack/move/defend). Quiz QTE auto-fails.",
+      "preventsSkills": true,
+      "id": "silence"
+    },
+    {
+      "name": "Sleep",
+      "icon": "💤",
+      "category": "control",
+      "desc": "Cannot act or move. BREAKS when taking damage.",
+      "preventsAction": true,
+      "preventsMovement": true,
+      "breaksOnDamage": true,
+      "id": "sleep"
+    },
+    {
+      "name": "Slow",
+      "icon": "🐌",
+      "category": "movement",
+      "desc": "Movement reduced by 2.",
+      "moveMod": -2,
+      "id": "slow"
+    },
+    {
+      "name": "Stealth",
+      "icon": "👤",
+      "category": "buff",
+      "desc": "Cannot be targeted. Breaks on attacking or taking AoE damage.",
+      "invisible": true,
+      "breaksOnAction": true,
+      "id": "stealth"
+    },
+    {
+      "name": "Stun",
+      "icon": "💫",
+      "category": "control",
+      "desc": "Cannot act or move. Does NOT break on damage.",
+      "preventsAction": true,
+      "preventsMovement": true,
+      "id": "stun"
+    },
+    {
+      "name": "Taunt",
+      "icon": "😤",
+      "category": "control",
+      "desc": "Must target the taunter with attacks.",
+      "forcedTarget": "source",
+      "id": "taunt"
+    },
+    {
+      "name": "Transform",
+      "icon": "🔄",
+      "category": "exotic",
+      "desc": "Changed into another form. Stats replaced temporarily.",
+      "id": "transform"
+    },
+    {
+      "name": "Unlucky",
+      "icon": "🍀",
+      "category": "statdown",
+      "desc": "Luck reduced. Crit chance down.",
+      "statMod": {
+        "L": -3
+      },
+      "id": "unlucky"
+    },
+    {
+      "name": "Weakness",
+      "icon": "📉",
+      "category": "statdown",
+      "desc": "Strength reduced.",
+      "statMod": {
+        "S": -3
+      },
+      "id": "weakness"
+    },
+    {
+      "name": "Web",
+      "icon": "🕸️",
+      "category": "movement",
+      "desc": "Cannot move. Breaks on taking fire damage.",
+      "preventsMovement": true,
+      "breaksOnElement": "Fire",
+      "id": "web"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ window.CJS.SkillEditor = (() => {
   const ER = () => window.CJS.EffectRegistry;
   const UI = () => window.CJS.UI;
   const F  = () => window.CJS.Formulas;
+  const CM = () => window.CJS.ContentManager;
 
   let _container, _listEl, _formEl, _activeId = null;
 
@@ -40,7 +41,7 @@ window.CJS.SkillEditor = (() => {
   }
 
   function _renderList(q) {
-    const items = q ? DS().search('skills', q) : DS().getAllAsArray('skills');
+    const items = CM()?.getVisibleItems?.('skills', q) || (q ? DS().search('skills', q) : DS().getAllAsArray('skills'));
     UI().renderDataList({ container: _listEl, items, activeId: _activeId, onSelect: (s) => _load(s.id) });
   }
 
