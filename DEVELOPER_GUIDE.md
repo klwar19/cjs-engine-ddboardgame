@@ -16,8 +16,12 @@ Main entry points:
 
 Core runtime files:
 - `js/core/constants.js` - enums, rank tables, terrain, status defs, shared rules
+- `js/core/formulas.js` - pure HP/MP/DR/damage/evasion/crit/initiative math
+- `js/core/dice.js` - dice-string parser + roller
 - `js/core/data-store.js` - in-memory source of truth for all loaded content
 - `js/core/content-manager.js` - manifest loader, world/scope tagging, migration, validation, file map builder
+- `js/core/skill-resolver.js` - canonical skill-reference normalization
+- `js/core/undo-manager.js` - undo/redo stack integrated into DataStore
 - `js/core/save-manager.js` - GitHub save helpers plus local extract/export helpers
 
 If you are new, read in this order:
@@ -209,11 +213,13 @@ Data browser:
 ## 7. Combat Architecture
 
 Main combat files:
+- `js/combat/battle-setup.js` - quick/random battle setup screen
 - `js/combat/combat-manager.js`
 - `js/combat/action-handler.js`
 - `js/combat/stat-compiler.js`
 - `js/combat/status-manager.js`
 - `js/combat/damage-calc.js`
+- `js/combat/dice-service.js` - wraps Dice to honor CombatSettings.diceMode
 - `js/combat/combat-log.js`
 - `js/combat/combat-settings.js`
 
@@ -221,7 +227,7 @@ Combat flow:
 1. encounter selected in `combat.html`
 2. `CombatUI.startCombat()` starts the fight
 3. `CombatManager.startEncounter()` compiles units and initializes grid
-4. `CombatManager.runUntilInput()` advances the turn loop
+4. `CombatManager.runUntilInput()` is pumped repeatedly to advance the turn loop until player input is needed
 5. `ActionHandler` validates and executes chosen actions
 6. `EffectResolver` fires triggered effects
 7. `StatusManager` handles ticks, expiry, and recompile requests
@@ -265,10 +271,12 @@ Grid files:
 - `js/grid/pathfinding.js`
 - `js/grid/aoe.js`
 - `js/grid/grid-renderer.js`
+- `js/grid/map-generator.js` - procedural battle-map generator with biome themes
 
 UI files:
 - `js/ui/combat-ui.js`
 - `js/ui/portrait-picker.js`
+- `js/ui/loot-roller.js` - post-combat loot rolls with Luck bonuses
 
 Portrait system:
 - editor widget lives in `js/ui/portrait-picker.js`
@@ -368,6 +376,7 @@ Migration artifacts:
 - matching builder file in `js/builders/`
 - `js/combat/stat-compiler.js` if the field affects combat stats
 - `js/combat/action-handler.js` if the field changes actions
+- `js/core/skill-resolver.js` when skill refs or overrides are involved
 - `js/core/data-store.js` only if normalization/export rules must change
 
 ### Change how combat turns work
@@ -378,8 +387,11 @@ Migration artifacts:
 ### Change damage, hit logic, or skill execution
 - `js/combat/action-handler.js`
 - `js/combat/damage-calc.js`
+- `js/combat/dice-service.js`
 - `js/effects/effect-resolver.js`
 - `js/combat/stat-compiler.js`
+- `js/core/formulas.js`
+- `js/core/dice.js`
 
 ### Change status behavior
 - `js/combat/status-manager.js`
@@ -398,11 +410,16 @@ Migration artifacts:
 - `js/ai/ai-conditions.js`
 - `js/ai/ai-targeting.js`
 
+### Change quick-battle / map setup
+- `js/combat/battle-setup.js`
+- `js/grid/map-generator.js`
+
 ### Change grid movement, terrain, range, or AoE
 - `js/grid/grid-engine.js`
 - `js/grid/pathfinding.js`
 - `js/grid/aoe.js`
 - `js/grid/grid-renderer.js`
+- `js/grid/map-generator.js`
 - `js/core/constants.js` for terrain definitions
 
 ### Change portraits
@@ -411,6 +428,14 @@ Migration artifacts:
 - `js/grid/grid-renderer.js`
 - `js/ui/combat-ui.js`
 - one relevant builder file
+
+### Change post-combat loot
+- `js/ui/loot-roller.js`
+- `js/ui/combat-ui.js`
+
+### Change undo/redo
+- `js/core/undo-manager.js`
+- `js/core/data-store.js`
 
 ### Change editor save/export behavior
 - `editor.html`
