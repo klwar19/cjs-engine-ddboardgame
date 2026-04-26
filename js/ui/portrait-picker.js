@@ -9,6 +9,33 @@ window.CJS.PortraitPicker = (() => {
   let _manifest = { characters: [], monsters: [], items: [] };
   let _loaded = false;
   let _imageCache = Object.create(null);
+  // Paths the user has (re)uploaded — display them with a ?v= query string
+  // to bypass stale browser/CDN cache. The stored portrait field on entities
+  // stays the clean path. Persisted to localStorage so the cache-bust survives
+  // reloads (browser disk cache can otherwise still serve the old image).
+  const CACHE_BUST_KEY = 'cjs.editor.portraitCacheBust';
+  let _cacheBust = (() => {
+    try {
+      const raw = localStorage.getItem(CACHE_BUST_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (e) { /* ignore */ }
+    return Object.create(null);
+  })();
+
+  function _persistCacheBust() {
+    try { localStorage.setItem(CACHE_BUST_KEY, JSON.stringify(_cacheBust)); }
+    catch (e) { /* ignore */ }
+  }
+
+  function _bustedSrc(path) {
+    if (!path) return path;
+    const v = _cacheBust[path];
+    if (!v) return path;
+    return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'v=' + v;
+  }
 
   const SIZE_OPTIONS = [
     { label: 'XS', px: 64 },
@@ -234,6 +261,8 @@ window.CJS.PortraitPicker = (() => {
           message: `image: register ${category}.${filename}`
         });
 
+        _cacheBust[path] = Date.now();
+        _persistCacheBust();
         delete _imageCache[path];
         currentPath = path;
         notifyChange();
@@ -265,7 +294,7 @@ window.CJS.PortraitPicker = (() => {
         const img = document.createElement('img');
         img.className = 'portrait-preview';
         img.alt = 'portrait';
-        img.src = currentPath;
+        img.src = _bustedSrc(currentPath);
 
         const fallback = document.createElement('span');
         fallback.className = 'portrait-fallback';
@@ -377,7 +406,7 @@ window.CJS.PortraitPicker = (() => {
         item.dataset.path = path;
 
         const img = document.createElement('img');
-        img.src = path;
+        img.src = _bustedSrc(path);
         img.alt = file;
 
         const name = document.createElement('span');
@@ -455,7 +484,7 @@ window.CJS.PortraitPicker = (() => {
     if (!path) return null;
     if (_imageCache[path]) return _imageCache[path];
     const img = new Image();
-    img.src = path;
+    img.src = _bustedSrc(path);
     _imageCache[path] = img;
     return img;
   }
