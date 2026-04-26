@@ -1,4 +1,6 @@
 {
   "sfx": {},
-  "bgm": {}
+  "bgm": {
+    "battle_1": "audio/bgm/battle_1.mp3"
+  }
 }
