@@ -31,6 +31,57 @@ window.CJS.AudioManager = (() => {
   let _bgmVolume = _readVol(LS_BGM_VOL, 0.5);
   let _muted     = _readBool(LS_MUTED, false);
 
+  // WebAudio fallback: when the manifest has no MP3 for a key, synthesize
+  // a short tone instead so the system is audible out of the box.
+  let _audioCtx = null;
+  let _emptyManifestNoticeShown = false;
+
+  // Built-in fallback tones (frequency Hz, duration ms, type).
+  // Keys match the SFX keys playSfx() resolves, plus per-element variants.
+  const FALLBACK_TONES = {
+    weapon_hit_physical: { f: 220, d: 90,  t: 'square'   },
+    weapon_hit_fire:     { f: 380, d: 110, t: 'sawtooth' },
+    weapon_hit_ice:      { f: 880, d: 100, t: 'triangle' },
+    weapon_hit_lightning:{ f: 1320,d: 70,  t: 'sawtooth' },
+    weapon_hit_water:    { f: 520, d: 110, t: 'sine'     },
+    magic_cast:          { f: 660, d: 200, t: 'triangle' },
+    magic_hit:           { f: 990, d: 160, t: 'triangle' },
+    item_use:            { f: 740, d: 140, t: 'sine'     },
+    ko:                  { f: 110, d: 280, t: 'sawtooth' },
+    status_apply:        { f: 540, d: 120, t: 'square'   },
+    ui_click:            { f: 1200,d: 40,  t: 'sine'     }
+  };
+
+  function _ensureAudioCtx() {
+    if (_audioCtx) return _audioCtx;
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    try { _audioCtx = new Ctor(); } catch (e) { _audioCtx = null; }
+    return _audioCtx;
+  }
+
+  function _playFallbackTone(key, gainScale) {
+    const tone = FALLBACK_TONES[key];
+    if (!tone) return;
+    const ctx = _ensureAudioCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const peak = _clamp01(_sfxVolume * (gainScale || 1)) * 0.18;
+      osc.type = tone.t;
+      osc.frequency.setValueAtTime(tone.f, now);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(peak, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.d / 1000);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + tone.d / 1000 + 0.05);
+    } catch (e) { /* swallow */ }
+  }
+
   // ── INIT ──────────────────────────────────────────────────────────
   async function loadManifest() {
     if (_loaded) return _manifest;
@@ -76,32 +127,54 @@ window.CJS.AudioManager = (() => {
 
   // ── SFX ───────────────────────────────────────────────────────────
   // playSfx(key) → tries the explicit key, then any caller-supplied
-  // fallback chain. Silent (no-throw) if no file resolves.
+  // fallback chain. If no MP3 is registered, plays a synthesized
+  // WebAudio tone so the system is audible without uploaded files.
   function playSfx(key, opts) {
     if (_muted) return;
-    if (typeof Audio === 'undefined') return;
-    const path = _resolveSfxPath(key, opts && opts.fallbacks);
-    if (!path) return;
-    _ensureSfxPool();
-    const slot = _sfxPool[_sfxIdx];
-    _sfxIdx = (_sfxIdx + 1) % _sfxPool.length;
-    try {
-      slot.src = path;
-      slot.volume = _clamp01(_sfxVolume * (opts?.volume ?? 1));
-      slot.currentTime = 0;
-      const p = slot.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-    } catch (e) { /* never throw from audio */ }
+    const candidates = [key, ...(Array.isArray(opts?.fallbacks) ? opts.fallbacks : [])];
+    const path = _resolveSfxPath(candidates);
+    if (path && typeof Audio !== 'undefined') {
+      _ensureSfxPool();
+      const slot = _sfxPool[_sfxIdx];
+      _sfxIdx = (_sfxIdx + 1) % _sfxPool.length;
+      try {
+        slot.src = path;
+        slot.volume = _clamp01(_sfxVolume * (opts?.volume ?? 1));
+        slot.currentTime = 0;
+        const p = slot.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch (e) { /* never throw from audio */ }
+      return;
+    }
+    // Fallback: synthesize a tone for the first candidate that has one.
+    _showEmptyManifestNoticeOnce();
+    for (const k of candidates) {
+      if (FALLBACK_TONES[k]) { _playFallbackTone(k, opts?.volume ?? 1); return; }
+    }
   }
 
-  function _resolveSfxPath(key, fallbacks) {
-    if (!key) return null;
-    const keys = [key, ...(Array.isArray(fallbacks) ? fallbacks : [])];
-    for (const k of keys) {
+  function _resolveSfxPath(candidates) {
+    if (!candidates) return null;
+    for (const k of candidates) {
+      if (!k) continue;
       const p = _manifest.sfx?.[k];
       if (p) return p;
     }
     return null;
+  }
+
+  function _showEmptyManifestNoticeOnce() {
+    if (_emptyManifestNoticeShown) return;
+    const sfxCount = Object.keys(_manifest.sfx || {}).length;
+    const bgmCount = Object.keys(_manifest.bgm || {}).length;
+    if (sfxCount === 0 && bgmCount === 0) {
+      _emptyManifestNoticeShown = true;
+      console.info(
+        '[CJS Audio] No MP3s registered in data/audio-manifest.json — '
+        + 'using synthesized fallback tones. Upload your own MP3s via '
+        + 'Editor → Audio Library to replace them.'
+      );
+    }
   }
 
   // ── BGM ───────────────────────────────────────────────────────────

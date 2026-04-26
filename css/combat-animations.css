@@ -30,8 +30,9 @@
 }
 
 @keyframes cjs-move-tween {
-  from { transform: var(--cjs-from-transform, translate(0, 0)); }
-  to   { transform: translate(0, 0); }
+  0%   { opacity: 0;   transform: scale(0.85); }
+  35%  { opacity: 0.7; transform: scale(1.0); }
+  100% { opacity: 0;   transform: scale(1.05); }
 }
 
 /* ── OVERLAY ELEMENTS ──────────────────────────────────────────── */

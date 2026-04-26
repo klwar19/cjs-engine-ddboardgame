@@ -162,11 +162,16 @@ window.CJS.CombatUI = (() => {
     if (!_animEnabled() || !$fxLayer || !pos) return;
     const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
     if (!cell) return;
+    const canvas = _container?.querySelector('#cbt-canvas');
+    // Canvas is centered inside .combat-grid-wrap (flex centering), so FX
+    // overlays must use canvas.offsetLeft/offsetTop to land on the cells.
+    const ox = canvas?.offsetLeft || 0;
+    const oy = canvas?.offsetTop  || 0;
     const [r, c] = pos;
     const el = document.createElement('div');
     el.className = `cjs-fx-cell ${cls}`;
-    el.style.left   = (c * cell) + 'px';
-    el.style.top    = (r * cell) + 'px';
+    el.style.left   = (c * cell + ox) + 'px';
+    el.style.top    = (r * cell + oy) + 'px';
     el.style.width  = cell + 'px';
     el.style.height = cell + 'px';
     $fxLayer.appendChild(el);
@@ -186,7 +191,11 @@ window.CJS.CombatUI = (() => {
   }
 
   function _animUnitMove(payload) {
-    _spawnFx('cjs-fx-move', payload?.to, 360);
+    // Flash both cells briefly: the cell the unit left, and the one it
+    // arrived in. Gives a clear "step" visual without needing canvas
+    // sprite animation.
+    _spawnFx('cjs-fx-move', payload?.from, 360);
+    _spawnFx('cjs-fx-move', payload?.to,   360);
   }
 
   function _animTurnBanner(payload) {
