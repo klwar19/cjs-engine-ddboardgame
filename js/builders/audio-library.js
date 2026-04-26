@@ -1,6 +1,6 @@
 // audio-library.js
 // Editor panel for managing the audio asset library:
-//   - upload MP3 to GitHub (audio/sfx/<id>.mp3 or audio/bgm/<id>.mp3)
+//   - upload audio files to GitHub (audio/sfx/<id>.<ext> or audio/bgm/<id>.<ext>)
 //   - register the new entry in data/audio-manifest.json
 //   - delete entries (manifest only — files in audio/ stay until pruned by hand)
 //
@@ -51,15 +51,15 @@ window.CJS.AudioLibrary = (() => {
             <input type="text" id="aud-id" placeholder="${_category==='sfx'?'magic_hit':'battle_default_1'}">
           </div>
           <div class="form-group" style="flex:2">
-            <label class="form-label">MP3 file</label>
-            <input type="file" id="aud-file" accept="audio/mpeg,audio/mp3,.mp3">
+            <label class="form-label">Audio file</label>
+            <input type="file" id="aud-file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,.mp3,.ogg,.wav">
           </div>
           <div class="form-group" style="flex:0 0 auto">
             <button class="btn btn-success" id="aud-upload">Upload</button>
           </div>
         </div>
         <div class="dim" style="font-size:0.8rem;margin-top:-4px">
-          Uploads to <code>audio/${_category}/&lt;id&gt;.mp3</code> on GitHub and registers the id in <code>data/audio-manifest.json</code>.
+          Uploads to <code>audio/${_category}/&lt;id&gt;.&lt;ext&gt;</code> on GitHub and registers the id in <code>data/audio-manifest.json</code>.
           Requires GitHub token to be configured.
         </div>
 
@@ -81,13 +81,13 @@ window.CJS.AudioLibrary = (() => {
     const list = _container.querySelector('#aud-list');
     if (!list) return;
     if (!ids.length) {
-      list.innerHTML = '<div class="dim" style="padding:10px">No entries yet. Upload an MP3 to add one.</div>';
+      list.innerHTML = '<div class="dim" style="padding:10px">No entries yet. Upload a track to add one.</div>';
       return;
     }
     list.innerHTML = ids.map(id => `
       <div class="list-row" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid rgba(255,255,255,0.06)">
         <span style="flex:0 0 30%;font-weight:600">${_esc(id)}</span>
-        <span style="flex:1;font-family:monospace;font-size:0.8rem;opacity:0.8">${_esc(entries[id])}</span>
+        <span style="flex:1;font-family:monospace;font-size:0.8rem;opacity:0.8">${_esc(_entryPreview(entries[id]))}</span>
         <button class="btn btn-ghost btn-sm" data-id="${_esc(id)}" data-act="play">▶</button>
         <button class="btn btn-danger btn-sm" data-id="${_esc(id)}" data-act="del">Remove</button>
       </div>
@@ -117,7 +117,7 @@ window.CJS.AudioLibrary = (() => {
       return;
     }
     if (!file) {
-      _setStatus('Pick an MP3 file first.', 'error');
+      _setStatus('Pick an audio file first.', 'error');
       return;
     }
     if (!SM() || !SM().uploadBinaryFileToGitHub) {
@@ -133,9 +133,11 @@ window.CJS.AudioLibrary = (() => {
     _setStatus('Reading file…', 'info');
     try {
       const base64 = await SM().fileToBase64(file);
-      const path = `audio/${_category}/${id}.mp3`;
+      const extMatch = String(file.name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+      const ext = extMatch ? extMatch[0] : '.mp3';
+      const path = `audio/${_category}/${id}${ext}`;
 
-      _setStatus('Uploading MP3 to GitHub…', 'info');
+      _setStatus('Uploading audio to GitHub…', 'info');
       await SM().uploadBinaryFileToGitHub(path, base64, {
         message: `audio: upload ${path}`
       });
@@ -195,7 +197,7 @@ window.CJS.AudioLibrary = (() => {
           await SM().saveTextFileToGitHub('data/audio-manifest.json', json, {
             message: `audio: remove ${_category}.${id}`
           });
-          _setStatus(`Removed "${id}" from manifest. (MP3 file in audio/ stays until pruned manually.)`, 'info');
+          _setStatus(`Removed "${id}" from manifest. (Audio file in audio/ stays until pruned manually.)`, 'info');
         } else {
           _setStatus('No GitHub token — manifest changed in memory only. Save manually.', 'info');
         }
@@ -219,6 +221,14 @@ window.CJS.AudioLibrary = (() => {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[c]));
+  }
+
+  function _entryPreview(entry) {
+    if (Array.isArray(entry)) {
+      if (entry.length <= 2) return entry.join(' | ');
+      return `${entry[0]} (+${entry.length - 1} variants)`;
+    }
+    return entry;
   }
 
   return Object.freeze({ init, refresh });

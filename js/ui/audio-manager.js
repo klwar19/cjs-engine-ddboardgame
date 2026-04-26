@@ -14,7 +14,7 @@ window.CJS = window.CJS || {};
 window.CJS.AudioManager = (() => {
   'use strict';
 
-  const SFX_POOL_SIZE = 6;
+  const SFX_POOL_SIZE = 12;
   const LS_SFX_VOL = 'cjs.audio.sfxVol';
   const LS_BGM_VOL = 'cjs.audio.bgmVol';
   const LS_MUTED   = 'cjs.audio.muted';
@@ -26,6 +26,7 @@ window.CJS.AudioManager = (() => {
   let _sfxIdx  = 0;
   let _bgmEl   = null;
   let _bgmCurrentId = null;
+  let _bgmCurrentPath = null;
 
   let _sfxVolume = _readVol(LS_SFX_VOL, 0.7);
   let _bgmVolume = _readVol(LS_BGM_VOL, 0.5);
@@ -34,115 +35,221 @@ window.CJS.AudioManager = (() => {
   // WebAudio fallback: when the manifest has no MP3 for a key, synthesize
   // a short tone instead so the system is audible out of the box.
   let _audioCtx = null;
+  let _noiseBuffer = null;
   let _emptyManifestNoticeShown = false;
+  let _bgmFadeRaf = 0;
+  let _bgmStopTimer = 0;
+  let _lastBgmError = null;
 
-  // Built-in fallback tones. Each entry is either:
-  //   { f, d, t }                       — single oscillator
-  //   { multi: [{f,d,t,delay?,slide?}] } — multi-osc layered/sequenced
-  //   { noise: { d, hp, lp, decay } }   — noise burst (for slashes/etc)
-  // Keys match the SFX keys playSfx() resolves.
+  const _subs = new Set();
+  const SFX_VARIATION = {
+    default:               { min: 0.985, max: 1.015 },
+    ui_click:              { min: 0.99,  max: 1.03  },
+    move_step:             { min: 0.94,  max: 1.02  },
+    defend_guard:          { min: 0.98,  max: 1.02  },
+    defend:                { min: 0.98,  max: 1.02  },
+    miss:                  { min: 0.96,  max: 1.04  },
+    heal:                  { min: 0.97,  max: 1.03  },
+    crit_sting:            { min: 0.99,  max: 1.01  },
+    critical:              { min: 0.99,  max: 1.01  },
+    absorb_guard:          { min: 0.97,  max: 1.02  },
+    status_apply:          { min: 0.96,  max: 1.04  },
+    turn_start_player:     { min: 0.99,  max: 1.01  },
+    turn_start_enemy:      { min: 0.985, max: 1.015 },
+    weapon_slash:          { min: 0.98,  max: 1.02  },
+    weapon_pierce:         { min: 0.98,  max: 1.04  },
+    weapon_blunt:          { min: 0.94,  max: 0.99  },
+    weapon_hit_physical:   { min: 0.94,  max: 1.06  },
+    weapon_hit_fire:       { min: 0.95,  max: 1.05  },
+    weapon_hit_ice:        { min: 0.97,  max: 1.04  },
+    weapon_hit_lightning:  { min: 0.98,  max: 1.06  },
+    weapon_hit_water:      { min: 0.95,  max: 1.03  },
+    magic_cast:            { min: 0.97,  max: 1.03  },
+    magic_hit:             { min: 0.96,  max: 1.05  },
+    item_use:              { min: 0.98,  max: 1.03  },
+    ko:                    { min: 0.985, max: 1.015 }
+  };
+
+  const SFX_KEY_ALIASES = {
+    weapon_slash: ['weapon_hit_physical'],
+    weapon_pierce: ['weapon_hit_physical'],
+    weapon_blunt: ['weapon_hit_physical'],
+    weapon_hit_wind: ['weapon_hit_physical'],
+    weapon_hit_earth: ['weapon_hit_physical'],
+    weapon_hit_holy: ['magic_hit'],
+    weapon_hit_dark: ['magic_hit'],
+    magic_fire: ['magic_hit'],
+    magic_ice: ['magic_hit'],
+    magic_lightning: ['magic_hit'],
+    magic_holy: ['magic_hit'],
+    magic_dark: ['magic_hit'],
+    critical: ['crit_sting'],
+    defend: ['defend_guard'],
+    dodge: ['miss'],
+    victory: ['ui_click'],
+    defeat: ['ko'],
+    level_up: ['ui_click'],
+    item_potion: ['item_use'],
+    item_buff: ['item_use'],
+    item_throw: ['item_use'],
+    status_buff: ['status_apply'],
+    status_debuff: ['status_apply'],
+    ui_cursor: ['ui_click'],
+    ui_confirm: ['ui_click'],
+    ui_cancel: ['ui_click'],
+    ui_error: ['ui_click']
+  };
+
+  // Built-in synthesized fallback presets. These still intentionally sound
+  // lightweight, but they are layered enough to feel closer to game UI SFX
+  // than the original single-oscillator beeps.
   const FALLBACK_TONES = {
-    // ── Weapon strikes by physical damageType ──
-    weapon_slash:         { noise: { d: 130, hp: 1800, lp: 6000, decay: 110 } },
-    weapon_pierce:        { f: 1400, d: 70,  t: 'square',   slide: 600 },
-    weapon_blunt:         { f: 90,   d: 180, t: 'sine',     bend: -30 },
-    weapon_hit_physical:  { f: 220,  d: 90,  t: 'square'   },
-
-    // ── Weapon strikes by element ──
-    weapon_hit_fire:      { multi: [
-                            { noise: { d: 90, hp: 600, lp: 4000, decay: 80 } },
-                            { f: 380, d: 110, t: 'sawtooth', delay: 20 }] },
-    weapon_hit_ice:       { f: 1400, d: 110, t: 'triangle', bend: -800 },
-    weapon_hit_lightning: { multi: [
-                            { f: 2400, d: 40, t: 'sawtooth' },
-                            { noise: { d: 120, hp: 4000, lp: 9000, decay: 100 }, delay: 10 }] },
-    weapon_hit_water:     { f: 520,  d: 110, t: 'sine',     bend: -200 },
-    weapon_hit_wind:      { noise: { d: 220, hp: 800, lp: 3000, decay: 200 } },
-    weapon_hit_earth:     { f: 70,   d: 220, t: 'square',   bend: -20 },
-    weapon_hit_holy:      { multi: [
-                            { f: 880,  d: 200, t: 'sine' },
-                            { f: 1320, d: 200, t: 'sine', delay: 30 },
-                            { f: 1760, d: 200, t: 'sine', delay: 60 }] },
-    weapon_hit_dark:      { multi: [
-                            { f: 110,  d: 240, t: 'sawtooth' },
-                            { f: 138,  d: 240, t: 'sawtooth', delay: 20 }] },
-
-    // ── Magic ──
-    magic_cast:           { multi: [
-                            { f: 440, d: 200, t: 'triangle' },
-                            { f: 660, d: 200, t: 'triangle', delay: 60 },
-                            { f: 990, d: 200, t: 'triangle', delay: 120 }] },
-    magic_hit:            { f: 990, d: 160, t: 'triangle', bend: 200 },
-    magic_fire:           { multi: [
-                            { noise: { d: 180, hp: 200, lp: 3000, decay: 160 } },
-                            { f: 220, d: 200, t: 'sawtooth', delay: 30, bend: 100 }] },
-    magic_ice:            { multi: [
-                            { f: 1760, d: 200, t: 'triangle' },
-                            { f: 1320, d: 200, t: 'triangle', delay: 50 }] },
-    magic_lightning:      { multi: [
-                            { noise: { d: 60,  hp: 4000, lp: 9000, decay: 50 } },
-                            { f: 3000, d: 50,  t: 'sawtooth', delay: 0 },
-                            { noise: { d: 180, hp: 1500, lp: 6000, decay: 160 }, delay: 70 }] },
-    magic_holy:           { multi: [
-                            { f: 1320, d: 320, t: 'sine' },
-                            { f: 1760, d: 320, t: 'sine', delay: 80 },
-                            { f: 2640, d: 320, t: 'sine', delay: 160 }] },
-    magic_dark:           { multi: [
-                            { f: 220,  d: 280, t: 'sawtooth' },
-                            { f: 165,  d: 280, t: 'sawtooth', delay: 60 },
-                            { f: 110,  d: 280, t: 'sawtooth', delay: 120 }] },
-
-    // ── Combat events ──
-    critical:             { multi: [
-                            { f: 1500, d: 90, t: 'square' },
-                            { f: 2000, d: 90, t: 'square', delay: 30 },
-                            { f: 2500, d: 90, t: 'square', delay: 60 }] },
-    miss:                 { f: 600,  d: 100, t: 'sine',     bend: -300 },
-    dodge:                { noise: { d: 90, hp: 2000, lp: 7000, decay: 80 } },
-    defend:               { f: 200,  d: 140, t: 'square',   bend: 80 },
-    heal:                 { multi: [
-                            { f: 660,  d: 220, t: 'sine' },
-                            { f: 990,  d: 220, t: 'sine', delay: 60 }] },
-    victory:              { multi: [
-                            { f: 523,  d: 180, t: 'square' },
-                            { f: 659,  d: 180, t: 'square', delay: 100 },
-                            { f: 784,  d: 240, t: 'square', delay: 200 },
-                            { f: 1047, d: 320, t: 'square', delay: 320 }] },
-    defeat:               { multi: [
-                            { f: 330,  d: 280, t: 'sawtooth' },
-                            { f: 247,  d: 280, t: 'sawtooth', delay: 100 },
-                            { f: 165,  d: 360, t: 'sawtooth', delay: 220 }] },
-    level_up:             { multi: [
-                            { f: 784,  d: 100, t: 'square' },
-                            { f: 988,  d: 100, t: 'square', delay: 60 },
-                            { f: 1175, d: 100, t: 'square', delay: 120 },
-                            { f: 1568, d: 200, t: 'square', delay: 180 }] },
-
-    // ── Items + statuses ──
-    item_use:             { f: 740, d: 140, t: 'sine'   },
-    item_potion:          { multi: [
-                            { f: 660, d: 90, t: 'sine' },
-                            { f: 880, d: 90, t: 'sine', delay: 70 }] },
-    item_buff:            { multi: [
-                            { f: 440, d: 80, t: 'triangle' },
-                            { f: 660, d: 80, t: 'triangle', delay: 60 },
-                            { f: 880, d: 80, t: 'triangle', delay: 120 }] },
-    item_throw:           { noise: { d: 200, hp: 400, lp: 2500, decay: 180 } },
-    ko:                   { f: 110, d: 280, t: 'sawtooth', bend: -50 },
-    status_apply:         { f: 540, d: 120, t: 'square'  },
-    status_buff:          { f: 660, d: 120, t: 'triangle', bend: 200 },
-    status_debuff:        { f: 220, d: 140, t: 'sawtooth', bend: -80 },
-
-    // ── UI ──
-    ui_click:             { f: 1200, d: 40, t: 'sine'   },
-    ui_cursor:            { f: 800,  d: 30, t: 'sine'   },
-    ui_confirm:           { multi: [
-                            { f: 880,  d: 60, t: 'square' },
-                            { f: 1320, d: 60, t: 'square', delay: 40 }] },
-    ui_cancel:            { f: 440,  d: 80, t: 'square', bend: -150 },
-    ui_error:             { multi: [
-                            { f: 200, d: 80, t: 'square' },
-                            { f: 200, d: 80, t: 'square', delay: 90 }] }
+    weapon_slash: {
+      noise: { duration: 0.055, gain: 0.08, highpass: 2100 }
+    },
+    weapon_pierce: {
+      voices: [
+        { type: 'square', startHz: 1420, endHz: 760, duration: 0.075, gain: 0.10 },
+        { type: 'triangle', startHz: 1960, endHz: 1020, duration: 0.055, gain: 0.05, delay: 0.008 }
+      ]
+    },
+    weapon_blunt: {
+      voices: [
+        { type: 'sine', startHz: 104, endHz: 72, duration: 0.15, gain: 0.22 },
+        { type: 'triangle', startHz: 170, endHz: 90, duration: 0.11, gain: 0.08, delay: 0.012 }
+      ]
+    },
+    weapon_hit_physical: {
+      voices: [
+        { type: 'triangle', startHz: 150, endHz: 82, duration: 0.10, gain: 0.28 },
+        { type: 'square', startHz: 880, endHz: 260, duration: 0.05, gain: 0.08, delay: 0.006 }
+      ],
+      noise: { duration: 0.045, gain: 0.10, highpass: 1400 }
+    },
+    weapon_hit_fire: {
+      voices: [
+        { type: 'sawtooth', startHz: 320, endHz: 520, duration: 0.12, gain: 0.18 },
+        { type: 'triangle', startHz: 740, endHz: 440, duration: 0.08, gain: 0.10, delay: 0.012 }
+      ],
+      noise: { duration: 0.060, gain: 0.09, bandpass: 2000 }
+    },
+    weapon_hit_ice: {
+      voices: [
+        { type: 'triangle', startHz: 1120, endHz: 780, duration: 0.11, gain: 0.17 },
+        { type: 'sine', startHz: 1760, endHz: 1280, duration: 0.05, gain: 0.07, delay: 0.016 }
+      ]
+    },
+    weapon_hit_lightning: {
+      voices: [
+        { type: 'square', startHz: 1600, endHz: 420, duration: 0.07, gain: 0.16 },
+        { type: 'sawtooth', startHz: 2200, endHz: 980, duration: 0.05, gain: 0.10, delay: 0.008 }
+      ],
+      noise: { duration: 0.030, gain: 0.08, highpass: 3200 }
+    },
+    weapon_hit_water: {
+      voices: [
+        { type: 'sine', startHz: 420, endHz: 300, duration: 0.14, gain: 0.18 },
+        { type: 'triangle', startHz: 760, endHz: 430, duration: 0.09, gain: 0.07, delay: 0.018 }
+      ]
+    },
+    weapon_hit_wind: {
+      voices: [
+        { type: 'triangle', startHz: 540, endHz: 340, duration: 0.12, gain: 0.08 }
+      ],
+      noise: { duration: 0.070, gain: 0.07, highpass: 2400 }
+    },
+    weapon_hit_earth: {
+      voices: [
+        { type: 'square', startHz: 112, endHz: 70, duration: 0.16, gain: 0.22 },
+        { type: 'triangle', startHz: 260, endHz: 140, duration: 0.08, gain: 0.06, delay: 0.01 }
+      ]
+    },
+    weapon_hit_holy: {
+      voices: [
+        { type: 'sine', startHz: 900, endHz: 1240, duration: 0.20, gain: 0.12 },
+        { type: 'sine', startHz: 1320, endHz: 1760, duration: 0.16, gain: 0.07, delay: 0.03 }
+      ]
+    },
+    weapon_hit_dark: {
+      voices: [
+        { type: 'sawtooth', startHz: 260, endHz: 150, duration: 0.18, gain: 0.14 },
+        { type: 'triangle', startHz: 180, endHz: 96, duration: 0.15, gain: 0.08, delay: 0.018 }
+      ]
+    },
+    magic_cast: {
+      voices: [
+        { type: 'triangle', startHz: 420, endHz: 780, duration: 0.22, gain: 0.18 },
+        { type: 'sine', startHz: 690, endHz: 1180, duration: 0.18, gain: 0.07, delay: 0.018 }
+      ]
+    },
+    magic_hit: {
+      voices: [
+        { type: 'triangle', startHz: 980, endHz: 520, duration: 0.17, gain: 0.20 },
+        { type: 'square', startHz: 1520, endHz: 760, duration: 0.09, gain: 0.08, delay: 0.012 }
+      ],
+      noise: { duration: 0.035, gain: 0.05, bandpass: 1800 }
+    },
+    move_step: {
+      voices: [
+        { type: 'triangle', startHz: 290, endHz: 210, duration: 0.065, gain: 0.09 },
+        { type: 'sine', startHz: 620, endHz: 420, duration: 0.030, gain: 0.04, delay: 0.01 }
+      ]
+    },
+    defend_guard: {
+      voices: [
+        { type: 'square', startHz: 320, endHz: 420, duration: 0.10, gain: 0.11 },
+        { type: 'sine', startHz: 760, endHz: 920, duration: 0.08, gain: 0.06, delay: 0.01 }
+      ]
+    },
+    miss: {
+      voices: [
+        { type: 'sine', startHz: 620, endHz: 430, duration: 0.09, gain: 0.09 },
+        { type: 'triangle', startHz: 840, endHz: 520, duration: 0.06, gain: 0.04, delay: 0.008 }
+      ]
+    },
+    heal: {
+      voices: [
+        { type: 'sine', startHz: 540, endHz: 780, duration: 0.18, gain: 0.16 },
+        { type: 'triangle', startHz: 780, endHz: 1160, duration: 0.13, gain: 0.08, delay: 0.03 }
+      ]
+    },
+    crit_sting: {
+      voices: [
+        { type: 'square', startHz: 1220, endHz: 1680, duration: 0.085, gain: 0.11 },
+        { type: 'square', startHz: 1660, endHz: 2360, duration: 0.070, gain: 0.07, delay: 0.016 }
+      ]
+    },
+    absorb_guard: {
+      voices: [
+        { type: 'triangle', startHz: 430, endHz: 560, duration: 0.11, gain: 0.11 },
+        { type: 'square', startHz: 960, endHz: 720, duration: 0.07, gain: 0.04, delay: 0.012 }
+      ],
+      noise: { duration: 0.022, gain: 0.03, highpass: 2800 }
+    },
+    item_use: {
+      voices: [
+        { type: 'sine', startHz: 580, endHz: 840, duration: 0.18, gain: 0.16 },
+        { type: 'triangle', startHz: 880, endHz: 1280, duration: 0.11, gain: 0.07, delay: 0.012 }
+      ]
+    },
+    ko: {
+      voices: [
+        { type: 'sawtooth', startHz: 180, endHz: 72, duration: 0.30, gain: 0.25 },
+        { type: 'triangle', startHz: 120, endHz: 52, duration: 0.26, gain: 0.14, delay: 0.015 }
+      ],
+      noise: { duration: 0.080, gain: 0.06, lowpass: 700 }
+    },
+    status_apply: {
+      voices: [
+        { type: 'square', startHz: 520, endHz: 640, duration: 0.11, gain: 0.12 },
+        { type: 'triangle', startHz: 880, endHz: 1040, duration: 0.08, gain: 0.07, delay: 0.012 }
+      ]
+    },
+    ui_click: {
+      voices: [
+        { type: 'sine', startHz: 980, endHz: 1160, duration: 0.05, gain: 0.10 }
+      ]
+    }
   };
 
   function _ensureAudioCtx() {
@@ -153,43 +260,83 @@ window.CJS.AudioManager = (() => {
     return _audioCtx;
   }
 
-  function _playToneVoice(ctx, voice, baseTime, gainScale) {
-    const peakRaw = _clamp01(_sfxVolume * (gainScale || 1)) * 0.18;
-    const start = baseTime + (voice.delay || 0) / 1000;
-
-    if (voice.noise) {
-      // Noise burst with band-pass-ish shaping
-      const n = voice.noise;
-      const dur = n.d / 1000;
-      const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+  function _ensureNoiseBuffer(ctx) {
+    if (_noiseBuffer) return _noiseBuffer;
+    try {
+      const length = Math.max(1, Math.floor(ctx.sampleRate * 0.4));
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = n.hp || 800;
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass';  lp.frequency.value = n.lp || 6000;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(peakRaw, start + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + (n.decay || n.d) / 1000);
-      src.connect(hp); hp.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
-      src.start(start);
-      src.stop(start + dur + 0.05);
-      return;
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      _noiseBuffer = buffer;
+    } catch (e) {
+      _noiseBuffer = null;
     }
+    return _noiseBuffer;
+  }
 
+  function _playOscVoice(ctx, when, voice, gainScale) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = voice.t || 'sine';
-    osc.frequency.setValueAtTime(voice.f, start);
-    if (voice.slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, voice.slide), start + voice.d / 1000);
-    if (voice.bend)  osc.frequency.linearRampToValueAtTime(Math.max(20, voice.f + voice.bend), start + voice.d / 1000);
-    gain.gain.setValueAtTime(0, start);
-    gain.gain.linearRampToValueAtTime(peakRaw, start + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + voice.d / 1000);
-    osc.connect(gain); gain.connect(ctx.destination);
+    const start = when + (voice.delay || 0);
+    const end = start + Math.max(0.01, voice.duration || 0.08);
+    const peak = _clamp01((gainScale || 1) * (voice.gain || 0.1)) * 0.22;
+    const attack = Math.min(0.01, (voice.duration || 0.08) * 0.18);
+
+    osc.type = voice.type || 'sine';
+    osc.frequency.setValueAtTime(voice.startHz || voice.endHz || 440, start);
+    osc.frequency.exponentialRampToValueAtTime(
+      Math.max(18, voice.endHz || voice.startHz || 440),
+      end
+    );
+
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(Math.max(0.0001, peak), start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
     osc.start(start);
-    osc.stop(start + voice.d / 1000 + 0.05);
+    osc.stop(end + 0.02);
+  }
+
+  function _playNoiseBurst(ctx, when, noise, gainScale) {
+    const buffer = _ensureNoiseBuffer(ctx);
+    if (!buffer) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    let node = source;
+    if (noise.lowpass || noise.highpass || noise.bandpass) {
+      const filter = ctx.createBiquadFilter();
+      if (noise.bandpass) {
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(noise.bandpass, when);
+        filter.Q.setValueAtTime(1.2, when);
+      } else if (noise.highpass) {
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(noise.highpass, when);
+      } else if (noise.lowpass) {
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(noise.lowpass, when);
+      }
+      source.connect(filter);
+      node = filter;
+    }
+
+    const gain = ctx.createGain();
+    const start = when + (noise.delay || 0);
+    const end = start + Math.max(0.01, noise.duration || 0.04);
+    const peak = _clamp01((gainScale || 1) * (noise.gain || 0.05)) * 0.22;
+    gain.gain.setValueAtTime(Math.max(0.0001, peak), start);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+    node.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(start);
+    source.stop(end + 0.02);
   }
 
   function _playFallbackTone(key, gainScale) {
@@ -198,20 +345,40 @@ window.CJS.AudioManager = (() => {
     const ctx = _ensureAudioCtx();
     if (!ctx) return;
     try {
-      const now = ctx.currentTime;
-      if (tone.multi) {
-        for (const v of tone.multi) _playToneVoice(ctx, v, now, gainScale);
-      } else {
-        _playToneVoice(ctx, tone, now, gainScale);
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime + 0.002;
+      const gain = _sfxVolume * (gainScale || 1);
+      for (const voice of (tone.voices || [])) {
+        _playOscVoice(ctx, now, voice, gain);
+      }
+      if (tone.noise) {
+        _playNoiseBurst(ctx, now, tone.noise, gain);
       }
     } catch (e) { /* swallow */ }
+  }
+
+  function subscribe(fn) {
+    if (typeof fn !== 'function') return () => {};
+    _subs.add(fn);
+    return () => _subs.delete(fn);
+  }
+
+  function _notify() {
+    const snapshot = getBgmState();
+    for (const fn of Array.from(_subs)) {
+      try { fn(snapshot); } catch (e) { /* swallow */ }
+    }
   }
 
   // ── INIT ──────────────────────────────────────────────────────────
   async function loadManifest() {
     if (_loaded) return _manifest;
     try {
-      const response = await fetch('data/audio-manifest.json');
+      const response = await fetch(`data/audio-manifest.json?ts=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       _manifest = _normalize(await response.json());
     } catch (error) {
@@ -219,6 +386,7 @@ window.CJS.AudioManager = (() => {
       _manifest = _normalize();
     }
     _loaded = true;
+    _notify();
     return _manifest;
   }
 
@@ -226,9 +394,33 @@ window.CJS.AudioManager = (() => {
 
   function _normalize(value) {
     return {
-      sfx: (value && typeof value.sfx === 'object' && value.sfx) ? { ...value.sfx } : {},
-      bgm: (value && typeof value.bgm === 'object' && value.bgm) ? { ...value.bgm } : {}
+      sfx: _normalizeBucket(value?.sfx),
+      bgm: _normalizeBucket(value?.bgm)
     };
+  }
+
+  function _normalizeBucket(bucket) {
+    const out = {};
+    if (!bucket || typeof bucket !== 'object') return out;
+    for (const [id, raw] of Object.entries(bucket)) {
+      const entry = _normalizeEntry(raw);
+      if (entry) out[id] = entry;
+    }
+    return out;
+  }
+
+  function _normalizeEntry(raw) {
+    if (typeof raw === 'string') {
+      const s = raw.trim();
+      return s ? s : null;
+    }
+    if (Array.isArray(raw)) {
+      const arr = raw
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+      return arr.length ? arr : null;
+    }
+    return null;
   }
 
   function _ensureSfxPool() {
@@ -247,24 +439,106 @@ window.CJS.AudioManager = (() => {
     _bgmEl = new Audio();
     _bgmEl.loop = true;
     _bgmEl.preload = 'auto';
+    _bgmEl.addEventListener('play', () => {
+      _lastBgmError = null;
+      _notify();
+    });
+    _bgmEl.addEventListener('pause', _notify);
+    _bgmEl.addEventListener('ended', _notify);
+    _bgmEl.addEventListener('loadeddata', () => {
+      _lastBgmError = null;
+      _notify();
+    });
+    _bgmEl.addEventListener('error', () => {
+      _lastBgmError = 'load_error';
+      _notify();
+    });
     return _bgmEl;
+  }
+
+  function _resolveManifestEntry(kind, candidates) {
+    if (!Array.isArray(candidates)) return null;
+    for (const key of candidates) {
+      if (!key) continue;
+      const entry = _manifest?.[kind]?.[key];
+      const path = _pickEntryPath(entry);
+      if (path) return { key, path, entry };
+    }
+    return null;
+  }
+
+  function _pickEntryPath(entry) {
+    if (Array.isArray(entry)) {
+      const paths = entry.map((item) => String(item || '').trim()).filter(Boolean);
+      if (!paths.length) return null;
+      return paths[Math.floor(Math.random() * paths.length)];
+    }
+    if (typeof entry === 'string') {
+      const s = entry.trim();
+      return s || null;
+    }
+    return null;
+  }
+
+  function _pickPlaybackRate(key, override) {
+    if (override != null && isFinite(Number(override))) {
+      return Math.max(0.5, Math.min(2, Number(override)));
+    }
+    const range = SFX_VARIATION[key] || SFX_VARIATION.default;
+    const min = Number(range?.min) || 1;
+    const max = Number(range?.max) || min;
+    return min + ((max - min) * Math.random());
+  }
+
+  function _expandSfxCandidates(key, fallbacks) {
+    const direct = [key, ...(Array.isArray(fallbacks) ? fallbacks : [])]
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+
+    const out = [];
+    const seen = new Set();
+    const push = (candidate) => {
+      if (!candidate || seen.has(candidate)) return;
+      seen.add(candidate);
+      out.push(candidate);
+    };
+
+    direct.forEach(push);
+    const queue = direct.slice();
+    while (queue.length) {
+      const candidate = queue.shift();
+      const aliases = Array.isArray(SFX_KEY_ALIASES[candidate]) ? SFX_KEY_ALIASES[candidate] : [];
+      for (const alias of aliases) {
+        const id = String(alias || '').trim();
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        out.push(id);
+        queue.push(id);
+      }
+    }
+    return out;
   }
 
   // ── SFX ───────────────────────────────────────────────────────────
   // playSfx(key) → tries the explicit key, then any caller-supplied
-  // fallback chain. If no MP3 is registered, plays a synthesized
+  // fallback chain. If no audio file is registered, plays a synthesized
   // WebAudio tone so the system is audible without uploaded files.
   function playSfx(key, opts) {
     if (_muted) return;
-    const candidates = [key, ...(Array.isArray(opts?.fallbacks) ? opts.fallbacks : [])];
-    const path = _resolveSfxPath(candidates);
-    if (path && typeof Audio !== 'undefined') {
+    const candidates = _expandSfxCandidates(key, opts?.fallbacks);
+    const resolved = _resolveManifestEntry('sfx', candidates);
+    if (resolved && typeof Audio !== 'undefined') {
       _ensureSfxPool();
       const slot = _sfxPool[_sfxIdx];
       _sfxIdx = (_sfxIdx + 1) % _sfxPool.length;
       try {
-        slot.src = path;
+        slot.src = resolved.path;
         slot.volume = _clamp01(_sfxVolume * (opts?.volume ?? 1));
+        slot.playbackRate = _pickPlaybackRate(resolved.key, opts?.playbackRate);
+        slot.defaultPlaybackRate = slot.playbackRate;
+        if ('preservesPitch' in slot) slot.preservesPitch = false;
+        if ('mozPreservesPitch' in slot) slot.mozPreservesPitch = false;
+        if ('webkitPreservesPitch' in slot) slot.webkitPreservesPitch = false;
         slot.currentTime = 0;
         const p = slot.play();
         if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -278,16 +552,6 @@ window.CJS.AudioManager = (() => {
     }
   }
 
-  function _resolveSfxPath(candidates) {
-    if (!candidates) return null;
-    for (const k of candidates) {
-      if (!k) continue;
-      const p = _manifest.sfx?.[k];
-      if (p) return p;
-    }
-    return null;
-  }
-
   function _showEmptyManifestNoticeOnce() {
     if (_emptyManifestNoticeShown) return;
     const sfxCount = Object.keys(_manifest.sfx || {}).length;
@@ -295,8 +559,8 @@ window.CJS.AudioManager = (() => {
     if (sfxCount === 0 && bgmCount === 0) {
       _emptyManifestNoticeShown = true;
       console.info(
-        '[CJS Audio] No MP3s registered in data/audio-manifest.json — '
-        + 'using synthesized fallback tones. Upload your own MP3s via '
+        '[CJS Audio] No audio files registered in data/audio-manifest.json — '
+        + 'using synthesized fallback tones. Upload your own tracks via '
         + 'Editor → Audio Library to replace them.'
       );
     }
@@ -305,12 +569,54 @@ window.CJS.AudioManager = (() => {
   // ── BGM ───────────────────────────────────────────────────────────
   // playBgm(idOrPool, { fadeMs, volume })
   //   idOrPool: string id, or array — array picks one entry at random.
+  function _cancelBgmFade() {
+    if (_bgmFadeRaf) {
+      cancelAnimationFrame(_bgmFadeRaf);
+      _bgmFadeRaf = 0;
+    }
+  }
+
+  function _cancelBgmStop() {
+    if (_bgmStopTimer) {
+      clearTimeout(_bgmStopTimer);
+      _bgmStopTimer = 0;
+    }
+  }
+
+  function _fadeBgmVolume(target, ms) {
+    if (!_bgmEl) return;
+    _cancelBgmFade();
+
+    const end = _muted ? 0 : _clamp01(target);
+    const duration = Math.max(0, Number(ms) || 0);
+    if (!duration || typeof requestAnimationFrame !== 'function') {
+      _bgmEl.volume = end;
+      _notify();
+      return;
+    }
+
+    const startVolume = Number(_bgmEl.volume) || 0;
+    const startedAt = Date.now();
+    const tick = () => {
+      const progress = Math.min(1, (Date.now() - startedAt) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      _bgmEl.volume = startVolume + ((end - startVolume) * eased);
+      if (progress < 1) {
+        _bgmFadeRaf = requestAnimationFrame(tick);
+      } else {
+        _bgmFadeRaf = 0;
+        _notify();
+      }
+    };
+    _bgmFadeRaf = requestAnimationFrame(tick);
+  }
+
   function playBgm(idOrPool, opts) {
     if (typeof Audio === 'undefined') return;
     opts = opts || {};
     const id = _pickBgmId(idOrPool);
     if (!id) { stopBgm(opts); return; }
-    const path = _manifest.bgm?.[id];
+    const path = _pickEntryPath(_manifest.bgm?.[id]);
     if (!path) {
       console.warn('AudioManager: bgm id not found in manifest:', id);
       return;
@@ -318,15 +624,31 @@ window.CJS.AudioManager = (() => {
     if (id === _bgmCurrentId && _bgmEl && !_bgmEl.paused) return;
     const el = _ensureBgmEl();
     if (!el) return;
+    _cancelBgmStop();
+    _cancelBgmFade();
     _bgmCurrentId = id;
+    _bgmCurrentPath = path;
+    _lastBgmError = null;
+    const targetVolume = _muted ? 0 : _clamp01(_bgmVolume * (opts.volume ?? 1));
+    const fadeMs = Math.max(0, Number(opts.fadeMs ?? 320) || 0);
     try {
       el.src = path;
-      el.volume = _muted ? 0 : _clamp01(_bgmVolume * (opts.volume ?? 1));
+      el.volume = fadeMs > 0 && !_muted ? 0 : targetVolume;
       const p = el.play();
       if (p && typeof p.catch === 'function') {
-        p.catch(() => { /* autoplay policy: needs user gesture; will retry on next gesture */ });
+        p.then(() => {
+          _lastBgmError = null;
+          _fadeBgmVolume(targetVolume, fadeMs);
+          _notify();
+        }).catch(() => {
+          _lastBgmError = 'autoplay_blocked';
+          _notify();
+        });
+      } else {
+        _fadeBgmVolume(targetVolume, fadeMs);
       }
     } catch (e) { /* swallow */ }
+    _notify();
   }
 
   function _pickBgmId(idOrPool) {
@@ -340,16 +662,46 @@ window.CJS.AudioManager = (() => {
 
   function stopBgm(opts) {
     if (!_bgmEl) return;
-    try {
-      _bgmEl.pause();
-      _bgmEl.currentTime = 0;
-    } catch (e) { /* swallow */ }
-    _bgmCurrentId = null;
+    const fadeMs = Math.max(0, Number(opts?.fadeMs ?? 180) || 0);
+    const finish = () => {
+      _cancelBgmFade();
+      _cancelBgmStop();
+      try {
+        _bgmEl.pause();
+        _bgmEl.currentTime = 0;
+      } catch (e) { /* swallow */ }
+      _bgmCurrentId = null;
+      _bgmCurrentPath = null;
+      _lastBgmError = null;
+      _notify();
+    };
+
+    _cancelBgmStop();
+    if (fadeMs > 0 && !_bgmEl.paused) {
+      _fadeBgmVolume(0, fadeMs);
+      _bgmStopTimer = setTimeout(finish, fadeMs + 30);
+      return;
+    }
+    finish();
   }
 
   function getCurrentBgmId() { return _bgmCurrentId; }
   function isBgmPlaying() {
     return !!(_bgmEl && !_bgmEl.paused && !_bgmEl.ended && _bgmCurrentId);
+  }
+
+  function getBgmState() {
+    return {
+      currentId: _bgmCurrentId,
+      path: _bgmCurrentPath,
+      playing: !!(_bgmEl && !_bgmEl.paused && !_bgmEl.ended && _bgmCurrentId),
+      paused: !!(_bgmEl && _bgmEl.paused),
+      readyState: _bgmEl?.readyState || 0,
+      muted: _muted,
+      sfxVolume: _sfxVolume,
+      bgmVolume: _bgmVolume,
+      error: _lastBgmError
+    };
   }
 
   // ── VOLUME / MUTE ─────────────────────────────────────────────────
@@ -361,8 +713,9 @@ window.CJS.AudioManager = (() => {
     } else if (channel === 'bgm') {
       _bgmVolume = v;
       _writeNum(LS_BGM_VOL, v);
-      if (_bgmEl) _bgmEl.volume = _muted ? 0 : v;
+      if (_bgmEl) _fadeBgmVolume(v, 120);
     }
+    _notify();
   }
 
   function getVolume(channel) {
@@ -372,7 +725,8 @@ window.CJS.AudioManager = (() => {
   function mute(flag) {
     _muted = !!flag;
     _writeBool(LS_MUTED, _muted);
-    if (_bgmEl) _bgmEl.volume = _muted ? 0 : _bgmVolume;
+    if (_bgmEl) _fadeBgmVolume(_bgmVolume, 120);
+    _notify();
   }
 
   function isMuted() { return _muted; }
@@ -414,10 +768,12 @@ window.CJS.AudioManager = (() => {
   return Object.freeze({
     loadManifest,
     getManifest,
+    subscribe,
     playSfx,
     playBgm,
     stopBgm,
     getCurrentBgmId,
+    getBgmState,
     isBgmPlaying,
     setVolume,
     getVolume,

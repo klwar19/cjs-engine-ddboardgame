@@ -1,6 +1,65 @@
 {
-  "sfx": {},
+  "sfx": {
+    "ui_click": [
+      "audio/sfx/ui-click.wav",
+      "audio/sfx/ui-click-alt.wav"
+    ],
+    "move_step": [
+      "audio/sfx/move-step.wav",
+      "audio/sfx/move-step-alt.wav"
+    ],
+    "defend_guard": "audio/sfx/defend-guard.wav",
+    "miss": [
+      "audio/sfx/miss.wav",
+      "audio/sfx/miss-alt.wav"
+    ],
+    "heal": [
+      "audio/sfx/heal.wav",
+      "audio/sfx/heal-alt.wav"
+    ],
+    "crit_sting": "audio/sfx/crit-sting.wav",
+    "absorb_guard": "audio/sfx/absorb-guard.wav",
+    "weapon_hit_physical": [
+      "audio/sfx/weapon-hit-physical.wav",
+      "audio/sfx/weapon-hit-physical-alt.wav"
+    ],
+    "weapon_hit_fire": [
+      "audio/sfx/weapon-hit-fire.wav",
+      "audio/sfx/weapon-hit-fire-alt.wav"
+    ],
+    "weapon_hit_ice": [
+      "audio/sfx/weapon-hit-ice.wav",
+      "audio/sfx/weapon-hit-ice-alt.wav"
+    ],
+    "weapon_hit_lightning": [
+      "audio/sfx/weapon-hit-lightning.wav",
+      "audio/sfx/weapon-hit-lightning-alt.wav"
+    ],
+    "weapon_hit_water": [
+      "audio/sfx/weapon-hit-water.wav",
+      "audio/sfx/weapon-hit-water-alt.wav"
+    ],
+    "magic_cast": [
+      "audio/sfx/magic-cast.wav",
+      "audio/sfx/magic-cast-alt.wav"
+    ],
+    "magic_hit": [
+      "audio/sfx/magic-hit.wav",
+      "audio/sfx/magic-hit-alt.wav"
+    ],
+    "item_use": [
+      "audio/sfx/item-use.wav",
+      "audio/sfx/item-use-alt.wav"
+    ],
+    "status_apply": [
+      "audio/sfx/status-apply.wav",
+      "audio/sfx/status-apply-alt.wav"
+    ],
+    "ko": "audio/sfx/ko.wav"
+  },
   "bgm": {
-    "battle_1": "audio/bgm/battle_1.mp3"
+    "battle_1": "audio/bgm/battle_1.mp3",
+    "codex_battle_loop": "audio/bgm/codex-battle-loop.wav",
+    "codex_shadow_skirmish": "audio/bgm/codex-shadow-skirmish.wav"
   }
 }

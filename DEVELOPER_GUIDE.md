@@ -530,26 +530,41 @@ Files:
 - `js/ui/audio-manager.js` - SFX pool + single BGM `<audio>` element, volume/mute persisted to localStorage
 - `js/ui/animation-bus.js` - tiny event bus combat code emits onto
 - `css/combat-animations.css` - the 5 keyframe sets + BGM control panel styles
-- `js/builders/audio-library.js` - editor panel for uploading MP3s and editing the manifest
-- `data/audio-manifest.json` - `{ sfx: { id: path }, bgm: { id: path } }`
-- `audio/sfx/`, `audio/bgm/` - actual MP3 files (user-uploaded via the editor)
+- `js/builders/audio-library.js` - editor panel for uploading audio files and editing the manifest
+- `data/audio-manifest.json` - `{ sfx: { id: path|string[] }, bgm: { id: path|string[] } }`
+- `audio/sfx/`, `audio/bgm/` - actual audio files (starter pack + user uploads)
 
 Built-in SFX keys (resolved by `AudioManager.playSfx`):
 - Weapon by shape: `weapon_slash`, `weapon_pierce`, `weapon_blunt`
 - Weapon by element: `weapon_hit_physical`, `weapon_hit_fire`, `weapon_hit_ice`, `weapon_hit_lightning`, `weapon_hit_water`, `weapon_hit_wind`, `weapon_hit_earth`, `weapon_hit_holy`, `weapon_hit_dark`
 - Magic: `magic_cast`, `magic_hit`, `magic_fire`, `magic_ice`, `magic_lightning`, `magic_holy`, `magic_dark`
-- Combat events: `critical`, `miss`, `dodge`, `defend`, `heal`, `victory`, `defeat`, `level_up`
+- Movement / defense / reactions: `move_step`, `defend_guard`, `miss`, `heal`, `crit_sting`, `absorb_guard`
+- Combat events: `critical`, `dodge`, `defend`, `victory`, `defeat`, `level_up`
 - Items: `item_use`, `item_potion`, `item_buff`, `item_throw`
 - Statuses: `status_apply`, `status_buff`, `status_debuff`
 - KO: `ko`
 - UI: `ui_click`, `ui_cursor`, `ui_confirm`, `ui_cancel`, `ui_error`
 
-Each built-in key has a synthesized WebAudio fallback in `audio-manager.js`'s `FALLBACK_TONES`. Uploading an MP3 with the same id in the Audio Library replaces the synth tone for that key.
+Each built-in key resolves through `audio-manager.js`'s manifest lookup plus
+its synthesized fallback / alias chain. Uploading an audio file with the same
+id in the Audio Library replaces the fallback for that key.
 
 Skills can override SFX directly via two optional fields on the skill record:
 - `castSfx` - id played when the skill is cast
 - `hitSfx` - id played on each hit (overrides default routing)
 The skill editor's Audio section exposes both as dropdowns populated from the manifest + built-in keys.
+
+Starter assets bundled in the repo:
+- BGM: `battle_1`, `codex_battle_loop`, `codex_shadow_skirmish`
+- SFX: `ui_click`, `weapon_hit_physical`, `weapon_hit_fire`, `weapon_hit_ice`,
+  `weapon_hit_lightning`, `weapon_hit_water`, `magic_cast`, `magic_hit`,
+  `move_step`, `defend_guard`, `miss`, `heal`, `crit_sting`, `absorb_guard`,
+  `item_use`, `status_apply`, `ko`
+
+Manifest values can be either a single path or an array of variant paths.
+When an array is present, `AudioManager` picks one variant at random each play
+and applies a slight playback-rate jitter so repeated actions do not sound
+identical.
 
 Encounter records can carry a `bgm` field:
 - string id - that single track plays
@@ -557,23 +572,25 @@ Encounter records can carry a `bgm` field:
 - omitted - falls back to `CombatSettings.getDefaultBgmPool()`
 
 Animation events emitted from combat:
-- `unit_move` - payload `{ unit, from, to }` (renders trail dots along the path)
-- `damage` - red flash on the target cell
-- `hit` - payload `{ attacker, target, skill?, element, weaponShape?, isCritical }` (renders directional slash + shake on target + small shake on attacker)
+- `unit_move` - payload `{ unit, from, to }` (renders travel streaks, arrival pulse, and path dots)
+- `damage` - target hit spark, damage labels, and guard labels for absorbed damage
+- `hit` - payload `{ attacker, target, skill?, element, weaponShape?, isCritical }` (renders directional slash + shake on attacker / target)
+- `heal` - green pulse and floating heal value
+- `miss` - miss reticle, trace, and floating `MISS`
 - `skill_cast` - cell pulse on caster
 - `unit_ko` - fade + scale-down on the dying cell
-- `turn_start` - fly-in banner with unit name
+- `turn_start` - fly-in banner with the round and unit name
 
 Toggle animations live with the checkbox in the combat sidebar
 (`CombatSettings.setAnimationsEnabled(false)` in code). Mute audio with
 the speaker button or `AudioManager.mute(true)`.
 
-Authoring + saving an MP3:
+Authoring + saving an audio file:
 1. Editor sidebar -> **Audio Library**
 2. Pick SFX or BGM tab
-3. Type an id, choose an MP3, click Upload
+3. Type an id, choose a supported audio file (`.mp3`, `.ogg`, `.wav`), click Upload
 4. SaveManager base64-encodes the file and PUTs it to GitHub at
-   `audio/<sfx|bgm>/<id>.mp3`, then re-saves `data/audio-manifest.json`
+   `audio/<sfx|bgm>/<id>.<ext>`, then re-saves `data/audio-manifest.json`
 5. Reference the id from an encounter's `bgm` field, or rely on the
    built-in SFX keys above.
 

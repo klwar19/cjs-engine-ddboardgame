@@ -35,6 +35,12 @@ window.CJS.CombatUI = (() => {
   let _unsubNarrator = null;
   let _keyboardBound = false;
   let _resizeBound = false;
+  let _activeFx = [];
+  let _fxSeq = 0;
+  let _activeBanner = null;
+  let _bannerTimer = 0;
+
+  const MAX_ACTIVE_FX = 24;
 
   let $grid = null;
   let $log = null;
@@ -64,6 +70,44 @@ window.CJS.CombatUI = (() => {
   }
 
   // ── BGM / SFX CONTROLS ─────────────────────────────────────────────
+  function _detachBgmSubscriptions() {
+    for (const off of _bgmUnsubs) { try { off(); } catch (e) {} }
+    _bgmUnsubs = [];
+  }
+
+  function _refreshBgmControls() {
+    if (!_container || !AM()) return;
+    const trackSel  = _container.querySelector('#bgm-track-select');
+    const toggleBtn = _container.querySelector('#btn-bgm-toggle');
+    const muteBtn   = _container.querySelector('#btn-bgm-mute');
+    const statusEl  = _container.querySelector('#bgm-status');
+    const state = AM().getBgmState ? AM().getBgmState() : null;
+
+    if (muteBtn) {
+      muteBtn.classList.toggle('active', AM().isMuted());
+      muteBtn.innerHTML = AM().isMuted() ? '&#128263;' : '&#128266;';
+    }
+    if (toggleBtn) {
+      toggleBtn.innerHTML = state?.playing ? '&#10074;&#10074;' : '&#9658;';
+    }
+    if (trackSel && state?.currentId && trackSel.value !== state.currentId) {
+      trackSel.value = state.currentId;
+    }
+    if (statusEl) {
+      if (state?.error === 'autoplay_blocked' && state.currentId) {
+        statusEl.textContent = `Ready: ${state.currentId} (click play)`;
+      } else if (state?.error === 'load_error' && state.currentId) {
+        statusEl.textContent = `Could not load: ${state.currentId}`;
+      } else if (state?.playing && state.currentId) {
+        statusEl.textContent = `Now playing: ${state.currentId}`;
+      } else if (state?.currentId) {
+        statusEl.textContent = `Loaded: ${state.currentId}`;
+      } else {
+        statusEl.textContent = 'No BGM loaded';
+      }
+    }
+  }
+
   function _bindBgmControls() {
     if (!_container || !AM()) return;
 
@@ -87,41 +131,49 @@ window.CJS.CombatUI = (() => {
         opt.textContent = id;
         trackSel.appendChild(opt);
       }
+      _refreshBgmControls();
     }).catch(() => {});
 
     // Initialize sliders from persisted prefs.
     if (bgmVol)  bgmVol.value = Math.round((AM().getVolume('bgm') || 0) * 100);
     if (sfxVol)  sfxVol.value = Math.round((AM().getVolume('sfx') || 0) * 100);
-    if (muteBtn) muteBtn.classList.toggle('active', AM().isMuted());
     if (animChk && CS()?.getAnimationsEnabled) animChk.checked = CS().getAnimationsEnabled();
+    document.body.classList.toggle('no-anim', !(animChk?.checked ?? true));
+    _refreshBgmControls();
+    _detachBgmSubscriptions();
+    if (AM().subscribe) {
+      _bgmUnsubs.push(AM().subscribe(() => _refreshBgmControls()));
+    }
 
     if (trackSel) {
       trackSel.addEventListener('change', () => {
         const id = trackSel.value;
-        if (!id) AM().stopBgm();
-        else AM().playBgm(id);
+        if (!id) AM().stopBgm({ fadeMs: 180 });
+        else AM().playBgm(id, { fadeMs: 260 });
+        _refreshBgmControls();
       });
     }
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => {
         if (AM().isBgmPlaying()) {
-          AM().stopBgm();
-          toggleBtn.innerHTML = '&#9658;';
-        } else if (trackSel?.value) {
-          AM().playBgm(trackSel.value);
-          toggleBtn.innerHTML = '&#10074;&#10074;';
+          AM().stopBgm({ fadeMs: 180 });
+        } else {
+          const next = trackSel?.value || AM().getCurrentBgmId();
+          if (next) AM().playBgm(next, { fadeMs: 260 });
         }
+        _refreshBgmControls();
       });
     }
     if (muteBtn) {
       muteBtn.addEventListener('click', () => {
         AM().mute(!AM().isMuted());
-        muteBtn.classList.toggle('active', AM().isMuted());
+        _refreshBgmControls();
       });
     }
     if (bgmVol) {
       bgmVol.addEventListener('input', () => {
         AM().setVolume('bgm', (parseInt(bgmVol.value, 10) || 0) / 100);
+        _refreshBgmControls();
       });
     }
     if (sfxVol) {
@@ -134,6 +186,7 @@ window.CJS.CombatUI = (() => {
         const flag = !!animChk.checked;
         if (CS()?.setAnimationsEnabled) CS().setAnimationsEnabled(flag);
         document.body.classList.toggle('no-anim', !flag);
+        if (!flag) _clearPresentationFx();
       });
     }
   }
@@ -144,6 +197,8 @@ window.CJS.CombatUI = (() => {
 
     _animUnsubs.push(AB().on('damage',     _animDamageFlash));
     _animUnsubs.push(AB().on('hit',        _animHit));
+    _animUnsubs.push(AB().on('heal',       _animHealPulse));
+    _animUnsubs.push(AB().on('miss',       _animMissCue));
     _animUnsubs.push(AB().on('unit_ko',    _animKoFade));
     _animUnsubs.push(AB().on('skill_cast', _animSkillCast));
     _animUnsubs.push(AB().on('unit_move',  _animUnitMove));
@@ -159,86 +214,246 @@ window.CJS.CombatUI = (() => {
     return CS()?.getAnimationsEnabled ? CS().getAnimationsEnabled() : true;
   }
 
-  function _spawnFx(cls, pos, ttl, opts) {
-    if (!_animEnabled() || !$fxLayer || !pos) return;
-    const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
-    if (!cell) return;
-    const canvas = _container?.querySelector('#cbt-canvas');
-    // Canvas is centered inside .combat-grid-wrap (flex centering), so FX
-    // overlays must use canvas.offsetLeft/offsetTop to land on the cells.
-    const ox = canvas?.offsetLeft || 0;
-    const oy = canvas?.offsetTop  || 0;
-    const [r, c] = pos;
-    const scale = (opts && typeof opts.scale === 'number') ? opts.scale : 1;
-    const size  = cell * scale;
-    const inset = (cell - size) / 2;
-    const el = document.createElement('div');
-    el.className = `cjs-fx-cell ${cls}`;
-    el.style.left   = (c * cell + ox + inset) + 'px';
-    el.style.top    = (r * cell + oy + inset) + 'px';
-    el.style.width  = size + 'px';
-    el.style.height = size + 'px';
-    $fxLayer.appendChild(el);
-    setTimeout(() => { try { el.remove(); } catch (e) {} }, ttl || 700);
+  function _removeFxEntry(entry) {
+    if (!entry) return;
+    try { clearTimeout(entry.timer); } catch (e) {}
+    try { entry.el.remove(); } catch (e) {}
+    _activeFx = _activeFx.filter((item) => item !== entry);
   }
 
-  function _animDamageFlash(payload) {
-    _spawnFx('cjs-fx-damage', payload?.target?.pos, 280);
-  }
-
-  function _animKoFade(payload) {
-    _spawnFx('cjs-fx-ko', payload?.unit?.pos, 700);
-  }
-
-  function _animSkillCast(payload) {
-    _spawnFx('cjs-fx-cast', payload?.unit?.pos, 480);
-  }
-
-  function _animUnitMove(payload) {
-    // From/to cell flash plus a trail of dots stepping along the line
-    // between them. Gives a clear sense of movement direction without
-    // needing canvas-side sprite animation.
-    const from = payload?.from;
-    const to   = payload?.to;
-    _spawnFx('cjs-fx-move', from, 360);
-    _spawnFx('cjs-fx-move', to,   360);
-    if (!from || !to) return;
-    const dr = to[0] - from[0];
-    const dc = to[1] - from[1];
-    const steps = Math.max(Math.abs(dr), Math.abs(dc));
-    if (steps <= 1) return;
-    for (let i = 1; i < steps; i++) {
-      const r = from[0] + Math.round(dr * (i / steps));
-      const c = from[1] + Math.round(dc * (i / steps));
-      setTimeout(() => _spawnFx('cjs-fx-trail', [r, c], 320, { scale: 0.55 }), i * 70);
+  function _clearPresentationFx() {
+    for (const entry of _activeFx.slice()) {
+      _removeFxEntry(entry);
+    }
+    _activeFx = [];
+    _fxSeq = 0;
+    if (_bannerTimer) {
+      clearTimeout(_bannerTimer);
+      _bannerTimer = 0;
+    }
+    if (_activeBanner) {
+      try { _activeBanner.remove(); } catch (e) {}
+      _activeBanner = null;
     }
   }
 
-  // Hit: spawn shake ring on target cell + directional slash overlay.
-  // For physical attacks the slash is colored by element; for magic skills
-  // it shows as well but tinted.
+  function _themeVars(kind) {
+    const key = String(kind || 'physical').toLowerCase();
+    const map = {
+      physical:  { accent: 'rgba(255, 112, 112, 0.94)', glow: 'rgba(255, 72, 72, 0.34)', ring: 'rgba(255,255,255,0.16)' },
+      fire:      { accent: 'rgba(255, 140, 82, 0.96)', glow: 'rgba(255, 102, 54, 0.42)', ring: 'rgba(255, 214, 170, 0.22)' },
+      ice:       { accent: 'rgba(138, 220, 255, 0.96)', glow: 'rgba(96, 184, 255, 0.36)', ring: 'rgba(224, 246, 255, 0.22)' },
+      lightning: { accent: 'rgba(255, 236, 124, 0.98)', glow: 'rgba(255, 214, 64, 0.42)', ring: 'rgba(255, 248, 196, 0.22)' },
+      water:     { accent: 'rgba(110, 188, 255, 0.95)', glow: 'rgba(72, 152, 255, 0.34)', ring: 'rgba(196, 232, 255, 0.20)' },
+      wind:      { accent: 'rgba(192, 255, 224, 0.92)', glow: 'rgba(122, 224, 176, 0.28)', ring: 'rgba(232, 255, 244, 0.22)' },
+      earth:     { accent: 'rgba(224, 186, 126, 0.94)', glow: 'rgba(164, 120, 74, 0.30)', ring: 'rgba(255, 236, 208, 0.18)' },
+      magic:     { accent: 'rgba(194, 148, 255, 0.94)', glow: 'rgba(156, 110, 255, 0.36)', ring: 'rgba(240, 222, 255, 0.22)' },
+      dark:      { accent: 'rgba(160, 104, 224, 0.92)', glow: 'rgba(92, 42, 168, 0.36)', ring: 'rgba(220, 196, 255, 0.20)' },
+      holy:      { accent: 'rgba(255, 244, 168, 0.98)', glow: 'rgba(255, 226, 124, 0.38)', ring: 'rgba(255, 252, 224, 0.26)' },
+      light:     { accent: 'rgba(255, 244, 168, 0.98)', glow: 'rgba(255, 226, 124, 0.38)', ring: 'rgba(255, 252, 224, 0.26)' },
+      ko:        { accent: 'rgba(34, 39, 49, 0.86)', glow: 'rgba(0, 0, 0, 0.42)', ring: 'rgba(210, 222, 255, 0.12)' },
+      move:      { accent: 'rgba(136, 214, 255, 0.76)', glow: 'rgba(96, 180, 255, 0.26)', ring: 'rgba(220, 245, 255, 0.16)' }
+    };
+    const chosen = map[key] || map.physical;
+    return {
+      '--cjs-fx-accent': chosen.accent,
+      '--cjs-fx-glow': chosen.glow,
+      '--cjs-fx-ring': chosen.ring
+    };
+  }
+
+  function _getCellMetrics(pos) {
+    if (!pos) return null;
+    const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
+    if (!cell) return null;
+    const canvas = _container?.querySelector('#cbt-canvas');
+    const ox = canvas?.offsetLeft || 0;
+    const oy = canvas?.offsetTop  || 0;
+    const [r, c] = pos;
+    const left = c * cell + ox;
+    const top = r * cell + oy;
+    return {
+      cell,
+      left,
+      top,
+      centerX: left + cell / 2,
+      centerY: top + cell / 2
+    };
+  }
+
+  function _spawnFx(cls, pos, ttl, opts = {}) {
+    if (!_animEnabled() || !$fxLayer || !pos) return;
+    const metrics = _getCellMetrics(pos);
+    if (!metrics) return;
+    const scale = typeof opts.scale === 'number' ? Math.max(0.2, opts.scale) : 1;
+    const size = metrics.cell * scale;
+    const inset = (metrics.cell - size) / 2;
+    const el = document.createElement('div');
+    const extra = opts.extraClass ? ` ${opts.extraClass}` : '';
+    el.className = `cjs-fx-cell ${cls}${extra}`;
+    el.style.left   = (metrics.left + inset) + 'px';
+    el.style.top    = (metrics.top + inset) + 'px';
+    el.style.width  = size + 'px';
+    el.style.height = size + 'px';
+    const vars = opts.vars || {};
+    for (const [name, value] of Object.entries(vars)) {
+      el.style.setProperty(name, value);
+    }
+
+    const key = opts.dedupeKey || `${cls}:${pos[0]}:${pos[1]}`;
+    const existing = _activeFx.find((entry) => entry.key === key);
+    if (existing) _removeFxEntry(existing);
+    while (_activeFx.length >= (opts.maxActive || MAX_ACTIVE_FX)) {
+      _removeFxEntry(_activeFx[0]);
+    }
+
+    $fxLayer.appendChild(el);
+    const entry = { el, key, timer: 0 };
+    entry.timer = setTimeout(() => _removeFxEntry(entry), ttl || 700);
+    _activeFx.push(entry);
+    return el;
+  }
+
+  function _spawnLabelFx(text, pos, ttl, opts = {}) {
+    if (!_animEnabled() || !$fxLayer || !pos || !text) return;
+    const metrics = _getCellMetrics(pos);
+    if (!metrics) return;
+    const stackKey = opts.stackKey || `label:${pos[0]}:${pos[1]}`;
+    const stackDepth = _activeFx.filter((entry) => String(entry.key).startsWith(stackKey)).length;
+    while (_activeFx.length >= (opts.maxActive || MAX_ACTIVE_FX)) {
+      _removeFxEntry(_activeFx[0]);
+    }
+
+    const el = document.createElement('div');
+    const extra = opts.extraClass ? ` ${opts.extraClass}` : '';
+    el.className = `cjs-fx-label${extra}`;
+    el.textContent = text;
+    el.style.left = metrics.centerX + 'px';
+    el.style.top = (metrics.centerY + (opts.offsetY || 0) - stackDepth * 14) + 'px';
+    const vars = opts.vars || {};
+    for (const [name, value] of Object.entries(vars)) {
+      el.style.setProperty(name, value);
+    }
+
+    $fxLayer.appendChild(el);
+    const entry = { el, key: `${stackKey}:${++_fxSeq}`, timer: 0 };
+    entry.timer = setTimeout(() => _removeFxEntry(entry), ttl || 720);
+    _activeFx.push(entry);
+    return el;
+  }
+
+  function _spawnTraceFx(from, to, ttl, opts = {}) {
+    if (!_animEnabled() || !$fxLayer || !from || !to) return;
+    const start = _getCellMetrics(from);
+    const end = _getCellMetrics(to);
+    if (!start || !end) return;
+    const dx = end.centerX - start.centerX;
+    const dy = end.centerY - start.centerY;
+    const length = Math.hypot(dx, dy);
+    if (!length) return;
+
+    const key = opts.dedupeKey || `trace:${from.join(',')}->${to.join(',')}`;
+    const existing = _activeFx.find((entry) => entry.key === key);
+    if (existing) _removeFxEntry(existing);
+    while (_activeFx.length >= (opts.maxActive || MAX_ACTIVE_FX)) {
+      _removeFxEntry(_activeFx[0]);
+    }
+
+    const el = document.createElement('div');
+    const extra = opts.extraClass ? ` ${opts.extraClass}` : '';
+    el.className = `cjs-fx-trace${extra}`;
+    el.style.left = start.centerX + 'px';
+    el.style.top = start.centerY + 'px';
+    el.style.width = `${Math.max(18, length)}px`;
+    el.style.transform = `translateY(-50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    const vars = opts.vars || {};
+    for (const [name, value] of Object.entries(vars)) {
+      el.style.setProperty(name, value);
+    }
+
+    $fxLayer.appendChild(el);
+    const entry = { el, key, timer: 0 };
+    entry.timer = setTimeout(() => _removeFxEntry(entry), ttl || 280);
+    _activeFx.push(entry);
+    return el;
+  }
+
+  function _animDamageFlash(payload) {
+    const id = payload?.target?.instanceId || payload?.target?.id || payload?.target?.baseId || 'target';
+    const tone = payload?.element || payload?.damageType || 'physical';
+    const theme = _themeVars(tone);
+    if (payload?.attacker?.pos && payload?.target?.pos) {
+      _spawnTraceFx(payload.attacker.pos, payload.target.pos, payload?.isCritical ? 320 : 250, {
+        dedupeKey: `trace-hit:${id}`,
+        extraClass: payload?.damageType === 'Magic' ? ' is-magic' : '',
+        vars: theme
+      });
+    }
+    if ((payload?.amount || 0) > 0) {
+      _spawnFx('cjs-fx-damage', payload?.target?.pos, payload?.isCritical ? 360 : 280, {
+        dedupeKey: `hit:${id}`,
+        extraClass: payload?.isCritical ? 'is-crit' : '',
+        vars: theme
+      });
+      _spawnLabelFx(`-${payload.amount}`, payload?.target?.pos, payload?.isCritical ? 760 : 680, {
+        stackKey: `label-dmg:${id}`,
+        extraClass: payload?.isCritical ? ' is-damage is-crit' : ' is-damage',
+        vars: theme
+      });
+      if (payload?.isCritical) {
+        _spawnLabelFx('CRIT', payload?.target?.pos, 680, {
+          stackKey: `label-crit:${id}`,
+          extraClass: ' is-crit-tag',
+          vars: theme,
+          offsetY: -18
+        });
+      }
+    }
+    if ((payload?.absorbed || 0) > 0) {
+      _spawnFx('cjs-fx-guard', payload?.target?.pos, 380, {
+        dedupeKey: `guard:${id}`,
+        vars: _themeVars('light')
+      });
+      _spawnLabelFx(`BLOCK ${payload.absorbed}`, payload?.target?.pos, 660, {
+        stackKey: `label-guard:${id}`,
+        extraClass: ' is-guard',
+        vars: _themeVars('light'),
+        offsetY: 18
+      });
+    }
+  }
+
   function _animHit(payload) {
     if (!_animEnabled() || !$fxLayer) return;
     const target = payload?.target;
     const attacker = payload?.attacker;
     if (!target?.pos) return;
 
-    // Shake the target cell, and a softer shake on attacker (lunge feel).
-    _spawnFx(
-      `cjs-fx-shake team-${target.team === 'player' ? 'player' : 'enemy'}${payload?.isCritical ? ' is-critical' : ''}`,
-      target.pos, 380
-    );
+    const id = target.instanceId || target.id || target.baseId || 'target';
+    const targetTeam = target.team === 'player' ? 'player' : 'enemy';
+    _spawnFx('cjs-fx-shake', target.pos, payload?.isCritical ? 420 : 360, {
+      dedupeKey: `shake:${id}`,
+      extraClass: `team-${targetTeam}${payload?.isCritical ? ' is-critical' : ''}`
+    });
+
     if (attacker?.pos && (attacker.pos[0] !== target.pos[0] || attacker.pos[1] !== target.pos[1])) {
-      _spawnFx(`cjs-fx-shake team-${attacker.team === 'player' ? 'player' : 'enemy'}`, attacker.pos, 220, { scale: 0.6 });
+      const attackerTeam = attacker.team === 'player' ? 'player' : 'enemy';
+      _spawnFx('cjs-fx-shake', attacker.pos, 220, {
+        dedupeKey: `lunge:${id}`,
+        extraClass: `team-${attackerTeam}`,
+        scale: 0.68
+      });
     }
 
-    // Directional slash from attacker -> target (atan2 in pixel space).
     const angleDeg = _slashAngle(attacker?.pos, target.pos);
     const elementClass = _slashElementClass(payload?.element);
-    const shapeClass = payload?.weaponShape === 'weapon_pierce' ? ' shape-pierce'
-                     : payload?.weaponShape === 'weapon_blunt'  ? ' shape-blunt'
-                     : '';
-    _spawnSlash(target.pos, angleDeg, `${elementClass}${shapeClass}`);
+    const shapeClass = payload?.weaponShape === 'weapon_pierce'
+      ? 'shape-pierce'
+      : payload?.weaponShape === 'weapon_blunt'
+        ? 'shape-blunt'
+        : '';
+    const extraClass = [elementClass, shapeClass].filter(Boolean).join(' ');
+    _spawnSlash(target.pos, angleDeg, extraClass, `slash:${id}`);
   }
 
   function _slashAngle(fromPos, toPos) {
@@ -246,50 +461,170 @@ window.CJS.CombatUI = (() => {
     const dy = toPos[0] - fromPos[0];
     const dx = toPos[1] - fromPos[1];
     if (dx === 0 && dy === 0) return -30;
-    return Math.atan2(dy, dx) * 180 / Math.PI - 30;  // -30deg gives slight diagonal feel
+    return (Math.atan2(dy, dx) * 180 / Math.PI) - 30;
   }
 
   function _slashElementClass(element) {
     const e = String(element || '').toLowerCase();
-    if (e === 'fire')      return 'tone-fire';
-    if (e === 'ice')       return 'tone-ice';
+    if (e === 'fire') return 'tone-fire';
+    if (e === 'ice') return 'tone-ice';
     if (e === 'lightning') return 'tone-lightning';
-    if (e === 'dark')      return 'tone-dark';
-    if (e === 'holy')      return 'tone-holy';
+    if (e === 'dark') return 'tone-dark';
+    if (e === 'holy' || e === 'light') return 'tone-holy';
     return '';
   }
 
-  function _spawnSlash(pos, angleDeg, extraClass) {
+  function _spawnSlash(pos, angleDeg, extraClass, dedupeKey) {
     if (!_animEnabled() || !$fxLayer || !pos) return;
-    const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
-    if (!cell) return;
-    const canvas = _container?.querySelector('#cbt-canvas');
-    const ox = canvas?.offsetLeft || 0;
-    const oy = canvas?.offsetTop  || 0;
-    const [r, c] = pos;
+    const metrics = _getCellMetrics(pos);
+    if (!metrics) return;
+
+    const key = dedupeKey || `slash:${pos[0]}:${pos[1]}`;
+    const existing = _activeFx.find((entry) => entry.key === key);
+    if (existing) _removeFxEntry(existing);
+    while (_activeFx.length >= MAX_ACTIVE_FX) {
+      _removeFxEntry(_activeFx[0]);
+    }
+
     const wrap = document.createElement('div');
-    wrap.className = `cjs-fx-cell cjs-fx-slash ${extraClass || ''}`;
-    wrap.style.left   = (c * cell + ox) + 'px';
-    wrap.style.top    = (r * cell + oy) + 'px';
-    wrap.style.width  = cell + 'px';
-    wrap.style.height = cell + 'px';
+    const classes = extraClass ? ` ${String(extraClass).trim()}` : '';
+    wrap.className = `cjs-fx-cell cjs-fx-slash${classes}`;
+    wrap.style.left = metrics.left + 'px';
+    wrap.style.top = metrics.top + 'px';
+    wrap.style.width = metrics.cell + 'px';
+    wrap.style.height = metrics.cell + 'px';
+
     const streak = document.createElement('div');
     streak.className = 'cjs-slash-streak';
     streak.style.setProperty('--cjs-slash-angle', angleDeg + 'deg');
     wrap.appendChild(streak);
     $fxLayer.appendChild(wrap);
-    setTimeout(() => { try { wrap.remove(); } catch (e) {} }, 320);
+
+    const entry = { el: wrap, key, timer: 0 };
+    entry.timer = setTimeout(() => _removeFxEntry(entry), 320);
+    _activeFx.push(entry);
+    return wrap;
+  }
+
+  function _animHealPulse(payload) {
+    const id = payload?.target?.instanceId || payload?.target?.id || payload?.target?.baseId || 'target';
+    const theme = {
+      '--cjs-fx-accent': 'rgba(118, 235, 156, 0.96)',
+      '--cjs-fx-glow': 'rgba(86, 214, 132, 0.34)',
+      '--cjs-fx-ring': 'rgba(230, 255, 236, 0.22)'
+    };
+    _spawnFx('cjs-fx-heal', payload?.target?.pos, 420, {
+      dedupeKey: `heal:${id}`,
+      vars: theme
+    });
+    _spawnLabelFx(`+${payload?.amount || 0}`, payload?.target?.pos, 760, {
+      stackKey: `label-heal:${id}`,
+      extraClass: ' is-heal',
+      vars: theme
+    });
+  }
+
+  function _animMissCue(payload) {
+    const id = payload?.target?.instanceId || payload?.target?.id || payload?.target?.baseId || 'target';
+    const theme = {
+      '--cjs-fx-accent': 'rgba(212, 220, 232, 0.96)',
+      '--cjs-fx-glow': 'rgba(196, 208, 230, 0.22)',
+      '--cjs-fx-ring': 'rgba(248, 252, 255, 0.20)'
+    };
+    if (payload?.attacker?.pos && payload?.target?.pos) {
+      _spawnTraceFx(payload.attacker.pos, payload.target.pos, 240, {
+        dedupeKey: `trace-miss:${id}`,
+        extraClass: ' is-miss',
+        vars: theme
+      });
+    }
+    _spawnFx('cjs-fx-miss', payload?.target?.pos, 340, {
+      dedupeKey: `miss:${id}`,
+      vars: theme
+    });
+    _spawnLabelFx('MISS', payload?.target?.pos, 720, {
+      stackKey: `label-miss:${id}`,
+      extraClass: ' is-miss',
+      vars: theme
+    });
+  }
+
+  function _animKoFade(payload) {
+    const id = payload?.unit?.instanceId || payload?.unit?.id || payload?.unit?.baseId || 'unit';
+    _spawnFx('cjs-fx-ko', payload?.unit?.pos, 700, {
+      dedupeKey: `ko:${id}`,
+      vars: _themeVars('ko')
+    });
+  }
+
+  function _animSkillCast(payload) {
+    const skill = payload?.skill || {};
+    const tone = skill.element || skill.damageType || 'magic';
+    const id = payload?.unit?.instanceId || payload?.unit?.id || payload?.unit?.baseId || 'caster';
+    _spawnFx('cjs-fx-cast', payload?.unit?.pos, 480, {
+      dedupeKey: `cast:${id}`,
+      extraClass: skill.damageType === 'Magic' ? 'is-magic' : 'is-physical',
+      vars: _themeVars(tone)
+    });
+  }
+
+  function _animUnitMove(payload) {
+    const from = payload?.from;
+    const to = payload?.to;
+    const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
+    if (!from || !to || !cell) return;
+    const dx = (to[1] - from[1]) * cell;
+    const dy = (to[0] - from[0]) * cell;
+    _spawnFx('cjs-fx-move-trail', from, 340, {
+      dedupeKey: `move:${from.join(',')}->${to.join(',')}`,
+      vars: {
+        ..._themeVars('move'),
+        '--cjs-travel-x': `${dx}px`,
+        '--cjs-travel-y': `${dy}px`
+      }
+    });
+    _spawnFx('cjs-fx-move-arrive', to, 280, {
+      dedupeKey: `move-arrive:${to.join(',')}`,
+      vars: _themeVars('move')
+    });
+
+    const dr = to[0] - from[0];
+    const dc = to[1] - from[1];
+    const steps = Math.max(Math.abs(dr), Math.abs(dc));
+    for (let i = 1; i < steps; i++) {
+      const r = from[0] + Math.round(dr * (i / steps));
+      const c = from[1] + Math.round(dc * (i / steps));
+      setTimeout(() => {
+        _spawnFx('cjs-fx-trail', [r, c], 260, {
+          dedupeKey: `move-dot:${from.join(',')}->${to.join(',')}:${i}`,
+          scale: 0.48
+        });
+      }, i * 55);
+    }
   }
 
   function _animTurnBanner(payload) {
     if (!_animEnabled() || !$grid) return;
     const unit = payload?.unit;
     if (!unit) return;
+    if (_bannerTimer) {
+      clearTimeout(_bannerTimer);
+      _bannerTimer = 0;
+    }
+    if (_activeBanner) {
+      try { _activeBanner.remove(); } catch (e) {}
+      _activeBanner = null;
+    }
     const banner = document.createElement('div');
     banner.className = 'cjs-turn-banner team-' + (unit.team === 'player' ? 'player' : 'enemy');
-    banner.textContent = (unit.name || 'Unit') + "'s turn";
+    banner.textContent = `Round ${payload?.round || 1} | ${(unit.name || 'Unit')}'s turn`;
     $grid.appendChild(banner);
-    setTimeout(() => { try { banner.remove(); } catch (e) {} }, 1200);
+    _activeBanner = banner;
+    _bannerTimer = setTimeout(() => {
+      if (_activeBanner === banner) _activeBanner = null;
+      try { banner.remove(); } catch (e) {}
+      _bannerTimer = 0;
+    }, 1200);
   }
 
   function _buildLayout() {
@@ -325,6 +660,9 @@ window.CJS.CombatUI = (() => {
                 <label class="bgm-label" style="display:flex;align-items:center;gap:4px;cursor:pointer">
                   <input type="checkbox" id="anim-toggle" checked> <span>Animations</span>
                 </label>
+              </div>
+              <div class="bgm-row bgm-status-row">
+                <span id="bgm-status" class="bgm-status">No BGM loaded</span>
               </div>
             </div>
             <div id="cbt-unit-info" class="unit-info-panel"></div>
@@ -497,6 +835,7 @@ window.CJS.CombatUI = (() => {
     _pendingAction = null;
     _clearModeHint();
     _clearFeedPanels();
+    _clearPresentationFx();
 
     _detachSubscriptions();
     try { NE().destroy(); } catch (_) {}
@@ -539,16 +878,11 @@ window.CJS.CombatUI = (() => {
       let pick = enc.bgm;
       if ((!pick || (Array.isArray(pick) && !pick.length)) && CS()?.getDefaultBgmPool) {
         const pool = CS().getDefaultBgmPool();
-        if (pool && pool.length) pick = pool;
+      if (pool && pool.length) pick = pool;
       }
       if (!pick || (Array.isArray(pick) && !pick.length)) return;
-      AM().playBgm(pick);
-      const trackSel = _container?.querySelector('#bgm-track-select');
-      const toggle   = _container?.querySelector('#btn-bgm-toggle');
-      if (trackSel && AM().getCurrentBgmId()) {
-        trackSel.value = AM().getCurrentBgmId();
-      }
-      if (toggle) toggle.innerHTML = '&#10074;&#10074;';
+      AM().playBgm(pick, { fadeMs: 300 });
+      _refreshBgmControls();
     }).catch(() => {});
   }
 
@@ -1177,7 +1511,9 @@ window.CJS.CombatUI = (() => {
 
   function destroy() {
     _detachSubscriptions();
+    _detachBgmSubscriptions();
     _detachAnimationBus();
+    _clearPresentationFx();
     try { AM()?.stopBgm(); } catch (_) {}
 
     try { NE().destroy(); } catch (_) {}
