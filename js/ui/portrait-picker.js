@@ -10,6 +10,41 @@ window.CJS.PortraitPicker = (() => {
   let _loaded = false;
   let _imageCache = Object.create(null);
 
+  const SIZE_OPTIONS = [
+    { label: 'XS', px: 64 },
+    { label: 'S',  px: 96 },
+    { label: 'M',  px: 128 },
+    { label: 'L',  px: 192 },
+    { label: 'XL', px: 256 },
+    { label: 'XXL', px: 320 }
+  ];
+  const SIZE_KEY = 'cjs.editor.portraitPreviewSize';
+
+  function _readSize() {
+    try {
+      const v = parseInt(localStorage.getItem(SIZE_KEY), 10);
+      if (Number.isFinite(v) && SIZE_OPTIONS.some(o => o.px === v)) return v;
+    } catch (e) { /* ignore */ }
+    return 192;
+  }
+  function _applySize(px) {
+    if (typeof document === 'undefined' || !document.documentElement) return;
+    document.documentElement.style.setProperty('--portrait-preview-size', `${px}px`);
+  }
+  function setPreviewSize(px) {
+    if (!SIZE_OPTIONS.some(o => o.px === px)) return;
+    try { localStorage.setItem(SIZE_KEY, String(px)); } catch (e) { /* ignore */ }
+    _applySize(px);
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.portrait-size-select').forEach(sel => {
+        if (parseInt(sel.value, 10) !== px) sel.value = String(px);
+      });
+    }
+  }
+  function getPreviewSize() { return _readSize(); }
+  // Apply persisted size on module load.
+  _applySize(_readSize());
+
   async function loadManifest() {
     if (_loaded) return _manifest;
     try {
@@ -68,7 +103,7 @@ window.CJS.PortraitPicker = (() => {
 
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = 'image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif';
+    fileInput.accept = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.avif,.svg,.tiff,.tif,.ico';
     fileInput.style.display = 'none';
 
     const browseBtn = document.createElement('button');
@@ -82,6 +117,32 @@ window.CJS.PortraitPicker = (() => {
     clearBtn.className = 'btn btn-ghost btn-sm portrait-clear-btn';
     clearBtn.textContent = 'Clear';
     clearBtn.title = 'Clear portrait';
+
+    const sizeWrap = document.createElement('label');
+    sizeWrap.className = 'portrait-size-wrap dim';
+    sizeWrap.style.display = 'inline-flex';
+    sizeWrap.style.alignItems = 'center';
+    sizeWrap.style.gap = '4px';
+    sizeWrap.style.fontSize = '0.78rem';
+    sizeWrap.style.marginLeft = 'auto';
+    sizeWrap.textContent = 'Size ';
+    const sizeSelect = document.createElement('select');
+    sizeSelect.className = 'portrait-size-select';
+    sizeSelect.style.fontSize = '0.78rem';
+    sizeSelect.style.padding = '1px 4px';
+    const currentSize = _readSize();
+    for (const opt of SIZE_OPTIONS) {
+      const o = document.createElement('option');
+      o.value = String(opt.px);
+      o.textContent = `${opt.label} (${opt.px}px)`;
+      if (opt.px === currentSize) o.selected = true;
+      sizeSelect.appendChild(o);
+    }
+    sizeSelect.addEventListener('change', () => {
+      const px = parseInt(sizeSelect.value, 10);
+      if (Number.isFinite(px)) setPreviewSize(px);
+    });
+    sizeWrap.appendChild(sizeSelect);
 
     const statusEl = document.createElement('div');
     statusEl.className = 'portrait-status dim';
@@ -224,6 +285,7 @@ window.CJS.PortraitPicker = (() => {
     row.appendChild(uploadBtn);
     row.appendChild(browseBtn);
     row.appendChild(clearBtn);
+    row.appendChild(sizeWrap);
     row.appendChild(fileInput);
     controls.appendChild(label);
     controls.appendChild(row);
@@ -399,6 +461,8 @@ window.CJS.PortraitPicker = (() => {
     openBrowseModal,
     getCachedImage,
     preloadImage,
-    clearCache
+    clearCache,
+    getPreviewSize,
+    setPreviewSize
   });
 })();

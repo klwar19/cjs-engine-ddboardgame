@@ -369,7 +369,7 @@ window.CJS.SaveManager = (() => {
     try {
       return await saveOnce();
     } catch (error) {
-      if (/sha|conflict|409/i.test(String(error.message || ''))) {
+      if (/sha|conflict|409|does not match/i.test(String(error.message || ''))) {
         return saveOnce();
       }
       throw error;
@@ -420,7 +420,7 @@ window.CJS.SaveManager = (() => {
     try {
       return await saveOnce();
     } catch (error) {
-      if (/sha|conflict|409/i.test(String(error.message || ''))) {
+      if (/sha|conflict|409|does not match/i.test(String(error.message || ''))) {
         return saveOnce();
       }
       throw error;
