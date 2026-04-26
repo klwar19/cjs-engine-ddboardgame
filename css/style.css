@@ -460,12 +460,13 @@ input::placeholder { color: var(--text-mute); }
   gap: 10px;
 }
 :root {
-  --portrait-preview-size: 192px;
+  --portrait-preview-w: 192px;
+  --portrait-preview-h: 192px;
 }
 .portrait-preview-wrap {
-  flex: 0 0 var(--portrait-preview-size);
-  width: var(--portrait-preview-size);
-  height: var(--portrait-preview-size);
+  flex: 0 0 var(--portrait-preview-w);
+  width: var(--portrait-preview-w);
+  height: var(--portrait-preview-h);
   border-radius: 8px;
   border: 2px solid rgba(255,255,255,0.1);
   background: rgba(0,0,0,0.3);
