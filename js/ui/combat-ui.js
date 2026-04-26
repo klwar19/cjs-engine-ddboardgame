@@ -1489,8 +1489,10 @@ window.CJS.CombatUI = (() => {
   function _renderPortraitMarkup(path, imageClass, fallbackClass, icon) {
     if (!path) return `<span class="${fallbackClass}">${_escHtml(icon || '?')}</span>`;
 
+    const PP = window.CJS && window.CJS.PortraitPicker;
+    const src = PP && PP.bustedSrc ? PP.bustedSrc(path) : path;
     return `
-      <img src="${_escAttr(path)}" class="${imageClass}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt="">
+      <img src="${_escAttr(src)}" class="${imageClass}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt="">
       <span class="${fallbackClass}" style="display:none">${_escHtml(icon || '?')}</span>
     `;
   }

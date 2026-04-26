@@ -533,6 +533,7 @@ window.CJS.PortraitPicker = (() => {
     preloadImage,
     clearCache,
     getPreviewSize,
-    setPreviewSize
+    setPreviewSize,
+    bustedSrc: _bustedSrc
   });
 })();
