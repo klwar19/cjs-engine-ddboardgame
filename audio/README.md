@@ -13,7 +13,14 @@ audio/
 Included starter ids:
 
 - `bgm.codex_battle_loop`
+- `bgm.codex_shadow_skirmish`
 - `sfx.ui_click`
+- `sfx.move_step`
+- `sfx.defend_guard`
+- `sfx.miss`
+- `sfx.heal`
+- `sfx.crit_sting`
+- `sfx.absorb_guard`
 - `sfx.weapon_hit_physical`
 - `sfx.weapon_hit_fire`
 - `sfx.weapon_hit_ice`
@@ -31,6 +38,10 @@ To add a new file by hand:
 2. Add an entry to `data/audio-manifest.json`, e.g.
    ```json
    { "sfx": { "magic_hit": "audio/sfx/magic-hit.wav" } }
+   ```
+   Variant sets are also supported:
+   ```json
+   { "sfx": { "magic_hit": ["audio/sfx/magic-hit.wav", "audio/sfx/magic-hit-alt.wav"] } }
    ```
 3. Reference the id from combat code (built-in keys are listed in the
    developer guide §17) or from an encounter record's `bgm` field.

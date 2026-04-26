@@ -14,7 +14,7 @@ window.CJS = window.CJS || {};
 window.CJS.AudioManager = (() => {
   'use strict';
 
-  const SFX_POOL_SIZE = 6;
+  const SFX_POOL_SIZE = 12;
   const LS_SFX_VOL = 'cjs.audio.sfxVol';
   const LS_BGM_VOL = 'cjs.audio.bgmVol';
   const LS_MUTED   = 'cjs.audio.muted';
@@ -26,6 +26,7 @@ window.CJS.AudioManager = (() => {
   let _sfxIdx  = 0;
   let _bgmEl   = null;
   let _bgmCurrentId = null;
+  let _bgmCurrentPath = null;
 
   let _sfxVolume = _readVol(LS_SFX_VOL, 0.7);
   let _bgmVolume = _readVol(LS_BGM_VOL, 0.5);
@@ -41,6 +42,28 @@ window.CJS.AudioManager = (() => {
   let _lastBgmError = null;
 
   const _subs = new Set();
+  const SFX_VARIATION = {
+    default:               { min: 0.985, max: 1.015 },
+    ui_click:              { min: 0.99,  max: 1.03  },
+    move_step:             { min: 0.94,  max: 1.02  },
+    defend_guard:          { min: 0.98,  max: 1.02  },
+    miss:                  { min: 0.96,  max: 1.04  },
+    heal:                  { min: 0.97,  max: 1.03  },
+    crit_sting:            { min: 0.99,  max: 1.01  },
+    absorb_guard:          { min: 0.97,  max: 1.02  },
+    status_apply:          { min: 0.96,  max: 1.04  },
+    turn_start_player:     { min: 0.99,  max: 1.01  },
+    turn_start_enemy:      { min: 0.985, max: 1.015 },
+    weapon_hit_physical:   { min: 0.94,  max: 1.06  },
+    weapon_hit_fire:       { min: 0.95,  max: 1.05  },
+    weapon_hit_ice:        { min: 0.97,  max: 1.04  },
+    weapon_hit_lightning:  { min: 0.98,  max: 1.06  },
+    weapon_hit_water:      { min: 0.95,  max: 1.03  },
+    magic_cast:            { min: 0.97,  max: 1.03  },
+    magic_hit:             { min: 0.96,  max: 1.05  },
+    item_use:              { min: 0.98,  max: 1.03  },
+    ko:                    { min: 0.985, max: 1.015 }
+  };
 
   // Built-in synthesized fallback presets. These still intentionally sound
   // lightweight, but they are layered enough to feel closer to game UI SFX
@@ -260,9 +283,33 @@ window.CJS.AudioManager = (() => {
 
   function _normalize(value) {
     return {
-      sfx: (value && typeof value.sfx === 'object' && value.sfx) ? { ...value.sfx } : {},
-      bgm: (value && typeof value.bgm === 'object' && value.bgm) ? { ...value.bgm } : {}
+      sfx: _normalizeBucket(value?.sfx),
+      bgm: _normalizeBucket(value?.bgm)
     };
+  }
+
+  function _normalizeBucket(bucket) {
+    const out = {};
+    if (!bucket || typeof bucket !== 'object') return out;
+    for (const [id, raw] of Object.entries(bucket)) {
+      const entry = _normalizeEntry(raw);
+      if (entry) out[id] = entry;
+    }
+    return out;
+  }
+
+  function _normalizeEntry(raw) {
+    if (typeof raw === 'string') {
+      const s = raw.trim();
+      return s ? s : null;
+    }
+    if (Array.isArray(raw)) {
+      const arr = raw
+        .map((item) => String(item || '').trim())
+        .filter(Boolean);
+      return arr.length ? arr : null;
+    }
+    return null;
   }
 
   function _ensureSfxPool() {
@@ -298,6 +345,40 @@ window.CJS.AudioManager = (() => {
     return _bgmEl;
   }
 
+  function _resolveManifestEntry(kind, candidates) {
+    if (!Array.isArray(candidates)) return null;
+    for (const key of candidates) {
+      if (!key) continue;
+      const entry = _manifest?.[kind]?.[key];
+      const path = _pickEntryPath(entry);
+      if (path) return { key, path, entry };
+    }
+    return null;
+  }
+
+  function _pickEntryPath(entry) {
+    if (Array.isArray(entry)) {
+      const paths = entry.map((item) => String(item || '').trim()).filter(Boolean);
+      if (!paths.length) return null;
+      return paths[Math.floor(Math.random() * paths.length)];
+    }
+    if (typeof entry === 'string') {
+      const s = entry.trim();
+      return s || null;
+    }
+    return null;
+  }
+
+  function _pickPlaybackRate(key, override) {
+    if (override != null && isFinite(Number(override))) {
+      return Math.max(0.5, Math.min(2, Number(override)));
+    }
+    const range = SFX_VARIATION[key] || SFX_VARIATION.default;
+    const min = Number(range?.min) || 1;
+    const max = Number(range?.max) || min;
+    return min + ((max - min) * Math.random());
+  }
+
   // ── SFX ───────────────────────────────────────────────────────────
   // playSfx(key) → tries the explicit key, then any caller-supplied
   // fallback chain. If no audio file is registered, plays a synthesized
@@ -305,14 +386,19 @@ window.CJS.AudioManager = (() => {
   function playSfx(key, opts) {
     if (_muted) return;
     const candidates = [key, ...(Array.isArray(opts?.fallbacks) ? opts.fallbacks : [])];
-    const path = _resolveSfxPath(candidates);
-    if (path && typeof Audio !== 'undefined') {
+    const resolved = _resolveManifestEntry('sfx', candidates);
+    if (resolved && typeof Audio !== 'undefined') {
       _ensureSfxPool();
       const slot = _sfxPool[_sfxIdx];
       _sfxIdx = (_sfxIdx + 1) % _sfxPool.length;
       try {
-        slot.src = path;
+        slot.src = resolved.path;
         slot.volume = _clamp01(_sfxVolume * (opts?.volume ?? 1));
+        slot.playbackRate = _pickPlaybackRate(resolved.key, opts?.playbackRate);
+        slot.defaultPlaybackRate = slot.playbackRate;
+        if ('preservesPitch' in slot) slot.preservesPitch = false;
+        if ('mozPreservesPitch' in slot) slot.mozPreservesPitch = false;
+        if ('webkitPreservesPitch' in slot) slot.webkitPreservesPitch = false;
         slot.currentTime = 0;
         const p = slot.play();
         if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -324,16 +410,6 @@ window.CJS.AudioManager = (() => {
     for (const k of candidates) {
       if (FALLBACK_TONES[k]) { _playFallbackTone(k, opts?.volume ?? 1); return; }
     }
-  }
-
-  function _resolveSfxPath(candidates) {
-    if (!candidates) return null;
-    for (const k of candidates) {
-      if (!k) continue;
-      const p = _manifest.sfx?.[k];
-      if (p) return p;
-    }
-    return null;
   }
 
   function _showEmptyManifestNoticeOnce() {
@@ -400,7 +476,7 @@ window.CJS.AudioManager = (() => {
     opts = opts || {};
     const id = _pickBgmId(idOrPool);
     if (!id) { stopBgm(opts); return; }
-    const path = _manifest.bgm?.[id];
+    const path = _pickEntryPath(_manifest.bgm?.[id]);
     if (!path) {
       console.warn('AudioManager: bgm id not found in manifest:', id);
       return;
@@ -411,6 +487,7 @@ window.CJS.AudioManager = (() => {
     _cancelBgmStop();
     _cancelBgmFade();
     _bgmCurrentId = id;
+    _bgmCurrentPath = path;
     _lastBgmError = null;
     const targetVolume = _muted ? 0 : _clamp01(_bgmVolume * (opts.volume ?? 1));
     const fadeMs = Math.max(0, Number(opts.fadeMs ?? 320) || 0);
@@ -454,6 +531,7 @@ window.CJS.AudioManager = (() => {
         _bgmEl.currentTime = 0;
       } catch (e) { /* swallow */ }
       _bgmCurrentId = null;
+      _bgmCurrentPath = null;
       _lastBgmError = null;
       _notify();
     };
@@ -475,7 +553,7 @@ window.CJS.AudioManager = (() => {
   function getBgmState() {
     return {
       currentId: _bgmCurrentId,
-      path: _bgmCurrentId ? (_manifest.bgm?.[_bgmCurrentId] || null) : null,
+      path: _bgmCurrentPath,
       playing: !!(_bgmEl && !_bgmEl.paused && !_bgmEl.ended && _bgmCurrentId),
       paused: !!(_bgmEl && _bgmEl.paused),
       readyState: _bgmEl?.readyState || 0,

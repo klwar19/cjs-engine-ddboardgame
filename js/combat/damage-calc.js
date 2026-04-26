@@ -18,6 +18,7 @@ window.CJS.DamageCalc = (() => {
   const DS   = () => window.CJS.DiceService;   // preferred — falls back to Dice
   const Log  = () => window.CJS.CombatLog;
   const AB   = () => window.CJS.AnimationBus;
+  const AM   = () => window.CJS.AudioManager;
 
   function _rollDice(expr, source) {
     // Prefer DiceService so manual/queued dice override works.
@@ -232,10 +233,13 @@ window.CJS.DamageCalc = (() => {
     if (applied > 0 || absorbed > 0) {
       try {
         AB()?.emit('damage', {
-          target, amount: applied, absorbed,
-          damageType, element, isCritical: !!isCritical
+          attacker, target, amount: applied, absorbed,
+          damageType, element, skill, isCritical: !!isCritical
         });
       } catch (e) {}
+      if (absorbed > 0) {
+        try { AM()?.playSfx('absorb_guard', { volume: applied > 0 ? 0.42 : 0.58 }); } catch (e) {}
+      }
     }
 
     // Log kill
@@ -268,6 +272,10 @@ window.CJS.DamageCalc = (() => {
     target.currentHP = newHP;
     const applied = newHP - prevHP;
     Log().logHeal({ actor, target, amount: applied, source });
+    if (applied > 0) {
+      try { AB()?.emit('heal', { actor, target, amount: applied, source }); } catch (e) {}
+      try { AM()?.playSfx('heal', { volume: 0.72 }); } catch (e) {}
+    }
     return { applied, newHP, blocked: false };
   }
 

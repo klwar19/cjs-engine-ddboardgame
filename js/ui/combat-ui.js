@@ -36,10 +36,11 @@ window.CJS.CombatUI = (() => {
   let _keyboardBound = false;
   let _resizeBound = false;
   let _activeFx = [];
+  let _fxSeq = 0;
   let _activeBanner = null;
   let _bannerTimer = 0;
 
-  const MAX_ACTIVE_FX = 18;
+  const MAX_ACTIVE_FX = 24;
 
   let $grid = null;
   let $log = null;
@@ -194,6 +195,8 @@ window.CJS.CombatUI = (() => {
     if (!AB()) return;
 
     _animUnsubs.push(AB().on('damage',     _animDamageFlash));
+    _animUnsubs.push(AB().on('heal',       _animHealPulse));
+    _animUnsubs.push(AB().on('miss',       _animMissCue));
     _animUnsubs.push(AB().on('unit_ko',    _animKoFade));
     _animUnsubs.push(AB().on('skill_cast', _animSkillCast));
     _animUnsubs.push(AB().on('unit_move',  _animUnitMove));
@@ -221,6 +224,7 @@ window.CJS.CombatUI = (() => {
       _removeFxEntry(entry);
     }
     _activeFx = [];
+    _fxSeq = 0;
     if (_bannerTimer) {
       clearTimeout(_bannerTimer);
       _bannerTimer = 0;
@@ -253,29 +257,42 @@ window.CJS.CombatUI = (() => {
     };
   }
 
-  function _spawnFx(cls, pos, ttl, opts = {}) {
-    if (!_animEnabled() || !$fxLayer || !pos) return;
+  function _getCellMetrics(pos) {
+    if (!pos) return null;
     const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
-    if (!cell) return;
+    if (!cell) return null;
     const canvas = _container?.querySelector('#cbt-canvas');
-    // Canvas is centered inside .combat-grid-wrap (flex centering), so FX
-    // overlays must use canvas.offsetLeft/offsetTop to land on the cells.
     const ox = canvas?.offsetLeft || 0;
     const oy = canvas?.offsetTop  || 0;
     const [r, c] = pos;
+    const left = c * cell + ox;
+    const top = r * cell + oy;
+    return {
+      cell,
+      left,
+      top,
+      centerX: left + cell / 2,
+      centerY: top + cell / 2
+    };
+  }
+
+  function _spawnFx(cls, pos, ttl, opts = {}) {
+    if (!_animEnabled() || !$fxLayer || !pos) return;
+    const metrics = _getCellMetrics(pos);
+    if (!metrics) return;
     const el = document.createElement('div');
     const extra = opts.extraClass ? ` ${opts.extraClass}` : '';
     el.className = `cjs-fx-cell ${cls}${extra}`;
-    el.style.left   = (c * cell + ox) + 'px';
-    el.style.top    = (r * cell + oy) + 'px';
-    el.style.width  = cell + 'px';
-    el.style.height = cell + 'px';
+    el.style.left   = metrics.left + 'px';
+    el.style.top    = metrics.top + 'px';
+    el.style.width  = metrics.cell + 'px';
+    el.style.height = metrics.cell + 'px';
     const vars = opts.vars || {};
     for (const [name, value] of Object.entries(vars)) {
       el.style.setProperty(name, value);
     }
 
-    const key = opts.dedupeKey || `${cls}:${r}:${c}`;
+    const key = opts.dedupeKey || `${cls}:${pos[0]}:${pos[1]}`;
     const existing = _activeFx.find((entry) => entry.key === key);
     if (existing) _removeFxEntry(existing);
     while (_activeFx.length >= (opts.maxActive || MAX_ACTIVE_FX)) {
@@ -289,12 +306,155 @@ window.CJS.CombatUI = (() => {
     return el;
   }
 
+  function _spawnLabelFx(text, pos, ttl, opts = {}) {
+    if (!_animEnabled() || !$fxLayer || !pos || !text) return;
+    const metrics = _getCellMetrics(pos);
+    if (!metrics) return;
+    const stackKey = opts.stackKey || `label:${pos[0]}:${pos[1]}`;
+    const stackDepth = _activeFx.filter((entry) => String(entry.key).startsWith(stackKey)).length;
+    while (_activeFx.length >= (opts.maxActive || MAX_ACTIVE_FX)) {
+      _removeFxEntry(_activeFx[0]);
+    }
+
+    const el = document.createElement('div');
+    const extra = opts.extraClass ? ` ${opts.extraClass}` : '';
+    el.className = `cjs-fx-label${extra}`;
+    el.textContent = text;
+    el.style.left = metrics.centerX + 'px';
+    el.style.top = (metrics.centerY + (opts.offsetY || 0) - stackDepth * 14) + 'px';
+    const vars = opts.vars || {};
+    for (const [name, value] of Object.entries(vars)) {
+      el.style.setProperty(name, value);
+    }
+
+    $fxLayer.appendChild(el);
+    const entry = { el, key: `${stackKey}:${++_fxSeq}`, timer: 0 };
+    entry.timer = setTimeout(() => _removeFxEntry(entry), ttl || 720);
+    _activeFx.push(entry);
+    return el;
+  }
+
+  function _spawnTraceFx(from, to, ttl, opts = {}) {
+    if (!_animEnabled() || !$fxLayer || !from || !to) return;
+    const start = _getCellMetrics(from);
+    const end = _getCellMetrics(to);
+    if (!start || !end) return;
+    const dx = end.centerX - start.centerX;
+    const dy = end.centerY - start.centerY;
+    const length = Math.hypot(dx, dy);
+    if (!length) return;
+
+    const key = opts.dedupeKey || `trace:${from.join(',')}->${to.join(',')}`;
+    const existing = _activeFx.find((entry) => entry.key === key);
+    if (existing) _removeFxEntry(existing);
+    while (_activeFx.length >= (opts.maxActive || MAX_ACTIVE_FX)) {
+      _removeFxEntry(_activeFx[0]);
+    }
+
+    const el = document.createElement('div');
+    const extra = opts.extraClass ? ` ${opts.extraClass}` : '';
+    el.className = `cjs-fx-trace${extra}`;
+    el.style.left = start.centerX + 'px';
+    el.style.top = start.centerY + 'px';
+    el.style.width = `${Math.max(18, length)}px`;
+    el.style.transform = `translateY(-50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    const vars = opts.vars || {};
+    for (const [name, value] of Object.entries(vars)) {
+      el.style.setProperty(name, value);
+    }
+
+    $fxLayer.appendChild(el);
+    const entry = { el, key, timer: 0 };
+    entry.timer = setTimeout(() => _removeFxEntry(entry), ttl || 280);
+    _activeFx.push(entry);
+    return el;
+  }
+
   function _animDamageFlash(payload) {
     const id = payload?.target?.instanceId || payload?.target?.id || payload?.target?.baseId || 'target';
-    _spawnFx('cjs-fx-damage', payload?.target?.pos, payload?.isCritical ? 360 : 280, {
-      dedupeKey: `hit:${id}`,
-      extraClass: payload?.isCritical ? 'is-crit' : '',
-      vars: _themeVars(payload?.element || payload?.damageType || 'physical')
+    const tone = payload?.element || payload?.damageType || 'physical';
+    const theme = _themeVars(tone);
+    if (payload?.attacker?.pos && payload?.target?.pos) {
+      _spawnTraceFx(payload.attacker.pos, payload.target.pos, payload?.isCritical ? 320 : 250, {
+        dedupeKey: `trace-hit:${id}`,
+        extraClass: payload?.damageType === 'Magic' ? ' is-magic' : '',
+        vars: theme
+      });
+    }
+    if ((payload?.amount || 0) > 0) {
+      _spawnFx('cjs-fx-damage', payload?.target?.pos, payload?.isCritical ? 360 : 280, {
+        dedupeKey: `hit:${id}`,
+        extraClass: payload?.isCritical ? 'is-crit' : '',
+        vars: theme
+      });
+      _spawnLabelFx(`-${payload.amount}`, payload?.target?.pos, payload?.isCritical ? 760 : 680, {
+        stackKey: `label-dmg:${id}`,
+        extraClass: payload?.isCritical ? ' is-damage is-crit' : ' is-damage',
+        vars: theme
+      });
+      if (payload?.isCritical) {
+        _spawnLabelFx('CRIT', payload?.target?.pos, 680, {
+          stackKey: `label-crit:${id}`,
+          extraClass: ' is-crit-tag',
+          vars: theme,
+          offsetY: -18
+        });
+      }
+    }
+    if ((payload?.absorbed || 0) > 0) {
+      _spawnFx('cjs-fx-guard', payload?.target?.pos, 380, {
+        dedupeKey: `guard:${id}`,
+        vars: _themeVars('light')
+      });
+      _spawnLabelFx(`BLOCK ${payload.absorbed}`, payload?.target?.pos, 660, {
+        stackKey: `label-guard:${id}`,
+        extraClass: ' is-guard',
+        vars: _themeVars('light'),
+        offsetY: 18
+      });
+    }
+  }
+
+  function _animHealPulse(payload) {
+    const id = payload?.target?.instanceId || payload?.target?.id || payload?.target?.baseId || 'target';
+    const theme = {
+      '--cjs-fx-accent': 'rgba(118, 235, 156, 0.96)',
+      '--cjs-fx-glow': 'rgba(86, 214, 132, 0.34)',
+      '--cjs-fx-ring': 'rgba(230, 255, 236, 0.22)'
+    };
+    _spawnFx('cjs-fx-heal', payload?.target?.pos, 420, {
+      dedupeKey: `heal:${id}`,
+      vars: theme
+    });
+    _spawnLabelFx(`+${payload?.amount || 0}`, payload?.target?.pos, 760, {
+      stackKey: `label-heal:${id}`,
+      extraClass: ' is-heal',
+      vars: theme
+    });
+  }
+
+  function _animMissCue(payload) {
+    const id = payload?.target?.instanceId || payload?.target?.id || payload?.target?.baseId || 'target';
+    const theme = {
+      '--cjs-fx-accent': 'rgba(212, 220, 232, 0.96)',
+      '--cjs-fx-glow': 'rgba(196, 208, 230, 0.22)',
+      '--cjs-fx-ring': 'rgba(248, 252, 255, 0.20)'
+    };
+    if (payload?.attacker?.pos && payload?.target?.pos) {
+      _spawnTraceFx(payload.attacker.pos, payload.target.pos, 240, {
+        dedupeKey: `trace-miss:${id}`,
+        extraClass: ' is-miss',
+        vars: theme
+      });
+    }
+    _spawnFx('cjs-fx-miss', payload?.target?.pos, 340, {
+      dedupeKey: `miss:${id}`,
+      vars: theme
+    });
+    _spawnLabelFx('MISS', payload?.target?.pos, 720, {
+      stackKey: `label-miss:${id}`,
+      extraClass: ' is-miss',
+      vars: theme
     });
   }
 
@@ -312,6 +472,7 @@ window.CJS.CombatUI = (() => {
     const id = payload?.unit?.instanceId || payload?.unit?.id || payload?.unit?.baseId || 'caster';
     _spawnFx('cjs-fx-cast', payload?.unit?.pos, 480, {
       dedupeKey: `cast:${id}`,
+      extraClass: skill.damageType === 'Magic' ? 'is-magic' : 'is-physical',
       vars: _themeVars(tone)
     });
   }
@@ -352,6 +513,7 @@ window.CJS.CombatUI = (() => {
     const banner = document.createElement('div');
     banner.className = 'cjs-turn-banner team-' + (unit.team === 'player' ? 'player' : 'enemy');
     banner.textContent = `Round ${payload?.round || 1} • ${(unit.name || 'Unit')}'s turn`;
+    banner.textContent = banner.textContent.replace(' 窶｢ ', ' | ');
     $grid.appendChild(banner);
     _activeBanner = banner;
     _bannerTimer = setTimeout(() => {

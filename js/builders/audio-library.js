@@ -87,7 +87,7 @@ window.CJS.AudioLibrary = (() => {
     list.innerHTML = ids.map(id => `
       <div class="list-row" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid rgba(255,255,255,0.06)">
         <span style="flex:0 0 30%;font-weight:600">${_esc(id)}</span>
-        <span style="flex:1;font-family:monospace;font-size:0.8rem;opacity:0.8">${_esc(entries[id])}</span>
+        <span style="flex:1;font-family:monospace;font-size:0.8rem;opacity:0.8">${_esc(_entryPreview(entries[id]))}</span>
         <button class="btn btn-ghost btn-sm" data-id="${_esc(id)}" data-act="play">▶</button>
         <button class="btn btn-danger btn-sm" data-id="${_esc(id)}" data-act="del">Remove</button>
       </div>
@@ -221,6 +221,14 @@ window.CJS.AudioLibrary = (() => {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[c]));
+  }
+
+  function _entryPreview(entry) {
+    if (Array.isArray(entry)) {
+      if (entry.length <= 2) return entry.join(' | ');
+      return `${entry[0]} (+${entry.length - 1} variants)`;
+    }
+    return entry;
   }
 
   return Object.freeze({ init, refresh });

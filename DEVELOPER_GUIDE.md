@@ -531,21 +531,28 @@ Files:
 - `js/ui/animation-bus.js` - tiny event bus combat code emits onto
 - `css/combat-animations.css` - the 5 keyframe sets + BGM control panel styles
 - `js/builders/audio-library.js` - editor panel for uploading audio files and editing the manifest
-- `data/audio-manifest.json` - `{ sfx: { id: path }, bgm: { id: path } }`
+- `data/audio-manifest.json` - `{ sfx: { id: path|string[] }, bgm: { id: path|string[] } }`
 - `audio/sfx/`, `audio/bgm/` - actual audio files (starter pack + user uploads)
 
 Built-in SFX keys (resolved by `AudioManager.playSfx`):
 - `weapon_hit_<element>` - falls back to `weapon_hit_physical` if missing
 - `magic_cast`, `magic_hit`
+- `move_step`, `defend_guard`, `miss`, `heal`, `crit_sting`, `absorb_guard`
 - `item_use`
 - `ko`
 - `status_apply`
 
 Starter assets bundled in the repo:
-- BGM: `codex_battle_loop`
+- BGM: `codex_battle_loop`, `codex_shadow_skirmish`
 - SFX: `ui_click`, `weapon_hit_physical`, `weapon_hit_fire`, `weapon_hit_ice`,
   `weapon_hit_lightning`, `weapon_hit_water`, `magic_cast`, `magic_hit`,
+  `move_step`, `defend_guard`, `miss`, `heal`, `crit_sting`, `absorb_guard`,
   `item_use`, `status_apply`, `ko`
+
+Manifest values can be either a single path or an array of variant paths.
+When an array is present, `AudioManager` picks one variant at random each play
+and applies a slight playback-rate jitter so repeated actions do not sound
+identical.
 
 Encounter records can carry a `bgm` field:
 - string id - that single track plays
@@ -553,7 +560,7 @@ Encounter records can carry a `bgm` field:
 - omitted - falls back to `CombatSettings.getDefaultBgmPool()`
 
 Animation events emitted from combat:
-- `unit_move`, `damage`, `skill_cast`, `unit_ko`, `turn_start`
+- `unit_move`, `damage`, `heal`, `miss`, `skill_cast`, `unit_ko`, `turn_start`
 
 Toggle animations live with the checkbox in the combat sidebar
 (`CombatSettings.setAnimationsEnabled(false)` in code). Mute audio with

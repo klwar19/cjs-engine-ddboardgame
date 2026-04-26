@@ -181,6 +181,7 @@ window.CJS.ActionHandler = (() => {
     });
 
     _anim('unit_move', { unit, from: fromPos, to: [tr, tc] });
+    _sfx('move_step', { volume: 0.58 });
 
     // Fire on_move trigger (terrain effects, caltrops, etc.)
     ER().fireTrigger('on_move', {
@@ -220,6 +221,8 @@ window.CJS.ActionHandler = (() => {
 
     if (attack.miss) {
       Log().logMiss({ actor: unit, target, skill: null });
+      _anim('miss', { attacker: unit, target, skill: null });
+      _sfx('miss', { volume: 0.58 });
       ER().fireTrigger('on_miss', {
         unit, attacker: unit, target, allUnits: GE().getAllUnits(),
         turnNumber: ctx.turnNumber
@@ -241,6 +244,7 @@ window.CJS.ActionHandler = (() => {
     _sfx(`weapon_hit_${String(atkElement || 'physical').toLowerCase()}`, {
       fallbacks: ['weapon_hit_physical']
     });
+    if (attack.isCritical) _sfx('crit_sting', { volume: 0.52 });
 
     // Fire on_hit (attacker-side)
     ER().fireTrigger('on_hit', {
@@ -325,6 +329,8 @@ window.CJS.ActionHandler = (() => {
         });
         if (attack.miss) {
           Log().logMiss({ actor: unit, target: t, skill });
+          _anim('miss', { attacker: unit, target: t, skill });
+          _sfx('miss', { volume: 0.58 });
           hits.push({ target: t, missed: true });
           continue;
         }
@@ -346,6 +352,7 @@ window.CJS.ActionHandler = (() => {
             fallbacks: ['weapon_hit_physical']
           });
         }
+        if (attack.isCritical) _sfx('crit_sting', { volume: 0.52 });
 
         ER().fireTrigger('on_hit', {
           unit, attacker: unit, target: t,
@@ -442,6 +449,7 @@ window.CJS.ActionHandler = (() => {
       type: 'defend', actor: unit, target: null,
       tags: ['defend'], data: { drBoost: unit._defendDRBoost }
     });
+    _sfx('defend_guard', { volume: 0.62 });
     return { success: true, action: 'defend' };
   }
 
