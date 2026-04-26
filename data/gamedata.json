@@ -4623,6 +4623,7 @@
     "bin": {
       "id": "bin",
       "name": "Bin Chen",
+      "portrait": "images/characters/bin.png",
       "icon": "🃏",
       "team": "player",
       "rank": "F",

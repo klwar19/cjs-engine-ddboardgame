@@ -87,7 +87,7 @@ window.CJS.PortraitPicker = (() => {
   async function loadManifest() {
     if (_loaded) return _manifest;
     try {
-      const response = await fetch('data/image-manifest.json');
+      const response = await fetch('data/image-manifest.json', { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       _manifest = _normalizeManifest(await response.json());
     } catch (error) {
