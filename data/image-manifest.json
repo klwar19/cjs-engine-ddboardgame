@@ -1,5 +1,7 @@
 {
-  "characters": [],
+  "characters": [
+    "bin.png"
+  ],
   "monsters": [],
   "items": []
 }
