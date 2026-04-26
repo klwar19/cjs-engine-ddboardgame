@@ -272,7 +272,7 @@ window.CJS.SaveManager = (() => {
   }
 
   // Read a File or Blob and resolve to a base64 string (no data: prefix).
-  // Used by the editor's Audio Library when uploading MP3s.
+  // Used by the editor's Audio Library when uploading audio files.
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       if (!file) return reject(new Error('No file provided'));
@@ -376,7 +376,7 @@ window.CJS.SaveManager = (() => {
     }
   }
 
-  // Upload a pre-base64-encoded binary blob (e.g. MP3) to GitHub.
+  // Upload a pre-base64-encoded binary blob (e.g. MP3 or OGG) to GitHub.
   // base64Content must be the raw base64 payload (no data: prefix).
   async function uploadBinaryFileToGitHub(path, base64Content, options = {}) {
     const config = _normalizeConfig({ ...getGitHubConfig(), ...(options.config || {}) });

@@ -34,22 +34,88 @@ window.CJS.AudioManager = (() => {
   // WebAudio fallback: when the manifest has no MP3 for a key, synthesize
   // a short tone instead so the system is audible out of the box.
   let _audioCtx = null;
+  let _noiseBuffer = null;
   let _emptyManifestNoticeShown = false;
+  let _bgmFadeRaf = 0;
+  let _bgmStopTimer = 0;
+  let _lastBgmError = null;
 
-  // Built-in fallback tones (frequency Hz, duration ms, type).
-  // Keys match the SFX keys playSfx() resolves, plus per-element variants.
+  const _subs = new Set();
+
+  // Built-in synthesized fallback presets. These still intentionally sound
+  // lightweight, but they are layered enough to feel closer to game UI SFX
+  // than the original single-oscillator beeps.
   const FALLBACK_TONES = {
-    weapon_hit_physical: { f: 220, d: 90,  t: 'square'   },
-    weapon_hit_fire:     { f: 380, d: 110, t: 'sawtooth' },
-    weapon_hit_ice:      { f: 880, d: 100, t: 'triangle' },
-    weapon_hit_lightning:{ f: 1320,d: 70,  t: 'sawtooth' },
-    weapon_hit_water:    { f: 520, d: 110, t: 'sine'     },
-    magic_cast:          { f: 660, d: 200, t: 'triangle' },
-    magic_hit:           { f: 990, d: 160, t: 'triangle' },
-    item_use:            { f: 740, d: 140, t: 'sine'     },
-    ko:                  { f: 110, d: 280, t: 'sawtooth' },
-    status_apply:        { f: 540, d: 120, t: 'square'   },
-    ui_click:            { f: 1200,d: 40,  t: 'sine'     }
+    weapon_hit_physical: {
+      voices: [
+        { type: 'triangle', startHz: 150, endHz: 82, duration: 0.10, gain: 0.28 },
+        { type: 'square', startHz: 880, endHz: 260, duration: 0.05, gain: 0.08, delay: 0.006 }
+      ],
+      noise: { duration: 0.045, gain: 0.10, highpass: 1400 }
+    },
+    weapon_hit_fire: {
+      voices: [
+        { type: 'sawtooth', startHz: 320, endHz: 520, duration: 0.12, gain: 0.18 },
+        { type: 'triangle', startHz: 740, endHz: 440, duration: 0.08, gain: 0.10, delay: 0.012 }
+      ],
+      noise: { duration: 0.060, gain: 0.09, bandpass: 2000 }
+    },
+    weapon_hit_ice: {
+      voices: [
+        { type: 'triangle', startHz: 1120, endHz: 780, duration: 0.11, gain: 0.17 },
+        { type: 'sine', startHz: 1760, endHz: 1280, duration: 0.05, gain: 0.07, delay: 0.016 }
+      ]
+    },
+    weapon_hit_lightning: {
+      voices: [
+        { type: 'square', startHz: 1600, endHz: 420, duration: 0.07, gain: 0.16 },
+        { type: 'sawtooth', startHz: 2200, endHz: 980, duration: 0.05, gain: 0.10, delay: 0.008 }
+      ],
+      noise: { duration: 0.030, gain: 0.08, highpass: 3200 }
+    },
+    weapon_hit_water: {
+      voices: [
+        { type: 'sine', startHz: 420, endHz: 300, duration: 0.14, gain: 0.18 },
+        { type: 'triangle', startHz: 760, endHz: 430, duration: 0.09, gain: 0.07, delay: 0.018 }
+      ]
+    },
+    magic_cast: {
+      voices: [
+        { type: 'triangle', startHz: 420, endHz: 780, duration: 0.22, gain: 0.18 },
+        { type: 'sine', startHz: 690, endHz: 1180, duration: 0.18, gain: 0.07, delay: 0.018 }
+      ]
+    },
+    magic_hit: {
+      voices: [
+        { type: 'triangle', startHz: 980, endHz: 520, duration: 0.17, gain: 0.20 },
+        { type: 'square', startHz: 1520, endHz: 760, duration: 0.09, gain: 0.08, delay: 0.012 }
+      ],
+      noise: { duration: 0.035, gain: 0.05, bandpass: 1800 }
+    },
+    item_use: {
+      voices: [
+        { type: 'sine', startHz: 580, endHz: 840, duration: 0.18, gain: 0.16 },
+        { type: 'triangle', startHz: 880, endHz: 1280, duration: 0.11, gain: 0.07, delay: 0.012 }
+      ]
+    },
+    ko: {
+      voices: [
+        { type: 'sawtooth', startHz: 180, endHz: 72, duration: 0.30, gain: 0.25 },
+        { type: 'triangle', startHz: 120, endHz: 52, duration: 0.26, gain: 0.14, delay: 0.015 }
+      ],
+      noise: { duration: 0.080, gain: 0.06, lowpass: 700 }
+    },
+    status_apply: {
+      voices: [
+        { type: 'square', startHz: 520, endHz: 640, duration: 0.11, gain: 0.12 },
+        { type: 'triangle', startHz: 880, endHz: 1040, duration: 0.08, gain: 0.07, delay: 0.012 }
+      ]
+    },
+    ui_click: {
+      voices: [
+        { type: 'sine', startHz: 980, endHz: 1160, duration: 0.05, gain: 0.10 }
+      ]
+    }
   };
 
   function _ensureAudioCtx() {
@@ -60,33 +126,125 @@ window.CJS.AudioManager = (() => {
     return _audioCtx;
   }
 
+  function _ensureNoiseBuffer(ctx) {
+    if (_noiseBuffer) return _noiseBuffer;
+    try {
+      const length = Math.max(1, Math.floor(ctx.sampleRate * 0.4));
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      _noiseBuffer = buffer;
+    } catch (e) {
+      _noiseBuffer = null;
+    }
+    return _noiseBuffer;
+  }
+
+  function _playOscVoice(ctx, when, voice, gainScale) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const start = when + (voice.delay || 0);
+    const end = start + Math.max(0.01, voice.duration || 0.08);
+    const peak = _clamp01((gainScale || 1) * (voice.gain || 0.1)) * 0.22;
+    const attack = Math.min(0.01, (voice.duration || 0.08) * 0.18);
+
+    osc.type = voice.type || 'sine';
+    osc.frequency.setValueAtTime(voice.startHz || voice.endHz || 440, start);
+    osc.frequency.exponentialRampToValueAtTime(
+      Math.max(18, voice.endHz || voice.startHz || 440),
+      end
+    );
+
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(Math.max(0.0001, peak), start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(end + 0.02);
+  }
+
+  function _playNoiseBurst(ctx, when, noise, gainScale) {
+    const buffer = _ensureNoiseBuffer(ctx);
+    if (!buffer) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    let node = source;
+    if (noise.lowpass || noise.highpass || noise.bandpass) {
+      const filter = ctx.createBiquadFilter();
+      if (noise.bandpass) {
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(noise.bandpass, when);
+        filter.Q.setValueAtTime(1.2, when);
+      } else if (noise.highpass) {
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(noise.highpass, when);
+      } else if (noise.lowpass) {
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(noise.lowpass, when);
+      }
+      source.connect(filter);
+      node = filter;
+    }
+
+    const gain = ctx.createGain();
+    const start = when + (noise.delay || 0);
+    const end = start + Math.max(0.01, noise.duration || 0.04);
+    const peak = _clamp01((gainScale || 1) * (noise.gain || 0.05)) * 0.22;
+    gain.gain.setValueAtTime(Math.max(0.0001, peak), start);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+    node.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(start);
+    source.stop(end + 0.02);
+  }
+
   function _playFallbackTone(key, gainScale) {
     const tone = FALLBACK_TONES[key];
     if (!tone) return;
     const ctx = _ensureAudioCtx();
     if (!ctx) return;
     try {
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const peak = _clamp01(_sfxVolume * (gainScale || 1)) * 0.18;
-      osc.type = tone.t;
-      osc.frequency.setValueAtTime(tone.f, now);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(peak, now + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.d / 1000);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + tone.d / 1000 + 0.05);
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime + 0.002;
+      const gain = _sfxVolume * (gainScale || 1);
+      for (const voice of (tone.voices || [])) {
+        _playOscVoice(ctx, now, voice, gain);
+      }
+      if (tone.noise) {
+        _playNoiseBurst(ctx, now, tone.noise, gain);
+      }
     } catch (e) { /* swallow */ }
+  }
+
+  function subscribe(fn) {
+    if (typeof fn !== 'function') return () => {};
+    _subs.add(fn);
+    return () => _subs.delete(fn);
+  }
+
+  function _notify() {
+    const snapshot = getBgmState();
+    for (const fn of Array.from(_subs)) {
+      try { fn(snapshot); } catch (e) { /* swallow */ }
+    }
   }
 
   // ── INIT ──────────────────────────────────────────────────────────
   async function loadManifest() {
     if (_loaded) return _manifest;
     try {
-      const response = await fetch('data/audio-manifest.json');
+      const response = await fetch(`data/audio-manifest.json?ts=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       _manifest = _normalize(await response.json());
     } catch (error) {
@@ -94,6 +252,7 @@ window.CJS.AudioManager = (() => {
       _manifest = _normalize();
     }
     _loaded = true;
+    _notify();
     return _manifest;
   }
 
@@ -122,12 +281,26 @@ window.CJS.AudioManager = (() => {
     _bgmEl = new Audio();
     _bgmEl.loop = true;
     _bgmEl.preload = 'auto';
+    _bgmEl.addEventListener('play', () => {
+      _lastBgmError = null;
+      _notify();
+    });
+    _bgmEl.addEventListener('pause', _notify);
+    _bgmEl.addEventListener('ended', _notify);
+    _bgmEl.addEventListener('loadeddata', () => {
+      _lastBgmError = null;
+      _notify();
+    });
+    _bgmEl.addEventListener('error', () => {
+      _lastBgmError = 'load_error';
+      _notify();
+    });
     return _bgmEl;
   }
 
   // ── SFX ───────────────────────────────────────────────────────────
   // playSfx(key) → tries the explicit key, then any caller-supplied
-  // fallback chain. If no MP3 is registered, plays a synthesized
+  // fallback chain. If no audio file is registered, plays a synthesized
   // WebAudio tone so the system is audible without uploaded files.
   function playSfx(key, opts) {
     if (_muted) return;
@@ -170,8 +343,8 @@ window.CJS.AudioManager = (() => {
     if (sfxCount === 0 && bgmCount === 0) {
       _emptyManifestNoticeShown = true;
       console.info(
-        '[CJS Audio] No MP3s registered in data/audio-manifest.json — '
-        + 'using synthesized fallback tones. Upload your own MP3s via '
+        '[CJS Audio] No audio files registered in data/audio-manifest.json — '
+        + 'using synthesized fallback tones. Upload your own tracks via '
         + 'Editor → Audio Library to replace them.'
       );
     }
@@ -180,6 +353,48 @@ window.CJS.AudioManager = (() => {
   // ── BGM ───────────────────────────────────────────────────────────
   // playBgm(idOrPool, { fadeMs, volume })
   //   idOrPool: string id, or array — array picks one entry at random.
+  function _cancelBgmFade() {
+    if (_bgmFadeRaf) {
+      cancelAnimationFrame(_bgmFadeRaf);
+      _bgmFadeRaf = 0;
+    }
+  }
+
+  function _cancelBgmStop() {
+    if (_bgmStopTimer) {
+      clearTimeout(_bgmStopTimer);
+      _bgmStopTimer = 0;
+    }
+  }
+
+  function _fadeBgmVolume(target, ms) {
+    if (!_bgmEl) return;
+    _cancelBgmFade();
+
+    const end = _muted ? 0 : _clamp01(target);
+    const duration = Math.max(0, Number(ms) || 0);
+    if (!duration || typeof requestAnimationFrame !== 'function') {
+      _bgmEl.volume = end;
+      _notify();
+      return;
+    }
+
+    const startVolume = Number(_bgmEl.volume) || 0;
+    const startedAt = Date.now();
+    const tick = () => {
+      const progress = Math.min(1, (Date.now() - startedAt) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      _bgmEl.volume = startVolume + ((end - startVolume) * eased);
+      if (progress < 1) {
+        _bgmFadeRaf = requestAnimationFrame(tick);
+      } else {
+        _bgmFadeRaf = 0;
+        _notify();
+      }
+    };
+    _bgmFadeRaf = requestAnimationFrame(tick);
+  }
+
   function playBgm(idOrPool, opts) {
     if (typeof Audio === 'undefined') return;
     opts = opts || {};
@@ -193,15 +408,30 @@ window.CJS.AudioManager = (() => {
     if (id === _bgmCurrentId && _bgmEl && !_bgmEl.paused) return;
     const el = _ensureBgmEl();
     if (!el) return;
+    _cancelBgmStop();
+    _cancelBgmFade();
     _bgmCurrentId = id;
+    _lastBgmError = null;
+    const targetVolume = _muted ? 0 : _clamp01(_bgmVolume * (opts.volume ?? 1));
+    const fadeMs = Math.max(0, Number(opts.fadeMs ?? 320) || 0);
     try {
       el.src = path;
-      el.volume = _muted ? 0 : _clamp01(_bgmVolume * (opts.volume ?? 1));
+      el.volume = fadeMs > 0 && !_muted ? 0 : targetVolume;
       const p = el.play();
       if (p && typeof p.catch === 'function') {
-        p.catch(() => { /* autoplay policy: needs user gesture; will retry on next gesture */ });
+        p.then(() => {
+          _lastBgmError = null;
+          _fadeBgmVolume(targetVolume, fadeMs);
+          _notify();
+        }).catch(() => {
+          _lastBgmError = 'autoplay_blocked';
+          _notify();
+        });
+      } else {
+        _fadeBgmVolume(targetVolume, fadeMs);
       }
     } catch (e) { /* swallow */ }
+    _notify();
   }
 
   function _pickBgmId(idOrPool) {
@@ -215,16 +445,45 @@ window.CJS.AudioManager = (() => {
 
   function stopBgm(opts) {
     if (!_bgmEl) return;
-    try {
-      _bgmEl.pause();
-      _bgmEl.currentTime = 0;
-    } catch (e) { /* swallow */ }
-    _bgmCurrentId = null;
+    const fadeMs = Math.max(0, Number(opts?.fadeMs ?? 180) || 0);
+    const finish = () => {
+      _cancelBgmFade();
+      _cancelBgmStop();
+      try {
+        _bgmEl.pause();
+        _bgmEl.currentTime = 0;
+      } catch (e) { /* swallow */ }
+      _bgmCurrentId = null;
+      _lastBgmError = null;
+      _notify();
+    };
+
+    _cancelBgmStop();
+    if (fadeMs > 0 && !_bgmEl.paused) {
+      _fadeBgmVolume(0, fadeMs);
+      _bgmStopTimer = setTimeout(finish, fadeMs + 30);
+      return;
+    }
+    finish();
   }
 
   function getCurrentBgmId() { return _bgmCurrentId; }
   function isBgmPlaying() {
     return !!(_bgmEl && !_bgmEl.paused && !_bgmEl.ended && _bgmCurrentId);
+  }
+
+  function getBgmState() {
+    return {
+      currentId: _bgmCurrentId,
+      path: _bgmCurrentId ? (_manifest.bgm?.[_bgmCurrentId] || null) : null,
+      playing: !!(_bgmEl && !_bgmEl.paused && !_bgmEl.ended && _bgmCurrentId),
+      paused: !!(_bgmEl && _bgmEl.paused),
+      readyState: _bgmEl?.readyState || 0,
+      muted: _muted,
+      sfxVolume: _sfxVolume,
+      bgmVolume: _bgmVolume,
+      error: _lastBgmError
+    };
   }
 
   // ── VOLUME / MUTE ─────────────────────────────────────────────────
@@ -236,8 +495,9 @@ window.CJS.AudioManager = (() => {
     } else if (channel === 'bgm') {
       _bgmVolume = v;
       _writeNum(LS_BGM_VOL, v);
-      if (_bgmEl) _bgmEl.volume = _muted ? 0 : v;
+      if (_bgmEl) _fadeBgmVolume(v, 120);
     }
+    _notify();
   }
 
   function getVolume(channel) {
@@ -247,7 +507,8 @@ window.CJS.AudioManager = (() => {
   function mute(flag) {
     _muted = !!flag;
     _writeBool(LS_MUTED, _muted);
-    if (_bgmEl) _bgmEl.volume = _muted ? 0 : _bgmVolume;
+    if (_bgmEl) _fadeBgmVolume(_bgmVolume, 120);
+    _notify();
   }
 
   function isMuted() { return _muted; }
@@ -289,10 +550,12 @@ window.CJS.AudioManager = (() => {
   return Object.freeze({
     loadManifest,
     getManifest,
+    subscribe,
     playSfx,
     playBgm,
     stopBgm,
     getCurrentBgmId,
+    getBgmState,
     isBgmPlaying,
     setVolume,
     getVolume,

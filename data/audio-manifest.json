@@ -1,4 +1,18 @@
 {
-  "sfx": {},
-  "bgm": {}
+  "sfx": {
+    "ui_click": "audio/sfx/ui-click.wav",
+    "weapon_hit_physical": "audio/sfx/weapon-hit-physical.wav",
+    "weapon_hit_fire": "audio/sfx/weapon-hit-fire.wav",
+    "weapon_hit_ice": "audio/sfx/weapon-hit-ice.wav",
+    "weapon_hit_lightning": "audio/sfx/weapon-hit-lightning.wav",
+    "weapon_hit_water": "audio/sfx/weapon-hit-water.wav",
+    "magic_cast": "audio/sfx/magic-cast.wav",
+    "magic_hit": "audio/sfx/magic-hit.wav",
+    "item_use": "audio/sfx/item-use.wav",
+    "status_apply": "audio/sfx/status-apply.wav",
+    "ko": "audio/sfx/ko.wav"
+  },
+  "bgm": {
+    "codex_battle_loop": "audio/bgm/codex-battle-loop.wav"
+  }
 }

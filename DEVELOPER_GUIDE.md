@@ -530,9 +530,9 @@ Files:
 - `js/ui/audio-manager.js` - SFX pool + single BGM `<audio>` element, volume/mute persisted to localStorage
 - `js/ui/animation-bus.js` - tiny event bus combat code emits onto
 - `css/combat-animations.css` - the 5 keyframe sets + BGM control panel styles
-- `js/builders/audio-library.js` - editor panel for uploading MP3s and editing the manifest
+- `js/builders/audio-library.js` - editor panel for uploading audio files and editing the manifest
 - `data/audio-manifest.json` - `{ sfx: { id: path }, bgm: { id: path } }`
-- `audio/sfx/`, `audio/bgm/` - actual MP3 files (user-uploaded via the editor)
+- `audio/sfx/`, `audio/bgm/` - actual audio files (starter pack + user uploads)
 
 Built-in SFX keys (resolved by `AudioManager.playSfx`):
 - `weapon_hit_<element>` - falls back to `weapon_hit_physical` if missing
@@ -540,6 +540,12 @@ Built-in SFX keys (resolved by `AudioManager.playSfx`):
 - `item_use`
 - `ko`
 - `status_apply`
+
+Starter assets bundled in the repo:
+- BGM: `codex_battle_loop`
+- SFX: `ui_click`, `weapon_hit_physical`, `weapon_hit_fire`, `weapon_hit_ice`,
+  `weapon_hit_lightning`, `weapon_hit_water`, `magic_cast`, `magic_hit`,
+  `item_use`, `status_apply`, `ko`
 
 Encounter records can carry a `bgm` field:
 - string id - that single track plays
@@ -553,12 +559,12 @@ Toggle animations live with the checkbox in the combat sidebar
 (`CombatSettings.setAnimationsEnabled(false)` in code). Mute audio with
 the speaker button or `AudioManager.mute(true)`.
 
-Authoring + saving an MP3:
+Authoring + saving an audio file:
 1. Editor sidebar -> **Audio Library**
 2. Pick SFX or BGM tab
-3. Type an id, choose an MP3, click Upload
+3. Type an id, choose a supported audio file (`.mp3`, `.ogg`, `.wav`), click Upload
 4. SaveManager base64-encodes the file and PUTs it to GitHub at
-   `audio/<sfx|bgm>/<id>.mp3`, then re-saves `data/audio-manifest.json`
+   `audio/<sfx|bgm>/<id>.<ext>`, then re-saves `data/audio-manifest.json`
 5. Reference the id from an encounter's `bgm` field, or rely on the
    built-in SFX keys above.
 
