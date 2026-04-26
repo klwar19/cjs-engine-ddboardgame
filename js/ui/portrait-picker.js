@@ -95,7 +95,28 @@ window.CJS.PortraitPicker = (() => {
       _manifest = _normalizeManifest();
     }
     _loaded = true;
+    _seedCacheBustFromManifest();
     return _manifest;
+  }
+
+  // Make sure every path the manifest lists has a cache-bust stamp. This
+  // guarantees a one-time cache flush for portraits that existed before the
+  // cache-busting feature landed (otherwise the browser keeps serving the
+  // old image at the unchanged URL).
+  function _seedCacheBustFromManifest() {
+    let dirty = false;
+    const ts = Date.now();
+    for (const category of ['characters', 'monsters', 'items']) {
+      const list = Array.isArray(_manifest[category]) ? _manifest[category] : [];
+      for (const file of list) {
+        const path = `images/${category}/${file}`;
+        if (!_cacheBust[path]) {
+          _cacheBust[path] = ts;
+          dirty = true;
+        }
+      }
+    }
+    if (dirty) _persistCacheBust();
   }
 
   function getManifest() {

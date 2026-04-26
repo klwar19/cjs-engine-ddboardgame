@@ -874,58 +874,25 @@
           return Promise.resolve();
         }
 
-        return new Promise((resolve) => {
-          const body = document.createElement('div');
-          body.innerHTML = `
-            <p style="margin-bottom:12px">A local draft backup from <b>${escapeHtml(formatDateTime(draft.savedAt))}</b> is available in this browser.</p>
-            <p style="margin:0;color:var(--text-dim)">Restore it to continue where you left off, or discard it if you no longer need it.</p>
-          `;
-
-          const footer = document.createElement('div');
-          const discardBtn = document.createElement('button');
-          discardBtn.className = 'btn btn-ghost';
-          discardBtn.textContent = 'Discard Draft';
-
-          const restoreBtn = document.createElement('button');
-          restoreBtn.className = 'btn btn-primary';
-          restoreBtn.textContent = 'Restore Draft';
-
-          footer.appendChild(discardBtn);
-          footer.appendChild(restoreBtn);
-
-          const overlay = UI.openModal({
-            title: 'Restore Local Draft?',
-            content: body,
-            footer,
-            width: '500px'
-          });
-
-          discardBtn.onclick = () => {
-            Save.clearDraft();
-            refreshSyncBadge();
-            setStatusMessage('Draft discarded');
-            UI.closeModal(overlay);
-            resolve();
-          };
-
-          restoreBtn.onclick = () => {
-            const result = DS.importJSON(draft.json);
-            if (result.success) {
-              DS.markDirty();
-              rememberDirtySnapshot(draft.json, 'restore');
-              refreshValidationState();
-              resetEditors();
-              initEditor(activePanel);
-              updateCounts();
-              setStatusMessage('Restored local draft');
-              UI.toast('Restored local draft', 'success');
-            } else {
-              UI.toast(`Draft restore failed: ${result.error}`, 'error');
-            }
-            UI.closeModal(overlay);
-            resolve();
-          };
-        });
+        const result = DS.importJSON(draft.json);
+        if (result.success) {
+          DS.markDirty();
+          rememberDirtySnapshot(draft.json, 'restore');
+          refreshValidationState();
+          resetEditors();
+          initEditor(activePanel);
+          updateCounts();
+          refreshSyncBadge();
+          const when = formatDateTime(draft.savedAt);
+          setStatusMessage(`Restored local draft from ${when}`);
+          UI.toast(`Restored local draft from ${when}`, 'info');
+        } else {
+          Save.clearDraft();
+          refreshSyncBadge();
+          setStatusMessage('Local draft was invalid and was discarded');
+          UI.toast(`Draft restore failed: ${result.error || 'invalid'}`, 'error');
+        }
+        return Promise.resolve();
       }
 
       function bindUndoRedo() {
