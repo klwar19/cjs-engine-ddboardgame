@@ -261,6 +261,34 @@ window.CJS.SaveManager = (() => {
     return btoa(binary);
   }
 
+  function _bytesToBase64(bytes) {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    return btoa(binary);
+  }
+
+  // Read a File or Blob and resolve to a base64 string (no data: prefix).
+  // Used by the editor's Audio Library when uploading MP3s.
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error('No file provided'));
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+      reader.onload = () => {
+        try {
+          const buf = reader.result;
+          const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(0);
+          resolve(_bytesToBase64(bytes));
+        } catch (e) { reject(e); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
   function _downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -335,6 +363,57 @@ window.CJS.SaveManager = (() => {
         throw await _parseApiError(response, 'GitHub save failed');
       }
 
+      return response.json();
+    };
+
+    try {
+      return await saveOnce();
+    } catch (error) {
+      if (/sha|conflict|409/i.test(String(error.message || ''))) {
+        return saveOnce();
+      }
+      throw error;
+    }
+  }
+
+  // Upload a pre-base64-encoded binary blob (e.g. MP3) to GitHub.
+  // base64Content must be the raw base64 payload (no data: prefix).
+  async function uploadBinaryFileToGitHub(path, base64Content, options = {}) {
+    const config = _normalizeConfig({ ...getGitHubConfig(), ...(options.config || {}) });
+    const token = String(options.token !== undefined ? options.token : getGitHubToken()).trim();
+    config.path = String(path || '').trim().replace(/^\/+/, '');
+
+    if (!config.owner || !config.repo) {
+      throw new Error('GitHub owner and repo are required');
+    }
+    if (!token) {
+      throw new Error('GitHub token is required');
+    }
+    if (!config.path) {
+      throw new Error('Upload path is required');
+    }
+    if (typeof base64Content !== 'string' || !base64Content) {
+      throw new Error('base64Content must be a non-empty string');
+    }
+
+    const saveOnce = async () => {
+      const existing = await _getRemoteFile(config, token);
+      const payload = {
+        message: options.message || config.commitMessage || `upload ${config.path}`,
+        branch: config.branch,
+        content: base64Content
+      };
+      if (existing && existing.sha) payload.sha = existing.sha;
+
+      const response = await fetch(_buildContentsUrl(config), {
+        method: 'PUT',
+        headers: _buildHeaders(token, true),
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw await _parseApiError(response, 'GitHub binary upload failed');
+      }
       return response.json();
     };
 
@@ -530,6 +609,8 @@ window.CJS.SaveManager = (() => {
     testGitHubConnection,
     saveJSONToGitHub,
     saveTextFileToGitHub,
+    uploadBinaryFileToGitHub,
+    fileToBase64,
     saveFilesSeparatelyToGitHub,
     saveFilesAsSingleCommit,
     exportFilesToDirectory,

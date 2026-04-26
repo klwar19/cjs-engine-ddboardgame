@@ -213,6 +213,8 @@ window.CJS.StatusManager = (() => {
       });
     }
 
+    try { window.CJS.AudioManager?.playSfx('status_apply'); } catch (e) {}
+
     return { applied: true, instance };
   }
 

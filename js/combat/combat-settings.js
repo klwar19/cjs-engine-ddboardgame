@@ -97,6 +97,20 @@ window.CJS.CombatSettings = (() => {
 
   function getDiceHistory() { return [..._diceHistory]; }
 
+  // ── PRESENTATION (audio + animations) ─────────────────────────────
+  // These are UI-only knobs. Combat math never reads them.
+
+  let _animationsEnabled = true;
+  let _defaultBgmPool = [];
+
+  function setAnimationsEnabled(flag) { _animationsEnabled = !!flag; }
+  function getAnimationsEnabled() { return _animationsEnabled; }
+
+  function setDefaultBgmPool(ids) {
+    _defaultBgmPool = Array.isArray(ids) ? ids.filter(Boolean).map(String) : [];
+  }
+  function getDefaultBgmPool() { return _defaultBgmPool.slice(); }
+
   // ── ONE-SHOT AUTO ──────────────────────────────────────────────────
   // Separate from the base control mode: a transient "let AI resolve this"
   // request. Base mode stays manual by default; when the scope expires,
@@ -175,6 +189,8 @@ window.CJS.CombatSettings = (() => {
     _autoScope = null;
     _autoStartTurnIndex = null;
     _autoForUnitId = null;
+    // Note: _animationsEnabled and _defaultBgmPool are session-level
+    // presentation prefs, not per-battle state. Don't reset them here.
   }
 
   // ── SNAPSHOT (for persistence / debugging) ────────────────────────
@@ -204,6 +220,9 @@ window.CJS.CombatSettings = (() => {
     queueDice, popQueuedDice, clearDiceQueue, diceQueueLength,
     setDicePromptFn, getDicePromptFn,
     recordDiceRoll, getDiceHistory,
+    // Presentation
+    setAnimationsEnabled, getAnimationsEnabled,
+    setDefaultBgmPool, getDefaultBgmPool,
     // Lifecycle
     reset, snapshot
   });

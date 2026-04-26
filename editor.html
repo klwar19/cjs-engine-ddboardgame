@@ -139,6 +139,9 @@
         <div class="nav-item" data-panel="browser">
           <span>Data Browser</span>
         </div>
+        <div class="nav-item" data-panel="audio">
+          <span>Audio Library</span>
+        </div>
       </div>
 
       <div class="app-content" id="main-content">
@@ -150,6 +153,7 @@
         <div class="editor-panel" id="panel-characters"></div>
         <div class="editor-panel" id="panel-monsters"></div>
         <div class="editor-panel" id="panel-encounters"></div>
+        <div class="editor-panel" id="panel-audio"></div>
         <div class="editor-panel" id="panel-browser"></div>
       </div>
     </div>
@@ -194,6 +198,7 @@
 
   <script src="js/ui/ui-helpers.js"></script>
   <script src="js/ui/portrait-picker.js"></script>
+  <script src="js/ui/audio-manager.js"></script>
   <script src="js/builders/effect-editor.js"></script>
   <script src="js/builders/status-editor.js"></script>
   <script src="js/builders/passive-editor.js"></script>
@@ -202,6 +207,7 @@
   <script src="js/builders/char-editor.js"></script>
   <script src="js/builders/monster-editor.js"></script>
   <script src="js/builders/encounter-editor.js"></script>
+  <script src="js/builders/audio-library.js"></script>
   <script src="js/ui/data-browser.js"></script>
 
   <script>
@@ -232,7 +238,8 @@
         characters: CJS.CharEditor,
         monsters: CJS.MonsterEditor,
         encounters: CJS.EncounterEditor,
-        browser: CJS.DataBrowser
+        browser: CJS.DataBrowser,
+        audio: CJS.AudioLibrary
       };
 
       const sidebar = document.getElementById('sidebar');

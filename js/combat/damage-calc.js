@@ -17,6 +17,7 @@ window.CJS.DamageCalc = (() => {
   const Dice = () => window.CJS.Dice;
   const DS   = () => window.CJS.DiceService;   // preferred — falls back to Dice
   const Log  = () => window.CJS.CombatLog;
+  const AB   = () => window.CJS.AnimationBus;
 
   function _rollDice(expr, source) {
     // Prefer DiceService so manual/queued dice override works.
@@ -226,6 +227,16 @@ window.CJS.DamageCalc = (() => {
       damage: applied + absorbed, element, damageType, skill, isCritical, qteGrade,
       breakdown: { ...breakdown, absorbed }
     });
+
+    // Animation: damage flash on target cell
+    if (applied > 0 || absorbed > 0) {
+      try {
+        AB()?.emit('damage', {
+          target, amount: applied, absorbed,
+          damageType, element, isCritical: !!isCritical
+        });
+      } catch (e) {}
+    }
 
     // Log kill
     if (killed) {

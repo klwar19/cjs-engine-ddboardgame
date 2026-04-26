@@ -21,6 +21,9 @@ window.CJS.EncounterEditor = (() => {
   let _grid = [];     // 2D array of terrain type strings
   let _units = [];    // [{ id, pos: [row, col], size: "1x1" }]
   let _width = 8, _height = 8;
+  let _bgm = null;    // string id | string[] (random pool) | null
+
+  const AM = () => window.CJS.AudioManager;
   let _paintMode = 'terrain'; // 'terrain' | 'unit' | 'erase_unit'
   let _selectedTerrain = 'empty';
   let _selectedUnit = null;   // unit ID to place
@@ -105,6 +108,9 @@ window.CJS.EncounterEditor = (() => {
     _height = enc.height || 8;
     _grid = enc.grid || _emptyGrid(_width, _height);
     _units = enc.units ? JSON.parse(JSON.stringify(enc.units)) : [];
+    _bgm = enc.bgm == null ? null
+      : Array.isArray(enc.bgm) ? enc.bgm.slice()
+      : String(enc.bgm);
     // Backfill size from unit data
     for (const u of _units) {
       if (!u.size) {
@@ -131,6 +137,22 @@ window.CJS.EncounterEditor = (() => {
           <div class="form-group" style="flex:0 0 80px"><label class="form-label">Width</label><input type="number" id="enc-w" value="${_width}" min="4" max="16"></div>
           <div class="form-group" style="flex:0 0 80px"><label class="form-label">Height</label><input type="number" id="enc-h" value="${_height}" min="4" max="16"></div>
           <div class="form-group" style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="btn btn-ghost btn-sm" id="enc-resize">Resize</button></div>
+        </div>
+
+        <h3>Audio <span class="dim" style="font-size:0.78em">— battle BGM (single track or random pool)</span></h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mode</label>
+            <select id="enc-bgm-mode">
+              <option value="none">None (use default)</option>
+              <option value="single">Single track</option>
+              <option value="pool">Random pool</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:2">
+            <label class="form-label">Track(s)</label>
+            <div id="enc-bgm-picker"></div>
+          </div>
         </div>
 
         <h3>Terrain <span class="dim" style="font-size:0.78em">— cost shown as ×N, 👁 = blocks LoS</span></h3>
@@ -198,7 +220,7 @@ window.CJS.EncounterEditor = (() => {
     document.removeEventListener('mouseup', _onMouseUp);
     document.addEventListener('mouseup', _onMouseUp);
 
-    _renderGrid(); _renderUnitList(); _updateModeButtons();
+    _renderGrid(); _renderUnitList(); _updateModeButtons(); _renderBgmPicker();
 
     _formEl.querySelector('#enc-save').onclick = () => _save(enc.id);
     _formEl.querySelector('#enc-dup').onclick = () => { const nid=DS().duplicate('encounters',enc.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
@@ -407,12 +429,83 @@ window.CJS.EncounterEditor = (() => {
   }
 
   function _save(id) {
-    DS().replace('encounters', id, {
+    const payload = {
       id, name: _formEl.querySelector('#enc-name').value,
       width: _width, height: _height, grid: _grid, units: _units
-    });
+    };
+    if (_bgm != null && !(Array.isArray(_bgm) && _bgm.length === 0)) {
+      payload.bgm = _bgm;
+    }
+    DS().replace('encounters', id, payload);
     _renderList();
     UI().toast('Encounter saved', 'success');
+  }
+
+  // ── BGM PICKER ──────────────────────────────────────────────────
+  function _renderBgmPicker() {
+    const modeSel = _formEl.querySelector('#enc-bgm-mode');
+    const wrap    = _formEl.querySelector('#enc-bgm-picker');
+    if (!modeSel || !wrap) return;
+
+    const initialMode = _bgm == null ? 'none' : Array.isArray(_bgm) ? 'pool' : 'single';
+    modeSel.value = initialMode;
+
+    function getBgmIds() {
+      try { return Object.keys(AM()?.getManifest()?.bgm || {}); } catch (e) { return []; }
+    }
+
+    function renderPicker() {
+      const mode = modeSel.value;
+      const ids = getBgmIds();
+
+      if (mode === 'none') {
+        _bgm = null;
+        wrap.innerHTML = '<div class="dim" style="font-size:0.82rem">Falls back to the global default pool (CombatSettings.defaultBgmPool).</div>';
+        return;
+      }
+
+      if (mode === 'single') {
+        if (Array.isArray(_bgm)) _bgm = _bgm[0] || null;
+        const cur = typeof _bgm === 'string' ? _bgm : '';
+        const opts = ['<option value="">-- pick --</option>']
+          .concat(ids.map(id => `<option value="${_esc(id)}"${id===cur?' selected':''}>${_esc(id)}</option>`))
+          .join('');
+        wrap.innerHTML = `<select id="enc-bgm-single" style="width:100%">${opts}</select>`;
+        wrap.querySelector('#enc-bgm-single').onchange = (e) => {
+          _bgm = e.target.value || null;
+        };
+        return;
+      }
+
+      // pool mode
+      if (!Array.isArray(_bgm)) _bgm = _bgm ? [_bgm] : [];
+      const set = new Set(_bgm);
+      const checks = ids.map(id => `
+        <label style="display:flex;gap:6px;align-items:center;font-size:0.82rem;padding:2px 0">
+          <input type="checkbox" value="${_esc(id)}"${set.has(id)?' checked':''}>
+          <span>${_esc(id)}</span>
+        </label>`).join('');
+      wrap.innerHTML = `
+        <div style="max-height:120px;overflow-y:auto;border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:6px">
+          ${checks || '<div class="dim">No BGM tracks in audio-manifest.json yet.</div>'}
+        </div>`;
+      wrap.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) set.add(cb.value);
+          else set.delete(cb.value);
+          _bgm = Array.from(set);
+        });
+      });
+    }
+
+    modeSel.onchange = renderPicker;
+
+    // Lazy-load manifest if AudioManager is present
+    if (AM() && AM().loadManifest) {
+      AM().loadManifest().then(renderPicker).catch(renderPicker);
+    } else {
+      renderPicker();
+    }
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

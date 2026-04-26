@@ -28,6 +28,11 @@ window.CJS.ActionHandler = (() => {
   const C   = () => window.CJS.CONST;
   const Log = () => window.CJS.CombatLog;
   const AoE = () => window.CJS.AoE;
+  const AM  = () => window.CJS.AudioManager;
+  const AB  = () => window.CJS.AnimationBus;
+
+  function _sfx(key, opts) { try { AM()?.playSfx(key, opts); } catch (e) {} }
+  function _anim(name, payload) { try { AB()?.emit(name, payload); } catch (e) {} }
 
   // ── VALIDATE ──────────────────────────────────────────────────────
   // Returns: { valid: bool, reason?: string }
@@ -175,6 +180,8 @@ window.CJS.ActionHandler = (() => {
       cost: result.cost, terrainEffects: result.terrainEffects
     });
 
+    _anim('unit_move', { unit, from: fromPos, to: [tr, tc] });
+
     // Fire on_move trigger (terrain effects, caltrops, etc.)
     ER().fireTrigger('on_move', {
       unit, turnNumber: ctx.turnNumber,
@@ -230,6 +237,11 @@ window.CJS.ActionHandler = (() => {
       skill: null, isCritical: attack.isCritical, breakdown: attack.breakdown
     });
 
+    // SFX: weapon-hit, element-routed with physical fallback
+    _sfx(`weapon_hit_${String(atkElement || 'physical').toLowerCase()}`, {
+      fallbacks: ['weapon_hit_physical']
+    });
+
     // Fire on_hit (attacker-side)
     ER().fireTrigger('on_hit', {
       unit, attacker: unit, target,
@@ -266,6 +278,9 @@ window.CJS.ActionHandler = (() => {
     const apCost = skill.ap || 1;
     const mpCost = Math.max(0, (skill.mp || 0) + (unit.costMod || 0));
     const cd     = Math.max(0, (skill.cooldown || 0) + (unit.cooldownMod || 0));
+
+    _anim('skill_cast', { unit, skill });
+    if (skill.damageType === 'Magic') _sfx('magic_cast');
 
     // Pay costs
     unit.turnState.mainActionUsed = true;
@@ -321,6 +336,16 @@ window.CJS.ActionHandler = (() => {
           qteGrade
         });
         hits.push({ target: t, damage: applied.applied, killed: applied.killed, critical: attack.isCritical });
+
+        // SFX: magic skills route to magic_hit; physical/weapon skills
+        // route to weapon_hit_<element> with physical fallback.
+        if (skill.damageType === 'Magic') {
+          _sfx('magic_hit');
+        } else {
+          _sfx(`weapon_hit_${String(skill.element || 'physical').toLowerCase()}`, {
+            fallbacks: ['weapon_hit_physical']
+          });
+        }
 
         ER().fireTrigger('on_hit', {
           unit, attacker: unit, target: t,
@@ -400,6 +425,8 @@ window.CJS.ActionHandler = (() => {
       unit, attacker: unit, allUnits: GE().getAllUnits(),
       turnNumber: ctx.turnNumber
     });
+
+    _sfx('item_use');
 
     return { success: true, action: 'item' };
   }

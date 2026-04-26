@@ -518,3 +518,53 @@ If you remember only one thing, remember this:
 - `SaveManager` writes data back out
 
 That separation is what keeps the project scalable as worlds and content grow.
+
+## 17. Audio and Animation
+
+Combat now has a thin presentation layer that listens to existing
+`CombatManager` pub/sub events. Combat math never reads from it, so
+audio + animation are safe to disable or extend without touching
+gameplay code.
+
+Files:
+- `js/ui/audio-manager.js` - SFX pool + single BGM `<audio>` element, volume/mute persisted to localStorage
+- `js/ui/animation-bus.js` - tiny event bus combat code emits onto
+- `css/combat-animations.css` - the 5 keyframe sets + BGM control panel styles
+- `js/builders/audio-library.js` - editor panel for uploading MP3s and editing the manifest
+- `data/audio-manifest.json` - `{ sfx: { id: path }, bgm: { id: path } }`
+- `audio/sfx/`, `audio/bgm/` - actual MP3 files (user-uploaded via the editor)
+
+Built-in SFX keys (resolved by `AudioManager.playSfx`):
+- `weapon_hit_<element>` - falls back to `weapon_hit_physical` if missing
+- `magic_cast`, `magic_hit`
+- `item_use`
+- `ko`
+- `status_apply`
+
+Encounter records can carry a `bgm` field:
+- string id - that single track plays
+- string array - random pick from the pool on battle start
+- omitted - falls back to `CombatSettings.getDefaultBgmPool()`
+
+Animation events emitted from combat:
+- `unit_move`, `damage`, `skill_cast`, `unit_ko`, `turn_start`
+
+Toggle animations live with the checkbox in the combat sidebar
+(`CombatSettings.setAnimationsEnabled(false)` in code). Mute audio with
+the speaker button or `AudioManager.mute(true)`.
+
+Authoring + saving an MP3:
+1. Editor sidebar -> **Audio Library**
+2. Pick SFX or BGM tab
+3. Type an id, choose an MP3, click Upload
+4. SaveManager base64-encodes the file and PUTs it to GitHub at
+   `audio/<sfx|bgm>/<id>.mp3`, then re-saves `data/audio-manifest.json`
+5. Reference the id from an encounter's `bgm` field, or rely on the
+   built-in SFX keys above.
+
+If you want to change audio behavior:
+- file routing for SFX hits - `js/combat/action-handler.js`
+- KO sound - `js/combat/combat-manager.js` (`_handleDeath`)
+- status applied sound - `js/combat/status-manager.js`
+- damage flash / KO fade / cast / move / banner visuals - `js/ui/combat-ui.js` (`_animXxx`) + `css/combat-animations.css`
+- BGM resolution at battle start - `js/ui/combat-ui.js` (`_startEncounterBgm`)
