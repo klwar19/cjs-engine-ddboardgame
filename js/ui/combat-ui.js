@@ -17,8 +17,14 @@ window.CJS.CombatUI = (() => {
   const QM = () => window.CJS.QteManager;
   const CS = () => window.CJS.CombatSettings;
   const Log = () => window.CJS.CombatLog;
+  const AM = () => window.CJS.AudioManager;
+  const AB = () => window.CJS.AnimationBus;
 
   let _container = null;
+  let _bgmUnsubs = [];
+  let _animUnsubs = [];
+  let $bgmControls = null;
+  let $fxLayer = null;
   let _callbacks = {};
   let _mode = 'idle';
   let _pendingAction = null;
@@ -49,10 +55,149 @@ window.CJS.CombatUI = (() => {
     _buildLayout();
     _bindEvents();
     _bindWindowEvents();
+    _bindBgmControls();
+    _bindAnimationBus();
 
     if (CS()) {
       _setDiceMode(CS().getDiceMode ? CS().getDiceMode() : 'auto');
     }
+  }
+
+  // ── BGM / SFX CONTROLS ─────────────────────────────────────────────
+  function _bindBgmControls() {
+    if (!_container || !AM()) return;
+
+    AM().loadManifest().catch(() => {});
+
+    const trackSel  = _container.querySelector('#bgm-track-select');
+    const toggleBtn = _container.querySelector('#btn-bgm-toggle');
+    const muteBtn   = _container.querySelector('#btn-bgm-mute');
+    const bgmVol    = _container.querySelector('#bgm-volume');
+    const sfxVol    = _container.querySelector('#sfx-volume');
+    const animChk   = _container.querySelector('#anim-toggle');
+
+    // Populate track select once manifest is loaded.
+    AM().loadManifest().then(() => {
+      if (!trackSel) return;
+      const bgm = AM().getManifest().bgm || {};
+      trackSel.innerHTML = '<option value="">-- none --</option>';
+      for (const id of Object.keys(bgm)) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = id;
+        trackSel.appendChild(opt);
+      }
+    }).catch(() => {});
+
+    // Initialize sliders from persisted prefs.
+    if (bgmVol)  bgmVol.value = Math.round((AM().getVolume('bgm') || 0) * 100);
+    if (sfxVol)  sfxVol.value = Math.round((AM().getVolume('sfx') || 0) * 100);
+    if (muteBtn) muteBtn.classList.toggle('active', AM().isMuted());
+    if (animChk && CS()?.getAnimationsEnabled) animChk.checked = CS().getAnimationsEnabled();
+
+    if (trackSel) {
+      trackSel.addEventListener('change', () => {
+        const id = trackSel.value;
+        if (!id) AM().stopBgm();
+        else AM().playBgm(id);
+      });
+    }
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        if (AM().isBgmPlaying()) {
+          AM().stopBgm();
+          toggleBtn.innerHTML = '&#9658;';
+        } else if (trackSel?.value) {
+          AM().playBgm(trackSel.value);
+          toggleBtn.innerHTML = '&#10074;&#10074;';
+        }
+      });
+    }
+    if (muteBtn) {
+      muteBtn.addEventListener('click', () => {
+        AM().mute(!AM().isMuted());
+        muteBtn.classList.toggle('active', AM().isMuted());
+      });
+    }
+    if (bgmVol) {
+      bgmVol.addEventListener('input', () => {
+        AM().setVolume('bgm', (parseInt(bgmVol.value, 10) || 0) / 100);
+      });
+    }
+    if (sfxVol) {
+      sfxVol.addEventListener('input', () => {
+        AM().setVolume('sfx', (parseInt(sfxVol.value, 10) || 0) / 100);
+      });
+    }
+    if (animChk) {
+      animChk.addEventListener('change', () => {
+        const flag = !!animChk.checked;
+        if (CS()?.setAnimationsEnabled) CS().setAnimationsEnabled(flag);
+        document.body.classList.toggle('no-anim', !flag);
+      });
+    }
+  }
+
+  // ── ANIMATION BUS ──────────────────────────────────────────────────
+  function _bindAnimationBus() {
+    if (!AB()) return;
+
+    _animUnsubs.push(AB().on('damage',     _animDamageFlash));
+    _animUnsubs.push(AB().on('unit_ko',    _animKoFade));
+    _animUnsubs.push(AB().on('skill_cast', _animSkillCast));
+    _animUnsubs.push(AB().on('unit_move',  _animUnitMove));
+    _animUnsubs.push(AB().on('turn_start', _animTurnBanner));
+  }
+
+  function _detachAnimationBus() {
+    for (const off of _animUnsubs) { try { off(); } catch (e) {} }
+    _animUnsubs = [];
+  }
+
+  function _animEnabled() {
+    return CS()?.getAnimationsEnabled ? CS().getAnimationsEnabled() : true;
+  }
+
+  function _spawnFx(cls, pos, ttl) {
+    if (!_animEnabled() || !$fxLayer || !pos) return;
+    const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
+    if (!cell) return;
+    const [r, c] = pos;
+    const el = document.createElement('div');
+    el.className = `cjs-fx-cell ${cls}`;
+    el.style.left   = (c * cell) + 'px';
+    el.style.top    = (r * cell) + 'px';
+    el.style.width  = cell + 'px';
+    el.style.height = cell + 'px';
+    $fxLayer.appendChild(el);
+    setTimeout(() => { try { el.remove(); } catch (e) {} }, ttl || 700);
+  }
+
+  function _animDamageFlash(payload) {
+    _spawnFx('cjs-fx-damage', payload?.target?.pos, 280);
+  }
+
+  function _animKoFade(payload) {
+    _spawnFx('cjs-fx-ko', payload?.unit?.pos, 700);
+  }
+
+  function _animSkillCast(payload) {
+    _spawnFx('cjs-fx-cast', payload?.unit?.pos, 480);
+  }
+
+  function _animUnitMove(payload) {
+    _spawnFx('cjs-fx-move', payload?.to, 360);
+  }
+
+  function _animTurnBanner(payload) {
+    if (!_animEnabled() || !$grid) return;
+    const unit = payload?.unit;
+    if (!unit) return;
+    const banner = document.createElement('div');
+    banner.className = 'cjs-turn-banner team-' + (unit.team === 'player' ? 'player' : 'enemy');
+    banner.textContent = (unit.name || 'Unit') + "'s turn";
+    $grid.appendChild(banner);
+    setTimeout(() => { try { banner.remove(); } catch (e) {} }, 1200);
   }
 
   function _buildLayout() {
@@ -66,8 +211,30 @@ window.CJS.CombatUI = (() => {
         <div class="combat-middle">
           <div class="combat-grid-wrap">
             <canvas id="cbt-canvas"></canvas>
+            <div id="cbt-fx-layer" class="cjs-fx-layer"></div>
           </div>
           <div class="combat-sidebar">
+            <div id="cbt-bgm-controls" class="bgm-controls">
+              <div class="bgm-row">
+                <span class="bgm-label">BGM</span>
+                <select id="bgm-track-select"><option value="">-- none --</option></select>
+                <button id="btn-bgm-toggle" class="btn btn-sm bgm-btn" title="Play/Pause BGM">&#9658;</button>
+                <button id="btn-bgm-mute" class="btn btn-sm bgm-btn" title="Mute all">&#128263;</button>
+              </div>
+              <div class="bgm-row">
+                <span class="bgm-label">Music</span>
+                <input type="range" id="bgm-volume" min="0" max="100" value="50">
+              </div>
+              <div class="bgm-row">
+                <span class="bgm-label">SFX</span>
+                <input type="range" id="sfx-volume" min="0" max="100" value="70">
+              </div>
+              <div class="bgm-row">
+                <label class="bgm-label" style="display:flex;align-items:center;gap:4px;cursor:pointer">
+                  <input type="checkbox" id="anim-toggle" checked> <span>Animations</span>
+                </label>
+              </div>
+            </div>
             <div id="cbt-unit-info" class="unit-info-panel"></div>
             <div id="cbt-actions" class="action-panel"></div>
             <div class="dice-controls">
@@ -118,6 +285,8 @@ window.CJS.CombatUI = (() => {
     $narrator = _container.querySelector('#cbt-narrator');
     $qteOverlay = _container.querySelector('#cbt-qte-overlay');
     $diceModal = _container.querySelector('#cbt-dice-modal');
+    $bgmControls = _container.querySelector('#cbt-bgm-controls');
+    $fxLayer = _container.querySelector('#cbt-fx-layer');
 
     const canvas = _container.querySelector('#cbt-canvas');
     GR().init(canvas, {
@@ -262,9 +431,33 @@ window.CJS.CombatUI = (() => {
       }
     }
 
+    _startEncounterBgm();
+
     const phase = CM().runUntilInput();
     _refresh();
     return phase;
+  }
+
+  // Resolve and play BGM for the current encounter.
+  // Priority: encounter.bgm (string or array) → CombatSettings default pool.
+  function _startEncounterBgm() {
+    if (!AM()) return;
+    AM().loadManifest().then(() => {
+      const enc = CM().getState()?.encounter || {};
+      let pick = enc.bgm;
+      if ((!pick || (Array.isArray(pick) && !pick.length)) && CS()?.getDefaultBgmPool) {
+        const pool = CS().getDefaultBgmPool();
+        if (pool && pool.length) pick = pool;
+      }
+      if (!pick || (Array.isArray(pick) && !pick.length)) return;
+      AM().playBgm(pick);
+      const trackSel = _container?.querySelector('#bgm-track-select');
+      const toggle   = _container?.querySelector('#btn-bgm-toggle');
+      if (trackSel && AM().getCurrentBgmId()) {
+        trackSel.value = AM().getCurrentBgmId();
+      }
+      if (toggle) toggle.innerHTML = '&#10074;&#10074;';
+    }).catch(() => {});
   }
 
   function _onStateChange() {
@@ -892,6 +1085,8 @@ window.CJS.CombatUI = (() => {
 
   function destroy() {
     _detachSubscriptions();
+    _detachAnimationBus();
+    try { AM()?.stopBgm(); } catch (_) {}
 
     try { NE().destroy(); } catch (_) {}
     try { GR().destroy(); } catch (_) {}
@@ -923,6 +1118,8 @@ window.CJS.CombatUI = (() => {
     $narrator = null;
     $qteOverlay = null;
     $diceModal = null;
+    $bgmControls = null;
+    $fxLayer = null;
   }
 
   return Object.freeze({

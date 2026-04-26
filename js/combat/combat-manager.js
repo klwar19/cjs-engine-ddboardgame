@@ -28,6 +28,8 @@ window.CJS.CombatManager = (() => {
   const F   = () => window.CJS.Formulas;
   const C   = () => window.CJS.CONST;
   const D   = () => window.CJS.DiceService || window.CJS.Dice;
+  const AM  = () => window.CJS.AudioManager;
+  const AB  = () => window.CJS.AnimationBus;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
   let _state = null;
@@ -193,6 +195,8 @@ window.CJS.CombatManager = (() => {
     Log().setTurn(_state.roundNumber);
     Log().setPhase('turn_start');
     Log().logTurnStart(unit);
+
+    try { AB()?.emit('turn_start', { unit, round: _state.roundNumber }); } catch (e) {}
 
     // Check whether a one-shot auto scope has expired (e.g. 'turn' scope
     // clears as soon as we're on a different unit's turn)
@@ -441,6 +445,8 @@ window.CJS.CombatManager = (() => {
   function _handleDeath(unit) {
     if (unit._deathProcessed) return;
     unit._deathProcessed = true;
+    try { AB()?.emit('unit_ko', { unit }); } catch (e) {}
+    try { AM()?.playSfx('ko'); } catch (e) {}
     ER().fireTrigger('on_death', {
       unit, allUnits: Object.values(_state.units),
       turnNumber: _state.roundNumber
