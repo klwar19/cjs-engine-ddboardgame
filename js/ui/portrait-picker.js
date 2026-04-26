@@ -50,13 +50,26 @@ window.CJS.PortraitPicker = (() => {
     const row = document.createElement('div');
     row.style.display = 'flex';
     row.style.gap = '4px';
+    row.style.flexWrap = 'wrap';
 
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'portrait-path-input';
     input.placeholder = `images/${category}/hero.png`;
     input.style.flex = '1';
+    input.style.minWidth = '120px';
     input.style.fontSize = '0.78rem';
+
+    const uploadBtn = document.createElement('button');
+    uploadBtn.type = 'button';
+    uploadBtn.className = 'btn btn-success btn-sm portrait-upload-btn';
+    uploadBtn.textContent = 'Upload';
+    uploadBtn.title = 'Upload an image from your computer';
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif';
+    fileInput.style.display = 'none';
 
     const browseBtn = document.createElement('button');
     browseBtn.type = 'button';
@@ -69,6 +82,84 @@ window.CJS.PortraitPicker = (() => {
     clearBtn.className = 'btn btn-ghost btn-sm portrait-clear-btn';
     clearBtn.textContent = 'Clear';
     clearBtn.title = 'Clear portrait';
+
+    const statusEl = document.createElement('div');
+    statusEl.className = 'portrait-status dim';
+    statusEl.style.fontSize = '0.78rem';
+    statusEl.style.marginTop = '4px';
+    statusEl.style.minHeight = '1em';
+
+    let busy = false;
+    function setStatus(text, kind) {
+      statusEl.textContent = text || '';
+      statusEl.style.color = kind === 'error' ? 'var(--danger, #f88)'
+        : kind === 'success' ? 'var(--success, #7c7)'
+        : '';
+    }
+
+    async function handleUpload() {
+      if (busy) return;
+      const SM = window.CJS && window.CJS.SaveManager;
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      if (!SM || !SM.uploadBinaryFileToGitHub) {
+        setStatus('SaveManager not loaded.', 'error');
+        return;
+      }
+      if (!SM.hasGitHubToken || !SM.hasGitHubToken()) {
+        setStatus('Configure your GitHub token first (Editor → GitHub).', 'error');
+        return;
+      }
+
+      const slug = _slugFor(opts.id, opts.name);
+      if (!slug) {
+        setStatus('Set an id or name on this entry before uploading.', 'error');
+        return;
+      }
+
+      busy = true;
+      uploadBtn.disabled = true;
+      setStatus('Reading file…', 'info');
+      try {
+        const base64 = await SM.fileToBase64(file);
+        const extMatch = String(file.name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+        const ext = extMatch ? extMatch[0] : '.png';
+        const filename = `${slug}${ext}`;
+        const path = `images/${category}/${filename}`;
+
+        setStatus('Uploading image to GitHub…', 'info');
+        await SM.uploadBinaryFileToGitHub(path, base64, {
+          message: `image: upload ${path}`
+        });
+
+        setStatus('Updating image-manifest.json…', 'info');
+        await loadManifest().catch(() => {});
+        _manifest[category] = Array.isArray(_manifest[category]) ? _manifest[category] : [];
+        if (!_manifest[category].includes(filename)) _manifest[category].push(filename);
+        const json = JSON.stringify(_manifest, null, 2) + '\n';
+        await SM.saveTextFileToGitHub('data/image-manifest.json', json, {
+          message: `image: register ${category}.${filename}`
+        });
+
+        delete _imageCache[path];
+        currentPath = path;
+        notifyChange();
+        render();
+
+        setStatus(`Uploaded → ${path}`, 'success');
+        fileInput.value = '';
+      } catch (e) {
+        console.error(e);
+        setStatus('Upload failed: ' + (e.message || e), 'error');
+      } finally {
+        busy = false;
+        uploadBtn.disabled = false;
+      }
+    }
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleUpload);
 
     function renderPreview() {
       previewWrap.innerHTML = '';
@@ -130,10 +221,13 @@ window.CJS.PortraitPicker = (() => {
     });
 
     row.appendChild(input);
+    row.appendChild(uploadBtn);
     row.appendChild(browseBtn);
     row.appendChild(clearBtn);
+    row.appendChild(fileInput);
     controls.appendChild(label);
     controls.appendChild(row);
+    controls.appendChild(statusEl);
     root.appendChild(previewWrap);
     root.appendChild(controls);
 
@@ -269,6 +363,15 @@ window.CJS.PortraitPicker = (() => {
 
   function clearCache() {
     _imageCache = Object.create(null);
+  }
+
+  function _slugFor(id, name) {
+    const base = String(id || '').trim() || String(name || '').trim();
+    if (!base) return '';
+    return base.toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   function _normalizeManifest(value) {

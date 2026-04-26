@@ -130,6 +130,8 @@ window.CJS.ItemEditor = (() => {
       portraitWidget = PP().createWidget({
         currentPath: item.portrait || '',
         category: 'items',
+        id: item.id,
+        name: item.name,
         fallbackIcon: item.icon || '?'
       });
       portraitArea.appendChild(portraitWidget.el);

@@ -142,6 +142,8 @@ window.CJS.CharEditor = (() => {
       portraitWidget = PP().createWidget({
         currentPath: c.portrait || '',
         category: 'characters',
+        id: c.id,
+        name: c.name,
         fallbackIcon: c.icon || '?'
       });
       portraitArea.appendChild(portraitWidget.el);

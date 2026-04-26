@@ -460,9 +460,9 @@ input::placeholder { color: var(--text-mute); }
   gap: 10px;
 }
 .portrait-preview-wrap {
-  flex: 0 0 64px;
-  width: 64px;
-  height: 64px;
+  flex: 0 0 192px;
+  width: 192px;
+  height: 192px;
   border-radius: 8px;
   border: 2px solid rgba(255,255,255,0.1);
   background: rgba(0,0,0,0.3);
@@ -478,7 +478,7 @@ input::placeholder { color: var(--text-mute); }
   border-radius: 6px;
 }
 .portrait-fallback {
-  font-size: 2rem;
+  font-size: 5rem;
   line-height: 1;
 }
 .portrait-controls {
@@ -494,9 +494,9 @@ input::placeholder { color: var(--text-mute); }
 }
 .portrait-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 8px;
-  max-height: 300px;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 10px;
+  max-height: 480px;
   overflow-y: auto;
 }
 .portrait-grid-item {

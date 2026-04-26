@@ -152,6 +152,8 @@ window.CJS.MonsterEditor = (() => {
       portraitWidget = PP().createWidget({
         currentPath: m.portrait || '',
         category: 'monsters',
+        id: m.id,
+        name: m.name,
         fallbackIcon: m.icon || '?'
       });
       portraitArea.appendChild(portraitWidget.el);
