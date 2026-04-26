@@ -143,6 +143,7 @@ window.CJS.CombatUI = (() => {
     if (!AB()) return;
 
     _animUnsubs.push(AB().on('damage',     _animDamageFlash));
+    _animUnsubs.push(AB().on('hit',        _animHit));
     _animUnsubs.push(AB().on('unit_ko',    _animKoFade));
     _animUnsubs.push(AB().on('skill_cast', _animSkillCast));
     _animUnsubs.push(AB().on('unit_move',  _animUnitMove));
@@ -158,7 +159,7 @@ window.CJS.CombatUI = (() => {
     return CS()?.getAnimationsEnabled ? CS().getAnimationsEnabled() : true;
   }
 
-  function _spawnFx(cls, pos, ttl) {
+  function _spawnFx(cls, pos, ttl, opts) {
     if (!_animEnabled() || !$fxLayer || !pos) return;
     const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
     if (!cell) return;
@@ -168,12 +169,15 @@ window.CJS.CombatUI = (() => {
     const ox = canvas?.offsetLeft || 0;
     const oy = canvas?.offsetTop  || 0;
     const [r, c] = pos;
+    const scale = (opts && typeof opts.scale === 'number') ? opts.scale : 1;
+    const size  = cell * scale;
+    const inset = (cell - size) / 2;
     const el = document.createElement('div');
     el.className = `cjs-fx-cell ${cls}`;
-    el.style.left   = (c * cell + ox) + 'px';
-    el.style.top    = (r * cell + oy) + 'px';
-    el.style.width  = cell + 'px';
-    el.style.height = cell + 'px';
+    el.style.left   = (c * cell + ox + inset) + 'px';
+    el.style.top    = (r * cell + oy + inset) + 'px';
+    el.style.width  = size + 'px';
+    el.style.height = size + 'px';
     $fxLayer.appendChild(el);
     setTimeout(() => { try { el.remove(); } catch (e) {} }, ttl || 700);
   }
@@ -191,11 +195,90 @@ window.CJS.CombatUI = (() => {
   }
 
   function _animUnitMove(payload) {
-    // Flash both cells briefly: the cell the unit left, and the one it
-    // arrived in. Gives a clear "step" visual without needing canvas
-    // sprite animation.
-    _spawnFx('cjs-fx-move', payload?.from, 360);
-    _spawnFx('cjs-fx-move', payload?.to,   360);
+    // From/to cell flash plus a trail of dots stepping along the line
+    // between them. Gives a clear sense of movement direction without
+    // needing canvas-side sprite animation.
+    const from = payload?.from;
+    const to   = payload?.to;
+    _spawnFx('cjs-fx-move', from, 360);
+    _spawnFx('cjs-fx-move', to,   360);
+    if (!from || !to) return;
+    const dr = to[0] - from[0];
+    const dc = to[1] - from[1];
+    const steps = Math.max(Math.abs(dr), Math.abs(dc));
+    if (steps <= 1) return;
+    for (let i = 1; i < steps; i++) {
+      const r = from[0] + Math.round(dr * (i / steps));
+      const c = from[1] + Math.round(dc * (i / steps));
+      setTimeout(() => _spawnFx('cjs-fx-trail', [r, c], 320, { scale: 0.55 }), i * 70);
+    }
+  }
+
+  // Hit: spawn shake ring on target cell + directional slash overlay.
+  // For physical attacks the slash is colored by element; for magic skills
+  // it shows as well but tinted.
+  function _animHit(payload) {
+    if (!_animEnabled() || !$fxLayer) return;
+    const target = payload?.target;
+    const attacker = payload?.attacker;
+    if (!target?.pos) return;
+
+    // Shake the target cell, and a softer shake on attacker (lunge feel).
+    _spawnFx(
+      `cjs-fx-shake team-${target.team === 'player' ? 'player' : 'enemy'}${payload?.isCritical ? ' is-critical' : ''}`,
+      target.pos, 380
+    );
+    if (attacker?.pos && (attacker.pos[0] !== target.pos[0] || attacker.pos[1] !== target.pos[1])) {
+      _spawnFx(`cjs-fx-shake team-${attacker.team === 'player' ? 'player' : 'enemy'}`, attacker.pos, 220, { scale: 0.6 });
+    }
+
+    // Directional slash from attacker -> target (atan2 in pixel space).
+    const angleDeg = _slashAngle(attacker?.pos, target.pos);
+    const elementClass = _slashElementClass(payload?.element);
+    const shapeClass = payload?.weaponShape === 'weapon_pierce' ? ' shape-pierce'
+                     : payload?.weaponShape === 'weapon_blunt'  ? ' shape-blunt'
+                     : '';
+    _spawnSlash(target.pos, angleDeg, `${elementClass}${shapeClass}`);
+  }
+
+  function _slashAngle(fromPos, toPos) {
+    if (!fromPos || !toPos) return -30;
+    const dy = toPos[0] - fromPos[0];
+    const dx = toPos[1] - fromPos[1];
+    if (dx === 0 && dy === 0) return -30;
+    return Math.atan2(dy, dx) * 180 / Math.PI - 30;  // -30deg gives slight diagonal feel
+  }
+
+  function _slashElementClass(element) {
+    const e = String(element || '').toLowerCase();
+    if (e === 'fire')      return 'tone-fire';
+    if (e === 'ice')       return 'tone-ice';
+    if (e === 'lightning') return 'tone-lightning';
+    if (e === 'dark')      return 'tone-dark';
+    if (e === 'holy')      return 'tone-holy';
+    return '';
+  }
+
+  function _spawnSlash(pos, angleDeg, extraClass) {
+    if (!_animEnabled() || !$fxLayer || !pos) return;
+    const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
+    if (!cell) return;
+    const canvas = _container?.querySelector('#cbt-canvas');
+    const ox = canvas?.offsetLeft || 0;
+    const oy = canvas?.offsetTop  || 0;
+    const [r, c] = pos;
+    const wrap = document.createElement('div');
+    wrap.className = `cjs-fx-cell cjs-fx-slash ${extraClass || ''}`;
+    wrap.style.left   = (c * cell + ox) + 'px';
+    wrap.style.top    = (r * cell + oy) + 'px';
+    wrap.style.width  = cell + 'px';
+    wrap.style.height = cell + 'px';
+    const streak = document.createElement('div');
+    streak.className = 'cjs-slash-streak';
+    streak.style.setProperty('--cjs-slash-angle', angleDeg + 'deg');
+    wrap.appendChild(streak);
+    $fxLayer.appendChild(wrap);
+    setTimeout(() => { try { wrap.remove(); } catch (e) {} }, 320);
   }
 
   function _animTurnBanner(payload) {

@@ -34,6 +34,18 @@ window.CJS.ActionHandler = (() => {
   function _sfx(key, opts) { try { AM()?.playSfx(key, opts); } catch (e) {} }
   function _anim(name, payload) { try { AB()?.emit(name, payload); } catch (e) {} }
 
+  // Map a weapon's damageType ("Slashing", "Piercing", "Bludgeoning",
+  // anything else) to our SFX key family. Falls back to weapon_hit_physical
+  // if the synth/manifest doesn't have a more specific match.
+  function _weaponSfxKey(weaponData) {
+    const dt = String(weaponData?.damageType || '').toLowerCase();
+    if (dt.includes('slash'))   return 'weapon_slash';
+    if (dt.includes('pierc'))   return 'weapon_pierce';
+    if (dt.includes('blunt') || dt.includes('bludg') || dt.includes('crush'))
+      return 'weapon_blunt';
+    return null;
+  }
+
   // ── VALIDATE ──────────────────────────────────────────────────────
   // Returns: { valid: bool, reason?: string }
   function validate(unit, action) {
@@ -237,9 +249,18 @@ window.CJS.ActionHandler = (() => {
       skill: null, isCritical: attack.isCritical, breakdown: attack.breakdown
     });
 
-    // SFX: weapon-hit, element-routed with physical fallback
-    _sfx(`weapon_hit_${String(atkElement || 'physical').toLowerCase()}`, {
-      fallbacks: ['weapon_hit_physical']
+    // SFX: prefer weapon-shape (slash/pierce/blunt), then element variant,
+    // then generic physical. Animation: directional slash + shake.
+    const weaponShapeKey = _weaponSfxKey(weaponData);
+    const elementKey = `weapon_hit_${String(atkElement || 'physical').toLowerCase()}`;
+    _sfx(weaponShapeKey || elementKey, {
+      fallbacks: weaponShapeKey ? [elementKey, 'weapon_hit_physical'] : ['weapon_hit_physical']
+    });
+    _anim('hit', {
+      attacker: unit, target,
+      damageType: atkDamageType, element: atkElement,
+      weaponShape: weaponShapeKey,           // 'weapon_slash' | 'weapon_pierce' | 'weapon_blunt' | null
+      isCritical: !!attack.isCritical
     });
 
     // Fire on_hit (attacker-side)
@@ -280,7 +301,13 @@ window.CJS.ActionHandler = (() => {
     const cd     = Math.max(0, (skill.cooldown || 0) + (unit.cooldownMod || 0));
 
     _anim('skill_cast', { unit, skill });
-    if (skill.damageType === 'Magic') _sfx('magic_cast');
+    // Honor skill.castSfx if author set one; else default to magic_cast for
+    // Magic skills, no cast SFX for Physical.
+    if (skill.castSfx) {
+      _sfx(skill.castSfx);
+    } else if (skill.damageType === 'Magic') {
+      _sfx('magic_cast');
+    }
 
     // Pay costs
     unit.turnState.mainActionUsed = true;
@@ -337,15 +364,29 @@ window.CJS.ActionHandler = (() => {
         });
         hits.push({ target: t, damage: applied.applied, killed: applied.killed, critical: attack.isCritical });
 
-        // SFX: magic skills route to magic_hit; physical/weapon skills
-        // route to weapon_hit_<element> with physical fallback.
-        if (skill.damageType === 'Magic') {
-          _sfx('magic_hit');
+        // SFX routing priority:
+        //   1. skill.hitSfx (author override)
+        //   2. magic_<element> for Magic skills, falling back to magic_hit
+        //   3. weapon_hit_<element> for Physical, falling back to weapon_hit_physical
+        if (skill.hitSfx) {
+          _sfx(skill.hitSfx, { fallbacks: ['weapon_hit_physical'] });
+        } else if (skill.damageType === 'Magic') {
+          const elementKey = `magic_${String(skill.element || '').toLowerCase()}`;
+          _sfx(elementKey, { fallbacks: ['magic_hit'] });
         } else {
           _sfx(`weapon_hit_${String(skill.element || 'physical').toLowerCase()}`, {
             fallbacks: ['weapon_hit_physical']
           });
         }
+        if (attack.isCritical) _sfx('critical');
+
+        // Animation: emit hit so combat-ui can render slash + shake
+        _anim('hit', {
+          attacker: unit, target: t, skill,
+          damageType: skill.damageType || 'Physical',
+          element: skill.element || 'Physical',
+          isCritical: !!attack.isCritical
+        });
 
         ER().fireTrigger('on_hit', {
           unit, attacker: unit, target: t,

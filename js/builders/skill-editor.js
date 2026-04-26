@@ -115,6 +115,22 @@ window.CJS.SkillEditor = (() => {
           <select id="skl-qte">${C().QTE_TYPES.map(q=>`<option value="${q}" ${s.qte===q?'selected':''}>${q}</option>`).join('')}</select>
         </div>
 
+        <h3>Audio <span class="dim" style="font-size:0.78em">— optional per-skill SFX overrides</span></h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">On Cast</label>
+            <select id="skl-castsfx"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">On Hit</label>
+            <select id="skl-hitsfx"></select>
+          </div>
+        </div>
+        <div class="dim" style="font-size:0.78rem;margin-top:-2px">
+          Leave blank to use the default routing (Magic → magic_&lt;element&gt;, Physical → weapon_hit_&lt;element&gt;).
+          Built-in keys (synth fallback) are listed below user-uploaded MP3 ids.
+        </div>
+
         <h3>Additional Effects</h3>
         <div id="skl-effects-area"></div>
 
@@ -133,6 +149,8 @@ window.CJS.SkillEditor = (() => {
 
     const effectBuilder = UI().createEffectListBuilder({ effects: s.effects || [], onChange: () => _preview() });
     _formEl.querySelector('#skl-effects-area').appendChild(effectBuilder);
+
+    _populateSfxSelects(s);
 
     // Live preview on field changes
     _formEl.querySelectorAll('input,select').forEach(el => el.addEventListener('change', _preview));
@@ -158,7 +176,9 @@ window.CJS.SkillEditor = (() => {
 
   function _save(id, effectBuilder) {
     const f = _formEl;
-    DS().replace('skills', id, {
+    const castSfx = f.querySelector('#skl-castsfx')?.value || '';
+    const hitSfx  = f.querySelector('#skl-hitsfx')?.value  || '';
+    const payload = {
       id,
       name: f.querySelector('#skl-name').value,
       icon: f.querySelector('#skl-icon').value,
@@ -179,9 +199,64 @@ window.CJS.SkillEditor = (() => {
         maxLevel: Number(f.querySelector('#skl-maxlvl').value) || 10
       },
       description: f.querySelector('#skl-desc').value
-    });
+    };
+    if (castSfx) payload.castSfx = castSfx;
+    if (hitSfx)  payload.hitSfx  = hitSfx;
+    DS().replace('skills', id, payload);
     _renderList(); _load(id);
     UI().toast('Skill saved', 'success');
+  }
+
+  // Populate the cast/hit SFX selects with manifest entries plus built-in
+  // synth keys. Both are valid values for AudioManager.playSfx.
+  function _populateSfxSelects(s) {
+    const castSel = _formEl.querySelector('#skl-castsfx');
+    const hitSel  = _formEl.querySelector('#skl-hitsfx');
+    if (!castSel || !hitSel) return;
+
+    const AM = window.CJS.AudioManager;
+    const finish = () => {
+      const manifest = AM?.getManifest ? AM.getManifest() : { sfx: {} };
+      const manifestIds = Object.keys(manifest.sfx || {}).sort();
+      const builtIns = [
+        'magic_cast', 'magic_hit', 'magic_fire', 'magic_ice', 'magic_lightning',
+        'magic_holy', 'magic_dark',
+        'weapon_slash', 'weapon_pierce', 'weapon_blunt',
+        'weapon_hit_physical', 'weapon_hit_fire', 'weapon_hit_ice',
+        'weapon_hit_lightning', 'weapon_hit_water', 'weapon_hit_wind',
+        'weapon_hit_earth', 'weapon_hit_holy', 'weapon_hit_dark',
+        'critical', 'heal', 'item_use', 'item_potion', 'item_buff', 'item_throw'
+      ];
+
+      function buildOptions(currentVal) {
+        let html = '<option value="">-- default --</option>';
+        if (manifestIds.length) {
+          html += '<optgroup label="Uploaded MP3s">';
+          html += manifestIds.map(id =>
+            `<option value="${_esc(id)}"${id === currentVal ? ' selected' : ''}>${_esc(id)}</option>`
+          ).join('');
+          html += '</optgroup>';
+        }
+        html += '<optgroup label="Built-in (synth fallback)">';
+        html += builtIns.map(id =>
+          `<option value="${_esc(id)}"${id === currentVal ? ' selected' : ''}>${_esc(id)}</option>`
+        ).join('');
+        html += '</optgroup>';
+        return html;
+      }
+
+      castSel.innerHTML = buildOptions(s.castSfx || '');
+      hitSel.innerHTML  = buildOptions(s.hitSfx  || '');
+
+      // Preview button next to each select would be nice; skip for now —
+      // AudioManager.playSfx(value) from the console works as a quick check.
+    };
+
+    if (AM && AM.loadManifest) {
+      AM.loadManifest().then(finish).catch(finish);
+    } else {
+      finish();
+    }
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

@@ -35,6 +35,32 @@
   100% { opacity: 0;   transform: scale(1.05); }
 }
 
+/* Move trail: dot that fades, used between from/to cells along path */
+@keyframes cjs-move-dot {
+  0%   { opacity: 0;   transform: scale(0.5); }
+  30%  { opacity: 0.85; transform: scale(1.0); }
+  100% { opacity: 0;   transform: scale(0.6); }
+}
+
+/* Hit shake: a halo ring around the cell that jiggles for ~250ms.
+   Conveys impact without trying to shake the canvas-rendered sprite. */
+@keyframes cjs-hit-shake {
+  0%   { transform: translate(0, 0)   scale(1);    opacity: 0;    box-shadow: inset 0 0 0 0 rgba(255,255,255,0); }
+  10%  { transform: translate(-3px, 1px) scale(1.04); opacity: 0.95; box-shadow: inset 0 0 0 3px rgba(255,255,255,0.55); }
+  20%  { transform: translate(3px, -1px) scale(1.04); opacity: 0.95; }
+  35%  { transform: translate(-2px, 2px) scale(1.02); opacity: 0.7; }
+  55%  { transform: translate(2px, -1px) scale(1.01); opacity: 0.45; }
+  100% { transform: translate(0, 0)   scale(1);    opacity: 0;    box-shadow: inset 0 0 0 0 rgba(255,255,255,0); }
+}
+
+/* Slash overlay: a rotated streak that scales out and fades.
+   Direction comes from --cjs-slash-angle inline style. */
+@keyframes cjs-slash-anim {
+  0%   { opacity: 0; transform: rotate(var(--cjs-slash-angle, -30deg)) scaleX(0.1); }
+  35%  { opacity: 1; transform: rotate(var(--cjs-slash-angle, -30deg)) scaleX(1.2); }
+  100% { opacity: 0; transform: rotate(var(--cjs-slash-angle, -30deg)) scaleX(1.4); }
+}
+
 /* ── OVERLAY ELEMENTS ──────────────────────────────────────────── */
 /* All visual overlays sit on top of the canvas, positioned relative
    to .combat-grid-wrap. CombatUI sets pixel positions inline. */
@@ -77,6 +103,52 @@
   background: rgba(180, 220, 255, 0.18);
   animation: cjs-move-tween 320ms ease-out forwards;
 }
+
+/* Trail dot used between from/to cells while a unit moves along a path. */
+.cjs-fx-trail {
+  background: radial-gradient(circle, rgba(180,220,255,0.85), rgba(180,220,255,0) 70%);
+  animation: cjs-move-dot 320ms ease-out forwards;
+  border-radius: 50%;
+}
+
+/* Hit shake ring around the cell. */
+.cjs-fx-shake {
+  background: transparent;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.55);
+  animation: cjs-hit-shake 280ms ease-out forwards;
+}
+.cjs-fx-shake.team-enemy { box-shadow: inset 0 0 0 3px rgba(255,120,120,0.7); }
+.cjs-fx-shake.team-player { box-shadow: inset 0 0 0 3px rgba(120,200,255,0.7); }
+.cjs-fx-shake.is-critical { box-shadow: inset 0 0 0 4px rgba(255,220,80,0.85); animation-duration: 360ms; }
+
+/* Directional slash overlay. .cjs-slash-streak inside positions the streak. */
+.cjs-fx-slash {
+  background: transparent;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cjs-fx-slash .cjs-slash-streak {
+  width: 110%;
+  height: 8px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.95) 45%,
+    rgba(255,255,255,0.95) 55%,
+    rgba(255,255,255,0) 100%);
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
+  animation: cjs-slash-anim 260ms ease-out forwards;
+  transform-origin: center;
+}
+.cjs-fx-slash.tone-fire .cjs-slash-streak       { background: linear-gradient(90deg, rgba(255,140,40,0) 0%, #ffb347 45%, #ff5a2a 55%, rgba(255,90,42,0) 100%); }
+.cjs-fx-slash.tone-ice .cjs-slash-streak        { background: linear-gradient(90deg, rgba(140,200,255,0) 0%, #aee8ff 45%, #6fc6ff 55%, rgba(110,180,255,0) 100%); }
+.cjs-fx-slash.tone-lightning .cjs-slash-streak  { background: linear-gradient(90deg, rgba(255,240,150,0) 0%, #fff5b0 45%, #ffeb50 55%, rgba(255,235,80,0) 100%); }
+.cjs-fx-slash.tone-dark .cjs-slash-streak       { background: linear-gradient(90deg, rgba(120,80,180,0) 0%, #b48bff 45%, #6a3aff 55%, rgba(106,58,255,0) 100%); }
+.cjs-fx-slash.tone-holy .cjs-slash-streak       { background: linear-gradient(90deg, rgba(255,250,200,0) 0%, #fffae8 45%, #ffe899 55%, rgba(255,232,153,0) 100%); }
+.cjs-fx-slash.shape-pierce .cjs-slash-streak    { height: 4px; }
+.cjs-fx-slash.shape-blunt .cjs-slash-streak     { height: 16px; filter: drop-shadow(0 0 6px rgba(255,200,100,0.7)); }
 
 /* ── TURN BANNER ───────────────────────────────────────────────── */
 .cjs-turn-banner {

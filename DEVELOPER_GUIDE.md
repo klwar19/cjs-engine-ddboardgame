@@ -535,11 +535,21 @@ Files:
 - `audio/sfx/`, `audio/bgm/` - actual MP3 files (user-uploaded via the editor)
 
 Built-in SFX keys (resolved by `AudioManager.playSfx`):
-- `weapon_hit_<element>` - falls back to `weapon_hit_physical` if missing
-- `magic_cast`, `magic_hit`
-- `item_use`
-- `ko`
-- `status_apply`
+- Weapon by shape: `weapon_slash`, `weapon_pierce`, `weapon_blunt`
+- Weapon by element: `weapon_hit_physical`, `weapon_hit_fire`, `weapon_hit_ice`, `weapon_hit_lightning`, `weapon_hit_water`, `weapon_hit_wind`, `weapon_hit_earth`, `weapon_hit_holy`, `weapon_hit_dark`
+- Magic: `magic_cast`, `magic_hit`, `magic_fire`, `magic_ice`, `magic_lightning`, `magic_holy`, `magic_dark`
+- Combat events: `critical`, `miss`, `dodge`, `defend`, `heal`, `victory`, `defeat`, `level_up`
+- Items: `item_use`, `item_potion`, `item_buff`, `item_throw`
+- Statuses: `status_apply`, `status_buff`, `status_debuff`
+- KO: `ko`
+- UI: `ui_click`, `ui_cursor`, `ui_confirm`, `ui_cancel`, `ui_error`
+
+Each built-in key has a synthesized WebAudio fallback in `audio-manager.js`'s `FALLBACK_TONES`. Uploading an MP3 with the same id in the Audio Library replaces the synth tone for that key.
+
+Skills can override SFX directly via two optional fields on the skill record:
+- `castSfx` - id played when the skill is cast
+- `hitSfx` - id played on each hit (overrides default routing)
+The skill editor's Audio section exposes both as dropdowns populated from the manifest + built-in keys.
 
 Encounter records can carry a `bgm` field:
 - string id - that single track plays
@@ -547,7 +557,12 @@ Encounter records can carry a `bgm` field:
 - omitted - falls back to `CombatSettings.getDefaultBgmPool()`
 
 Animation events emitted from combat:
-- `unit_move`, `damage`, `skill_cast`, `unit_ko`, `turn_start`
+- `unit_move` - payload `{ unit, from, to }` (renders trail dots along the path)
+- `damage` - red flash on the target cell
+- `hit` - payload `{ attacker, target, skill?, element, weaponShape?, isCritical }` (renders directional slash + shake on target + small shake on attacker)
+- `skill_cast` - cell pulse on caster
+- `unit_ko` - fade + scale-down on the dying cell
+- `turn_start` - fly-in banner with unit name
 
 Toggle animations live with the checkbox in the combat sidebar
 (`CombatSettings.setAnimationsEnabled(false)` in code). Mute audio with
