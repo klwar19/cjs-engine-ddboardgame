@@ -219,7 +219,7 @@
         "baseDamage": 7,
         "damageType": "Physical",
         "element": "Lightning",
-        "range": 5
+        "range": 3
       },
       "description": "Bowy's beloved crossbow. Named Thunder. Do NOT touch it.",
       "grantedSkills": []

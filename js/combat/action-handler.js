@@ -497,6 +497,7 @@ window.CJS.ActionHandler = (() => {
 
   // ── END TURN ──────────────────────────────────────────────────────
   function _doEndTurn(unit, action, ctx) {
+    unit.turnState.bonusAP = (unit.turnState.bonusAP || 0) + (C().ACTION_ECONOMY.endTurnAPBonus || 0);
     return { success: true, action: 'end_turn' };
   }
 
@@ -556,7 +557,8 @@ window.CJS.ActionHandler = (() => {
   // Weapon range + unit rangeBonus, or melee (1) if no weapon.
   function getAttackRange(unit) {
     const wd = _getWeaponData(unit);
-    return (wd?.range || 1) + (unit.rangeBonus || 0);
+    const baseRange = wd?.range ?? unit.basicAttackRange ?? unit.attackRange ?? 1;
+    return Math.max(1, baseRange + (unit.rangeBonus || 0));
   }
 
   // ── QUERIES ────────────────────────────────────────────────────────
@@ -580,6 +582,7 @@ window.CJS.ActionHandler = (() => {
       const SR = window.CJS.SkillResolver;
       for (const entry of (unit.skills || [])) {
         const skillId = SR ? SR.getSkillId(entry) : (typeof entry === 'string' ? entry : entry.skillId);
+        if (!skillId || skillId === 'basic_attack') continue;
         const skill = _resolveSkill(unit, skillId);
         if (!skill) continue;
         const cdRemaining = ts.cooldowns?.[skillId] || 0;

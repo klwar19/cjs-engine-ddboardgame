@@ -473,7 +473,9 @@ window.CJS.CONST = (() => {
   // ── ACTION ECONOMY ─────────────────────────────────────────────────
   const ACTION_ECONOMY = {
     baseAP: 2,
+    turnStartAP: 1,         // AP granted at the start of every turn
     defendAPBonus: 1,        // AP gained next turn from defending
+    endTurnAPBonus: 2,       // AP banked for choosing to end turn early
     defendDRBonus: 5,        // flat DR boost during defend round
     movesPerTurn: 1,         // free moves allowed per turn
     mainActionsPerTurn: 1    // main actions per turn (can be increased by effects)

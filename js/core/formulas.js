@@ -56,19 +56,32 @@ window.CJS.Formulas = (() => {
     return basePower * (1 + 0.15 * (skillLevel - 1));
   }
 
-  function calcBaseDamage(skillPower, primaryStat, diceRoll) {
-    return Math.sqrt(skillPower) * Math.sqrt(primaryStat) + diceRoll;
+  function calcPowerPulse(skillPower, primaryStat) {
+    const pulseBase = Math.max(0, (2 * (skillPower || 0)) + (2 * (primaryStat || 0)));
+    return Math.pow(pulseBase, 4 / 5);
+  }
+
+  function calcBaseDamage(skillPower, primaryStat, diceRoll, luckValue) {
+    const power = Math.max(0, skillPower || 0);
+    const stat = Math.max(0, primaryStat || 0);
+    const luck = Math.max(0, luckValue || 0);
+    const sqrtCore = Math.sqrt(power) * Math.sqrt(stat);
+    const luckDice = (diceRoll || 0) * Math.sqrt(luck);
+    return sqrtCore + luckDice + calcPowerPulse(power, stat);
   }
 
   function calcFinalDamage({ skillPower, primaryStat, diceRoll, qteMultiplier,
-                             elementMultiplier, dr, bonusDamageFlat, bonusDamagePercent }) {
-    const base = calcBaseDamage(skillPower, primaryStat, diceRoll || 0);
+                             elementMultiplier, dr, bonusDamageFlat, bonusDamagePercent,
+                             luckValue }) {
+    const base = calcBaseDamage(skillPower, primaryStat, diceRoll || 0, luckValue || 0);
     const withBonusFlat = base + (bonusDamageFlat || 0);
     const withBonusPercent = withBonusFlat * (1 + (bonusDamagePercent || 0) / 100);
     const withQTE = withBonusPercent * (qteMultiplier || 1.0);
     const withElement = withQTE * (elementMultiplier || 1.0);
-    const afterDR = withElement - (dr || 0);
-    const final = Math.max(1, Math.floor(afterDR));
+    const isImmune = (elementMultiplier || 0) === 0;
+    const blocked = isImmune ? 0 : Math.max(0, Math.floor(dr || 0));
+    const afterDR = isImmune ? 0 : withElement - blocked;
+    const final = isImmune ? 0 : Math.max(1, Math.floor(afterDR));
 
     return {
       base: Math.floor(base),
@@ -77,7 +90,7 @@ window.CJS.Formulas = (() => {
       withElement: Math.floor(withElement),
       afterDR: final,
       final: final,
-      blocked: Math.max(0, Math.floor(dr || 0)),
+      blocked,
       overkill: 0  // set by caller after checking target HP
     };
   }

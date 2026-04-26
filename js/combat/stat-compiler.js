@@ -124,6 +124,8 @@ window.CJS.StatCompiler = (() => {
       movement,
       baseAP,
       rangeBonus:    mods.range || 0,
+      basicAttackRange: baseUnit.basicAttackRange ?? null,
+      basicAttackPower: baseUnit.basicAttackPower ?? null,
       costMod:       mods.costMod || 0,
       cooldownMod:   mods.cooldownMod || 0,
       extraActions:  mods.extraActions || 0,

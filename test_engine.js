@@ -91,6 +91,7 @@ const SC  = CJS.StatCompiler;
 const SR  = CJS.SkillResolver;
 const SM  = CJS.StatusManager;
 const AH  = CJS.ActionHandler;
+const DC  = CJS.DamageCalc;
 const AI  = CJS.AIController;
 const CM  = CJS.CombatManager;
 const Log = CJS.CombatLog;
@@ -141,6 +142,16 @@ function assert(label, condition) {
 function assertEq(label, actual, expected) {
   if (actual === expected) { _passed++; console.log(`  ✅ ${label} (${JSON.stringify(actual)})`); }
   else { _failed++; console.error(`  ❌ FAIL: ${label} — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); }
+}
+
+function assertNear(label, actual, expected, tolerance = 1e-6) {
+  if (Math.abs(actual - expected) <= tolerance) {
+    _passed++;
+    console.log(`  ✅ ${label} (${actual})`);
+  } else {
+    _failed++;
+    console.error(`  ❌ FAIL: ${label} — expected ${expected}, got ${actual}`);
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -378,6 +389,55 @@ assertEq('skill.range uses override (8)', fbAvail.skill.range, 8);
 assertEq('skill.level preserved (3)', fbAvail.skill.level, 3);
 assertEq('skill.mp from base (3)', fbAvail.skill.mp, 3);
 
+const dedupeUnit = {
+  currentHP: 40,
+  skills: ['basic_attack', 'firebolt'],
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} },
+  currentMP: 50, costMod: 0, rangeBonus: 0
+};
+const dedupeAvail = AH.getAvailableActions(dedupeUnit);
+assert('basic attack command still available', !!dedupeAvail.attack);
+assertEq('basic_attack is hidden from skill buttons',
+  dedupeAvail.skills.some(s => s.id === 'basic_attack'), false);
+
+const defendUnit = {
+  name: 'Defender',
+  currentHP: 20,
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, bonusAP: 0, cooldowns: {} }
+};
+const defendResult = AH.execute(defendUnit, { type: 'defend' }, { turnNumber: 1 });
+assert('defend action succeeds', !!defendResult.success);
+assertEq('defend banks next-turn AP', defendUnit.turnState.bonusAP, CJS.CONST.ACTION_ECONOMY.defendAPBonus);
+
+const endTurnUnit = {
+  name: 'Closer',
+  currentHP: 20,
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, bonusAP: 0, cooldowns: {} }
+};
+const endTurnResult = AH.execute(endTurnUnit, { type: 'end_turn' }, { turnNumber: 1 });
+assert('end turn action succeeds', !!endTurnResult.success);
+assertEq('end turn banks next-turn AP', endTurnUnit.turnState.bonusAP, CJS.CONST.ACTION_ECONOMY.endTurnAPBonus);
+
+const formulaProbe = CJS.Formulas.calcBaseDamage(9, 16, 2, 4);
+const expectedFormulaProbe =
+  (Math.sqrt(9) * Math.sqrt(16)) +
+  (2 * Math.sqrt(4)) +
+  Math.pow((2 * 9) + (2 * 16), 4 / 5);
+assertNear('base damage uses sqrt core + luck dice + power pulse', formulaProbe, expectedFormulaProbe);
+
+const immunityProbe = CJS.Formulas.calcFinalDamage({
+  skillPower: 9,
+  primaryStat: 16,
+  diceRoll: 2,
+  luckValue: 4,
+  qteMultiplier: 1,
+  elementMultiplier: 0,
+  dr: 999,
+  bonusDamageFlat: 0,
+  bonusDamagePercent: 0
+});
+assertEq('elemental immunity reduces damage to 0', immunityProbe.final, 0);
+
 // ══════════════════════════════════════════════════════════════════════
 // TEST 9: AI ownership check — AI should not pick skills the unit doesn't own
 // ══════════════════════════════════════════════════════════════════════
@@ -452,6 +512,10 @@ assert('AH.getAttackRange exists', typeof AH.getAttackRange === 'function');
 const meleeUnit = { equipment: [], rangeBonus: 0 };
 assertEq('no weapon → range 1', AH.getAttackRange(meleeUnit), 1);
 
+// Ranged monster without a weapon can still author its own basic attack range
+const naturalRangedUnit = { equipment: [], rangeBonus: 0, basicAttackRange: 3 };
+assertEq('authored monster range → 3', AH.getAttackRange(naturalRangedUnit), 3);
+
 // Unit with ranged weapon
 DS.replace('items', 'test_crossbow', {
   id: 'test_crossbow', name: 'Test Crossbow', slot: 'weapon',
@@ -471,6 +535,43 @@ DS.replace('items', 'test_frost_staff', {
 });
 const mageUnit = { equipment: ['test_frost_staff'], rangeBonus: 0 };
 assertEq('frost staff → range 3', AH.getAttackRange(mageUnit), 3);
+
+const originalDiceService = CJS.DiceService;
+const originalRandom = Math.random;
+CJS.DiceService = {
+  d20: () => ({ total: 20 }),
+  d12: () => ({ total: 1 }),
+  roll: () => ({ total: 2 })
+};
+Math.random = () => 0.99;
+const rangedBasicAttack = DC.computeAttack({
+  attacker: {
+    compiledStats: { S: 2, P: 20, L: 1 },
+    stats: { S: 2, P: 20, L: 1 },
+    accuracyBonus: 0,
+    critBonus: 0,
+    critDmgBonus: 0,
+    damageFlat: 0,
+    damagePercent: 0,
+    damageByElement: {},
+    basicAttackRange: 3
+  },
+  target: {
+    compiledStats: { A: 1 },
+    stats: { A: 1 },
+    dr: { physical: 0, magic: 0, chaos: 0 },
+    currentHP: 99,
+    weak: [],
+    resist: [],
+    immune: []
+  },
+  skill: null,
+  qteMultiplier: 1.0,
+  weaponData: { baseDamage: 5, range: 3, damageType: 'Physical', element: 'Physical' }
+});
+Math.random = originalRandom;
+CJS.DiceService = originalDiceService;
+assertEq('ranged normal attacks scale from P', rangedBasicAttack.breakdown.scalingStat, 'P');
 
 // ══════════════════════════════════════════════════════════════════════
 // TEST 12: Real gamedata migration / backward compatibility
@@ -504,6 +605,12 @@ assert('legacy character skill arrays normalized on load',
   realChars.every(ch => (ch.skills || []).every(isCanonicalSkillEntry)));
 assert('legacy monster skill arrays normalized on load',
   realMons.every(mon => (mon.skills || []).every(isCanonicalSkillEntry)));
+assert('real characters no longer duplicate basic_attack in skill lists',
+  realChars.every(ch => (ch.skills || []).every(entry => entry.skillId !== 'basic_attack')));
+assertEq('legacy thunder shot range normalized to 3', DS.get('skills', 'thunder_shot')?.range, 3);
+assertEq('legacy piercing bolt range normalized to 3', DS.get('skills', 'piercing_bolt')?.range, 3);
+assertEq('legacy rally range normalized to 2', DS.get('skills', 'rally_cry')?.range, 2);
+assertEq('legacy crossbow basic range normalized to 3', DS.get('items', 'thunder_crossbow')?.weaponData?.range, 3);
 
 const exportedReal = JSON.parse(DS.exportJSON());
 assert('export keeps character skills normalized',
@@ -576,6 +683,14 @@ const combatState = CM.startEncounter(realEncounterId);
 assert('existing encounter starts from real gamedata', !!combatState);
 assertEq('all encounter units compiled into combat state',
   Object.keys(combatState.units).length, (realEncounter.units || []).length);
+
+const openingPhase = CM.step();
+const openingUnit = CM.getCurrentUnit();
+assertEq('combat advances into action phase from idle', openingPhase, 'action');
+assert('opening unit exists after first step', !!openingUnit);
+assertEq('turn start grants flat AP regen',
+  openingUnit?.turnState?.apRemaining,
+  (openingUnit?.baseAP || 0) + CJS.CONST.ACTION_ECONOMY.turnStartAP);
 
 const realPlayer = Object.values(combatState.units).find(u => u.team === 'player');
 const realEnemy = Object.values(combatState.units).find(u => u.team === 'enemy');

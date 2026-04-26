@@ -75,7 +75,8 @@
       ],
       "description": "Mischievous ice elemental. Fragile but dangerous magic. Stays at range.",
       "movement": 3,
-      "size": "1x1"
+      "size": "1x1",
+      "basicAttackRange": 3
     },
     {
       "id": "haven_frostfire_chimera",

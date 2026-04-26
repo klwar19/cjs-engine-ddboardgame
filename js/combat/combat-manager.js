@@ -212,7 +212,10 @@ window.CJS.CombatManager = (() => {
     unit.turnState = unit.turnState || {};
     unit.turnState.hasMoved = false;
     unit.turnState.mainActionUsed = false;
-    unit.turnState.apRemaining = (unit.baseAP || 2) + (unit.turnState.bonusAP || 0);
+    unit.turnState.apRemaining =
+      (unit.baseAP || C().ACTION_ECONOMY.baseAP || 2) +
+      (C().ACTION_ECONOMY.turnStartAP || 0) +
+      (unit.turnState.bonusAP || 0);
     unit.turnState.bonusAP = 0;
     unit.turnState.isDefending = false;
 

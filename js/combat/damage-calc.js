@@ -34,6 +34,11 @@ window.CJS.DamageCalc = (() => {
     return Dice().d12();
   }
 
+  function _basicAttackScalingStat(attacker, weaponData) {
+    const baseRange = weaponData?.range ?? attacker.basicAttackRange ?? attacker.attackRange ?? 1;
+    return baseRange > 1 ? 'P' : 'S';
+  }
+
   // ── FULL ATTACK PIPELINE ──────────────────────────────────────────
   // Computes a hit (including hit check, crit, damage) but does NOT apply
   // it. action-handler / effect-resolver calls `applyDamage` after this.
@@ -85,14 +90,18 @@ window.CJS.DamageCalc = (() => {
                        F().rollCrit(luck, attacker.critBonus || 0);
 
     // ── 3. BASE DAMAGE ────────────────────────────────────────────
-    // Power: skill.power at its current level, falling back to weapon / 10.
-    const basePower = skill?.power ?? _defaultPowerFromWeapon(attacker) ?? 10;
+    // Power: skill.power at its current level, falling back to authored
+    // natural/basic attack power, then weapon power, then a safe default.
+    const basePower = skill?.power
+      ?? attacker.basicAttackPower
+      ?? _defaultPowerFromWeapon(attacker)
+      ?? 10;
     const skillLevel = skill?.level || 1;
     const effectivePower = F().calcSkillPowerAtLevel(basePower, skillLevel,
                                                       skill?.levelScaling?.powerPerLevel);
 
     // Primary scaling stat
-    const scalingStat = skill?.scalingStat || 'S';
+    const scalingStat = skill?.scalingStat || _basicAttackScalingStat(attacker, weaponData);
     const primaryStatValue = attacker.compiledStats?.[scalingStat]
                           ?? attacker.stats?.[scalingStat]
                           ?? 5;
@@ -134,6 +143,7 @@ window.CJS.DamageCalc = (() => {
       skillPower: effectivePower,
       primaryStat: primaryStatValue,
       diceRoll,
+      luckValue: luck,
       qteMultiplier: qMult * critMult,  // fold crit into the same multiplier step
       elementMultiplier: elementMult,
       dr,
@@ -154,6 +164,7 @@ window.CJS.DamageCalc = (() => {
         basePower:    effectivePower,
         primaryStat:  primaryStatValue,
         scalingStat,
+        luck,
         diceRoll,
         qteMultiplier: qMult,
         critMultiplier: critMult,
@@ -308,8 +319,9 @@ window.CJS.DamageCalc = (() => {
       default:         dr = 0;  // pure DoT or "True"
     }
 
+    const isImmune = elementMult === 0;
     const raw   = Math.floor(amount * elementMult);
-    let final = Math.max(1, raw - Math.floor(dr / 2));  // DoTs ignore half DR
+    let final = isImmune ? 0 : Math.max(1, raw - Math.floor(dr / 2));  // DoTs ignore half DR unless immune
 
     // ── Absorb shield check for DoT damage too ──
     let absorbed = 0;

@@ -27,8 +27,7 @@
       "skills": [
         "haven_thunder_shot",
         "haven_piercing_bolt",
-        "haven_suppressive_fire",
-        "basic_attack"
+        "haven_suppressive_fire"
       ],
       "equipment": [
         "haven_thunder_crossbow",
@@ -65,8 +64,7 @@
       "skills": [
         "haven_hunters_strike",
         "haven_trap_set",
-        "haven_rally_cry",
-        "basic_attack"
+        "haven_rally_cry"
       ],
       "equipment": [
         "haven_hunters_blade",
