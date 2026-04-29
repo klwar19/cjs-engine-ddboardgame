@@ -1,0 +1,46 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarios",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_scn_lost_temple_procedural",
+      "name": "Lost Temple (Procedural)",
+      "world": "haven",
+      "type": "adventure",
+      "phaseCost": 2,
+      "travelMode": "procedural",
+      "setting": "dungeon",
+      "size": "large",
+      "mapSeedTags": ["shrine"],
+      "danger": { "start": 1, "max": 12 },
+      "limits": { "campRests": 2, "events": 3, "randomBattles": 4 },
+      "entrySnapshot": true,
+      "entryOps": [
+        { "op": "log", "text": "A new layout. The temple shifts each delve." }
+      ],
+      "exitOps": [
+        { "op": "pass_phase" }
+      ],
+      "randomBattleTables": [
+        {
+          "id": "lost_temple_random",
+          "name": "Temple Wanderers",
+          "entries": [
+            { "weight": 50, "encounterId": "haven_enc_wolf_pack", "label": "Stray Pack" },
+            { "weight": 35, "encounterId": "haven_enc_temple_floor1", "label": "Temple Guardians" },
+            { "weight": 15, "encounterId": "haven_enc_chimera_boss", "label": "Awakened Chimera" }
+          ]
+        }
+      ],
+      "successConditions": [],
+      "failureConditions": [],
+      "notes": "Procedural map. The runner builds a node graph from a Frostbitten map seed each run."
+    }
+  ]
+}

@@ -114,6 +114,24 @@ window.CJS.CampaignUI = (() => {
 
     const mapRegion = _root.querySelector('#campaign-map-region');
     if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+    _bindRunPanel();
+  }
+
+  function _bindRunPanel() {
+    const beatList = _root.querySelector('#campaign-beat-list');
+    if (!beatList) return;
+    beatList.querySelectorAll('[data-beat-id]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.beatId;
+        const scenario = CS().getActiveScenario();
+        const idx = (scenario?.beats || []).findIndex((b) => b.id === id);
+        if (idx < 0) return;
+        CS().mutate((state) => {
+          const run = state.activeScenarioRun;
+          if (run) run.currentBeatIndex = idx;
+        }, { source: 'beat_jump' });
+      });
+    });
   }
 
   function _renderHeader(state, campaign) {
@@ -242,7 +260,7 @@ window.CJS.CampaignUI = (() => {
       case 'farm': return window.CJS.PocketHaven.renderFarm();
       case 'pocket': return window.CJS.PocketHaven.renderPocket();
       case 'scenarios': return _renderScenarios(state);
-      case 'maps': return '<div id="campaign-map-region"></div>';
+      case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
       case 'logs': return _renderLogPanel(state);
       case 'settings': return _renderSettings(state);
@@ -672,6 +690,7 @@ window.CJS.CampaignUI = (() => {
               <h3>${_esc(scenario.name || scenario.id)}</h3>
               <span class="campaign-pill">${_esc(scenario.type || 'scenario')}</span>
             </div>
+            ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
             <div class="campaign-action-grid">
               <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''}>Start</button>
@@ -681,6 +700,143 @@ window.CJS.CampaignUI = (() => {
         `).join('') || '<div class="campaign-empty">No scenarios available.</div>'}
       </div>
     `;
+  }
+
+  function _renderShapePills(scenario) {
+    const mode = scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform');
+    const modeLabels = {
+      node_map: '🗺 Map',
+      procedural: '🎲 Procedural',
+      linear: '📜 Linear',
+      freeform: '🎯 Freeform'
+    };
+    const settingLabels = {
+      outdoor: '🌲 Outdoor',
+      dungeon: '🏚 Dungeon',
+      urban: '🏙 Urban',
+      arena: '⚔ Arena',
+      abstract: '✨ Abstract'
+    };
+    const sizeLabels = { tiny: 'XS', small: 'S', medium: 'M', large: 'L' };
+    const pills = [];
+    pills.push(`<span class="campaign-chip">${modeLabels[mode] || mode}</span>`);
+    if (scenario.setting) pills.push(`<span class="campaign-chip">${settingLabels[scenario.setting] || scenario.setting}</span>`);
+    if (scenario.size) pills.push(`<span class="campaign-chip">${sizeLabels[scenario.size] || scenario.size}</span>`);
+    return `<div class="campaign-chip-row">${pills.join('')}</div>`;
+  }
+
+  function _renderRun(state) {
+    const run = state.activeScenarioRun;
+    if (!run) {
+      return `
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h2>Scenario Run</h2></div>
+          <div class="campaign-empty">No scenario active. Start one from the Briefing tab.</div>
+          <div class="campaign-action-grid">
+            <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Briefing</button>
+          </div>
+        </section>
+      `;
+    }
+    const mode = run.travelMode || (run.mapId ? 'node_map' : 'freeform');
+    let panel;
+    if (mode === 'freeform') panel = _renderRunFreeform(state, run);
+    else if (mode === 'linear') panel = _renderRunLinear(state, run);
+    else panel = `<div id="campaign-map-region"></div>`;
+    return `
+      <div class="campaign-dashboard">
+        ${panel}
+        ${_renderPendingBattle(state)}
+        ${_renderCombatResult(state)}
+        ${_renderEventResult(state)}
+      </div>
+    `;
+  }
+
+  function _renderRunFreeform(state, run) {
+    const scenario = CS().getActiveScenario();
+    const setBattles = scenario?.setBattles || [];
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head">
+          <h2>${_esc(scenario?.name || 'Run')}</h2>
+          <span class="campaign-pill">Freeform</span>
+        </div>
+        ${_renderShapePills(scenario || {})}
+        <div class="campaign-muted">${_esc(scenario?.notes || 'No map. Pick what happens next.')}</div>
+        <div class="campaign-stat-grid">
+          <span>Danger <b>${run.danger}/${run.dangerMax}</b></span>
+          <span>Camps <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
+          <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
+          <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
+        </div>
+        <div class="campaign-action-grid">
+          <button class="campaign-action primary" data-campaign-action="run-roll-battle">🎲 Random Battle</button>
+          <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
+          <button class="campaign-action" data-campaign-action="run-roll-event">🎴 Roll Event</button>
+          <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
+          <button class="campaign-action" data-campaign-action="run-tick-danger">⚠ Tick Danger +1</button>
+          <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+        </div>
+        ${setBattles.length ? `
+          <div class="campaign-panel-head" style="margin-top:14px"><h3>Set Battles</h3></div>
+          ${setBattles.map((b) => `
+            <div class="campaign-row">
+              <div>
+                <strong>${_esc(b.label || b.encounterId)}</strong>
+                <div class="campaign-muted">${_esc(b.encounterId || '')}</div>
+              </div>
+              <button class="campaign-action" data-campaign-action="run-queue-set-battle" data-battle-id="${_escAttr(b.id || b.encounterId)}">Queue</button>
+            </div>
+          `).join('')}
+        ` : ''}
+      </section>
+    `;
+  }
+
+  function _renderRunLinear(state, run) {
+    const scenario = CS().getActiveScenario();
+    const beats = scenario?.beats || [];
+    const idx = run.currentBeatIndex ?? 0;
+    const done = idx >= beats.length;
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head">
+          <h2>${_esc(scenario?.name || 'Run')}</h2>
+          <span class="campaign-pill">Linear · Beat ${Math.min(idx + 1, beats.length)}/${beats.length}</span>
+        </div>
+        ${_renderShapePills(scenario || {})}
+        <div class="campaign-muted">${_esc(scenario?.notes || '')}</div>
+        <div class="campaign-stat-grid">
+          <span>Danger <b>${run.danger}/${run.dangerMax}</b></span>
+          <span>Camps <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
+        </div>
+        <ol class="campaign-beat-list" id="campaign-beat-list">
+          ${beats.map((b, i) => `
+            <li class="campaign-beat ${i === idx ? 'is-current' : i < idx ? 'is-done' : ''}" data-beat-id="${_escAttr(b.id)}">
+              <span class="campaign-beat-num">${i + 1}</span>
+              <span class="campaign-beat-icon">${_beatIcon(b.kind)}</span>
+              <div class="campaign-beat-body">
+                <strong>${_esc(b.label || b.id)}</strong>
+                <div class="campaign-muted">${_esc(b.kind || '')}${b.encounterId ? ' · ' + _esc(b.encounterId) : ''}${b.prompt ? ' · ' + _esc(b.prompt) : ''}</div>
+              </div>
+            </li>
+          `).join('')}
+        </ol>
+        <div class="campaign-action-grid">
+          <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat ▶'}</button>
+          <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
+          <button class="campaign-action" data-campaign-action="run-roll-event">🎴 Roll Event</button>
+          <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
+          <button class="campaign-action danger" data-campaign-action="end-scenario">End</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function _beatIcon(kind) {
+    const map = { battle: '⚔', event: '🎴', trap: '🪤', rest: '🏕', reward: '🎁', boss: '👹', exit: '🚪' };
+    return map[kind] || '·';
   }
 
   function _renderQuestPanel(state) {
@@ -821,6 +977,12 @@ window.CJS.CampaignUI = (() => {
       case 'travel-world': return _travelWorld();
       case 'open-scenarios-tab': return _goto('scenario', 'scenarios');
       case 'open-maps-tab': return _goto('scenario', 'maps');
+      case 'run-roll-battle': return _runRollBattle();
+      case 'run-pick-battle': return _runPickBattle();
+      case 'run-roll-event': return _runRollEvent();
+      case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
+      case 'run-tick-danger': return Ops().apply({ op: 'danger', amount: 1 }, { source: 'run' });
+      case 'run-next-beat': return _runNextBeat();
       case 'start-scenario': return Runner().startScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
       case 'move-node': return _moveNode(data.nodeId);
@@ -1080,6 +1242,78 @@ window.CJS.CampaignUI = (() => {
     Bridge().openBattle(battle);
     Save().saveCurrent();
     UI().toast('Battle request sent to combat app', 'info');
+  }
+
+  function _runRollBattle() {
+    const scenario = CS().getActiveScenario();
+    const tables = scenario?.randomBattleTables || [];
+    if (!tables.length) return UI().toast('No random battle tables on this scenario', 'info');
+    const pending = Runner().rollRandomBattle(tables[0].id);
+    if (!pending) UI().toast('No battle rolled', 'info');
+  }
+
+  function _runPickBattle() {
+    const scenario = CS().getActiveScenario();
+    const seen = new Map();
+    for (const set of scenario?.setBattles || []) {
+      if (set.encounterId && !seen.has(set.encounterId)) {
+        seen.set(set.encounterId, { value: set.encounterId, label: set.label || set.encounterId, sub: 'set' });
+      }
+    }
+    for (const table of scenario?.randomBattleTables || []) {
+      for (const entry of table.entries || []) {
+        if (entry.encounterId && !seen.has(entry.encounterId)) {
+          seen.set(entry.encounterId, { value: entry.encounterId, label: entry.label || entry.encounterId, sub: table.name || table.id });
+        }
+      }
+    }
+    const world = CS().getState()?.currentWorld;
+    for (const enc of DS().getAllAsArray('encounters')) {
+      if (seen.has(enc.id)) continue;
+      if (enc._world && enc._world !== world) continue;
+      seen.set(enc.id, { value: enc.id, label: enc.name || enc.id, sub: enc._world || 'all' });
+    }
+    const options = Array.from(seen.values()).sort((a, b) => String(a.label).localeCompare(String(b.label)));
+    if (!options.length) return UI().toast('No encounters available', 'info');
+    _opPickerModal({
+      title: 'Pick Battle',
+      options,
+      placeholder: 'Search encounters…',
+      primaryLabel: 'Queue Battle',
+      onSubmit: ({ value }) => {
+        const opt = seen.get(value);
+        const pending = { encounterId: value, label: opt?.label || value, source: 'manual_pick' };
+        CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_pick_battle' });
+        Ops().apply({ op: 'log', text: `Battle queued (manual pick): ${pending.label}.` }, { source: 'run' });
+      }
+    });
+  }
+
+  function _runRollEvent() {
+    const campaign = CS().getCurrentCampaign();
+    const tables = campaign?.eventTables || [];
+    const tableId = tables.find((id) => id.includes(CS().getState().currentWorld)) || tables[0];
+    if (!tableId) return UI().toast('No event tables available', 'info');
+    const event = window.CJS.CampaignEvents.roll(tableId);
+    if (!event) UI().toast('Event roll returned nothing', 'info');
+  }
+
+  function _runQueueSetBattle(battleId) {
+    const scenario = CS().getActiveScenario();
+    const battle = (scenario?.setBattles || []).find((b) => b.id === battleId || b.encounterId === battleId);
+    if (!battle) return UI().toast('Set battle not found', 'error');
+    const pending = {
+      encounterId: battle.encounterId,
+      label: battle.label || battle.encounterId,
+      source: 'set'
+    };
+    CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_set_battle' });
+    Ops().apply({ op: 'log', text: `Set battle queued: ${pending.label}.` }, { source: 'run' });
+  }
+
+  function _runNextBeat() {
+    const beat = Runner().advanceLinearBeat();
+    if (!beat) UI().toast('No more beats', 'info');
   }
 
   function _manualBattleModal() {
