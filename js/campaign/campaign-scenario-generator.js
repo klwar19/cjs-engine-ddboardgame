@@ -12,8 +12,10 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const Runner = () => window.CJS.ScenarioRunner;
 
   const MAP_TYPES = ['any', 'urban', 'outdoor', 'dungeon', 'house', 'castle', 'mountain'];
+  const MAP_FORMS = ['node_map', 'grid_map'];
   const SIZES = ['tiny', 'small', 'medium', 'large'];
   const SIZE_COUNTS = { tiny: 5, small: 7, medium: 9, large: 12 };
+  const GRID_SIZES = { tiny: [5, 5], small: [6, 6], medium: [8, 6], large: [10, 8] };
 
   function generateAndStart(options = {}) {
     if (CS().getState()?.activeScenarioRun) return null;
@@ -29,7 +31,9 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const opts = _normalizeOptions(options);
     const context = _sourceContext(opts.source, world);
     const seed = _pickMapSeed(opts, context, world) || _fallbackSeed(opts, context, world);
-    const map = _buildMap(seed, opts, context, world);
+    const map = opts.mapForm === 'grid_map'
+      ? _buildGridMap(seed, opts, context, world)
+      : _buildMap(seed, opts, context, world);
     const scenario = _buildScenario(map, seed, opts, context, world);
 
     CS().mutate((next) => {
@@ -55,6 +59,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
   function options() {
     return {
       sources: ['random', 'active_quest', 'quest_chain'],
+      mapForms: [...MAP_FORMS],
       mapTypes: [...MAP_TYPES],
       sizes: [...SIZES],
       layers: [1, 2, 3]
@@ -63,10 +68,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
 
   function _normalizeOptions(options) {
     const mapType = MAP_TYPES.includes(options.mapType) ? options.mapType : 'any';
+    const mapForm = MAP_FORMS.includes(options.mapForm) ? options.mapForm : 'node_map';
     const size = SIZES.includes(options.size) ? options.size : 'small';
     const layers = Math.max(1, Math.min(3, Number(options.layers || 1)));
     const source = ['random', 'active_quest', 'quest_chain'].includes(options.source) ? options.source : 'random';
-    return { source, mapType, size, layers };
+    return { source, mapType, mapForm, size, layers };
   }
 
   function _sourceContext(source, world) {
@@ -135,12 +141,13 @@ window.CJS.CampaignScenarioGenerator = (() => {
   }
 
   function _buildScenario(map, seed, opts, context, world) {
+    const points = map.nodes || map.cells || [];
     const battleRefs = _unique([
       ...(context.battleSetIds || []),
-      ...map.nodes.flatMap((node) => [...(node.battleSetIds || []), ...(node.encounterIds || [])])
+      ...points.flatMap((point) => [...(point.battleSetIds || []), ...(point.encounterIds || [])])
     ]);
     const setBattles = battleRefs.map(_battleEntryFromRef).filter((entry) => entry.encounterId || entry.battleSetId);
-    const exitNode = [...map.nodes].reverse().find((node) => node.kind === 'exit') || map.nodes[map.nodes.length - 1];
+    const exitPoint = [...points].reverse().find((point) => point.kind === 'exit') || points[points.length - 1];
     const id = `gen_scn_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const setting = opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType;
     return {
@@ -148,9 +155,10 @@ window.CJS.CampaignScenarioGenerator = (() => {
       name: `${context.title || 'Generated Scenario'}: ${map.name}`,
       type: 'generated',
       world,
-      travelMode: 'node_map',
+      travelMode: map.type === 'grid_map' ? 'grid_map' : 'node_map',
       mapId: map.id,
       startNode: map.defaultStartNode,
+      startCell: map.defaultStartCell,
       setting,
       size: opts.size,
       canonRisk: seed.canonRisk || 'green',
@@ -170,7 +178,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
         name: 'Generated Battle Pool',
         entries: setBattles.map((entry) => ({ ...entry, weight: entry.weight || 1 }))
       }] : [],
-      successConditions: exitNode ? [{ type: 'reach_node', nodeId: exitNode.id }] : [],
+      successConditions: exitPoint
+        ? (map.type === 'grid_map'
+          ? [{ type: 'reach_cell', x: exitPoint.x, y: exitPoint.y }]
+          : [{ type: 'reach_node', nodeId: exitPoint.id }])
+        : [],
       entryOps: [{ op: 'log', text: `Generated from ${context.source}: ${context.title || seed.name || 'random pools'}.` }],
       exitOps: []
     };
@@ -240,6 +252,72 @@ window.CJS.CampaignScenarioGenerator = (() => {
       _seedId: seed.id || null,
       _source: context.source
     };
+  }
+
+  function _buildGridMap(seed, opts, context, world) {
+    const id = `gen_grid_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const [width, height] = GRID_SIZES[opts.size] || GRID_SIZES.small;
+    const rng = _seededRng(`${seed.id || id}:grid:${Date.now()}`);
+    const seedNodes = (seed.nodes || []).length ? seed.nodes : _fallbackNodes(opts);
+    const path = _gridPath(width, height);
+    const step = Math.max(1, Math.floor(path.length / Math.max(seedNodes.length, 1)));
+    const occupied = new Set();
+    const cells = seedNodes.slice(0, Math.min(seedNodes.length, path.length)).map((node, index) => {
+      const pos = path[Math.min(path.length - 1, index * step)];
+      occupied.add(`${pos.x},${pos.y}`);
+      const kind = _roleToKind(node.role);
+      const battleRef = node.battleSetIds?.[0] || node.encounterIds?.[0] || node.encounterId || null;
+      return {
+        id: node.id,
+        title: node.name || node.title || node.id,
+        x: pos.x,
+        y: pos.y,
+        kind,
+        tags: _unique([...(node.tags || []), ...(seed.tags || []), 'grid']),
+        notes: node.notes || node.role || '',
+        discoveredByDefault: index === 0,
+        battleSetIds: node.battleSetIds || [],
+        encounterIds: node.encounterIds || (node.encounterId ? [node.encounterId] : []),
+        randomBattle: ['battle', 'boss', 'event_battle'].includes(kind) && battleRef
+          ? { chance: kind === 'boss' ? 1 : 0.8, ..._battleEntryFromRef(battleRef) }
+          : undefined,
+        onEnter: _onEnterOps(node, kind, world)
+      };
+    });
+    const terrain = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_, x) => {
+      const key = `${x},${y}`;
+      if (occupied.has(key)) return 'floor';
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) return rng() < 0.35 ? 'wall' : 'floor';
+      return rng() < 0.12 ? 'obstacle' : 'floor';
+    }));
+    for (const pos of path) terrain[pos.y][pos.x] = 'floor';
+    return {
+      id,
+      name: `${seed.name || _titleCase(opts.mapType)} Grid`,
+      type: 'grid_map',
+      world,
+      setting: opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType,
+      size: opts.size,
+      width,
+      height,
+      terrain,
+      defaultStartCell: cells[0] ? [cells[0].x, cells[0].y] : [1, height - 2],
+      cells,
+      _generated: true,
+      _seedId: seed.id || null,
+      _source: context.source
+    };
+  }
+
+  function _gridPath(width, height) {
+    const out = [];
+    for (let y = height - 2; y >= 1; y--) {
+      const xs = y % 2 === 0
+        ? Array.from({ length: width - 2 }, (_, index) => index + 1)
+        : Array.from({ length: width - 2 }, (_, index) => width - 2 - index);
+      for (const x of xs) out.push({ x, y });
+    }
+    return out.length ? out : [{ x: 0, y: 0 }];
   }
 
   function _layers(seed, count) {

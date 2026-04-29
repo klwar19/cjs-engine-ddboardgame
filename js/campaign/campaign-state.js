@@ -248,6 +248,12 @@ window.CJS.CampaignState = (() => {
       statuses: [],
       buffs: [],
       injuries: [],
+      availability: {
+        status: 'available',
+        reason: '',
+        source: 'default',
+        expires: null
+      },
       equipment: clone(base.equipment || []),
       notes: [],
       xp: 0
@@ -347,8 +353,28 @@ window.CJS.CampaignState = (() => {
     next.pinnedNotes = next.pinnedNotes || [];
     next.log = next.log || [];
     next.settings = next.settings || {};
+    for (const member of Object.values(next.party || {})) {
+      member.statuses = member.statuses || [];
+      member.buffs = member.buffs || [];
+      member.injuries = member.injuries || [];
+      member.statOverrides = member.statOverrides || {};
+      member.notes = member.notes || [];
+      member.availability = normalizeAvailability(member.availability, member);
+    }
     next.lastUpdated = next.lastUpdated || nowIso();
     return next;
+  }
+
+  function normalizeAvailability(raw = {}, member = {}) {
+    const status = String(raw.status || raw.state || (member.available === false ? 'unavailable' : 'available')).toLowerCase();
+    const valid = ['available', 'unavailable', 'busy', 'injured', 'story_locked'];
+    return {
+      status: valid.includes(status) ? status : 'available',
+      reason: raw.reason || member.unavailableReason || '',
+      source: raw.source || '',
+      expires: raw.expires || null,
+      updatedAt: raw.updatedAt || null
+    };
   }
 
   function snapshotState() {
@@ -407,6 +433,7 @@ window.CJS.CampaignState = (() => {
     buildInitialSave,
     buildPartyMember,
     buildInitialHubState,
+    normalizeAvailability,
     normalizeSave,
     snapshotState,
     getHubState,

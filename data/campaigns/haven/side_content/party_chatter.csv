@@ -1,0 +1,31 @@
+id,world,situation,scenarioId,locationKind,speaker,target,line,reply,tags,requiresPresent,excludesPresent,weight
+hav_chat_start_bin_bowy,haven,scenario_start,*,*,bin,haven_bowy,"If this becomes a heroic speech, shoot me before the second paragraph.","Only if you start rhyming.",starter|banter,bin|haven_bowy,,3
+hav_chat_start_mitia,haven,scenario_start,*,*,haven_mitia,bin,"The snow feels different here. Like it is listening.","Great. Even the weather has audience participation.",mystery|snow,haven_mitia|bin,,2
+hav_chat_start_garr,haven,scenario_start,*,*,haven_garr,party,"Check straps, check blades, and do not chase lights that whisper your name.","I hate that this needed saying.",warning|travel,haven_garr,,2
+hav_chat_travel_bin,haven,scenario,*,event,bin,party,"New rule: if a ruin glows, we vote before touching it.","Seconded with enthusiasm.",ruin|event,bin,,2
+hav_chat_travel_bowy,haven,scenario,*,battle,haven_bowy,bin,"Stay behind the line until I say otherwise.","I adore being treated like expensive luggage.",battle|tactics,haven_bowy|bin,,2
+hav_chat_travel_mitia,haven,scenario,*,rest,haven_mitia,party,"We should breathe for a moment. Everyone is pretending not to be tired.","I was heroically conserving complaints.",rest|care,haven_mitia,,3
+hav_chat_travel_garr,haven,scenario,*,trap,haven_garr,party,"Tracks stop here. That usually means a trap or wings.","Please be wings. Wings are funnier.",trap|tracks,haven_garr,,2
+hav_chat_battle_ready_bin,haven,battle_ready,*,*,bin,party,"If we win, I am calling it strategy. If we lose, experimental theater.","Focus.",battle|jester,bin,,3
+hav_chat_battle_ready_bowy,haven,battle_ready,*,*,haven_bowy,haven_mitia,"If they rush you, step left. I will make the right side regret itself.","I trust you.",battle|protect,haven_bowy|haven_mitia,,2
+hav_chat_battle_ready_garr,haven,battle_ready,*,*,haven_garr,bin,"You joke when you are scared. That is fine. Keep your feet moving too.","Yes, father. Emotionally and geographically.",battle|mentor,haven_garr|bin,,2
+hav_chat_reward_bin,haven,scenario,*,reward,bin,party,"A treasure cache. Finally, the universe remembers we are poor.","Do not thank it yet.",reward|gold,bin,,3
+hav_chat_reward_mitia,haven,scenario,*,reward,haven_mitia,party,"Some of this is still warm. That is either comforting or deeply bad.","Both can be true.",reward|magic,haven_mitia,,2
+hav_chat_shop_bowy,haven,town,*,*,haven_bowy,bin,"Do not spend all the gold on weird trinkets.","Define weird in a legally binding way.",shop|gold,haven_bowy|bin,,2
+hav_chat_shop_garr,haven,town,*,*,haven_garr,party,"Tents first, medicine second, toys last.","The toys heard you and are devastated.",shop|rest,haven_garr,,2
+hav_chat_jp_bin,haven,town,*,*,bin,party,"Jester Points are not money. They are consequences wearing a price tag.","That explains the smell of destiny.",jester|jp,bin,,2
+hav_chat_jp_mitia,haven,town,*,*,haven_mitia,bin,"Peri's rewards always feel like they are smiling at us.","That is because they know something.",jester|peri,haven_mitia|bin,,2
+hav_chat_unavailable_garr,haven,scenario_start,*,*,haven_garr,party,"If someone stays behind, it is a job, not a punishment.","We will make the job sound heroic.",availability|split,haven_garr,,2
+hav_chat_unavailable_bin,haven,scenario_start,*,*,bin,party,"Splitting the party is traditionally bad. So naturally, this system supports it.","Professionally bad.",availability|system,bin,,2
+hav_chat_grid_bin,haven,scenario,*,grid,bin,party,"Squares. Finally, a battlefield honest enough to admit life is a board game.","Keep moving.",grid|movement,bin,,3
+hav_chat_grid_bowy,haven,scenario,*,grid,haven_bowy,party,"Corners matter. If you cannot see around one, assume teeth.","Very poetic. Horrible, but poetic.",grid|tactics,haven_bowy,,2
+hav_chat_grid_mitia,haven,scenario,*,grid,haven_mitia,party,"I can feel safer paths under the frost. Not safe. Safer.","We take those.",grid|magic,haven_mitia,,2
+hav_chat_frostwood_bin,haven,scenario,haven_scn_frostwood_short_run,*,bin,haven_garr,"This place feels familiar in a way my memory refuses to sign for.","Then we walk carefully.",memory|frostwood,bin|haven_garr,,2
+hav_chat_sewer_bowy,haven,scenario,haven_scn_sewer_crawl,*,haven_bowy,bin,"If you make one smell joke, I am leaving you here.","I have matured beyond the obvious joke. Mostly.",sewer|comedy,haven_bowy|bin,,2
+hav_chat_wolf_hunt_garr,haven,scenario,haven_scn_wolf_hunt_freeform,*,haven_garr,party,"Wolves test the edge first. Do not give them one.","No edges. Only premium center.",wolf|hunt,haven_garr,,2
+hav_chat_temple_mitia,haven,scenario,haven_scn_lost_temple_procedural,*,haven_mitia,party,"Old magic here is folded, like a letter someone never sent.","That is beautiful and worrying.",temple|mystery,haven_mitia,,2
+hav_chat_injured_bin,haven,town,*,*,bin,party,"Today I learned unconscious people are bad at teamwork.","Rest. That is also teamwork.",injury|rest,bin,,2
+hav_chat_busy_bowy,haven,town,*,*,haven_bowy,party,"I can guard the supplies. Someone has to keep the hungry hero from selling the tent.","Slander with supporting evidence.",availability|supplies,haven_bowy,,2
+hav_chat_busy_mitia,haven,town,*,*,haven_mitia,party,"If I stay with the wounded, bring back something warm.","Warm, edible, or emotionally supportive?",care|availability,haven_mitia,,2
+hav_chat_boss_bin,haven,battle_ready,*,boss,bin,party,"That is either the boss or a public monument to bad decisions.","Aim at the decision part.",boss|battle,bin,,2
+hav_chat_exit_garr,haven,scenario,*,exit,haven_garr,party,"Exit in sight. Do not relax until the door is behind us.","I will relax aggressively afterward.",exit|travel,haven_garr,,2

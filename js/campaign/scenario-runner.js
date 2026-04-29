@@ -19,7 +19,7 @@ window.CJS.ScenarioRunner = (() => {
     let proceduralMap = null;
     let mapId = null;
 
-    if (travelMode === 'node_map') {
+    if (travelMode === 'node_map' || travelMode === 'grid_map') {
       map = CS().getScenarioMapById(scenario.mapId);
       mapId = scenario.mapId;
     } else if (travelMode === 'procedural') {
@@ -31,11 +31,15 @@ window.CJS.ScenarioRunner = (() => {
     const startNode = travelMode === 'node_map' || travelMode === 'procedural'
       ? (scenario.startNode || map?.defaultStartNode || map?.nodes?.[0]?.id || null)
       : null;
+    const startCell = travelMode === 'grid_map'
+      ? _normalizeCell(scenario.startCell || map?.defaultStartCell || map?.startCell || [0, 0])
+      : null;
     const entrySnapshot = _snapshotForReport(CS().getState());
 
     CS().mutate((state) => {
       const runId = `run_${Date.now()}`;
       const revealed = _defaultRevealedNodes(map, startNode);
+      const revealedCells = _defaultRevealedCells(map, startCell);
       state.activeScenarioRun = {
         runId,
         scenarioId,
@@ -43,6 +47,7 @@ window.CJS.ScenarioRunner = (() => {
         mapId,
         proceduralMap,
         currentNode: startNode,
+        currentCell: startCell,
         mapLayer: _defaultMapLayer(map, startNode),
         currentBeatIndex: travelMode === 'linear' ? 0 : null,
         completedBeats: [],
@@ -55,6 +60,8 @@ window.CJS.ScenarioRunner = (() => {
         randomBattlesUsed: 0,
         visitedNodes: startNode ? [startNode] : [],
         revealedNodes: revealed,
+        visitedCells: startCell ? [_cellKey(startCell.x, startCell.y)] : [],
+        revealedCells,
         completedBattles: [],
         entrySnapshot,
         notes: []
@@ -63,11 +70,17 @@ window.CJS.ScenarioRunner = (() => {
         const mapState = state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
         for (const nodeId of revealed) mapState.revealed[nodeId] = true;
         if (startNode) mapState.visited[startNode] = true;
+        mapState.revealedCells = mapState.revealedCells || {};
+        mapState.visitedCells = mapState.visitedCells || {};
+        for (const cellId of revealedCells) mapState.revealedCells[cellId] = true;
+        if (startCell) mapState.visitedCells[_cellKey(startCell.x, startCell.y)] = true;
       }
     }, { source: 'scenario_start' });
 
+    applyAutomaticPartyAvailability(scenario);
     Ops().apply(scenario.entryOps || [], { source: 'scenario_entry' });
     Ops().apply({ op: 'log', text: `Scenario started: ${scenario.name || scenario.id} (${travelMode}).` }, { source: 'scenario' });
+    window.CJS.CampaignPartyChat?.auto?.({ world: scenario.world || CS().getState()?.currentWorld, situation: 'scenario_start', scenarioId, tags: scenario.tags || [] }, { chance: 0.65 });
     return CS().getState().activeScenarioRun;
   }
 
@@ -84,6 +97,7 @@ window.CJS.ScenarioRunner = (() => {
       next.lastScenarioReport = report;
       next.activeScenarioRun = null;
       next.pendingBattle = null;
+      _clearScenarioAvailability(next);
     }, { source: 'scenario_end' });
 
     Ops().apply(scenario?.exitOps || [], { source: 'scenario_exit' });
@@ -134,6 +148,60 @@ window.CJS.ScenarioRunner = (() => {
       Ops().apply({ op: 'log', text: `Scenario objective reached: ${node.title || nodeId}.` }, { source: 'scenario' });
     }
     return node;
+  }
+
+  function moveToCell(x, y) {
+    const state = CS().getState();
+    const run = state?.activeScenarioRun;
+    const map = CS().getActiveMap();
+    if (!run || !map || run.travelMode !== 'grid_map') return null;
+    const target = _gridCell(map, x, y);
+    if (!target || !_cellPassable(map, target.x, target.y)) return null;
+    const current = run.currentCell || _normalizeCell(map.defaultStartCell || [0, 0]);
+    const distance = Math.abs(Number(target.x) - Number(current.x)) + Math.abs(Number(target.y) - Number(current.y));
+    const targetKey = _cellKey(target.x, target.y);
+    const alreadyVisited = (run.visitedCells || []).includes(targetKey);
+    if (distance > 1 && !alreadyVisited) {
+      Ops().apply({ op: 'log', text: `Move blocked: ${target.title || targetKey} is too far from the current cell.` }, { source: 'grid_move' });
+      return null;
+    }
+
+    CS().mutate((next) => {
+      const active = next.activeScenarioRun;
+      if (!active) return;
+      active.currentCell = { x: Number(target.x), y: Number(target.y) };
+      active.visitedCells = active.visitedCells || [];
+      active.revealedCells = active.revealedCells || [];
+      if (!active.visitedCells.includes(targetKey)) active.visitedCells.push(targetKey);
+      if (!active.revealedCells.includes(targetKey)) active.revealedCells.push(targetKey);
+      const mapState = next.mapState[active.mapId || map.id] = next.mapState[active.mapId || map.id] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
+      mapState.visitedCells = mapState.visitedCells || {};
+      mapState.revealedCells = mapState.revealedCells || {};
+      mapState.visitedCells[targetKey] = true;
+      mapState.revealedCells[targetKey] = true;
+    }, { source: 'grid_move' });
+
+    _revealCellNeighborhood(map, target.x, target.y);
+
+    if (Array.isArray(target.onEnter) && target.onEnter.length) {
+      Ops().apply(target.onEnter, { source: 'grid_cell_enter' });
+    }
+    if (target.randomBattle) {
+      maybeTriggerRandomBattle(target.randomBattle);
+    }
+    const scenario = CS().getActiveScenario();
+    if ((scenario?.successConditions || []).some((cond) => cond.type === 'reach_cell' && Number(cond.x) === Number(target.x) && Number(cond.y) === Number(target.y))) {
+      Ops().apply({ op: 'log', text: `Scenario objective reached: ${target.title || targetKey}.` }, { source: 'scenario' });
+    }
+    window.CJS.CampaignPartyChat?.auto?.({
+      world: scenario?.world || state.currentWorld,
+      situation: 'scenario',
+      scenarioId: run.scenarioId,
+      mapId: run.mapId,
+      locationKind: target.kind || _terrainAt(map, target.x, target.y),
+      tags: target.tags || []
+    }, { chance: 0.28 });
+    return target;
   }
 
   function maybeTriggerRandomBattle(randomBattle) {
@@ -406,6 +474,12 @@ window.CJS.ScenarioRunner = (() => {
       if (state.activeScenarioRun) state.activeScenarioRun.randomBattlesUsed += 1;
     }, { source: 'random_battle' });
     Ops().apply({ op: 'log', text: `Random battle triggered: ${pending.label}.` }, { source: 'random_battle' });
+    window.CJS.CampaignPartyChat?.auto?.({
+      world: CS().getState()?.currentWorld,
+      situation: 'battle_ready',
+      scenarioId: CS().getState()?.activeScenarioRun?.scenarioId || '',
+      locationKind: pending.source === 'random' ? 'battle' : ''
+    }, { chance: 0.5 });
     return pending;
   }
 
@@ -555,6 +629,16 @@ window.CJS.ScenarioRunner = (() => {
     return Array.from(out);
   }
 
+  function _defaultRevealedCells(map, startCell) {
+    if (!map || map.type !== 'grid_map' || !startCell) return [];
+    const out = new Set([_cellKey(startCell.x, startCell.y)]);
+    for (const cell of map.cells || []) {
+      if (cell.discoveredByDefault) out.add(_cellKey(cell.x, cell.y));
+    }
+    for (const cell of _adjacentCells(map, startCell.x, startCell.y)) out.add(_cellKey(cell.x, cell.y));
+    return Array.from(out);
+  }
+
   function _revealNodeNeighborhood(map, nodeId) {
     if (!map || !nodeId) return;
     const ids = [nodeId, ..._adjacentNodeIds(map, nodeId)];
@@ -582,6 +666,74 @@ window.CJS.ScenarioRunner = (() => {
       if ((other.exits || []).some((exit) => exit.to === nodeId)) out.add(other.id);
     }
     return Array.from(out);
+  }
+
+  function _revealCellNeighborhood(map, x, y) {
+    if (!map) return;
+    const cells = [_gridCell(map, x, y), ..._adjacentCells(map, x, y)].filter(Boolean);
+    CS().mutate((state) => {
+      const run = state.activeScenarioRun;
+      if (!run) return;
+      const mapId = run.mapId || map.id;
+      const mapState = state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
+      mapState.revealedCells = mapState.revealedCells || {};
+      run.revealedCells = run.revealedCells || [];
+      for (const cell of cells) {
+        const key = _cellKey(cell.x, cell.y);
+        mapState.revealedCells[key] = true;
+        if (!run.revealedCells.includes(key)) run.revealedCells.push(key);
+      }
+    }, { source: 'grid_reveal' });
+  }
+
+  function _adjacentCells(map, x, y) {
+    return [
+      [Number(x) + 1, Number(y)],
+      [Number(x) - 1, Number(y)],
+      [Number(x), Number(y) + 1],
+      [Number(x), Number(y) - 1]
+    ].map(([cx, cy]) => _gridCell(map, cx, cy)).filter((cell) => cell && _cellPassable(map, cell.x, cell.y));
+  }
+
+  function _gridCell(map, x, y) {
+    const cx = Number(x);
+    const cy = Number(y);
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+    const width = Number(map.width || map.cols || map.columns || 0);
+    const height = Number(map.height || map.rows || 0);
+    if (cx < 0 || cy < 0 || cx >= width || cy >= height) return null;
+    const authored = (map.cells || []).find((cell) => Number(cell.x) === cx && Number(cell.y) === cy);
+    return {
+      id: authored?.id || _cellKey(cx, cy),
+      x: cx,
+      y: cy,
+      title: authored?.title || authored?.name || _cellKey(cx, cy),
+      kind: authored?.kind || _terrainAt(map, cx, cy),
+      notes: authored?.notes || '',
+      tags: authored?.tags || [],
+      onEnter: authored?.onEnter || [],
+      randomBattle: authored?.randomBattle || null,
+      discoveredByDefault: authored?.discoveredByDefault || false
+    };
+  }
+
+  function _cellPassable(map, x, y) {
+    const terrain = _terrainAt(map, x, y);
+    return !['wall', 'obstacle', 'blocked', 'void'].includes(String(terrain || '').toLowerCase());
+  }
+
+  function _terrainAt(map, x, y) {
+    const row = map.terrain?.[Number(y)] || map.grid?.[Number(y)];
+    return row?.[Number(x)] || 'floor';
+  }
+
+  function _normalizeCell(value) {
+    if (Array.isArray(value)) return { x: Number(value[0] || 0), y: Number(value[1] || 0) };
+    return { x: Number(value?.x || 0), y: Number(value?.y || 0) };
+  }
+
+  function _cellKey(x, y) {
+    return `${Number(x)},${Number(y)}`;
   }
 
   function _defaultMapLayer(map, startNode) {
@@ -624,16 +776,67 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
+  function applyAutomaticPartyAvailability(scenario = {}) {
+    CS().mutate((state) => {
+      for (const [id, member] of Object.entries(state.party || {})) {
+        if (Number(member.currentHp || 0) <= 0) {
+          member.availability = {
+            status: 'injured',
+            reason: '0 HP at scenario start',
+            source: 'auto_hp',
+            expires: 'scenario',
+            updatedAt: new Date().toISOString()
+          };
+        }
+      }
+      for (const rule of scenario.partyRestrictions || scenario.partyAvailability || []) {
+        const id = rule.characterId || rule.target || rule.id;
+        if (!id || !state.party[id]) continue;
+        if (rule.unlessFlag && state.flags?.[rule.unlessFlag]) continue;
+        if (rule.requiresFlag && !state.flags?.[rule.requiresFlag]) continue;
+        state.party[id].availability = {
+          status: rule.status || 'unavailable',
+          reason: rule.reason || 'Scenario circumstance',
+          source: rule.source || 'scenario',
+          expires: rule.expires || 'scenario',
+          updatedAt: new Date().toISOString()
+        };
+      }
+    }, { source: 'party_availability_auto' });
+  }
+
+  function _clearScenarioAvailability(state) {
+    for (const member of Object.values(state.party || {})) {
+      if (member.availability?.expires === 'scenario') {
+        member.availability = {
+          status: 'available',
+          reason: '',
+          source: 'scenario_end',
+          expires: null,
+          updatedAt: new Date().toISOString()
+        };
+      }
+    }
+  }
+
   return Object.freeze({
     startScenario,
     endScenario,
     moveToNode,
+    moveToCell,
     advanceLinearBeat,
     expandProceduralMap,
     maybeTriggerRandomBattle,
     rollRandomBattle,
     findNode,
     findCurrentNode,
+    findCell: _gridCell,
+    findCurrentCell: () => {
+      const run = CS().getState()?.activeScenarioRun;
+      const map = CS().getActiveMap();
+      return run?.currentCell ? _gridCell(map, run.currentCell.x, run.currentCell.y) : null;
+    },
+    applyAutomaticPartyAvailability,
     buildReport
   });
 })();

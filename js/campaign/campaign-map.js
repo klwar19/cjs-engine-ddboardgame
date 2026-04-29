@@ -20,6 +20,11 @@ window.CJS.CampaignMap = (() => {
       return;
     }
 
+    if (run.travelMode === 'grid_map' || map.type === 'grid_map') {
+      renderGrid(container, state, run, map);
+      return;
+    }
+
     const mapState = state.mapState[map.id] || { revealed: {}, visited: {}, locked: {}, cleared: {} };
     const layers = _layers(map);
     const currentNode = Runner().findCurrentNode();
@@ -84,6 +89,69 @@ window.CJS.CampaignMap = (() => {
         if (event.key === 'Enter' || event.key === ' ') renderSelectedNode(container, el.dataset.nodeId);
       });
     });
+  }
+
+  function renderGrid(container, state, run, map) {
+    const width = Number(map.width || map.cols || map.columns || 8);
+    const height = Number(map.height || map.rows || 8);
+    const mapState = state.mapState[map.id] || {};
+    const revealed = mapState.revealedCells || {};
+    const visited = mapState.visitedCells || {};
+    const current = run.currentCell || { x: 0, y: 0 };
+    const cells = [];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const key = _cellKey(x, y);
+        const cell = Runner().findCell?.(map, x, y) || { x, y, kind: _terrainAt(map, x, y), title: key };
+        const isCurrent = Number(current.x) === x && Number(current.y) === y;
+        const isRevealed = revealed[key] || (run.revealedCells || []).includes(key) || cell.discoveredByDefault || isCurrent;
+        const isVisited = visited[key] || (run.visitedCells || []).includes(key);
+        const passable = _cellPassable(map, x, y);
+        const canMove = isRevealed && passable && _canMoveCell(run, x, y);
+        cells.push(`
+          <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'}"
+            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(cell.title || key)}">
+            <span>${isRevealed ? _gridIcon(cell, passable) : ''}</span>
+            <small>${isRevealed ? _esc(_shortLabel(cell.title || key)) : ''}</small>
+          </button>
+        `);
+      }
+    }
+    const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y);
+    container.innerHTML = `
+      <div class="campaign-map-shell">
+        <div class="campaign-map-head">
+          <div>
+            <h2>${_esc(map.name || 'Scenario Grid')}</h2>
+            <span class="campaign-muted">${_esc(_gridMeta(map, run, width, height))}</span>
+          </div>
+        </div>
+        <div class="campaign-grid-map" style="--grid-cols:${width}">
+          ${cells.join('')}
+        </div>
+        <div class="campaign-node-detail">
+          ${renderGridCellDetail(currentCell, mapState)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGridCellDetail(cell, mapState = {}) {
+    if (!cell) return '<div class="campaign-empty">No current cell.</div>';
+    const key = _cellKey(cell.x, cell.y);
+    const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
+    return `
+      <div class="campaign-detail-title">
+        <span>${_esc(cell.title || key)}</span>
+        <span class="campaign-pill">${_esc(cell.kind || 'floor')}</span>
+      </div>
+      <div class="campaign-muted">${_esc(cell.notes || '')}</div>
+      <div class="campaign-chip-row">${tags}</div>
+      <div class="campaign-node-actions">
+        <span class="campaign-pill is-current">Current ${_esc(key)}</span>
+        ${mapState.clearedCells?.[key] ? '<span class="campaign-pill">Cleared</span>' : ''}
+      </div>
+    `;
   }
 
   function renderSelectedNode(container, nodeId) {
@@ -176,6 +244,15 @@ window.CJS.CampaignMap = (() => {
     return parts.join(' | ');
   }
 
+  function _gridMeta(map, run, width, height) {
+    const parts = [];
+    if (map.setting) parts.push(map.setting);
+    if (map.size) parts.push(map.size);
+    parts.push(`${width}x${height}`);
+    parts.push(`${(run.visitedCells || []).length} visited`);
+    return parts.join(' | ');
+  }
+
   function _nodeLayer(node) {
     return _normalizeLayerId(node?.layer || node?.layerId || 'layer_1');
   }
@@ -196,6 +273,44 @@ window.CJS.CampaignMap = (() => {
     return (current?.exits || []).some((exit) => exit.to === nodeId);
   }
 
+  function _canMoveCell(run, x, y) {
+    const current = run?.currentCell;
+    if (!current) return false;
+    const key = _cellKey(x, y);
+    if ((run.visitedCells || []).includes(key)) return true;
+    return Math.abs(Number(current.x) - Number(x)) + Math.abs(Number(current.y) - Number(y)) <= 1;
+  }
+
+  function _gridIcon(cell, passable) {
+    if (!passable) return '#';
+    const map = {
+      entrance: 'E',
+      exit: 'X',
+      battle: 'B',
+      event_battle: 'B',
+      event: '?',
+      trap: 'T',
+      rest: 'R',
+      reward: '$',
+      shop: 'S',
+      boss: '!'
+    };
+    return map[cell.kind] || '.';
+  }
+
+  function _terrainAt(map, x, y) {
+    const row = map.terrain?.[Number(y)] || map.grid?.[Number(y)];
+    return row?.[Number(x)] || 'floor';
+  }
+
+  function _cellPassable(map, x, y) {
+    return !['wall', 'obstacle', 'blocked', 'void'].includes(String(_terrainAt(map, x, y)).toLowerCase());
+  }
+
+  function _cellKey(x, y) {
+    return `${Number(x)},${Number(y)}`;
+  }
+
   function _esc(value) {
     return String(value || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   }
@@ -206,7 +321,9 @@ window.CJS.CampaignMap = (() => {
 
   return Object.freeze({
     render,
+    renderGrid,
     renderSelectedNode,
-    renderNodeDetail
+    renderNodeDetail,
+    renderGridCellDetail
   });
 })();

@@ -70,18 +70,19 @@
       ],
       "scenarios": [
         "haven_scn_frostwood_short_run",
+        "haven_scn_frostwood_grid_patrol",
         "haven_scn_sewer_crawl",
         "haven_scn_wolf_hunt_freeform",
         "haven_scn_lost_temple_procedural"
       ],
-      "maps": ["haven_map_frostwood_short_route"],
+      "maps": ["haven_map_frostwood_short_route", "haven_map_frostwood_grid_patrol"],
       "eventTables": ["haven_generic_events", "haven_frostwood_events", "haven_urban_events", "haven_aftermath_events"],
       "questTemplates": ["haven_basic_quest_templates"],
       "carryoverProfiles": ["carryover_new_world_default"],
       "hubs": ["haven_hub_frostbitten"],
       "sideContentPacks": ["haven_scp_frostbitten_v1"],
       "startingState": {
-        "currencies": { "haven_gold": 20, "jp": 0 },
+        "currencies": { "haven_gold": 20, "jp": 1 },
         "items": { "haven_minor_potion": 2, "haven_basic_tent": 1 },
         "materials": {},
         "food": {},

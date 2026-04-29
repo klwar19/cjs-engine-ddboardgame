@@ -17,9 +17,56 @@
       "restockRule": "manual_or_chapter",
       "stock": [
         { "id": "haven_minor_potion", "type": "item", "price": 8, "qty": 6 },
-        { "id": "haven_basic_tent", "type": "item", "price": 12, "qty": 3 }
+        { "id": "haven_basic_tent", "type": "item", "price": 12, "qty": 3 },
+        { "id": "haven_frostbitten_writ", "type": "item", "price": 30, "qty": 1 }
       ],
       "description": "Starter campaign shop for manual buy/sell testing."
+    },
+    {
+      "id": "haven_curio_counter",
+      "name": "Frostbitten Curio Counter",
+      "world": "haven",
+      "hubId": "haven_hub_frostbitten",
+      "currency": "haven_gold",
+      "unlockFlags": [],
+      "restockRule": "chapter",
+      "stock": [
+        {
+          "id": "haven_frostfire_core",
+          "type": "item",
+          "price": 55,
+          "qty": 1,
+          "requires": { "materials": { "haven_ice_crystal": 1 } }
+        },
+        {
+          "id": "haven_chimera_fang",
+          "type": "item",
+          "price": 40,
+          "qty": 1,
+          "requires": { "materials": { "haven_bear_claw": 1 } },
+          "costs": { "materials": { "haven_bear_claw": 1 } }
+        }
+      ],
+      "description": "Hub special shop that can require materials in addition to gold."
+    },
+    {
+      "id": "cjs_jester_system_shop",
+      "name": "CJS Jester System Shop",
+      "world": "haven",
+      "currency": "jp",
+      "unlockFlags": [],
+      "restockRule": "system",
+      "stock": [
+        { "id": "cjs_reroll_ticket", "type": "item", "price": 1, "qty": "system" },
+        {
+          "id": "cjs_punchline_charm",
+          "type": "item",
+          "price": 3,
+          "qty": 1,
+          "requires": { "items": { "haven_lucky_coin": 1 } }
+        }
+      ],
+      "description": "System shop priced in Jester Points."
     }
   ]
 }

@@ -550,6 +550,58 @@ Battle references in scenario maps:
 Starter generator map seeds are in:
 - `data/campaigns/haven/map_seeds/haven_generator_map_seeds.json`
 
+Grid scenario maps:
+- supported map type: `grid_map`
+- authored maps live in `data/campaigns/<world>/maps/*.map.json`
+- set scenario `travelMode: "grid_map"`, `mapId`, and `startCell: [x, y]`
+- map fields: `width`, `height`, `terrain`, `defaultStartCell`, and `cells`
+- terrain values `wall`, `obstacle`, `blocked`, and `void` are impassable
+- cell records can include `x`, `y`, `kind`, `title`, `notes`, `tags`, `onEnter`, and `randomBattle`
+- success can use `{ "type": "reach_cell", "x": 5, "y": 1 }`
+- the Scenario generator has a Form selector: `node_map` or `grid_map`
+
+Party availability:
+- campaign saves store `party.<id>.availability`
+- statuses are `available`, `unavailable`, `busy`, `injured`, or `story_locked`
+- manual UI: party card -> Availability
+- combat bridge sends only battle-ready party members to `combat.html`
+- automatic rules:
+  - 0 HP at scenario start marks a member `injured` until scenario end
+  - scenario records can define `partyRestrictions` entries:
+    `{ "characterId": "haven_garr", "status": "busy", "reason": "...", "expires": "scenario" }`
+- use ops for scripts/events:
+  - `{ "op": "set_party_availability", "target": "haven_garr", "status": "busy", "reason": "...", "expires": "scenario" }`
+  - `{ "op": "clear_party_availability", "target": "haven_garr" }`
+
+Party chatter:
+- CSV source: `data/campaigns/haven/side_content/party_chatter.csv`
+- loader: `js/campaign/campaign-party-chat.js`
+- add future dialogue as rows, not prompt text
+- core columns:
+  - `id`, `world`, `situation`, `scenarioId`, `locationKind`
+  - `speaker`, `target`, `line`, `reply`
+  - `tags`, `requiresPresent`, `excludesPresent`, `weight`
+- list columns use `|`, for example `bin|haven_bowy`
+- `situation` values currently used: `town`, `scenario_start`, `scenario`, `battle_ready`
+- `locationKind` can match node/cell kinds such as `battle`, `trap`, `reward`, `grid`, `exit`
+- the roller filters out unavailable party members automatically
+
+Campaign battle app bridge:
+- request/result handoff lives in `js/campaign/campaign-combat-bridge.js`
+- result storage uses `sessionStorage`, `localStorage`, `BroadcastChannel`, and `postMessage`
+- this is intentional so a battle opened in a separate tab can still report loot back to Campaign Mode
+- result loot is summarized in both `combat.html` and the Campaign Mode result panel
+
+Campaign economy:
+- campaign saves track arbitrary `currencies`, not only gold
+- `jp` is displayed as Jester Points
+- shop records can set a shop-level `currency` or stock-level `currency`
+- stock entries can use:
+  - `requires` for ownership gates that are not consumed
+  - `costs` or `costBundle` for extra consumed item/material/currency costs
+  - `consumeRequires: true` if requirements should also be consumed
+- system/special shop examples are in `data/worlds/haven/shops.json`
+
 ## 17. Short Summary
 
 If you remember only one thing, remember this:

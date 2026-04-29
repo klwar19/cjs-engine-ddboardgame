@@ -16,11 +16,13 @@ window.CJS.CampaignUI = (() => {
   const Bridge = () => window.CJS.CampaignCombatBridge;
   const Side = () => window.CJS.CampaignSideContent;
   const Gen = () => window.CJS.CampaignScenarioGenerator;
+  const Chat = () => window.CJS.CampaignPartyChat;
 
   let _root = null;
   let _activeMode = 'town';
   let _activeTab = 'overview';
   let _booted = false;
+  let _combatResultUnsub = null;
 
   const MODES = [
     ['town', 'Town', '🏠'],
@@ -71,6 +73,7 @@ window.CJS.CampaignUI = (() => {
 
     try {
       await CM().loadDefaultData();
+      await Chat()?.load?.();
       CS().loadContentFromDataStore();
       if (!Save().loadActive()) {
         CS().createNewSave(Object.values(CS().getContent().campaigns)[0]?.id);
@@ -78,6 +81,7 @@ window.CJS.CampaignUI = (() => {
       }
       _consumeCombatResult();
       _bindEvents();
+      _bindCombatResultListener();
       CS().subscribe(() => {
         Save().saveCurrent();
         render();
@@ -135,9 +139,24 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
+  function _bindCombatResultListener() {
+    if (_combatResultUnsub || !Bridge()?.onResult) return;
+    _combatResultUnsub = Bridge().onResult((result) => {
+      _storeCombatResult(result);
+      Bridge().consumeResult();
+    });
+  }
+
+  function _storeCombatResult(result) {
+    if (!result) return;
+    const state = CS().getState();
+    if (result.saveId && state?.saveId && result.saveId !== state.saveId) return;
+    CS().mutate((next) => { next.pendingBattleResult = result; }, { source: 'combat_bridge' });
+  }
+
   function _renderHeader(state, campaign) {
     const world = CS().getCurrentWorld();
-    const currency = `${state.currentWorld}_gold`;
+    const currencies = Object.entries(state.currencies || {});
     return `
       <header class="campaign-header">
         <a class="campaign-back" href="index.html">Main Menu</a>
@@ -146,8 +165,7 @@ window.CJS.CampaignUI = (() => {
           <span>${_esc(world?.displayName || state.currentWorld)} | Chapter ${state.currentChapter} | Phase ${state.phase.number}: ${_esc(state.phase.name || state.phase.type)}</span>
         </div>
         <div class="campaign-stats">
-          <span>${_esc(currency)} <b>${state.currencies[currency] || 0}</b></span>
-          <span>JP <b>${state.currencies.jp || 0}</b></span>
+          ${currencies.length ? currencies.map(([id, amount]) => `<span>${_esc(_currencyLabel(id))} <b>${amount || 0}</b></span>`).join('') : '<span>No currency <b>0</b></span>'}
         </div>
         <div class="campaign-header-actions">
           <button class="campaign-action" data-campaign-action="new-save">New</button>
@@ -225,14 +243,17 @@ window.CJS.CampaignUI = (() => {
     const hpPct = Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100);
     const mpPct = Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100);
     const statuses = (member.statuses || []).map((status) => `<span class="campaign-chip">${_esc(status.label || status.id)}</span>`).join('');
+    const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
+    const availability = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
     return `
-      <section class="campaign-character">
+      <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
         <div class="campaign-character-head">
           <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _esc(member.icon || member.name?.[0] || '?')}</div>
           <div>
             <strong>${_esc(member.name || id)}</strong>
             <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(member.rank || 'F')}</div>
           </div>
+          <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${_esc(availability)}</span>
         </div>
         <div class="campaign-bar"><span class="hp" style="width:${hpPct}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
         <div class="campaign-bar"><span class="mp" style="width:${mpPct}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
@@ -242,6 +263,8 @@ window.CJS.CampaignUI = (() => {
           <button data-campaign-action="heal-char" data-id="${_escAttr(id)}">Heal</button>
           <button data-campaign-action="mp-char" data-id="${_escAttr(id)}">MP</button>
           <button data-campaign-action="status-char" data-id="${_escAttr(id)}">Status</button>
+          <button data-campaign-action="party-availability" data-id="${_escAttr(id)}">Availability</button>
+          ${battleReady ? '' : `<button data-campaign-action="party-available" data-id="${_escAttr(id)}">Return</button>`}
         </div>
       </section>
     `;
@@ -553,6 +576,9 @@ window.CJS.CampaignUI = (() => {
       `;
     }
     const scenario = CS().getScenarioById(run.scenarioId);
+    const location = run.travelMode === 'grid_map' && run.currentCell
+      ? `${run.currentCell.x},${run.currentCell.y}`
+      : (run.currentNode || '-');
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
@@ -560,13 +586,14 @@ window.CJS.CampaignUI = (() => {
           <span class="campaign-pill">Danger ${run.danger}/${run.dangerMax}</span>
         </div>
         <div class="campaign-stat-grid">
-          <span>Node <b>${_esc(run.currentNode || '-')}</b></span>
+          <span>${run.travelMode === 'grid_map' ? 'Cell' : 'Node'} <b>${_esc(location)}</b></span>
           <span>Camp <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
         </div>
         <div class="campaign-action-grid">
           <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
+          <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
           <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
@@ -587,6 +614,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         <strong>${_esc(battle.label || battle.encounterId)}</strong>
         <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || '')}</div>
+        ${_renderBattlePartySummary(state)}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="run-battle" ${battle.encounterId ? '' : 'disabled'}>Run in Combat App</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Resolve Manually</button>
@@ -605,18 +633,46 @@ window.CJS.CampaignUI = (() => {
     return map[battle.source] || battle.source || 'manual';
   }
 
+  function _renderBattlePartySummary(state) {
+    const ready = [];
+    const blocked = [];
+    for (const [id, member] of Object.entries(state.party || {})) {
+      if (Bridge()?.isMemberBattleReady?.(member)) ready.push(member.name || id);
+      else blocked.push(`${member.name || id}: ${Bridge()?.availabilityLabel?.(member) || 'Unavailable'}`);
+    }
+    return `
+      <div class="campaign-preview">
+        <b>Battle Party</b><br>
+        Ready: ${_esc(ready.join(', ') || 'none')}<br>
+        ${blocked.length ? `Unavailable: ${_esc(blocked.join('; '))}` : 'Unavailable: none'}
+      </div>
+    `;
+  }
+
   function _renderCombatResult(state) {
     const result = state.pendingBattleResult;
     if (!result) return '';
+    const loot = _renderLootSummary(result.loot || []);
     return `
       <section class="campaign-panel battle-result">
         <div class="campaign-panel-head"><h2>Combat Result</h2><span class="campaign-pill">${_esc(result.result)}</span></div>
         <div class="campaign-muted">${_esc(result.encounterId || '')} | ${result.rounds || 0} rounds</div>
+        ${loot}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="apply-combat-result">Apply Result</button>
           <button class="campaign-action danger" data-campaign-action="ignore-combat-result">Ignore</button>
         </div>
       </section>
+    `;
+  }
+
+  function _renderLootSummary(drops) {
+    if (!drops.length) return '<div class="campaign-empty">No loot in this result.</div>';
+    return `
+      <div class="campaign-preview">
+        <b>Loot</b><br>
+        ${drops.map((drop) => _esc(_lootLine(drop))).join('<br>')}
+      </div>
     `;
   }
 
@@ -678,6 +734,9 @@ window.CJS.CampaignUI = (() => {
   function _renderSide(state) {
     const activeQuests = Object.values(state.quests || {}).filter((quest) => quest.status === 'active');
     return `
+      ${_renderWallet(state)}
+      ${_renderInventorySnapshot(state)}
+      ${_renderPartyChatCard(state)}
       <section class="campaign-side-section">
         <div class="campaign-panel-head"><h2>Quests</h2></div>
         ${activeQuests.length ? activeQuests.slice(0, 5).map(_renderQuestMini).join('') : '<div class="campaign-empty">No active quests.</div>'}
@@ -689,6 +748,60 @@ window.CJS.CampaignUI = (() => {
       <section class="campaign-side-section">
         <div class="campaign-panel-head"><h2>Notes</h2><button class="campaign-icon-btn" data-campaign-action="add-note">+</button></div>
         ${(state.pinnedNotes || []).slice(0, 6).map((note) => `<div class="campaign-log-line">${_esc(note.text || note)}</div>`).join('') || '<div class="campaign-empty">No pinned notes.</div>'}
+      </section>
+    `;
+  }
+
+  function _renderWallet(state) {
+    const entries = Object.entries(state.currencies || {});
+    return `
+      <section class="campaign-side-section">
+        <div class="campaign-panel-head"><h2>Wallet</h2></div>
+        ${entries.length ? entries.map(([id, amount]) => `
+          <div class="campaign-row">
+            <strong>${_esc(_currencyLabel(id))}</strong>
+            <span class="campaign-pill">${amount || 0}</span>
+          </div>
+        `).join('') : '<div class="campaign-empty">No currency tracked.</div>'}
+      </section>
+    `;
+  }
+
+  function _renderInventorySnapshot(state) {
+    const buckets = [
+      ['items', 'Items'],
+      ['materials', 'Materials'],
+      ['food', 'Food'],
+      ['questItems', 'Quest Items']
+    ];
+    const rows = buckets.flatMap(([bucket, label]) => Object.entries(state.inventory?.[bucket] || {})
+      .filter(([, qty]) => qty > 0)
+      .map(([id, qty]) => ({ bucket, label, id, qty })));
+    return `
+      <section class="campaign-side-section">
+        <div class="campaign-panel-head"><h2>Inventory</h2><button class="campaign-icon-btn" data-campaign-action="open-inventory-tab">Open</button></div>
+        ${rows.length ? rows.slice(0, 8).map((row) => `
+          <div class="campaign-log-line">
+            <span>${_esc(_recordName(row.bucket, row.id))}</span>
+            <small>${_esc(row.label)} x${row.qty}</small>
+          </div>
+        `).join('') : '<div class="campaign-empty">No inventory yet.</div>'}
+      </section>
+    `;
+  }
+
+  function _renderPartyChatCard(state) {
+    const chat = state.lastPartyChat;
+    return `
+      <section class="campaign-side-section">
+        <div class="campaign-panel-head"><h2>Party Banter</h2><button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button></div>
+        ${chat ? `
+          <div class="campaign-chat-line">
+            <strong>${_esc(chat.speakerName || chat.speaker || 'Party')}</strong>
+            <span>${_esc(chat.line || '')}</span>
+            ${chat.reply ? `<small>${_esc(chat.reply)}</small>` : ''}
+          </div>
+        ` : '<div class="campaign-empty">No banter rolled yet.</div>'}
       </section>
     `;
   }
@@ -721,6 +834,12 @@ window.CJS.CampaignUI = (() => {
                 <option value="random">Random</option>
                 <option value="active_quest">Active Quest</option>
                 <option value="quest_chain">Quest Chain</option>
+              </select>
+            </label>
+            <label>Form
+              <select id="campaign-gen-form">
+                <option value="node_map">Node Map</option>
+                <option value="grid_map">Grid Map</option>
               </select>
             </label>
             <label>Map Type
@@ -770,6 +889,7 @@ window.CJS.CampaignUI = (() => {
     const mode = scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform');
     const modeLabels = {
       node_map: '🗺 Map',
+      grid_map: 'Grid',
       procedural: '🎲 Procedural',
       linear: '📜 Linear',
       freeform: '🎯 Freeform'
@@ -1047,6 +1167,8 @@ window.CJS.CampaignUI = (() => {
       case 'travel-world': return _travelWorld();
       case 'open-scenarios-tab': return _goto('scenario', 'scenarios');
       case 'open-maps-tab': return _goto('scenario', 'maps');
+      case 'open-inventory-tab': return _goto('workshop', 'inventory');
+      case 'roll-party-chat': return _rollPartyChat();
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
       case 'run-roll-event': return _runRollEvent();
@@ -1058,6 +1180,7 @@ window.CJS.CampaignUI = (() => {
       case 'start-scenario': return Runner().startScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
       case 'move-node': return _moveNode(data.nodeId);
+      case 'move-cell': return _moveCell(data.x, data.y);
       case 'map-layer': return _setMapLayer(data.layer);
       case 'reveal-node': return Ops().apply({ op: 'reveal_node', nodeId: data.nodeId }, { source: 'ui' });
       case 'clear-node': return _clearNode(data.nodeId);
@@ -1070,8 +1193,8 @@ window.CJS.CampaignUI = (() => {
       case 'ignore-combat-result': return CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'ui' });
       case 'inventory-delta': return _inventoryDelta(data);
       case 'quick-add-inventory': return _quickAddInventory(data.bucket);
-      case 'shop-buy': return Ops().apply({ op: 'shop_buy', id: data.id, type: data.type, price: Number(data.price || 0), currency: data.currency, qty: 1 }, { source: 'ui' });
-      case 'shop-sell': return Ops().apply({ op: 'shop_sell', id: data.id, bucket: data.type === 'material' ? 'materials' : 'items', price: Number(data.price || 0), currency: data.currency, qty: 1 }, { source: 'ui' });
+      case 'shop-buy': return _shopBuy(data);
+      case 'shop-sell': return Ops().apply({ op: 'shop_sell', id: data.id, type: data.type, price: Number(data.price || 0), currency: data.currency, qty: 1 }, { source: 'ui' });
       case 'farm-tick': return Ops().apply({ op: 'farm_tick', amount: 1 }, { source: 'ui' });
       case 'plant-seed': return _plantSeed(data.plotId);
       case 'harvest-plot': return window.CJS.PocketHaven.harvestPlot(data.plotId);
@@ -1086,6 +1209,8 @@ window.CJS.CampaignUI = (() => {
       case 'heal-char': return _charNumberOp(data.id, 'heal_character', 'Heal amount');
       case 'mp-char': return _charMpModal(data.id);
       case 'status-char': return _charStatusModal(data.id);
+      case 'party-availability': return _partyAvailabilityModal(data.id);
+      case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
       case 'load-slot': Save().loadSlot(data.id); return render();
       case 'delete-slot': Save().deleteSlot(data.id); return render();
@@ -1470,6 +1595,7 @@ window.CJS.CampaignUI = (() => {
     if (CS().getState()?.activeScenarioRun) return UI().toast('End the active scenario before generating another', 'info');
     const options = {
       source: _root.querySelector('#campaign-gen-source')?.value || 'random',
+      mapForm: _root.querySelector('#campaign-gen-form')?.value || 'node_map',
       mapType: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
       size: _root.querySelector('#campaign-gen-size')?.value || 'small',
       layers: Number(_root.querySelector('#campaign-gen-layers')?.value || 1),
@@ -1497,6 +1623,39 @@ window.CJS.CampaignUI = (() => {
     if (!moved) UI().toast('That node is not connected from here yet', 'info');
   }
 
+  function _moveCell(x, y) {
+    const moved = Runner().moveToCell?.(Number(x), Number(y));
+    if (!moved) UI().toast('That cell is blocked or out of reach', 'info');
+  }
+
+  function _rollPartyChat() {
+    const state = CS().getState();
+    const run = state.activeScenarioRun;
+    const currentNode = Runner().findCurrentNode?.();
+    const currentCell = Runner().findCurrentCell?.();
+    const chat = Chat()?.roll?.({
+      world: state.currentWorld,
+      situation: run ? 'scenario' : 'town',
+      scenarioId: run?.scenarioId || '',
+      mapId: run?.mapId || '',
+      locationKind: currentNode?.kind || currentCell?.kind || '',
+      tags: [...(currentNode?.tags || []), ...(currentCell?.tags || [])]
+    });
+    if (!chat) return UI().toast('No party banter available', 'info');
+    CS().mutate((next) => {
+      next.lastPartyChat = chat;
+      next.log.unshift({
+        id: `log_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+        at: new Date().toISOString(),
+        phase: next.phase?.number || 1,
+        world: next.currentWorld,
+        text: `${chat.speakerName || chat.speaker}: ${chat.line}`,
+        op: 'party_chat'
+      });
+      next.log = next.log.slice(0, 500);
+    }, { source: 'party_chat' });
+  }
+
   function _clearNode(nodeId) {
     CS().mutate((state) => {
       const mapId = state.activeScenarioRun?.mapId;
@@ -1511,6 +1670,8 @@ window.CJS.CampaignUI = (() => {
     const battle = CS().getState().pendingBattle;
     if (!battle) return;
     if (!battle.encounterId) return UI().toast('This battle set is manual-only until converted to an encounter.', 'info');
+    const readyCount = Object.values(CS().getState().party || {}).filter((member) => Bridge()?.isMemberBattleReady?.(member)).length;
+    if (!readyCount) return UI().toast('No available party members can enter this battle', 'error');
     Bridge().openBattle(battle);
     Save().saveCurrent();
     UI().toast('Battle request sent to combat app', 'info');
@@ -1642,6 +1803,28 @@ window.CJS.CampaignUI = (() => {
     const result = CS().getState().pendingBattleResult;
     Bridge().applyResult(result);
     CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'combat_bridge' });
+  }
+
+  function _shopBuy(data) {
+    const stock = _shopStock(data.shopId, data.stockIndex);
+    Ops().apply({
+      op: 'shop_buy',
+      id: data.id || stock?.id,
+      type: data.type || stock?.type || 'item',
+      bucket: stock?.bucket,
+      price: Number(data.price ?? stock?.price ?? 0),
+      currency: data.currency || stock?.currency,
+      qty: 1,
+      requires: stock?.requires || {},
+      costs: stock?.costs || stock?.costBundle || {},
+      consumeRequires: !!stock?.consumeRequires
+    }, { source: 'ui' });
+  }
+
+  function _shopStock(shopId, stockIndex) {
+    const shop = shopId ? DS().get('shops', shopId) : null;
+    const index = Number(stockIndex);
+    return shop?.stock?.[index] || null;
   }
 
   function _inventoryDelta(data) {
@@ -1788,6 +1971,61 @@ window.CJS.CampaignUI = (() => {
       primaryLabel: 'Apply Status',
       onSubmit: ({ value, duration }) => {
         Ops().apply({ op: 'add_status', target: id, status: value, duration: duration || 'manual' }, { source: 'ui' });
+      }
+    });
+  }
+
+  function _partyAvailabilityModal(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Status'));
+    const status = UI().createSelect({
+      options: [
+        { value: 'available', label: 'Available' },
+        { value: 'unavailable', label: 'Unavailable' },
+        { value: 'busy', label: 'Busy' },
+        { value: 'injured', label: 'Injured' },
+        { value: 'story_locked', label: 'Story Locked' }
+      ],
+      value: member.availability?.status || 'available'
+    });
+    body.appendChild(status);
+    body.appendChild(_formLabel('Reason'));
+    const reason = document.createElement('input');
+    reason.type = 'text';
+    reason.style.width = '100%';
+    reason.placeholder = 'guarding the sled, recovering, story split...';
+    reason.value = member.availability?.reason || '';
+    body.appendChild(reason);
+    body.appendChild(_formLabel('Expires'));
+    const expires = UI().createSelect({
+      options: [
+        { value: '', label: 'Manual' },
+        { value: 'scenario', label: 'Scenario' },
+        { value: 'phase', label: 'Phase' },
+        { value: 'battle', label: 'Battle' }
+      ],
+      value: member.availability?.expires || ''
+    });
+    body.appendChild(expires);
+    _formModal({
+      title: `Availability: ${member.name || id}`,
+      body,
+      primaryLabel: 'Save',
+      onSubmit: () => {
+        if (status.value === 'available') {
+          Ops().apply({ op: 'clear_party_availability', target: id }, { source: 'ui' });
+        } else {
+          Ops().apply({
+            op: 'set_party_availability',
+            target: id,
+            status: status.value,
+            reason: reason.value.trim(),
+            expires: expires.value || null,
+            source: 'manual'
+          }, { source: 'ui' });
+        }
       }
     });
   }
@@ -2032,7 +2270,7 @@ window.CJS.CampaignUI = (() => {
   function _consumeCombatResult() {
     const result = Bridge().consumeResult();
     if (!result) return;
-    CS().mutate((state) => { state.pendingBattleResult = result; }, { source: 'combat_bridge' });
+    _storeCombatResult(result);
   }
 
   function _formLabel(text) {
@@ -2203,6 +2441,27 @@ window.CJS.CampaignUI = (() => {
       primaryLabel,
       onSubmit: () => onSubmit(slider._getValue())
     });
+  }
+
+  function _lootLine(drop) {
+    if (drop.type === 'money') return `${drop.amount || drop.qty || 0} ${_currencyLabel(drop.currency || 'gold')}`;
+    if (drop.type === 'jp') return `${drop.amount || drop.qty || 0} ${_currencyLabel('jp')}`;
+    return `${drop.qty || 1}x ${drop.name || _recordName(drop.type === 'material' ? 'materials' : 'items', drop.id)}`;
+  }
+
+  function _currencyLabel(id) {
+    const value = String(id || '').toLowerCase();
+    if (value === 'jp' || value === 'jester_points') return 'Jester Points';
+    if (value.endsWith('_gold')) return `${_label(value.replace(/_gold$/, ''))} Gold`;
+    return _label(id);
+  }
+
+  function _recordName(bucketOrType, id) {
+    const bucket = bucketOrType === 'material' ? 'materials'
+      : bucketOrType === 'food' ? 'food'
+        : bucketOrType === 'questItem' ? 'questItems'
+          : bucketOrType || 'items';
+    return DS().get(bucket, id)?.name || id;
   }
 
   function _label(value) {

@@ -1,0 +1,104 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-map",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarioMaps",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_map_frostwood_grid_patrol",
+      "name": "Frostwood Grid Patrol",
+      "type": "grid_map",
+      "world": "haven",
+      "setting": "outdoor",
+      "size": "small",
+      "width": 7,
+      "height": 6,
+      "defaultStartCell": [1, 4],
+      "terrain": [
+        ["wall", "wall", "floor", "floor", "floor", "wall", "wall"],
+        ["wall", "floor", "floor", "obstacle", "floor", "floor", "wall"],
+        ["floor", "floor", "floor", "floor", "floor", "floor", "floor"],
+        ["floor", "obstacle", "floor", "floor", "obstacle", "floor", "floor"],
+        ["wall", "floor", "floor", "floor", "floor", "floor", "wall"],
+        ["wall", "wall", "floor", "floor", "floor", "wall", "wall"]
+      ],
+      "cells": [
+        {
+          "id": "sled_start",
+          "title": "Sled Start",
+          "x": 1,
+          "y": 4,
+          "kind": "entrance",
+          "discoveredByDefault": true,
+          "tags": ["grid", "sled"],
+          "notes": "The supply sled waits behind a low snowbank."
+        },
+        {
+          "id": "bent_pine",
+          "title": "Bent Pine",
+          "x": 2,
+          "y": 3,
+          "kind": "event",
+          "tags": ["tracks", "wolf"],
+          "notes": "Fresh tracks split around the tree.",
+          "onEnter": [
+            { "op": "log", "text": "Bent Pine: tracks show something circling the route." }
+          ]
+        },
+        {
+          "id": "thin_ice",
+          "title": "Thin Ice",
+          "x": 3,
+          "y": 2,
+          "kind": "trap",
+          "tags": ["ice", "danger"],
+          "notes": "The snow crust is too smooth here.",
+          "onEnter": [
+            { "op": "danger", "amount": 1 },
+            { "op": "damage_party", "amount": 2 },
+            { "op": "log", "text": "Thin Ice: the party loses time and footing." }
+          ]
+        },
+        {
+          "id": "wolf_cutoff",
+          "title": "Wolf Cutoff",
+          "x": 5,
+          "y": 2,
+          "kind": "battle",
+          "tags": ["wolf", "ambush"],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine"],
+          "randomBattle": {
+            "chance": 1,
+            "battleSetId": "haven_bset_wolf_pack_bent_pine"
+          }
+        },
+        {
+          "id": "hunter_cache_grid",
+          "title": "Hunter Cache",
+          "x": 4,
+          "y": 4,
+          "kind": "reward",
+          "tags": ["cache", "reward"],
+          "onEnter": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 10 },
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
+            { "op": "log", "text": "Hunter Cache: useful supplies recovered." }
+          ]
+        },
+        {
+          "id": "watch_ridge",
+          "title": "Watch Ridge",
+          "x": 5,
+          "y": 1,
+          "kind": "exit",
+          "tags": ["exit", "ridge"],
+          "notes": "A clear view back to Frostbitten."
+        }
+      ]
+    }
+  ]
+}

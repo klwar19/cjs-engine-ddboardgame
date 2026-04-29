@@ -1,0 +1,66 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-scenario",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarios",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_scn_frostwood_grid_patrol",
+      "name": "Frostwood Grid Patrol",
+      "type": "field_run",
+      "world": "haven",
+      "travelMode": "grid_map",
+      "mapId": "haven_map_frostwood_grid_patrol",
+      "startCell": [1, 4],
+      "setting": "outdoor",
+      "size": "small",
+      "tags": ["grid", "movement", "wolf", "sled"],
+      "notes": "A square-grid patrol route with step movement, revealed cells, a guaranteed wolf cutoff, and a party split circumstance.",
+      "partyRestrictions": [
+        {
+          "characterId": "haven_garr",
+          "status": "busy",
+          "reason": "Holding the sled route open while the others scout ahead.",
+          "expires": "scenario"
+        }
+      ],
+      "limits": { "campRests": 1, "randomBattles": 1, "events": 2 },
+      "danger": { "start": 0, "max": 8 },
+      "setBattles": [
+        {
+          "id": "grid_wolf_cutoff",
+          "battleSetId": "haven_bset_wolf_pack_bent_pine",
+          "encounterId": "haven_enc_wolf_pack",
+          "label": "Wolf Cutoff",
+          "rewardOps": [
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
+            { "op": "give_jp", "amount": 1 }
+          ]
+        }
+      ],
+      "randomBattleTables": [
+        {
+          "id": "grid_patrol_battles",
+          "name": "Grid Patrol Battles",
+          "entries": [
+            { "battleSetId": "haven_bset_wolf_pack_bent_pine", "weight": 2 },
+            { "battleSetId": "haven_bset_bear_hollow", "weight": 1 }
+          ]
+        }
+      ],
+      "successConditions": [
+        { "type": "reach_cell", "x": 5, "y": 1 }
+      ],
+      "entryOps": [
+        { "op": "log", "text": "Grid patrol started. Garr stays with the sled route." }
+      ],
+      "exitOps": [
+        { "op": "log", "text": "Grid patrol ended." }
+      ]
+    }
+  ]
+}

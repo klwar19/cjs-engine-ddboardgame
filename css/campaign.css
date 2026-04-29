@@ -403,6 +403,11 @@ body.campaign-page {
   color: var(--campaign-text);
 }
 
+.campaign-pill.is-blocked {
+  border-color: rgba(245, 184, 75, 0.75);
+  color: #ffdd91;
+}
+
 .campaign-hud-spacer {
   min-height: 1px;
 }
@@ -602,6 +607,81 @@ body.campaign-page {
   overflow: visible;
 }
 
+.campaign-grid-map {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), minmax(42px, 1fr));
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #10151a;
+}
+
+.campaign-grid-cell {
+  min-height: 58px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #172027;
+  color: var(--campaign-text);
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.campaign-grid-cell span {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.campaign-grid-cell small {
+  max-width: 100%;
+  color: var(--campaign-muted);
+  font-size: 0.68rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.campaign-grid-cell:hover:not(:disabled) {
+  border-color: var(--campaign-accent);
+}
+
+.campaign-grid-cell.is-active {
+  background: #173044;
+  border-color: var(--campaign-accent);
+  box-shadow: 0 0 0 1px var(--campaign-accent) inset;
+}
+
+.campaign-grid-cell.is-visited {
+  border-color: rgba(139, 209, 124, 0.65);
+}
+
+.campaign-grid-cell.is-hidden {
+  background: #0d1115;
+  border-color: #1d242b;
+}
+
+.campaign-grid-cell.is-blocked {
+  background: #1b1717;
+  color: #8b939c;
+}
+
+.campaign-grid-cell.kind-battle,
+.campaign-grid-cell.kind-event_battle {
+  border-color: #ffb46a;
+}
+
+.campaign-grid-cell.kind-boss {
+  border-color: var(--campaign-danger);
+}
+
+.campaign-grid-cell.kind-rest,
+.campaign-grid-cell.kind-shop,
+.campaign-grid-cell.kind-reward {
+  border-color: #78d0a0;
+}
+
 .campaign-map-bg {
   fill: #121820;
   stroke: #26313b;
@@ -796,7 +876,7 @@ body.campaign-page {
 
   .campaign-panel-head,
   .campaign-row,
-  .campaign-character-head {
+.campaign-character-head {
     align-items: flex-start;
   }
 
@@ -828,4 +908,25 @@ body.campaign-page {
     right: 10px;
     bottom: 78px;
   }
+}
+
+.campaign-character.is-unavailable {
+  border-color: rgba(245, 184, 75, 0.55);
+}
+
+.campaign-chat-line {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #101419;
+}
+
+.campaign-chat-line span {
+  color: var(--campaign-text);
+}
+
+.campaign-chat-line small {
+  color: var(--campaign-muted);
 }

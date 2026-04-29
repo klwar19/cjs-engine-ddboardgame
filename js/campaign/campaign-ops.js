@@ -48,6 +48,8 @@ window.CJS.CampaignOps = (() => {
         case 'damage_character': return `Damage ${op.target || op.characterId} for ${op.amount || 0}`;
         case 'heal_character': return `Heal ${op.target || op.characterId} for ${op.amount || 0}`;
         case 'add_status': return `Add ${op.status || op.id} to ${op.target || 'target'}`;
+        case 'set_party_availability': return `Set ${op.target || op.characterId || 'party member'} availability`;
+        case 'clear_party_availability': return `Clear ${op.target || op.characterId || 'party member'} availability`;
         case 'danger': return `Danger ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
         case 'reputation_change': return `Reputation ${op.target || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
         case 'hub_problem_add': return `Add hub problem ${op.problemId || op.id}`;
@@ -103,6 +105,8 @@ window.CJS.CampaignOps = (() => {
       case 'heal_character': return _hp(state, op.target || op.characterId, op.amount || 0);
       case 'restore_mp': return _mp(state, op.target || op.characterId, op.amount || 0);
       case 'spend_mp': return _mp(state, op.target || op.characterId, -(op.amount || 0));
+      case 'set_party_availability': return _setPartyAvailability(state, op);
+      case 'clear_party_availability': return _clearPartyAvailability(state, op);
       case 'damage_party': return _partyEach(state, (id) => _hp(state, id, -(op.amount || 0), false), `Party took ${op.amount || 0} HP damage.`);
       case 'heal_party': return _partyEach(state, (id) => _hp(state, id, op.amount || 0, false), `Party healed ${op.amount || 0} HP.`);
       case 'add_status': return _addStatus(state, op);
@@ -300,6 +304,36 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
+  function _setPartyAvailability(state, op) {
+    const status = String(op.status || op.state || 'unavailable').toLowerCase();
+    const normalized = ['available', 'unavailable', 'busy', 'injured', 'story_locked'].includes(status) ? status : 'unavailable';
+    for (const id of _resolveTargets(state, op.target || op.characterId || op.id)) {
+      const member = state.party[id];
+      member.availability = {
+        status: normalized,
+        reason: op.reason || '',
+        source: op.source || 'manual',
+        expires: op.expires || null,
+        updatedAt: new Date().toISOString()
+      };
+      _log(state, `${member.name || id} availability: ${normalized}${op.reason ? ` - ${op.reason}` : ''}.`);
+    }
+  }
+
+  function _clearPartyAvailability(state, op) {
+    for (const id of _resolveTargets(state, op.target || op.characterId || op.id)) {
+      const member = state.party[id];
+      member.availability = {
+        status: 'available',
+        reason: '',
+        source: op.source || 'manual',
+        expires: null,
+        updatedAt: new Date().toISOString()
+      };
+      _log(state, `${member.name || id} returned to the active party.`);
+    }
+  }
+
   function _partyEach(state, fn, message) {
     for (const id of Object.keys(state.party)) fn(id);
     if (message) _log(state, message);
@@ -436,6 +470,9 @@ window.CJS.CampaignOps = (() => {
     for (const member of Object.values(state.party)) {
       member.statuses = (member.statuses || []).filter((status) => status.duration !== duration);
       member.buffs = (member.buffs || []).filter((buff) => buff.duration !== duration);
+      if (member.availability?.expires === duration) {
+        member.availability = { status: 'available', reason: '', source: 'duration_clear', expires: null, updatedAt: new Date().toISOString() };
+      }
     }
   }
 
@@ -486,21 +523,40 @@ window.CJS.CampaignOps = (() => {
     const currency = op.currency || _worldCurrency(state);
     const qty = Number(op.qty || 1);
     const price = Number(op.price || 0) * qty;
+    const requires = _scaleBundle(op.requires || {}, qty);
+    const costs = _scaleBundle(op.costs || op.costBundle || {}, qty);
+    if (!_hasBundle(state, requires)) {
+      _log(state, `Shop buy skipped: missing requirement for ${op.id}.`);
+      return;
+    }
+    if (!_hasBundle(state, costs)) {
+      _log(state, `Shop buy skipped: missing special cost for ${op.id}.`);
+      return;
+    }
     if ((state.currencies[currency] || 0) < price && !op.allowDebt) {
       _log(state, `Shop buy skipped: not enough ${currency}.`);
       return;
     }
     _money(state, currency, -price);
-    _inventory(state, op.bucket || (op.type === 'material' ? 'materials' : 'items'), op.id, qty);
+    if (op.consumeRequires) _consumeBundle(state, requires);
+    _consumeBundle(state, costs);
+    _inventory(state, op.bucket || _bucketForType(op.type), op.id, qty);
     _log(state, `Bought ${qty} ${op.id}.`);
   }
 
   function _shopSell(state, op) {
     const currency = op.currency || _worldCurrency(state);
     const qty = Number(op.qty || 1);
-    _inventory(state, op.bucket || 'items', op.id, -qty);
+    _inventory(state, op.bucket || _bucketForType(op.type), op.id, -qty);
     _money(state, currency, Number(op.price || 0) * qty);
     _log(state, `Sold ${qty} ${op.id}.`);
+  }
+
+  function _bucketForType(type) {
+    if (type === 'material') return 'materials';
+    if (type === 'food') return 'food';
+    if (type === 'questItem') return 'questItems';
+    return 'items';
   }
 
   function _craftBasic(state, op) {
@@ -516,15 +572,45 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _consumeBundle(state, bundle) {
+    for (const [id, qty] of Object.entries(bundle.currencies || {})) _money(state, id, -qty);
     for (const [id, qty] of Object.entries(bundle.items || {})) _inventory(state, 'items', id, -qty);
     for (const [id, qty] of Object.entries(bundle.materials || {})) _inventory(state, 'materials', id, -qty);
     for (const [id, qty] of Object.entries(bundle.food || {})) _inventory(state, 'food', id, -qty);
+    for (const [id, qty] of Object.entries(bundle.questItems || {})) _inventory(state, 'questItems', id, -qty);
   }
 
   function _grantBundle(state, bundle) {
+    for (const [id, qty] of Object.entries(bundle.currencies || {})) _money(state, id, qty);
     for (const [id, qty] of Object.entries(bundle.items || {})) _inventory(state, 'items', id, qty);
     for (const [id, qty] of Object.entries(bundle.materials || {})) _inventory(state, 'materials', id, qty);
     for (const [id, qty] of Object.entries(bundle.food || {})) _inventory(state, 'food', id, qty);
+    for (const [id, qty] of Object.entries(bundle.questItems || {})) _inventory(state, 'questItems', id, qty);
+  }
+
+  function _hasBundle(state, bundle) {
+    for (const [id, qty] of Object.entries(bundle.currencies || {})) {
+      if ((state.currencies[id] || 0) < Number(qty || 0)) return false;
+    }
+    for (const [bucket, records] of Object.entries({
+      items: bundle.items || {},
+      materials: bundle.materials || {},
+      food: bundle.food || {},
+      questItems: bundle.questItems || {}
+    })) {
+      for (const [id, qty] of Object.entries(records)) {
+        if ((state.inventory?.[bucket]?.[id] || 0) < Number(qty || 0)) return false;
+      }
+    }
+    return true;
+  }
+
+  function _scaleBundle(bundle, qty) {
+    const out = {};
+    for (const [bucket, records] of Object.entries(bundle || {})) {
+      out[bucket] = {};
+      for (const [id, amount] of Object.entries(records || {})) out[bucket][id] = Number(amount || 0) * qty;
+    }
+    return out;
   }
 
   function _farmTick(state, amount, log = true) {

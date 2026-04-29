@@ -1,5 +1,5 @@
 // campaign-combat-bridge.js
-// sessionStorage handoff between campaign.html and combat.html.
+// Handoff between campaign.html and combat.html.
 
 window.CJS = window.CJS || {};
 
@@ -8,6 +8,7 @@ window.CJS.CampaignCombatBridge = (() => {
 
   const REQUEST_KEY = 'cjs.campaign.battle.request.v1';
   const RESULT_KEY = 'cjs.campaign.battle.result.v1';
+  const RESULT_EVENT = 'cjs-campaign-battle-result';
 
   const DS = () => window.CJS.DataStore;
   const CS = () => window.CJS.CampaignState;
@@ -17,13 +18,28 @@ window.CJS.CampaignCombatBridge = (() => {
     catch (_) { return null; }
   }
 
+  function _local() {
+    try { return window.localStorage; }
+    catch (_) { return null; }
+  }
+
+  function _channel() {
+    try {
+      return 'BroadcastChannel' in window ? new BroadcastChannel(RESULT_EVENT) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   function writeRequest(request) {
-    _session()?.setItem(REQUEST_KEY, JSON.stringify(request || {}));
+    const payload = JSON.stringify(request || {});
+    _session()?.setItem(REQUEST_KEY, payload);
+    _local()?.setItem(REQUEST_KEY, payload);
   }
 
   function readRequest() {
     try {
-      const raw = _session()?.getItem(REQUEST_KEY);
+      const raw = _session()?.getItem(REQUEST_KEY) || _local()?.getItem(REQUEST_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (_) {
       return null;
@@ -32,29 +48,77 @@ window.CJS.CampaignCombatBridge = (() => {
 
   function clearRequest() {
     _session()?.removeItem(REQUEST_KEY);
+    _local()?.removeItem(REQUEST_KEY);
   }
 
   function writeResult(result) {
-    _session()?.setItem(RESULT_KEY, JSON.stringify(result || {}));
+    const payload = JSON.stringify(result || {});
+    _session()?.setItem(RESULT_KEY, payload);
+    _local()?.setItem(RESULT_KEY, payload);
+    const channel = _channel();
+    if (channel) {
+      try { channel.postMessage(result || {}); }
+      finally { channel.close(); }
+    }
+    try {
+      window.opener?.postMessage?.({ type: RESULT_EVENT, result }, window.location.origin);
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent(RESULT_EVENT, { detail: result }));
+    } catch (_) {}
   }
 
   function consumeResult() {
     try {
-      const raw = _session()?.getItem(RESULT_KEY);
+      const raw = _session()?.getItem(RESULT_KEY) || _local()?.getItem(RESULT_KEY);
       if (!raw) return null;
       _session()?.removeItem(RESULT_KEY);
+      _local()?.removeItem(RESULT_KEY);
       return JSON.parse(raw);
     } catch (_) {
       return null;
     }
   }
 
+  function onResult(listener) {
+    if (typeof listener !== 'function') return () => {};
+    const channel = _channel();
+    const handle = (result) => {
+      if (!result) return;
+      listener(result);
+    };
+    const onStorage = (event) => {
+      if (event.key !== RESULT_KEY || !event.newValue) return;
+      try { handle(JSON.parse(event.newValue)); } catch (_) {}
+    };
+    const onMessage = (event) => {
+      if (event.origin && event.origin !== window.location.origin) return;
+      if (event.data?.type === RESULT_EVENT) handle(event.data.result);
+    };
+    const onCustom = (event) => handle(event.detail);
+    if (channel) channel.onmessage = (event) => handle(event.data);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('message', onMessage);
+    window.addEventListener(RESULT_EVENT, onCustom);
+    return () => {
+      if (channel) channel.close();
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('message', onMessage);
+      window.removeEventListener(RESULT_EVENT, onCustom);
+    };
+  }
+
   function buildRequestFromState(pendingBattle) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
+    const partyEntries = Object.entries(state.party || {});
+    const availableParty = partyEntries.filter(([, member]) => isMemberBattleReady(member));
+    const excludedParty = partyEntries.filter(([, member]) => !isMemberBattleReady(member));
     return {
       campaignId: state.campaignId,
       saveId: state.saveId,
+      world: state.currentWorld,
+      currency: `${state.currentWorld || 'haven'}_gold`,
       scenarioRunId: run?.runId || null,
       nodeId: pendingBattle?.nodeId || run?.currentNode || null,
       encounterId: pendingBattle?.encounterId,
@@ -62,7 +126,13 @@ window.CJS.CampaignCombatBridge = (() => {
       mode: 'campaign',
       returnUrl: 'campaign.html',
       requestedAt: new Date().toISOString(),
-      partyOverlay: Object.fromEntries(Object.entries(state.party || {}).map(([id, member]) => [id, {
+      availablePartyIds: availableParty.map(([id]) => id),
+      excludedParty: excludedParty.map(([id, member]) => ({
+        id,
+        name: member.name || id,
+        reason: availabilityLabel(member)
+      })),
+      partyOverlay: Object.fromEntries(availableParty.map(([id, member]) => [id, {
         currentHP: member.currentHp,
         currentMP: member.currentMp,
         statuses: (member.statuses || []).map((status) => ({
@@ -87,12 +157,18 @@ window.CJS.CampaignCombatBridge = (() => {
     if (!base) return null;
     const runtimeId = `campaign_runtime_${request.encounterId}`;
     const overlay = request.partyOverlay || {};
+    const available = new Set(request.availablePartyIds || Object.keys(overlay));
+    const excluded = new Set((request.excludedParty || []).map((entry) => entry.id));
     const clone = JSON.parse(JSON.stringify(base));
     clone.id = runtimeId;
     clone.name = `${base.name || request.encounterId} (Campaign)`;
     clone._runtime = true;
     clone._scope = 'runtime';
-    clone.units = (clone.units || []).map((placement) => {
+    clone.units = (clone.units || []).filter((placement) => {
+      const character = DS().get('characters', placement.id);
+      const isPlayer = placement.team === 'player' || character?.team === 'player' || overlay[placement.id] || excluded.has(placement.id);
+      return !isPlayer || available.has(placement.id);
+    }).map((placement) => {
       const patch = overlay[placement.id];
       if (!patch) return placement;
       return {
@@ -127,7 +203,7 @@ window.CJS.CampaignCombatBridge = (() => {
     if (window.CJS.LootRoller && combatState?.winner === 'player') {
       const drops = window.CJS.LootRoller.rollLoot(enemies, _maxPartyLuck(units));
       for (const drop of drops) {
-        if (drop.isGold) loot.push({ type: 'money', currency: 'haven_gold', amount: drop.quantity });
+        if (drop.isGold) loot.push({ type: 'money', currency: request?.currency || `${request?.world || 'haven'}_gold`, amount: drop.quantity });
         else if (drop.isJP) loot.push({ type: 'jp', amount: drop.quantity });
         else loot.push({
           type: DS().exists('materials', drop.itemId) ? 'material' : 'item',
@@ -141,6 +217,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return {
       requestId: request?.requestedAt || '',
       campaignId: request?.campaignId || '',
+      saveId: request?.saveId || '',
       scenarioRunId: request?.scenarioRunId || null,
       nodeId: request?.nodeId || null,
       encounterId: request?.encounterId || combatState?.encounter?.id || null,
@@ -183,16 +260,53 @@ window.CJS.CampaignCombatBridge = (() => {
       .reduce((max, unit) => Math.max(max, unit.compiledStats?.L || 5), 5);
   }
 
+  function isMemberBattleReady(member) {
+    const availability = normalizeAvailability(member);
+    return availability.status === 'available' && Number(member?.currentHp ?? 1) > 0;
+  }
+
+  function normalizeAvailability(member = {}) {
+    const raw = member.availability || {};
+    const status = String(raw.status || raw.state || (member.available === false ? 'unavailable' : 'available')).toLowerCase();
+    return {
+      status: ['available', 'unavailable', 'benched', 'busy', 'injured', 'story_locked'].includes(status) && status !== 'benched'
+        ? status
+        : status === 'benched' ? 'unavailable' : 'available',
+      reason: raw.reason || member.unavailableReason || ''
+    };
+  }
+
+  function availabilityLabel(member) {
+    const availability = normalizeAvailability(member);
+    if (Number(member?.currentHp ?? 1) <= 0) return '0 HP';
+    return availability.reason || availability.status || 'unavailable';
+  }
+
+  function summarizeLoot(result) {
+    const drops = result?.loot || [];
+    if (!drops.length) return 'No loot';
+    return drops.map((drop) => {
+      if (drop.type === 'money') return `${drop.amount || drop.qty || 0} ${drop.currency || 'gold'}`;
+      if (drop.type === 'jp') return `${drop.amount || drop.qty || 0} JP`;
+      return `${drop.qty || 1}x ${drop.name || drop.id || drop.type}`;
+    }).join(', ');
+  }
+
   return Object.freeze({
     writeRequest,
     readRequest,
     clearRequest,
     writeResult,
     consumeResult,
+    onResult,
     buildRequestFromState,
     openBattle,
     createRuntimeEncounterFromRequest,
     buildResultFromCombat,
-    applyResult
+    applyResult,
+    isMemberBattleReady,
+    normalizeAvailability,
+    availabilityLabel,
+    summarizeLoot
   });
 })();

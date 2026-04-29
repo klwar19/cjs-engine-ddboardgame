@@ -169,6 +169,12 @@
       "category": "scenarios"
     },
     {
+      "path": "data/campaigns/haven/scenarios/scn_frostwood_grid_patrol.scenario.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "scenarios"
+    },
+    {
       "path": "data/campaigns/haven/scenarios/scn_sewer_crawl.scenario.json",
       "scope": "world",
       "world": "haven",
@@ -188,6 +194,12 @@
     },
     {
       "path": "data/campaigns/haven/maps/frostwood_short_route.map.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "scenarioMaps"
+    },
+    {
+      "path": "data/campaigns/haven/maps/frostwood_grid_patrol.map.json",
       "scope": "world",
       "world": "haven",
       "category": "scenarioMaps"

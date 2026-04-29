@@ -15,32 +15,37 @@ window.CJS.CampaignEconomy = (() => {
     if (!shops.length) {
       return '<section class="campaign-panel"><h3>Shops</h3><div class="campaign-empty">No shop data for this world yet. Use GM Override for manual buys and sells.</div></section>';
     }
-    return `<div class="campaign-tab-grid">${shops.map(_renderShop).join('')}</div>`;
+    return `<div class="campaign-tab-grid">${shops.map((shop) => _renderShop(shop, state)).join('')}</div>`;
   }
 
-  function _renderShop(shop) {
+  function _renderShop(shop, state) {
     const currency = shop.currency || `${shop.world || 'haven'}_gold`;
     const stock = shop.stock || [];
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h3>${_esc(shop.name || shop.id)}</h3>
-          <span class="campaign-pill">${_esc(currency)}</span>
+          <span class="campaign-pill">${_esc(_currencyLabel(currency))}</span>
         </div>
         <div class="campaign-muted">${_esc(shop.description || '')}</div>
-        ${stock.length ? stock.map((item) => `
+        ${stock.length ? stock.map((item, index) => {
+          const itemCurrency = item.currency || currency;
+          const canBuy = _canBuy(state, item, itemCurrency);
+          return `
           <div class="campaign-row">
             <div>
               <strong>${_esc(_recordName(item.type, item.id))}</strong>
               <div class="campaign-muted">${_esc(item.id)} | stock ${item.qty ?? 'manual'}</div>
+              ${_formatBundle(item.requires, 'Needs')}
+              ${_formatBundle(item.costs || item.costBundle, 'Consumes')}
             </div>
             <div class="campaign-row-actions">
-              <span class="campaign-pill">${item.price || 0}</span>
-              <button class="campaign-action" data-campaign-action="shop-buy" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Number(item.price || 0)}" data-currency="${_escAttr(currency)}">Buy</button>
-              <button class="campaign-action" data-campaign-action="shop-sell" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Math.floor(Number(item.price || 0) / 2)}" data-currency="${_escAttr(currency)}">Sell</button>
+              <span class="campaign-pill">${Number(item.price || 0)} ${_esc(_currencyLabel(itemCurrency))}</span>
+              <button class="campaign-action" data-campaign-action="shop-buy" data-shop-id="${_escAttr(shop.id)}" data-stock-index="${index}" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Number(item.price || 0)}" data-currency="${_escAttr(itemCurrency)}" ${canBuy ? '' : 'disabled'}>Buy</button>
+              <button class="campaign-action" data-campaign-action="shop-sell" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Math.floor(Number(item.price || 0) / 2)}" data-currency="${_escAttr(itemCurrency)}">Sell</button>
             </div>
           </div>
-        `).join('') : '<div class="campaign-empty">No stock yet.</div>'}
+        `; }).join('') : '<div class="campaign-empty">No stock yet.</div>'}
       </section>
     `;
   }
@@ -62,6 +67,49 @@ window.CJS.CampaignEconomy = (() => {
   function _recordName(type, id) {
     const bucket = type === 'material' ? 'materials' : type === 'food' ? 'food' : 'items';
     return DS().get(bucket, id)?.name || id;
+  }
+
+  function _canBuy(state, item, currency) {
+    if ((state.currencies?.[currency] || 0) < Number(item.price || 0)) return false;
+    return _hasBundle(state, item.requires || {}) && _hasBundle(state, item.costs || item.costBundle || {});
+  }
+
+  function _hasBundle(state, bundle) {
+    for (const [id, qty] of Object.entries(bundle?.currencies || {})) {
+      if ((state.currencies?.[id] || 0) < Number(qty || 0)) return false;
+    }
+    for (const [bucket, records] of Object.entries({
+      items: bundle?.items || {},
+      materials: bundle?.materials || {},
+      food: bundle?.food || {},
+      questItems: bundle?.questItems || {}
+    })) {
+      for (const [id, qty] of Object.entries(records)) {
+        if ((state.inventory?.[bucket]?.[id] || 0) < Number(qty || 0)) return false;
+      }
+    }
+    return true;
+  }
+
+  function _formatBundle(bundle, label) {
+    const parts = [];
+    for (const [id, qty] of Object.entries(bundle?.currencies || {})) parts.push(`${qty} ${_currencyLabel(id)}`);
+    for (const [id, qty] of Object.entries(bundle?.items || {})) parts.push(`${qty} ${_recordName('item', id)}`);
+    for (const [id, qty] of Object.entries(bundle?.materials || {})) parts.push(`${qty} ${_recordName('material', id)}`);
+    for (const [id, qty] of Object.entries(bundle?.food || {})) parts.push(`${qty} ${_recordName('food', id)}`);
+    for (const [id, qty] of Object.entries(bundle?.questItems || {})) parts.push(`${qty} ${id}`);
+    return parts.length ? `<div class="campaign-muted">${_esc(label)}: ${_esc(parts.join(', '))}</div>` : '';
+  }
+
+  function _currencyLabel(id) {
+    const value = String(id || '').toLowerCase();
+    if (value === 'jp' || value === 'jester_points') return 'Jester Points';
+    if (value.endsWith('_gold')) return `${_label(value.replace(/_gold$/, ''))} Gold`;
+    return _label(id);
+  }
+
+  function _label(value) {
+    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
   }
 
   function _esc(value) {

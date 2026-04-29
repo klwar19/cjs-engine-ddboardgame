@@ -31,6 +31,46 @@
       "grantedSkills": []
     },
     {
+      "id": "cjs_reroll_ticket",
+      "name": "Jester Reroll Ticket",
+      "icon": "Ticket",
+      "slot": "consumable",
+      "rarity": "Uncommon",
+      "effects": [],
+      "weaponData": null,
+      "description": "A system-shop token for a GM-approved reroll or oracle replacement.",
+      "grantedSkills": []
+    },
+    {
+      "id": "cjs_punchline_charm",
+      "name": "Punchline Charm",
+      "icon": "Charm",
+      "slot": "accessory1",
+      "rarity": "Rare",
+      "effects": [
+        {
+          "effectId": "stat_mod_lck",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A tiny charm that laughs at bad odds.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_frostbitten_writ",
+      "name": "Frostbitten Trade Writ",
+      "icon": "Writ",
+      "slot": "key",
+      "rarity": "Uncommon",
+      "effects": [],
+      "weaponData": null,
+      "description": "A local writ accepted by special hub vendors.",
+      "grantedSkills": []
+    },
+    {
       "id": "haven_adventurers_cloak",
       "name": "Adventurer's Cloak",
       "icon": "🧣",
