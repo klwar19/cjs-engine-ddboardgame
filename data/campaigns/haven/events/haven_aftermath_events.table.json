@@ -1,0 +1,83 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignEvents",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_aftermath_events",
+      "name": "Post-Battle Aftermath",
+      "world": "haven",
+      "entries": [
+        {
+          "weight": 25,
+          "id": "haven_evt_after_loot",
+          "type": "reward",
+          "title": "Quick Loot",
+          "prompt": "The party rummages through the dead's effects.",
+          "suggested": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 14 },
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 20,
+          "id": "haven_evt_after_wounded",
+          "type": "mechanical",
+          "title": "Lingering Wounds",
+          "prompt": "The fight took more out of the party than expected.",
+          "suggested": [
+            { "op": "damage_party", "amount": 3 },
+            { "op": "add_status", "target": "party_random", "status": "bleed", "duration": "scenario" }
+          ]
+        },
+        {
+          "weight": 20,
+          "id": "haven_evt_after_field_kit",
+          "type": "reward",
+          "title": "Battlefield Kit",
+          "prompt": "An enemy carried a small medical roll.",
+          "suggested": [
+            { "op": "give_item", "id": "haven_minor_potion", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 15,
+          "id": "haven_evt_after_witness",
+          "type": "social",
+          "title": "Witness in the Trees",
+          "prompt": "A traveler watched the fight from cover. They want a word.",
+          "suggested": [
+            { "op": "log", "text": "GM: hostile, friendly, or scared? Choose." },
+            { "op": "set_flag", "flag": "haven_battle_witnessed", "value": true }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_after_morale_high",
+          "type": "mechanical",
+          "title": "Morale Surge",
+          "prompt": "The cleanly-won fight steadies the whole party.",
+          "suggested": [
+            { "op": "heal_party", "amount": 6 },
+            { "op": "danger", "amount": -1 }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_after_trophy",
+          "type": "reward",
+          "title": "Worthy Trophy",
+          "prompt": "One body has a marked sigil. A guildmaster will pay for proof.",
+          "suggested": [
+            { "op": "give_quest_item", "id": "haven_guild_sigil", "qty": 1 }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -257,10 +257,60 @@ window.CJS.ScenarioRunner = (() => {
         notes: node.notes || node.role || '',
         discoveredByDefault: idx === 0,
         battleSetIds: node.battleSetIds || [],
-        randomBattle: node.battleSetIds?.length ? { chance: 0.6, table: node.battleSetIds[0] } : undefined,
+        randomBattle: kind === 'battle' || kind === 'boss' || kind === 'event_battle'
+          ? (node.battleSetIds?.length ? { chance: 0.85, table: node.battleSetIds[0] } : undefined)
+          : undefined,
+        onEnter: _onEnterOpsForRole(node, kind),
         exits
       };
     });
+  }
+
+  function _onEnterOpsForRole(node, kind) {
+    const ops = [];
+    if (kind === 'reward') {
+      ops.push({ op: 'give_money', currency: _activeCurrency(), amount: 18 });
+      ops.push({ op: 'give_material', id: _pickWorldMaterial(), qty: 1 });
+      ops.push({ op: 'log', text: `Reward node: ${node.name || node.id}.` });
+    } else if (kind === 'trap') {
+      ops.push({ op: 'damage_party', amount: 4 });
+      ops.push({ op: 'danger', amount: 1 });
+      ops.push({ op: 'log', text: `Trap triggered at ${node.name || node.id}.` });
+    } else if (kind === 'rest') {
+      ops.push({ op: 'heal_party', amount: 8 });
+      ops.push({ op: 'log', text: `Brief rest at ${node.name || node.id}.` });
+    } else if (kind === 'shop') {
+      ops.push({ op: 'log', text: `Small offering / cache at ${node.name || node.id}.` });
+      ops.push({ op: 'give_money', currency: _activeCurrency(), amount: 8 });
+    } else if (kind === 'boss') {
+      ops.push({ op: 'danger', amount: 2 });
+      ops.push({ op: 'log', text: `Boss approach: ${node.name || node.id}.` });
+    } else if (kind === 'event_battle') {
+      const tableId = _campaignEventTableId();
+      if (tableId) ops.push({ op: 'roll_event', table: tableId, chance: 0.6 });
+    }
+    return ops.length ? ops : undefined;
+  }
+
+  function _activeCurrency() {
+    const world = CS().getState()?.currentWorld || 'haven';
+    return `${world}_gold`;
+  }
+
+  function _pickWorldMaterial() {
+    const world = CS().getState()?.currentWorld;
+    const DS = window.CJS.DataStore;
+    const all = DS ? DS.getAllAsArray('materials') : [];
+    const list = all.filter((m) => !m._world || m._world === world);
+    if (!list.length) return 'haven_wolf_pelt';
+    return list[Math.floor(Math.random() * list.length)].id;
+  }
+
+  function _campaignEventTableId() {
+    const campaign = CS().getCurrentCampaign();
+    const world = CS().getState()?.currentWorld;
+    const list = campaign?.eventTables || [];
+    return list.find((id) => id.includes(world)) || list[0] || null;
   }
 
   function _seedRoleToKind(role) {

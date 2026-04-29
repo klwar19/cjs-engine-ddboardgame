@@ -19,17 +19,51 @@ window.CJS.CampaignOracle = (() => {
     return list[Math.floor(Math.random() * list.length)];
   }
 
+  function _activeWorldTable() {
+    const CS = window.CJS.CampaignState;
+    const Loader = window.CJS.CampaignDataLoader;
+    if (!CS || !Loader) return null;
+    const world = CS.getState()?.currentWorld;
+    const tables = Loader.getOracleTables ? Loader.getOracleTables(world || null) : [];
+    return tables[0] || null;
+  }
+
   function roll(overrides = {}) {
-    const tables = { ...TABLES, ...(overrides.tables || {}) };
+    const worldTable = _activeWorldTable();
+    if (worldTable && Math.random() < 0.5 && Array.isArray(worldTable.prompts) && worldTable.prompts.length) {
+      const prompt = pick(worldTable.prompts);
+      return {
+        id: prompt.id,
+        text: prompt.text,
+        tableId: worldTable.id,
+        tableName: worldTable.name,
+        canonRisk: prompt.canonRisk,
+        tags: prompt.tags || []
+      };
+    }
+    const merged = {
+      adjectives: TABLES.adjectives,
+      nouns: TABLES.nouns,
+      verbs: TABLES.verbs,
+      objects: TABLES.objects,
+      twists: TABLES.twists,
+      effects: TABLES.effects,
+      ...(worldTable?.tables || {}),
+      ...(overrides.tables || {})
+    };
     const result = {
-      adjective: pick(tables.adjectives),
-      noun: pick(tables.nouns),
-      verb: pick(tables.verbs),
-      object: pick(tables.objects),
-      twist: pick(tables.twists),
-      effect: pick(tables.effects)
+      adjective: pick(merged.adjectives),
+      noun: pick(merged.nouns),
+      verb: pick(merged.verbs),
+      object: pick(merged.objects),
+      twist: pick(merged.twists),
+      effect: pick(merged.effects)
     };
     result.text = `The ${result.adjective} ${result.noun} ${result.verb} ${result.object}, but ${result.twist}. Suggested effect: ${result.effect}.`;
+    if (worldTable) {
+      result.tableId = worldTable.id;
+      result.tableName = worldTable.name;
+    }
     return result;
   }
 

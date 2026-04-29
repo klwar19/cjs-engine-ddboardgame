@@ -478,6 +478,21 @@ body.campaign-page {
   display: block;
 }
 
+.campaign-trio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.campaign-trio-label {
+  min-width: 90px;
+  color: var(--campaign-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .campaign-gm {
   position: fixed;
   right: 18px;

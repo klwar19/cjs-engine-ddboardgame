@@ -276,11 +276,21 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-panel-head"><h2>Control Desk</h2></div>
           <div class="campaign-action-grid">
             <button class="campaign-action primary" data-campaign-action="pass-phase">Pass Phase</button>
-            <button class="campaign-action" data-campaign-action="roll-event">Roll Event</button>
-            <button class="campaign-action" data-campaign-action="roll-oracle">Roll GM Prompt</button>
             <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
             <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
             <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
+          </div>
+          <div class="campaign-trio-row" style="margin-top:12px">
+            <span class="campaign-trio-label">Event</span>
+            <button class="campaign-action" data-campaign-action="roll-event">🎲 Random</button>
+            <button class="campaign-action" data-campaign-action="pick-event">📋 Pick</button>
+            <button class="campaign-action" data-campaign-action="custom-event">✏️ Custom</button>
+          </div>
+          <div class="campaign-trio-row">
+            <span class="campaign-trio-label">GM Prompt</span>
+            <button class="campaign-action" data-campaign-action="roll-oracle">🎲 Random</button>
+            <button class="campaign-action" data-campaign-action="pick-oracle">📋 Pick</button>
+            <button class="campaign-action" data-campaign-action="custom-oracle">✏️ Custom</button>
           </div>
         </section>
         ${_renderScenarioSummary(state)}
@@ -567,23 +577,31 @@ window.CJS.CampaignUI = (() => {
   function _renderPendingBattle(state) {
     const battle = state.pendingBattle;
     if (!battle) return '';
+    const isRandom = battle.source === 'random';
     return `
       <section class="campaign-panel battle-ready">
         <div class="campaign-panel-head">
           <h2>Battle Ready</h2>
-          <span class="campaign-pill">${_esc(battle.source || 'manual')}</span>
+          <span class="campaign-pill">${_esc(_battleSourceLabel(battle))}</span>
         </div>
         <strong>${_esc(battle.label || battle.encounterId)}</strong>
         <div class="campaign-muted">${_esc(battle.encounterId || '')}</div>
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="run-battle" ${battle.encounterId ? '' : 'disabled'}>Run in Combat App</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Resolve Manually</button>
-          <button class="campaign-action" data-campaign-action="skip-victory">Skip as Victory</button>
-          <button class="campaign-action" data-campaign-action="skip-defeat">Skip as Defeat</button>
+          ${isRandom ? '<button class="campaign-action" data-campaign-action="battle-reroll">🎲 Reroll</button>' : ''}
+          <button class="campaign-action" data-campaign-action="battle-override">📋 Override</button>
+          <button class="campaign-action" data-campaign-action="skip-victory">Skip Victory</button>
+          <button class="campaign-action" data-campaign-action="skip-defeat">Skip Defeat</button>
           <button class="campaign-action danger" data-campaign-action="cancel-battle">Cancel</button>
         </div>
       </section>
     `;
+  }
+
+  function _battleSourceLabel(battle) {
+    const map = { random: '🎲 Random Roll', set: '📌 Set Battle', manual_pick: '📋 Picked', beat: '📜 Beat', manual: 'Manual' };
+    return map[battle.source] || battle.source || 'manual';
   }
 
   function _renderCombatResult(state) {
@@ -608,7 +626,7 @@ window.CJS.CampaignUI = (() => {
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>${_esc(event.title || event.id || 'Event')}</h2>
-          <span class="campaign-pill">${_esc(event.type || 'event')}</span>
+          <span class="campaign-pill">${_esc(event.tableName || event.type || 'event')}</span>
         </div>
         <p>${_esc(event.prompt || '')}</p>
         ${(event.suggested || []).length ? `<div class="campaign-preview">${Ops().describe(event.suggested).map(_esc).join('<br>')}</div>` : ''}
@@ -617,7 +635,8 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action" data-campaign-action="edit-event">Edit First</button>
           <button class="campaign-action" data-campaign-action="note-event">Save Note</button>
           <button class="campaign-action danger" data-campaign-action="ignore-event">Ignore</button>
-          <button class="campaign-action" data-campaign-action="roll-event">Reroll</button>
+          <button class="campaign-action" data-campaign-action="roll-event">🎲 Reroll</button>
+          <button class="campaign-action" data-campaign-action="pick-event">📋 Override</button>
         </div>
       </section>
     `;
@@ -629,7 +648,11 @@ window.CJS.CampaignUI = (() => {
       <section class="campaign-panel oracle">
         <div class="campaign-panel-head"><h2>GM Prompt</h2></div>
         <p>${_esc(state.lastOracle.text)}</p>
-        <button class="campaign-action" data-campaign-action="oracle-note">Save as Note</button>
+        <div class="campaign-action-grid">
+          <button class="campaign-action" data-campaign-action="oracle-note">Save as Note</button>
+          <button class="campaign-action" data-campaign-action="roll-oracle">🎲 Reroll</button>
+          <button class="campaign-action" data-campaign-action="pick-oracle">📋 Override</button>
+        </div>
       </section>
     `;
   }
@@ -944,7 +967,13 @@ window.CJS.CampaignUI = (() => {
       case 'push-github': return _pushGitHub();
       case 'pass-phase': return Ops().apply({ op: 'pass_phase' }, { source: 'ui' });
       case 'roll-event': return _rollEvent();
+      case 'pick-event': return _pickEvent();
+      case 'custom-event': return _customEvent();
       case 'roll-oracle': return _rollOracle();
+      case 'pick-oracle': return _pickOracle();
+      case 'custom-oracle': return _customOracle();
+      case 'battle-reroll': return _battleReroll();
+      case 'battle-override': return _battleOverride();
       case 'roll-hub-pulse': return _rollHubPulse(data.table);
       case 'apply-side-choice': return _applySideChoice(data.id, Number(data.choice || 0));
       case 'save-side-idea': return _saveSideIdea(data.id);
@@ -1044,7 +1073,181 @@ window.CJS.CampaignUI = (() => {
 
   function _rollOracle() {
     const oracle = window.CJS.CampaignOracle.roll();
+    if (!oracle) return UI().toast('No oracle table available', 'info');
     CS().mutate((state) => { state.lastOracle = oracle; }, { source: 'oracle' });
+  }
+
+  function _eventChoices() {
+    const campaign = CS().getCurrentCampaign();
+    const world = CS().getState().currentWorld;
+    const tables = (campaign?.eventTables || []).map((id) => CS().getContent().campaignEvents[id]).filter(Boolean);
+    const seen = new Map();
+    for (const table of tables) {
+      for (const entry of table.entries || []) {
+        if (!entry.id || seen.has(entry.id)) continue;
+        seen.set(entry.id, {
+          value: entry.id,
+          label: entry.title || entry.id,
+          sub: table.name || table.id,
+          _entry: { ...entry, tableId: table.id, tableName: table.name }
+        });
+      }
+    }
+    void world;
+    return Array.from(seen.values());
+  }
+
+  function _pickEvent() {
+    const choices = _eventChoices();
+    if (!choices.length) return UI().toast('No events authored yet', 'info');
+    _opPickerModal({
+      title: 'Pick Event',
+      options: choices.map(({ value, label, sub }) => ({ value, label, sub })),
+      placeholder: 'Search events…',
+      primaryLabel: 'Use Event',
+      onSubmit: ({ value }) => {
+        const opt = choices.find((c) => c.value === value);
+        if (!opt) return;
+        const event = { ...opt._entry, rolledAt: new Date().toISOString() };
+        CS().mutate((state) => { state.lastEvent = event; }, { source: 'event_pick' });
+      }
+    });
+  }
+
+  function _customEvent() {
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Title'));
+    const title = document.createElement('input');
+    title.type = 'text';
+    title.style.width = '100%';
+    title.placeholder = 'Event title';
+    body.appendChild(title);
+    body.appendChild(_formLabel('Prompt'));
+    const prompt = document.createElement('textarea');
+    prompt.style.width = '100%';
+    prompt.style.minHeight = '90px';
+    prompt.placeholder = 'What happens?';
+    body.appendChild(prompt);
+    body.appendChild(_formLabel('Quick consequence (optional)'));
+    const consequence = UI().createSelect({
+      options: [
+        { value: 'none', label: 'None — story only' },
+        { value: 'gain_gold', label: 'Gain 25 gold' },
+        { value: 'lose_gold', label: 'Lose 15 gold' },
+        { value: 'damage_party', label: 'Damage party 5' },
+        { value: 'heal_party', label: 'Heal party 10' },
+        { value: 'add_status_cold', label: 'Cold status on party (scenario)' },
+        { value: 'danger_up', label: 'Danger +1' },
+        { value: 'danger_down', label: 'Danger -1' }
+      ],
+      value: 'none'
+    });
+    body.appendChild(consequence);
+    _formModal({
+      title: 'Custom Event',
+      body,
+      width: '520px',
+      primaryLabel: 'Use',
+      onSubmit: () => {
+        const t = title.value.trim() || 'Custom Event';
+        const p = prompt.value.trim();
+        const choice = consequence.value;
+        const world = CS().getState().currentWorld;
+        const ops = _consequenceOps(choice, world);
+        const event = {
+          id: `custom_${Date.now()}`,
+          title: t,
+          prompt: p,
+          suggested: ops,
+          tableName: 'Custom',
+          rolledAt: new Date().toISOString()
+        };
+        CS().mutate((state) => { state.lastEvent = event; }, { source: 'event_custom' });
+      }
+    });
+  }
+
+  function _consequenceOps(choice, world) {
+    switch (choice) {
+      case 'gain_gold': return [{ op: 'give_money', currency: `${world}_gold`, amount: 25 }];
+      case 'lose_gold': return [{ op: 'take_money', currency: `${world}_gold`, amount: 15 }];
+      case 'damage_party': return [{ op: 'damage_party', amount: 5 }];
+      case 'heal_party': return [{ op: 'heal_party', amount: 10 }];
+      case 'add_status_cold': return [{ op: 'add_status', target: 'party', status: 'cold', duration: 'scenario' }];
+      case 'danger_up': return [{ op: 'danger', amount: 1 }];
+      case 'danger_down': return [{ op: 'danger', amount: -1 }];
+      default: return [];
+    }
+  }
+
+  function _oracleChoices() {
+    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || Object.values(CS().getContent().oracleTables || {});
+    const seen = new Map();
+    for (const table of tables) {
+      const entries = table.entries || table.prompts || [];
+      for (const entry of entries) {
+        const text = entry.text || entry.prompt || entry.label;
+        if (!text) continue;
+        const value = entry.id || `${table.id}_${seen.size}`;
+        seen.set(value, {
+          value,
+          label: text.length > 80 ? text.slice(0, 80) + '…' : text,
+          sub: table.name || table.id,
+          _text: text,
+          _tableId: table.id
+        });
+      }
+    }
+    return Array.from(seen.values());
+  }
+
+  function _pickOracle() {
+    const choices = _oracleChoices();
+    if (!choices.length) return UI().toast('No oracle prompts available', 'info');
+    _opPickerModal({
+      title: 'Pick GM Prompt',
+      options: choices.map(({ value, label, sub }) => ({ value, label, sub })),
+      placeholder: 'Search prompts…',
+      primaryLabel: 'Use Prompt',
+      onSubmit: ({ value }) => {
+        const opt = choices.find((c) => c.value === value);
+        if (!opt) return;
+        CS().mutate((state) => {
+          state.lastOracle = { id: opt.value, text: opt._text, tableId: opt._tableId, rolledAt: new Date().toISOString() };
+        }, { source: 'oracle_pick' });
+      }
+    });
+  }
+
+  function _customOracle() {
+    _textareaModal({
+      title: 'Custom GM Prompt',
+      label: 'Prompt text',
+      placeholder: 'A scene seed in your own words…',
+      primaryLabel: 'Use',
+      onSubmit: (text) => {
+        if (!text) return false;
+        CS().mutate((state) => {
+          state.lastOracle = { id: `custom_${Date.now()}`, text, source: 'custom', rolledAt: new Date().toISOString() };
+        }, { source: 'oracle_custom' });
+      }
+    });
+  }
+
+  function _battleReroll() {
+    const battle = CS().getState().pendingBattle;
+    if (!battle || battle.source !== 'random') return UI().toast('Only random battles can be rerolled', 'info');
+    const scenario = CS().getActiveScenario();
+    const tables = scenario?.randomBattleTables || [];
+    const tableId = battle.tableId || tables[0]?.id;
+    if (!tableId) return UI().toast('No random table to reroll from', 'info');
+    Runner().rollRandomBattle(tableId);
+  }
+
+  function _battleOverride() {
+    const battle = CS().getState().pendingBattle;
+    if (!battle) return;
+    _runPickBattle();
   }
 
   function _rollHubPulse(table) {

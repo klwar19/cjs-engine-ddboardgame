@@ -44,8 +44,12 @@
           "id": "beat_event_drips",
           "kind": "event",
           "label": "Glowing Drip",
-          "prompt": "Phosphorescent goo drips from the ceiling. Sample it, avoid it, or smear it on a torch?",
-          "ops": [{ "op": "log", "text": "GM: choose a flavor consequence." }]
+          "prompt": "Phosphorescent goo drips from the ceiling. Bottle it for later or smear it on a torch?",
+          "ops": [
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 2 },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Two flasks of phosphor saved. Light is louder now." }
+          ]
         },
         {
           "id": "beat_battle_rats",

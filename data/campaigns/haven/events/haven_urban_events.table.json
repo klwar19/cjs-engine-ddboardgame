@@ -1,0 +1,113 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignEvents",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_urban_events",
+      "name": "Haven Urban & Sewer Events",
+      "world": "haven",
+      "entries": [
+        {
+          "weight": 20,
+          "id": "haven_evt_pickpocket",
+          "type": "encounter",
+          "title": "Pickpocket Brush",
+          "prompt": "A child in a thin coat bumps into the lead party member and runs.",
+          "suggested": [
+            { "op": "take_money", "currency": "haven_gold", "amount": 8 },
+            { "op": "log", "text": "A coin pouch is lighter than it should be." }
+          ]
+        },
+        {
+          "weight": 15,
+          "id": "haven_evt_bribe_offer",
+          "type": "social",
+          "title": "Bribe Offered",
+          "prompt": "A nervous clerk slides a small purse across a desk in exchange for looking the other way.",
+          "suggested": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 30 },
+            { "op": "set_flag", "flag": "haven_owes_clerk", "value": true }
+          ]
+        },
+        {
+          "weight": 15,
+          "id": "haven_evt_grate_drop",
+          "type": "trap",
+          "title": "Loose Grate",
+          "prompt": "A rusted grate gives way underfoot.",
+          "check": {
+            "stat": "A",
+            "dc": 11,
+            "fail": [
+              { "op": "damage_party", "amount": 4 },
+              { "op": "add_status", "target": "party_random", "status": "soaked", "duration": "scene" }
+            ]
+          },
+          "suggested": [
+            { "op": "roll_check", "stat": "A", "dc": 11 }
+          ]
+        },
+        {
+          "weight": 15,
+          "id": "haven_evt_lost_coin_pouch",
+          "type": "reward",
+          "title": "Lost Coin Pouch",
+          "prompt": "A small pouch wedged between cobbles. Someone dropped it.",
+          "suggested": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 18 }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_sewer_glow",
+          "type": "mechanical",
+          "title": "Phosphor Drip",
+          "prompt": "Glowing goo drips from the ceiling. Someone bottles it.",
+          "suggested": [
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 2 },
+            { "op": "danger", "amount": 1 }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_kind_innkeeper",
+          "type": "social",
+          "title": "Kind Innkeeper",
+          "prompt": "A weathered innkeeper waves the party to the back kitchen and ladles hot stew.",
+          "suggested": [
+            { "op": "heal_party", "amount": 8 },
+            { "op": "give_food", "id": "warm_stew", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_market_argument",
+          "type": "social",
+          "title": "Market Argument",
+          "prompt": "Two stalls are screaming about a stolen scale. Both want the party to weigh in.",
+          "suggested": [
+            { "op": "log", "text": "GM: pick a side. Other side becomes hostile." },
+            { "op": "set_flag", "flag": "haven_market_dispute", "value": "open" }
+          ]
+        },
+        {
+          "weight": 5,
+          "id": "haven_evt_rooftop_runner",
+          "type": "encounter",
+          "title": "Rooftop Runner",
+          "prompt": "A figure leaps roof to roof above the party, trailing snow.",
+          "suggested": [
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Someone is watching the route." }
+          ]
+        }
+      ]
+    }
+  ]
+}
