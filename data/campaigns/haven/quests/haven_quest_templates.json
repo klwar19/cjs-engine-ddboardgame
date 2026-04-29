@@ -1,0 +1,52 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignQuests",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_basic_quest_templates",
+      "name": "Haven Basic Quest Templates",
+      "templates": [
+        {
+          "id": "quest_clear_wolf_pack",
+          "title": "Clear the Wolf Pack",
+          "status": "active",
+          "giver": "Frostbitten Guild",
+          "summary": "Clear the wolf pack troubling the Frostwood road.",
+          "objectives": [
+            { "id": "clear_wolves", "label": "Clear the wolf threat", "current": 0, "required": 1 }
+          ],
+          "rewards": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 30 },
+            { "op": "give_jp", "amount": 1 }
+          ],
+          "timer": { "phasesRemaining": 3 },
+          "linkedScenario": "haven_scn_frostwood_short_run",
+          "linkedMapNodes": ["wolf_tracks", "old_shrine"],
+          "notes": "GM may complete this after any wolf-pack result, combat or tabletop."
+        },
+        {
+          "id": "quest_frostcap_mushrooms",
+          "title": "Gather Frostcap Mushrooms",
+          "status": "idea",
+          "giver": "Tessa",
+          "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
+          "objectives": [
+            { "id": "collect_mushrooms", "label": "Collect 5 Frostcap Mushrooms", "current": 0, "required": 5 }
+          ],
+          "rewards": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 20 },
+            { "op": "give_jp", "amount": 1 }
+          ],
+          "timer": { "phasesRemaining": 4 },
+          "notes": "Good low-pressure resource quest."
+        }
+      ]
+    }
+  ]
+}

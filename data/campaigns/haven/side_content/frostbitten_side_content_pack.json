@@ -1,0 +1,445 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "sideContentPacks",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_scp_frostbitten_v1",
+      "aliases": ["scp_haven_frostbitten_v1"],
+      "name": "Frostbitten Side Content Pack",
+      "version": 1,
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "hubId": "haven_hub_frostbitten",
+      "role": "starting hub / frozen guild town",
+      "canonPolicy": {
+        "gmControlsMainStory": true,
+        "defaultCanonRisk": "green",
+        "forbiddenReveals": [
+          "Bin's true Haven past",
+          "the event that sent Bin to Earth",
+          "Garr's secret with Peri",
+          "Mitia's hidden bloodline truth",
+          "Peri's real motive",
+          "the previous Jester mystery",
+          "Lily's long-term cure path",
+          "Luna's Organization plot",
+          "Zhao family / Black Tortoise main arc",
+          "Ethereal Judge main plot",
+          "major companion death",
+          "major romance decisions",
+          "world-ending consequences"
+        ],
+        "redRequiresReview": true,
+        "yellowRequiresSoftWarning": true
+      },
+      "tone": ["Gintama comedy", "Frosthaven survival", "warm found family", "emotional undertone", "RPG guild town"],
+      "contentRefs": {
+        "hub": "haven_hub_frostbitten",
+        "questChains": ["haven_qchains_frostbitten"],
+        "battleSets": ["haven_bsets_frostbitten"],
+        "mapSeeds": ["haven_mseeds_frostbitten"],
+        "oracle": ["haven_oracle_frostbitten"]
+      },
+      "tags": ["haven", "frostbitten", "guild", "snow", "starter"],
+      "hubEvents": [
+        {
+          "id": "haven_hub_evt_lysa_wrong_congrats",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Lysa's Wrong Congratulations",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 18,
+          "tags": ["guild", "comedy", "bin_return"],
+          "prompt": "Lysa loudly congratulates Bin for not being dead anymore, causing half the guild to stare.",
+          "gmKeywords": ["not dead", "too loud", "public greeting", "guild silence"],
+          "suggestedChoices": [
+            {
+              "label": "Turn it into a good joke",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "reputation_change", "target": "haven_zon_frostbitten", "amount": 1 },
+                { "op": "log", "text": "Bin survived public undeath congratulations with style." }
+              ]
+            }
+          ],
+          "followUpHooks": ["Corvin asks if Bin needs resurrection tax forms."]
+        },
+        {
+          "id": "haven_hub_evt_corvin_death_paperwork",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Corvin's Death Paperwork",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 20,
+          "tags": ["guild", "paperwork", "comedy", "bin_return"],
+          "prompt": "Corvin cannot legally process Bin's quests because Bin is listed as missing, probably dead, pending confirmation.",
+          "gmKeywords": ["triplicate", "death status", "temporary corpse", "legal haunting"],
+          "suggestedChoices": [
+            {
+              "label": "Begin the paperwork quest",
+              "ops": [
+                { "op": "set_flag", "flag": "bin_paperwork_started" },
+                { "op": "start_quest_chain", "templateId": "haven_qchain_ledger_of_the_ghost" }
+              ]
+            }
+          ],
+          "followUpHooks": ["The Ledger of the Ghost"]
+        },
+        {
+          "id": "haven_hub_evt_dain_loud_opinion",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Dain's Loud Opinion",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 14,
+          "tags": ["rival", "guild", "social"],
+          "prompt": "Dain mocks Bin's return and says disappearing for two months is not a talent.",
+          "gmKeywords": ["rival", "loud counter", "C-rank ego", "public insult"],
+          "suggestedChoices": [
+            {
+              "label": "Win by verbal counter",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "bond_change", "npcId": "dain", "field": "rivalry", "amount": 1 }
+              ]
+            }
+          ],
+          "followUpHooks": ["Optional sparring battle set."]
+        },
+        {
+          "id": "haven_hub_evt_mara_quiet_warning",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Mara's Quiet Warning",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "yellow",
+          "weight": 8,
+          "tags": ["mystery", "ruins", "mitia", "soft_warning"],
+          "prompt": "Mara tells Mitia that some ruins react badly to old blood.",
+          "gmKeywords": ["old blood", "patient mage", "warning", "ruins"],
+          "suggestedChoices": [
+            {
+              "label": "Keep it as a rumor only",
+              "ops": [
+                { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Some ruins react badly to old blood.", "canonRisk": "yellow", "tags": ["ruins", "mitia"] }
+              ]
+            }
+          ],
+          "gmNote": "Do not reveal Mitia's bloodline."
+        },
+        {
+          "id": "haven_hub_evt_kael_hero_worship",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Kael's Hero Worship",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["rookie", "social", "warm"],
+          "prompt": "Kael asks Bin for advice on surviving a first real quest.",
+          "gmKeywords": ["rookie", "nervous", "hero worship", "bad advice risk"],
+          "suggestedChoices": [
+            { "label": "Give sincere advice", "ops": [{ "op": "give_jp", "amount": 1 }, { "op": "bond_change", "npcId": "kael", "field": "trust", "amount": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_brinna_debt_claim",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Brinna Twins' Debt Claim",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["rivals", "debt", "comedy"],
+          "prompt": "Ella and Nessa insist Bin still owes them three silver from before vanishing.",
+          "gmKeywords": ["three silver", "emotional interest", "debt survives death"],
+          "suggestedChoices": [
+            { "label": "Treat the debt as a side chain", "ops": [{ "op": "start_quest_chain", "templateId": "haven_qchain_three_silver_discount" }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_warm_stew_shortage",
+          "table": "haven_frostbitten_tavern_events",
+          "title": "Warm Stew Shortage",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "green",
+          "weight": 18,
+          "tags": ["food", "cooking", "town_problem"],
+          "prompt": "The Frosted Mug is nearly out of frostcap mushrooms, which means no warm stew for tired adventurers.",
+          "gmKeywords": ["empty pot", "frostcap", "hungry guild", "warm bowls"],
+          "suggestedChoices": [
+            { "label": "Post a gathering job", "ops": [{ "op": "start_quest_chain", "templateId": "haven_qchain_frostcap_fever" }, { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "warm_stew_shortage" }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_hilda_bent_nails",
+          "table": "haven_frostbitten_forge_events",
+          "title": "Hilda's Bent Nails",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_ironhand_forge",
+          "canonRisk": "green",
+          "weight": 14,
+          "tags": ["forge", "crafting", "materials"],
+          "prompt": "Hilda Ironhand says every nail in town is bending wrong because the latest iron shipment froze wet.",
+          "gmKeywords": ["bad iron", "frozen nails", "repair queue", "forge smoke"],
+          "suggestedChoices": [
+            { "label": "Help the forge recover", "ops": [{ "op": "start_quest_chain", "templateId": "haven_qchain_ironhand_errand" }, { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "prosperity", "amount": -1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_firemoss_shortage",
+          "table": "haven_frostbitten_town_events",
+          "title": "Firemoss Shortage",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 18,
+          "tags": ["town_problem", "survival", "supply"],
+          "prompt": "The north road delivery missed its window, and Frostbitten's firemoss burners are running thin.",
+          "gmKeywords": ["cold lamps", "missing sled", "supply trail", "thin smoke"],
+          "suggestedChoices": [
+            { "label": "Open the supply trail job", "ops": [{ "op": "start_quest_chain", "templateId": "haven_qchain_warm_lights_cold_hands" }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_cracked_bell_rumor",
+          "table": "haven_frostbitten_weird_events",
+          "title": "The Cracked Bell Rings Once",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_old_temple_ruins",
+          "canonRisk": "red",
+          "weight": 3,
+          "tags": ["shrine", "mystery", "review"],
+          "prompt": "A child says the cracked temple bell rang during snowfall, but nobody was near the ruins.",
+          "gmKeywords": ["bell", "snowfall", "empty shrine", "memory pressure"],
+          "suggestedChoices": [
+            { "label": "Save as rumor only", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "The cracked temple bell rang during snowfall.", "canonRisk": "red", "tags": ["shrine", "bell"] }] }
+          ],
+          "gmNote": "Requires GM approval before it becomes canon."
+        },
+        {
+          "id": "haven_hub_evt_lost_mittens",
+          "table": "haven_frostbitten_town_events",
+          "title": "The Lost Mittens Problem",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "green",
+          "weight": 10,
+          "tags": ["comedy", "town", "minor"],
+          "prompt": "Three townsfolk accuse the same tiny mitten of being theirs. The mitten appears to be winning the argument.",
+          "gmKeywords": ["tiny mitten", "heated debate", "cold hands", "dramatic evidence"],
+          "suggestedChoices": [
+            { "label": "Mediate with theatrical seriousness", "ops": [{ "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_training_sled",
+          "table": "haven_frostbitten_town_events",
+          "title": "Training Sled Disaster",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 10,
+          "tags": ["training", "qte", "guild"],
+          "prompt": "A beginner training sled breaks loose and slides toward the guild door with heroic timing.",
+          "gmKeywords": ["sled", "door", "reflex check", "rookie panic"],
+          "suggestedChoices": [
+            { "label": "Run a quick check", "ops": [{ "op": "roll_check", "stat": "A", "dc": 10, "success": [{ "op": "give_jp", "amount": 1 }], "fail": [{ "op": "damage_party", "amount": 2 }] }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_frozen_ledger",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Frozen Ledger",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 9,
+          "tags": ["paperwork", "guild", "weird"],
+          "prompt": "The guild ledger freezes shut on the page with Bin's name and refuses to be reasonable.",
+          "gmKeywords": ["frozen book", "ink crackle", "legal haunting", "warm breath"],
+          "suggestedChoices": [
+            { "label": "Thaw it carefully", "ops": [{ "op": "set_flag", "flag": "bin_ledger_page_thawed" }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_soup_argument",
+          "table": "haven_frostbitten_tavern_events",
+          "title": "Soup Argument",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "green",
+          "weight": 10,
+          "tags": ["food", "cooking", "social"],
+          "prompt": "Two cooks argue whether warm stew should be thick enough to hold a spoon upright or a prophecy upright.",
+          "gmKeywords": ["spoon", "prophecy", "too thick", "tavern stakes"],
+          "suggestedChoices": [
+            { "label": "Cook a compromise bowl", "ops": [{ "op": "give_food", "id": "warm_stew", "qty": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_wolf_pelt_discount",
+          "table": "haven_frostbitten_forge_events",
+          "title": "Wolf Pelt Discount",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_ironhand_forge",
+          "canonRisk": "green",
+          "weight": 10,
+          "tags": ["forge", "crafting", "wolf"],
+          "prompt": "Hilda offers a small repair discount if the party brings clean wolf pelts for winter grip wraps.",
+          "gmKeywords": ["pelt wraps", "repair discount", "forge favor"],
+          "suggestedChoices": [
+            { "label": "Turn pelts into forge favor", "ops": [{ "op": "take_material", "id": "haven_wolf_pelt", "qty": 1 }, { "op": "hub_service_unlock", "hubId": "haven_hub_frostbitten", "serviceId": "ironhand_pelt_wrap_discount" }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_garr_quiet_roof",
+          "table": "haven_frostbitten_town_events",
+          "title": "Garr on the Quiet Roof",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_garr_hut",
+          "canonRisk": "yellow",
+          "weight": 6,
+          "tags": ["garr", "warm", "soft_warning"],
+          "prompt": "Garr repairs a roof beam in silence, then asks whether Bin is sleeping enough.",
+          "gmKeywords": ["roof beam", "care under gruffness", "old worry"],
+          "suggestedChoices": [
+            { "label": "Let it be a quiet bond scene", "ops": [{ "op": "bond_change", "npcId": "haven_garr", "field": "trust", "amount": 1 }] }
+          ],
+          "gmNote": "Warm character beat only. Do not reveal Garr's secret."
+        },
+        {
+          "id": "haven_hub_evt_mitia_hot_cup",
+          "table": "haven_frostbitten_town_events",
+          "title": "Mitia's Hot Cup",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "green",
+          "weight": 9,
+          "tags": ["mitia", "warm", "tavern"],
+          "prompt": "Mitia keeps warming one cup for the table because nobody else admits they are cold.",
+          "gmKeywords": ["hot cup", "quiet care", "stubborn adventurers"],
+          "suggestedChoices": [
+            { "label": "Take the rest seriously", "ops": [{ "op": "heal_party", "amount": 3 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_bowy_target_board",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Bowy's Target Board",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 9,
+          "tags": ["bowy", "training", "crafting"],
+          "prompt": "Bowy notices the guild's target board is so old it apologizes before arrows hit it.",
+          "gmKeywords": ["splintering board", "aim practice", "thunder joke"],
+          "suggestedChoices": [
+            { "label": "Repair it with scrap", "ops": [{ "op": "take_material", "id": "haven_wolf_pelt", "qty": 1 }, { "op": "give_jp", "amount": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_blue_mushroom_banter",
+          "table": "haven_frostbitten_weird_events",
+          "title": "Blue Mushroom Banter",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "green",
+          "weight": 8,
+          "tags": ["food", "weird", "oracle"],
+          "prompt": "A blue-lit mushroom squeaks when cut, and the cook asks whether that counts as freshness.",
+          "gmKeywords": ["squeak", "blue cap", "chef logic", "edible maybe"],
+          "suggestedChoices": [
+            { "label": "Turn it into a recipe hook", "ops": [{ "op": "unlock_recipe", "recipeId": "warm_stew" }, { "op": "give_food", "id": "warm_stew", "qty": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_snowblind_map",
+          "table": "haven_frostbitten_town_events",
+          "title": "Snowblind Map Request",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 9,
+          "tags": ["map_seed", "travel", "guild"],
+          "prompt": "Tessa asks the party to mark the safest path through Snowblind Ridge after the last sled returned backwards.",
+          "gmKeywords": ["ridge", "backwards sled", "trail markers"],
+          "suggestedChoices": [
+            { "label": "Save map seed for later", "ops": [{ "op": "side_idea_save", "contentCard": { "id": "idea_frostwood_supply_trail", "type": "map_seed", "title": "Frostwood Supply Trail", "canonRisk": "green", "mapSeedId": "haven_mseed_frostwood_supply_trail" } }] }
+          ]
+        }
+      ],
+      "notes": "GM controls canon. This pack provides side content only."
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarios",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_scn_frostwood_short_run",
+      "name": "Frostwood Short Run",
+      "world": "haven",
+      "type": "adventure",
+      "phaseCost": 1,
+      "mapId": "haven_map_frostwood_short_route",
+      "startNode": "frostwood_edge",
+      "danger": { "start": 0, "max": 10 },
+      "limits": { "campRests": 1, "events": 3, "randomBattles": 2 },
+      "entrySnapshot": true,
+      "entryOps": [
+        { "op": "log", "text": "The party enters Frostwood." }
+      ],
+      "exitOps": [
+        { "op": "pass_phase" }
+      ],
+      "setBattles": [
+        {
+          "id": "wolf_pack",
+          "label": "Ice Wolf Ambush",
+          "encounterId": "haven_enc_wolf_pack"
+        }
+      ],
+      "randomBattleTables": [
+        {
+          "id": "frostwood_wolf_battles",
+          "name": "Frostwood Wolf Battles",
+          "entries": [
+            { "weight": 75, "encounterId": "haven_enc_wolf_pack", "label": "Wolf Pack" },
+            { "weight": 25, "encounterId": "haven_enc_bear_cave", "label": "Bear Cave Trouble" }
+          ]
+        }
+      ],
+      "successConditions": [
+        { "type": "reach_node", "nodeId": "old_shrine" }
+      ],
+      "failureConditions": [],
+      "notes": "Short test scenario. GM can insert events, battles, rests, and loot freely."
+    }
+  ]
+}

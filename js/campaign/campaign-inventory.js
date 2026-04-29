@@ -1,0 +1,68 @@
+// campaign-inventory.js
+// Inventory tab renderer and small helpers.
+
+window.CJS = window.CJS || {};
+
+window.CJS.CampaignInventory = (() => {
+  'use strict';
+
+  const CS = () => window.CJS.CampaignState;
+  const DS = () => window.CJS.DataStore;
+
+  const BUCKETS = [
+    ['items', 'Items'],
+    ['materials', 'Materials'],
+    ['food', 'Food'],
+    ['questItems', 'Quest Items'],
+    ['equipment', 'Equipment Refs']
+  ];
+
+  function render() {
+    const state = CS().getState();
+    return `
+      <div class="campaign-tab-grid">
+        ${BUCKETS.map(([bucket, label]) => _renderBucket(state, bucket, label)).join('')}
+      </div>
+    `;
+  }
+
+  function _renderBucket(state, bucket, label) {
+    const entries = Object.entries(state.inventory?.[bucket] || {}).filter(([, qty]) => qty > 0);
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head">
+          <h3>${_esc(label)}</h3>
+          <button class="campaign-icon-btn" title="Add ${_esc(label)}" data-campaign-action="quick-add-inventory" data-bucket="${_escAttr(bucket)}">+</button>
+        </div>
+        ${entries.length ? entries.map(([id, qty]) => `
+          <div class="campaign-row">
+            <div>
+              <strong>${_esc(_nameFor(bucket, id))}</strong>
+              <div class="campaign-muted">${_esc(id)}</div>
+            </div>
+            <div class="campaign-row-actions">
+              <span class="campaign-pill">x${qty}</span>
+              <button class="campaign-icon-btn" title="Add one" data-campaign-action="inventory-delta" data-bucket="${_escAttr(bucket)}" data-id="${_escAttr(id)}" data-delta="1">+</button>
+              <button class="campaign-icon-btn" title="Remove one" data-campaign-action="inventory-delta" data-bucket="${_escAttr(bucket)}" data-id="${_escAttr(id)}" data-delta="-1">-</button>
+            </div>
+          </div>
+        `).join('') : '<div class="campaign-empty">Empty.</div>'}
+      </section>
+    `;
+  }
+
+  function _nameFor(bucket, id) {
+    const type = bucket === 'materials' ? 'materials'
+      : bucket === 'food' ? 'food'
+        : bucket === 'questItems' ? 'items'
+          : 'items';
+    return DS().get(type, id)?.name || id;
+  }
+
+  function _esc(value) {
+    return String(value || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+  function _escAttr(value) { return _esc(value); }
+
+  return Object.freeze({ render });
+})();

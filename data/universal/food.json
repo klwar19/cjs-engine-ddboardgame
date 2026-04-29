@@ -6,5 +6,18 @@
     "category": "food",
     "status": "stub"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "warm_stew",
+      "name": "Warm Stew",
+      "icon": "Stew",
+      "rarity": "Common",
+      "duration": "next_battle",
+      "buff": {
+        "stat": "E",
+        "amount": 2
+      },
+      "description": "Comforting food. Campaign Mode can track it as a next-battle Endurance buff."
+    }
+  ]
 }

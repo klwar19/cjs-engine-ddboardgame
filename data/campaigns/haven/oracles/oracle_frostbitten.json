@@ -1,0 +1,86 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "oracleTables",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_oracle_frostbitten",
+      "name": "Frostbitten Oracle",
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "hubId": "haven_hub_frostbitten",
+      "defaultCanonRisk": "green",
+      "tables": {
+        "adjectives": ["cracked", "hungry", "blue-lit", "old", "silent", "warm", "half-buried", "wolf-marked", "snowblind", "paperwork-haunted"],
+        "nouns": ["bell", "lantern", "mushroom", "crossbow bolt", "guild stamp", "pelt", "shrine", "debt", "sled", "ledger"],
+        "verbs": ["remembers", "follows", "mocks", "warms", "freezes", "stains", "refuses", "itemizes", "slides", "argues"],
+        "objects": ["Bin's shadow", "the party", "the nearest adventurer", "Bowy's hand", "every form", "the snow", "the offering", "three silver", "the south gate", "Corvin's patience"],
+        "twists": ["only Mitia hears the second ring", "wolves refuse to cross its light", "Corvin already filed paperwork about it", "Garr refuses to explain who carved it", "Lysa insists this happens only sometimes", "the Frosted Mug cook wants to buy it anyway", "Peri gives the attempt a five-star rating", "the Brinna Twins have itemized the interest"]
+      },
+      "prompts": [
+        {
+          "id": "haven_oracle_cracked_bell_shadow",
+          "text": "The cracked bell remembers Bin's shadow, but only Mitia hears the second ring.",
+          "suggestedUse": "Old shrine clue.",
+          "canonRisk": "red",
+          "tags": ["bell", "shrine", "memory", "review"]
+        },
+        {
+          "id": "haven_oracle_hungry_lantern",
+          "text": "The hungry lantern follows the party, but wolves refuse to cross its light.",
+          "suggestedUse": "Travel event.",
+          "canonRisk": "yellow",
+          "tags": ["travel", "lantern", "wolves"]
+        },
+        {
+          "id": "haven_oracle_blue_mushroom",
+          "text": "The blue-lit mushroom mocks the nearest adventurer, but Corvin already filed paperwork about it.",
+          "suggestedUse": "Comedy quest.",
+          "canonRisk": "green",
+          "tags": ["mushroom", "paperwork", "comedy"]
+        },
+        {
+          "id": "haven_oracle_old_bolt",
+          "text": "The old crossbow bolt warms in Bowy's hand, but Garr refuses to explain who carved it.",
+          "suggestedUse": "Bowy side quest or Garr clue.",
+          "canonRisk": "yellow",
+          "tags": ["bowy", "garr", "crossbow", "soft_warning"]
+        },
+        {
+          "id": "haven_oracle_guild_stamp",
+          "text": "The wolf-marked guild stamp freezes every form it touches, but Lysa insists this happens only sometimes.",
+          "suggestedUse": "Paperwork comedy event.",
+          "canonRisk": "green",
+          "tags": ["guild", "stamp", "lysa"]
+        },
+        {
+          "id": "haven_oracle_silent_pelt",
+          "text": "The silent pelt stains the snow blue, but the Frosted Mug cook wants to buy it anyway.",
+          "suggestedUse": "Strange loot or recipe hook.",
+          "canonRisk": "yellow",
+          "tags": ["pelt", "food", "loot"]
+        },
+        {
+          "id": "haven_oracle_warm_shrine",
+          "text": "The warm shrine refuses the offering, but Peri gives the attempt a five-star rating.",
+          "suggestedUse": "CJS joke or shrine clue.",
+          "canonRisk": "red",
+          "tags": ["shrine", "peri", "review"]
+        },
+        {
+          "id": "haven_oracle_half_buried_debt",
+          "text": "The half-buried debt follows Bin through town, but the Brinna Twins have itemized the interest.",
+          "suggestedUse": "Comedy rival event.",
+          "canonRisk": "green",
+          "tags": ["debt", "brinna_twins", "comedy"]
+        }
+      ],
+      "notes": "No runtime AI required. Roll a prompt, then GM chooses whether it stays a note, saved idea, or review item."
+    }
+  ]
+}

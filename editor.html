@@ -91,6 +91,7 @@
         <button class="btn btn-ghost btn-sm" id="btn-export" title="Extract split files or download a bundle backup">Export</button>
         <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">Validate</button>
         <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">Tests</a>
+        <a href="campaign.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#bfdbfe">Campaign</a>
         <a href="combat.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#fca5a5">Combat</a>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
@@ -135,6 +136,12 @@
           <span class="badge" id="count-encounters">0</span>
         </div>
 
+        <div class="nav-section">Campaign</div>
+        <div class="nav-item" data-panel="campaign">
+          <span>Campaign Data</span>
+          <span class="badge" id="count-campaigns">0</span>
+        </div>
+
         <div class="nav-section">Tools</div>
         <div class="nav-item" data-panel="browser">
           <span>Data Browser</span>
@@ -153,6 +160,7 @@
         <div class="editor-panel" id="panel-characters"></div>
         <div class="editor-panel" id="panel-monsters"></div>
         <div class="editor-panel" id="panel-encounters"></div>
+        <div class="editor-panel" id="panel-campaign"></div>
         <div class="editor-panel" id="panel-audio"></div>
         <div class="editor-panel" id="panel-browser"></div>
       </div>
@@ -207,6 +215,7 @@
   <script src="js/builders/char-editor.js"></script>
   <script src="js/builders/monster-editor.js"></script>
   <script src="js/builders/encounter-editor.js"></script>
+  <script src="js/builders/campaign-editor.js"></script>
   <script src="js/builders/audio-library.js"></script>
   <script src="js/ui/data-browser.js"></script>
 
@@ -238,6 +247,7 @@
         characters: CJS.CharEditor,
         monsters: CJS.MonsterEditor,
         encounters: CJS.EncounterEditor,
+        campaign: CJS.CampaignEditor,
         browser: CJS.DataBrowser,
         audio: CJS.AudioLibrary
       };
@@ -426,7 +436,7 @@
         }
 
         statusCounts.innerHTML = Object.entries(counts)
-          .filter(([key, value]) => ['effects', 'skills', 'items', 'food', 'materials', 'passives', 'characters', 'monsters', 'encounters', 'crafting', 'crops', 'shops', 'zones', 'stories'].includes(key) && value > 0)
+          .filter(([key, value]) => ['effects', 'skills', 'items', 'food', 'materials', 'passives', 'characters', 'monsters', 'encounters', 'crafting', 'crops', 'shops', 'zones', 'stories', 'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents', 'campaignQuests', 'campaignHubs', 'sideContentPacks', 'questChains', 'battleSets', 'mapSeeds', 'oracleTables'].includes(key) && value > 0)
           .map(([key, value]) => `<span>${key}: <b>${value}</b></span>`)
           .join('');
 

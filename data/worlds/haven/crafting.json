@@ -7,5 +7,23 @@
     "category": "crafting",
     "status": "stub"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "haven_recipe_wolf_fur_cloak",
+      "name": "Wolf Fur Cloak",
+      "station": "workbench",
+      "inputs": {
+        "materials": {
+          "haven_wolf_pelt": 2,
+          "haven_frost_fang": 1
+        }
+      },
+      "outputs": {
+        "items": {
+          "haven_adventurers_cloak": 1
+        }
+      },
+      "description": "Campaign crafting recipe; GM can adjust the exact output before applying."
+    }
+  ]
 }

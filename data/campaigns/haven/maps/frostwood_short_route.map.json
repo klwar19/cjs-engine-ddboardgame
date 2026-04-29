@@ -1,0 +1,112 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarioMaps",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_map_frostwood_short_route",
+      "name": "Frostwood Short Route",
+      "type": "node_map",
+      "world": "haven",
+      "defaultStartNode": "frostwood_edge",
+      "nodes": [
+        {
+          "id": "frostwood_edge",
+          "title": "Frostwood Edge",
+          "kind": "entrance",
+          "x": 110,
+          "y": 260,
+          "tags": ["forest", "cold"],
+          "discoveredByDefault": true,
+          "onEnter": [
+            { "op": "roll_event", "table": "haven_frostwood_events", "chance": 0.35 }
+          ],
+          "exits": [
+            {
+              "to": "wolf_tracks",
+              "label": "Follow wolf tracks",
+              "dangerChange": 1,
+              "onTravel": [
+                { "op": "log", "text": "The party follows fresh tracks under heavy frost." }
+              ]
+            },
+            {
+              "to": "frozen_creek",
+              "label": "Take the creek route",
+              "check": {
+                "type": "stat",
+                "stat": "P",
+                "dc": 10,
+                "success": [{ "op": "log", "text": "The party spots a safe path over the creek." }],
+                "fail": [{ "op": "danger", "amount": 1 }]
+              }
+            }
+          ]
+        },
+        {
+          "id": "wolf_tracks",
+          "title": "Wolf Tracks",
+          "kind": "event_battle",
+          "x": 320,
+          "y": 205,
+          "tags": ["forest", "predator"],
+          "randomBattle": {
+            "chance": 0.45,
+            "table": "frostwood_wolf_battles"
+          },
+          "events": ["haven_evt_tracks_in_snow"],
+          "exits": [
+            { "to": "old_shrine", "label": "Continue to old shrine" },
+            { "to": "frostwood_edge", "label": "Return to the edge" }
+          ]
+        },
+        {
+          "id": "frozen_creek",
+          "title": "Frozen Creek",
+          "kind": "trap",
+          "x": 305,
+          "y": 330,
+          "tags": ["water", "cold", "dangerous"],
+          "trap": {
+            "title": "Weak Ice",
+            "check": {
+              "type": "stat",
+              "stat": "A",
+              "dc": 12,
+              "success": [{ "op": "log", "text": "Quick footing keeps everyone dry." }],
+              "fail": [
+                { "op": "damage_party", "amount": 5 },
+                { "op": "add_status", "target": "party_random", "status": "cold", "duration": "scenario" }
+              ]
+            }
+          },
+          "exits": [
+            { "to": "old_shrine", "label": "Climb toward old shrine", "dangerChange": 1 },
+            { "to": "frostwood_edge", "label": "Return to the edge" }
+          ]
+        },
+        {
+          "id": "old_shrine",
+          "title": "Old Shrine",
+          "kind": "exit",
+          "x": 545,
+          "y": 250,
+          "tags": ["ruins", "objective"],
+          "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "clear_wolves", "amount": 1 },
+            { "op": "log", "text": "The old shrine is quiet enough to call the route clear." }
+          ],
+          "exits": [
+            { "to": "wolf_tracks", "label": "Backtrack to wolf tracks" },
+            { "to": "frozen_creek", "label": "Descend to frozen creek" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -23,7 +23,7 @@ window.CJS.DataBrowser = (() => {
         <div class="flex gap-sm items-center" style="flex-shrink:0">
           <h3 style="margin:0;color:var(--accent)">📊 Data Browser</h3>
           <div class="btn-group" id="db-tabs">
-            ${['effects','skills','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds'].map(t =>
+            ${['effects','skills','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables'].map(t =>
               `<button class="btn btn-sm ${t===_activeTab?'btn-primary':''}" data-tab="${t}">${t}</button>`
             ).join('')}
           </div>
@@ -66,6 +66,19 @@ window.CJS.DataBrowser = (() => {
       case 'zones':      _renderGeneric(area, status, 'zones', q, ['ID','Name','Description','Scope','World','Origin']); break;
       case 'stories':    _renderGeneric(area, status, 'stories', q, ['ID','Name','Description','Scope','World','Origin']); break;
       case 'worlds':     _renderWorlds(area, status, q); break;
+      case 'campaigns':
+      case 'scenarios':
+      case 'scenarioMaps':
+      case 'campaignEvents':
+      case 'campaignQuests':
+      case 'campaignHubs':
+      case 'sideContentPacks':
+      case 'questChains':
+      case 'battleSets':
+      case 'mapSeeds':
+      case 'oracleTables':
+        _renderGeneric(area, status, _activeTab, q, ['ID','Name','Description','Scope','World','Origin']);
+        break;
     }
   }
 

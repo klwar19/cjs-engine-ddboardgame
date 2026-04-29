@@ -7,5 +7,19 @@
     "category": "shops",
     "status": "stub"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "haven_general_store",
+      "name": "Frostbitten General Store",
+      "world": "haven",
+      "currency": "haven_gold",
+      "unlockFlags": [],
+      "restockRule": "manual_or_chapter",
+      "stock": [
+        { "id": "haven_minor_potion", "type": "item", "price": 8, "qty": 6 },
+        { "id": "haven_basic_tent", "type": "item", "price": 12, "qty": 3 }
+      ],
+      "description": "Starter campaign shop for manual buy/sell testing."
+    }
+  ]
 }

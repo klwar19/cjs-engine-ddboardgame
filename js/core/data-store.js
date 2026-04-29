@@ -33,6 +33,19 @@ window.CJS.DataStore = (() => {
     shops:      {},   // id -> shop object
     zones:      {},   // id -> zone object
     stories:    {},   // id -> story object
+    campaigns:  {},   // id -> authored campaign definition
+    scenarios:  {},   // id -> authored campaign scenario
+    scenarioMaps: {}, // id -> authored campaign map
+    campaignEvents: {}, // id -> campaign event table
+    campaignQuests: {}, // id -> campaign quest template collection
+    campaignProfiles: {}, // id -> world/chapter carryover profile
+    pocketHavenRules: {}, // id -> portable base rules
+    sideContentPacks: {}, // id -> side content pack index
+    campaignHubs: {}, // id -> living hub definition
+    questChains: {}, // id -> side quest chain template set
+    battleSets: {}, // id -> GM battle set card collection
+    mapSeeds: {}, // id -> node map seed collection
+    oracleTables: {}, // id -> oracle keyword/prompt table
     worlds:     {},   // id -> world meta object
     passives:   {},   // id → passive object
     characters: {},   // id → character object
@@ -148,6 +161,19 @@ window.CJS.DataStore = (() => {
       shops:      _stripMeta({ ..._data.shops }),
       zones:      _stripMeta({ ..._data.zones }),
       stories:    _stripMeta({ ..._data.stories }),
+      campaigns:  _stripMeta({ ..._data.campaigns }),
+      scenarios:  _stripMeta({ ..._data.scenarios }),
+      scenarioMaps: _stripMeta({ ..._data.scenarioMaps }),
+      campaignEvents: _stripMeta({ ..._data.campaignEvents }),
+      campaignQuests: _stripMeta({ ..._data.campaignQuests }),
+      campaignProfiles: _stripMeta({ ..._data.campaignProfiles }),
+      pocketHavenRules: _stripMeta({ ..._data.pocketHavenRules }),
+      sideContentPacks: _stripMeta({ ..._data.sideContentPacks }),
+      campaignHubs: _stripMeta({ ..._data.campaignHubs }),
+      questChains: _stripMeta({ ..._data.questChains }),
+      battleSets: _stripMeta({ ..._data.battleSets }),
+      mapSeeds: _stripMeta({ ..._data.mapSeeds }),
+      oracleTables: _stripMeta({ ..._data.oracleTables }),
       worlds:     _stripMeta({ ..._data.worlds }),
       passives:   _stripMeta({ ..._data.passives }),
       characters: _normalizeCollection('characters', _data.characters),
@@ -186,6 +212,19 @@ window.CJS.DataStore = (() => {
       shp: _data.shops,
       zon: _data.zones,
       sto: _data.stories,
+      cmp: _data.campaigns,
+      scn: _data.scenarios,
+      map: _data.scenarioMaps,
+      evt: _data.campaignEvents,
+      qst: _data.campaignQuests,
+      cpf: _data.campaignProfiles,
+      phr: _data.pocketHavenRules,
+      scp: _data.sideContentPacks,
+      hub: _data.campaignHubs,
+      qch: _data.questChains,
+      bst: _data.battleSets,
+      msd: _data.mapSeeds,
+      orc: _data.oracleTables,
       wld: _data.worlds,
       pas: _data.passives,
       chr: _data.characters,
@@ -454,6 +493,83 @@ window.CJS.DataStore = (() => {
       });
     }
 
+    // Validate authored campaign references. These warnings keep Campaign Mode
+    // readable without making freeform GM content impossible to save.
+    for (const [id, campaign] of Object.entries(_data.campaigns)) {
+      (campaign.scenarios || []).forEach(sid => {
+        if (sid && !exists('scenarios', sid)) warnings.push(`Campaign "${id}" references missing scenario "${sid}"`);
+      });
+      (campaign.maps || []).forEach(mid => {
+        if (mid && !exists('scenarioMaps', mid)) warnings.push(`Campaign "${id}" references missing map "${mid}"`);
+      });
+      (campaign.eventTables || []).forEach(tid => {
+        if (tid && !exists('campaignEvents', tid)) warnings.push(`Campaign "${id}" references missing event table "${tid}"`);
+      });
+      (campaign.questTemplates || []).forEach(qid => {
+        if (qid && !exists('campaignQuests', qid)) warnings.push(`Campaign "${id}" references missing quest template set "${qid}"`);
+      });
+      (campaign.carryoverProfiles || []).forEach(pid => {
+        if (pid && !exists('campaignProfiles', pid)) warnings.push(`Campaign "${id}" references missing carryover profile "${pid}"`);
+      });
+      (campaign.sideContentPacks || []).forEach(pid => {
+        if (pid && !exists('sideContentPacks', pid)) warnings.push(`Campaign "${id}" references missing side content pack "${pid}"`);
+      });
+      (campaign.hubs || []).forEach(hid => {
+        if (hid && !exists('campaignHubs', hid)) warnings.push(`Campaign "${id}" references missing hub "${hid}"`);
+      });
+    }
+
+    for (const [id, scenario] of Object.entries(_data.scenarios)) {
+      if (scenario.mapId && !exists('scenarioMaps', scenario.mapId)) {
+        warnings.push(`Scenario "${id}" references missing map "${scenario.mapId}"`);
+      }
+      (scenario.setBattles || []).forEach((battle) => {
+        const encounterId = battle.encounterId || battle.id;
+        if (encounterId && !exists('encounters', encounterId)) {
+          warnings.push(`Scenario "${id}" references missing encounter "${encounterId}"`);
+        }
+      });
+    }
+
+    for (const [id, pack] of Object.entries(_data.sideContentPacks)) {
+      const refs = pack.contentRefs || {};
+      if (refs.hub && !exists('campaignHubs', refs.hub)) warnings.push(`Side content pack "${id}" references missing hub "${refs.hub}"`);
+      (refs.questChains || []).forEach(qid => {
+        if (qid && !exists('questChains', qid)) warnings.push(`Side content pack "${id}" references missing quest chain set "${qid}"`);
+      });
+      (refs.battleSets || []).forEach(bid => {
+        if (bid && !exists('battleSets', bid)) warnings.push(`Side content pack "${id}" references missing battle set "${bid}"`);
+      });
+      (refs.mapSeeds || []).forEach(mid => {
+        if (mid && !exists('mapSeeds', mid)) warnings.push(`Side content pack "${id}" references missing map seed "${mid}"`);
+      });
+      (refs.oracle || []).forEach(oid => {
+        if (oid && !exists('oracleTables', oid)) warnings.push(`Side content pack "${id}" references missing oracle table "${oid}"`);
+      });
+    }
+
+    for (const [id, hub] of Object.entries(_data.campaignHubs)) {
+      for (const [slot, tableId] of Object.entries(hub.eventTables || {})) {
+        const packHasTable = Object.values(_data.sideContentPacks).some((pack) =>
+          (pack.hubEvents || pack.events || []).some((event) => event.table === tableId || (event.tables || []).includes(tableId))
+        );
+        if (tableId && !exists('campaignEvents', tableId) && !packHasTable) {
+          warnings.push(`Hub "${id}" ${slot} table "${tableId}" is not in campaignEvents or side content packs`);
+        }
+      }
+    }
+
+    for (const [id, set] of Object.entries(_data.battleSets)) {
+      for (const card of set.cards || []) {
+        for (const enemy of card.enemyMix || []) {
+          const unitId = enemy.id || enemy.monsterId;
+          if (unitId && !exists('monsters', unitId) && !exists('characters', unitId)) {
+            warnings.push(`Battle set "${id}" card "${card.id || card.name}" references missing unit "${unitId}"`);
+          }
+        }
+      }
+    }
+
     return { errors, warnings, valid: errors.length === 0 };
   }
 
@@ -497,6 +613,10 @@ window.CJS.DataStore = (() => {
     const collections = [
       'effects', 'skills', 'items', 'food', 'materials', 'crafting',
       'crops', 'shops', 'zones', 'stories', 'worlds', 'passives',
+      'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
+      'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
+      'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
+      'mapSeeds', 'oracleTables',
       'characters', 'monsters', 'encounters', 'statuses'
     ];
     for (const col of collections) {
@@ -536,6 +656,19 @@ window.CJS.DataStore = (() => {
       shp: _data.shops,
       zon: _data.zones,
       sto: _data.stories,
+      cmp: _data.campaigns,
+      scn: _data.scenarios,
+      map: _data.scenarioMaps,
+      evt: _data.campaignEvents,
+      qst: _data.campaignQuests,
+      cpf: _data.campaignProfiles,
+      phr: _data.pocketHavenRules,
+      scp: _data.sideContentPacks,
+      hub: _data.campaignHubs,
+      qch: _data.questChains,
+      bst: _data.battleSets,
+      msd: _data.mapSeeds,
+      orc: _data.oracleTables,
       wld: _data.worlds,
       pas: _data.passives,
       chr: _data.characters,
@@ -562,6 +695,10 @@ window.CJS.DataStore = (() => {
     _data = {
       effects: {}, skills: {}, items: {}, food: {}, materials: {}, crafting: {},
       crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {},
+      campaigns: {}, scenarios: {}, scenarioMaps: {}, campaignEvents: {},
+      campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
+      sideContentPacks: {}, campaignHubs: {}, questChains: {},
+      battleSets: {}, mapSeeds: {}, oracleTables: {},
       characters: {}, monsters: {}, encounters: {}, statuses: {},
       quips: [], quizBank: []
     };
@@ -586,6 +723,19 @@ window.CJS.DataStore = (() => {
       shops:      Object.keys(_data.shops).length,
       zones:      Object.keys(_data.zones).length,
       stories:    Object.keys(_data.stories).length,
+      campaigns:  Object.keys(_data.campaigns).length,
+      scenarios:  Object.keys(_data.scenarios).length,
+      scenarioMaps: Object.keys(_data.scenarioMaps).length,
+      campaignEvents: Object.keys(_data.campaignEvents).length,
+      campaignQuests: Object.keys(_data.campaignQuests).length,
+      campaignProfiles: Object.keys(_data.campaignProfiles).length,
+      pocketHavenRules: Object.keys(_data.pocketHavenRules).length,
+      sideContentPacks: Object.keys(_data.sideContentPacks).length,
+      campaignHubs: Object.keys(_data.campaignHubs).length,
+      questChains: Object.keys(_data.questChains).length,
+      battleSets: Object.keys(_data.battleSets).length,
+      mapSeeds: Object.keys(_data.mapSeeds).length,
+      oracleTables: Object.keys(_data.oracleTables).length,
       worlds:     Object.keys(_data.worlds).length,
       passives:   Object.keys(_data.passives).length,
       characters: Object.keys(_data.characters).length,

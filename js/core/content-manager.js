@@ -34,7 +34,20 @@ window.CJS.ContentManager = (() => {
     crops: 'crops',
     shops: 'shops',
     zones: 'zones',
-    stories: 'stories'
+    stories: 'stories',
+    campaigns: 'campaigns',
+    scenarios: 'scenarios',
+    scenarioMaps: 'scenarioMaps',
+    campaignEvents: 'campaignEvents',
+    campaignQuests: 'campaignQuests',
+    campaignProfiles: 'campaignProfiles',
+    pocketHavenRules: 'pocketHavenRules',
+    sideContentPacks: 'sideContentPacks',
+    campaignHubs: 'campaignHubs',
+    questChains: 'questChains',
+    battleSets: 'battleSets',
+    mapSeeds: 'mapSeeds',
+    oracleTables: 'oracleTables'
   };
 
   const CATEGORY_TO_TYPE = Object.freeze(
@@ -47,7 +60,11 @@ window.CJS.ContentManager = (() => {
   const TYPE_ORDER = [
     'effects', 'statuses', 'passives', 'skills', 'items', 'food',
     'characters', 'monsters', 'encounters', 'materials', 'crafting',
-    'crops', 'shops', 'zones', 'stories'
+    'crops', 'shops', 'zones', 'stories',
+    'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
+    'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
+    'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
+    'mapSeeds', 'oracleTables'
   ];
 
   const SCOPE_LABELS = {
@@ -182,7 +199,21 @@ window.CJS.ContentManager = (() => {
       case 'shops':
       case 'zones':
       case 'stories':
+      case 'campaigns':
+      case 'scenarios':
+      case 'scenarioMaps':
+      case 'campaignEvents':
+      case 'campaignQuests':
+      case 'sideContentPacks':
+      case 'campaignHubs':
+      case 'questChains':
+      case 'battleSets':
+      case 'mapSeeds':
+      case 'oracleTables':
         return ['world'];
+      case 'campaignProfiles':
+      case 'pocketHavenRules':
+        return ['universal'];
       case 'characters':
       case 'passives':
       case 'skills':

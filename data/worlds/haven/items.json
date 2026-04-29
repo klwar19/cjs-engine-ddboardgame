@@ -9,6 +9,28 @@
   },
   "entries": [
     {
+      "id": "haven_basic_tent",
+      "name": "Basic Tent",
+      "icon": "Tent",
+      "slot": "consumable",
+      "rarity": "Common",
+      "effects": [],
+      "weaponData": null,
+      "description": "Simple camping shelter. Campaign Mode can consume it for a camp rest.",
+      "grantedSkills": []
+    },
+    {
+      "id": "haven_minor_potion",
+      "name": "Minor Potion",
+      "icon": "Potion",
+      "slot": "consumable",
+      "rarity": "Common",
+      "effects": [],
+      "weaponData": null,
+      "description": "Small healing draught. Campaign Mode tracks it as a manual-use item.",
+      "grantedSkills": []
+    },
+    {
       "id": "haven_adventurers_cloak",
       "name": "Adventurer's Cloak",
       "icon": "🧣",

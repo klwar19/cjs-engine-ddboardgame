@@ -1,0 +1,186 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "battleSets",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_bsets_frostbitten",
+      "name": "Frostbitten Battle Sets",
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "hubId": "haven_hub_frostbitten",
+      "cards": [
+        {
+          "id": "haven_bset_frost_rats_tavern_cellar",
+          "name": "Frost Rats in the Tavern Cellar",
+          "rank": "F",
+          "canonRisk": "green",
+          "tags": ["tavern", "food", "starter", "comedy"],
+          "enemyMix": [
+            { "name": "Frost Rat", "qty": 4 },
+            { "name": "Big Fat Frost Rat", "qty": 1, "optional": true, "condition": "danger >= 3" }
+          ],
+          "grid": { "width": 8, "height": 8 },
+          "terrain": ["crates as obstacles", "spilled stew creates slippery cells", "hanging sausages are interactable objects"],
+          "objective": "Clear the rats before they ruin the food stores.",
+          "gimmick": "Every round, one rat tries to drag food toward a hole. If three crates are lost, reward decreases.",
+          "rewardOps": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 8 },
+            { "op": "give_food", "id": "warm_stew", "qty": 1 }
+          ],
+          "complications": ["A rat eats a strange blue mushroom and gains a frostbite aura."],
+          "cjsComment": "Bin has entered mortal combat with pantry wildlife. Peri is pretending this is character development."
+        },
+        {
+          "id": "haven_bset_wolf_pack_bent_pine",
+          "name": "Wolf Pack at Bent Pine",
+          "rank": "F-E",
+          "canonRisk": "green",
+          "tags": ["wolf", "forest", "ambush", "crafting"],
+          "encounterId": "haven_enc_wolf_pack",
+          "enemyMix": [
+            { "id": "haven_ice_wolf", "qty": 2 },
+            { "id": "haven_ice_wolf", "qty": 1, "label": "Snowbitten Wolf Scout" }
+          ],
+          "grid": { "width": 8, "height": 8 },
+          "terrain": ["trees block line of sight", "deep snow slows movement", "one high-ground rock gives +2 accuracy"],
+          "objective": "Survive the ambush and protect the supply sled.",
+          "gimmick": "Wolves try to flank the lowest-HP character. Bowy can pin one wolf from high ground as a GM stunt.",
+          "rewardOps": [
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 2 },
+            { "op": "give_money", "currency": "haven_gold", "amount": 8 },
+            { "op": "reputation_change", "target": "haven_zon_frostbitten", "amount": 1 }
+          ],
+          "complications": ["If danger is 5+, the scout howls and summons another wolf after round 3."]
+        },
+        {
+          "id": "haven_bset_bandit_taxmen_snowblind",
+          "name": "Bandit Taxmen of Snowblind Ridge",
+          "rank": "E",
+          "canonRisk": "green",
+          "tags": ["bandit", "ridge", "social", "ambush"],
+          "enemyMix": [
+            { "name": "Haven Bandit", "qty": 2 },
+            { "name": "Bandit Trapper", "qty": 1 }
+          ],
+          "grid": { "width": 8, "height": 8 },
+          "terrain": ["ridge high ground", "snowdrift cover", "rope snare markers"],
+          "objective": "Get the supply sled past fake toll collectors.",
+          "gimmick": "A successful Charisma check can make one bandit leave before combat.",
+          "rewardOps": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 12 },
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 }
+          ],
+          "complications": ["If the party pays them, they come back later with receipts."]
+        },
+        {
+          "id": "haven_bset_frost_sprite_grove",
+          "name": "Frost Sprite Grove",
+          "rank": "F",
+          "canonRisk": "green",
+          "tags": ["sprite", "mushroom", "food", "magic"],
+          "encounterId": "haven_enc_temple_floor1",
+          "enemyMix": [
+            { "id": "haven_frost_sprite", "qty": 2 },
+            { "id": "haven_ice_wolf", "qty": 1, "optional": true }
+          ],
+          "grid": { "width": 8, "height": 8 },
+          "terrain": ["mushroom clusters", "ice patches", "soft blue light"],
+          "objective": "Gather frostcaps or defeat the sprites before they scatter the grove.",
+          "gimmick": "Characters can spend an action to gather; three gathers ends the fight as a success.",
+          "rewardOps": [
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 },
+            { "op": "give_food", "id": "warm_stew", "qty": 1 }
+          ],
+          "complications": ["One mushroom asks for a lawyer. Green if played as comedy."]
+        },
+        {
+          "id": "haven_bset_bear_hollow",
+          "name": "Bear Hollow Warning",
+          "rank": "E",
+          "canonRisk": "green",
+          "tags": ["bear", "cave", "materials", "danger"],
+          "encounterId": "haven_enc_bear_cave",
+          "enemyMix": [
+            { "id": "haven_snow_bear", "qty": 1 },
+            { "id": "haven_ice_wolf", "qty": 1 }
+          ],
+          "grid": { "width": 8, "height": 8 },
+          "terrain": ["narrow cave mouth", "rubble", "ice slick"],
+          "objective": "Drive the bear away without letting it maul a front-liner.",
+          "gimmick": "The bear roars when first bloodied and can frighten nearby units.",
+          "rewardOps": [
+            { "op": "give_material", "id": "haven_bear_hide", "qty": 1 },
+            { "op": "give_material", "id": "haven_bear_claw", "qty": 1 }
+          ],
+          "complications": ["If the party retreats, mark the cave as dangerous for the next scenario."]
+        },
+        {
+          "id": "haven_bset_guild_sparring_dain",
+          "name": "Guild Sparring with Dain",
+          "rank": "F",
+          "canonRisk": "green",
+          "tags": ["guild", "sparring", "rival", "nonlethal"],
+          "enemyMix": [
+            { "name": "Dain, C-rank Showoff", "qty": 1 },
+            { "name": "Two heckling guild rookies", "qty": 2, "noncombat": true }
+          ],
+          "grid": { "width": 8, "height": 8 },
+          "terrain": ["training mats", "practice pillars", "crowd edge"],
+          "objective": "Win a nonlethal spar or make the crowd laugh enough that Dain loses momentum.",
+          "gimmick": "Good jokes count as tactical advantage if the GM approves.",
+          "rewardOps": [
+            { "op": "give_jp", "amount": 1 },
+            { "op": "bond_change", "npcId": "dain", "field": "rivalry", "amount": 1 }
+          ],
+          "complications": ["Dain demands a rematch and calls it a training tax."]
+        },
+        {
+          "id": "haven_bset_old_shrine_outer_ring",
+          "name": "Old Shrine Outer Ring",
+          "rank": "E",
+          "canonRisk": "red",
+          "tags": ["shrine", "mystery", "review", "sprite"],
+          "encounterId": "haven_enc_temple_floor1",
+          "enemyMix": [
+            { "id": "haven_frost_sprite", "qty": 2 },
+            { "id": "haven_ice_wolf", "qty": 2 }
+          ],
+          "grid": { "width": 10, "height": 8 },
+          "terrain": ["broken prayer gate", "bell courtyard", "sealed inner door"],
+          "objective": "Survive strange guardians and decide whether to retreat before the inner shrine.",
+          "gimmick": "The bell may ring once; GM decides if this is canon, atmosphere, or a false omen.",
+          "rewardOps": [
+            { "op": "give_material", "id": "haven_ice_crystal", "qty": 1 }
+          ],
+          "complications": ["Red-risk content must be reviewed before applying memory or story meaning."]
+        },
+        {
+          "id": "haven_bset_chimera_echo",
+          "name": "Chimera Echo Drill",
+          "rank": "D-C",
+          "canonRisk": "yellow",
+          "tags": ["boss_preview", "training", "chimera", "danger"],
+          "encounterId": "haven_enc_chimera_boss",
+          "enemyMix": [
+            { "id": "haven_frostfire_chimera", "qty": 1 }
+          ],
+          "grid": { "width": 10, "height": 10 },
+          "terrain": ["fire zones", "ice zones", "wide arena"],
+          "objective": "Preview a dangerous boss pattern as a dream, training echo, or future warning.",
+          "gimmick": "Use only if the GM wants the party to learn the chimera rhythm early.",
+          "rewardOps": [
+            { "op": "give_jp", "amount": 1 },
+            { "op": "clock_tick", "clockId": "chimera_attention", "label": "Chimera Attention", "max": 4, "amount": 1 }
+          ],
+          "complications": ["Yellow risk because it foreshadows a serious fight."]
+        }
+      ]
+    }
+  ]
+}

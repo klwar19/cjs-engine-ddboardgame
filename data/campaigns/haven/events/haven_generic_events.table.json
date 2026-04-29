@@ -1,0 +1,51 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignEvents",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_generic_events",
+      "name": "Haven Generic Events",
+      "world": "haven",
+      "entries": [
+        {
+          "weight": 40,
+          "id": "haven_evt_kind_trader",
+          "type": "hybrid",
+          "title": "Kind Trader",
+          "prompt": "A trader offers a small favor if the party shares news from the road.",
+          "suggested": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 5 },
+            { "op": "log", "text": "The party earned a small trader favor." }
+          ]
+        },
+        {
+          "weight": 25,
+          "id": "haven_evt_bad_weather",
+          "type": "mechanical",
+          "title": "Bad Weather",
+          "prompt": "Freezing wind slows travel and drains morale.",
+          "suggested": [
+            { "op": "add_status", "target": "party", "status": "tired", "duration": "phase" },
+            { "op": "danger", "amount": 1 }
+          ]
+        },
+        {
+          "weight": 35,
+          "id": "haven_evt_forgotten_cache",
+          "type": "reward",
+          "title": "Forgotten Cache",
+          "prompt": "A hidden cache sits under a loose stone.",
+          "suggested": [
+            { "op": "give_item", "id": "haven_minor_potion", "qty": 1 }
+          ]
+        }
+      ]
+    }
+  ]
+}
