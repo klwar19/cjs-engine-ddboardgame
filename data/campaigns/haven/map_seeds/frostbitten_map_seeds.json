@@ -1,0 +1,93 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "mapSeeds",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_mseeds_frostbitten",
+      "name": "Frostbitten Map Seeds",
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "hubId": "haven_hub_frostbitten",
+      "seeds": [
+        {
+          "id": "haven_mseed_frostwood_supply_trail",
+          "name": "Frostwood Supply Trail",
+          "purpose": ["escort", "gathering", "ambush", "missing carrier"],
+          "canonRisk": "green",
+          "tags": ["supply", "trail", "ambush", "firemoss"],
+          "nodes": [
+            { "id": "south_gate", "name": "South Gate", "role": "entrance", "notes": "Safe departure point." },
+            { "id": "old_marker_post", "name": "Old Marker Post", "role": "clue", "notes": "Possible Garr route hint if promoted to yellow." },
+            { "id": "broken_sled", "name": "Broken Sled", "role": "choice", "notes": "Repair, search, or abandon." },
+            { "id": "snowblind_ridge", "name": "Snowblind Ridge", "role": "battle", "battleSetIds": ["haven_bset_bandit_taxmen_snowblind", "haven_bset_wolf_pack_bent_pine"] },
+            { "id": "firemoss_cache", "name": "Firemoss Cache", "role": "reward", "notes": "Resources and town consequence." },
+            { "id": "return_shortcut", "name": "Return Shortcut", "role": "exit", "notes": "Fast return if the party secured the trail." }
+          ],
+          "links": [["south_gate", "old_marker_post"], ["old_marker_post", "broken_sled"], ["broken_sled", "snowblind_ridge"], ["snowblind_ridge", "firemoss_cache"], ["firemoss_cache", "return_shortcut"]],
+          "goodQuestChains": ["haven_qchain_warm_lights_cold_hands"],
+          "notes": "Good for firemoss delivery jobs and bandit taxmen hooks."
+        },
+        {
+          "id": "haven_mseed_frostcap_grove",
+          "name": "Frostcap Grove",
+          "purpose": ["gathering", "low combat", "starter job"],
+          "canonRisk": "green",
+          "tags": ["mushroom", "food", "starter", "sprite"],
+          "nodes": [
+            { "id": "frostwood_edge", "name": "Frostwood Edge", "role": "entrance" },
+            { "id": "bent_pine_marker", "name": "Bent Pine Marker", "role": "navigation clue" },
+            { "id": "frostcap_grove", "name": "Frostcap Grove", "role": "gathering node" },
+            { "id": "frozen_hollow", "name": "Frozen Hollow", "role": "battle or trap", "battleSetIds": ["haven_bset_frost_sprite_grove"] },
+            { "id": "warm_snow_patch", "name": "Warm Snow Patch", "role": "mystery flavor" },
+            { "id": "return_trail", "name": "Return Trail", "role": "exit" }
+          ],
+          "links": [["frostwood_edge", "bent_pine_marker"], ["bent_pine_marker", "frostcap_grove"], ["frostcap_grove", "frozen_hollow"], ["frozen_hollow", "warm_snow_patch"], ["warm_snow_patch", "return_trail"]],
+          "goodQuestChains": ["haven_qchain_frostcap_fever"],
+          "notes": "Use the warm snow as green flavor or promote to yellow if it starts pointing at deeper lore."
+        },
+        {
+          "id": "haven_mseed_frozen_creek_trail",
+          "name": "Frozen Creek Trail",
+          "purpose": ["Bowy side chain", "wolf hunt", "crafting material"],
+          "canonRisk": "yellow",
+          "tags": ["bowy", "wolf", "creek", "yellow"],
+          "nodes": [
+            { "id": "creek_crossing", "name": "Creek Crossing", "role": "entrance/check" },
+            { "id": "frostpine_stand", "name": "Frostpine Stand", "role": "resource node" },
+            { "id": "hunters_marker", "name": "Hunter's Marker", "role": "Garr clue", "canonRisk": "yellow" },
+            { "id": "wolf_den", "name": "Wolf Den", "role": "battle", "battleSetIds": ["haven_bset_wolf_pack_bent_pine"] },
+            { "id": "broken_bolt_camp", "name": "Broken Bolt Camp", "role": "clue/reward" },
+            { "id": "return_shortcut", "name": "Return Shortcut", "role": "exit" }
+          ],
+          "links": [["creek_crossing", "frostpine_stand"], ["frostpine_stand", "hunters_marker"], ["hunters_marker", "wolf_den"], ["wolf_den", "broken_bolt_camp"], ["broken_bolt_camp", "return_shortcut"]],
+          "goodQuestChains": ["haven_qchain_thunder_needs_a_voice", "haven_qchain_ironhand_errand"],
+          "gmNote": "Keep Garr implications soft unless the GM explicitly promotes them."
+        },
+        {
+          "id": "haven_mseed_old_shrine_outer_ring",
+          "name": "Old Shrine Outer Ring",
+          "purpose": ["mystery", "red-risk clue", "optional battle"],
+          "canonRisk": "red",
+          "tags": ["shrine", "bell", "review", "mystery"],
+          "nodes": [
+            { "id": "snowed_road", "name": "Snowed Road", "role": "entrance" },
+            { "id": "broken_prayer_gate", "name": "Broken Prayer Gate", "role": "clue" },
+            { "id": "frozen_offering_bowl", "name": "Frozen Offering Bowl", "role": "choice/event" },
+            { "id": "bell_courtyard", "name": "Bell Courtyard", "role": "battle or oracle prompt", "battleSetIds": ["haven_bset_old_shrine_outer_ring"] },
+            { "id": "sealed_inner_door", "name": "Sealed Inner Door", "role": "locked mystery" },
+            { "id": "side_exit", "name": "Side Exit", "role": "retreat route" }
+          ],
+          "links": [["snowed_road", "broken_prayer_gate"], ["broken_prayer_gate", "frozen_offering_bowl"], ["frozen_offering_bowl", "bell_courtyard"], ["bell_courtyard", "sealed_inner_door"], ["bell_courtyard", "side_exit"]],
+          "goodQuestChains": [],
+          "gmNote": "Do not use casually if the GM wants to delay main mystery clues."
+        }
+      ]
+    }
+  ]
+}

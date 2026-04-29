@@ -63,6 +63,16 @@
       "category": "food"
     },
     {
+      "path": "data/campaigns/universal/campaign_carryover_profiles.json",
+      "scope": "universal",
+      "category": "campaignProfiles"
+    },
+    {
+      "path": "data/campaigns/universal/pocket_haven_rules.json",
+      "scope": "universal",
+      "category": "pocketHavenRules"
+    },
+    {
       "path": "data/worlds/haven/_meta.json",
       "scope": "world",
       "world": "haven",
@@ -145,6 +155,78 @@
       "scope": "world",
       "world": "haven",
       "category": "quips"
+    },
+    {
+      "path": "data/campaigns/haven/haven_free_campaign_test.campaign.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "campaigns"
+    },
+    {
+      "path": "data/campaigns/haven/scenarios/scn_frostwood_short_run.scenario.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "scenarios"
+    },
+    {
+      "path": "data/campaigns/haven/maps/frostwood_short_route.map.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "scenarioMaps"
+    },
+    {
+      "path": "data/campaigns/haven/events/haven_generic_events.table.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "campaignEvents"
+    },
+    {
+      "path": "data/campaigns/haven/events/frostwood_events.table.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "campaignEvents"
+    },
+    {
+      "path": "data/campaigns/haven/quests/haven_quest_templates.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "campaignQuests"
+    },
+    {
+      "path": "data/campaigns/haven/side_content/frostbitten_side_content_pack.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "sideContentPacks"
+    },
+    {
+      "path": "data/campaigns/haven/hubs/hub_frostbitten.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "campaignHubs"
+    },
+    {
+      "path": "data/campaigns/haven/quest_chains/frostbitten_quest_chains.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "questChains"
+    },
+    {
+      "path": "data/campaigns/haven/battle_sets/frostbitten_battle_sets.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "battleSets"
+    },
+    {
+      "path": "data/campaigns/haven/map_seeds/frostbitten_map_seeds.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "mapSeeds"
+    },
+    {
+      "path": "data/campaigns/haven/oracles/oracle_frostbitten.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "oracleTables"
     },
     {
       "path": "data/worlds/zombie/_meta.json",

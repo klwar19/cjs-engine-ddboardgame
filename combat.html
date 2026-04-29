@@ -79,6 +79,7 @@
   <script src="js/ui/animation-bus.js"></script>
   <script src="js/ui/combat-ui.js"></script>
   <script src="js/ui/loot-roller.js"></script>
+  <script src="js/campaign/campaign-combat-bridge.js"></script>
 
   <script>
   (async function() {
@@ -88,6 +89,7 @@
     const ND = window.CJS.NarratorData;
     const CM = window.CJS.ContentManager;
     const BS = window.CJS.BattleSetup;
+    const Bridge = window.CJS.CampaignCombatBridge;
 
     const setupEl = document.getElementById('battle-setup-container');
     const combatEl = document.getElementById('combat-container');
@@ -97,6 +99,9 @@
     let demoCreated = false;
     let battleSetupReady = false;
     let activeEncounterId = null;
+    let campaignRequest = null;
+    let campaignResultWritten = false;
+    let unsubCampaignResult = null;
 
     async function loadData() {
       try {
@@ -123,6 +128,10 @@
     function teardownCombatView(options = {}) {
       const removeActiveRuntime = options.removeActiveRuntime !== false;
 
+      if (unsubCampaignResult) {
+        try { unsubCampaignResult(); } catch (_) {}
+        unsubCampaignResult = null;
+      }
       try { window.CJS.CombatUI.destroy(); } catch (_) {}
       try { window.CJS.CombatManager.reset(); } catch (_) {}
 
@@ -156,6 +165,45 @@
     function showCombat() {
       setupEl.style.display = 'none';
       combatEl.style.display = '';
+    }
+
+    function isCampaignBattleMode() {
+      return new URLSearchParams(window.location.search).get('campaignBattle') === '1';
+    }
+
+    function returnToCampaign() {
+      window.location.href = campaignRequest?.returnUrl || 'campaign.html';
+    }
+
+    function renderCampaignBridgeBanner(result) {
+      if (!campaignRequest) return;
+      const existing = document.getElementById('campaign-bridge-banner');
+      if (existing) existing.remove();
+      const banner = document.createElement('div');
+      banner.id = 'campaign-bridge-banner';
+      banner.className = 'campaign-bridge-banner';
+      banner.style.cssText = 'margin:12px;padding:12px;border:1px solid #64b5f6;border-radius:8px;background:#101923;color:#f5f7fa;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap';
+      banner.innerHTML = `
+        <div>
+          <strong>Campaign Battle</strong>
+          <div style="color:#a9b4c0;font-size:0.9rem">${result ? `Result saved: ${result.result} in ${result.rounds || 0} rounds` : (campaignRequest.label || campaignRequest.encounterId || 'Ready')}</div>
+        </div>
+        <button id="campaign-return-btn" class="btn btn-primary">Return to Campaign</button>
+      `;
+      combatEl.prepend(banner);
+      banner.querySelector('#campaign-return-btn').onclick = returnToCampaign;
+    }
+
+    function bindCampaignResult() {
+      if (!campaignRequest || unsubCampaignResult) return;
+      unsubCampaignResult = window.CJS.CombatManager.subscribe((state) => {
+        if (!state || state.phase !== 'battle_end' || campaignResultWritten) return;
+        const result = Bridge.buildResultFromCombat(campaignRequest, state);
+        Bridge.writeResult(result);
+        Bridge.clearRequest();
+        campaignResultWritten = true;
+        renderCampaignBridgeBanner(result);
+      });
     }
 
     function populateEncounters() {
@@ -299,11 +347,13 @@
 
       activeEncounterId = encounterId;
       window.CJS.CombatUI.init(combatEl, {
-        onReturnToSetup: () => showSetup()
+        onReturnToSetup: () => campaignRequest ? returnToCampaign() : showSetup()
       });
 
       try {
         window.CJS.CombatUI.startCombat(encounterId);
+        bindCampaignResult();
+        renderCampaignBridgeBanner();
       } catch (error) {
         console.error('Combat start failed:', error);
         alert(`Combat failed to start: ${error.message}`);
@@ -351,7 +401,18 @@
 
     populateEncounters();
     ensureBattleSetup();
-    showSetup();
+    if (isCampaignBattleMode()) {
+      campaignRequest = Bridge.readRequest();
+      const runtimeId = Bridge.createRuntimeEncounterFromRequest(campaignRequest);
+      if (runtimeId) {
+        startCombat(runtimeId);
+      } else {
+        showSetup();
+        alert('Campaign battle request was missing or could not be loaded.');
+      }
+    } else {
+      showSetup();
+    }
     console.log('CJS Combat Simulator ready.');
   })();
   </script>

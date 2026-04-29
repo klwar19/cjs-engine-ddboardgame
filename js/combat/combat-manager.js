@@ -76,7 +76,11 @@ window.CJS.CombatManager = (() => {
         ? `${placement.id}_${idCounts[placement.id]}`
         : placement.id;
 
-      const compiled = SC().compileUnit(base, instanceId);
+      const compiled = SC().compileUnit(base, instanceId, {
+        currentHP: placement.currentHP,
+        currentMP: placement.currentMP,
+        activeStatuses: placement.activeStatuses || []
+      });
       if (placement.size) compiled.size = placement.size;
       unitObjects[instanceId] = compiled;
       initiative.push(instanceId);

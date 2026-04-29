@@ -1,0 +1,89 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaigns",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_camp_free_test",
+      "name": "Haven Free Campaign Test",
+      "version": 1,
+      "world": "haven",
+      "startChapter": 1,
+      "startPhase": "town_phase",
+      "startScenario": null,
+      "defaultMode": "soft_limit",
+      "allowedWorlds": ["haven", "zombie"],
+      "phaseRules": [
+        {
+          "id": "town_phase",
+          "name": "Town Phase",
+          "mode": "soft_limit",
+          "eventCharges": { "town_event": 2, "shop_event": 1, "social_prompt": 1 },
+          "allowFullRest": true,
+          "allowCampRest": false,
+          "allowScenarioStart": true,
+          "farmGrowth": 1,
+          "shopRestock": "manual_or_chapter",
+          "questTimersAdvance": true
+        },
+        {
+          "id": "travel_phase",
+          "name": "Travel Segment",
+          "mode": "soft_limit",
+          "eventCharges": { "travel_event": 1 },
+          "allowFullRest": false,
+          "allowCampRest": true,
+          "allowScenarioStart": true,
+          "farmGrowth": 1,
+          "shopRestock": "none",
+          "questTimersAdvance": true
+        },
+        {
+          "id": "scenario_phase",
+          "name": "Scenario Turn",
+          "mode": "soft_limit",
+          "eventCharges": { "scenario_event": 1 },
+          "allowFullRest": false,
+          "allowCampRest": true,
+          "allowScenarioStart": false,
+          "farmGrowth": 0,
+          "shopRestock": "none",
+          "questTimersAdvance": false
+        },
+        {
+          "id": "pocket_haven_phase",
+          "name": "Pocket Haven Cycle",
+          "mode": "free",
+          "eventCharges": { "haven_task": 2 },
+          "allowFullRest": true,
+          "allowCampRest": false,
+          "allowScenarioStart": true,
+          "farmGrowth": 1,
+          "shopRestock": "manual_or_chapter",
+          "questTimersAdvance": true
+        }
+      ],
+      "scenarios": ["haven_scn_frostwood_short_run"],
+      "maps": ["haven_map_frostwood_short_route"],
+      "eventTables": ["haven_generic_events", "haven_frostwood_events"],
+      "questTemplates": ["haven_basic_quest_templates"],
+      "carryoverProfiles": ["carryover_new_world_default"],
+      "hubs": ["haven_hub_frostbitten"],
+      "sideContentPacks": ["haven_scp_frostbitten_v1"],
+      "startingState": {
+        "currencies": { "haven_gold": 20, "jp": 0 },
+        "items": { "haven_minor_potion": 2, "haven_basic_tent": 1 },
+        "materials": {},
+        "food": {},
+        "questItems": {},
+        "party": ["bin", "haven_bowy", "haven_mitia", "haven_garr"]
+      },
+      "notes": "Free GM campaign. Story is manual. App tracks state only."
+    }
+  ]
+}

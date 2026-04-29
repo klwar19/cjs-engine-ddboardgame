@@ -1,0 +1,146 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignHubs",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_hub_frostbitten",
+      "aliases": ["hub_frostbitten"],
+      "name": "Frostbitten",
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "type": "settlement_hub",
+      "description": "A small northern guild settlement clinging to survival at the edge of the Frostwood.",
+      "defaultMood": "cautious_warmth",
+      "traits": ["cold", "guild", "survival", "found_family", "frontier"],
+      "locations": [
+        {
+          "id": "loc_garr_hut",
+          "name": "Garr's Hut",
+          "type": "home",
+          "tags": ["family", "rest", "woodsmoke"],
+          "services": ["garr_hut_full_rest"],
+          "notes": "Warm, small, smells of dried meat and old secrets."
+        },
+        {
+          "id": "loc_adventurers_guild",
+          "name": "Adventurer's Guild",
+          "type": "guild",
+          "tags": ["quests", "paperwork", "rivals"],
+          "services": ["guild_basic_board", "guild_registration"],
+          "notes": "Main community hub. Staff and rivals make it feel alive."
+        },
+        {
+          "id": "loc_frosted_mug",
+          "name": "The Frosted Mug",
+          "type": "tavern_inn",
+          "tags": ["food", "rumors", "warmth"],
+          "services": ["frosted_mug_basic_meals", "rumor_roll"],
+          "notes": "Warm food, cold ale, and dangerous gossip density."
+        },
+        {
+          "id": "loc_ironhand_forge",
+          "name": "Ironhand Forge",
+          "type": "forge",
+          "tags": ["crafting", "repair", "gear"],
+          "services": ["ironhand_basic_repairs", "forge_basic_recipes"],
+          "notes": "Run by Hilda Ironhand. Good place for weapon and material side chains."
+        },
+        {
+          "id": "loc_old_temple_ruins",
+          "name": "Old Temple Ruins",
+          "type": "ruins",
+          "tags": ["mystery", "shrine", "canon_risk"],
+          "services": [],
+          "notes": "Use carefully. Many hooks here are yellow/red canon risk."
+        }
+      ],
+      "npcs": [
+        {
+          "id": "lysa",
+          "name": "Lysa",
+          "role": "front desk receptionist",
+          "defaultMood": "cheerful_and_too_loud",
+          "tags": ["guild", "flirty", "comic_relief", "remembers_names"],
+          "safeHooks": ["misfiled forms", "overexcited greetings", "rumor delivery"]
+        },
+        {
+          "id": "corvin",
+          "name": "Corvin",
+          "role": "senior clerk",
+          "defaultMood": "paperwork_haunted",
+          "tags": ["guild", "paperwork", "tired", "deadpan"],
+          "safeHooks": ["forms", "legal status", "missing stamps", "death paperwork"]
+        },
+        {
+          "id": "tessa",
+          "name": "Tessa",
+          "role": "quest assigner",
+          "defaultMood": "testing_party_carefully",
+          "tags": ["guild", "serious", "practical", "mentor"],
+          "safeHooks": ["warm-up jobs", "supply routes", "quiet tests"]
+        },
+        {
+          "id": "dain",
+          "name": "Dain",
+          "role": "C-rank fighter",
+          "defaultMood": "annoyed_and_competitive",
+          "tags": ["rival", "cocky", "fighter", "loud"],
+          "safeHooks": ["insult contest", "sparring", "rival bet"]
+        },
+        {
+          "id": "mara",
+          "name": "Mara",
+          "role": "D-rank mage",
+          "defaultMood": "quietly_observant",
+          "tags": ["mage", "patient", "subtle_clues"],
+          "safeHooks": ["magic warning", "ruin rumor", "Dain correction"]
+        },
+        {
+          "id": "kael",
+          "name": "Kael",
+          "role": "E-rank rogue",
+          "defaultMood": "hero_worship",
+          "tags": ["rookie", "rogue", "nervous", "admires_bin"],
+          "safeHooks": ["rookie advice", "missing kit", "scouting trouble"]
+        },
+        {
+          "id": "brinna_twins",
+          "name": "Ella and Nessa Brinna",
+          "role": "F-rank rival sisters",
+          "defaultMood": "friendly_debt_collectors",
+          "tags": ["rivals", "twins", "comedy", "debt"],
+          "safeHooks": ["three silver debt", "friendly competition", "petty rivalry"]
+        },
+        {
+          "id": "hilda_ironhand",
+          "name": "Hilda Ironhand",
+          "role": "forge master",
+          "defaultMood": "measuring_everyone_by_boot_noise",
+          "tags": ["forge", "crafting", "repair", "deadpan"],
+          "safeHooks": ["repair job", "ore shortage", "weapon banter"]
+        }
+      ],
+      "hubStats": {
+        "security": { "min": -10, "max": 10, "default": 0 },
+        "prosperity": { "min": -10, "max": 10, "default": 0 },
+        "warmth": { "min": -10, "max": 10, "default": 0 },
+        "weirdness": { "min": -10, "max": 10, "default": 0 }
+      },
+      "startingProblems": ["bin_death_paperwork", "firemoss_shortage"],
+      "eventTables": {
+        "town": "haven_frostbitten_town_events",
+        "guild": "haven_frostbitten_guild_events",
+        "tavern": "haven_frostbitten_tavern_events",
+        "forge": "haven_frostbitten_forge_events",
+        "weird": "haven_frostbitten_weird_events"
+      },
+      "notes": "Starting living hub. Keep main-story revelations under GM control."
+    }
+  ]
+}

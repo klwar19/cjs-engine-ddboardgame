@@ -1,0 +1,33 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "campaignProfiles",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "carryover_new_world_default",
+      "name": "New World Default Carryover",
+      "keep": {
+        "jp": true,
+        "pocketHaven": true,
+        "universalItems": true,
+        "selectedEquipment": true,
+        "relationshipNotes": true,
+        "majorStoryFlags": true
+      },
+      "reset": {
+        "worldCurrency": true,
+        "worldQuestItems": true,
+        "worldQuestProgress": true,
+        "temporaryStatuses": true,
+        "activeScenarioRun": true,
+        "mapState": true
+      },
+      "manualReview": true,
+      "description": "Archive world-local state, keep universal campaign progress, and let the GM review the transition."
+    }
+  ]
+}

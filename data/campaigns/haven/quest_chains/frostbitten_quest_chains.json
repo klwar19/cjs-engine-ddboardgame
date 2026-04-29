@@ -1,0 +1,169 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "questChains",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_qchains_frostbitten",
+      "name": "Frostbitten Quest Chains",
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "hubId": "haven_hub_frostbitten",
+      "chains": [
+        {
+          "id": "haven_qchain_frostcap_fever",
+          "title": "Frostcap Fever",
+          "canonRisk": "green",
+          "type": "gathering -> mystery -> light combat -> town consequence",
+          "tags": ["food", "gathering", "cooking", "starter"],
+          "mainNpcs": ["tessa", "frosted_mug_cook", "corvin"],
+          "summary": "A safe mushroom-gathering job becomes a useful first field run for Bin's returning party.",
+          "steps": [
+            { "id": "guild_request", "label": "Guild Request", "text": "Collect Frostcap Mushrooms from the Frostwood edge." },
+            { "id": "map_seed", "label": "Map Seed", "text": "Use Frostcap Grove as the route." },
+            { "id": "warm_snow", "label": "Warm Snow", "text": "Mushrooms grow in a perfect circle around warm snow." },
+            { "id": "slime_nest", "label": "Light Battle", "text": "Use the Frost Slime Nest battle card or resolve manually." },
+            { "id": "return_stew", "label": "Return", "text": "The Frosted Mug can make Warm Stew again." }
+          ],
+          "battleSetIds": ["haven_bset_frost_sprite_grove"],
+          "mapSeedIds": ["haven_mseed_frostcap_grove"],
+          "rewardOps": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 20 },
+            { "op": "unlock_recipe", "recipeId": "warm_stew" },
+            { "op": "reputation_change", "target": "haven_zon_frostbitten", "amount": 2 },
+            { "op": "bond_change", "npcId": "tessa", "field": "trust", "amount": 2 }
+          ],
+          "failureOps": [
+            { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "warm_stew_shortage", "label": "Warm Stew Shortage" }
+          ],
+          "followUpHooks": ["One mushroom does not rot. It hums when Bin touches it. Promote only as yellow-risk content."]
+        },
+        {
+          "id": "haven_qchain_ledger_of_the_ghost",
+          "title": "The Ledger of the Ghost",
+          "canonRisk": "green",
+          "type": "town comedy -> social challenge -> optional duel",
+          "tags": ["paperwork", "guild", "comedy", "bin_return"],
+          "mainNpcs": ["corvin", "lysa", "dain", "brinna_twins"],
+          "summary": "Corvin needs proof that Bin is alive enough to sign guild forms.",
+          "steps": [
+            { "id": "paperwork_problem", "label": "Paperwork Problem", "text": "Gather signatures proving Bin is alive." },
+            { "id": "required_signatures", "label": "Required Signatures", "text": "Garr, Tessa, Lysa, and the Brinna Twins each sign for different reasons." },
+            { "id": "dain_loophole", "label": "Dain's Claim", "text": "Dain says Bin is exploiting a dramatic return loophole." },
+            { "id": "public_choice", "label": "Public Choice", "text": "Ignore Dain or roast him publicly." },
+            { "id": "stamp_restored", "label": "Stamp Restored", "text": "The guild stamp finally accepts Bin's name." }
+          ],
+          "battleSetIds": ["haven_bset_guild_sparring_dain"],
+          "rewardOps": [
+            { "op": "set_flag", "flag": "bin_guild_status_restored" },
+            { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "bin_death_paperwork" },
+            { "op": "give_jp", "amount": 1 },
+            { "op": "reputation_change", "target": "haven_zon_frostbitten", "amount": 1 }
+          ],
+          "failureOps": [
+            { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "bin_death_paperwork", "label": "Bin Death Paperwork" }
+          ]
+        },
+        {
+          "id": "haven_qchain_warm_lights_cold_hands",
+          "title": "Warm Lights, Cold Hands",
+          "canonRisk": "green",
+          "type": "supply problem -> escort -> ambush -> hub repair",
+          "tags": ["survival", "firemoss", "escort", "battle"],
+          "mainNpcs": ["tessa", "hilda_ironhand", "kael"],
+          "summary": "The missing firemoss shipment needs a short supply-trail run before Frostbitten's burners dim.",
+          "steps": [
+            { "id": "shortage_posted", "label": "Shortage Posted", "text": "Tessa posts the firemoss shortage as a local priority." },
+            { "id": "south_gate", "label": "South Gate", "text": "Choose who watches the sled and who scouts ahead." },
+            { "id": "broken_sled", "label": "Broken Sled", "text": "Repair, search, or abandon a damaged carrier sled." },
+            { "id": "snowblind_ridge", "label": "Snowblind Ridge", "text": "Use Bandit Taxmen or Wolf Pack at Bent Pine." },
+            { "id": "cache_return", "label": "Cache Return", "text": "Return the firemoss cache to town." }
+          ],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bandit_taxmen_snowblind"],
+          "mapSeedIds": ["haven_mseed_frostwood_supply_trail"],
+          "rewardOps": [
+            { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "firemoss_shortage" },
+            { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": 2 },
+            { "op": "give_money", "currency": "haven_gold", "amount": 18 },
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 }
+          ],
+          "failureOps": [
+            { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": -2 },
+            { "op": "clock_tick", "clockId": "cold_exposure", "label": "Cold Exposure", "max": 6, "amount": 1 }
+          ]
+        },
+        {
+          "id": "haven_qchain_ironhand_errand",
+          "title": "Ironhand Errand",
+          "canonRisk": "green",
+          "type": "forge repair -> material hunt -> recipe unlock",
+          "tags": ["forge", "crafting", "materials", "repair"],
+          "mainNpcs": ["hilda_ironhand", "bowy"],
+          "summary": "Hilda needs frost-resistant binding material before the forge can repair winter gear reliably.",
+          "steps": [
+            { "id": "bad_iron", "label": "Bad Iron", "text": "Hilda explains the repair queue and bad iron shipment." },
+            { "id": "pelt_wraps", "label": "Grip Wraps", "text": "Gather wolf pelts or bear hide for winter grip wraps." },
+            { "id": "forge_check", "label": "Forge Check", "text": "Run a crafting check or spend extra material." },
+            { "id": "field_test", "label": "Field Test", "text": "Use the repaired gear in one fight or travel segment." },
+            { "id": "recipe_card", "label": "Recipe Card", "text": "Hilda writes down a basic cloak recipe, badly." }
+          ],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "rewardOps": [
+            { "op": "unlock_recipe", "recipeId": "haven_recipe_wolf_fur_cloak" },
+            { "op": "hub_service_unlock", "hubId": "haven_hub_frostbitten", "serviceId": "ironhand_pelt_wrap_discount" },
+            { "op": "bond_change", "npcId": "hilda_ironhand", "field": "trust", "amount": 2 }
+          ]
+        },
+        {
+          "id": "haven_qchain_thunder_needs_a_voice",
+          "title": "Thunder Needs a Voice",
+          "canonRisk": "yellow",
+          "type": "Bowy side job -> trail clue -> battle -> character beat",
+          "tags": ["bowy", "side_character", "wolf", "yellow"],
+          "mainNpcs": ["bowy", "garr", "mara"],
+          "summary": "Bowy follows a trail of old crossbow bolts toward a wolf den. Keep Garr clues soft unless GM promotes them.",
+          "steps": [
+            { "id": "broken_bolt", "label": "Broken Bolt", "text": "Bowy finds an old bolt that warms in his hand." },
+            { "id": "frozen_creek", "label": "Frozen Creek Trail", "text": "Use the Frozen Creek Trail map seed." },
+            { "id": "hunter_marker", "label": "Hunter's Marker", "text": "A marker suggests someone knew this route well." },
+            { "id": "wolf_den", "label": "Wolf Den", "text": "Use a wolf battle set or resolve manually." },
+            { "id": "quiet_return", "label": "Quiet Return", "text": "Bowy decides what kind of archer he wants to be." }
+          ],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine"],
+          "mapSeedIds": ["haven_mseed_frozen_creek_trail"],
+          "rewardOps": [
+            { "op": "give_material", "id": "haven_frost_fang", "qty": 1 },
+            { "op": "bond_change", "npcId": "haven_bowy", "field": "confidence", "amount": 1 }
+          ],
+          "gmNote": "Do not force Garr's hidden truth. This is a soft character beat."
+        },
+        {
+          "id": "haven_qchain_three_silver_discount",
+          "title": "Three Silver and a Funeral Discount",
+          "canonRisk": "green",
+          "type": "rival comedy -> small jobs -> social reward",
+          "tags": ["brinna_twins", "debt", "comedy", "town"],
+          "mainNpcs": ["brinna_twins", "lysa", "corvin"],
+          "summary": "The Brinna Twins claim Bin's old three-silver debt accrued emotional interest while he was missing.",
+          "steps": [
+            { "id": "debt_claim", "label": "Debt Claim", "text": "Hear the twins' itemized argument." },
+            { "id": "receipt_hunt", "label": "Receipt Hunt", "text": "Search town for proof of the original debt." },
+            { "id": "tiny_jobs", "label": "Tiny Jobs", "text": "Do one tiny helpful town task." },
+            { "id": "public_arbitration", "label": "Public Arbitration", "text": "Let Lysa or Corvin arbitrate the absurd interest." },
+            { "id": "friendly_rivals", "label": "Friendly Rivals", "text": "Turn the debt into a recurring friendly rivalry." }
+          ],
+          "rewardOps": [
+            { "op": "give_jp", "amount": 1 },
+            { "op": "bond_change", "npcId": "brinna_twins", "field": "friendship", "amount": 2 },
+            { "op": "reputation_change", "target": "haven_zon_frostbitten", "amount": 1 }
+          ]
+        }
+      ]
+    }
+  ]
+}

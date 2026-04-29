@@ -1,0 +1,69 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignEvents",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_frostwood_events",
+      "name": "Frostwood Minor Events",
+      "world": "haven",
+      "entries": [
+        {
+          "weight": 30,
+          "id": "haven_evt_tracks_in_snow",
+          "type": "hybrid",
+          "title": "Tracks in the Snow",
+          "prompt": "Fresh tracks cross the party path, but one set walks backward.",
+          "suggested": [
+            { "op": "roll_check", "stat": "P", "dc": 10 },
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 20,
+          "id": "haven_evt_weak_ice",
+          "type": "trap",
+          "title": "Weak Ice",
+          "prompt": "Snow hides a thin ice shelf.",
+          "check": {
+            "stat": "A",
+            "dc": 12,
+            "fail": [
+              { "op": "damage_party", "amount": 5 },
+              { "op": "add_status", "target": "party_random", "status": "cold", "duration": "scenario" }
+            ]
+          },
+          "suggested": [
+            { "op": "roll_check", "stat": "A", "dc": 12 }
+          ]
+        },
+        {
+          "weight": 25,
+          "id": "haven_evt_frost_herbs",
+          "type": "reward",
+          "title": "Frost Herbs",
+          "prompt": "A blue herb cluster grows where sunlight breaks the canopy.",
+          "suggested": [
+            { "op": "give_material", "id": "haven_ice_crystal", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 25,
+          "id": "haven_evt_hungry_howl",
+          "type": "mechanical",
+          "title": "Hungry Howl",
+          "prompt": "A long howl rolls through the trees.",
+          "suggested": [
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "The forest answers with distant howls." }
+          ]
+        }
+      ]
+    }
+  ]
+}
