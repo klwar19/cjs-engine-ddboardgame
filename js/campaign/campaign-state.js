@@ -118,7 +118,9 @@ window.CJS.CampaignState = (() => {
 
   function getActiveMap() {
     const run = _state?.activeScenarioRun;
-    return run ? _content.scenarioMaps[run.mapId] || null : null;
+    if (!run) return null;
+    if (run.proceduralMap) return run.proceduralMap;
+    return _content.scenarioMaps[run.mapId] || null;
   }
 
   function createNewSave(campaignId, options = {}) {

@@ -1,0 +1,84 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarios",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_scn_sewer_crawl",
+      "name": "Sewer Crawl",
+      "world": "haven",
+      "type": "adventure",
+      "phaseCost": 1,
+      "travelMode": "linear",
+      "setting": "urban",
+      "size": "tiny",
+      "danger": { "start": 0, "max": 6 },
+      "limits": { "campRests": 0, "events": 1, "randomBattles": 1 },
+      "entrySnapshot": true,
+      "entryOps": [
+        { "op": "log", "text": "The party drops into the cracked sewer." }
+      ],
+      "exitOps": [
+        { "op": "pass_phase" }
+      ],
+      "beats": [
+        {
+          "id": "beat_grate",
+          "kind": "trap",
+          "label": "Rusted Grate",
+          "prompt": "A rusted iron grate seals the path. Force it, pry it, or squeeze through?",
+          "check": {
+            "type": "stat",
+            "stat": "S",
+            "dc": 10,
+            "success": [{ "op": "log", "text": "The grate gives way cleanly." }],
+            "fail": [{ "op": "damage_party", "amount": 2 }, { "op": "log", "text": "Sharp metal scrapes everyone." }]
+          }
+        },
+        {
+          "id": "beat_event_drips",
+          "kind": "event",
+          "label": "Glowing Drip",
+          "prompt": "Phosphorescent goo drips from the ceiling. Bottle it for later or smear it on a torch?",
+          "ops": [
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 2 },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Two flasks of phosphor saved. Light is louder now." }
+          ]
+        },
+        {
+          "id": "beat_battle_rats",
+          "kind": "battle",
+          "label": "Pack of Rats",
+          "encounterId": "haven_enc_wolf_pack"
+        },
+        {
+          "id": "beat_reward",
+          "kind": "reward",
+          "label": "Forgotten Stash",
+          "ops": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 25 },
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
+            { "op": "log", "text": "A waterproof crate yields coins and a stashed pelt." }
+          ]
+        },
+        {
+          "id": "beat_exit",
+          "kind": "exit",
+          "label": "Climb Back Up",
+          "ops": [{ "op": "log", "text": "The party climbs back to the street." }]
+        }
+      ],
+      "successConditions": [
+        { "type": "complete_beats" }
+      ],
+      "failureConditions": [],
+      "notes": "Tiny linear quest. No map shown. Each tap on Next Beat advances one step."
+    }
+  ]
+}

@@ -62,6 +62,70 @@
             { "op": "danger", "amount": 1 },
             { "op": "log", "text": "The forest answers with distant howls." }
           ]
+        },
+        {
+          "weight": 12,
+          "id": "haven_evt_buried_cache",
+          "type": "reward",
+          "title": "Buried Cache",
+          "prompt": "A frozen knot of rope leads to a buried trapper's cache.",
+          "suggested": [
+            { "op": "give_item", "id": "haven_minor_potion", "qty": 1 },
+            { "op": "give_money", "currency": "haven_gold", "amount": 12 }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_lost_lantern",
+          "type": "social",
+          "title": "Lost Lantern",
+          "prompt": "A frostbitten traveler wanders the trees, missing a lantern.",
+          "suggested": [
+            { "op": "take_item", "id": "haven_minor_potion", "qty": 1 },
+            { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
+            { "op": "log", "text": "The traveler swears to repay Haven if it can be done." }
+          ]
+        },
+        {
+          "weight": 12,
+          "id": "haven_evt_wolf_kit",
+          "type": "encounter",
+          "title": "Wolf Pup",
+          "prompt": "A pup follows the party. Mother is somewhere nearby.",
+          "suggested": [
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Pack will be drawn to the trail." }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_bowy_old_target",
+          "type": "social",
+          "title": "Bowy's Old Target",
+          "prompt": "An arrow with familiar fletching is buried in a trunk.",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_bowy_old_quarry", "value": true },
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_sudden_storm",
+          "type": "trap",
+          "title": "Sudden Storm",
+          "prompt": "Wind picks up. Visibility collapses.",
+          "check": {
+            "stat": "P",
+            "dc": 12,
+            "fail": [
+              { "op": "damage_party", "amount": 3 },
+              { "op": "add_status", "target": "party", "status": "cold", "duration": "scenario" },
+              { "op": "danger", "amount": 1 }
+            ]
+          },
+          "suggested": [
+            { "op": "roll_check", "stat": "P", "dc": 12 }
+          ]
         }
       ]
     }

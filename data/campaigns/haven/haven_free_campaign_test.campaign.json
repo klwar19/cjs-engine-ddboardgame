@@ -68,9 +68,14 @@
           "questTimersAdvance": true
         }
       ],
-      "scenarios": ["haven_scn_frostwood_short_run"],
+      "scenarios": [
+        "haven_scn_frostwood_short_run",
+        "haven_scn_sewer_crawl",
+        "haven_scn_wolf_hunt_freeform",
+        "haven_scn_lost_temple_procedural"
+      ],
       "maps": ["haven_map_frostwood_short_route"],
-      "eventTables": ["haven_generic_events", "haven_frostwood_events"],
+      "eventTables": ["haven_generic_events", "haven_frostwood_events", "haven_urban_events", "haven_aftermath_events"],
       "questTemplates": ["haven_basic_quest_templates"],
       "carryoverProfiles": ["carryover_new_world_default"],
       "hubs": ["haven_hub_frostbitten"],

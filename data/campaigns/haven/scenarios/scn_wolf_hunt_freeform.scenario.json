@@ -1,0 +1,48 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "scenarios",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_scn_wolf_hunt_freeform",
+      "name": "Wolf Hunt",
+      "world": "haven",
+      "type": "adventure",
+      "phaseCost": 1,
+      "travelMode": "freeform",
+      "setting": "outdoor",
+      "size": "small",
+      "danger": { "start": 1, "max": 8 },
+      "limits": { "campRests": 1, "events": 2, "randomBattles": 3 },
+      "entrySnapshot": true,
+      "entryOps": [
+        { "op": "log", "text": "The party fans out into the snowy thicket." }
+      ],
+      "exitOps": [
+        { "op": "pass_phase" }
+      ],
+      "setBattles": [
+        { "id": "alpha_wolf", "label": "Alpha Wolf Showdown", "encounterId": "haven_enc_wolf_pack" },
+        { "id": "snow_bear", "label": "Snow Bear Den", "encounterId": "haven_enc_bear_cave" }
+      ],
+      "randomBattleTables": [
+        {
+          "id": "wolf_hunt_random",
+          "name": "Frostwood Wandering Beasts",
+          "entries": [
+            { "weight": 70, "encounterId": "haven_enc_wolf_pack", "label": "Wolf Pack" },
+            { "weight": 30, "encounterId": "haven_enc_bear_cave", "label": "Lone Bear" }
+          ]
+        }
+      ],
+      "successConditions": [],
+      "failureConditions": [],
+      "notes": "Freeform hunt. No map. Roll random battles or pick a set battle when the moment fits."
+    }
+  ]
+}

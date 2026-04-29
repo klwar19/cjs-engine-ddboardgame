@@ -13,8 +13,24 @@ window.CJS.ScenarioRunner = (() => {
     const content = CS().getContent();
     const scenario = content.scenarios[scenarioId];
     if (!scenario) throw new Error(`Scenario not found: ${scenarioId}`);
-    const map = content.scenarioMaps[scenario.mapId];
-    const startNode = scenario.startNode || map?.defaultStartNode || map?.nodes?.[0]?.id || null;
+    const travelMode = scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform');
+
+    let map = null;
+    let proceduralMap = null;
+    let mapId = null;
+
+    if (travelMode === 'node_map') {
+      map = content.scenarioMaps[scenario.mapId];
+      mapId = scenario.mapId;
+    } else if (travelMode === 'procedural') {
+      proceduralMap = expandProceduralMap(scenario);
+      map = proceduralMap;
+      mapId = proceduralMap?.id || `proc_${scenarioId}`;
+    }
+
+    const startNode = travelMode === 'node_map' || travelMode === 'procedural'
+      ? (scenario.startNode || map?.defaultStartNode || map?.nodes?.[0]?.id || null)
+      : null;
     const entrySnapshot = _snapshotForReport(CS().getState());
 
     CS().mutate((state) => {
@@ -23,8 +39,12 @@ window.CJS.ScenarioRunner = (() => {
       state.activeScenarioRun = {
         runId,
         scenarioId,
-        mapId: scenario.mapId,
+        travelMode,
+        mapId,
+        proceduralMap,
         currentNode: startNode,
+        currentBeatIndex: travelMode === 'linear' ? 0 : null,
+        completedBeats: [],
         startedAtPhase: state.phase.number || 1,
         danger: scenario.danger?.start || 0,
         dangerMax: scenario.danger?.max || 10,
@@ -38,13 +58,15 @@ window.CJS.ScenarioRunner = (() => {
         entrySnapshot,
         notes: []
       };
-      const mapState = state.mapState[scenario.mapId] = state.mapState[scenario.mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
-      for (const nodeId of revealed) mapState.revealed[nodeId] = true;
-      if (startNode) mapState.visited[startNode] = true;
+      if (mapId) {
+        const mapState = state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
+        for (const nodeId of revealed) mapState.revealed[nodeId] = true;
+        if (startNode) mapState.visited[startNode] = true;
+      }
     }, { source: 'scenario_start' });
 
     Ops().apply(scenario.entryOps || [], { source: 'scenario_entry' });
-    Ops().apply({ op: 'log', text: `Scenario started: ${scenario.name || scenario.id}.` }, { source: 'scenario' });
+    Ops().apply({ op: 'log', text: `Scenario started: ${scenario.name || scenario.id} (${travelMode}).` }, { source: 'scenario' });
     return CS().getState().activeScenarioRun;
   }
 
@@ -110,6 +132,215 @@ window.CJS.ScenarioRunner = (() => {
     const chance = Number(randomBattle.chance ?? 1);
     if (Math.random() > chance) return null;
     return rollRandomBattle(randomBattle.table);
+  }
+
+  function advanceLinearBeat() {
+    const state = CS().getState();
+    const run = state?.activeScenarioRun;
+    const scenario = CS().getActiveScenario();
+    if (!run || run.travelMode !== 'linear' || !scenario?.beats?.length) return null;
+
+    const idx = run.currentBeatIndex ?? 0;
+    if (idx >= scenario.beats.length) {
+      Ops().apply({ op: 'log', text: 'All beats complete.' }, { source: 'scenario' });
+      return null;
+    }
+    const beat = scenario.beats[idx];
+
+    if (beat.kind === 'battle' && beat.encounterId) {
+      const pending = {
+        encounterId: beat.encounterId,
+        label: beat.label || beat.encounterId,
+        beatId: beat.id,
+        source: 'beat'
+      };
+      CS().mutate((next) => { next.pendingBattle = pending; }, { source: 'beat_battle' });
+      Ops().apply({ op: 'log', text: `Beat ${idx + 1}: battle queued (${pending.label}).` }, { source: 'scenario' });
+    } else if (beat.kind === 'event') {
+      const event = {
+        id: beat.id,
+        title: beat.label || 'Event',
+        prompt: beat.prompt || '',
+        suggested: beat.ops || [],
+        rolledAt: new Date().toISOString(),
+        source: 'beat'
+      };
+      CS().mutate((s) => { s.lastEvent = event; }, { source: 'beat_event' });
+      Ops().apply({ op: 'log', text: `Beat ${idx + 1}: event (${event.title}).` }, { source: 'scenario' });
+    } else if (beat.kind === 'rest') {
+      Ops().apply({ op: 'camp_rest', dangerChange: beat.dangerChange ?? -1 }, { source: 'beat_rest' });
+    } else if (beat.kind === 'reward' && Array.isArray(beat.ops)) {
+      Ops().apply(beat.ops, { source: 'beat_reward' });
+    } else if (beat.kind === 'trap' && beat.check) {
+      CS().mutate((s) => {
+        s.lastEvent = { type: 'trap', title: beat.label || 'Trap', prompt: beat.prompt || '', suggested: [_checkToOperation(beat.check)] };
+      }, { source: 'beat_trap' });
+    } else if (Array.isArray(beat.ops)) {
+      Ops().apply(beat.ops, { source: 'beat_ops' });
+    }
+
+    CS().mutate((next) => {
+      const r = next.activeScenarioRun;
+      if (!r) return;
+      r.completedBeats = r.completedBeats || [];
+      r.completedBeats.push(beat.id);
+      r.currentBeatIndex = idx + 1;
+    }, { source: 'beat_advance' });
+
+    return beat;
+  }
+
+  function expandProceduralMap(scenario) {
+    const seedRef = _resolveMapSeed(scenario);
+    if (!seedRef) return null;
+    const nodes = _layoutSeedNodes(seedRef);
+    return {
+      id: `proc_${scenario.id}_${seedRef.id}`,
+      name: seedRef.name || scenario.name || 'Procedural Map',
+      type: 'node_map',
+      world: scenario.world || seedRef.world || null,
+      defaultStartNode: nodes[0]?.id || null,
+      nodes,
+      _procedural: true,
+      _seedId: seedRef.id
+    };
+  }
+
+  function _resolveMapSeed(scenario) {
+    const Loader = window.CJS.CampaignDataLoader;
+    if (!Loader) return null;
+    if (scenario.mapSeedId) {
+      const direct = Loader.getMapSeed(scenario.mapSeedId);
+      if (direct) return direct;
+    }
+    const pool = Loader.getMapSeeds(scenario.world || null);
+    if (Array.isArray(scenario.mapSeedTags) && scenario.mapSeedTags.length) {
+      const tagged = pool.filter((s) => scenario.mapSeedTags.every((tag) => (s.tags || []).includes(tag)));
+      if (tagged.length) return _pick(tagged);
+    }
+    if (pool.length) return _pick(pool);
+    return null;
+  }
+
+  function _layoutSeedNodes(seed) {
+    const seedNodes = seed.nodes || [];
+    if (!seedNodes.length) return [];
+    const links = seed.links || [];
+    const exitsById = {};
+    for (const [a, b] of links) {
+      exitsById[a] = exitsById[a] || [];
+      exitsById[b] = exitsById[b] || [];
+      exitsById[a].push(b);
+      exitsById[b].push(a);
+    }
+    const width = 660;
+    const height = 380;
+    const padX = 70;
+    const padY = 60;
+    const cols = Math.max(seedNodes.length, 2);
+    const rng = _seededRng(seed.id || 'proc');
+    return seedNodes.map((node, idx) => {
+      const t = cols === 1 ? 0.5 : idx / (cols - 1);
+      const baseX = padX + t * (width - 2 * padX);
+      const jitterX = (rng() - 0.5) * 30;
+      const yMid = height / 2;
+      const yJitter = (rng() - 0.5) * (height - 2 * padY);
+      const kind = _seedRoleToKind(node.role);
+      const exits = (exitsById[node.id] || []).map((to) => ({ to, label: `Travel to ${seedNodes.find((n) => n.id === to)?.name || to}` }));
+      return {
+        id: node.id,
+        title: node.name || node.id,
+        kind,
+        x: Math.round(baseX + jitterX),
+        y: Math.round(yMid + yJitter),
+        tags: node.tags || [],
+        notes: node.notes || node.role || '',
+        discoveredByDefault: idx === 0,
+        battleSetIds: node.battleSetIds || [],
+        randomBattle: kind === 'battle' || kind === 'boss' || kind === 'event_battle'
+          ? (node.battleSetIds?.length ? { chance: 0.85, table: node.battleSetIds[0] } : undefined)
+          : undefined,
+        onEnter: _onEnterOpsForRole(node, kind),
+        exits
+      };
+    });
+  }
+
+  function _onEnterOpsForRole(node, kind) {
+    const ops = [];
+    if (kind === 'reward') {
+      ops.push({ op: 'give_money', currency: _activeCurrency(), amount: 18 });
+      ops.push({ op: 'give_material', id: _pickWorldMaterial(), qty: 1 });
+      ops.push({ op: 'log', text: `Reward node: ${node.name || node.id}.` });
+    } else if (kind === 'trap') {
+      ops.push({ op: 'damage_party', amount: 4 });
+      ops.push({ op: 'danger', amount: 1 });
+      ops.push({ op: 'log', text: `Trap triggered at ${node.name || node.id}.` });
+    } else if (kind === 'rest') {
+      ops.push({ op: 'heal_party', amount: 8 });
+      ops.push({ op: 'log', text: `Brief rest at ${node.name || node.id}.` });
+    } else if (kind === 'shop') {
+      ops.push({ op: 'log', text: `Small offering / cache at ${node.name || node.id}.` });
+      ops.push({ op: 'give_money', currency: _activeCurrency(), amount: 8 });
+    } else if (kind === 'boss') {
+      ops.push({ op: 'danger', amount: 2 });
+      ops.push({ op: 'log', text: `Boss approach: ${node.name || node.id}.` });
+    } else if (kind === 'event_battle') {
+      const tableId = _campaignEventTableId();
+      if (tableId) ops.push({ op: 'roll_event', table: tableId, chance: 0.6 });
+    }
+    return ops.length ? ops : undefined;
+  }
+
+  function _activeCurrency() {
+    const world = CS().getState()?.currentWorld || 'haven';
+    return `${world}_gold`;
+  }
+
+  function _pickWorldMaterial() {
+    const world = CS().getState()?.currentWorld;
+    const DS = window.CJS.DataStore;
+    const all = DS ? DS.getAllAsArray('materials') : [];
+    const list = all.filter((m) => !m._world || m._world === world);
+    if (!list.length) return 'haven_wolf_pelt';
+    return list[Math.floor(Math.random() * list.length)].id;
+  }
+
+  function _campaignEventTableId() {
+    const campaign = CS().getCurrentCampaign();
+    const world = CS().getState()?.currentWorld;
+    const list = campaign?.eventTables || [];
+    return list.find((id) => id.includes(world)) || list[0] || null;
+  }
+
+  function _seedRoleToKind(role) {
+    const r = String(role || '').toLowerCase();
+    if (r.includes('entrance')) return 'entrance';
+    if (r.includes('exit') || r.includes('return')) return 'exit';
+    if (r.includes('battle')) return 'battle';
+    if (r.includes('boss')) return 'boss';
+    if (r.includes('trap')) return 'trap';
+    if (r.includes('rest') || r.includes('camp')) return 'rest';
+    if (r.includes('shop') || r.includes('reward')) return 'shop';
+    return 'event_battle';
+  }
+
+  function _seededRng(seedStr) {
+    let h = 2166136261;
+    for (let i = 0; i < seedStr.length; i++) {
+      h ^= seedStr.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return () => {
+      h = Math.imul(h ^ (h >>> 15), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      h ^= h >>> 16;
+      return ((h >>> 0) / 4294967296);
+    };
+  }
+
+  function _pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 
   function rollRandomBattle(tableId) {
@@ -232,6 +463,8 @@ window.CJS.ScenarioRunner = (() => {
     startScenario,
     endScenario,
     moveToNode,
+    advanceLinearBeat,
+    expandProceduralMap,
     maybeTriggerRandomBattle,
     rollRandomBattle,
     findNode,

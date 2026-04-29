@@ -1,0 +1,93 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "mapSeeds",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_mseeds_haven_extra",
+      "name": "Haven Extra Map Seeds",
+      "world": "haven",
+      "seeds": [
+        {
+          "id": "haven_mseed_ice_cave_descent",
+          "name": "Ice Cave Descent",
+          "purpose": ["dungeon", "boss option", "crafting material"],
+          "canonRisk": "green",
+          "tags": ["cave", "ice", "dungeon"],
+          "nodes": [
+            { "id": "cave_mouth", "name": "Cave Mouth", "role": "entrance", "notes": "Wind whistles down the throat of the cave." },
+            { "id": "frozen_pool", "name": "Frozen Pool", "role": "trap", "notes": "Ice cracks under weight." },
+            { "id": "icicle_corridor", "name": "Icicle Corridor", "role": "battle", "battleSetIds": ["haven_enc_wolf_pack"] },
+            { "id": "echo_chamber", "name": "Echo Chamber", "role": "clue", "notes": "Voices that aren't anyone's." },
+            { "id": "deep_shelf", "name": "Deep Shelf", "role": "reward", "notes": "Old crystal cluster." },
+            { "id": "boss_pit", "name": "Boss Pit", "role": "boss", "battleSetIds": ["haven_enc_chimera_boss"] },
+            { "id": "rope_back_up", "name": "Rope Back Up", "role": "exit" }
+          ],
+          "links": [
+            ["cave_mouth", "frozen_pool"],
+            ["frozen_pool", "icicle_corridor"],
+            ["icicle_corridor", "echo_chamber"],
+            ["echo_chamber", "deep_shelf"],
+            ["deep_shelf", "boss_pit"],
+            ["boss_pit", "rope_back_up"],
+            ["icicle_corridor", "rope_back_up"]
+          ],
+          "notes": "Branching cave. Skip the boss with the icicle-corridor shortcut."
+        },
+        {
+          "id": "haven_mseed_haven_undercity_run",
+          "name": "Haven Undercity Run",
+          "purpose": ["urban", "stealth-or-fight", "smuggler hooks"],
+          "canonRisk": "yellow",
+          "tags": ["urban", "sewer", "smuggler"],
+          "nodes": [
+            { "id": "south_drain", "name": "South Drain", "role": "entrance" },
+            { "id": "rusted_grate", "name": "Rusted Grate", "role": "trap" },
+            { "id": "smuggler_camp", "name": "Smuggler Camp", "role": "battle", "battleSetIds": ["haven_enc_wolf_pack"] },
+            { "id": "phosphor_pool", "name": "Phosphor Pool", "role": "reward" },
+            { "id": "brick_chapel", "name": "Brick Chapel", "role": "clue" },
+            { "id": "merchant_door", "name": "Merchant's Back Door", "role": "exit" }
+          ],
+          "links": [
+            ["south_drain", "rusted_grate"],
+            ["rusted_grate", "smuggler_camp"],
+            ["smuggler_camp", "phosphor_pool"],
+            ["phosphor_pool", "brick_chapel"],
+            ["brick_chapel", "merchant_door"],
+            ["rusted_grate", "merchant_door"]
+          ],
+          "notes": "Two-route city undercrawl. Phosphor route is richer; back door is faster."
+        },
+        {
+          "id": "haven_mseed_old_ruins_walk",
+          "name": "Old Ruins Walk",
+          "purpose": ["outdoor", "ruin", "exploration"],
+          "canonRisk": "green",
+          "tags": ["ruins", "outdoor"],
+          "nodes": [
+            { "id": "ruin_arch", "name": "Ruin Arch", "role": "entrance" },
+            { "id": "fallen_pillar", "name": "Fallen Pillar", "role": "clue" },
+            { "id": "broken_courtyard", "name": "Broken Courtyard", "role": "battle", "battleSetIds": ["haven_enc_temple_floor1"] },
+            { "id": "sunken_well", "name": "Sunken Well", "role": "trap" },
+            { "id": "shrine_hub", "name": "Old Shrine Hub", "role": "reward" },
+            { "id": "moss_path", "name": "Moss Path Out", "role": "exit" }
+          ],
+          "links": [
+            ["ruin_arch", "fallen_pillar"],
+            ["fallen_pillar", "broken_courtyard"],
+            ["broken_courtyard", "shrine_hub"],
+            ["broken_courtyard", "sunken_well"],
+            ["sunken_well", "shrine_hub"],
+            ["shrine_hub", "moss_path"]
+          ],
+          "notes": "Outdoor ruin. Skipping the well takes you straight through the broken guardians."
+        }
+      ]
+    }
+  ]
+}
