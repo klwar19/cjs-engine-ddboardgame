@@ -15,6 +15,7 @@ window.CJS.CampaignUI = (() => {
   const Runner = () => window.CJS.ScenarioRunner;
   const Bridge = () => window.CJS.CampaignCombatBridge;
   const Side = () => window.CJS.CampaignSideContent;
+  const Gen = () => window.CJS.CampaignScenarioGenerator;
 
   let _root = null;
   let _activeMode = 'town';
@@ -194,7 +195,7 @@ window.CJS.CampaignUI = (() => {
   function _renderScenarioHud(state) {
     const run = state.activeScenarioRun;
     if (!run) return '<div class="campaign-hud-spacer"></div>';
-    const scenario = CS().getContent().scenarios[run.scenarioId];
+    const scenario = CS().getScenarioById(run.scenarioId);
     return `
       <div class="campaign-scenario-hud">
         <span class="campaign-pill is-current">${_esc(scenario?.name || run.scenarioId)}</span>
@@ -551,7 +552,7 @@ window.CJS.CampaignUI = (() => {
         </section>
       `;
     }
-    const scenario = CS().getContent().scenarios[run.scenarioId];
+    const scenario = CS().getScenarioById(run.scenarioId);
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
@@ -585,7 +586,7 @@ window.CJS.CampaignUI = (() => {
           <span class="campaign-pill">${_esc(_battleSourceLabel(battle))}</span>
         </div>
         <strong>${_esc(battle.label || battle.encounterId)}</strong>
-        <div class="campaign-muted">${_esc(battle.encounterId || '')}</div>
+        <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || '')}</div>
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="run-battle" ${battle.encounterId ? '' : 'disabled'}>Run in Combat App</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Resolve Manually</button>
@@ -704,14 +705,53 @@ window.CJS.CampaignUI = (() => {
 
   function _renderScenarios(state) {
     const campaign = CS().getCurrentCampaign();
-    const scenarios = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
+    const authored = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
+    const generated = CS().getGeneratedScenarios ? CS().getGeneratedScenarios() : Object.values(state.sideContent?.generatedScenarios || {});
+    const scenarios = [...generated, ...authored];
     return `
-      <div class="campaign-tab-grid">
+      <div class="campaign-dashboard">
+        <section class="campaign-panel">
+          <div class="campaign-panel-head">
+            <h2>Generate Scenario</h2>
+            <span class="campaign-pill">Save-local</span>
+          </div>
+          <div class="campaign-generator-controls">
+            <label>Source
+              <select id="campaign-gen-source">
+                <option value="random">Random</option>
+                <option value="active_quest">Active Quest</option>
+                <option value="quest_chain">Quest Chain</option>
+              </select>
+            </label>
+            <label>Map Type
+              <select id="campaign-gen-map-type">
+                ${['any', 'urban', 'outdoor', 'dungeon', 'house', 'castle', 'mountain'].map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
+              </select>
+            </label>
+            <label>Size
+              <select id="campaign-gen-size">
+                ${['tiny', 'small', 'medium', 'large'].map((size) => `<option value="${size}" ${size === 'small' ? 'selected' : ''}>${_esc(_label(size))}</option>`).join('')}
+              </select>
+            </label>
+            <label>Layers
+              <select id="campaign-gen-layers">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+          </div>
+          <div class="campaign-action-grid">
+            <button class="campaign-action primary" data-campaign-action="generate-scenario" ${state.activeScenarioRun ? 'disabled' : ''}>Generate & Start</button>
+            <button class="campaign-action" data-campaign-action="generate-quest-scenario" ${state.activeScenarioRun ? 'disabled' : ''}>Quest-Based</button>
+          </div>
+        </section>
+        <div class="campaign-tab-grid">
         ${scenarios.map((scenario) => `
           <section class="campaign-panel">
             <div class="campaign-panel-head">
               <h3>${_esc(scenario.name || scenario.id)}</h3>
-              <span class="campaign-pill">${_esc(scenario.type || 'scenario')}</span>
+              <span class="campaign-pill">${_esc(scenario.generated ? 'generated' : (scenario.type || 'scenario'))}</span>
             </div>
             ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
@@ -721,6 +761,7 @@ window.CJS.CampaignUI = (() => {
             </div>
           </section>
         `).join('') || '<div class="campaign-empty">No scenarios available.</div>'}
+        </div>
       </div>
     `;
   }
@@ -806,10 +847,10 @@ window.CJS.CampaignUI = (() => {
           ${setBattles.map((b) => `
             <div class="campaign-row">
               <div>
-                <strong>${_esc(b.label || b.encounterId)}</strong>
-                <div class="campaign-muted">${_esc(b.encounterId || '')}</div>
+                <strong>${_esc(b.label || b.name || b.encounterId || b.battleSetId)}</strong>
+                <div class="campaign-muted">${_esc(b.encounterId || b.battleSetId || '')}</div>
               </div>
-              <button class="campaign-action" data-campaign-action="run-queue-set-battle" data-battle-id="${_escAttr(b.id || b.encounterId)}">Queue</button>
+              <button class="campaign-action" data-campaign-action="run-queue-set-battle" data-battle-id="${_escAttr(b.id || b.battleSetId || b.encounterId)}">Queue</button>
             </div>
           `).join('')}
         ` : ''}
@@ -1012,9 +1053,12 @@ window.CJS.CampaignUI = (() => {
       case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
       case 'run-tick-danger': return Ops().apply({ op: 'danger', amount: 1 }, { source: 'run' });
       case 'run-next-beat': return _runNextBeat();
+      case 'generate-scenario': return _generateScenario();
+      case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
       case 'start-scenario': return Runner().startScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
       case 'move-node': return _moveNode(data.nodeId);
+      case 'map-layer': return _setMapLayer(data.layer);
       case 'reveal-node': return Ops().apply({ op: 'reveal_node', nodeId: data.nodeId }, { source: 'ui' });
       case 'clear-node': return _clearNode(data.nodeId);
       case 'run-battle': return _runBattle();
@@ -1422,10 +1466,35 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  function _generateScenario(overrides = {}) {
+    if (CS().getState()?.activeScenarioRun) return UI().toast('End the active scenario before generating another', 'info');
+    const options = {
+      source: _root.querySelector('#campaign-gen-source')?.value || 'random',
+      mapType: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
+      size: _root.querySelector('#campaign-gen-size')?.value || 'small',
+      layers: Number(_root.querySelector('#campaign-gen-layers')?.value || 1),
+      ...overrides
+    };
+    const result = Gen().generateAndStart(options);
+    if (!result) return UI().toast('Scenario generation skipped', 'info');
+    _activeMode = 'scenario';
+    _activeTab = 'maps';
+    render();
+    UI().toast(`Started ${result.scenario.name}`, 'success');
+  }
+
+  function _setMapLayer(layer) {
+    if (!layer) return;
+    CS().mutate((state) => {
+      if (state.activeScenarioRun) state.activeScenarioRun.mapLayer = layer;
+    }, { source: 'map_layer' });
+  }
+
   function _moveNode(nodeId) {
     const current = Runner().findCurrentNode();
     const link = (current?.exits || []).find((exit) => exit.to === nodeId) || null;
-    Runner().moveToNode(nodeId, link);
+    const moved = Runner().moveToNode(nodeId, link);
+    if (!moved) UI().toast('That node is not connected from here yet', 'info');
   }
 
   function _clearNode(nodeId) {
@@ -1459,16 +1528,32 @@ window.CJS.CampaignUI = (() => {
     const scenario = CS().getActiveScenario();
     const seen = new Map();
     for (const set of scenario?.setBattles || []) {
-      if (set.encounterId && !seen.has(set.encounterId)) {
-        seen.set(set.encounterId, { value: set.encounterId, label: set.label || set.encounterId, sub: 'set' });
-      }
+      const value = set.id || set.battleSetId || set.encounterId;
+      if (!value || seen.has(value)) continue;
+      seen.set(value, { value, label: set.label || set.name || set.encounterId || set.battleSetId, sub: 'scenario', _battle: set });
     }
     for (const table of scenario?.randomBattleTables || []) {
       for (const entry of table.entries || []) {
-        if (entry.encounterId && !seen.has(entry.encounterId)) {
-          seen.set(entry.encounterId, { value: entry.encounterId, label: entry.label || entry.encounterId, sub: table.name || table.id });
-        }
+        const value = entry.id || entry.battleSetId || entry.encounterId;
+        if (!value || seen.has(value)) continue;
+        seen.set(value, { value, label: entry.label || entry.encounterId || entry.battleSetId, sub: table.name || table.id, _battle: entry });
       }
+    }
+    for (const card of window.CJS.CampaignBattleSetForge.getCards()) {
+      if (seen.has(card.id)) continue;
+      seen.set(card.id, {
+        value: card.id,
+        label: card.name || card.id,
+        sub: `battle set ${card.rank || ''}`.trim(),
+        _battle: {
+          battleSetId: card.id,
+          encounterId: card.encounterId || null,
+          label: card.name || card.id,
+          rewardOps: card.rewardOps || [],
+          objective: card.objective || '',
+          notes: card.gimmick || ''
+        }
+      });
     }
     const world = CS().getState()?.currentWorld;
     for (const enc of DS().getAllAsArray('encounters')) {
@@ -1485,7 +1570,16 @@ window.CJS.CampaignUI = (() => {
       primaryLabel: 'Queue Battle',
       onSubmit: ({ value }) => {
         const opt = seen.get(value);
-        const pending = { encounterId: value, label: opt?.label || value, source: 'manual_pick' };
+        const battle = opt?._battle || {};
+        const pending = {
+          encounterId: battle.battleSetId ? (battle.encounterId || null) : (battle.encounterId || value),
+          battleSetId: battle.battleSetId || null,
+          label: battle.label || opt?.label || value,
+          source: 'manual_pick',
+          rewardOps: battle.rewardOps || [],
+          objective: battle.objective || '',
+          notes: battle.notes || ''
+        };
         CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_pick_battle' });
         Ops().apply({ op: 'log', text: `Battle queued (manual pick): ${pending.label}.` }, { source: 'run' });
       }
@@ -1503,12 +1597,16 @@ window.CJS.CampaignUI = (() => {
 
   function _runQueueSetBattle(battleId) {
     const scenario = CS().getActiveScenario();
-    const battle = (scenario?.setBattles || []).find((b) => b.id === battleId || b.encounterId === battleId);
+    const battle = (scenario?.setBattles || []).find((b) => b.id === battleId || b.encounterId === battleId || b.battleSetId === battleId);
     if (!battle) return UI().toast('Set battle not found', 'error');
     const pending = {
-      encounterId: battle.encounterId,
-      label: battle.label || battle.encounterId,
-      source: 'set'
+      encounterId: battle.encounterId || null,
+      battleSetId: battle.battleSetId || null,
+      label: battle.label || battle.name || battle.encounterId || battle.battleSetId,
+      source: 'set',
+      rewardOps: battle.rewardOps || [],
+      objective: battle.objective || '',
+      notes: battle.notes || ''
     };
     CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_set_battle' });
     Ops().apply({ op: 'log', text: `Set battle queued: ${pending.label}.` }, { source: 'run' });
@@ -2105,6 +2203,10 @@ window.CJS.CampaignUI = (() => {
       primaryLabel,
       onSubmit: () => onSubmit(slider._getValue())
     });
+  }
+
+  function _label(value) {
+    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
   }
 
   function _safe(value) {

@@ -21,7 +21,14 @@ window.CJS.CampaignMap = (() => {
     }
 
     const mapState = state.mapState[map.id] || { revealed: {}, visited: {}, locked: {}, cleared: {} };
-    const nodes = (map.nodes || []).filter((node) => node.discoveredByDefault || mapState.revealed?.[node.id] || run.revealedNodes?.includes(node.id));
+    const layers = _layers(map);
+    const currentNode = Runner().findCurrentNode();
+    const activeLayer = run.mapLayer || _nodeLayer(currentNode) || layers[0]?.id || 'layer_1';
+    const revealedNodes = (map.nodes || []).filter((node) =>
+      node.discoveredByDefault || mapState.revealed?.[node.id] || run.revealedNodes?.includes(node.id));
+    const nodes = layers.length > 1
+      ? revealedNodes.filter((node) => _nodeLayer(node) === activeLayer)
+      : revealedNodes;
     const width = 680;
     const height = 420;
     const nodeById = Object.fromEntries((map.nodes || []).map((node) => [node.id, node]));
@@ -40,24 +47,33 @@ window.CJS.CampaignMap = (() => {
       const active = run.currentNode === node.id;
       const visited = mapState.visited?.[node.id] || run.visitedNodes?.includes(node.id);
       const locked = mapState.locked?.[node.id];
+      const cleared = mapState.cleared?.[node.id];
+      const kind = String(node.kind || 'node').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
       return `
-        <g class="campaign-map-node ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
+        <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
           <circle cx="${node.x}" cy="${node.y}" r="${active ? 20 : 16}"></circle>
-          <text x="${node.x}" y="${node.y + 4}" text-anchor="middle">${_nodeIcon(node)}</text>
+          <text class="campaign-map-icon" x="${node.x}" y="${node.y + 4}" text-anchor="middle">${_nodeIcon(node)}</text>
+          <text class="campaign-map-label" x="${node.x}" y="${node.y + 34}" text-anchor="middle">${_esc(_shortLabel(node.title || node.id))}</text>
         </g>
       `;
     }).join('');
 
-    const current = Runner().findCurrentNode();
     container.innerHTML = `
       <div class="campaign-map-shell">
+        <div class="campaign-map-head">
+          <div>
+            <h2>${_esc(map.name || 'Scenario Map')}</h2>
+            <span class="campaign-muted">${_esc(_mapMeta(map, nodes.length, revealedNodes.length))}</span>
+          </div>
+          ${_renderLayerTabs(layers, activeLayer)}
+        </div>
         <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}">
           <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-map-bg"></rect>
           ${lines.join('')}
           ${nodeMarkup}
         </svg>
         <div class="campaign-node-detail">
-          ${renderNodeDetail(current, mapState)}
+          ${renderNodeDetail(currentNode, mapState)}
         </div>
       </div>
     `;
@@ -81,18 +97,20 @@ window.CJS.CampaignMap = (() => {
   function renderNodeDetail(node, mapState = {}) {
     if (!node) return '<div class="campaign-empty">Select a node.</div>';
     const run = CS().getState()?.activeScenarioRun;
+    const map = CS().getActiveMap();
+    const isCurrent = run?.currentNode === node.id;
+    const canMove = _canMoveTo(node.id, run, map);
     const exits = (node.exits || []).map((exit) => {
-      const target = Runner().findNode(CS().getActiveMap(), exit.to);
+      const target = Runner().findNode(map, exit.to);
       const locked = mapState.locked?.[exit.to] || exit.locked;
       return `
-        <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(exit.to)}" ${locked ? 'disabled' : ''}>
+        <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
           ${_esc(exit.label || target?.title || exit.to)}
         </button>
       `;
     }).join('');
 
     const tags = (node.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
-    const isCurrent = run?.currentNode === node.id;
     return `
       <div class="campaign-detail-title">
         <span>${_esc(node.title || node.id)}</span>
@@ -101,7 +119,7 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-muted">${_esc(node.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
       <div class="campaign-node-actions">
-        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}">Move Here</button>`}
+        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
         <button class="campaign-action" data-campaign-action="reveal-node" data-node-id="${_escAttr(node.id)}">Reveal</button>
         <button class="campaign-action" data-campaign-action="clear-node" data-node-id="${_escAttr(node.id)}">Clear</button>
       </div>
@@ -115,12 +133,67 @@ window.CJS.CampaignMap = (() => {
       exit: 'X',
       battle: 'B',
       event_battle: 'B',
+      event: '?',
       trap: 'T',
       rest: 'R',
       shop: 'S',
       boss: '!'
     };
     return map[node.kind] || '.';
+  }
+
+  function _layers(map) {
+    const explicit = Array.isArray(map.layers) ? map.layers : [];
+    if (explicit.length) {
+      return explicit.map((layer, index) => ({
+        id: _normalizeLayerId(layer.id || layer.layerId || `layer_${index + 1}`),
+        name: layer.name || layer.label || `Layer ${index + 1}`
+      }));
+    }
+    const ids = Array.from(new Set((map.nodes || []).map((node) => _nodeLayer(node))));
+    return ids.map((id, index) => ({ id, name: ids.length > 1 ? `Layer ${index + 1}` : 'Map' }));
+  }
+
+  function _renderLayerTabs(layers, activeLayer) {
+    if (layers.length <= 1) return '';
+    return `
+      <div class="campaign-map-layers" role="tablist" aria-label="Map layers">
+        ${layers.map((layer) => `
+          <button class="campaign-map-layer ${layer.id === activeLayer ? 'is-active' : ''}" data-campaign-action="map-layer" data-layer="${_escAttr(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer ? 'true' : 'false'}">
+            ${_esc(layer.name)}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function _mapMeta(map, visible, revealed) {
+    const parts = [];
+    if (map._procedural) parts.push('Procedural');
+    if (map.setting) parts.push(map.setting);
+    if (map.size) parts.push(map.size);
+    parts.push(`${visible}/${revealed} shown`);
+    return parts.join(' | ');
+  }
+
+  function _nodeLayer(node) {
+    return _normalizeLayerId(node?.layer || node?.layerId || 'layer_1');
+  }
+
+  function _normalizeLayerId(value) {
+    return String(value || 'layer_1').replace(/\s+/g, '_').toLowerCase();
+  }
+
+  function _shortLabel(value) {
+    const text = String(value || '');
+    return text.length > 18 ? `${text.slice(0, 16)}..` : text;
+  }
+
+  function _canMoveTo(nodeId, run, map) {
+    if (!run || !map || !nodeId) return false;
+    if ((run.visitedNodes || []).includes(nodeId)) return true;
+    const current = Runner().findNode(map, run.currentNode);
+    return (current?.exits || []).some((exit) => exit.to === nodeId);
   }
 
   function _esc(value) {

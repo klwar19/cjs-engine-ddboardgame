@@ -11,7 +11,7 @@ window.CJS.ScenarioRunner = (() => {
 
   function startScenario(scenarioId) {
     const content = CS().getContent();
-    const scenario = content.scenarios[scenarioId];
+    const scenario = CS().getScenarioById(scenarioId);
     if (!scenario) throw new Error(`Scenario not found: ${scenarioId}`);
     const travelMode = scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform');
 
@@ -20,7 +20,7 @@ window.CJS.ScenarioRunner = (() => {
     let mapId = null;
 
     if (travelMode === 'node_map') {
-      map = content.scenarioMaps[scenario.mapId];
+      map = CS().getScenarioMapById(scenario.mapId);
       mapId = scenario.mapId;
     } else if (travelMode === 'procedural') {
       proceduralMap = expandProceduralMap(scenario);
@@ -43,6 +43,7 @@ window.CJS.ScenarioRunner = (() => {
         mapId,
         proceduralMap,
         currentNode: startNode,
+        mapLayer: _defaultMapLayer(map, startNode),
         currentBeatIndex: travelMode === 'linear' ? 0 : null,
         completedBeats: [],
         startedAtPhase: state.phase.number || 1,
@@ -74,7 +75,7 @@ window.CJS.ScenarioRunner = (() => {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     if (!run) return null;
-    const scenario = CS().getContent().scenarios[run.scenarioId];
+    const scenario = CS().getScenarioById(run.scenarioId);
     const report = buildReport(state, outcome);
 
     CS().mutate((next) => {
@@ -97,16 +98,24 @@ window.CJS.ScenarioRunner = (() => {
     if (!run || !map || !nodeId) return;
     const node = findNode(map, nodeId);
     if (!node) return;
+    const current = findNode(map, run.currentNode);
+    const travelLink = link || (current?.exits || []).find((exit) => exit.to === nodeId) || null;
+    const canMove = nodeId === run.currentNode || !!travelLink || (run.visitedNodes || []).includes(nodeId);
+    if (!canMove) {
+      Ops().apply({ op: 'log', text: `Move blocked: ${node.title || nodeId} is not connected to the current node.` }, { source: 'map_move' });
+      return null;
+    }
 
     const travelOps = [];
-    if (link?.dangerChange) travelOps.push({ op: 'danger', amount: link.dangerChange });
-    if (Array.isArray(link?.onTravel)) travelOps.push(...link.onTravel);
-    if (link?.check) {
-      travelOps.push(_checkToOperation(link.check));
+    if (travelLink?.dangerChange) travelOps.push({ op: 'danger', amount: travelLink.dangerChange });
+    if (Array.isArray(travelLink?.onTravel)) travelOps.push(...travelLink.onTravel);
+    if (travelLink?.check) {
+      travelOps.push(_checkToOperation(travelLink.check));
     }
     if (travelOps.length) Ops().apply(travelOps, { source: 'map_travel' });
 
     Ops().apply({ op: 'goto_node', nodeId }, { source: 'map_move' });
+    _revealNodeNeighborhood(map, nodeId);
 
     if (Array.isArray(node.onEnter) && node.onEnter.length) {
       Ops().apply(node.onEnter, { source: 'node_enter' });
@@ -124,6 +133,7 @@ window.CJS.ScenarioRunner = (() => {
     if ((scenario?.successConditions || []).some((cond) => cond.type === 'reach_node' && cond.nodeId === nodeId)) {
       Ops().apply({ op: 'log', text: `Scenario objective reached: ${node.title || nodeId}.` }, { source: 'scenario' });
     }
+    return node;
   }
 
   function maybeTriggerRandomBattle(randomBattle) {
@@ -131,6 +141,7 @@ window.CJS.ScenarioRunner = (() => {
     if (!run) return null;
     const chance = Number(randomBattle.chance ?? 1);
     if (Math.random() > chance) return null;
+    if (randomBattle.battleSetId || randomBattle.encounterId) return _queueBattleEntry(randomBattle, { source: 'random' });
     return rollRandomBattle(randomBattle.table);
   }
 
@@ -187,6 +198,10 @@ window.CJS.ScenarioRunner = (() => {
       r.currentBeatIndex = idx + 1;
     }, { source: 'beat_advance' });
 
+    if (idx + 1 >= scenario.beats.length && (scenario.successConditions || []).some((cond) => cond.type === 'complete_beats')) {
+      Ops().apply({ op: 'log', text: 'Scenario objective reached: all beats complete.' }, { source: 'scenario' });
+    }
+
     return beat;
   }
 
@@ -199,6 +214,9 @@ window.CJS.ScenarioRunner = (() => {
       name: seedRef.name || scenario.name || 'Procedural Map',
       type: 'node_map',
       world: scenario.world || seedRef.world || null,
+      setting: scenario.setting || seedRef.tags?.find((tag) => ['urban', 'outdoor', 'dungeon', 'house', 'castle', 'mountain'].includes(tag)) || null,
+      size: scenario.size || seedRef.tags?.find((tag) => ['tiny', 'small', 'medium', 'large'].includes(tag)) || null,
+      layers: _layerDefs(seedRef, nodes),
       defaultStartNode: nodes[0]?.id || null,
       nodes,
       _procedural: true,
@@ -237,28 +255,42 @@ window.CJS.ScenarioRunner = (() => {
     const height = 380;
     const padX = 70;
     const padY = 60;
-    const cols = Math.max(seedNodes.length, 2);
     const rng = _seededRng(seed.id || 'proc');
+    const layers = _layerDefs(seed, seedNodes);
+    const nodesByLayer = new Map();
+    for (const node of seedNodes) {
+      const layer = _normalizeLayerId(node.layer || node.layerId || layers[0]?.id || 'layer_1');
+      if (!nodesByLayer.has(layer)) nodesByLayer.set(layer, []);
+      nodesByLayer.get(layer).push(node);
+    }
     return seedNodes.map((node, idx) => {
-      const t = cols === 1 ? 0.5 : idx / (cols - 1);
+      const layer = _normalizeLayerId(node.layer || node.layerId || layers[0]?.id || 'layer_1');
+      const layerNodes = nodesByLayer.get(layer) || seedNodes;
+      const layerIndex = layerNodes.findIndex((entry) => entry.id === node.id);
+      const cols = Math.max(layerNodes.length, 2);
+      const t = cols === 1 ? 0.5 : Math.max(0, layerIndex) / (cols - 1);
       const baseX = padX + t * (width - 2 * padX);
       const jitterX = (rng() - 0.5) * 30;
       const yMid = height / 2;
       const yJitter = (rng() - 0.5) * (height - 2 * padY);
       const kind = _seedRoleToKind(node.role);
       const exits = (exitsById[node.id] || []).map((to) => ({ to, label: `Travel to ${seedNodes.find((n) => n.id === to)?.name || to}` }));
+      const battleRef = _firstBattleRef(node);
       return {
         id: node.id,
         title: node.name || node.id,
         kind,
         x: Math.round(baseX + jitterX),
         y: Math.round(yMid + yJitter),
+        layer,
+        layerName: _layerName(seed, layer),
         tags: node.tags || [],
         notes: node.notes || node.role || '',
         discoveredByDefault: idx === 0,
         battleSetIds: node.battleSetIds || [],
+        encounterIds: node.encounterIds || (node.encounterId ? [node.encounterId] : []),
         randomBattle: kind === 'battle' || kind === 'boss' || kind === 'event_battle'
-          ? (node.battleSetIds?.length ? { chance: 0.85, table: node.battleSetIds[0] } : undefined)
+          ? (battleRef ? { chance: 0.85, ..._battleEntryFromRef(battleRef) } : undefined)
           : undefined,
         onEnter: _onEnterOpsForRole(node, kind),
         exits
@@ -322,6 +354,7 @@ window.CJS.ScenarioRunner = (() => {
     if (r.includes('trap')) return 'trap';
     if (r.includes('rest') || r.includes('camp')) return 'rest';
     if (r.includes('shop') || r.includes('reward')) return 'shop';
+    if (r.includes('clue') || r.includes('choice') || r.includes('gather') || r.includes('resource')) return 'event';
     return 'event_battle';
   }
 
@@ -347,14 +380,26 @@ window.CJS.ScenarioRunner = (() => {
     const scenario = CS().getActiveScenario();
     const tables = scenario?.randomBattleTables || [];
     const table = tables.find((entry) => entry.id === tableId) || tables[0];
-    if (!table || !Array.isArray(table.entries) || table.entries.length === 0) return null;
+    if (!table || !Array.isArray(table.entries) || table.entries.length === 0) {
+      return tableId ? _queueBattleEntry(_battleEntryFromRef(tableId), { source: 'random' }) : null;
+    }
     const entry = window.CJS.CampaignEvents.weightedPick(table.entries);
+    return _queueBattleEntry(entry, { source: 'random', tableId: table.id });
+  }
+
+  function _queueBattleEntry(entry, meta = {}) {
+    const normalized = _normalizeBattleEntry(entry);
+    if (!normalized.encounterId && !normalized.battleSetId) return null;
     const pending = {
-      encounterId: entry.encounterId,
-      label: entry.label || entry.encounterId,
-      tableId: table.id,
+      encounterId: normalized.encounterId || null,
+      battleSetId: normalized.battleSetId || null,
+      label: normalized.label || normalized.encounterId || normalized.battleSetId,
+      tableId: meta.tableId || normalized.tableId || null,
       nodeId: CS().getState().activeScenarioRun?.currentNode || null,
-      source: 'random'
+      source: meta.source || normalized.source || 'random',
+      rewardOps: normalized.rewardOps || [],
+      objective: normalized.objective || '',
+      notes: normalized.notes || ''
     };
     CS().mutate((state) => {
       state.pendingBattle = pending;
@@ -362,6 +407,66 @@ window.CJS.ScenarioRunner = (() => {
     }, { source: 'random_battle' });
     Ops().apply({ op: 'log', text: `Random battle triggered: ${pending.label}.` }, { source: 'random_battle' });
     return pending;
+  }
+
+  function _normalizeBattleEntry(entry = {}) {
+    if (typeof entry === 'string') return _battleEntryFromRef(entry);
+    if (entry.battleSetId) {
+      const card = _battleCardById(entry.battleSetId);
+      return {
+        ...entry,
+        battleSetId: entry.battleSetId,
+        encounterId: entry.encounterId || card?.encounterId || null,
+        label: entry.label || card?.name || entry.battleSetId,
+        rewardOps: entry.rewardOps || card?.rewardOps || [],
+        objective: entry.objective || card?.objective || '',
+        notes: entry.notes || card?.gimmick || ''
+      };
+    }
+    if (entry.encounterId) {
+      const encounter = _encounterById(entry.encounterId);
+      return {
+        ...entry,
+        encounterId: entry.encounterId,
+        label: entry.label || encounter?.name || entry.encounterId
+      };
+    }
+    return entry;
+  }
+
+  function _battleEntryFromRef(ref) {
+    const id = typeof ref === 'string' ? ref : ref?.id;
+    if (!id) return {};
+    const card = _battleCardById(id);
+    if (card) {
+      return {
+        battleSetId: card.id,
+        encounterId: card.encounterId || null,
+        label: card.name || card.id,
+        rewardOps: card.rewardOps || [],
+        objective: card.objective || '',
+        notes: card.gimmick || ''
+      };
+    }
+    const encounter = _encounterById(id);
+    return {
+      encounterId: encounter?.id || id,
+      label: encounter?.name || id
+    };
+  }
+
+  function _battleCardById(id) {
+    return window.CJS.CampaignBattleSetForge?.getCard?.(id)
+      || window.CJS.CampaignDataLoader?.getBattleSetCard?.(id)
+      || null;
+  }
+
+  function _encounterById(id) {
+    return window.CJS.DataStore?.get?.('encounters', id) || null;
+  }
+
+  function _firstBattleRef(node) {
+    return node.battleSetIds?.[0] || node.encounterIds?.[0] || node.encounterId || null;
   }
 
   function findNode(map, nodeId) {
@@ -375,7 +480,7 @@ window.CJS.ScenarioRunner = (() => {
 
   function buildReport(state, outcome) {
     const run = state.activeScenarioRun;
-    const scenario = CS().getContent().scenarios[run.scenarioId];
+    const scenario = CS().getScenarioById(run.scenarioId);
     const exit = _snapshotForReport(state);
     return {
       id: `report_${Date.now()}`,
@@ -446,7 +551,67 @@ window.CJS.ScenarioRunner = (() => {
     for (const node of map?.nodes || []) {
       if (node.discoveredByDefault || node.id === startNode) out.add(node.id);
     }
+    for (const id of _adjacentNodeIds(map, startNode)) out.add(id);
     return Array.from(out);
+  }
+
+  function _revealNodeNeighborhood(map, nodeId) {
+    if (!map || !nodeId) return;
+    const ids = [nodeId, ..._adjacentNodeIds(map, nodeId)];
+    CS().mutate((state) => {
+      const run = state.activeScenarioRun;
+      if (!run) return;
+      const mapId = run.mapId || map.id;
+      const mapState = state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
+      run.revealedNodes = run.revealedNodes || [];
+      for (const id of ids) {
+        mapState.revealed[id] = true;
+        if (!run.revealedNodes.includes(id)) run.revealedNodes.push(id);
+      }
+      const layer = _nodeLayer(findNode(map, nodeId));
+      if (layer) run.mapLayer = layer;
+    }, { source: 'map_reveal' });
+  }
+
+  function _adjacentNodeIds(map, nodeId) {
+    if (!map || !nodeId) return [];
+    const out = new Set();
+    const node = findNode(map, nodeId);
+    for (const exit of node?.exits || []) out.add(exit.to);
+    for (const other of map.nodes || []) {
+      if ((other.exits || []).some((exit) => exit.to === nodeId)) out.add(other.id);
+    }
+    return Array.from(out);
+  }
+
+  function _defaultMapLayer(map, startNode) {
+    const start = findNode(map, startNode);
+    return _nodeLayer(start) || _layerDefs(map || {}, map?.nodes || [])[0]?.id || 'layer_1';
+  }
+
+  function _nodeLayer(node) {
+    return node ? _normalizeLayerId(node.layer || node.layerId || 'layer_1') : null;
+  }
+
+  function _layerDefs(seed, nodes) {
+    const explicit = Array.isArray(seed.layers) ? seed.layers : [];
+    if (explicit.length) {
+      return explicit.map((layer, index) => ({
+        id: _normalizeLayerId(layer.id || layer.layerId || `layer_${index + 1}`),
+        name: layer.name || layer.label || `Layer ${index + 1}`
+      }));
+    }
+    const fromNodes = Array.from(new Set((nodes || []).map((node) => _normalizeLayerId(node.layer || node.layerId || 'layer_1'))));
+    return (fromNodes.length ? fromNodes : ['layer_1']).map((id, index) => ({ id, name: `Layer ${index + 1}` }));
+  }
+
+  function _normalizeLayerId(value) {
+    return String(value || 'layer_1').replace(/\s+/g, '_').toLowerCase();
+  }
+
+  function _layerName(seed, layerId) {
+    const found = (seed.layers || []).find((layer) => _normalizeLayerId(layer.id || layer.layerId) === layerId);
+    return found?.name || found?.label || layerId.replace(/_/g, ' ');
   }
 
   function _checkToOperation(check) {

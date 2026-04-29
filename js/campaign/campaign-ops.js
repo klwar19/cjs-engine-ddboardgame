@@ -222,6 +222,11 @@ window.CJS.CampaignOps = (() => {
     const map = _mapState(state, mapId);
     map[key] = map[key] || {};
     map[key][nodeId] = value;
+    if (state.activeScenarioRun && key === 'revealed') {
+      state.activeScenarioRun.revealedNodes = state.activeScenarioRun.revealedNodes || [];
+      if (value && !state.activeScenarioRun.revealedNodes.includes(nodeId)) state.activeScenarioRun.revealedNodes.push(nodeId);
+      if (!value) state.activeScenarioRun.revealedNodes = state.activeScenarioRun.revealedNodes.filter((id) => id !== nodeId);
+    }
     _log(state, `${key} ${nodeId}: ${value ? 'yes' : 'no'}.`);
   }
 
@@ -233,7 +238,26 @@ window.CJS.CampaignOps = (() => {
     map.revealed[nodeId] = true;
     if (!state.activeScenarioRun.visitedNodes.includes(nodeId)) state.activeScenarioRun.visitedNodes.push(nodeId);
     if (!state.activeScenarioRun.revealedNodes.includes(nodeId)) state.activeScenarioRun.revealedNodes.push(nodeId);
+    _revealNodeNeighborhood(state, nodeId);
     _log(state, `Moved to ${nodeId}.`);
+  }
+
+  function _revealNodeNeighborhood(state, nodeId) {
+    const mapDef = CS().getActiveMap();
+    if (!mapDef || !nodeId) return;
+    const run = state.activeScenarioRun;
+    const map = _mapState(state, run?.mapId || mapDef.id);
+    const reveal = new Set([nodeId]);
+    const node = (mapDef.nodes || []).find((entry) => entry.id === nodeId);
+    for (const exit of node?.exits || []) reveal.add(exit.to);
+    for (const other of mapDef.nodes || []) {
+      if ((other.exits || []).some((exit) => exit.to === nodeId)) reveal.add(other.id);
+    }
+    run.revealedNodes = run.revealedNodes || [];
+    for (const id of reveal) {
+      map.revealed[id] = true;
+      if (!run.revealedNodes.includes(id)) run.revealedNodes.push(id);
+    }
   }
 
   function _money(state, currency, amount) {
@@ -719,6 +743,8 @@ window.CJS.CampaignOps = (() => {
   function _sideContentState(state) {
     state.sideContent = state.sideContent || {};
     state.sideContent.generatedIdeas = state.sideContent.generatedIdeas || {};
+    state.sideContent.generatedScenarios = state.sideContent.generatedScenarios || {};
+    state.sideContent.generatedMaps = state.sideContent.generatedMaps || {};
     state.sideContent.activeQuestChains = state.sideContent.activeQuestChains || {};
     state.sideContent.contentHistory = state.sideContent.contentHistory || [];
     state.sideContent.reviewQueue = state.sideContent.reviewQueue || [];

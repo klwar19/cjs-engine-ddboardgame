@@ -507,7 +507,50 @@ Use this before pushing changes that touch:
 - statuses
 - migration
 
-## 16. Short Summary
+## 16. Campaign Mode Scenario System
+
+Campaign Mode lives at `campaign.html` and uses the `js/campaign/*` modules.
+It is save-first: authored content is loaded through `DataStore`, while
+generated scenario content is stored inside the active campaign save.
+
+Core files:
+- `js/campaign/campaign-state.js` - campaign save normalization, authored content lookup, generated scenario/map lookup
+- `js/campaign/scenario-runner.js` - starts, advances, moves through, and reports scenario runs
+- `js/campaign/campaign-map.js` - layered node-map renderer for active scenario maps
+- `js/campaign/campaign-scenario-generator.js` - save-local random, quest, and quest-chain scenario generator
+- `js/campaign/campaign-ui.js` - Scenario tabs, generator controls, run controls, battle/event handoff
+
+Supported scenario travel modes:
+- `node_map` - uses an authored or generated scenario map by `mapId`
+- `procedural` - expands a `mapSeedId` or matching `mapSeedTags` into a node map at run start
+- `linear` - advances through ordered `beats`
+- `freeform` - no map; GM uses random/pick/custom battle and event controls
+
+Generated scenarios:
+- are created from the Scenario > Briefing generator controls
+- can use source `random`, `active_quest`, or `quest_chain`
+- accept map type `urban`, `outdoor`, `dungeon`, `house`, `castle`, `mountain`, or `any`
+- accept size `tiny`, `small`, `medium`, or `large`
+- accept 1-3 layers
+- are saved under `state.sideContent.generatedScenarios`
+- store generated maps under `state.sideContent.generatedMaps`
+- start through `ScenarioRunner.startScenario()`, just like authored scenarios
+
+Layered maps:
+- map nodes may use `layer` or `layerId`
+- map definitions may include `layers: [{ id, name }]`
+- the renderer shows one layer at a time and switches layers via `activeScenarioRun.mapLayer`
+- movement reveals the destination plus adjacent nodes so routes are readable while still preserving exploration
+
+Battle references in scenario maps:
+- `battleSetIds` should reference battle set cards when possible
+- `encounterId` or `encounterIds` may reference direct combat encounters
+- procedural and generated maps resolve both forms before queuing a pending battle
+
+Starter generator map seeds are in:
+- `data/campaigns/haven/map_seeds/haven_generator_map_seeds.json`
+
+## 17. Short Summary
 
 If you remember only one thing, remember this:
 
@@ -519,7 +562,7 @@ If you remember only one thing, remember this:
 
 That separation is what keeps the project scalable as worlds and content grow.
 
-## 17. Audio and Animation
+## 18. Audio and Animation
 
 Combat now has a thin presentation layer that listens to existing
 `CombatManager` pub/sub events. Combat math never reads from it, so

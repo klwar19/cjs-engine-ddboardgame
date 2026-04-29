@@ -217,6 +217,12 @@
       "category": "mapSeeds"
     },
     {
+      "path": "data/campaigns/haven/map_seeds/haven_generator_map_seeds.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "mapSeeds"
+    },
+    {
       "path": "data/campaigns/haven/events/frostwood_events.table.json",
       "scope": "world",
       "world": "haven",

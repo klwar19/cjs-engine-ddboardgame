@@ -113,14 +113,28 @@ window.CJS.CampaignState = (() => {
 
   function getActiveScenario() {
     const run = _state?.activeScenarioRun;
-    return run ? _content.scenarios[run.scenarioId] || null : null;
+    return run ? getScenarioById(run.scenarioId) : null;
   }
 
   function getActiveMap() {
     const run = _state?.activeScenarioRun;
     if (!run) return null;
     if (run.proceduralMap) return run.proceduralMap;
-    return _content.scenarioMaps[run.mapId] || null;
+    return getScenarioMapById(run.mapId);
+  }
+
+  function getScenarioById(scenarioId) {
+    if (!scenarioId) return null;
+    return _content.scenarios[scenarioId]
+      || _state?.sideContent?.generatedScenarios?.[scenarioId]
+      || null;
+  }
+
+  function getScenarioMapById(mapId) {
+    if (!mapId) return null;
+    return _content.scenarioMaps[mapId]
+      || _state?.sideContent?.generatedMaps?.[mapId]
+      || null;
   }
 
   function createNewSave(campaignId, options = {}) {
@@ -191,6 +205,8 @@ window.CJS.CampaignState = (() => {
       hubState: buildInitialHubState(campaign),
       sideContent: {
         generatedIdeas: {},
+        generatedScenarios: {},
+        generatedMaps: {},
         activeQuestChains: {},
         contentHistory: [],
         reviewQueue: [],
@@ -312,6 +328,8 @@ window.CJS.CampaignState = (() => {
     }
     next.sideContent = next.sideContent || {};
     next.sideContent.generatedIdeas = next.sideContent.generatedIdeas || {};
+    next.sideContent.generatedScenarios = next.sideContent.generatedScenarios || {};
+    next.sideContent.generatedMaps = next.sideContent.generatedMaps || {};
     next.sideContent.activeQuestChains = next.sideContent.activeQuestChains || {};
     next.sideContent.contentHistory = next.sideContent.contentHistory || [];
     next.sideContent.reviewQueue = next.sideContent.reviewQueue || [];
@@ -357,6 +375,10 @@ window.CJS.CampaignState = (() => {
     return getGeneratedIdeas().filter((idea) => idea.status === 'saved');
   }
 
+  function getGeneratedScenarios() {
+    return Object.values(_state?.sideContent?.generatedScenarios || {});
+  }
+
   function getActiveQuestChains() {
     return Object.values(_state?.sideContent?.activeQuestChains || {});
   }
@@ -379,6 +401,8 @@ window.CJS.CampaignState = (() => {
     getPhaseRule,
     getActiveScenario,
     getActiveMap,
+    getScenarioById,
+    getScenarioMapById,
     createNewSave,
     buildInitialSave,
     buildPartyMember,
@@ -390,6 +414,7 @@ window.CJS.CampaignState = (() => {
     getNpcMood,
     getGeneratedIdeas,
     getSavedIdeas,
+    getGeneratedScenarios,
     getActiveQuestChains,
     getSideContentHistory
   });

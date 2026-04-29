@@ -1,0 +1,199 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "mapSeeds",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_mseeds_generator_routes",
+      "name": "Haven Generator Route Seeds",
+      "world": "haven",
+      "seeds": [
+        {
+          "id": "haven_mseed_market_rooftops_urban_small",
+          "name": "Market Rooftops Run",
+          "purpose": ["urban", "small", "multi_layer", "chase", "ambush"],
+          "canonRisk": "green",
+          "tags": ["urban", "small", "rooftop", "house", "multi_layer"],
+          "layers": [
+            { "id": "street", "name": "Street" },
+            { "id": "roof", "name": "Rooftops" }
+          ],
+          "nodes": [
+            { "id": "market_gate", "name": "Market Gate", "role": "entrance", "layer": "street" },
+            { "id": "fishmonger_lane", "name": "Fishmonger Lane", "role": "clue", "layer": "street", "notes": "Witnesses saw a runner with a blue sash." },
+            { "id": "awning_climb", "name": "Awning Climb", "role": "trap", "layer": "street" },
+            { "id": "chimney_line", "name": "Chimney Line", "role": "battle", "layer": "roof", "battleSetIds": ["haven_bset_bandit_taxmen_snowblind"] },
+            { "id": "bell_roof", "name": "Bell Roof", "role": "reward", "layer": "roof" },
+            { "id": "courtyard_drop", "name": "Courtyard Drop", "role": "exit", "layer": "street" }
+          ],
+          "links": [
+            ["market_gate", "fishmonger_lane"],
+            ["fishmonger_lane", "awning_climb"],
+            ["awning_climb", "chimney_line"],
+            ["chimney_line", "bell_roof"],
+            ["bell_roof", "courtyard_drop"],
+            ["fishmonger_lane", "courtyard_drop"]
+          ],
+          "notes": "Compact city chase with a street-to-roof route and a fast street bypass."
+        },
+        {
+          "id": "haven_mseed_frostwood_open_outdoor_large",
+          "name": "Frostwood Open Patrol",
+          "purpose": ["outdoor", "large", "patrol", "gathering"],
+          "canonRisk": "green",
+          "tags": ["outdoor", "large", "forest", "wolf", "gathering"],
+          "nodes": [
+            { "id": "south_trail", "name": "South Trail", "role": "entrance" },
+            { "id": "split_pines", "name": "Split Pines", "role": "clue" },
+            { "id": "old_snare", "name": "Old Snare", "role": "trap" },
+            { "id": "wolf_run", "name": "Wolf Run", "role": "battle", "battleSetIds": ["haven_bset_wolf_pack_bent_pine"] },
+            { "id": "frostcap_patch", "name": "Frostcap Patch", "role": "resource" },
+            { "id": "bear_scratch", "name": "Bear Scratch Tree", "role": "clue" },
+            { "id": "hollow_mouth", "name": "Hollow Mouth", "role": "battle", "battleSetIds": ["haven_bset_bear_hollow"] },
+            { "id": "hunter_cache", "name": "Hunter Cache", "role": "reward" },
+            { "id": "return_trail", "name": "Return Trail", "role": "exit" }
+          ],
+          "links": [
+            ["south_trail", "split_pines"],
+            ["split_pines", "old_snare"],
+            ["old_snare", "wolf_run"],
+            ["wolf_run", "frostcap_patch"],
+            ["frostcap_patch", "hunter_cache"],
+            ["split_pines", "bear_scratch"],
+            ["bear_scratch", "hollow_mouth"],
+            ["hollow_mouth", "hunter_cache"],
+            ["hunter_cache", "return_trail"]
+          ],
+          "notes": "Large outdoor route with a safe gathering branch and a harder bear branch."
+        },
+        {
+          "id": "haven_mseed_deep_ice_dungeon_large",
+          "name": "Deep Ice Dungeon",
+          "purpose": ["dungeon", "large", "multi_layer", "boss"],
+          "canonRisk": "yellow",
+          "tags": ["dungeon", "large", "ice", "multi_layer", "boss"],
+          "layers": [
+            { "id": "upper", "name": "Upper Halls" },
+            { "id": "lower", "name": "Lower Halls" },
+            { "id": "vault", "name": "Vault" }
+          ],
+          "nodes": [
+            { "id": "ice_gate", "name": "Ice Gate", "role": "entrance", "layer": "upper" },
+            { "id": "rime_hall", "name": "Rime Hall", "role": "clue", "layer": "upper" },
+            { "id": "slick_stairs", "name": "Slick Stairs", "role": "trap", "layer": "upper" },
+            { "id": "sprite_nest", "name": "Sprite Nest", "role": "battle", "layer": "lower", "battleSetIds": ["haven_bset_frost_sprite_grove"] },
+            { "id": "frozen_font", "name": "Frozen Font", "role": "rest", "layer": "lower" },
+            { "id": "broken_bridge", "name": "Broken Bridge", "role": "trap", "layer": "lower" },
+            { "id": "outer_vault", "name": "Outer Vault", "role": "battle", "layer": "vault", "battleSetIds": ["haven_bset_old_shrine_outer_ring"] },
+            { "id": "chimera_echo", "name": "Chimera Echo", "role": "boss", "layer": "vault", "battleSetIds": ["haven_bset_chimera_echo"] },
+            { "id": "sunken_lift", "name": "Sunken Lift", "role": "exit", "layer": "upper" }
+          ],
+          "links": [
+            ["ice_gate", "rime_hall"],
+            ["rime_hall", "slick_stairs"],
+            ["slick_stairs", "sprite_nest"],
+            ["sprite_nest", "frozen_font"],
+            ["frozen_font", "broken_bridge"],
+            ["broken_bridge", "outer_vault"],
+            ["outer_vault", "chimera_echo"],
+            ["outer_vault", "sunken_lift"],
+            ["frozen_font", "sunken_lift"]
+          ],
+          "notes": "Three-layer dungeon route with a retreat lift before the boss chamber."
+        },
+        {
+          "id": "haven_mseed_boarding_house_search_tiny",
+          "name": "Boarding House Search",
+          "purpose": ["house", "tiny", "multi_layer", "investigation"],
+          "canonRisk": "green",
+          "tags": ["house", "tiny", "investigation", "multi_layer"],
+          "layers": [
+            { "id": "ground", "name": "Ground Floor" },
+            { "id": "cellar", "name": "Cellar" }
+          ],
+          "nodes": [
+            { "id": "front_step", "name": "Front Step", "role": "entrance", "layer": "ground" },
+            { "id": "kitchen_mess", "name": "Kitchen Mess", "role": "clue", "layer": "ground" },
+            { "id": "pantry_hole", "name": "Pantry Hole", "role": "battle", "layer": "ground", "battleSetIds": ["haven_bset_frost_rats_tavern_cellar"] },
+            { "id": "cold_cellar", "name": "Cold Cellar", "role": "reward", "layer": "cellar" },
+            { "id": "back_door", "name": "Back Door", "role": "exit", "layer": "ground" }
+          ],
+          "links": [
+            ["front_step", "kitchen_mess"],
+            ["kitchen_mess", "pantry_hole"],
+            ["pantry_hole", "cold_cellar"],
+            ["cold_cellar", "back_door"],
+            ["kitchen_mess", "back_door"]
+          ],
+          "notes": "Tiny indoor investigation that can become a cellar fight."
+        },
+        {
+          "id": "haven_mseed_keep_of_cold_bells_castle_medium",
+          "name": "Keep of Cold Bells",
+          "purpose": ["castle", "medium", "multi_layer", "fortress"],
+          "canonRisk": "yellow",
+          "tags": ["castle", "medium", "fortress", "multi_layer"],
+          "layers": [
+            { "id": "bailey", "name": "Bailey" },
+            { "id": "keep", "name": "Keep" },
+            { "id": "tower", "name": "Tower" }
+          ],
+          "nodes": [
+            { "id": "outer_gate", "name": "Outer Gate", "role": "entrance", "layer": "bailey" },
+            { "id": "snow_bailey", "name": "Snow Bailey", "role": "battle", "layer": "bailey", "battleSetIds": ["haven_bset_bandit_taxmen_snowblind"] },
+            { "id": "armory_door", "name": "Armory Door", "role": "reward", "layer": "keep" },
+            { "id": "servant_hall", "name": "Servant Hall", "role": "clue", "layer": "keep" },
+            { "id": "bell_stair", "name": "Bell Stair", "role": "trap", "layer": "tower" },
+            { "id": "top_bell", "name": "Top Bell", "role": "boss", "layer": "tower", "battleSetIds": ["haven_bset_old_shrine_outer_ring"] },
+            { "id": "postern_exit", "name": "Postern Exit", "role": "exit", "layer": "bailey" }
+          ],
+          "links": [
+            ["outer_gate", "snow_bailey"],
+            ["snow_bailey", "armory_door"],
+            ["armory_door", "servant_hall"],
+            ["servant_hall", "bell_stair"],
+            ["bell_stair", "top_bell"],
+            ["servant_hall", "postern_exit"],
+            ["top_bell", "postern_exit"]
+          ],
+          "notes": "Castle route with a keep interior and tower objective."
+        },
+        {
+          "id": "haven_mseed_switchback_pass_mountain_medium",
+          "name": "Switchback Pass",
+          "purpose": ["mountain", "medium", "multi_layer", "weather"],
+          "canonRisk": "green",
+          "tags": ["mountain", "medium", "cliff", "multi_layer", "weather"],
+          "layers": [
+            { "id": "lower_pass", "name": "Lower Pass" },
+            { "id": "upper_pass", "name": "Upper Pass" }
+          ],
+          "nodes": [
+            { "id": "base_camp", "name": "Base Camp", "role": "entrance", "layer": "lower_pass" },
+            { "id": "wind_cut", "name": "Wind Cut", "role": "trap", "layer": "lower_pass" },
+            { "id": "goat_path", "name": "Goat Path", "role": "clue", "layer": "upper_pass" },
+            { "id": "ridge_pack", "name": "Ridge Pack", "role": "battle", "layer": "upper_pass", "battleSetIds": ["haven_bset_wolf_pack_bent_pine"] },
+            { "id": "ice_shelf", "name": "Ice Shelf", "role": "rest", "layer": "upper_pass" },
+            { "id": "summit_cache", "name": "Summit Cache", "role": "reward", "layer": "upper_pass" },
+            { "id": "downslope", "name": "Downslope", "role": "exit", "layer": "lower_pass" }
+          ],
+          "links": [
+            ["base_camp", "wind_cut"],
+            ["wind_cut", "goat_path"],
+            ["goat_path", "ridge_pack"],
+            ["ridge_pack", "ice_shelf"],
+            ["ice_shelf", "summit_cache"],
+            ["summit_cache", "downslope"],
+            ["wind_cut", "downslope"]
+          ],
+          "notes": "Mountain pass with a risky upper route and fast lower escape."
+        }
+      ]
+    }
+  ]
+}
