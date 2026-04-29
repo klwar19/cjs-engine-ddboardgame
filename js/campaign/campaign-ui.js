@@ -17,28 +17,52 @@ window.CJS.CampaignUI = (() => {
   const Side = () => window.CJS.CampaignSideContent;
 
   let _root = null;
+  let _activeMode = 'town';
   let _activeTab = 'overview';
   let _booted = false;
 
-  const TABS = [
-    ['overview', 'Overview'],
-    ['sideForge', 'Side Forge'],
-    ['questChains', 'Quest Chains'],
-    ['battleSets', 'Battle Sets'],
-    ['mapSeeds', 'Map Seeds'],
-    ['oracleForge', 'Oracle'],
-    ['inventory', 'Inventory'],
-    ['shops', 'Shops'],
-    ['craft', 'Forge'],
-    ['cook', 'Cook'],
-    ['farm', 'Farm'],
-    ['pocket', 'Pocket Haven'],
-    ['scenarios', 'Scenarios'],
-    ['maps', 'Maps'],
+  const MODES = [
+    ['town', 'Town', '🏠'],
+    ['workshop', 'Workshop', '🛠'],
+    ['scenario', 'Scenario', '⚔']
+  ];
+
+  const MODE_TABS = {
+    town: [
+      ['overview', 'Overview'],
+      ['oracleForge', 'Events & Oracle'],
+      ['sideForge', 'Hub Pulse'],
+      ['shops', 'Shops & Rest'],
+      ['questChains', 'Quest Chains']
+    ],
+    workshop: [
+      ['cook', 'Cook'],
+      ['craft', 'Forge'],
+      ['farm', 'Farm'],
+      ['pocket', 'Pocket Haven'],
+      ['inventory', 'Inventory']
+    ],
+    scenario: [
+      ['scenarios', 'Briefing'],
+      ['maps', 'Run'],
+      ['battleSets', 'Battle Sets'],
+      ['mapSeeds', 'Map Seeds']
+    ]
+  };
+
+  const UTILITY_TABS = [
     ['quests', 'Quests'],
     ['logs', 'Logs'],
     ['settings', 'Settings']
   ];
+
+  const TAB_TO_MODE = (() => {
+    const out = {};
+    for (const [mode, tabs] of Object.entries(MODE_TABS)) {
+      for (const [id] of tabs) out[id] = mode;
+    }
+    return out;
+  })();
 
   async function init(root) {
     _root = root;
@@ -70,15 +94,19 @@ window.CJS.CampaignUI = (() => {
     const state = CS().getState();
     const campaign = CS().getCurrentCampaign();
 
+    const isUtility = UTILITY_TABS.some(([id]) => id === _activeTab);
+    const subTabs = isUtility ? UTILITY_TABS : (MODE_TABS[_activeMode] || []);
+
     _root.innerHTML = `
       <div class="campaign-shell">
         ${_renderHeader(state, campaign)}
+        ${_renderModeBar(state)}
+        ${_renderSubTabs(subTabs, isUtility)}
         <div class="campaign-body">
           <aside class="campaign-party">${_renderParty(state)}</aside>
           <main class="campaign-main">${_renderMain(state)}</main>
           <aside class="campaign-side">${_renderSide(state)}</aside>
         </div>
-        <nav class="campaign-tabs">${TABS.map(([id, label]) => `<button class="campaign-tab ${id === _activeTab ? 'active' : ''}" data-campaign-tab="${id}">${label}</button>`).join('')}</nav>
         <button class="campaign-gm" data-campaign-action="gm-override">GM Override</button>
         <input type="file" id="campaign-import-file" accept=".json" hidden>
       </div>
@@ -91,7 +119,6 @@ window.CJS.CampaignUI = (() => {
   function _renderHeader(state, campaign) {
     const world = CS().getCurrentWorld();
     const currency = `${state.currentWorld}_gold`;
-    const danger = state.activeScenarioRun ? `<span>Danger <b>${state.activeScenarioRun.danger}/${state.activeScenarioRun.dangerMax}</b></span>` : '';
     return `
       <header class="campaign-header">
         <a class="campaign-back" href="index.html">Main Menu</a>
@@ -102,7 +129,6 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-stats">
           <span>${_esc(currency)} <b>${state.currencies[currency] || 0}</b></span>
           <span>JP <b>${state.currencies.jp || 0}</b></span>
-          ${danger}
         </div>
         <div class="campaign-header-actions">
           <button class="campaign-action" data-campaign-action="new-save">New</button>
@@ -116,6 +142,57 @@ window.CJS.CampaignUI = (() => {
         </div>
       </header>
     `;
+  }
+
+  function _renderModeBar(state) {
+    const modeButtons = MODES.map(([id, label, icon]) => {
+      const active = id === _activeMode && !UTILITY_TABS.some(([u]) => u === _activeTab);
+      return `<button class="campaign-mode-btn ${active ? 'active' : ''}" data-campaign-mode="${id}">
+        <span class="campaign-mode-icon">${icon}</span><span>${label}</span>
+      </button>`;
+    }).join('');
+    const utilityButtons = UTILITY_TABS.map(([id, label]) => {
+      const active = id === _activeTab;
+      return `<button class="campaign-util-btn ${active ? 'active' : ''}" data-campaign-tab="${id}">${label}</button>`;
+    }).join('');
+    return `
+      <div class="campaign-modes">
+        <div class="campaign-modes-primary">${modeButtons}</div>
+        ${_renderScenarioHud(state)}
+        <div class="campaign-modes-utility">${utilityButtons}</div>
+      </div>
+    `;
+  }
+
+  function _renderSubTabs(tabs, isUtility) {
+    if (!tabs || !tabs.length) return '';
+    return `
+      <nav class="campaign-subtabs ${isUtility ? 'is-utility' : ''}">
+        ${tabs.map(([id, label]) => `<button class="campaign-tab ${id === _activeTab ? 'active' : ''}" data-campaign-tab="${id}">${_esc(label)}</button>`).join('')}
+      </nav>
+    `;
+  }
+
+  function _renderScenarioHud(state) {
+    const run = state.activeScenarioRun;
+    if (!run) return '<div class="campaign-hud-spacer"></div>';
+    const scenario = CS().getContent().scenarios[run.scenarioId];
+    return `
+      <div class="campaign-scenario-hud">
+        <span class="campaign-pill is-current">${_esc(scenario?.name || run.scenarioId)}</span>
+        <span class="campaign-pill">Danger ${run.danger}/${run.dangerMax}</span>
+        <span class="campaign-pill">Camps ${run.usedCampRests}/${run.limits?.campRests ?? 0}</span>
+        <span class="campaign-pill">Battles ${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</span>
+        <button class="campaign-action" data-campaign-action="open-maps-tab">Run</button>
+        <button class="campaign-action danger" data-campaign-action="end-scenario">End</button>
+      </div>
+    `;
+  }
+
+  function _goto(mode, tab) {
+    if (mode) _activeMode = mode;
+    if (tab) _activeTab = tab;
+    render();
   }
 
   function _renderParty(state) {
@@ -664,9 +741,22 @@ window.CJS.CampaignUI = (() => {
 
   function _bindEvents() {
     _root.addEventListener('click', (event) => {
+      const mode = event.target.closest('[data-campaign-mode]');
+      if (mode) {
+        const id = mode.dataset.campaignMode;
+        _activeMode = id;
+        const firstTab = (MODE_TABS[id] || [])[0];
+        if (firstTab) _activeTab = firstTab[0];
+        render();
+        return;
+      }
+
       const tab = event.target.closest('[data-campaign-tab]');
       if (tab) {
-        _activeTab = tab.dataset.campaignTab;
+        const id = tab.dataset.campaignTab;
+        _activeTab = id;
+        const owningMode = TAB_TO_MODE[id];
+        if (owningMode) _activeMode = owningMode;
         render();
         return;
       }
@@ -727,10 +817,10 @@ window.CJS.CampaignUI = (() => {
       case 'ignore-event': return _ignoreEvent();
       case 'add-quest': return _openQuestModal();
       case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
-      case 'camp-rest': return Ops().apply({ op: 'camp_rest', consumeItem: 'haven_basic_tent', dangerChange: 1 }, { source: 'ui' });
+      case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
-      case 'open-scenarios-tab': _activeTab = 'scenarios'; return render();
-      case 'open-maps-tab': _activeTab = 'maps'; return render();
+      case 'open-scenarios-tab': return _goto('scenario', 'scenarios');
+      case 'open-maps-tab': return _goto('scenario', 'maps');
       case 'start-scenario': return Runner().startScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
       case 'move-node': return _moveNode(data.nodeId);
@@ -770,10 +860,11 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _newSave() {
-    if (!window.confirm('Create a fresh campaign save?')) return;
-    const campaign = Object.values(CS().getContent().campaigns)[0];
-    CS().createNewSave(campaign?.id);
-    Save().saveCurrent();
+    UI().confirm('Create a fresh campaign save?', () => {
+      const campaign = Object.values(CS().getContent().campaigns)[0];
+      CS().createNewSave(campaign?.id);
+      Save().saveCurrent();
+    });
   }
 
   function _pushGitHub() {
@@ -795,6 +886,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _rollHubPulse(table) {
+    _activeMode = 'town';
     _activeTab = 'sideForge';
     const card = window.CJS.CampaignHub.rollHubPulse(table);
     if (!card) return UI().toast('No hub events available', 'info');
@@ -803,10 +895,13 @@ window.CJS.CampaignUI = (() => {
 
   function _applySideChoice(id, choiceIndex) {
     const card = _sideCardById(id);
-    const approved = card?.canonRisk === 'red'
-      ? window.confirm('This is red-risk content. Approve and apply it now?')
-      : true;
-    window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved });
+    if (card?.canonRisk === 'red') {
+      UI().confirm('This is red-risk content. Approve and apply it now?',
+        () => window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved: true }),
+        () => window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved: false }));
+      return;
+    }
+    window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved: true });
   }
 
   function _saveSideIdea(id) {
@@ -816,8 +911,13 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _rejectSideIdea(id) {
-    const reason = window.prompt('Reject reason', '');
-    Side().rejectCard(id, reason || '');
+    _textareaModal({
+      title: 'Reject Idea',
+      label: 'Reason (optional)',
+      placeholder: 'Why is this rejected?',
+      primaryLabel: 'Reject',
+      onSubmit: (reason) => Side().rejectCard(id, reason || '')
+    });
   }
 
   function _copySideCard(id) {
@@ -837,6 +937,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _rollForgeOracle() {
+    _activeMode = 'town';
     _activeTab = 'oracleForge';
     const card = window.CJS.CampaignIdeaForge.rollOracle();
     if (!card) return UI().toast('No oracle table available', 'info');
@@ -844,15 +945,27 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _importSidePack() {
-    const raw = window.prompt('Paste side content pack JSON');
-    if (!raw) return;
-    try {
-      const pack = JSON.parse(raw);
-      window.CJS.CampaignSideContent.importPack(pack);
-      UI().toast('Side content pack imported', 'success');
-    } catch (error) {
-      UI().toast(error.message || 'Invalid JSON', 'error');
-    }
+    _textareaModal({
+      title: 'Import Side Content Pack',
+      label: 'Paste pack JSON',
+      placeholder: '{ "id": "...", "cards": [...] }',
+      primaryLabel: 'Import',
+      width: '640px',
+      onSubmit: (raw) => {
+        if (!raw) {
+          UI().toast('Nothing to import', 'info');
+          return false;
+        }
+        try {
+          const pack = JSON.parse(raw);
+          window.CJS.CampaignSideContent.importPack(pack);
+          UI().toast('Side content pack imported', 'success');
+        } catch (error) {
+          UI().toast(error.message || 'Invalid JSON', 'error');
+          return false;
+        }
+      }
+    });
   }
 
   function _exportSidePack() {
@@ -1010,16 +1123,37 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _quickAddInventory(bucket) {
-    const id = window.prompt('ID to add');
-    if (!id) return;
-    const qty = Number(window.prompt('Quantity', '1') || 1);
-    _inventoryDelta({ bucket, id, delta: qty });
+    const options = _bucketOptions(bucket || 'items');
+    if (!options.length) {
+      UI().toast(`No ${bucket || 'items'} available in this world`, 'info');
+      return;
+    }
+    const titleByBucket = { items: 'Add Item', materials: 'Add Material', food: 'Add Food', equipment: 'Add Equipment', questItems: 'Add Quest Item' };
+    _opPickerModal({
+      title: titleByBucket[bucket] || 'Add Inventory',
+      options,
+      withQty: true,
+      qtyDefault: 1,
+      qtyMin: 1,
+      qtyMax: 99,
+      primaryLabel: 'Add',
+      onSubmit: ({ value, qty }) => _inventoryDelta({ bucket, id: value, delta: qty || 1 })
+    });
   }
 
   function _plantSeed(plotId) {
-    const seeds = DS().getAllAsArray('crops').filter((crop) => !crop._world || crop._world === CS().getState().currentWorld);
-    const seedId = window.prompt(`Seed ID (${seeds.map((seed) => seed.id).join(', ')})`, seeds[0]?.id || '');
-    if (seedId) window.CJS.PocketHaven.plantSeed(plotId, seedId);
+    const options = _seedOptions();
+    if (!options.length) {
+      UI().toast('No seeds available in this world', 'info');
+      return;
+    }
+    _opPickerModal({
+      title: 'Plant Seed',
+      options,
+      primaryLabel: 'Plant',
+      placeholder: 'Search seeds…',
+      onSubmit: ({ value }) => window.CJS.PocketHaven.plantSeed(plotId, value)
+    });
   }
 
   function _craftRecipe(recipeId) {
@@ -1029,15 +1163,29 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _addPocketNote() {
-    const text = window.prompt('Pocket Haven note');
-    if (!text) return;
-    CS().mutate((state) => state.pocketHaven.notes.unshift({ at: new Date().toISOString(), text }), { source: 'note' });
+    _textareaModal({
+      title: 'Pocket Haven Note',
+      label: 'Note',
+      placeholder: 'A short note about your haven…',
+      primaryLabel: 'Save Note',
+      onSubmit: (text) => {
+        if (!text) return false;
+        CS().mutate((state) => state.pocketHaven.notes.unshift({ at: new Date().toISOString(), text }), { source: 'note' });
+      }
+    });
   }
 
   function _addPinnedNote() {
-    const text = window.prompt('Pinned note');
-    if (!text) return;
-    CS().mutate((state) => state.pinnedNotes.unshift({ at: new Date().toISOString(), text }), { source: 'note' });
+    _textareaModal({
+      title: 'Pinned Note',
+      label: 'Note',
+      placeholder: 'Pin a reminder for the campaign…',
+      primaryLabel: 'Pin',
+      onSubmit: (text) => {
+        if (!text) return false;
+        CS().mutate((state) => state.pinnedNotes.unshift({ at: new Date().toISOString(), text }), { source: 'note' });
+      }
+    });
   }
 
   function _questProgress(questId) {
@@ -1048,87 +1196,280 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _charNumberOp(id, op, label) {
-    const amount = Number(window.prompt(label, '5') || 0);
-    if (amount) Ops().apply({ op, target: id, amount }, { source: 'ui' });
+    const member = CS().getState()?.party?.[id];
+    const max = op === 'heal_character' ? Math.max(member?.maxHp || 999, 1) : 999;
+    _numberModal({
+      title: `${label}: ${member?.name || id}`,
+      label,
+      value: 5,
+      min: 1,
+      max,
+      primaryLabel: 'Apply',
+      onSubmit: (amount) => {
+        if (amount) Ops().apply({ op, target: id, amount }, { source: 'ui' });
+      }
+    });
   }
 
   function _charMpModal(id) {
-    const amount = Number(window.prompt('MP change (positive restore, negative spend)', '5') || 0);
-    if (!amount) return;
-    Ops().apply({ op: amount >= 0 ? 'restore_mp' : 'spend_mp', target: id, amount: Math.abs(amount) }, { source: 'ui' });
+    const member = CS().getState()?.party?.[id];
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Direction'));
+    const dir = UI().createSelect({
+      options: [
+        { value: 'restore_mp', label: 'Restore MP' },
+        { value: 'spend_mp', label: 'Spend MP' }
+      ],
+      value: 'restore_mp'
+    });
+    body.appendChild(dir);
+    body.appendChild(_formLabel('Amount'));
+    const slider = UI().createNumberSlider({ value: 5, min: 1, max: Math.max(member?.maxMp || 99, 1), step: 1 });
+    body.appendChild(slider);
+    _formModal({
+      title: `MP: ${member?.name || id}`,
+      body,
+      primaryLabel: 'Apply',
+      onSubmit: () => {
+        const amount = slider._getValue();
+        if (!amount) return false;
+        Ops().apply({ op: dir.value, target: id, amount }, { source: 'ui' });
+      }
+    });
   }
 
   function _charStatusModal(id) {
-    const status = window.prompt('Status ID');
-    if (status) Ops().apply({ op: 'add_status', target: id, status, duration: 'manual' }, { source: 'ui' });
+    const member = CS().getState()?.party?.[id];
+    const options = _statusOptions();
+    if (!options.length) {
+      UI().toast('No statuses authored yet', 'info');
+      return;
+    }
+    _opPickerModal({
+      title: `Add Status: ${member?.name || id}`,
+      options,
+      withDuration: true,
+      placeholder: 'Search statuses…',
+      primaryLabel: 'Apply Status',
+      onSubmit: ({ value, duration }) => {
+        Ops().apply({ op: 'add_status', target: id, status: value, duration: duration || 'manual' }, { source: 'ui' });
+      }
+    });
   }
 
   function _travelWorld() {
-    const worlds = CS().getCurrentCampaign()?.allowedWorlds || Object.keys(CS().getContent().worlds);
-    const toWorld = window.prompt(`World ID (${worlds.join(', ')})`, worlds.find((id) => id !== CS().getState().currentWorld) || worlds[0]);
-    if (toWorld) Ops().apply({ op: 'world_transition', toWorld, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+    const options = _worldOptions().filter((opt) => opt.value !== CS().getState().currentWorld);
+    if (!options.length) {
+      UI().toast('No other worlds available', 'info');
+      return;
+    }
+    _opPickerModal({
+      title: 'Travel to World',
+      options,
+      placeholder: 'Search worlds…',
+      primaryLabel: 'Travel',
+      onSubmit: ({ value }) => {
+        Ops().apply({ op: 'world_transition', toWorld: value, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+      }
+    });
+  }
+
+  function _campRestModal() {
+    const options = _tentOptions();
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Consume Item (optional)'));
+    const select = UI().createSearchableSelect({
+      options: [{ value: '', label: '— None (no item consumed) —' }, ...options],
+      value: options.find((opt) => opt.value === 'haven_basic_tent') ? 'haven_basic_tent' : '',
+      placeholder: 'Search items…'
+    });
+    body.appendChild(select);
+    body.appendChild(_formLabel('Danger change'));
+    const danger = UI().createNumberSlider({ value: 1, min: -3, max: 5, step: 1 });
+    body.appendChild(danger);
+    _formModal({
+      title: 'Camp Rest',
+      body,
+      primaryLabel: 'Camp',
+      onSubmit: () => {
+        const consumeItem = select._getValue() || null;
+        const op = { op: 'camp_rest', dangerChange: danger._getValue() || 0 };
+        if (consumeItem) op.consumeItem = consumeItem;
+        Ops().apply(op, { source: 'ui' });
+      }
+    });
   }
 
   function _gmOverride() {
+    const GM_OPS = [
+      { value: 'give_money', label: 'Give Money', kind: 'money' },
+      { value: 'take_money', label: 'Take Money', kind: 'money' },
+      { value: 'give_jp', label: 'Give JP', kind: 'jp' },
+      { value: 'take_jp', label: 'Take JP', kind: 'jp' },
+      { value: 'give_item', label: 'Give Item', kind: 'inv', bucket: 'items' },
+      { value: 'take_item', label: 'Take Item', kind: 'inv', bucket: 'items' },
+      { value: 'give_material', label: 'Give Material', kind: 'inv', bucket: 'materials' },
+      { value: 'take_material', label: 'Take Material', kind: 'inv', bucket: 'materials' },
+      { value: 'give_food', label: 'Give Food', kind: 'inv', bucket: 'food' },
+      { value: 'take_food', label: 'Take Food', kind: 'inv', bucket: 'food' },
+      { value: 'damage_character', label: 'Damage Character', kind: 'char' },
+      { value: 'heal_character', label: 'Heal Character', kind: 'char' },
+      { value: 'add_status', label: 'Add Status', kind: 'status' },
+      { value: 'remove_status', label: 'Remove Status', kind: 'status' },
+      { value: 'set_flag', label: 'Set Flag', kind: 'flag' },
+      { value: 'clear_flag', label: 'Clear Flag', kind: 'flag' },
+      { value: 'log', label: 'Log Note', kind: 'log' },
+      { value: 'custom', label: 'Custom JSON', kind: 'custom' }
+    ];
+
     const body = document.createElement('div');
-    body.innerHTML = `
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Operation</label>
-          <select id="gm-op">
-            <option value="give_money">Give Money</option>
-            <option value="take_money">Take Money</option>
-            <option value="give_jp">Give JP</option>
-            <option value="take_jp">Take JP</option>
-            <option value="give_item">Give Item</option>
-            <option value="take_item">Take Item</option>
-            <option value="give_material">Give Material</option>
-            <option value="take_material">Take Material</option>
-            <option value="give_food">Give Food</option>
-            <option value="take_food">Take Food</option>
-            <option value="damage_character">Damage Character</option>
-            <option value="heal_character">Heal Character</option>
-            <option value="add_status">Add Status</option>
-            <option value="remove_status">Remove Status</option>
-            <option value="set_flag">Set Flag</option>
-            <option value="clear_flag">Clear Flag</option>
-            <option value="log">Log Note</option>
-            <option value="custom">Custom JSON</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Target/Currency</label><input id="gm-target" placeholder="party, character id, haven_gold"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">ID/Status/Flag</label><input id="gm-id"></div>
-        <div class="form-group"><label class="form-label">Amount/Qty</label><input id="gm-amount" type="number" value="1"></div>
-      </div>
-      <label class="form-label">Text or Custom JSON</label>
-      <textarea id="gm-text" placeholder='{"op":"give_material","id":"haven_wolf_pelt","qty":2}'></textarea>
-    `;
-    const footer = document.createElement('div');
-    footer.innerHTML = '<button class="btn btn-primary">Apply</button>';
-    const overlay = UI().openModal({ title: 'GM Override', content: body, footer, width: '640px' });
-    footer.querySelector('button').onclick = () => {
-      try {
-        const opName = body.querySelector('#gm-op').value;
-        const target = body.querySelector('#gm-target').value.trim();
-        const id = body.querySelector('#gm-id').value.trim();
-        const amount = Number(body.querySelector('#gm-amount').value || 0);
-        const text = body.querySelector('#gm-text').value.trim();
-        let op;
-        if (opName === 'custom') op = JSON.parse(text);
-        else if (opName === 'log') op = { op: 'log', text };
-        else if (opName.includes('money')) op = { op: opName, currency: target || `${CS().getState().currentWorld}_gold`, amount };
-        else if (opName.includes('character')) op = { op: opName, target, amount };
-        else if (opName.includes('status')) op = { op: opName, target, status: id, duration: 'manual' };
-        else if (opName.includes('flag')) op = { op: opName, flag: id || target, value: text || true };
-        else op = { op: opName, id, qty: amount || 1 };
-        Ops().apply(op, { source: 'gm_override' });
-        UI().closeModal(overlay);
-      } catch (error) {
-        UI().toast(error.message || 'Invalid override', 'error');
+    body.appendChild(_formLabel('Operation'));
+    const opSelect = UI().createSelect({
+      options: GM_OPS.map((o) => ({ value: o.value, label: o.label })),
+      value: 'give_money',
+      onChange: () => renderFields()
+    });
+    body.appendChild(opSelect);
+
+    const fields = document.createElement('div');
+    body.appendChild(fields);
+
+    const partyOptions = () => Object.entries(CS().getState()?.party || {})
+      .map(([id, m]) => ({ value: id, label: m.name || id }));
+
+    let active = {};
+
+    function renderFields() {
+      fields.innerHTML = '';
+      active = {};
+      const def = GM_OPS.find((o) => o.value === opSelect.value) || GM_OPS[0];
+
+      if (def.kind === 'money') {
+        fields.appendChild(_formLabel('Currency'));
+        const wid = CS().getState().currentWorld;
+        const currencyOptions = [
+          { value: `${wid}_gold`, label: `${wid} gold` },
+          { value: 'jp', label: 'JP' }
+        ];
+        active.currency = UI().createSelect({ options: currencyOptions, value: `${wid}_gold` });
+        fields.appendChild(active.currency);
+        fields.appendChild(_formLabel('Amount'));
+        active.amount = UI().createNumberSlider({ value: 10, min: 1, max: 9999, step: 1 });
+        fields.appendChild(active.amount);
+      } else if (def.kind === 'jp') {
+        fields.appendChild(_formLabel('Amount'));
+        active.amount = UI().createNumberSlider({ value: 1, min: 1, max: 999, step: 1 });
+        fields.appendChild(active.amount);
+      } else if (def.kind === 'inv') {
+        const opts = _bucketOptions(def.bucket);
+        fields.appendChild(_formLabel(def.bucket === 'materials' ? 'Material' : def.bucket === 'food' ? 'Food' : 'Item'));
+        active.id = UI().createSearchableSelect({ options: opts, placeholder: 'Search…' });
+        fields.appendChild(active.id);
+        fields.appendChild(_formLabel('Quantity'));
+        active.qty = UI().createNumberSlider({ value: 1, min: 1, max: 99, step: 1 });
+        fields.appendChild(active.qty);
+      } else if (def.kind === 'char') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Amount'));
+        active.amount = UI().createNumberSlider({ value: 5, min: 1, max: 999, step: 1 });
+        fields.appendChild(active.amount);
+      } else if (def.kind === 'status') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Status'));
+        active.status = UI().createSearchableSelect({ options: _statusOptions(), placeholder: 'Search statuses…' });
+        fields.appendChild(active.status);
+        if (def.value === 'add_status') {
+          fields.appendChild(_formLabel('Duration'));
+          active.duration = UI().createSelect({
+            options: [
+              { value: 'manual', label: 'Manual' },
+              { value: 'scene', label: 'Scene' },
+              { value: 'scenario', label: 'Scenario' },
+              { value: '3', label: '3 turns' },
+              { value: '5', label: '5 turns' }
+            ],
+            value: 'manual'
+          });
+          fields.appendChild(active.duration);
+        }
+      } else if (def.kind === 'flag') {
+        fields.appendChild(_formLabel('Flag name'));
+        active.flag = document.createElement('input');
+        active.flag.type = 'text';
+        active.flag.placeholder = 'flag_id';
+        active.flag.style.width = '100%';
+        fields.appendChild(active.flag);
+        if (def.value === 'set_flag') {
+          fields.appendChild(_formLabel('Value (text or true)'));
+          active.value = document.createElement('input');
+          active.value.type = 'text';
+          active.value.placeholder = 'leave blank for true';
+          active.value.style.width = '100%';
+          fields.appendChild(active.value);
+        }
+      } else if (def.kind === 'log') {
+        fields.appendChild(_formLabel('Log text'));
+        active.text = document.createElement('textarea');
+        active.text.style.width = '100%';
+        active.text.style.minHeight = '90px';
+        fields.appendChild(active.text);
+      } else if (def.kind === 'custom') {
+        fields.appendChild(_formLabel('Custom JSON op'));
+        active.json = document.createElement('textarea');
+        active.json.style.width = '100%';
+        active.json.style.minHeight = '120px';
+        active.json.placeholder = '{"op":"give_material","id":"haven_wolf_pelt","qty":2}';
+        fields.appendChild(active.json);
       }
-    };
+    }
+
+    renderFields();
+
+    _formModal({
+      title: 'GM Override',
+      body,
+      width: '560px',
+      primaryLabel: 'Apply',
+      onSubmit: () => {
+        try {
+          const def = GM_OPS.find((o) => o.value === opSelect.value) || GM_OPS[0];
+          let op;
+          if (def.kind === 'money') {
+            op = { op: def.value, currency: active.currency.value, amount: active.amount._getValue() };
+          } else if (def.kind === 'jp') {
+            op = { op: def.value, amount: active.amount._getValue() };
+          } else if (def.kind === 'inv') {
+            const id = active.id._getValue();
+            if (!id) { UI().toast('Pick an item', 'error'); return false; }
+            op = { op: def.value, id, qty: active.qty._getValue() || 1 };
+          } else if (def.kind === 'char') {
+            op = { op: def.value, target: active.target.value, amount: active.amount._getValue() };
+          } else if (def.kind === 'status') {
+            const status = active.status._getValue();
+            if (!status) { UI().toast('Pick a status', 'error'); return false; }
+            op = { op: def.value, target: active.target.value, status };
+            if (def.value === 'add_status') op.duration = active.duration.value || 'manual';
+          } else if (def.kind === 'flag') {
+            const flag = active.flag.value.trim();
+            if (!flag) { UI().toast('Flag name required', 'error'); return false; }
+            op = { op: def.value, flag };
+            if (def.value === 'set_flag') op.value = active.value.value.trim() || true;
+          } else if (def.kind === 'log') {
+            op = { op: 'log', text: active.text.value.trim() };
+          } else if (def.kind === 'custom') {
+            op = JSON.parse(active.json.value.trim() || '{}');
+          }
+          Ops().apply(op, { source: 'gm_override' });
+        } catch (error) {
+          UI().toast(error.message || 'Invalid override', 'error');
+          return false;
+        }
+      }
+    });
   }
 
   function _opsModal(title, ops, onApply) {
@@ -1157,6 +1498,176 @@ window.CJS.CampaignUI = (() => {
     const result = Bridge().consumeResult();
     if (!result) return;
     CS().mutate((state) => { state.pendingBattleResult = result; }, { source: 'combat_bridge' });
+  }
+
+  function _formLabel(text) {
+    const lbl = document.createElement('label');
+    lbl.className = 'form-label';
+    lbl.textContent = text;
+    lbl.style.marginTop = '10px';
+    lbl.style.display = 'block';
+    return lbl;
+  }
+
+  function _formModal({ title, body, onSubmit, primaryLabel = 'Apply', width = '480px' }) {
+    const footer = document.createElement('div');
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = primaryLabel;
+    footer.appendChild(btn);
+    const overlay = UI().openModal({ title, content: body, footer, width });
+    btn.onclick = () => {
+      const close = onSubmit();
+      if (close !== false) UI().closeModal(overlay);
+    };
+    return overlay;
+  }
+
+  function _bucketOptions(bucket) {
+    const world = CS().getState()?.currentWorld;
+    const inWorld = (entry) => !entry._world || entry._world === world || entry._scope === 'universal' || entry._scope === 'system';
+    const sortLabel = (a, b) => String(a.label).localeCompare(String(b.label));
+    if (bucket === 'materials') {
+      return DS().getAllAsArray('materials').filter(inWorld)
+        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || '' }))
+        .sort(sortLabel);
+    }
+    if (bucket === 'food') {
+      return DS().getAllAsArray('food').filter(inWorld)
+        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || '' }))
+        .sort(sortLabel);
+    }
+    return DS().getAllAsArray('items').filter(inWorld)
+      .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry.type || entry._world || '' }))
+      .sort(sortLabel);
+  }
+
+  function _statusOptions() {
+    const opts = DS().getAllAsArray('statuses').map((entry) => ({
+      value: entry.id,
+      label: entry.name || entry.id,
+      sub: entry.kind || ''
+    }));
+    return opts.sort((a, b) => String(a.label).localeCompare(String(b.label)));
+  }
+
+  function _seedOptions() {
+    const world = CS().getState()?.currentWorld;
+    return DS().getAllAsArray('crops')
+      .filter((crop) => !crop._world || crop._world === world)
+      .map((crop) => ({
+        value: crop.id,
+        label: crop.name || crop.id,
+        sub: crop.growTime ? `${crop.growTime}t` : ''
+      }))
+      .sort((a, b) => String(a.label).localeCompare(String(b.label)));
+  }
+
+  function _worldOptions() {
+    const campaign = CS().getCurrentCampaign();
+    const worlds = CS().getContent().worlds || {};
+    const allowed = campaign?.allowedWorlds || Object.keys(worlds);
+    return allowed.map((id) => ({
+      value: id,
+      label: worlds[id]?.displayName || id,
+      sub: id
+    }));
+  }
+
+  function _tentOptions() {
+    const inv = CS().getState()?.inventory?.items || {};
+    const owned = Object.keys(inv).filter((id) => (inv[id] || 0) > 0);
+    const items = DS().getAllAsArray('items');
+    const tagged = items.filter((entry) => {
+      const tags = entry.tags || [];
+      return tags.includes('tent') || tags.includes('camp') || /tent|camp/i.test(entry.id || '');
+    });
+    const tentIds = new Set(tagged.map((entry) => entry.id));
+    const all = new Set([...owned, ...tentIds]);
+    return Array.from(all).map((id) => {
+      const entry = items.find((e) => e.id === id);
+      return { value: id, label: entry?.name || id, sub: `Owned: ${inv[id] || 0}` };
+    });
+  }
+
+  function _opPickerModal({ title, options, primaryLabel = 'Apply', placeholder, withQty, qtyLabel = 'Qty', qtyMin = 1, qtyMax = 99, qtyDefault = 1, withDuration, onSubmit }) {
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Select'));
+    const select = UI().createSearchableSelect({ options, placeholder: placeholder || 'Search…' });
+    body.appendChild(select);
+
+    let qty = null;
+    if (withQty) {
+      body.appendChild(_formLabel(qtyLabel));
+      qty = UI().createNumberSlider({ value: qtyDefault, min: qtyMin, max: qtyMax, step: 1 });
+      body.appendChild(qty);
+    }
+
+    let duration = null;
+    if (withDuration) {
+      body.appendChild(_formLabel('Duration'));
+      duration = UI().createSelect({
+        options: [
+          { value: 'manual', label: 'Manual (GM clears)' },
+          { value: 'scene', label: 'Scene' },
+          { value: 'scenario', label: 'Scenario' },
+          { value: '3', label: '3 turns' },
+          { value: '5', label: '5 turns' },
+          { value: '10', label: '10 turns' }
+        ],
+        value: 'manual'
+      });
+      body.appendChild(duration);
+    }
+
+    return _formModal({
+      title,
+      body,
+      primaryLabel,
+      onSubmit: () => {
+        const value = select._getValue();
+        if (!value) {
+          UI().toast('Pick a value first', 'error');
+          return false;
+        }
+        onSubmit({
+          value,
+          qty: qty ? qty._getValue() : undefined,
+          duration: duration ? duration.value : undefined
+        });
+      }
+    });
+  }
+
+  function _textareaModal({ title, label, placeholder, primaryLabel = 'Save', onSubmit, width = '520px', defaultValue = '' }) {
+    const body = document.createElement('div');
+    if (label) body.appendChild(_formLabel(label));
+    const ta = document.createElement('textarea');
+    ta.style.width = '100%';
+    ta.style.minHeight = '120px';
+    ta.placeholder = placeholder || '';
+    ta.value = defaultValue;
+    body.appendChild(ta);
+    return _formModal({
+      title,
+      body,
+      primaryLabel,
+      width,
+      onSubmit: () => onSubmit(ta.value.trim())
+    });
+  }
+
+  function _numberModal({ title, label, primaryLabel = 'Apply', min = 1, max = 999, value = 5, onSubmit }) {
+    const body = document.createElement('div');
+    body.appendChild(_formLabel(label || 'Amount'));
+    const slider = UI().createNumberSlider({ value, min, max, step: 1 });
+    body.appendChild(slider);
+    return _formModal({
+      title,
+      body,
+      primaryLabel,
+      onSubmit: () => onSubmit(slider._getValue())
+    });
   }
 
   function _safe(value) {

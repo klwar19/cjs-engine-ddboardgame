@@ -107,7 +107,25 @@ window.CJS.CampaignSideContent = (() => {
   function copyMarkdown(card) {
     const text = cardToMarkdown(card);
     if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-    window.prompt('Copy Markdown', text);
+    const UI = window.CJS.UI;
+    if (UI?.openModal) {
+      const body = document.createElement('div');
+      const hint = document.createElement('div');
+      hint.className = 'campaign-muted';
+      hint.style.marginBottom = '8px';
+      hint.textContent = 'Clipboard unavailable — copy the text manually:';
+      const ta = document.createElement('textarea');
+      ta.readOnly = true;
+      ta.style.width = '100%';
+      ta.style.minHeight = '220px';
+      ta.style.fontFamily = 'monospace';
+      ta.value = text;
+      body.appendChild(hint);
+      body.appendChild(ta);
+      const overlay = UI.openModal({ title: 'Copy Markdown', content: body, width: '600px' });
+      setTimeout(() => { ta.focus(); ta.select(); }, 30);
+      void overlay;
+    }
     return Promise.resolve();
   }
 
