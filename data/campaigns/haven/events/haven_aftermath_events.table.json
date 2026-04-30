@@ -12,12 +12,15 @@
       "id": "haven_aftermath_events",
       "name": "Post-Battle Aftermath",
       "world": "haven",
+      "tags": ["aftermath", "battle"],
+      "settings": ["outdoor", "urban", "dungeon", "house", "castle", "mountain"],
       "entries": [
         {
-          "weight": 25,
+          "weight": 22,
           "id": "haven_evt_after_loot",
           "type": "reward",
           "title": "Quick Loot",
+          "tags": ["aftermath", "reward"],
           "prompt": "The party rummages through the dead's effects.",
           "suggested": [
             { "op": "give_money", "currency": "haven_gold", "amount": 14 },
@@ -25,10 +28,11 @@
           ]
         },
         {
-          "weight": 20,
+          "weight": 18,
           "id": "haven_evt_after_wounded",
           "type": "mechanical",
           "title": "Lingering Wounds",
+          "tags": ["aftermath", "injury"],
           "prompt": "The fight took more out of the party than expected.",
           "suggested": [
             { "op": "damage_party", "amount": 3 },
@@ -36,21 +40,25 @@
           ]
         },
         {
-          "weight": 20,
+          "weight": 16,
           "id": "haven_evt_after_field_kit",
           "type": "reward",
           "title": "Battlefield Kit",
+          "tags": ["aftermath", "reward"],
           "prompt": "An enemy carried a small medical roll.",
           "suggested": [
             { "op": "give_item", "id": "haven_minor_potion", "qty": 1 }
           ]
         },
         {
-          "weight": 15,
+          "weight": 12,
           "id": "haven_evt_after_witness",
           "type": "social",
           "title": "Witness in the Trees",
+          "tags": ["aftermath", "social"],
           "prompt": "A traveler watched the fight from cover. They want a word.",
+          "gmHook": "Recurring witness. Could be informant, blackmailer, or future hire.",
+          "gmIdea": "new_char",
           "suggested": [
             { "op": "log", "text": "GM: hostile, friendly, or scared? Choose." },
             { "op": "set_flag", "flag": "haven_battle_witnessed", "value": true }
@@ -61,6 +69,7 @@
           "id": "haven_evt_after_morale_high",
           "type": "mechanical",
           "title": "Morale Surge",
+          "tags": ["aftermath", "rest"],
           "prompt": "The cleanly-won fight steadies the whole party.",
           "suggested": [
             { "op": "heal_party", "amount": 6 },
@@ -68,13 +77,103 @@
           ]
         },
         {
-          "weight": 10,
+          "weight": 9,
           "id": "haven_evt_after_trophy",
           "type": "reward",
           "title": "Worthy Trophy",
+          "tags": ["aftermath", "guild"],
           "prompt": "One body has a marked sigil. A guildmaster will pay for proof.",
           "suggested": [
             { "op": "give_quest_item", "id": "haven_guild_sigil", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_after_cracked_blade",
+          "type": "mechanical",
+          "title": "Cracked Blade",
+          "tags": ["aftermath", "weapon"],
+          "prompt": "Someone's weapon took the hit instead of them. It needs reforging.",
+          "gmHook": "Free hook for the forge or a smithing quest.",
+          "gmIdea": "weapon",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_blade_needs_reforge", "value": true },
+            { "op": "log", "text": "GM: pick whose blade and decide if Hilda's forge can repair it." }
+          ]
+        },
+        {
+          "weight": 7,
+          "id": "haven_evt_after_bowy_kill_count",
+          "type": "social",
+          "title": "Tally on the Quiver",
+          "tags": ["aftermath", "back_story"],
+          "requiresParty": ["haven_bowy"],
+          "prompt": "Bowy's quiver has more notches than he remembers carving.",
+          "gmHook": "Plant Bowy's missing time or extra mentor seed.",
+          "gmIdea": "back_story",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_bowy_extra_kills", "value": true },
+            { "op": "log", "text": "Bowy is quiet for a while. GM picks why." }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_after_garr_silent",
+          "type": "social",
+          "title": "Garr Goes Silent",
+          "tags": ["aftermath", "back_story"],
+          "requiresParty": ["haven_garr"],
+          "prompt": "Garr cleans his blade longer than the wound deserves.",
+          "gmHook": "Free beat for Garr's hidden truth. Yellow.",
+          "gmIdea": "development",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "log", "text": "GM: what memory did this fight surface for Garr?" }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_after_mitia_residue",
+          "type": "social",
+          "title": "Frost Residue",
+          "tags": ["aftermath", "magic"],
+          "requiresParty": ["haven_mitia"],
+          "prompt": "Frost lingers on Mitia's hands long after the fight ends.",
+          "gmHook": "Promote into Mitia's hidden lineage.",
+          "gmIdea": "main_plot",
+          "suggested": [
+            { "op": "add_status", "target": "haven_mitia", "status": "blessed", "duration": "scenario" },
+            { "op": "log", "text": "Mitia stares at her hands. GM picks how worried she is." }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_after_strange_coin",
+          "type": "reward",
+          "title": "Strange Coin",
+          "tags": ["aftermath", "mystery"],
+          "prompt": "One enemy carried a coin that does not match any kingdom's mint.",
+          "gmHook": "Single coin = single faction hook. Pin and develop in two scenarios.",
+          "gmIdea": "faction",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
+            { "op": "log", "text": "GM: name the faction whose coin this is." }
+          ]
+        },
+        {
+          "weight": 5,
+          "id": "haven_evt_after_letter",
+          "type": "social",
+          "title": "Half-Burnt Letter",
+          "tags": ["aftermath", "clue"],
+          "prompt": "A blackened scrap of letter survives in a glove. A name is half-readable.",
+          "gmHook": "GM picks the name. New NPC seed.",
+          "gmIdea": "new_char",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_letter_recovered", "value": true },
+            { "op": "log", "text": "GM: pick the half-name on the letter." }
           ]
         }
       ]

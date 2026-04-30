@@ -143,6 +143,16 @@ window.CJS.ScenarioRunner = (() => {
       maybeTriggerRandomBattle(node.randomBattle);
     }
 
+    const scenarioForChat = CS().getActiveScenario();
+    window.CJS.CampaignPartyChat?.auto?.({
+      world: scenarioForChat?.world || CS().getState()?.currentWorld,
+      situation: 'scenario',
+      scenarioId: run.scenarioId,
+      mapId: run.mapId,
+      locationKind: node.kind || '',
+      tags: [...(node.tags || []), ...(scenarioForChat?.tags || [])]
+    }, { chance: 0.3 });
+
     const scenario = CS().getActiveScenario();
     if ((scenario?.successConditions || []).some((cond) => cond.type === 'reach_node' && cond.nodeId === nodeId)) {
       Ops().apply({ op: 'log', text: `Scenario objective reached: ${node.title || nodeId}.` }, { source: 'scenario' });

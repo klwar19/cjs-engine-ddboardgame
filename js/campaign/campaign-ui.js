@@ -685,18 +685,33 @@ window.CJS.CampaignUI = (() => {
   function _renderEventResult(state) {
     const event = state.lastEvent;
     if (!event) return '';
+    const ideaLabels = {
+      new_char: '👤 New NPC',
+      new_item: '🎁 Item idea',
+      weapon: '⚔ Weapon idea',
+      back_story: '📖 Backstory beat',
+      main_plot: '🌌 Main plot thread',
+      development: '✨ Character development',
+      faction: '🏛 Faction hook',
+      mystery: '🔮 Mystery hook'
+    };
+    const ideaPill = event.gmIdea ? `<span class="campaign-pill">${_esc(ideaLabels[event.gmIdea] || event.gmIdea)}</span>` : '';
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>${_esc(event.title || event.id || 'Event')}</h2>
           <span class="campaign-pill">${_esc(event.tableName || event.type || 'event')}</span>
+          ${ideaPill}
         </div>
         <p>${_esc(event.prompt || '')}</p>
+        ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
         ${(event.suggested || []).length ? `<div class="campaign-preview">${Ops().describe(event.suggested).map(_esc).join('<br>')}</div>` : ''}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="apply-event">Apply</button>
           <button class="campaign-action" data-campaign-action="edit-event">Edit First</button>
           <button class="campaign-action" data-campaign-action="note-event">Save Note</button>
+          ${(event.gmHook || event.gmIdea) ? '<button class="campaign-action" data-campaign-action="pin-plot-seed">📌 Pin Plot Seed</button>' : ''}
+          ${event.oracleTableId ? '<button class="campaign-action" data-campaign-action="event-to-oracle">🎴 Roll Oracle</button>' : ''}
           <button class="campaign-action danger" data-campaign-action="ignore-event">Ignore</button>
           <button class="campaign-action" data-campaign-action="roll-event">🎲 Reroll</button>
           <button class="campaign-action" data-campaign-action="pick-event">📋 Override</button>
@@ -1176,6 +1191,8 @@ window.CJS.CampaignUI = (() => {
       case 'edit-event': return _editEvent();
       case 'note-event': return _noteEvent();
       case 'ignore-event': return _ignoreEvent();
+      case 'pin-plot-seed': return _pinPlotSeed();
+      case 'event-to-oracle': return _eventToOracle();
       case 'add-quest': return _openQuestModal();
       case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
       case 'camp-rest': return _campRestModal();
@@ -1252,8 +1269,10 @@ window.CJS.CampaignUI = (() => {
 
   function _rollEvent() {
     const campaign = CS().getCurrentCampaign();
-    const tableId = campaign?.eventTables?.find((id) => id.includes(CS().getState().currentWorld)) || campaign?.eventTables?.[0];
-    const event = window.CJS.CampaignEvents.roll(tableId);
+    const world = CS().getState().currentWorld;
+    const tables = campaign?.eventTables || [];
+    const tableId = window.CJS.CampaignEvents.pickTable(tables, { world, setting: 'town', tags: ['town'] });
+    const event = window.CJS.CampaignEvents.roll(tableId, { world, setting: 'town', tags: ['town'] });
     if (!event) UI().toast('No event table available', 'info');
   }
 
@@ -1572,6 +1591,21 @@ window.CJS.CampaignUI = (() => {
     CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
   }
 
+  function _pinPlotSeed() {
+    const event = CS().getState().lastEvent;
+    if (!event) return;
+    window.CJS.CampaignEvents.pinAsPlotSeed(event);
+    UI().toast('Plot seed pinned to notes', 'success');
+  }
+
+  function _eventToOracle() {
+    const event = CS().getState().lastEvent;
+    const oracle = window.CJS.CampaignOracle?.roll?.();
+    if (!oracle) return UI().toast('Oracle table empty', 'info');
+    CS().mutate((state) => { state.lastOracle = { ...oracle, source: event ? `event:${event.id}` : 'event' }; }, { source: 'oracle_from_event' });
+    UI().toast('Oracle rolled from event', 'success');
+  }
+
   function _openQuestModal() {
     const templates = Object.values(CS().getContent().campaignQuests).flatMap((record) => record.templates || []);
     const body = document.createElement('div');
@@ -1866,10 +1900,18 @@ window.CJS.CampaignUI = (() => {
     const scenario = CS().getActiveScenario();
     const campaign = CS().getCurrentCampaign();
     const world = CS().getState().currentWorld;
+    const node = Runner().findCurrentNode?.();
+    const cell = Runner().findCurrentCell?.();
+    const context = {
+      world,
+      setting: scenario?.setting || '',
+      tags: [...(scenario?.tags || []), ...(node?.tags || []), ...(cell?.tags || [])],
+      locationKind: node?.kind || cell?.kind || ''
+    };
     const tables = [...(scenario?.eventTables || []), ...(campaign?.eventTables || [])];
-    const tableId = tables.find((id) => String(id).includes(world)) || tables[0];
+    const tableId = window.CJS.CampaignEvents.pickTable(tables, context);
     if (!tableId) return UI().toast('No event tables available', 'info');
-    const event = window.CJS.CampaignEvents.roll(tableId);
+    const event = window.CJS.CampaignEvents.roll(tableId, context);
     if (!event) UI().toast('Event roll returned nothing', 'info');
   }
 

@@ -12,23 +12,28 @@
       "id": "haven_generic_events",
       "name": "Haven Generic Events",
       "world": "haven",
+      "tags": ["generic", "town", "travel"],
+      "settings": ["town", "outdoor"],
       "entries": [
         {
-          "weight": 40,
+          "weight": 30,
           "id": "haven_evt_kind_trader",
           "type": "hybrid",
           "title": "Kind Trader",
-          "prompt": "A trader offers a small favor if the party shares news from the road.",
+          "tags": ["town", "social"],
+          "prompt": "A road trader offers a small favor if the party shares news from the south.",
           "suggested": [
             { "op": "give_money", "currency": "haven_gold", "amount": 5 },
             { "op": "log", "text": "The party earned a small trader favor." }
           ]
         },
         {
-          "weight": 25,
+          "weight": 22,
           "id": "haven_evt_bad_weather",
           "type": "mechanical",
           "title": "Bad Weather",
+          "tags": ["travel", "outdoor"],
+          "settings": ["outdoor", "mountain"],
           "prompt": "Freezing wind slows travel and drains morale.",
           "suggested": [
             { "op": "add_status", "target": "party", "status": "tired", "duration": "phase" },
@@ -36,13 +41,125 @@
           ]
         },
         {
-          "weight": 35,
+          "weight": 25,
           "id": "haven_evt_forgotten_cache",
           "type": "reward",
           "title": "Forgotten Cache",
+          "tags": ["reward", "cache"],
           "prompt": "A hidden cache sits under a loose stone.",
           "suggested": [
             { "op": "give_item", "id": "haven_minor_potion", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 18,
+          "id": "haven_evt_tavern_rumor",
+          "type": "social",
+          "title": "Tavern Rumor",
+          "tags": ["town", "rumor", "tavern"],
+          "settings": ["town"],
+          "prompt": "A drunk regular mutters about lights moving inside the old shrine.",
+          "gmHook": "Hand the GM a rumor card. Keep canon-risk yellow.",
+          "gmIdea": "mystery",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Lights inside the old shrine after midnight.", "canonRisk": "yellow", "tags": ["shrine", "mystery"] },
+            { "op": "log", "text": "Rumor pinned for the GM's plot pile." }
+          ]
+        },
+        {
+          "weight": 14,
+          "id": "haven_evt_courier_request",
+          "type": "social",
+          "title": "Courier Request",
+          "tags": ["town", "quest_seed"],
+          "settings": ["town"],
+          "prompt": "A travelling courier asks the party to deliver a thin wax-sealed letter on their next route.",
+          "gmHook": "If the GM accepts: thread the letter through the next scenario as a quest item.",
+          "gmIdea": "new_char",
+          "suggested": [
+            { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
+            { "op": "log", "text": "Letter accepted. Recipient: GM choice." }
+          ]
+        },
+        {
+          "weight": 12,
+          "id": "haven_evt_merchant_argument",
+          "type": "social",
+          "title": "Stalled Caravan",
+          "tags": ["town", "social"],
+          "settings": ["town", "outdoor"],
+          "prompt": "Two merchant guards block the road over a weighing dispute. They want a third party to call it.",
+          "gmHook": "The losing side becomes a low-hostility recurring NPC the next time the party returns.",
+          "gmIdea": "faction",
+          "suggested": [
+            { "op": "log", "text": "GM: pick the side. Other side becomes hostile-light." },
+            { "op": "set_flag", "flag": "haven_caravan_dispute", "value": "open" }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_old_friend",
+          "type": "social",
+          "title": "An Old Friend",
+          "tags": ["town", "bond"],
+          "settings": ["town"],
+          "requiresParty": ["bin"],
+          "prompt": "Someone from before Bin's missing year recognises him by his walk and won't let him refuse a drink.",
+          "gmHook": "Free hook for filling Bin's lost year. Pin and develop later.",
+          "gmIdea": "back_story",
+          "suggested": [
+            { "op": "bond_change", "npcId": "bin", "field": "memory", "amount": 1 },
+            { "op": "log", "text": "Bin gains a fragment of his missing year. GM picks the truth." }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_mitia_whisper",
+          "type": "social",
+          "title": "Whisper Under the Bell",
+          "tags": ["town", "magic"],
+          "settings": ["town"],
+          "requiresParty": ["haven_mitia"],
+          "prompt": "Mitia hears a whisper inside the temple bell that no one else does. The bell rings only for her.",
+          "gmHook": "Plant Mitia's hidden lineage seed. Yellow. Promote only with consent.",
+          "gmIdea": "main_plot",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_mitia_bell_heard", "value": true },
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "The bell rings for one of the visitors.", "canonRisk": "yellow" }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_garr_marker",
+          "type": "social",
+          "title": "Garr's Old Mark",
+          "tags": ["town", "back_story"],
+          "settings": ["town", "outdoor"],
+          "requiresParty": ["haven_garr"],
+          "prompt": "A weathered post bears a hunter's mark Garr left years ago. The mark has been carved over.",
+          "gmHook": "Whoever covered the mark is a hook for an antagonist or rival.",
+          "gmIdea": "back_story",
+          "suggested": [
+            { "op": "log", "text": "GM: name the rival who carved over Garr's mark." },
+            { "op": "set_flag", "flag": "haven_garr_mark_overcarved", "value": true }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_bowy_old_bow",
+          "type": "social",
+          "title": "Bowy's First Bow",
+          "tags": ["town", "weapon"],
+          "settings": ["town"],
+          "requiresParty": ["haven_bowy"],
+          "prompt": "A pawnbroker shows Bowy a child's hunting bow with his initials scratched inside.",
+          "gmHook": "Free seed for an heirloom upgrade or a chapter about Bowy's village.",
+          "gmIdea": "weapon",
+          "suggested": [
+            { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
+            { "op": "log", "text": "Bowy keeps the bow. GM: tie it to a future smith or village quest." }
           ]
         }
       ]

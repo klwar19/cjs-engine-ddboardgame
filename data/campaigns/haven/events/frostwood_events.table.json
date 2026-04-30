@@ -12,23 +12,28 @@
       "id": "haven_frostwood_events",
       "name": "Frostwood Minor Events",
       "world": "haven",
+      "tags": ["outdoor", "frostwood", "travel"],
+      "settings": ["outdoor", "mountain"],
       "entries": [
         {
-          "weight": 30,
+          "weight": 28,
           "id": "haven_evt_tracks_in_snow",
           "type": "hybrid",
           "title": "Tracks in the Snow",
-          "prompt": "Fresh tracks cross the party path, but one set walks backward.",
+          "tags": ["outdoor", "clue"],
+          "prompt": "Fresh tracks cross the path, but one set walks backward.",
           "suggested": [
             { "op": "roll_check", "stat": "P", "dc": 10 },
             { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 }
           ]
         },
         {
-          "weight": 20,
+          "weight": 18,
           "id": "haven_evt_weak_ice",
           "type": "trap",
           "title": "Weak Ice",
+          "tags": ["outdoor", "trap"],
+          "locationKinds": ["trap", "event_battle", "event"],
           "prompt": "Snow hides a thin ice shelf.",
           "check": {
             "stat": "A",
@@ -43,20 +48,22 @@
           ]
         },
         {
-          "weight": 25,
+          "weight": 22,
           "id": "haven_evt_frost_herbs",
           "type": "reward",
           "title": "Frost Herbs",
+          "tags": ["outdoor", "reward"],
           "prompt": "A blue herb cluster grows where sunlight breaks the canopy.",
           "suggested": [
             { "op": "give_material", "id": "haven_ice_crystal", "qty": 1 }
           ]
         },
         {
-          "weight": 25,
+          "weight": 22,
           "id": "haven_evt_hungry_howl",
           "type": "mechanical",
           "title": "Hungry Howl",
+          "tags": ["outdoor", "wolf"],
           "prompt": "A long howl rolls through the trees.",
           "suggested": [
             { "op": "danger", "amount": 1 },
@@ -68,6 +75,7 @@
           "id": "haven_evt_buried_cache",
           "type": "reward",
           "title": "Buried Cache",
+          "tags": ["outdoor", "reward"],
           "prompt": "A frozen knot of rope leads to a buried trapper's cache.",
           "suggested": [
             { "op": "give_item", "id": "haven_minor_potion", "qty": 1 },
@@ -79,7 +87,10 @@
           "id": "haven_evt_lost_lantern",
           "type": "social",
           "title": "Lost Lantern",
+          "tags": ["outdoor", "rescue"],
           "prompt": "A frostbitten traveler wanders the trees, missing a lantern.",
+          "gmHook": "If the party gives up a potion, the traveler reappears at the next town as a contact.",
+          "gmIdea": "new_char",
           "suggested": [
             { "op": "take_item", "id": "haven_minor_potion", "qty": 1 },
             { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
@@ -91,6 +102,7 @@
           "id": "haven_evt_wolf_kit",
           "type": "encounter",
           "title": "Wolf Pup",
+          "tags": ["outdoor", "wolf"],
           "prompt": "A pup follows the party. Mother is somewhere nearby.",
           "suggested": [
             { "op": "danger", "amount": 1 },
@@ -98,14 +110,50 @@
           ]
         },
         {
-          "weight": 8,
+          "weight": 10,
           "id": "haven_evt_bowy_old_target",
           "type": "social",
           "title": "Bowy's Old Target",
-          "prompt": "An arrow with familiar fletching is buried in a trunk.",
+          "tags": ["outdoor", "back_story"],
+          "requiresParty": ["haven_bowy"],
+          "prompt": "An arrow with familiar fletching is buried in a trunk. Bowy did not fire it.",
+          "gmHook": "Plant Bowy's missing mentor. Could become a quest chain.",
+          "gmIdea": "new_char",
+          "oracleTableId": "oracle_frostbitten",
           "suggested": [
             { "op": "set_flag", "flag": "haven_bowy_old_quarry", "value": true },
             { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_garr_clue",
+          "type": "social",
+          "title": "Garr's Old Map Stone",
+          "tags": ["outdoor", "back_story"],
+          "requiresParty": ["haven_garr"],
+          "prompt": "A flat stone is scored with a route Garr used in another life. The end of the route is scratched out.",
+          "gmHook": "Free seed for Garr's hidden truth. Hand to GM, do not auto-resolve.",
+          "gmIdea": "back_story",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_garr_old_route", "value": true },
+            { "op": "log", "text": "Garr stares at the stone too long. GM picks why." }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_mitia_pull",
+          "type": "social",
+          "title": "Frost That Listens",
+          "tags": ["outdoor", "magic"],
+          "requiresParty": ["haven_mitia"],
+          "prompt": "Mitia feels the snow lean toward her like it wants to be told something.",
+          "gmHook": "Promote later for Mitia's lineage. Yellow risk.",
+          "gmIdea": "main_plot",
+          "suggested": [
+            { "op": "add_status", "target": "haven_mitia", "status": "blessed", "duration": "scenario" },
+            { "op": "log", "text": "GM: name the thing the snow wanted to hear." }
           ]
         },
         {
@@ -113,6 +161,7 @@
           "id": "haven_evt_sudden_storm",
           "type": "trap",
           "title": "Sudden Storm",
+          "tags": ["outdoor", "weather"],
           "prompt": "Wind picks up. Visibility collapses.",
           "check": {
             "stat": "P",
@@ -125,6 +174,62 @@
           },
           "suggested": [
             { "op": "roll_check", "stat": "P", "dc": 12 }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_old_shrine_glow",
+          "type": "social",
+          "title": "Glow Through the Pines",
+          "tags": ["outdoor", "shrine", "mystery"],
+          "prompt": "A faint amber glow pulses through the trees in the direction of an unmarked shrine.",
+          "gmHook": "Big plot bait. Promote into the main mystery only when the GM is ready.",
+          "gmIdea": "main_plot",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "An unmarked shrine pulses amber after dusk.", "canonRisk": "red", "tags": ["shrine", "mystery"] },
+            { "op": "log", "text": "Plot seed pinned. Red risk; GM must approve for canon." }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_lost_recipe",
+          "type": "reward",
+          "title": "Hunter's Lost Recipe",
+          "tags": ["outdoor", "cooking"],
+          "prompt": "A wax-paper folded recipe sits inside a hollow log, half-frozen.",
+          "gmIdea": "new_item",
+          "suggested": [
+            { "op": "unlock_recipe", "recipeId": "warm_stew" },
+            { "op": "log", "text": "Recipe unlocked: warm stew." }
+          ]
+        },
+        {
+          "weight": 5,
+          "id": "haven_evt_rival_camp",
+          "type": "encounter",
+          "title": "Rival Hunters' Camp",
+          "tags": ["outdoor", "faction"],
+          "prompt": "A small camp belongs to a rival hunting band. They are not here. Their gear is.",
+          "gmHook": "Give the GM a recurring rival faction in two minutes.",
+          "gmIdea": "faction",
+          "suggested": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 8 },
+            { "op": "set_flag", "flag": "haven_rival_hunters_known", "value": true },
+            { "op": "log", "text": "GM: name the rival band." }
+          ]
+        },
+        {
+          "weight": 4,
+          "id": "haven_evt_dropped_blade",
+          "type": "reward",
+          "title": "Dropped Blade",
+          "tags": ["outdoor", "weapon"],
+          "gmIdea": "weapon",
+          "prompt": "A short blade lies half-buried near broken snow. Someone struggled here.",
+          "suggested": [
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
+            { "op": "log", "text": "GM: name the previous owner of the blade." }
           ]
         }
       ]
