@@ -1,0 +1,176 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "campaignEvents",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_plot_seeds",
+      "name": "Haven Plot Seeds",
+      "world": "haven",
+      "tags": ["plot_seed", "town", "outdoor", "urban"],
+      "settings": ["town", "outdoor", "urban", "dungeon", "house", "castle"],
+      "entries": [
+        {
+          "weight": 12,
+          "id": "haven_evt_seed_new_npc_courier",
+          "type": "social",
+          "title": "Plot Seed: A New Face",
+          "tags": ["plot_seed", "new_char"],
+          "gmIdea": "new_char",
+          "prompt": "A courier with a half-finished tattoo waits exactly where the party will pass. They have read the room before sitting down.",
+          "gmHook": "Pin as a recurring NPC. GM picks gender, tone, and which faction the tattoo points to.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: new courier NPC. GM names them and gives them one secret." }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_seed_new_npc_smith",
+          "type": "social",
+          "title": "Plot Seed: Smith Without a Forge",
+          "tags": ["plot_seed", "new_char", "weapon"],
+          "gmIdea": "new_char",
+          "prompt": "Hilda introduces a smith who lost their forge and is sleeping behind the alley. They ask for a small job.",
+          "gmHook": "Free recurring craft NPC. Could unlock a custom weapon line.",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: itinerant smith. GM picks one weapon they uniquely make." }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_seed_new_item_relic",
+          "type": "reward",
+          "title": "Plot Seed: A Relic in the Snow",
+          "tags": ["plot_seed", "new_item"],
+          "gmIdea": "new_item",
+          "prompt": "A wax-wrapped object pokes out of fresh snow. Cold, heavy, a little wrong.",
+          "gmHook": "GM defines the relic later. Yellow if used; red if it whispers.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
+            { "op": "log", "text": "Plot seed: GM names the relic and one rule it breaks." }
+          ]
+        },
+        {
+          "weight": 10,
+          "id": "haven_evt_seed_weapon_named",
+          "type": "reward",
+          "title": "Plot Seed: A Weapon With a Name",
+          "tags": ["plot_seed", "weapon"],
+          "gmIdea": "weapon",
+          "prompt": "An old weapon, signed in a smith's mark no one in town recognises.",
+          "gmHook": "Hand the GM a free named weapon. Roll oracle for the original wielder's last word.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: GM picks weapon name and one trait it earned." }
+          ]
+        },
+        {
+          "weight": 9,
+          "id": "haven_evt_seed_main_plot_prophecy",
+          "type": "social",
+          "title": "Plot Seed: A Whispered Line",
+          "tags": ["plot_seed", "main_plot"],
+          "gmIdea": "main_plot",
+          "prompt": "A fevered patient repeats a single line that none of the local clergy can place.",
+          "gmHook": "Pin as a main plot thread. Promote when the party is ready.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A patient repeats a line none of the clergy can place.", "canonRisk": "red" },
+            { "op": "log", "text": "Plot seed: red-risk main plot thread." }
+          ]
+        },
+        {
+          "weight": 9,
+          "id": "haven_evt_seed_back_story_letter",
+          "type": "social",
+          "title": "Plot Seed: A Letter to Someone Here",
+          "tags": ["plot_seed", "back_story"],
+          "gmIdea": "back_story",
+          "prompt": "A sealed letter is addressed to one of the party. The handwriting is old.",
+          "gmHook": "GM picks the recipient and one childhood truth in the letter.",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: GM picks the recipient and what the letter admits." }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_seed_development_choice",
+          "type": "social",
+          "title": "Plot Seed: A Choice That Stays",
+          "tags": ["plot_seed", "development"],
+          "gmIdea": "development",
+          "prompt": "The party is offered an easy out that costs someone a little of who they were.",
+          "gmHook": "Free character growth beat. Ties into the next scenario or chapter break.",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: GM picks who is offered the easy out." }
+          ]
+        },
+        {
+          "weight": 7,
+          "id": "haven_evt_seed_faction_third",
+          "type": "social",
+          "title": "Plot Seed: A Third Faction",
+          "tags": ["plot_seed", "faction"],
+          "gmIdea": "faction",
+          "prompt": "A messenger from a faction nobody tracks waits in the corner of the tavern.",
+          "gmHook": "GM names the faction and one thing they want.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: name the third faction and one demand they make." }
+          ]
+        },
+        {
+          "weight": 7,
+          "id": "haven_evt_seed_mystery_door",
+          "type": "social",
+          "title": "Plot Seed: A Door That Was Not There",
+          "tags": ["plot_seed", "mystery"],
+          "gmIdea": "mystery",
+          "prompt": "A door appears in a wall the party walked past yesterday.",
+          "gmHook": "Mystery seed. Promote into a scenario when the GM is ready.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A door is open in a wall that was solid yesterday.", "canonRisk": "yellow" },
+            { "op": "log", "text": "Plot seed: GM decides where the door leads." }
+          ]
+        },
+        {
+          "weight": 6,
+          "id": "haven_evt_seed_bin_missing_year",
+          "type": "social",
+          "title": "Plot Seed: A Year Bin Cannot Account For",
+          "tags": ["plot_seed", "main_plot", "back_story"],
+          "gmIdea": "main_plot",
+          "requiresParty": ["bin"],
+          "prompt": "Someone produces a contract in Bin's handwriting from a city Bin has never visited.",
+          "gmHook": "Heavy. Promote only if the missing-year arc is wanted.",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_bin_missing_year_evidence", "value": true },
+            { "op": "log", "text": "Plot seed: GM picks the city and what Bin agreed to." }
+          ]
+        },
+        {
+          "weight": 5,
+          "id": "haven_evt_seed_party_bond",
+          "type": "social",
+          "title": "Plot Seed: An Unfinished Conversation",
+          "tags": ["plot_seed", "development", "bond"],
+          "gmIdea": "development",
+          "prompt": "Two party members realise they were both there, on different sides, of an event neither has talked about.",
+          "gmHook": "Free bond beat between any two members the GM picks.",
+          "suggested": [
+            { "op": "log", "text": "Plot seed: GM picks the two members and the unfinished moment." }
+          ]
+        }
+      ]
+    }
+  ]
+}

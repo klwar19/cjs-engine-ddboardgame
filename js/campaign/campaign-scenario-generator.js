@@ -18,8 +18,9 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const GRID_SIZES = { tiny: [5, 5], small: [6, 6], medium: [8, 6], large: [10, 8] };
 
   function generateAndStart(options = {}) {
-    if (CS().getState()?.activeScenarioRun) return null;
+    if (CS().getState()?.activeScenarioRun) return { error: 'active_run' };
     const result = generate(options);
+    if (result.error) return result;
     Runner().startScenario(result.scenario.id);
     return result;
   }
@@ -30,6 +31,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const world = state.currentWorld || CS().getCurrentCampaign()?.world || 'haven';
     const opts = _normalizeOptions(options);
     const context = _sourceContext(opts.source, world);
+    if (context.error) return { error: context.error, source: opts.source };
     const seed = _pickMapSeed(opts, context, world) || _fallbackSeed(opts, context, world);
     const map = opts.mapForm === 'grid_map'
       ? _buildGridMap(seed, opts, context, world)
@@ -79,40 +81,37 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const state = CS().getState();
     if (source === 'active_quest') {
       const quest = Object.values(state.quests || {}).find((entry) => !['complete', 'completed', 'failed'].includes(String(entry.status || 'active')))
-        || Object.values(state.quests || {})[0]
         || null;
-      if (quest) {
-        return {
-          source,
-          title: quest.title || quest.id,
-          summary: quest.summary || '',
-          tags: quest.tags || [],
-          battleSetIds: quest.battleSetIds || [],
-          mapSeedIds: quest.mapSeedIds || []
-        };
-      }
+      if (!quest) return { error: 'no_active_quest', source };
+      return {
+        source,
+        title: quest.title || quest.id,
+        summary: quest.summary || '',
+        tags: quest.tags || [],
+        battleSetIds: quest.battleSetIds || [],
+        mapSeedIds: quest.mapSeedIds || []
+      };
     }
 
     if (source === 'quest_chain') {
-      const active = Object.values(state.sideContent?.activeQuestChains || {})[0] || null;
-      const template = active ? Loader().getQuestChainTemplate(active.templateId) : _pick(Loader().getQuestChainTemplates(world));
-      const chain = template || active;
-      if (chain) {
-        return {
-          source,
-          title: chain.title || chain.name || chain.templateId || chain.id,
-          summary: chain.summary || '',
-          tags: chain.tags || [],
-          battleSetIds: chain.battleSetIds || [],
-          mapSeedIds: chain.mapSeedIds || [],
-          questChainId: chain.id || chain.templateId
-        };
-      }
+      const activeState = Object.values(state.sideContent?.activeQuestChains || {})[0] || null;
+      const activeTemplate = activeState ? Loader().getQuestChainTemplate(activeState.templateId) : null;
+      const chain = activeTemplate || activeState;
+      if (!chain) return { error: 'no_active_chain', source };
+      return {
+        source,
+        title: chain.title || chain.name || chain.templateId || chain.id,
+        summary: chain.summary || '',
+        tags: chain.tags || [],
+        battleSetIds: chain.battleSetIds || [],
+        mapSeedIds: chain.mapSeedIds || [],
+        questChainId: chain.id || chain.templateId
+      };
     }
 
     return {
       source: 'random',
-      title: 'Random Scenario',
+      title: '',
       summary: 'A generated field run using the current campaign pools.',
       tags: [],
       battleSetIds: [],
@@ -146,13 +145,15 @@ window.CJS.CampaignScenarioGenerator = (() => {
       ...(context.battleSetIds || []),
       ...points.flatMap((point) => [...(point.battleSetIds || []), ...(point.encounterIds || [])])
     ]);
-    const setBattles = battleRefs.map(_battleEntryFromRef).filter((entry) => entry.encounterId || entry.battleSetId);
+    let setBattles = battleRefs.map(_battleEntryFromRef).filter((entry) => entry.encounterId || entry.battleSetId);
+    const fallbackPool = setBattles.length ? [] : _worldBattlePool(world);
+    const battlePool = setBattles.length ? setBattles : fallbackPool;
     const exitPoint = [...points].reverse().find((point) => point.kind === 'exit') || points[points.length - 1];
     const id = `gen_scn_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const setting = opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType;
     return {
       id,
-      name: `${context.title || 'Generated Scenario'}: ${map.name}`,
+      name: _scenarioName(context, map, seed),
       type: 'generated',
       world,
       travelMode: map.type === 'grid_map' ? 'grid_map' : 'node_map',
@@ -173,11 +174,12 @@ window.CJS.CampaignScenarioGenerator = (() => {
       limits: { campRests: opts.size === 'large' ? 2 : 1, randomBattles: opts.size === 'tiny' ? 1 : 2, events: opts.size === 'large' ? 4 : 2 },
       danger: { start: 0, max: opts.size === 'large' ? 12 : 10 },
       setBattles,
-      randomBattleTables: setBattles.length ? [{
+      randomBattleTables: battlePool.length ? [{
         id: `${id}_random_battles`,
-        name: 'Generated Battle Pool',
-        entries: setBattles.map((entry) => ({ ...entry, weight: entry.weight || 1 }))
+        name: setBattles.length ? 'Generated Battle Pool' : 'World Battle Pool',
+        entries: battlePool.map((entry) => ({ ...entry, weight: entry.weight || 1 }))
       }] : [],
+      eventTables: _campaignEventTables(world),
       successConditions: exitPoint
         ? (map.type === 'grid_map'
           ? [{ type: 'reach_cell', x: exitPoint.x, y: exitPoint.y }]
@@ -186,6 +188,43 @@ window.CJS.CampaignScenarioGenerator = (() => {
       entryOps: [{ op: 'log', text: `Generated from ${context.source}: ${context.title || seed.name || 'random pools'}.` }],
       exitOps: []
     };
+  }
+
+  function _scenarioName(context, map, seed) {
+    const base = map.name || seed.name || 'Scenario';
+    if (context.source === 'random' || !context.title) return base;
+    return `${context.title}: ${base}`;
+  }
+
+  function _worldBattlePool(world) {
+    const cards = Loader().getBattleSetCards(world) || [];
+    const entries = cards
+      .map((card) => ({
+        id: card.id,
+        battleSetId: card.id,
+        encounterId: card.encounterId || null,
+        label: card.name || card.id,
+        rewardOps: card.rewardOps || [],
+        objective: card.objective || '',
+        notes: card.gimmick || ''
+      }))
+      .filter((entry) => entry.encounterId || entry.battleSetId);
+    if (entries.length) return entries;
+    const encounters = (DS().getAllAsArray('encounters') || []).filter((enc) => !enc._world || enc._world === world);
+    return encounters.slice(0, 6).map((enc) => ({
+      id: enc.id,
+      encounterId: enc.id,
+      label: enc.name || enc.id
+    }));
+  }
+
+  function _campaignEventTables(world) {
+    const tables = CS().getCurrentCampaign()?.eventTables || [];
+    if (tables.length) return [...tables];
+    const fromStore = (DS().getAllAsArray('campaignEvents') || [])
+      .filter((table) => !table.world || table.world === world || table._world === world)
+      .map((table) => table.id);
+    return fromStore;
   }
 
   function _buildMap(seed, opts, context, world) {

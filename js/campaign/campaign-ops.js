@@ -1144,7 +1144,22 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _rollEvent(state, op) {
-    const result = window.CJS.CampaignEvents?.roll(op.table, op);
+    const Events = window.CJS.CampaignEvents;
+    if (!Events) return;
+    const scenario = CS().getActiveScenario?.();
+    const node = window.CJS.ScenarioRunner?.findCurrentNode?.();
+    const cell = window.CJS.ScenarioRunner?.findCurrentCell?.();
+    const context = {
+      world: state.currentWorld,
+      setting: scenario?.setting || op.setting || '',
+      tags: [...(op.tags || []), ...(scenario?.tags || []), ...(node?.tags || []), ...(cell?.tags || [])],
+      locationKind: node?.kind || cell?.kind || '',
+      chance: op.chance,
+      afterBattle: !!op.afterBattle
+    };
+    const tables = op.table ? [op.table] : (scenario?.eventTables || CS().getCurrentCampaign()?.eventTables || []);
+    const tableId = Events.pickTable ? Events.pickTable(tables, context) : tables[0];
+    const result = Events.roll(tableId, context);
     if (result) {
       state.lastEvent = result;
       _log(state, `Rolled event: ${result.title || result.id}.`);

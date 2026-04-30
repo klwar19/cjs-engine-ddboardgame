@@ -214,6 +214,7 @@ window.CJS.CampaignUI = (() => {
     const run = state.activeScenarioRun;
     if (!run) return '<div class="campaign-hud-spacer"></div>';
     const scenario = CS().getScenarioById(run.scenarioId);
+    const generated = !!scenario?.generated;
     return `
       <div class="campaign-scenario-hud">
         <span class="campaign-pill is-current">${_esc(scenario?.name || run.scenarioId)}</span>
@@ -222,6 +223,7 @@ window.CJS.CampaignUI = (() => {
         <span class="campaign-pill">Battles ${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</span>
         <button class="campaign-action" data-campaign-action="open-maps-tab">Run</button>
         <button class="campaign-action danger" data-campaign-action="end-scenario">End</button>
+        ${generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without recording a report">Cancel</button>' : ''}
       </div>
     `;
   }
@@ -416,10 +418,13 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-tab-grid">
         <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head"><h2>Active Quest Chains</h2></div>
-          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side chains.</div>'}
+          <div class="campaign-panel-head">
+            <h2>Active Quest Chains</h2>
+            <span class="campaign-pill">${active.length} active · ${available.length} available</span>
+          </div>
+          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side chains. Pick one below to begin.</div>'}
         </section>
-        ${available.map((chain) => _renderQuestChainTemplate(chain)).join('') || '<section class="campaign-panel"><div class="campaign-empty">No available chains.</div></section>'}
+        ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No quest chain templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
       </div>
     `;
   }
@@ -597,6 +602,7 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
           <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+          ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Scenario</button>' : ''}
         </div>
       </section>
     `;
@@ -679,18 +685,33 @@ window.CJS.CampaignUI = (() => {
   function _renderEventResult(state) {
     const event = state.lastEvent;
     if (!event) return '';
+    const ideaLabels = {
+      new_char: '👤 New NPC',
+      new_item: '🎁 Item idea',
+      weapon: '⚔ Weapon idea',
+      back_story: '📖 Backstory beat',
+      main_plot: '🌌 Main plot thread',
+      development: '✨ Character development',
+      faction: '🏛 Faction hook',
+      mystery: '🔮 Mystery hook'
+    };
+    const ideaPill = event.gmIdea ? `<span class="campaign-pill">${_esc(ideaLabels[event.gmIdea] || event.gmIdea)}</span>` : '';
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>${_esc(event.title || event.id || 'Event')}</h2>
           <span class="campaign-pill">${_esc(event.tableName || event.type || 'event')}</span>
+          ${ideaPill}
         </div>
         <p>${_esc(event.prompt || '')}</p>
+        ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
         ${(event.suggested || []).length ? `<div class="campaign-preview">${Ops().describe(event.suggested).map(_esc).join('<br>')}</div>` : ''}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="apply-event">Apply</button>
           <button class="campaign-action" data-campaign-action="edit-event">Edit First</button>
           <button class="campaign-action" data-campaign-action="note-event">Save Note</button>
+          ${(event.gmHook || event.gmIdea) ? '<button class="campaign-action" data-campaign-action="pin-plot-seed">📌 Pin Plot Seed</button>' : ''}
+          ${event.oracleTableId ? '<button class="campaign-action" data-campaign-action="event-to-oracle">🎴 Roll Oracle</button>' : ''}
           <button class="campaign-action danger" data-campaign-action="ignore-event">Ignore</button>
           <button class="campaign-action" data-campaign-action="roll-event">🎲 Reroll</button>
           <button class="campaign-action" data-campaign-action="pick-event">📋 Override</button>
@@ -870,13 +891,14 @@ window.CJS.CampaignUI = (() => {
           <section class="campaign-panel">
             <div class="campaign-panel-head">
               <h3>${_esc(scenario.name || scenario.id)}</h3>
-              <span class="campaign-pill">${_esc(scenario.generated ? 'generated' : (scenario.type || 'scenario'))}</span>
+              <span class="campaign-pill">${_esc(scenario.generated ? `generated · ${scenario.source?.kind || 'random'}` : (scenario.type || 'scenario'))}</span>
             </div>
             ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
             <div class="campaign-action-grid">
               <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''}>Start</button>
               <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}">Inspect</button>
+              ${scenario.generated ? `<button class="campaign-action danger" data-campaign-action="discard-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun?.scenarioId === scenario.id ? 'disabled' : ''}>Discard</button>` : ''}
             </div>
           </section>
         `).join('') || '<div class="campaign-empty">No scenarios available.</div>'}
@@ -1025,26 +1047,34 @@ window.CJS.CampaignUI = (() => {
 
   function _renderQuestPanel(state) {
     const quests = Object.values(state.quests || {});
+    const active = quests.filter((q) => !['complete', 'completed', 'failed'].includes(String(q.status || 'active')));
+    const finished = quests.filter((q) => ['complete', 'completed', 'failed'].includes(String(q.status || 'active')));
+    const templateCount = Object.values(CS().getContent().campaignQuests || {})
+      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
+    const renderRow = (quest) => `
+      <div class="campaign-row">
+        <div>
+          <strong>${_esc(quest.title || quest.id)}</strong>
+          <div class="campaign-muted">${_esc(quest.status || 'active')}${quest.giver ? ' · ' + _esc(quest.giver) : ''}${quest.timer?.phasesRemaining ? ' · ' + quest.timer.phasesRemaining + ' phases left' : ''}</div>
+          ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
+          ${(quest.objectives || []).map((obj) => `<div class="campaign-muted">• ${_esc(obj.label || obj.id)} ${obj.current || 0}/${obj.required || 1}</div>`).join('')}
+        </div>
+        <div class="campaign-row-actions">
+          <button class="campaign-action" data-campaign-action="quest-progress" data-id="${_escAttr(quest.id)}">Progress</button>
+          <button class="campaign-action" data-campaign-action="quest-complete" data-id="${_escAttr(quest.id)}">Complete</button>
+          <button class="campaign-action danger" data-campaign-action="quest-fail" data-id="${_escAttr(quest.id)}">Fail</button>
+        </div>
+      </div>
+    `;
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>Quest Tracker</h2>
+          <span class="campaign-pill">${active.length} active · ${finished.length} resolved · ${templateCount} templates</span>
           <button class="campaign-action primary" data-campaign-action="add-quest">Add Quest</button>
         </div>
-        ${quests.length ? quests.map((quest) => `
-          <div class="campaign-row">
-            <div>
-              <strong>${_esc(quest.title || quest.id)}</strong>
-              <div class="campaign-muted">${_esc(quest.status || 'active')} | ${_esc(quest.summary || '')}</div>
-              ${(quest.objectives || []).map((obj) => `<div class="campaign-muted">${_esc(obj.label || obj.id)} ${obj.current || 0}/${obj.required || 1}</div>`).join('')}
-            </div>
-            <div class="campaign-row-actions">
-              <button class="campaign-action" data-campaign-action="quest-progress" data-id="${_escAttr(quest.id)}">Progress</button>
-              <button class="campaign-action" data-campaign-action="quest-complete" data-id="${_escAttr(quest.id)}">Complete</button>
-              <button class="campaign-action danger" data-campaign-action="quest-fail" data-id="${_escAttr(quest.id)}">Fail</button>
-            </div>
-          </div>
-        `).join('') : '<div class="campaign-empty">No quests yet.</div>'}
+        ${active.length ? active.map(renderRow).join('') : '<div class="campaign-empty">No active quests. Use Add Quest to start one from a template or write your own.</div>'}
+        ${finished.length ? `<div class="campaign-panel-head" style="margin-top:14px"><h3>Resolved</h3></div>${finished.map(renderRow).join('')}` : ''}
       </section>
     `;
   }
@@ -1161,6 +1191,8 @@ window.CJS.CampaignUI = (() => {
       case 'edit-event': return _editEvent();
       case 'note-event': return _noteEvent();
       case 'ignore-event': return _ignoreEvent();
+      case 'pin-plot-seed': return _pinPlotSeed();
+      case 'event-to-oracle': return _eventToOracle();
       case 'add-quest': return _openQuestModal();
       case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
       case 'camp-rest': return _campRestModal();
@@ -1179,6 +1211,8 @@ window.CJS.CampaignUI = (() => {
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
       case 'start-scenario': return Runner().startScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
+      case 'cancel-scenario': return _cancelScenario();
+      case 'discard-scenario': return _discardGeneratedScenario(data.id);
       case 'move-node': return _moveNode(data.nodeId);
       case 'move-cell': return _moveCell(data.x, data.y);
       case 'map-layer': return _setMapLayer(data.layer);
@@ -1235,8 +1269,10 @@ window.CJS.CampaignUI = (() => {
 
   function _rollEvent() {
     const campaign = CS().getCurrentCampaign();
-    const tableId = campaign?.eventTables?.find((id) => id.includes(CS().getState().currentWorld)) || campaign?.eventTables?.[0];
-    const event = window.CJS.CampaignEvents.roll(tableId);
+    const world = CS().getState().currentWorld;
+    const tables = campaign?.eventTables || [];
+    const tableId = window.CJS.CampaignEvents.pickTable(tables, { world, setting: 'town', tags: ['town'] });
+    const event = window.CJS.CampaignEvents.roll(tableId, { world, setting: 'town', tags: ['town'] });
     if (!event) UI().toast('No event table available', 'info');
   }
 
@@ -1555,6 +1591,21 @@ window.CJS.CampaignUI = (() => {
     CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
   }
 
+  function _pinPlotSeed() {
+    const event = CS().getState().lastEvent;
+    if (!event) return;
+    window.CJS.CampaignEvents.pinAsPlotSeed(event);
+    UI().toast('Plot seed pinned to notes', 'success');
+  }
+
+  function _eventToOracle() {
+    const event = CS().getState().lastEvent;
+    const oracle = window.CJS.CampaignOracle?.roll?.();
+    if (!oracle) return UI().toast('Oracle table empty', 'info');
+    CS().mutate((state) => { state.lastOracle = { ...oracle, source: event ? `event:${event.id}` : 'event' }; }, { source: 'oracle_from_event' });
+    UI().toast('Oracle rolled from event', 'success');
+  }
+
   function _openQuestModal() {
     const templates = Object.values(CS().getContent().campaignQuests).flatMap((record) => record.templates || []);
     const body = document.createElement('div');
@@ -1602,11 +1653,69 @@ window.CJS.CampaignUI = (() => {
       ...overrides
     };
     const result = Gen().generateAndStart(options);
-    if (!result) return UI().toast('Scenario generation skipped', 'info');
+    if (!result || result.error) {
+      const messages = {
+        active_run: 'End the active scenario before generating another',
+        no_active_quest: 'No active quest to source from. Add one in the Quests tab first.',
+        no_active_chain: 'No active quest chain. Start one in the Quest Chains tab first.'
+      };
+      const msg = messages[result?.error] || 'Scenario generation skipped';
+      return UI().toast(msg, 'info');
+    }
     _activeMode = 'scenario';
     _activeTab = 'maps';
     render();
     UI().toast(`Started ${result.scenario.name}`, 'success');
+  }
+
+  function _discardGeneratedScenario(scenarioId) {
+    if (!scenarioId) return;
+    const state = CS().getState();
+    if (state?.activeScenarioRun?.scenarioId === scenarioId) {
+      return UI().toast('Cancel the active run first', 'info');
+    }
+    UI().confirm('Discard this generated scenario?', () => {
+      CS().mutate((next) => {
+        const sc = next.sideContent || {};
+        const scenario = sc.generatedScenarios?.[scenarioId];
+        const mapId = scenario?.mapId;
+        if (sc.generatedScenarios) delete sc.generatedScenarios[scenarioId];
+        if (mapId && sc.generatedMaps) delete sc.generatedMaps[mapId];
+      }, { source: 'scenario_discard' });
+      Ops().apply({ op: 'log', text: `Generated scenario discarded: ${scenarioId}.` }, { source: 'scenario_discard' });
+      UI().toast('Scenario discarded', 'info');
+    });
+  }
+
+  function _cancelScenario() {
+    const run = CS().getState()?.activeScenarioRun;
+    if (!run) return;
+    UI().confirm('Cancel this scenario without recording a report?', () => {
+      const scenarioId = run.scenarioId;
+      CS().mutate((state) => {
+        state.activeScenarioRun = null;
+        state.pendingBattle = null;
+        for (const member of Object.values(state.party || {})) {
+          if (member.availability?.expires === 'scenario') {
+            member.availability = {
+              status: 'available',
+              reason: '',
+              source: 'scenario_cancel',
+              expires: null,
+              updatedAt: new Date().toISOString()
+            };
+          }
+        }
+        if (scenarioId && state.sideContent?.generatedScenarios?.[scenarioId]) {
+          delete state.sideContent.generatedScenarios[scenarioId];
+        }
+      }, { source: 'scenario_cancel' });
+      Ops().apply({ op: 'log', text: `Scenario cancelled: ${scenarioId}.` }, { source: 'scenario_cancel' });
+      _activeMode = 'scenario';
+      _activeTab = 'scenarios';
+      render();
+      UI().toast('Scenario cancelled', 'info');
+    });
   }
 
   function _setMapLayer(layer) {
@@ -1680,9 +1789,49 @@ window.CJS.CampaignUI = (() => {
   function _runRollBattle() {
     const scenario = CS().getActiveScenario();
     const tables = scenario?.randomBattleTables || [];
-    if (!tables.length) return UI().toast('No random battle tables on this scenario', 'info');
-    const pending = Runner().rollRandomBattle(tables[0].id);
-    if (!pending) UI().toast('No battle rolled', 'info');
+    if (tables.length) {
+      const pending = Runner().rollRandomBattle(tables[0].id);
+      if (!pending) UI().toast('No battle rolled', 'info');
+      return;
+    }
+    const fallbackPool = _fallbackBattlePool();
+    if (!fallbackPool.length) return UI().toast('No battles available in this world', 'info');
+    const pick = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+    const pending = {
+      encounterId: pick.encounterId || null,
+      battleSetId: pick.battleSetId || null,
+      label: pick.label,
+      source: 'random',
+      rewardOps: pick.rewardOps || [],
+      objective: pick.objective || '',
+      notes: pick.notes || ''
+    };
+    CS().mutate((state) => {
+      state.pendingBattle = pending;
+      if (state.activeScenarioRun) state.activeScenarioRun.randomBattlesUsed = (state.activeScenarioRun.randomBattlesUsed || 0) + 1;
+    }, { source: 'random_battle_fallback' });
+    Ops().apply({ op: 'log', text: `Random battle rolled (world pool): ${pending.label}.` }, { source: 'random_battle' });
+  }
+
+  function _fallbackBattlePool() {
+    const world = CS().getState()?.currentWorld;
+    const cards = window.CJS.CampaignBattleSetForge?.getCards?.({ world }) || [];
+    const fromCards = cards
+      .map((card) => ({
+        id: card.id,
+        battleSetId: card.id,
+        encounterId: card.encounterId || null,
+        label: card.name || card.id,
+        rewardOps: card.rewardOps || [],
+        objective: card.objective || '',
+        notes: card.gimmick || ''
+      }))
+      .filter((entry) => entry.encounterId || entry.battleSetId);
+    if (fromCards.length) return fromCards;
+    return DS().getAllAsArray('encounters')
+      .filter((enc) => !enc._world || enc._world === world)
+      .slice(0, 6)
+      .map((enc) => ({ id: enc.id, encounterId: enc.id, label: enc.name || enc.id }));
   }
 
   function _runPickBattle() {
@@ -1748,11 +1897,21 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _runRollEvent() {
+    const scenario = CS().getActiveScenario();
     const campaign = CS().getCurrentCampaign();
-    const tables = campaign?.eventTables || [];
-    const tableId = tables.find((id) => id.includes(CS().getState().currentWorld)) || tables[0];
+    const world = CS().getState().currentWorld;
+    const node = Runner().findCurrentNode?.();
+    const cell = Runner().findCurrentCell?.();
+    const context = {
+      world,
+      setting: scenario?.setting || '',
+      tags: [...(scenario?.tags || []), ...(node?.tags || []), ...(cell?.tags || [])],
+      locationKind: node?.kind || cell?.kind || ''
+    };
+    const tables = [...(scenario?.eventTables || []), ...(campaign?.eventTables || [])];
+    const tableId = window.CJS.CampaignEvents.pickTable(tables, context);
     if (!tableId) return UI().toast('No event tables available', 'info');
-    const event = window.CJS.CampaignEvents.roll(tableId);
+    const event = window.CJS.CampaignEvents.roll(tableId, context);
     if (!event) UI().toast('Event roll returned nothing', 'info');
   }
 

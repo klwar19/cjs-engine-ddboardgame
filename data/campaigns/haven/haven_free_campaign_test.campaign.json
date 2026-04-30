@@ -76,7 +76,7 @@
         "haven_scn_lost_temple_procedural"
       ],
       "maps": ["haven_map_frostwood_short_route", "haven_map_frostwood_grid_patrol"],
-      "eventTables": ["haven_generic_events", "haven_frostwood_events", "haven_urban_events", "haven_aftermath_events"],
+      "eventTables": ["haven_generic_events", "haven_frostwood_events", "haven_urban_events", "haven_aftermath_events", "haven_plot_seeds"],
       "questTemplates": ["haven_basic_quest_templates"],
       "carryoverProfiles": ["carryover_new_world_default"],
       "hubs": ["haven_hub_frostbitten"],

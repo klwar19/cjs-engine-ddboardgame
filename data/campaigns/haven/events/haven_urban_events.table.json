@@ -12,34 +12,42 @@
       "id": "haven_urban_events",
       "name": "Haven Urban & Sewer Events",
       "world": "haven",
+      "tags": ["urban", "town", "sewer"],
+      "settings": ["urban", "town", "house", "dungeon"],
       "entries": [
         {
-          "weight": 20,
+          "weight": 18,
           "id": "haven_evt_pickpocket",
           "type": "encounter",
           "title": "Pickpocket Brush",
-          "prompt": "A child in a thin coat bumps into the lead party member and runs.",
+          "tags": ["urban", "town"],
+          "prompt": "A child in a thin coat bumps the lead member and is gone before anyone reacts.",
           "suggested": [
             { "op": "take_money", "currency": "haven_gold", "amount": 8 },
             { "op": "log", "text": "A coin pouch is lighter than it should be." }
           ]
         },
         {
-          "weight": 15,
+          "weight": 14,
           "id": "haven_evt_bribe_offer",
           "type": "social",
           "title": "Bribe Offered",
+          "tags": ["town", "social", "faction"],
           "prompt": "A nervous clerk slides a small purse across a desk in exchange for looking the other way.",
+          "gmHook": "Take the money and you owe the clerk a favor in two scenarios.",
+          "gmIdea": "faction",
           "suggested": [
             { "op": "give_money", "currency": "haven_gold", "amount": 30 },
             { "op": "set_flag", "flag": "haven_owes_clerk", "value": true }
           ]
         },
         {
-          "weight": 15,
+          "weight": 12,
           "id": "haven_evt_grate_drop",
           "type": "trap",
           "title": "Loose Grate",
+          "tags": ["urban", "trap"],
+          "settings": ["urban", "dungeon"],
           "prompt": "A rusted grate gives way underfoot.",
           "check": {
             "stat": "A",
@@ -54,10 +62,11 @@
           ]
         },
         {
-          "weight": 15,
+          "weight": 13,
           "id": "haven_evt_lost_coin_pouch",
           "type": "reward",
           "title": "Lost Coin Pouch",
+          "tags": ["urban", "reward"],
           "prompt": "A small pouch wedged between cobbles. Someone dropped it.",
           "suggested": [
             { "op": "give_money", "currency": "haven_gold", "amount": 18 }
@@ -68,6 +77,8 @@
           "id": "haven_evt_sewer_glow",
           "type": "mechanical",
           "title": "Phosphor Drip",
+          "tags": ["sewer", "magic"],
+          "settings": ["dungeon", "urban"],
           "prompt": "Glowing goo drips from the ceiling. Someone bottles it.",
           "suggested": [
             { "op": "give_material", "id": "haven_sprite_dust", "qty": 2 },
@@ -75,10 +86,12 @@
           ]
         },
         {
-          "weight": 10,
+          "weight": 12,
           "id": "haven_evt_kind_innkeeper",
           "type": "social",
           "title": "Kind Innkeeper",
+          "tags": ["town", "rest"],
+          "settings": ["town"],
           "prompt": "A weathered innkeeper waves the party to the back kitchen and ladles hot stew.",
           "suggested": [
             { "op": "heal_party", "amount": 8 },
@@ -90,21 +103,94 @@
           "id": "haven_evt_market_argument",
           "type": "social",
           "title": "Market Argument",
+          "tags": ["town", "social"],
+          "settings": ["town", "urban"],
           "prompt": "Two stalls are screaming about a stolen scale. Both want the party to weigh in.",
+          "gmHook": "Whichever side loses gets pinned as a recurring complaint NPC.",
+          "gmIdea": "new_char",
           "suggested": [
-            { "op": "log", "text": "GM: pick a side. Other side becomes hostile." },
+            { "op": "log", "text": "GM: pick a side. Other side becomes hostile-light." },
             { "op": "set_flag", "flag": "haven_market_dispute", "value": "open" }
           ]
         },
         {
-          "weight": 5,
+          "weight": 6,
           "id": "haven_evt_rooftop_runner",
           "type": "encounter",
           "title": "Rooftop Runner",
+          "tags": ["urban", "mystery"],
+          "settings": ["urban"],
           "prompt": "A figure leaps roof to roof above the party, trailing snow.",
+          "gmHook": "Recurring stalker. Can become a rival, an informant, or a missing childhood friend.",
+          "gmIdea": "new_char",
+          "oracleTableId": "oracle_frostbitten",
           "suggested": [
             { "op": "danger", "amount": 1 },
+            { "op": "set_flag", "flag": "haven_rooftop_runner_seen", "value": true },
             { "op": "log", "text": "Someone is watching the route." }
+          ]
+        },
+        {
+          "weight": 8,
+          "id": "haven_evt_temple_question",
+          "type": "social",
+          "title": "Temple Question",
+          "tags": ["town", "religion"],
+          "settings": ["town"],
+          "prompt": "A novice asks the party an awkward theological question about miracles in wartime.",
+          "gmHook": "Free belief beat for any character. Pin and use later for a chapter break.",
+          "gmIdea": "development",
+          "suggested": [
+            { "op": "log", "text": "GM: pick which member answers and how it lands." },
+            { "op": "bond_change", "npcId": "tessa", "field": "respect", "amount": 1 }
+          ]
+        },
+        {
+          "weight": 7,
+          "id": "haven_evt_back_alley_smith",
+          "type": "social",
+          "title": "Back-Alley Smith",
+          "tags": ["urban", "weapon"],
+          "settings": ["urban"],
+          "prompt": "A smith offers to engrave a name into a blade for cheap. The smith asks who hurt the bearer.",
+          "gmHook": "Engraved blade can become a custom item next chapter.",
+          "gmIdea": "weapon",
+          "suggested": [
+            { "op": "take_money", "currency": "haven_gold", "amount": 5 },
+            { "op": "give_quest_item", "id": "haven_traveler_token", "qty": 1 },
+            { "op": "log", "text": "GM: pick whose blade was engraved and what name was carved." }
+          ]
+        },
+        {
+          "weight": 5,
+          "id": "haven_evt_bin_double",
+          "type": "social",
+          "title": "Someone Wearing Bin's Face",
+          "tags": ["town", "mystery"],
+          "settings": ["town", "urban"],
+          "requiresParty": ["bin"],
+          "prompt": "Half a dozen witnesses swear they saw Bin in another part of town an hour ago.",
+          "gmHook": "Heavy plot bait. Pin only if the GM wants the missing-year mystery to escalate.",
+          "gmIdea": "main_plot",
+          "oracleTableId": "oracle_frostbitten",
+          "suggested": [
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Someone wearing Bin's face was seen in town.", "canonRisk": "red", "tags": ["bin", "mystery"] },
+            { "op": "set_flag", "flag": "haven_bin_doppelganger_seen", "value": true }
+          ]
+        },
+        {
+          "weight": 5,
+          "id": "haven_evt_corvin_paperwork",
+          "type": "social",
+          "title": "Corvin's Paperwork",
+          "tags": ["town", "guild"],
+          "settings": ["town"],
+          "prompt": "Corvin needs three signatures and at least one witness to confirm Bin is alive enough to sign for jobs.",
+          "gmHook": "Soft hook into the existing 'Ledger of the Ghost' chain.",
+          "gmIdea": "development",
+          "suggested": [
+            { "op": "set_flag", "flag": "haven_corvin_paperwork_open", "value": true },
+            { "op": "log", "text": "Corvin will not let this go." }
           ]
         }
       ]
