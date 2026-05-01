@@ -1284,7 +1284,6 @@ window.CJS.CampaignUI = (() => {
 
   function _eventChoices() {
     const campaign = CS().getCurrentCampaign();
-    const world = CS().getState().currentWorld;
     const tables = (campaign?.eventTables || []).map((id) => CS().getContent().campaignEvents[id]).filter(Boolean);
     const seen = new Map();
     for (const table of tables) {
@@ -1298,7 +1297,6 @@ window.CJS.CampaignUI = (() => {
         });
       }
     }
-    void world;
     return Array.from(seen.values());
   }
 

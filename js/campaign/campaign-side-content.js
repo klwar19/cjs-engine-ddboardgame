@@ -122,9 +122,8 @@ window.CJS.CampaignSideContent = (() => {
       ta.value = text;
       body.appendChild(hint);
       body.appendChild(ta);
-      const overlay = UI.openModal({ title: 'Copy Markdown', content: body, width: '600px' });
+      UI.openModal({ title: 'Copy Markdown', content: body, width: '600px' });
       setTimeout(() => { ta.focus(); ta.select(); }, 30);
-      void overlay;
     }
     return Promise.resolve();
   }

@@ -181,11 +181,11 @@ window.CJS.CampaignEditor = (() => {
       case 'campaigns':
         return { id: '', name: 'New Campaign', version: 1, world, startChapter: 1, startPhase: 'town_phase', scenarios: [], maps: [], eventTables: [], questTemplates: [], hubs: [], sideContentPacks: [], startingState: { currencies: {}, items: {}, materials: {}, food: {}, questItems: {}, party: [] } };
       case 'scenarios':
-        return { id: '', name: 'New Scenario', world, mapId: '', startNode: '', randomBattleTable: [], setBattles: [], notes: '' };
+        return { id: '', name: 'New Scenario', world, mapId: '', startNode: '', randomBattleTables: [], setBattles: [], notes: '' };
       case 'scenarioMaps':
         return { id: '', name: 'New Map', world, nodes: [], links: [], notes: '' };
       case 'campaignEvents':
-        return { id: '', name: 'New Event Table', world, events: [] };
+        return { id: '', name: 'New Event Table', world, entries: [] };
       case 'campaignQuests':
         return { id: '', name: 'New Quest Templates', world, templates: [] };
       case 'campaignHubs':

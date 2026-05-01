@@ -153,18 +153,13 @@ window.CJS.AudioLibrary = (() => {
         message: `audio: register ${_category}.${id}`
       });
 
-      // Re-fetch so AM cache picks up the new entry
-      try { window.CJS.AudioManager && (window.CJS.AudioManager._reloadOnNext = true); } catch (e) {}
-
       _setStatus(`Uploaded "${id}" → ${path}`, 'success');
       idEl.value = ''; fileEl.value = '';
-      // Force AudioManager to reload manifest by re-fetching directly.
       try {
         const fresh = await fetch('data/audio-manifest.json?t=' + Date.now());
         if (fresh.ok) {
           const obj = await fresh.json();
           if (AM().getManifest) {
-            // overwrite cached manifest in-place
             const m = AM().getManifest();
             m.sfx = obj.sfx || {};
             m.bgm = obj.bgm || {};

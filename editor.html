@@ -483,25 +483,6 @@
         }
       }
 
-      function seedBuiltInStatuses() {
-        const UM = window.CJS.UndoManager;
-        const CONST = window.CJS.CONST;
-
-        if (UM) UM.disable();
-        if (CONST && CONST.STATUS_DEFINITIONS) {
-          for (const [id, def] of Object.entries(CONST.STATUS_DEFINITIONS)) {
-            if (!DS.exists('statuses', id)) {
-              DS.replace('statuses', id, { ...def, id });
-            }
-          }
-        }
-        if (UM) {
-          UM.enable();
-          UM.clear();
-        }
-        DS.markClean();
-      }
-
       async function downloadCurrentData() {
         if (CM?.getManifest?.()) {
           return extractCurrentFiles(false);
@@ -614,10 +595,6 @@
           });
 
         return syncState.saveInFlight;
-      }
-
-      async function maybeAutoSaveToGitHub(json) {
-        return json;
       }
 
       function openSaveDialog() {
@@ -979,9 +956,7 @@
 
         if (!DS.isDirty()) return;
 
-        const json = DS.exportJSON();
-        rememberDirtySnapshot(json, 'autosave');
-        maybeAutoSaveToGitHub(json);
+        rememberDirtySnapshot(DS.exportJSON(), 'autosave');
       }
 
       navItems.forEach((nav) => {
