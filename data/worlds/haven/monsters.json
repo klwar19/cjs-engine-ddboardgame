@@ -9,6 +9,458 @@
   },
   "entries": [
     {
+      "id": "haven_azure_dragon",
+      "name": "Azure Dragon (Qinglong)",
+      "icon": "🐉💧",
+      "team": "enemy",
+      "rank": "S",
+      "type": "divine_beast",
+      "stats": {
+        "S": 22,
+        "P": 16,
+        "E": 24,
+        "C": 14,
+        "I": 20,
+        "A": 12,
+        "L": 10
+      },
+      "skills": [
+        "haven_celestial_breath",
+        "haven_azure_storm",
+        "haven_dragon_swipe"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_dragon_majesty",
+        "haven_divine_aegis"
+      ],
+      "weak": [],
+      "resist": [
+        "Water",
+        "Lightning",
+        "Physical"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Dragon Scale",
+          "itemId": "haven_dragon_scale",
+          "rarity": "Legendary",
+          "chance": 1.0
+        },
+        {
+          "name": "Qinglong Horn",
+          "itemId": "haven_qinglong_horn",
+          "rarity": "Legendary",
+          "chance": 0.5
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "skill_off_cooldown:azure_storm AND enemies_in_range:5 >= 2",
+          "action": "use_skill:haven_azure_storm",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:celestial_breath",
+          "action": "use_skill:haven_celestial_breath",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_dragon_swipe",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "S-rank Divine Beast of the East. Guardian of spring, master of storms. The pinnacle threat of the Frostbitten season — only the strongest survivors should challenge it.",
+      "movement": 4,
+      "size": "2x2",
+      "basicAttackRange": 2
+    },
+    {
+      "id": "haven_black_tortoise",
+      "name": "Black Tortoise (Xuanwu)",
+      "icon": "🐢🌊",
+      "team": "enemy",
+      "rank": "A",
+      "type": "divine_beast",
+      "stats": {
+        "S": 16,
+        "P": 8,
+        "E": 26,
+        "C": 8,
+        "I": 14,
+        "A": 4,
+        "L": 6
+      },
+      "skills": [
+        "haven_shell_bash",
+        "haven_tide_surge",
+        "haven_glacial_carapace"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_shell_aegis",
+        "haven_thorns_of_winter"
+      ],
+      "weak": [
+        "Lightning"
+      ],
+      "resist": [
+        "Physical",
+        "Water",
+        "Fire"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Xuanwu Plating",
+          "itemId": "haven_xuanwu_plating",
+          "rarity": "Epic",
+          "chance": 0.7
+        },
+        {
+          "name": "Eternal Shell Fragment",
+          "itemId": "haven_eternal_shell",
+          "rarity": "Legendary",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "tank",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "hp_below_50 AND skill_off_cooldown:glacial_carapace",
+          "action": "use_skill:haven_glacial_carapace",
+          "target": "self"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:tide_surge AND enemies_in_range:3 >= 2",
+          "action": "use_skill:haven_tide_surge",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_shell_bash",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "A-rank Divine Beast of the North. Slow but nearly unbreakable. Punishes melee attackers with frozen thorns and tides of black water.",
+      "movement": 1,
+      "size": "2x2"
+    },
+    {
+      "id": "haven_frost_brute",
+      "name": "Frost Brute",
+      "icon": "🧟❄️💪",
+      "team": "enemy",
+      "rank": "E",
+      "type": "undead",
+      "stats": {
+        "S": 13,
+        "P": 3,
+        "E": 12,
+        "C": 1,
+        "I": 1,
+        "A": 2,
+        "L": 2
+      },
+      "skills": [
+        "haven_frost_crush",
+        "haven_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_frostbitten_flesh",
+        "haven_unfeeling"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Physical",
+        "Water"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Brute Sinew",
+          "itemId": "haven_brute_sinew",
+          "rarity": "Uncommon",
+          "chance": 0.5
+        },
+        {
+          "name": "Frozen Heart",
+          "itemId": "haven_frozen_heart",
+          "rarity": "Rare",
+          "chance": 0.1
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:frost_crush",
+          "action": "use_skill:haven_frost_crush",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Towering corpse swollen by glacial rot. Two damage per hit and ignores light armor. The signature heavy zombie of the frozen wastes.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_frost_climber",
+      "name": "Frost Climber",
+      "icon": "🧟🧗",
+      "team": "enemy",
+      "rank": "E",
+      "type": "undead",
+      "stats": {
+        "S": 6,
+        "P": 5,
+        "E": 5,
+        "C": 1,
+        "I": 1,
+        "A": 9,
+        "L": 3
+      },
+      "skills": [
+        "haven_climbing_leap",
+        "haven_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_climber",
+        "haven_frostbitten_flesh"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Climber Talon",
+          "itemId": "haven_climber_talon",
+          "rarity": "Uncommon",
+          "chance": 0.5
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:climbing_leap AND no_adjacent_enemy",
+          "action": "use_skill:haven_climbing_leap",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "Skitters straight up walls and battlements — barricades and obstacles will not save you. Lunges over cover to reach archers.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_frost_necromancer",
+      "name": "Frost Necromancer",
+      "icon": "🧙‍♂️💀❄️",
+      "team": "enemy",
+      "rank": "D",
+      "type": "undead",
+      "stats": {
+        "S": 5,
+        "P": 7,
+        "E": 8,
+        "C": 4,
+        "I": 14,
+        "A": 5,
+        "L": 5
+      },
+      "skills": [
+        "haven_raise_frostling",
+        "haven_undying_chant",
+        "haven_ice_shard"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_unholy_aura",
+        "haven_frostbitten_flesh"
+      ],
+      "weak": [
+        "Fire",
+        "Light"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Necromancer's Tome",
+          "itemId": "haven_necro_tome",
+          "rarity": "Rare",
+          "chance": 0.6
+        },
+        {
+          "name": "Soul Shard",
+          "itemId": "haven_soul_shard",
+          "rarity": "Epic",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "summoner",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "skill_off_cooldown:raise_frostling AND allies_alive_lt_4",
+          "action": "use_skill:haven_raise_frostling",
+          "target": "self"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:undying_chant AND allies_alive_gt_1",
+          "action": "use_skill:haven_undying_chant",
+          "target": "nearest_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "use_skill:haven_ice_shard",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 4,
+          "condition": "any_adjacent_enemy",
+          "action": "move_away",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "D-rank caster. Summons fresh frost walkers each turn — kill it fast or be overrun. Always flees melee.",
+      "movement": 3,
+      "size": "1x1",
+      "basicAttackRange": 3
+    },
+    {
+      "id": "haven_frost_runner",
+      "name": "Frost Runner",
+      "icon": "🧟❄️💨",
+      "team": "enemy",
+      "rank": "F",
+      "type": "undead",
+      "stats": {
+        "S": 5,
+        "P": 4,
+        "E": 4,
+        "C": 1,
+        "I": 1,
+        "A": 8,
+        "L": 3
+      },
+      "skills": [
+        "haven_frost_charge",
+        "haven_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_frostbitten_flesh"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Tattered Cloth",
+          "itemId": "haven_tattered_cloth",
+          "rarity": "Common",
+          "chance": 0.6
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:frost_charge AND no_adjacent_enemy",
+          "action": "use_skill:haven_frost_charge",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "Sprinting corpse, unnaturally fast. Activates twice on Necromancer turns. Targets the wounded first.",
+      "movement": 5,
+      "size": "1x1"
+    },
+    {
       "id": "haven_frost_sprite",
       "name": "Frost Sprite",
       "icon": "✨❄️",
@@ -77,6 +529,65 @@
       "movement": 3,
       "size": "1x1",
       "basicAttackRange": 3
+    },
+    {
+      "id": "haven_frost_walker",
+      "name": "Frost Walker",
+      "icon": "🧟❄️",
+      "team": "enemy",
+      "rank": "F",
+      "type": "undead",
+      "stats": {
+        "S": 4,
+        "P": 2,
+        "E": 5,
+        "C": 1,
+        "I": 1,
+        "A": 2,
+        "L": 2
+      },
+      "skills": [
+        "haven_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_frostbitten_flesh"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Tattered Cloth",
+          "itemId": "haven_tattered_cloth",
+          "rarity": "Common",
+          "chance": 0.4
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Shambling frost-rotted corpse. Slow, weak, and individually no threat — but they always come in numbers.",
+      "movement": 2,
+      "size": "1x1"
     },
     {
       "id": "haven_frostfire_chimera",
@@ -225,6 +736,167 @@
       "size": "1x1"
     },
     {
+      "id": "haven_kumiho",
+      "name": "Kumiho, Nine-Tailed Trickster",
+      "icon": "🦊✨",
+      "team": "enemy",
+      "rank": "B",
+      "type": "abomination",
+      "stats": {
+        "S": 12,
+        "P": 16,
+        "E": 14,
+        "C": 18,
+        "I": 18,
+        "A": 14,
+        "L": 12
+      },
+      "skills": [
+        "haven_charm_gaze",
+        "haven_phantom_tails",
+        "haven_fox_fire"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_nine_tails",
+        "haven_abominable"
+      ],
+      "weak": [
+        "Light"
+      ],
+      "resist": [
+        "Dark",
+        "Magic"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Kumiho Pelt",
+          "itemId": "haven_kumiho_pelt",
+          "rarity": "Epic",
+          "chance": 0.7
+        },
+        {
+          "name": "Fox Bead",
+          "itemId": "haven_fox_bead",
+          "rarity": "Legendary",
+          "chance": 0.25
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "skill_off_cooldown:charm_gaze",
+          "action": "use_skill:haven_charm_gaze",
+          "target": "highest_threat_enemy"
+        },
+        {
+          "priority": 2,
+          "condition": "enemies_in_range:3 >= 2 AND skill_off_cooldown:phantom_tails",
+          "action": "use_skill:haven_phantom_tails",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "use_skill:haven_fox_fire",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 4,
+          "condition": "any_adjacent_enemy",
+          "action": "move_away",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "B-rank abomination. The nine-tailed fox-spirit, mythical entity of trickery and deception. Charms a survivor each turn — once charmed, they attack their allies. Mundane weapons cannot kill it; only enchanted weapons or fire deal real damage.",
+      "movement": 4,
+      "size": "2x2",
+      "basicAttackRange": 2
+    },
+    {
+      "id": "haven_oni_marauder",
+      "name": "Oni Marauder",
+      "icon": "👹🏮",
+      "team": "enemy",
+      "rank": "C",
+      "type": "demon",
+      "stats": {
+        "S": 18,
+        "P": 6,
+        "E": 18,
+        "C": 4,
+        "I": 8,
+        "A": 5,
+        "L": 4
+      },
+      "skills": [
+        "haven_oni_smash",
+        "haven_demon_fire",
+        "haven_oni_roar"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_oni_horns",
+        "haven_demonic_might"
+      ],
+      "weak": [
+        "Light"
+      ],
+      "resist": [
+        "Fire",
+        "Physical"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Iron Kanabō",
+          "itemId": "haven_oni_club",
+          "rarity": "Rare",
+          "chance": 0.6
+        },
+        {
+          "name": "Oni Horn",
+          "itemId": "haven_oni_horn",
+          "rarity": "Epic",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:oni_smash",
+          "action": "use_skill:haven_oni_smash",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "enemies_in_range:2 >= 2 AND skill_off_cooldown:demon_fire",
+          "action": "use_skill:haven_demon_fire",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "skill_off_cooldown:oni_roar AND hp_below_60",
+          "action": "use_skill:haven_oni_roar",
+          "target": "self"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "C-rank demon. Crashed down from the mountain shrines wielding an iron kanabō. Each smash sends survivors flying; rage builds the longer the fight drags.",
+      "movement": 3,
+      "size": "1x1"
+    },
+    {
       "id": "haven_snow_bear",
       "name": "Snow Bear",
       "icon": "🐻‍❄️",
@@ -292,6 +964,322 @@
       "description": "Massive bear of the frozen north. Extremely tough. Don't let it reach you.",
       "movement": 2,
       "size": "2x2"
+    },
+    {
+      "id": "haven_terracotta_warrior",
+      "name": "Terracotta Warrior",
+      "icon": "🗿⚔️",
+      "team": "enemy",
+      "rank": "D",
+      "type": "construct",
+      "stats": {
+        "S": 11,
+        "P": 4,
+        "E": 14,
+        "C": 1,
+        "I": 1,
+        "A": 3,
+        "L": 1
+      },
+      "skills": [
+        "haven_terracotta_slam",
+        "haven_terracotta_shatter"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_terracotta_chain",
+        "haven_unfeeling"
+      ],
+      "weak": [
+        "Lightning"
+      ],
+      "resist": [
+        "Physical",
+        "Fire",
+        "Water"
+      ],
+      "immune": [
+        "Frost",
+        "Poison"
+      ],
+      "loot": [
+        {
+          "name": "Terracotta Shard",
+          "itemId": "haven_terracotta_shard",
+          "rarity": "Uncommon",
+          "chance": 0.7
+        },
+        {
+          "name": "Ancient Sigil",
+          "itemId": "haven_ancient_sigil",
+          "rarity": "Rare",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "tank",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:terracotta_slam",
+          "action": "use_skill:haven_terracotta_slam",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "D-rank construct from the buried imperial tomb. Spawns in groups — when five share a zone, they activate together. Shatters violently when destroyed, damaging adjacent foes.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    {
+      "id": "haven_vermillion_bird",
+      "name": "Vermillion Bird (Zhuque)",
+      "icon": "🔥🦅",
+      "team": "enemy",
+      "rank": "A",
+      "type": "divine_beast",
+      "stats": {
+        "S": 14,
+        "P": 18,
+        "E": 16,
+        "C": 12,
+        "I": 18,
+        "A": 14,
+        "L": 8
+      },
+      "skills": [
+        "haven_phoenix_fire",
+        "haven_solar_dive",
+        "haven_chimera_fire_swipe"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_phoenix_rebirth",
+        "haven_divine_aegis"
+      ],
+      "weak": [
+        "Water"
+      ],
+      "resist": [
+        "Fire",
+        "Light"
+      ],
+      "immune": [
+        "Frost",
+        "Burn"
+      ],
+      "loot": [
+        {
+          "name": "Zhuque Plume",
+          "itemId": "haven_zhuque_plume",
+          "rarity": "Epic",
+          "chance": 0.7
+        },
+        {
+          "name": "Eternal Ember",
+          "itemId": "haven_eternal_ember",
+          "rarity": "Legendary",
+          "chance": 0.25
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "skill_off_cooldown:phoenix_fire AND enemies_in_range:4 >= 2",
+          "action": "use_skill:haven_phoenix_fire",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:solar_dive",
+          "action": "use_skill:haven_solar_dive",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:haven_chimera_fire_swipe",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "A-rank Divine Beast of the South. The undying phoenix — once per battle, reignites at full HP when slain. Burns the battlefield with sun-fire.",
+      "movement": 5,
+      "size": "2x2",
+      "basicAttackRange": 3
+    },
+    {
+      "id": "haven_white_tiger",
+      "name": "White Tiger (Baihu)",
+      "icon": "🐅⚡",
+      "team": "enemy",
+      "rank": "A",
+      "type": "divine_beast",
+      "stats": {
+        "S": 20,
+        "P": 14,
+        "E": 14,
+        "C": 10,
+        "I": 12,
+        "A": 18,
+        "L": 8
+      },
+      "skills": [
+        "haven_thunderfang",
+        "haven_divine_roar",
+        "haven_tiger_pounce"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_divine_swift",
+        "haven_divine_aegis"
+      ],
+      "weak": [
+        "Earth"
+      ],
+      "resist": [
+        "Lightning",
+        "Physical"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Baihu Fang",
+          "itemId": "haven_baihu_fang",
+          "rarity": "Epic",
+          "chance": 0.7
+        },
+        {
+          "name": "Stormcoat Pelt",
+          "itemId": "haven_stormcoat_pelt",
+          "rarity": "Legendary",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "skill_off_cooldown:tiger_pounce AND no_adjacent_enemy",
+          "action": "use_skill:haven_tiger_pounce",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 2,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:thunderfang",
+          "action": "use_skill:haven_thunderfang",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 3,
+          "condition": "skill_off_cooldown:divine_roar AND enemies_in_range:2 >= 2",
+          "action": "use_skill:haven_divine_roar",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "A-rank Divine Beast of the West. Storm-coated apex predator. Pounces from impossible distances, every fang strike crackles with lightning.",
+      "movement": 6,
+      "size": "2x2"
+    },
+    {
+      "id": "haven_yeti",
+      "name": "Yeti, the Mountain Terror",
+      "icon": "🦣❄️",
+      "team": "enemy",
+      "rank": "B",
+      "type": "abomination",
+      "stats": {
+        "S": 22,
+        "P": 6,
+        "E": 22,
+        "C": 4,
+        "I": 4,
+        "A": 6,
+        "L": 5
+      },
+      "skills": [
+        "haven_snow_hurl",
+        "haven_avalanche",
+        "haven_yeti_slam"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "haven_abominable",
+        "haven_frostbitten_flesh"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Physical",
+        "Water"
+      ],
+      "immune": [
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Yeti Hide",
+          "itemId": "haven_yeti_hide",
+          "rarity": "Epic",
+          "chance": 0.8
+        },
+        {
+          "name": "Mountain Heart",
+          "itemId": "haven_mountain_heart",
+          "rarity": "Legendary",
+          "chance": 0.15
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:yeti_slam",
+          "action": "use_skill:haven_yeti_slam",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:avalanche AND enemies_in_range:4 >= 3",
+          "action": "use_skill:haven_avalanche",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "no_adjacent_enemy",
+          "action": "use_skill:haven_snow_hurl",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "B-rank abomination. The elusive cryptid of the high peaks. Ignores mundane weapons; pulls down the mountain itself to bury survivors. Kickstarter-tier threat.",
+      "movement": 3,
+      "size": "2x2",
+      "basicAttackRange": 3
     }
   ]
 }

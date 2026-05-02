@@ -9,6 +9,77 @@
   },
   "entries": [
     {
+      "id": "haven_avalanche",
+      "name": "Avalanche",
+      "icon": "🏔️❄️",
+      "power": 26,
+      "ap": 4,
+      "mp": 0,
+      "cooldown": 4,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 4,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "terrain_create_ice",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Yeti pulls down a slab of mountain. Massive AoE, knockback, leaves ice terrain."
+    },
+    {
+      "id": "haven_azure_storm",
+      "name": "Azure Storm",
+      "icon": "🐉⛈️",
+      "power": 32,
+      "ap": 5,
+      "mp": 14,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": "Lightning",
+      "scalingStat": "I",
+      "range": 5,
+      "aoe": "radius",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "shock_dot",
+          "overrides": {
+            "value": 4,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_shock",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.18,
+        "maxLevel": 15
+      },
+      "description": "Qinglong calls down a tempest. Massive lightning AoE with lingering shock terrain."
+    },
+    {
       "id": "haven_bear_maul",
       "name": "Maul",
       "icon": "🐻💥",
@@ -58,6 +129,79 @@
         "maxLevel": 5
       },
       "description": "Roar that terrifies nearby enemies."
+    },
+    {
+      "id": "haven_celestial_breath",
+      "name": "Celestial Breath",
+      "icon": "🐉💨",
+      "power": 30,
+      "ap": 4,
+      "mp": 12,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": "line",
+      "aoeSize": 5,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 6,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_water",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.18,
+        "maxLevel": 15
+      },
+      "description": "Azure Dragon's signature breath. A long line of celestial water that freezes everything it touches."
+    },
+    {
+      "id": "haven_charm_gaze",
+      "name": "Charm Gaze",
+      "icon": "🦊💕",
+      "power": 6,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "C",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "silence_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 2
+          }
+        },
+        {
+          "effectId": "mark_on_hit",
+          "overrides": {
+            "value": 15,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 10
+      },
+      "description": "Kumiho's gaze entrances the target — they cannot cast and take heightened damage."
     },
     {
       "id": "haven_chill_wind",
@@ -190,6 +334,124 @@
       "description": "Devastating breath from the ice head. Line AoE, heavy frostbite."
     },
     {
+      "id": "haven_climbing_leap",
+      "name": "Climbing Leap",
+      "icon": "🧗💨",
+      "power": 8,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "A",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Skitters over walls and obstacles to land beside the target. Ignores cover."
+    },
+    {
+      "id": "haven_demon_fire",
+      "name": "Demon Fire",
+      "icon": "👹🔥",
+      "power": 18,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Hellish flame erupts around the Oni, burning everything nearby."
+    },
+    {
+      "id": "haven_divine_roar",
+      "name": "Divine Roar",
+      "icon": "🐅🗯️",
+      "power": 10,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Lightning",
+      "scalingStat": "S",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "shock_dot",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        },
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Baihu's thunderous roar. Knocks back and shocks foes in a wide radius."
+    },
+    {
+      "id": "haven_dragon_swipe",
+      "name": "Dragon Swipe",
+      "icon": "🐉👊",
+      "power": 24,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "frostbite_on_hit",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Azure Dragon's basic claw strike. Heavy damage with chilling follow-through."
+    },
+    {
       "id": "haven_ember_slash",
       "name": "Ember Slash",
       "icon": "🔥⚔️",
@@ -217,6 +479,95 @@
         "maxLevel": 10
       },
       "description": "A fiery slash. Chance to burn."
+    },
+    {
+      "id": "haven_fox_fire",
+      "name": "Fox Fire",
+      "icon": "🦊💙",
+      "power": 16,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "curse_dot",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Pale spirit-flame conjured from a tail. Cursed wound — prevents regen."
+    },
+    {
+      "id": "haven_frost_charge",
+      "name": "Frost Charge",
+      "icon": "🧟💨",
+      "power": 12,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 5
+      },
+      "description": "Frost Runner sprints and slams into a target. Closes the gap fast."
+    },
+    {
+      "id": "haven_frost_crush",
+      "name": "Frost Crush",
+      "icon": "🧟💢",
+      "power": 18,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 5
+      },
+      "description": "Two-handed frost-rotted slam. Deals double damage and breaks armor."
     },
     {
       "id": "haven_frost_touch",
@@ -247,6 +598,42 @@
         "maxLevel": 10
       },
       "description": "Gentle ice magic. Applies frostbite, slowing the target."
+    },
+    {
+      "id": "haven_glacial_carapace",
+      "name": "Glacial Carapace",
+      "icon": "🐢🧊",
+      "power": 0,
+      "ap": 3,
+      "mp": 10,
+      "cooldown": 5,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "E",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "opening_shield",
+          "overrides": {
+            "value": 60
+          }
+        },
+        {
+          "effectId": "thorns_aura",
+          "overrides": {
+            "value": 8,
+            "duration": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Xuanwu retreats into its shell. Massive shield, plus thorns reflecting damage to attackers."
     },
     {
       "id": "haven_healing_light",
@@ -367,6 +754,76 @@
       "description": "Creates an ice barrier on an ally that absorbs damage."
     },
     {
+      "id": "haven_oni_roar",
+      "name": "Oni Rage",
+      "icon": "👹🗯️",
+      "power": 0,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 5,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "S",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "berserk_low_hp",
+          "overrides": {
+            "value": 8
+          }
+        },
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 6
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Wounded Oni roars in fury, gaining berserk damage and lashing out harder."
+    },
+    {
+      "id": "haven_oni_smash",
+      "name": "Kanabō Smash",
+      "icon": "👹🔨",
+      "power": 24,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "crit_stun",
+          "overrides": {
+            "value": 25
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Two-handed iron club smash. Heavy knockback; crits stun."
+    },
+    {
       "id": "haven_pack_howl",
       "name": "Pack Howl",
       "icon": "🐺🌙",
@@ -394,6 +851,72 @@
         "maxLevel": 5
       },
       "description": "Howl that empowers nearby wolves."
+    },
+    {
+      "id": "haven_phantom_tails",
+      "name": "Phantom Tails",
+      "icon": "🦊🌀",
+      "power": 14,
+      "ap": 3,
+      "mp": 7,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "bleed_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Nine spectral tails lash out — multi-strike radius attack that bleeds targets."
+    },
+    {
+      "id": "haven_phoenix_fire",
+      "name": "Phoenix Fire",
+      "icon": "🔥🦅",
+      "power": 28,
+      "ap": 4,
+      "mp": 12,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Fire",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": "radius",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 8,
+            "duration": 4
+          }
+        },
+        {
+          "effectId": "terrain_create_fire",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.18,
+        "maxLevel": 15
+      },
+      "description": "Zhuque rains down sun-fire. Devastating fire AoE that ignites the ground for turns to come."
     },
     {
       "id": "haven_piercing_bolt",
@@ -426,6 +949,35 @@
       "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR."
     },
     {
+      "id": "haven_raise_frostling",
+      "name": "Raise Frostling",
+      "icon": "💀❄️🆙",
+      "power": 0,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "raise_dead",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Necromancer hauls a fresh frost walker out of the snow. Adds another zombie to the field."
+    },
+    {
       "id": "haven_rally_cry",
       "name": "Rally",
       "icon": "📯",
@@ -453,6 +1005,95 @@
         "maxLevel": 10
       },
       "description": "Garr rallies the party. Buffs all allies' damage."
+    },
+    {
+      "id": "haven_shell_bash",
+      "name": "Shell Bash",
+      "icon": "🐢💥",
+      "power": 20,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "E",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Black Tortoise charges with its stone shell, knocking the target back."
+    },
+    {
+      "id": "haven_snow_hurl",
+      "name": "Snow Hurl",
+      "icon": "❄️🪨",
+      "power": 16,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Yeti hurls a packed boulder of snow and ice. Long range; slows the victim."
+    },
+    {
+      "id": "haven_solar_dive",
+      "name": "Solar Dive",
+      "icon": "☀️🦅",
+      "power": 22,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Phoenix dives from the sky, burning everything in its path. Closes range and deals heavy damage."
     },
     {
       "id": "haven_suppressive_fire",
@@ -485,6 +1126,64 @@
       "description": "Spray of bolts in a cone. Lower damage but slows enemies. QTE: Mash!"
     },
     {
+      "id": "haven_terracotta_shatter",
+      "name": "Terracotta Shatter",
+      "icon": "🗿💥",
+      "power": 18,
+      "ap": 0,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "E",
+      "range": 0,
+      "aoe": "radius",
+      "aoeSize": 1,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "death_explosion",
+          "overrides": {
+            "value": 18
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "On death, the warrior shatters violently. Damages everyone adjacent. (Triggered effect)"
+    },
+    {
+      "id": "haven_terracotta_slam",
+      "name": "Terracotta Slam",
+      "icon": "🗿⚔️",
+      "power": 16,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Stone fist slam from the ancient guardian. Heavy and unflinching."
+    },
+    {
       "id": "haven_thunder_shot",
       "name": "Thunder Shot",
       "icon": "⚡🏹",
@@ -513,6 +1212,106 @@
         "maxLevel": 10
       },
       "description": "Bowy's signature crossbow shot. Long range, lightning element."
+    },
+    {
+      "id": "haven_thunderfang",
+      "name": "Thunderfang",
+      "icon": "🐅⚡",
+      "power": 26,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Lightning",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "shock_dot",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        },
+        {
+          "effectId": "chain_lightning_proc",
+          "overrides": {
+            "value": 30
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Baihu's lightning-charged bite. May arc to nearby enemies."
+    },
+    {
+      "id": "haven_tide_surge",
+      "name": "Tide Surge",
+      "icon": "🌊🐢",
+      "power": 22,
+      "ap": 4,
+      "mp": 10,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": "cone",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "pull_on_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "terrain_water",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Black Tortoise unleashes a wave of dark water. Pulls enemies toward it and floods the floor."
+    },
+    {
+      "id": "haven_tiger_pounce",
+      "name": "Tiger Pounce",
+      "icon": "🐅💨",
+      "power": 20,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "A",
+      "range": 5,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Baihu pounces from impossible distance. Closes the gap and savages the target."
     },
     {
       "id": "haven_trap_set",
@@ -544,6 +1343,71 @@
       "description": "Place a trap that creates a poison zone. Veteran hunting tactic."
     },
     {
+      "id": "haven_undying_chant",
+      "name": "Undying Chant",
+      "icon": "💀🎶",
+      "power": 0,
+      "ap": 2,
+      "mp": 6,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "radius",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 6
+          }
+        },
+        {
+          "effectId": "regen_hp",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Necromancer's dark chant — empowers and slowly heals all undead allies in range."
+    },
+    {
+      "id": "haven_walker_bite",
+      "name": "Walker Bite",
+      "icon": "🧟🦷",
+      "power": 8,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "bleed_on_hit",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Frost-rotted teeth tear into flesh. Causes bleeding."
+    },
+    {
       "id": "haven_wolf_bite",
       "name": "Frost Bite",
       "icon": "🐺❄️",
@@ -572,6 +1436,41 @@
         "maxLevel": 5
       },
       "description": "Freezing bite that chills to the bone."
+    },
+    {
+      "id": "haven_yeti_slam",
+      "name": "Yeti Slam",
+      "icon": "🦣💥",
+      "power": 28,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "crit_stun",
+          "overrides": {
+            "value": 30
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Yeti's two-fisted ground slam. Heavy knockback; crits stun targets cold."
     }
   ]
 }
