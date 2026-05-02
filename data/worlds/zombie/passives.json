@@ -5,7 +5,157 @@
     "scope": "world",
     "world": "zombie",
     "category": "passives",
-    "status": "stub"
+    "status": "active"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "zombie_abominable",
+      "name": "Abominable",
+      "icon": "💀🛡️",
+      "tags": [
+        "abomination",
+        "boss",
+        "immunity"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_all",
+          "overrides": {
+            "value": 8
+          }
+        },
+        {
+          "effectId": "status_resist_mod",
+          "overrides": {
+            "value": 75
+          }
+        },
+        {
+          "effectId": "hp_mod_flat",
+          "overrides": {
+            "value": 40
+          }
+        }
+      ],
+      "description": "Impervious to mundane weapons. Only fire, explosives, or boss-tier weapons deal real damage. Immune to most status effects."
+    },
+    {
+      "id": "zombie_armored_flesh",
+      "name": "Armored Flesh",
+      "icon": "🧟🛡️",
+      "tags": [
+        "fatty",
+        "abomination",
+        "defense"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "description": "Layers of dead muscle absorb the first damage of any hit. Anything below the threshold just bounces off."
+    },
+    {
+      "id": "zombie_low_profile",
+      "name": "Low Profile",
+      "icon": "⬇️🎯",
+      "tags": [
+        "crawler",
+        "evasion"
+      ],
+      "effects": [
+        {
+          "effectId": "evasion_mod",
+          "overrides": {
+            "value": 25
+          }
+        }
+      ],
+      "description": "Belly-down on the ground. Hard to hit with arrows, bullets, or any ranged weapon."
+    },
+    {
+      "id": "zombie_toxic_aura",
+      "name": "Toxic Aura",
+      "icon": "☣️🌫️",
+      "tags": [
+        "toxic_walker",
+        "aura",
+        "poison"
+      ],
+      "effects": [
+        {
+          "effectId": "degen_aura",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "description": "Constantly leaks poison gas. Adjacent survivors take damage each round."
+    },
+    {
+      "id": "zombie_unholy_focus",
+      "name": "Unholy Focus",
+      "icon": "💀🔮",
+      "tags": [
+        "necromancer",
+        "caster",
+        "buff"
+      ],
+      "effects": [
+        {
+          "effectId": "damage_mod_dark",
+          "overrides": {
+            "value": 6
+          }
+        },
+        {
+          "effectId": "regen_mp",
+          "overrides": {
+            "value": 5
+          }
+        },
+        {
+          "effectId": "stat_mod_int",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "description": "Channels the Beacon's corruption. Massive mana regen and dark-spell amplification."
+    },
+    {
+      "id": "zombie_walking_dead",
+      "name": "Walking Dead",
+      "icon": "🧟",
+      "tags": [
+        "zombie",
+        "undead",
+        "core"
+      ],
+      "effects": [
+        {
+          "effectId": "element_weak_add",
+          "overrides": {
+            "value": "Fire"
+          }
+        },
+        {
+          "effectId": "element_immune_add",
+          "overrides": {
+            "value": "Bleed"
+          }
+        },
+        {
+          "effectId": "status_resist_mod",
+          "overrides": {
+            "value": 30
+          }
+        }
+      ],
+      "description": "It's already dead. Doesn't bleed, doesn't fear, doesn't tire. But it burns."
+    }
+  ]
 }

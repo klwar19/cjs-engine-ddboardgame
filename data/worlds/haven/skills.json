@@ -9,6 +9,41 @@
   },
   "entries": [
     {
+      "id": "haven_avalanche",
+      "name": "Avalanche",
+      "icon": "🏔️❄️",
+      "power": 26,
+      "ap": 4,
+      "mp": 0,
+      "cooldown": 4,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 4,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "terrain_create_ice",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Yeti pulls down a slab of mountain. Massive AoE, knockback, leaves ice terrain."
+    },
+    {
       "id": "haven_bear_maul",
       "name": "Maul",
       "icon": "🐻💥",
@@ -58,6 +93,43 @@
         "maxLevel": 5
       },
       "description": "Roar that terrifies nearby enemies."
+    },
+    {
+      "id": "haven_charm_gaze",
+      "name": "Charm Gaze",
+      "icon": "🦊💕",
+      "power": 6,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "C",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "silence_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 2
+          }
+        },
+        {
+          "effectId": "mark_on_hit",
+          "overrides": {
+            "value": 15,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 10
+      },
+      "description": "Kumiho's gaze entrances the target — they cannot cast and take heightened damage."
     },
     {
       "id": "haven_chill_wind",
@@ -190,6 +262,58 @@
       "description": "Devastating breath from the ice head. Line AoE, heavy frostbite."
     },
     {
+      "id": "haven_climbing_leap",
+      "name": "Climbing Leap",
+      "icon": "🧗💨",
+      "power": 8,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "A",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Skitters over walls and obstacles to land beside the target. Ignores cover."
+    },
+    {
+      "id": "haven_demon_fire",
+      "name": "Demon Fire",
+      "icon": "👹🔥",
+      "power": 18,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Fire",
+      "scalingStat": "S",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Hellish flame erupts around the Oni, burning everything nearby."
+    },
+    {
       "id": "haven_ember_slash",
       "name": "Ember Slash",
       "icon": "🔥⚔️",
@@ -217,6 +341,95 @@
         "maxLevel": 10
       },
       "description": "A fiery slash. Chance to burn."
+    },
+    {
+      "id": "haven_fox_fire",
+      "name": "Fox Fire",
+      "icon": "🦊💙",
+      "power": 16,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "curse_dot",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Pale spirit-flame conjured from a tail. Cursed wound — prevents regen."
+    },
+    {
+      "id": "haven_frost_charge",
+      "name": "Frost Charge",
+      "icon": "🧟💨",
+      "power": 12,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 5
+      },
+      "description": "Frost Runner sprints and slams into a target. Closes the gap fast."
+    },
+    {
+      "id": "haven_frost_crush",
+      "name": "Frost Crush",
+      "icon": "🧟💢",
+      "power": 18,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 5
+      },
+      "description": "Two-handed frost-rotted slam. Deals double damage and breaks armor."
     },
     {
       "id": "haven_frost_touch",
@@ -367,6 +580,76 @@
       "description": "Creates an ice barrier on an ally that absorbs damage."
     },
     {
+      "id": "haven_oni_roar",
+      "name": "Oni Rage",
+      "icon": "👹🗯️",
+      "power": 0,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 5,
+      "damageType": "Magic",
+      "element": null,
+      "scalingStat": "S",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "berserk_low_hp",
+          "overrides": {
+            "value": 8
+          }
+        },
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 6
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Wounded Oni roars in fury, gaining berserk damage and lashing out harder."
+    },
+    {
+      "id": "haven_oni_smash",
+      "name": "Kanabō Smash",
+      "icon": "👹🔨",
+      "power": 24,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "crit_stun",
+          "overrides": {
+            "value": 25
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 10
+      },
+      "description": "Two-handed iron club smash. Heavy knockback; crits stun."
+    },
+    {
       "id": "haven_pack_howl",
       "name": "Pack Howl",
       "icon": "🐺🌙",
@@ -394,6 +677,36 @@
         "maxLevel": 5
       },
       "description": "Howl that empowers nearby wolves."
+    },
+    {
+      "id": "haven_phantom_tails",
+      "name": "Phantom Tails",
+      "icon": "🦊🌀",
+      "power": 14,
+      "ap": 3,
+      "mp": 7,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 2,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "bleed_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Nine spectral tails lash out — multi-strike radius attack that bleeds targets."
     },
     {
       "id": "haven_piercing_bolt",
@@ -426,6 +739,35 @@
       "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR."
     },
     {
+      "id": "haven_raise_frostling",
+      "name": "Raise Frostling",
+      "icon": "💀❄️🆙",
+      "power": 0,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "raise_dead",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Necromancer hauls a fresh frost walker out of the snow. Adds another zombie to the field."
+    },
+    {
       "id": "haven_rally_cry",
       "name": "Rally",
       "icon": "📯",
@@ -453,6 +795,36 @@
         "maxLevel": 10
       },
       "description": "Garr rallies the party. Buffs all allies' damage."
+    },
+    {
+      "id": "haven_snow_hurl",
+      "name": "Snow Hurl",
+      "icon": "❄️🪨",
+      "power": 16,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Water",
+      "scalingStat": "S",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Yeti hurls a packed boulder of snow and ice. Long range; slows the victim."
     },
     {
       "id": "haven_suppressive_fire",
@@ -544,6 +916,71 @@
       "description": "Place a trap that creates a poison zone. Veteran hunting tactic."
     },
     {
+      "id": "haven_undying_chant",
+      "name": "Undying Chant",
+      "icon": "💀🎶",
+      "power": 0,
+      "ap": 2,
+      "mp": 6,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "radius",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "damage_mod_all",
+          "overrides": {
+            "value": 6
+          }
+        },
+        {
+          "effectId": "regen_hp",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Necromancer's dark chant — empowers and slowly heals all undead allies in range."
+    },
+    {
+      "id": "haven_walker_bite",
+      "name": "Walker Bite",
+      "icon": "🧟🦷",
+      "power": 8,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "bleed_on_hit",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Frost-rotted teeth tear into flesh. Causes bleeding."
+    },
+    {
       "id": "haven_wolf_bite",
       "name": "Frost Bite",
       "icon": "🐺❄️",
@@ -572,6 +1009,41 @@
         "maxLevel": 5
       },
       "description": "Freezing bite that chills to the bone."
+    },
+    {
+      "id": "haven_yeti_slam",
+      "name": "Yeti Slam",
+      "icon": "🦣💥",
+      "power": 28,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "crit_stun",
+          "overrides": {
+            "value": 30
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Yeti's two-fisted ground slam. Heavy knockback; crits stun targets cold."
     }
   ]
 }

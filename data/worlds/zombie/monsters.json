@@ -5,7 +5,476 @@
     "scope": "world",
     "world": "zombie",
     "category": "monsters",
-    "status": "stub"
+    "status": "active"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "zombie_abomination",
+      "name": "Abomination",
+      "icon": "🧟‍♂️👹",
+      "team": "enemy",
+      "rank": "B",
+      "type": "abomination",
+      "stats": {
+        "S": 22,
+        "P": 4,
+        "E": 24,
+        "C": 1,
+        "I": 1,
+        "A": 3,
+        "L": 2
+      },
+      "skills": [
+        "zombie_abomination_crush",
+        "zombie_abomination_hurl",
+        "zombie_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_abominable",
+        "zombie_armored_flesh"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Physical"
+      ],
+      "immune": [
+        "Bleed",
+        "Frost"
+      ],
+      "loot": [
+        {
+          "name": "Abomination Heart",
+          "itemId": "zombie_abomination_heart",
+          "rarity": "Epic",
+          "chance": 0.8
+        },
+        {
+          "name": "Hazard Tag",
+          "itemId": "zombie_hazard_tag",
+          "rarity": "Rare",
+          "chance": 0.4
+        }
+      ],
+      "behaviorAI": "boss",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:abomination_crush",
+          "action": "use_skill:zombie_abomination_crush",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "no_adjacent_enemy AND skill_off_cooldown:abomination_hurl",
+          "action": "use_skill:zombie_abomination_hurl",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:zombie_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 4,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "B-rank boss zombie. Towering mass of fused corpses — impervious to mundane weapons. Only fire, explosives, or boss-tier abilities deal real damage. Each blow ignores light armor.",
+      "movement": 2,
+      "size": "2x2"
+    },
+    {
+      "id": "zombie_crawler",
+      "name": "Crawler",
+      "icon": "🧟⬇️",
+      "team": "enemy",
+      "rank": "F",
+      "type": "undead",
+      "stats": {
+        "S": 4,
+        "P": 3,
+        "E": 5,
+        "C": 1,
+        "I": 1,
+        "A": 4,
+        "L": 3
+      },
+      "skills": [
+        "zombie_ankle_bite",
+        "zombie_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_low_profile",
+        "zombie_walking_dead"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Tattered Rag",
+          "itemId": "zombie_tattered_rag",
+          "rarity": "Common",
+          "chance": 0.5
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:zombie_ankle_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Half-eaten zombie dragging itself along the ground. Hard to hit with ranged weapons — high evasion vs. arrows and bullets.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    {
+      "id": "zombie_fatty",
+      "name": "Fatty",
+      "icon": "🧟‍♂️🥩",
+      "team": "enemy",
+      "rank": "E",
+      "type": "undead",
+      "stats": {
+        "S": 12,
+        "P": 3,
+        "E": 14,
+        "C": 1,
+        "I": 1,
+        "A": 2,
+        "L": 2
+      },
+      "skills": [
+        "zombie_fatty_smash",
+        "zombie_fatty_split",
+        "zombie_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_armored_flesh",
+        "zombie_walking_dead"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Physical"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Bloated Gland",
+          "itemId": "zombie_bloated_gland",
+          "rarity": "Uncommon",
+          "chance": 0.6
+        },
+        {
+          "name": "Spoiled Meat",
+          "itemId": "zombie_spoiled_meat",
+          "rarity": "Common",
+          "chance": 0.7
+        }
+      ],
+      "behaviorAI": "tank",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy AND skill_off_cooldown:fatty_smash",
+          "action": "use_skill:zombie_fatty_smash",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:zombie_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Bloated zombie, swollen on rot. Two damage minimum to kill — anything weaker just bounces off. When it dies, two Walkers spawn from the splash.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    {
+      "id": "zombie_necromancer",
+      "name": "Necromancer",
+      "icon": "🧙‍♂️💀",
+      "team": "enemy",
+      "rank": "C",
+      "type": "undead",
+      "stats": {
+        "S": 5,
+        "P": 8,
+        "E": 8,
+        "C": 5,
+        "I": 14,
+        "A": 5,
+        "L": 5
+      },
+      "skills": [
+        "zombie_raise_walker",
+        "zombie_dark_bolt",
+        "zombie_corruption_pulse"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_unholy_focus",
+        "zombie_walking_dead"
+      ],
+      "weak": [
+        "Fire",
+        "Light"
+      ],
+      "resist": [
+        "Dark"
+      ],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Necromancer's Grimoire",
+          "itemId": "zombie_grimoire",
+          "rarity": "Rare",
+          "chance": 0.7
+        },
+        {
+          "name": "Soul Reagent",
+          "itemId": "zombie_soul_reagent",
+          "rarity": "Epic",
+          "chance": 0.2
+        }
+      ],
+      "behaviorAI": "summoner",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "skill_off_cooldown:raise_walker AND allies_alive_lt_4",
+          "action": "use_skill:zombie_raise_walker",
+          "target": "self"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:corruption_pulse AND enemies_in_range:3 >= 2",
+          "action": "use_skill:zombie_corruption_pulse",
+          "target": "most_clustered"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "use_skill:zombie_dark_bolt",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 4,
+          "condition": "any_adjacent_enemy",
+          "action": "move_away",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "C-rank caster. The most dangerous threat in any horde — opens new spawn zones each turn and floods the map with walkers. Always kill the Necromancer first.",
+      "movement": 3,
+      "size": "1x1",
+      "basicAttackRange": 3
+    },
+    {
+      "id": "zombie_runner",
+      "name": "Runner",
+      "icon": "🧟💨",
+      "team": "enemy",
+      "rank": "F",
+      "type": "undead",
+      "stats": {
+        "S": 5,
+        "P": 4,
+        "E": 4,
+        "C": 1,
+        "I": 1,
+        "A": 9,
+        "L": 3
+      },
+      "skills": [
+        "zombie_runner_pounce",
+        "zombie_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_walking_dead"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Tattered Rag",
+          "itemId": "zombie_tattered_rag",
+          "rarity": "Common",
+          "chance": 0.6
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:zombie_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "skill_off_cooldown:runner_pounce AND no_adjacent_enemy",
+          "action": "use_skill:zombie_runner_pounce",
+          "target": "lowest_hp_enemy"
+        },
+        {
+          "priority": 3,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "lowest_hp_enemy"
+        }
+      ],
+      "description": "Sprinting corpse. Activates twice on Necromancer turns — covers ground frighteningly fast. Goes for the wounded first.",
+      "movement": 5,
+      "size": "1x1"
+    },
+    {
+      "id": "zombie_toxic_walker",
+      "name": "Toxic Walker",
+      "icon": "🧟☣️",
+      "team": "enemy",
+      "rank": "E",
+      "type": "undead",
+      "stats": {
+        "S": 5,
+        "P": 3,
+        "E": 7,
+        "C": 1,
+        "I": 1,
+        "A": 2,
+        "L": 2
+      },
+      "skills": [
+        "zombie_toxic_bite",
+        "zombie_toxic_burst"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_toxic_aura",
+        "zombie_walking_dead"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Poison"
+      ],
+      "immune": [
+        "Poison"
+      ],
+      "loot": [
+        {
+          "name": "Toxic Sac",
+          "itemId": "zombie_toxic_sac",
+          "rarity": "Uncommon",
+          "chance": 0.6
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:zombie_toxic_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Pus-bloated walker leaking acid bile. Releases a poison cloud when killed — close-range melee carries serious risk.",
+      "movement": 2,
+      "size": "1x1"
+    },
+    {
+      "id": "zombie_walker",
+      "name": "Walker",
+      "icon": "🧟",
+      "team": "enemy",
+      "rank": "F",
+      "type": "undead",
+      "stats": {
+        "S": 4,
+        "P": 2,
+        "E": 5,
+        "C": 1,
+        "I": 1,
+        "A": 2,
+        "L": 2
+      },
+      "skills": [
+        "zombie_walker_bite"
+      ],
+      "equipment": [],
+      "innatePassives": [
+        "zombie_walking_dead"
+      ],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [],
+      "immune": [],
+      "loot": [
+        {
+          "name": "Tattered Rag",
+          "itemId": "zombie_tattered_rag",
+          "rarity": "Common",
+          "chance": 0.4
+        }
+      ],
+      "behaviorAI": "aggressive",
+      "aiRules": [
+        {
+          "priority": 1,
+          "condition": "any_adjacent_enemy",
+          "action": "use_skill:zombie_walker_bite",
+          "target": "lowest_hp_adjacent"
+        },
+        {
+          "priority": 2,
+          "condition": "default",
+          "action": "move_toward",
+          "target": "nearest_enemy"
+        }
+      ],
+      "description": "Standard shambling corpse. Slow, weak, individually no threat. The horde is the threat.",
+      "movement": 2,
+      "size": "1x1"
+    }
+  ]
 }

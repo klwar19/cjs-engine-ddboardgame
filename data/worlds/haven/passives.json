@@ -9,6 +9,37 @@
   },
   "entries": [
     {
+      "id": "haven_abominable",
+      "name": "Abominable",
+      "icon": "💀🛡️",
+      "tags": [
+        "abomination",
+        "boss",
+        "immunity"
+      ],
+      "effects": [
+        {
+          "effectId": "dr_mod_all",
+          "overrides": {
+            "value": 6
+          }
+        },
+        {
+          "effectId": "status_resist_mod",
+          "overrides": {
+            "value": 60
+          }
+        },
+        {
+          "effectId": "hp_mod_flat",
+          "overrides": {
+            "value": 30
+          }
+        }
+      ],
+      "description": "Mythic, nearly unkillable. Mundane weapons cannot harm it; only enchanted, fire, or boss-tier abilities deal real damage."
+    },
+    {
       "id": "haven_alpha_presence",
       "name": "Alpha Presence",
       "icon": "🐺👑",
@@ -26,6 +57,49 @@
         }
       ],
       "description": "Pack alpha. Nearby wolves deal more damage."
+    },
+    {
+      "id": "haven_climber",
+      "name": "Climber",
+      "icon": "🧗",
+      "tags": [
+        "zombie",
+        "mobility"
+      ],
+      "effects": [
+        {
+          "effectId": "movement_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "description": "Can scale walls and obstacles as if they were open ground. Cover does not protect against this enemy."
+    },
+    {
+      "id": "haven_demonic_might",
+      "name": "Demonic Might",
+      "icon": "👹💪",
+      "tags": [
+        "demon",
+        "oni",
+        "damage"
+      ],
+      "effects": [
+        {
+          "effectId": "stat_mod_str",
+          "overrides": {
+            "value": 3
+          }
+        },
+        {
+          "effectId": "damage_mod_physical",
+          "overrides": {
+            "value": 6
+          }
+        }
+      ],
+      "description": "Hellish strength. Every blow lands harder."
     },
     {
       "id": "haven_fae_blood",
@@ -51,6 +125,37 @@
         }
       ],
       "description": "Hidden Fae heritage. Natural mana recovery and magic resistance."
+    },
+    {
+      "id": "haven_frostbitten_flesh",
+      "name": "Frostbitten Flesh",
+      "icon": "🧟❄️",
+      "tags": [
+        "zombie",
+        "undead",
+        "frost"
+      ],
+      "effects": [
+        {
+          "effectId": "element_immune_add",
+          "overrides": {
+            "value": "Frost"
+          }
+        },
+        {
+          "effectId": "element_resist_add",
+          "overrides": {
+            "value": "Water"
+          }
+        },
+        {
+          "effectId": "element_weak_add",
+          "overrides": {
+            "value": "Fire"
+          }
+        }
+      ],
+      "description": "The cold preserves it. Immune to frost, but fire burns away its flesh faster."
     },
     {
       "id": "haven_frozen_carapace",
@@ -157,6 +262,106 @@
         }
       ],
       "description": "Bowy's trained eye. Better accuracy and extended range."
+    },
+    {
+      "id": "haven_nine_tails",
+      "name": "Nine Tails",
+      "icon": "🦊✨",
+      "tags": [
+        "kumiho",
+        "abomination",
+        "magic"
+      ],
+      "effects": [
+        {
+          "effectId": "damage_mod_magic",
+          "overrides": {
+            "value": 8
+          }
+        },
+        {
+          "effectId": "stat_mod_cha",
+          "overrides": {
+            "value": 4
+          }
+        },
+        {
+          "effectId": "spell_lifesteal",
+          "overrides": {
+            "value": 15
+          }
+        }
+      ],
+      "description": "Nine spirit-tails amplify her magic. Spell-lifesteal restores HP from every dark spell."
+    },
+    {
+      "id": "haven_oni_horns",
+      "name": "Oni Horns",
+      "icon": "👹🔱",
+      "tags": [
+        "oni",
+        "demon",
+        "crit"
+      ],
+      "effects": [
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": {
+            "value": 12
+          }
+        },
+        {
+          "effectId": "crit_damage_mod",
+          "overrides": {
+            "value": 25
+          }
+        }
+      ],
+      "description": "Cursed horns harden the Oni's crits — extra crit rate and devastating crit damage."
+    },
+    {
+      "id": "haven_unfeeling",
+      "name": "Unfeeling",
+      "icon": "🧱",
+      "tags": [
+        "construct",
+        "undead",
+        "immunity"
+      ],
+      "effects": [
+        {
+          "effectId": "status_resist_mod",
+          "overrides": {
+            "value": 75
+          }
+        }
+      ],
+      "description": "No nerves, no fear. Highly resistant to charm, fear, bleed, and pain-based effects."
+    },
+    {
+      "id": "haven_unholy_aura",
+      "name": "Unholy Aura",
+      "icon": "💀🌑",
+      "tags": [
+        "necromancer",
+        "undead",
+        "buff"
+      ],
+      "effects": [
+        {
+          "effectId": "damage_mod_dark",
+          "overrides": {
+            "value": 5
+          }
+        },
+        {
+          "effectId": "regen_mp",
+          "overrides": {
+            "value": 4
+          }
+        }
+      ],
+      "description": "Pulses of dark energy fuel the necromancer's spells. Buffs nearby undead and refills mana."
     },
     {
       "id": "haven_veterans_instinct",

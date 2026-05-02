@@ -5,7 +5,374 @@
     "scope": "world",
     "world": "zombie",
     "category": "skills",
-    "status": "stub"
+    "status": "active"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "zombie_abomination_crush",
+      "name": "Abomination Crush",
+      "icon": "👹💥",
+      "power": 32,
+      "ap": 4,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 2
+          }
+        },
+        {
+          "effectId": "desolation_armor_break",
+          "overrides": {
+            "value": 4,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.15,
+        "maxLevel": 15
+      },
+      "description": "Two-fisted overhead crush. Ignores armor entirely and sends survivors flying."
+    },
+    {
+      "id": "zombie_abomination_hurl",
+      "name": "Abomination Hurl",
+      "icon": "👹🪨",
+      "power": 22,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 5,
+      "aoe": "radius",
+      "aoeSize": 1,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 15
+      },
+      "description": "Rips a chunk of rubble (or a corpse) free and hurls it across the battlefield. Splash on impact."
+    },
+    {
+      "id": "zombie_ankle_bite",
+      "name": "Ankle Bite",
+      "icon": "🧟🦷",
+      "power": 6,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "slow_on_hit",
+          "overrides": {
+            "value": 1,
+            "duration": 2
+          }
+        },
+        {
+          "effectId": "bleed_on_hit",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Crawler latches onto a leg. Lower damage but slows and bleeds the target."
+    },
+    {
+      "id": "zombie_corruption_pulse",
+      "name": "Corruption Pulse",
+      "icon": "🌑💀",
+      "power": 14,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "radius",
+      "aoeSize": 3,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "curse_dot",
+          "overrides": {
+            "value": 3,
+            "duration": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Necromancer pulses corruption from the beacon. Cursed wounds prevent healing."
+    },
+    {
+      "id": "zombie_dark_bolt",
+      "name": "Dark Bolt",
+      "icon": "🌑⚡",
+      "power": 14,
+      "ap": 2,
+      "mp": 4,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 10
+      },
+      "description": "Necromancer's basic ranged spell. Bolt of negative energy."
+    },
+    {
+      "id": "zombie_fatty_smash",
+      "name": "Fatty Smash",
+      "icon": "🥩💥",
+      "power": 18,
+      "ap": 3,
+      "mp": 0,
+      "cooldown": 2,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "Belly-flop slam. The Fatty's full bloated weight comes down on the target."
+    },
+    {
+      "id": "zombie_fatty_split",
+      "name": "Death Split",
+      "icon": "🥩💔",
+      "power": 0,
+      "ap": 0,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 0,
+      "aoe": "radius",
+      "aoeSize": 1,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "raise_dead",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.05,
+        "maxLevel": 5
+      },
+      "description": "On death, the Fatty bursts open — two fresh Walkers crawl out of the splash. (Triggered effect)"
+    },
+    {
+      "id": "zombie_raise_walker",
+      "name": "Raise Walker",
+      "icon": "💀🆙",
+      "power": 0,
+      "ap": 3,
+      "mp": 8,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "raise_dead",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "Necromancer pulls a fresh Walker out of the rot. Adds another zombie to the field."
+    },
+    {
+      "id": "zombie_runner_pounce",
+      "name": "Runner Pounce",
+      "icon": "🧟💨",
+      "power": 12,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 1,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "A",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 5
+      },
+      "description": "Sprint and tackle. Closes the gap fast and brings the target to the ground."
+    },
+    {
+      "id": "zombie_toxic_bite",
+      "name": "Toxic Bite",
+      "icon": "🧟☣️",
+      "power": 8,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Dark",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "poison_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Acid-bile bite. Heavy poison damage over time."
+    },
+    {
+      "id": "zombie_toxic_burst",
+      "name": "Toxic Burst",
+      "icon": "☣️💥",
+      "power": 12,
+      "ap": 0,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Magic",
+      "element": "Dark",
+      "scalingStat": "E",
+      "range": 0,
+      "aoe": "radius",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "poison_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_create_poison",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 10
+      },
+      "description": "On death, the Toxic Walker bursts. Poison cloud lingers in the area for several turns. (Triggered effect)"
+    },
+    {
+      "id": "zombie_walker_bite",
+      "name": "Walker Bite",
+      "icon": "🧟🦷",
+      "power": 8,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Physical",
+      "scalingStat": "S",
+      "range": 1,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "bleed_on_hit",
+          "overrides": {
+            "value": 2,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
+      },
+      "description": "Rotting teeth tear into flesh. Causes bleeding."
+    }
+  ]
 }
