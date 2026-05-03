@@ -43,13 +43,29 @@ window.CJS.CampaignBattleSetForge = (() => {
       source: 'side_content',
       rewardOps: card.rewardOps || [],
       objective: card.objective || '',
-      notes: card.gimmick || ''
+      notes: card.gimmick || '',
+      battleMap: _battleMapForCard(card)
     }, { source: 'battle_set_forge' });
   }
 
   function victoryOps(cardId) {
     const card = getCard(cardId);
     return card?.rewardOps || [];
+  }
+
+  function _battleMapForCard(card = {}) {
+    const text = [card.name, card.objective, card.gimmick, ...(card.tags || [])].join(' ').toLowerCase();
+    let theme = 'forest';
+    if (/temple|shrine|holy/.test(text)) theme = 'temple';
+    else if (/ruins|relic|pillar/.test(text)) theme = 'ruins';
+    else if (/cave|cellar|sewer|underground|den/.test(text)) theme = 'cave';
+    else if (/snow|ice|frost|ridge|mountain/.test(text)) theme = 'tundra';
+    else if (/arena|spar|training|guild|tavern|house|urban|street/.test(text)) theme = 'arena';
+    return {
+      theme,
+      width: Number(card.grid?.width || 8),
+      height: Number(card.grid?.height || 8)
+    };
   }
 
   return Object.freeze({

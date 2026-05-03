@@ -168,6 +168,37 @@ body.campaign-page {
   margin-bottom: 14px;
 }
 
+.campaign-solo-notice,
+.campaign-travel-notice,
+.battle-ready {
+  border-color: var(--campaign-warn);
+  background: linear-gradient(180deg, #2a2417 0%, var(--campaign-panel) 100%);
+  box-shadow: 0 0 0 1px rgba(245, 184, 75, 0.22), 0 0 22px rgba(245, 184, 75, 0.1);
+  animation: campaign-notice-pulse 1.6s ease-in-out infinite;
+}
+
+.campaign-solo-notice.risk-red {
+  border-color: var(--campaign-danger);
+  box-shadow: 0 0 0 1px rgba(239, 102, 102, 0.25), 0 0 22px rgba(239, 102, 102, 0.12);
+}
+
+@keyframes campaign-notice-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(245, 184, 75, 0.2), 0 0 16px rgba(245, 184, 75, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(245, 184, 75, 0.45), 0 0 28px rgba(245, 184, 75, 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campaign-solo-notice,
+  .campaign-travel-notice,
+  .battle-ready {
+    animation: none;
+  }
+}
+
 .campaign-panel-head,
 .campaign-character-head,
 .campaign-row {

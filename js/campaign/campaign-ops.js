@@ -1180,7 +1180,9 @@ window.CJS.CampaignOps = (() => {
       source: op.source || 'manual',
       rewardOps: op.rewardOps || [],
       notes: op.notes || '',
-      objective: op.objective || ''
+      objective: op.objective || '',
+      battleMap: op.battleMap || null,
+      setting: op.setting || null
     };
     _log(state, `Battle ready: ${state.pendingBattle.label}.`);
   }

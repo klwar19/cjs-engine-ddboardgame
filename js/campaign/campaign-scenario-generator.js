@@ -11,11 +11,79 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const Loader = () => window.CJS.CampaignDataLoader;
   const Runner = () => window.CJS.ScenarioRunner;
 
-  const MAP_TYPES = ['any', 'urban', 'outdoor', 'dungeon', 'house', 'castle', 'mountain'];
+  const MAP_TYPES = ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
   const MAP_FORMS = ['node_map', 'grid_map'];
   const SIZES = ['tiny', 'small', 'medium', 'large'];
   const SIZE_COUNTS = { tiny: 5, small: 7, medium: 9, large: 12 };
   const GRID_SIZES = { tiny: [5, 5], small: [6, 6], medium: [8, 6], large: [10, 8] };
+  const BATTLE_KINDS = new Set(['battle', 'boss', 'event_battle']);
+  const AREA_PROFILES = {
+    urban: {
+      aliases: ['urban', 'town', 'city', 'street', 'market', 'guild', 'alley'],
+      battle: ['urban', 'guild', 'rival', 'bandit', 'sparring', 'social', 'taxmen'],
+      themes: ['arena', 'open_field']
+    },
+    outdoor: {
+      aliases: ['outdoor', 'outside', 'trail', 'road', 'field', 'wilds', 'snow', 'tundra'],
+      battle: ['outdoor', 'forest', 'trail', 'road', 'wolf', 'bear', 'ambush', 'beast', 'snow', 'ridge'],
+      themes: ['forest', 'tundra', 'open_field']
+    },
+    forest: {
+      aliases: ['forest', 'wood', 'frostwood', 'grove', 'pine', 'creek'],
+      battle: ['forest', 'wolf', 'bear', 'sprite', 'grove', 'mushroom', 'beast', 'ambush'],
+      themes: ['forest', 'tundra']
+    },
+    dungeon: {
+      aliases: ['dungeon', 'underground', 'cellar', 'vault', 'floor', 'crypt'],
+      battle: ['dungeon', 'cave', 'cellar', 'shrine', 'temple', 'sprite', 'undead', 'mystery'],
+      themes: ['cave', 'ruins', 'temple']
+    },
+    cave: {
+      aliases: ['cave', 'hollow', 'den', 'cavern'],
+      battle: ['cave', 'bear', 'wolf', 'undead', 'hollow', 'danger'],
+      themes: ['cave']
+    },
+    sewer: {
+      aliases: ['sewer', 'drain', 'canal', 'tunnel'],
+      battle: ['sewer', 'rat', 'undead', 'runner', 'brute', 'crawler'],
+      themes: ['cave', 'swamp']
+    },
+    ruins: {
+      aliases: ['ruins', 'ruin', 'old', 'broken', 'relic'],
+      battle: ['ruins', 'shrine', 'temple', 'sprite', 'mystery', 'guardian', 'undead'],
+      themes: ['ruins', 'temple']
+    },
+    temple: {
+      aliases: ['temple', 'shrine', 'bell', 'holy'],
+      battle: ['temple', 'shrine', 'sprite', 'guardian', 'mystery', 'review'],
+      themes: ['temple', 'ruins']
+    },
+    house: {
+      aliases: ['house', 'home', 'hut', 'room', 'cellar'],
+      battle: ['house', 'cellar', 'rat', 'sprite', 'training', 'social'],
+      themes: ['arena', 'cave']
+    },
+    tavern: {
+      aliases: ['tavern', 'inn', 'mug', 'kitchen', 'food', 'cellar'],
+      battle: ['tavern', 'food', 'rat', 'comedy', 'cellar', 'sparring'],
+      themes: ['arena', 'cave']
+    },
+    castle: {
+      aliases: ['castle', 'keep', 'gate', 'bailey', 'tower'],
+      battle: ['castle', 'gate', 'guard', 'rival', 'undead', 'tower'],
+      themes: ['ruins', 'arena']
+    },
+    mountain: {
+      aliases: ['mountain', 'ridge', 'peak', 'summit', 'slope', 'ice'],
+      battle: ['mountain', 'ridge', 'bear', 'wolf', 'yeti', 'oni', 'danger'],
+      themes: ['tundra', 'cave', 'open_field']
+    },
+    arena: {
+      aliases: ['arena', 'training', 'sparring', 'drill'],
+      battle: ['arena', 'training', 'sparring', 'rival', 'boss_preview'],
+      themes: ['arena', 'open_field']
+    }
+  };
 
   function generateAndStart(options = {}) {
     if (CS().getState()?.activeScenarioRun) return { error: 'active_run' };
@@ -125,14 +193,14 @@ window.CJS.CampaignScenarioGenerator = (() => {
       .map((id) => Loader().getMapSeed(id))
       .filter(Boolean);
     if (byContext.length) {
-      const typed = opts.mapType === 'any' ? byContext : byContext.filter((seed) => _hasToken(seed, opts.mapType));
+      const typed = opts.mapType === 'any' ? byContext : byContext.filter((seed) => _matchesArea(seed, opts.mapType));
       const sized = (typed.length ? typed : byContext).filter((seed) => _hasToken(seed, opts.size));
       return _pick(sized.length ? sized : (typed.length ? typed : byContext));
     }
 
     let filtered = seeds;
     if (opts.mapType !== 'any') {
-      filtered = seeds.filter((seed) => _hasToken(seed, opts.mapType));
+      filtered = seeds.filter((seed) => _matchesArea(seed, opts.mapType));
     }
     const sized = filtered.filter((seed) => _hasToken(seed, opts.size));
     const layered = (sized.length ? sized : filtered).filter((seed) => opts.layers <= 1 || (seed.layers || []).length >= opts.layers || _hasToken(seed, 'multi_layer'));
@@ -141,16 +209,19 @@ window.CJS.CampaignScenarioGenerator = (() => {
 
   function _buildScenario(map, seed, opts, context, world) {
     const points = map.nodes || map.cells || [];
+    const setting = opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType;
+    const autoBattlePool = _worldBattlePool(world, { setting, size: opts.size, tags: _scenarioTags(seed, context) }, context, seed);
+    _ensurePointBattles(points, autoBattlePool, { setting, size: opts.size });
     const battleRefs = _unique([
       ...(context.battleSetIds || []),
       ...points.flatMap((point) => [...(point.battleSetIds || []), ...(point.encounterIds || [])])
     ]);
     let setBattles = battleRefs.map(_battleEntryFromRef).filter((entry) => entry.encounterId || entry.battleSetId);
-    const fallbackPool = setBattles.length ? [] : _worldBattlePool(world);
+    setBattles = _dedupeBattleEntries(setBattles);
+    const fallbackPool = setBattles.length ? [] : autoBattlePool;
     const battlePool = setBattles.length ? setBattles : fallbackPool;
     const exitPoint = [...points].reverse().find((point) => point.kind === 'exit') || points[points.length - 1];
     const id = `gen_scn_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const setting = opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType;
     return {
       id,
       name: _scenarioName(context, map, seed),
@@ -164,6 +235,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
       size: opts.size,
       canonRisk: seed.canonRisk || 'green',
       generated: true,
+      tags: _scenarioTags(seed, context),
       source: {
         kind: context.source,
         title: context.title || '',
@@ -176,7 +248,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
       setBattles,
       randomBattleTables: battlePool.length ? [{
         id: `${id}_random_battles`,
-        name: setBattles.length ? 'Generated Battle Pool' : 'World Battle Pool',
+        name: setBattles.length ? 'Generated Battle Pool' : `${_titleCase(setting)} Battle Pool`,
         entries: battlePool.map((entry) => ({ ...entry, weight: entry.weight || 1 }))
       }] : [],
       eventTables: _campaignEventTables(world),
@@ -196,7 +268,31 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return `${context.title}: ${base}`;
   }
 
-  function _worldBattlePool(world) {
+  function _ensurePointBattles(points, pool, context = {}) {
+    if (!Array.isArray(points) || !points.length || !pool.length) return;
+    const shuffled = _shuffle(pool);
+    let index = 0;
+    for (const point of points) {
+      const kind = String(point.kind || _roleToKind(point.role)).toLowerCase();
+      if (!BATTLE_KINDS.has(kind)) continue;
+      if (point.randomBattle || point.battleSetIds?.length || point.encounterIds?.length || point.encounterId) continue;
+      const localPool = _rankedBattles(shuffled, { ...context, tags: [...(context.tags || []), ...(point.tags || []), point.title, point.name, point.notes, kind] });
+      const entry = localPool[index % localPool.length] || shuffled[index % shuffled.length];
+      index += 1;
+      if (!entry) continue;
+      if (entry.battleSetId) point.battleSetIds = _unique([...(point.battleSetIds || []), entry.battleSetId]);
+      if (entry.encounterId) point.encounterIds = _unique([...(point.encounterIds || []), entry.encounterId]);
+      point.randomBattle = {
+        chance: kind === 'boss' ? 1 : 0.85,
+        ...entry,
+        source: 'auto_area'
+      };
+      point.tags = _unique([...(point.tags || []), 'auto_battle', context.setting || '']);
+      point.notes = [point.notes, `Auto battle: ${entry.label || entry.encounterId || entry.battleSetId}.`].filter(Boolean).join(' ');
+    }
+  }
+
+  function _worldBattlePool(world, area = {}, context = {}, seed = {}) {
     const cards = Loader().getBattleSetCards(world) || [];
     const entries = cards
       .map((card) => ({
@@ -206,16 +302,27 @@ window.CJS.CampaignScenarioGenerator = (() => {
         label: card.name || card.id,
         rewardOps: card.rewardOps || [],
         objective: card.objective || '',
-        notes: card.gimmick || ''
+        notes: card.gimmick || '',
+        tags: card.tags || [],
+        rank: card.rank || '',
+        canonRisk: card.canonRisk || 'green',
+        enemyMix: card.enemyMix || [],
+        battleMap: _battleMapSuggestion(card, area.setting)
       }))
       .filter((entry) => entry.encounterId || entry.battleSetId);
-    if (entries.length) return entries;
+    if (entries.length) return _rankedBattles(entries, {
+      setting: area.setting,
+      size: area.size,
+      tags: [...(area.tags || []), ...(context.tags || []), ...(seed.tags || []), context.title, context.summary, seed.name, seed.notes]
+    });
     const encounters = (DS().getAllAsArray('encounters') || []).filter((enc) => !enc._world || enc._world === world);
-    return encounters.slice(0, 6).map((enc) => ({
+    return _rankedBattles(encounters.map((enc) => ({
       id: enc.id,
       encounterId: enc.id,
-      label: enc.name || enc.id
-    }));
+      label: enc.name || enc.id,
+      tags: enc.tags || [],
+      battleMap: _battleMapSuggestion(enc, area.setting)
+    })), area).slice(0, 8);
   }
 
   function _campaignEventTables(world) {
@@ -393,10 +500,17 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const names = {
       urban: ['Gate Alley', 'Market Bend', 'Rooftop Cut', 'Watch Post', 'Storehouse', 'Back Street', 'Canal Exit'],
       outdoor: ['Trailhead', 'Old Marker', 'Broken Sled', 'Pine Hollow', 'Cold Creek', 'Hidden Cache', 'Return Trail'],
+      forest: ['Forest Edge', 'Bent Pine', 'Mossy Hollow', 'Wolf Track', 'Old Snag', 'Hidden Grove', 'Return Trail'],
       dungeon: ['Stone Mouth', 'Low Hall', 'Split Stairs', 'Guard Room', 'Rune Door', 'Deep Vault', 'Exit Arch'],
+      cave: ['Cave Mouth', 'Dripstone Bend', 'Low Crawl', 'Bear Scratch', 'Dark Pool', 'Deep Hollow', 'Daylight Crack'],
+      sewer: ['Drain Gate', 'Slick Channel', 'Broken Grate', 'Rat Run', 'Flooded Step', 'Old Valve', 'Street Exit'],
+      ruins: ['Snowed Road', 'Broken Gate', 'Old Courtyard', 'Fallen Pillars', 'Silent Bell', 'Sealed Door', 'Side Exit'],
+      temple: ['Prayer Gate', 'Outer Ring', 'Offering Bowl', 'Bell Court', 'Shrine Steps', 'Inner Seal', 'Retreat Path'],
       house: ['Front Step', 'Mud Room', 'Kitchen', 'Locked Study', 'Cold Cellar', 'Attic Cache', 'Back Door'],
+      tavern: ['Common Room', 'Kitchen Door', 'Pantry Shelves', 'Cellar Steps', 'Ale Casks', 'Warm Hearth', 'Back Alley'],
       castle: ['Outer Gate', 'Bailey', 'Armory', 'Servant Hall', 'Tower Stair', 'Keep Chamber', 'Postern Exit'],
-      mountain: ['Base Camp', 'Switchback', 'Ice Shelf', 'Wind Gap', 'Goat Path', 'Summit Cache', 'Downslope']
+      mountain: ['Base Camp', 'Switchback', 'Ice Shelf', 'Wind Gap', 'Goat Path', 'Summit Cache', 'Downslope'],
+      arena: ['Entry Sand', 'Left Cover', 'Center Line', 'Hazard Mark', 'High Rail', 'Prize Corner', 'Exit Gate']
     };
     const roles = ['entrance', 'clue', 'trap', 'battle', 'rest', 'reward', 'battle', 'boss', 'exit', 'clue', 'battle', 'exit'];
     const count = SIZE_COUNTS[opts.size] || 7;
@@ -463,15 +577,129 @@ window.CJS.CampaignScenarioGenerator = (() => {
         label: card.name || card.id,
         rewardOps: card.rewardOps || [],
         objective: card.objective || '',
-        notes: card.gimmick || ''
+        notes: card.gimmick || '',
+        tags: card.tags || [],
+        enemyMix: card.enemyMix || [],
+        rank: card.rank || '',
+        canonRisk: card.canonRisk || 'green',
+        battleMap: _battleMapSuggestion(card)
       };
     }
     const encounter = DS().get('encounters', ref);
     return {
       id: ref,
       encounterId: encounter?.id || ref,
-      label: encounter?.name || ref
+      label: encounter?.name || ref,
+      tags: encounter?.tags || [],
+      battleMap: _battleMapSuggestion(encounter || {}, null)
     };
+  }
+
+  function _scenarioTags(seed, context) {
+    return _unique([
+      ...(seed.tags || []),
+      ...(context.tags || []),
+      ...(Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean)),
+      context.source,
+      context.questChainId
+    ]);
+  }
+
+  function _battleMapSuggestion(record = {}, setting) {
+    const theme = _themeForArea(setting || _firstMatchingArea(record) || 'outdoor', record);
+    const grid = record.grid || {};
+    return {
+      theme,
+      width: Number(grid.width || record.width || 8),
+      height: Number(grid.height || record.height || 8)
+    };
+  }
+
+  function _rankedBattles(entries, context = {}) {
+    const scored = (entries || [])
+      .filter(Boolean)
+      .map((entry) => ({ entry, score: _battleScore(entry, context) }))
+      .sort((a, b) => b.score - a.score || String(a.entry.label || a.entry.id || '').localeCompare(String(b.entry.label || b.entry.id || '')));
+    return scored.map(({ entry, score }) => ({
+      ...entry,
+      weight: Math.max(1, Math.round(score))
+    }));
+  }
+
+  function _battleScore(entry, context = {}) {
+    const setting = context.setting === 'any' ? '' : context.setting;
+    const profile = _areaProfile(setting);
+    const haystack = _tokensFor(entry).join(' ');
+    const contextTokens = _tokensFor({ tags: context.tags || [], notes: [context.setting, context.size].filter(Boolean).join(' ') });
+    let score = entry.encounterId ? 8 : 4;
+    if (entry.canonRisk === 'green') score += 2;
+    if (entry.canonRisk === 'red') score -= 3;
+    for (const token of profile.aliases || []) if (haystack.includes(token)) score += 4;
+    for (const token of profile.battle || []) if (haystack.includes(token)) score += 5;
+    for (const token of contextTokens) if (token && haystack.includes(token)) score += 1.5;
+    if (setting && _matchesArea(entry, setting)) score += 4;
+    if (String(context.size || '').toLowerCase() === 'tiny' && /boss|chimera|yeti|oni|kumiho|b-|c-|d-c/.test(haystack)) score -= 3;
+    if (/starter|f-|f\b|low combat/.test(haystack)) score += 1;
+    return Math.max(1, score);
+  }
+
+  function _dedupeBattleEntries(entries) {
+    const seen = new Set();
+    const out = [];
+    for (const entry of entries || []) {
+      const key = entry.battleSetId || entry.encounterId || entry.id;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(entry);
+    }
+    return out;
+  }
+
+  function _matchesArea(record, area) {
+    if (!area || area === 'any') return true;
+    const profile = _areaProfile(area);
+    const haystack = _tokensFor(record).join(' ');
+    return [area, ...(profile.aliases || [])].some((token) => token && haystack.includes(token));
+  }
+
+  function _firstMatchingArea(record) {
+    return MAP_TYPES.find((type) => type !== 'any' && _matchesArea(record, type)) || 'outdoor';
+  }
+
+  function _areaProfile(area) {
+    const key = String(area || 'outdoor').toLowerCase();
+    return AREA_PROFILES[key] || AREA_PROFILES.outdoor;
+  }
+
+  function _themeForArea(area, record = {}) {
+    const profile = _areaProfile(area);
+    const haystack = _tokensFor(record).join(' ');
+    if (haystack.includes('temple') || haystack.includes('shrine')) return 'temple';
+    if (haystack.includes('ruins')) return 'ruins';
+    if (haystack.includes('cave') || haystack.includes('cellar') || haystack.includes('sewer')) return 'cave';
+    if (haystack.includes('snow') || haystack.includes('ice') || haystack.includes('frost') || haystack.includes('ridge') || haystack.includes('mountain')) return 'tundra';
+    return profile.themes?.[0] || 'forest';
+  }
+
+  function _tokensFor(record = {}) {
+    return [
+      record.id,
+      record.name,
+      record.title,
+      record.label,
+      record.rank,
+      record.objective,
+      record.gimmick,
+      record.notes,
+      record.summary,
+      record.prompt,
+      record.setting,
+      ...(record.tags || []),
+      ...(Array.isArray(record.purpose) ? record.purpose : [record.purpose].filter(Boolean)),
+      ...(record.enemyMix || []).flatMap((enemy) => [enemy.id, enemy.name, enemy.label])
+    ]
+      .flatMap((value) => String(value || '').toLowerCase().split(/[^a-z0-9_]+/))
+      .filter(Boolean);
   }
 
   function _hasToken(record, token) {
@@ -486,7 +714,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
   }
 
   function _firstMapType(seed) {
-    return MAP_TYPES.find((type) => type !== 'any' && _hasToken(seed, type)) || 'outdoor';
+    return _firstMatchingArea(seed);
   }
 
   function _exitLabel(seedNodes, to, fromLayer, layers) {
@@ -550,6 +778,10 @@ window.CJS.CampaignScenarioGenerator = (() => {
 
   function _pick(values) {
     return values?.length ? values[Math.floor(Math.random() * values.length)] : null;
+  }
+
+  function _shuffle(values) {
+    return [...(values || [])].sort(() => Math.random() - 0.5);
   }
 
   function _seededRng(seedStr) {

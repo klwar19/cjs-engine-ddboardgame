@@ -122,6 +122,11 @@ window.CJS.CampaignCombatBridge = (() => {
       scenarioRunId: run?.runId || null,
       nodeId: pendingBattle?.nodeId || run?.currentNode || null,
       encounterId: pendingBattle?.encounterId,
+      battleSetId: pendingBattle?.battleSetId || null,
+      battleSetCard: _battleSetCard(pendingBattle?.battleSetId),
+      monsterIds: (pendingBattle?.monsterIds || []).filter(Boolean),
+      battleMap: pendingBattle?.battleMap || null,
+      setting: pendingBattle?.setting || CS().getActiveScenario?.()?.setting || '',
       label: pendingBattle?.label || pendingBattle?.encounterId,
       mode: 'campaign',
       returnUrl: 'campaign.html',
@@ -152,9 +157,8 @@ window.CJS.CampaignCombatBridge = (() => {
   }
 
   function createRuntimeEncounterFromRequest(request) {
-    if (!request?.encounterId) return null;
-    const base = DS().get('encounters', request.encounterId);
-    if (!base) return null;
+    const base = request?.encounterId ? DS().get('encounters', request.encounterId) : null;
+    if (!base) return _createProceduralEncounterFromRequest(request);
     const runtimeId = `campaign_runtime_${request.encounterId}`;
     const overlay = request.partyOverlay || {};
     const available = new Set(request.availablePartyIds || Object.keys(overlay));
@@ -179,6 +183,57 @@ window.CJS.CampaignCombatBridge = (() => {
       };
     });
     DS().replace('encounters', runtimeId, clone);
+    return runtimeId;
+  }
+
+  function _createProceduralEncounterFromRequest(request = {}) {
+    const card = request.battleSetCard || _battleSetCard(request.battleSetId);
+    const overlay = request.partyOverlay || {};
+    const partyIds = request.availablePartyIds || Object.keys(overlay);
+    if (!partyIds.length) return null;
+
+    const enemyIds = _enemyIdsForRequest(card, request);
+    if (!enemyIds.length) return null;
+
+    const mapConfig = _battleMapConfig(card, request);
+    const generated = window.CJS.MapGenerator?.generate?.({
+      theme: mapConfig.theme,
+      width: mapConfig.width,
+      height: mapConfig.height
+    });
+    if (!generated) return null;
+
+    const unitData = {};
+    for (const id of partyIds) unitData[id] = DS().get('characters', id);
+    for (const id of enemyIds) unitData[id] = DS().get('monsters', id);
+
+    const playerPlacements = window.CJS.MapGenerator.placeUnitsInZone(partyIds, generated.spawnZones.player, unitData, generated.grid)
+      .map((placement) => {
+        const patch = overlay[placement.id] || {};
+        return {
+          ...placement,
+          currentHP: patch.currentHP,
+          currentMP: patch.currentMP,
+          activeStatuses: patch.statuses || []
+        };
+      });
+    const enemyPlacements = window.CJS.MapGenerator.placeUnitsInZone(enemyIds, generated.spawnZones.enemy, unitData, generated.grid);
+    const runtimeId = `campaign_runtime_${request.battleSetId || request.requestedAt || Date.now()}`;
+
+    DS().replace('encounters', runtimeId, {
+      id: runtimeId,
+      name: `${card?.name || request.label || 'Campaign Battle'} (${generated.themeName})`,
+      width: generated.width,
+      height: generated.height,
+      grid: generated.grid,
+      units: [...playerPlacements, ...enemyPlacements],
+      _runtime: true,
+      _scope: 'runtime',
+      _world: request.world || card?.world || null,
+      _origin: request.monsterIds?.length ? 'runtime:campaign-monster-pool' : 'runtime:campaign-battle-set',
+      _battleSetId: request.battleSetId || card?.id || null,
+      _battleTheme: generated.themeId
+    });
     return runtimeId;
   }
 
@@ -228,6 +283,151 @@ window.CJS.CampaignCombatBridge = (() => {
       notes: 'Combat app result imported.',
       completedAt: new Date().toISOString()
     };
+  }
+
+  function _battleSetCard(cardId) {
+    if (!cardId) return null;
+    const fromLoader = window.CJS.CampaignDataLoader?.getBattleSetCard?.(cardId);
+    if (fromLoader) return fromLoader;
+    for (const set of DS().getAllAsArray('battleSets') || []) {
+      const card = (set.cards || []).find((entry) => entry.id === cardId);
+      if (card) return { ...card, sourceSetId: set.id, world: card.world || set.world, zone: card.zone || set.zone, hubId: card.hubId || set.hubId };
+    }
+    return null;
+  }
+
+  function _enemyIdsForRequest(card, request = {}) {
+    const explicit = (request.monsterIds || []).filter((id) => DS().exists('monsters', id));
+    return explicit.length ? explicit : _enemyIdsFromBattleCard(card, request);
+  }
+
+  function _enemyIdsFromBattleCard(card, request = {}) {
+    const ids = [];
+    for (const mix of card?.enemyMix || []) {
+      if (mix.optional && Math.random() < 0.5) continue;
+      const id = _monsterIdForMix(mix);
+      if (!id) continue;
+      const qty = Math.max(1, Math.min(8, Number(mix.qty || mix.count || 1)));
+      for (let i = 0; i < qty; i++) ids.push(id);
+    }
+    return ids.length ? ids : _fallbackEnemyIds(card, request);
+  }
+
+  function _monsterIdForMix(mix = {}) {
+    if (mix.id && DS().exists('monsters', mix.id)) return mix.id;
+    const label = _normalize([mix.id, mix.name, mix.label].filter(Boolean).join(' '));
+    if (!label) return null;
+    const exact = DS().getAllAsArray('monsters').find((monster) => _normalize(monster.name || monster.id) === label);
+    if (exact) return exact.id;
+    const partial = DS().getAllAsArray('monsters').find((monster) => {
+      const name = _normalize(`${monster.id} ${monster.name || ''} ${monster.type || ''}`);
+      return label.includes(name) || name.includes(label);
+    });
+    if (partial) return partial.id;
+
+    const aliases = [
+      ['wolf', 'wolf'],
+      ['bear', 'bear'],
+      ['sprite', 'sprite'],
+      ['rat', 'runner'],
+      ['bandit', 'runner'],
+      ['trapper', 'climber'],
+      ['undead', 'walker'],
+      ['brute', 'brute'],
+      ['necromancer', 'necromancer'],
+      ['chimera', 'chimera'],
+      ['yeti', 'yeti'],
+      ['oni', 'oni']
+    ];
+    const alias = aliases.find(([needle]) => label.includes(needle))?.[1];
+    if (!alias) return null;
+    return DS().getAllAsArray('monsters').find((monster) => _normalize(`${monster.id} ${monster.name || ''} ${monster.type || ''}`).includes(alias))?.id || null;
+  }
+
+  function _fallbackEnemyIds(card, request = {}) {
+    const world = request.world || card?.world || '';
+    const monsters = DS().getAllAsArray('monsters')
+      .filter((monster) => !world || !monster._world || monster._world === world)
+      .map((monster) => ({ monster, score: _monsterScore(monster, card, request) }))
+      .sort((a, b) => b.score - a.score);
+    if (!monsters.length) return [];
+    const partyCount = Math.max(1, (request.availablePartyIds || []).length);
+    const count = Math.max(2, Math.min(5, partyCount + 1));
+    const pool = monsters.slice(0, Math.min(5, monsters.length)).map(({ monster }) => monster.id);
+    return Array.from({ length: count }, (_, index) => pool[index % pool.length]);
+  }
+
+  function _monsterScore(monster, card = {}, request = {}) {
+    const text = _normalize([
+      request.setting,
+      request.label,
+      card?.name,
+      card?.objective,
+      card?.gimmick,
+      ...(card?.tags || [])
+    ].join(' '));
+    const mon = _normalize(`${monster.id} ${monster.name || ''} ${monster.type || ''} ${monster.rank || ''} ${monster.description || ''}`);
+    let score = 1;
+    const profile = {
+      outdoor: ['wolf', 'bear', 'sprite', 'beast', 'forest', 'snow'],
+      forest: ['wolf', 'bear', 'sprite', 'beast', 'forest'],
+      dungeon: ['walker', 'brute', 'necromancer', 'sprite', 'undead', 'cave'],
+      cave: ['bear', 'wolf', 'brute', 'walker', 'undead'],
+      sewer: ['runner', 'walker', 'brute', 'undead'],
+      ruins: ['sprite', 'walker', 'brute', 'necromancer', 'undead'],
+      temple: ['sprite', 'walker', 'necromancer', 'undead'],
+      urban: ['runner', 'climber', 'sprite'],
+      house: ['runner', 'walker', 'sprite'],
+      tavern: ['runner', 'walker', 'sprite'],
+      mountain: ['bear', 'yeti', 'oni', 'wolf'],
+      arena: ['chimera', 'oni', 'runner', 'wolf']
+    }[_areaFromText(text)] || ['wolf', 'bear', 'sprite', 'walker'];
+    for (const token of profile) if (mon.includes(token) || text.includes(token)) score += 4;
+    for (const token of text.split(/\s+/)) if (token && mon.includes(token)) score += 1;
+    if (/\bb\b|\bc\b|boss|chimera|yeti|oni|kumiho/.test(mon) && !/boss|preview|danger|mountain|arena/.test(text)) score -= 2;
+    return score;
+  }
+
+  function _battleMapConfig(card = {}, request = {}) {
+    card = card || {};
+    const source = request.battleMap || card.battleMap || {};
+    const grid = card.grid || {};
+    const width = Number(source.width || grid.width || 8);
+    const height = Number(source.height || grid.height || 8);
+    return {
+      theme: source.theme || _themeFromText(_normalize([request.setting, request.label, card.name, card.objective, card.gimmick, ...(card.tags || [])].join(' '))),
+      width: Math.max(8, Math.min(12, width)),
+      height: Math.max(8, Math.min(12, height))
+    };
+  }
+
+  function _themeFromText(text) {
+    if (/temple|shrine|holy/.test(text)) return 'temple';
+    if (/ruins|relic|pillar/.test(text)) return 'ruins';
+    if (/cave|cellar|sewer|underground|tunnel|den/.test(text)) return 'cave';
+    if (/snow|ice|frost|mountain|ridge|tundra/.test(text)) return 'tundra';
+    if (/arena|spar|training|guild|tavern|house|urban|street/.test(text)) return 'arena';
+    if (/swamp|poison|marsh/.test(text)) return 'swamp';
+    return 'forest';
+  }
+
+  function _areaFromText(text) {
+    if (/forest|wood|grove|creek/.test(text)) return 'forest';
+    if (/cave|hollow|den/.test(text)) return 'cave';
+    if (/sewer|drain|canal/.test(text)) return 'sewer';
+    if (/ruins|relic/.test(text)) return 'ruins';
+    if (/temple|shrine|bell/.test(text)) return 'temple';
+    if (/house|hut|cellar/.test(text)) return 'house';
+    if (/tavern|kitchen|pantry|mug/.test(text)) return 'tavern';
+    if (/mountain|ridge|summit|slope/.test(text)) return 'mountain';
+    if (/arena|training|spar/.test(text)) return 'arena';
+    if (/urban|town|city|street|guild/.test(text)) return 'urban';
+    if (/dungeon|vault|crypt|floor/.test(text)) return 'dungeon';
+    return 'outdoor';
+  }
+
+  function _normalize(value) {
+    return String(value || '').toLowerCase().replace(/[^a-z0-9_]+/g, ' ').trim();
   }
 
   function applyResult(result) {

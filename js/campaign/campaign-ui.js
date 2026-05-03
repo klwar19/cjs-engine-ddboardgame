@@ -303,6 +303,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-action-grid">
             <button class="campaign-action primary" data-campaign-action="pass-phase">Pass Phase</button>
             <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
+            <button class="campaign-action" data-campaign-action="solo-surprise">Solo Surprise</button>
             <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
             <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
           </div>
@@ -319,7 +320,9 @@ window.CJS.CampaignUI = (() => {
             <button class="campaign-action" data-campaign-action="custom-oracle">✏️ Custom</button>
           </div>
         </section>
+        ${_renderSoloNotice(state)}
         ${_renderScenarioSummary(state)}
+        ${_renderTravelSurprise(state)}
         ${_renderPendingBattle(state)}
         ${_renderCombatResult(state)}
         ${_renderEventResult(state)}
@@ -359,9 +362,13 @@ window.CJS.CampaignUI = (() => {
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern">Tavern</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge">Forge</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="weird">Weird</button>
+            <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
+            <button class="campaign-action" data-campaign-action="random-rumor-offer">Random Rumor</button>
+            <button class="campaign-action" data-campaign-action="manual-rumor">Manual Rumor</button>
             <button class="campaign-action" data-campaign-action="roll-forge-oracle">Oracle</button>
           </div>
         </section>
+        ${_renderSoloNotice(state)}
         ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Hub Problems</h3></div>
@@ -373,7 +380,7 @@ window.CJS.CampaignUI = (() => {
           `).join('') || '<div class="campaign-empty">No active hub problems.</div>'}
         </section>
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Rumors</h3></div>
+          <div class="campaign-panel-head"><h3>Rumors</h3><button class="campaign-action" data-campaign-action="manual-rumor">Add Rumor</button></div>
           ${(hubState?.rumors || []).slice(0, 6).map((rumor) => `
             <div class="campaign-row">
               <div>
@@ -569,6 +576,35 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _renderSoloNotice(state) {
+    const card = _pendingSoloHookCard(state);
+    if (!card) return '';
+    const kind = state.pendingSoloHook?.kind || card.type || 'hook';
+    const risk = Side().risk(card.canonRisk);
+    const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
+    const choice = card.suggestedChoices?.[0]?.label || 'Apply the first suggested choice';
+    return `
+      <section class="campaign-panel campaign-solo-notice ${risk === 'red' ? 'risk-red' : ''}">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>Solo Offer</h2>
+            <div class="campaign-muted">${_esc(_label(kind))} | ${_esc(choice)}</div>
+          </div>
+          <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
+        </div>
+        <strong>${_esc(card.title || card.name || card.id)}</strong>
+        ${prompt ? `<p>${_esc(prompt)}</p>` : ''}
+        <div class="campaign-action-grid">
+          <button class="campaign-action primary" data-campaign-action="accept-solo-hook">Accept</button>
+          <button class="campaign-action" data-campaign-action="solo-hook-quest">Make Quest</button>
+          <button class="campaign-action" data-campaign-action="solo-hook-rumor">Make Rumor</button>
+          <button class="campaign-action" data-campaign-action="save-solo-hook">Save</button>
+          <button class="campaign-action danger" data-campaign-action="ignore-solo-hook">Ignore</button>
+        </div>
+      </section>
+    `;
+  }
+
   function _renderScenarioSummary(state) {
     const run = state.activeScenarioRun;
     if (!run) {
@@ -598,6 +634,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div class="campaign-action-grid">
           <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
+          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
           <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
@@ -612,6 +649,7 @@ window.CJS.CampaignUI = (() => {
     const battle = state.pendingBattle;
     if (!battle) return '';
     const isRandom = battle.source === 'random';
+    const canRun = battle.encounterId || battle.battleSetId || battle.monsterIds?.length;
     return `
       <section class="campaign-panel battle-ready">
         <div class="campaign-panel-head">
@@ -619,10 +657,11 @@ window.CJS.CampaignUI = (() => {
           <span class="campaign-pill">${_esc(_battleSourceLabel(battle))}</span>
         </div>
         <strong>${_esc(battle.label || battle.encounterId)}</strong>
-        <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || '')}</div>
+        <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '')}</div>
+        ${battle.battleMap?.theme ? `<div class="campaign-muted">Auto map: ${_esc(_label(battle.battleMap.theme))}</div>` : ''}
         ${_renderBattlePartySummary(state)}
         <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="run-battle" ${battle.encounterId ? '' : 'disabled'}>Run in Combat App</button>
+          <button class="campaign-action primary" data-campaign-action="run-battle" ${canRun ? '' : 'disabled'}>Run in Combat App</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Resolve Manually</button>
           ${isRandom ? '<button class="campaign-action" data-campaign-action="battle-reroll">🎲 Reroll</button>' : ''}
           <button class="campaign-action" data-campaign-action="battle-override">📋 Override</button>
@@ -634,8 +673,33 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _renderTravelSurprise(state) {
+    const notice = state.lastTravelSurprise;
+    if (!notice || !state.activeScenarioRun) return '';
+    const repeat = notice.repeated ? `Revisit ${notice.visitCount || 2}` : 'New route';
+    return `
+      <section class="campaign-panel campaign-travel-notice">
+        <div class="campaign-panel-head">
+          <h2>${_esc(notice.title || 'Travel Surprise')}</h2>
+          <span class="campaign-pill">${_esc(_label(notice.category || 'surprise'))}</span>
+        </div>
+        <p>${_esc(notice.prompt || '')}</p>
+        <div class="campaign-chip-row">
+          <span class="campaign-chip">${_esc(notice.area || 'Area')}</span>
+          <span class="campaign-chip">${_esc(repeat)}</span>
+          ${notice.location ? `<span class="campaign-chip">${_esc(notice.location)}</span>` : ''}
+        </div>
+        <div class="campaign-action-grid" style="margin-top:12px">
+          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Roll Another</button>
+        </div>
+      </section>
+    `;
+  }
+
   function _battleSourceLabel(battle) {
     const map = { random: '🎲 Random Roll', set: '📌 Set Battle', manual_pick: '📋 Picked', beat: '📜 Beat', manual: 'Manual' };
+    if (battle.source === 'travel_surprise') return 'Travel Surprise';
+    if (battle.source === 'random_monster_pool') return 'Monster Pool';
     return map[battle.source] || battle.source || 'manual';
   }
 
@@ -865,7 +929,7 @@ window.CJS.CampaignUI = (() => {
             </label>
             <label>Map Type
               <select id="campaign-gen-map-type">
-                ${['any', 'urban', 'outdoor', 'dungeon', 'house', 'castle', 'mountain'].map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
+                ${(Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena']).map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
               </select>
             </label>
             <label>Size
@@ -952,6 +1016,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-dashboard">
         ${panel}
+        ${_renderTravelSurprise(state)}
         ${_renderPendingBattle(state)}
         ${_renderCombatResult(state)}
         ${_renderEventResult(state)}
@@ -980,6 +1045,7 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action primary" data-campaign-action="run-roll-battle">🎲 Random Battle</button>
           <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
           <button class="campaign-action" data-campaign-action="run-roll-event">🎴 Roll Event</button>
+          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
           <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
           <button class="campaign-action" data-campaign-action="run-tick-danger">⚠ Tick Danger +1</button>
           <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
@@ -1033,6 +1099,7 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat ▶'}</button>
           <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
           <button class="campaign-action" data-campaign-action="run-roll-event">🎴 Roll Event</button>
+          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
           <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
           <button class="campaign-action danger" data-campaign-action="end-scenario">End</button>
         </div>
@@ -1072,7 +1139,9 @@ window.CJS.CampaignUI = (() => {
           <h2>Quest Tracker</h2>
           <span class="campaign-pill">${active.length} active · ${finished.length} resolved · ${templateCount} templates</span>
           <button class="campaign-action primary" data-campaign-action="add-quest">Add Quest</button>
+          <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
         </div>
+        ${_renderSoloNotice(state)}
         ${active.length ? active.map(renderRow).join('') : '<div class="campaign-empty">No active quests. Use Add Quest to start one from a template or write your own.</div>'}
         ${finished.length ? `<div class="campaign-panel-head" style="margin-top:14px"><h3>Resolved</h3></div>${finished.map(renderRow).join('')}` : ''}
       </section>
@@ -1166,6 +1235,15 @@ window.CJS.CampaignUI = (() => {
       case 'battle-reroll': return _battleReroll();
       case 'battle-override': return _battleOverride();
       case 'roll-hub-pulse': return _rollHubPulse(data.table);
+      case 'solo-surprise': return _rollSoloSurprise();
+      case 'random-quest-offer': return _offerRandomQuest();
+      case 'random-rumor-offer': return _offerRandomRumor();
+      case 'manual-rumor': return _manualRumorModal();
+      case 'accept-solo-hook': return _acceptSoloHook();
+      case 'solo-hook-quest': return _soloHookToQuest();
+      case 'solo-hook-rumor': return _soloHookToRumor();
+      case 'save-solo-hook': return _saveSoloHook();
+      case 'ignore-solo-hook': return _ignoreSoloHook();
       case 'apply-side-choice': return _applySideChoice(data.id, Number(data.choice || 0));
       case 'save-side-idea': return _saveSideIdea(data.id);
       case 'reject-side-idea': return _rejectSideIdea(data.id);
@@ -1204,6 +1282,7 @@ window.CJS.CampaignUI = (() => {
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
       case 'run-roll-event': return _runRollEvent();
+      case 'roll-travel-surprise': return _rollTravelSurprise();
       case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
       case 'run-tick-danger': return Ops().apply({ op: 'danger', amount: 1 }, { source: 'run' });
       case 'run-next-beat': return _runNextBeat();
@@ -1463,6 +1542,176 @@ window.CJS.CampaignUI = (() => {
     render();
   }
 
+  function _rollSoloSurprise() {
+    const tables = ['town', 'guild', 'tavern', 'forge', 'weird'];
+    const table = tables[Math.floor(Math.random() * tables.length)];
+    const card = window.CJS.CampaignHub.rollHubPulse(table);
+    if (!card) return UI().toast('No solo hooks available', 'info');
+    _setPendingSoloHook(card, 'surprise');
+    _activeMode = 'town';
+    _activeTab = 'overview';
+    render();
+    UI().toast('Solo offer ready', 'success');
+  }
+
+  function _offerRandomRumor() {
+    const tables = ['tavern', 'town', 'weird'];
+    const table = tables[Math.floor(Math.random() * tables.length)];
+    const card = window.CJS.CampaignHub.rollHubPulse(table);
+    if (!card) return UI().toast('No rumor hooks available', 'info');
+    _setPendingSoloHook({ ...card, type: 'rumor_offer' }, 'rumor_offer');
+    render();
+  }
+
+  function _offerRandomQuest() {
+    const card = _randomQuestOfferCard();
+    if (!card) return UI().toast('No quest templates available', 'info');
+    Side().saveCard(card, { status: 'idea', source: 'solo_quest_offer' });
+    _setPendingSoloHook(card, 'quest_offer');
+    _activeMode = 'town';
+    _activeTab = 'quests';
+    render();
+  }
+
+  function _randomQuestOfferCard() {
+    const activeQuestIds = new Set(Object.keys(CS().getState()?.quests || {}));
+    const templates = Object.values(CS().getContent().campaignQuests || {})
+      .flatMap((record) => record.templates || [])
+      .filter((quest) => !activeQuestIds.has(quest.id));
+    const chains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
+    const options = [
+      ...templates.map((quest) => ({ type: 'quest_template', quest })),
+      ...chains.map((chain) => ({ type: 'quest_chain', chain }))
+    ];
+    if (!options.length) return null;
+    const pick = options[Math.floor(Math.random() * options.length)];
+    if (pick.type === 'quest_chain') {
+      const chain = pick.chain;
+      return {
+        id: `idea_offer_${chain.id}_${Date.now()}`,
+        type: 'quest_offer',
+        title: chain.title || chain.name || chain.id,
+        summary: chain.summary || '',
+        canonRisk: chain.canonRisk || 'green',
+        tags: chain.tags || [],
+        questChainTemplateId: chain.id,
+        suggestedChoices: [{
+          label: 'Start this quest chain',
+          ops: [{ op: 'start_quest_chain', templateId: chain.id }]
+        }]
+      };
+    }
+    const quest = CS().clone(pick.quest);
+    return {
+      id: `idea_offer_${quest.id}_${Date.now()}`,
+      type: 'quest_offer',
+      title: quest.title || quest.id,
+      summary: quest.summary || '',
+      canonRisk: quest.canonRisk || 'green',
+      tags: quest.tags || [],
+      questTemplate: quest,
+      suggestedChoices: [{
+        label: 'Add this quest',
+        ops: [{ op: 'add_quest', quest }]
+      }]
+    };
+  }
+
+  function _setPendingSoloHook(card, kind) {
+    const id = card?.id;
+    if (!id) return;
+    CS().mutate((state) => {
+      state.pendingSoloHook = {
+        cardId: id,
+        kind: kind || card.type || 'hook',
+        at: new Date().toISOString()
+      };
+    }, { source: 'solo_hook' });
+  }
+
+  function _pendingSoloHookCard(state = CS().getState()) {
+    const id = state?.pendingSoloHook?.cardId;
+    if (!id) return null;
+    return state.sideContent?.generatedIdeas?.[id]
+      || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
+  }
+
+  function _clearPendingSoloHook() {
+    CS().mutate((state) => { state.pendingSoloHook = null; }, { source: 'solo_hook' });
+  }
+
+  function _acceptSoloHook() {
+    const card = _pendingSoloHookCard();
+    if (!card) return;
+    const apply = () => {
+      const choice = card.suggestedChoices?.[0];
+      if (choice?.ops?.length) {
+        Ops().apply(choice.ops, { source: 'solo_hook_accept' });
+        Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'hub_event', approved: true }, { source: 'solo_hook' });
+      } else {
+        _soloHookToQuest(true);
+        return;
+      }
+      _clearPendingSoloHook();
+      UI().toast('Solo offer accepted', 'success');
+    };
+    if (Side().risk(card.canonRisk) === 'red') {
+      return UI().confirm('This is red-risk content. Accept it now?', apply);
+    }
+    apply();
+  }
+
+  function _soloHookToQuest(approved = false) {
+    const card = _pendingSoloHookCard();
+    if (!card) return;
+    if (Side().risk(card.canonRisk) === 'red' && !approved) {
+      return UI().confirm('This is red-risk content. Make it a quest now?', () => _soloHookToQuest(true));
+    }
+    const quest = card.questTemplate ? CS().clone(card.questTemplate) : {
+      id: `quest_${card.id}`,
+      title: card.title || card.name || 'Solo Quest',
+      status: 'active',
+      summary: card.summary || card.prompt || '',
+      objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
+      rewards: card.rewardOps || []
+    };
+    Ops().apply({ op: 'add_quest', quest }, { source: 'solo_hook_quest' });
+    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'accepted_hook', approved: true }, { source: 'solo_hook' });
+    _clearPendingSoloHook();
+  }
+
+  function _soloHookToRumor(approved = false) {
+    const card = _pendingSoloHookCard();
+    if (!card) return;
+    if (Side().risk(card.canonRisk) === 'red' && !approved) {
+      return UI().confirm('This is red-risk content. Make it a rumor now?', () => _soloHookToRumor(true));
+    }
+    const hubId = window.CJS.CampaignHub.getCurrentHubId();
+    Ops().apply({
+      op: 'add_rumor',
+      hubId,
+      text: card.prompt || card.summary || card.title || card.name || card.id,
+      canonRisk: card.canonRisk || 'green',
+      tags: card.tags || [],
+      source: 'solo_hook'
+    }, { source: 'solo_hook_rumor' });
+    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'rumor', approved: true }, { source: 'solo_hook' });
+    _clearPendingSoloHook();
+  }
+
+  function _saveSoloHook() {
+    const card = _pendingSoloHookCard();
+    if (!card) return;
+    Side().saveCard(card, { status: 'saved', source: 'solo_hook' });
+    _clearPendingSoloHook();
+  }
+
+  function _ignoreSoloHook() {
+    const card = _pendingSoloHookCard();
+    if (card) Side().rejectCard(card.id, 'Ignored from solo offer.');
+    _clearPendingSoloHook();
+  }
+
   function _applySideChoice(id, choiceIndex) {
     const card = _sideCardById(id);
     if (card?.canonRisk === 'red') {
@@ -1642,6 +1891,46 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  function _manualRumorModal() {
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Rumor'));
+    const text = document.createElement('textarea');
+    text.style.width = '100%';
+    text.style.minHeight = '90px';
+    text.placeholder = 'What are people whispering about?';
+    body.appendChild(text);
+    body.appendChild(_formLabel('Canon risk'));
+    const risk = UI().createSelect({
+      options: [
+        { value: 'green', label: 'Green' },
+        { value: 'yellow', label: 'Yellow' },
+        { value: 'red', label: 'Red' }
+      ],
+      value: 'green'
+    });
+    body.appendChild(risk);
+    _formModal({
+      title: 'Add Rumor',
+      body,
+      width: '520px',
+      primaryLabel: 'Add Rumor',
+      onSubmit: () => {
+        const value = text.value.trim();
+        if (!value) {
+          UI().toast('Rumor text required', 'error');
+          return false;
+        }
+        Ops().apply({
+          op: 'add_rumor',
+          hubId: window.CJS.CampaignHub.getCurrentHubId(),
+          text: value,
+          canonRisk: risk.value,
+          source: 'manual'
+        }, { source: 'ui' });
+      }
+    });
+  }
+
   function _generateScenario(overrides = {}) {
     if (CS().getState()?.activeScenarioRun) return UI().toast('End the active scenario before generating another', 'info');
     const options = {
@@ -1778,7 +2067,7 @@ window.CJS.CampaignUI = (() => {
   function _runBattle() {
     const battle = CS().getState().pendingBattle;
     if (!battle) return;
-    if (!battle.encounterId) return UI().toast('This battle set is manual-only until converted to an encounter.', 'info');
+    if (!battle.encounterId && !battle.battleSetId && !battle.monsterIds?.length) return UI().toast('This battle needs an encounter, battle set, or monster pool first.', 'info');
     const readyCount = Object.values(CS().getState().party || {}).filter((member) => Bridge()?.isMemberBattleReady?.(member)).length;
     if (!readyCount) return UI().toast('No available party members can enter this battle', 'error');
     Bridge().openBattle(battle);
@@ -1800,17 +2089,26 @@ window.CJS.CampaignUI = (() => {
     const pending = {
       encounterId: pick.encounterId || null,
       battleSetId: pick.battleSetId || null,
+      monsterIds: pick.monsterIds || [],
       label: pick.label,
       source: 'random',
       rewardOps: pick.rewardOps || [],
       objective: pick.objective || '',
-      notes: pick.notes || ''
+      notes: pick.notes || '',
+      battleMap: pick.battleMap || null,
+      setting: pick.setting || scenario?.setting || null
     };
     CS().mutate((state) => {
       state.pendingBattle = pending;
       if (state.activeScenarioRun) state.activeScenarioRun.randomBattlesUsed = (state.activeScenarioRun.randomBattlesUsed || 0) + 1;
     }, { source: 'random_battle_fallback' });
     Ops().apply({ op: 'log', text: `Random battle rolled (world pool): ${pending.label}.` }, { source: 'random_battle' });
+  }
+
+  function _rollTravelSurprise() {
+    const result = Runner().rollTravelSurprise?.({ force: true });
+    if (!result) return UI().toast('No travel surprise available right now', 'info');
+    UI().toast(result.title || 'Travel surprise ready', result.category === 'battle' ? 'warning' : 'success');
   }
 
   function _fallbackBattlePool() {
@@ -1824,14 +2122,53 @@ window.CJS.CampaignUI = (() => {
         label: card.name || card.id,
         rewardOps: card.rewardOps || [],
         objective: card.objective || '',
-        notes: card.gimmick || ''
+        notes: card.gimmick || '',
+        battleMap: _battleMapForCard(card)
       }))
       .filter((entry) => entry.encounterId || entry.battleSetId);
     if (fromCards.length) return fromCards;
-    return DS().getAllAsArray('encounters')
+    const encounters = DS().getAllAsArray('encounters')
       .filter((enc) => !enc._world || enc._world === world)
       .slice(0, 6)
       .map((enc) => ({ id: enc.id, encounterId: enc.id, label: enc.name || enc.id }));
+    if (encounters.length) return encounters;
+    const monsters = DS().getAllAsArray('monsters')
+      .filter((monster) => !world || !monster._world || monster._world === world)
+      .slice(0, 8);
+    if (!monsters.length) return [];
+    return monsters.map((monster) => ({
+      id: `monster_pool_${monster.id}`,
+      monsterIds: [monster.id],
+      label: monster.name || monster.id,
+      setting: CS().getActiveScenario()?.setting || 'outdoor',
+      battleMap: _battleMapForArea(CS().getActiveScenario()?.setting || 'outdoor')
+    }));
+  }
+
+  function _battleMapForArea(area) {
+    const key = String(area || '').toLowerCase();
+    let theme = 'forest';
+    if (['dungeon', 'cave', 'sewer', 'house'].includes(key)) theme = 'cave';
+    else if (key === 'temple') theme = 'temple';
+    else if (key === 'ruins') theme = 'ruins';
+    else if (['urban', 'tavern', 'castle', 'arena'].includes(key)) theme = 'arena';
+    else if (key === 'mountain') theme = 'tundra';
+    return { theme, width: 8, height: 8 };
+  }
+
+  function _battleMapForCard(card = {}) {
+    const text = [card.name, card.objective, card.gimmick, ...(card.tags || [])].join(' ').toLowerCase();
+    let theme = 'forest';
+    if (/temple|shrine|holy/.test(text)) theme = 'temple';
+    else if (/ruins|relic|pillar/.test(text)) theme = 'ruins';
+    else if (/cave|cellar|sewer|underground|den/.test(text)) theme = 'cave';
+    else if (/snow|ice|frost|ridge|mountain/.test(text)) theme = 'tundra';
+    else if (/arena|spar|training|guild|tavern|house|urban|street/.test(text)) theme = 'arena';
+    return {
+      theme,
+      width: Number(card.grid?.width || 8),
+      height: Number(card.grid?.height || 8)
+    };
   }
 
   function _runPickBattle() {
@@ -1861,7 +2198,8 @@ window.CJS.CampaignUI = (() => {
           label: card.name || card.id,
           rewardOps: card.rewardOps || [],
           objective: card.objective || '',
-          notes: card.gimmick || ''
+          notes: card.gimmick || '',
+          battleMap: _battleMapForCard(card)
         }
       });
     }
@@ -1888,7 +2226,8 @@ window.CJS.CampaignUI = (() => {
           source: 'manual_pick',
           rewardOps: battle.rewardOps || [],
           objective: battle.objective || '',
-          notes: battle.notes || ''
+          notes: battle.notes || '',
+          battleMap: battle.battleMap || null
         };
         CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_pick_battle' });
         Ops().apply({ op: 'log', text: `Battle queued (manual pick): ${pending.label}.` }, { source: 'run' });
@@ -1926,7 +2265,8 @@ window.CJS.CampaignUI = (() => {
       source: 'set',
       rewardOps: battle.rewardOps || [],
       objective: battle.objective || '',
-      notes: battle.notes || ''
+      notes: battle.notes || '',
+      battleMap: battle.battleMap || null
     };
     CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_set_battle' });
     Ops().apply({ op: 'log', text: `Set battle queued: ${pending.label}.` }, { source: 'run' });
