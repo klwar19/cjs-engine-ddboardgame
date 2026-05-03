@@ -57,6 +57,7 @@ window.CJS.MonsterEditor = (() => {
       weak: [], resist: [], immune: [],
       loot: [], behaviorAI: 'aggressive', aiRules: [],
       portrait: '',
+      battleSfx: {},
       description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -128,6 +129,12 @@ window.CJS.MonsterEditor = (() => {
           <div class="form-group"><label class="form-label">Weak</label><div id="mon-weak"></div></div>
           <div class="form-group"><label class="form-label">Resist</label><div id="mon-resist"></div></div>
           <div class="form-group"><label class="form-label">Immune</label><div id="mon-immune"></div></div>
+        </div>
+
+        <h3>Battle SFX</h3>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Attack SFX ID</label><input type="text" id="mon-sfx-attack" value="${_esc(m.battleSfx?.attack || m.battleSfx?.monsterAttack || '')}" placeholder="monster_attack"></div>
+          <div class="form-group"><label class="form-label">Hurt SFX ID</label><input type="text" id="mon-sfx-hurt" value="${_esc(m.battleSfx?.hurt || m.battleSfx?.monsterHurt || '')}" placeholder="monster_hurt"></div>
         </div>
 
         <h3>AI Behavior Rules</h3>
@@ -218,6 +225,7 @@ window.CJS.MonsterEditor = (() => {
       for (const s of C().STATS) cs[s] = sliders[s]._getValue();
       _readAIRules(rulesArea, aiRules);
       _readLoot(lootArea, loot);
+      const battleSfx = _collectBattleSfx(m, 'mon', ['attack', 'hurt']);
       DS().replace('monsters', m.id, {
         id: m.id,
         name: _formEl.querySelector('#mon-name').value,
@@ -234,6 +242,7 @@ window.CJS.MonsterEditor = (() => {
         equipment: [],
         innatePassives: passivePicker.getIds(),
         weak: weakW._getTags(), resist: resistW._getTags(), immune: immuneW._getTags(),
+        ...(Object.keys(battleSfx).length ? { battleSfx } : {}),
         aiRules, loot,
         description: _formEl.querySelector('#mon-desc').value
       });
@@ -242,6 +251,18 @@ window.CJS.MonsterEditor = (() => {
     };
     _formEl.querySelector('#mon-dup').onclick = () => { const nid=DS().duplicate('monsters',m.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
     _formEl.querySelector('#mon-del').onclick = () => { UI().confirm(`Delete "${m.name}"?`,()=>{DS().remove('monsters',m.id);_activeId=null;_renderList();_formEl.innerHTML='<div class="card" style="text-align:center;color:var(--text-mute);padding:40px">Select a monster</div>';UI().toast('Deleted','info');}); };
+  }
+
+  function _collectBattleSfx(current, prefix, keys) {
+    const out = { ...(current?.battleSfx || {}) };
+    delete out.monsterAttack;
+    delete out.monsterHurt;
+    for (const key of keys) {
+      const value = String(_formEl.querySelector(`#${prefix}-sfx-${key}`)?.value || '').trim();
+      if (value) out[key] = value;
+      else delete out[key];
+    }
+    return out;
   }
 
   function _updateDerived(sliders, rank) {

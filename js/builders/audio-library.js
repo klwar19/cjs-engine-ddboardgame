@@ -34,6 +34,7 @@ window.CJS.AudioLibrary = (() => {
     const manifest = (AM()?.getManifest && AM().getManifest()) || { sfx: {}, bgm: {} };
     const entries = manifest[_category] || {};
     const ids = Object.keys(entries).sort();
+    const slots = _category === 'sfx' ? (manifest.sfxSlots || {}) : {};
 
     _container.innerHTML = `
       <div class="card">
@@ -65,6 +66,10 @@ window.CJS.AudioLibrary = (() => {
 
         <h3 style="margin-top:14px">Library (${ids.length})</h3>
         <div id="aud-list" style="font-size:0.88rem"></div>
+        ${_category === 'sfx' ? `
+          <h3 style="margin-top:14px">Battle Voice Slots</h3>
+          <div id="aud-slots" style="font-size:0.88rem"></div>
+        ` : ''}
 
         <div id="aud-status" class="dim" style="font-size:0.82rem;margin-top:10px"></div>
       </div>
@@ -75,6 +80,7 @@ window.CJS.AudioLibrary = (() => {
     _container.querySelector('#aud-upload').onclick = _doUpload;
 
     _renderList(ids, entries);
+    _renderSlots(slots, entries);
   }
 
   function _renderList(ids, entries) {
@@ -102,6 +108,35 @@ window.CJS.AudioLibrary = (() => {
     });
     list.querySelectorAll('button[data-act="del"]').forEach(b => {
       b.onclick = () => _doRemove(b.dataset.id);
+    });
+  }
+
+  function _renderSlots(slots, entries) {
+    const el = _container.querySelector('#aud-slots');
+    if (!el) return;
+    const ids = Object.keys(slots || {}).sort();
+    if (!ids.length) {
+      el.innerHTML = '<div class="dim" style="padding:10px">No reserved slots.</div>';
+      return;
+    }
+    el.innerHTML = ids.map((id) => {
+      const slot = slots[id] || {};
+      const registered = !!entries[id];
+      return `
+        <div class="list-row" style="display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <span style="flex:0 0 22%;font-weight:600">${_esc(id)}</span>
+          <span style="flex:0 0 24%;color:var(--text-mute,#a0a8b8)">${_esc(slot.label || id)}</span>
+          <span style="flex:1;font-family:monospace;font-size:0.8rem;opacity:0.8">${_esc(slot.path || `audio/sfx/${id}.wav`)}</span>
+          <span class="badge">${registered ? 'registered' : 'empty'}</span>
+          <button class="btn btn-ghost btn-sm" data-slot-id="${_esc(id)}">Use ID</button>
+        </div>
+      `;
+    }).join('');
+    el.querySelectorAll('[data-slot-id]').forEach((button) => {
+      button.onclick = () => {
+        const input = _container.querySelector('#aud-id');
+        if (input) input.value = button.dataset.slotId || '';
+      };
     });
   }
 
@@ -168,6 +203,7 @@ window.CJS.AudioLibrary = (() => {
             const m = AM().getManifest();
             m.sfx = obj.sfx || {};
             m.bgm = obj.bgm || {};
+            m.sfxSlots = obj.sfxSlots || m.sfxSlots || {};
           }
         }
       } catch (e) { /* ignore */ }

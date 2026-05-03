@@ -484,7 +484,19 @@ window.CJS.CampaignCombatBridge = (() => {
     ops.push({
       op: 'manual_battle_result',
       result: outcome,
+      requestId: result.requestId || '',
+      resultKey: [
+        result.requestId,
+        result.saveId,
+        result.scenarioRunId,
+        result.encounterId,
+        result.completedAt,
+        outcome
+      ].filter(Boolean).join('|'),
       encounterId: result.encounterId,
+      rounds: result.rounds || 0,
+      loot: result.loot || [],
+      completedAt: result.completedAt || new Date().toISOString(),
       summary: result.notes || 'Combat bridge result applied.',
       currency: result.currency || `${state.currentWorld || 'haven'}_gold`,
       defeatOps: result.defeatOps || pending.defeatOps || [],

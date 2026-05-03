@@ -225,6 +225,9 @@ window.CJS.SkillEditor = (() => {
         'weapon_hit_physical', 'weapon_hit_fire', 'weapon_hit_ice',
         'weapon_hit_lightning', 'weapon_hit_water', 'weapon_hit_wind',
         'weapon_hit_earth', 'weapon_hit_holy', 'weapon_hit_dark',
+        'weapon_bow_shot',
+        'voice_attack', 'voice_hurt', 'voice_happy', 'voice_expression',
+        'monster_attack', 'monster_hurt',
         'critical', 'heal', 'item_use', 'item_potion', 'item_buff', 'item_throw'
       ];
 

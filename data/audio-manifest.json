@@ -55,5 +55,60 @@
     "battle_1": "audio/bgm/battle_1.mp3",
     "codex_battle_loop": "audio/bgm/codex-battle-loop.wav",
     "codex_shadow_skirmish": "audio/bgm/codex-shadow-skirmish.wav"
+  },
+  "sfxSlots": {
+    "voice_attack": {
+      "label": "Character attack line",
+      "path": "audio/sfx/voice_attack.wav",
+      "events": [
+        "character.basic_attack",
+        "character.skill_attack"
+      ]
+    },
+    "voice_hurt": {
+      "label": "Character hurt line",
+      "path": "audio/sfx/voice_hurt.wav",
+      "events": [
+        "character.damage_taken"
+      ]
+    },
+    "voice_happy": {
+      "label": "Character happy line",
+      "path": "audio/sfx/voice_happy.wav",
+      "events": [
+        "character.kill",
+        "player.victory"
+      ]
+    },
+    "voice_expression": {
+      "label": "Character expression line",
+      "path": "audio/sfx/voice_expression.wav",
+      "events": [
+        "character.defend",
+        "character.turn_start"
+      ]
+    },
+    "weapon_bow_shot": {
+      "label": "Bow or crossbow shot",
+      "path": "audio/sfx/weapon_bow_shot.wav",
+      "events": [
+        "weapon.ranged_basic_attack"
+      ]
+    },
+    "monster_attack": {
+      "label": "Monster attack",
+      "path": "audio/sfx/monster_attack.wav",
+      "events": [
+        "monster.basic_attack",
+        "monster.skill_attack"
+      ]
+    },
+    "monster_hurt": {
+      "label": "Monster hurt",
+      "path": "audio/sfx/monster_hurt.wav",
+      "events": [
+        "monster.damage_taken"
+      ]
+    }
   }
 }

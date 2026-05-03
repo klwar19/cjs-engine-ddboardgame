@@ -100,6 +100,44 @@ window.CJS.AudioManager = (() => {
     ui_error: ['ui_click']
   };
 
+  const DEFAULT_SFX_SLOTS = {
+    voice_attack: {
+      label: 'Character attack line',
+      path: 'audio/sfx/voice_attack.wav',
+      events: ['character.basic_attack', 'character.skill_attack']
+    },
+    voice_hurt: {
+      label: 'Character hurt line',
+      path: 'audio/sfx/voice_hurt.wav',
+      events: ['character.damage_taken']
+    },
+    voice_happy: {
+      label: 'Character happy line',
+      path: 'audio/sfx/voice_happy.wav',
+      events: ['character.kill', 'player.victory']
+    },
+    voice_expression: {
+      label: 'Character expression line',
+      path: 'audio/sfx/voice_expression.wav',
+      events: ['character.defend', 'character.turn_start']
+    },
+    weapon_bow_shot: {
+      label: 'Bow or crossbow shot',
+      path: 'audio/sfx/weapon_bow_shot.wav',
+      events: ['weapon.ranged_basic_attack']
+    },
+    monster_attack: {
+      label: 'Monster attack',
+      path: 'audio/sfx/monster_attack.wav',
+      events: ['monster.basic_attack', 'monster.skill_attack']
+    },
+    monster_hurt: {
+      label: 'Monster hurt',
+      path: 'audio/sfx/monster_hurt.wav',
+      events: ['monster.damage_taken']
+    }
+  };
+
   // Built-in synthesized fallback presets. These still intentionally sound
   // lightweight, but they are layered enough to feel closer to game UI SFX
   // than the original single-oscillator beeps.
@@ -395,7 +433,8 @@ window.CJS.AudioManager = (() => {
   function _normalize(value) {
     return {
       sfx: _normalizeBucket(value?.sfx),
-      bgm: _normalizeBucket(value?.bgm)
+      bgm: _normalizeBucket(value?.bgm),
+      sfxSlots: _normalizeSlotBucket(value?.sfxSlots)
     };
   }
 
@@ -421,6 +460,40 @@ window.CJS.AudioManager = (() => {
       return arr.length ? arr : null;
     }
     return null;
+  }
+
+  function _normalizeSlotBucket(bucket) {
+    const out = {};
+    for (const [id, slot] of Object.entries(DEFAULT_SFX_SLOTS)) {
+      out[id] = { ...slot };
+    }
+    if (!bucket || typeof bucket !== 'object') return out;
+    for (const [id, raw] of Object.entries(bucket)) {
+      const key = String(id || '').trim();
+      if (!key) continue;
+      if (typeof raw === 'string') {
+        const path = raw.trim();
+        if (path) out[key] = { ...(out[key] || {}), path };
+        continue;
+      }
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        out[key] = {
+          ...(out[key] || {}),
+          label: String(raw.label || out[key]?.label || key),
+          path: String(raw.path || raw.uploadPath || out[key]?.path || '').trim(),
+          events: Array.isArray(raw.events) ? raw.events.map((event) => String(event || '').trim()).filter(Boolean) : (out[key]?.events || [])
+        };
+      }
+    }
+    return out;
+  }
+
+  function getSfxSlots() {
+    return { ...(_manifest.sfxSlots || {}) };
+  }
+
+  function getSfxSlotIds() {
+    return Object.keys(_manifest.sfxSlots || DEFAULT_SFX_SLOTS).sort();
   }
 
   function _ensureSfxPool() {
@@ -768,6 +841,8 @@ window.CJS.AudioManager = (() => {
   return Object.freeze({
     loadManifest,
     getManifest,
+    getSfxSlots,
+    getSfxSlotIds,
     subscribe,
     playSfx,
     playBgm,

@@ -23,6 +23,7 @@ window.CJS.CampaignUI = (() => {
   let _activeTab = 'overview';
   let _booted = false;
   let _combatResultUnsub = null;
+  let _lastCombatResultKey = '';
 
   const MODES = [
     ['town', 'Town', '🏠'],
@@ -151,10 +152,24 @@ window.CJS.CampaignUI = (() => {
     if (!result) return;
     const state = CS().getState();
     if (result.saveId && state?.saveId && result.saveId !== state.saveId) return;
+    const key = _combatResultKey(result);
+    if (key && (key === _lastCombatResultKey || key === state?.lastCombatResultKey)) return;
+    _lastCombatResultKey = key;
     _activeMode = 'scenario';
     _activeTab = 'maps';
-    CS().mutate((next) => { next.pendingBattleResult = result; }, { source: 'combat_bridge' });
-    UI()?.toast?.('Combat result returned. Apply it to update campaign state.', 'success');
+    Bridge().applyResult(result);
+    UI()?.toast?.(`Combat ${result.result || 'result'} applied to campaign.`, 'success');
+  }
+
+  function _combatResultKey(result) {
+    return [
+      result?.requestId,
+      result?.saveId,
+      result?.scenarioRunId,
+      result?.encounterId,
+      result?.completedAt,
+      result?.result
+    ].filter(Boolean).join('|');
   }
 
   function _renderHeader(state, campaign) {
@@ -350,6 +365,7 @@ window.CJS.CampaignUI = (() => {
         ${_renderTravelSurprise(state)}
         ${_renderPendingBattle(state)}
         ${_renderCombatResult(state)}
+        ${_renderLastCombatResult(state)}
         ${_renderEventResult(state)}
         ${_renderOracle(state)}
         ${_renderLastReport(state)}
@@ -784,6 +800,23 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _renderLastCombatResult(state) {
+    const result = state.lastCombatResult;
+    if (!result) return '';
+    const loot = _renderLootSummary(result.loot || []);
+    return `
+      <section class="campaign-panel battle-result applied">
+        <div class="campaign-panel-head">
+          <h2>Combat Applied</h2>
+          <span class="campaign-pill">${_esc(result.result || 'resolved')}</span>
+        </div>
+        <div class="campaign-muted">${_esc(result.encounterId || result.label || 'Campaign battle')} | ${result.rounds || 0} rounds</div>
+        ${result.summary ? `<p>${_esc(result.summary)}</p>` : ''}
+        ${loot}
+      </section>
+    `;
+  }
+
   function _renderCombatConsequenceNotice(result, state) {
     const outcome = String(result?.result || '').toLowerCase();
     if (!['defeat', 'draw'].includes(outcome)) return '';
@@ -1095,6 +1128,7 @@ window.CJS.CampaignUI = (() => {
         ${_renderTravelSurprise(state)}
         ${_renderPendingBattle(state)}
         ${_renderCombatResult(state)}
+        ${_renderLastCombatResult(state)}
         ${_renderEventResult(state)}
       </div>
     `;
@@ -2422,6 +2456,7 @@ window.CJS.CampaignUI = (() => {
 
   function _applyCombatResult() {
     const result = CS().getState().pendingBattleResult;
+    if (!result) return;
     Bridge().applyResult(result);
     CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'combat_bridge' });
   }

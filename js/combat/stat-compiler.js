@@ -151,6 +151,7 @@ window.CJS.StatCompiler = (() => {
       aiRules:          baseUnit.aiRules || [],
       loot:             baseUnit.loot || [],
       inventory:        baseUnit.inventory || [],
+      battleSfx:        baseUnit.battleSfx || {},
       statusImmunities: baseUnit.statusImmunities || [],
 
       // Active statuses (carried through from opts — status-manager owns these)

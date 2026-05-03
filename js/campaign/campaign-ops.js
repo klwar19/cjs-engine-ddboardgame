@@ -84,7 +84,7 @@ window.CJS.CampaignOps = (() => {
       case 'end_scenario': return window.CJS.ScenarioRunner?.endScenario(op.outcome || 'manual');
       case 'start_battle': return _startBattle(state, op);
       case 'roll_random_battle': return _rollRandomBattle(state, op);
-      case 'manual_battle_result': return _manualBattleResult(state, op);
+      case 'manual_battle_result': return _manualBattleResult(state, op, options);
       case 'roll_event': return _rollEvent(state, op);
       case 'roll_check': return _rollCheck(state, op);
       case 'run_qte_or_dice': return _rollCheck(state, { ...op, type: 'qte_or_dice' });
@@ -1204,22 +1204,40 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Battle ready: ${state.pendingBattle.label}.`);
   }
 
-  function _manualBattleResult(state, op) {
+  function _manualBattleResult(state, op, options = {}) {
     const outcome = String(op.result || 'victory').toLowerCase();
+    const pending = state.pendingBattle || {};
     _log(state, `Manual battle result: ${outcome || 'resolved'}${op.summary ? ` - ${op.summary}` : ''}.`);
     for (const change of op.changes || []) _applyOne(state, change, { source: 'manual_battle' });
     _applyBattleSetback(state, outcome, op);
     if (outcome === 'victory' && op.applyRewards !== false) {
-      for (const reward of state.pendingBattle?.rewardOps || []) _applyOne(state, reward, { source: 'battle_set_reward' });
+      for (const reward of pending.rewardOps || []) _applyOne(state, reward, { source: 'battle_set_reward' });
     }
     if (state.activeScenarioRun) {
       state.activeScenarioRun.completedBattles.push({
         at: new Date().toISOString(),
         result: outcome || 'manual',
         summary: op.summary || '',
-        encounterId: op.encounterId || state.pendingBattle?.encounterId || null
+        encounterId: op.encounterId || pending.encounterId || null
       });
     }
+    state.lastCombatResult = {
+      result: outcome || 'manual',
+      summary: op.summary || '',
+      encounterId: op.encounterId || pending.encounterId || null,
+      battleSetId: pending.battleSetId || null,
+      label: pending.label || op.encounterId || '',
+      rounds: Number(op.rounds || 0),
+      loot: Array.isArray(op.loot) ? op.loot : [],
+      completedAt: op.completedAt || new Date().toISOString(),
+      source: options.source || op.source || 'manual'
+    };
+    state.lastCombatResultKey = op.resultKey || op.requestId || [
+      state.saveId,
+      state.lastCombatResult.encounterId,
+      state.lastCombatResult.completedAt,
+      state.lastCombatResult.result
+    ].filter(Boolean).join('|');
     state.pendingBattle = null;
   }
 

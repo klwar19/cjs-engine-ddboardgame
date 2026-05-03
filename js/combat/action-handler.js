@@ -46,6 +46,72 @@ window.CJS.ActionHandler = (() => {
     return null;
   }
 
+  function _battleSfx(unit, event, ctx = {}) {
+    const key = _battleSfxKey(unit, event, ctx);
+    if (key) _sfx(key, { volume: ctx.volume ?? 0.62 });
+    return key;
+  }
+
+  function _battleSfxKey(unit, event, ctx = {}) {
+    const authored = _authoredBattleSfx(unit, event);
+    if (authored) return authored;
+    const monster = _isMonsterUnit(unit);
+    if (event === 'archerAttack') return _isArcherWeapon(unit, ctx.weaponData) ? 'weapon_bow_shot' : null;
+    if (event === 'attack') return monster ? 'monster_attack' : 'voice_attack';
+    if (event === 'hurt') return monster ? 'monster_hurt' : 'voice_hurt';
+    if (event === 'happy') return monster ? null : 'voice_happy';
+    if (event === 'expression') return monster ? null : 'voice_expression';
+    return null;
+  }
+
+  function _authoredBattleSfx(unit, event) {
+    const slots = unit?.battleSfx || {};
+    const aliases = {
+      attack: ['attack', 'attackLine', 'voiceAttack', 'monsterAttack'],
+      hurt: ['hurt', 'hurtLine', 'voiceHurt', 'monsterHurt'],
+      happy: ['happy', 'happyLine', 'voiceHappy'],
+      expression: ['expression', 'expressionLine', 'voiceExpression'],
+      archerAttack: ['archerAttack', 'bowShot', 'rangedAttack'],
+      monsterAttack: ['monsterAttack', 'attack'],
+      monsterHurt: ['monsterHurt', 'hurt']
+    }[event] || [event];
+    for (const alias of aliases) {
+      const picked = _pickSfxValue(slots[alias]);
+      if (picked) return picked;
+    }
+    return null;
+  }
+
+  function _pickSfxValue(value) {
+    if (typeof value === 'string') return value.trim();
+    if (Array.isArray(value)) {
+      const options = value.map((item) => String(item || '').trim()).filter(Boolean);
+      return options.length ? options[Math.floor(Math.random() * options.length)] : '';
+    }
+    if (value && typeof value === 'object') return _pickSfxValue(value.id || value.key || value.sfx);
+    return '';
+  }
+
+  function _isMonsterUnit(unit) {
+    const baseId = unit?.baseId || unit?.id || unit?.instanceId;
+    return unit?.team === 'enemy' || (baseId && DS()?.exists?.('monsters', baseId));
+  }
+
+  function _isArcherWeapon(unit, weaponData) {
+    const text = [
+      weaponData?.itemId,
+      weaponData?.itemName,
+      weaponData?.weaponType,
+      weaponData?.type,
+      weaponData?.kind,
+      ...(weaponData?.tags || [])
+    ].join(' ').toLowerCase();
+    if (/bow|crossbow|arrow|archer/.test(text)) return true;
+    const range = Number(weaponData?.range ?? unit?.basicAttackRange ?? unit?.attackRange ?? 1);
+    const damageType = String(weaponData?.damageType || '').toLowerCase();
+    return range > 1 && (damageType.includes('physical') || damageType.includes('pierc'));
+  }
+
   // ── VALIDATE ──────────────────────────────────────────────────────
   // Returns: { valid: bool, reason?: string }
   function validate(unit, action) {
@@ -222,6 +288,8 @@ window.CJS.ActionHandler = (() => {
     const target = GE().getUnit(action.targetId);
     // Get weapon data for element/damageType (null = fists → Physical)
     const weaponData = _getWeaponData(unit);
+    _battleSfx(unit, 'attack', { weaponData, target, volume: 0.5 });
+    _battleSfx(unit, 'archerAttack', { weaponData, target, volume: 0.62 });
     const attack = DC().computeAttack({
       attacker: unit, target, skill: null,
       qteMultiplier: ctx.qteMultiplier || 1.0,
@@ -251,6 +319,7 @@ window.CJS.ActionHandler = (() => {
       damageType: atkDamageType, element: atkElement,
       skill: null, isCritical: attack.isCritical, breakdown: attack.breakdown
     });
+    if (applied.applied > 0) _battleSfx(target, 'hurt', { attacker: unit, volume: 0.48 });
 
     // SFX: prefer weapon-shape (slash/pierce/blunt), then element variant,
     // then generic physical. Animation: directional slash + shake.
@@ -286,6 +355,7 @@ window.CJS.ActionHandler = (() => {
     // on_take_damage is fired inside damage-calc/resolver chain
 
     if (applied.killed) {
+      _battleSfx(unit, 'happy', { target, volume: 0.5 });
       ER().fireTrigger('on_kill', {
         unit, attacker: unit, target,
         turnNumber: ctx.turnNumber, allUnits: GE().getAllUnits()
@@ -350,6 +420,7 @@ window.CJS.ActionHandler = (() => {
     // Resolve damage (if skill has power) for each target
     const hits = [];
     if (skill.power) {
+      _battleSfx(unit, 'attack', { skill, volume: 0.48 });
       for (const t of targets) {
         const attack = DC().computeAttack({
           attacker: unit, target: t, skill, qteMultiplier, qteGrade
@@ -369,6 +440,7 @@ window.CJS.ActionHandler = (() => {
           qteGrade
         });
         hits.push({ target: t, damage: applied.applied, killed: applied.killed, critical: attack.isCritical });
+        if (applied.applied > 0) _battleSfx(t, 'hurt', { attacker: unit, skill, volume: 0.46 });
 
         // SFX routing priority:
         //   1. skill.hitSfx (author override)
@@ -410,6 +482,7 @@ window.CJS.ActionHandler = (() => {
           });
         }
         if (applied.killed) {
+          _battleSfx(unit, 'happy', { target: t, skill, volume: 0.5 });
           ER().fireTrigger('on_kill', {
             unit, attacker: unit, target: t,
             turnNumber: ctx.turnNumber, allUnits: GE().getAllUnits()
@@ -492,6 +565,7 @@ window.CJS.ActionHandler = (() => {
       tags: ['defend'], data: { drBoost: unit._defendDRBoost }
     });
     _sfx('defend_guard', { volume: 0.62 });
+    _battleSfx(unit, 'expression', { volume: 0.42 });
     return { success: true, action: 'defend' };
   }
 
@@ -547,7 +621,13 @@ window.CJS.ActionHandler = (() => {
     for (const iid of unit.equipment) {
       const item = DS().get('items', iid);
       if (item?.slot === 'weapon' && item.weaponData) {
-        return item.weaponData;
+        return {
+          ...item.weaponData,
+          itemId: iid,
+          itemName: item.name || iid,
+          tags: item.tags || [],
+          type: item.type || item.weaponType || ''
+        };
       }
     }
     return null;

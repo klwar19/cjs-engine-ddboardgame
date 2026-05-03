@@ -52,6 +52,7 @@ window.CJS.CharEditor = (() => {
       skills: [], equipment: [], innatePassives: [],
       weak: [], resist: [], immune: [],
       portrait: '',
+      battleSfx: {},
       description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -129,6 +130,17 @@ window.CJS.CharEditor = (() => {
           <div class="form-group"><label class="form-label">Immunities</label><div id="chr-immune-area"></div></div>
         </div>
 
+        <h3>Battle SFX</h3>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Attack Line ID</label><input type="text" id="chr-sfx-attack" value="${_esc(c.battleSfx?.attack || '')}" placeholder="voice_attack"></div>
+          <div class="form-group"><label class="form-label">Hurt Line ID</label><input type="text" id="chr-sfx-hurt" value="${_esc(c.battleSfx?.hurt || '')}" placeholder="voice_hurt"></div>
+          <div class="form-group"><label class="form-label">Happy Line ID</label><input type="text" id="chr-sfx-happy" value="${_esc(c.battleSfx?.happy || '')}" placeholder="voice_happy"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Expression ID</label><input type="text" id="chr-sfx-expression" value="${_esc(c.battleSfx?.expression || '')}" placeholder="voice_expression"></div>
+          <div class="form-group"><label class="form-label">Archer Shot ID</label><input type="text" id="chr-sfx-archerAttack" value="${_esc(c.battleSfx?.archerAttack || '')}" placeholder="weapon_bow_shot"></div>
+        </div>
+
         <div class="form-group mt-md"><label class="form-label">Description</label><textarea id="chr-desc" rows="2">${_esc(c.description||'')}</textarea></div>
 
         <div style="margin-top:12px"><button class="btn btn-success" id="chr-save">💾 Save Character</button></div>
@@ -203,6 +215,7 @@ window.CJS.CharEditor = (() => {
     _formEl.querySelector('#chr-save').onclick = () => {
       const currentStats = {};
       for (const s of C().STATS) currentStats[s] = statSliders[s]._getValue();
+      const battleSfx = _collectBattleSfx(c, 'chr', ['attack', 'hurt', 'happy', 'expression', 'archerAttack']);
       DS().replace('characters', c.id, {
         id: c.id,
         name: _formEl.querySelector('#chr-name').value,
@@ -220,6 +233,7 @@ window.CJS.CharEditor = (() => {
         weak: weakWidget._getTags(),
         resist: resistWidget._getTags(),
         immune: immuneWidget._getTags(),
+        ...(Object.keys(battleSfx).length ? { battleSfx } : {}),
         description: _formEl.querySelector('#chr-desc').value
       });
       _renderList(); _load(c.id);
@@ -227,6 +241,16 @@ window.CJS.CharEditor = (() => {
     };
     _formEl.querySelector('#chr-dup').onclick = () => { const nid=DS().duplicate('characters',c.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
     _formEl.querySelector('#chr-del').onclick = () => { UI().confirm(`Delete "${c.name}"?`,()=>{DS().remove('characters',c.id);_activeId=null;_renderList();_formEl.innerHTML='<div class="card" style="text-align:center;color:var(--text-mute);padding:40px">Select a character</div>';UI().toast('Deleted','info');}); };
+  }
+
+  function _collectBattleSfx(current, prefix, keys) {
+    const out = { ...(current?.battleSfx || {}) };
+    for (const key of keys) {
+      const value = String(_formEl.querySelector(`#${prefix}-sfx-${key}`)?.value || '').trim();
+      if (value) out[key] = value;
+      else delete out[key];
+    }
+    return out;
   }
 
   function _updateDerived(sliders, rank) {
