@@ -13,29 +13,33 @@ window.CJS.Formulas = (() => {
   const C = () => window.CJS.CONST;
 
   // ── HP & MP ────────────────────────────────────────────────────────
-  // HP = (Endurance × 5) + (Strength × 2) + Rank Bonus
-  function calcMaxHP(stats, rank) {
-    const bonus = C().RANK_DATA[rank]?.hpBonus || 0;
-    return (stats.E * 5) + (stats.S * 2) + bonus;
+  // HP = Rank Base + (Endurance * 6) + (Strength * 3) + floor(max(S, E) * 1.5)
+  function calcMaxHP(stats = {}, rank) {
+    const rankData = C().RANK_DATA[rank] || C().RANK_DATA.F || {};
+    const base = rankData.hpBase ?? rankData.hpBonus ?? 0;
+    const strength = stats.S || 0;
+    const endurance = stats.E || 0;
+    return base + (endurance * 6) + (strength * 3) + Math.floor(Math.max(strength, endurance) * 1.5);
   }
 
-  // MP = (Intelligence × 4) + (Perception × 2) + Rank Bonus
-  function calcMaxMP(stats, rank) {
-    const bonus = C().RANK_DATA[rank]?.mpBonus || 0;
-    return (stats.I * 4) + (stats.P * 2) + bonus;
+  // MP = Rank Base + (Intelligence * 5) + (Perception * 2) + (Charisma * 2)
+  function calcMaxMP(stats = {}, rank) {
+    const rankData = C().RANK_DATA[rank] || C().RANK_DATA.F || {};
+    const base = rankData.mpBase ?? rankData.mpBonus ?? 0;
+    return base + ((stats.I || 0) * 5) + ((stats.P || 0) * 2) + ((stats.C || 0) * 2);
   }
 
   // ── DAMAGE RESISTANCE ──────────────────────────────────────────────
-  function calcPhysicalDR(stats) {
-    return Math.floor((stats.S + stats.E) / 2);
+  function calcPhysicalDR(stats = {}) {
+    return Math.floor(((stats.S || 0) + (stats.E || 0)) / 2);
   }
 
-  function calcMagicDR(stats) {
-    return Math.floor((stats.I + stats.P) / 2);
+  function calcMagicDR(stats = {}) {
+    return Math.floor(((stats.I || 0) + (stats.P || 0)) / 2);
   }
 
-  function calcChaosDR(stats) {
-    return stats.L;
+  function calcChaosDR(stats = {}) {
+    return Math.floor(((stats.L || 0) * 0.8) + ((stats.C || 0) * 0.4));
   }
 
   function calcDR(stats, damageType) {
@@ -49,7 +53,7 @@ window.CJS.Formulas = (() => {
   }
 
   // ── DAMAGE ─────────────────────────────────────────────────────────
-  // Final = (√SkillPower × √PrimaryStat + DiceRoll) × QTE × Element − DR
+  // Final = ((Base + bonuses) * QTE/Crit * Element) through hybrid defense
   // Minimum 1 damage (never 0 unless immune)
 
   function calcEffectiveSkillPower(basePower, skillLevel) {
@@ -66,8 +70,25 @@ window.CJS.Formulas = (() => {
     const stat = Math.max(0, primaryStat || 0);
     const luck = Math.max(0, luckValue || 0);
     const sqrtCore = Math.sqrt(power) * Math.sqrt(stat);
-    const luckDice = (diceRoll || 0) * Math.sqrt(luck);
+    const luckDice = (diceRoll || 0) * Math.pow(luck, 3 / 11);
     return sqrtCore + luckDice + calcPowerPulse(power, stat);
+  }
+
+  function calcMitigatedDamage(rawDamage, defenseRating) {
+    const raw = Math.max(0, rawDamage || 0);
+    const rating = Math.max(0, Math.floor(defenseRating || 0));
+    const flatBlock = Math.floor(rating * 0.5);
+    const percentMitigation = Math.min(0.40, rating / (rating + 80));
+    const afterDefense = Math.floor((raw * (1 - percentMitigation)) - flatBlock);
+    const final = Math.max(1, afterDefense);
+
+    return {
+      final,
+      defenseRating: rating,
+      flatBlock,
+      percentMitigation,
+      blocked: Math.max(0, Math.floor(raw) - final)
+    };
   }
 
   function calcFinalDamage({ skillPower, primaryStat, diceRoll, qteMultiplier,
@@ -79,18 +100,21 @@ window.CJS.Formulas = (() => {
     const withQTE = withBonusPercent * (qteMultiplier || 1.0);
     const withElement = withQTE * (elementMultiplier || 1.0);
     const isImmune = (elementMultiplier || 0) === 0;
-    const blocked = isImmune ? 0 : Math.max(0, Math.floor(dr || 0));
-    const afterDR = isImmune ? 0 : withElement - blocked;
-    const final = isImmune ? 0 : Math.max(1, Math.floor(afterDR));
+    const mitigation = isImmune
+      ? { final: 0, defenseRating: 0, flatBlock: 0, percentMitigation: 0, blocked: Math.floor(withElement) }
+      : calcMitigatedDamage(withElement, dr);
 
     return {
       base: Math.floor(base),
       withBonuses: Math.floor(withBonusPercent),
       withQTE: Math.floor(withQTE),
       withElement: Math.floor(withElement),
-      afterDR: final,
-      final: final,
-      blocked,
+      afterDR: mitigation.final,
+      final: mitigation.final,
+      blocked: mitigation.blocked,
+      defenseRating: mitigation.defenseRating,
+      flatBlock: mitigation.flatBlock,
+      percentMitigation: mitigation.percentMitigation,
       overkill: 0  // set by caller after checking target HP
     };
   }
@@ -238,7 +262,7 @@ window.CJS.Formulas = (() => {
   return Object.freeze({
     calcMaxHP, calcMaxMP,
     calcPhysicalDR, calcMagicDR, calcChaosDR, calcDR,
-    calcEffectiveSkillPower, calcBaseDamage, calcFinalDamage,
+    calcEffectiveSkillPower, calcBaseDamage, calcMitigatedDamage, calcFinalDamage,
     getElementMultiplier,
     calcHitCheck, calcCritChance, calcCritMultiplier, rollCrit,
     calcInitiative, calcMovement,

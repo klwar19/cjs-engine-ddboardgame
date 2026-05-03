@@ -320,8 +320,11 @@ window.CJS.DamageCalc = (() => {
     }
 
     const isImmune = elementMult === 0;
-    const raw   = Math.floor(amount * elementMult);
-    let final = isImmune ? 0 : Math.max(1, raw - Math.floor(dr / 2));  // DoTs ignore half DR unless immune
+    const raw = Math.floor(amount * elementMult);
+    const mitigation = isImmune
+      ? { final: 0 }
+      : F().calcMitigatedDamage(raw, dr / 2);  // DoTs use half defense rating unless immune
+    let final = mitigation.final;
 
     // ── Absorb shield check for DoT damage too ──
     let absorbed = 0;

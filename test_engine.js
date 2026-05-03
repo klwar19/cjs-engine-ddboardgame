@@ -418,12 +418,42 @@ const endTurnResult = AH.execute(endTurnUnit, { type: 'end_turn' }, { turnNumber
 assert('end turn action succeeds', !!endTurnResult.success);
 assertEq('end turn banks next-turn AP', endTurnUnit.turnState.bonusAP, CJS.CONST.ACTION_ECONOMY.endTurnAPBonus);
 
+const fFormulaStats = { S: 7, P: 8, E: 7, C: 4, I: 3, A: 5, L: 4 };
+const cFormulaStats = { S: 20, P: 18, E: 22, C: 12, I: 16, A: 14, L: 10 };
+const ssrFormulaStats = { S: 80, P: 75, E: 90, C: 60, I: 85, A: 70, L: 65 };
+
+assertEq('F HP uses soft rank base + S/E scaling', CJS.Formulas.calcMaxHP(fFormulaStats, 'F'), 91);
+assertEq('F MP uses soft rank base + I/P/C scaling', CJS.Formulas.calcMaxMP(fFormulaStats, 'F'), 53);
+assertEq('C HP uses soft rank base + S/E scaling', CJS.Formulas.calcMaxHP(cFormulaStats, 'C'), 303);
+assertEq('C MP uses soft rank base + I/P/C scaling', CJS.Formulas.calcMaxMP(cFormulaStats, 'C'), 204);
+assertEq('SSR HP uses soft rank base + S/E scaling', CJS.Formulas.calcMaxHP(ssrFormulaStats, 'SSR'), 1201);
+assertEq('SSR MP uses soft rank base + I/P/C scaling', CJS.Formulas.calcMaxMP(ssrFormulaStats, 'SSR'), 925);
+
+assertEq('physical defense rating uses S/E', CJS.Formulas.calcPhysicalDR(fFormulaStats), 7);
+assertEq('magic defense rating uses I/P', CJS.Formulas.calcMagicDR(fFormulaStats), 5);
+assertEq('chaos defense rating uses L/C', CJS.Formulas.calcChaosDR(fFormulaStats), 4);
+
 const formulaProbe = CJS.Formulas.calcBaseDamage(9, 16, 2, 4);
 const expectedFormulaProbe =
   (Math.sqrt(9) * Math.sqrt(16)) +
-  (2 * Math.sqrt(4)) +
+  (2 * Math.pow(4, 3 / 11)) +
   Math.pow((2 * 9) + (2 * 16), 4 / 5);
-assertNear('base damage uses sqrt core + luck dice + power pulse', formulaProbe, expectedFormulaProbe);
+assertNear('base damage uses sqrt core + luck exponent dice + power pulse', formulaProbe, expectedFormulaProbe);
+
+function expectedHybridDamage(rawDamage, defenseRating) {
+  const flatBlock = Math.floor(defenseRating * 0.5);
+  const percentMitigation = Math.min(0.40, defenseRating / (defenseRating + 80));
+  return Math.max(1, Math.floor((rawDamage * (1 - percentMitigation)) - flatBlock));
+}
+
+const lowDefenseProbe = CJS.Formulas.calcMitigatedDamage(40, 4);
+const mediumDefenseProbe = CJS.Formulas.calcMitigatedDamage(40, 20);
+const highDefenseProbe = CJS.Formulas.calcMitigatedDamage(200, 120);
+assertEq('hybrid mitigation handles low defense rating', lowDefenseProbe.final, expectedHybridDamage(40, 4));
+assertEq('hybrid mitigation handles medium defense rating', mediumDefenseProbe.final, expectedHybridDamage(40, 20));
+assertEq('hybrid mitigation handles high defense rating', highDefenseProbe.final, expectedHybridDamage(200, 120));
+assertEq('hybrid mitigation exposes flat block', highDefenseProbe.flatBlock, 60);
+assertNear('hybrid mitigation caps percent reduction at 40%', highDefenseProbe.percentMitigation, 0.4);
 
 const immunityProbe = CJS.Formulas.calcFinalDamage({
   skillPower: 9,
@@ -437,6 +467,75 @@ const immunityProbe = CJS.Formulas.calcFinalDamage({
   bonusDamagePercent: 0
 });
 assertEq('elemental immunity reduces damage to 0', immunityProbe.final, 0);
+
+const minimumDamageProbe = CJS.Formulas.calcFinalDamage({
+  skillPower: 0,
+  primaryStat: 0,
+  diceRoll: 0,
+  luckValue: 0,
+  qteMultiplier: 1,
+  elementMultiplier: 1,
+  dr: 999,
+  bonusDamageFlat: 1,
+  bonusDamagePercent: 0
+});
+assertEq('non-immune damage floors at 1', minimumDamageProbe.final, 1);
+
+const originalDiceServiceForFormula = CJS.DiceService;
+const originalRandomForFormula = Math.random;
+CJS.DiceService = {
+  d20: () => ({ total: 20 }),
+  d12: () => ({ total: 1 }),
+  roll: () => ({ total: 2 })
+};
+Math.random = () => 0.99;
+const formulaAttacker = {
+  compiledStats: { S: 16, P: 5, E: 5, C: 5, I: 5, A: 5, L: 4 },
+  stats: { S: 16, P: 5, E: 5, C: 5, I: 5, A: 5, L: 4 },
+  accuracyBonus: 0,
+  critBonus: 0,
+  critDmgBonus: 0,
+  damageFlat: 0,
+  damagePercent: 0,
+  damageByElement: {},
+  basicAttackPower: 9,
+  basicAttackRange: 1
+};
+const formulaTarget = {
+  compiledStats: { A: 1 },
+  stats: { A: 1 },
+  dr: { physical: 0, magic: 0, chaos: 0 },
+  currentHP: 999,
+  weak: [],
+  resist: [],
+  immune: []
+};
+const basicFormulaAttack = DC.computeAttack({
+  attacker: formulaAttacker,
+  target: { ...formulaTarget },
+  skill: null,
+  qteMultiplier: 1,
+  weaponData: { baseDamage: 9, range: 1, damageType: 'Physical', element: 'Physical' }
+});
+const skillFormulaAttack = DC.computeAttack({
+  attacker: formulaAttacker,
+  target: { ...formulaTarget },
+  skill: {
+    id: 'formula_probe',
+    power: 9,
+    level: 1,
+    scalingStat: 'S',
+    dice: '1d6',
+    damageType: 'Physical',
+    element: 'Physical',
+    unavoidable: true
+  },
+  qteMultiplier: 1,
+  weaponData: null
+});
+Math.random = originalRandomForFormula;
+CJS.DiceService = originalDiceServiceForFormula;
+assertEq('basic attacks and skills share base damage formula', basicFormulaAttack.damage, skillFormulaAttack.damage);
 
 // ══════════════════════════════════════════════════════════════════════
 // TEST 9: AI ownership check — AI should not pick skills the unit doesn't own

@@ -26,15 +26,15 @@ window.CJS.CONST = (() => {
   const RANKS = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SR', 'SSR'];
 
   const RANK_DATA = {
-    F:   { statMin: 3,  statMax: 8,  totalSpecial: 35,  hpBonus: 20,  mpBonus: 20  },
-    E:   { statMin: 6,  statMax: 12, totalSpecial: 55,  hpBonus: 40,  mpBonus: 40  },
-    D:   { statMin: 9,  statMax: 16, totalSpecial: 80,  hpBonus: 70,  mpBonus: 70  },
-    C:   { statMin: 12, statMax: 22, totalSpecial: 110, hpBonus: 110, mpBonus: 110 },
-    B:   { statMin: 16, statMax: 30, totalSpecial: 150, hpBonus: 160, mpBonus: 160 },
-    A:   { statMin: 22, statMax: 40, totalSpecial: 200, hpBonus: 220, mpBonus: 220 },
-    S:   { statMin: 30, statMax: 55, totalSpecial: 270, hpBonus: 300, mpBonus: 300 },
-    SR:  { statMin: 40, statMax: 75, totalSpecial: 360, hpBonus: 400, mpBonus: 400 },
-    SSR: { statMin: 55, statMax: 99, totalSpecial: 480, hpBonus: 520, mpBonus: 520 }
+    F:   { statMin: 3,  statMax: 8,  totalSpecial: 35,  hpBonus: 18,  mpBonus: 14,  hpBase: 18,  mpBase: 14  },
+    E:   { statMin: 6,  statMax: 12, totalSpecial: 55,  hpBonus: 34,  mpBonus: 28,  hpBase: 34,  mpBase: 28  },
+    D:   { statMin: 9,  statMax: 16, totalSpecial: 80,  hpBonus: 54,  mpBonus: 44,  hpBase: 54,  mpBase: 44  },
+    C:   { statMin: 12, statMax: 22, totalSpecial: 110, hpBonus: 78,  mpBonus: 64,  hpBase: 78,  mpBase: 64  },
+    B:   { statMin: 16, statMax: 30, totalSpecial: 150, hpBonus: 108, mpBonus: 88,  hpBase: 108, mpBase: 88  },
+    A:   { statMin: 22, statMax: 40, totalSpecial: 200, hpBonus: 142, mpBonus: 116, hpBase: 142, mpBase: 116 },
+    S:   { statMin: 30, statMax: 55, totalSpecial: 270, hpBonus: 182, mpBonus: 148, hpBase: 182, mpBase: 148 },
+    SR:  { statMin: 40, statMax: 75, totalSpecial: 360, hpBonus: 230, mpBonus: 186, hpBase: 230, mpBase: 186 },
+    SSR: { statMin: 55, statMax: 99, totalSpecial: 480, hpBonus: 286, mpBonus: 230, hpBase: 286, mpBase: 230 }
   };
 
   // QTE difficulty distribution by area rank
