@@ -50,16 +50,16 @@
       "description": "Hub special shop that can require materials in addition to gold."
     },
     {
-      "id": "cjs_jester_system_shop",
+      "id": "haven_jester_system_shop",
       "name": "CJS Jester System Shop",
       "world": "haven",
       "currency": "jp",
       "unlockFlags": [],
       "restockRule": "system",
       "stock": [
-        { "id": "cjs_reroll_ticket", "type": "item", "price": 1, "qty": "system" },
+        { "id": "haven_reroll_ticket", "type": "item", "price": 1, "qty": "system" },
         {
-          "id": "cjs_punchline_charm",
+          "id": "haven_punchline_charm",
           "type": "item",
           "price": 3,
           "qty": 1,

@@ -31,7 +31,7 @@
       "grantedSkills": []
     },
     {
-      "id": "cjs_reroll_ticket",
+      "id": "haven_reroll_ticket",
       "name": "Jester Reroll Ticket",
       "icon": "Ticket",
       "slot": "consumable",
@@ -42,7 +42,7 @@
       "grantedSkills": []
     },
     {
-      "id": "cjs_punchline_charm",
+      "id": "haven_punchline_charm",
       "name": "Punchline Charm",
       "icon": "Charm",
       "slot": "accessory1",
