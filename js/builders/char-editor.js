@@ -238,7 +238,7 @@ window.CJS.CharEditor = (() => {
 
     const el = _formEl.querySelector('#chr-derived');
     if (!el) return;
-    const hp = F().calcMaxHP(stats, rank);
+    const hp = F().calcMaxHP(stats, rank, { team: 'player', plotArmor: true });
     const mp = F().calcMaxMP(stats, rank);
     const pdr = F().calcPhysicalDR(stats);
     const mdr = F().calcMagicDR(stats);

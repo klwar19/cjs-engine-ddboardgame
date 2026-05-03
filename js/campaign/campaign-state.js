@@ -230,7 +230,7 @@ window.CJS.CampaignState = (() => {
     if (!base) return null;
     const stats = { ...(base.stats || {}) };
     const rank = base.rank || 'F';
-    const maxHp = F().calcMaxHP(stats, rank);
+    const maxHp = F().calcMaxHP(stats, rank, _partyHpContext(base, charId));
     const maxMp = F().calcMaxMP(stats, rank);
 
     return {
@@ -258,6 +258,32 @@ window.CJS.CampaignState = (() => {
       notes: [],
       xp: 0
     };
+  }
+
+  function _partyHpContext(base = {}, id = '') {
+    return {
+      team: base.team || 'player',
+      type: base.type || 'humanoid',
+      id: base.id || id,
+      plotArmor: base.plotArmor !== false
+    };
+  }
+
+  function _syncPartyMaxHp(id, member = {}) {
+    const store = DS();
+    if (!store?.get || !F()?.calcMaxHP) return;
+    const base = store.get('characters', member.baseCharacterId || id);
+    if (!base) return;
+    const stats = { ...(base.stats || {}) };
+    const rank = member.rank || base.rank || 'F';
+    const expectedMax = F().calcMaxHP(stats, rank, _partyHpContext(base, id));
+    const priorMax = Number(member.maxHp || 0);
+    if (expectedMax > priorMax) {
+      member.maxHp = expectedMax;
+      const current = Number(member.currentHp ?? priorMax);
+      member.currentHp = current >= priorMax ? Math.min(expectedMax, current + (expectedMax - priorMax)) : current;
+    }
+    member.currentHp = Math.max(0, Math.min(member.maxHp || expectedMax || 1, Number(member.currentHp ?? member.maxHp ?? expectedMax ?? 1)));
   }
 
   function buildInitialHubState(campaign) {
@@ -353,13 +379,14 @@ window.CJS.CampaignState = (() => {
     next.pinnedNotes = next.pinnedNotes || [];
     next.log = next.log || [];
     next.settings = next.settings || {};
-    for (const member of Object.values(next.party || {})) {
+    for (const [id, member] of Object.entries(next.party || {})) {
       member.statuses = member.statuses || [];
       member.buffs = member.buffs || [];
       member.injuries = member.injuries || [];
       member.statOverrides = member.statOverrides || {};
       member.notes = member.notes || [];
       member.availability = normalizeAvailability(member.availability, member);
+      _syncPartyMaxHp(id, member);
     }
     next.lastUpdated = next.lastUpdated || nowIso();
     return next;

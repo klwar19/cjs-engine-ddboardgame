@@ -912,7 +912,15 @@ window.CJS.CampaignOps = (() => {
         encounterId: idea.encounterId || null,
         battleSetId: idea.battleSetId || id,
         label: idea.title || idea.name || id,
-        source: 'side_content'
+        source: 'side_content',
+        defeatOps: idea.defeatOps || idea.lossOps || [],
+        drawOps: idea.drawOps || [],
+        badEndingOps: idea.badEndingOps || [],
+        badEndingOnDefeat: !!idea.badEndingOnDefeat,
+        badEndingFlag: idea.badEndingFlag || null,
+        defeatOutcome: idea.defeatOutcome || null,
+        defeatMode: idea.defeatMode || null,
+        defeatNoRecovery: !!(idea.defeatNoRecovery || idea.noDefeatRecovery)
       };
     }
 
@@ -1175,10 +1183,19 @@ window.CJS.CampaignOps = (() => {
     state.pendingBattle = {
       encounterId: op.encounterId,
       battleSetId: op.battleSetId || null,
+      monsterIds: op.monsterIds || [],
       label: op.label || op.encounterId,
       nodeId: op.nodeId || state.activeScenarioRun?.currentNode || null,
       source: op.source || 'manual',
       rewardOps: op.rewardOps || [],
+      defeatOps: op.defeatOps || op.lossOps || [],
+      drawOps: op.drawOps || [],
+      badEndingOps: op.badEndingOps || [],
+      badEndingOnDefeat: !!op.badEndingOnDefeat,
+      badEndingFlag: op.badEndingFlag || null,
+      defeatOutcome: op.defeatOutcome || null,
+      defeatMode: op.defeatMode || null,
+      defeatNoRecovery: !!(op.defeatNoRecovery || op.noDefeatRecovery),
       notes: op.notes || '',
       objective: op.objective || '',
       battleMap: op.battleMap || null,
@@ -1188,20 +1205,96 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _manualBattleResult(state, op) {
-    _log(state, `Manual battle result: ${op.result || 'resolved'}${op.summary ? ` - ${op.summary}` : ''}.`);
+    const outcome = String(op.result || 'victory').toLowerCase();
+    _log(state, `Manual battle result: ${outcome || 'resolved'}${op.summary ? ` - ${op.summary}` : ''}.`);
     for (const change of op.changes || []) _applyOne(state, change, { source: 'manual_battle' });
-    if ((op.result || 'victory') === 'victory' && op.applyRewards !== false) {
+    _applyBattleSetback(state, outcome, op);
+    if (outcome === 'victory' && op.applyRewards !== false) {
       for (const reward of state.pendingBattle?.rewardOps || []) _applyOne(state, reward, { source: 'battle_set_reward' });
     }
     if (state.activeScenarioRun) {
       state.activeScenarioRun.completedBattles.push({
         at: new Date().toISOString(),
-        result: op.result || 'manual',
+        result: outcome || 'manual',
         summary: op.summary || '',
         encounterId: op.encounterId || state.pendingBattle?.encounterId || null
       });
     }
     state.pendingBattle = null;
+  }
+
+  function _applyBattleSetback(state, outcome, op = {}) {
+    if (!['defeat', 'draw'].includes(outcome) || op.penaltyApplied || op.applyDefaultPenalty === false) return;
+    const pending = state.pendingBattle || {};
+    const badEnding = outcome === 'defeat' && _isBadEndingDefeat(op, pending);
+    const customOps = outcome === 'defeat'
+      ? _asOps((badEnding && (op.badEndingOps || pending.badEndingOps)) || op.defeatOps || op.lossOps || pending.defeatOps || pending.lossOps || [])
+      : _asOps(op.drawOps || pending.drawOps || []);
+    if (badEnding) _markBadEndingBranch(state, op, pending);
+    if (customOps.length) {
+      for (const change of customOps) _applyOne(state, change, { source: 'battle_setback' });
+      return;
+    }
+    _applyDefaultBattleSetback(state, outcome, { ...pending, ...op });
+  }
+
+  function _asOps(value) {
+    if (!value) return [];
+    return Array.isArray(value) ? value.filter(Boolean) : [value];
+  }
+
+  function _isBadEndingDefeat(op = {}, pending = {}) {
+    return !!(
+      op.badEnding ||
+      op.badEndingOnDefeat ||
+      pending.badEndingOnDefeat ||
+      op.defeatOutcome === 'bad_ending' ||
+      pending.defeatOutcome === 'bad_ending' ||
+      op.defeatMode === 'bad_ending' ||
+      pending.defeatMode === 'bad_ending'
+    );
+  }
+
+  function _markBadEndingBranch(state, op = {}, pending = {}) {
+    const flag = op.badEndingFlag || pending.badEndingFlag || 'bad_ending_pending';
+    _setFlag(state, flag, true, {
+      encounterId: op.encounterId || pending.encounterId || null,
+      battleSetId: pending.battleSetId || null,
+      label: pending.label || op.summary || 'Battle defeat',
+      at: new Date().toISOString()
+    });
+    _log(state, `Defeat opened a bad-ending branch: ${pending.label || op.encounterId || 'battle'}.`);
+  }
+
+  function _applyDefaultBattleSetback(state, outcome, op = {}) {
+    const recovered = op.defeatNoRecovery || op.noDefeatRecovery ? 0 : _recoverPartyAfterSetback(state, outcome);
+    const dangerApplied = !!state.activeScenarioRun;
+    if (dangerApplied) _danger(state, outcome === 'draw' ? 1 : 2);
+    const currency = op.currency || _worldCurrency(state);
+    const balance = Number(state.currencies?.[currency] || 0);
+    const lossRate = outcome === 'draw' ? 0.05 : 0.10;
+    const moneyLoss = balance > 0 ? Math.max(1, Math.floor(balance * lossRate)) : 0;
+    if (moneyLoss > 0) _money(state, currency, -moneyLoss);
+    const recoveredText = recovered ? ` ${recovered} KO ally${recovered === 1 ? '' : 'ies'} recovered enough to move.` : '';
+    const dangerText = dangerApplied ? 'danger rose' : 'no scenario danger changed';
+    const moneyText = moneyLoss > 0 ? `${moneyLoss} ${currency} lost` : 'no currency was lost';
+    _log(state, `${outcome === 'draw' ? 'Draw consequence' : 'Defeat penalty'}: ${dangerText}; ${moneyText}.${recoveredText}`);
+  }
+
+  function _recoverPartyAfterSetback(state, outcome) {
+    let recovered = 0;
+    for (const member of Object.values(state.party || {})) {
+      if (Number(member.currentHp || 0) > 0) continue;
+      member.currentHp = _setbackRecoveryHp(member, outcome);
+      recovered += 1;
+    }
+    return recovered;
+  }
+
+  function _setbackRecoveryHp(member = {}, outcome) {
+    const maxHp = Math.max(1, Number(member.maxHp || 1));
+    const rate = outcome === 'draw' ? 0.25 : 0.10;
+    return Math.max(1, Math.floor(maxHp * rate));
   }
 
   return Object.freeze({

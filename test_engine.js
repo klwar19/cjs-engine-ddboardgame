@@ -423,6 +423,10 @@ const cFormulaStats = { S: 20, P: 18, E: 22, C: 12, I: 16, A: 14, L: 10 };
 const ssrFormulaStats = { S: 80, P: 75, E: 90, C: 60, I: 85, A: 70, L: 65 };
 
 assertEq('F HP uses soft rank base + S/E scaling', CJS.Formulas.calcMaxHP(fFormulaStats, 'F'), 91);
+assertEq('F player HP gets plot armor cushion', CJS.Formulas.calcMaxHP(fFormulaStats, 'F', { team: 'player' }), 99);
+assertEq('F enemy HP skips plot armor cushion', CJS.Formulas.calcMaxHP(fFormulaStats, 'F', { team: 'enemy' }), 91);
+assertEq('compiled F player receives plot armor HP', SC.compileUnit({ id: 'plot_hero', name: 'Plot Hero', team: 'player', rank: 'F', stats: fFormulaStats }, 'plot_hero').maxHP, 99);
+assertEq('compiled F enemy does not receive plot armor HP', SC.compileUnit({ id: 'plot_enemy', name: 'Plot Enemy', team: 'enemy', rank: 'F', stats: fFormulaStats }, 'plot_enemy').maxHP, 91);
 assertEq('F MP uses soft rank base + I/P/C scaling', CJS.Formulas.calcMaxMP(fFormulaStats, 'F'), 53);
 assertEq('C HP uses soft rank base + S/E scaling', CJS.Formulas.calcMaxHP(cFormulaStats, 'C'), 303);
 assertEq('C MP uses soft rank base + I/P/C scaling', CJS.Formulas.calcMaxMP(cFormulaStats, 'C'), 204);

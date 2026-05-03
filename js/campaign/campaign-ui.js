@@ -712,8 +712,8 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action" data-campaign-action="manual-battle">Resolve Manually</button>
           ${isRandom ? '<button class="campaign-action" data-campaign-action="battle-reroll">🎲 Reroll</button>' : ''}
           <button class="campaign-action" data-campaign-action="battle-override">📋 Override</button>
-          <button class="campaign-action" data-campaign-action="skip-victory">Skip Victory</button>
-          <button class="campaign-action" data-campaign-action="skip-defeat">Skip Defeat</button>
+          <button class="campaign-action" data-campaign-action="skip-victory">Manual Victory</button>
+          <button class="campaign-action" data-campaign-action="skip-defeat">Manual Defeat (Penalty)</button>
           <button class="campaign-action danger" data-campaign-action="cancel-battle">Cancel</button>
         </div>
       </section>
@@ -775,11 +775,40 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-panel-head"><h2>Returned From Combat</h2><span class="campaign-pill">${_esc(result.result)}</span></div>
         <div class="campaign-muted">${_esc(result.encounterId || '')} | ${result.rounds || 0} rounds</div>
         ${loot}
+        ${_renderCombatConsequenceNotice(result, state)}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="apply-combat-result">Apply to Campaign</button>
           <button class="campaign-action danger" data-campaign-action="ignore-combat-result">Ignore</button>
         </div>
       </section>
+    `;
+  }
+
+  function _renderCombatConsequenceNotice(result, state) {
+    const outcome = String(result?.result || '').toLowerCase();
+    if (!['defeat', 'draw'].includes(outcome)) return '';
+    const battle = state.pendingBattle || {};
+    const hasCustom = outcome === 'defeat'
+      ? !!((result.defeatOps || battle.defeatOps || battle.lossOps || result.badEndingOps || battle.badEndingOps || []).length)
+      : !!((result.drawOps || battle.drawOps || []).length);
+    const badEnding = outcome === 'defeat' && !!(
+      result.badEndingOnDefeat ||
+      battle.badEndingOnDefeat ||
+      result.defeatOutcome === 'bad_ending' ||
+      battle.defeatOutcome === 'bad_ending' ||
+      result.defeatMode === 'bad_ending' ||
+      battle.defeatMode === 'bad_ending'
+    );
+    const lines = [];
+    if (badEnding) lines.push('Defeat can branch into a bad-ending route for this battle.');
+    if (hasCustom) lines.push('This battle has authored defeat consequences.');
+    if (!hasCustom) lines.push(outcome === 'draw' ? 'Default draw penalty: danger +1 and 5% currency loss.' : 'Default defeat penalty: danger +2 and 10% currency loss.');
+    if (!(result.defeatNoRecovery || battle.defeatNoRecovery || battle.noDefeatRecovery)) lines.push('KO party members recover to low HP instead of an instant wipeout.');
+    return `
+      <div class="campaign-preview">
+        <b>Campaign Consequence</b><br>
+        ${lines.map((line) => _esc(line)).join('<br>')}
+      </div>
     `;
   }
 
@@ -2165,6 +2194,7 @@ window.CJS.CampaignUI = (() => {
       label: pick.label,
       source: 'random',
       rewardOps: pick.rewardOps || [],
+      ..._battleDefeatFields(pick),
       objective: pick.objective || '',
       notes: pick.notes || '',
       battleMap: pick.battleMap || null,
@@ -2193,6 +2223,7 @@ window.CJS.CampaignUI = (() => {
         encounterId: card.encounterId || null,
         label: card.name || card.id,
         rewardOps: card.rewardOps || [],
+        ..._battleDefeatFields(card),
         objective: card.objective || '',
         notes: card.gimmick || '',
         battleMap: _battleMapForCard(card)
@@ -2243,6 +2274,21 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  function _battleDefeatFields(entry = {}, card = {}) {
+    const defeatOutcome = entry.defeatOutcome || card?.defeatOutcome || null;
+    const defeatMode = entry.defeatMode || card?.defeatMode || null;
+    return {
+      defeatOps: entry.defeatOps || entry.lossOps || card?.defeatOps || card?.lossOps || [],
+      drawOps: entry.drawOps || card?.drawOps || [],
+      badEndingOps: entry.badEndingOps || card?.badEndingOps || [],
+      badEndingOnDefeat: !!(entry.badEndingOnDefeat || card?.badEndingOnDefeat || defeatOutcome === 'bad_ending' || defeatMode === 'bad_ending'),
+      badEndingFlag: entry.badEndingFlag || card?.badEndingFlag || null,
+      defeatOutcome,
+      defeatMode,
+      defeatNoRecovery: !!(entry.defeatNoRecovery || entry.noDefeatRecovery || card?.defeatNoRecovery || card?.noDefeatRecovery)
+    };
+  }
+
   function _runPickBattle() {
     const scenario = CS().getActiveScenario();
     const seen = new Map();
@@ -2269,6 +2315,7 @@ window.CJS.CampaignUI = (() => {
           encounterId: card.encounterId || null,
           label: card.name || card.id,
           rewardOps: card.rewardOps || [],
+          ..._battleDefeatFields(card),
           objective: card.objective || '',
           notes: card.gimmick || '',
           battleMap: _battleMapForCard(card)
@@ -2297,6 +2344,7 @@ window.CJS.CampaignUI = (() => {
           label: battle.label || opt?.label || value,
           source: 'manual_pick',
           rewardOps: battle.rewardOps || [],
+          ..._battleDefeatFields(battle),
           objective: battle.objective || '',
           notes: battle.notes || '',
           battleMap: battle.battleMap || null
@@ -2336,6 +2384,7 @@ window.CJS.CampaignUI = (() => {
       label: battle.label || battle.name || battle.encounterId || battle.battleSetId,
       source: 'set',
       rewardOps: battle.rewardOps || [],
+      ..._battleDefeatFields(battle),
       objective: battle.objective || '',
       notes: battle.notes || '',
       battleMap: battle.battleMap || null
@@ -2353,7 +2402,8 @@ window.CJS.CampaignUI = (() => {
     const body = document.createElement('div');
     body.innerHTML = `
       <label class="form-label">Result</label>
-      <select id="campaign-manual-result"><option value="victory">Victory</option><option value="defeat">Defeat</option><option value="draw">Draw</option></select>
+      <select id="campaign-manual-result"><option value="victory">Victory (battle rewards)</option><option value="defeat">Defeat (setback penalty)</option><option value="draw">Draw (small setback)</option></select>
+      <div class="campaign-muted" style="margin:8px 0 10px">Defeat and draw keep the party alive by default, then apply danger and currency penalties unless this battle has authored consequences.</div>
       <label class="form-label">Summary</label>
       <textarea id="campaign-manual-summary"></textarea>
     `;

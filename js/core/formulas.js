@@ -11,15 +11,24 @@ window.CJS.Formulas = (() => {
   'use strict';
 
   const C = () => window.CJS.CONST;
+  const F_RANK_PLOT_ARMOR_HP = 8;
 
   // ── HP & MP ────────────────────────────────────────────────────────
   // HP = Rank Base + (Endurance * 6) + (Strength * 3) + floor(max(S, E) * 1.5)
-  function calcMaxHP(stats = {}, rank) {
-    const rankData = C().RANK_DATA[rank] || C().RANK_DATA.F || {};
+  function calcMaxHP(stats = {}, rank, context = {}) {
+    const normalizedRank = String(rank || 'F').toUpperCase();
+    const rankData = C().RANK_DATA[normalizedRank] || C().RANK_DATA.F || {};
     const base = rankData.hpBase ?? rankData.hpBonus ?? 0;
     const strength = stats.S || 0;
     const endurance = stats.E || 0;
-    return base + (endurance * 6) + (strength * 3) + Math.floor(Math.max(strength, endurance) * 1.5);
+    return base + (endurance * 6) + (strength * 3) + Math.floor(Math.max(strength, endurance) * 1.5) + calcPlotArmorHP(normalizedRank, context);
+  }
+
+  function calcPlotArmorHP(rank, context = {}) {
+    const normalizedRank = String(rank || 'F').toUpperCase();
+    const disabled = context?.plotArmor === false;
+    const isPlayer = context === true || context?.plotArmor === true || context?.team === 'player' || context?.isPlayer === true;
+    return normalizedRank === 'F' && isPlayer && !disabled ? F_RANK_PLOT_ARMOR_HP : 0;
   }
 
   // MP = Rank Base + (Intelligence * 5) + (Perception * 2) + (Charisma * 2)
@@ -260,7 +269,7 @@ window.CJS.Formulas = (() => {
 
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
-    calcMaxHP, calcMaxMP,
+    calcMaxHP, calcMaxMP, calcPlotArmorHP,
     calcPhysicalDR, calcMagicDR, calcChaosDR, calcDR,
     calcEffectiveSkillPower, calcBaseDamage, calcMitigatedDamage, calcFinalDamage,
     getElementMultiplier,

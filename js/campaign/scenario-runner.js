@@ -443,6 +443,7 @@ window.CJS.ScenarioRunner = (() => {
         beatId: beat.id,
         source: 'beat',
         rewardOps: normalizedBattle.rewardOps || [],
+        ..._defeatFields(normalizedBattle),
         objective: normalizedBattle.objective || '',
         notes: normalizedBattle.notes || '',
         battleMap: normalizedBattle.battleMap || null,
@@ -1394,6 +1395,7 @@ window.CJS.ScenarioRunner = (() => {
       cellKey: run?.currentCell ? _cellKey(run.currentCell.x, run.currentCell.y) : null,
       source: meta.source || normalized.source || 'random',
       rewardOps: normalized.rewardOps || [],
+      ..._defeatFields(normalized),
       objective: normalized.objective || '',
       notes: normalized.notes || '',
       battleMap: normalized.battleMap || null,
@@ -1424,6 +1426,7 @@ window.CJS.ScenarioRunner = (() => {
         monsterIds: _monsterIdsFromEntry(entry),
         label: entry.label || card?.name || entry.battleSetId,
         rewardOps: entry.rewardOps || card?.rewardOps || [],
+        ..._defeatFields(entry, card),
         objective: entry.objective || card?.objective || '',
         notes: entry.notes || card?.gimmick || '',
         battleMap: entry.battleMap || _battleMapForCard(card)
@@ -1435,7 +1438,8 @@ window.CJS.ScenarioRunner = (() => {
         ...entry,
         encounterId: entry.encounterId,
         monsterIds: _monsterIdsFromEntry(entry),
-        label: entry.label || encounter?.name || entry.encounterId
+        label: entry.label || encounter?.name || entry.encounterId,
+        ..._defeatFields(entry)
       };
     }
     if (_monsterIdsFromEntry(entry).length) {
@@ -1444,10 +1448,26 @@ window.CJS.ScenarioRunner = (() => {
         encounterId: entry.encounterId || null,
         battleSetId: entry.battleSetId || null,
         monsterIds: _monsterIdsFromEntry(entry),
-        label: entry.label || entry.name || 'Travel Encounter'
+        label: entry.label || entry.name || 'Travel Encounter',
+        ..._defeatFields(entry)
       };
     }
     return entry;
+  }
+
+  function _defeatFields(entry = {}, card = {}) {
+    const defeatOutcome = entry.defeatOutcome || card?.defeatOutcome || null;
+    const defeatMode = entry.defeatMode || card?.defeatMode || null;
+    return {
+      defeatOps: entry.defeatOps || entry.lossOps || card?.defeatOps || card?.lossOps || [],
+      drawOps: entry.drawOps || card?.drawOps || [],
+      badEndingOps: entry.badEndingOps || card?.badEndingOps || [],
+      badEndingOnDefeat: !!(entry.badEndingOnDefeat || card?.badEndingOnDefeat || defeatOutcome === 'bad_ending' || defeatMode === 'bad_ending'),
+      badEndingFlag: entry.badEndingFlag || card?.badEndingFlag || null,
+      defeatOutcome,
+      defeatMode,
+      defeatNoRecovery: !!(entry.defeatNoRecovery || entry.noDefeatRecovery || card?.defeatNoRecovery || card?.noDefeatRecovery)
+    };
   }
 
   function _monsterIdsFromEntry(entry = {}) {
@@ -1465,6 +1485,7 @@ window.CJS.ScenarioRunner = (() => {
         encounterId: card.encounterId || null,
         label: card.name || card.id,
         rewardOps: card.rewardOps || [],
+        ..._defeatFields(card),
         objective: card.objective || '',
         notes: card.gimmick || '',
         battleMap: _battleMapForCard(card)

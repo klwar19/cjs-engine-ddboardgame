@@ -127,6 +127,14 @@ window.CJS.CampaignCombatBridge = (() => {
       monsterIds: (pendingBattle?.monsterIds || []).filter(Boolean),
       battleMap: pendingBattle?.battleMap || null,
       setting: pendingBattle?.setting || CS().getActiveScenario?.()?.setting || '',
+      defeatOps: pendingBattle?.defeatOps || pendingBattle?.lossOps || [],
+      drawOps: pendingBattle?.drawOps || [],
+      badEndingOps: pendingBattle?.badEndingOps || [],
+      badEndingOnDefeat: !!pendingBattle?.badEndingOnDefeat,
+      badEndingFlag: pendingBattle?.badEndingFlag || null,
+      defeatOutcome: pendingBattle?.defeatOutcome || null,
+      defeatMode: pendingBattle?.defeatMode || null,
+      defeatNoRecovery: !!(pendingBattle?.defeatNoRecovery || pendingBattle?.noDefeatRecovery),
       label: pendingBattle?.label || pendingBattle?.encounterId,
       mode: 'campaign',
       returnUrl: 'campaign.html',
@@ -276,11 +284,20 @@ window.CJS.CampaignCombatBridge = (() => {
       saveId: request?.saveId || '',
       scenarioRunId: request?.scenarioRunId || null,
       nodeId: request?.nodeId || null,
+      currency: request?.currency || `${request?.world || 'haven'}_gold`,
       encounterId: request?.encounterId || combatState?.encounter?.id || null,
       result: combatState?.winner === 'player' ? 'victory' : combatState?.winner === 'enemy' ? 'defeat' : 'draw',
       rounds: combatState?.roundNumber || 0,
       partyAfter,
       loot,
+      defeatOps: request?.defeatOps || [],
+      drawOps: request?.drawOps || [],
+      badEndingOps: request?.badEndingOps || [],
+      badEndingOnDefeat: !!request?.badEndingOnDefeat,
+      badEndingFlag: request?.badEndingFlag || null,
+      defeatOutcome: request?.defeatOutcome || null,
+      defeatMode: request?.defeatMode || null,
+      defeatNoRecovery: !!request?.defeatNoRecovery,
       notes: 'Combat app result imported.',
       completedAt: new Date().toISOString()
     };
@@ -434,25 +451,68 @@ window.CJS.CampaignCombatBridge = (() => {
   function applyResult(result) {
     const Ops = window.CJS.CampaignOps;
     if (!result || !Ops) return;
+    const state = CS().getState();
+    if (!state?.party) return;
+    const pending = state?.pendingBattle || {};
+    const outcome = _resultOutcome(result);
+    const allowRecovery = _allowResultRecovery(outcome, result, pending);
     const ops = [];
     for (const [id, member] of Object.entries(result.partyAfter || {})) {
-      const current = CS().getState().party[id];
+      const current = state.party[id];
       if (!current) continue;
-      const hpLoss = Math.max(0, current.currentHp - member.currentHp);
+      const importedHp = Number(member.currentHp ?? current.currentHp ?? 0);
+      const importedMp = Number(member.currentMp ?? current.currentMp ?? 0);
+      const hpLoss = Math.max(0, current.currentHp - importedHp);
       if (hpLoss) ops.push({ op: 'damage_character', target: id, amount: hpLoss });
-      if (member.currentHp > current.currentHp) ops.push({ op: 'heal_character', target: id, amount: member.currentHp - current.currentHp });
-      const mpDelta = (member.currentMp || 0) - (current.currentMp || 0);
+      if (importedHp > current.currentHp) ops.push({ op: 'heal_character', target: id, amount: importedHp - current.currentHp });
+      if (allowRecovery && importedHp <= 0) {
+        const recoveryHp = _resultRecoveryHp(current, outcome);
+        if (recoveryHp > importedHp) ops.push({ op: 'heal_character', target: id, amount: recoveryHp - Math.max(0, importedHp) });
+      }
+      const mpDelta = importedMp - (current.currentMp || 0);
       if (mpDelta) ops.push({ op: mpDelta >= 0 ? 'restore_mp' : 'spend_mp', target: id, amount: Math.abs(mpDelta) });
       for (const status of member.statuses || []) ops.push({ op: 'add_status', target: id, status: status.id, duration: status.duration || 'battle', stacks: status.stacks || 1 });
     }
-    for (const drop of result.loot || []) {
-      if (drop.type === 'money') ops.push({ op: 'give_money', currency: drop.currency || 'haven_gold', amount: drop.amount || drop.qty || 0 });
-      else if (drop.type === 'jp') ops.push({ op: 'give_jp', amount: drop.amount || drop.qty || 0 });
-      else if (drop.type === 'material') ops.push({ op: 'give_material', id: drop.id, qty: drop.qty || 1 });
-      else ops.push({ op: 'give_item', id: drop.id, qty: drop.qty || 1 });
+    if (outcome === 'victory') {
+      for (const drop of result.loot || []) {
+        if (drop.type === 'money') ops.push({ op: 'give_money', currency: drop.currency || 'haven_gold', amount: drop.amount || drop.qty || 0 });
+        else if (drop.type === 'jp') ops.push({ op: 'give_jp', amount: drop.amount || drop.qty || 0 });
+        else if (drop.type === 'material') ops.push({ op: 'give_material', id: drop.id, qty: drop.qty || 1 });
+        else ops.push({ op: 'give_item', id: drop.id, qty: drop.qty || 1 });
+      }
     }
-    ops.push({ op: 'manual_battle_result', result: result.result, encounterId: result.encounterId, summary: result.notes || 'Combat bridge result applied.' });
+    ops.push({
+      op: 'manual_battle_result',
+      result: outcome,
+      encounterId: result.encounterId,
+      summary: result.notes || 'Combat bridge result applied.',
+      currency: result.currency || `${state.currentWorld || 'haven'}_gold`,
+      defeatOps: result.defeatOps || pending.defeatOps || [],
+      drawOps: result.drawOps || pending.drawOps || [],
+      badEndingOps: result.badEndingOps || pending.badEndingOps || [],
+      badEndingOnDefeat: !!(result.badEndingOnDefeat || pending.badEndingOnDefeat),
+      badEndingFlag: result.badEndingFlag || pending.badEndingFlag || null,
+      defeatOutcome: result.defeatOutcome || pending.defeatOutcome || null,
+      defeatMode: result.defeatMode || pending.defeatMode || null,
+      defeatNoRecovery: !!(result.defeatNoRecovery || pending.defeatNoRecovery || pending.noDefeatRecovery)
+    });
     Ops.apply(ops, { source: 'combat_bridge' });
+  }
+
+  function _resultOutcome(result) {
+    const outcome = String(result?.result || 'draw').toLowerCase();
+    return ['victory', 'defeat', 'draw'].includes(outcome) ? outcome : 'draw';
+  }
+
+  function _allowResultRecovery(outcome, result = {}, pending = {}) {
+    if (!['defeat', 'draw'].includes(outcome)) return false;
+    return !(result.defeatNoRecovery || result.noDefeatRecovery || pending.defeatNoRecovery || pending.noDefeatRecovery);
+  }
+
+  function _resultRecoveryHp(member = {}, outcome) {
+    const maxHp = Math.max(1, Number(member.maxHp || 1));
+    const rate = outcome === 'draw' ? 0.25 : 0.10;
+    return Math.max(1, Math.floor(maxHp * rate));
   }
 
   function _maxPartyLuck(units) {

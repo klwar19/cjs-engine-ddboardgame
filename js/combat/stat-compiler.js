@@ -65,7 +65,11 @@ window.CJS.StatCompiler = (() => {
 
     // ── 6. Calculate derived values ────────────────────────────────
     const rank = baseUnit.rank || 'F';
-    let maxHP = F().calcMaxHP(compiledStats, rank) + (mods.hpFlat || 0);
+    let maxHP = F().calcMaxHP(compiledStats, rank, {
+      team: baseUnit.team || 'enemy',
+      type: baseUnit.type || 'humanoid',
+      id: baseUnit.id
+    }) + (mods.hpFlat || 0);
     maxHP = Math.floor(maxHP * (1 + (mods.hpPercent || 0) / 100));
 
     let maxMP = F().calcMaxMP(compiledStats, rank) + (mods.mpFlat || 0);
