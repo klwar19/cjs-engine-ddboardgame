@@ -16,7 +16,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const SIZES = ['tiny', 'small', 'medium', 'large'];
   const SIZE_COUNTS = { tiny: 5, small: 7, medium: 9, large: 12 };
   const GRID_SIZES = { tiny: [5, 5], small: [6, 6], medium: [8, 6], large: [10, 8] };
+  const BATTLE_TARGETS = { tiny: 2, small: 3, medium: 4, large: 5 };
+  const BATTLE_LIMITS = { tiny: 2, small: 3, medium: 4, large: 5 };
+  const EVENT_LIMITS = { tiny: 2, small: 3, medium: 4, large: 5 };
   const BATTLE_KINDS = new Set(['battle', 'boss', 'event_battle']);
+  const LOW_BATTLE_KINDS = new Set(['entrance', 'exit', 'rest', 'shop']);
   const AREA_PROFILES = {
     urban: {
       aliases: ['urban', 'town', 'city', 'street', 'market', 'guild', 'alley'],
@@ -212,6 +216,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const setting = opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType;
     const autoBattlePool = _worldBattlePool(world, { setting, size: opts.size, tags: _scenarioTags(seed, context) }, context, seed);
     _ensurePointBattles(points, autoBattlePool, { setting, size: opts.size });
+    _ensureBattleDensity(points, autoBattlePool, { setting, size: opts.size, tags: _scenarioTags(seed, context) });
     const battleRefs = _unique([
       ...(context.battleSetIds || []),
       ...points.flatMap((point) => [...(point.battleSetIds || []), ...(point.encounterIds || [])])
@@ -243,7 +248,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
         mapSeedId: seed.id || null
       },
       notes: context.summary || seed.notes || 'Generated scenario.',
-      limits: { campRests: opts.size === 'large' ? 2 : 1, randomBattles: opts.size === 'tiny' ? 1 : 2, events: opts.size === 'large' ? 4 : 2 },
+      limits: { campRests: opts.size === 'large' ? 2 : 1, randomBattles: BATTLE_LIMITS[opts.size] || 3, events: EVENT_LIMITS[opts.size] || 3 },
       danger: { start: 0, max: opts.size === 'large' ? 12 : 10 },
       setBattles,
       randomBattleTables: battlePool.length ? [{
@@ -290,6 +295,68 @@ window.CJS.CampaignScenarioGenerator = (() => {
       point.tags = _unique([...(point.tags || []), 'auto_battle', context.setting || '']);
       point.notes = [point.notes, `Auto battle: ${entry.label || entry.encounterId || entry.battleSetId}.`].filter(Boolean).join(' ');
     }
+  }
+
+  function _ensureBattleDensity(points, pool, context = {}) {
+    if (!Array.isArray(points) || !points.length || !pool.length) return;
+    const target = Math.min(_battleTarget(context.size, context.setting), Math.max(1, points.length - 2));
+    let current = _battlePointCount(points);
+    if (current >= target) return;
+    const candidates = _shuffle(points.filter((point, index) => _canAddBattleToPoint(point, index, points.length)));
+    let poolIndex = 0;
+    for (const point of candidates) {
+      if (current >= target) break;
+      const kind = String(point.kind || _roleToKind(point.role)).toLowerCase();
+      const localPool = _rankedBattles(pool, { ...context, tags: [...(context.tags || []), ...(point.tags || []), point.title, point.name, point.notes, kind] });
+      const entry = localPool[poolIndex % localPool.length] || pool[poolIndex % pool.length];
+      poolIndex += 1;
+      if (!entry) continue;
+      _attachBattleToPoint(point, entry, {
+        ...context,
+        chance: _battleChanceForPoint(point, kind, context.size),
+        source: 'auto_density'
+      });
+      current += 1;
+    }
+  }
+
+  function _battleTarget(size, setting) {
+    const base = BATTLE_TARGETS[size] || 3;
+    const key = String(setting || '').toLowerCase();
+    const bump = ['dungeon', 'cave', 'sewer', 'ruins', 'mountain', 'arena'].includes(key) ? 1 : 0;
+    return Math.min(6, base + bump);
+  }
+
+  function _battlePointCount(points) {
+    return points.filter((point) => point.randomBattle || point.battleSetIds?.length || point.encounterIds?.length || point.encounterId).length;
+  }
+
+  function _canAddBattleToPoint(point, index, total) {
+    const kind = String(point.kind || _roleToKind(point.role)).toLowerCase();
+    if (index === 0 || index === total - 1) return false;
+    if (LOW_BATTLE_KINDS.has(kind)) return false;
+    if (point.randomBattle || point.battleSetIds?.length || point.encounterIds?.length || point.encounterId) return false;
+    return true;
+  }
+
+  function _battleChanceForPoint(point, kind, size) {
+    if (kind === 'boss') return 1;
+    if (BATTLE_KINDS.has(kind)) return 0.9;
+    const bySize = { tiny: 0.5, small: 0.58, medium: 0.64, large: 0.7 };
+    if (String(point.kind || '').includes('trap')) return Math.min(0.75, (bySize[size] || 0.6) + 0.08);
+    return bySize[size] || 0.6;
+  }
+
+  function _attachBattleToPoint(point, entry, context = {}) {
+    if (entry.battleSetId) point.battleSetIds = _unique([...(point.battleSetIds || []), entry.battleSetId]);
+    if (entry.encounterId) point.encounterIds = _unique([...(point.encounterIds || []), entry.encounterId]);
+    point.randomBattle = {
+      chance: context.chance ?? 0.75,
+      ...entry,
+      source: context.source || 'auto_area'
+    };
+    point.tags = _unique([...(point.tags || []), 'auto_battle', context.setting || '']);
+    point.notes = [point.notes, `Auto battle: ${entry.label || entry.encounterId || entry.battleSetId}.`].filter(Boolean).join(' ');
   }
 
   function _worldBattlePool(world, area = {}, context = {}, seed = {}) {

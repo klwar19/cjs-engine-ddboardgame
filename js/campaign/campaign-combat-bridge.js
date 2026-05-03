@@ -152,7 +152,8 @@ window.CJS.CampaignCombatBridge = (() => {
   function openBattle(pendingBattle) {
     const request = buildRequestFromState(pendingBattle);
     writeRequest(request);
-    window.open('combat.html?campaignBattle=1', '_blank');
+    const opened = window.open('combat.html?campaignBattle=1', '_blank');
+    if (!opened) window.location.href = 'combat.html?campaignBattle=1';
     return request;
   }
 

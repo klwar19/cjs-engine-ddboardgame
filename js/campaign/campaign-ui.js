@@ -151,7 +151,10 @@ window.CJS.CampaignUI = (() => {
     if (!result) return;
     const state = CS().getState();
     if (result.saveId && state?.saveId && result.saveId !== state.saveId) return;
+    _activeMode = 'scenario';
+    _activeTab = 'maps';
     CS().mutate((next) => { next.pendingBattleResult = result; }, { source: 'combat_bridge' });
+    UI()?.toast?.('Combat result returned. Apply it to update campaign state.', 'success');
   }
 
   function _renderHeader(state, campaign) {
@@ -300,20 +303,42 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-dashboard">
         <section class="campaign-panel campaign-actions-panel">
           <div class="campaign-panel-head"><h2>Control Desk</h2></div>
-          <div class="campaign-action-grid">
+          <div class="campaign-control-stack">
+            ${_controlGroup('Solo / Random', `
+              <button class="campaign-action primary" data-campaign-action="solo-surprise">Solo Offer</button>
+              <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
+              <button class="campaign-action" data-campaign-action="random-rumor-offer">Random Rumor</button>
+              <button class="campaign-action" data-campaign-action="roll-event">Random Event</button>
+              <button class="campaign-action" data-campaign-action="roll-oracle">Random GM Prompt</button>
+            `)}
+            ${_controlGroup('Manual Control', `
+              <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
+              <button class="campaign-action" data-campaign-action="manual-rumor">Manual Rumor</button>
+              <button class="campaign-action" data-campaign-action="pick-event">Pick Event</button>
+              <button class="campaign-action" data-campaign-action="custom-event">Custom Event</button>
+              <button class="campaign-action" data-campaign-action="pick-oracle">Pick GM Prompt</button>
+              <button class="campaign-action" data-campaign-action="custom-oracle">Custom GM Prompt</button>
+            `)}
+            ${_controlGroup('Campaign Admin', `
+              <button class="campaign-action" data-campaign-action="pass-phase">Pass Phase</button>
+              <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
+              <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
+            `)}
+          </div>
+          <div class="campaign-action-grid" hidden>
             <button class="campaign-action primary" data-campaign-action="pass-phase">Pass Phase</button>
             <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
             <button class="campaign-action" data-campaign-action="solo-surprise">Solo Surprise</button>
             <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
             <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
           </div>
-          <div class="campaign-trio-row" style="margin-top:12px">
+          <div class="campaign-trio-row" style="margin-top:12px" hidden>
             <span class="campaign-trio-label">Event</span>
             <button class="campaign-action" data-campaign-action="roll-event">🎲 Random</button>
             <button class="campaign-action" data-campaign-action="pick-event">📋 Pick</button>
             <button class="campaign-action" data-campaign-action="custom-event">✏️ Custom</button>
           </div>
-          <div class="campaign-trio-row">
+          <div class="campaign-trio-row" hidden>
             <span class="campaign-trio-label">GM Prompt</span>
             <button class="campaign-action" data-campaign-action="roll-oracle">🎲 Random</button>
             <button class="campaign-action" data-campaign-action="pick-oracle">📋 Pick</button>
@@ -576,6 +601,15 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _controlGroup(title, buttons) {
+    return `
+      <div class="campaign-control-group">
+        <div class="campaign-control-title">${_esc(title)}</div>
+        <div class="campaign-action-grid">${buttons}</div>
+      </div>
+    `;
+  }
+
   function _renderSoloNotice(state) {
     const card = _pendingSoloHookCard(state);
     if (!card) return '';
@@ -632,7 +666,20 @@ window.CJS.CampaignUI = (() => {
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
         </div>
-        <div class="campaign-action-grid">
+        <div class="campaign-control-stack">
+          ${_controlGroup('Solo / Random', `
+            <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
+            <button class="campaign-action primary" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
+            <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
+            <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
+          `)}
+          ${_controlGroup('Manual Control', `
+            <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
+            <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+            ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Scenario</button>' : ''}
+          `)}
+        </div>
+        <div class="campaign-action-grid" hidden>
           <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
           <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
           <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
@@ -725,11 +772,11 @@ window.CJS.CampaignUI = (() => {
     const loot = _renderLootSummary(result.loot || []);
     return `
       <section class="campaign-panel battle-result">
-        <div class="campaign-panel-head"><h2>Combat Result</h2><span class="campaign-pill">${_esc(result.result)}</span></div>
+        <div class="campaign-panel-head"><h2>Returned From Combat</h2><span class="campaign-pill">${_esc(result.result)}</span></div>
         <div class="campaign-muted">${_esc(result.encounterId || '')} | ${result.rounds || 0} rounds</div>
         ${loot}
         <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="apply-combat-result">Apply Result</button>
+          <button class="campaign-action primary" data-campaign-action="apply-combat-result">Apply to Campaign</button>
           <button class="campaign-action danger" data-campaign-action="ignore-combat-result">Ignore</button>
         </div>
       </section>
@@ -1041,7 +1088,20 @@ window.CJS.CampaignUI = (() => {
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
         </div>
-        <div class="campaign-action-grid">
+        <div class="campaign-control-stack">
+          ${_controlGroup('Solo / Random', `
+            <button class="campaign-action primary" data-campaign-action="run-roll-battle">Random Battle</button>
+            <button class="campaign-action" data-campaign-action="run-roll-event">Random Event</button>
+            <button class="campaign-action" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
+          `)}
+          ${_controlGroup('Manual Control', `
+            <button class="campaign-action" data-campaign-action="run-pick-battle">Pick Battle</button>
+            <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
+            <button class="campaign-action" data-campaign-action="run-tick-danger">Tick Danger +1</button>
+            <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+          `)}
+        </div>
+        <div class="campaign-action-grid" hidden>
           <button class="campaign-action primary" data-campaign-action="run-roll-battle">🎲 Random Battle</button>
           <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
           <button class="campaign-action" data-campaign-action="run-roll-event">🎴 Roll Event</button>
@@ -1095,7 +1155,19 @@ window.CJS.CampaignUI = (() => {
             </li>
           `).join('')}
         </ol>
-        <div class="campaign-action-grid">
+        <div class="campaign-control-stack">
+          ${_controlGroup('Scenario Flow', `
+            <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat'}</button>
+            <button class="campaign-action" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
+            <button class="campaign-action" data-campaign-action="run-roll-event">Random Event</button>
+          `)}
+          ${_controlGroup('Manual Control', `
+            <button class="campaign-action" data-campaign-action="run-pick-battle">Pick Battle</button>
+            <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
+            <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+          `)}
+        </div>
+        <div class="campaign-action-grid" hidden>
           <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat ▶'}</button>
           <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
           <button class="campaign-action" data-campaign-action="run-roll-event">🎴 Roll Event</button>
@@ -2072,7 +2144,7 @@ window.CJS.CampaignUI = (() => {
     if (!readyCount) return UI().toast('No available party members can enter this battle', 'error');
     Bridge().openBattle(battle);
     Save().saveCurrent();
-    UI().toast('Battle request sent to combat app', 'info');
+    UI().toast('Battle opened. Combat will return here when it ends.', 'info');
   }
 
   function _runRollBattle() {

@@ -101,6 +101,7 @@
     let activeEncounterId = null;
     let campaignRequest = null;
     let campaignResultWritten = false;
+    let campaignReturnTimer = null;
     let unsubCampaignResult = null;
 
     async function loadData() {
@@ -176,10 +177,18 @@
         try {
           window.opener.focus();
           window.opener.location.href = campaignRequest?.returnUrl || 'campaign.html';
+          setTimeout(() => {
+            try { window.close(); } catch (_) {}
+          }, 250);
           return;
         } catch (_) {}
       }
       window.location.href = campaignRequest?.returnUrl || 'campaign.html';
+    }
+
+    function scheduleCampaignReturn() {
+      if (campaignReturnTimer) return;
+      campaignReturnTimer = setTimeout(returnToCampaign, 1400);
     }
 
     function renderCampaignBridgeBanner(result) {
@@ -194,25 +203,32 @@
       banner.innerHTML = `
         <div>
           <strong>Campaign Battle</strong>
-          <div style="color:#a9b4c0;font-size:0.9rem">${result ? `Result saved: ${result.result} in ${result.rounds || 0} rounds` : (campaignRequest.label || campaignRequest.encounterId || 'Ready')}</div>
+          <div style="color:#a9b4c0;font-size:0.9rem">${result ? `Result saved: ${result.result} in ${result.rounds || 0} rounds. Returning to Campaign...` : (campaignRequest.label || campaignRequest.encounterId || 'Ready')}</div>
           ${result ? `<div style="color:#c8df83;font-size:0.9rem">Loot: ${lootText}</div>` : ''}
         </div>
-        <button id="campaign-return-btn" class="btn btn-primary">Return to Campaign</button>
+        <button id="campaign-return-btn" class="btn btn-primary">${result ? 'Return Now' : 'Return to Campaign'}</button>
       `;
       combatEl.prepend(banner);
       banner.querySelector('#campaign-return-btn').onclick = returnToCampaign;
     }
 
+    function writeCampaignResultFromState(state) {
+      if (!campaignRequest || !state || state.phase !== 'battle_end' || campaignResultWritten) return false;
+      const result = Bridge.buildResultFromCombat(campaignRequest, state);
+      Bridge.writeResult(result);
+      Bridge.clearRequest();
+      campaignResultWritten = true;
+      renderCampaignBridgeBanner(result);
+      scheduleCampaignReturn();
+      return true;
+    }
+
     function bindCampaignResult() {
       if (!campaignRequest || unsubCampaignResult) return;
       unsubCampaignResult = window.CJS.CombatManager.subscribe((state) => {
-        if (!state || state.phase !== 'battle_end' || campaignResultWritten) return;
-        const result = Bridge.buildResultFromCombat(campaignRequest, state);
-        Bridge.writeResult(result);
-        Bridge.clearRequest();
-        campaignResultWritten = true;
-        renderCampaignBridgeBanner(result);
+        writeCampaignResultFromState(state);
       });
+      writeCampaignResultFromState(window.CJS.CombatManager.getState?.());
     }
 
     function populateEncounters() {
