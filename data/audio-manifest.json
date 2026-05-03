@@ -19,10 +19,7 @@
     ],
     "crit_sting": "audio/sfx/crit-sting.wav",
     "absorb_guard": "audio/sfx/absorb-guard.wav",
-    "weapon_hit_physical": [
-      "audio/sfx/weapon-hit-physical.wav",
-      "audio/sfx/weapon-hit-physical-alt.wav"
-    ],
+    "weapon_hit_physical": "audio/sfx/weapon_hit_physical.wav",
     "weapon_hit_fire": [
       "audio/sfx/weapon-hit-fire.wav",
       "audio/sfx/weapon-hit-fire-alt.wav"
