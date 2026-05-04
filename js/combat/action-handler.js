@@ -186,7 +186,7 @@ window.CJS.ActionHandler = (() => {
         if (action.targetId && !skill.aoe) {
           const target = GE().getUnit(action.targetId);
           if (!target) return { valid: false, reason: 'no_target' };
-          const range = (skill.range || 1) + (unit.rangeBonus || 0);
+          const range = Math.max(1, skill.range || 1);
           if (GE().footprintDistance(unit, target) > range) {
             return { valid: false, reason: 'target_out_of_range' };
           }
@@ -197,7 +197,7 @@ window.CJS.ActionHandler = (() => {
         }
         // AoE cell targeting range
         if (action.aoeCenter && skill.aoe) {
-          const range = (skill.range || 1) + (unit.rangeBonus || 0);
+          const range = Math.max(1, skill.range || 1);
           if (GE().distance(unit.pos[0], unit.pos[1], action.aoeCenter[0], action.aoeCenter[1]) > range) {
             return { valid: false, reason: 'aoe_center_out_of_range' };
           }
@@ -695,11 +695,11 @@ window.CJS.ActionHandler = (() => {
   }
 
   // Get the effective attack range for basic attacks.
-  // Weapon range + unit rangeBonus, or melee (1) if no weapon.
+  // Basic attack range comes from the equipped weapon, or the authored unit range.
   function getAttackRange(unit) {
     const wd = _getWeaponData(unit);
     const baseRange = wd?.range ?? unit.basicAttackRange ?? unit.attackRange ?? 1;
-    return Math.max(1, baseRange + (unit.rangeBonus || 0));
+    return Math.max(1, Number(baseRange || 1));
   }
 
   // ── QUERIES ────────────────────────────────────────────────────────

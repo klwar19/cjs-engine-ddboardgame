@@ -102,7 +102,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     if (!state) throw new Error('No campaign save loaded.');
     const world = state.currentWorld || CS().getCurrentCampaign()?.world || 'haven';
     const opts = _normalizeOptions(options);
-    const context = _sourceContext(opts.source, world);
+    const context = _sourceContext(opts.source, world, opts);
     if (context.error) return { error: context.error, source: opts.source };
     const seed = _pickMapSeed(opts, context, world) || _fallbackSeed(opts, context, world);
     const map = opts.mapForm === 'grid_map'
@@ -146,17 +146,19 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const size = SIZES.includes(options.size) ? options.size : 'small';
     const layers = Math.max(1, Math.min(3, Number(options.layers || 1)));
     const source = ['random', 'active_quest', 'quest_chain'].includes(options.source) ? options.source : 'random';
-    return { source, mapType, mapForm, size, layers };
+    return { source, mapType, mapForm, size, layers, questId: options.questId || null };
   }
 
-  function _sourceContext(source, world) {
+  function _sourceContext(source, world, opts = {}) {
     const state = CS().getState();
     if (source === 'active_quest') {
-      const quest = Object.values(state.quests || {}).find((entry) => !['complete', 'completed', 'failed'].includes(String(entry.status || 'active')))
+      const quest = (opts.questId ? state.quests?.[opts.questId] : null)
+        || Object.values(state.quests || {}).find((entry) => !['complete', 'completed', 'failed'].includes(String(entry.status || 'active')))
         || null;
-      if (!quest) return { error: 'no_active_quest', source };
+      if (!quest || ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'))) return { error: 'no_active_quest', source };
       return {
         source,
+        questId: quest.id,
         title: quest.title || quest.id,
         summary: quest.summary || '',
         tags: quest.tags || [],
@@ -244,6 +246,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
       source: {
         kind: context.source,
         title: context.title || '',
+        questId: context.questId || null,
         questChainId: context.questChainId || null,
         mapSeedId: seed.id || null
       },
@@ -668,6 +671,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
       ...(context.tags || []),
       ...(Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean)),
       context.source,
+      context.questId,
       context.questChainId
     ]);
   }

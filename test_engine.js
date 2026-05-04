@@ -622,14 +622,14 @@ assertEq('authored monster range → 3', AH.getAttackRange(naturalRangedUnit), 3
 // Unit with ranged weapon
 DS.replace('items', 'test_crossbow', {
   id: 'test_crossbow', name: 'Test Crossbow', slot: 'weapon',
-  effects: [], weaponData: { baseDamage: 8, range: 4, damageType: 'Physical', element: 'Physical' }
+  effects: [], weaponData: { baseDamage: 8, range: 3, damageType: 'Physical', element: 'Physical' }
 });
 const rangedUnit = { equipment: ['test_crossbow'], rangeBonus: 0 };
-assertEq('crossbow → range 4', AH.getAttackRange(rangedUnit), 4);
+assertEq('crossbow -> weapon range 3', AH.getAttackRange(rangedUnit), 3);
 
-// With rangeBonus
+// Unit range bonuses no longer extend basic weapon reach.
 const bonusUnit = { equipment: ['test_crossbow'], rangeBonus: 2 };
-assertEq('crossbow + rangeBonus 2 → range 6', AH.getAttackRange(bonusUnit), 6);
+assertEq('crossbow + rangeBonus 2 -> still weapon range 3', AH.getAttackRange(bonusUnit), 3);
 
 // Elemental weapon
 DS.replace('items', 'test_frost_staff', {

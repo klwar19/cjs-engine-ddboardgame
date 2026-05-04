@@ -1116,11 +1116,11 @@ window.CJS.CombatUI = (() => {
     _mode = 'target_single';
     _pendingAction = action;
 
-    let range = 1 + (unit.rangeBonus || 0);
+    let range = 1;
     if (action.type !== 'attack') {
       const resolver = window.CJS.SkillResolver;
       const skill = resolver ? resolver.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
-      range = (skill?.range || 1) + (unit.rangeBonus || 0);
+      range = Math.max(1, skill?.range || 1);
     } else if (AH() && AH().getAttackRange) {
       range = AH().getAttackRange(unit);
     }
@@ -1143,7 +1143,7 @@ window.CJS.CombatUI = (() => {
     _mode = 'target_aoe';
     _pendingAction = { type: 'skill', skillId: skill.id };
 
-    const range = (skill.range || 3) + (unit.rangeBonus || 0);
+    const range = Math.max(1, skill.range || 3);
     const rawCells = GE().getCellsInRange(unit.pos[0], unit.pos[1], range);
     const cells = rawCells.map(([r, c]) => ({ r, c }));
     GR().setHighlights(cells, 'rgba(168,85,247,0.3)', 'target');

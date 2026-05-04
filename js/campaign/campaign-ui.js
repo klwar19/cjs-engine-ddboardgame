@@ -241,9 +241,16 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderRecentLogStrip(state) {
+    const hasLog = (state.log || []).length > 0;
     return `
       <section class="campaign-log-strip">
-        <div class="campaign-panel-head"><h2>Recent Log</h2><button class="campaign-icon-btn" data-campaign-panel="log">All</button></div>
+        <div class="campaign-panel-head">
+          <h2>Recent Log</h2>
+          <div class="campaign-panel-actions">
+            <button class="campaign-icon-btn" data-campaign-panel="log">All</button>
+            ${hasLog ? '<button class="campaign-icon-btn danger" data-campaign-action="clear-log">Clear</button>' : ''}
+          </div>
+        </div>
         ${(state.log || []).slice(0, 3).map((line) => _renderLogEntry(line, { compact: true })).join('') || '<div class="campaign-empty">No log entries yet.</div>'}
       </section>
     `;
@@ -1197,7 +1204,10 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-side-section">
           <div class="campaign-panel-head">
             <h2>Party Banter</h2>
-            <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
+            <div class="campaign-panel-actions">
+              <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
+              ${list.length ? '<button class="campaign-icon-btn danger" data-campaign-action="clear-banter">Clear</button>' : ''}
+            </div>
           </div>
           ${list.length
             ? `<div class="campaign-banter-history">${list.map(_renderBanterBox).join('')}</div>`
@@ -1209,7 +1219,10 @@ window.CJS.CampaignUI = (() => {
       <section class="campaign-side-section">
         <div class="campaign-panel-head">
           <h2>Party Banter</h2>
-          <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
+          <div class="campaign-panel-actions">
+            <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
+            ${chat ? '<button class="campaign-icon-btn danger" data-campaign-action="clear-banter">Clear</button>' : ''}
+          </div>
         </div>
         ${chat ? _renderBanterBox(chat) : '<div class="campaign-banter-box is-empty">No banter rolled yet.</div>'}
       </section>
@@ -1737,44 +1750,130 @@ window.CJS.CampaignUI = (() => {
 
   function _renderQuestPanel(state) {
     const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !['complete', 'completed', 'failed'].includes(String(q.status || 'active')));
-    const finished = quests.filter((q) => ['complete', 'completed', 'failed'].includes(String(q.status || 'active')));
+    const active = quests.filter((q) => !_isQuestResolved(q));
+    const finished = quests.filter(_isQuestResolved);
     const templateCount = Object.values(CS().getContent().campaignQuests || {})
       .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    const renderRow = (quest) => `
-      <div class="campaign-row">
-        <div>
-          <strong>${_esc(quest.title || quest.id)}</strong>
-          <div class="campaign-muted">${_esc(quest.status || 'active')}${quest.giver ? ' · ' + _esc(quest.giver) : ''}${quest.timer?.phasesRemaining ? ' · ' + quest.timer.phasesRemaining + ' phases left' : ''}</div>
-          ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
-          ${(quest.objectives || []).map((obj) => `<div class="campaign-muted">• ${_esc(obj.label || obj.id)} ${obj.current || 0}/${obj.required || 1}</div>`).join('')}
-        </div>
-        <div class="campaign-row-actions">
-          <button class="campaign-action" data-campaign-action="quest-progress" data-id="${_escAttr(quest.id)}">Progress</button>
-          <button class="campaign-action" data-campaign-action="quest-complete" data-id="${_escAttr(quest.id)}">Complete</button>
-          <button class="campaign-action danger" data-campaign-action="quest-fail" data-id="${_escAttr(quest.id)}">Fail</button>
-        </div>
-      </div>
-    `;
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>Quest Tracker</h2>
-          <span class="campaign-pill">${active.length} active · ${finished.length} resolved · ${templateCount} templates</span>
-          <button class="campaign-action primary" data-campaign-action="add-quest">Add Quest</button>
-          <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
+          <div class="campaign-panel-actions">
+            <span class="campaign-pill">${active.length} active | ${finished.length} resolved | ${templateCount} templates</span>
+            <button class="campaign-action primary" data-campaign-action="add-quest">Add Quest</button>
+            <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
+          </div>
         </div>
         ${_renderSoloNotice(state)}
-        ${active.length ? active.map(renderRow).join('') : '<div class="campaign-empty">No active quests. Use Add Quest to start one from a template or write your own.</div>'}
-        ${finished.length ? `<div class="campaign-panel-head" style="margin-top:14px"><h3>Resolved</h3></div>${finished.map(renderRow).join('')}` : ''}
+        <div class="campaign-quest-list">
+          ${active.length ? active.map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests.</div>'}
+        </div>
+        ${finished.length ? `
+          <details class="campaign-resolved-quests">
+            <summary>Resolved (${finished.length})</summary>
+            <div class="campaign-quest-list">${finished.map((quest) => _renderQuestRow(quest, { resolved: true })).join('')}</div>
+          </details>
+        ` : ''}
       </section>
     `;
   }
 
+  function _renderQuestRow(quest, opts = {}) {
+    const objectives = quest.objectives || [];
+    const nextObjective = _questNextObjective(quest);
+    const done = objectives.filter((obj) => _questObjectiveDone(obj)).length;
+    const total = objectives.length || 1;
+    const meta = [
+      _label(quest.status || 'active'),
+      quest.giver ? `Giver: ${quest.giver}` : '',
+      quest.timer?.phasesRemaining ? `${quest.timer.phasesRemaining} phases left` : ''
+    ].filter(Boolean).join(' | ');
+    const activeRun = CS().getState()?.activeScenarioRun;
+    const activeScenario = CS().getActiveScenario?.();
+    const isRunQuest = activeScenario?.source?.questId === quest.id;
+    const scenarioDisabled = activeRun && !isRunQuest;
+    const scenarioLabel = isRunQuest ? 'Open Map' : 'Map Run';
+    return `
+      <article class="campaign-quest-card ${opts.resolved ? 'is-resolved' : ''}">
+        <div class="campaign-quest-main">
+          <div class="campaign-quest-title-row">
+            <strong>${_esc(quest.title || quest.id)}</strong>
+            <span class="campaign-pill campaign-quest-status ${_escAttr(_questStatusClass(quest))}">${_esc(_label(quest.status || 'active'))}</span>
+          </div>
+          ${meta ? `<div class="campaign-muted">${_esc(meta)}</div>` : ''}
+          ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
+          <div class="campaign-quest-phase">
+            <span>Phase</span>
+            <strong>${_esc(nextObjective?.label || (opts.resolved ? 'Resolved' : 'Open'))}</strong>
+            <small>${done}/${total}</small>
+          </div>
+          <div class="campaign-quest-objectives">
+            ${objectives.length ? objectives.map(_renderQuestObjective).join('') : '<div class="campaign-muted">No written objective yet.</div>'}
+          </div>
+        </div>
+        ${opts.resolved ? '' : `
+          <div class="campaign-quest-actions">
+            <button class="campaign-action primary" data-campaign-action="quest-scenario" data-id="${_escAttr(quest.id)}" ${scenarioDisabled ? 'disabled' : ''}>${scenarioLabel}</button>
+            <button class="campaign-action" data-campaign-action="quest-battle" data-id="${_escAttr(quest.id)}">Battle</button>
+            <button class="campaign-action" data-campaign-action="quest-event" data-id="${_escAttr(quest.id)}">Event</button>
+            <button class="campaign-action" data-campaign-action="quest-check" data-id="${_escAttr(quest.id)}">Check</button>
+            <button class="campaign-action" data-campaign-action="quest-hand-in" data-id="${_escAttr(quest.id)}">Hand In</button>
+            <button class="campaign-action" data-campaign-action="quest-answer" data-id="${_escAttr(quest.id)}">Answer</button>
+            <button class="campaign-action" data-campaign-action="quest-progress" data-id="${_escAttr(quest.id)}">Progress</button>
+            <button class="campaign-action" data-campaign-action="quest-complete" data-id="${_escAttr(quest.id)}">Resolve</button>
+            <button class="campaign-action danger" data-campaign-action="quest-fail" data-id="${_escAttr(quest.id)}">Fail</button>
+          </div>
+        `}
+      </article>
+    `;
+  }
+
+  function _renderQuestObjective(obj = {}) {
+    const current = Number(obj.current || 0);
+    const required = Math.max(1, Number(obj.required || 1));
+    const pct = Math.max(0, Math.min(100, Math.round((current / required) * 100)));
+    return `
+      <div class="campaign-quest-objective ${current >= required ? 'is-done' : ''}">
+        <div>
+          <strong>${_esc(obj.label || obj.id || 'Objective')}</strong>
+          <small>${current}/${required}</small>
+        </div>
+        <div class="campaign-quest-progress"><span style="width:${pct}%"></span></div>
+      </div>
+    `;
+  }
+
+  function _questNextObjective(quest = {}) {
+    const objectives = quest.objectives || [];
+    return objectives.find((entry) => !_questObjectiveDone(entry)) || objectives[0] || null;
+  }
+
+  function _questObjectiveDone(obj = {}) {
+    return Number(obj.current || 0) >= Math.max(1, Number(obj.required || 1));
+  }
+
+  function _isQuestResolved(quest = {}) {
+    return ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'));
+  }
+
+  function _questStatusClass(quest = {}) {
+    const status = String(quest.status || 'active');
+    if (status === 'failed') return 'is-failed';
+    if (_isQuestResolved(quest)) return 'is-complete';
+    return 'is-active';
+  }
+
   function _renderLogPanel(state) {
+    const hasLog = (state.log || []).length > 0;
     return `
       <section class="campaign-panel">
-        <div class="campaign-panel-head"><h2>Session Log</h2><button class="campaign-action" data-campaign-action="export-log">Export Log</button></div>
+        <div class="campaign-panel-head">
+          <h2>Session Log</h2>
+          <div class="campaign-panel-actions">
+            <button class="campaign-action" data-campaign-action="export-log">Export Log</button>
+            ${hasLog ? '<button class="campaign-action danger" data-campaign-action="clear-log">Clear Log</button>' : ''}
+          </div>
+        </div>
         ${(state.log || []).map((line) => _renderLogEntry(line)).join('') || '<div class="campaign-empty">No log entries.</div>'}
       </section>
     `;
@@ -1956,6 +2055,7 @@ window.CJS.CampaignUI = (() => {
       case 'open-maps-tab': return _goto('scenario', 'maps');
       case 'open-inventory-tab': return _goto('workshop', 'inventory');
       case 'roll-party-chat': return _rollPartyChat();
+      case 'clear-banter': return _clearBanter();
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
       case 'run-roll-event': return _runRollEvent();
@@ -1993,6 +2093,12 @@ window.CJS.CampaignUI = (() => {
       case 'add-pocket-note': return _addPocketNote();
       case 'add-note': return _addPinnedNote();
       case 'quest-progress': return _questProgress(data.id);
+      case 'quest-scenario': return _questScenario(data.id);
+      case 'quest-battle': return _questBattle(data.id);
+      case 'quest-event': return _questEvent(data.id);
+      case 'quest-check': return _questCheck(data.id);
+      case 'quest-hand-in': return _questHandIn(data.id);
+      case 'quest-answer': return _questAnswer(data.id);
       case 'quest-complete': return Ops().apply({ op: 'complete_quest', questId: data.id }, { source: 'ui' });
       case 'quest-fail': return Ops().apply({ op: 'fail_quest', questId: data.id }, { source: 'ui' });
       case 'damage-char': return _charNumberOp(data.id, 'damage_character', 'Damage amount');
@@ -2018,6 +2124,7 @@ window.CJS.CampaignUI = (() => {
       case 'load-slot': Save().loadSlot(data.id); return render();
       case 'delete-slot': Save().deleteSlot(data.id); return render();
       case 'export-log': return _exportLog();
+      case 'clear-log': return _clearLog();
       default: break;
     }
   }
@@ -2639,12 +2746,14 @@ window.CJS.CampaignUI = (() => {
         no_active_chain: 'No active quest chain. Start one in the Quest Chains tab first.'
       };
       const msg = messages[result?.error] || 'Scenario generation skipped';
-      return UI().toast(msg, 'info');
+      UI().toast(msg, 'info');
+      return result;
     }
     _activeMode = 'scenario';
     _activeTab = 'maps';
     render();
     UI().toast(`Started ${result.scenario.name}`, 'success');
+    return result;
   }
 
   function _discardGeneratedScenario(scenarioId) {
@@ -2742,6 +2851,16 @@ window.CJS.CampaignUI = (() => {
       });
       next.log = next.log.slice(0, 500);
     }, { source: 'party_chat' });
+  }
+
+  function _clearBanter() {
+    UI().confirm('Clear party banter history?', () => {
+      CS().mutate((state) => {
+        state.lastPartyChat = null;
+        state.log = (state.log || []).filter((line) => line.op !== 'party_chat');
+      }, { source: 'clear_banter' });
+      UI().toast('Banter cleared', 'info');
+    });
   }
 
   function _clearNode(nodeId) {
@@ -3117,11 +3236,205 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _questProgress(questId) {
+  function _questProgress(questId, objectiveId = null, amount = 1) {
     const quest = CS().getState().quests[questId];
-    const objective = quest?.objectives?.[0];
+    if (!quest) return;
+    let objective = (quest.objectives || []).find((entry) => entry.id === objectiveId) || _questNextObjective(quest);
+    if (!objective) {
+      const fallbackId = `objective_${Date.now()}`;
+      CS().mutate((state) => {
+        const q = state.quests[questId];
+        if (!q) return;
+        q.objectives = [{ id: fallbackId, label: 'Manual progress', current: 0, required: 1 }];
+      }, { source: 'quest_objective_add' });
+      objective = CS().getState().quests[questId]?.objectives?.[0];
+    }
     if (!objective) return;
-    Ops().apply({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 }, { source: 'ui' });
+    Ops().apply({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount }, { source: 'ui' });
+  }
+
+  function _questScenario(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const activeRun = CS().getState()?.activeScenarioRun;
+    const activeScenario = CS().getActiveScenario?.();
+    if (activeRun) {
+      if (activeScenario?.source?.questId === questId) return _goto('scenario', 'maps');
+      return UI().toast('End the active scenario before starting a quest map', 'info');
+    }
+    return _startQuestScenario(questId);
+  }
+
+  function _questBattle(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    if (!CS().getState()?.activeScenarioRun) {
+      const result = _startQuestScenario(questId, { size: 'tiny' });
+      if (!result || result.error) return;
+    }
+    _runRollBattle();
+    Ops().apply({ op: 'log', text: `Quest battle queued: ${quest.title || quest.id}.` }, { source: 'quest_battle' });
+    _activeMode = 'scenario';
+    _activeTab = 'maps';
+    render();
+  }
+
+  function _questEvent(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    Ops().apply([
+      { op: 'roll_event', setting: _questMapType(quest), tags: _questTags(quest) },
+      { op: 'log', text: `Quest event rolled: ${quest.title || quest.id}.` }
+    ], { source: 'quest_event' });
+  }
+
+  function _questCheck(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const objective = _questNextObjective(quest);
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Stat'));
+    const stat = UI().createSelect({
+      options: (C()?.STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L']).map((value) => ({ value, label: `${value} - ${_statName(value)}` })),
+      value: 'P'
+    });
+    body.appendChild(stat);
+    body.appendChild(_formLabel('DC'));
+    const dc = UI().createNumberSlider({ value: 12, min: 4, max: 25, step: 1 });
+    body.appendChild(dc);
+    _formModal({
+      title: `Quest Check: ${quest.title || quest.id}`,
+      body,
+      primaryLabel: 'Roll',
+      onSubmit: () => {
+        const success = [{ op: 'log', text: `Quest check success: ${quest.title || quest.id}.` }];
+        if (objective) success.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
+        const fail = [
+          { op: 'log', text: `Quest check setback: ${quest.title || quest.id}.` },
+          { op: 'danger', amount: 1 }
+        ];
+        Ops().apply({ op: 'roll_check', stat: stat.value, dc: dc._getValue(), success, fail }, { source: 'quest_check' });
+      }
+    });
+  }
+
+  function _questHandIn(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const options = _ownedInventoryOptions();
+    if (!options.length) return UI().toast('No inventory to hand in', 'info');
+    const objective = _questNextObjective(quest);
+    const maxQty = Math.max(1, ...options.map((opt) => opt.qty || 1));
+    _opPickerModal({
+      title: `Hand In: ${quest.title || quest.id}`,
+      options,
+      withQty: true,
+      qtyDefault: 1,
+      qtyMin: 1,
+      qtyMax: maxQty,
+      primaryLabel: 'Hand In',
+      placeholder: 'Search owned inventory...',
+      onSubmit: ({ value, qty }) => {
+        const opt = options.find((entry) => entry.value === value);
+        if (!opt) return false;
+        const amount = Math.max(1, Math.min(Number(qty || 1), opt.qty || 1));
+        const ops = [
+          { op: _takeOpForBucket(opt.bucket), id: opt.id, qty: amount },
+          { op: 'log', text: `Quest hand-in: ${amount} ${_recordName(opt.bucket, opt.id)} for ${quest.title || quest.id}.` }
+        ];
+        if (objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
+        Ops().apply(ops, { source: 'quest_hand_in' });
+      }
+    });
+  }
+
+  function _questAnswer(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const objective = _questNextObjective(quest);
+    _textareaModal({
+      title: `Answer: ${quest.title || quest.id}`,
+      label: 'Answer',
+      placeholder: 'What did the party answer or do?',
+      primaryLabel: 'Apply',
+      onSubmit: (text) => {
+        if (!text) return false;
+        const ops = [{ op: 'log', text: `Quest answer: ${quest.title || quest.id} - ${text}` }];
+        if (objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
+        Ops().apply(ops, { source: 'quest_answer' });
+      }
+    });
+  }
+
+  function _activeQuestById(questId) {
+    const quest = CS().getState()?.quests?.[questId];
+    return quest && !_isQuestResolved(quest) ? quest : null;
+  }
+
+  function _startQuestScenario(questId, overrides = {}) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return null;
+    return _generateScenario({
+      source: 'active_quest',
+      questId,
+      mapForm: 'node_map',
+      mapType: _questMapType(quest),
+      size: 'small',
+      ...overrides
+    });
+  }
+
+  function _questMapType(quest = {}) {
+    const text = [quest.mapType, quest.setting, quest.location, quest.title, quest.summary, ...(quest.tags || [])]
+      .filter(Boolean).join(' ').toLowerCase();
+    if (/town|city|street|market|guild|urban/.test(text)) return 'urban';
+    if (/forest|grove|wood|pine/.test(text)) return 'forest';
+    if (/dungeon|crypt|vault/.test(text)) return 'dungeon';
+    if (/cave|hollow|den/.test(text)) return 'cave';
+    if (/sewer|canal|drain/.test(text)) return 'sewer';
+    if (/ruin|relic/.test(text)) return 'ruins';
+    if (/temple|shrine|holy/.test(text)) return 'temple';
+    if (/house|home|hut/.test(text)) return 'house';
+    if (/tavern|inn/.test(text)) return 'tavern';
+    if (/castle|keep|tower/.test(text)) return 'castle';
+    if (/mountain|ridge|summit|ice|snow/.test(text)) return 'mountain';
+    if (/arena|training|spar/.test(text)) return 'arena';
+    if (/outdoor|road|trail|field|wild/.test(text)) return 'outdoor';
+    return 'any';
+  }
+
+  function _questTags(quest = {}) {
+    return ['quest', quest.id, ...(quest.tags || []), _questMapType(quest)].filter(Boolean);
+  }
+
+  function _ownedInventoryOptions() {
+    const state = CS().getState() || {};
+    return [
+      ['questItems', 'Quest Item'],
+      ['items', 'Item'],
+      ['materials', 'Material'],
+      ['food', 'Food']
+    ].flatMap(([bucket, label]) => Object.entries(state.inventory?.[bucket] || {})
+      .filter(([, qty]) => Number(qty || 0) > 0)
+      .map(([id, qty]) => ({
+        value: `${bucket}:${id}`,
+        label: _recordName(bucket, id),
+        sub: `${label} x${qty}`,
+        description: id,
+        bucket,
+        id,
+        qty: Number(qty || 0)
+      })));
+  }
+
+  function _takeOpForBucket(bucket) {
+    const map = {
+      questItems: 'take_quest_item',
+      items: 'take_item',
+      materials: 'take_material',
+      food: 'take_food'
+    };
+    return map[bucket] || 'take_item';
   }
 
   function _charNumberOp(id, op, label) {
@@ -3668,6 +3981,13 @@ window.CJS.CampaignUI = (() => {
     const state = CS().getState();
     const text = (state.log || []).map((line) => `[${line.at}] [${_logKind(line).label}] Phase ${line.phase} ${line.world}: ${line.text}`).join('\n');
     window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-log.txt`, `${text}\n`, 'text/plain');
+  }
+
+  function _clearLog() {
+    UI().confirm('Clear the session log?', () => {
+      CS().mutate((state) => { state.log = []; }, { source: 'clear_log' });
+      UI().toast('Log cleared', 'info');
+    });
   }
 
   function _consumeCombatResult() {

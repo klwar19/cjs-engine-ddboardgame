@@ -2316,3 +2316,170 @@ body.campaign-page::before {
     padding-bottom: 140px;
   }
 }
+
+.campaign-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.campaign-quest-list {
+  display: grid;
+  gap: 12px;
+}
+
+.campaign-quest-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
+  gap: 14px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid rgba(217, 183, 102, 0.26);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(32, 50, 46, 0.75), rgba(20, 32, 32, 0.9));
+}
+
+.campaign-quest-card.is-resolved {
+  grid-template-columns: 1fr;
+  opacity: 0.72;
+}
+
+.campaign-quest-main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.campaign-quest-title-row,
+.campaign-quest-phase,
+.campaign-quest-objective > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.campaign-quest-title-row strong,
+.campaign-quest-phase strong,
+.campaign-quest-objective strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-quest-status.is-active {
+  border-color: var(--cmp-teal);
+  color: #b9f5df;
+}
+
+.campaign-quest-status.is-complete {
+  border-color: #8bd17c;
+  color: #c8f5bd;
+}
+
+.campaign-quest-status.is-failed {
+  border-color: #ef6666;
+  color: #ffb8b8;
+}
+
+.campaign-quest-phase {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid rgba(118, 211, 177, 0.32);
+  border-radius: 6px;
+  background: rgba(12, 20, 19, 0.58);
+}
+
+.campaign-quest-phase span,
+.campaign-quest-phase small,
+.campaign-quest-objective small {
+  color: var(--campaign-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.campaign-quest-objectives {
+  display: grid;
+  gap: 7px;
+}
+
+.campaign-quest-objective {
+  display: grid;
+  gap: 5px;
+}
+
+.campaign-quest-objective.is-done strong,
+.campaign-quest-objective.is-done small {
+  color: #c8f5bd;
+}
+
+.campaign-quest-progress {
+  height: 7px;
+  border: 1px solid rgba(217, 183, 102, 0.24);
+  border-radius: 999px;
+  background: #0c1413;
+  overflow: hidden;
+}
+
+.campaign-quest-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2c8a72, #f3dc92);
+}
+
+.campaign-quest-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(82px, 1fr));
+  gap: 8px;
+}
+
+.campaign-quest-actions .campaign-action {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 8px;
+  font-size: 0.78rem;
+  line-height: 1.15;
+}
+
+.campaign-resolved-quests {
+  margin-top: 14px;
+  border-top: 1px solid rgba(217, 183, 102, 0.25);
+  padding-top: 10px;
+}
+
+.campaign-resolved-quests summary {
+  cursor: pointer;
+  color: var(--cmp-frame-gold-hi);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.campaign-resolved-quests .campaign-quest-list {
+  margin-top: 10px;
+}
+
+@media (max-width: 1180px) {
+  .campaign-quest-card {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-quest-actions {
+    grid-template-columns: repeat(4, minmax(82px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .campaign-panel-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .campaign-quest-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
