@@ -123,7 +123,6 @@ window.CJS.CampaignUI = (() => {
           <main class="campaign-main">${_renderMain(state)}</main>
           <aside class="campaign-rail">${_renderCommandRail(state)}</aside>
         </div>
-        <button class="campaign-gm" data-campaign-action="gm-override">GM Override</button>
         <input type="file" id="campaign-import-file" accept=".json" hidden>
       </div>
     `;
@@ -1292,6 +1291,13 @@ window.CJS.CampaignUI = (() => {
     return `
       ${buttons}
       <div class="campaign-rail-divider" aria-hidden="true"></div>
+      <button class="campaign-rail-btn is-gm"
+              data-campaign-action="gm-override"
+              title="GM Override"
+              aria-label="GM Override">
+        <span class="campaign-rail-btn-icon" aria-hidden="true">⚜</span>
+        <span class="campaign-rail-btn-label">GM</span>
+      </button>
       <div class="campaign-rail-currency" title="Total currency">${totalCurrency}</div>
     `;
   }
@@ -1327,14 +1333,21 @@ window.CJS.CampaignUI = (() => {
     _lastFocus = null;
   }
 
+  function _tearDownDrawer() {
+    if (_drawerBackdropEl) {
+      _drawerBackdropEl.remove();
+      _drawerBackdropEl = null;
+    }
+    if (_drawerEl) {
+      _drawerEl.remove();
+      _drawerEl = null;
+    }
+  }
+
   function _renderPanelLayer(opts = {}) {
     const state = CS().getState();
     if (!_activePanel) {
-      if (_drawerBackdropEl) {
-        _drawerBackdropEl.remove();
-        _drawerBackdropEl = null;
-        _drawerEl = null;
-      }
+      _tearDownDrawer();
       return;
     }
     const def = PANEL_DEFS[_activePanel];
@@ -1352,11 +1365,7 @@ window.CJS.CampaignUI = (() => {
       return;
     }
 
-    if (_drawerBackdropEl) {
-      _drawerBackdropEl.remove();
-      _drawerBackdropEl = null;
-      _drawerEl = null;
-    }
+    _tearDownDrawer();
 
     _drawerBackdropEl = document.createElement('div');
     _drawerBackdropEl.className = 'campaign-drawer-backdrop';
