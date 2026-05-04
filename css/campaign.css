@@ -300,6 +300,123 @@ body.campaign-page {
   filter: grayscale(0.45);
 }
 
+.campaign-sidebar-label {
+  margin: 12px 0 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.campaign-roster-member {
+  border-top: 1px solid var(--campaign-line);
+  padding: 14px 0;
+}
+
+.campaign-roster-member:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.campaign-roster-head,
+.campaign-roster-resources,
+.campaign-detail-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.campaign-roster-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.campaign-roster-resources {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
+.campaign-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.campaign-stat-grid span {
+  display: grid;
+  gap: 2px;
+  min-height: 64px;
+  padding: 9px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #111614;
+}
+
+.campaign-stat-grid b {
+  font-size: 0.78rem;
+  color: var(--campaign-muted);
+}
+
+.campaign-stat-grid small {
+  color: var(--campaign-muted);
+  font-size: 0.72rem;
+}
+
+.campaign-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.campaign-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 32px;
+  color: var(--campaign-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.campaign-record-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  border-top: 1px solid var(--campaign-line);
+  padding: 8px 0;
+}
+
+.campaign-record-line:first-of-type {
+  border-top: 0;
+}
+
+.campaign-record-line strong,
+.campaign-record-line small,
+.campaign-record-line p,
+.campaign-picker-option strong,
+.campaign-picker-option small,
+.campaign-picker-option span {
+  display: block;
+}
+
+.campaign-record-line small,
+.campaign-picker-option small {
+  color: var(--campaign-muted);
+  font-size: 0.76rem;
+}
+
+.campaign-record-line p,
+.campaign-picker-option span {
+  margin: 3px 0 0;
+  color: var(--campaign-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.campaign-picker-option {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
 .campaign-preview {
   border: 1px solid rgba(227, 200, 111, 0.3);
   background: #141713;
@@ -979,6 +1096,11 @@ body.campaign-page {
   .campaign-side > * {
     margin-bottom: 0;
   }
+
+  .campaign-roster-head,
+  .campaign-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1022,6 +1144,11 @@ body.campaign-page {
   .campaign-action,
   .campaign-mini-actions button {
     flex: 1 1 140px;
+  }
+
+  .campaign-roster-resources,
+  .campaign-stat-grid {
+    grid-template-columns: 1fr;
   }
 
   .campaign-gm {

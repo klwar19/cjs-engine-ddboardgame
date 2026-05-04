@@ -38,7 +38,8 @@ window.CJS.CampaignInventory = (() => {
           <div class="campaign-row">
             <div>
               <strong>${_esc(_nameFor(bucket, id))}</strong>
-              <div class="campaign-muted">${_esc(id)}</div>
+              <div class="campaign-muted">${_esc(_metaFor(bucket, id))}</div>
+              ${_descriptionFor(bucket, id) ? `<div class="campaign-muted">${_esc(_descriptionFor(bucket, id))}</div>` : ''}
             </div>
             <div class="campaign-row-actions">
               <span class="campaign-pill">x${qty}</span>
@@ -52,11 +53,25 @@ window.CJS.CampaignInventory = (() => {
   }
 
   function _nameFor(bucket, id) {
+    return _recordFor(bucket, id)?.name || id;
+  }
+
+  function _metaFor(bucket, id) {
+    const record = _recordFor(bucket, id);
+    return [id, record?.type, record?.rarity, record?._world].filter(Boolean).join(' | ');
+  }
+
+  function _descriptionFor(bucket, id) {
+    const record = _recordFor(bucket, id);
+    return record?.description || record?.desc || record?.flavor || record?.notes || '';
+  }
+
+  function _recordFor(bucket, id) {
     const type = bucket === 'materials' ? 'materials'
       : bucket === 'food' ? 'food'
         : bucket === 'questItems' ? 'items'
           : 'items';
-    return DS().get(type, id)?.name || id;
+    return DS().get(type, id);
   }
 
   function _esc(value) {

@@ -77,6 +77,7 @@ window.CJS.CampaignState = (() => {
   function mutate(mutator, meta = {}) {
     if (!_state) return null;
     mutator(_state);
+    _state = normalizeSave(_state);
     _state.lastUpdated = nowIso();
     _emit({ type: meta.type || 'mutate', source: meta.source || 'unknown', detail: meta.detail || null });
     return _state;
@@ -245,9 +246,12 @@ window.CJS.CampaignState = (() => {
       currentHp: maxHp,
       currentMp: maxMp,
       statOverrides: {},
+      learnedSkills: [],
+      learnedPassives: [],
       statuses: [],
       buffs: [],
       injuries: [],
+      rosterRole: 'active',
       availability: {
         status: 'available',
         reason: '',
@@ -271,19 +275,34 @@ window.CJS.CampaignState = (() => {
 
   function _syncPartyMaxHp(id, member = {}) {
     const store = DS();
-    if (!store?.get || !F()?.calcMaxHP) return;
+    if (!store?.get || !F()?.calcMaxHP || !F()?.calcMaxMP) return;
     const base = store.get('characters', member.baseCharacterId || id);
     if (!base) return;
-    const stats = { ...(base.stats || {}) };
+    const stats = _partyStats(base, member);
     const rank = member.rank || base.rank || 'F';
-    const expectedMax = F().calcMaxHP(stats, rank, _partyHpContext(base, id));
-    const priorMax = Number(member.maxHp || 0);
-    if (expectedMax > priorMax) {
-      member.maxHp = expectedMax;
-      const current = Number(member.currentHp ?? priorMax);
-      member.currentHp = current >= priorMax ? Math.min(expectedMax, current + (expectedMax - priorMax)) : current;
+    _syncResource(member, 'maxHp', 'currentHp', F().calcMaxHP(stats, rank, _partyHpContext(base, id)));
+    _syncResource(member, 'maxMp', 'currentMp', F().calcMaxMP(stats, rank));
+  }
+
+  function _partyStats(base = {}, member = {}) {
+    const stats = { ...(base.stats || {}) };
+    const overrides = member.statOverrides || {};
+    for (const [stat, amount] of Object.entries(overrides)) {
+      stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
     }
-    member.currentHp = Math.max(0, Math.min(member.maxHp || expectedMax || 1, Number(member.currentHp ?? member.maxHp ?? expectedMax ?? 1)));
+    return stats;
+  }
+
+  function _syncResource(member, maxKey, currentKey, expectedMax) {
+    const expected = Math.max(1, Number(expectedMax || 1));
+    const priorMax = Number(member[maxKey] || 0);
+    const priorCurrent = Number(member[currentKey] ?? (priorMax || expected));
+    member[maxKey] = expected;
+    if (!priorMax || priorCurrent >= priorMax) {
+      member[currentKey] = expected;
+    } else {
+      member[currentKey] = Math.max(0, Math.min(expected, priorCurrent));
+    }
   }
 
   function buildInitialHubState(campaign) {
@@ -380,10 +399,17 @@ window.CJS.CampaignState = (() => {
     next.log = next.log || [];
     next.settings = next.settings || {};
     for (const [id, member] of Object.entries(next.party || {})) {
+      member.baseCharacterId = member.baseCharacterId || id;
+      member.level = Number(member.level || 1);
+      member.xp = Number(member.xp || 0);
+      member.rosterRole = member.rosterRole === 'bench' || member.benched ? 'bench' : 'active';
       member.statuses = member.statuses || [];
       member.buffs = member.buffs || [];
       member.injuries = member.injuries || [];
       member.statOverrides = member.statOverrides || {};
+      member.learnedSkills = Array.isArray(member.learnedSkills) ? member.learnedSkills.filter(Boolean) : [];
+      member.learnedPassives = Array.isArray(member.learnedPassives) ? member.learnedPassives.filter(Boolean) : [];
+      member.equipment = Array.isArray(member.equipment) ? member.equipment : clone(DS().get('characters', member.baseCharacterId || id)?.equipment || []);
       member.notes = member.notes || [];
       member.availability = normalizeAvailability(member.availability, member);
       _syncPartyMaxHp(id, member);

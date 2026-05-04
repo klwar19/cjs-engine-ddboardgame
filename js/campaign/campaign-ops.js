@@ -47,6 +47,11 @@ window.CJS.CampaignOps = (() => {
         case 'take_material': return `Take ${op.qty || 1} ${op.id}`;
         case 'damage_character': return `Damage ${op.target || op.characterId} for ${op.amount || 0}`;
         case 'heal_character': return `Heal ${op.target || op.characterId} for ${op.amount || 0}`;
+        case 'recruit_character': return `Recruit ${op.characterId || op.id}`;
+        case 'bench_character': return `Bench ${op.target || op.characterId}`;
+        case 'activate_character': return `Activate ${op.target || op.characterId}`;
+        case 'learn_skill': return `Learn skill ${op.skillId || op.id}`;
+        case 'learn_passive': return `Learn passive ${op.passiveId || op.id}`;
         case 'add_status': return `Add ${op.status || op.id} to ${op.target || 'target'}`;
         case 'set_party_availability': return `Set ${op.target || op.characterId || 'party member'} availability`;
         case 'clear_party_availability': return `Clear ${op.target || op.characterId || 'party member'} availability`;
@@ -105,6 +110,14 @@ window.CJS.CampaignOps = (() => {
       case 'heal_character': return _hp(state, op.target || op.characterId, op.amount || 0);
       case 'restore_mp': return _mp(state, op.target || op.characterId, op.amount || 0);
       case 'spend_mp': return _mp(state, op.target || op.characterId, -(op.amount || 0));
+      case 'recruit_character': return _recruitCharacter(state, op);
+      case 'remove_character': return _removeCharacter(state, op);
+      case 'bench_character': return _setRosterRole(state, op.target || op.characterId || op.id, 'bench');
+      case 'activate_character': return _setRosterRole(state, op.target || op.characterId || op.id, 'active');
+      case 'learn_skill': return _learnSkill(state, op);
+      case 'unlearn_skill': return _unlearnSkill(state, op);
+      case 'learn_passive': return _learnPassive(state, op);
+      case 'unlearn_passive': return _unlearnPassive(state, op);
       case 'set_party_availability': return _setPartyAvailability(state, op);
       case 'clear_party_availability': return _clearPartyAvailability(state, op);
       case 'damage_party': return _partyEach(state, (id) => _hp(state, id, -(op.amount || 0), false), `Party took ${op.amount || 0} HP damage.`);
@@ -302,6 +315,92 @@ window.CJS.CampaignOps = (() => {
       member.currentMp = Math.max(0, Math.min(member.maxMp || 0, (member.currentMp || 0) + delta));
       if (log) _log(state, `${member.name || id} ${delta >= 0 ? 'restored' : 'spent'} ${Math.abs(delta)} MP.`);
     }
+  }
+
+  function _recruitCharacter(state, op) {
+    const characterId = op.characterId || op.id || op.target;
+    if (!characterId || state.party[characterId]) return;
+    const member = CS().buildPartyMember(characterId);
+    if (!member) return;
+    member.rosterRole = op.role === 'bench' ? 'bench' : 'active';
+    state.party[characterId] = member;
+    _log(state, `${member.name || characterId} joined the roster${member.rosterRole === 'bench' ? ' on bench' : ''}.`);
+  }
+
+  function _removeCharacter(state, op) {
+    const id = op.target || op.characterId || op.id;
+    if (!id || !state.party[id]) return;
+    const name = state.party[id].name || id;
+    delete state.party[id];
+    _log(state, `${name} left the roster.`);
+  }
+
+  function _setRosterRole(state, target, role) {
+    for (const id of _resolveTargets(state, target)) {
+      const member = state.party[id];
+      member.rosterRole = role === 'bench' ? 'bench' : 'active';
+      _log(state, `${member.name || id} moved to ${member.rosterRole === 'bench' ? 'bench' : 'active party'}.`);
+    }
+  }
+
+  function _learnSkill(state, op) {
+    const skillId = op.skillId || op.id;
+    if (!skillId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.learnedSkills = member.learnedSkills || [];
+      const base = DS().get('characters', member.baseCharacterId || id) || {};
+      if (!_skillEntries([...(base.skills || []), ...member.learnedSkills]).includes(skillId)) {
+        member.learnedSkills.push({ skillId, level: Number(op.level || 1), source: op.source || 'campaign' });
+        _log(state, `${member.name || id} learned ${_recordName('skills', skillId)}.`);
+      }
+    }
+  }
+
+  function _unlearnSkill(state, op) {
+    const skillId = op.skillId || op.id;
+    if (!skillId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.learnedSkills = (member.learnedSkills || []).filter((entry) => _skillEntryId(entry) !== skillId);
+      _log(state, `${member.name || id} forgot ${_recordName('skills', skillId)}.`);
+    }
+  }
+
+  function _learnPassive(state, op) {
+    const passiveId = op.passiveId || op.id;
+    if (!passiveId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.learnedPassives = member.learnedPassives || [];
+      const base = DS().get('characters', member.baseCharacterId || id) || {};
+      if (![...(base.innatePassives || []), ...member.learnedPassives].includes(passiveId)) {
+        member.learnedPassives.push(passiveId);
+        _log(state, `${member.name || id} learned passive ${_recordName('passives', passiveId) || passiveId}.`);
+      }
+    }
+  }
+
+  function _unlearnPassive(state, op) {
+    const passiveId = op.passiveId || op.id;
+    if (!passiveId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.learnedPassives = (member.learnedPassives || []).filter((entry) => entry !== passiveId);
+      _log(state, `${member.name || id} removed passive ${_recordName('passives', passiveId) || passiveId}.`);
+    }
+  }
+
+  function _skillEntryId(entry) {
+    return typeof entry === 'string' ? entry : entry?.skillId || null;
+  }
+
+  function _skillEntries(entries = []) {
+    return entries.map(_skillEntryId).filter(Boolean);
+  }
+
+  function _recordName(type, id) {
+    return DS().get(type, id)?.name || id;
   }
 
   function _setPartyAvailability(state, op) {

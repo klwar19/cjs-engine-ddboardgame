@@ -94,6 +94,7 @@ window.CJS.StatCompiler = (() => {
       // Identity
       instanceId:    id,
       baseId:        baseUnit.id,
+      campaignPartyId: baseUnit.campaignPartyId || null,
       name:          baseUnit.name,
       icon:          baseUnit.icon,
       portrait:      baseUnit.portrait || '',

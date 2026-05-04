@@ -17,6 +17,7 @@ window.CJS.CampaignUI = (() => {
   const Side = () => window.CJS.CampaignSideContent;
   const Gen = () => window.CJS.CampaignScenarioGenerator;
   const Chat = () => window.CJS.CampaignPartyChat;
+  const C = () => window.CJS.CONST;
 
   let _root = null;
   let _activeMode = 'town';
@@ -35,6 +36,7 @@ window.CJS.CampaignUI = (() => {
   const MODE_TABS = {
     town: [
       ['overview', 'Overview'],
+      ['roster', 'Roster'],
       ['oracleForge', 'Events & Oracle'],
       ['sideForge', 'Hub Pulse'],
       ['shops', 'Shops & Rest'],
@@ -270,9 +272,15 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderParty(state) {
+    const active = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
+    const bench = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') === 'bench');
     return `
-      <div class="campaign-panel-head"><h2>Party</h2></div>
-      ${Object.entries(state.party || {}).map(([id, member]) => _renderPartyCard(id, member)).join('') || '<div class="campaign-empty">No party members.</div>'}
+      <div class="campaign-panel-head">
+        <h2>Party</h2>
+        <button class="campaign-icon-btn" data-campaign-action="open-roster-tab">Roster</button>
+      </div>
+      ${active.map(([id, member]) => _renderPartyCard(id, member)).join('') || '<div class="campaign-empty">No active party members.</div>'}
+      ${bench.length ? `<div class="campaign-muted campaign-sidebar-label">Bench</div>${bench.map(([id, member]) => _renderPartyCard(id, member)).join('')}` : ''}
     `;
   }
 
@@ -282,6 +290,7 @@ window.CJS.CampaignUI = (() => {
     const statuses = (member.statuses || []).map((status) => `<span class="campaign-chip">${_esc(status.label || status.id)}</span>`).join('');
     const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
     const availability = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
+    const isBench = (member.rosterRole || 'active') === 'bench';
     return `
       <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
         <div class="campaign-character-head">
@@ -300,6 +309,8 @@ window.CJS.CampaignUI = (() => {
           <button data-campaign-action="heal-char" data-id="${_escAttr(id)}">Heal</button>
           <button data-campaign-action="mp-char" data-id="${_escAttr(id)}">MP</button>
           <button data-campaign-action="status-char" data-id="${_escAttr(id)}">Status</button>
+          <button data-campaign-action="party-sheet" data-id="${_escAttr(id)}">Sheet</button>
+          <button data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
           <button data-campaign-action="party-availability" data-id="${_escAttr(id)}">Availability</button>
           ${battleReady ? '' : `<button data-campaign-action="party-available" data-id="${_escAttr(id)}">Return</button>`}
         </div>
@@ -307,8 +318,141 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _renderRoster(state) {
+    const entries = Object.entries(state.party || {});
+    const active = entries.filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
+    const bench = entries.filter(([, member]) => (member.rosterRole || 'active') === 'bench');
+    return `
+      <div class="campaign-tab-stack">
+        <section class="campaign-panel">
+          <div class="campaign-panel-head">
+            <h2>Roster</h2>
+            <button class="campaign-action" data-campaign-action="recruit-character">Recruit</button>
+          </div>
+          ${active.length ? active.map(([id, member]) => _renderRosterMember(id, member)).join('') : '<div class="campaign-empty">No active roster.</div>'}
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h2>Bench</h2></div>
+          ${bench.length ? bench.map(([id, member]) => _renderRosterMember(id, member)).join('') : '<div class="campaign-empty">No benched members.</div>'}
+        </section>
+      </div>
+    `;
+  }
+
+  function _renderRosterMember(id, member) {
+    const base = _memberBase(id, member);
+    const stats = _memberStats(id, member);
+    const skills = _memberSkillEntries(id, member);
+    const passives = _memberPassives(id, member);
+    const statuses = member.statuses || [];
+    const equipment = member.equipment || [];
+    const isBench = (member.rosterRole || 'active') === 'bench';
+    return `
+      <div class="campaign-roster-member">
+        <div class="campaign-roster-head">
+          <div class="campaign-character-head">
+            <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _esc(member.icon || member.name?.[0] || '?')}</div>
+            <div>
+              <strong>${_esc(member.name || base?.name || id)}</strong>
+              <div class="campaign-muted">Lv ${member.level || 1} | XP ${member.xp || 0} | Rank ${_esc(member.rank || base?.rank || 'F')} | ${isBench ? 'Bench' : 'Active'}</div>
+              <div class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</div>
+            </div>
+          </div>
+          <div class="campaign-row-actions">
+            <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
+            <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
+            <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
+            <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
+          </div>
+        </div>
+        <div class="campaign-roster-resources">
+          <div class="campaign-bar"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
+          <div class="campaign-bar"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
+        </div>
+        <div class="campaign-stat-grid">
+          ${Object.entries(stats).map(([stat, value]) => `<span><b>${_esc(stat)}</b>${Number(value || 0)}<small>${_esc(_statName(stat))}</small></span>`).join('')}
+        </div>
+        <div class="campaign-detail-grid">
+          <div>
+            <div class="campaign-section-title">Skills <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}">+</button></div>
+            ${skills.length ? skills.map((entry) => _renderKnownSkill(id, entry)).join('') : '<div class="campaign-empty">No skills.</div>'}
+          </div>
+          <div>
+            <div class="campaign-section-title">Passives <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}">+</button></div>
+            ${passives.length ? passives.map((passive) => _renderKnownPassive(id, passive)).join('') : '<div class="campaign-empty">No passives.</div>'}
+          </div>
+          <div>
+            <div class="campaign-section-title">Statuses <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${_escAttr(id)}">+</button></div>
+            ${statuses.length ? statuses.map((status) => _renderKnownStatus(status)).join('') : '<div class="campaign-empty">No statuses.</div>'}
+          </div>
+          <div>
+            <div class="campaign-section-title">Equipment</div>
+            ${equipment.length ? equipment.map((itemId) => _renderKnownItem('items', itemId)).join('') : '<div class="campaign-empty">No equipment.</div>'}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function _renderKnownSkill(memberId, entry) {
+    const skillId = _skillEntryId(entry);
+    const skill = DS().get('skills', skillId);
+    const learned = entry.source === 'campaign' || _memberLearnedSkillIds(memberId).includes(skillId);
+    return _renderKnownRecord({
+      title: skill?.name || skillId,
+      meta: _skillMeta(skill, entry),
+      description: _desc(skill),
+      removeAction: learned ? 'unlearn-skill' : '',
+      removeData: learned ? `data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}"` : ''
+    });
+  }
+
+  function _renderKnownPassive(memberId, passiveId) {
+    const passive = DS().get('passives', passiveId) || DS().get('effects', passiveId);
+    const learned = (CS().getState()?.party?.[memberId]?.learnedPassives || []).includes(passiveId);
+    return _renderKnownRecord({
+      title: passive?.name || passiveId,
+      meta: passive?.trigger || passive?.category || passiveId,
+      description: _desc(passive),
+      removeAction: learned ? 'unlearn-passive' : '',
+      removeData: learned ? `data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}"` : ''
+    });
+  }
+
+  function _renderKnownStatus(status) {
+    const def = _statusDef(status.id);
+    return _renderKnownRecord({
+      title: def?.name || status.label || status.id,
+      meta: `${status.duration || 'manual'} | stacks ${status.stacks || 1}`,
+      description: status.notes || _desc(def)
+    });
+  }
+
+  function _renderKnownItem(bucket, id) {
+    const record = DS().get(bucket, id) || DS().get('items', id);
+    return _renderKnownRecord({
+      title: record?.name || id,
+      meta: record?.type || record?._world || id,
+      description: _desc(record)
+    });
+  }
+
+  function _renderKnownRecord({ title, meta, description, removeAction, removeData }) {
+    return `
+      <div class="campaign-record-line">
+        <div>
+          <strong>${_esc(title || '')}</strong>
+          <small>${_esc(meta || '')}</small>
+          <p>${_esc(description || 'No description yet.')}</p>
+        </div>
+        ${removeAction ? `<button class="campaign-icon-btn danger" title="Remove" data-campaign-action="${removeAction}" ${removeData}>-</button>` : ''}
+      </div>
+    `;
+  }
+
   function _renderMain(state) {
     switch (_activeTab) {
+      case 'roster': return _renderRoster(state);
       case 'sideForge': return _renderSideForge(state);
       case 'questChains': return _renderQuestChains(state);
       case 'battleSets': return _renderBattleSets(state);
@@ -1427,6 +1571,7 @@ window.CJS.CampaignUI = (() => {
       case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
       case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
+      case 'open-roster-tab': return _goto('town', 'roster');
       case 'open-scenarios-tab': return _goto('scenario', 'scenarios');
       case 'open-maps-tab': return _goto('scenario', 'maps');
       case 'open-inventory-tab': return _goto('workshop', 'inventory');
@@ -1474,6 +1619,17 @@ window.CJS.CampaignUI = (() => {
       case 'heal-char': return _charNumberOp(data.id, 'heal_character', 'Heal amount');
       case 'mp-char': return _charMpModal(data.id);
       case 'status-char': return _charStatusModal(data.id);
+      case 'party-sheet': return _partySheetModal(data.id);
+      case 'recruit-character': return _recruitCharacterModal();
+      case 'bench-character': return Ops().apply({ op: 'bench_character', target: data.id }, { source: 'ui' });
+      case 'activate-character': return Ops().apply({ op: 'activate_character', target: data.id }, { source: 'ui' });
+      case 'remove-character': return _removeCharacter(data.id);
+      case 'learn-skill': return _learnSkillModal(data.id);
+      case 'unlearn-skill': return Ops().apply({ op: 'unlearn_skill', target: data.id, skillId: data.skillId }, { source: 'ui' });
+      case 'learn-passive': return _learnPassiveModal(data.id);
+      case 'unlearn-passive': return Ops().apply({ op: 'unlearn_passive', target: data.id, passiveId: data.passiveId }, { source: 'ui' });
+      case 'stat-boost': return _statBoostModal(data.id);
+      case 'level-char': return _charNumberOp(data.id, 'add_level', 'Level change');
       case 'party-availability': return _partyAvailabilityModal(data.id);
       case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
@@ -2648,6 +2804,100 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
+  function _partySheetModal(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    const body = document.createElement('div');
+    body.innerHTML = _renderRosterMember(id, member);
+    body.addEventListener('click', (event) => {
+      const action = event.target.closest('[data-campaign-action]');
+      if (!action) return;
+      event.preventDefault();
+      _handleAction(action.dataset, action);
+    });
+    _formModal({
+      title: `${member.name || id} Sheet`,
+      body,
+      width: '820px',
+      primaryLabel: 'Close',
+      onSubmit: () => true
+    });
+  }
+
+  function _recruitCharacterModal() {
+    const options = _characterOptions();
+    if (!options.length) {
+      UI().toast('No unrecruited characters found in Edit Mode', 'info');
+      return;
+    }
+    _opPickerModal({
+      title: 'Recruit Character',
+      options,
+      placeholder: 'Search characters...',
+      primaryLabel: 'Recruit',
+      onSubmit: ({ value }) => Ops().apply({ op: 'recruit_character', characterId: value }, { source: 'ui' })
+    });
+  }
+
+  function _removeCharacter(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    UI().confirm(`Remove ${member.name || id} from this campaign roster?`, () => {
+      Ops().apply({ op: 'remove_character', target: id }, { source: 'ui' });
+    });
+  }
+
+  function _learnSkillModal(id) {
+    const options = _skillOptions(id);
+    if (!options.length) {
+      UI().toast('No unlearned skills found in Edit Mode', 'info');
+      return;
+    }
+    _opPickerModal({
+      title: 'Learn Skill',
+      options,
+      placeholder: 'Search skills...',
+      primaryLabel: 'Learn',
+      onSubmit: ({ value }) => Ops().apply({ op: 'learn_skill', target: id, skillId: value }, { source: 'ui' })
+    });
+  }
+
+  function _learnPassiveModal(id) {
+    const options = _passiveOptions(id);
+    if (!options.length) {
+      UI().toast('No unlearned passives found in Edit Mode', 'info');
+      return;
+    }
+    _opPickerModal({
+      title: 'Learn Passive',
+      options,
+      placeholder: 'Search passives...',
+      primaryLabel: 'Learn',
+      onSubmit: ({ value }) => Ops().apply({ op: 'learn_passive', target: id, passiveId: value }, { source: 'ui' })
+    });
+  }
+
+  function _statBoostModal(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Stat'));
+    const stat = UI().createSelect({
+      options: (C()?.STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L']).map((value) => ({ value, label: `${value} - ${_statName(value)}` })),
+      value: 'S'
+    });
+    body.appendChild(stat);
+    body.appendChild(_formLabel('Change'));
+    const amount = UI().createNumberSlider({ value: 1, min: -20, max: 20, step: 1 });
+    body.appendChild(amount);
+    _formModal({
+      title: `Stat Growth: ${member.name || id}`,
+      body,
+      primaryLabel: 'Apply',
+      onSubmit: () => Ops().apply({ op: 'change_stat', target: id, stat: stat.value, amount: amount._getValue() || 0 }, { source: 'ui' })
+    });
+  }
+
   function _partyAvailabilityModal(id) {
     const member = CS().getState()?.party?.[id];
     if (!member) return;
@@ -2760,6 +3010,11 @@ window.CJS.CampaignUI = (() => {
       { value: 'take_food', label: 'Take Food', kind: 'inv', bucket: 'food' },
       { value: 'damage_character', label: 'Damage Character', kind: 'char' },
       { value: 'heal_character', label: 'Heal Character', kind: 'char' },
+      { value: 'add_level', label: 'Add Level', kind: 'level' },
+      { value: 'change_stat', label: 'Change Stat', kind: 'stat' },
+      { value: 'recruit_character', label: 'Recruit Character', kind: 'recruit' },
+      { value: 'learn_skill', label: 'Learn Skill', kind: 'skill' },
+      { value: 'learn_passive', label: 'Learn Passive', kind: 'passive' },
       { value: 'add_status', label: 'Add Status', kind: 'status' },
       { value: 'remove_status', label: 'Remove Status', kind: 'status' },
       { value: 'set_flag', label: 'Set Flag', kind: 'flag' },
@@ -2821,6 +3076,43 @@ window.CJS.CampaignUI = (() => {
         fields.appendChild(_formLabel('Amount'));
         active.amount = UI().createNumberSlider({ value: 5, min: 1, max: 999, step: 1 });
         fields.appendChild(active.amount);
+      } else if (def.kind === 'level') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Levels'));
+        active.amount = UI().createNumberSlider({ value: 1, min: 1, max: 20, step: 1 });
+        fields.appendChild(active.amount);
+      } else if (def.kind === 'stat') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Stat'));
+        active.stat = UI().createSelect({
+          options: (C()?.STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L']).map((value) => ({ value, label: `${value} - ${_statName(value)}` })),
+          value: 'S'
+        });
+        fields.appendChild(active.stat);
+        fields.appendChild(_formLabel('Change'));
+        active.amount = UI().createNumberSlider({ value: 1, min: -20, max: 20, step: 1 });
+        fields.appendChild(active.amount);
+      } else if (def.kind === 'recruit') {
+        active.character = UI().createSearchableSelect({ options: _characterOptions(), placeholder: 'Search characters...', renderItem: _pickerItem });
+        fields.appendChild(active.character);
+      } else if (def.kind === 'skill') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Skill'));
+        active.skill = UI().createSearchableSelect({ options: _skillOptions(active.target.value), placeholder: 'Search skills...', renderItem: _pickerItem });
+        fields.appendChild(active.skill);
+      } else if (def.kind === 'passive') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Passive'));
+        active.passive = UI().createSearchableSelect({ options: _passiveOptions(active.target.value), placeholder: 'Search passives...', renderItem: _pickerItem });
+        fields.appendChild(active.passive);
       } else if (def.kind === 'status') {
         fields.appendChild(_formLabel('Character'));
         active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
@@ -2894,6 +3186,22 @@ window.CJS.CampaignUI = (() => {
             op = { op: def.value, id, qty: active.qty._getValue() || 1 };
           } else if (def.kind === 'char') {
             op = { op: def.value, target: active.target.value, amount: active.amount._getValue() };
+          } else if (def.kind === 'level') {
+            op = { op: def.value, target: active.target.value, amount: active.amount._getValue() || 1 };
+          } else if (def.kind === 'stat') {
+            op = { op: def.value, target: active.target.value, stat: active.stat.value, amount: active.amount._getValue() || 0 };
+          } else if (def.kind === 'recruit') {
+            const characterId = active.character._getValue();
+            if (!characterId) { UI().toast('Pick a character', 'error'); return false; }
+            op = { op: def.value, characterId };
+          } else if (def.kind === 'skill') {
+            const skillId = active.skill._getValue();
+            if (!skillId) { UI().toast('Pick a skill', 'error'); return false; }
+            op = { op: def.value, target: active.target.value, skillId };
+          } else if (def.kind === 'passive') {
+            const passiveId = active.passive._getValue();
+            if (!passiveId) { UI().toast('Pick a passive', 'error'); return false; }
+            op = { op: def.value, target: active.target.value, passiveId };
           } else if (def.kind === 'status') {
             const status = active.status._getValue();
             if (!status) { UI().toast('Pick a status', 'error'); return false; }
@@ -2948,6 +3256,140 @@ window.CJS.CampaignUI = (() => {
     return handled;
   }
 
+  function _memberBase(id, member = {}) {
+    return DS().get('characters', member.baseCharacterId || id) || {};
+  }
+
+  function _memberStats(id, member = {}) {
+    const base = _memberBase(id, member);
+    const stats = { ...(base.stats || {}) };
+    for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
+      stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
+    }
+    const ordered = {};
+    for (const stat of C()?.STATS || Object.keys(stats)) ordered[stat] = stats[stat] || 0;
+    return ordered;
+  }
+
+  function _memberSkillEntries(id, member = CS().getState()?.party?.[id] || {}) {
+    const base = _memberBase(id, member);
+    const out = [];
+    const seen = new Set();
+    for (const entry of [...(base.skills || []), ...(member.learnedSkills || [])]) {
+      const skillId = _skillEntryId(entry);
+      if (!skillId || seen.has(skillId)) continue;
+      seen.add(skillId);
+      out.push(typeof entry === 'string' ? { skillId } : entry);
+    }
+    return out;
+  }
+
+  function _memberLearnedSkillIds(id) {
+    const member = CS().getState()?.party?.[id] || {};
+    return (member.learnedSkills || []).map(_skillEntryId).filter(Boolean);
+  }
+
+  function _skillEntryId(entry) {
+    return typeof entry === 'string' ? entry : entry?.skillId || null;
+  }
+
+  function _memberPassives(id, member = {}) {
+    const base = _memberBase(id, member);
+    return Array.from(new Set([...(base.innatePassives || []), ...(member.learnedPassives || [])].filter(Boolean)));
+  }
+
+  function _characterOptions() {
+    const state = CS().getState();
+    const current = new Set(Object.keys(state?.party || {}));
+    return DS().getAllAsArray('characters')
+      .filter((entry) => entry?.id && !current.has(entry.id) && (entry.team || 'player') !== 'enemy')
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: `${entry.rank || 'F'} | ${(entry.skills || []).length} skills`,
+        description: _desc(entry),
+        tags: entry.tags || []
+      }))
+      .sort(_sortOptionLabel);
+  }
+
+  function _skillOptions(memberId) {
+    const known = new Set(_memberSkillEntries(memberId).map(_skillEntryId));
+    return DS().getAllAsArray('skills')
+      .filter((entry) => entry?.id && !known.has(entry.id))
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: _skillMeta(entry),
+        description: _desc(entry),
+        tags: entry.tags || []
+      }))
+      .sort(_sortOptionLabel);
+  }
+
+  function _passiveOptions(memberId) {
+    const member = CS().getState()?.party?.[memberId] || {};
+    const known = new Set(_memberPassives(memberId, member));
+    const passiveOptions = DS().getAllAsArray('passives').map((entry) => ({
+      value: entry.id,
+      label: entry.name || entry.id,
+      sub: 'Passive',
+      description: _desc(entry),
+      tags: entry.tags || []
+    }));
+    const passiveTriggers = new Set(['stat_mod', 'dr_mod', 'element_mod', 'crit_mod', 'evasion_mod', 'accuracy_mod', 'ap_mod', 'movement_mod', 'range_mod', 'cost_mod', 'cooldown_mod', 'damage_mod', 'hp_mod', 'mp_mod', 'status_resist_mod', 'double_action', 'triple_action']);
+    const effectOptions = DS().getAllAsArray('effects')
+      .filter((entry) => passiveTriggers.has(entry.trigger))
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: `Effect | ${entry.trigger || ''}`,
+        description: _desc(entry),
+        tags: entry.tags || []
+      }));
+    return [...passiveOptions, ...effectOptions]
+      .filter((entry) => entry.value && !known.has(entry.value))
+      .sort(_sortOptionLabel);
+  }
+
+  function _statusDef(statusId) {
+    const custom = DS().get('statuses', statusId);
+    if (custom) return custom;
+    const builtins = C()?.STATUS_DEFINITIONS || {};
+    return builtins[statusId] ? { id: statusId, ...builtins[statusId] } : null;
+  }
+
+  function _skillMeta(skill = {}, entry = {}) {
+    const parts = [];
+    if (skill.mp != null) parts.push(`${skill.mp} MP`);
+    if (skill.range != null) parts.push(`Range ${skill.range}`);
+    if (skill.power != null) parts.push(`Power ${skill.power}`);
+    if (entry.level) parts.push(`Lv ${entry.level}`);
+    return parts.join(' | ') || skill.category || skill.type || '';
+  }
+
+  function _statName(stat) {
+    return C()?.STAT_NAMES?.[stat] || stat;
+  }
+
+  function _desc(record = {}) {
+    return record.description || record.desc || record.flavor || record.notes || record.effectText || record.summary || '';
+  }
+
+  function _pickerItem(option) {
+    return `
+      <div class="campaign-picker-option">
+        <strong>${_esc(option.label || option.value)}</strong>
+        ${option.sub ? `<small>${_esc(option.sub)}</small>` : ''}
+        ${option.description ? `<span>${_esc(option.description)}</span>` : ''}
+      </div>
+    `;
+  }
+
+  function _sortOptionLabel(a, b) {
+    return String(a.label || '').localeCompare(String(b.label || ''));
+  }
+
   function _formLabel(text) {
     const lbl = document.createElement('label');
     lbl.className = 'form-label';
@@ -2977,25 +3419,41 @@ window.CJS.CampaignUI = (() => {
     const sortLabel = (a, b) => String(a.label).localeCompare(String(b.label));
     if (bucket === 'materials') {
       return DS().getAllAsArray('materials').filter(inWorld)
-        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || '' }))
+        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || entry.rarity || '', description: _desc(entry), tags: entry.tags || [] }))
         .sort(sortLabel);
     }
     if (bucket === 'food') {
       return DS().getAllAsArray('food').filter(inWorld)
-        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || '' }))
+        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || entry.type || '', description: _desc(entry), tags: entry.tags || [] }))
         .sort(sortLabel);
     }
     return DS().getAllAsArray('items').filter(inWorld)
-      .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry.type || entry._world || '' }))
+      .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: [entry.type, entry.rarity, entry._world].filter(Boolean).join(' | '), description: _desc(entry), tags: entry.tags || [] }))
       .sort(sortLabel);
   }
 
   function _statusOptions() {
-    const opts = DS().getAllAsArray('statuses').map((entry) => ({
-      value: entry.id,
-      label: entry.name || entry.id,
-      sub: entry.kind || ''
-    }));
+    const customIds = new Set();
+    const opts = DS().getAllAsArray('statuses').map((entry) => {
+      customIds.add(entry.id);
+      return {
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: entry.kind || entry.category || '',
+        description: _desc(entry),
+        tags: entry.tags || []
+      };
+    });
+    for (const [id, def] of Object.entries(C()?.STATUS_DEFINITIONS || {})) {
+      if (customIds.has(id)) continue;
+      opts.push({
+        value: id,
+        label: def.name || id,
+        sub: def.category || 'Built-in',
+        description: _desc(def),
+        tags: def.tags || []
+      });
+    }
     return opts.sort((a, b) => String(a.label).localeCompare(String(b.label)));
   }
 
@@ -3038,10 +3496,10 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _opPickerModal({ title, options, primaryLabel = 'Apply', placeholder, withQty, qtyLabel = 'Qty', qtyMin = 1, qtyMax = 99, qtyDefault = 1, withDuration, onSubmit }) {
+  function _opPickerModal({ title, options, primaryLabel = 'Apply', placeholder, withQty, qtyLabel = 'Qty', qtyMin = 1, qtyMax = 99, qtyDefault = 1, withDuration, renderItem = _pickerItem, onSubmit }) {
     const body = document.createElement('div');
     body.appendChild(_formLabel('Select'));
-    const select = UI().createSearchableSelect({ options, placeholder: placeholder || 'Search…' });
+    const select = UI().createSearchableSelect({ options, placeholder: placeholder || 'Search...', renderItem });
     body.appendChild(select);
 
     let qty = null;

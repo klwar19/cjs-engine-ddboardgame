@@ -156,6 +156,7 @@ window.CJS.CampaignCombatBridge = (() => {
       partyOverlay: Object.fromEntries(availableParty.map(([id, member]) => [id, {
         currentHP: member.currentHp,
         currentMP: member.currentMp,
+        unit: _campaignUnitSnapshot(id, member),
         statuses: (member.statuses || []).map((status) => ({
           statusId: status.id,
           duration: status.duration === 'battle' ? 1 : 99,
@@ -172,37 +173,114 @@ window.CJS.CampaignCombatBridge = (() => {
     return request;
   }
 
+  function _campaignUnitSnapshot(id, member = {}) {
+    const baseId = member.baseCharacterId || id;
+    const base = DS().get('characters', baseId) || {};
+    const stats = { ...(base.stats || {}) };
+    for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
+      stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
+    }
+    return {
+      ..._clone(base),
+      id,
+      baseTemplateId: baseId,
+      campaignPartyId: id,
+      name: member.name || base.name || id,
+      icon: member.icon || base.icon || '',
+      portrait: member.portrait || base.portrait || '',
+      team: 'player',
+      level: Number(member.level || base.level || 1),
+      rank: member.rank || base.rank || 'F',
+      stats,
+      skills: _mergeSkillEntries(base.skills || [], member.learnedSkills || []),
+      innatePassives: _mergeIds(base.innatePassives || [], member.learnedPassives || []),
+      equipment: Array.isArray(member.equipment) ? _clone(member.equipment) : _clone(base.equipment || []),
+      battleSfx: member.battleSfx || base.battleSfx || {}
+    };
+  }
+
+  function _installCampaignPartyUnits(request = {}) {
+    for (const patch of Object.values(request.partyOverlay || {})) {
+      if (patch?.unit?.id) DS().replace('characters', patch.unit.id, _clone(patch.unit));
+    }
+  }
+
+  function _mergeSkillEntries(baseSkills = [], learnedSkills = []) {
+    const out = [];
+    const seen = new Set();
+    for (const entry of [...baseSkills, ...learnedSkills]) {
+      const id = _skillId(entry);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push(typeof entry === 'string' ? entry : _clone(entry));
+    }
+    return out;
+  }
+
+  function _skillId(entry) {
+    return typeof entry === 'string' ? entry : entry?.skillId || null;
+  }
+
+  function _mergeIds(...sets) {
+    const out = [];
+    for (const set of sets) {
+      for (const id of set || []) {
+        if (id && !out.includes(id)) out.push(id);
+      }
+    }
+    return out;
+  }
+
+  function _clone(value) {
+    return JSON.parse(JSON.stringify(value || (Array.isArray(value) ? [] : {})));
+  }
+
   function createRuntimeEncounterFromRequest(request) {
+    _installCampaignPartyUnits(request);
     const base = request?.encounterId ? DS().get('encounters', request.encounterId) : null;
     if (!base) return _createProceduralEncounterFromRequest(request);
     const runtimeId = `campaign_runtime_${request.encounterId}`;
     const overlay = request.partyOverlay || {};
-    const available = new Set(request.availablePartyIds || Object.keys(overlay));
     const excluded = new Set((request.excludedParty || []).map((entry) => entry.id));
     const clone = JSON.parse(JSON.stringify(base));
     clone.id = runtimeId;
     clone.name = `${base.name || request.encounterId} (Campaign)`;
     clone._runtime = true;
     clone._scope = 'runtime';
-    clone.units = (clone.units || []).filter((placement) => {
+    const sourceUnits = clone.units || [];
+    const playerSlots = sourceUnits.filter((placement) => {
       const character = DS().get('characters', placement.id);
       const isPlayer = placement.team === 'player' || character?.team === 'player' || overlay[placement.id] || excluded.has(placement.id);
-      return !isPlayer || available.has(placement.id);
-    }).map((placement) => {
-      const patch = overlay[placement.id];
-      if (!patch) return placement;
+      return isPlayer;
+    });
+    const enemies = sourceUnits.filter((placement) => !playerSlots.includes(placement));
+    const partyIds = request.availablePartyIds || Object.keys(overlay);
+    const players = partyIds.map((id, index) => {
+      const slot = playerSlots[index] || playerSlots[index % Math.max(playerSlots.length, 1)] || {};
+      const patch = overlay[id] || {};
       return {
-        ...placement,
+        ...slot,
+        id,
+        pos: slot.pos || _fallbackPlayerPos(clone, index),
+        team: 'player',
         currentHP: patch.currentHP,
         currentMP: patch.currentMP,
         activeStatuses: patch.statuses || []
       };
     });
+    clone.units = [...players, ...enemies];
     DS().replace('encounters', runtimeId, clone);
     return runtimeId;
   }
 
+  function _fallbackPlayerPos(encounter = {}, index = 0) {
+    const width = Math.max(2, Number(encounter.width || 8));
+    const height = Math.max(2, Number(encounter.height || 8));
+    return [width - 2, Math.min(height - 1, 1 + index)];
+  }
+
   function _createProceduralEncounterFromRequest(request = {}) {
+    _installCampaignPartyUnits(request);
     const card = request.battleSetCard || _battleSetCard(request.battleSetId);
     const overlay = request.partyOverlay || {};
     const partyIds = request.availablePartyIds || Object.keys(overlay);
@@ -257,7 +335,7 @@ window.CJS.CampaignCombatBridge = (() => {
     const units = Object.values(combatState?.units || {});
     const partyAfter = {};
     for (const unit of units.filter((entry) => entry.team === 'player')) {
-      const id = unit.baseId || unit.id || unit.instanceId;
+      const id = unit.campaignPartyId || unit.baseId || unit.id || unit.instanceId;
       partyAfter[id] = {
         currentHp: unit.currentHP,
         currentMp: unit.currentMP,
@@ -542,7 +620,7 @@ window.CJS.CampaignCombatBridge = (() => {
 
   function isMemberBattleReady(member) {
     const availability = normalizeAvailability(member);
-    return availability.status === 'available' && Number(member?.currentHp ?? 1) > 0;
+    return (member?.rosterRole || 'active') !== 'bench' && availability.status === 'available' && Number(member?.currentHp ?? 1) > 0;
   }
 
   function normalizeAvailability(member = {}) {
@@ -558,6 +636,7 @@ window.CJS.CampaignCombatBridge = (() => {
 
   function availabilityLabel(member) {
     const availability = normalizeAvailability(member);
+    if ((member?.rosterRole || 'active') === 'bench') return 'Bench';
     if (Number(member?.currentHp ?? 1) <= 0) return '0 HP';
     return availability.reason || availability.status || 'unavailable';
   }

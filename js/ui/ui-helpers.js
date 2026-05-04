@@ -131,7 +131,10 @@ window.CJS.UI = (() => {
       if (q) filtered = options.filter(o =>
         (o.label || '').toLowerCase().includes(q) ||
         (o.value || '').toLowerCase().includes(q) ||
-        (o.group || '').toLowerCase().includes(q)
+        (o.group || '').toLowerCase().includes(q) ||
+        (o.sub || '').toLowerCase().includes(q) ||
+        (o.description || '').toLowerCase().includes(q) ||
+        (o.tags || []).join(' ').toLowerCase().includes(q)
       );
 
       if (groupBy) {
