@@ -1246,6 +1246,7 @@ window.CJS.CampaignOps = (() => {
       title: template.title || template.name || templateId,
       status: 'active',
       currentStepId: firstStep,
+      questId: op.questId || `quest_${templateId}`,
       completedSteps: [],
       startedAtPhase: state.phase?.number || 1,
       notes: [],
@@ -1292,9 +1293,16 @@ window.CJS.CampaignOps = (() => {
     const chain = _chainState(state, templateId);
     if (!chain || chain.status === 'complete') return;
     const template = _findQuestChainTemplate(templateId, op.template);
+    const linkedQuest = chain.questId ? state.quests?.[chain.questId] : null;
+    if (linkedQuest && !['complete', 'completed'].includes(String(linkedQuest.status || 'active'))) {
+      _completeQuest(state, chain.questId, { source: 'quest_chain', applyRewards: op.applyRewards !== false });
+      chain.rewardsApplied = true;
+    } else if (linkedQuest) {
+      chain.rewardsApplied = true;
+    }
     chain.status = 'complete';
     chain.completedAtPhase = state.phase?.number || 1;
-    if (op.applyRewards !== false && !chain.rewardsApplied) {
+    if (!linkedQuest && op.applyRewards !== false && !chain.rewardsApplied) {
       chain.rewardsApplied = true;
       const rewards = template?.rewardOps || template?.rewards || [];
       for (const reward of rewards) _applyOne(state, reward, { source: 'quest_chain_reward' });
@@ -1308,6 +1316,7 @@ window.CJS.CampaignOps = (() => {
     const chain = _chainState(state, templateId);
     if (!chain) return;
     const template = _findQuestChainTemplate(templateId, op.template);
+    if (chain.questId && state.quests?.[chain.questId]) state.quests[chain.questId].status = 'failed';
     chain.status = 'failed';
     chain.failedAtPhase = state.phase?.number || 1;
     if (op.applyConsequences) {

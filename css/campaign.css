@@ -2456,6 +2456,12 @@ body.campaign-page::before {
   padding-top: 10px;
 }
 
+.campaign-subpanel {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
 .campaign-resolved-quests summary {
   cursor: pointer;
   color: var(--cmp-frame-gold-hi);

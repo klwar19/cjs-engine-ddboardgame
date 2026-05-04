@@ -146,7 +146,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const size = SIZES.includes(options.size) ? options.size : 'small';
     const layers = Math.max(1, Math.min(3, Number(options.layers || 1)));
     const source = ['random', 'active_quest', 'quest_chain'].includes(options.source) ? options.source : 'random';
-    return { source, mapType, mapForm, size, layers, questId: options.questId || null };
+    return { source, mapType, mapForm, size, layers, questId: options.questId || null, questChainId: options.questChainId || null };
   }
 
   function _sourceContext(source, world, opts = {}) {
@@ -168,7 +168,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }
 
     if (source === 'quest_chain') {
-      const activeState = Object.values(state.sideContent?.activeQuestChains || {})[0] || null;
+      const activeChains = Object.values(state.sideContent?.activeQuestChains || {})
+        .filter((entry) => String(entry.status || 'active') === 'active');
+      const activeState = (opts.questChainId
+        ? activeChains.find((entry) => entry.templateId === opts.questChainId)
+        : activeChains[0]) || null;
       const activeTemplate = activeState ? Loader().getQuestChainTemplate(activeState.templateId) : null;
       const chain = activeTemplate || activeState;
       if (!chain) return { error: 'no_active_chain', source };
@@ -179,7 +183,8 @@ window.CJS.CampaignScenarioGenerator = (() => {
         tags: chain.tags || [],
         battleSetIds: chain.battleSetIds || [],
         mapSeedIds: chain.mapSeedIds || [],
-        questChainId: chain.id || chain.templateId
+        questId: activeState?.questId || null,
+        questChainId: activeState?.templateId || chain.id || chain.templateId
       };
     }
 

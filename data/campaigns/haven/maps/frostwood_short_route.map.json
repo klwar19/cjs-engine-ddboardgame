@@ -64,6 +64,7 @@
           "tags": ["forest", "predator"],
           "onEnter": [
             { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "read_tracks", "amount": 1 },
+            { "op": "update_quest_progress", "questId": "quest_ironhand_pelt_wraps", "objectiveId": "find_pelt_marks", "amount": 1 },
             { "op": "log", "text": "Quest clue: the tracks split toward a den and a ridge trail." }
           ],
           "randomBattle": {
@@ -112,6 +113,7 @@
           "y": 415,
           "tags": ["forest", "tracks", "choice"],
           "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_firemoss_cache_run", "objectiveId": "inspect_sled", "amount": 1 },
             { "op": "roll_event", "table": "haven_frostwood_events", "chance": 0.65 },
             { "op": "log", "text": "Event: the broken sled points to a cache trail and a safer creek crossing." }
           ],
@@ -129,6 +131,7 @@
           "y": 390,
           "tags": ["cache", "reward", "forest"],
           "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_firemoss_cache_run", "objectiveId": "recover_cache", "amount": 1 },
             { "op": "give_money", "currency": "haven_gold", "amount": 10 },
             { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
             { "op": "log", "text": "Reward: the cache holds bait, pelts, and a ridge warning." }
@@ -154,6 +157,7 @@
           },
           "onEnter": [
             { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "break_den", "amount": 1 },
+            { "op": "update_quest_progress", "questId": "quest_ironhand_pelt_wraps", "objectiveId": "gather_pelts", "amount": 1 },
             { "op": "log", "text": "Quest battle: the den pack is forced into the open." }
           ],
           "exits": [
@@ -175,6 +179,7 @@
             "label": "Snowblind Taxmen"
           },
           "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_firemoss_cache_run", "objectiveId": "secure_ridge", "amount": 1 },
             { "op": "log", "text": "Choice event: the ridge reveals another trail, but movement here may draw bandits." }
           ],
           "exits": [
@@ -192,6 +197,7 @@
           "tags": ["ruins", "objective"],
           "onEnter": [
             { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "clear_wolves", "amount": 1 },
+            { "op": "update_quest_progress", "questId": "quest_ironhand_pelt_wraps", "objectiveId": "field_test", "amount": 1 },
             { "op": "log", "text": "The old shrine is quiet enough to call the route clear." }
           ],
           "exits": [

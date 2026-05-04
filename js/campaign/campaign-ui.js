@@ -44,8 +44,7 @@ window.CJS.CampaignUI = (() => {
       ['roster', 'Roster'],
       ['oracleForge', 'Events & Oracle'],
       ['sideForge', 'Hub Pulse'],
-      ['shops', 'Shops & Rest'],
-      ['questChains', 'Quest Chains']
+      ['shops', 'Shops & Rest']
     ],
     workshop: [
       ['cook', 'Cook'],
@@ -661,16 +660,18 @@ window.CJS.CampaignUI = (() => {
   function _renderQuestChains() {
     const available = window.CJS.CampaignQuestChains.getAvailable();
     const active = window.CJS.CampaignQuestChains.getActive();
+    const finished = window.CJS.CampaignQuestChains.getFinished?.() || [];
     return `
       <div class="campaign-tab-grid">
         <section class="campaign-panel campaign-wide-panel">
           <div class="campaign-panel-head">
-            <h2>Active Quest Chains</h2>
+            <h2>Quest Arcs</h2>
             <span class="campaign-pill">${active.length} active · ${available.length} available</span>
           </div>
-          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side chains. Pick one below to begin.</div>'}
+          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active quest arcs. Start one below or use Quest Run for a single quest.</div>'}
+          ${finished.length ? `<details class="campaign-resolved-quests"><summary>Resolved arcs (${finished.length})</summary>${finished.map(_renderQuestChainResolved).join('')}</details>` : ''}
         </section>
-        ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No quest chain templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
+        ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No quest arc templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
       </div>
     `;
   }
@@ -678,17 +679,34 @@ window.CJS.CampaignUI = (() => {
   function _renderQuestChainActive(chain) {
     const template = chain.template || {};
     const step = (template.steps || []).find((entry) => entry.id === chain.currentStepId);
+    const steps = template.steps || [];
+    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === chain.currentStepId));
     return `
       <div class="campaign-row">
         <div>
           <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
-          <div class="campaign-muted">${_esc(chain.status)} | Current: ${_esc(step?.label || chain.currentStepId || '-')}</div>
+          <div class="campaign-muted">${_esc(chain.status)} | Step ${currentIndex + 1}/${steps.length || 1}: ${_esc(step?.label || chain.currentStepId || '-')}</div>
           <div class="campaign-muted">${_esc(step?.text || '')}</div>
+          ${_renderChainStakes(template)}
         </div>
         <div class="campaign-row-actions">
-          <button class="campaign-action" data-campaign-action="advance-chain" data-id="${_escAttr(chain.templateId)}">Advance</button>
-          <button class="campaign-action" data-campaign-action="complete-chain" data-id="${_escAttr(chain.templateId)}">Complete</button>
+          <button class="campaign-action primary" data-campaign-action="chain-scenario" data-id="${_escAttr(chain.templateId)}">Map Run</button>
+          <button class="campaign-action" data-campaign-action="chain-battle" data-id="${_escAttr(chain.templateId)}">Battle</button>
+          <button class="campaign-action" data-campaign-action="advance-chain" data-id="${_escAttr(chain.templateId)}">Complete Step</button>
+          <button class="campaign-action" data-campaign-action="complete-chain" data-id="${_escAttr(chain.templateId)}">Resolve</button>
           <button class="campaign-action danger" data-campaign-action="fail-chain" data-id="${_escAttr(chain.templateId)}">Fail</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function _renderQuestChainResolved(chain) {
+    const template = chain.template || {};
+    return `
+      <div class="campaign-row">
+        <div>
+          <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
+          <div class="campaign-muted">${_esc(_label(chain.status || 'resolved'))} at phase ${_esc(chain.completedAtPhase || chain.failedAtPhase || '-')}</div>
         </div>
       </div>
     `;
@@ -703,14 +721,106 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div class="campaign-muted">${_esc(chain.summary || '')}</div>
         <div class="campaign-chip-row">${(chain.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>
+        ${_renderChainStakes(chain)}
         ${(chain.steps || []).map((step) => `<div class="campaign-step"><b>${_esc(step.label || step.id)}</b><span>${_esc(step.text || '')}</span></div>`).join('')}
         <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="start-chain" data-id="${_escAttr(chain.id)}">Start</button>
+          <button class="campaign-action primary" data-campaign-action="start-chain" data-id="${_escAttr(chain.id)}">Start Quest Run</button>
           <button class="campaign-action" data-campaign-action="save-chain" data-id="${_escAttr(chain.id)}">Save Idea</button>
-          <button class="campaign-action" data-campaign-action="promote-chain" data-id="${_escAttr(chain.id)}">Quest Tracker</button>
+          <button class="campaign-action" data-campaign-action="promote-chain" data-id="${_escAttr(chain.id)}">Add To Quests</button>
         </div>
       </section>
     `;
+  }
+
+  function _renderChainStakes(chain = {}) {
+    const rewards = Ops().describe(chain.rewardOps || chain.rewards || []);
+    const failures = Ops().describe(chain.failureOps || chain.failureConsequences || []);
+    const battleCount = (chain.battleSetIds || []).length;
+    const mapCount = (chain.mapSeedIds || []).length + (chain.linkedScenario ? 1 : 0);
+    return `
+      <div class="campaign-preview">
+        <b>Run</b>: ${mapCount ? `${mapCount} map hook${mapCount === 1 ? '' : 's'}` : 'generated map'}${battleCount ? ` · ${battleCount} battle hook${battleCount === 1 ? '' : 's'}` : ''}<br>
+        ${rewards.length ? `<b>Reward</b>: ${rewards.map(_esc).join('; ')}<br>` : ''}
+        ${failures.length ? `<b>If failed</b>: ${failures.map(_esc).join('; ')}` : '<b>If failed</b>: GM consequence or mark failed'}
+      </div>
+    `;
+  }
+
+  function _startQuestChainRun(templateId) {
+    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
+    if (!chain) return UI().toast('Quest arc not found', 'info');
+    if (CS().getState()?.activeScenarioRun) {
+      _activeMode = 'scenario';
+      _activeTab = 'maps';
+      render();
+      return UI().toast('A scenario is already active. Finish it before starting a quest arc run.', 'info');
+    }
+    window.CJS.CampaignQuestChains.start(templateId);
+    return _startQuestChainScenario(templateId);
+  }
+
+  function _startQuestChainScenario(templateId) {
+    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
+    if (!chain) return UI().toast('Quest arc not found', 'info');
+    const quest = _ensureQuestChainQuest(chain);
+    if (!quest) return null;
+    const activeRun = CS().getState()?.activeScenarioRun;
+    const activeScenario = CS().getActiveScenario?.();
+    if (activeRun) {
+      if (_activeRunQuestId(activeRun, activeScenario) === quest.id || activeRun.questChainId === templateId) return _goto('scenario', 'maps');
+      return UI().toast('End the active scenario before starting this quest arc map', 'info');
+    }
+    return _startQuestScenario(quest.id, {
+      quest,
+      source: 'quest_chain',
+      questChainId: templateId,
+      mapForm: chain.mapForm || 'node_map',
+      mapType: chain.mapType || _questMapType(chain),
+      size: chain.size || 'small',
+      forceGenerated: !chain.linkedScenario
+    });
+  }
+
+  function _questChainBattle(templateId) {
+    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
+    if (!chain) return UI().toast('Quest arc not found', 'info');
+    const quest = _ensureQuestChainQuest(chain);
+    if (!quest) return null;
+    return _questBattle(quest.id);
+  }
+
+  function _ensureQuestChainQuest(chain) {
+    const questId = `quest_${chain.id}`;
+    const existing = CS().getState()?.quests?.[questId];
+    if (existing && !_isQuestResolved(existing)) return existing;
+    const quest = window.CJS.CampaignQuestChains.toQuest(chain);
+    Ops().apply({ op: 'add_quest', quest }, { source: 'quest_chain' });
+    return CS().getState()?.quests?.[questId] || quest;
+  }
+
+  function _addQuestChainToTracker(templateId) {
+    window.CJS.CampaignQuestChains.start(templateId);
+    _activeMode = 'town';
+    _activeTab = 'quests';
+    render();
+    UI().toast('Quest arc added to Quests', 'success');
+  }
+
+  function _advanceQuestChainStep(templateId) {
+    window.CJS.CampaignQuestChains.advance(templateId);
+    render();
+  }
+
+  function _completeQuestChain(templateId) {
+    window.CJS.CampaignQuestChains.complete(templateId);
+    render();
+    UI().toast('Quest arc resolved', 'success');
+  }
+
+  function _failQuestChain(templateId) {
+    window.CJS.CampaignQuestChains.fail(templateId);
+    render();
+    UI().toast('Quest arc failed', 'info');
   }
 
   function _renderBattleSets() {
@@ -1556,7 +1666,7 @@ window.CJS.CampaignUI = (() => {
               <select id="campaign-gen-source">
                 <option value="random">Random</option>
                 <option value="active_quest">Active Quest</option>
-                <option value="quest_chain">Quest Chain</option>
+                <option value="quest_chain">Quest Arc</option>
               </select>
             </label>
             <label>Form
@@ -1778,8 +1888,11 @@ window.CJS.CampaignUI = (() => {
 
   function _renderQuestPanel(state) {
     const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !_isQuestResolved(q));
-    const finished = quests.filter(_isQuestResolved);
+    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
+    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
+    const activeChains = window.CJS.CampaignQuestChains?.getActive?.() || [];
+    const availableChains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
+    const finishedChains = window.CJS.CampaignQuestChains?.getFinished?.() || [];
     const templateCount = Object.values(CS().getContent().campaignQuests || {})
       .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
     return `
@@ -1796,10 +1909,28 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-quest-list">
           ${active.length ? active.map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests.</div>'}
         </div>
+        ${activeChains.length ? `
+          <section class="campaign-subpanel">
+            <div class="campaign-panel-head"><h3>Quest Arcs</h3><span class="campaign-pill">${activeChains.length} active</span></div>
+            ${activeChains.map((chain) => _renderQuestChainActive(chain)).join('')}
+          </section>
+        ` : ''}
+        ${availableChains.length ? `
+          <details class="campaign-resolved-quests">
+            <summary>Available Quest Arcs (${availableChains.length})</summary>
+            <div class="campaign-tab-grid">${availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')}</div>
+          </details>
+        ` : ''}
         ${finished.length ? `
           <details class="campaign-resolved-quests">
             <summary>Resolved (${finished.length})</summary>
             <div class="campaign-quest-list">${finished.map((quest) => _renderQuestRow(quest, { resolved: true })).join('')}</div>
+          </details>
+        ` : ''}
+        ${finishedChains.length ? `
+          <details class="campaign-resolved-quests">
+            <summary>Resolved Quest Arcs (${finishedChains.length})</summary>
+            ${finishedChains.map(_renderQuestChainResolved).join('')}
           </details>
         ` : ''}
       </section>
@@ -2053,12 +2184,14 @@ window.CJS.CampaignUI = (() => {
       case 'copy-side-card': return _copySideCard(data.id);
       case 'review-resolve': return Ops().apply({ op: 'review_queue_resolve', reviewId: data.id, decision: data.decision }, { source: 'ui' });
       case 'resolve-hub-problem': return Ops().apply({ op: 'hub_problem_remove', hubId: data.hubId, problemId: data.id }, { source: 'ui' });
-      case 'start-chain': return window.CJS.CampaignQuestChains.start(data.id);
-      case 'advance-chain': return window.CJS.CampaignQuestChains.advance(data.id);
-      case 'complete-chain': return window.CJS.CampaignQuestChains.complete(data.id);
-      case 'fail-chain': return window.CJS.CampaignQuestChains.fail(data.id);
+      case 'start-chain': return _startQuestChainRun(data.id);
+      case 'advance-chain': return _advanceQuestChainStep(data.id);
+      case 'complete-chain': return _completeQuestChain(data.id);
+      case 'fail-chain': return _failQuestChain(data.id);
       case 'save-chain': return window.CJS.CampaignQuestChains.saveAsIdea(data.id);
-      case 'promote-chain': return window.CJS.CampaignQuestChains.promoteToQuest(data.id);
+      case 'promote-chain': return _addQuestChainToTracker(data.id);
+      case 'chain-scenario': return _startQuestChainScenario(data.id);
+      case 'chain-battle': return _questChainBattle(data.id);
       case 'queue-battle-set': return window.CJS.CampaignBattleSetForge.queueBattle(data.id);
       case 'save-battle-card': return window.CJS.CampaignBattleSetForge.saveCard(data.id);
       case 'copy-battle-card': return _copyBattleCard(data.id);
@@ -2396,7 +2529,7 @@ window.CJS.CampaignUI = (() => {
       return UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
     }
     const card = _randomQuestOfferCard();
-    if (!card) return UI().toast('No quest run templates available', 'info');
+    if (!card) return UI().toast('No single-quest templates available. Finish an active quest or add more quest templates.', 'info');
     Side().saveCard(card, { status: 'active', source: 'quest_run' });
     return _startQuestRunFromOffer(card);
   }
@@ -2409,28 +2542,9 @@ window.CJS.CampaignUI = (() => {
     const templates = Object.values(CS().getContent().campaignQuests || {})
       .flatMap((record) => record.templates || [])
       .filter((quest) => !activeQuestIds.has(quest.id));
-    const chains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
-    const options = templates.length
-      ? templates.map((quest) => ({ type: 'quest_template', quest }))
-      : chains.map((chain) => ({ type: 'quest_chain', chain }));
+    const options = templates.map((quest) => ({ type: 'quest_template', quest }));
     if (!options.length) return null;
     const pick = options[Math.floor(Math.random() * options.length)];
-    if (pick.type === 'quest_chain') {
-      const chain = pick.chain;
-      return {
-        id: `idea_offer_${chain.id}_${Date.now()}`,
-        type: 'quest_offer',
-        title: chain.title || chain.name || chain.id,
-        summary: chain.summary || '',
-        canonRisk: chain.canonRisk || 'green',
-        tags: chain.tags || [],
-        questChainTemplateId: chain.id,
-        suggestedChoices: [{
-          label: 'Start this quest chain',
-          ops: [{ op: 'start_quest_chain', templateId: chain.id }]
-        }]
-      };
-    }
     const quest = CS().clone(pick.quest);
     return {
       id: `idea_offer_${quest.id}_${Date.now()}`,
@@ -2457,17 +2571,9 @@ window.CJS.CampaignUI = (() => {
       return { error: 'active_run' };
     }
     if (card.questChainTemplateId) {
-      const choice = card.suggestedChoices?.[0];
-      if (choice?.ops?.length) Ops().apply(choice.ops, { source: 'quest_run_chain' });
       Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain_run', approved: true }, { source: 'quest_run' });
       _clearPendingSoloHook();
-      const result = _generateScenario({
-        source: 'quest_chain',
-        mapForm: 'node_map',
-        mapType: _questMapType(card),
-        size: 'small'
-      });
-      return result;
+      return _startQuestChainRun(card.questChainTemplateId);
     }
 
     const quest = _questFromOfferCard(card);
@@ -2567,7 +2673,7 @@ window.CJS.CampaignUI = (() => {
       _activeMode = 'town';
       _activeTab = 'quests';
       render();
-      UI().toast('Quest chain started', 'success');
+      UI().toast('Quest arc added', 'success');
       return;
     }
     const quest = card.questTemplate ? CS().clone(card.questTemplate) : {
@@ -2857,7 +2963,7 @@ window.CJS.CampaignUI = (() => {
       const messages = {
         active_run: 'End the active scenario before generating another',
         no_active_quest: 'No active quest to source from. Add one in the Quests tab first.',
-        no_active_chain: 'No active quest chain. Start one in the Quest Chains tab first.'
+        no_active_chain: 'No active quest arc. Start one from the Quests tab first.'
       };
       const msg = messages[result?.error] || 'Scenario generation skipped';
       UI().toast(msg, 'info');
@@ -3538,6 +3644,7 @@ window.CJS.CampaignUI = (() => {
       if (!run) return;
       run.questId = quest.id;
       run.questTitle = quest.title || quest.id;
+      run.questChainId = quest.chainTemplateId || scenario?.source?.questChainId || run.questChainId || null;
       run.questObjectiveId = task.objectiveId || null;
       run.questTask = task;
     }, { source: 'quest_run' });

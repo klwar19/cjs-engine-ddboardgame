@@ -57,6 +57,56 @@
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
           "tags": ["forest", "forage", "starter"],
           "notes": "Good low-pressure resource quest."
+        },
+        {
+          "id": "quest_firemoss_cache_run",
+          "title": "Recover the Firemoss Cache",
+          "status": "active",
+          "giver": "Tessa",
+          "summary": "Trace a broken sled route, recover the firemoss cache, and keep Frostbitten's burners lit.",
+          "objectives": [
+            { "id": "inspect_sled", "label": "Inspect the broken sled", "current": 0, "required": 1 },
+            { "id": "recover_cache", "label": "Recover the hunter cache supplies", "current": 0, "required": 1 },
+            { "id": "secure_ridge", "label": "Secure the Watch Ridge route", "current": 0, "required": 1 }
+          ],
+          "rewards": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 18 },
+            { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": 2 }
+          ],
+          "failureConsequence": [
+            { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": -1 }
+          ],
+          "timer": { "phasesRemaining": 3 },
+          "mapType": "forest",
+          "linkedScenario": "haven_scn_frostwood_short_run",
+          "linkedMapNodes": ["broken_sled", "hunter_cache", "watch_ridge"],
+          "battleSetIds": ["haven_bset_bandit_taxmen_snowblind", "haven_bset_wolf_pack_bent_pine"],
+          "tags": ["forest", "supply", "starter"],
+          "notes": "Use the sled/cache/ridge branch on Frostwood Short Route."
+        },
+        {
+          "id": "quest_ironhand_pelt_wraps",
+          "title": "Ironhand Pelt Wraps",
+          "status": "active",
+          "giver": "Hilda Ironhand",
+          "summary": "Field-test winter grip wraps by tracking wolves, taking pelts, and returning by the shrine route.",
+          "objectives": [
+            { "id": "find_pelt_marks", "label": "Find usable pelt marks", "current": 0, "required": 1 },
+            { "id": "gather_pelts", "label": "Gather winter pelts from the den", "current": 0, "required": 1 },
+            { "id": "field_test", "label": "Finish the shrine-route field test", "current": 0, "required": 1 }
+          ],
+          "rewards": [
+            { "op": "unlock_recipe", "recipeId": "haven_recipe_wolf_fur_cloak" },
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
+            { "op": "give_jp", "amount": 1 }
+          ],
+          "timer": { "phasesRemaining": 4 },
+          "mapType": "forest",
+          "linkedScenario": "haven_scn_frostwood_short_run",
+          "linkedMapNodes": ["wolf_tracks", "wolf_den", "old_shrine"],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "tags": ["forest", "crafting", "starter"],
+          "notes": "A practical forge quest that still uses map movement and combat."
         }
       ]
     }

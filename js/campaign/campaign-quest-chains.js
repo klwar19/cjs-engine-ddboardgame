@@ -20,7 +20,14 @@ window.CJS.CampaignQuestChains = (() => {
     return CS().getActiveQuestChains().map((state) => ({
       ...state,
       template: Loader().getQuestChainTemplate(state.templateId)
-    }));
+    })).filter((chain) => String(chain.status || 'active') === 'active');
+  }
+
+  function getFinished() {
+    return CS().getActiveQuestChains().map((state) => ({
+      ...state,
+      template: Loader().getQuestChainTemplate(state.templateId)
+    })).filter((chain) => String(chain.status || 'active') !== 'active');
   }
 
   function getTemplate(templateId) {
@@ -28,11 +35,24 @@ window.CJS.CampaignQuestChains = (() => {
   }
 
   function start(templateId) {
-    Ops().apply({ op: 'start_quest_chain', templateId }, { source: 'quest_chain' });
+    const chain = getTemplate(templateId);
+    if (!chain) return;
+    Ops().apply([
+      { op: 'start_quest_chain', templateId, questId: `quest_${templateId}` },
+      { op: 'add_quest', quest: toQuest(chain) }
+    ], { source: 'quest_chain' });
   }
 
   function advance(templateId) {
-    Ops().apply({ op: 'advance_quest_chain_step', templateId }, { source: 'quest_chain' });
+    const active = CS().getState()?.sideContent?.activeQuestChains?.[templateId];
+    const chain = getTemplate(templateId);
+    const stepId = active?.currentStepId || null;
+    const ops = [];
+    const questId = active?.questId || `quest_${templateId}`;
+    if (chain && !CS().getState()?.quests?.[questId]) ops.push({ op: 'add_quest', quest: toQuest(chain) });
+    if (stepId) ops.push({ op: 'update_quest_progress', questId, objectiveId: stepId, amount: 1 });
+    ops.push({ op: 'advance_quest_chain_step', templateId, applyRewards: false });
+    Ops().apply(ops, { source: 'quest_chain' });
   }
 
   function completeStep(templateId, stepId) {
@@ -40,11 +60,29 @@ window.CJS.CampaignQuestChains = (() => {
   }
 
   function complete(templateId) {
-    Ops().apply({ op: 'complete_quest_chain', templateId }, { source: 'quest_chain' });
+    const active = CS().getState()?.sideContent?.activeQuestChains?.[templateId];
+    const chain = getTemplate(templateId);
+    const questId = active?.questId || `quest_${templateId}`;
+    const ops = [];
+    if (chain && !CS().getState()?.quests?.[questId]) ops.push({ op: 'add_quest', quest: toQuest(chain) });
+    Ops().apply([
+      ...ops,
+      { op: 'complete_quest', questId },
+      { op: 'complete_quest_chain', templateId, applyRewards: false }
+    ], { source: 'quest_chain' });
   }
 
   function fail(templateId) {
-    Ops().apply({ op: 'fail_quest_chain', templateId, applyConsequences: true }, { source: 'quest_chain' });
+    const active = CS().getState()?.sideContent?.activeQuestChains?.[templateId];
+    const chain = getTemplate(templateId);
+    const questId = active?.questId || `quest_${templateId}`;
+    const ops = [];
+    if (chain && !CS().getState()?.quests?.[questId]) ops.push({ op: 'add_quest', quest: toQuest(chain) });
+    Ops().apply([
+      ...ops,
+      { op: 'fail_quest', questId },
+      { op: 'fail_quest_chain', templateId, applyConsequences: true }
+    ], { source: 'quest_chain' });
   }
 
   function saveAsIdea(templateId) {
@@ -65,19 +103,37 @@ window.CJS.CampaignQuestChains = (() => {
     if (!chain) return;
     Ops().apply({
       op: 'add_quest',
-      quest: {
-        id: `quest_${chain.id}`,
-        title: chain.title,
-        summary: chain.summary || '',
-        objectives: (chain.steps || []).map((step) => ({ id: step.id, label: step.label || step.id, current: 0, required: 1 })),
-        rewards: chain.rewardOps || []
-      }
+      quest: toQuest(chain)
     }, { source: 'quest_chain' });
+  }
+
+  function toQuest(chain = {}) {
+    return {
+      id: `quest_${chain.id}`,
+      title: chain.title || chain.name || chain.id,
+      status: 'active',
+      summary: chain.summary || '',
+      chainTemplateId: chain.id,
+      objectives: (chain.steps || []).map((step) => ({
+        id: step.id,
+        label: step.label || step.id,
+        current: 0,
+        required: 1,
+        text: step.text || ''
+      })),
+      rewards: chain.rewardOps || chain.rewards || [],
+      failureConsequence: chain.failureOps || chain.failureConsequences || [],
+      battleSetIds: chain.battleSetIds || [],
+      mapSeedIds: chain.mapSeedIds || [],
+      tags: chain.tags || [],
+      notes: chain.type || ''
+    };
   }
 
   return Object.freeze({
     getAvailable,
     getActive,
+    getFinished,
     getTemplate,
     start,
     advance,
@@ -85,6 +141,7 @@ window.CJS.CampaignQuestChains = (() => {
     complete,
     fail,
     saveAsIdea,
-    promoteToQuest
+    promoteToQuest,
+    toQuest
   });
 })();
