@@ -52,6 +52,8 @@ window.CJS.CampaignOps = (() => {
         case 'activate_character': return `Activate ${op.target || op.characterId}`;
         case 'learn_skill': return `Learn skill ${op.skillId || op.id}`;
         case 'learn_passive': return `Learn passive ${op.passiveId || op.id}`;
+        case 'equip_item': return `Equip ${op.itemId || op.id} on ${op.target || op.characterId}`;
+        case 'unequip_item': return `Unequip ${op.slot || op.itemId || op.id} from ${op.target || op.characterId}`;
         case 'add_status': return `Add ${op.status || op.id} to ${op.target || 'target'}`;
         case 'set_party_availability': return `Set ${op.target || op.characterId || 'party member'} availability`;
         case 'clear_party_availability': return `Clear ${op.target || op.characterId || 'party member'} availability`;
@@ -118,6 +120,8 @@ window.CJS.CampaignOps = (() => {
       case 'unlearn_skill': return _unlearnSkill(state, op);
       case 'learn_passive': return _learnPassive(state, op);
       case 'unlearn_passive': return _unlearnPassive(state, op);
+      case 'equip_item': return _equipItem(state, op);
+      case 'unequip_item': return _unequipItem(state, op);
       case 'set_party_availability': return _setPartyAvailability(state, op);
       case 'clear_party_availability': return _clearPartyAvailability(state, op);
       case 'damage_party': return _partyEach(state, (id) => _hp(state, id, -(op.amount || 0), false), `Party took ${op.amount || 0} HP damage.`);
@@ -389,6 +393,155 @@ window.CJS.CampaignOps = (() => {
       member.learnedPassives = (member.learnedPassives || []).filter((entry) => entry !== passiveId);
       _log(state, `${member.name || id} removed passive ${_recordName('passives', passiveId) || passiveId}.`);
     }
+  }
+
+  function _equipItem(state, op) {
+    const itemId = op.itemId || op.id;
+    if (!itemId) return;
+    const item = DS().get('items', itemId);
+    if (!item) return;
+    const kind = _equipmentKind(item);
+    if (!['weapon', 'armor', 'accessory'].includes(kind)) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.equipmentSlots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+      if (kind === 'weapon' && !_canUseWeapon(member, item)) {
+        _log(state, `${member.name || id} cannot equip ${item.name || itemId}: wrong weapon type.`);
+        continue;
+      }
+      if (kind === 'armor' && !_canUseArmor(member, item)) {
+        _log(state, `${member.name || id} cannot equip ${item.name || itemId}: wrong armor type.`);
+        continue;
+      }
+      if (kind === 'weapon') member.equipmentSlots.weapon = itemId;
+      else if (kind === 'armor') member.equipmentSlots.armor = itemId;
+      else _equipAccessory(member, itemId, item, op.slot);
+      _syncEquipmentList(member);
+      _log(state, `${member.name || id} equipped ${item.name || itemId}.`);
+    }
+  }
+
+  function _unequipItem(state, op) {
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.equipmentSlots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+      const slot = op.slot;
+      if (slot && member.equipmentSlots[slot] !== undefined) member.equipmentSlots[slot] = null;
+      const itemId = op.itemId || op.id;
+      if (itemId) {
+        for (const key of Object.keys(member.equipmentSlots)) {
+          if (member.equipmentSlots[key] === itemId) member.equipmentSlots[key] = null;
+        }
+      }
+      _syncEquipmentList(member);
+      _log(state, `${member.name || id} changed equipment.`);
+    }
+  }
+
+  function _equipAccessory(member, itemId, item, requestedSlot) {
+    const slots = member.equipmentSlots;
+    const type = _accessoryType(item);
+    const otherSlot = requestedSlot === 'accessory2' ? 'accessory1' : 'accessory2';
+    if (requestedSlot && slots[requestedSlot] !== undefined) {
+      const other = DS().get('items', slots[otherSlot]);
+      if (type && other && _accessoryType(other) === type) slots[otherSlot] = null;
+      slots[requestedSlot] = itemId;
+      return;
+    }
+    for (const key of ['accessory1', 'accessory2']) {
+      const equipped = DS().get('items', slots[key]);
+      if (type && equipped && _accessoryType(equipped) === type) slots[key] = null;
+    }
+    const open = !slots.accessory1 ? 'accessory1' : !slots.accessory2 ? 'accessory2' : 'accessory1';
+    slots[open] = itemId;
+  }
+
+  function _normalizeEquipmentSlots(rawSlots, equipment = []) {
+    const slots = {
+      weapon: rawSlots?.weapon || null,
+      armor: rawSlots?.armor || null,
+      accessory1: rawSlots?.accessory1 || null,
+      accessory2: rawSlots?.accessory2 || null
+    };
+    const used = new Set(Object.values(slots).filter(Boolean));
+    for (const itemId of equipment || []) {
+      if (!itemId || used.has(itemId)) continue;
+      const item = DS().get('items', itemId);
+      const kind = _equipmentKind(item);
+      if (kind === 'weapon' && !slots.weapon) slots.weapon = itemId;
+      else if (kind === 'armor' && !slots.armor) slots.armor = itemId;
+      else if (kind === 'accessory' && !slots.accessory1) slots.accessory1 = itemId;
+      else if (kind === 'accessory' && !slots.accessory2) slots.accessory2 = itemId;
+      used.add(itemId);
+    }
+    return slots;
+  }
+
+  function _syncEquipmentList(member) {
+    member.equipment = [
+      member.equipmentSlots?.weapon,
+      member.equipmentSlots?.armor,
+      member.equipmentSlots?.accessory1,
+      member.equipmentSlots?.accessory2
+    ].filter(Boolean);
+  }
+
+  function _equipmentKind(item = {}) {
+    const slot = item?.slot || '';
+    if (item?.equipmentCategory) return item.equipmentCategory;
+    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
+    if (['armor', 'head', 'body', 'legs', 'feet'].includes(slot)) return 'armor';
+    if (['accessory', 'accessory1', 'accessory2'].includes(slot)) return 'accessory';
+    return '';
+  }
+
+  function _canUseWeapon(member, item) {
+    const base = DS().get('characters', member.baseCharacterId) || {};
+    const allowed = _uniqueTypes([...(base.allowedWeaponTypes || []), ...(member.allowedWeaponTypes || [])]);
+    return !allowed.length || allowed.includes(_weaponType(item));
+  }
+
+  function _canUseArmor(member, item) {
+    const base = DS().get('characters', member.baseCharacterId) || {};
+    const allowed = _uniqueTypes([...(base.allowedArmorTypes || []), ...(member.allowedArmorTypes || [])]);
+    return !allowed.length || allowed.includes(_armorType(item));
+  }
+
+  function _uniqueTypes(values = []) {
+    return Array.from(new Set(values.map(_cleanType).filter(Boolean)));
+  }
+
+  function _weaponType(item = {}) {
+    return _cleanType(item.weaponType || item.weaponData?.weaponType || item.type || _inferType(item, window.CJS.CONST?.WEAPON_TYPES || []));
+  }
+
+  function _armorType(item = {}) {
+    return _cleanType(item.armorType || item.type || _inferType(item, window.CJS.CONST?.ARMOR_TYPES || []));
+  }
+
+  function _accessoryType(item = {}) {
+    return _cleanType(item.accessoryType || item.type || _inferType(item, window.CJS.CONST?.ACCESSORY_TYPES || []));
+  }
+
+  function _inferType(item, types) {
+    const text = [item.id, item.name, item.slot, ...(item.tags || [])].join(' ').toLowerCase();
+    const aliases = {
+      blade: 'sword', longsword: 'sword', shortsword: 'sword', katana: 'sword',
+      fang: 'dagger', knife: 'dagger',
+      longbow: 'bow', shortbow: 'bow',
+      fist: 'knuckles', claw: 'knuckles', gauntlet: 'knuckles',
+      rod: 'staff', tome: 'staff',
+      leather: 'light', cloak: 'light', boots: 'light', cloth: 'robe', mail: 'heavy', plate: 'heavy',
+      pendant: 'amulet', necklace: 'amulet', coin: 'charm', core: 'trinket'
+    };
+    for (const [alias, type] of Object.entries(aliases)) {
+      if ((types || []).includes(type) && text.includes(alias)) return type;
+    }
+    return (types || []).find((type) => text.includes(type)) || '';
+  }
+
+  function _cleanType(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_ -]+/g, '').replace(/\s+/g, '_');
   }
 
   function _skillEntryId(entry) {

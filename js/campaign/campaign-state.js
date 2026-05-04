@@ -248,6 +248,8 @@ window.CJS.CampaignState = (() => {
       statOverrides: {},
       learnedSkills: [],
       learnedPassives: [],
+      allowedWeaponTypes: clone(base.allowedWeaponTypes || []),
+      allowedArmorTypes: clone(base.allowedArmorTypes || []),
       statuses: [],
       buffs: [],
       injuries: [],
@@ -259,6 +261,7 @@ window.CJS.CampaignState = (() => {
         expires: null
       },
       equipment: clone(base.equipment || []),
+      equipmentSlots: _equipmentSlotsFromList(base.equipment || []),
       notes: [],
       xp: 0
     };
@@ -303,6 +306,44 @@ window.CJS.CampaignState = (() => {
     } else {
       member[currentKey] = Math.max(0, Math.min(expected, priorCurrent));
     }
+  }
+
+  function _normalizeEquipmentSlots(rawSlots, equipment = []) {
+    const slots = {
+      weapon: rawSlots?.weapon || null,
+      armor: rawSlots?.armor || null,
+      accessory1: rawSlots?.accessory1 || null,
+      accessory2: rawSlots?.accessory2 || null
+    };
+    const used = new Set(Object.values(slots).filter(Boolean));
+    for (const itemId of equipment || []) {
+      if (!itemId || used.has(itemId)) continue;
+      const item = DS().get('items', itemId);
+      const kind = _equipmentKind(item);
+      if (kind === 'weapon' && !slots.weapon) slots.weapon = itemId;
+      else if (kind === 'armor' && !slots.armor) slots.armor = itemId;
+      else if (kind === 'accessory' && !slots.accessory1) slots.accessory1 = itemId;
+      else if (kind === 'accessory' && !slots.accessory2) slots.accessory2 = itemId;
+      used.add(itemId);
+    }
+    return slots;
+  }
+
+  function _equipmentSlotsFromList(equipment = []) {
+    return _normalizeEquipmentSlots({}, equipment);
+  }
+
+  function _equipmentListFromSlots(slots = {}) {
+    return [slots.weapon, slots.armor, slots.accessory1, slots.accessory2].filter(Boolean);
+  }
+
+  function _equipmentKind(item = {}) {
+    const slot = item?.slot || '';
+    if (item?.equipmentCategory) return item.equipmentCategory;
+    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
+    if (['armor', 'head', 'body', 'legs', 'feet'].includes(slot)) return 'armor';
+    if (['accessory', 'accessory1', 'accessory2'].includes(slot)) return 'accessory';
+    return '';
   }
 
   function buildInitialHubState(campaign) {
@@ -409,7 +450,12 @@ window.CJS.CampaignState = (() => {
       member.statOverrides = member.statOverrides || {};
       member.learnedSkills = Array.isArray(member.learnedSkills) ? member.learnedSkills.filter(Boolean) : [];
       member.learnedPassives = Array.isArray(member.learnedPassives) ? member.learnedPassives.filter(Boolean) : [];
-      member.equipment = Array.isArray(member.equipment) ? member.equipment : clone(DS().get('characters', member.baseCharacterId || id)?.equipment || []);
+      const base = DS().get('characters', member.baseCharacterId || id) || {};
+      member.allowedWeaponTypes = Array.isArray(member.allowedWeaponTypes) ? member.allowedWeaponTypes : clone(base.allowedWeaponTypes || []);
+      member.allowedArmorTypes = Array.isArray(member.allowedArmorTypes) ? member.allowedArmorTypes : clone(base.allowedArmorTypes || []);
+      member.equipment = Array.isArray(member.equipment) ? member.equipment : clone(base.equipment || []);
+      member.equipmentSlots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+      member.equipment = _equipmentListFromSlots(member.equipmentSlots);
       member.notes = member.notes || [];
       member.availability = normalizeAvailability(member.availability, member);
       _syncPartyMaxHp(id, member);

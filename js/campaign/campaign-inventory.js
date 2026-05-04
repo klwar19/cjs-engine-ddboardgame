@@ -58,12 +58,34 @@ window.CJS.CampaignInventory = (() => {
 
   function _metaFor(bucket, id) {
     const record = _recordFor(bucket, id);
-    return [id, record?.type, record?.rarity, record?._world].filter(Boolean).join(' | ');
+    return [id, _equipmentMeta(record), record?.type, record?.rarity, record?._world].filter(Boolean).join(' | ');
   }
 
   function _descriptionFor(bucket, id) {
     const record = _recordFor(bucket, id);
-    return record?.description || record?.desc || record?.flavor || record?.notes || '';
+    return [
+      record?.description || record?.desc || record?.flavor || record?.notes || '',
+      record?.characteristic ? `Characteristic: ${record.characteristic}` : '',
+      record?.changeNotes ? `Change: ${record.changeNotes}` : ''
+    ].filter(Boolean).join(' ');
+  }
+
+  function _equipmentMeta(record = {}) {
+    const kind = _equipmentKind(record);
+    if (!kind) return '';
+    const type = kind === 'weapon' ? record.weaponType || record.weaponData?.weaponType
+      : kind === 'armor' ? record.armorType
+        : record.accessoryType;
+    return [kind, type].filter(Boolean).join(': ');
+  }
+
+  function _equipmentKind(record = {}) {
+    const slot = record?.slot || '';
+    if (record?.equipmentCategory) return record.equipmentCategory;
+    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
+    if (['armor', 'head', 'body', 'legs', 'feet'].includes(slot)) return 'armor';
+    if (['accessory', 'accessory1', 'accessory2'].includes(slot)) return 'accessory';
+    return '';
   }
 
   function _recordFor(bucket, id) {

@@ -89,6 +89,11 @@ body.campaign-page {
   color: #ffd7d7;
 }
 
+.campaign-icon-btn.danger {
+  border-color: rgba(239, 102, 102, 0.55);
+  color: #ffd7d7;
+}
+
 .campaign-action:disabled,
 .campaign-map-layer:disabled {
   opacity: 0.48;
@@ -386,6 +391,44 @@ body.campaign-page {
 
 .campaign-record-line:first-of-type {
   border-top: 0;
+}
+
+.campaign-equipment-proficiency {
+  margin-bottom: 6px;
+  color: var(--campaign-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.campaign-equipment-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  border-top: 1px solid var(--campaign-line);
+  padding: 8px 0;
+}
+
+.campaign-equipment-line strong,
+.campaign-equipment-line small,
+.campaign-equipment-line p {
+  display: block;
+}
+
+.campaign-equipment-line small {
+  color: var(--campaign-muted);
+  font-size: 0.76rem;
+}
+
+.campaign-equipment-line p {
+  margin: 3px 0 0;
+  color: var(--campaign-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.campaign-picker-change {
+  color: var(--campaign-good) !important;
 }
 
 .campaign-record-line strong,

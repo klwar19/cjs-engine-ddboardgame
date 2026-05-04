@@ -163,6 +163,9 @@ window.CJS.ActionHandler = (() => {
         if (!knownSkillIds.includes(action.skillId)) {
           return { valid: false, reason: 'skill_not_known' };
         }
+        if (!_meetsWeaponRequirement(unit, skill)) {
+          return { valid: false, reason: 'required_weapon_missing' };
+        }
         if ((ts.cooldowns?.[action.skillId] || 0) > 0) {
           return { valid: false, reason: 'on_cooldown' };
         }
@@ -613,24 +616,82 @@ window.CJS.ActionHandler = (() => {
     return base ? { ...base } : null;
   }
 
+  function _meetsWeaponRequirement(unit, skill) {
+    const required = _requiredWeaponTypes(skill);
+    if (!required.length) return true;
+    const weaponType = _equippedWeaponType(unit) || 'unarmed';
+    return required.includes(weaponType);
+  }
+
+  function _requiredWeaponTypes(skill = {}) {
+    const raw = skill.requiredWeaponTypes
+      || skill.requiresWeaponTypes
+      || skill.requiredWeaponType
+      || skill.weaponTypeRequired
+      || [];
+    return (Array.isArray(raw) ? raw : [raw]).map(_cleanType).filter(Boolean);
+  }
+
+  function _equippedWeaponType(unit) {
+    const item = _getWeaponItem(unit);
+    return item ? _weaponType(item) : '';
+  }
+
   // ── WEAPON DATA ───────────────────────────────────────────────────
   // Get the equipped weapon's data (range, element, damageType, baseDamage).
   // Returns null if no weapon equipped.
   function _getWeaponData(unit) {
+    const equipped = _getWeaponItem(unit);
+    if (!equipped) return null;
+    return {
+      ...(equipped.weaponData || {}),
+      itemId: equipped.id,
+      itemName: equipped.name || equipped.id,
+      weaponType: _weaponType(equipped),
+      tags: equipped.tags || [],
+      type: equipped.type || equipped.weaponType || ''
+    };
+  }
+
+  function _getWeaponItem(unit) {
     if (!unit.equipment) return null;
     for (const iid of unit.equipment) {
       const item = DS().get('items', iid);
-      if (item?.slot === 'weapon' && item.weaponData) {
-        return {
-          ...item.weaponData,
-          itemId: iid,
-          itemName: item.name || iid,
-          tags: item.tags || [],
-          type: item.type || item.weaponType || ''
-        };
-      }
+      if (_equipmentKind(item) === 'weapon' && item.weaponData) return { ...item, id: iid };
     }
     return null;
+  }
+
+  function _equipmentKind(item = {}) {
+    const slot = item?.slot || '';
+    if (item?.equipmentCategory) return item.equipmentCategory;
+    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
+    return '';
+  }
+
+  function _weaponType(item = {}) {
+    return _cleanType(item.weaponType || item.weaponData?.weaponType || item.type || _inferType(item, C()?.WEAPON_TYPES || []));
+  }
+
+  function _inferType(item, types) {
+    const text = [item?.id, item?.name, item?.slot, ...(item?.tags || [])].join(' ').toLowerCase();
+    const aliases = {
+      blade: 'sword', longsword: 'sword', shortsword: 'sword', katana: 'sword',
+      fang: 'dagger', knife: 'dagger',
+      longbow: 'bow', shortbow: 'bow',
+      fist: 'knuckles', claw: 'knuckles', gauntlet: 'knuckles',
+      rod: 'staff', tome: 'staff',
+      leather: 'light', cloak: 'light', boots: 'light', cloth: 'robe', mail: 'heavy', plate: 'heavy',
+      pendant: 'amulet', necklace: 'amulet', coin: 'charm', core: 'trinket'
+    };
+    for (const [alias, type] of Object.entries(aliases)) {
+      if ((types || []).includes(type) && text.includes(alias)) return type;
+    }
+    return (types || []).find((type) => text.includes(type)) || '';
+  }
+
+  function _cleanType(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_ -]+/g, '').replace(/\s+/g, '_');
   }
 
   // Get the effective attack range for basic attacks.
@@ -668,14 +729,18 @@ window.CJS.ActionHandler = (() => {
         const cdRemaining = ts.cooldowns?.[skillId] || 0;
         const mpCost = Math.max(0, (skill.mp || 0) + (unit.costMod || 0));
         const apCost = skill.ap || 1;
+        const weaponReady = _meetsWeaponRequirement(unit, skill);
         available.skills.push({
           id: skillId,
           skill,
           usable: canSkill &&
+                  weaponReady &&
                   cdRemaining === 0 &&
                   (unit.currentMP || 0) >= mpCost &&
                   (ts.apRemaining || 0) >= apCost,
           silenced: !canSkill,
+          weaponReady,
+          requiredWeaponTypes: _requiredWeaponTypes(skill),
           cooldown: cdRemaining,
           apCost, mpCost
         });

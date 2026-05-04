@@ -345,7 +345,6 @@ window.CJS.CampaignUI = (() => {
     const skills = _memberSkillEntries(id, member);
     const passives = _memberPassives(id, member);
     const statuses = member.statuses || [];
-    const equipment = member.equipment || [];
     const isBench = (member.rosterRole || 'active') === 'bench';
     return `
       <div class="campaign-roster-member">
@@ -387,7 +386,7 @@ window.CJS.CampaignUI = (() => {
           </div>
           <div>
             <div class="campaign-section-title">Equipment</div>
-            ${equipment.length ? equipment.map((itemId) => _renderKnownItem('items', itemId)).join('') : '<div class="campaign-empty">No equipment.</div>'}
+            ${_renderEquipmentLoadout(id, member)}
           </div>
         </div>
       </div>
@@ -1628,6 +1627,8 @@ window.CJS.CampaignUI = (() => {
       case 'unlearn-skill': return Ops().apply({ op: 'unlearn_skill', target: data.id, skillId: data.skillId }, { source: 'ui' });
       case 'learn-passive': return _learnPassiveModal(data.id);
       case 'unlearn-passive': return Ops().apply({ op: 'unlearn_passive', target: data.id, passiveId: data.passiveId }, { source: 'ui' });
+      case 'equip-item': return _equipItemModal(data.id, data.slot);
+      case 'unequip-item': return Ops().apply({ op: 'unequip_item', target: data.id, slot: data.slot }, { source: 'ui' });
       case 'stat-boost': return _statBoostModal(data.id);
       case 'level-char': return _charNumberOp(data.id, 'add_level', 'Level change');
       case 'party-availability': return _partyAvailabilityModal(data.id);
@@ -2877,6 +2878,24 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
+  function _equipItemModal(id, slot) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    const options = _equipmentOptions(member, slot);
+    if (!options.length) {
+      UI().toast(`No ${_slotLabel(slot).toLowerCase()} options found in Edit Mode`, 'info');
+      return;
+    }
+    _opPickerModal({
+      title: `Equip ${_slotLabel(slot)}: ${member.name || id}`,
+      options,
+      placeholder: 'Search equipment...',
+      primaryLabel: 'Equip',
+      renderItem: _equipmentPickerItem,
+      onSubmit: ({ value }) => Ops().apply({ op: 'equip_item', target: id, itemId: value, slot }, { source: 'ui' })
+    });
+  }
+
   function _statBoostModal(id) {
     const member = CS().getState()?.party?.[id];
     if (!member) return;
@@ -3271,6 +3290,233 @@ window.CJS.CampaignUI = (() => {
     return ordered;
   }
 
+  function _renderEquipmentLoadout(memberId, member = {}) {
+    const slots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+    const weaponTypes = _allowedTypes(member, 'allowedWeaponTypes').map(_label).join(', ') || 'Any';
+    const armorTypes = _allowedTypes(member, 'allowedArmorTypes').map(_label).join(', ') || 'Any';
+    const rows = ['weapon', 'armor', 'accessory1', 'accessory2'].map((slot) => {
+      const itemId = slots[slot];
+      const item = DS().get('items', itemId);
+      const itemName = item?.name || itemId || 'Empty';
+      const type = item ? _equipmentType(item) : '';
+      const meta = item ? [type, item.rarity].filter(Boolean).join(' | ') : 'Empty';
+      return `
+        <div class="campaign-equipment-line">
+          <div>
+            <strong>${_esc(_slotLabel(slot))}</strong>
+            <small>${_esc(itemName)}${meta ? ` | ${_esc(meta)}` : ''}</small>
+            ${item ? `<p>${_esc(_equipmentDesc(item))}</p>` : ''}
+          </div>
+          <div class="campaign-row-actions">
+            <button class="campaign-icon-btn" data-campaign-action="equip-item" data-id="${_escAttr(memberId)}" data-slot="${_escAttr(slot)}">Equip</button>
+            ${item ? `<button class="campaign-icon-btn danger" data-campaign-action="unequip-item" data-id="${_escAttr(memberId)}" data-slot="${_escAttr(slot)}">-</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="campaign-equipment-proficiency">Weapons: ${_esc(weaponTypes)} | Armor: ${_esc(armorTypes)} | Accessories: any two different types</div>
+      ${rows}
+    `;
+  }
+
+  function _equipmentOptions(member, slot) {
+    const kind = _slotKind(slot);
+    const slots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+    const currentId = slots[slot];
+    const otherAccessorySlot = slot === 'accessory1' ? 'accessory2' : 'accessory1';
+    const otherAccessory = kind === 'accessory' ? DS().get('items', slots[otherAccessorySlot]) : null;
+    const otherAccessoryType = otherAccessory ? _accessoryType(otherAccessory) : '';
+    const state = CS().getState() || {};
+    const world = state.currentWorld;
+    const itemInventory = state.inventory?.items || {};
+    const equipmentInventory = state.inventory?.equipment || {};
+    const inWorld = (entry) => !entry._world || entry._world === world || entry._scope === 'universal' || entry._scope === 'system';
+    return DS().getAllAsArray('items')
+      .filter((entry) => entry?.id && inWorld(entry) && _equipmentKind(entry) === kind)
+      .filter((entry) => {
+        if (kind === 'weapon') return _memberCanUseWeapon(member, entry);
+        if (kind === 'armor') return _memberCanUseArmor(member, entry);
+        if (kind === 'accessory' && otherAccessoryType && entry.id !== currentId) return _accessoryType(entry) !== otherAccessoryType;
+        return true;
+      })
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: [_equipmentType(entry), entry.rarity, `Owned: ${itemInventory[entry.id] || equipmentInventory[entry.id] || 0}`].filter(Boolean).join(' | '),
+        description: _equipmentDesc(entry),
+        change: _equipmentChangeDescription(member, slot, entry, true),
+        group: _slotLabel(slot),
+        tags: [entry.id, entry.name, _equipmentType(entry), _equipmentKind(entry), ...(entry.tags || [])].filter(Boolean)
+      }))
+      .sort(_sortOptionLabel);
+  }
+
+  function _equipmentPickerItem(option) {
+    return `
+      <div class="campaign-picker-option campaign-equipment-option">
+        <strong>${_esc(option.label || option.value)}</strong>
+        ${option.sub ? `<small>${_esc(option.sub)}</small>` : ''}
+        ${option.description ? `<span>${_esc(option.description)}</span>` : ''}
+        ${option.change ? `<span class="campaign-picker-change">${_esc(option.change)}</span>` : ''}
+      </div>
+    `;
+  }
+
+  function _normalizeEquipmentSlots(rawSlots, equipment = []) {
+    const slots = {
+      weapon: rawSlots?.weapon || null,
+      armor: rawSlots?.armor || null,
+      accessory1: rawSlots?.accessory1 || null,
+      accessory2: rawSlots?.accessory2 || null
+    };
+    const used = new Set(Object.values(slots).filter(Boolean));
+    for (const itemId of equipment || []) {
+      if (!itemId || used.has(itemId)) continue;
+      const item = DS().get('items', itemId);
+      const kind = _equipmentKind(item);
+      if (kind === 'weapon' && !slots.weapon) slots.weapon = itemId;
+      else if (kind === 'armor' && !slots.armor) slots.armor = itemId;
+      else if (kind === 'accessory' && !slots.accessory1) slots.accessory1 = itemId;
+      else if (kind === 'accessory' && !slots.accessory2) slots.accessory2 = itemId;
+      used.add(itemId);
+    }
+    return slots;
+  }
+
+  function _slotKind(slot) {
+    if (slot === 'weapon') return 'weapon';
+    if (slot === 'armor') return 'armor';
+    return 'accessory';
+  }
+
+  function _slotLabel(slot) {
+    if (slot === 'accessory1') return 'Accessory 1';
+    if (slot === 'accessory2') return 'Accessory 2';
+    return _label(slot);
+  }
+
+  function _equipmentKind(item = {}) {
+    const slot = item?.slot || '';
+    if (item?.equipmentCategory) return item.equipmentCategory;
+    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
+    if (['armor', 'head', 'body', 'legs', 'feet'].includes(slot)) return 'armor';
+    if (['accessory', 'accessory1', 'accessory2'].includes(slot)) return 'accessory';
+    return '';
+  }
+
+  function _equipmentType(item = {}) {
+    const kind = _equipmentKind(item);
+    if (kind === 'weapon') return _label(_weaponType(item) || 'weapon');
+    if (kind === 'armor') return _label(_armorType(item) || 'armor');
+    if (kind === 'accessory') return _label(_accessoryType(item) || 'accessory');
+    return '';
+  }
+
+  function _equipmentDesc(item = {}) {
+    return [
+      _desc(item),
+      item.characteristic ? `Characteristic: ${item.characteristic}` : '',
+      item.changeNotes ? `Change: ${item.changeNotes}` : '',
+      _weaponSummary(item),
+      _effectSummary(item)
+    ].filter(Boolean).join(' ');
+  }
+
+  function _equipmentChangeDescription(member, slot, item, includeCurrent = true) {
+    const slots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+    const current = DS().get('items', slots[slot]);
+    const parts = [];
+    if (includeCurrent) parts.push(current ? `Replaces ${current.name || slots[slot]}` : 'Fills empty slot');
+    if (_equipmentKind(item) === 'weapon') {
+      const next = item.weaponData || {};
+      const prior = current?.weaponData || {};
+      if (next.baseDamage != null || prior.baseDamage != null) parts.push(`Damage ${_delta(next.baseDamage, prior.baseDamage)}`);
+      if (next.range != null || prior.range != null) parts.push(`Range ${_delta(next.range, prior.range)}`);
+      if (next.element || prior.element) parts.push(`Element ${next.element || 'None'}`);
+    }
+    if ((item.effects || []).length || (current?.effects || []).length) {
+      parts.push(`Effects ${(current?.effects || []).length} -> ${(item.effects || []).length}`);
+    }
+    if (item.changeNotes) parts.push(item.changeNotes);
+    return parts.filter(Boolean).join(' | ');
+  }
+
+  function _weaponSummary(item = {}) {
+    const data = item.weaponData || {};
+    if (_equipmentKind(item) !== 'weapon' || !Object.keys(data).length) return '';
+    return [
+      data.baseDamage != null ? `Damage ${data.baseDamage}` : '',
+      data.range != null ? `Range ${data.range}` : '',
+      data.damageType || '',
+      data.element ? `${data.element} element` : ''
+    ].filter(Boolean).join(', ');
+  }
+
+  function _effectSummary(item = {}) {
+    const effects = item.effects || [];
+    if (!effects.length) return '';
+    return effects.slice(0, 3).map((effect) => {
+      const def = DS().get('effects', effect.effectId || effect.id) || {};
+      const value = effect.overrides?.value ?? effect.value ?? def.value;
+      return `${def.name || effect.effectId || effect.id}${value != null ? ` ${Number(value) >= 0 ? '+' : ''}${value}` : ''}`;
+    }).join(', ') + (effects.length > 3 ? `, +${effects.length - 3} more` : '');
+  }
+
+  function _delta(next, prior) {
+    const diff = Number(next || 0) - Number(prior || 0);
+    return `${Number(next || 0)} (${diff >= 0 ? '+' : ''}${diff})`;
+  }
+
+  function _memberCanUseWeapon(member, item) {
+    const allowed = _allowedTypes(member, 'allowedWeaponTypes');
+    return !allowed.length || allowed.includes(_weaponType(item));
+  }
+
+  function _memberCanUseArmor(member, item) {
+    const allowed = _allowedTypes(member, 'allowedArmorTypes');
+    return !allowed.length || allowed.includes(_armorType(item));
+  }
+
+  function _allowedTypes(member = {}, key) {
+    const base = DS().get('characters', member.baseCharacterId) || {};
+    const values = [...(base[key] || []), ...(member[key] || [])].map(_cleanType).filter(Boolean);
+    return Array.from(new Set(values));
+  }
+
+  function _weaponType(item = {}) {
+    return _cleanType(item.weaponType || item.weaponData?.weaponType || item.type || _inferType(item, C()?.WEAPON_TYPES || []));
+  }
+
+  function _armorType(item = {}) {
+    return _cleanType(item.armorType || item.type || _inferType(item, C()?.ARMOR_TYPES || []));
+  }
+
+  function _accessoryType(item = {}) {
+    return _cleanType(item.accessoryType || item.type || _inferType(item, C()?.ACCESSORY_TYPES || []));
+  }
+
+  function _inferType(item, types) {
+    const text = [item?.id, item?.name, item?.slot, ...(item?.tags || [])].join(' ').toLowerCase();
+    const aliases = {
+      blade: 'sword', longsword: 'sword', shortsword: 'sword', katana: 'sword',
+      fang: 'dagger', knife: 'dagger',
+      longbow: 'bow', shortbow: 'bow',
+      fist: 'knuckles', claw: 'knuckles', gauntlet: 'knuckles',
+      rod: 'staff', tome: 'staff',
+      leather: 'light', cloak: 'light', boots: 'light', cloth: 'robe', mail: 'heavy', plate: 'heavy',
+      pendant: 'amulet', necklace: 'amulet', coin: 'charm', core: 'trinket'
+    };
+    for (const [alias, type] of Object.entries(aliases)) {
+      if ((types || []).includes(type) && text.includes(alias)) return type;
+    }
+    return (types || []).find((type) => text.includes(type)) || '';
+  }
+
+  function _cleanType(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_ -]+/g, '').replace(/\s+/g, '_');
+  }
+
   function _memberSkillEntries(id, member = CS().getState()?.party?.[id] || {}) {
     const base = _memberBase(id, member);
     const out = [];
@@ -3364,12 +3610,19 @@ window.CJS.CampaignUI = (() => {
     if (skill.mp != null) parts.push(`${skill.mp} MP`);
     if (skill.range != null) parts.push(`Range ${skill.range}`);
     if (skill.power != null) parts.push(`Power ${skill.power}`);
+    const requiredWeapons = _skillWeaponTypes(skill);
+    if (requiredWeapons.length) parts.push(`Weapon ${requiredWeapons.map(_label).join('/')}`);
     if (entry.level) parts.push(`Lv ${entry.level}`);
     return parts.join(' | ') || skill.category || skill.type || '';
   }
 
   function _statName(stat) {
     return C()?.STAT_NAMES?.[stat] || stat;
+  }
+
+  function _skillWeaponTypes(skill = {}) {
+    const raw = skill.requiredWeaponTypes || skill.requiredWeaponType || skill.weaponTypeRequired || [];
+    return (Array.isArray(raw) ? raw : [raw]).map(_cleanType).filter(Boolean);
   }
 
   function _desc(record = {}) {

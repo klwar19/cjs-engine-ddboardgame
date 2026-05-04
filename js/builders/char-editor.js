@@ -50,6 +50,8 @@ window.CJS.CharEditor = (() => {
       name: 'New Character', icon: '🧑', team: 'player', rank: 'F', type: 'humanoid',
       stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
       skills: [], equipment: [], innatePassives: [],
+      allowedWeaponTypes: ['sword', 'bow', 'staff'],
+      allowedArmorTypes: ['light', 'robe'],
       weak: [], resist: [], immune: [],
       portrait: '',
       battleSfx: {},
@@ -119,6 +121,17 @@ window.CJS.CharEditor = (() => {
 
         <h3>Equipment</h3>
         <div id="chr-equip-area"></div>
+        <div class="hint-box">Equipment proficiencies control what this character can equip in Campaign Mode.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Allowed Weapon Types</label>
+            <div id="chr-weapon-types-area"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Allowed Armor Types</label>
+            <div id="chr-armor-types-area"></div>
+          </div>
+        </div>
 
         <h3>Innate Passives</h3>
         <div id="chr-passives-area"></div>
@@ -197,6 +210,18 @@ window.CJS.CharEditor = (() => {
     const equipArea = _formEl.querySelector('#chr-equip-area');
     const equipPicker = _createRefPicker('items', c.equipment || [], 'item');
     equipArea.appendChild(equipPicker.el);
+    const weaponTypeWidget = UI().createTagInput({
+      tags: Array.isArray(c.allowedWeaponTypes) ? c.allowedWeaponTypes : [c.allowedWeaponTypes].filter(Boolean),
+      placeholder: 'sword + Enter',
+      suggestions: C().WEAPON_TYPES || []
+    });
+    _formEl.querySelector('#chr-weapon-types-area').appendChild(weaponTypeWidget);
+    const armorTypeWidget = UI().createTagInput({
+      tags: Array.isArray(c.allowedArmorTypes) ? c.allowedArmorTypes : [c.allowedArmorTypes].filter(Boolean),
+      placeholder: 'light + Enter',
+      suggestions: C().ARMOR_TYPES || []
+    });
+    _formEl.querySelector('#chr-armor-types-area').appendChild(armorTypeWidget);
 
     // ── Passives picker ──
     const passivesArea = _formEl.querySelector('#chr-passives-area');
@@ -229,6 +254,8 @@ window.CJS.CharEditor = (() => {
         size: _formEl.querySelector('#chr-size').value || '1x1',
         skills: skillPicker.getEntries(),
         equipment: equipPicker.getIds(),
+        allowedWeaponTypes: weaponTypeWidget._getTags(),
+        allowedArmorTypes: armorTypeWidget._getTags(),
         innatePassives: passivePicker.getIds(),
         weak: weakWidget._getTags(),
         resist: resistWidget._getTags(),

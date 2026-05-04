@@ -82,8 +82,21 @@ window.CJS.CONST = (() => {
 
   // ── EQUIPMENT SLOTS ────────────────────────────────────────────────
   const EQUIPMENT_SLOTS = [
-    'weapon', 'offhand', 'head', 'body', 'legs',
-    'feet', 'accessory1', 'accessory2'
+    'weapon', 'armor', 'accessory',
+    'offhand', 'head', 'body', 'legs', 'feet', 'accessory1', 'accessory2'
+  ];
+
+  const WEAPON_TYPES = [
+    'sword', 'bow', 'staff', 'knuckles', 'dagger', 'axe',
+    'spear', 'mace', 'crossbow', 'gun', 'wand', 'shield', 'unarmed'
+  ];
+
+  const ARMOR_TYPES = [
+    'light', 'heavy', 'robe', 'medium', 'cloth', 'leather', 'plate'
+  ];
+
+  const ACCESSORY_TYPES = [
+    'ring', 'amulet', 'charm', 'belt', 'cloak', 'talisman', 'trinket', 'earring'
   ];
 
   // ── RARITY ─────────────────────────────────────────────────────────
@@ -542,7 +555,7 @@ window.CJS.CONST = (() => {
     STATS, STAT_NAMES, RANKS, RANK_DATA,
     QTE_DIFFICULTY_BY_RANK,
     ELEMENTS, ELEMENT_COLORS, ELEMENT_CHART, ELEMENT_MULTIPLIERS,
-    DAMAGE_TYPES, UNIT_TYPES, EQUIPMENT_SLOTS,
+    DAMAGE_TYPES, UNIT_TYPES, EQUIPMENT_SLOTS, WEAPON_TYPES, ARMOR_TYPES, ACCESSORY_TYPES,
     RARITIES, RARITY_COLORS,
     TERRAIN_TYPES, UNIT_SIZES, MOVEMENT_DEFAULTS, COLLISION, LINE_OF_SIGHT,
     EFFECT_TRIGGERS, EFFECT_ACTIONS, EFFECT_TARGETS, VALUE_SOURCES,

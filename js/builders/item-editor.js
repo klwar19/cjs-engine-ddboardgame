@@ -55,6 +55,8 @@ window.CJS.ItemEditor = (() => {
   function _createNew() {
     const id = DS().create('items', {
       name: 'New Item', icon: '📦', slot: 'weapon', rarity: 'Common',
+      weaponType: 'sword', armorType: '', accessoryType: '',
+      characteristic: '', changeNotes: '',
       effects: [], weaponData: null, portrait: '', description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -70,7 +72,10 @@ window.CJS.ItemEditor = (() => {
   }
 
   function _renderForm(item) {
-    const isWeapon = item.slot === 'weapon';
+    const gearKind = _gearKind(item);
+    const isWeapon = gearKind === 'weapon';
+    const isArmor = gearKind === 'armor';
+    const isAccessory = gearKind === 'accessory';
     _formEl.innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -94,6 +99,29 @@ window.CJS.ItemEditor = (() => {
           <div class="form-group"><label class="form-label">Rarity</label>
             <select id="itm-rarity">${C().RARITIES.map(r=>`<option value="${r}" ${item.rarity===r?'selected':''}>${r}</option>`).join('')}</select>
           </div>
+        </div>
+
+        <h3>Equipment Type</h3>
+        <div class="form-row">
+          <div class="form-group" id="itm-weapon-type-wrap" style="display:${isWeapon?'block':'none'}">
+            <label class="form-label">Weapon Type</label>
+            <input type="text" id="itm-weapon-type" list="itm-weapon-types" value="${_esc(_weaponType(item) || 'sword')}" placeholder="sword, bow, staff...">
+            <datalist id="itm-weapon-types">${_typeOptions(C().WEAPON_TYPES || [])}</datalist>
+          </div>
+          <div class="form-group" id="itm-armor-type-wrap" style="display:${isArmor?'block':'none'}">
+            <label class="form-label">Armor Type</label>
+            <input type="text" id="itm-armor-type" list="itm-armor-types" value="${_esc(_armorType(item) || 'light')}" placeholder="light, heavy, robe...">
+            <datalist id="itm-armor-types">${_typeOptions(C().ARMOR_TYPES || [])}</datalist>
+          </div>
+          <div class="form-group" id="itm-accessory-type-wrap" style="display:${isAccessory?'block':'none'}">
+            <label class="form-label">Accessory Type</label>
+            <input type="text" id="itm-accessory-type" list="itm-accessory-types" value="${_esc(_accessoryType(item) || 'ring')}" placeholder="ring, amulet, charm...">
+            <datalist id="itm-accessory-types">${_typeOptions(C().ACCESSORY_TYPES || [])}</datalist>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Characteristic</label><input type="text" id="itm-characteristic" value="${_esc(item.characteristic || '')}" placeholder="fast bow, heavy defense, magic focus..."></div>
+          <div class="form-group"><label class="form-label">Change Notes</label><input type="text" id="itm-change" value="${_esc(item.changeNotes || '')}" placeholder="+S, longer range, grants skill, etc."></div>
         </div>
 
         <div id="itm-weapon-section" style="display:${isWeapon?'block':'none'}">
@@ -142,13 +170,18 @@ window.CJS.ItemEditor = (() => {
       iconInput?.addEventListener('change', syncPortraitFallback);
     }
 
-    // Toggle weapon section on slot change
-    _formEl.querySelector('#itm-slot').onchange = (e) => {
-      _formEl.querySelector('#itm-weapon-section').style.display = e.target.value === 'weapon' ? 'block' : 'none';
-    };
+    // Toggle equipment-specific fields on slot change
+    const slotSelect = _formEl.querySelector('#itm-slot');
 
     const effectBuilder = UI().createEffectListBuilder({ effects: item.effects || [], onChange: () => _preview(effectBuilder) });
     _formEl.querySelector('#itm-effects-area').appendChild(effectBuilder);
+    slotSelect.onchange = (e) => {
+      _syncEquipmentFields(e.target.value);
+      _preview(effectBuilder);
+    };
+    ['#itm-weapon-type', '#itm-armor-type', '#itm-accessory-type', '#itm-change'].forEach((selector) => {
+      _formEl.querySelector(selector)?.addEventListener('input', () => _preview(effectBuilder));
+    });
 
     // Granted skills picker
     const skillsArea = _formEl.querySelector('#itm-skills-area');
@@ -195,29 +228,111 @@ window.CJS.ItemEditor = (() => {
     if (!el || !effectBuilder) return;
     const resolved = ER().resolveRefs(effectBuilder._getEffects());
     const descs = resolved.map(e => ER().autoDescribe(e));
-    el.innerHTML = `<div class="dim" style="font-size:0.82rem"><b>Effects:</b> ${descs.join(', ')||'None'} | <b>ID:</b> ${_activeId}</div>`;
+    const slot = _formEl.querySelector('#itm-slot')?.value || '';
+    const type = _typeForCurrentForm(slot);
+    const change = _formEl.querySelector('#itm-change')?.value || '';
+    el.innerHTML = `<div class="dim" style="font-size:0.82rem"><b>${_gearKindFromSlot(slot)}:</b> ${type || 'untyped'} ${change ? `| <b>Change:</b> ${_esc(change)}` : ''} | <b>Effects:</b> ${descs.join(', ')||'None'} | <b>ID:</b> ${_activeId}</div>`;
   }
 
   function _save(id, effectBuilder, grantedSkills, portraitWidget, currentPortrait) {
     const f = _formEl;
     const slot = f.querySelector('#itm-slot').value;
+    const equipmentCategory = _gearKindFromSlot(slot);
+    const weaponType = _cleanType(f.querySelector('#itm-weapon-type')?.value || '');
+    const armorType = _cleanType(f.querySelector('#itm-armor-type')?.value || '');
+    const accessoryType = _cleanType(f.querySelector('#itm-accessory-type')?.value || '');
     const obj = {
       id, name: f.querySelector('#itm-name').value, icon: f.querySelector('#itm-icon').value,
       portrait: portraitWidget ? portraitWidget.getValue() : currentPortrait,
       slot, rarity: f.querySelector('#itm-rarity').value,
+      equipmentCategory,
+      weaponType: equipmentCategory === 'weapon' ? (weaponType || 'sword') : '',
+      armorType: equipmentCategory === 'armor' ? (armorType || 'light') : '',
+      accessoryType: equipmentCategory === 'accessory' ? (accessoryType || 'ring') : '',
+      characteristic: f.querySelector('#itm-characteristic').value,
+      changeNotes: f.querySelector('#itm-change').value,
       effects: effectBuilder._getEffects(),
       grantedSkills: grantedSkills || [],
-      weaponData: slot === 'weapon' ? {
+      weaponData: equipmentCategory === 'weapon' ? {
         baseDamage: Number(f.querySelector('#itm-wdmg').value)||0,
         damageType: f.querySelector('#itm-wtype').value,
         element: f.querySelector('#itm-welem').value || null,
-        range: Number(f.querySelector('#itm-wrange').value)||1
+        range: Number(f.querySelector('#itm-wrange').value)||1,
+        weaponType: weaponType || 'sword'
       } : null,
       description: f.querySelector('#itm-desc').value
     };
     DS().replace('items', id, obj);
     _renderList(); _load(id);
     UI().toast('Item saved', 'success');
+  }
+
+  function _syncEquipmentFields(slot) {
+    const kind = _gearKindFromSlot(slot);
+    const show = (id, active) => {
+      const el = _formEl.querySelector(id);
+      if (el) el.style.display = active ? 'block' : 'none';
+    };
+    show('#itm-weapon-section', kind === 'weapon');
+    show('#itm-weapon-type-wrap', kind === 'weapon');
+    show('#itm-armor-type-wrap', kind === 'armor');
+    show('#itm-accessory-type-wrap', kind === 'accessory');
+  }
+
+  function _gearKind(item = {}) {
+    return item.equipmentCategory || _gearKindFromSlot(item.slot);
+  }
+
+  function _gearKindFromSlot(slot) {
+    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
+    if (['armor', 'head', 'body', 'legs', 'feet'].includes(slot)) return 'armor';
+    if (['accessory', 'accessory1', 'accessory2'].includes(slot)) return 'accessory';
+    return slot || 'item';
+  }
+
+  function _weaponType(item = {}) {
+    return _cleanType(item.weaponType || item.weaponData?.weaponType || item.type || _inferType(item, C().WEAPON_TYPES || []));
+  }
+
+  function _armorType(item = {}) {
+    return _cleanType(item.armorType || item.type || _inferType(item, C().ARMOR_TYPES || []));
+  }
+
+  function _accessoryType(item = {}) {
+    return _cleanType(item.accessoryType || item.type || _inferType(item, C().ACCESSORY_TYPES || []));
+  }
+
+  function _inferType(item, types) {
+    const text = [item.id, item.name, item.slot, ...(item.tags || [])].join(' ').toLowerCase();
+    const aliases = {
+      blade: 'sword', longsword: 'sword', shortsword: 'sword', katana: 'sword',
+      fang: 'dagger', knife: 'dagger',
+      longbow: 'bow', shortbow: 'bow',
+      fist: 'knuckles', claw: 'knuckles', gauntlet: 'knuckles',
+      rod: 'staff', tome: 'staff',
+      leather: 'light', cloak: 'light', boots: 'light', cloth: 'robe', mail: 'heavy', plate: 'heavy',
+      pendant: 'amulet', necklace: 'amulet', coin: 'charm', core: 'trinket'
+    };
+    for (const [alias, type] of Object.entries(aliases)) {
+      if ((types || []).includes(type) && text.includes(alias)) return type;
+    }
+    return (types || []).find((type) => text.includes(type)) || '';
+  }
+
+  function _typeForCurrentForm(slot) {
+    const kind = _gearKindFromSlot(slot);
+    if (kind === 'weapon') return _cleanType(_formEl.querySelector('#itm-weapon-type')?.value || '');
+    if (kind === 'armor') return _cleanType(_formEl.querySelector('#itm-armor-type')?.value || '');
+    if (kind === 'accessory') return _cleanType(_formEl.querySelector('#itm-accessory-type')?.value || '');
+    return '';
+  }
+
+  function _typeOptions(types) {
+    return types.map((type) => `<option value="${_esc(type)}"></option>`).join('');
+  }
+
+  function _cleanType(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_ -]+/g, '').replace(/\s+/g, '_');
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

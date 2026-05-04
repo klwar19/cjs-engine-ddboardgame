@@ -1030,7 +1030,11 @@ window.CJS.CombatUI = (() => {
         const skillName = skillEntry.skill?.name || skillEntry.id;
         const skillIcon = skillEntry.skill?.icon || '*';
         const disabled = !skillEntry.usable ? 'disabled' : '';
-        const reason = skillEntry.cooldown > 0 ? `title="Cooldown: ${skillEntry.cooldown} turns"` : '';
+        const weaponReason = !skillEntry.weaponReady && skillEntry.requiredWeaponTypes?.length
+          ? `Requires ${skillEntry.requiredWeaponTypes.map((type) => String(type).replace(/_/g, ' ')).join(' or ')}`
+          : '';
+        const reasonText = weaponReason || (skillEntry.cooldown > 0 ? `Cooldown: ${skillEntry.cooldown} turns` : '');
+        const reason = reasonText ? `title="${_escAttr(reasonText)}"` : '';
         html += `
           <button class="btn btn-action btn-skill" data-action="skill" data-skill="${_escAttr(skillEntry.id)}" ${disabled} ${reason}>
             ${_escHtml(skillIcon)} ${_escHtml(skillName)}

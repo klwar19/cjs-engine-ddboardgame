@@ -50,6 +50,7 @@ window.CJS.SkillEditor = (() => {
       name: 'New Skill', icon: '⚔️', power: 10, ap: 2, mp: 0, cooldown: 0,
       damageType: 'Physical', element: null, scalingStat: 'S',
       range: 1, aoe: null, aoeSize: 0, qte: 'quickpress',
+      requiredWeaponTypes: [],
       effects: [], levelScaling: { powerPerLevel: 0.15, maxLevel: 10 }, description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -108,6 +109,11 @@ window.CJS.SkillEditor = (() => {
           </div>
           <div class="form-group"><label class="form-label">AoE Size</label><input type="number" id="skl-aoesize" value="${s.aoeSize||0}" min="0" max="6" style="width:100%"></div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Required Weapon Types</label>
+          <div id="skl-weapon-req-area"></div>
+          <div class="dim" style="font-size:0.78rem;margin-top:4px">Leave empty for any weapon. Examples: sword, bow, staff, knuckles.</div>
+        </div>
 
         <h3>QTE</h3>
         <div class="form-group">
@@ -149,6 +155,12 @@ window.CJS.SkillEditor = (() => {
 
     const effectBuilder = UI().createEffectListBuilder({ effects: s.effects || [], onChange: () => _preview() });
     _formEl.querySelector('#skl-effects-area').appendChild(effectBuilder);
+    const weaponReqWidget = UI().createTagInput({
+      tags: Array.isArray(s.requiredWeaponTypes) ? s.requiredWeaponTypes : [s.requiredWeaponTypes].filter(Boolean),
+      placeholder: 'bow + Enter',
+      suggestions: C().WEAPON_TYPES || []
+    });
+    _formEl.querySelector('#skl-weapon-req-area').appendChild(weaponReqWidget);
 
     _populateSfxSelects(s);
 
@@ -156,7 +168,7 @@ window.CJS.SkillEditor = (() => {
     _formEl.querySelectorAll('input,select').forEach(el => el.addEventListener('change', _preview));
     _preview();
 
-    _formEl.querySelector('#skl-save').onclick = () => _save(s.id, effectBuilder);
+    _formEl.querySelector('#skl-save').onclick = () => _save(s.id, effectBuilder, weaponReqWidget);
     _formEl.querySelector('#skl-dup').onclick = () => { const nid = DS().duplicate('skills', s.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
     _formEl.querySelector('#skl-del').onclick = () => { UI().confirm(`Delete "${s.name}"?`, () => { DS().remove('skills', s.id); _activeId=null; _renderList(); _formEl.innerHTML='<div class="card" style="text-align:center;color:var(--text-mute);padding:40px">Select a skill</div>'; UI().toast('Deleted','info'); }); };
   }
@@ -174,7 +186,7 @@ window.CJS.SkillEditor = (() => {
     </div>`;
   }
 
-  function _save(id, effectBuilder) {
+  function _save(id, effectBuilder, weaponReqWidget) {
     const f = _formEl;
     const castSfx = f.querySelector('#skl-castsfx')?.value || '';
     const hitSfx  = f.querySelector('#skl-hitsfx')?.value  || '';
@@ -193,6 +205,7 @@ window.CJS.SkillEditor = (() => {
       aoe: f.querySelector('#skl-aoe').value || null,
       aoeSize: Number(f.querySelector('#skl-aoesize').value) || 0,
       qte: f.querySelector('#skl-qte').value,
+      requiredWeaponTypes: weaponReqWidget?._getTags?.() || [],
       effects: effectBuilder._getEffects(),
       levelScaling: {
         powerPerLevel: (Number(f.querySelector('#skl-ppl').value) || 15) / 100,

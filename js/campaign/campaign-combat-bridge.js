@@ -194,7 +194,10 @@ window.CJS.CampaignCombatBridge = (() => {
       stats,
       skills: _mergeSkillEntries(base.skills || [], member.learnedSkills || []),
       innatePassives: _mergeIds(base.innatePassives || [], member.learnedPassives || []),
+      allowedWeaponTypes: _mergeIds(base.allowedWeaponTypes || [], member.allowedWeaponTypes || []),
+      allowedArmorTypes: _mergeIds(base.allowedArmorTypes || [], member.allowedArmorTypes || []),
       equipment: Array.isArray(member.equipment) ? _clone(member.equipment) : _clone(base.equipment || []),
+      equipmentSlots: _clone(member.equipmentSlots || {}),
       battleSfx: member.battleSfx || base.battleSfx || {}
     };
   }
