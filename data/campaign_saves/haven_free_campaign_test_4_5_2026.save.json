@@ -1,0 +1,285 @@
+{
+  "saveVersion": 1,
+  "saveId": "save_1777900758324",
+  "slotName": "Haven Free Campaign Test 4/5/2026",
+  "campaignId": "haven_camp_free_test",
+  "currentWorld": "haven",
+  "currentChapter": 1,
+  "phase": {
+    "number": 1,
+    "type": "town_phase",
+    "name": "Town Phase"
+  },
+  "mode": "soft_limit",
+  "currencies": {
+    "haven_gold": 20,
+    "jp": 1
+  },
+  "party": {
+    "bin": {
+      "baseCharacterId": "bin",
+      "name": "Bin Chen",
+      "icon": "🃏",
+      "portrait": "images/characters/bin.png",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 78,
+      "maxMp": 77,
+      "currentHp": 78,
+      "currentMp": 77,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_rusty_sword",
+        "haven_leather_armor",
+        "haven_lucky_coin"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_rusty_sword",
+        "armor": "haven_leather_armor",
+        "accessory1": "haven_lucky_coin",
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    },
+    "haven_bowy": {
+      "baseCharacterId": "haven_bowy",
+      "name": "Bowy",
+      "icon": "🐗",
+      "portrait": "",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 99,
+      "maxMp": 53,
+      "currentHp": 99,
+      "currentMp": 53,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_thunder_crossbow",
+        "haven_leather_armor"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_thunder_crossbow",
+        "armor": "haven_leather_armor",
+        "accessory1": null,
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    },
+    "haven_mitia": {
+      "baseCharacterId": "haven_mitia",
+      "name": "Mitia",
+      "icon": "🧊",
+      "portrait": "",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 65,
+      "maxMp": 76,
+      "currentHp": 65,
+      "currentMp": 76,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_frost_staff",
+        "haven_adventurers_cloak",
+        "haven_healers_pendant"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_frost_staff",
+        "armor": "haven_adventurers_cloak",
+        "accessory1": "haven_healers_pendant",
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    },
+    "haven_garr": {
+      "baseCharacterId": "haven_garr",
+      "name": "Garr",
+      "icon": "🐾",
+      "portrait": "",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 93,
+      "maxMp": 58,
+      "currentHp": 93,
+      "currentMp": 58,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_hunters_blade",
+        "haven_leather_armor"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_hunters_blade",
+        "armor": "haven_leather_armor",
+        "accessory1": null,
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    }
+  },
+  "inventory": {
+    "items": {
+      "haven_minor_potion": 2,
+      "haven_basic_tent": 1
+    },
+    "materials": {},
+    "food": {},
+    "questItems": {},
+    "equipment": {}
+  },
+  "quests": {},
+  "flags": {},
+  "activeScenarioRun": null,
+  "scenarioHistory": [],
+  "mapState": {},
+  "worldArchive": {},
+  "pocketHaven": {
+    "enabled": true,
+    "notes": [],
+    "farm": {
+      "plots": [
+        {
+          "id": "plot_1",
+          "seedId": null,
+          "cropId": null,
+          "progress": 0,
+          "required": 3,
+          "ready": false
+        }
+      ]
+    },
+    "stations": [
+      {
+        "id": "campfire",
+        "name": "Campfire",
+        "kind": "cook"
+      },
+      {
+        "id": "workbench",
+        "name": "Workbench",
+        "kind": "craft"
+      }
+    ]
+  },
+  "hubState": {
+    "haven_hub_frostbitten": {
+      "hubId": "haven_hub_frostbitten",
+      "mood": "cautious_warmth",
+      "security": 0,
+      "prosperity": 0,
+      "warmth": 0,
+      "weirdness": 0,
+      "activeProblems": [
+        "bin_death_paperwork",
+        "firemoss_shortage"
+      ],
+      "resolvedProblems": [],
+      "unlockedServices": [
+        "garr_hut_full_rest",
+        "guild_basic_board",
+        "guild_registration",
+        "frosted_mug_basic_meals",
+        "rumor_roll",
+        "ironhand_basic_repairs",
+        "forge_basic_recipes"
+      ],
+      "shopModifiers": {},
+      "npcMoods": {
+        "lysa": "cheerful_and_too_loud",
+        "corvin": "paperwork_haunted",
+        "tessa": "testing_party_carefully",
+        "dain": "annoyed_and_competitive",
+        "mara": "quietly_observant",
+        "kael": "hero_worship",
+        "brinna_twins": "friendly_debt_collectors",
+        "hilda_ironhand": "measuring_everyone_by_boot_noise"
+      },
+      "rumors": [],
+      "eventCooldowns": {},
+      "notes": []
+    }
+  },
+  "sideContent": {
+    "generatedIdeas": {},
+    "generatedScenarios": {},
+    "generatedMaps": {},
+    "activeQuestChains": {},
+    "contentHistory": [],
+    "reviewQueue": [],
+    "importedPacks": {}
+  },
+  "clocks": {},
+  "memoryShards": {},
+  "bonds": {},
+  "pinnedNotes": [],
+  "log": [],
+  "settings": {
+    "confirmPhasePass": false
+  },
+  "createdAt": "2026-05-04T13:19:18.324Z",
+  "lastUpdated": "2026-05-04T13:19:18.324Z",
+  "reputation": {},
+  "unlockedRecipes": {}
+}
