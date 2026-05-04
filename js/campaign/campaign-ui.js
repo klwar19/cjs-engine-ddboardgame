@@ -118,8 +118,8 @@ window.CJS.CampaignUI = (() => {
         ${_renderHeader(state, campaign)}
         ${_renderModeBar(state)}
         ${_renderSubTabs(subTabs, isUtility)}
+        ${_renderRecentLogStrip(state)}
         <div class="campaign-body">
-          <aside class="campaign-party">${_renderParty(state)}</aside>
           <main class="campaign-main">${_renderMain(state)}</main>
           <aside class="campaign-rail">${_renderCommandRail(state)}</aside>
         </div>
@@ -199,7 +199,6 @@ window.CJS.CampaignUI = (() => {
 
   function _renderHeader(state, campaign) {
     const world = CS().getCurrentWorld();
-    const currencies = Object.entries(state.currencies || {});
     return `
       <header class="campaign-header">
         <a class="campaign-back" href="index.html">Main Menu</a>
@@ -207,9 +206,7 @@ window.CJS.CampaignUI = (() => {
           <h1>${_esc(campaign?.name || 'Campaign')}</h1>
           <span>${_esc(world?.displayName || state.currentWorld)} | Chapter ${state.currentChapter} | Phase ${state.phase.number}: ${_esc(state.phase.name || state.phase.type)}</span>
         </div>
-        <div class="campaign-stats">
-          ${currencies.length ? currencies.map(([id, amount]) => `<span>${_esc(_currencyLabel(id))} <b>${amount || 0}</b></span>`).join('') : '<span>No currency <b>0</b></span>'}
-        </div>
+        ${_renderCompactCurrencies(state)}
         <div class="campaign-header-actions">
           <button class="campaign-action" data-campaign-action="new-save">New</button>
           <button class="campaign-action" data-campaign-action="save-slot">Save</button>
@@ -221,6 +218,34 @@ window.CJS.CampaignUI = (() => {
           <a class="campaign-action" href="combat.html">Combat</a>
         </div>
       </header>
+    `;
+  }
+
+  function _renderCompactCurrencies(state) {
+    const values = _currencyAmounts(state);
+    return `
+      <div class="campaign-stats campaign-stats-compact" aria-label="Currencies">
+        <span><small>Gold</small><b>${values.gold}</b></span>
+      </div>
+    `;
+  }
+
+  function _currencyAmounts(state) {
+    const currencies = state.currencies || {};
+    const worldGold = `${state.currentWorld || 'haven'}_gold`;
+    const goldId = currencies[worldGold] != null ? worldGold
+      : Object.keys(currencies).find((id) => String(id).toLowerCase().endsWith('_gold') || String(id).toLowerCase() === 'gold');
+    return {
+      gold: goldId ? Number(currencies[goldId] || 0) : 0
+    };
+  }
+
+  function _renderRecentLogStrip(state) {
+    return `
+      <section class="campaign-log-strip">
+        <div class="campaign-panel-head"><h2>Recent Log</h2><button class="campaign-icon-btn" data-campaign-panel="log">All</button></div>
+        ${(state.log || []).slice(0, 3).map((line) => _renderLogEntry(line, { compact: true })).join('') || '<div class="campaign-empty">No log entries yet.</div>'}
+      </section>
     `;
   }
 
@@ -1103,7 +1128,7 @@ window.CJS.CampaignUI = (() => {
       </section>
       <section class="campaign-side-section">
         <div class="campaign-panel-head"><h2>Recent Log</h2></div>
-        ${(state.log || []).slice(0, 10).map((line) => `<div class="campaign-log-line"><span>${_esc(line.text)}</span><small>Phase ${line.phase}</small></div>`).join('') || '<div class="campaign-empty">No log entries.</div>'}
+        ${(state.log || []).slice(0, 10).map((line) => _renderLogEntry(line, { compact: true })).join('') || '<div class="campaign-empty">No log entries.</div>'}
       </section>
       <section class="campaign-side-section">
         <div class="campaign-panel-head"><h2>Notes</h2><button class="campaign-icon-btn" data-campaign-action="add-note">+</button></div>
@@ -1248,14 +1273,14 @@ window.CJS.CampaignUI = (() => {
   /* ── Command Rail + Drawer Overlay System ─────────────────── */
 
   const PANEL_DEFS = {
+    party:     { icon: '👥', label: 'Party',  title: 'Party' },
     inventory: { icon: '📦', label: 'Items', title: 'Inventory' },
     quests:    { icon: '📜', label: 'Quests', title: 'Quest Log' },
     log:       { icon: '🪶', label: 'Log',    title: 'Campaign Log' },
     notes:     { icon: '📝', label: 'Notes',  title: 'Pinned Notes' },
     banter:    { icon: '💬', label: 'Banter', title: 'Party Banter' },
-    wallet:    { icon: '💰', label: 'Wallet', title: 'Wallet' }
   };
-  const RAIL_ORDER = ['inventory', 'quests', 'log', 'notes', 'banter', 'wallet'];
+  const RAIL_ORDER = ['party', 'inventory', 'quests', 'log', 'notes', 'banter'];
 
   function _renderCommandRail(state) {
     const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
@@ -1264,15 +1289,16 @@ window.CJS.CampaignUI = (() => {
     const inventoryCount = ['items', 'materials', 'food', 'questItems']
       .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
     const hasBanter = !!state.lastPartyChat;
+    const partyCount = Object.keys(state.party || {}).length;
     const counts = {
+      party: partyCount,
       inventory: inventoryCount,
       quests: activeQuests,
       log: logCount,
       notes: notesCount,
-      banter: hasBanter ? 1 : 0,
-      wallet: Object.keys(state.currencies || {}).length
+      banter: hasBanter ? 1 : 0
     };
-    const totalCurrency = Object.values(state.currencies || {}).reduce((sum, n) => sum + (Number(n) || 0), 0);
+    const currency = _currencyAmounts(state);
     const buttons = RAIL_ORDER.map((id) => {
       const def = PANEL_DEFS[id];
       const active = _activePanel === id;
@@ -1298,7 +1324,9 @@ window.CJS.CampaignUI = (() => {
         <span class="campaign-rail-btn-icon" aria-hidden="true">⚜</span>
         <span class="campaign-rail-btn-label">GM</span>
       </button>
-      <div class="campaign-rail-currency" title="Total currency">${totalCurrency}</div>
+      <div class="campaign-rail-currency" title="Gold">
+        <span>G ${currency.gold}</span>
+      </div>
     `;
   }
 
@@ -1406,6 +1434,8 @@ window.CJS.CampaignUI = (() => {
 
   function _renderDrawerBody(panelId, state) {
     switch (panelId) {
+      case 'party':
+        return _renderParty(state);
       case 'inventory':
         try {
           const html = window.CJS.CampaignInventory?.render?.();
@@ -1420,8 +1450,6 @@ window.CJS.CampaignUI = (() => {
         return _renderNotesPanel(state);
       case 'banter':
         return _renderPartyChatCard(state, { full: true });
-      case 'wallet':
-        return _renderWallet(state);
       default:
         return '<div class="campaign-empty">Panel not implemented.</div>';
     }
@@ -1444,7 +1472,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-side-section">
         <div class="campaign-panel-head"><h2>Campaign Log</h2></div>
-        ${log.map((line) => `<div class="campaign-log-line"><span>${_esc(line.text)}</span><small>Phase ${line.phase}</small></div>`).join('')}
+        ${log.map((line) => _renderLogEntry(line, { compact: true })).join('')}
       </section>
     `;
   }
@@ -1747,9 +1775,55 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head"><h2>Session Log</h2><button class="campaign-action" data-campaign-action="export-log">Export Log</button></div>
-        ${(state.log || []).map((line) => `<div class="campaign-log-line"><span>${_esc(line.text)}</span><small>${_esc(line.at || '')}</small></div>`).join('') || '<div class="campaign-empty">No log entries.</div>'}
+        ${(state.log || []).map((line) => _renderLogEntry(line)).join('') || '<div class="campaign-empty">No log entries.</div>'}
       </section>
     `;
+  }
+
+  function _renderLogEntry(line, options = {}) {
+    const kind = _logKind(line);
+    return `
+      <div class="campaign-log-line campaign-log-${_escAttr(kind.key)}">
+        <div class="campaign-log-main">
+          <span class="campaign-log-type">${_esc(kind.label)}</span>
+          <span>${_esc(line.text || '')}</span>
+        </div>
+        <small>${_esc(_logMeta(line, options.compact))}</small>
+      </div>
+    `;
+  }
+
+  function _logKind(line = {}) {
+    const op = String(line.op || '').toLowerCase();
+    const text = String(line.text || '').toLowerCase();
+    const starts = (value) => text.startsWith(value);
+
+    if (op.includes('party') || / hp\b| mp\b|joined the roster|left the roster|availability|learned|forgot|gained status|active party|bench/.test(text)) return { key: 'party', label: 'Party' };
+    if (op.includes('battle') || text.includes('battle') || text.includes('combat')) return { key: 'battle', label: 'Battle' };
+    if (op.includes('event') || starts('event ') || starts('plot seed')) return { key: 'event', label: 'Event' };
+    if (op.includes('quest') || starts('quest ')) return { key: 'quest', label: 'Quest' };
+    if (op.includes('oracle') || text.includes('oracle')) return { key: 'oracle', label: 'Oracle' };
+    if (op.includes('scenario') || starts('scenario ') || starts('moved ') || starts('move blocked') || text.includes('danger')) return { key: 'run', label: 'Run' };
+    if (op.includes('shop') || op.includes('craft') || op.includes('farm') || starts('added ') || starts('removed ') || starts('gained ') || starts('spent ')) return { key: 'loot', label: 'Loot' };
+    if (op.includes('hub') || starts('rumor ') || starts('npc ') || starts('bond ') || starts('clock ') || starts('memory shard')) return { key: 'hub', label: 'Hub' };
+    if (starts('phase ')) return { key: 'phase', label: 'Phase' };
+    return { key: 'system', label: 'Log' };
+  }
+
+  function _logMeta(line = {}, compact = false) {
+    const phase = line.phase ? `Phase ${line.phase}` : 'Phase ?';
+    const time = _formatLogTime(line.at, compact);
+    return [phase, time].filter(Boolean).join(' | ');
+  }
+
+  function _formatLogTime(value, compact = false) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const options = compact
+      ? { hour: '2-digit', minute: '2-digit' }
+      : { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return date.toLocaleString([], options);
   }
 
   function _renderSettings(state) {
@@ -3592,7 +3666,7 @@ window.CJS.CampaignUI = (() => {
 
   function _exportLog() {
     const state = CS().getState();
-    const text = (state.log || []).map((line) => `[${line.at}] Phase ${line.phase} ${line.world}: ${line.text}`).join('\n');
+    const text = (state.log || []).map((line) => `[${line.at}] [${_logKind(line).label}] Phase ${line.phase} ${line.world}: ${line.text}`).join('\n');
     window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-log.txt`, `${text}\n`, 'text/plain');
   }
 
