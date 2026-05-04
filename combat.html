@@ -102,6 +102,7 @@
     let campaignRequest = null;
     let campaignResultWritten = false;
     let campaignReturnTimer = null;
+    let campaignResultPoll = null;
     let unsubCampaignResult = null;
 
     async function loadData() {
@@ -132,6 +133,10 @@
       if (unsubCampaignResult) {
         try { unsubCampaignResult(); } catch (_) {}
         unsubCampaignResult = null;
+      }
+      if (campaignResultPoll) {
+        clearInterval(campaignResultPoll);
+        campaignResultPoll = null;
       }
       try { window.CJS.CombatUI.destroy(); } catch (_) {}
       try { window.CJS.CombatManager.reset(); } catch (_) {}
@@ -172,18 +177,40 @@
       return new URLSearchParams(window.location.search).get('campaignBattle') === '1';
     }
 
+    function campaignReturnUrl() {
+      const fallback = campaignRequest?.returnUrl || 'campaign.html?combatReturn=1';
+      try {
+        const url = new URL(fallback, window.location.href);
+        url.searchParams.set('combatReturn', '1');
+        if (campaignResultWritten) url.searchParams.set('combatResult', '1');
+        url.searchParams.set('t', String(Date.now()));
+        return url.href;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function flushCampaignResult() {
+      if (!campaignRequest) return false;
+      if (campaignResultWritten) return true;
+      const state = window.CJS.CombatManager.getState?.();
+      return writeCampaignResultFromState(state);
+    }
+
     function returnToCampaign() {
+      flushCampaignResult();
+      const targetUrl = campaignReturnUrl();
       if (window.opener && !window.opener.closed) {
         try {
           window.opener.focus();
-          window.opener.location.href = campaignRequest?.returnUrl || 'campaign.html';
+          window.opener.location.href = targetUrl;
           setTimeout(() => {
             try { window.close(); } catch (_) {}
           }, 250);
           return;
         } catch (_) {}
       }
-      window.location.href = campaignRequest?.returnUrl || 'campaign.html';
+      window.location.href = targetUrl;
     }
 
     function scheduleCampaignReturn() {
@@ -229,7 +256,16 @@
         writeCampaignResultFromState(state);
       });
       writeCampaignResultFromState(window.CJS.CombatManager.getState?.());
+      campaignResultPoll = setInterval(() => {
+        if (flushCampaignResult() && campaignResultPoll) {
+          clearInterval(campaignResultPoll);
+          campaignResultPoll = null;
+        }
+      }, 400);
     }
+
+    window.addEventListener('pagehide', flushCampaignResult);
+    window.addEventListener('beforeunload', flushCampaignResult);
 
     function populateEncounters() {
       const encounters = DS.getAll('encounters') || {};

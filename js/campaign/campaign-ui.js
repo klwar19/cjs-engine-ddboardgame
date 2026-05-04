@@ -23,6 +23,7 @@ window.CJS.CampaignUI = (() => {
   let _activeTab = 'overview';
   let _booted = false;
   let _combatResultUnsub = null;
+  let _combatReturnEventsBound = false;
   let _lastCombatResultKey = '';
 
   const MODES = [
@@ -80,14 +81,15 @@ window.CJS.CampaignUI = (() => {
         CS().createNewSave(Object.values(CS().getContent().campaigns)[0]?.id);
         Save().saveCurrent();
       }
-      _consumeCombatResult();
       _bindEvents();
       _bindCombatResultListener();
+      _bindCombatReturnEvents();
       CS().subscribe(() => {
         Save().saveCurrent();
         render();
       });
       _booted = true;
+      _consumeCombatResult();
       render();
     } catch (error) {
       console.error(error);
@@ -143,22 +145,37 @@ window.CJS.CampaignUI = (() => {
   function _bindCombatResultListener() {
     if (_combatResultUnsub || !Bridge()?.onResult) return;
     _combatResultUnsub = Bridge().onResult((result) => {
-      _storeCombatResult(result);
-      Bridge().consumeResult();
+      if (_storeCombatResult(result)) Bridge().clearResult?.();
     });
   }
 
   function _storeCombatResult(result) {
-    if (!result) return;
+    if (!result) return false;
     const state = CS().getState();
-    if (result.saveId && state?.saveId && result.saveId !== state.saveId) return;
+    if (result.saveId && state?.saveId && result.saveId !== state.saveId) return false;
     const key = _combatResultKey(result);
-    if (key && (key === _lastCombatResultKey || key === state?.lastCombatResultKey)) return;
+    if (key && (key === _lastCombatResultKey || key === state?.lastCombatResultKey)) return true;
     _lastCombatResultKey = key;
     _activeMode = 'scenario';
     _activeTab = 'maps';
     Bridge().applyResult(result);
     UI()?.toast?.(`Combat ${result.result || 'result'} applied to campaign.`, 'success');
+    return true;
+  }
+
+  function _bindCombatReturnEvents() {
+    if (_combatReturnEventsBound) return;
+    _combatReturnEventsBound = true;
+    const consume = () => _consumeCombatResult();
+    window.addEventListener('focus', consume);
+    window.addEventListener('pageshow', consume);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) consume();
+    });
+    window.setInterval(() => {
+      const state = CS().getState?.();
+      if (state?.pendingBattle || Bridge().readResult?.()) consume();
+    }, 750);
   }
 
   function _combatResultKey(result) {
@@ -2205,9 +2222,9 @@ window.CJS.CampaignUI = (() => {
     if (!battle.encounterId && !battle.battleSetId && !battle.monsterIds?.length) return UI().toast('This battle needs an encounter, battle set, or monster pool first.', 'info');
     const readyCount = Object.values(CS().getState().party || {}).filter((member) => Bridge()?.isMemberBattleReady?.(member)).length;
     if (!readyCount) return UI().toast('No available party members can enter this battle', 'error');
-    Bridge().openBattle(battle);
     Save().saveCurrent();
-    UI().toast('Battle opened. Combat will return here when it ends.', 'info');
+    UI().toast('Opening combat. Results apply automatically when you return.', 'info');
+    Bridge().openBattle(battle);
   }
 
   function _runRollBattle() {
@@ -2924,9 +2941,11 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _consumeCombatResult() {
-    const result = Bridge().consumeResult();
-    if (!result) return;
-    _storeCombatResult(result);
+    const result = Bridge().readResult?.() || Bridge().consumeResult();
+    if (!result) return false;
+    const handled = _storeCombatResult(result);
+    if (handled) Bridge().clearResult?.();
+    return handled;
   }
 
   function _formLabel(text) {

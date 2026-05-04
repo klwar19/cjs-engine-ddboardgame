@@ -68,16 +68,24 @@ window.CJS.CampaignCombatBridge = (() => {
     } catch (_) {}
   }
 
-  function consumeResult() {
+  function readResult() {
     try {
       const raw = _session()?.getItem(RESULT_KEY) || _local()?.getItem(RESULT_KEY);
-      if (!raw) return null;
-      _session()?.removeItem(RESULT_KEY);
-      _local()?.removeItem(RESULT_KEY);
-      return JSON.parse(raw);
+      return raw ? JSON.parse(raw) : null;
     } catch (_) {
       return null;
     }
+  }
+
+  function clearResult() {
+    _session()?.removeItem(RESULT_KEY);
+    _local()?.removeItem(RESULT_KEY);
+  }
+
+  function consumeResult() {
+    const result = readResult();
+    if (result) clearResult();
+    return result;
   }
 
   function onResult(listener) {
@@ -137,7 +145,7 @@ window.CJS.CampaignCombatBridge = (() => {
       defeatNoRecovery: !!(pendingBattle?.defeatNoRecovery || pendingBattle?.noDefeatRecovery),
       label: pendingBattle?.label || pendingBattle?.encounterId,
       mode: 'campaign',
-      returnUrl: 'campaign.html',
+      returnUrl: 'campaign.html?combatReturn=1',
       requestedAt: new Date().toISOString(),
       availablePartyIds: availableParty.map(([id]) => id),
       excludedParty: excludedParty.map(([id, member]) => ({
@@ -160,8 +168,7 @@ window.CJS.CampaignCombatBridge = (() => {
   function openBattle(pendingBattle) {
     const request = buildRequestFromState(pendingBattle);
     writeRequest(request);
-    const opened = window.open('combat.html?campaignBattle=1', '_blank');
-    if (!opened) window.location.href = 'combat.html?campaignBattle=1';
+    window.location.href = 'combat.html?campaignBattle=1';
     return request;
   }
 
@@ -570,6 +577,8 @@ window.CJS.CampaignCombatBridge = (() => {
     readRequest,
     clearRequest,
     writeResult,
+    readResult,
+    clearResult,
     consumeResult,
     onResult,
     buildRequestFromState,

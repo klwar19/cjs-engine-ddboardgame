@@ -347,6 +347,7 @@ window.CJS.CombatManager = (() => {
       return 'turn_end';
     }
     _afterActionHook(unit, decision, result);
+    _notify();
 
     return _state.phase;
   }
