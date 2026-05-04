@@ -2392,6 +2392,12 @@ body.campaign-page::before {
   background: rgba(12, 20, 19, 0.58);
 }
 
+.campaign-scenario-task {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(86px, auto) 1fr auto;
+}
+
 .campaign-quest-phase span,
 .campaign-quest-phase small,
 .campaign-quest-objective small {
@@ -2477,6 +2483,11 @@ body.campaign-page::before {
   .campaign-panel-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .campaign-scenario-task {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .campaign-quest-actions {

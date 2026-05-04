@@ -688,7 +688,8 @@ window.CJS.CampaignOps = (() => {
     if (!quest) return;
     const objective = (quest.objectives || []).find((entry) => entry.id === op.objectiveId) || quest.objectives?.[0];
     if (!objective) return;
-    objective.current = Math.max(0, (objective.current || 0) + Number(op.amount || 1));
+    const required = Math.max(1, Number(objective.required || 1));
+    objective.current = Math.min(required, Math.max(0, (objective.current || 0) + Number(op.amount || 1)));
     _log(state, `Quest progress: ${quest.title || quest.id} - ${objective.label || objective.id} ${objective.current}/${objective.required || 1}.`);
     if ((quest.objectives || []).every((entry) => (entry.current || 0) >= (entry.required || 1))) {
       _completeQuest(state, quest.id, { source: 'quest_auto' });

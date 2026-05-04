@@ -45,6 +45,13 @@
                 "success": [{ "op": "log", "text": "The party spots a safe path over the creek." }],
                 "fail": [{ "op": "danger", "amount": 1 }]
               }
+            },
+            {
+              "to": "broken_sled",
+              "label": "Inspect the broken sled",
+              "onTravel": [
+                { "op": "log", "text": "The party detours toward a half-buried sled trail." }
+              ]
             }
           ]
         },
@@ -55,13 +62,19 @@
           "x": 320,
           "y": 205,
           "tags": ["forest", "predator"],
+          "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "read_tracks", "amount": 1 },
+            { "op": "log", "text": "Quest clue: the tracks split toward a den and a ridge trail." }
+          ],
           "randomBattle": {
-            "chance": 0.45,
+            "chance": 0.55,
             "table": "frostwood_wolf_battles"
           },
           "events": ["haven_evt_tracks_in_snow"],
           "exits": [
-            { "to": "old_shrine", "label": "Continue to old shrine" },
+            { "to": "wolf_den", "label": "Press toward the den", "dangerChange": 1 },
+            { "to": "old_shrine", "label": "Skirt toward old shrine" },
+            { "to": "hunter_cache", "label": "Check the hunter cache" },
             { "to": "frostwood_edge", "label": "Return to the edge" }
           ]
         },
@@ -87,7 +100,87 @@
           },
           "exits": [
             { "to": "old_shrine", "label": "Climb toward old shrine", "dangerChange": 1 },
+            { "to": "hunter_cache", "label": "Follow smoke to the cache" },
             { "to": "frostwood_edge", "label": "Return to the edge" }
+          ]
+        },
+        {
+          "id": "broken_sled",
+          "title": "Broken Sled",
+          "kind": "event",
+          "x": 225,
+          "y": 415,
+          "tags": ["forest", "tracks", "choice"],
+          "onEnter": [
+            { "op": "roll_event", "table": "haven_frostwood_events", "chance": 0.65 },
+            { "op": "log", "text": "Event: the broken sled points to a cache trail and a safer creek crossing." }
+          ],
+          "exits": [
+            { "to": "hunter_cache", "label": "Follow the cache marks" },
+            { "to": "frozen_creek", "label": "Cut across the creek" },
+            { "to": "frostwood_edge", "label": "Return to the edge" }
+          ]
+        },
+        {
+          "id": "hunter_cache",
+          "title": "Hunter Cache",
+          "kind": "reward",
+          "x": 410,
+          "y": 390,
+          "tags": ["cache", "reward", "forest"],
+          "onEnter": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 10 },
+            { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
+            { "op": "log", "text": "Reward: the cache holds bait, pelts, and a ridge warning." }
+          ],
+          "exits": [
+            { "to": "wolf_tracks", "label": "Return to the tracks" },
+            { "to": "frozen_creek", "label": "Drop to the creek" },
+            { "to": "watch_ridge", "label": "Climb to watch ridge", "dangerChange": 1 }
+          ]
+        },
+        {
+          "id": "wolf_den",
+          "title": "Wolf Den",
+          "kind": "battle",
+          "x": 505,
+          "y": 155,
+          "tags": ["wolf", "den", "objective"],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine"],
+          "randomBattle": {
+            "chance": 1,
+            "battleSetId": "haven_bset_wolf_pack_bent_pine",
+            "label": "Wolf Den Ambush"
+          },
+          "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "break_den", "amount": 1 },
+            { "op": "log", "text": "Quest battle: the den pack is forced into the open." }
+          ],
+          "exits": [
+            { "to": "wolf_tracks", "label": "Fall back to tracks" },
+            { "to": "old_shrine", "label": "Push through to old shrine" },
+            { "to": "watch_ridge", "label": "Take the ridge after the den" }
+          ]
+        },
+        {
+          "id": "watch_ridge",
+          "title": "Watch Ridge",
+          "kind": "event_battle",
+          "x": 620,
+          "y": 365,
+          "tags": ["ridge", "bandit", "choice"],
+          "randomBattle": {
+            "chance": 0.7,
+            "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+            "label": "Snowblind Taxmen"
+          },
+          "onEnter": [
+            { "op": "log", "text": "Choice event: the ridge reveals another trail, but movement here may draw bandits." }
+          ],
+          "exits": [
+            { "to": "hunter_cache", "label": "Drop back to the cache" },
+            { "to": "old_shrine", "label": "Approach old shrine from above", "dangerChange": 1 },
+            { "to": "wolf_den", "label": "Circle back toward the den" }
           ]
         },
         {
@@ -103,6 +196,8 @@
           ],
           "exits": [
             { "to": "wolf_tracks", "label": "Backtrack to wolf tracks" },
+            { "to": "wolf_den", "label": "Return through the den" },
+            { "to": "watch_ridge", "label": "Take the ridge route" },
             { "to": "frozen_creek", "label": "Descend to frozen creek" }
           ]
         }

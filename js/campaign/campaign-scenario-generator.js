@@ -594,7 +594,27 @@ window.CJS.CampaignScenarioGenerator = (() => {
   }
 
   function _chainLinks(nodes) {
-    return nodes.slice(1).map((node, index) => [nodes[index].id, node.id]);
+    const links = nodes.slice(1).map((node, index) => [nodes[index].id, node.id]);
+    const branchPairs = [
+      [0, 2],
+      [1, 3],
+      [2, 4],
+      [1, 4],
+      [3, 5],
+      [2, 6],
+      [4, 7]
+    ];
+    for (const [from, to] of branchPairs) {
+      if (nodes[from] && nodes[to]) links.push([nodes[from].id, nodes[to].id]);
+    }
+    const seen = new Set();
+    return links.filter(([from, to]) => {
+      if (!from || !to || from === to) return false;
+      const key = `${from}->${to}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function _onEnterOps(node, kind, world) {

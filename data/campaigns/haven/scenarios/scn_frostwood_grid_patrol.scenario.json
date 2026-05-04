@@ -19,7 +19,7 @@
       "setting": "outdoor",
       "size": "small",
       "tags": ["grid", "movement", "wolf", "sled"],
-      "notes": "A square-grid patrol route with step movement, revealed cells, a guaranteed wolf cutoff, and a party split circumstance.",
+      "notes": "A square-grid patrol route with step movement, revealed cells, forage tasks, branch combats, and a party split circumstance.",
       "partyRestrictions": [
         {
           "characterId": "haven_garr",
@@ -28,7 +28,7 @@
           "expires": "scenario"
         }
       ],
-      "limits": { "campRests": 1, "randomBattles": 1, "events": 2 },
+      "limits": { "campRests": 1, "randomBattles": 3, "events": 3 },
       "danger": { "start": 0, "max": 8 },
       "setBattles": [
         {
@@ -40,6 +40,11 @@
             { "op": "give_material", "id": "haven_wolf_pelt", "qty": 1 },
             { "op": "give_jp", "amount": 1 }
           ]
+        },
+        {
+          "id": "grid_bandit_cutoff",
+          "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+          "label": "Bandit Cutoff"
         }
       ],
       "randomBattleTables": [
@@ -48,7 +53,8 @@
           "name": "Grid Patrol Battles",
           "entries": [
             { "battleSetId": "haven_bset_wolf_pack_bent_pine", "weight": 2 },
-            { "battleSetId": "haven_bset_bear_hollow", "weight": 1 }
+            { "battleSetId": "haven_bset_bear_hollow", "weight": 1 },
+            { "battleSetId": "haven_bset_bandit_taxmen_snowblind", "weight": 1 }
           ]
         }
       ],
@@ -56,7 +62,8 @@
         { "type": "reach_cell", "x": 5, "y": 1 }
       ],
       "entryOps": [
-        { "op": "log", "text": "Grid patrol started. Garr stays with the sled route." }
+        { "op": "log", "text": "Grid patrol started. Garr stays with the sled route." },
+        { "op": "log", "text": "Quest phase: scout the Bent Pine trail, forage Frostcaps, then reach Watch Ridge." }
       ],
       "exitOps": [
         { "op": "log", "text": "Grid patrol ended." }

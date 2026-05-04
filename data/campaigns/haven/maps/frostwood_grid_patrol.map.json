@@ -46,7 +46,22 @@
           "tags": ["tracks", "wolf"],
           "notes": "Fresh tracks split around the tree.",
           "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_frostcap_mushrooms", "objectiveId": "find_grove", "amount": 1 },
             { "op": "log", "text": "Bent Pine: tracks show something circling the route." }
+          ]
+        },
+        {
+          "id": "frostcap_grove",
+          "title": "Frostcap Grove",
+          "x": 2,
+          "y": 1,
+          "kind": "reward",
+          "tags": ["forage", "mushroom", "reward"],
+          "notes": "Blue caps cluster beneath the bent roots.",
+          "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_frostcap_mushrooms", "objectiveId": "collect_mushrooms", "amount": 5 },
+            { "op": "give_quest_item", "id": "haven_frostcap_mushroom", "qty": 5 },
+            { "op": "log", "text": "Quest find: five Frostcap Mushrooms gathered from the grove." }
           ]
         },
         {
@@ -74,6 +89,20 @@
           "randomBattle": {
             "chance": 1,
             "battleSetId": "haven_bset_wolf_pack_bent_pine"
+          }
+        },
+        {
+          "id": "bandit_cutoff",
+          "title": "Bandit Cutoff",
+          "x": 4,
+          "y": 1,
+          "kind": "battle",
+          "tags": ["bandit", "roadblock"],
+          "battleSetIds": ["haven_bset_bandit_taxmen_snowblind"],
+          "randomBattle": {
+            "chance": 0.8,
+            "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+            "label": "Snowblind Taxmen"
           }
         },
         {

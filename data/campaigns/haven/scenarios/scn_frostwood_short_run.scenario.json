@@ -17,10 +17,11 @@
       "mapId": "haven_map_frostwood_short_route",
       "startNode": "frostwood_edge",
       "danger": { "start": 0, "max": 10 },
-      "limits": { "campRests": 1, "events": 3, "randomBattles": 2 },
+      "limits": { "campRests": 1, "events": 4, "randomBattles": 4 },
       "entrySnapshot": true,
       "entryOps": [
-        { "op": "log", "text": "The party enters Frostwood." }
+        { "op": "log", "text": "The party enters Frostwood." },
+        { "op": "log", "text": "Quest phase: read tracks, break the den, then secure the shrine route." }
       ],
       "exitOps": [
         { "op": "pass_phase" }
@@ -30,6 +31,16 @@
           "id": "wolf_pack",
           "label": "Ice Wolf Ambush",
           "encounterId": "haven_enc_wolf_pack"
+        },
+        {
+          "id": "wolf_den",
+          "label": "Wolf Den Break",
+          "battleSetId": "haven_bset_wolf_pack_bent_pine"
+        },
+        {
+          "id": "ridge_taxmen",
+          "label": "Snowblind Ridge Taxmen",
+          "battleSetId": "haven_bset_bandit_taxmen_snowblind"
         }
       ],
       "randomBattleTables": [
@@ -37,8 +48,9 @@
           "id": "frostwood_wolf_battles",
           "name": "Frostwood Wolf Battles",
           "entries": [
-            { "weight": 75, "encounterId": "haven_enc_wolf_pack", "label": "Wolf Pack" },
-            { "weight": 25, "encounterId": "haven_enc_bear_cave", "label": "Bear Cave Trouble" }
+            { "weight": 55, "battleSetId": "haven_bset_wolf_pack_bent_pine", "label": "Wolf Pack" },
+            { "weight": 25, "battleSetId": "haven_bset_bear_hollow", "label": "Bear Hollow Trouble" },
+            { "weight": 20, "battleSetId": "haven_bset_bandit_taxmen_snowblind", "label": "Snowblind Taxmen" }
           ]
         }
       ],

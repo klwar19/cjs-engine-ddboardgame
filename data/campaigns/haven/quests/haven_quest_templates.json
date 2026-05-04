@@ -19,15 +19,20 @@
           "giver": "Frostbitten Guild",
           "summary": "Clear the wolf pack troubling the Frostwood road.",
           "objectives": [
-            { "id": "clear_wolves", "label": "Clear the wolf threat", "current": 0, "required": 1 }
+            { "id": "read_tracks", "label": "Read the tracks at Wolf Tracks", "current": 0, "required": 1 },
+            { "id": "break_den", "label": "Break the Wolf Den ambush", "current": 0, "required": 1 },
+            { "id": "clear_wolves", "label": "Secure the Old Shrine route", "current": 0, "required": 1 }
           ],
           "rewards": [
             { "op": "give_money", "currency": "haven_gold", "amount": 30 },
             { "op": "give_jp", "amount": 1 }
           ],
           "timer": { "phasesRemaining": 3 },
+          "mapType": "forest",
           "linkedScenario": "haven_scn_frostwood_short_run",
-          "linkedMapNodes": ["wolf_tracks", "old_shrine"],
+          "linkedMapNodes": ["wolf_tracks", "wolf_den", "old_shrine"],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bandit_taxmen_snowblind"],
+          "tags": ["forest", "wolf", "starter"],
           "notes": "GM may complete this after any wolf-pack result, combat or tabletop."
         },
         {
@@ -37,6 +42,7 @@
           "giver": "Tessa",
           "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
           "objectives": [
+            { "id": "find_grove", "label": "Scout the Bent Pine trail", "current": 0, "required": 1 },
             { "id": "collect_mushrooms", "label": "Collect 5 Frostcap Mushrooms", "current": 0, "required": 5 }
           ],
           "rewards": [
@@ -44,6 +50,12 @@
             { "op": "give_jp", "amount": 1 }
           ],
           "timer": { "phasesRemaining": 4 },
+          "mapType": "forest",
+          "mapForm": "grid_map",
+          "linkedScenario": "haven_scn_frostwood_grid_patrol",
+          "linkedMapCells": ["bent_pine", "frostcap_grove", "watch_ridge"],
+          "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "tags": ["forest", "forage", "starter"],
           "notes": "Good low-pressure resource quest."
         }
       ]

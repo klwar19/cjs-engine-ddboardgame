@@ -515,11 +515,11 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-dashboard">
         <section class="campaign-panel campaign-actions-panel">
-          <div class="campaign-panel-head"><h2>Control Desk</h2></div>
+          <div class="campaign-panel-head"><h2>Adventure Desk</h2></div>
           <div class="campaign-control-stack">
             ${_controlGroup('Story Prompts', `
               <button class="campaign-action primary" data-campaign-action="solo-surprise">Story Offer</button>
-              <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Offer</button>
+              <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Run</button>
               <button class="campaign-action" data-campaign-action="random-rumor-offer">Rumor Hook</button>
               <button class="campaign-action" data-campaign-action="roll-event">Event</button>
               <button class="campaign-action" data-campaign-action="roll-oracle">GM Prompt</button>
@@ -541,7 +541,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-action-grid" hidden>
             <button class="campaign-action primary" data-campaign-action="pass-phase">Pass Phase</button>
             <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
-            <button class="campaign-action" data-campaign-action="solo-surprise">Solo Surprise</button>
+            <button class="campaign-action" data-campaign-action="solo-surprise">Story Offer</button>
             <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
             <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
           </div>
@@ -601,8 +601,8 @@ window.CJS.CampaignUI = (() => {
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern">Tavern</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge">Forge</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="weird">Weird</button>
-            <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
-            <button class="campaign-action" data-campaign-action="random-rumor-offer">Random Rumor</button>
+            <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Run</button>
+            <button class="campaign-action" data-campaign-action="random-rumor-offer">Rumor Hook</button>
             <button class="campaign-action" data-campaign-action="manual-rumor">Manual Rumor</button>
             <button class="campaign-action" data-campaign-action="roll-forge-oracle">Oracle</button>
           </div>
@@ -880,6 +880,7 @@ window.CJS.CampaignUI = (() => {
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
         </div>
+        ${_renderQuestRunTask(state, run, scenario)}
         <div class="campaign-control-stack">
           ${_controlGroup('Scenario Tools', `
             <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
@@ -903,6 +904,33 @@ window.CJS.CampaignUI = (() => {
           ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Scenario</button>' : ''}
         </div>
       </section>
+    `;
+  }
+
+  function _renderQuestRunTask(state, run, scenario) {
+    const questId = _activeRunQuestId(run, scenario);
+    const quest = questId ? state.quests?.[questId] : null;
+    if (!quest) return '';
+    if (_isQuestResolved(quest)) {
+      return `
+        <div class="campaign-quest-phase campaign-scenario-task">
+          <span>Quest Resolved</span>
+          <strong>${_esc(quest.title || quest.id)}</strong>
+          <small>End scenario when ready</small>
+        </div>
+      `;
+    }
+    const objectives = quest.objectives || [];
+    const nextObjective = _questNextObjective(quest);
+    const idx = Math.max(0, objectives.findIndex((entry) => entry.id === nextObjective?.id));
+    const phase = objectives.length ? `Phase ${idx + 1}/${objectives.length}` : 'Quest Task';
+    const task = _questTaskDescriptor(quest, scenario);
+    return `
+      <div class="campaign-quest-phase campaign-scenario-task">
+        <span>${_esc(phase)}</span>
+        <strong>${_esc(nextObjective?.label || task.label || 'Follow the quest route')}</strong>
+        <small>${_esc(task.location || 'Use the map branches to resolve it')}</small>
+      </div>
     `;
   }
 
@@ -1761,7 +1789,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-panel-actions">
             <span class="campaign-pill">${active.length} active | ${finished.length} resolved | ${templateCount} templates</span>
             <button class="campaign-action primary" data-campaign-action="add-quest">Add Quest</button>
-            <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
+            <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Run</button>
           </div>
         </div>
         ${_renderSoloNotice(state)}
@@ -1780,7 +1808,7 @@ window.CJS.CampaignUI = (() => {
 
   function _renderQuestRow(quest, opts = {}) {
     const objectives = quest.objectives || [];
-    const nextObjective = _questNextObjective(quest);
+    const nextObjective = opts.resolved ? null : _questNextObjective(quest);
     const done = objectives.filter((obj) => _questObjectiveDone(obj)).length;
     const total = objectives.length || 1;
     const meta = [
@@ -1790,7 +1818,7 @@ window.CJS.CampaignUI = (() => {
     ].filter(Boolean).join(' | ');
     const activeRun = CS().getState()?.activeScenarioRun;
     const activeScenario = CS().getActiveScenario?.();
-    const isRunQuest = activeScenario?.source?.questId === quest.id;
+    const isRunQuest = _activeRunQuestId(activeRun, activeScenario) === quest.id;
     const scenarioDisabled = activeRun && !isRunQuest;
     const scenarioLabel = isRunQuest ? 'Open Map' : 'Map Run';
     return `
@@ -1804,7 +1832,7 @@ window.CJS.CampaignUI = (() => {
           ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
           <div class="campaign-quest-phase">
             <span>Phase</span>
-            <strong>${_esc(nextObjective?.label || (opts.resolved ? 'Resolved' : 'Open'))}</strong>
+            <strong>${_esc(opts.resolved ? 'Resolved' : (nextObjective?.label || 'Open'))}</strong>
             <small>${done}/${total}</small>
           </div>
           <div class="campaign-quest-objectives">
@@ -2348,7 +2376,7 @@ window.CJS.CampaignUI = (() => {
     _activeMode = 'town';
     _activeTab = 'overview';
     render();
-    UI().toast('Solo offer ready', 'success');
+    UI().toast('Story offer ready', 'success');
   }
 
   function _offerRandomRumor() {
@@ -2361,26 +2389,30 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _offerRandomQuest() {
+    if (CS().getState()?.activeScenarioRun) {
+      _activeMode = 'scenario';
+      _activeTab = 'maps';
+      render();
+      return UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
+    }
     const card = _randomQuestOfferCard();
-    if (!card) return UI().toast('No quest templates available', 'info');
-    Side().saveCard(card, { status: 'idea', source: 'solo_quest_offer' });
-    _setPendingSoloHook(card, 'quest_offer');
-    _activeMode = 'town';
-    _activeTab = 'overview';
-    render();
-    UI().toast('Quest offer ready', 'success');
+    if (!card) return UI().toast('No quest run templates available', 'info');
+    Side().saveCard(card, { status: 'active', source: 'quest_run' });
+    return _startQuestRunFromOffer(card);
   }
 
   function _randomQuestOfferCard() {
-    const activeQuestIds = new Set(Object.keys(CS().getState()?.quests || {}));
+    const state = CS().getState();
+    const activeQuestIds = new Set(Object.values(state?.quests || {})
+      .filter((quest) => !_isQuestResolved(quest))
+      .map((quest) => quest.id));
     const templates = Object.values(CS().getContent().campaignQuests || {})
       .flatMap((record) => record.templates || [])
       .filter((quest) => !activeQuestIds.has(quest.id));
     const chains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
-    const options = [
-      ...templates.map((quest) => ({ type: 'quest_template', quest })),
-      ...chains.map((chain) => ({ type: 'quest_chain', chain }))
-    ];
+    const options = templates.length
+      ? templates.map((quest) => ({ type: 'quest_template', quest }))
+      : chains.map((chain) => ({ type: 'quest_chain', chain }));
     if (!options.length) return null;
     const pick = options[Math.floor(Math.random() * options.length)];
     if (pick.type === 'quest_chain') {
@@ -2409,10 +2441,65 @@ window.CJS.CampaignUI = (() => {
       tags: quest.tags || [],
       questTemplate: quest,
       suggestedChoices: [{
-        label: 'Add this quest',
+        label: 'Start this quest run',
         ops: [{ op: 'add_quest', quest }]
       }]
     };
+  }
+
+  function _startQuestRunFromOffer(card) {
+    if (!card) return null;
+    if (CS().getState()?.activeScenarioRun) {
+      _activeMode = 'scenario';
+      _activeTab = 'maps';
+      render();
+      UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
+      return { error: 'active_run' };
+    }
+    if (card.questChainTemplateId) {
+      const choice = card.suggestedChoices?.[0];
+      if (choice?.ops?.length) Ops().apply(choice.ops, { source: 'quest_run_chain' });
+      Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain_run', approved: true }, { source: 'quest_run' });
+      _clearPendingSoloHook();
+      const result = _generateScenario({
+        source: 'quest_chain',
+        mapForm: 'node_map',
+        mapType: _questMapType(card),
+        size: 'small'
+      });
+      return result;
+    }
+
+    const quest = _questFromOfferCard(card);
+    if (!quest) return null;
+    Ops().apply({ op: 'add_quest', quest }, { source: 'quest_run' });
+    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_run', approved: true }, { source: 'quest_run' });
+    _clearPendingSoloHook();
+    const result = _startQuestScenario(quest.id, {
+      quest,
+      mapForm: quest.mapForm || 'node_map',
+      mapType: quest.mapType || _questMapType(quest)
+    });
+    if (result?.error) {
+      _activeMode = 'town';
+      _activeTab = 'quests';
+      render();
+    }
+    return result;
+  }
+
+  function _questFromOfferCard(card) {
+    const base = card.questTemplate ? CS().clone(card.questTemplate) : {
+      id: `quest_${card.id || Date.now()}`,
+      title: card.title || card.name || 'Quest Run',
+      summary: card.summary || card.prompt || '',
+      objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
+      rewards: card.rewardOps || [],
+      tags: card.tags || []
+    };
+    base.templateId = base.templateId || base.id;
+    base.status = 'active';
+    return base;
   }
 
   function _setPendingSoloHook(card, kind) {
@@ -2443,7 +2530,7 @@ window.CJS.CampaignUI = (() => {
     if (!card) return;
     const apply = () => {
       if (card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer') {
-        _soloHookToQuest(true);
+        _startQuestRunFromOffer(card);
         return;
       }
       const choice = card.suggestedChoices?.[0];
@@ -2485,7 +2572,7 @@ window.CJS.CampaignUI = (() => {
     }
     const quest = card.questTemplate ? CS().clone(card.questTemplate) : {
       id: `quest_${card.id}`,
-      title: card.title || card.name || 'Solo Quest',
+      title: card.title || card.name || 'Story Quest',
       status: 'active',
       summary: card.summary || card.prompt || '',
       objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
@@ -2528,7 +2615,7 @@ window.CJS.CampaignUI = (() => {
 
   function _ignoreSoloHook() {
     const card = _pendingSoloHookCard();
-    if (card) Side().rejectCard(card.id, 'Ignored from solo offer.');
+    if (card) Side().rejectCard(card.id, 'Ignored from story offer.');
     _clearPendingSoloHook();
   }
 
@@ -3286,7 +3373,7 @@ window.CJS.CampaignUI = (() => {
     const activeRun = CS().getState()?.activeScenarioRun;
     const activeScenario = CS().getActiveScenario?.();
     if (activeRun) {
-      if (activeScenario?.source?.questId === questId) return _goto('scenario', 'maps');
+      if (_activeRunQuestId(activeRun, activeScenario) === questId) return _goto('scenario', 'maps');
       return UI().toast('End the active scenario before starting a quest map', 'info');
     }
     return _startQuestScenario(questId);
@@ -3398,10 +3485,18 @@ window.CJS.CampaignUI = (() => {
     return quest && !_isQuestResolved(quest) ? quest : null;
   }
 
+  function _activeRunQuestId(run, scenario) {
+    return run?.questId || scenario?.source?.questId || null;
+  }
+
   function _startQuestScenario(questId, overrides = {}) {
-    const quest = _activeQuestById(questId);
+    const quest = overrides.quest || _activeQuestById(questId);
     if (!quest) return null;
-    return _generateScenario({
+    if (!overrides.forceGenerated) {
+      const existing = _startExistingQuestScenario(quest);
+      if (existing) return existing;
+    }
+    const result = _generateScenario({
       source: 'active_quest',
       questId,
       mapForm: 'node_map',
@@ -3409,6 +3504,112 @@ window.CJS.CampaignUI = (() => {
       size: 'small',
       ...overrides
     });
+    if (result && !result.error) {
+      _annotateQuestRun(quest, result.scenario);
+      render();
+    }
+    return result;
+  }
+
+  function _startExistingQuestScenario(quest) {
+    const scenarioId = quest?.linkedScenario || quest?.scenarioId || quest?.scenario;
+    if (!scenarioId) return null;
+    const scenario = CS().getScenarioById(scenarioId);
+    if (!scenario) return null;
+    try {
+      Runner().startScenario(scenarioId);
+    } catch (err) {
+      UI().toast(`Scenario could not start: ${err?.message || scenarioId}`, 'info');
+      return { error: 'start_failed' };
+    }
+    _annotateQuestRun(quest, scenario);
+    _activeMode = 'scenario';
+    _activeTab = 'maps';
+    render();
+    UI().toast(`Started ${scenario.name || scenario.id}`, 'success');
+    return { scenario, existing: true };
+  }
+
+  function _annotateQuestRun(quest, scenario) {
+    if (!quest?.id || !CS().getState()?.activeScenarioRun) return;
+    const task = _questTaskDescriptor(quest, scenario);
+    CS().mutate((state) => {
+      const run = state.activeScenarioRun;
+      if (!run) return;
+      run.questId = quest.id;
+      run.questTitle = quest.title || quest.id;
+      run.questObjectiveId = task.objectiveId || null;
+      run.questTask = task;
+    }, { source: 'quest_run' });
+    const location = task.location ? ` at ${task.location}` : '';
+    Ops().apply({ op: 'log', text: `Quest task: ${task.label || quest.title || quest.id}${location}.` }, { source: 'quest_run' });
+  }
+
+  function _questTaskDescriptor(quest = {}, scenario = null) {
+    const objectives = quest.objectives || [];
+    const objective = _questNextObjective(quest);
+    const objectiveIndex = Math.max(0, objectives.findIndex((entry) => entry.id === objective?.id));
+    const map = (scenario?.mapId && CS().getScenarioMapById?.(scenario.mapId)) || CS().getActiveMap?.();
+    const nodeId = Array.isArray(quest.linkedMapNodes)
+      ? (quest.linkedMapNodes[objectiveIndex] || quest.linkedMapNodes[quest.linkedMapNodes.length - 1])
+      : null;
+    if (nodeId) {
+      const node = Runner().findNode?.(map, nodeId);
+      return {
+        label: objective?.label || quest.title || 'Quest task',
+        objectiveId: objective?.id || null,
+        nodeId,
+        location: node?.title || _label(nodeId)
+      };
+    }
+
+    const linkedCells = Array.isArray(quest.linkedMapCells) ? quest.linkedMapCells : [];
+    const cellRef = linkedCells[objectiveIndex] || linkedCells[linkedCells.length - 1] || null;
+    const cell = _questCellFromRef(map, cellRef);
+    if (cell) {
+      return {
+        label: objective?.label || quest.title || 'Quest task',
+        objectiveId: objective?.id || null,
+        cell: { x: Number(cell.x), y: Number(cell.y) },
+        location: cell.title || `${cell.x},${cell.y}`
+      };
+    }
+
+    const success = (scenario?.successConditions || [])[0];
+    if (success?.type === 'reach_node') {
+      const node = Runner().findNode?.(map, success.nodeId);
+      return {
+        label: objective?.label || quest.title || 'Quest task',
+        objectiveId: objective?.id || null,
+        nodeId: success.nodeId,
+        location: node?.title || _label(success.nodeId)
+      };
+    }
+    if (success?.type === 'reach_cell') {
+      const found = Runner().findCell?.(map, success.x, success.y);
+      return {
+        label: objective?.label || quest.title || 'Quest task',
+        objectiveId: objective?.id || null,
+        cell: { x: Number(success.x), y: Number(success.y) },
+        location: found?.title || `${success.x},${success.y}`
+      };
+    }
+    return {
+      label: objective?.label || quest.title || 'Quest task',
+      objectiveId: objective?.id || null,
+      location: ''
+    };
+  }
+
+  function _questCellFromRef(map, ref) {
+    if (!map || ref == null) return null;
+    if (Array.isArray(ref)) return Runner().findCell?.(map, ref[0], ref[1]) || { x: ref[0], y: ref[1] };
+    if (typeof ref === 'object') {
+      if (ref.id) return (map.cells || []).find((cell) => cell.id === ref.id) || null;
+      if (ref.x != null && ref.y != null) return Runner().findCell?.(map, ref.x, ref.y) || ref;
+    }
+    if (typeof ref === 'string') return (map.cells || []).find((cell) => cell.id === ref) || null;
+    return null;
   }
 
   function _questMapType(quest = {}) {
