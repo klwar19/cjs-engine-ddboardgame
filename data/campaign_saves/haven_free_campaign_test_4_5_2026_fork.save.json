@@ -1,0 +1,1537 @@
+{
+  "saveVersion": 1,
+  "saveId": "save_1777900744964",
+  "slotName": "Haven Free Campaign Test 4/5/2026 Fork",
+  "campaignId": "haven_camp_free_test",
+  "currentWorld": "haven",
+  "currentChapter": 1,
+  "phase": {
+    "number": 1,
+    "type": "town_phase",
+    "name": "Town Phase"
+  },
+  "mode": "soft_limit",
+  "currencies": {
+    "haven_gold": 20,
+    "jp": 1
+  },
+  "party": {
+    "bin": {
+      "baseCharacterId": "bin",
+      "name": "Bin Chen",
+      "icon": "🃏",
+      "portrait": "images/characters/bin.png",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 78,
+      "maxMp": 77,
+      "currentHp": 78,
+      "currentMp": 77,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_rusty_sword",
+        "haven_leather_armor",
+        "haven_lucky_coin"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_rusty_sword",
+        "armor": "haven_leather_armor",
+        "accessory1": "haven_lucky_coin",
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    },
+    "haven_bowy": {
+      "baseCharacterId": "haven_bowy",
+      "name": "Bowy",
+      "icon": "🐗",
+      "portrait": "",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 99,
+      "maxMp": 53,
+      "currentHp": 99,
+      "currentMp": 53,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_thunder_crossbow",
+        "haven_leather_armor"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_thunder_crossbow",
+        "armor": "haven_leather_armor",
+        "accessory1": null,
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    },
+    "haven_mitia": {
+      "baseCharacterId": "haven_mitia",
+      "name": "Mitia",
+      "icon": "🧊",
+      "portrait": "",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 65,
+      "maxMp": 76,
+      "currentHp": 65,
+      "currentMp": 76,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_frost_staff",
+        "haven_adventurers_cloak",
+        "haven_healers_pendant"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_frost_staff",
+        "armor": "haven_adventurers_cloak",
+        "accessory1": "haven_healers_pendant",
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    },
+    "haven_garr": {
+      "baseCharacterId": "haven_garr",
+      "name": "Garr",
+      "icon": "🐾",
+      "portrait": "",
+      "level": 1,
+      "rank": "F",
+      "maxHp": 93,
+      "maxMp": 58,
+      "currentHp": 93,
+      "currentMp": 58,
+      "statOverrides": {},
+      "learnedSkills": [],
+      "learnedPassives": [],
+      "allowedWeaponTypes": [],
+      "allowedArmorTypes": [],
+      "statuses": [],
+      "buffs": [],
+      "injuries": [],
+      "rosterRole": "active",
+      "availability": {
+        "status": "available",
+        "reason": "",
+        "source": "default",
+        "expires": null,
+        "updatedAt": null
+      },
+      "equipment": [
+        "haven_hunters_blade",
+        "haven_leather_armor"
+      ],
+      "equipmentSlots": {
+        "weapon": "haven_hunters_blade",
+        "armor": "haven_leather_armor",
+        "accessory1": null,
+        "accessory2": null
+      },
+      "notes": [],
+      "xp": 0
+    }
+  },
+  "inventory": {
+    "items": {
+      "haven_minor_potion": 2,
+      "haven_basic_tent": 1
+    },
+    "materials": {},
+    "food": {},
+    "questItems": {},
+    "equipment": {}
+  },
+  "quests": {
+    "quest_frostcap_mushrooms": {
+      "status": "idea",
+      "objectives": [
+        {
+          "id": "collect_mushrooms",
+          "label": "Collect 5 Frostcap Mushrooms",
+          "current": 0,
+          "required": 5
+        }
+      ],
+      "notes": "Good low-pressure resource quest.",
+      "id": "quest_frostcap_mushrooms",
+      "title": "Gather Frostcap Mushrooms",
+      "giver": "Tessa",
+      "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
+      "rewards": [
+        {
+          "op": "give_money",
+          "currency": "haven_gold",
+          "amount": 20
+        },
+        {
+          "op": "give_jp",
+          "amount": 1
+        }
+      ],
+      "timer": {
+        "phasesRemaining": 4
+      }
+    }
+  },
+  "flags": {},
+  "activeScenarioRun": {
+    "runId": "run_1777894795058",
+    "scenarioId": "gen_scn_1777894795052_2473",
+    "travelMode": "node_map",
+    "mapId": "gen_map_1777894795049_6057",
+    "proceduralMap": null,
+    "currentNode": "market_gate",
+    "currentCell": null,
+    "mapLayer": "street",
+    "currentBeatIndex": null,
+    "completedBeats": [],
+    "startedAtPhase": 1,
+    "danger": 0,
+    "dangerMax": 10,
+    "limits": {
+      "campRests": 1,
+      "randomBattles": 3,
+      "events": 3
+    },
+    "usedCampRests": 0,
+    "eventsUsed": 0,
+    "randomBattlesUsed": 0,
+    "visitedNodes": [
+      "market_gate"
+    ],
+    "revealedNodes": [
+      "market_gate",
+      "fishmonger_lane"
+    ],
+    "visitedCells": [],
+    "revealedCells": [],
+    "completedBattles": [],
+    "entrySnapshot": {
+      "currencies": {
+        "haven_gold": 20,
+        "jp": 1
+      },
+      "inventory": {
+        "items": {
+          "haven_minor_potion": 2,
+          "haven_basic_tent": 1
+        },
+        "materials": {},
+        "food": {},
+        "questItems": {},
+        "equipment": {}
+      },
+      "party": {
+        "bin": {
+          "currentHp": 78,
+          "maxHp": 78,
+          "currentMp": 77,
+          "maxMp": 77,
+          "statuses": []
+        },
+        "haven_bowy": {
+          "currentHp": 99,
+          "maxHp": 99,
+          "currentMp": 53,
+          "maxMp": 53,
+          "statuses": []
+        },
+        "haven_mitia": {
+          "currentHp": 65,
+          "maxHp": 65,
+          "currentMp": 76,
+          "maxMp": 76,
+          "statuses": []
+        },
+        "haven_garr": {
+          "currentHp": 93,
+          "maxHp": 93,
+          "currentMp": 58,
+          "maxMp": 58,
+          "statuses": []
+        }
+      },
+      "quests": {
+        "quest_frostcap_mushrooms": {
+          "status": "idea",
+          "objectives": [
+            {
+              "id": "collect_mushrooms",
+              "label": "Collect 5 Frostcap Mushrooms",
+              "current": 0,
+              "required": 5
+            }
+          ],
+          "notes": "Good low-pressure resource quest.",
+          "id": "quest_frostcap_mushrooms",
+          "title": "Gather Frostcap Mushrooms",
+          "giver": "Tessa",
+          "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
+          "rewards": [
+            {
+              "op": "give_money",
+              "currency": "haven_gold",
+              "amount": 20
+            },
+            {
+              "op": "give_jp",
+              "amount": 1
+            }
+          ],
+          "timer": {
+            "phasesRemaining": 4
+          }
+        }
+      }
+    },
+    "travelSteps": 0,
+    "revisitCounts": {},
+    "surpriseHistory": [],
+    "notes": []
+  },
+  "scenarioHistory": [],
+  "mapState": {
+    "gen_map_1777894795049_6057": {
+      "visited": {
+        "market_gate": true
+      },
+      "revealed": {
+        "market_gate": true,
+        "fishmonger_lane": true
+      },
+      "locked": {},
+      "cleared": {},
+      "notes": {},
+      "revealedCells": {},
+      "visitedCells": {}
+    }
+  },
+  "worldArchive": {},
+  "pocketHaven": {
+    "enabled": true,
+    "notes": [],
+    "farm": {
+      "plots": [
+        {
+          "id": "plot_1",
+          "seedId": null,
+          "cropId": null,
+          "progress": 0,
+          "required": 3,
+          "ready": false
+        }
+      ]
+    },
+    "stations": [
+      {
+        "id": "campfire",
+        "name": "Campfire",
+        "kind": "cook"
+      },
+      {
+        "id": "workbench",
+        "name": "Workbench",
+        "kind": "craft"
+      }
+    ]
+  },
+  "hubState": {
+    "haven_hub_frostbitten": {
+      "hubId": "haven_hub_frostbitten",
+      "mood": "cautious_warmth",
+      "security": 0,
+      "prosperity": 0,
+      "warmth": 0,
+      "weirdness": 0,
+      "activeProblems": [
+        "bin_death_paperwork",
+        "firemoss_shortage"
+      ],
+      "resolvedProblems": [],
+      "unlockedServices": [
+        "garr_hut_full_rest",
+        "guild_basic_board",
+        "guild_registration",
+        "frosted_mug_basic_meals",
+        "rumor_roll",
+        "ironhand_basic_repairs",
+        "forge_basic_recipes"
+      ],
+      "shopModifiers": {},
+      "npcMoods": {
+        "lysa": "cheerful_and_too_loud",
+        "corvin": "paperwork_haunted",
+        "tessa": "testing_party_carefully",
+        "dain": "annoyed_and_competitive",
+        "mara": "quietly_observant",
+        "kael": "hero_worship",
+        "brinna_twins": "friendly_debt_collectors",
+        "hilda_ironhand": "measuring_everyone_by_boot_noise"
+      },
+      "rumors": [],
+      "eventCooldowns": {},
+      "notes": []
+    }
+  },
+  "sideContent": {
+    "generatedIdeas": {
+      "idea_offer_haven_qchain_thunder_needs_a_voice_1777894734783": {
+        "id": "idea_offer_haven_qchain_thunder_needs_a_voice_1777894734783",
+        "type": "quest_offer",
+        "title": "Thunder Needs a Voice",
+        "summary": "Bowy follows a trail of old crossbow bolts toward a wolf den. Keep Garr clues soft unless GM promotes them.",
+        "canonRisk": "yellow",
+        "tags": [
+          "bowy",
+          "side_character",
+          "wolf",
+          "yellow"
+        ],
+        "questChainTemplateId": "haven_qchain_thunder_needs_a_voice",
+        "suggestedChoices": [
+          {
+            "label": "Start this quest chain",
+            "ops": [
+              {
+                "op": "start_quest_chain",
+                "templateId": "haven_qchain_thunder_needs_a_voice"
+              }
+            ]
+          }
+        ],
+        "source": "side_content",
+        "createdAtPhase": 1,
+        "status": "active",
+        "updatedAt": "2026-05-04T11:38:54.784Z",
+        "promotedAtPhase": 1,
+        "targetType": "hub_event"
+      },
+      "idea_offer_quest_frostcap_mushrooms_1777894751986": {
+        "id": "idea_offer_quest_frostcap_mushrooms_1777894751986",
+        "type": "quest_offer",
+        "title": "Gather Frostcap Mushrooms",
+        "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
+        "canonRisk": "green",
+        "tags": [],
+        "questTemplate": {
+          "id": "quest_frostcap_mushrooms",
+          "title": "Gather Frostcap Mushrooms",
+          "status": "idea",
+          "giver": "Tessa",
+          "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
+          "objectives": [
+            {
+              "id": "collect_mushrooms",
+              "label": "Collect 5 Frostcap Mushrooms",
+              "current": 0,
+              "required": 5
+            }
+          ],
+          "rewards": [
+            {
+              "op": "give_money",
+              "currency": "haven_gold",
+              "amount": 20
+            },
+            {
+              "op": "give_jp",
+              "amount": 1
+            }
+          ],
+          "timer": {
+            "phasesRemaining": 4
+          },
+          "notes": "Good low-pressure resource quest."
+        },
+        "suggestedChoices": [
+          {
+            "label": "Add this quest",
+            "ops": [
+              {
+                "op": "add_quest",
+                "quest": {
+                  "id": "quest_frostcap_mushrooms",
+                  "title": "Gather Frostcap Mushrooms",
+                  "status": "idea",
+                  "giver": "Tessa",
+                  "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
+                  "objectives": [
+                    {
+                      "id": "collect_mushrooms",
+                      "label": "Collect 5 Frostcap Mushrooms",
+                      "current": 0,
+                      "required": 5
+                    }
+                  ],
+                  "rewards": [
+                    {
+                      "op": "give_money",
+                      "currency": "haven_gold",
+                      "amount": 20
+                    },
+                    {
+                      "op": "give_jp",
+                      "amount": 1
+                    }
+                  ],
+                  "timer": {
+                    "phasesRemaining": 4
+                  },
+                  "notes": "Good low-pressure resource quest."
+                }
+              }
+            ]
+          }
+        ],
+        "source": "side_content",
+        "createdAtPhase": 1,
+        "status": "active",
+        "updatedAt": "2026-05-04T11:39:11.986Z",
+        "promotedAtPhase": 1,
+        "targetType": "accepted_hook"
+      },
+      "idea_offer_haven_qchain_three_silver_discount_1777894759376": {
+        "id": "idea_offer_haven_qchain_three_silver_discount_1777894759376",
+        "type": "quest_offer",
+        "title": "Three Silver and a Funeral Discount",
+        "summary": "The Brinna Twins claim Bin's old three-silver debt accrued emotional interest while he was missing.",
+        "canonRisk": "green",
+        "tags": [
+          "brinna_twins",
+          "debt",
+          "comedy",
+          "town"
+        ],
+        "questChainTemplateId": "haven_qchain_three_silver_discount",
+        "suggestedChoices": [
+          {
+            "label": "Start this quest chain",
+            "ops": [
+              {
+                "op": "start_quest_chain",
+                "templateId": "haven_qchain_three_silver_discount"
+              }
+            ]
+          }
+        ],
+        "source": "side_content",
+        "createdAtPhase": 1,
+        "status": "active",
+        "updatedAt": "2026-05-04T11:39:19.376Z",
+        "promotedAtPhase": 1,
+        "targetType": "hub_event"
+      },
+      "idea_offer_haven_qchain_ironhand_errand_1777894781295": {
+        "id": "idea_offer_haven_qchain_ironhand_errand_1777894781295",
+        "type": "quest_offer",
+        "title": "Ironhand Errand",
+        "summary": "Hilda needs frost-resistant binding material before the forge can repair winter gear reliably.",
+        "canonRisk": "green",
+        "tags": [
+          "forge",
+          "crafting",
+          "materials",
+          "repair"
+        ],
+        "questChainTemplateId": "haven_qchain_ironhand_errand",
+        "suggestedChoices": [
+          {
+            "label": "Start this quest chain",
+            "ops": [
+              {
+                "op": "start_quest_chain",
+                "templateId": "haven_qchain_ironhand_errand"
+              }
+            ]
+          }
+        ],
+        "source": "side_content",
+        "createdAtPhase": 1,
+        "status": "active",
+        "updatedAt": "2026-05-04T11:39:41.295Z",
+        "promotedAtPhase": 1,
+        "targetType": "hub_event"
+      }
+    },
+    "generatedScenarios": {
+      "gen_scn_1777894795052_2473": {
+        "id": "gen_scn_1777894795052_2473",
+        "name": "Gather Frostcap Mushrooms: Market Rooftops Run",
+        "type": "generated",
+        "world": "haven",
+        "travelMode": "node_map",
+        "mapId": "gen_map_1777894795049_6057",
+        "startNode": "market_gate",
+        "setting": "urban",
+        "size": "small",
+        "canonRisk": "green",
+        "generated": true,
+        "tags": [
+          "urban",
+          "small",
+          "rooftop",
+          "house",
+          "multi_layer",
+          "chase",
+          "ambush",
+          "active_quest",
+          "quest_frostcap_mushrooms"
+        ],
+        "source": {
+          "kind": "active_quest",
+          "title": "Gather Frostcap Mushrooms",
+          "questId": "quest_frostcap_mushrooms",
+          "questChainId": null,
+          "mapSeedId": "haven_mseed_market_rooftops_urban_small"
+        },
+        "notes": "Gather mushrooms in Frostwood for a warm-up guild job.",
+        "limits": {
+          "campRests": 1,
+          "randomBattles": 3,
+          "events": 3
+        },
+        "danger": {
+          "start": 0,
+          "max": 10
+        },
+        "setBattles": [
+          {
+            "id": "haven_bset_guild_sparring_dain",
+            "battleSetId": "haven_bset_guild_sparring_dain",
+            "encounterId": null,
+            "label": "Guild Sparring with Dain",
+            "rewardOps": [
+              {
+                "op": "give_jp",
+                "amount": 1
+              },
+              {
+                "op": "bond_change",
+                "npcId": "dain",
+                "field": "rivalry",
+                "amount": 1
+              }
+            ],
+            "objective": "Win a nonlethal spar or make the crowd laugh enough that Dain loses momentum.",
+            "notes": "Good jokes count as tactical advantage if the GM approves.",
+            "tags": [
+              "guild",
+              "sparring",
+              "rival",
+              "nonlethal"
+            ],
+            "enemyMix": [
+              {
+                "name": "Dain, C-rank Showoff",
+                "qty": 1
+              },
+              {
+                "name": "Two heckling guild rookies",
+                "qty": 2,
+                "noncombat": true
+              }
+            ],
+            "rank": "F",
+            "canonRisk": "green",
+            "battleMap": {
+              "theme": "arena",
+              "width": 8,
+              "height": 8
+            }
+          },
+          {
+            "id": "haven_bset_bandit_taxmen_snowblind",
+            "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+            "encounterId": null,
+            "label": "Bandit Taxmen of Snowblind Ridge",
+            "rewardOps": [
+              {
+                "op": "give_money",
+                "currency": "haven_gold",
+                "amount": 12
+              },
+              {
+                "op": "give_material",
+                "id": "haven_wolf_pelt",
+                "qty": 1
+              }
+            ],
+            "objective": "Get the supply sled past fake toll collectors.",
+            "notes": "A successful Charisma check can make one bandit leave before combat.",
+            "tags": [
+              "bandit",
+              "ridge",
+              "social",
+              "ambush"
+            ],
+            "enemyMix": [
+              {
+                "name": "Haven Bandit",
+                "qty": 2
+              },
+              {
+                "name": "Bandit Trapper",
+                "qty": 1
+              }
+            ],
+            "rank": "E",
+            "canonRisk": "green",
+            "battleMap": {
+              "theme": "tundra",
+              "width": 8,
+              "height": 8
+            }
+          }
+        ],
+        "randomBattleTables": [
+          {
+            "id": "gen_scn_1777894795052_2473_random_battles",
+            "name": "Generated Battle Pool",
+            "entries": [
+              {
+                "id": "haven_bset_guild_sparring_dain",
+                "battleSetId": "haven_bset_guild_sparring_dain",
+                "encounterId": null,
+                "label": "Guild Sparring with Dain",
+                "rewardOps": [
+                  {
+                    "op": "give_jp",
+                    "amount": 1
+                  },
+                  {
+                    "op": "bond_change",
+                    "npcId": "dain",
+                    "field": "rivalry",
+                    "amount": 1
+                  }
+                ],
+                "objective": "Win a nonlethal spar or make the crowd laugh enough that Dain loses momentum.",
+                "notes": "Good jokes count as tactical advantage if the GM approves.",
+                "tags": [
+                  "guild",
+                  "sparring",
+                  "rival",
+                  "nonlethal"
+                ],
+                "enemyMix": [
+                  {
+                    "name": "Dain, C-rank Showoff",
+                    "qty": 1
+                  },
+                  {
+                    "name": "Two heckling guild rookies",
+                    "qty": 2,
+                    "noncombat": true
+                  }
+                ],
+                "rank": "F",
+                "canonRisk": "green",
+                "battleMap": {
+                  "theme": "arena",
+                  "width": 8,
+                  "height": 8
+                },
+                "weight": 1
+              },
+              {
+                "id": "haven_bset_bandit_taxmen_snowblind",
+                "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+                "encounterId": null,
+                "label": "Bandit Taxmen of Snowblind Ridge",
+                "rewardOps": [
+                  {
+                    "op": "give_money",
+                    "currency": "haven_gold",
+                    "amount": 12
+                  },
+                  {
+                    "op": "give_material",
+                    "id": "haven_wolf_pelt",
+                    "qty": 1
+                  }
+                ],
+                "objective": "Get the supply sled past fake toll collectors.",
+                "notes": "A successful Charisma check can make one bandit leave before combat.",
+                "tags": [
+                  "bandit",
+                  "ridge",
+                  "social",
+                  "ambush"
+                ],
+                "enemyMix": [
+                  {
+                    "name": "Haven Bandit",
+                    "qty": 2
+                  },
+                  {
+                    "name": "Bandit Trapper",
+                    "qty": 1
+                  }
+                ],
+                "rank": "E",
+                "canonRisk": "green",
+                "battleMap": {
+                  "theme": "tundra",
+                  "width": 8,
+                  "height": 8
+                },
+                "weight": 1
+              }
+            ]
+          }
+        ],
+        "eventTables": [
+          "haven_generic_events",
+          "haven_frostwood_events",
+          "haven_urban_events",
+          "haven_aftermath_events",
+          "haven_plot_seeds"
+        ],
+        "successConditions": [
+          {
+            "type": "reach_node",
+            "nodeId": "courtyard_drop"
+          }
+        ],
+        "entryOps": [
+          {
+            "op": "log",
+            "text": "Generated from active_quest: Gather Frostcap Mushrooms."
+          }
+        ],
+        "exitOps": []
+      }
+    },
+    "generatedMaps": {
+      "gen_map_1777894795049_6057": {
+        "id": "gen_map_1777894795049_6057",
+        "name": "Market Rooftops Run",
+        "type": "node_map",
+        "world": "haven",
+        "setting": "urban",
+        "size": "small",
+        "layers": [
+          {
+            "id": "street",
+            "name": "Street"
+          },
+          {
+            "id": "roof",
+            "name": "Rooftops"
+          }
+        ],
+        "defaultStartNode": "market_gate",
+        "nodes": [
+          {
+            "id": "market_gate",
+            "title": "Market Gate",
+            "kind": "entrance",
+            "x": 65,
+            "y": 186,
+            "layer": "street",
+            "layerName": "Street",
+            "tags": [
+              "urban",
+              "small",
+              "rooftop",
+              "house",
+              "multi_layer"
+            ],
+            "notes": "entrance",
+            "discoveredByDefault": true,
+            "battleSetIds": [],
+            "encounterIds": [],
+            "exits": [
+              {
+                "to": "fishmonger_lane",
+                "label": "Travel to Fishmonger Lane"
+              }
+            ]
+          },
+          {
+            "id": "fishmonger_lane",
+            "title": "Fishmonger Lane",
+            "kind": "event",
+            "x": 242,
+            "y": 294,
+            "layer": "street",
+            "layerName": "Street",
+            "tags": [
+              "urban",
+              "small",
+              "rooftop",
+              "house",
+              "multi_layer"
+            ],
+            "notes": "Witnesses saw a runner with a blue sash.",
+            "discoveredByDefault": false,
+            "battleSetIds": [],
+            "encounterIds": [],
+            "onEnter": [
+              {
+                "op": "roll_event",
+                "table": "haven_generic_events",
+                "chance": 0.65
+              }
+            ],
+            "exits": [
+              {
+                "to": "market_gate",
+                "label": "Travel to Market Gate"
+              },
+              {
+                "to": "awning_climb",
+                "label": "Travel to Awning Climb"
+              },
+              {
+                "to": "courtyard_drop",
+                "label": "Travel to Courtyard Drop"
+              }
+            ]
+          },
+          {
+            "id": "awning_climb",
+            "title": "Awning Climb",
+            "kind": "trap",
+            "x": 437,
+            "y": 133,
+            "layer": "street",
+            "layerName": "Street",
+            "tags": [
+              "urban",
+              "small",
+              "rooftop",
+              "house",
+              "multi_layer",
+              "auto_battle"
+            ],
+            "notes": "trap Auto battle: Guild Sparring with Dain.",
+            "discoveredByDefault": false,
+            "battleSetIds": [
+              "haven_bset_guild_sparring_dain"
+            ],
+            "encounterIds": [],
+            "randomBattle": {
+              "chance": 0.6599999999999999,
+              "id": "haven_bset_guild_sparring_dain",
+              "battleSetId": "haven_bset_guild_sparring_dain",
+              "encounterId": null,
+              "label": "Guild Sparring with Dain",
+              "rewardOps": [
+                {
+                  "op": "give_jp",
+                  "amount": 1
+                },
+                {
+                  "op": "bond_change",
+                  "npcId": "dain",
+                  "field": "rivalry",
+                  "amount": 1
+                }
+              ],
+              "objective": "Win a nonlethal spar or make the crowd laugh enough that Dain loses momentum.",
+              "notes": "Good jokes count as tactical advantage if the GM approves.",
+              "tags": [
+                "guild",
+                "sparring",
+                "rival",
+                "nonlethal"
+              ],
+              "rank": "F",
+              "canonRisk": "green",
+              "enemyMix": [
+                {
+                  "name": "Dain, C-rank Showoff",
+                  "qty": 1
+                },
+                {
+                  "name": "Two heckling guild rookies",
+                  "qty": 2,
+                  "noncombat": true
+                }
+              ],
+              "battleMap": {
+                "theme": "arena",
+                "width": 8,
+                "height": 8
+              },
+              "weight": 30,
+              "source": "auto_density"
+            },
+            "onEnter": [
+              {
+                "op": "danger",
+                "amount": 1
+              },
+              {
+                "op": "damage_party",
+                "amount": 3
+              },
+              {
+                "op": "log",
+                "text": "Trap sprung: Awning Climb."
+              }
+            ],
+            "exits": [
+              {
+                "to": "fishmonger_lane",
+                "label": "Travel to Fishmonger Lane"
+              },
+              {
+                "to": "chimney_line",
+                "label": "Stairs to Chimney Line"
+              }
+            ]
+          },
+          {
+            "id": "chimney_line",
+            "title": "Chimney Line",
+            "kind": "battle",
+            "x": 65,
+            "y": 245,
+            "layer": "roof",
+            "layerName": "Rooftops",
+            "tags": [
+              "urban",
+              "small",
+              "rooftop",
+              "house",
+              "multi_layer"
+            ],
+            "notes": "battle",
+            "discoveredByDefault": false,
+            "battleSetIds": [
+              "haven_bset_bandit_taxmen_snowblind"
+            ],
+            "encounterIds": [],
+            "randomBattle": {
+              "chance": 0.8,
+              "id": "haven_bset_bandit_taxmen_snowblind",
+              "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+              "encounterId": null,
+              "label": "Bandit Taxmen of Snowblind Ridge",
+              "rewardOps": [
+                {
+                  "op": "give_money",
+                  "currency": "haven_gold",
+                  "amount": 12
+                },
+                {
+                  "op": "give_material",
+                  "id": "haven_wolf_pelt",
+                  "qty": 1
+                }
+              ],
+              "objective": "Get the supply sled past fake toll collectors.",
+              "notes": "A successful Charisma check can make one bandit leave before combat.",
+              "tags": [
+                "bandit",
+                "ridge",
+                "social",
+                "ambush"
+              ],
+              "enemyMix": [
+                {
+                  "name": "Haven Bandit",
+                  "qty": 2
+                },
+                {
+                  "name": "Bandit Trapper",
+                  "qty": 1
+                }
+              ],
+              "rank": "E",
+              "canonRisk": "green",
+              "battleMap": {
+                "theme": "tundra",
+                "width": 8,
+                "height": 8
+              }
+            },
+            "exits": [
+              {
+                "to": "awning_climb",
+                "label": "Stairs to Awning Climb"
+              },
+              {
+                "to": "bell_roof",
+                "label": "Travel to Bell Roof"
+              }
+            ]
+          },
+          {
+            "id": "bell_roof",
+            "title": "Bell Roof",
+            "kind": "reward",
+            "x": 606,
+            "y": 217,
+            "layer": "roof",
+            "layerName": "Rooftops",
+            "tags": [
+              "urban",
+              "small",
+              "rooftop",
+              "house",
+              "multi_layer",
+              "auto_battle"
+            ],
+            "notes": "reward Auto battle: Bandit Taxmen of Snowblind Ridge.",
+            "discoveredByDefault": false,
+            "battleSetIds": [
+              "haven_bset_bandit_taxmen_snowblind"
+            ],
+            "encounterIds": [],
+            "randomBattle": {
+              "chance": 0.58,
+              "id": "haven_bset_bandit_taxmen_snowblind",
+              "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+              "encounterId": null,
+              "label": "Bandit Taxmen of Snowblind Ridge",
+              "rewardOps": [
+                {
+                  "op": "give_money",
+                  "currency": "haven_gold",
+                  "amount": 12
+                },
+                {
+                  "op": "give_material",
+                  "id": "haven_wolf_pelt",
+                  "qty": 1
+                }
+              ],
+              "objective": "Get the supply sled past fake toll collectors.",
+              "notes": "A successful Charisma check can make one bandit leave before combat.",
+              "tags": [
+                "bandit",
+                "ridge",
+                "social",
+                "ambush"
+              ],
+              "rank": "E",
+              "canonRisk": "green",
+              "enemyMix": [
+                {
+                  "name": "Haven Bandit",
+                  "qty": 2
+                },
+                {
+                  "name": "Bandit Trapper",
+                  "qty": 1
+                }
+              ],
+              "battleMap": {
+                "theme": "tundra",
+                "width": 8,
+                "height": 8
+              },
+              "weight": 24,
+              "source": "auto_density"
+            },
+            "onEnter": [
+              {
+                "op": "give_money",
+                "currency": "haven_gold",
+                "amount": 12
+              },
+              {
+                "op": "log",
+                "text": "Reward found: Bell Roof."
+              }
+            ],
+            "exits": [
+              {
+                "to": "chimney_line",
+                "label": "Travel to Chimney Line"
+              },
+              {
+                "to": "courtyard_drop",
+                "label": "Stairs to Courtyard Drop"
+              }
+            ]
+          },
+          {
+            "id": "courtyard_drop",
+            "title": "Courtyard Drop",
+            "kind": "exit",
+            "x": 617,
+            "y": 236,
+            "layer": "street",
+            "layerName": "Street",
+            "tags": [
+              "urban",
+              "small",
+              "rooftop",
+              "house",
+              "multi_layer"
+            ],
+            "notes": "exit",
+            "discoveredByDefault": false,
+            "battleSetIds": [],
+            "encounterIds": [],
+            "exits": [
+              {
+                "to": "bell_roof",
+                "label": "Stairs to Bell Roof"
+              },
+              {
+                "to": "fishmonger_lane",
+                "label": "Travel to Fishmonger Lane"
+              }
+            ]
+          }
+        ],
+        "_generated": true,
+        "_seedId": "haven_mseed_market_rooftops_urban_small",
+        "_source": "active_quest"
+      }
+    },
+    "activeQuestChains": {
+      "haven_qchain_thunder_needs_a_voice": {
+        "templateId": "haven_qchain_thunder_needs_a_voice",
+        "title": "Thunder Needs a Voice",
+        "status": "active",
+        "currentStepId": "broken_bolt",
+        "completedSteps": [],
+        "startedAtPhase": 1,
+        "notes": [],
+        "rewardsApplied": false
+      },
+      "haven_qchain_three_silver_discount": {
+        "templateId": "haven_qchain_three_silver_discount",
+        "title": "Three Silver and a Funeral Discount",
+        "status": "active",
+        "currentStepId": "debt_claim",
+        "completedSteps": [],
+        "startedAtPhase": 1,
+        "notes": [],
+        "rewardsApplied": false
+      },
+      "haven_qchain_ironhand_errand": {
+        "templateId": "haven_qchain_ironhand_errand",
+        "title": "Ironhand Errand",
+        "status": "active",
+        "currentStepId": "bad_iron",
+        "completedSteps": [],
+        "startedAtPhase": 1,
+        "notes": [],
+        "rewardsApplied": false
+      }
+    },
+    "contentHistory": [
+      {
+        "id": "hist_1777894795052_2913",
+        "phase": 1,
+        "type": "generated_scenario",
+        "title": "Gather Frostcap Mushrooms: Market Rooftops Run",
+        "result": "active_quest:urban:small",
+        "at": "2026-05-04T11:39:55.052Z"
+      },
+      {
+        "id": "hist_1777894785843_5852",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Ironhand Errand",
+        "result": "promoted",
+        "at": "2026-05-04T11:39:45.843Z"
+      },
+      {
+        "id": "hist_1777894785835_6688",
+        "phase": 1,
+        "type": "quest_chain",
+        "title": "Ironhand Errand",
+        "result": "active",
+        "at": "2026-05-04T11:39:45.835Z"
+      },
+      {
+        "id": "hist_1777894781295_1642",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Ironhand Errand",
+        "result": "saved",
+        "at": "2026-05-04T11:39:41.295Z"
+      },
+      {
+        "id": "hist_1777894764877_6916",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Three Silver and a Funeral Discount",
+        "result": "promoted",
+        "at": "2026-05-04T11:39:24.877Z"
+      },
+      {
+        "id": "hist_1777894764871_1312",
+        "phase": 1,
+        "type": "quest_chain",
+        "title": "Three Silver and a Funeral Discount",
+        "result": "active",
+        "at": "2026-05-04T11:39:24.871Z"
+      },
+      {
+        "id": "hist_1777894759376_2794",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Three Silver and a Funeral Discount",
+        "result": "saved",
+        "at": "2026-05-04T11:39:19.376Z"
+      },
+      {
+        "id": "hist_1777894755812_4444",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Gather Frostcap Mushrooms",
+        "result": "promoted",
+        "at": "2026-05-04T11:39:15.812Z"
+      },
+      {
+        "id": "hist_1777894751986_3541",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Gather Frostcap Mushrooms",
+        "result": "saved",
+        "at": "2026-05-04T11:39:11.986Z"
+      },
+      {
+        "id": "hist_1777894736813_8022",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Thunder Needs a Voice",
+        "result": "promoted",
+        "at": "2026-05-04T11:38:56.813Z"
+      },
+      {
+        "id": "hist_1777894736808_7452",
+        "phase": 1,
+        "type": "quest_chain",
+        "title": "Thunder Needs a Voice",
+        "result": "active",
+        "at": "2026-05-04T11:38:56.808Z"
+      },
+      {
+        "id": "hist_1777894734784_2865",
+        "phase": 1,
+        "type": "quest_offer",
+        "title": "Thunder Needs a Voice",
+        "result": "saved",
+        "at": "2026-05-04T11:38:54.784Z"
+      }
+    ],
+    "reviewQueue": [],
+    "importedPacks": {}
+  },
+  "clocks": {},
+  "memoryShards": {},
+  "bonds": {},
+  "pinnedNotes": [],
+  "log": [
+    {
+      "id": "log_1777894795072_6662",
+      "at": "2026-05-04T11:39:55.072Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Scenario started: Gather Frostcap Mushrooms: Market Rooftops Run (node_map).",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894795068_3214",
+      "at": "2026-05-04T11:39:55.068Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Generated from active_quest: Gather Frostcap Mushrooms.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894795052_5159",
+      "at": "2026-05-04T11:39:55.052Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Generated scenario: Gather Frostcap Mushrooms: Market Rooftops Run.",
+      "op": "generated_scenario"
+    },
+    {
+      "id": "log_1777894785843_6201",
+      "at": "2026-05-04T11:39:45.843Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Promoted side idea: Ironhand Errand.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894785835_848",
+      "at": "2026-05-04T11:39:45.835Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Started quest chain: Ironhand Errand.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894781295_8017",
+      "at": "2026-05-04T11:39:41.295Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Saved side idea: Ironhand Errand.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894764877_3149",
+      "at": "2026-05-04T11:39:24.877Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Promoted side idea: Three Silver and a Funeral Discount.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894764871_8456",
+      "at": "2026-05-04T11:39:24.871Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Started quest chain: Three Silver and a Funeral Discount.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894759376_1148",
+      "at": "2026-05-04T11:39:19.376Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Saved side idea: Three Silver and a Funeral Discount.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894755812_7515",
+      "at": "2026-05-04T11:39:15.812Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Promoted side idea: Gather Frostcap Mushrooms.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894755808_8693",
+      "at": "2026-05-04T11:39:15.808Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Quest added: Gather Frostcap Mushrooms.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894751986_6869",
+      "at": "2026-05-04T11:39:11.986Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Saved side idea: Gather Frostcap Mushrooms.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894736813_5991",
+      "at": "2026-05-04T11:38:56.813Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Promoted side idea: Thunder Needs a Voice.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894736808_6332",
+      "at": "2026-05-04T11:38:56.808Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Started quest chain: Thunder Needs a Voice.",
+      "op": "log"
+    },
+    {
+      "id": "log_1777894734784_3263",
+      "at": "2026-05-04T11:38:54.784Z",
+      "phase": 1,
+      "world": "haven",
+      "text": "Saved side idea: Thunder Needs a Voice.",
+      "op": "log"
+    }
+  ],
+  "settings": {
+    "confirmPhasePass": false
+  },
+  "createdAt": "2026-05-04T13:19:04.964Z",
+  "lastUpdated": "2026-05-04T13:19:04.964Z",
+  "reputation": {},
+  "unlockedRecipes": {},
+  "lastSideContentCard": {
+    "id": "idea_offer_haven_qchain_ironhand_errand_1777894781295",
+    "type": "quest_offer",
+    "title": "Ironhand Errand",
+    "summary": "Hilda needs frost-resistant binding material before the forge can repair winter gear reliably.",
+    "canonRisk": "green",
+    "tags": [
+      "forge",
+      "crafting",
+      "materials",
+      "repair"
+    ],
+    "questChainTemplateId": "haven_qchain_ironhand_errand",
+    "suggestedChoices": [
+      {
+        "label": "Start this quest chain",
+        "ops": [
+          {
+            "op": "start_quest_chain",
+            "templateId": "haven_qchain_ironhand_errand"
+          }
+        ]
+      }
+    ],
+    "source": "side_content",
+    "createdAtPhase": 1,
+    "status": "idea",
+    "updatedAt": "2026-05-04T11:39:41.295Z"
+  },
+  "pendingSoloHook": null,
+  "lastGeneratedScenario": {
+    "scenarioId": "gen_scn_1777894795052_2473",
+    "mapId": "gen_map_1777894795049_6057",
+    "at": "2026-05-04T11:39:55.052Z"
+  }
+}
