@@ -26,6 +26,11 @@ window.CJS.CampaignUI = (() => {
   let _combatResultUnsub = null;
   let _combatReturnEventsBound = false;
   let _lastCombatResultKey = '';
+  let _activePanel = null;
+  let _lastFocus = null;
+  let _escBound = false;
+  let _drawerEl = null;
+  let _drawerBackdropEl = null;
 
   const MODES = [
     ['town', 'Town', '🏠'],
@@ -84,6 +89,7 @@ window.CJS.CampaignUI = (() => {
         Save().saveCurrent();
       }
       _bindEvents();
+      _bindEscapeForPanels();
       _bindCombatResultListener();
       _bindCombatReturnEvents();
       CS().subscribe(() => {
@@ -108,14 +114,14 @@ window.CJS.CampaignUI = (() => {
     const subTabs = isUtility ? UTILITY_TABS : (MODE_TABS[_activeMode] || []);
 
     _root.innerHTML = `
-      <div class="campaign-shell">
+      <div class="campaign-shell ${_activePanel ? 'has-drawer-open' : ''}">
         ${_renderHeader(state, campaign)}
         ${_renderModeBar(state)}
         ${_renderSubTabs(subTabs, isUtility)}
         <div class="campaign-body">
           <aside class="campaign-party">${_renderParty(state)}</aside>
           <main class="campaign-main">${_renderMain(state)}</main>
-          <aside class="campaign-side">${_renderSide(state)}</aside>
+          <aside class="campaign-rail">${_renderCommandRail(state)}</aside>
         </div>
         <button class="campaign-gm" data-campaign-action="gm-override">GM Override</button>
         <input type="file" id="campaign-import-file" accept=".json" hidden>
@@ -125,6 +131,7 @@ window.CJS.CampaignUI = (() => {
     const mapRegion = _root.querySelector('#campaign-map-region');
     if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
     _bindRunPanel();
+    _renderPanelLayer();
   }
 
   function _bindRunPanel() {
@@ -1121,7 +1128,7 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderInventorySnapshot(state) {
+  function _renderInventorySnapshot(state, opts = {}) {
     const buckets = [
       ['items', 'Items'],
       ['materials', 'Materials'],
@@ -1131,10 +1138,11 @@ window.CJS.CampaignUI = (() => {
     const rows = buckets.flatMap(([bucket, label]) => Object.entries(state.inventory?.[bucket] || {})
       .filter(([, qty]) => qty > 0)
       .map(([id, qty]) => ({ bucket, label, id, qty })));
+    const visible = opts.full ? rows : rows.slice(0, 8);
     return `
       <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Inventory</h2><button class="campaign-icon-btn" data-campaign-action="open-inventory-tab">Open</button></div>
-        ${rows.length ? rows.slice(0, 8).map((row) => `
+        <div class="campaign-panel-head"><h2>Inventory</h2><button class="campaign-icon-btn" data-campaign-action="open-inventory-tab">Open Full</button></div>
+        ${visible.length ? visible.map((row) => `
           <div class="campaign-log-line">
             <span>${_esc(_recordName(row.bucket, row.id))}</span>
             <small>${_esc(row.label)} x${row.qty}</small>
@@ -1144,20 +1152,303 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderPartyChatCard(state) {
+  function _renderPartyChatCard(state, opts = {}) {
     const chat = state.lastPartyChat;
+    if (opts.full) {
+      const past = (state.log || [])
+        .filter((line) => line.op === 'party_chat')
+        .slice(0, 12)
+        .map(_chatFromLogLine)
+        .filter(Boolean);
+      const seen = new Set();
+      const list = [];
+      if (chat) { list.push(chat); seen.add(`${chat.speaker}|${chat.line}`); }
+      for (const c of past) {
+        const key = `${c.speaker}|${c.line}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push(c);
+      }
+      return `
+        <section class="campaign-side-section">
+          <div class="campaign-panel-head">
+            <h2>Party Banter</h2>
+            <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
+          </div>
+          ${list.length
+            ? `<div class="campaign-banter-history">${list.map(_renderBanterBox).join('')}</div>`
+            : '<div class="campaign-banter-box is-empty">No banter rolled yet.</div>'}
+        </section>
+      `;
+    }
     return `
       <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Party Banter</h2><button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button></div>
-        ${chat ? `
-          <div class="campaign-chat-line">
-            <strong>${_esc(chat.speakerName || chat.speaker || 'Party')}</strong>
-            <span>${_esc(chat.line || '')}</span>
-            ${chat.reply ? `<small>${_esc(chat.reply)}</small>` : ''}
-          </div>
-        ` : '<div class="campaign-empty">No banter rolled yet.</div>'}
+        <div class="campaign-panel-head">
+          <h2>Party Banter</h2>
+          <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
+        </div>
+        ${chat ? _renderBanterBox(chat) : '<div class="campaign-banter-box is-empty">No banter rolled yet.</div>'}
       </section>
     `;
+  }
+
+  function _chatFromLogLine(line) {
+    const text = String(line.text || '');
+    const idx = text.indexOf(':');
+    if (idx < 1) return null;
+    const speakerName = text.slice(0, idx).trim();
+    const body = text.slice(idx + 1).trim();
+    if (!body) return null;
+    const partyEntry = Object.entries(CS().getState()?.party || {})
+      .find(([, m]) => (m.name || '').trim() === speakerName);
+    return {
+      speaker: partyEntry?.[0] || null,
+      speakerName,
+      line: body
+    };
+  }
+
+  function _renderBanterBox(chat) {
+    if (!chat) return '';
+    const speaker = chat.speakerName || chat.speaker || 'Party';
+    const portrait = _speakerPortrait(chat.speaker);
+    return `
+      <div class="campaign-banter-box">
+        <span class="campaign-banter-name">${_esc(speaker)}</span>
+        <span class="campaign-banter-text">${_esc(chat.line || '')}</span>
+        ${chat.reply ? `<span class="campaign-banter-reply">${_esc(chat.reply)}</span>` : ''}
+        ${portrait
+          ? `<div class="campaign-banter-portrait"><img src="${_escAttr(portrait)}" alt=""></div>`
+          : ''}
+        <span class="campaign-banter-arrow">▼</span>
+      </div>
+    `;
+  }
+
+  function _speakerPortrait(speakerId) {
+    if (!speakerId) return null;
+    const member = CS().getState()?.party?.[speakerId];
+    return member?.portrait || null;
+  }
+
+  function _renderNotesPanel(state) {
+    const notes = state.pinnedNotes || [];
+    return `
+      <section class="campaign-side-section">
+        <div class="campaign-panel-head">
+          <h2>Pinned Notes</h2>
+          <button class="campaign-icon-btn" data-campaign-action="add-note">+ Add</button>
+        </div>
+        ${notes.length
+          ? notes.map((note) => `<div class="campaign-log-line">${_esc(note.text || note)}</div>`).join('')
+          : '<div class="campaign-empty">No pinned notes yet.</div>'}
+      </section>
+    `;
+  }
+
+  /* ── Command Rail + Drawer Overlay System ─────────────────── */
+
+  const PANEL_DEFS = {
+    inventory: { icon: '📦', label: 'Items', title: 'Inventory' },
+    quests:    { icon: '📜', label: 'Quests', title: 'Quest Log' },
+    log:       { icon: '🪶', label: 'Log',    title: 'Campaign Log' },
+    notes:     { icon: '📝', label: 'Notes',  title: 'Pinned Notes' },
+    banter:    { icon: '💬', label: 'Banter', title: 'Party Banter' },
+    wallet:    { icon: '💰', label: 'Wallet', title: 'Wallet' }
+  };
+  const RAIL_ORDER = ['inventory', 'quests', 'log', 'notes', 'banter', 'wallet'];
+
+  function _renderCommandRail(state) {
+    const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
+    const logCount = (state.log || []).length;
+    const notesCount = (state.pinnedNotes || []).length;
+    const inventoryCount = ['items', 'materials', 'food', 'questItems']
+      .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
+    const hasBanter = !!state.lastPartyChat;
+    const counts = {
+      inventory: inventoryCount,
+      quests: activeQuests,
+      log: logCount,
+      notes: notesCount,
+      banter: hasBanter ? 1 : 0,
+      wallet: Object.keys(state.currencies || {}).length
+    };
+    const totalCurrency = Object.values(state.currencies || {}).reduce((sum, n) => sum + (Number(n) || 0), 0);
+    const buttons = RAIL_ORDER.map((id) => {
+      const def = PANEL_DEFS[id];
+      const active = _activePanel === id;
+      const dot = counts[id] > 0 ? '<span class="campaign-rail-dot" aria-hidden="true"></span>' : '';
+      return `
+        <button class="campaign-rail-btn ${active ? 'is-active' : ''}"
+                data-campaign-panel="${id}"
+                title="${_esc(def.title)}"
+                aria-label="${_esc(def.title)}">
+          <span class="campaign-rail-btn-icon" aria-hidden="true">${def.icon}</span>
+          <span class="campaign-rail-btn-label">${_esc(def.label)}</span>
+          ${dot}
+        </button>
+      `;
+    }).join('');
+    return `
+      ${buttons}
+      <div class="campaign-rail-divider" aria-hidden="true"></div>
+      <div class="campaign-rail-currency" title="Total currency">${totalCurrency}</div>
+    `;
+  }
+
+  function _openPanel(panelId) {
+    if (!PANEL_DEFS[panelId]) return;
+    if (_activePanel === panelId) {
+      _closePanel();
+      return;
+    }
+    _lastFocus = document.activeElement;
+    _activePanel = panelId;
+    _renderPanelLayer({ rebuild: true });
+    _root.querySelector('.campaign-shell')?.classList.add('has-drawer-open');
+    _root.querySelectorAll('.campaign-rail-btn').forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.campaignPanel === panelId);
+    });
+    requestAnimationFrame(() => {
+      const focusTarget = _drawerEl?.querySelector('button, [tabindex], a, input, select, textarea');
+      focusTarget?.focus?.();
+    });
+  }
+
+  function _closePanel() {
+    if (!_activePanel) return;
+    _activePanel = null;
+    _renderPanelLayer({ rebuild: true });
+    _root.querySelector('.campaign-shell')?.classList.remove('has-drawer-open');
+    _root.querySelectorAll('.campaign-rail-btn.is-active').forEach((btn) => btn.classList.remove('is-active'));
+    if (_lastFocus && document.contains(_lastFocus)) {
+      try { _lastFocus.focus(); } catch (e) { /* ignore */ }
+    }
+    _lastFocus = null;
+  }
+
+  function _renderPanelLayer(opts = {}) {
+    const state = CS().getState();
+    if (!_activePanel) {
+      if (_drawerBackdropEl) {
+        _drawerBackdropEl.remove();
+        _drawerBackdropEl = null;
+        _drawerEl = null;
+      }
+      return;
+    }
+    const def = PANEL_DEFS[_activePanel];
+    if (!def) return;
+
+    const activeEl = document.activeElement;
+    const editing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+    const editingInDrawer = editing && _drawerEl?.contains(activeEl);
+    const sameWrapper = !opts.rebuild && _drawerEl && _drawerEl.dataset.panelId === _activePanel;
+    if (sameWrapper && editingInDrawer) return;
+
+    if (sameWrapper) {
+      const body = _drawerEl.querySelector('.campaign-drawer-body');
+      if (body) body.innerHTML = _renderDrawerBody(_activePanel, state);
+      return;
+    }
+
+    if (_drawerBackdropEl) {
+      _drawerBackdropEl.remove();
+      _drawerBackdropEl = null;
+      _drawerEl = null;
+    }
+
+    _drawerBackdropEl = document.createElement('div');
+    _drawerBackdropEl.className = 'campaign-drawer-backdrop';
+    _drawerBackdropEl.addEventListener('click', (e) => {
+      if (e.target === _drawerBackdropEl) _closePanel();
+    });
+
+    _drawerEl = document.createElement('aside');
+    _drawerEl.className = 'campaign-drawer';
+    _drawerEl.setAttribute('role', 'dialog');
+    _drawerEl.setAttribute('aria-modal', 'true');
+    _drawerEl.setAttribute('aria-label', def.title);
+    _drawerEl.dataset.panelId = _activePanel;
+    _drawerEl.innerHTML = `
+      <header class="campaign-drawer-head">
+        <h2>${_esc(def.title)}</h2>
+        <button class="campaign-drawer-close" data-campaign-panel-close="1" aria-label="Close panel">×</button>
+      </header>
+      <div class="campaign-drawer-body">${_renderDrawerBody(_activePanel, state)}</div>
+    `;
+    _drawerEl.addEventListener('click', (e) => {
+      if (e.target.closest('[data-campaign-panel-close]')) {
+        _closePanel();
+        return;
+      }
+      const action = e.target.closest('[data-campaign-action]');
+      if (action) {
+        e.preventDefault();
+        const closesPanel = ['open-inventory-tab', 'open-roster-tab', 'open-scenarios-tab', 'open-maps-tab'];
+        if (closesPanel.includes(action.dataset.campaignAction)) _closePanel();
+        _handleAction(action.dataset, action);
+      }
+    });
+
+    document.body.appendChild(_drawerBackdropEl);
+    document.body.appendChild(_drawerEl);
+  }
+
+  function _renderDrawerBody(panelId, state) {
+    switch (panelId) {
+      case 'inventory':
+        try {
+          const html = window.CJS.CampaignInventory?.render?.();
+          if (typeof html === 'string' && html.length) return html;
+        } catch (e) { /* fall through */ }
+        return _renderInventorySnapshot(state, { full: true });
+      case 'quests':
+        return typeof _renderQuestPanel === 'function' ? _renderQuestPanel(state) : _renderQuestsFallback(state);
+      case 'log':
+        return typeof _renderLogPanel === 'function' ? _renderLogPanel(state) : _renderLogFallback(state);
+      case 'notes':
+        return _renderNotesPanel(state);
+      case 'banter':
+        return _renderPartyChatCard(state, { full: true });
+      case 'wallet':
+        return _renderWallet(state);
+      default:
+        return '<div class="campaign-empty">Panel not implemented.</div>';
+    }
+  }
+
+  function _renderQuestsFallback(state) {
+    const quests = Object.values(state.quests || {});
+    if (!quests.length) return '<div class="campaign-empty">No quests.</div>';
+    return `
+      <section class="campaign-side-section">
+        <div class="campaign-panel-head"><h2>All Quests</h2></div>
+        ${quests.map(_renderQuestMini).join('')}
+      </section>
+    `;
+  }
+
+  function _renderLogFallback(state) {
+    const log = state.log || [];
+    if (!log.length) return '<div class="campaign-empty">No log entries.</div>';
+    return `
+      <section class="campaign-side-section">
+        <div class="campaign-panel-head"><h2>Campaign Log</h2></div>
+        ${log.map((line) => `<div class="campaign-log-line"><span>${_esc(line.text)}</span><small>Phase ${line.phase}</small></div>`).join('')}
+      </section>
+    `;
+  }
+
+  function _bindEscapeForPanels() {
+    if (_escBound) return;
+    _escBound = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !_activePanel) return;
+      if (document.querySelector('.modal-overlay')) return;
+      e.stopPropagation();
+      _closePanel();
+    });
   }
 
   function _renderQuestMini(quest) {
@@ -1475,6 +1766,13 @@ window.CJS.CampaignUI = (() => {
 
   function _bindEvents() {
     _root.addEventListener('click', (event) => {
+      const panelBtn = event.target.closest('[data-campaign-panel]');
+      if (panelBtn) {
+        event.preventDefault();
+        _openPanel(panelBtn.dataset.campaignPanel);
+        return;
+      }
+
       const mode = event.target.closest('[data-campaign-mode]');
       if (mode) {
         const id = mode.dataset.campaignMode;
@@ -2809,7 +3107,7 @@ window.CJS.CampaignUI = (() => {
     const member = CS().getState()?.party?.[id];
     if (!member) return;
     const body = document.createElement('div');
-    body.innerHTML = _renderRosterMember(id, member);
+    body.innerHTML = _renderPortraitHero(id, member) + _renderRosterMember(id, member);
     body.addEventListener('click', (event) => {
       const action = event.target.closest('[data-campaign-action]');
       if (!action) return;
@@ -2823,6 +3121,28 @@ window.CJS.CampaignUI = (() => {
       primaryLabel: 'Close',
       onSubmit: () => true
     });
+  }
+
+  function _renderPortraitHero(id, member) {
+    const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
+    const portrait = member.portrait
+      ? `<img src="${_escAttr(member.portrait)}" alt="${_escAttr(member.name || id)}">`
+      : `<div class="fallback">${_esc(initial)}</div>`;
+    const lvl = member.level || 1;
+    const rank = member.rank || 'F';
+    const klass = member.class || member.archetype || '';
+    return `
+      <div class="campaign-portrait-hero">
+        <div class="campaign-portrait-frame is-large">${portrait}</div>
+        <div class="campaign-portrait-meta">
+          <h2>${_esc(member.name || id)}</h2>
+          <div class="campaign-portrait-sub">${_esc(klass || 'Adventurer')} · Lv ${lvl} · Rank ${_esc(rank)}</div>
+          <div class="campaign-chip-row">
+            ${(member.tags || []).slice(0, 6).map((t) => `<span class="campaign-chip">${_esc(t)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   function _recruitCharacterModal() {
