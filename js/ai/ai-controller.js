@@ -110,7 +110,7 @@ window.CJS.AIController = (() => {
     if ((unit.turnState?.apRemaining || 0) < (skill.ap || 1)) return null;
 
     // Find target(s)
-    const range = Math.max(1, skill.range || 1);
+    const range = Math.max(1, Number(skill.range || 1) + Number(unit.rangeBonus || 0));
 
     if (skill.aoe && skill.aoe !== 'none') {
       // AoE skill — pick best cell

@@ -183,10 +183,10 @@ window.CJS.ActionHandler = (() => {
         }
 
         // Range check for single-target skills
-        if (action.targetId && !skill.aoe) {
+        if (action.targetId && !_isAoeSkill(skill)) {
           const target = GE().getUnit(action.targetId);
           if (!target) return { valid: false, reason: 'no_target' };
-          const range = Math.max(1, skill.range || 1);
+          const range = _skillRange(unit, skill);
           if (GE().footprintDistance(unit, target) > range) {
             return { valid: false, reason: 'target_out_of_range' };
           }
@@ -196,8 +196,8 @@ window.CJS.ActionHandler = (() => {
           }
         }
         // AoE cell targeting range
-        if (action.aoeCenter && skill.aoe) {
-          const range = Math.max(1, skill.range || 1);
+        if (action.aoeCenter && _isAoeSkill(skill)) {
+          const range = _skillRange(unit, skill);
           if (GE().distance(unit.pos[0], unit.pos[1], action.aoeCenter[0], action.aoeCenter[1]) > range) {
             return { valid: false, reason: 'aoe_center_out_of_range' };
           }
@@ -699,7 +699,16 @@ window.CJS.ActionHandler = (() => {
   function getAttackRange(unit) {
     const wd = _getWeaponData(unit);
     const baseRange = wd?.range ?? unit.basicAttackRange ?? unit.attackRange ?? 1;
-    return Math.max(1, Number(baseRange || 1));
+    const bonus = unit.basicAttackRangeBonus ?? unit.basicRangeBonus ?? 0;
+    return Math.max(1, Number(baseRange || 1) + Number(bonus || 0));
+  }
+
+  function _skillRange(unit, skill) {
+    return Math.max(1, Number(skill?.range || 1) + Number(unit?.rangeBonus || 0));
+  }
+
+  function _isAoeSkill(skill) {
+    return !!(skill?.aoe && skill.aoe !== 'none');
   }
 
   // ── QUERIES ────────────────────────────────────────────────────────

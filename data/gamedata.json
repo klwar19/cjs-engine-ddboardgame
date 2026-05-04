@@ -3641,7 +3641,7 @@
       "damageType": "Physical",
       "element": "Lightning",
       "scalingStat": "P",
-      "range": 3,
+      "range": 4,
       "aoe": null,
       "aoeSize": 0,
       "qte": "quickpress",
@@ -4462,11 +4462,12 @@
         {
           "effectId": "range_mod",
           "overrides": {
-            "value": 1
+            "value": 1,
+            "appliesTo": "basic_attack"
           }
         }
       ],
-      "description": "Bowy's trained eye. Better accuracy and extended range."
+      "description": "Bowy's trained eye. Better accuracy and extended basic attack range."
     },
     "iron_hide": {
       "id": "iron_hide",

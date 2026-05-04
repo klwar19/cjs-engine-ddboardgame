@@ -1030,6 +1030,8 @@ window.CJS.CombatUI = (() => {
         const skillName = skillEntry.skill?.name || skillEntry.id;
         const skillIcon = skillEntry.skill?.icon || '*';
         const disabled = !skillEntry.usable ? 'disabled' : '';
+        const costParts = [`AP ${skillEntry.apCost || 0}`];
+        if (skillEntry.mpCost) costParts.push(`MP ${skillEntry.mpCost}`);
         const weaponReason = !skillEntry.weaponReady && skillEntry.requiredWeaponTypes?.length
           ? `Requires ${skillEntry.requiredWeaponTypes.map((type) => String(type).replace(/_/g, ' ')).join(' or ')}`
           : '';
@@ -1038,7 +1040,7 @@ window.CJS.CombatUI = (() => {
         html += `
           <button class="btn btn-action btn-skill" data-action="skill" data-skill="${_escAttr(skillEntry.id)}" ${disabled} ${reason}>
             ${_escHtml(skillIcon)} ${_escHtml(skillName)}
-            <span class="skill-cost">${skillEntry.apCost || 0}AP ${skillEntry.mpCost || 0}MP</span>
+            <span class="skill-cost">${_escHtml(costParts.join(' | '))}</span>
           </button>
         `;
       }
@@ -1120,7 +1122,7 @@ window.CJS.CombatUI = (() => {
     if (action.type !== 'attack') {
       const resolver = window.CJS.SkillResolver;
       const skill = resolver ? resolver.resolveUnitSkill(unit, action.skillId) : DS().get('skills', action.skillId);
-      range = Math.max(1, skill?.range || 1);
+      range = Math.max(1, Number(skill?.range || 1) + Number(unit.rangeBonus || 0));
     } else if (AH() && AH().getAttackRange) {
       range = AH().getAttackRange(unit);
     }
@@ -1143,7 +1145,7 @@ window.CJS.CombatUI = (() => {
     _mode = 'target_aoe';
     _pendingAction = { type: 'skill', skillId: skill.id };
 
-    const range = Math.max(1, skill.range || 3);
+    const range = Math.max(1, Number(skill.range || 3) + Number(unit.rangeBonus || 0));
     const rawCells = GE().getCellsInRange(unit.pos[0], unit.pos[1], range);
     const cells = rawCells.map(([r, c]) => ({ r, c }));
     GR().setHighlights(cells, 'rgba(168,85,247,0.3)', 'target');

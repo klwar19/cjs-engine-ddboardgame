@@ -517,12 +517,12 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-panel campaign-actions-panel">
           <div class="campaign-panel-head"><h2>Control Desk</h2></div>
           <div class="campaign-control-stack">
-            ${_controlGroup('Solo / Random', `
-              <button class="campaign-action primary" data-campaign-action="solo-surprise">Solo Offer</button>
-              <button class="campaign-action" data-campaign-action="random-quest-offer">Random Quest</button>
-              <button class="campaign-action" data-campaign-action="random-rumor-offer">Random Rumor</button>
-              <button class="campaign-action" data-campaign-action="roll-event">Random Event</button>
-              <button class="campaign-action" data-campaign-action="roll-oracle">Random GM Prompt</button>
+            ${_controlGroup('Story Prompts', `
+              <button class="campaign-action primary" data-campaign-action="solo-surprise">Story Offer</button>
+              <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Offer</button>
+              <button class="campaign-action" data-campaign-action="random-rumor-offer">Rumor Hook</button>
+              <button class="campaign-action" data-campaign-action="roll-event">Event</button>
+              <button class="campaign-action" data-campaign-action="roll-oracle">GM Prompt</button>
             `)}
             ${_controlGroup('Manual Control', `
               <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
@@ -835,7 +835,7 @@ window.CJS.CampaignUI = (() => {
       <section class="campaign-panel campaign-solo-notice ${risk === 'red' ? 'risk-red' : ''}">
         <div class="campaign-panel-head">
           <div>
-            <h2>Solo Offer</h2>
+            <h2>Story Offer</h2>
             <div class="campaign-muted">${_esc(_label(kind))} | ${_esc(choice)}</div>
           </div>
           <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
@@ -881,7 +881,7 @@ window.CJS.CampaignUI = (() => {
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
         </div>
         <div class="campaign-control-stack">
-          ${_controlGroup('Solo / Random', `
+          ${_controlGroup('Scenario Tools', `
             <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
             <button class="campaign-action primary" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
             <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
@@ -2366,8 +2366,9 @@ window.CJS.CampaignUI = (() => {
     Side().saveCard(card, { status: 'idea', source: 'solo_quest_offer' });
     _setPendingSoloHook(card, 'quest_offer');
     _activeMode = 'town';
-    _activeTab = 'quests';
+    _activeTab = 'overview';
     render();
+    UI().toast('Quest offer ready', 'success');
   }
 
   function _randomQuestOfferCard() {
@@ -2441,6 +2442,10 @@ window.CJS.CampaignUI = (() => {
     const card = _pendingSoloHookCard();
     if (!card) return;
     const apply = () => {
+      if (card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer') {
+        _soloHookToQuest(true);
+        return;
+      }
       const choice = card.suggestedChoices?.[0];
       if (choice?.ops?.length) {
         Ops().apply(choice.ops, { source: 'solo_hook_accept' });
@@ -2450,7 +2455,10 @@ window.CJS.CampaignUI = (() => {
         return;
       }
       _clearPendingSoloHook();
-      UI().toast('Solo offer accepted', 'success');
+      _activeMode = 'town';
+      _activeTab = 'overview';
+      render();
+      UI().toast('Story offer accepted', 'success');
     };
     if (Side().risk(card.canonRisk) === 'red') {
       return UI().confirm('This is red-risk content. Accept it now?', apply);
@@ -2464,6 +2472,17 @@ window.CJS.CampaignUI = (() => {
     if (Side().risk(card.canonRisk) === 'red' && !approved) {
       return UI().confirm('This is red-risk content. Make it a quest now?', () => _soloHookToQuest(true));
     }
+    if (card.questChainTemplateId) {
+      const choice = card.suggestedChoices?.[0];
+      if (choice?.ops?.length) Ops().apply(choice.ops, { source: 'solo_hook_chain' });
+      Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain', approved: true }, { source: 'solo_hook' });
+      _clearPendingSoloHook();
+      _activeMode = 'town';
+      _activeTab = 'quests';
+      render();
+      UI().toast('Quest chain started', 'success');
+      return;
+    }
     const quest = card.questTemplate ? CS().clone(card.questTemplate) : {
       id: `quest_${card.id}`,
       title: card.title || card.name || 'Solo Quest',
@@ -2475,6 +2494,10 @@ window.CJS.CampaignUI = (() => {
     Ops().apply({ op: 'add_quest', quest }, { source: 'solo_hook_quest' });
     Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'accepted_hook', approved: true }, { source: 'solo_hook' });
     _clearPendingSoloHook();
+    _activeMode = 'town';
+    _activeTab = 'quests';
+    render();
+    UI().toast(`Quest added: ${quest.title || quest.id}`, 'success');
   }
 
   function _soloHookToRumor(approved = false) {
@@ -2667,9 +2690,13 @@ window.CJS.CampaignUI = (() => {
       <textarea id="campaign-quest-summary"></textarea>
     `;
     const footer = document.createElement('div');
-    footer.innerHTML = '<button class="btn btn-primary" id="campaign-add-quest-commit">Add Quest</button>';
+    footer.innerHTML = `
+      <button class="btn" id="campaign-add-quest-back">Back</button>
+      <button class="btn btn-primary" id="campaign-add-quest-commit">Add Quest</button>
+    `;
     const overlay = UI().openModal({ title: 'Add Quest', content: body, footer, width: '520px' });
-    footer.querySelector('button').onclick = () => {
+    footer.querySelector('#campaign-add-quest-back').onclick = () => UI().closeModal(overlay);
+    footer.querySelector('#campaign-add-quest-commit').onclick = () => {
       const template = templates.find((quest) => quest.id === body.querySelector('#campaign-quest-template').value);
       const customTitle = body.querySelector('#campaign-quest-title').value.trim();
       const summary = body.querySelector('#campaign-quest-summary').value.trim();
@@ -4330,6 +4357,7 @@ window.CJS.CampaignUI = (() => {
 
   function _skillMeta(skill = {}, entry = {}) {
     const parts = [];
+    if (skill.ap != null) parts.push(`${skill.ap} AP`);
     if (skill.mp != null) parts.push(`${skill.mp} MP`);
     if (skill.range != null) parts.push(`Range ${skill.range}`);
     if (skill.power != null) parts.push(`Power ${skill.power}`);

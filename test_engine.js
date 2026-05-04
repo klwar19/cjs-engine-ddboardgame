@@ -389,6 +389,33 @@ assertEq('skill.range uses override (8)', fbAvail.skill.range, 8);
 assertEq('skill.level preserved (3)', fbAvail.skill.level, 3);
 assertEq('skill.mp from base (3)', fbAvail.skill.mp, 3);
 
+const savedGetUnit = CJS.GridEngine.getUnit;
+const savedFootprintDistance = CJS.GridEngine.footprintDistance;
+const savedHasLineOfSight = CJS.GridEngine.hasLineOfSight;
+const skillRangeTarget = { instanceId: 'skill_range_target', team: 'enemy', pos: [0, 5], currentHP: 10 };
+CJS.GridEngine.getUnit = (id) => id === 'skill_range_target' ? skillRangeTarget : null;
+CJS.GridEngine.footprintDistance = () => 5;
+CJS.GridEngine.hasLineOfSight = () => true;
+const skillRangeUnit = {
+  instanceId: 'skill_range_user',
+  team: 'player',
+  pos: [0, 0],
+  skills: ['firebolt'],
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} },
+  currentHP: 20,
+  currentMP: 50,
+  costMod: 0,
+  rangeBonus: 1
+};
+assertEq('skill validation includes rangeBonus',
+  AH.validate(skillRangeUnit, { type: 'skill', skillId: 'firebolt', targetId: 'skill_range_target' }).valid, true);
+skillRangeUnit.rangeBonus = 0;
+assertEq('skill validation rejects out-of-range without rangeBonus',
+  AH.validate(skillRangeUnit, { type: 'skill', skillId: 'firebolt', targetId: 'skill_range_target' }).reason, 'target_out_of_range');
+CJS.GridEngine.getUnit = savedGetUnit;
+CJS.GridEngine.footprintDistance = savedFootprintDistance;
+CJS.GridEngine.hasLineOfSight = savedHasLineOfSight;
+
 const dedupeUnit = {
   currentHP: 40,
   skills: ['basic_attack', 'firebolt'],
@@ -631,6 +658,9 @@ assertEq('crossbow -> weapon range 3', AH.getAttackRange(rangedUnit), 3);
 const bonusUnit = { equipment: ['test_crossbow'], rangeBonus: 2 };
 assertEq('crossbow + rangeBonus 2 -> still weapon range 3', AH.getAttackRange(bonusUnit), 3);
 
+const basicBonusUnit = { equipment: ['test_crossbow'], rangeBonus: 2, basicAttackRangeBonus: 1 };
+assertEq('crossbow + basic attack range bonus 1 -> range 4', AH.getAttackRange(basicBonusUnit), 4);
+
 // Elemental weapon
 DS.replace('items', 'test_frost_staff', {
   id: 'test_frost_staff', name: 'Frost Staff', slot: 'weapon',
@@ -710,10 +740,14 @@ assert('legacy monster skill arrays normalized on load',
   realMons.every(mon => (mon.skills || []).every(isCanonicalSkillEntry)));
 assert('real characters no longer duplicate basic_attack in skill lists',
   realChars.every(ch => (ch.skills || []).every(entry => entry.skillId !== 'basic_attack')));
-assertEq('legacy thunder shot range normalized to 3', DS.get('skills', 'thunder_shot')?.range, 3);
+assertEq('legacy thunder shot range normalized to 4', DS.get('skills', 'thunder_shot')?.range, 4);
 assertEq('legacy piercing bolt range normalized to 3', DS.get('skills', 'piercing_bolt')?.range, 3);
 assertEq('legacy rally range normalized to 2', DS.get('skills', 'rally_cry')?.range, 2);
 assertEq('legacy crossbow basic range normalized to 3', DS.get('items', 'thunder_crossbow')?.weaponData?.range, 3);
+const bowyCompiled = SC.compileUnit(DS.get('characters', 'bowy'), 'bowy_test');
+assertEq('Bowy passive does not add generic skill rangeBonus', bowyCompiled.rangeBonus, 0);
+assertEq('Bowy passive adds basic attack range bonus', bowyCompiled.basicAttackRangeBonus, 1);
+assertEq('Bowy basic attack range is crossbow 3 plus passive 1', AH.getAttackRange(bowyCompiled), 4);
 
 const exportedReal = JSON.parse(DS.exportJSON());
 assert('export keeps character skills normalized',

@@ -129,6 +129,7 @@ window.CJS.StatCompiler = (() => {
       movement,
       baseAP,
       rangeBonus:    mods.range || 0,
+      basicAttackRangeBonus: mods.basicAttackRange || 0,
       basicAttackRange: baseUnit.basicAttackRange ?? null,
       basicAttackPower: baseUnit.basicAttackPower ?? null,
       costMod:       mods.costMod || 0,
@@ -353,6 +354,7 @@ window.CJS.StatCompiler = (() => {
       evasion: [],
       movement: [],
       range: [],
+      basicAttackRange: [],
       ap: [],
       hpFlat: [], hpPercent: [],
       mpFlat: [], mpPercent: [],
@@ -402,7 +404,10 @@ window.CJS.StatCompiler = (() => {
         case 'accuracy_mod':  rawMods.accuracy.push(v); break;
         case 'ap_mod':        rawMods.ap.push(v); break;
         case 'movement_mod':  rawMods.movement.push(v); break;
-        case 'range_mod':     rawMods.range.push(v); break;
+        case 'range_mod':
+          if (_isBasicAttackRangeMod(eff)) rawMods.basicAttackRange.push(v);
+          else rawMods.range.push(v);
+          break;
         case 'cost_mod':      rawMods.costMod.push(v); break;
         case 'cooldown_mod':  rawMods.cooldownMod.push(v); break;
         case 'damage_mod': {
@@ -455,6 +460,7 @@ window.CJS.StatCompiler = (() => {
       evasion:     _cappedSum(rawMods.evasion),
       movement:    _sumAll(rawMods.movement),    // movement: no cap (small numbers)
       range:       _sumAll(rawMods.range),
+      basicAttackRange: _sumAll(rawMods.basicAttackRange),
       ap:          _sumAll(rawMods.ap),
       hpFlat:      _sumAll(rawMods.hpFlat),
       hpPercent:   _sumAll(rawMods.hpPercent),
@@ -482,6 +488,12 @@ window.CJS.StatCompiler = (() => {
     }
 
     return mods;
+  }
+
+  function _isBasicAttackRangeMod(eff) {
+    const scope = String(eff.appliesTo || eff.scope || eff.rangeScope || eff.targetAction || '').toLowerCase();
+    return eff.basicAttackOnly === true ||
+      ['basic', 'basic_attack', 'weapon_attack', 'basic attack'].includes(scope);
   }
 
   // Sum the top STACKING_CAP values by absolute magnitude

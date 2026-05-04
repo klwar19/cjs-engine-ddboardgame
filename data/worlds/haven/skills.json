@@ -867,7 +867,7 @@
       "damageType": "Physical",
       "element": "Lightning",
       "scalingStat": "P",
-      "range": 3,
+      "range": 4,
       "aoe": null,
       "aoeSize": 0,
       "qte": "quickpress",
