@@ -53,6 +53,11 @@
       "category": "skills"
     },
     {
+      "path": "data/universal/jobs.json",
+      "scope": "universal",
+      "category": "jobs"
+    },
+    {
       "path": "data/universal/items.json",
       "scope": "universal",
       "category": "items"

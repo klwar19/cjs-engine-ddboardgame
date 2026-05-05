@@ -702,5 +702,107 @@ If you want to change audio behavior:
 - file routing for SFX hits - `js/combat/action-handler.js`
 - KO sound - `js/combat/combat-manager.js` (`_handleDeath`)
 - status applied sound - `js/combat/status-manager.js`
+
+## 16. Progression: Skill AP, Character XP, Job XP
+
+Three independent progression tracks live in campaign saves and feed back
+into combat through the snapshot built by `campaign-combat-bridge.js`.
+
+### 16.1 Skill Ability Points
+
+Each `(party member, skill)` pair owns an AP pool stored at
+`state.party.<id>.skillProgress.<skillId> = { ap, level }`.
+
+- Authors set `apGain` (default 1) and optionally `apThresholds` per skill in
+  the Skill Editor. Default thresholds come from `CONST.PROGRESSION.skillApThresholds`.
+- Combat: every successful skill use writes to `unit.skillUseLog[skillId]`
+  in `js/combat/action-handler.js` (`_doSkill`).
+- Bridge: `campaign-combat-bridge.applyResult` reads each player unit's
+  `skillUseLog`, multiplies by QTE grade (`Formulas.calcSkillApGainPerUse`),
+  and emits one `gain_skill_ap` op per skill.
+- Op: `gain_skill_ap { target, skillId, amount }` in `campaign-ops.js`
+  auto-levels the skill via `Formulas.calcSkillLevelForAp`.
+- The new level is pushed into the snapshot `skills[].level` field, so
+  `SkillResolver.resolveUnitSkill` and `Formulas.calcSkillPowerAtLevel`
+  reflect the bonus power immediately on the next battle.
+
+Edit-mode buttons in the roster grant AP (`+AP`) or force a level-up
+(`+Lv`) without combat — they emit `gain_skill_ap` / `set_skill_level`.
+
+### 16.2 Character XP and Levels
+
+- `state.party.<id>.{ level, xp }` already existed; level-up is now applied
+  by `campaign-ops._applyCharLevelUp`, which mutates `statOverrides` with
+  the delta from `Formulas.calcCharLevelStatBonus(rank, level, baseStats)`.
+- Per-rank growth comes from `CONST.PROGRESSION.statPointsPerCharLevelByRank`.
+  Distribution is deterministic: highest base stats gain first, ties broken
+  by canonical S→L order.
+- `add_xp` now triggers an auto level-up via `_checkCharLevelUp`. The
+  victory-bonus XP and per-skill-use XP are awarded by the combat bridge.
+
+### 16.3 Jobs
+
+Jobs are a new authorable type registered in `data-store.js` (collection
+`jobs`, prefix `job`) with the editor file `js/builders/job-editor.js`
+and starter content at `data/universal/jobs.json`.
+
+Schema:
+
+```jsonc
+{
+  "id": "job_warrior",
+  "name": "Warrior",
+  "icon": "⚔️",
+  "weaponTypes": ["sword", "axe"],
+  "armorTypes":  ["light", "medium", "heavy"],
+  "maxLevel": 10,
+  "xpThresholds": [0, 30, 80, ...],   // optional override of CONST.PROGRESSION.jobXpThresholds
+  "levels": [
+    { "level": 1, "statBonus": { "S": 1 }, "grantsSkills": [], "grantsPassives": [] },
+    { "level": 2, "statBonus": { "S": 1 }, "grantsSkills": ["parry"] }
+  ]
+}
+```
+
+Party-member fields:
+`currentJob`, `unlockedJobs[]`, `jobProgress.<jobId> = { xp, level }`.
+
+Ops added to `campaign-ops.js`:
+`set_job`, `unlock_job`, `gain_job_xp`, `set_job_level`. Job XP gain
+auto-levels via `_applyJobLevelUp`, which:
+1. accumulates `Formulas.calcJobLevelStatBonus` deltas into `statOverrides`,
+2. auto-learns each skill / passive granted by tiers between old → new level
+   (calls `_learnSkill` / `_learnPassive` so the existing UI keeps working),
+3. resyncs HP/MP via `CampaignState.syncPartyMember`.
+
+The combat bridge also injects active-job grants into the per-battle
+snapshot in case the campaign was loaded from a save predating the
+auto-grant pass.
+
+### 16.4 Backward compatibility
+
+`CampaignState._normalizeProgression` runs on every save load and:
+- ensures every authored / learned skill has a `skillProgress` entry,
+- defaults `currentJob` to `base.defaultJob` (or null),
+- copies `availableJobs` into `unlockedJobs` if absent,
+- initializes `jobProgress` for every unlocked job.
+
+Old saves without any of these fields therefore continue to load and run
+identically, then start collecting AP / XP the moment a member uses a
+skill or wins a battle.
+
+### 16.5 Where to edit
+
+| Change | File |
+| --- | --- |
+| AP curve, char/job XP curves, per-rank growth | `js/core/constants.js` (`PROGRESSION`) |
+| Level / XP / AP math | `js/core/formulas.js` |
+| Skill `apGain` / `apThresholds` UI | `js/builders/skill-editor.js` |
+| Job authoring UI | `js/builders/job-editor.js` |
+| Character `availableJobs`, `defaultJob`, `weaponSlots` | `js/builders/char-editor.js` |
+| Campaign ops dispatch | `js/campaign/campaign-ops.js` |
+| Per-battle skill-use → AP gain plumbing | `js/combat/action-handler.js` (`_doSkill`) and `js/campaign/campaign-combat-bridge.js` |
+| Roster level / AP / job UI buttons | `js/campaign/campaign-ui.js` (`_renderRosterMember`, `_renderKnownSkill`, `_grantSkillApModal`, `_changeJobModal`, etc.) |
+
 - damage flash / KO fade / cast / move / banner visuals - `js/ui/combat-ui.js` (`_animXxx`) + `css/combat-animations.css`
 - BGM resolution at battle start - `js/ui/combat-ui.js` (`_startEncounterBgm`)

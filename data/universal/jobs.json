@@ -1,0 +1,121 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "jobs",
+    "status": "active",
+    "notes": [
+      "Jobs (a.k.a. classes) authorable from the editor.",
+      "Each level may grant statBonus, grantsSkills, grantsPassives.",
+      "Backward-compatible: party members without a currentJob behave as before."
+    ]
+  },
+  "entries": [
+    {
+      "id": "job_warrior",
+      "name": "Warrior",
+      "icon": "⚔️",
+      "description": "Frontline melee specialist. Trades technique for raw force.",
+      "weaponTypes": ["sword", "axe", "spear", "mace"],
+      "armorTypes": ["light", "medium", "heavy"],
+      "maxLevel": 10,
+      "levels": [
+        { "level": 1, "statBonus": { "S": 1, "E": 1 }, "grantsSkills": [], "grantsPassives": [], "description": "Base Warrior training." },
+        { "level": 2, "statBonus": { "S": 1 } },
+        { "level": 3, "statBonus": { "E": 1 } },
+        { "level": 4, "statBonus": { "S": 1, "E": 1 } },
+        { "level": 5, "statBonus": { "S": 2 } },
+        { "level": 6, "statBonus": { "E": 1 } },
+        { "level": 7, "statBonus": { "S": 1, "A": 1 } },
+        { "level": 8, "statBonus": { "S": 2 } },
+        { "level": 9, "statBonus": { "E": 2 } },
+        { "level": 10, "statBonus": { "S": 2, "E": 2 } }
+      ]
+    },
+    {
+      "id": "job_archer",
+      "name": "Archer",
+      "icon": "🏹",
+      "description": "Ranged hunter. Reads battlefields a beat ahead of the rest of the party.",
+      "weaponTypes": ["bow", "crossbow", "dagger"],
+      "armorTypes": ["light", "leather"],
+      "maxLevel": 10,
+      "levels": [
+        { "level": 1, "statBonus": { "P": 1, "A": 1 } },
+        { "level": 2, "statBonus": { "P": 1 } },
+        { "level": 3, "statBonus": { "A": 1 } },
+        { "level": 4, "statBonus": { "P": 1, "L": 1 } },
+        { "level": 5, "statBonus": { "P": 2 } },
+        { "level": 6, "statBonus": { "A": 1 } },
+        { "level": 7, "statBonus": { "P": 1, "A": 1 } },
+        { "level": 8, "statBonus": { "L": 1 } },
+        { "level": 9, "statBonus": { "P": 2 } },
+        { "level": 10, "statBonus": { "P": 2, "A": 2 } }
+      ]
+    },
+    {
+      "id": "job_mage",
+      "name": "Mage",
+      "icon": "🔮",
+      "description": "Master of arcane focus. Wields elemental magic at distance.",
+      "weaponTypes": ["staff", "wand", "dagger"],
+      "armorTypes": ["robe", "cloth", "light"],
+      "maxLevel": 10,
+      "levels": [
+        { "level": 1, "statBonus": { "I": 1, "P": 1 } },
+        { "level": 2, "statBonus": { "I": 1 } },
+        { "level": 3, "statBonus": { "P": 1 } },
+        { "level": 4, "statBonus": { "I": 1, "C": 1 } },
+        { "level": 5, "statBonus": { "I": 2 } },
+        { "level": 6, "statBonus": { "P": 1 } },
+        { "level": 7, "statBonus": { "I": 1, "C": 1 } },
+        { "level": 8, "statBonus": { "I": 1 } },
+        { "level": 9, "statBonus": { "I": 2 } },
+        { "level": 10, "statBonus": { "I": 2, "P": 2 } }
+      ]
+    },
+    {
+      "id": "job_rogue",
+      "name": "Rogue",
+      "icon": "🗡️",
+      "description": "Quick, unpredictable, lethal. Strikes from edges and shadows.",
+      "weaponTypes": ["dagger", "sword", "knuckles"],
+      "armorTypes": ["light", "leather"],
+      "maxLevel": 10,
+      "levels": [
+        { "level": 1, "statBonus": { "A": 1, "L": 1 } },
+        { "level": 2, "statBonus": { "A": 1 } },
+        { "level": 3, "statBonus": { "L": 1 } },
+        { "level": 4, "statBonus": { "A": 1, "S": 1 } },
+        { "level": 5, "statBonus": { "A": 2 } },
+        { "level": 6, "statBonus": { "L": 1 } },
+        { "level": 7, "statBonus": { "A": 1, "P": 1 } },
+        { "level": 8, "statBonus": { "L": 1 } },
+        { "level": 9, "statBonus": { "A": 2 } },
+        { "level": 10, "statBonus": { "A": 2, "L": 2 } }
+      ]
+    },
+    {
+      "id": "job_cleric",
+      "name": "Cleric",
+      "icon": "✨",
+      "description": "Healer and protector. Channels divine grace to support the party.",
+      "weaponTypes": ["mace", "staff", "wand"],
+      "armorTypes": ["robe", "cloth", "light", "medium"],
+      "maxLevel": 10,
+      "levels": [
+        { "level": 1, "statBonus": { "C": 1, "I": 1 } },
+        { "level": 2, "statBonus": { "C": 1 } },
+        { "level": 3, "statBonus": { "I": 1 } },
+        { "level": 4, "statBonus": { "C": 1, "E": 1 } },
+        { "level": 5, "statBonus": { "C": 2 } },
+        { "level": 6, "statBonus": { "I": 1 } },
+        { "level": 7, "statBonus": { "C": 1, "P": 1 } },
+        { "level": 8, "statBonus": { "I": 1 } },
+        { "level": 9, "statBonus": { "C": 2 } },
+        { "level": 10, "statBonus": { "C": 2, "I": 2 } }
+      ]
+    }
+  ]
+}

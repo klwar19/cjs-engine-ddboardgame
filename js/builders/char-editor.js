@@ -52,6 +52,8 @@ window.CJS.CharEditor = (() => {
       skills: [], equipment: [], innatePassives: [],
       allowedWeaponTypes: ['sword', 'bow', 'staff'],
       allowedArmorTypes: ['light', 'robe'],
+      availableJobs: [], defaultJob: null,
+      weaponSlots: 2,
       weak: [], resist: [], immune: [],
       portrait: '',
       battleSfx: {},
@@ -130,6 +132,25 @@ window.CJS.CharEditor = (() => {
           <div class="form-group">
             <label class="form-label">Allowed Armor Types</label>
             <div id="chr-armor-types-area"></div>
+          </div>
+          <div class="form-group" style="flex:0 0 130px">
+            <label class="form-label">Weapon Slots</label>
+            <input type="number" id="chr-weapon-slots" value="${Number(c.weaponSlots || 2)}" min="1" max="4">
+            <div class="dim" style="font-size:0.74rem">How many distinct weapon types this character can master (informational).</div>
+          </div>
+        </div>
+
+        <h3>Available Jobs</h3>
+        <div class="hint-box">Jobs the character can pick from in Campaign Mode. The default job is auto-applied when the party is created.</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Available Jobs</label>
+            <div id="chr-jobs-area"></div>
+          </div>
+          <div class="form-group" style="flex:0 0 200px">
+            <label class="form-label">Default Job</label>
+            <select id="chr-default-job"></select>
+            <div class="dim" style="font-size:0.74rem">— None — keeps the character jobless until campaign assigns one.</div>
           </div>
         </div>
 
@@ -228,6 +249,28 @@ window.CJS.CharEditor = (() => {
     const passivePicker = _createRefPicker('passives', c.innatePassives || [], 'passive');
     passivesArea.appendChild(passivePicker.el);
 
+    // ── Jobs picker (available jobs + default job) ──
+    const jobsArea = _formEl.querySelector('#chr-jobs-area');
+    const jobsPicker = _createRefPicker('jobs', c.availableJobs || [], 'job');
+    jobsArea.appendChild(jobsPicker.el);
+
+    const defaultJobSel = _formEl.querySelector('#chr-default-job');
+    function _refreshDefaultJobOptions() {
+      const ids = jobsPicker.getIds();
+      const opts = ['<option value="">— None —</option>'];
+      for (const jid of ids) {
+        const job = DS().get('jobs', jid);
+        const label = job ? `${job.icon || '🛡️'} ${job.name}` : jid;
+        const selected = c.defaultJob === jid ? ' selected' : '';
+        opts.push(`<option value="${jid}"${selected}>${label}</option>`);
+      }
+      defaultJobSel.innerHTML = opts.join('');
+    }
+    _refreshDefaultJobOptions();
+    // Re-render the default job dropdown whenever the available list changes.
+    const jobsRefreshObserver = new MutationObserver(_refreshDefaultJobOptions);
+    jobsRefreshObserver.observe(jobsArea, { childList: true, subtree: true });
+
     // ── Elemental tag inputs ──
     const weakWidget = UI().createTagInput({ tags: c.weak || [], placeholder: 'e.g. Fire + Enter' });
     _formEl.querySelector('#chr-weak-area').appendChild(weakWidget);
@@ -241,6 +284,8 @@ window.CJS.CharEditor = (() => {
       const currentStats = {};
       for (const s of C().STATS) currentStats[s] = statSliders[s]._getValue();
       const battleSfx = _collectBattleSfx(c, 'chr', ['attack', 'hurt', 'happy', 'expression', 'archerAttack']);
+      const availableJobs = jobsPicker.getIds();
+      const chosenDefaultJob = defaultJobSel.value || null;
       DS().replace('characters', c.id, {
         id: c.id,
         name: _formEl.querySelector('#chr-name').value,
@@ -256,6 +301,9 @@ window.CJS.CharEditor = (() => {
         equipment: equipPicker.getIds(),
         allowedWeaponTypes: weaponTypeWidget._getTags(),
         allowedArmorTypes: armorTypeWidget._getTags(),
+        weaponSlots: Math.max(1, Number(_formEl.querySelector('#chr-weapon-slots').value) || 2),
+        availableJobs,
+        defaultJob: availableJobs.includes(chosenDefaultJob) ? chosenDefaultJob : null,
         innatePassives: passivePicker.getIds(),
         weak: weakWidget._getTags(),
         resist: resistWidget._getTags(),

@@ -48,6 +48,7 @@ window.CJS.DataStore = (() => {
     oracleTables: {}, // id -> oracle keyword/prompt table
     worlds:     {},   // id -> world meta object
     passives:   {},   // id → passive object
+    jobs:       {},   // id → job (class) object
     characters: {},   // id → character object
     monsters:   {},   // id → monster object
     encounters: {},   // id → encounter object
@@ -176,6 +177,7 @@ window.CJS.DataStore = (() => {
       oracleTables: _stripMeta({ ..._data.oracleTables }),
       worlds:     _stripMeta({ ..._data.worlds }),
       passives:   _stripMeta({ ..._data.passives }),
+      jobs:       _stripMeta({ ..._data.jobs }),
       characters: _normalizeCollection('characters', _data.characters),
       monsters:   _normalizeCollection('monsters', _data.monsters),
       encounters: _stripMeta({ ..._data.encounters }),
@@ -612,7 +614,7 @@ window.CJS.DataStore = (() => {
     // Merge or replace each collection
     const collections = [
       'effects', 'skills', 'items', 'food', 'materials', 'crafting',
-      'crops', 'shops', 'zones', 'stories', 'worlds', 'passives',
+      'crops', 'shops', 'zones', 'stories', 'worlds', 'passives', 'jobs',
       'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
       'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
       'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
@@ -671,6 +673,7 @@ window.CJS.DataStore = (() => {
       orc: _data.oracleTables,
       wld: _data.worlds,
       pas: _data.passives,
+      job: _data.jobs,
       chr: _data.characters,
       mon: _data.monsters,
       enc: _data.encounters,
@@ -694,7 +697,7 @@ window.CJS.DataStore = (() => {
   function reset() {
     _data = {
       effects: {}, skills: {}, items: {}, food: {}, materials: {}, crafting: {},
-      crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {},
+      crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {}, jobs: {},
       campaigns: {}, scenarios: {}, scenarioMaps: {}, campaignEvents: {},
       campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
       sideContentPacks: {}, campaignHubs: {}, questChains: {},
@@ -738,6 +741,7 @@ window.CJS.DataStore = (() => {
       oracleTables: Object.keys(_data.oracleTables).length,
       worlds:     Object.keys(_data.worlds).length,
       passives:   Object.keys(_data.passives).length,
+      jobs:       Object.keys(_data.jobs).length,
       characters: Object.keys(_data.characters).length,
       monsters:   Object.keys(_data.monsters).length,
       encounters: Object.keys(_data.encounters).length,

@@ -514,6 +514,17 @@ window.CJS.ActionHandler = (() => {
       turnNumber: ctx.turnNumber, allUnits: GE().getAllUnits()
     });
 
+    // Record skill use for post-combat campaign-mode AP gain. This fires
+    // for every unit (including AI), but combat-bridge only emits ops for
+    // player party members.
+    unit.skillUseLog = unit.skillUseLog || {};
+    const logEntry = unit.skillUseLog[action.skillId] = unit.skillUseLog[action.skillId]
+      || { count: 0, qteCounts: { perfect: 0, good: 0, ok: 0, fail: 0 } };
+    logEntry.count = (logEntry.count || 0) + 1;
+    if (logEntry.qteCounts[qteGrade] != null) {
+      logEntry.qteCounts[qteGrade] += 1;
+    }
+
     return { success: true, action: 'skill', skillId: action.skillId, hits };
   }
 

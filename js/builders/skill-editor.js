@@ -51,7 +51,10 @@ window.CJS.SkillEditor = (() => {
       damageType: 'Physical', element: null, scalingStat: 'S',
       range: 1, aoe: null, aoeSize: 0, qte: 'quickpress',
       requiredWeaponTypes: [],
-      effects: [], levelScaling: { powerPerLevel: 0.15, maxLevel: 10 }, description: ''
+      effects: [], levelScaling: { powerPerLevel: 0.15, maxLevel: 10 },
+      apGain: 1,
+      apThresholds: null,
+      description: ''
     });
     _activeId = id; _renderList(); _load(id);
     UI().toast('Skill created', 'success');
@@ -140,10 +143,16 @@ window.CJS.SkillEditor = (() => {
         <h3>Additional Effects</h3>
         <div id="skl-effects-area"></div>
 
-        <h3>Level Scaling</h3>
+        <h3>Level Scaling <span class="dim" style="font-size:0.78em">— gain Ability Points by using this skill in combat</span></h3>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Power/Level (%)</label><input type="number" id="skl-ppl" value="${(s.levelScaling?.powerPerLevel||0.15)*100}" min="0" max="50" step="1" style="width:100%"></div>
           <div class="form-group"><label class="form-label">Max Level</label><input type="number" id="skl-maxlvl" value="${s.levelScaling?.maxLevel||10}" min="1" max="20" style="width:100%"></div>
+          <div class="form-group"><label class="form-label">AP per Use</label><input type="number" id="skl-apgain" value="${s.apGain != null ? s.apGain : 1}" min="0" max="20" style="width:100%"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">AP Thresholds <span class="dim" style="font-size:0.78em">(comma-separated cumulative; blank = use default curve)</span></label>
+          <input type="text" id="skl-apthresholds" value="${_esc(_apThresholdsToText(s.apThresholds))}" placeholder="0, 8, 20, 36, 56, 80, 110, 145, 185, 230, 280">
+          <div class="dim" style="font-size:0.78rem;margin-top:4px">Leave blank to use the default curve from CONST.PROGRESSION.skillApThresholds.</div>
         </div>
 
         <div class="form-group mt-md"><label class="form-label">Description</label><textarea id="skl-desc" rows="2">${_esc(s.description||'')}</textarea></div>
@@ -211,6 +220,8 @@ window.CJS.SkillEditor = (() => {
         powerPerLevel: (Number(f.querySelector('#skl-ppl').value) || 15) / 100,
         maxLevel: Number(f.querySelector('#skl-maxlvl').value) || 10
       },
+      apGain: Math.max(0, Number(f.querySelector('#skl-apgain').value) || 0),
+      apThresholds: _parseApThresholds(f.querySelector('#skl-apthresholds').value),
       description: f.querySelector('#skl-desc').value
     };
     if (castSfx) payload.castSfx = castSfx;
@@ -273,6 +284,19 @@ window.CJS.SkillEditor = (() => {
     } else {
       finish();
     }
+  }
+
+  function _apThresholdsToText(thresholds) {
+    if (!Array.isArray(thresholds) || !thresholds.length) return '';
+    return thresholds.join(', ');
+  }
+
+  function _parseApThresholds(raw) {
+    const text = String(raw || '').trim();
+    if (!text) return null;
+    const parts = text.split(/[\s,]+/).map((part) => Number(part.trim()));
+    if (!parts.length || parts.some((n) => Number.isNaN(n))) return null;
+    return parts.map((n) => Math.max(0, Math.floor(n)));
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

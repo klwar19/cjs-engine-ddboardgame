@@ -234,7 +234,7 @@ window.CJS.CampaignState = (() => {
     const maxHp = F().calcMaxHP(stats, rank, _partyHpContext(base, charId));
     const maxMp = F().calcMaxMP(stats, rank);
 
-    return {
+    const initial = {
       baseCharacterId: charId,
       name: base.name || charId,
       icon: base.icon || '',
@@ -263,8 +263,30 @@ window.CJS.CampaignState = (() => {
       equipment: clone(base.equipment || []),
       equipmentSlots: _equipmentSlotsFromList(base.equipment || []),
       notes: [],
-      xp: 0
+      xp: 0,
+      // Progression: per-skill AP/level + jobs
+      skillProgress: _initialSkillProgress(base),
+      currentJob: base.defaultJob || null,
+      unlockedJobs: clone(base.availableJobs || (base.defaultJob ? [base.defaultJob] : [])),
+      jobProgress: {}
     };
+    if (initial.currentJob) {
+      initial.jobProgress[initial.currentJob] = { xp: 0, level: 1 };
+    }
+    return initial;
+  }
+
+  // Build a baseline skillProgress map from the character's authored skill
+  // list. Each skill starts at level 1 with 0 AP and is auto-extended later
+  // when new skills are learned in campaign mode.
+  function _initialSkillProgress(base = {}) {
+    const out = {};
+    for (const entry of base.skills || []) {
+      const id = typeof entry === 'string' ? entry : entry?.skillId;
+      const level = (entry && typeof entry === 'object' && entry.level) ? Number(entry.level || 1) : 1;
+      if (id) out[id] = { ap: 0, level: Math.max(1, level) };
+    }
+    return out;
   }
 
   function _partyHpContext(base = {}, id = '') {
@@ -458,6 +480,7 @@ window.CJS.CampaignState = (() => {
       member.equipment = _equipmentListFromSlots(member.equipmentSlots);
       member.notes = member.notes || [];
       member.availability = normalizeAvailability(member.availability, member);
+      _normalizeProgression(member, base);
       _syncPartyMaxHp(id, member);
     }
     next.lastUpdated = next.lastUpdated || nowIso();
@@ -474,6 +497,59 @@ window.CJS.CampaignState = (() => {
       expires: raw.expires || null,
       updatedAt: raw.updatedAt || null
     };
+  }
+
+  // Backfill skillProgress / job fields onto a party member loaded from
+  // an existing save (or freshly-recruited). Existing data is preserved;
+  // only missing entries are added so old saves keep working.
+  function _normalizeProgression(member, base = {}) {
+    member.skillProgress = (member.skillProgress && typeof member.skillProgress === 'object')
+      ? member.skillProgress
+      : {};
+
+    // Make sure every authored + learned skill has a progress entry.
+    const known = new Set();
+    for (const entry of base.skills || []) {
+      const sid = typeof entry === 'string' ? entry : entry?.skillId;
+      if (sid) known.add(sid);
+    }
+    for (const entry of member.learnedSkills || []) {
+      const sid = typeof entry === 'string' ? entry : entry?.skillId;
+      if (sid) known.add(sid);
+    }
+    for (const sid of known) {
+      if (!member.skillProgress[sid]) {
+        member.skillProgress[sid] = { ap: 0, level: 1 };
+      } else {
+        member.skillProgress[sid].ap = Number(member.skillProgress[sid].ap || 0);
+        member.skillProgress[sid].level = Math.max(1, Number(member.skillProgress[sid].level || 1));
+      }
+    }
+
+    // Job state
+    if (!Array.isArray(member.unlockedJobs)) {
+      member.unlockedJobs = clone(base.availableJobs || []);
+    }
+    if (member.currentJob === undefined) {
+      member.currentJob = base.defaultJob || null;
+      if (member.currentJob && !member.unlockedJobs.includes(member.currentJob)) {
+        member.unlockedJobs.push(member.currentJob);
+      }
+    }
+    if (!member.jobProgress || typeof member.jobProgress !== 'object') {
+      member.jobProgress = {};
+    }
+    for (const jid of member.unlockedJobs) {
+      if (!member.jobProgress[jid]) {
+        member.jobProgress[jid] = { xp: 0, level: 1 };
+      } else {
+        member.jobProgress[jid].xp = Number(member.jobProgress[jid].xp || 0);
+        member.jobProgress[jid].level = Math.max(1, Number(member.jobProgress[jid].level || 1));
+      }
+    }
+    if (member.currentJob && !member.jobProgress[member.currentJob]) {
+      member.jobProgress[member.currentJob] = { xp: 0, level: 1 };
+    }
   }
 
   function snapshotState() {
@@ -534,6 +610,7 @@ window.CJS.CampaignState = (() => {
     buildInitialHubState,
     normalizeAvailability,
     normalizeSave,
+    syncPartyMember: _syncPartyMaxHp,
     snapshotState,
     getHubState,
     getActiveHubProblems,

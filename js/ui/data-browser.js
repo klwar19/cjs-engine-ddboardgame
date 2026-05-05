@@ -23,7 +23,7 @@ window.CJS.DataBrowser = (() => {
         <div class="flex gap-sm items-center" style="flex-shrink:0">
           <h3 style="margin:0;color:var(--accent)">📊 Data Browser</h3>
           <div class="btn-group" id="db-tabs">
-            ${['effects','skills','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables'].map(t =>
+            ${['effects','skills','jobs','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables'].map(t =>
               `<button class="btn btn-sm ${t===_activeTab?'btn-primary':''}" data-tab="${t}">${t}</button>`
             ).join('')}
           </div>
@@ -53,6 +53,7 @@ window.CJS.DataBrowser = (() => {
     switch (_activeTab) {
       case 'effects':    _renderEffects(area, status, q); break;
       case 'skills':     _renderSkills(area, status, q); break;
+      case 'jobs':       _renderJobs(area, status, q); break;
       case 'items':      _renderItems(area, status, q); break;
       case 'food':       _renderGeneric(area, status, 'food', q, ['ID','Name','Description','Scope','World','Origin']); break;
       case 'materials':  _renderGeneric(area, status, 'materials', q, ['ID','Name','Description','Scope','World','Origin']); break;
@@ -98,14 +99,30 @@ window.CJS.DataBrowser = (() => {
   function _renderSkills(area, status, q) {
     let items = CM()?.getVisibleItems?.('skills', q) || DS().getAllAsArray('skills');
     if (q) items = items.filter(e => _match(e, q));
-    const cols = ['ID','Icon','Name','Power','AP','MP','CD','Type','Element','Scaling','Range','AoE','QTE','Effects#'];
+    const cols = ['ID','Icon','Name','Power','AP','MP','CD','Type','Element','Scaling','Range','AoE','QTE','Effects#','AP/Use','MaxLv'];
     let rows = items.map(s => [
       s.id, s.icon||'', s.name||'', s.power||0, s.ap||0, s.mp||0, s.cooldown||0,
       s.damageType||'', s.element||'—', s.scalingStat||'', s.range||1,
-      s.aoe||'none', s.qte||'none', (s.effects||[]).length
+      s.aoe||'none', s.qte||'none', (s.effects||[]).length,
+      s.apGain != null ? s.apGain : 1,
+      s.levelScaling?.maxLevel || 10
     ]);
     area.innerHTML = _table(cols, rows);
     status.textContent = `${items.length} skills`;
+  }
+
+  function _renderJobs(area, status, q) {
+    let items = CM()?.getVisibleItems?.('jobs', q) || DS().getAllAsArray('jobs');
+    if (q) items = items.filter(e => _match(e, q));
+    const cols = ['ID','Icon','Name','MaxLv','Levels#','Weapons','Armors','Description'];
+    let rows = items.map(j => [
+      j.id, j.icon||'🛡️', j.name||'', j.maxLevel||10, (j.levels||[]).length,
+      (j.weaponTypes||[]).join('/') || '—',
+      (j.armorTypes||[]).join('/') || '—',
+      (j.description||'').substring(0, 60)
+    ]);
+    area.innerHTML = _table(cols, rows);
+    status.textContent = `${items.length} jobs`;
   }
 
   function _renderItems(area, status, q) {

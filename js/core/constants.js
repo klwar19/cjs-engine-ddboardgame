@@ -547,7 +547,38 @@ window.CJS.CONST = (() => {
     encounter: 'enc',
     passive:   'pas',
     status:    'sts',
-    quip:      'qip'
+    quip:      'qip',
+    job:       'job'
+  };
+
+  // ── PROGRESSION (skill AP + character/job XP) ─────────────────────
+  // Skill ability points: each (member, skill) pair tracks an AP pool.
+  // Successfully using a skill in combat awards skill.apGain (default 1)
+  // points; once enough points are banked, the skill levels up.
+  // Different skills can author their own thresholds per level.
+  const PROGRESSION = {
+    // Default AP needed to reach the indexed level (level 1 needs 0).
+    skillApThresholds: [0, 8, 20, 36, 56, 80, 110, 145, 185, 230, 280],
+    // Default per-level XP needed for character level-up (level 1 → 2 needs 50).
+    charXpThresholds: [0, 50, 120, 220, 360, 540, 760, 1020, 1320, 1660, 2040, 2460, 2920, 3420, 3960, 4540, 5160, 5820, 6520, 7260, 8040],
+    // Default per-level XP needed for job level-up.
+    jobXpThresholds:  [0, 30,  80, 150, 240, 360, 500, 660,  840, 1040, 1260, 1500, 1760, 2040, 2340, 2660, 3000, 3360, 3740, 4140, 4560],
+    // Default skill cap when authors don't supply levelScaling.maxLevel.
+    skillMaxLevelDefault: 10,
+    // Default char cap when not overridden anywhere.
+    charMaxLevel: 20,
+    // Default job cap when authors don't supply maxLevel.
+    jobMaxLevelDefault: 10,
+    // QTE grade multipliers applied to apGain on a single skill use.
+    apGainQteMultipliers: { perfect: 1.5, good: 1.25, ok: 1.0, fail: 0.5 },
+    // How many distinct weapon types a player character may know by default
+    // (informational; the authoritative cap is allowedWeaponTypes.length).
+    weaponSlotsDefault: 2,
+    // Per-rank stat points granted by a character level-up. Higher ranks
+    // gain more so that the gap with monsters scales with level.
+    statPointsPerCharLevelByRank: {
+      F: 1, E: 2, D: 2, C: 3, B: 3, A: 4, S: 4, SR: 5, SSR: 6
+    }
   };
 
   // ── PUBLIC API ─────────────────────────────────────────────────────
@@ -563,6 +594,7 @@ window.CJS.CONST = (() => {
     AI_ARCHETYPES, AI_TARGET_TYPES,
     QTE_TYPES, QTE_DIFFICULTIES, QTE_MULTIPLIERS,
     GRID_DEFAULTS, ACTION_ECONOMY,
-    ID_PREFIXES
+    ID_PREFIXES,
+    PROGRESSION
   });
 })();

@@ -383,6 +383,11 @@ window.CJS.CampaignUI = (() => {
     const passives = _memberPassives(id, member);
     const statuses = member.statuses || [];
     const isBench = (member.rosterRole || 'active') === 'bench';
+    const F = window.CJS.Formulas;
+    const charLevel = Number(member.level || 1);
+    const charXp = Number(member.xp || 0);
+    const xpToNext = F?.calcCharXpToNextLevel ? F.calcCharXpToNextLevel(charXp, charLevel) : null;
+    const charXpMeta = xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`;
     return `
       <div class="campaign-roster-member">
         <div class="campaign-roster-head">
@@ -390,13 +395,17 @@ window.CJS.CampaignUI = (() => {
             <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _esc(member.icon || member.name?.[0] || '?')}</div>
             <div>
               <strong>${_esc(member.name || base?.name || id)}</strong>
-              <div class="campaign-muted">Lv ${member.level || 1} | XP ${member.xp || 0} | Rank ${_esc(member.rank || base?.rank || 'F')} | ${isBench ? 'Bench' : 'Active'}</div>
+              <div class="campaign-muted">Lv ${charLevel} | ${charXpMeta} | Rank ${_esc(member.rank || base?.rank || 'F')} | ${isBench ? 'Bench' : 'Active'}</div>
+              <div class="campaign-muted">${_renderJobChip(id, member)}</div>
               <div class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</div>
             </div>
           </div>
           <div class="campaign-row-actions">
             <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
             <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
+            <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
+            <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
+            <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
             <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
             <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
           </div>
@@ -434,12 +443,32 @@ window.CJS.CampaignUI = (() => {
     const skillId = _skillEntryId(entry);
     const skill = DS().get('skills', skillId);
     const learned = entry.source === 'campaign' || _memberLearnedSkillIds(memberId).includes(skillId);
+    const member = CS().getState()?.party?.[memberId] || {};
+    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
+    const F = window.CJS.Formulas;
+    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill || {}) : 10;
+    const apTotal = Number(prog.ap || 0);
+    const level = Math.max(1, Number(prog.level || 1));
+    const apToNext = (skill && F?.calcSkillApToNextLevel) ? F.calcSkillApToNextLevel(skill, apTotal, level) : null;
+    const apMeta = level >= cap
+      ? `Lv ${level}/${cap} (max)`
+      : (apToNext != null ? `Lv ${level}/${cap} | ${apToNext} AP to next` : `Lv ${level}/${cap}`);
+    const baseMeta = _skillMeta(skill, entry);
+    const meta = [baseMeta, apMeta].filter(Boolean).join(' | ');
+    const apButton = (skill && level < cap)
+      ? `<button class="campaign-action" data-campaign-action="grant-skill-ap" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Grant AP for this skill (edit-mode)">+AP</button>`
+      : '';
+    const levelButton = (skill && level < cap)
+      ? `<button class="campaign-action" data-campaign-action="level-up-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Force level-up (edit-mode)">+Lv</button>`
+      : '';
+    const extraActions = `${apButton}${levelButton}`;
     return _renderKnownRecord({
       title: skill?.name || skillId,
-      meta: _skillMeta(skill, entry),
+      meta,
       description: _desc(skill),
       removeAction: learned ? 'unlearn-skill' : '',
-      removeData: learned ? `data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}"` : ''
+      removeData: learned ? `data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}"` : '',
+      extraActions
     });
   }
 
@@ -473,7 +502,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _renderKnownRecord({ title, meta, description, removeAction, removeData }) {
+  function _renderKnownRecord({ title, meta, description, removeAction, removeData, extraActions }) {
     return `
       <div class="campaign-record-line">
         <div>
@@ -481,7 +510,10 @@ window.CJS.CampaignUI = (() => {
           <small>${_esc(meta || '')}</small>
           <p>${_esc(description || 'No description yet.')}</p>
         </div>
-        ${removeAction ? `<button class="campaign-icon-btn danger" title="Remove" data-campaign-action="${removeAction}" ${removeData}>-</button>` : ''}
+        <div style="display:flex;gap:4px;align-items:center">
+          ${extraActions || ''}
+          ${removeAction ? `<button class="campaign-icon-btn danger" title="Remove" data-campaign-action="${removeAction}" ${removeData}>-</button>` : ''}
+        </div>
       </div>
     `;
   }
@@ -2279,6 +2311,11 @@ window.CJS.CampaignUI = (() => {
       case 'unequip-item': return Ops().apply({ op: 'unequip_item', target: data.id, slot: data.slot }, { source: 'ui' });
       case 'stat-boost': return _statBoostModal(data.id);
       case 'level-char': return _charNumberOp(data.id, 'add_level', 'Level change');
+      case 'grant-xp': return _grantXpModal(data.id);
+      case 'grant-job-xp': return _grantJobXpModal(data.id);
+      case 'change-job': return _changeJobModal(data.id);
+      case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
+      case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
       case 'party-availability': return _partyAvailabilityModal(data.id);
       case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
@@ -3968,6 +4005,125 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
+  function _grantXpModal(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    _numberModal({
+      title: `Grant XP: ${member.name || id}`,
+      label: 'XP amount',
+      value: 50,
+      min: 1,
+      max: 99999,
+      primaryLabel: 'Grant',
+      onSubmit: (amount) => {
+        if (amount > 0) Ops().apply({ op: 'add_xp', target: id, amount }, { source: 'ui' });
+      }
+    });
+  }
+
+  function _grantJobXpModal(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    if (!member.currentJob) {
+      UI().toast(`${member.name || id} has no active job. Pick one with the Job button first.`, 'info');
+      return;
+    }
+    const job = DS().get('jobs', member.currentJob);
+    _numberModal({
+      title: `Grant Job XP: ${member.name || id} (${job?.name || member.currentJob})`,
+      label: 'Job XP amount',
+      value: 30,
+      min: 1,
+      max: 99999,
+      primaryLabel: 'Grant',
+      onSubmit: (amount) => {
+        if (amount > 0) Ops().apply({ op: 'gain_job_xp', target: id, amount }, { source: 'ui' });
+      }
+    });
+  }
+
+  function _changeJobModal(id) {
+    const member = CS().getState()?.party?.[id];
+    if (!member) return;
+    const base = DS().get('characters', member.baseCharacterId || id) || {};
+    const allowed = new Set([...(base.availableJobs || []), ...(member.unlockedJobs || [])]);
+    if (member.currentJob) allowed.add(member.currentJob);
+    const allJobs = DS().getAllAsArray('jobs');
+    const fromAllowed = allJobs.filter((j) => allowed.has(j.id));
+    const others = allJobs.filter((j) => !allowed.has(j.id));
+    const options = [
+      { value: '', label: '— Remove current job —' },
+      ...fromAllowed.map((j) => ({ value: j.id, label: `${j.icon || '🛡️'} ${j.name} ${j.id === member.currentJob ? '(current)' : ''}` })),
+      ...(others.length ? [{ value: '__hr__', label: '── Other (will unlock) ──', disabled: true }] : []),
+      ...others.map((j) => ({ value: j.id, label: `${j.icon || '🛡️'} ${j.name} (unlock)` }))
+    ];
+    if (!allJobs.length) {
+      UI().toast('No jobs authored yet. Open the editor → Jobs to create some.', 'info');
+      return;
+    }
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Job'));
+    const sel = UI().createSelect({ options, value: member.currentJob || '' });
+    body.appendChild(sel);
+    _formModal({
+      title: `Change Job: ${member.name || id}`,
+      body,
+      primaryLabel: 'Apply',
+      onSubmit: () => {
+        const value = sel.value;
+        if (value === '') {
+          Ops().apply({ op: 'set_job', target: id, jobId: null }, { source: 'ui' });
+        } else {
+          if (!allowed.has(value)) {
+            Ops().apply([
+              { op: 'unlock_job', target: id, jobId: value },
+              { op: 'set_job', target: id, jobId: value }
+            ], { source: 'ui' });
+          } else {
+            Ops().apply({ op: 'set_job', target: id, jobId: value }, { source: 'ui' });
+          }
+        }
+      }
+    });
+  }
+
+  function _grantSkillApModal(memberId, skillId) {
+    const member = CS().getState()?.party?.[memberId];
+    const skill = DS().get('skills', skillId);
+    if (!member || !skill) return;
+    const F = window.CJS.Formulas;
+    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
+    const apToNext = F?.calcSkillApToNextLevel ? F.calcSkillApToNextLevel(skill, prog.ap, prog.level) : 10;
+    _numberModal({
+      title: `Grant ${skill.name || skillId} AP: ${member.name || memberId}`,
+      label: `Current AP: ${prog.ap}, Lv ${prog.level} (${apToNext != null ? `${apToNext} to next` : 'max'})`,
+      value: Math.max(1, apToNext || 5),
+      min: 1,
+      max: 9999,
+      primaryLabel: 'Grant',
+      onSubmit: (amount) => {
+        if (amount > 0) Ops().apply({ op: 'gain_skill_ap', target: memberId, skillId, amount }, { source: 'ui' });
+      }
+    });
+  }
+
+  function _levelUpSkillConfirm(memberId, skillId) {
+    const member = CS().getState()?.party?.[memberId];
+    const skill = DS().get('skills', skillId);
+    if (!member || !skill) return;
+    const F = window.CJS.Formulas;
+    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
+    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 10;
+    const target = Math.min(cap, Number(prog.level || 1) + 1);
+    if (target <= prog.level) {
+      UI().toast('Skill is already at max level.', 'info');
+      return;
+    }
+    UI().confirm(`Force ${skill.name || skillId} to Lv ${target}? (Edit-mode only.)`, () => {
+      Ops().apply({ op: 'set_skill_level', target: memberId, skillId, level: target }, { source: 'ui' });
+    });
+  }
+
   function _partyAvailabilityModal(id) {
     const member = CS().getState()?.party?.[id];
     if (!member) return;
@@ -4661,6 +4817,21 @@ window.CJS.CampaignUI = (() => {
     if (custom) return custom;
     const builtins = C()?.STATUS_DEFINITIONS || {};
     return builtins[statusId] ? { id: statusId, ...builtins[statusId] } : null;
+  }
+
+  function _renderJobChip(memberId, member = {}) {
+    const F = window.CJS.Formulas;
+    const jobId = member.currentJob || null;
+    if (!jobId) return `<span class="campaign-muted">No job</span>`;
+    const job = DS().get('jobs', jobId);
+    if (!job) return `<span class="campaign-muted">Unknown job: ${_esc(jobId)}</span>`;
+    const prog = member.jobProgress?.[jobId] || { xp: 0, level: 1 };
+    const cap = F?.getJobMaxLevel ? F.getJobMaxLevel(job) : 10;
+    const level = Math.max(1, Number(prog.level || 1));
+    const xp = Number(prog.xp || 0);
+    const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
+    const meta = level >= cap ? `(max)` : (xpToNext != null ? `(${xpToNext} XP to next)` : '');
+    return `${_esc(job.icon || '🛡️')} ${_esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}`;
   }
 
   function _skillMeta(skill = {}, entry = {}) {

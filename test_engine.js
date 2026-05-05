@@ -897,6 +897,137 @@ assertEq('burn HP drops once from one tick', burnProbe.currentHP, 26);
 assertEq('burn produces one status_tick log entry', burnTickEntries.length, 1);
 assertEq('burn tick log keeps tick_damage effect', burnTickEntries[0]?.data?.effect, 'tick_damage');
 
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 16: Progression — skill AP, char/job XP, skill use logging
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 16: Progression (skill AP / char level / job level) ──');
+
+const F = CJS.Formulas;
+assert('Formulas progression API exposed', typeof F.calcSkillLevelForAp === 'function'
+  && typeof F.calcSkillApGainPerUse === 'function'
+  && typeof F.calcCharLevelForXp === 'function'
+  && typeof F.calcJobLevelForXp === 'function'
+  && typeof F.calcCharLevelStatBonus === 'function'
+  && typeof F.calcJobLevelStatBonus === 'function');
+
+// Author a tiny test skill with a custom AP curve.
+const testSkillId = DS.create('skills', {
+  name: 'Test Strike', icon: '🧪', power: 5, ap: 1, mp: 0, cooldown: 0,
+  damageType: 'Physical', element: null, scalingStat: 'S',
+  range: 1, aoe: null, aoeSize: 0, qte: 'none',
+  apGain: 2,
+  apThresholds: [0, 4, 10, 20, 35, 60],
+  levelScaling: { powerPerLevel: 0.15, maxLevel: 6 },
+  description: ''
+});
+const testSkill = DS.get('skills', testSkillId);
+
+assertEq('skill defaults to level 1 with no AP', F.calcSkillLevelForAp(testSkill, 0), 1);
+assertEq('skill levels up at first threshold (4 AP)', F.calcSkillLevelForAp(testSkill, 4), 2);
+assertEq('skill levels at 35 AP → level 5', F.calcSkillLevelForAp(testSkill, 35), 5);
+assertEq('skill caps at maxLevel from levelScaling', F.calcSkillLevelForAp(testSkill, 9999), 6);
+assertEq('skill AP-to-next at level 1 with 0 AP is 4', F.calcSkillApToNextLevel(testSkill, 0, 1), 4);
+assert('skill AP-to-next at max is null', F.calcSkillApToNextLevel(testSkill, 9999, 6) === null);
+assertEq('AP gain per use scales with QTE perfect (apGain 2 * 1.5 = 3)', F.calcSkillApGainPerUse(testSkill, 'perfect'), 3);
+assertEq('AP gain per use floors at 1 even with fail QTE', F.calcSkillApGainPerUse(testSkill, 'fail'), 1);
+
+// Char XP curve from CONST defaults.
+assertEq('char level 1 with 0 XP', F.calcCharLevelForXp(0), 1);
+assertEq('char level 2 at 50 XP', F.calcCharLevelForXp(50), 2);
+assertEq('char level 3 at 120 XP', F.calcCharLevelForXp(120), 3);
+assert('char xpToNext for level 1 is positive', (F.calcCharXpToNextLevel(0, 1) || 0) > 0);
+
+// Char level stat bonus: F-rank gains 1 stat point per level-up; D-rank gains 2.
+const baseStats = { S: 8, P: 4, E: 5, C: 3, I: 6, A: 7, L: 2 };
+const bonusF3 = F.calcCharLevelStatBonus('F', 3, baseStats);
+const totalF3 = Object.values(bonusF3).reduce((s, v) => s + v, 0);
+assertEq('F-rank level 3 grants 1 × 2 = 2 stat points', totalF3, 2);
+const bonusD5 = F.calcCharLevelStatBonus('D', 5, baseStats);
+const totalD5 = Object.values(bonusD5).reduce((s, v) => s + v, 0);
+assertEq('D-rank level 5 grants 2 × 4 = 8 stat points', totalD5, 8);
+const bonusFFirst = F.calcCharLevelStatBonus('F', 2, baseStats);
+assertEq('F level-up favors highest base stat (S=8)', bonusFFirst.S, 1);
+
+// Job system
+const testJob = {
+  id: 'job_test',
+  name: 'Tester',
+  maxLevel: 5,
+  xpThresholds: [0, 10, 25, 50, 100],
+  levels: [
+    { level: 1, statBonus: { S: 1 } },
+    { level: 2, statBonus: { S: 1, E: 1 }, grantsSkills: [testSkillId] },
+    { level: 3, statBonus: { S: 2 }, grantsPassives: ['fake_passive'] },
+    { level: 4, statBonus: { I: 2 } },
+    { level: 5, statBonus: { S: 3, E: 3 } }
+  ]
+};
+DS.create('jobs', testJob);
+assertEq('job level 1 from 0 xp', F.calcJobLevelForXp(testJob, 0), 1);
+assertEq('job level 3 at 25 xp', F.calcJobLevelForXp(testJob, 25), 3);
+assertEq('job caps at maxLevel', F.calcJobLevelForXp(testJob, 99999), 5);
+const jobBonus3 = F.calcJobLevelStatBonus(testJob, 3);
+assertEq('job lvl 3 cumulative S = 1+1+2 = 4', jobBonus3.S, 4);
+assertEq('job lvl 3 cumulative E = 0+1+0 = 1', jobBonus3.E, 1);
+const jobGrants3 = F.collectJobGrants(testJob, 3);
+assert('job grants test skill at lvl ≥ 2', jobGrants3.skills.includes(testSkillId));
+assert('job grants passive at lvl ≥ 3', jobGrants3.passives.includes('fake_passive'));
+const jobGrants1 = F.collectJobGrants(testJob, 1);
+assert('job grants nothing at lvl 1', !jobGrants1.skills.length && !jobGrants1.passives.length);
+
+// DataStore registers the new jobs collection
+assert('DataStore exposes jobs counts', typeof DS.getCounts().jobs === 'number');
+const cleanupSkillId = testSkillId;
+const apprenticeId = DS.create('characters', {
+  name: 'Apprentice', team: 'player', rank: 'F', type: 'humanoid',
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  skills: [{ skillId: cleanupSkillId, overrides: {}, level: 1 }],
+  equipment: [], innatePassives: []
+});
+const skUserBase = DS.get('characters', apprenticeId);
+const skUser = SC.compileUnit(skUserBase, 'apprentice_inst');
+skUser.pos = [0, 0];
+skUser.turnState = { hasMoved: false, mainActionUsed: false, apRemaining: 5, bonusAP: 0, cooldowns: {} };
+
+const dummyId = DS.create('characters', {
+  name: 'Dummy', team: 'enemy', rank: 'F', type: 'humanoid',
+  stats: { S: 1, P: 1, E: 1, C: 1, I: 1, A: 1, L: 1 },
+  skills: [], equipment: [], innatePassives: []
+});
+const skTargetBase = DS.get('characters', dummyId);
+const skTarget = SC.compileUnit(skTargetBase, 'dummy_inst');
+skTarget.pos = [0, 1];
+skTarget.turnState = { hasMoved: false, mainActionUsed: false, apRemaining: 2, bonusAP: 0, cooldowns: {} };
+
+const previousGE = CJS.GridEngine;
+CJS.GridEngine = {
+  getUnit: (id) => id === skUser.instanceId ? skUser : skTarget,
+  getAllUnits: () => [skUser, skTarget],
+  footprintDistance: () => 1,
+  distance: () => 1,
+  hasLineOfSight: () => true,
+  removeFromBoard: () => {},
+  getDims: () => ({ width: 8, height: 8 })
+};
+
+const skResult = AH.execute(skUser, {
+  type: 'skill',
+  skillId: cleanupSkillId,
+  targetId: skTarget.instanceId,
+  qteResult: { grade: 'perfect', multiplier: 1.5, qteType: 'none' }
+}, { turnNumber: 1 });
+CJS.GridEngine = previousGE;
+
+assert('skill use returns success', !!skResult.success);
+assertEq('skill use logs one count', skUser.skillUseLog?.[cleanupSkillId]?.count, 1);
+assertEq('skill use logs the perfect QTE', skUser.skillUseLog?.[cleanupSkillId]?.qteCounts?.perfect, 1);
+
+// Cleanup so later runs don't accumulate test data
+DS.remove('skills', cleanupSkillId);
+DS.remove('jobs', 'job_test');
+DS.remove('characters', apprenticeId);
+DS.remove('characters', dummyId);
+
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════
 console.log('\n══════════════════════════════════════════');

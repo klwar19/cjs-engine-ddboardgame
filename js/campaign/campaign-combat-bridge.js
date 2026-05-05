@@ -173,12 +173,75 @@ window.CJS.CampaignCombatBridge = (() => {
     return request;
   }
 
+  function _calcSkillApAward(skillId, entry = {}) {
+    const skill = DS().get('skills', skillId);
+    if (!skill) return 0;
+    const F = window.CJS.Formulas;
+    if (!F?.calcSkillApGainPerUse) {
+      // Fallback: use the authored apGain as flat per-use amount.
+      const flat = Math.max(0, Number(skill.apGain ?? 1));
+      return flat * Number(entry?.count || 0);
+    }
+    const counts = entry.qteCounts || {};
+    let total = 0;
+    for (const grade of ['perfect', 'good', 'ok', 'fail']) {
+      const n = Number(counts[grade] || 0);
+      if (!n) continue;
+      total += F.calcSkillApGainPerUse(skill, grade) * n;
+    }
+    // Fallback for older logs without qteCounts breakdown.
+    if (!total && entry.count) {
+      total = F.calcSkillApGainPerUse(skill, 'ok') * Number(entry.count);
+    }
+    return Math.max(0, Math.round(total));
+  }
+
+  function _cloneSkillUseLog(log) {
+    if (!log || typeof log !== 'object') return {};
+    const out = {};
+    for (const [skillId, entry] of Object.entries(log)) {
+      if (!entry) continue;
+      out[skillId] = {
+        count: Number(entry.count || 0),
+        qteCounts: {
+          perfect: Number(entry.qteCounts?.perfect || 0),
+          good: Number(entry.qteCounts?.good || 0),
+          ok: Number(entry.qteCounts?.ok || 0),
+          fail: Number(entry.qteCounts?.fail || 0)
+        }
+      };
+    }
+    return out;
+  }
+
   function _campaignUnitSnapshot(id, member = {}) {
     const baseId = member.baseCharacterId || id;
     const base = DS().get('characters', baseId) || {};
     const stats = { ...(base.stats || {}) };
+    // statOverrides already accumulate char-level + job-level + manual deltas.
     for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
       stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
+    }
+    const skills = _mergeSkillEntries(base.skills || [], member.learnedSkills || []);
+    _applySkillProgressLevels(skills, member.skillProgress || {});
+    // Apply job-granted skills/passives that aren't in learnedSkills/learnedPassives yet.
+    // (Normally _learnSkill keeps these in sync, but during combat we tolerate either path.)
+    const F = window.CJS.Formulas;
+    const passives = _mergeIds(base.innatePassives || [], member.learnedPassives || []);
+    if (member.currentJob && F?.collectJobGrants) {
+      const job = DS().get('jobs', member.currentJob);
+      const prog = member.jobProgress?.[member.currentJob];
+      const jobLevel = Math.max(1, Number(prog?.level || 1));
+      const grants = F.collectJobGrants(job || {}, jobLevel);
+      for (const sid of grants.skills || []) {
+        if (!skills.some((entry) => (typeof entry === 'string' ? entry : entry.skillId) === sid)) {
+          const lvl = Math.max(1, Number(member.skillProgress?.[sid]?.level || 1));
+          skills.push({ skillId: sid, overrides: {}, level: lvl });
+        }
+      }
+      for (const pid of grants.passives || []) {
+        if (!passives.includes(pid)) passives.push(pid);
+      }
     }
     return {
       ..._clone(base),
@@ -192,14 +255,34 @@ window.CJS.CampaignCombatBridge = (() => {
       level: Number(member.level || base.level || 1),
       rank: member.rank || base.rank || 'F',
       stats,
-      skills: _mergeSkillEntries(base.skills || [], member.learnedSkills || []),
-      innatePassives: _mergeIds(base.innatePassives || [], member.learnedPassives || []),
+      skills,
+      innatePassives: passives,
       allowedWeaponTypes: _mergeIds(base.allowedWeaponTypes || [], member.allowedWeaponTypes || []),
       allowedArmorTypes: _mergeIds(base.allowedArmorTypes || [], member.allowedArmorTypes || []),
       equipment: Array.isArray(member.equipment) ? _clone(member.equipment) : _clone(base.equipment || []),
       equipmentSlots: _clone(member.equipmentSlots || {}),
-      battleSfx: member.battleSfx || base.battleSfx || {}
+      battleSfx: member.battleSfx || base.battleSfx || {},
+      // Carryovers for combat to render & for telemetry to be reattached on result.
+      currentJob: member.currentJob || null,
+      jobLevel: member.currentJob ? Number(member.jobProgress?.[member.currentJob]?.level || 1) : 0
     };
+  }
+
+  // Walk the skill list and bump each entry.level to the campaign-tracked
+  // value (or leave as-authored when no progress entry exists).
+  function _applySkillProgressLevels(skills, skillProgress) {
+    for (let i = 0; i < skills.length; i++) {
+      const entry = skills[i];
+      const skillId = typeof entry === 'string' ? entry : entry?.skillId;
+      if (!skillId) continue;
+      const prog = skillProgress[skillId];
+      if (!prog) continue;
+      if (typeof entry === 'string') {
+        skills[i] = { skillId, overrides: {}, level: Math.max(1, Number(prog.level || 1)) };
+      } else {
+        skills[i] = { ...entry, level: Math.max(1, Number(prog.level || 1)) };
+      }
+    }
   }
 
   function _installCampaignPartyUnits(request = {}) {
@@ -346,7 +429,8 @@ window.CJS.CampaignCombatBridge = (() => {
           id: status.statusId || status.id,
           duration: 'battle',
           stacks: status.stacks || 1
-        }))
+        })),
+        skillUseLog: _cloneSkillUseLog(unit.skillUseLog)
       };
     }
 
@@ -560,6 +644,35 @@ window.CJS.CampaignCombatBridge = (() => {
       const mpDelta = importedMp - (current.currentMp || 0);
       if (mpDelta) ops.push({ op: mpDelta >= 0 ? 'restore_mp' : 'spend_mp', target: id, amount: Math.abs(mpDelta) });
       for (const status of member.statuses || []) ops.push({ op: 'add_status', target: id, status: status.id, duration: status.duration || 'battle', stacks: status.stacks || 1 });
+
+      // Per-skill AP gains based on actual usage in this battle. Job XP is
+      // also awarded a small amount per skill use; character XP is awarded
+      // a small amount per skill use plus an outcome bonus below.
+      let skillUseTotal = 0;
+      for (const [skillId, entry] of Object.entries(member.skillUseLog || {})) {
+        const apAmount = _calcSkillApAward(skillId, entry);
+        if (apAmount > 0) {
+          ops.push({ op: 'gain_skill_ap', target: id, skillId, amount: apAmount });
+        }
+        skillUseTotal += Number(entry?.count || 0);
+      }
+      if (skillUseTotal > 0) {
+        const xpAward = Math.max(1, Math.round(skillUseTotal * 5));
+        ops.push({ op: 'add_xp', target: id, amount: xpAward });
+        // Job XP (only if the member has a current job; ops handler will skip otherwise).
+        ops.push({ op: 'gain_job_xp', target: id, amount: Math.max(1, Math.round(skillUseTotal * 3)) });
+      }
+    }
+    // Outcome bonus XP for victory (split across active members).
+    if (outcome === 'victory') {
+      const winnerIds = Object.keys(result.partyAfter || {}).filter((id) => state.party[id]);
+      if (winnerIds.length) {
+        const bonusPerMember = 25 + Math.round((result.rounds || 0) * 5);
+        for (const id of winnerIds) {
+          ops.push({ op: 'add_xp', target: id, amount: bonusPerMember });
+          ops.push({ op: 'gain_job_xp', target: id, amount: Math.max(5, Math.round(bonusPerMember / 2)) });
+        }
+      }
     }
     if (outcome === 'victory') {
       for (const drop of result.loot || []) {

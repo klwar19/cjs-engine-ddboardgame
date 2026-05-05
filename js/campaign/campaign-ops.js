@@ -69,6 +69,12 @@ window.CJS.CampaignOps = (() => {
         case 'advance_quest_chain_step': return `Advance quest chain ${op.templateId || op.id}`;
         case 'complete_quest_chain': return `Complete quest chain ${op.templateId || op.id}`;
         case 'clock_tick': return `Clock ${op.clockId || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'gain_skill_ap': return `Gain ${op.amount || 0} AP for skill ${op.skillId || op.id}`;
+        case 'set_skill_level': return `Set skill ${op.skillId || op.id} to Lv ${op.level || 1}`;
+        case 'set_job': return `Set ${op.target || op.characterId || 'member'} job → ${op.jobId || op.id || 'none'}`;
+        case 'unlock_job': return `Unlock job ${op.jobId || op.id}`;
+        case 'gain_job_xp': return `Gain ${op.amount || 0} job XP`;
+        case 'set_job_level': return `Set job ${op.jobId || op.id} level to ${op.level || 1}`;
         case 'log': return op.text || 'Log entry';
         default: return op.op || 'operation';
       }
@@ -134,6 +140,13 @@ window.CJS.CampaignOps = (() => {
       case 'set_stat_override': return _setStatOverride(state, op);
       case 'add_xp': return _addXp(state, op);
       case 'add_level': return _addLevel(state, op);
+      // ── Progression: skill AP + jobs ──
+      case 'gain_skill_ap': return _gainSkillAp(state, op);
+      case 'set_skill_level': return _setSkillLevel(state, op);
+      case 'set_job': return _setJob(state, op);
+      case 'unlock_job': return _unlockJob(state, op);
+      case 'gain_job_xp': return _gainJobXp(state, op);
+      case 'set_job_level': return _setJobLevel(state, op);
       case 'add_quest': return _addQuest(state, op.quest || op, options);
       case 'update_quest_progress': return _questProgress(state, op);
       case 'complete_quest': return _completeQuest(state, op.questId || op.id, options);
@@ -357,6 +370,11 @@ window.CJS.CampaignOps = (() => {
       if (!_skillEntries([...(base.skills || []), ...member.learnedSkills]).includes(skillId)) {
         member.learnedSkills.push({ skillId, level: Number(op.level || 1), source: op.source || 'campaign' });
         _log(state, `${member.name || id} learned ${_recordName('skills', skillId)}.`);
+      }
+      // Make sure the new skill has a progress entry so it can earn AP.
+      member.skillProgress = member.skillProgress || {};
+      if (!member.skillProgress[skillId]) {
+        member.skillProgress[skillId] = { ap: 0, level: Math.max(1, Number(op.level || 1)) };
       }
     }
   }
@@ -659,17 +677,230 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _addXp(state, op) {
+    const amount = Number(op.amount || 0);
+    if (!amount) return;
     for (const id of _resolveTargets(state, op.target || op.characterId || 'party')) {
-      state.party[id].xp = (state.party[id].xp || 0) + Number(op.amount || 0);
+      const member = state.party[id];
+      member.xp = (member.xp || 0) + amount;
+      _checkCharLevelUp(state, id, member);
     }
-    _log(state, `Added ${op.amount || 0} XP.`);
+    _log(state, `Added ${amount} XP.`);
   }
 
   function _addLevel(state, op) {
+    const delta = Number(op.amount || 1);
+    if (!delta) return;
     for (const id of _resolveTargets(state, op.target || op.characterId || 'party')) {
-      state.party[id].level = (state.party[id].level || 1) + Number(op.amount || 1);
+      const member = state.party[id];
+      const newLevel = Math.max(1, (member.level || 1) + delta);
+      _applyCharLevelUp(state, id, member, newLevel);
     }
-    _log(state, `Level changed by ${op.amount || 1}.`);
+    _log(state, `Level changed by ${delta}.`);
+  }
+
+  // Bring a member's level up to `targetLevel` (no-op if already there or lower).
+  // Applies cumulative stat bonuses to statOverrides, recomputes max HP/MP.
+  function _applyCharLevelUp(state, id, member, targetLevel) {
+    const F = window.CJS.Formulas;
+    const cap = F?.getCharMaxLevel ? F.getCharMaxLevel() : 20;
+    const oldLevel = Math.max(1, Number(member.level || 1));
+    const lvl = Math.max(oldLevel, Math.min(cap, Number(targetLevel || oldLevel)));
+    if (lvl <= oldLevel) {
+      member.level = lvl;
+      return;
+    }
+    const base = DS().get('characters', member.baseCharacterId || id) || {};
+    if (F?.calcCharLevelStatBonus) {
+      const oldBonus = F.calcCharLevelStatBonus(member.rank || base.rank || 'F', oldLevel, base.stats || {});
+      const newBonus = F.calcCharLevelStatBonus(member.rank || base.rank || 'F', lvl, base.stats || {});
+      member.statOverrides = member.statOverrides || {};
+      for (const stat of Object.keys(newBonus)) {
+        const delta = (newBonus[stat] || 0) - (oldBonus[stat] || 0);
+        if (delta) {
+          member.statOverrides[stat] = (Number(member.statOverrides[stat]) || 0) + delta;
+        }
+      }
+    }
+    member.level = lvl;
+    _log(state, `${member.name || id} reached level ${lvl}.`);
+    // Sync derived resources (HP/MP).
+    if (CS().syncPartyMember) {
+      CS().syncPartyMember(id, member);
+    }
+  }
+
+  // Auto-level the character based on their current XP and the configured curve.
+  function _checkCharLevelUp(state, id, member) {
+    const F = window.CJS.Formulas;
+    if (!F?.calcCharLevelForXp) return;
+    const target = F.calcCharLevelForXp(member.xp || 0);
+    if (target > (member.level || 1)) {
+      _applyCharLevelUp(state, id, member, target);
+    }
+  }
+
+  function _gainSkillAp(state, op) {
+    const skillId = op.skillId || op.id;
+    const amount = Number(op.amount || 0);
+    if (!skillId || amount <= 0) return;
+    const F = window.CJS.Formulas;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.skillProgress = member.skillProgress || {};
+      const prog = member.skillProgress[skillId] = member.skillProgress[skillId] || { ap: 0, level: 1 };
+      prog.ap = Math.max(0, Number(prog.ap || 0) + amount);
+      const skill = DS().get('skills', skillId) || {};
+      const oldLevel = Math.max(1, Number(prog.level || 1));
+      const newLevel = F?.calcSkillLevelForAp ? F.calcSkillLevelForAp(skill, prog.ap) : oldLevel;
+      if (newLevel > oldLevel) {
+        prog.level = newLevel;
+        _log(state, `${member.name || id}'s ${_recordName('skills', skillId)} reached Lv ${newLevel}.`);
+      }
+    }
+  }
+
+  function _setSkillLevel(state, op) {
+    const skillId = op.skillId || op.id;
+    const level = Math.max(1, Number(op.level || 1));
+    if (!skillId) return;
+    const F = window.CJS.Formulas;
+    const skill = DS().get('skills', skillId) || {};
+    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 10;
+    const targetLevel = Math.min(cap, level);
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.skillProgress = member.skillProgress || {};
+      const prog = member.skillProgress[skillId] = member.skillProgress[skillId] || { ap: 0, level: 1 };
+      prog.level = targetLevel;
+      // If forcing up, also bring AP up to the threshold so future gains
+      // accumulate from a sensible baseline.
+      const thresholds = (Array.isArray(skill.apThresholds) && skill.apThresholds.length)
+        ? skill.apThresholds
+        : (window.CJS.CONST?.PROGRESSION?.skillApThresholds || [0]);
+      const thresholdAp = thresholds[targetLevel - 1] != null ? thresholds[targetLevel - 1] : prog.ap;
+      if (prog.ap < thresholdAp) prog.ap = thresholdAp;
+      _log(state, `${member.name || id}'s ${_recordName('skills', skillId)} set to Lv ${targetLevel}.`);
+    }
+  }
+
+  function _setJob(state, op) {
+    const jobId = op.jobId || op.id;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      if (jobId === null || jobId === '' || jobId === undefined) {
+        member.currentJob = null;
+        _log(state, `${member.name || id} has no active job.`);
+        continue;
+      }
+      const job = DS().get('jobs', jobId);
+      if (!job) {
+        _log(state, `Job ${jobId} not found.`);
+        continue;
+      }
+      member.unlockedJobs = member.unlockedJobs || [];
+      if (!member.unlockedJobs.includes(jobId)) member.unlockedJobs.push(jobId);
+      member.jobProgress = member.jobProgress || {};
+      if (!member.jobProgress[jobId]) member.jobProgress[jobId] = { xp: 0, level: 1 };
+      member.currentJob = jobId;
+      _log(state, `${member.name || id} took the ${job.name || jobId} job.`);
+      if (CS().syncPartyMember) CS().syncPartyMember(id, member);
+    }
+  }
+
+  function _unlockJob(state, op) {
+    const jobId = op.jobId || op.id;
+    if (!jobId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.unlockedJobs = member.unlockedJobs || [];
+      member.jobProgress = member.jobProgress || {};
+      if (!member.unlockedJobs.includes(jobId)) {
+        member.unlockedJobs.push(jobId);
+        member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
+        _log(state, `${member.name || id} unlocked the ${_recordName('jobs', jobId) || jobId} job.`);
+      }
+    }
+  }
+
+  function _gainJobXp(state, op) {
+    const amount = Number(op.amount || 0);
+    if (amount <= 0) return;
+    const F = window.CJS.Formulas;
+    for (const id of _resolveTargets(state, op.target || op.characterId || 'party')) {
+      const member = state.party[id];
+      const jobId = op.jobId || member.currentJob;
+      if (!jobId) continue;
+      const job = DS().get('jobs', jobId);
+      if (!job) continue;
+      member.jobProgress = member.jobProgress || {};
+      const prog = member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
+      const oldLevel = Math.max(1, Number(prog.level || 1));
+      prog.xp = Math.max(0, Number(prog.xp || 0) + amount);
+      const newLevel = F?.calcJobLevelForXp ? F.calcJobLevelForXp(job, prog.xp) : oldLevel;
+      if (newLevel > oldLevel) {
+        _applyJobLevelUp(state, id, member, jobId, oldLevel, newLevel);
+      }
+    }
+  }
+
+  function _setJobLevel(state, op) {
+    const jobId = op.jobId || op.id;
+    const targetLevel = Math.max(1, Number(op.level || 1));
+    if (!jobId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      const job = DS().get('jobs', jobId);
+      if (!job) continue;
+      member.jobProgress = member.jobProgress || {};
+      const prog = member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
+      const oldLevel = Math.max(1, Number(prog.level || 1));
+      const F = window.CJS.Formulas;
+      const cap = F?.getJobMaxLevel ? F.getJobMaxLevel(job) : 10;
+      const newLevel = Math.min(cap, targetLevel);
+      if (newLevel > oldLevel) {
+        _applyJobLevelUp(state, id, member, jobId, oldLevel, newLevel);
+      } else if (newLevel < oldLevel) {
+        // Manual level-down (rare, debug only) – just adjust the level.
+        prog.level = newLevel;
+      }
+    }
+  }
+
+  // Apply cumulative stat/skill/passive grants when a job advances from
+  // oldLevel → newLevel for a given member.
+  function _applyJobLevelUp(state, id, member, jobId, oldLevel, newLevel) {
+    const F = window.CJS.Formulas;
+    const job = DS().get('jobs', jobId);
+    if (!job) return;
+    member.jobProgress = member.jobProgress || {};
+    const prog = member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
+
+    if (F?.calcJobLevelStatBonus) {
+      const oldBonus = F.calcJobLevelStatBonus(job, oldLevel);
+      const newBonus = F.calcJobLevelStatBonus(job, newLevel);
+      member.statOverrides = member.statOverrides || {};
+      for (const stat of Object.keys(newBonus)) {
+        const delta = (newBonus[stat] || 0) - (oldBonus[stat] || 0);
+        if (delta) member.statOverrides[stat] = (Number(member.statOverrides[stat]) || 0) + delta;
+      }
+    }
+
+    if (F?.collectJobGrants) {
+      const oldGrants = F.collectJobGrants(job, oldLevel);
+      const newGrants = F.collectJobGrants(job, newLevel);
+      const newSkills = (newGrants.skills || []).filter((sid) => !oldGrants.skills.includes(sid));
+      const newPassives = (newGrants.passives || []).filter((pid) => !oldGrants.passives.includes(pid));
+      for (const sid of newSkills) {
+        _learnSkill(state, { target: id, skillId: sid, source: `job:${jobId}` });
+      }
+      for (const pid of newPassives) {
+        _learnPassive(state, { target: id, passiveId: pid });
+      }
+    }
+
+    prog.level = newLevel;
+    _log(state, `${member.name || id} advanced ${job.name || jobId} to Lv ${newLevel}.`);
+    if (CS().syncPartyMember) CS().syncPartyMember(id, member);
   }
 
   function _addQuest(state, quest) {
