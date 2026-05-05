@@ -405,6 +405,7 @@ window.CJS.CampaignUI = (() => {
             <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
             <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
             <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
+            <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
             <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
             <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
             <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
@@ -446,7 +447,7 @@ window.CJS.CampaignUI = (() => {
     const member = CS().getState()?.party?.[memberId] || {};
     const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
     const F = window.CJS.Formulas;
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill || {}) : 10;
+    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill || {}) : 5;
     const apTotal = Number(prog.ap || 0);
     const level = Math.max(1, Number(prog.level || 1));
     const apToNext = (skill && F?.calcSkillApToNextLevel) ? F.calcSkillApToNextLevel(skill, apTotal, level) : null;
@@ -461,11 +462,28 @@ window.CJS.CampaignUI = (() => {
     const levelButton = (skill && level < cap)
       ? `<button class="campaign-action" data-campaign-action="level-up-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Force level-up (edit-mode)">+Lv</button>`
       : '';
-    const extraActions = `${apButton}${levelButton}`;
+    const detailButton = skill
+      ? `<button class="campaign-action" data-campaign-action="show-skill-detail" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Show full perk tree">Detail</button>`
+      : '';
+    const extraActions = `${apButton}${levelButton}${detailButton}`;
+
+    // Inline preview of earned perks + next perk so progress is visible
+    // without opening the detail modal.
+    const earned = (skill && F?.getEarnedSkillPerks) ? F.getEarnedSkillPerks(skill, level) : [];
+    const next = (skill && F?.getNextSkillPerk) ? F.getNextSkillPerk(skill, level) : null;
+    const earnedLine = earned.length
+      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `Lv${p.level} — ${_esc(p.description || '...')}`).join(' • ')}</div>`
+      : '';
+    const nextLine = next
+      ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at Lv${next.level}: ${_esc(next.description || '...')}</div>`
+      : '';
+    const baseDesc = _desc(skill) || '';
+    const descriptionHtml = `<p>${_esc(baseDesc || 'No description yet.')}</p>${earnedLine}${nextLine}`;
+
     return _renderKnownRecord({
       title: skill?.name || skillId,
       meta,
-      description: _desc(skill),
+      descriptionHtml,
       removeAction: learned ? 'unlearn-skill' : '',
       removeData: learned ? `data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}"` : '',
       extraActions
@@ -502,13 +520,16 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _renderKnownRecord({ title, meta, description, removeAction, removeData, extraActions }) {
+  function _renderKnownRecord({ title, meta, description, descriptionHtml, removeAction, removeData, extraActions }) {
+    const body = descriptionHtml != null
+      ? descriptionHtml
+      : `<p>${_esc(description || 'No description yet.')}</p>`;
     return `
       <div class="campaign-record-line">
         <div>
           <strong>${_esc(title || '')}</strong>
           <small>${_esc(meta || '')}</small>
-          <p>${_esc(description || 'No description yet.')}</p>
+          ${body}
         </div>
         <div style="display:flex;gap:4px;align-items:center">
           ${extraActions || ''}
@@ -2314,8 +2335,12 @@ window.CJS.CampaignUI = (() => {
       case 'grant-xp': return _grantXpModal(data.id);
       case 'grant-job-xp': return _grantJobXpModal(data.id);
       case 'change-job': return _changeJobModal(data.id);
+      case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
+      case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
+      case 'unlock-job-from-tree': return _confirmUnlockJob(data.id, data.jobId);
+      case 'switch-job-from-tree': return _switchJob(data.id, data.jobId);
       case 'party-availability': return _partyAvailabilityModal(data.id);
       case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
@@ -4113,7 +4138,7 @@ window.CJS.CampaignUI = (() => {
     if (!member || !skill) return;
     const F = window.CJS.Formulas;
     const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 10;
+    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 5;
     const target = Math.min(cap, Number(prog.level || 1) + 1);
     if (target <= prog.level) {
       UI().toast('Skill is already at max level.', 'info');
@@ -4122,6 +4147,212 @@ window.CJS.CampaignUI = (() => {
     UI().confirm(`Force ${skill.name || skillId} to Lv ${target}? (Edit-mode only.)`, () => {
       Ops().apply({ op: 'set_skill_level', target: memberId, skillId, level: target }, { source: 'ui' });
     });
+  }
+
+  // Open a modal listing every level perk on the skill, marking earned vs.
+  // upcoming. Used by the "Detail" button on each known-skill row.
+  function _showSkillDetailModal(memberId, skillId) {
+    const member = CS().getState()?.party?.[memberId];
+    const skill = DS().get('skills', skillId);
+    if (!skill) { UI().toast('Skill not found', 'error'); return; }
+    const F = window.CJS.Formulas;
+    const prog = member?.skillProgress?.[skillId] || { ap: 0, level: 1 };
+    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 5;
+    const level = Math.max(1, Number(prog.level || 1));
+    const ap = Number(prog.ap || 0);
+    const apToNext = F?.calcSkillApToNextLevel ? F.calcSkillApToNextLevel(skill, ap, level) : null;
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div style="margin-bottom:12px">
+        <div><b>${_esc(skill.icon || '⚔️')} ${_esc(skill.name || skillId)}</b></div>
+        <div class="campaign-muted">${_esc(skill.description || '')}</div>
+        <div style="margin-top:6px">
+          ${_esc(_skillMeta(skill, { level }))}
+          | <b>Lv ${level}/${cap}</b>
+          | AP ${ap}${apToNext != null ? ` (${apToNext} to next)` : ' (max)'}
+        </div>
+      </div>
+      <div class="campaign-section-title">Level Perks</div>
+      <div id="skl-detail-perks"></div>
+    `;
+    const perksArea = body.querySelector('#skl-detail-perks');
+    const perks = Array.isArray(skill.levelPerks) ? [...skill.levelPerks].sort((a, b) => a.level - b.level) : [];
+    if (!perks.length) {
+      perksArea.innerHTML = '<div class="campaign-empty">No authored perks. (Power scales with level via levelScaling.powerPerLevel.)</div>';
+    } else {
+      perksArea.innerHTML = perks.map((perk) => {
+        const earned = Number(perk.level || 0) <= level;
+        const tag = earned ? '<span style="color:var(--green)">✔ earned</span>' : `<span class="campaign-muted">unlocks at Lv ${perk.level}</span>`;
+        const mods = perk.modifiers
+          ? Object.entries(perk.modifiers).filter(([, v]) => v).map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${v}`).join(', ')
+          : '';
+        const addEff = (perk.addEffects || []).map((e) => e.effectId).filter(Boolean).join(', ');
+        return `
+          <div class="campaign-record-line" style="opacity:${earned ? 1 : 0.6}">
+            <div>
+              <strong>Lv ${perk.level}</strong>
+              <small>${tag}</small>
+              <p>${_esc(perk.description || '')}</p>
+              ${mods ? `<div class="campaign-muted" style="font-size:0.8em">Modifiers: ${_esc(mods)}</div>` : ''}
+              ${addEff ? `<div class="campaign-muted" style="font-size:0.8em">Adds effects: ${_esc(addEff)}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    UI().openModal({
+      title: `Skill Detail: ${skill.name || skillId}`,
+      content: body,
+      width: '600px'
+    });
+  }
+
+  // Show the full job tree for a member: every job grouped by branch, each
+  // marked unlocked / current / locked, with per-level perks visible.
+  function _showJobTreeModal(memberId) {
+    const member = CS().getState()?.party?.[memberId];
+    if (!member) return;
+    const F = window.CJS.Formulas;
+    const allJobs = DS().getAllAsArray('jobs') || [];
+    const jobsCollection = DS().getAll('jobs') || {};
+
+    // Group: branches the member can access, plus an "other" group for any
+    // jobs they've unlocked outside their authored branches.
+    const memberBranches = new Set(member.availableBranches || []);
+    const memberAllow = new Set(member.baseAvailableJobs || []);
+    const groups = {};
+
+    for (const job of allJobs) {
+      const branch = job.branch || 'other';
+      const inScope = memberBranches.has(branch) || memberAllow.has(job.id) || (member.unlockedJobs || []).includes(job.id);
+      if (!inScope) continue;
+      groups[branch] = groups[branch] || [];
+      groups[branch].push(job);
+    }
+    for (const list of Object.values(groups)) {
+      list.sort((a, b) => Number(a.tier || 1) - Number(b.tier || 1));
+    }
+
+    const body = document.createElement('div');
+    const slotInfo = `Slots used: ${(member.unlockedJobs || []).length} / ${member.maxJobs || 3}`;
+    body.innerHTML = `
+      <div style="margin-bottom:8px" class="campaign-muted">
+        ${_esc(member.name || memberId)} — ${slotInfo}
+        ${member.currentJob ? ` — Current: <b>${_esc(_jobLabel(member.currentJob))}</b>` : ' — No active job'}
+      </div>
+      <div id="job-tree-area"></div>
+    `;
+    const area = body.querySelector('#job-tree-area');
+
+    if (!Object.keys(groups).length) {
+      area.innerHTML = '<div class="campaign-empty">No job branches authored on this character. Add availableBranches or availableJobs in the editor.</div>';
+    } else {
+      area.innerHTML = Object.entries(groups).map(([branch, list]) =>
+        _renderBranchColumn(memberId, member, branch, list, jobsCollection, F)
+      ).join('');
+    }
+
+    UI().openModal({
+      title: `Job Tree: ${member.name || memberId}`,
+      content: body,
+      width: '780px'
+    });
+  }
+
+  function _renderBranchColumn(memberId, member, branchId, jobs, jobsCollection, F) {
+    const header = `<div class="campaign-section-title" style="margin-top:8px">${_esc(branchId)} branch</div>`;
+    const cards = jobs.map((job) => {
+      const unlocked = (member.unlockedJobs || []).includes(job.id);
+      const isCurrent = member.currentJob === job.id;
+      const prog = member.jobProgress?.[job.id] || { xp: 0, level: 1 };
+      const cap = F?.getJobMaxLevel ? F.getJobMaxLevel(job) : 5;
+      const level = Math.max(1, Number(prog.level || 1));
+      const xp = Number(prog.xp || 0);
+      const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
+      const xpMeta = level >= cap
+        ? `Lv ${level}/${cap} (max)`
+        : (xpToNext != null ? `Lv ${level}/${cap} | XP ${xp} (${xpToNext} to next)` : `Lv ${level}/${cap}`);
+
+      const eligibility = F?.canUnlockJob
+        ? F.canUnlockJob(job, member, jobsCollection)
+        : { ok: true };
+
+      let statusBadge = '';
+      let actionBtn = '';
+      if (isCurrent) {
+        statusBadge = '<span style="color:var(--green)">● ACTIVE</span>';
+      } else if (unlocked) {
+        statusBadge = '<span style="color:var(--accent)">● UNLOCKED</span>';
+        actionBtn = `<button class="campaign-action" data-campaign-action="switch-job-from-tree" data-id="${_escAttr(memberId)}" data-job-id="${_escAttr(job.id)}">Switch to this job</button>`;
+      } else if (eligibility.ok) {
+        statusBadge = '<span class="campaign-muted">○ available</span>';
+        actionBtn = `<button class="campaign-action" data-campaign-action="unlock-job-from-tree" data-id="${_escAttr(memberId)}" data-job-id="${_escAttr(job.id)}">Unlock & switch</button>`;
+      } else {
+        const reasonText = _eligibilityReason(eligibility, job);
+        statusBadge = `<span class="campaign-muted">🔒 ${_esc(reasonText)}</span>`;
+      }
+
+      const levels = Array.isArray(job.levels) ? [...job.levels].sort((a, b) => Number(a.level) - Number(b.level)) : [];
+      const levelLines = levels.map((tier) => {
+        const earned = unlocked && Number(tier.level || 0) <= level;
+        const star = earned ? '★' : '☆';
+        const stat = tier.statBonus
+          ? Object.entries(tier.statBonus).filter(([, v]) => v).map(([k, v]) => `${k}+${v}`).join(' ')
+          : '';
+        const skills = (tier.grantsSkills || []).join(', ');
+        const passives = (tier.grantsPassives || []).join(', ');
+        const desc = tier.description || [stat, skills && `learn ${skills}`, passives && `passive ${passives}`].filter(Boolean).join(' · ');
+        return `<div style="opacity:${earned ? 1 : 0.65};font-size:0.85em">${star} <b>Lv ${tier.level}</b> — ${_esc(desc || '...')}</div>`;
+      }).join('');
+
+      return `
+        <div class="campaign-record-line" style="margin-bottom:8px">
+          <div>
+            <strong>${_esc(job.icon || '🛡️')} ${_esc(job.name || job.id)} <small style="color:var(--text-mute)">tier ${job.tier || 1}</small></strong>
+            <small>${statusBadge} | ${_esc(xpMeta)}</small>
+            <p>${_esc(job.description || '')}</p>
+            <div style="margin-top:4px">${levelLines || '<i class="campaign-muted">No level data authored.</i>'}</div>
+          </div>
+          ${actionBtn ? `<div>${actionBtn}</div>` : ''}
+        </div>`;
+    }).join('');
+    return header + cards;
+  }
+
+  function _eligibilityReason(eligibility, job) {
+    if (!eligibility) return 'unknown';
+    if (eligibility.reason === 'max_jobs_reached') return 'job slots full';
+    if (eligibility.reason === 'branch_not_available') return 'branch not allowed for this character';
+    if (eligibility.reason === 'prereq_not_unlocked') return `requires ${job.unlockRequirement?.jobId}`;
+    if (eligibility.reason === 'prereq_level_low') return `requires ${job.unlockRequirement?.jobId} Lv ${eligibility.need || job.unlockRequirement?.minLevel}`;
+    if (eligibility.reason === 'prereq_job_missing') return 'prereq job missing in DataStore';
+    return eligibility.reason || 'locked';
+  }
+
+  function _confirmUnlockJob(memberId, jobId) {
+    const member = CS().getState()?.party?.[memberId];
+    const job = DS().get('jobs', jobId);
+    if (!member || !job) return;
+    const slots = (member.unlockedJobs || []).length;
+    UI().confirm(
+      `Unlock ${job.name || jobId} for ${member.name || memberId}? (${slots + 1}/${member.maxJobs || 3} slots will be used.)`,
+      () => Ops().apply([
+        { op: 'unlock_job', target: memberId, jobId },
+        { op: 'set_job', target: memberId, jobId }
+      ], { source: 'ui' })
+    );
+  }
+
+  function _switchJob(memberId, jobId) {
+    const job = DS().get('jobs', jobId);
+    if (!job) return;
+    Ops().apply({ op: 'set_job', target: memberId, jobId }, { source: 'ui' });
+  }
+
+  function _jobLabel(jobId) {
+    const job = DS().get('jobs', jobId);
+    return job ? `${job.icon || '🛡️'} ${job.name || jobId}` : jobId;
   }
 
   function _partyAvailabilityModal(id) {

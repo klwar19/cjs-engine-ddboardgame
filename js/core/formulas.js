@@ -283,11 +283,13 @@ window.CJS.Formulas = (() => {
   }
 
   function getSkillMaxLevel(skill) {
-    return Math.max(1,
-      Number(skill?.levelScaling?.maxLevel
-        ?? skill?.maxLevel
-        ?? _progress().skillMaxLevelDefault
-        ?? 10));
+    const authored = Number(skill?.levelScaling?.maxLevel
+      ?? skill?.maxLevel
+      ?? _progress().skillMaxLevelDefault
+      ?? 5);
+    const hardCap = _progress().skillMaxLevelCap;
+    const capped = (hardCap == null) ? authored : Math.min(authored, hardCap);
+    return Math.max(1, capped);
   }
 
   // Given a skill record and an AP total, return the resulting level
@@ -443,6 +445,118 @@ window.CJS.Formulas = (() => {
     return out;
   }
 
+  // Decide whether `member` can unlock `job`. Returns { ok, reason }.
+  // member shape: { unlockedJobs[], jobProgress{}, maxJobs, availableBranches[], baseAvailableJobs[] }
+  // baseAvailableJobs is the explicit allow-list from the character record.
+  function canUnlockJob(job, member = {}, jobsCollection = {}) {
+    if (!job || !job.id) return { ok: false, reason: 'no_job' };
+    const unlocked = member.unlockedJobs || [];
+    if (unlocked.includes(job.id)) return { ok: true, reason: 'already_unlocked' };
+
+    // Slot cap
+    const cap = Math.max(1, Number(member.maxJobs || 2));
+    if (unlocked.length >= cap) return { ok: false, reason: 'max_jobs_reached' };
+
+    // Branch / explicit allow-list. If the character has no branches and no
+    // baseAvailableJobs allow-list, treat as wildcard (any job allowed).
+    const branches = member.availableBranches || [];
+    const allow = member.baseAvailableJobs || [];
+    const hasAllowList = branches.length > 0 || allow.length > 0;
+    if (hasAllowList) {
+      const branchOk = job.branch ? branches.includes(job.branch) : false;
+      const explicitOk = allow.includes(job.id);
+      if (!branchOk && !explicitOk) return { ok: false, reason: 'branch_not_available' };
+    }
+
+    // Prerequisite job at minLevel
+    const req = job.unlockRequirement;
+    if (req && req.jobId) {
+      const prereq = jobsCollection[req.jobId];
+      if (!prereq) return { ok: false, reason: 'prereq_job_missing' };
+      if (!unlocked.includes(req.jobId)) return { ok: false, reason: 'prereq_not_unlocked' };
+      const prog = (member.jobProgress || {})[req.jobId] || { level: 1 };
+      if (Number(prog.level || 1) < Number(req.minLevel || 1)) {
+        return { ok: false, reason: 'prereq_level_low', need: req.minLevel };
+      }
+    }
+
+    return { ok: true };
+  }
+
+  // ── SKILL LEVEL PERKS ─────────────────────────────────────────────
+  // Apply cumulative perks (modifiers + extra effects) up to `level`
+  // on top of the base skill. Returns a new merged skill object.
+  // Schema for perks (authored on the skill):
+  //   levelPerks: [
+  //     { level: 2, modifiers: { ap: -1, range: +1, power: +5, cooldown: -1, mp: -1 },
+  //       addEffects: [{ effectId, overrides? }],
+  //       description: "..." }
+  //   ]
+  // Modifiers are deltas to the base values. Power deltas stack with
+  // calcSkillPowerAtLevel multiplicative scaling applied separately.
+  function applySkillLevelPerks(skill, level) {
+    if (!skill) return skill;
+    const lvl = Math.max(1, Number(level || 1));
+    const perks = Array.isArray(skill.levelPerks) ? skill.levelPerks : [];
+    if (!perks.length) return skill;
+
+    const merged = { ...skill };
+    let apDelta = 0, mpDelta = 0, rangeDelta = 0, cdDelta = 0, powerDelta = 0;
+    let extraEffects = [];
+
+    for (const perk of perks) {
+      const perkLevel = Number(perk?.level || 0);
+      if (!perkLevel || perkLevel > lvl) continue;
+      const m = perk.modifiers || {};
+      apDelta += Number(m.ap || 0);
+      mpDelta += Number(m.mp || 0);
+      rangeDelta += Number(m.range || 0);
+      cdDelta += Number(m.cooldown || 0);
+      powerDelta += Number(m.power || 0);
+      for (const ref of (perk.addEffects || [])) {
+        if (ref && ref.effectId) extraEffects.push(ref);
+      }
+    }
+
+    if (apDelta || mpDelta || rangeDelta || cdDelta || powerDelta) {
+      merged.ap = Math.max(0, Number(merged.ap || 0) + apDelta);
+      merged.mp = Math.max(0, Number(merged.mp || 0) + mpDelta);
+      merged.range = Math.max(0, Number(merged.range || 0) + rangeDelta);
+      merged.cooldown = Math.max(0, Number(merged.cooldown || 0) + cdDelta);
+      merged.power = Math.max(0, Number(merged.power || 0) + powerDelta);
+    }
+    if (extraEffects.length) {
+      merged.effects = [...(merged.effects || []), ...extraEffects];
+    }
+    return merged;
+  }
+
+  // Return the next perk a skill will unlock above its current level
+  // (for tooltip display). Null if at cap.
+  function getNextSkillPerk(skill, level) {
+    if (!skill || !Array.isArray(skill.levelPerks)) return null;
+    const lvl = Math.max(1, Number(level || 1));
+    let best = null;
+    for (const perk of skill.levelPerks) {
+      const perkLevel = Number(perk?.level || 0);
+      if (!perkLevel || perkLevel <= lvl) continue;
+      if (!best || perkLevel < Number(best.level || 0)) best = perk;
+    }
+    return best;
+  }
+
+  // List of perks already earned at the given level (for UI summary).
+  function getEarnedSkillPerks(skill, level) {
+    if (!skill || !Array.isArray(skill.levelPerks)) return [];
+    const lvl = Math.max(1, Number(level || 1));
+    return skill.levelPerks
+      .filter((perk) => {
+        const perkLevel = Number(perk?.level || 0);
+        return perkLevel && perkLevel <= lvl;
+      })
+      .sort((a, b) => Number(a.level) - Number(b.level));
+  }
+
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     calcMaxHP, calcMaxMP, calcPlotArmorHP,
@@ -460,6 +574,8 @@ window.CJS.Formulas = (() => {
     getSkillMaxLevel, calcSkillLevelForAp, calcSkillApToNextLevel, calcSkillApGainPerUse,
     getCharMaxLevel, calcCharLevelForXp, calcCharXpToNextLevel,
     getJobMaxLevel, calcJobLevelForXp, calcJobXpToNextLevel,
-    calcCharLevelStatBonus, calcJobLevelStatBonus, collectJobGrants
+    calcCharLevelStatBonus, calcJobLevelStatBonus, collectJobGrants,
+    canUnlockJob,
+    applySkillLevelPerks, getNextSkillPerk, getEarnedSkillPerks
   });
 })();

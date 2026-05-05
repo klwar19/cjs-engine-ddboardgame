@@ -234,6 +234,7 @@ window.CJS.CampaignState = (() => {
     const maxHp = F().calcMaxHP(stats, rank, _partyHpContext(base, charId));
     const maxMp = F().calcMaxMP(stats, rank);
 
+    const PROG = (window.CJS.CONST?.PROGRESSION) || {};
     const initial = {
       baseCharacterId: charId,
       name: base.name || charId,
@@ -268,7 +269,11 @@ window.CJS.CampaignState = (() => {
       skillProgress: _initialSkillProgress(base),
       currentJob: base.defaultJob || null,
       unlockedJobs: clone(base.availableJobs || (base.defaultJob ? [base.defaultJob] : [])),
-      jobProgress: {}
+      jobProgress: {},
+      availableBranches: clone(base.availableBranches || []),
+      baseAvailableJobs: clone(base.availableJobs || []),
+      maxJobs: Number(base.maxJobs || PROG.maxJobsDefault || 3),
+      weaponSlots: Number(base.weaponSlots || PROG.weaponSlotsDefault || 2)
     };
     if (initial.currentJob) {
       initial.jobProgress[initial.currentJob] = { xp: 0, level: 1 };
@@ -503,6 +508,7 @@ window.CJS.CampaignState = (() => {
   // an existing save (or freshly-recruited). Existing data is preserved;
   // only missing entries are added so old saves keep working.
   function _normalizeProgression(member, base = {}) {
+    const PROG = (window.CJS.CONST?.PROGRESSION) || {};
     member.skillProgress = (member.skillProgress && typeof member.skillProgress === 'object')
       ? member.skillProgress
       : {};
@@ -524,6 +530,20 @@ window.CJS.CampaignState = (() => {
         member.skillProgress[sid].ap = Number(member.skillProgress[sid].ap || 0);
         member.skillProgress[sid].level = Math.max(1, Number(member.skillProgress[sid].level || 1));
       }
+    }
+
+    // Branches / job allow-list / slot caps (from char base when missing)
+    if (!Array.isArray(member.availableBranches)) {
+      member.availableBranches = clone(base.availableBranches || []);
+    }
+    if (!Array.isArray(member.baseAvailableJobs)) {
+      member.baseAvailableJobs = clone(base.availableJobs || []);
+    }
+    if (member.maxJobs == null) {
+      member.maxJobs = Number(base.maxJobs || PROG.maxJobsDefault || 3);
+    }
+    if (member.weaponSlots == null) {
+      member.weaponSlots = Number(base.weaponSlots || PROG.weaponSlotsDefault || 2);
     }
 
     // Job state

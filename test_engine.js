@@ -918,6 +918,10 @@ const testSkillId = DS.create('skills', {
   apGain: 2,
   apThresholds: [0, 4, 10, 20, 35, 60],
   levelScaling: { powerPerLevel: 0.15, maxLevel: 6 },
+  levelPerks: [
+    { level: 2, modifiers: { ap: -1 }, description: '-1 AP cost' },
+    { level: 3, modifiers: { power: 5 }, description: '+5 power' }
+  ],
   description: ''
 });
 const testSkill = DS.get('skills', testSkillId);
@@ -925,9 +929,21 @@ const testSkill = DS.get('skills', testSkillId);
 assertEq('skill defaults to level 1 with no AP', F.calcSkillLevelForAp(testSkill, 0), 1);
 assertEq('skill levels up at first threshold (4 AP)', F.calcSkillLevelForAp(testSkill, 4), 2);
 assertEq('skill levels at 35 AP → level 5', F.calcSkillLevelForAp(testSkill, 35), 5);
-assertEq('skill caps at maxLevel from levelScaling', F.calcSkillLevelForAp(testSkill, 9999), 6);
+// Global hard cap (PROGRESSION.skillMaxLevelCap = 5) clamps even a higher
+// authored maxLevel to 5 for now, until tier-2 content explicitly opts in.
+assertEq('skill caps at global hard cap 5', F.calcSkillLevelForAp(testSkill, 9999), 5);
 assertEq('skill AP-to-next at level 1 with 0 AP is 4', F.calcSkillApToNextLevel(testSkill, 0, 1), 4);
-assert('skill AP-to-next at max is null', F.calcSkillApToNextLevel(testSkill, 9999, 6) === null);
+assert('skill AP-to-next at max is null', F.calcSkillApToNextLevel(testSkill, 9999, 5) === null);
+
+// Skill level perks merge cumulatively into the resolved skill.
+const perkedAt2 = F.applySkillLevelPerks(testSkill, 2);
+assertEq('perk Lv2 reduces AP from 1 → 0', perkedAt2.ap, 0);
+const perkedAt3 = F.applySkillLevelPerks(testSkill, 3);
+assertEq('perk Lv3 also adds +5 power on top of base 5 → 10', perkedAt3.power, 10);
+const earnedAt3 = F.getEarnedSkillPerks(testSkill, 3);
+assertEq('two perks earned by Lv3', earnedAt3.length, 2);
+const nextAt3 = F.getNextSkillPerk(testSkill, 3);
+assert('no further perk after Lv3 in this skill', nextAt3 == null);
 assertEq('AP gain per use scales with QTE perfect (apGain 2 * 1.5 = 3)', F.calcSkillApGainPerUse(testSkill, 'perfect'), 3);
 assertEq('AP gain per use floors at 1 even with fail QTE', F.calcSkillApGainPerUse(testSkill, 'fail'), 1);
 
@@ -1027,6 +1043,69 @@ DS.remove('skills', cleanupSkillId);
 DS.remove('jobs', 'job_test');
 DS.remove('characters', apprenticeId);
 DS.remove('characters', dummyId);
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 17: Job tree (branches, tiers, unlock eligibility)
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 17: Job tree branches ──');
+
+const branchTier1 = {
+  id: 'job_t1', name: 'T1', branch: 'br1', tier: 1, maxLevel: 5,
+  levels: [{ level: 1, statBonus: { S: 1 } }]
+};
+const branchTier2 = {
+  id: 'job_t2', name: 'T2', branch: 'br1', tier: 2,
+  unlockRequirement: { jobId: 'job_t1', minLevel: 5 },
+  maxLevel: 5,
+  levels: [{ level: 1, statBonus: { S: 2 } }]
+};
+const branchOther = {
+  id: 'job_other', name: 'Other', branch: 'br2', tier: 1, maxLevel: 5,
+  levels: [{ level: 1 }]
+};
+DS.create('jobs', branchTier1);
+DS.create('jobs', branchTier2);
+DS.create('jobs', branchOther);
+
+const treeJobs = DS.getAll('jobs');
+
+// Member with branch br1 only, max 3 jobs, t1 unlocked at level 1.
+let testMember = {
+  unlockedJobs: ['job_t1'],
+  jobProgress: { job_t1: { xp: 0, level: 1 } },
+  availableBranches: ['br1'],
+  baseAvailableJobs: ['job_t1'],
+  maxJobs: 3
+};
+
+let elig = F.canUnlockJob(branchTier2, testMember, treeJobs);
+assert('tier-2 locked while prereq below minLevel', !elig.ok && elig.reason === 'prereq_level_low');
+
+testMember.jobProgress.job_t1.level = 5;
+elig = F.canUnlockJob(branchTier2, testMember, treeJobs);
+assert('tier-2 unlocks once prereq hits minLevel', !!elig.ok);
+
+elig = F.canUnlockJob(branchOther, testMember, treeJobs);
+assert('other-branch job blocked when not in availableBranches', !elig.ok && elig.reason === 'branch_not_available');
+
+testMember.maxJobs = 1;
+elig = F.canUnlockJob(branchTier2, testMember, treeJobs);
+assert('slot cap blocks unlock when full', !elig.ok && elig.reason === 'max_jobs_reached');
+
+DS.remove('jobs', 'job_t1');
+DS.remove('jobs', 'job_t2');
+DS.remove('jobs', 'job_other');
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 18: Per-enemy XP table values exist
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 18: XP-per-enemy progression table ──');
+const PROG = CJS.CONST?.PROGRESSION || {};
+assert('xpPerEnemyRank table exists', PROG.xpPerEnemyRank && PROG.xpPerEnemyRank.F > 0);
+assert('jobXpPerEnemyRank table exists', PROG.jobXpPerEnemyRank && PROG.jobXpPerEnemyRank.F > 0);
+assert('xp scales up with rank', PROG.xpPerEnemyRank.A > PROG.xpPerEnemyRank.F);
+assert('default skill cap is now 5', PROG.skillMaxLevelDefault === 5);
+assertEq('default job cap is 5', PROG.jobMaxLevelDefault, 5);
 
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════

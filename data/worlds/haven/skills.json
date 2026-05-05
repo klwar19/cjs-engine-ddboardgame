@@ -328,6 +328,7 @@
       "aoe": null,
       "aoeSize": 0,
       "qte": "quickpress",
+      "requiredWeaponTypes": ["sword", "dagger"],
       "effects": [
         {
           "effectId": "burn_on_hit",
@@ -337,9 +338,16 @@
         }
       ],
       "levelScaling": {
-        "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "powerPerLevel": 0.10,
+        "maxLevel": 5
       },
+      "apGain": 1,
+      "levelPerks": [
+        { "level": 2, "modifiers": { "ap": -1 }, "description": "AP cost -1." },
+        { "level": 3, "modifiers": { "mp": -2 }, "description": "MP cost -2." },
+        { "level": 4, "modifiers": { "power": 4 }, "description": "+4 power; flames bite deeper." },
+        { "level": 5, "addEffects": [{ "effectId": "bash", "overrides": { "duration": 1 } }], "description": "Heat-staggers the target on hit." }
+      ],
       "description": "A fiery slash. Chance to burn."
     },
     {

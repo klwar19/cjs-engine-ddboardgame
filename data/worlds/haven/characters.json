@@ -38,10 +38,17 @@
         "haven_marksmans_eye",
         "haven_iron_hide"
       ],
+      "allowedWeaponTypes": ["bow", "crossbow", "dagger"],
+      "allowedArmorTypes": ["light", "leather"],
+      "availableBranches": ["archer", "thief"],
+      "availableJobs": ["job_archer", "job_thief"],
+      "defaultJob": "job_archer",
+      "maxJobs": 3,
+      "weaponSlots": 2,
       "weak": [],
       "resist": [],
       "immune": [],
-      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
+      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride. Trains as Archer (bow) or Thief (dagger).",
       "movement": 2,
       "size": "1x1"
     },

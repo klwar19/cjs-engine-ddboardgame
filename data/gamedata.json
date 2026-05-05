@@ -3544,10 +3544,50 @@
         }
       ],
       "levelScaling": {
-        "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
       },
-      "description": "A fiery slash. Chance to burn."
+      "description": "A fiery slash. Chance to burn.",
+      "requiredWeaponTypes": [
+        "sword",
+        "dagger"
+      ],
+      "apGain": 1,
+      "levelPerks": [
+        {
+          "level": 2,
+          "modifiers": {
+            "ap": -1
+          },
+          "description": "AP cost -1."
+        },
+        {
+          "level": 3,
+          "modifiers": {
+            "mp": -2
+          },
+          "description": "MP cost -2."
+        },
+        {
+          "level": 4,
+          "modifiers": {
+            "power": 4
+          },
+          "description": "+4 power; flames bite deeper."
+        },
+        {
+          "level": 5,
+          "addEffects": [
+            {
+              "effectId": "bash",
+              "overrides": {
+                "duration": 1
+              }
+            }
+          ],
+          "description": "Heat-staggers the target on hit."
+        }
+      ]
     },
     "taunt_mock": {
       "id": "taunt_mock",
@@ -3574,10 +3614,46 @@
         }
       ],
       "levelScaling": {
-        "powerPerLevel": 0.1,
-        "maxLevel": 10
+        "powerPerLevel": 0,
+        "maxLevel": 5
       },
-      "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz."
+      "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz.",
+      "apGain": 1,
+      "levelPerks": [
+        {
+          "level": 2,
+          "modifiers": {
+            "cooldown": -1
+          },
+          "description": "Cooldown -1."
+        },
+        {
+          "level": 3,
+          "modifiers": {
+            "ap": -1
+          },
+          "description": "AP -1."
+        },
+        {
+          "level": 4,
+          "modifiers": {
+            "range": 1
+          },
+          "description": "Reach +1."
+        },
+        {
+          "level": 5,
+          "addEffects": [
+            {
+              "effectId": "taunt_passive",
+              "overrides": {
+                "duration": 2
+              }
+            }
+          ],
+          "description": "Now also forces target to attack the caster."
+        }
+      ]
     },
     "jester_gambit": {
       "id": "jester_gambit",
@@ -3603,10 +3679,41 @@
         }
       ],
       "levelScaling": {
-        "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "powerPerLevel": 0.1,
+        "maxLevel": 5
       },
-      "description": "Roll the cosmic dice. High variance chaos damage, boosted crit."
+      "description": "Roll the cosmic dice. High variance chaos damage, boosted crit.",
+      "apGain": 1,
+      "levelPerks": [
+        {
+          "level": 2,
+          "modifiers": {
+            "cooldown": -1
+          },
+          "description": "Cooldown -1."
+        },
+        {
+          "level": 3,
+          "modifiers": {
+            "power": 4
+          },
+          "description": "+4 power."
+        },
+        {
+          "level": 4,
+          "modifiers": {
+            "mp": -2
+          },
+          "description": "MP cost -2."
+        },
+        {
+          "level": 5,
+          "modifiers": {
+            "range": 1
+          },
+          "description": "Reach +1."
+        }
+      ]
     },
     "basic_attack": {
       "id": "basic_attack",
@@ -3626,7 +3733,7 @@
       "effects": [],
       "levelScaling": {
         "powerPerLevel": 0.1,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Standard melee attack."
     },
@@ -3656,7 +3763,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Bowy's signature crossbow shot. Long range, lightning element."
     },
@@ -3686,7 +3793,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR."
     },
@@ -3716,7 +3823,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.12,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Spray of bolts in a cone. Lower damage but slows enemies. QTE: Mash!"
     },
@@ -3746,7 +3853,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Gentle ice magic. Applies frostbite, slowing the target."
     },
@@ -3775,7 +3882,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Creates an ice barrier on an ally that absorbs damage."
     },
@@ -3804,7 +3911,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Warm healing magic. Restores HP and grants regen."
     },
@@ -3834,7 +3941,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Precise strike that marks the target, increasing damage taken."
     },
@@ -3863,7 +3970,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.1,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Place a trap that creates a poison zone. Veteran hunting tactic."
     },
@@ -3892,7 +3999,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.1,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Garr rallies the party. Buffs all allies' damage."
     },
@@ -4097,7 +4204,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Cone of flame from the fire head. Burns and creates fire terrain."
     },
@@ -4133,7 +4240,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Devastating breath from the ice head. Line AoE, heavy frostbite."
     },
@@ -4162,7 +4269,7 @@
       ],
       "levelScaling": {
         "powerPerLevel": 0.15,
-        "maxLevel": 10
+        "maxLevel": 5
       },
       "description": "Fiery claw swipe. Basic melee attack of the chimera."
     }
@@ -4657,7 +4764,27 @@
       "immune": [],
       "description": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon.",
       "movement": 3,
-      "size": "1x1"
+      "size": "1x1",
+      "allowedWeaponTypes": [
+        "sword",
+        "dagger"
+      ],
+      "allowedArmorTypes": [
+        "light",
+        "leather",
+        "medium"
+      ],
+      "availableBranches": [
+        "warrior",
+        "thief"
+      ],
+      "availableJobs": [
+        "job_warrior",
+        "job_thief"
+      ],
+      "defaultJob": "job_warrior",
+      "maxJobs": 3,
+      "weaponSlots": 2
     },
     "bowy": {
       "id": "bowy",
@@ -4694,7 +4821,27 @@
       "immune": [],
       "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "allowedWeaponTypes": [
+        "bow",
+        "crossbow",
+        "dagger"
+      ],
+      "allowedArmorTypes": [
+        "light",
+        "leather"
+      ],
+      "availableBranches": [
+        "archer",
+        "thief"
+      ],
+      "availableJobs": [
+        "job_archer",
+        "job_thief"
+      ],
+      "defaultJob": "job_archer",
+      "maxJobs": 3,
+      "weaponSlots": 2
     },
     "mitia": {
       "id": "mitia",
@@ -5713,5 +5860,367 @@
   },
   "statuses": {},
   "quips": [],
-  "quizBank": []
+  "quizBank": [],
+  "jobs": {
+    "job_warrior": {
+      "id": "job_warrior",
+      "name": "Warrior",
+      "icon": "⚔️",
+      "branch": "warrior",
+      "tier": 1,
+      "description": "Frontline melee specialist. Builds the foundation that knights and berserkers later refine.",
+      "weaponTypes": [
+        "sword"
+      ],
+      "armorTypes": [
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "maxLevel": 5,
+      "levels": [
+        {
+          "level": 1,
+          "statBonus": {
+            "S": 1,
+            "E": 1
+          },
+          "description": "Stance training. +1 STR, +1 END."
+        },
+        {
+          "level": 2,
+          "statBonus": {
+            "S": 1
+          },
+          "grantsSkills": [
+            "skl_power_strike"
+          ],
+          "description": "+1 STR. Learn Power Strike."
+        },
+        {
+          "level": 3,
+          "statBonus": {
+            "E": 1
+          },
+          "grantsPassives": [
+            "pas_sword_mastery"
+          ],
+          "description": "+1 END. Sword Mastery passive (+10% damage with swords)."
+        },
+        {
+          "level": 4,
+          "statBonus": {
+            "S": 1,
+            "E": 1
+          },
+          "grantsSkills": [
+            "skl_guard_break"
+          ],
+          "description": "+1 STR, +1 END. Learn Guard Break (reduces target DR)."
+        },
+        {
+          "level": 5,
+          "statBonus": {
+            "S": 2
+          },
+          "grantsPassives": [
+            "pas_warriors_resolve"
+          ],
+          "description": "+2 STR. Warrior's Resolve: +20% damage when below 30% HP. Unlocks Knight and Berserker tiers."
+        }
+      ]
+    },
+    "job_knight": {
+      "id": "job_knight",
+      "name": "Knight",
+      "icon": "🛡️",
+      "branch": "warrior",
+      "tier": 2,
+      "unlockRequirement": {
+        "jobId": "job_warrior",
+        "minLevel": 5
+      },
+      "description": "Disciplined defender. Trades raw output for staying power and party protection.",
+      "weaponTypes": [
+        "sword",
+        "spear",
+        "mace"
+      ],
+      "armorTypes": [
+        "medium",
+        "heavy"
+      ],
+      "maxLevel": 5,
+      "levels": [
+        {
+          "level": 1,
+          "statBonus": {
+            "E": 2
+          },
+          "grantsPassives": [
+            "pas_shield_brace"
+          ],
+          "description": "+2 END. Shield Brace (+5 DR while defending)."
+        },
+        {
+          "level": 2,
+          "statBonus": {
+            "E": 1,
+            "S": 1
+          },
+          "grantsSkills": [
+            "skl_shield_bash"
+          ],
+          "description": "+1 END, +1 STR. Learn Shield Bash (stuns target)."
+        },
+        {
+          "level": 3,
+          "statBonus": {
+            "E": 1
+          },
+          "grantsPassives": [
+            "pas_bulwark"
+          ],
+          "description": "+1 END. Bulwark passive (+1 DR all damage types)."
+        },
+        {
+          "level": 4,
+          "statBonus": {
+            "E": 2,
+            "S": 1
+          },
+          "grantsSkills": [
+            "skl_protect_ally"
+          ],
+          "description": "+2 END, +1 STR. Learn Protect Ally (taunt nearby enemies)."
+        },
+        {
+          "level": 5,
+          "statBonus": {
+            "E": 2,
+            "S": 2
+          },
+          "grantsPassives": [
+            "pas_indomitable"
+          ],
+          "description": "+2 END, +2 STR. Indomitable: immune to fear and charm."
+        }
+      ]
+    },
+    "job_berserker": {
+      "id": "job_berserker",
+      "name": "Berserker",
+      "icon": "🪓",
+      "branch": "warrior",
+      "tier": 2,
+      "unlockRequirement": {
+        "jobId": "job_warrior",
+        "minLevel": 5
+      },
+      "description": "Raging assault specialist. Punishes enemies who dared survive a Warrior.",
+      "weaponTypes": [
+        "sword",
+        "axe",
+        "mace"
+      ],
+      "armorTypes": [
+        "light",
+        "medium"
+      ],
+      "maxLevel": 5,
+      "levels": [
+        {
+          "level": 1,
+          "statBonus": {
+            "S": 2,
+            "A": 1
+          },
+          "grantsPassives": [
+            "pas_rage_buildup"
+          ],
+          "description": "+2 STR, +1 AGI. Rage Buildup: +1% crit per round of combat."
+        },
+        {
+          "level": 2,
+          "statBonus": {
+            "S": 1
+          },
+          "grantsSkills": [
+            "skl_cleave"
+          ],
+          "description": "+1 STR. Learn Cleave (line AoE)."
+        },
+        {
+          "level": 3,
+          "statBonus": {
+            "S": 1,
+            "A": 1
+          },
+          "grantsPassives": [
+            "pas_bloodlust"
+          ],
+          "description": "+1 STR, +1 AGI. Bloodlust: heal 5% max HP on kill."
+        },
+        {
+          "level": 4,
+          "statBonus": {
+            "S": 2
+          },
+          "grantsSkills": [
+            "skl_berserker_charge"
+          ],
+          "description": "+2 STR. Learn Berserker Charge (move + attack)."
+        },
+        {
+          "level": 5,
+          "statBonus": {
+            "S": 2,
+            "A": 2
+          },
+          "grantsPassives": [
+            "pas_frenzy"
+          ],
+          "description": "+2 STR, +2 AGI. Frenzy: when below 50% HP, +30% damage but -3 DR."
+        }
+      ]
+    },
+    "job_thief": {
+      "id": "job_thief",
+      "name": "Thief",
+      "icon": "🗡️",
+      "branch": "thief",
+      "tier": 1,
+      "description": "Quick, evasive, lethal from the flank. Future tiers will branch into Rogue and Assassin.",
+      "weaponTypes": [
+        "dagger"
+      ],
+      "armorTypes": [
+        "light",
+        "leather"
+      ],
+      "maxLevel": 5,
+      "levels": [
+        {
+          "level": 1,
+          "statBonus": {
+            "A": 1,
+            "L": 1
+          },
+          "description": "Light footwork. +1 AGI, +1 LCK."
+        },
+        {
+          "level": 2,
+          "statBonus": {
+            "A": 1
+          },
+          "grantsSkills": [
+            "skl_quick_stab"
+          ],
+          "description": "+1 AGI. Learn Quick Stab (low-AP single hit)."
+        },
+        {
+          "level": 3,
+          "statBonus": {
+            "A": 1,
+            "L": 1
+          },
+          "grantsPassives": [
+            "pas_dodge_step"
+          ],
+          "description": "+1 AGI, +1 LCK. Dodge Step: +5% evasion."
+        },
+        {
+          "level": 4,
+          "statBonus": {
+            "A": 1
+          },
+          "grantsSkills": [
+            "skl_pickpocket"
+          ],
+          "description": "+1 AGI. Learn Pickpocket (chance to steal small loot — flagged for future combat support)."
+        },
+        {
+          "level": 5,
+          "statBonus": {
+            "A": 2,
+            "L": 1
+          },
+          "grantsPassives": [
+            "pas_backstab"
+          ],
+          "description": "+2 AGI, +1 LCK. Backstab: +25% damage when target has 2+ enemies adjacent to it."
+        }
+      ]
+    },
+    "job_archer": {
+      "id": "job_archer",
+      "name": "Archer",
+      "icon": "🏹",
+      "branch": "archer",
+      "tier": 1,
+      "description": "Ranged hunter. Reads the field a beat ahead of the rest of the party.",
+      "weaponTypes": [
+        "bow",
+        "crossbow"
+      ],
+      "armorTypes": [
+        "light",
+        "leather"
+      ],
+      "maxLevel": 5,
+      "levels": [
+        {
+          "level": 1,
+          "statBonus": {
+            "P": 1,
+            "A": 1
+          },
+          "description": "+1 PER, +1 AGI."
+        },
+        {
+          "level": 2,
+          "statBonus": {
+            "P": 1
+          },
+          "grantsSkills": [
+            "skl_aimed_shot"
+          ],
+          "description": "+1 PER. Learn Aimed Shot (high accuracy)."
+        },
+        {
+          "level": 3,
+          "statBonus": {
+            "P": 1,
+            "L": 1
+          },
+          "grantsPassives": [
+            "pas_eagle_eye"
+          ],
+          "description": "+1 PER, +1 LCK. Eagle Eye: +1 basic-attack range."
+        },
+        {
+          "level": 4,
+          "statBonus": {
+            "P": 1,
+            "A": 1
+          },
+          "grantsSkills": [
+            "skl_volley"
+          ],
+          "description": "+1 PER, +1 AGI. Learn Volley (small AoE)."
+        },
+        {
+          "level": 5,
+          "statBonus": {
+            "P": 2,
+            "A": 1
+          },
+          "grantsPassives": [
+            "pas_marksman"
+          ],
+          "description": "+2 PER, +1 AGI. Marksman: +15% damage to targets at 3+ cells away."
+        }
+      ]
+    }
+  }
 }

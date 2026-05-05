@@ -558,19 +558,25 @@ window.CJS.CONST = (() => {
   // Different skills can author their own thresholds per level.
   const PROGRESSION = {
     // Default AP needed to reach the indexed level (level 1 needs 0).
-    skillApThresholds: [0, 8, 20, 36, 56, 80, 110, 145, 185, 230, 280],
-    // Default per-level XP needed for character level-up (level 1 → 2 needs 50).
+    skillApThresholds: [0, 6, 16, 32, 56, 90],
+    // Default per-level XP needed for character level-up.
     charXpThresholds: [0, 50, 120, 220, 360, 540, 760, 1020, 1320, 1660, 2040, 2460, 2920, 3420, 3960, 4540, 5160, 5820, 6520, 7260, 8040],
-    // Default per-level XP needed for job level-up.
-    jobXpThresholds:  [0, 30,  80, 150, 240, 360, 500, 660,  840, 1040, 1260, 1500, 1760, 2040, 2340, 2660, 3000, 3360, 3740, 4140, 4560],
+    // Default per-level XP needed for job level-up. Steeper than char XP
+    // so jobs require dedicated training, not just battle exposure.
+    jobXpThresholds:  [0, 80, 220, 440, 760, 1200, 1780, 2520, 3440, 4560, 5900, 7480, 9320, 11440, 13860, 16600, 19680, 23120, 26940, 31160, 35800],
     // Default skill cap when authors don't supply levelScaling.maxLevel.
-    skillMaxLevelDefault: 10,
+    skillMaxLevelDefault: 5,
+    // Hard ceiling: even if a skill authors a higher maxLevel it is clamped
+    // to this for now. Set to null to disable the clamp.
+    skillMaxLevelCap: 5,
     // Default char cap when not overridden anywhere.
     charMaxLevel: 20,
     // Default job cap when authors don't supply maxLevel.
-    jobMaxLevelDefault: 10,
+    jobMaxLevelDefault: 5,
     // QTE grade multipliers applied to apGain on a single skill use.
     apGainQteMultipliers: { perfect: 1.5, good: 1.25, ok: 1.0, fail: 0.5 },
+    // Default jobs slot cap per character (Bin / Bowy use this).
+    maxJobsDefault: 3,
     // How many distinct weapon types a player character may know by default
     // (informational; the authoritative cap is allowedWeaponTypes.length).
     weaponSlotsDefault: 2,
@@ -578,6 +584,18 @@ window.CJS.CONST = (() => {
     // gain more so that the gap with monsters scales with level.
     statPointsPerCharLevelByRank: {
       F: 1, E: 2, D: 2, C: 3, B: 3, A: 4, S: 4, SR: 5, SSR: 6
+    },
+    // XP awarded for defeating an enemy of the given rank. Split among the
+    // surviving party members at the end of a battle.
+    xpPerEnemyRank: {
+      F:  20, E:  35, D:  60, C:  95,
+      B: 150, A: 220, S: 320, SR: 460, SSR: 640
+    },
+    // Job XP awarded per defeated enemy of given rank (smaller than char
+    // XP — job mastery is intentionally slower).
+    jobXpPerEnemyRank: {
+      F:  10, E:  18, D:  30, C:  50,
+      B:  80, A: 120, S: 175, SR: 250, SSR: 350
     }
   };
 

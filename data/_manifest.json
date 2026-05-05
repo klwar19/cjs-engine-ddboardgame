@@ -48,7 +48,17 @@
       "category": "passives"
     },
     {
+      "path": "data/universal/job_passives.json",
+      "scope": "universal",
+      "category": "passives"
+    },
+    {
       "path": "data/universal/skills.json",
+      "scope": "universal",
+      "category": "skills"
+    },
+    {
+      "path": "data/universal/job_skills.json",
       "scope": "universal",
       "category": "skills"
     },

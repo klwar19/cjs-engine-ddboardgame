@@ -514,15 +514,36 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _canUseWeapon(member, item) {
-    const base = DS().get('characters', member.baseCharacterId) || {};
-    const allowed = _uniqueTypes([...(base.allowedWeaponTypes || []), ...(member.allowedWeaponTypes || [])]);
+    const allowed = _effectiveAllowedWeaponTypes(member);
     return !allowed.length || allowed.includes(_weaponType(item));
   }
 
   function _canUseArmor(member, item) {
-    const base = DS().get('characters', member.baseCharacterId) || {};
-    const allowed = _uniqueTypes([...(base.allowedArmorTypes || []), ...(member.allowedArmorTypes || [])]);
+    const allowed = _effectiveAllowedArmorTypes(member);
     return !allowed.length || allowed.includes(_armorType(item));
+  }
+
+  // Active-job awareness: when a job is set, its weaponTypes/armorTypes
+  // narrow the character's authored allow-list. If the job is empty/missing,
+  // we fall back to the character's authored lists (existing behavior).
+  function _effectiveAllowedWeaponTypes(member = {}) {
+    const base = DS().get('characters', member.baseCharacterId) || {};
+    const charList = _uniqueTypes([...(base.allowedWeaponTypes || []), ...(member.allowedWeaponTypes || [])]);
+    const job = member.currentJob ? DS().get('jobs', member.currentJob) : null;
+    const jobList = _uniqueTypes(job?.weaponTypes || []);
+    if (!jobList.length) return charList;
+    if (!charList.length) return jobList;
+    return jobList.filter((t) => charList.includes(t));
+  }
+
+  function _effectiveAllowedArmorTypes(member = {}) {
+    const base = DS().get('characters', member.baseCharacterId) || {};
+    const charList = _uniqueTypes([...(base.allowedArmorTypes || []), ...(member.allowedArmorTypes || [])]);
+    const job = member.currentJob ? DS().get('jobs', member.currentJob) : null;
+    const jobList = _uniqueTypes(job?.armorTypes || []);
+    if (!jobList.length) return charList;
+    if (!charList.length) return jobList;
+    return jobList.filter((t) => charList.includes(t));
   }
 
   function _uniqueTypes(values = []) {
@@ -790,6 +811,7 @@ window.CJS.CampaignOps = (() => {
       if (jobId === null || jobId === '' || jobId === undefined) {
         member.currentJob = null;
         _log(state, `${member.name || id} has no active job.`);
+        if (CS().syncPartyMember) CS().syncPartyMember(id, member);
         continue;
       }
       const job = DS().get('jobs', jobId);
@@ -798,11 +820,24 @@ window.CJS.CampaignOps = (() => {
         continue;
       }
       member.unlockedJobs = member.unlockedJobs || [];
-      if (!member.unlockedJobs.includes(jobId)) member.unlockedJobs.push(jobId);
+      // Already unlocked → just switch.
+      if (!member.unlockedJobs.includes(jobId)) {
+        const F = window.CJS.Formulas;
+        const allJobs = DS().getAll('jobs') || {};
+        const check = F?.canUnlockJob ? F.canUnlockJob(job, member, allJobs) : { ok: true };
+        if (!check.ok) {
+          _log(state, `${member.name || id} cannot take ${job.name || jobId}: ${check.reason}.`);
+          continue;
+        }
+        member.unlockedJobs.push(jobId);
+      }
       member.jobProgress = member.jobProgress || {};
       if (!member.jobProgress[jobId]) member.jobProgress[jobId] = { xp: 0, level: 1 };
       member.currentJob = jobId;
       _log(state, `${member.name || id} took the ${job.name || jobId} job.`);
+
+      // Re-validate equipment against the new job's weapon/armor profile.
+      // We don't auto-unequip; we just log a hint for the UI.
       if (CS().syncPartyMember) CS().syncPartyMember(id, member);
     }
   }
@@ -814,11 +849,19 @@ window.CJS.CampaignOps = (() => {
       const member = state.party[id];
       member.unlockedJobs = member.unlockedJobs || [];
       member.jobProgress = member.jobProgress || {};
-      if (!member.unlockedJobs.includes(jobId)) {
-        member.unlockedJobs.push(jobId);
-        member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
-        _log(state, `${member.name || id} unlocked the ${_recordName('jobs', jobId) || jobId} job.`);
+      if (member.unlockedJobs.includes(jobId)) continue;
+      const job = DS().get('jobs', jobId);
+      if (!job) continue;
+      const F = window.CJS.Formulas;
+      const allJobs = DS().getAll('jobs') || {};
+      const check = F?.canUnlockJob ? F.canUnlockJob(job, member, allJobs) : { ok: true };
+      if (!check.ok) {
+        _log(state, `${member.name || id} cannot unlock ${job.name || jobId}: ${check.reason}.`);
+        continue;
       }
+      member.unlockedJobs.push(jobId);
+      member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
+      _log(state, `${member.name || id} unlocked the ${_recordName('jobs', jobId) || jobId} job.`);
     }
   }
 

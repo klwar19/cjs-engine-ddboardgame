@@ -435,6 +435,13 @@ window.CJS.CampaignCombatBridge = (() => {
     }
 
     const enemies = units.filter((entry) => entry.team === 'enemy');
+    const defeatedEnemies = enemies
+      .filter((unit) => Number(unit.currentHP || 0) <= 0)
+      .map((unit) => ({
+        id: unit.baseId || unit.id || unit.instanceId,
+        name: unit.name || '',
+        rank: unit.rank || 'F'
+      }));
     const loot = [];
     if (window.CJS.LootRoller && combatState?.winner === 'player') {
       const drops = window.CJS.LootRoller.rollLoot(enemies, _maxPartyLuck(units));
@@ -462,6 +469,7 @@ window.CJS.CampaignCombatBridge = (() => {
       rounds: combatState?.roundNumber || 0,
       partyAfter,
       loot,
+      defeatedEnemies,
       defeatOps: request?.defeatOps || [],
       drawOps: request?.drawOps || [],
       badEndingOps: request?.badEndingOps || [],
@@ -663,14 +671,39 @@ window.CJS.CampaignCombatBridge = (() => {
         ops.push({ op: 'gain_job_xp', target: id, amount: Math.max(1, Math.round(skillUseTotal * 3)) });
       }
     }
-    // Outcome bonus XP for victory (split across active members).
+    // XP per defeated enemy, split across surviving active members.
+    // This is the "killing the enemy gives XP / Job XP" the user asked for —
+    // separate from the per-skill-use XP awarded above.
+    const PROG = window.CJS.CONST?.PROGRESSION || {};
+    const xpTable = PROG.xpPerEnemyRank || {};
+    const jobXpTable = PROG.jobXpPerEnemyRank || {};
+    const defeatedList = Array.isArray(result.defeatedEnemies) ? result.defeatedEnemies : [];
+    const totalEnemyXp = defeatedList.reduce((s, e) => s + (xpTable[e.rank || 'F'] || 0), 0);
+    const totalEnemyJobXp = defeatedList.reduce((s, e) => s + (jobXpTable[e.rank || 'F'] || 0), 0);
+    const eligibleIds = Object.keys(result.partyAfter || {}).filter((id) => {
+      const cur = state.party[id];
+      if (!cur) return false;
+      // Reward only members who survived the battle (importedHp > 0). Match the
+      // partyAfter snapshot directly since current state has been updated above.
+      const after = (result.partyAfter || {})[id] || {};
+      return Number(after.currentHp || 0) > 0;
+    });
+    if (eligibleIds.length && (totalEnemyXp > 0 || totalEnemyJobXp > 0)) {
+      const xpPer = Math.max(1, Math.floor(totalEnemyXp / eligibleIds.length));
+      const jobXpPer = Math.max(1, Math.floor(totalEnemyJobXp / eligibleIds.length));
+      for (const id of eligibleIds) {
+        if (xpPer > 0) ops.push({ op: 'add_xp', target: id, amount: xpPer });
+        if (jobXpPer > 0) ops.push({ op: 'gain_job_xp', target: id, amount: jobXpPer });
+      }
+    }
+    // Small flat victory bonus (kept as a participation reward, on top of
+    // enemy-specific XP). Helps short fights still feel rewarding.
     if (outcome === 'victory') {
       const winnerIds = Object.keys(result.partyAfter || {}).filter((id) => state.party[id]);
       if (winnerIds.length) {
-        const bonusPerMember = 25 + Math.round((result.rounds || 0) * 5);
+        const bonusPerMember = 10 + Math.round((result.rounds || 0) * 2);
         for (const id of winnerIds) {
           ops.push({ op: 'add_xp', target: id, amount: bonusPerMember });
-          ops.push({ op: 'gain_job_xp', target: id, amount: Math.max(5, Math.round(bonusPerMember / 2)) });
         }
       }
     }

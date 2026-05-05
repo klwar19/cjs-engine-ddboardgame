@@ -62,8 +62,8 @@ window.CJS.SkillResolver = (() => {
 
   // ── RESOLVE UNIT SKILL ────────────────────────────────────────────
   // Given a unit and a skillId, look up the base skill from DataStore,
-  // merge per-unit overrides + level, return the fully resolved skill object.
-  // Returns null if the skill doesn't exist in DataStore.
+  // merge per-unit overrides + level + cumulative levelPerks, return the
+  // fully resolved skill object. Returns null if the skill doesn't exist.
   function resolveUnitSkill(unit, skillId) {
     const base = DS().get('skills', skillId);
     if (!base) return null;
@@ -72,8 +72,14 @@ window.CJS.SkillResolver = (() => {
     const overrides = entry?.overrides || {};
     const level = entry?.level || 1;
 
-    // Merge: base + overrides, preserving base id
-    return { ...base, ...overrides, id: base.id, level };
+    // Apply cumulative level perks from base, then layer per-unit
+    // overrides (so an editor override always wins over a perk).
+    const F = window.CJS.Formulas;
+    const withPerks = (F && F.applySkillLevelPerks)
+      ? F.applySkillLevelPerks(base, level)
+      : base;
+
+    return { ...withPerks, ...overrides, id: base.id, level };
   }
 
   // ── RESOLVE ALL ───────────────────────────────────────────────────
