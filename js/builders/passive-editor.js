@@ -50,7 +50,8 @@ window.CJS.PassiveEditor = (() => {
 
   function _createNew() {
     const id = DS().create('passives', {
-      name: 'New Passive', icon: '🛡️', description: '', tags: [], effects: []
+      name: 'New Passive', icon: '🛡️', description: '', tags: [], effects: [],
+      spCost: 1
     });
     _activeId = id;
     _renderList();
@@ -84,7 +85,12 @@ window.CJS.PassiveEditor = (() => {
             <input type="text" id="pas-icon" value="${_esc(p.icon||'🛡️')}" style="text-align:center;font-size:1.2em">
           </div>
         </div>
-        <div class="form-group" id="pas-tags-area"><label class="form-label">Tags</label></div>
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 110px"><label class="form-label">SP Cost</label>
+            <input type="number" id="pas-spcost" value="${p.spCost != null ? p.spCost : 1}" min="0" max="20" title="Passive points required to equip this passive">
+          </div>
+          <div class="form-group" id="pas-tags-area" style="flex:1"><label class="form-label">Tags</label></div>
+        </div>
         <h3>Effects</h3>
         <div id="pas-effects-area"></div>
         <div class="form-group mt-md"><label class="form-label">Description (auto-generated if blank)</label>
@@ -114,6 +120,7 @@ window.CJS.PassiveEditor = (() => {
         name: _formEl.querySelector('#pas-name').value,
         icon: _formEl.querySelector('#pas-icon').value,
         tags: tagWidget._getTags(),
+        spCost: Math.max(0, Number(_formEl.querySelector('#pas-spcost').value) || 0),
         effects: effectBuilder._getEffects(),
         description: _formEl.querySelector('#pas-desc').value || _autoDesc(effectBuilder._getEffects())
       });

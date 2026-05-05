@@ -27,7 +27,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 10
       },
-      "description": "Standard melee attack."
+      "description": "Standard melee attack.",
+      "spCost": 0
     },
     {
       "id": "jester_gambit",
@@ -53,17 +54,42 @@
         }
       ],
       "levelScaling": {
-        "powerPerLevel": 0.10,
+        "powerPerLevel": 0.1,
         "maxLevel": 5
       },
       "apGain": 1,
       "levelPerks": [
-        { "level": 2, "modifiers": { "cooldown": -1 }, "description": "Cooldown -1 — gambits land more often." },
-        { "level": 3, "modifiers": { "power": 4 }, "description": "+4 power on a successful read." },
-        { "level": 4, "modifiers": { "mp": -2 }, "description": "MP cost -2." },
-        { "level": 5, "modifiers": { "range": 1 }, "description": "Reach +1; the joke now travels." }
+        {
+          "level": 2,
+          "modifiers": {
+            "cooldown": -1
+          },
+          "description": "Cooldown -1 — gambits land more often."
+        },
+        {
+          "level": 3,
+          "modifiers": {
+            "power": 4
+          },
+          "description": "+4 power on a successful read."
+        },
+        {
+          "level": 4,
+          "modifiers": {
+            "mp": -2
+          },
+          "description": "MP cost -2."
+        },
+        {
+          "level": 5,
+          "modifiers": {
+            "range": 1
+          },
+          "description": "Reach +1; the joke now travels."
+        }
       ],
-      "description": "Roll the cosmic dice. High variance chaos damage, boosted crit."
+      "description": "Roll the cosmic dice. High variance chaos damage, boosted crit.",
+      "spCost": 2
     },
     {
       "id": "taunt_mock",
@@ -90,17 +116,47 @@
         }
       ],
       "levelScaling": {
-        "powerPerLevel": 0.0,
+        "powerPerLevel": 0,
         "maxLevel": 5
       },
       "apGain": 1,
       "levelPerks": [
-        { "level": 2, "modifiers": { "cooldown": -1 }, "description": "Cooldown -1 — barbs come faster." },
-        { "level": 3, "modifiers": { "ap": -1 }, "description": "AP cost -1." },
-        { "level": 4, "modifiers": { "range": 1 }, "description": "Reach +1; insult travels further." },
-        { "level": 5, "addEffects": [{ "effectId": "taunt_passive", "overrides": { "duration": 2 } }], "description": "Now also forces the target to attack the caster." }
+        {
+          "level": 2,
+          "modifiers": {
+            "cooldown": -1
+          },
+          "description": "Cooldown -1 — barbs come faster."
+        },
+        {
+          "level": 3,
+          "modifiers": {
+            "ap": -1
+          },
+          "description": "AP cost -1."
+        },
+        {
+          "level": 4,
+          "modifiers": {
+            "range": 1
+          },
+          "description": "Reach +1; insult travels further."
+        },
+        {
+          "level": 5,
+          "addEffects": [
+            {
+              "effectId": "taunt_passive",
+              "overrides": {
+                "duration": 2
+              }
+            }
+          ],
+          "description": "Now also forces the target to attack the caster."
+        }
       ],
-      "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz."
+      "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz.",
+      "spCost": 1
     }
   ]
 }

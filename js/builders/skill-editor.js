@@ -51,9 +51,10 @@ window.CJS.SkillEditor = (() => {
       damageType: 'Physical', element: null, scalingStat: 'S',
       range: 1, aoe: null, aoeSize: 0, qte: 'quickpress',
       requiredWeaponTypes: [],
-      effects: [], levelScaling: { powerPerLevel: 0.15, maxLevel: 10 },
+      effects: [], levelScaling: { powerPerLevel: 0.15, maxLevel: 5 },
       apGain: 1,
       apThresholds: null,
+      spCost: 1,
       description: ''
     });
     _activeId = id; _renderList(); _load(id);
@@ -146,8 +147,9 @@ window.CJS.SkillEditor = (() => {
         <h3>Level Scaling <span class="dim" style="font-size:0.78em">— gain Ability Points by using this skill in combat</span></h3>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Power/Level (%)</label><input type="number" id="skl-ppl" value="${(s.levelScaling?.powerPerLevel||0.15)*100}" min="0" max="50" step="1" style="width:100%"></div>
-          <div class="form-group"><label class="form-label">Max Level</label><input type="number" id="skl-maxlvl" value="${s.levelScaling?.maxLevel||10}" min="1" max="20" style="width:100%"></div>
+          <div class="form-group"><label class="form-label">Max Level</label><input type="number" id="skl-maxlvl" value="${s.levelScaling?.maxLevel||5}" min="1" max="20" style="width:100%"></div>
           <div class="form-group"><label class="form-label">AP per Use</label><input type="number" id="skl-apgain" value="${s.apGain != null ? s.apGain : 1}" min="0" max="20" style="width:100%"></div>
+          <div class="form-group"><label class="form-label">SP Cost</label><input type="number" id="skl-spcost" value="${s.spCost != null ? s.spCost : 1}" min="0" max="20" style="width:100%" title="Skill points required to equip this skill"></div>
         </div>
         <div class="form-group">
           <label class="form-label">AP Thresholds <span class="dim" style="font-size:0.78em">(comma-separated cumulative; blank = use default curve)</span></label>
@@ -222,6 +224,7 @@ window.CJS.SkillEditor = (() => {
       },
       apGain: Math.max(0, Number(f.querySelector('#skl-apgain').value) || 0),
       apThresholds: _parseApThresholds(f.querySelector('#skl-apthresholds').value),
+      spCost: Math.max(0, Number(f.querySelector('#skl-spcost').value) || 0),
       description: f.querySelector('#skl-desc').value
     };
     if (castSfx) payload.castSfx = castSfx;

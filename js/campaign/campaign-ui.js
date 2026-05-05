@@ -420,12 +420,12 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div class="campaign-detail-grid">
           <div>
-            <div class="campaign-section-title">Skills <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}">+</button></div>
-            ${skills.length ? skills.map((entry) => _renderKnownSkill(id, entry)).join('') : '<div class="campaign-empty">No skills.</div>'}
+            <div class="campaign-section-title">Skills <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'skill')}</small> <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}" title="Add to pool">+</button></div>
+            ${_renderSkillPoolList(id, member, skills)}
           </div>
           <div>
-            <div class="campaign-section-title">Passives <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}">+</button></div>
-            ${passives.length ? passives.map((passive) => _renderKnownPassive(id, passive)).join('') : '<div class="campaign-empty">No passives.</div>'}
+            <div class="campaign-section-title">Passives <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'passive')}</small> <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}" title="Add to pool">+</button></div>
+            ${_renderPassivePoolList(id, member, passives)}
           </div>
           <div>
             <div class="campaign-section-title">Statuses <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${_escAttr(id)}">+</button></div>
@@ -440,7 +440,52 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderKnownSkill(memberId, entry) {
+  // Selection budget chip — shows "X/Y slots · A/B SP" for a member.
+  function _renderSelectionBudgetBadge(memberId, member, kind /* 'skill' | 'passive' */) {
+    const F = window.CJS.Formulas;
+    if (!F) return '';
+    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
+    const eqField = kind === 'skill' ? 'equippedSkills' : 'equippedPassives';
+    const slotCap = kind === 'skill'
+      ? (F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : member.skillSlots || 0)
+      : (F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : member.passiveSlots || 0);
+    const spCap = kind === 'skill'
+      ? (F.calcEffectiveSkillPoints ? F.calcEffectiveSkillPoints(member, base) : member.skillPoints || 0)
+      : (F.calcEffectivePassivePoints ? F.calcEffectivePassivePoints(member, base) : member.passivePoints || 0);
+    const equipped = member[eqField] || [];
+    const used = F.calcEquippedSpCost
+      ? F.calcEquippedSpCost(equipped, kind === 'skill' ? 'skills' : 'passives')
+      : equipped.length;
+    return `${equipped.length}/${slotCap} slots · ${used}/${spCap} SP`;
+  }
+
+  // Render the FULL skill pool for a member, with equip/unequip controls
+  // per row. authoredEntries: the merged list from base + learned (used by
+  // _renderKnownSkill so per-skill overrides like authored level still apply).
+  function _renderSkillPoolList(memberId, member, authoredEntries) {
+    const pool = CS().skillPoolIds ? CS().skillPoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
+    if (!pool.length) return '<div class="campaign-empty">No skills in pool. Use the + button to learn one.</div>';
+    const equippedSet = new Set(member.equippedSkills || []);
+    // Map id → authored entry (so per-character overrides + level survive).
+    const entryById = new Map();
+    for (const e of authoredEntries || []) {
+      const sid = typeof e === 'string' ? e : e?.skillId;
+      if (sid) entryById.set(sid, e);
+    }
+    return pool.map((sid) => {
+      const entry = entryById.get(sid) || { skillId: sid };
+      return _renderKnownSkill(memberId, entry, equippedSet.has(sid));
+    }).join('');
+  }
+
+  function _renderPassivePoolList(memberId, member, authoredPassives) {
+    const pool = CS().passivePoolIds ? CS().passivePoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
+    if (!pool.length) return '<div class="campaign-empty">No passives in pool. Use the + button to learn one.</div>';
+    const equippedSet = new Set(member.equippedPassives || []);
+    return pool.map((pid) => _renderKnownPassive(memberId, pid, equippedSet.has(pid))).join('');
+  }
+
+  function _renderKnownSkill(memberId, entry, isEquipped) {
     const skillId = _skillEntryId(entry);
     const skill = DS().get('skills', skillId);
     const learned = entry.source === 'campaign' || _memberLearnedSkillIds(memberId).includes(skillId);
@@ -465,7 +510,14 @@ window.CJS.CampaignUI = (() => {
     const detailButton = skill
       ? `<button class="campaign-action" data-campaign-action="show-skill-detail" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Show full perk tree">Detail</button>`
       : '';
-    const extraActions = `${apButton}${levelButton}${detailButton}`;
+    const equippedFlag = isEquipped === true;
+    const spCost = (skill && window.CJS.Formulas?.calcSpCost) ? window.CJS.Formulas.calcSpCost(skill) : 1;
+    const equipButton = isEquipped == null
+      ? '' // older callers (back-compat) don't pass an equip state
+      : (equippedFlag
+          ? `<button class="campaign-action danger" data-campaign-action="unequip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Unequip (frees slot/SP)">Unequip</button>`
+          : `<button class="campaign-action" data-campaign-action="equip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
+    const extraActions = `${equipButton}${apButton}${levelButton}${detailButton}`;
 
     // Inline preview of earned perks + next perk so progress is visible
     // without opening the detail modal.
@@ -480,9 +532,10 @@ window.CJS.CampaignUI = (() => {
     const baseDesc = _desc(skill) || '';
     const descriptionHtml = `<p>${_esc(baseDesc || 'No description yet.')}</p>${earnedLine}${nextLine}`;
 
+    const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
     return _renderKnownRecord({
-      title: skill?.name || skillId,
-      meta,
+      title: `${titlePrefix}${skill?.name || skillId}`,
+      meta: `SP ${spCost} | ${meta}`,
       descriptionHtml,
       removeAction: learned ? 'unlearn-skill' : '',
       removeData: learned ? `data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}"` : '',
@@ -490,15 +543,24 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _renderKnownPassive(memberId, passiveId) {
+  function _renderKnownPassive(memberId, passiveId, isEquipped) {
     const passive = DS().get('passives', passiveId) || DS().get('effects', passiveId);
     const learned = (CS().getState()?.party?.[memberId]?.learnedPassives || []).includes(passiveId);
+    const spCost = (passive && window.CJS.Formulas?.calcSpCost) ? window.CJS.Formulas.calcSpCost(passive) : 1;
+    const equippedFlag = isEquipped === true;
+    const equipButton = isEquipped == null
+      ? ''
+      : (equippedFlag
+          ? `<button class="campaign-action danger" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Unequip (frees slot/SP)">Unequip</button>`
+          : `<button class="campaign-action" data-campaign-action="equip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
+    const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
     return _renderKnownRecord({
-      title: passive?.name || passiveId,
-      meta: passive?.trigger || passive?.category || passiveId,
+      title: `${titlePrefix}${passive?.name || passiveId}`,
+      meta: `SP ${spCost} | ${passive?.trigger || passive?.category || passiveId}`,
       description: _desc(passive),
       removeAction: learned ? 'unlearn-passive' : '',
-      removeData: learned ? `data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}"` : ''
+      removeData: learned ? `data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}"` : '',
+      extraActions: equipButton
     });
   }
 
@@ -2338,6 +2400,10 @@ window.CJS.CampaignUI = (() => {
       case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
+      case 'equip-skill':    return Ops().apply({ op: 'equip_skill',    target: data.id, skillId:   data.skillId   }, { source: 'ui' });
+      case 'unequip-skill':  return Ops().apply({ op: 'unequip_skill',  target: data.id, skillId:   data.skillId   }, { source: 'ui' });
+      case 'equip-passive':  return Ops().apply({ op: 'equip_passive',  target: data.id, passiveId: data.passiveId }, { source: 'ui' });
+      case 'unequip-passive':return Ops().apply({ op: 'unequip_passive',target: data.id, passiveId: data.passiveId }, { source: 'ui' });
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
       case 'unlock-job-from-tree': return _confirmUnlockJob(data.id, data.jobId);
       case 'switch-job-from-tree': return _switchJob(data.id, data.jobId);

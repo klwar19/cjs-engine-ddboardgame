@@ -273,12 +273,89 @@ window.CJS.CampaignState = (() => {
       availableBranches: clone(base.availableBranches || []),
       baseAvailableJobs: clone(base.availableJobs || []),
       maxJobs: Number(base.maxJobs || PROG.maxJobsDefault || 3),
-      weaponSlots: Number(base.weaponSlots || PROG.weaponSlotsDefault || 2)
+      weaponSlots: Number(base.weaponSlots || PROG.weaponSlotsDefault || 2),
+      // Skill / passive selection budgets — auto-filled below.
+      skillSlots:    Number(base.skillSlots ?? PROG.defaultSkillSlots ?? 4),
+      passiveSlots:  Number(base.passiveSlots ?? PROG.defaultPassiveSlots ?? 3),
+      skillPoints:   Number(base.skillPoints ?? PROG.defaultSkillPoints ?? 4),
+      passivePoints: Number(base.passivePoints ?? PROG.defaultPassivePoints ?? 3),
+      equippedSkills: [],
+      equippedPassives: []
     };
     if (initial.currentJob) {
       initial.jobProgress[initial.currentJob] = { xp: 0, level: 1 };
     }
+    // Auto-fill the equipped sets so a freshly recruited member is combat-ready.
+    _autoFillEquipped(initial, base);
     return initial;
+  }
+
+  // Greedy fill of equippedSkills / equippedPassives from the member's pool
+  // so brand-new members and legacy saves enter combat with sensible loadouts.
+  // Stops adding when either the slot cap or the SP budget is reached.
+  function _autoFillEquipped(member, base) {
+    const F = window.CJS.Formulas;
+    if (!F) return;
+    const slotCapSkills   = F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : (member.skillSlots || 4);
+    const slotCapPassives = F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : (member.passiveSlots || 3);
+    const spCapSkills     = F.calcEffectiveSkillPoints ? F.calcEffectiveSkillPoints(member, base) : (member.skillPoints || 4);
+    const spCapPassives   = F.calcEffectivePassivePoints ? F.calcEffectivePassivePoints(member, base) : (member.passivePoints || 3);
+
+    if (!Array.isArray(member.equippedSkills) || !member.equippedSkills.length) {
+      const pool = _skillPoolIds(member, base);
+      member.equippedSkills = _greedyFill(pool, 'skills', slotCapSkills, spCapSkills, F);
+    }
+    if (!Array.isArray(member.equippedPassives) || !member.equippedPassives.length) {
+      const pool = _passivePoolIds(member, base);
+      member.equippedPassives = _greedyFill(pool, 'passives', slotCapPassives, spCapPassives, F);
+    }
+  }
+
+  function _greedyFill(poolIds, type, slotCap, spCap, F) {
+    const out = [];
+    let used = 0;
+    for (const id of poolIds) {
+      if (out.length >= slotCap) break;
+      const rec = DS().get(type, id);
+      const cost = rec ? (F?.calcSpCost ? F.calcSpCost(rec) : 1) : 1;
+      if (used + cost > spCap) continue;
+      out.push(id);
+      used += cost;
+    }
+    return out;
+  }
+
+  function _skillPoolIds(member = {}, base = {}) {
+    const ids = new Set();
+    for (const e of base.skills || []) {
+      const id = typeof e === 'string' ? e : e?.skillId;
+      if (id) ids.add(id);
+    }
+    for (const e of member.learnedSkills || []) {
+      const id = typeof e === 'string' ? e : e?.skillId;
+      if (id) ids.add(id);
+    }
+    // Job-granted skills
+    if (member.currentJob && window.CJS.Formulas?.collectJobGrants) {
+      const job = DS().get('jobs', member.currentJob);
+      const lvl = Math.max(1, Number(member.jobProgress?.[member.currentJob]?.level || 1));
+      const grants = window.CJS.Formulas.collectJobGrants(job || {}, lvl);
+      for (const id of grants.skills || []) ids.add(id);
+    }
+    return Array.from(ids);
+  }
+
+  function _passivePoolIds(member = {}, base = {}) {
+    const ids = new Set();
+    for (const id of base.innatePassives || []) if (id) ids.add(id);
+    for (const id of member.learnedPassives || []) if (id) ids.add(id);
+    if (member.currentJob && window.CJS.Formulas?.collectJobGrants) {
+      const job = DS().get('jobs', member.currentJob);
+      const lvl = Math.max(1, Number(member.jobProgress?.[member.currentJob]?.level || 1));
+      const grants = window.CJS.Formulas.collectJobGrants(job || {}, lvl);
+      for (const id of grants.passives || []) ids.add(id);
+    }
+    return Array.from(ids);
   }
 
   // Build a baseline skillProgress map from the character's authored skill
@@ -570,6 +647,42 @@ window.CJS.CampaignState = (() => {
     if (member.currentJob && !member.jobProgress[member.currentJob]) {
       member.jobProgress[member.currentJob] = { xp: 0, level: 1 };
     }
+
+    // SP / slot budgets — fall back to base char's authored values, then to
+    // PROGRESSION defaults. Re-compute on every load so editing the base
+    // values pushes through to existing saves automatically.
+    if (member.skillSlots == null)    member.skillSlots    = Number(base.skillSlots    ?? PROG.defaultSkillSlots    ?? 4);
+    if (member.passiveSlots == null)  member.passiveSlots  = Number(base.passiveSlots  ?? PROG.defaultPassiveSlots  ?? 3);
+    if (member.skillPoints == null)   member.skillPoints   = Number(base.skillPoints   ?? PROG.defaultSkillPoints   ?? 4);
+    if (member.passivePoints == null) member.passivePoints = Number(base.passivePoints ?? PROG.defaultPassivePoints ?? 3);
+
+    // Equipped sets: drop ids that are no longer in the pool. If the field
+    // was missing entirely (legacy save), auto-fill from the pool so the
+    // member is combat-ready out of the gate. If the player previously
+    // chose an empty list, that empty list is respected.
+    const skillPool = new Set(_skillPoolIds(member, base));
+    const skillsMissing = !Array.isArray(member.equippedSkills);
+    member.equippedSkills = (Array.isArray(member.equippedSkills) ? member.equippedSkills : [])
+      .filter((id) => id && skillPool.has(id));
+
+    const passivePool = new Set(_passivePoolIds(member, base));
+    const passivesMissing = !Array.isArray(member.equippedPassives);
+    member.equippedPassives = (Array.isArray(member.equippedPassives) ? member.equippedPassives : [])
+      .filter((id) => id && passivePool.has(id));
+
+    if (skillsMissing || passivesMissing) {
+      // Only auto-fill the side(s) that were missing.
+      const before = {
+        equippedSkills: skillsMissing ? null : member.equippedSkills,
+        equippedPassives: passivesMissing ? null : member.equippedPassives
+      };
+      if (skillsMissing) member.equippedSkills = [];
+      if (passivesMissing) member.equippedPassives = [];
+      _autoFillEquipped(member, base);
+      // Restore any side that was already explicitly authored (untouched).
+      if (before.equippedSkills) member.equippedSkills = before.equippedSkills;
+      if (before.equippedPassives) member.equippedPassives = before.equippedPassives;
+    }
   }
 
   function snapshotState() {
@@ -631,6 +744,9 @@ window.CJS.CampaignState = (() => {
     normalizeAvailability,
     normalizeSave,
     syncPartyMember: _syncPartyMaxHp,
+    skillPoolIds: _skillPoolIds,
+    passivePoolIds: _passivePoolIds,
+    autoFillEquipped: _autoFillEquipped,
     snapshotState,
     getHubState,
     getActiveHubProblems,

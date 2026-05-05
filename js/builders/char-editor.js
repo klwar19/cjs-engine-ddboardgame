@@ -46,6 +46,7 @@ window.CJS.CharEditor = (() => {
   }
 
   function _createNew() {
+    const PROG = C().PROGRESSION || {};
     const id = DS().create('characters', {
       name: 'New Character', icon: '🧑', team: 'player', rank: 'F', type: 'humanoid',
       stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
@@ -54,6 +55,10 @@ window.CJS.CharEditor = (() => {
       allowedArmorTypes: ['light', 'robe'],
       availableJobs: [], defaultJob: null,
       weaponSlots: 2,
+      skillSlots:    Number(PROG.defaultSkillSlots ?? 4),
+      passiveSlots:  Number(PROG.defaultPassiveSlots ?? 3),
+      skillPoints:   Number(PROG.defaultSkillPoints ?? 4),
+      passivePoints: Number(PROG.defaultPassivePoints ?? 3),
       weak: [], resist: [], immune: [],
       portrait: '',
       battleSfx: {},
@@ -152,6 +157,16 @@ window.CJS.CharEditor = (() => {
             <select id="chr-default-job"></select>
             <div class="dim" style="font-size:0.74rem">— None — keeps the character jobless until campaign assigns one.</div>
           </div>
+        </div>
+
+        <h3>Selection Budget</h3>
+        <div class="hint-box">In Campaign Mode the player explicitly equips a subset of known skills/passives. Both caps apply: total count must fit slots, and total spCost must fit the points budget.</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Skill Slots</label><input type="number" id="chr-skill-slots" value="${Number(c.skillSlots ?? C().PROGRESSION?.defaultSkillSlots ?? 4)}" min="0" max="20"></div>
+          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Passive Slots</label><input type="number" id="chr-passive-slots" value="${Number(c.passiveSlots ?? C().PROGRESSION?.defaultPassiveSlots ?? 3)}" min="0" max="20"></div>
+          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Skill Points</label><input type="number" id="chr-skill-points" value="${Number(c.skillPoints ?? C().PROGRESSION?.defaultSkillPoints ?? 4)}" min="0" max="50"></div>
+          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Passive Points</label><input type="number" id="chr-passive-points" value="${Number(c.passivePoints ?? C().PROGRESSION?.defaultPassivePoints ?? 3)}" min="0" max="50"></div>
+          <div class="dim" style="align-self:flex-end;padding-bottom:6px;font-size:0.78rem">Effective values get +bonuses from level / rank / job / item / passive at runtime.</div>
         </div>
 
         <h3>Innate Passives</h3>
@@ -302,6 +317,10 @@ window.CJS.CharEditor = (() => {
         allowedWeaponTypes: weaponTypeWidget._getTags(),
         allowedArmorTypes: armorTypeWidget._getTags(),
         weaponSlots: Math.max(1, Number(_formEl.querySelector('#chr-weapon-slots').value) || 2),
+        skillSlots:    Math.max(0, Number(_formEl.querySelector('#chr-skill-slots').value) || 0),
+        passiveSlots:  Math.max(0, Number(_formEl.querySelector('#chr-passive-slots').value) || 0),
+        skillPoints:   Math.max(0, Number(_formEl.querySelector('#chr-skill-points').value) || 0),
+        passivePoints: Math.max(0, Number(_formEl.querySelector('#chr-passive-points').value) || 0),
         availableJobs,
         defaultJob: availableJobs.includes(chosenDefaultJob) ? chosenDefaultJob : null,
         innatePassives: passivePicker.getIds(),

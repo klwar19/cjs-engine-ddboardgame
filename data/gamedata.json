@@ -3587,7 +3587,8 @@
           ],
           "description": "Heat-staggers the target on hit."
         }
-      ]
+      ],
+      "spCost": 1
     },
     "taunt_mock": {
       "id": "taunt_mock",
@@ -3653,7 +3654,8 @@
           ],
           "description": "Now also forces target to attack the caster."
         }
-      ]
+      ],
+      "spCost": 1
     },
     "jester_gambit": {
       "id": "jester_gambit",
@@ -3713,7 +3715,8 @@
           },
           "description": "Reach +1."
         }
-      ]
+      ],
+      "spCost": 2
     },
     "basic_attack": {
       "id": "basic_attack",
@@ -3735,7 +3738,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Standard melee attack."
+      "description": "Standard melee attack.",
+      "spCost": 0
     },
     "thunder_shot": {
       "id": "thunder_shot",
@@ -3765,7 +3769,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Bowy's signature crossbow shot. Long range, lightning element."
+      "description": "Bowy's signature crossbow shot. Long range, lightning element.",
+      "spCost": 1
     },
     "piercing_bolt": {
       "id": "piercing_bolt",
@@ -3795,7 +3800,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR."
+      "description": "Armor-piercing bolt that penetrates in a line. Reduces target DR.",
+      "spCost": 1
     },
     "suppressive_fire": {
       "id": "suppressive_fire",
@@ -3825,7 +3831,8 @@
         "powerPerLevel": 0.12,
         "maxLevel": 5
       },
-      "description": "Spray of bolts in a cone. Lower damage but slows enemies. QTE: Mash!"
+      "description": "Spray of bolts in a cone. Lower damage but slows enemies. QTE: Mash!",
+      "spCost": 1
     },
     "frost_touch": {
       "id": "frost_touch",
@@ -3855,7 +3862,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Gentle ice magic. Applies frostbite, slowing the target."
+      "description": "Gentle ice magic. Applies frostbite, slowing the target.",
+      "spCost": 1
     },
     "ice_shield": {
       "id": "ice_shield",
@@ -3884,7 +3892,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Creates an ice barrier on an ally that absorbs damage."
+      "description": "Creates an ice barrier on an ally that absorbs damage.",
+      "spCost": 1
     },
     "healing_light": {
       "id": "healing_light",
@@ -3913,7 +3922,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Warm healing magic. Restores HP and grants regen."
+      "description": "Warm healing magic. Restores HP and grants regen.",
+      "spCost": 1
     },
     "hunters_strike": {
       "id": "hunters_strike",
@@ -3943,7 +3953,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Precise strike that marks the target, increasing damage taken."
+      "description": "Precise strike that marks the target, increasing damage taken.",
+      "spCost": 1
     },
     "trap_set": {
       "id": "trap_set",
@@ -3972,7 +3983,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Place a trap that creates a poison zone. Veteran hunting tactic."
+      "description": "Place a trap that creates a poison zone. Veteran hunting tactic.",
+      "spCost": 1
     },
     "rally_cry": {
       "id": "rally_cry",
@@ -4001,7 +4013,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Garr rallies the party. Buffs all allies' damage."
+      "description": "Garr rallies the party. Buffs all allies' damage.",
+      "spCost": 1
     },
     "wolf_bite": {
       "id": "wolf_bite",
@@ -4031,7 +4044,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Freezing bite that chills to the bone."
+      "description": "Freezing bite that chills to the bone.",
+      "spCost": 1
     },
     "pack_howl": {
       "id": "pack_howl",
@@ -4060,7 +4074,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Howl that empowers nearby wolves."
+      "description": "Howl that empowers nearby wolves.",
+      "spCost": 1
     },
     "ice_shard": {
       "id": "ice_shard",
@@ -4090,7 +4105,8 @@
         "powerPerLevel": 0.12,
         "maxLevel": 5
       },
-      "description": "Ranged ice projectile."
+      "description": "Ranged ice projectile.",
+      "spCost": 1
     },
     "chill_wind": {
       "id": "chill_wind",
@@ -4119,7 +4135,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Blast of freezing wind in a cone. Creates ice terrain."
+      "description": "Blast of freezing wind in a cone. Creates ice terrain.",
+      "spCost": 1
     },
     "bear_maul": {
       "id": "bear_maul",
@@ -4148,7 +4165,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Devastating swipe that knocks the target back."
+      "description": "Devastating swipe that knocks the target back.",
+      "spCost": 1
     },
     "bear_roar": {
       "id": "bear_roar",
@@ -4170,7 +4188,8 @@
         "powerPerLevel": 0.1,
         "maxLevel": 5
       },
-      "description": "Roar that terrifies nearby enemies."
+      "description": "Roar that terrifies nearby enemies.",
+      "spCost": 1
     },
     "chimera_flame_wave": {
       "id": "chimera_flame_wave",
@@ -4206,7 +4225,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Cone of flame from the fire head. Burns and creates fire terrain."
+      "description": "Cone of flame from the fire head. Burns and creates fire terrain.",
+      "spCost": 1
     },
     "chimera_frost_breath": {
       "id": "chimera_frost_breath",
@@ -4242,7 +4262,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Devastating breath from the ice head. Line AoE, heavy frostbite."
+      "description": "Devastating breath from the ice head. Line AoE, heavy frostbite.",
+      "spCost": 1
     },
     "chimera_fire_swipe": {
       "id": "chimera_fire_swipe",
@@ -4271,7 +4292,8 @@
         "powerPerLevel": 0.15,
         "maxLevel": 5
       },
-      "description": "Fiery claw swipe. Basic melee attack of the chimera."
+      "description": "Fiery claw swipe. Basic melee attack of the chimera.",
+      "spCost": 1
     }
   },
   "items": {
@@ -4523,7 +4545,8 @@
           }
         }
       ],
-      "description": "The universe finds Bin entertaining. Slightly better luck and crits."
+      "description": "The universe finds Bin entertaining. Slightly better luck and crits.",
+      "spCost": 1
     },
     "comedy_armor": {
       "id": "comedy_armor",
@@ -4548,7 +4571,8 @@
           }
         }
       ],
-      "description": "If you're already the joke, nothing hits as hard. Minor DR and evasion."
+      "description": "If you're already the joke, nothing hits as hard. Minor DR and evasion.",
+      "spCost": 1
     },
     "marksmans_eye": {
       "id": "marksmans_eye",
@@ -4574,7 +4598,8 @@
           }
         }
       ],
-      "description": "Bowy's trained eye. Better accuracy and extended basic attack range."
+      "description": "Bowy's trained eye. Better accuracy and extended basic attack range.",
+      "spCost": 1
     },
     "iron_hide": {
       "id": "iron_hide",
@@ -4599,7 +4624,8 @@
           }
         }
       ],
-      "description": "Half-orc/half-boar toughness. Thick skin."
+      "description": "Half-orc/half-boar toughness. Thick skin.",
+      "spCost": 1
     },
     "fae_blood": {
       "id": "fae_blood",
@@ -4624,7 +4650,8 @@
           }
         }
       ],
-      "description": "Hidden Fae heritage. Natural mana recovery and magic resistance."
+      "description": "Hidden Fae heritage. Natural mana recovery and magic resistance.",
+      "spCost": 1
     },
     "gentle_heart": {
       "id": "gentle_heart",
@@ -4649,7 +4676,8 @@
           }
         }
       ],
-      "description": "Mitia's kindness strengthens her magic and charm."
+      "description": "Mitia's kindness strengthens her magic and charm.",
+      "spCost": 1
     },
     "veterans_instinct": {
       "id": "veterans_instinct",
@@ -4674,7 +4702,8 @@
           }
         }
       ],
-      "description": "Decades of hunting hone reflexes. Counter chance on melee + perception."
+      "description": "Decades of hunting hone reflexes. Counter chance on melee + perception.",
+      "spCost": 1
     },
     "alpha_presence": {
       "id": "alpha_presence",
@@ -4693,7 +4722,8 @@
           }
         }
       ],
-      "description": "Pack alpha. Nearby wolves deal more damage."
+      "description": "Pack alpha. Nearby wolves deal more damage.",
+      "spCost": 1
     },
     "frozen_carapace": {
       "id": "frozen_carapace",
@@ -4724,7 +4754,8 @@
           }
         }
       ],
-      "description": "The chimera's frostfire-hardened scales. High DR and reflects damage."
+      "description": "The chimera's frostfire-hardened scales. High DR and reflects damage.",
+      "spCost": 1
     }
   },
   "characters": {

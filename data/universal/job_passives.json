@@ -22,11 +22,16 @@
       "effects": [
         {
           "effectId": "damage_mod_physical",
-          "overrides": { "value": 10 }
+          "overrides": {
+            "value": 10
+          }
         }
       ],
       "description": "+10% physical damage. Trained on sword forms (the engine applies it whenever physical damage is dealt; restrict by weapon when conditional weapon-type triggers are wired).",
-      "tags": ["job:warrior"]
+      "tags": [
+        "job:warrior"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_warriors_resolve",
@@ -37,11 +42,17 @@
       "effects": [
         {
           "effectId": "berserk_low_hp",
-          "overrides": { "value": 20, "threshold": 30 }
+          "overrides": {
+            "value": 20,
+            "threshold": 30
+          }
         }
       ],
       "description": "Below 30% HP: enrages, +20% damage. Hooks the existing on_low_hp berserk effect.",
-      "tags": ["job:warrior"]
+      "tags": [
+        "job:warrior"
+      ],
+      "spCost": 2
     },
     {
       "id": "pas_shield_brace",
@@ -52,11 +63,16 @@
       "effects": [
         {
           "effectId": "dr_mod_physical",
-          "overrides": { "value": 3 }
+          "overrides": {
+            "value": 3
+          }
         }
       ],
       "description": "+3 physical DR (the Knight braces even outside the defend round; defend still adds the action-economy bonus on top).",
-      "tags": ["job:knight"]
+      "tags": [
+        "job:knight"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_bulwark",
@@ -67,11 +83,16 @@
       "effects": [
         {
           "effectId": "dr_mod_all",
-          "overrides": { "value": 1 }
+          "overrides": {
+            "value": 1
+          }
         }
       ],
       "description": "+1 DR vs all damage types.",
-      "tags": ["job:knight"]
+      "tags": [
+        "job:knight"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_indomitable",
@@ -80,11 +101,26 @@
       "trigger": "passive",
       "category": "status_resist",
       "effects": [
-        { "effectId": "status_resist_mod", "overrides": { "status": "fear",  "value": 100 } },
-        { "effectId": "status_resist_mod", "overrides": { "status": "charm", "value": 100 } }
+        {
+          "effectId": "status_resist_mod",
+          "overrides": {
+            "status": "fear",
+            "value": 100
+          }
+        },
+        {
+          "effectId": "status_resist_mod",
+          "overrides": {
+            "status": "charm",
+            "value": 100
+          }
+        }
       ],
       "description": "Immune to fear and charm.",
-      "tags": ["job:knight"]
+      "tags": [
+        "job:knight"
+      ],
+      "spCost": 2
     },
     {
       "id": "pas_rage_buildup",
@@ -95,11 +131,16 @@
       "effects": [
         {
           "effectId": "crit_rate_mod",
-          "overrides": { "value": 5 }
+          "overrides": {
+            "value": 5
+          }
         }
       ],
       "description": "+5% crit chance baseline. (Per-round stacking will swap in once on_turn_end stacking is supported.)",
-      "tags": ["job:berserker"]
+      "tags": [
+        "job:berserker"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_bloodlust",
@@ -110,11 +151,17 @@
       "effects": [
         {
           "effectId": "heal_on_kill",
-          "overrides": { "value": 5, "source": "percent_max" }
+          "overrides": {
+            "value": 5,
+            "source": "percent_max"
+          }
         }
       ],
       "description": "Heal 5% max HP on kill.",
-      "tags": ["job:berserker"]
+      "tags": [
+        "job:berserker"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_frenzy",
@@ -123,10 +170,19 @@
       "trigger": "on_low_hp",
       "category": "low_hp",
       "effects": [
-        { "effectId": "berserk_low_hp", "overrides": { "value": 30, "threshold": 50 } }
+        {
+          "effectId": "berserk_low_hp",
+          "overrides": {
+            "value": 30,
+            "threshold": 50
+          }
+        }
       ],
       "description": "Below 50% HP: +30% damage (uses the existing berserk_low_hp hook).",
-      "tags": ["job:berserker"]
+      "tags": [
+        "job:berserker"
+      ],
+      "spCost": 2
     },
     {
       "id": "pas_dodge_step",
@@ -135,10 +191,18 @@
       "trigger": "passive",
       "category": "evasion",
       "effects": [
-        { "effectId": "evasion_mod", "overrides": { "value": 5 } }
+        {
+          "effectId": "evasion_mod",
+          "overrides": {
+            "value": 5
+          }
+        }
       ],
       "description": "+5% evasion.",
-      "tags": ["job:thief"]
+      "tags": [
+        "job:thief"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_backstab",
@@ -147,10 +211,18 @@
       "trigger": "passive",
       "category": "damage_bonus",
       "effects": [
-        { "effectId": "damage_mod_physical", "overrides": { "value": 10 } }
+        {
+          "effectId": "damage_mod_physical",
+          "overrides": {
+            "value": 10
+          }
+        }
       ],
       "description": "+10% physical damage. (Conditional surrounded-target bonus wires once that trigger is added.)",
-      "tags": ["job:thief"]
+      "tags": [
+        "job:thief"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_eagle_eye",
@@ -159,10 +231,18 @@
       "trigger": "passive",
       "category": "range",
       "effects": [
-        { "effectId": "range_mod", "overrides": { "value": 1 } }
+        {
+          "effectId": "range_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
       ],
       "description": "+1 range to skills and basic attacks.",
-      "tags": ["job:archer"]
+      "tags": [
+        "job:archer"
+      ],
+      "spCost": 1
     },
     {
       "id": "pas_marksman",
@@ -171,10 +251,18 @@
       "trigger": "passive",
       "category": "damage_bonus",
       "effects": [
-        { "effectId": "damage_mod_physical", "overrides": { "value": 15 } }
+        {
+          "effectId": "damage_mod_physical",
+          "overrides": {
+            "value": 15
+          }
+        }
       ],
       "description": "+15% physical damage. (Range-conditional bonus wires once that trigger is added.)",
-      "tags": ["job:archer"]
+      "tags": [
+        "job:archer"
+      ],
+      "spCost": 2
     }
   ]
 }

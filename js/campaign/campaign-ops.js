@@ -75,6 +75,10 @@ window.CJS.CampaignOps = (() => {
         case 'unlock_job': return `Unlock job ${op.jobId || op.id}`;
         case 'gain_job_xp': return `Gain ${op.amount || 0} job XP`;
         case 'set_job_level': return `Set job ${op.jobId || op.id} level to ${op.level || 1}`;
+        case 'equip_skill': return `Equip skill ${op.skillId || op.id}`;
+        case 'unequip_skill': return `Unequip skill ${op.skillId || op.id}`;
+        case 'equip_passive': return `Equip passive ${op.passiveId || op.id}`;
+        case 'unequip_passive': return `Unequip passive ${op.passiveId || op.id}`;
         case 'log': return op.text || 'Log entry';
         default: return op.op || 'operation';
       }
@@ -147,6 +151,11 @@ window.CJS.CampaignOps = (() => {
       case 'unlock_job': return _unlockJob(state, op);
       case 'gain_job_xp': return _gainJobXp(state, op);
       case 'set_job_level': return _setJobLevel(state, op);
+      // ── Skill / passive selection (slot + SP budget) ──
+      case 'equip_skill': return _equipSelection(state, op, 'skill');
+      case 'unequip_skill': return _unequipSelection(state, op, 'skill');
+      case 'equip_passive': return _equipSelection(state, op, 'passive');
+      case 'unequip_passive': return _unequipSelection(state, op, 'passive');
       case 'add_quest': return _addQuest(state, op.quest || op, options);
       case 'update_quest_progress': return _questProgress(state, op);
       case 'complete_quest': return _completeQuest(state, op.questId || op.id, options);
@@ -385,6 +394,9 @@ window.CJS.CampaignOps = (() => {
     for (const id of _resolveTargets(state, op.target || op.characterId)) {
       const member = state.party[id];
       member.learnedSkills = (member.learnedSkills || []).filter((entry) => _skillEntryId(entry) !== skillId);
+      // Drop from the equipped set too, so the budget recovers and the
+      // combat snapshot doesn't reference a missing skill.
+      member.equippedSkills = (member.equippedSkills || []).filter((entry) => entry !== skillId);
       _log(state, `${member.name || id} forgot ${_recordName('skills', skillId)}.`);
     }
   }
@@ -409,7 +421,76 @@ window.CJS.CampaignOps = (() => {
     for (const id of _resolveTargets(state, op.target || op.characterId)) {
       const member = state.party[id];
       member.learnedPassives = (member.learnedPassives || []).filter((entry) => entry !== passiveId);
+      // Also drop from equippedPassives if it was equipped, so the budget
+      // recovers and downstream snapshots don't reference a missing entry.
+      member.equippedPassives = (member.equippedPassives || []).filter((entry) => entry !== passiveId);
       _log(state, `${member.name || id} removed passive ${_recordName('passives', passiveId) || passiveId}.`);
+    }
+  }
+
+  // Skill / passive equip selection — both slot count AND SP budget apply.
+  // op shape: { target, skillId | passiveId | id }
+  // kind: 'skill' | 'passive'
+  function _equipSelection(state, op, kind) {
+    const recId = op[`${kind}Id`] || op.id;
+    if (!recId) return;
+    const collection = kind === 'skill' ? 'skills' : 'passives';
+    const eqField    = kind === 'skill' ? 'equippedSkills' : 'equippedPassives';
+    const slotsField = kind === 'skill' ? 'skillSlots' : 'passiveSlots';
+    const pointsField = kind === 'skill' ? 'skillPoints' : 'passivePoints';
+    const F = window.CJS.Formulas;
+
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      const base = DS().get('characters', member.baseCharacterId || id) || {};
+      const pool = kind === 'skill'
+        ? (CS().skillPoolIds ? CS().skillPoolIds(member, base) : [])
+        : (CS().passivePoolIds ? CS().passivePoolIds(member, base) : []);
+      if (!pool.includes(recId)) {
+        _log(state, `${member.name || id} cannot equip ${recId}: not in pool.`);
+        continue;
+      }
+      member[eqField] = Array.isArray(member[eqField]) ? member[eqField] : [];
+      if (member[eqField].includes(recId)) continue;
+
+      const cap = (F && F[`calcEffective${kind === 'skill' ? 'Skill' : 'Passive'}Slots`])
+        ? F[`calcEffective${kind === 'skill' ? 'Skill' : 'Passive'}Slots`](member, base)
+        : Number(member[slotsField] || 0);
+      if (member[eqField].length >= cap) {
+        _log(state, `${member.name || id} cannot equip ${recId}: ${kind} slot cap (${cap}) reached.`);
+        continue;
+      }
+
+      const rec = DS().get(collection, recId);
+      const cost = F?.calcSpCost ? F.calcSpCost(rec) : 1;
+      const spCap = (F && F[`calcEffective${kind === 'skill' ? 'Skill' : 'Passive'}Points`])
+        ? F[`calcEffective${kind === 'skill' ? 'Skill' : 'Passive'}Points`](member, base)
+        : Number(member[pointsField] || 0);
+      const used = F?.calcEquippedSpCost ? F.calcEquippedSpCost(member[eqField], collection) : member[eqField].length;
+      if (used + cost > spCap) {
+        _log(state, `${member.name || id} cannot equip ${rec?.name || recId}: not enough ${kind} points (${used}+${cost} > ${spCap}).`);
+        continue;
+      }
+
+      member[eqField].push(recId);
+      _log(state, `${member.name || id} equipped ${rec?.name || recId}.`);
+    }
+  }
+
+  function _unequipSelection(state, op, kind) {
+    const recId = op[`${kind}Id`] || op.id;
+    if (!recId) return;
+    const eqField = kind === 'skill' ? 'equippedSkills' : 'equippedPassives';
+    const collection = kind === 'skill' ? 'skills' : 'passives';
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      if (!Array.isArray(member[eqField])) continue;
+      const before = member[eqField].length;
+      member[eqField] = member[eqField].filter((entry) => entry !== recId);
+      if (member[eqField].length !== before) {
+        const rec = DS().get(collection, recId);
+        _log(state, `${member.name || id} unequipped ${rec?.name || recId}.`);
+      }
     }
   }
 

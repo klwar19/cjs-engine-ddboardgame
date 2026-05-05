@@ -222,27 +222,39 @@ window.CJS.CampaignCombatBridge = (() => {
     for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
       stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
     }
-    const skills = _mergeSkillEntries(base.skills || [], member.learnedSkills || []);
-    _applySkillProgressLevels(skills, member.skillProgress || {});
-    // Apply job-granted skills/passives that aren't in learnedSkills/learnedPassives yet.
-    // (Normally _learnSkill keeps these in sync, but during combat we tolerate either path.)
+
+    // Filter to only the EQUIPPED skills the player has selected. The pool
+    // may include base.skills, learnedSkills, and job grants; equippedSkills
+    // (set by campaign-ops + auto-fill normalization) is the player's
+    // chosen subset. Item-granted skills are layered in by stat-compiler at
+    // combat time; they don't need a slot.
+    const equippedSkillIds = new Set(member.equippedSkills || []);
+    const fullSkills = _mergeSkillEntries(base.skills || [], member.learnedSkills || []);
     const F = window.CJS.Formulas;
-    const passives = _mergeIds(base.innatePassives || [], member.learnedPassives || []);
+
+    // Job-granted skills can be equipped if the player picked them; they get
+    // the player's progress level, same as any other skill.
     if (member.currentJob && F?.collectJobGrants) {
       const job = DS().get('jobs', member.currentJob);
-      const prog = member.jobProgress?.[member.currentJob];
-      const jobLevel = Math.max(1, Number(prog?.level || 1));
-      const grants = F.collectJobGrants(job || {}, jobLevel);
+      const lvl = Math.max(1, Number(member.jobProgress?.[member.currentJob]?.level || 1));
+      const grants = F.collectJobGrants(job || {}, lvl);
       for (const sid of grants.skills || []) {
-        if (!skills.some((entry) => (typeof entry === 'string' ? entry : entry.skillId) === sid)) {
-          const lvl = Math.max(1, Number(member.skillProgress?.[sid]?.level || 1));
-          skills.push({ skillId: sid, overrides: {}, level: lvl });
+        if (!fullSkills.some((entry) => (typeof entry === 'string' ? entry : entry.skillId) === sid)) {
+          fullSkills.push({ skillId: sid, overrides: {}, level: 1 });
         }
       }
-      for (const pid of grants.passives || []) {
-        if (!passives.includes(pid)) passives.push(pid);
-      }
     }
+    _applySkillProgressLevels(fullSkills, member.skillProgress || {});
+
+    const skills = fullSkills.filter((entry) => {
+      const sid = typeof entry === 'string' ? entry : entry?.skillId;
+      return equippedSkillIds.has(sid);
+    });
+
+    // Equipped passives — same idea. Innate passives count against slots
+    // but auto-fill pre-selects them, so existing characters keep their
+    // innate behavior.
+    const passives = (member.equippedPassives || []).slice();
     return {
       ..._clone(base),
       id,

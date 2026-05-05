@@ -596,7 +596,28 @@ window.CJS.CONST = (() => {
     jobXpPerEnemyRank: {
       F:  10, E:  18, D:  30, C:  50,
       B:  80, A: 120, S: 175, SR: 250, SSR: 350
-    }
+    },
+    // ── Skill / Passive selection budget ────────────────────────────
+    // Each character has two budgets:
+    //   * a SLOT cap (count of equipped entries)
+    //   * a POINT budget (sum of spCost across equipped entries)
+    // Both apply — equipping fails if either is exceeded.
+    defaultSkillSlots: 4,
+    defaultPassiveSlots: 3,
+    defaultSkillPoints: 4,
+    defaultPassivePoints: 3,
+    defaultSpCost: 1,
+    // Bonuses gained automatically over the character's career. Kept here so
+    // future content can lean on the same numbers without hard-coding.
+    skillSlotsPerCharLevel:    { every: 5,  amount: 1 },  // +1 slot every 5 levels
+    passiveSlotsPerCharLevel:  { every: 8,  amount: 1 },
+    skillPointsPerCharLevel:   { every: 4,  amount: 1 },  // +1 SP every 4 levels
+    passivePointsPerCharLevel: { every: 6,  amount: 1 },
+    // Per-rank bonuses (cumulative across the rank order F→SSR).
+    rankSkillSlotBonus:       { F: 0, E: 0, D: 1, C: 1, B: 2, A: 2, S: 3, SR: 3, SSR: 4 },
+    rankPassiveSlotBonus:     { F: 0, E: 0, D: 0, C: 1, B: 1, A: 2, S: 2, SR: 3, SSR: 3 },
+    rankSkillPointBonus:      { F: 0, E: 1, D: 1, C: 2, B: 2, A: 3, S: 3, SR: 4, SSR: 5 },
+    rankPassivePointBonus:    { F: 0, E: 0, D: 1, C: 1, B: 2, A: 2, S: 3, SR: 3, SSR: 4 }
   };
 
   // ── PUBLIC API ─────────────────────────────────────────────────────

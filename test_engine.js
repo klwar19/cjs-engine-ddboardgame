@@ -1107,6 +1107,47 @@ assert('xp scales up with rank', PROG.xpPerEnemyRank.A > PROG.xpPerEnemyRank.F);
 assert('default skill cap is now 5', PROG.skillMaxLevelDefault === 5);
 assertEq('default job cap is 5', PROG.jobMaxLevelDefault, 5);
 
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 19: Skill / passive selection budget (SP + slot caps)
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 19: SP / slot budget ──');
+
+// Author 5 simple skills and a member with the default 4-slot / 4-SP budget.
+const sp1 = DS.create('skills', { name: 'A', power: 5, ap: 1, mp: 0, scalingStat: 'S', range: 1, qte: 'none', spCost: 1, levelScaling: { maxLevel: 5 } });
+const sp2 = DS.create('skills', { name: 'B', power: 5, ap: 1, mp: 0, scalingStat: 'S', range: 1, qte: 'none', spCost: 1, levelScaling: { maxLevel: 5 } });
+const sp3 = DS.create('skills', { name: 'C', power: 5, ap: 1, mp: 0, scalingStat: 'S', range: 1, qte: 'none', spCost: 1, levelScaling: { maxLevel: 5 } });
+const sp4 = DS.create('skills', { name: 'D', power: 5, ap: 1, mp: 0, scalingStat: 'S', range: 1, qte: 'none', spCost: 1, levelScaling: { maxLevel: 5 } });
+const sp5 = DS.create('skills', { name: 'E (heavy)', power: 5, ap: 1, mp: 0, scalingStat: 'S', range: 1, qte: 'none', spCost: 3, levelScaling: { maxLevel: 5 } });
+
+const memberWithPool = {
+  baseCharacterId: 'fake_base',
+  level: 1, rank: 'F',
+  skillSlots: 4, passiveSlots: 3, skillPoints: 4, passivePoints: 3,
+  equippedSkills: [sp1, sp2],
+  equippedPassives: []
+};
+const baseFake = { stats: { S: 5 } };
+assertEq('effective skill slots = base 4 (no level/rank/job/item bonuses)', F.calcEffectiveSkillSlots(memberWithPool, baseFake), 4);
+assertEq('effective skill points = base 4', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 4);
+assertEq('current SP usage from 2x cost-1 = 2', F.calcEquippedSpCost([sp1, sp2], 'skills'), 2);
+assertEq('SP cost of heavy skill = 3', F.calcSpCost(DS.get('skills', sp5)), 3);
+
+// Per-level cadence: at level 5 we should gain +1 skill point per the
+// PROGRESSION.skillPointsPerCharLevel cadence (every: 4, amount: 1).
+memberWithPool.level = 5;
+assertEq('level 5 grants +1 skill point (every-4 cadence)', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 5);
+
+// Rank E grants +1 skill point per CONST.PROGRESSION.rankSkillPointBonus.
+memberWithPool.rank = 'E';
+memberWithPool.level = 1;
+assertEq('rank E grants +1 skill point baseline', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 5);
+
+DS.remove('skills', sp1);
+DS.remove('skills', sp2);
+DS.remove('skills', sp3);
+DS.remove('skills', sp4);
+DS.remove('skills', sp5);
+
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════
 console.log('\n══════════════════════════════════════════');

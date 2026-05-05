@@ -557,6 +557,134 @@ window.CJS.Formulas = (() => {
       .sort((a, b) => Number(a.level) - Number(b.level));
   }
 
+  // ── SP / SLOT BUDGETS ─────────────────────────────────────────────
+  // Effective skill/passive slot caps and SP budgets are computed from:
+  //   1. base authored value on the character (or defaults)
+  //   2. + per-level steps (every N levels → +X)
+  //   3. + per-rank bonus
+  //   4. + sum of bonuses contributed by the active job tiers
+  //   5. + sum of bonuses contributed by EQUIPPED items (carried in
+  //      member.equippedItemBonuses for the future when items declare them)
+  //
+  // The caller passes the member shape (level, rank, currentJob, jobProgress)
+  // and base char (for authored caps). Item bonuses are read off the member
+  // record so callers don't have to re-resolve item DataStore lookups here.
+  // DataStore lookup helper available inside Formulas without hard imports.
+  // Defined first so the helpers below can call it freely.
+  function _DS() { return window.CJS && window.CJS.DataStore; }
+
+  function _bonusFromCadence(level, cadence) {
+    const every = Math.max(1, Number(cadence?.every || 1));
+    const amount = Number(cadence?.amount || 0);
+    if (!amount) return 0;
+    const lvl = Math.max(1, Number(level || 1));
+    return Math.floor((lvl - 1) / every) * amount;
+  }
+
+  function _jobSlotBonus(member, base, kind) {
+    if (!member?.currentJob) return 0;
+    const job = _DS()?.get?.('jobs', member.currentJob);
+    if (!job || !Array.isArray(job.levels)) return 0;
+    const cap = Math.min(getJobMaxLevel(job), Math.max(1, Number(member.jobProgress?.[member.currentJob]?.level || 1)));
+    let total = 0;
+    for (const tier of job.levels) {
+      const lvl = Number(tier?.level || 0);
+      if (!lvl || lvl > cap) continue;
+      total += Number(tier?.[kind] || 0);
+    }
+    return total;
+  }
+
+  function _itemSlotBonus(member, kind) {
+    if (!member?.equipment) return 0;
+    let total = 0;
+    for (const itemId of member.equipment) {
+      const item = _DS()?.get?.('items', itemId);
+      if (!item) continue;
+      total += Number(item[kind] || 0);
+    }
+    return total;
+  }
+
+  function _passiveSlotBonus(member, kind) {
+    // Passives can themselves contribute slot/SP bonuses (e.g. a passive that
+    // grants +1 skill slot). Read from the resolved passive record's
+    // top-level field. We count only EQUIPPED passives so the budget is
+    // self-consistent (an unequipped passive shouldn't grant its own slot).
+    let total = 0;
+    const ids = new Set(member?.equippedPassives || []);
+    for (const pid of ids) {
+      const passive = _DS()?.get?.('passives', pid);
+      if (!passive) continue;
+      total += Number(passive[kind] || 0);
+    }
+    return total;
+  }
+
+  function calcEffectiveSkillSlots(member = {}, base = {}) {
+    const PROG = _progress();
+    const start = Number(member.skillSlots ?? base.skillSlots ?? PROG.defaultSkillSlots ?? 4);
+    return Math.max(0, start
+      + _bonusFromCadence(member.level, PROG.skillSlotsPerCharLevel)
+      + Number((PROG.rankSkillSlotBonus || {})[member.rank || base.rank || 'F'] || 0)
+      + _jobSlotBonus(member, base, 'skillSlotBonus')
+      + _itemSlotBonus(member, 'skillSlotBonus')
+      + _passiveSlotBonus(member, 'skillSlotBonus'));
+  }
+
+  function calcEffectivePassiveSlots(member = {}, base = {}) {
+    const PROG = _progress();
+    const start = Number(member.passiveSlots ?? base.passiveSlots ?? PROG.defaultPassiveSlots ?? 3);
+    return Math.max(0, start
+      + _bonusFromCadence(member.level, PROG.passiveSlotsPerCharLevel)
+      + Number((PROG.rankPassiveSlotBonus || {})[member.rank || base.rank || 'F'] || 0)
+      + _jobSlotBonus(member, base, 'passiveSlotBonus')
+      + _itemSlotBonus(member, 'passiveSlotBonus')
+      + _passiveSlotBonus(member, 'passiveSlotBonus'));
+  }
+
+  function calcEffectiveSkillPoints(member = {}, base = {}) {
+    const PROG = _progress();
+    const start = Number(member.skillPoints ?? base.skillPoints ?? PROG.defaultSkillPoints ?? 4);
+    return Math.max(0, start
+      + _bonusFromCadence(member.level, PROG.skillPointsPerCharLevel)
+      + Number((PROG.rankSkillPointBonus || {})[member.rank || base.rank || 'F'] || 0)
+      + _jobSlotBonus(member, base, 'skillPointBonus')
+      + _itemSlotBonus(member, 'skillPointBonus')
+      + _passiveSlotBonus(member, 'skillPointBonus'));
+  }
+
+  function calcEffectivePassivePoints(member = {}, base = {}) {
+    const PROG = _progress();
+    const start = Number(member.passivePoints ?? base.passivePoints ?? PROG.defaultPassivePoints ?? 3);
+    return Math.max(0, start
+      + _bonusFromCadence(member.level, PROG.passivePointsPerCharLevel)
+      + Number((PROG.rankPassivePointBonus || {})[member.rank || base.rank || 'F'] || 0)
+      + _jobSlotBonus(member, base, 'passivePointBonus')
+      + _itemSlotBonus(member, 'passivePointBonus')
+      + _passiveSlotBonus(member, 'passivePointBonus'));
+  }
+
+  // SP cost of a single skill / passive record. Authors set spCost on the
+  // record; falls back to PROGRESSION.defaultSpCost (currently 1).
+  function calcSpCost(record) {
+    const PROG = _progress();
+    const authored = Number(record?.spCost);
+    if (Number.isFinite(authored) && authored >= 0) return authored;
+    return Number(PROG.defaultSpCost ?? 1);
+  }
+
+  // Sum SP cost across an array of skill / passive ids.
+  function calcEquippedSpCost(ids = [], type = 'skills') {
+    let total = 0;
+    for (const id of ids || []) {
+      const rec = _DS()?.get?.(type, id);
+      if (!rec) continue;
+      total += calcSpCost(rec);
+    }
+    return total;
+  }
+
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     calcMaxHP, calcMaxMP, calcPlotArmorHP,
@@ -576,6 +704,10 @@ window.CJS.Formulas = (() => {
     getJobMaxLevel, calcJobLevelForXp, calcJobXpToNextLevel,
     calcCharLevelStatBonus, calcJobLevelStatBonus, collectJobGrants,
     canUnlockJob,
-    applySkillLevelPerks, getNextSkillPerk, getEarnedSkillPerks
+    applySkillLevelPerks, getNextSkillPerk, getEarnedSkillPerks,
+    // SP / slot budgets
+    calcEffectiveSkillSlots, calcEffectivePassiveSlots,
+    calcEffectiveSkillPoints, calcEffectivePassivePoints,
+    calcSpCost, calcEquippedSpCost
   });
 })();
