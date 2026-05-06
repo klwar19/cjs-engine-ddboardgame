@@ -391,35 +391,57 @@ window.CJS.CampaignUI = (() => {
     const xpToNext = F?.calcCharXpToNextLevel ? F.calcCharXpToNextLevel(charXp, charLevel) : null;
     const charXpMeta = xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`;
     return `
-      <div class="campaign-roster-member">
-        <div class="campaign-roster-head">
-          <div class="campaign-character-head">
-            <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _esc(member.icon || member.name?.[0] || '?')}</div>
-            <div>
-              <strong>${_esc(member.name || base?.name || id)}</strong>
-              <div class="campaign-muted">Lv ${charLevel} | ${charXpMeta} | Rank ${_esc(member.rank || base?.rank || 'F')} | ${isBench ? 'Bench' : 'Active'}</div>
-              <div class="campaign-muted">${_renderJobChip(id, member)}</div>
-              <div class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</div>
+      <div class="campaign-roster-member" style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; gap:20px; align-items:stretch;">
+          <!-- HUGE PORTRAIT (left) -->
+          <div style="width:230px; flex-shrink:0; border-radius:6px; overflow:hidden; border:2px solid var(--cmp-frame-gold, #aaa); background:#111; display:flex;">
+            ${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="" style="width:100%; object-fit:cover;">` : `<div style="display:grid; place-items:center; width:100%; font-size:6rem; color:#555;">${_esc(member.icon || member.name?.[0] || '?')}</div>`}
+          </div>
+          
+          <!-- STATS/INFO (right) -->
+          <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+            <!-- HEADER -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1px solid var(--campaign-line); padding-bottom:8px;">
+              <div>
+                <strong style="font-size:1.6rem; color:var(--campaign-accent); font-family:'Cinzel', serif;">${_esc(member.name || base?.name || id)}</strong>
+                <div class="campaign-muted">Lv ${charLevel} | Rank ${_esc(member.rank || base?.rank || 'F')} | ${isBench ? 'Bench' : 'Active'}</div>
+                <div class="campaign-muted">${_renderJobChip(id, member)} | ${charXpMeta} | ${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</div>
+              </div>
+              <div class="campaign-row-actions" style="margin-top:0;">
+                <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
+                <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
+                <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
+                <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
+                <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
+                <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
+                <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
+                <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
+              </div>
+            </div>
+            
+            <!-- MID: HP/MP/Stats + Elements -->
+            <div style="display:flex; gap:24px; flex:1;">
+              <!-- HP/MP & core stats -->
+              <div style="flex: 0 0 220px; display:flex; flex-direction:column; justify-content:flex-start;">
+                <div class="campaign-bar" style="margin-bottom:6px;"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
+                <div class="campaign-bar" style="margin-bottom:16px;"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2px 12px; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px; border:1px solid var(--campaign-line);">
+                  ${Object.entries(stats).map(([stat, value]) => `
+                    <div style="display:flex; justify-content:space-between;">
+                      <span style="color:var(--campaign-muted);">${_esc(_statName(stat))}</span>
+                      <strong style="color:var(--cmp-parchment, #fff);">${Number(value || 0)}</strong>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              
+              <!-- Affinities -->
+              <div style="flex:1;">
+                ${_renderResistances(base, member, stats)}
+              </div>
             </div>
           </div>
-          <div class="campaign-row-actions">
-            <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
-            <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
-            <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
-            <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
-            <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
-            <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
-            <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
-            <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
-          </div>
-        </div>
-        <div class="campaign-resources-compact">
-          <div class="campaign-bar"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
-          <div class="campaign-bar"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
-        </div>
-        ${_renderResistances(base, member, stats)}
-        <div class="campaign-stat-grid">
-          ${Object.entries(stats).map(([stat, value]) => `<span><b>${_esc(stat)}</b>${Number(value || 0)}<small>${_esc(_statName(stat))}</small></span>`).join('')}
         </div>
         <div class="campaign-detail-grid">
           <div>
@@ -4996,22 +5018,37 @@ window.CJS.CampaignUI = (() => {
     const weak = [...(base.weak || []), ...(member.weak || [])].filter((v, i, a) => a.indexOf(v) === i);
     const resist = [...(base.resist || []), ...(member.resist || [])].filter((v, i, a) => a.indexOf(v) === i);
     const immune = [...(base.immune || []), ...(member.immune || [])].filter((v, i, a) => a.indexOf(v) === i);
-    const hasElements = weak.length || resist.length || immune.length;
+    
+    const elements = C()?.ELEMENTS || ['Physical', 'Fire', 'Water', 'Lightning', 'Earth', 'Wind', 'Nature', 'Light', 'Dark', 'Chaos'];
+    
+    let html = '<div style="font-size:0.85rem; font-weight:700; color:var(--campaign-muted); margin-bottom:8px; border-bottom:1px solid var(--campaign-line); padding-bottom:4px;">Affinities</div>';
+    html += '<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap:6px 12px; font-size:0.8rem; margin-bottom:16px;">';
+    
+    for (const el of elements) {
+      let state = '<span style="color:var(--campaign-muted); opacity:0.5;">--</span>';
+      if (immune.includes(el)) state = '<strong style="color:#f3e49a;">Nu</strong>';
+      else if (resist.includes(el)) state = '<strong style="color:#b8d4ff;">Rs</strong>';
+      else if (weak.includes(el)) state = '<strong style="color:#ffb8b8;">Wk</strong>';
+      
+      html += `<div style="display:flex; justify-content:space-between; background:rgba(0,0,0,0.25); padding:3px 8px; border-radius:4px; border:1px solid var(--campaign-line);">
+        <span style="color:var(--cmp-parchment, #ddd);">${_esc(el)}</span>
+        <span>${state}</span>
+      </div>`;
+    }
+    html += '</div>';
 
     // DR values
     const physDR = F?.calcPhysicalDR ? F.calcPhysicalDR(stats) : 0;
     const magDR = F?.calcMagicDR ? F.calcMagicDR(stats) : 0;
     const chaosDR = F?.calcChaosDR ? F.calcChaosDR(stats) : 0;
 
-    let html = '';
-    if (hasElements) {
-      html += '<div class="campaign-resist-row">';
-      for (const el of weak) html += `<span class="campaign-resist-chip weak">⚡ ${_esc(el)}</span>`;
-      for (const el of resist) html += `<span class="campaign-resist-chip resist">🛡 ${_esc(el)}</span>`;
-      for (const el of immune) html += `<span class="campaign-resist-chip immune">✦ ${_esc(el)}</span>`;
-      html += '</div>';
-    }
-    html += `<div class="campaign-dr-row"><span>🗡 Phys DR ${physDR}</span><span>✨ Mag DR ${magDR}</span><span>🌀 Chaos DR ${chaosDR}</span></div>`;
+    html += '<div style="font-size:0.85rem; font-weight:700; color:var(--campaign-muted); margin-bottom:8px; border-bottom:1px solid var(--campaign-line); padding-bottom:4px;">Damage Reduction</div>';
+    html += `<div style="display:flex; gap:16px; font-size:0.8rem; color:var(--campaign-muted); background:rgba(0,0,0,0.25); padding:8px; border-radius:4px; border:1px solid var(--campaign-line);">
+      <span>🗡 Phys DR <b style="color:var(--cmp-parchment, #fff); margin-left:4px;">${physDR}</b></span>
+      <span>✨ Mag DR <b style="color:var(--cmp-parchment, #fff); margin-left:4px;">${magDR}</b></span>
+      <span>🌀 Chaos DR <b style="color:var(--cmp-parchment, #fff); margin-left:4px;">${chaosDR}</b></span>
+    </div>`;
+    
     return html;
   }
 
