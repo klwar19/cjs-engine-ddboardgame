@@ -411,14 +411,14 @@ window.CJS.CharEditor = (() => {
     return { el, getIds: () => [...ids] };
   }
 
-  // ── Skill Override Picker (skills with optional overrides) ────────
-  // Stores as: [{ skillId: 'fire_slash', overrides: { power: 20 } }]
-  // Backwards-compatible: bare string IDs treated as { skillId, overrides: {} }
+  // ── Skill Override Picker (skills with optional overrides + level) ──
+  // Stores as: [{ skillId: 'fire_slash', overrides: { power: 20 }, level: 3 }]
+  // Backwards-compatible: bare string IDs treated as { skillId, overrides: {}, level: 1 }
   function _createSkillRefPicker(currentEntries) {
     const el = document.createElement('div');
-    // Normalize: accept both bare IDs and { skillId, overrides }
+    // Normalize: accept both bare IDs and { skillId, overrides, level }
     let entries = (currentEntries || []).map(e =>
-      typeof e === 'string' ? { skillId: e, overrides: {} } : { ...e }
+      typeof e === 'string' ? { skillId: e, overrides: {}, level: 1 } : { ...e, level: e.level || 1 }
     );
 
     function render() {
@@ -426,16 +426,22 @@ window.CJS.CharEditor = (() => {
       for (let i = 0; i < entries.length; i++) {
         const entry = entries[i];
         const skill = DS().get('skills', entry.skillId);
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'margin-bottom:6px';
+
         const chip = document.createElement('div');
         chip.className = 'effect-chip';
 
         const hasOverrides = entry.overrides && Object.keys(entry.overrides).length > 0;
+        const Formulas = F();
+        const maxLevel = (skill && Formulas?.getSkillMaxLevel) ? Formulas.getSkillMaxLevel(skill) : 5;
+        const curLevel = Math.max(1, Math.min(entry.level || 1, maxLevel));
 
         if (skill) {
           const overrideHint = hasOverrides
             ? `<span style="color:var(--gold);font-size:0.75em"> ✏️ ${Object.keys(entry.overrides).join(', ')}</span>`
             : '';
-          chip.innerHTML = `<span class="chip-icon">${skill.icon||'⚔️'}</span><span class="chip-name">${skill.name}${overrideHint}</span><span class="chip-desc">${skill.ap||0}AP ${skill.mp||0}MP</span>`;
+          chip.innerHTML = `<span class="chip-icon">${skill.icon||'⚔️'}</span><span class="chip-name">${skill.name}${overrideHint}</span><span class="chip-desc">${skill.ap||0}AP ${skill.mp||0}MP | Lv ${curLevel}/${maxLevel}</span>`;
         } else {
           chip.innerHTML = `<span class="chip-icon">⚠️</span><span class="chip-name">${entry.skillId}</span><span class="chip-desc" style="color:var(--red)">Not found</span>`;
         }
@@ -444,9 +450,39 @@ window.CJS.CharEditor = (() => {
         actions.className = 'chip-actions';
         actions.style.display = 'flex';
         actions.style.gap = '2px';
+        actions.style.alignItems = 'center';
 
-        // Edit overrides button
+        // Level controls
         if (skill) {
+          const lvlDown = document.createElement('button');
+          lvlDown.className = 'btn-icon';
+          lvlDown.textContent = '−';
+          lvlDown.title = 'Decrease level';
+          lvlDown.style.cssText = 'font-weight:bold;font-size:1.1em';
+          lvlDown.disabled = curLevel <= 1;
+          lvlDown.onclick = () => { entry.level = Math.max(1, curLevel - 1); render(); };
+          actions.appendChild(lvlDown);
+
+          const lvlLabel = document.createElement('span');
+          lvlLabel.style.cssText = 'font-size:0.82em;min-width:18px;text-align:center;font-weight:bold;color:var(--accent)';
+          lvlLabel.textContent = curLevel;
+          actions.appendChild(lvlLabel);
+
+          const lvlUp = document.createElement('button');
+          lvlUp.className = 'btn-icon';
+          lvlUp.textContent = '+';
+          lvlUp.title = 'Increase level';
+          lvlUp.style.cssText = 'font-weight:bold;font-size:1.1em';
+          lvlUp.disabled = curLevel >= maxLevel;
+          lvlUp.onclick = () => { entry.level = Math.min(maxLevel, curLevel + 1); render(); };
+          actions.appendChild(lvlUp);
+
+          // Separator
+          const sep = document.createElement('span');
+          sep.style.cssText = 'border-left:1px solid var(--border);height:18px;margin:0 2px';
+          actions.appendChild(sep);
+
+          // Edit overrides button
           const editBtn = document.createElement('button');
           editBtn.className = 'btn-icon';
           editBtn.textContent = '✏️';
@@ -463,7 +499,28 @@ window.CJS.CharEditor = (() => {
         actions.appendChild(removeBtn);
 
         chip.appendChild(actions);
-        el.appendChild(chip);
+        wrapper.appendChild(chip);
+
+        // Perk preview (earned + next) if skill has levelPerks
+        if (skill && Formulas) {
+          const earned = Formulas.getEarnedSkillPerks ? Formulas.getEarnedSkillPerks(skill, curLevel) : [];
+          const next = Formulas.getNextSkillPerk ? Formulas.getNextSkillPerk(skill, curLevel) : null;
+          if (earned.length || next) {
+            const perkDiv = document.createElement('div');
+            perkDiv.style.cssText = 'font-size:0.78em;padding:2px 8px 4px 28px;color:var(--text-dim)';
+            let html = '';
+            if (earned.length) {
+              html += `<span style="color:var(--green)">✔ ${earned.map(p => `Lv${p.level}: ${_esc(p.description || 'perk')}`).join(' · ')}</span>`;
+            }
+            if (next) {
+              html += `${earned.length ? ' | ' : ''}<span style="color:var(--accent)">Next at Lv${next.level}: ${_esc(next.description || '...')}</span>`;
+            }
+            perkDiv.innerHTML = html;
+            wrapper.appendChild(perkDiv);
+          }
+        }
+
+        el.appendChild(wrapper);
       }
 
       // Add skill button
@@ -472,7 +529,7 @@ window.CJS.CharEditor = (() => {
       addBtn.textContent = '+ Add skill';
       addBtn.onclick = () => _openRefPicker('skills', 'skill', (picked) => {
         if (!entries.some(e => e.skillId === picked.id)) {
-          entries.push({ skillId: picked.id, overrides: {} });
+          entries.push({ skillId: picked.id, overrides: {}, level: 1 });
           render();
         }
       });
@@ -559,7 +616,7 @@ window.CJS.CharEditor = (() => {
     render();
     return {
       el,
-      // Return entries in the { skillId, overrides } format
+      // Return entries in the { skillId, overrides, level } format
       getEntries: () => JSON.parse(JSON.stringify(entries)),
       // Also support getIds for backwards compat — returns bare IDs
       getIds: () => entries.map(e => e.skillId)

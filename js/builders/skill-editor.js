@@ -157,6 +157,10 @@ window.CJS.SkillEditor = (() => {
           <div class="dim" style="font-size:0.78rem;margin-top:4px">Leave blank to use the default curve from CONST.PROGRESSION.skillApThresholds.</div>
         </div>
 
+        <h3>Level Perks <span class="dim" style="font-size:0.78em">— bonus/ability unlocked at specific skill levels</span></h3>
+        <div class="hint-box">Define what changes at each level: stat modifiers (power, AP cost, MP cost, range, cooldown) and/or extra effects. These stack cumulatively.</div>
+        <div id="skl-perks-area"></div>
+
         <div class="form-group mt-md"><label class="form-label">Description</label><textarea id="skl-desc" rows="2">${_esc(s.description||'')}</textarea></div>
 
         <div class="card" style="background:var(--surface2);margin-top:8px" id="skl-preview"></div>
@@ -173,13 +177,21 @@ window.CJS.SkillEditor = (() => {
     });
     _formEl.querySelector('#skl-weapon-req-area').appendChild(weaponReqWidget);
 
+    // Level perks builder
+    const perksBuilder = _createLevelPerksBuilder(s.levelPerks || [], Number(s.levelScaling?.maxLevel || 5));
+    _formEl.querySelector('#skl-perks-area').appendChild(perksBuilder.el);
+    // Refresh perk builder when max level changes
+    _formEl.querySelector('#skl-maxlvl').addEventListener('change', () => {
+      perksBuilder.setMaxLevel(Number(_formEl.querySelector('#skl-maxlvl').value) || 5);
+    });
+
     _populateSfxSelects(s);
 
     // Live preview on field changes
     _formEl.querySelectorAll('input,select').forEach(el => el.addEventListener('change', _preview));
     _preview();
 
-    _formEl.querySelector('#skl-save').onclick = () => _save(s.id, effectBuilder, weaponReqWidget);
+    _formEl.querySelector('#skl-save').onclick = () => _save(s.id, effectBuilder, weaponReqWidget, perksBuilder);
     _formEl.querySelector('#skl-dup').onclick = () => { const nid = DS().duplicate('skills', s.id); if(nid){_activeId=nid;_renderList();_load(nid);UI().toast('Duplicated','success');} };
     _formEl.querySelector('#skl-del').onclick = () => { UI().confirm(`Delete "${s.name}"?`, () => { DS().remove('skills', s.id); _activeId=null; _renderList(); _formEl.innerHTML='<div class="card" style="text-align:center;color:var(--text-mute);padding:40px">Select a skill</div>'; UI().toast('Deleted','info'); }); };
   }
@@ -197,7 +209,7 @@ window.CJS.SkillEditor = (() => {
     </div>`;
   }
 
-  function _save(id, effectBuilder, weaponReqWidget) {
+  function _save(id, effectBuilder, weaponReqWidget, perksBuilder) {
     const f = _formEl;
     const castSfx = f.querySelector('#skl-castsfx')?.value || '';
     const hitSfx  = f.querySelector('#skl-hitsfx')?.value  || '';
@@ -225,6 +237,7 @@ window.CJS.SkillEditor = (() => {
       apGain: Math.max(0, Number(f.querySelector('#skl-apgain').value) || 0),
       apThresholds: _parseApThresholds(f.querySelector('#skl-apthresholds').value),
       spCost: Math.max(0, Number(f.querySelector('#skl-spcost').value) || 0),
+      levelPerks: perksBuilder ? perksBuilder.getPerks() : [],
       description: f.querySelector('#skl-desc').value
     };
     if (castSfx) payload.castSfx = castSfx;
@@ -300,6 +313,129 @@ window.CJS.SkillEditor = (() => {
     const parts = text.split(/[\s,]+/).map((part) => Number(part.trim()));
     if (!parts.length || parts.some((n) => Number.isNaN(n))) return null;
     return parts.map((n) => Math.max(0, Math.floor(n)));
+  }
+
+  // ── Level Perks Builder ────────────────────────────────────────────
+  // Dynamic builder for the skill.levelPerks array.
+  // Each perk: { level, description, modifiers: { power, ap, mp, range, cooldown }, addEffects: [] }
+  function _createLevelPerksBuilder(initialPerks, maxLevel) {
+    const el = document.createElement('div');
+    let perks = JSON.parse(JSON.stringify(initialPerks || []));
+    let _maxLevel = maxLevel || 5;
+
+    function render() {
+      el.innerHTML = '';
+      // Sort perks by level
+      perks.sort((a, b) => (a.level || 0) - (b.level || 0));
+
+      for (let i = 0; i < perks.length; i++) {
+        const perk = perks[i];
+        const m = perk.modifiers || {};
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.cssText = 'background:var(--surface2);margin-bottom:8px;padding:10px';
+        card.innerHTML = `
+          <div class="form-row" style="align-items:flex-end;gap:8px;margin-bottom:6px">
+            <div class="form-group" style="flex:0 0 80px">
+              <label class="form-label">Level</label>
+              <input type="number" class="perk-level" value="${perk.level || 2}" min="2" max="${_maxLevel}" style="width:100%">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Description</label>
+              <input type="text" class="perk-desc" value="${_esc(perk.description || '')}" placeholder="e.g. Reduces MP cost, increases range" style="width:100%">
+            </div>
+            <button class="btn btn-danger btn-sm perk-remove" style="flex:0 0 auto;margin-bottom:2px">✕</button>
+          </div>
+          <div class="form-row" style="gap:6px">
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:0.75em">Power ±</label>
+              <input type="number" class="perk-mod-power" value="${m.power || 0}" style="width:100%">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:0.75em">AP ±</label>
+              <input type="number" class="perk-mod-ap" value="${m.ap || 0}" style="width:100%">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:0.75em">MP ±</label>
+              <input type="number" class="perk-mod-mp" value="${m.mp || 0}" style="width:100%">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:0.75em">Range ±</label>
+              <input type="number" class="perk-mod-range" value="${m.range || 0}" style="width:100%">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:0.75em">Cooldown ±</label>
+              <input type="number" class="perk-mod-cd" value="${m.cooldown || 0}" style="width:100%">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:6px">
+            <label class="form-label" style="font-size:0.75em">Add Effect IDs <span class="dim">(comma-separated)</span></label>
+            <input type="text" class="perk-effects" value="${_esc((perk.addEffects || []).map(e => e.effectId || e).filter(Boolean).join(', '))}" placeholder="e.g. burn_on_hit, extra_damage" style="width:100%">
+          </div>
+        `;
+
+        // Remove handler
+        card.querySelector('.perk-remove').onclick = () => { perks.splice(i, 1); render(); };
+
+        // Live sync on any change
+        card.querySelectorAll('input').forEach(inp => {
+          inp.addEventListener('change', () => _syncPerk(i, card));
+        });
+
+        el.appendChild(card);
+      }
+
+      // Add perk button
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn btn-ghost btn-sm';
+      addBtn.textContent = '+ Add Level Perk';
+      addBtn.onclick = () => {
+        // Find next unused level
+        const usedLevels = new Set(perks.map(p => p.level));
+        let nextLevel = 2;
+        while (usedLevels.has(nextLevel) && nextLevel <= _maxLevel) nextLevel++;
+        perks.push({ level: Math.min(nextLevel, _maxLevel), description: '', modifiers: {}, addEffects: [] });
+        render();
+      };
+      el.appendChild(addBtn);
+
+      if (!perks.length) {
+        const hint = document.createElement('div');
+        hint.className = 'dim';
+        hint.style.cssText = 'font-size:0.82rem;margin-bottom:6px';
+        hint.textContent = 'No level perks yet. Power still scales via Power/Level (%) above. Add perks for extra bonuses at specific levels.';
+        el.insertBefore(hint, addBtn);
+      }
+    }
+
+    function _syncPerk(index, card) {
+      const perk = perks[index];
+      perk.level = Math.max(2, Number(card.querySelector('.perk-level').value) || 2);
+      perk.description = card.querySelector('.perk-desc').value;
+      perk.modifiers = {
+        power:    Number(card.querySelector('.perk-mod-power').value) || 0,
+        ap:       Number(card.querySelector('.perk-mod-ap').value) || 0,
+        mp:       Number(card.querySelector('.perk-mod-mp').value) || 0,
+        range:    Number(card.querySelector('.perk-mod-range').value) || 0,
+        cooldown: Number(card.querySelector('.perk-mod-cd').value) || 0
+      };
+      // Clean zero modifiers
+      for (const [k, v] of Object.entries(perk.modifiers)) { if (!v) delete perk.modifiers[k]; }
+      const effectsText = card.querySelector('.perk-effects').value;
+      perk.addEffects = effectsText.split(/[,;]+/).map(s => s.trim()).filter(Boolean).map(id => ({ effectId: id }));
+    }
+
+    render();
+    return {
+      el,
+      getPerks: () => {
+        // Final sync all cards before returning
+        const cards = el.querySelectorAll('.card');
+        cards.forEach((card, i) => { if (perks[i]) _syncPerk(i, card); });
+        return JSON.parse(JSON.stringify(perks.filter(p => p.level > 1)));
+      },
+      setMaxLevel: (ml) => { _maxLevel = Math.max(1, ml); render(); }
+    };
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

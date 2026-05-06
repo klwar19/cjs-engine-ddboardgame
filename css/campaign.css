@@ -2500,3 +2500,125 @@ body.campaign-page::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ── Slot-based equip grid ─────────────────────────────────────────── */
+.campaign-slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+
+.campaign-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 5px 10px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #111614;
+  font-size: 0.84rem;
+  position: relative;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.campaign-slot.filled {
+  background: #182220;
+  border-color: rgba(118, 211, 177, 0.35);
+}
+
+.campaign-slot.filled:hover {
+  border-color: rgba(118, 211, 177, 0.65);
+  background: #1e2c28;
+}
+
+.campaign-slot.empty {
+  cursor: pointer;
+  border-style: dashed;
+  border-color: rgba(174, 185, 176, 0.35);
+  min-width: 56px;
+  justify-content: center;
+}
+
+.campaign-slot.empty:hover {
+  border-color: var(--campaign-accent);
+  background: #162220;
+}
+
+.campaign-slot-icon {
+  font-size: 1.1rem;
+  flex: 0 0 auto;
+}
+
+.campaign-slot-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.campaign-slot-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(239, 102, 102, 0.6);
+  background: #1a1112;
+  color: #ffa8a8;
+  font-size: 0.68rem;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.campaign-slot.filled:hover .campaign-slot-remove {
+  display: flex;
+}
+
+.campaign-slot-plus {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--campaign-muted);
+}
+
+.campaign-slot.empty:hover .campaign-slot-plus {
+  color: var(--campaign-accent);
+}
+
+/* ── Collapsible pool details ──────────────────────────────────────── */
+.campaign-pool-details {
+  margin-top: 4px;
+}
+
+.campaign-pool-summary {
+  cursor: pointer;
+  color: var(--campaign-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 0;
+  user-select: none;
+  list-style: none;
+}
+
+.campaign-pool-summary::-webkit-details-marker {
+  display: none;
+}
+
+.campaign-pool-summary::before {
+  content: '▸ ';
+  font-size: 0.82em;
+}
+
+.campaign-pool-details[open] > .campaign-pool-summary::before {
+  content: '▾ ';
+}
+
+.campaign-pool-summary:hover {
+  color: var(--campaign-accent);
+}

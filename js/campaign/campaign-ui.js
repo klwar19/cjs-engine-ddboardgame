@@ -423,11 +423,13 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-detail-grid">
           <div>
             <div class="campaign-section-title">Skills <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'skill')}</small> <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}" title="Add to pool">+</button></div>
-            ${_renderSkillPoolList(id, member, skills)}
+            ${_renderSkillSlotView(id, member)}
+            <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberSkillPoolCount(id, member)} in pool)</summary>${_renderSkillPoolList(id, member, skills)}</details>
           </div>
           <div>
             <div class="campaign-section-title">Passives <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'passive')}</small> <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}" title="Add to pool">+</button></div>
-            ${_renderPassivePoolList(id, member, passives)}
+            ${_renderPassiveSlotView(id, member)}
+            <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberPassivePoolCount(id, member)} in pool)</summary>${_renderPassivePoolList(id, member, passives)}</details>
           </div>
           <div>
             <div class="campaign-section-title">Statuses <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${_escAttr(id)}">+</button></div>
@@ -485,6 +487,178 @@ window.CJS.CampaignUI = (() => {
     if (!pool.length) return '<div class="campaign-empty">No passives in pool. Use the + button to learn one.</div>';
     const equippedSet = new Set(member.equippedPassives || []);
     return pool.map((pid) => _renderKnownPassive(memberId, pid, equippedSet.has(pid))).join('');
+  }
+
+  // ── Slot-based equip views ──────────────────────────────────────────
+  // Show equipped items as filled slots, empty slots as [+] picker buttons.
+  function _renderSkillSlotView(memberId, member) {
+    const F = window.CJS.Formulas;
+    if (!F) return '';
+    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
+    const slotCap = F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : (member.skillSlots || 4);
+    const equipped = member.equippedSkills || [];
+    let html = '<div class="campaign-slot-grid">';
+    for (let i = 0; i < slotCap; i++) {
+      if (i < equipped.length) {
+        const sid = equipped[i];
+        const skill = DS().get('skills', sid);
+        const spCost = F.calcSpCost ? F.calcSpCost(skill) : 1;
+        html += `<div class="campaign-slot filled" title="${_escAttr(skill?.name || sid)} (SP ${spCost})">
+          <span class="campaign-slot-icon">${skill?.icon || '⚔️'}</span>
+          <span class="campaign-slot-name">${_esc(skill?.name || sid)}</span>
+          <button class="campaign-slot-remove" data-campaign-action="unequip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(sid)}" title="Unequip">✕</button>
+        </div>`;
+      } else {
+        html += `<div class="campaign-slot empty" data-campaign-action="pick-equip-skill" data-id="${_escAttr(memberId)}" title="Equip a skill from pool">
+          <span class="campaign-slot-plus">+</span>
+        </div>`;
+      }
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function _renderPassiveSlotView(memberId, member) {
+    const F = window.CJS.Formulas;
+    if (!F) return '';
+    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
+    const slotCap = F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : (member.passiveSlots || 3);
+    const equipped = member.equippedPassives || [];
+    let html = '<div class="campaign-slot-grid">';
+    for (let i = 0; i < slotCap; i++) {
+      if (i < equipped.length) {
+        const pid = equipped[i];
+        const passive = DS().get('passives', pid) || DS().get('effects', pid);
+        const spCost = F.calcSpCost ? F.calcSpCost(passive) : 1;
+        html += `<div class="campaign-slot filled" title="${_escAttr(passive?.name || pid)} (SP ${spCost})">
+          <span class="campaign-slot-icon">${passive?.icon || '🛡️'}</span>
+          <span class="campaign-slot-name">${_esc(passive?.name || pid)}</span>
+          <button class="campaign-slot-remove" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(pid)}" title="Unequip">✕</button>
+        </div>`;
+      } else {
+        html += `<div class="campaign-slot empty" data-campaign-action="pick-equip-passive" data-id="${_escAttr(memberId)}" title="Equip a passive from pool">
+          <span class="campaign-slot-plus">+</span>
+        </div>`;
+      }
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function _memberSkillPoolCount(memberId, member) {
+    const pool = CS().skillPoolIds ? CS().skillPoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
+    return pool.length;
+  }
+
+  function _memberPassivePoolCount(memberId, member) {
+    const pool = CS().passivePoolIds ? CS().passivePoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
+    return pool.length;
+  }
+
+  // Pool picker modal — shows unequipped items from the char's pool for quick equip
+  function _openSkillPoolPicker(memberId) {
+    const member = CS().getState()?.party?.[memberId];
+    if (!member) return;
+    const F = window.CJS.Formulas;
+    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
+    const pool = CS().skillPoolIds ? CS().skillPoolIds(member, base) : [];
+    const equippedSet = new Set(member.equippedSkills || []);
+    const available = pool.filter((sid) => !equippedSet.has(sid));
+
+    if (!available.length) return UI().toast('No unequipped skills in pool.', 'info');
+
+    const body = document.createElement('div');
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.placeholder = 'Search skills...';
+    search.style.cssText = 'width:100%;margin-bottom:8px';
+    body.appendChild(search);
+
+    const list = document.createElement('div');
+    list.className = 'data-list';
+    list.style.maxHeight = '400px';
+    body.appendChild(list);
+
+    let overlay;
+    function renderList(q) {
+      list.innerHTML = '';
+      const query = (q || '').toLowerCase();
+      for (const sid of available) {
+        const skill = DS().get('skills', sid);
+        if (!skill) continue;
+        if (query && !(skill.name || '').toLowerCase().includes(query) && !sid.toLowerCase().includes(query)) continue;
+        const spCost = F?.calcSpCost ? F.calcSpCost(skill) : 1;
+        const prog = member.skillProgress?.[sid] || { level: 1 };
+        const row = document.createElement('div');
+        row.className = 'data-list-item';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<span class="item-icon">${skill.icon || '⚔️'}</span><div><div class="item-name">${_esc(skill.name || sid)}</div><div class="item-sub">SP ${spCost} | Lv ${prog.level || 1} | ${_esc(skill.description?.substring(0, 60) || '')}</div></div>`;
+        row.onclick = () => {
+          Ops().apply({ op: 'equip_skill', target: memberId, skillId: sid }, { source: 'ui' });
+          UI().closeModal(overlay);
+        };
+        list.appendChild(row);
+      }
+      if (!list.children.length) list.innerHTML = '<div class="data-list-empty">No matching skills.</div>';
+    }
+
+    search.oninput = () => renderList(search.value);
+    renderList('');
+
+    overlay = UI().openModal({ title: 'Equip Skill from Pool', content: body, width: '500px' });
+    search.focus();
+  }
+
+  function _openPassivePoolPicker(memberId) {
+    const member = CS().getState()?.party?.[memberId];
+    if (!member) return;
+    const F = window.CJS.Formulas;
+    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
+    const pool = CS().passivePoolIds ? CS().passivePoolIds(member, base) : [];
+    const equippedSet = new Set(member.equippedPassives || []);
+    const available = pool.filter((pid) => !equippedSet.has(pid));
+
+    if (!available.length) return UI().toast('No unequipped passives in pool.', 'info');
+
+    const body = document.createElement('div');
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.placeholder = 'Search passives...';
+    search.style.cssText = 'width:100%;margin-bottom:8px';
+    body.appendChild(search);
+
+    const list = document.createElement('div');
+    list.className = 'data-list';
+    list.style.maxHeight = '400px';
+    body.appendChild(list);
+
+    let overlay;
+    function renderList(q) {
+      list.innerHTML = '';
+      const query = (q || '').toLowerCase();
+      for (const pid of available) {
+        const passive = DS().get('passives', pid) || DS().get('effects', pid);
+        if (!passive) continue;
+        if (query && !(passive.name || '').toLowerCase().includes(query) && !pid.toLowerCase().includes(query)) continue;
+        const spCost = F?.calcSpCost ? F.calcSpCost(passive) : 1;
+        const row = document.createElement('div');
+        row.className = 'data-list-item';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<span class="item-icon">${passive.icon || '🛡️'}</span><div><div class="item-name">${_esc(passive.name || pid)}</div><div class="item-sub">SP ${spCost} | ${_esc(passive.trigger || passive.category || '')} | ${_esc(passive.description?.substring(0, 60) || '')}</div></div>`;
+        row.onclick = () => {
+          Ops().apply({ op: 'equip_passive', target: memberId, passiveId: pid }, { source: 'ui' });
+          UI().closeModal(overlay);
+        };
+        list.appendChild(row);
+      }
+      if (!list.children.length) list.innerHTML = '<div class="data-list-empty">No matching passives.</div>';
+    }
+
+    search.oninput = () => renderList(search.value);
+    renderList('');
+
+    overlay = UI().openModal({ title: 'Equip Passive from Pool', content: body, width: '500px' });
+    search.focus();
   }
 
   function _renderKnownSkill(memberId, entry, isEquipped) {
@@ -2417,6 +2591,8 @@ window.CJS.CampaignUI = (() => {
       case 'unequip-skill':  return Ops().apply({ op: 'unequip_skill',  target: data.id, skillId:   data.skillId   }, { source: 'ui' });
       case 'equip-passive':  return Ops().apply({ op: 'equip_passive',  target: data.id, passiveId: data.passiveId }, { source: 'ui' });
       case 'unequip-passive':return Ops().apply({ op: 'unequip_passive',target: data.id, passiveId: data.passiveId }, { source: 'ui' });
+      case 'pick-equip-skill':   return _openSkillPoolPicker(data.id);
+      case 'pick-equip-passive': return _openPassivePoolPicker(data.id);
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
       case 'unlock-job-from-tree': return _confirmUnlockJob(data.id, data.jobId);
       case 'switch-job-from-tree': return _switchJob(data.id, data.jobId);
