@@ -38,6 +38,11 @@ window.CJS.L2DCompanion = (() => {
     endedAnnounced: false
   };
 
+  const CJS_PREFIX = /^\[CJS\]\s*/i;
+  const RECENT_QUIP_LIMIT = 8;
+  const RECENT_QUIPS = [];
+  const COMBAT_LOG_REACTION_TYPES = new Set(['turn_start', 'move', 'defend', 'item_used']);
+
   // ── DOM ─────────────────────────────────────────────────────────
   function _buildDock(opts) {
     const dock = document.createElement('aside');
@@ -80,24 +85,111 @@ window.CJS.L2DCompanion = (() => {
     return true;
   }
 
+  function _reactionTags(key, override = {}) {
+    const tags = ['l2d', key, `l2d_mode_${STATE.mode}`];
+    if (key && !String(key).startsWith('l2d_')) tags.push(`l2d_${key}`);
+    if (override.entry?.tags) tags.push(...override.entry.tags);
+    if (override.change?.source) tags.push(`campaign_source_${override.change.source}`);
+    if (Array.isArray(override.tags)) tags.push(...override.tags);
+    return tags.filter(Boolean).map(String);
+  }
+
+  function _getQuipFragments() {
+    const DS = window.CJS.DataStore;
+    try {
+      return DS?.getAllAsArray?.('quips') || [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function _pickCjsQuip(tags, context = {}) {
+    const tagSet = new Set((tags || []).filter(Boolean).map(String));
+    const matches = [];
+
+    for (const fragment of _getQuipFragments()) {
+      if (!fragment || fragment.layer !== 'cjs_editorial' || !fragment.text) continue;
+      const required = fragment.required_tags || [];
+      const excluded = fragment.excluded_tags || [];
+      if (!required.every((tag) => tagSet.has(tag))) continue;
+      if (excluded.some((tag) => tagSet.has(tag))) continue;
+      const score = Number(fragment.weight ?? 5) + (required.length * 2);
+      matches.push({ fragment, score });
+    }
+
+    if (!matches.length) return null;
+    matches.sort((a, b) => b.score - a.score);
+    const available = matches.filter((match) => !RECENT_QUIPS.includes(match.fragment.id));
+    const pool = available.length ? available : matches;
+    const topScore = pool[0].score;
+    const nearTop = pool.filter((match) => match.score >= topScore - 2);
+    const picked = nearTop[Math.floor(Math.random() * nearTop.length)].fragment;
+    if (picked.id) {
+      RECENT_QUIPS.push(picked.id);
+      while (RECENT_QUIPS.length > RECENT_QUIP_LIMIT) RECENT_QUIPS.shift();
+    }
+
+    const line = _substituteQuip(picked.text, context).replace(CJS_PREFIX, '').trim();
+    return line ? { line, expression: picked.expression, fragmentId: picked.id } : null;
+  }
+
+  function _substituteQuip(text, context = {}) {
+    const entry = context.entry || context;
+    const actor = entry.actor || {};
+    const target = entry.target || {};
+    const data = entry.data || {};
+    const CS = window.CJS.CampaignState;
+    const state = CS?.getState?.();
+    const campaign = CS?.getCurrentCampaign?.();
+
+    const skillName = () => {
+      const skillId = data.skill || data.skillId;
+      if (!skillId) return 'basic attack';
+      const rec = window.CJS.DataStore?.get?.('skills', skillId);
+      return rec?.name || String(skillId).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    };
+
+    const vars = {
+      'actor.name': actor.name || actor.baseId || 'Someone',
+      'target.name': target.name || target.baseId || 'Something',
+      'actor.id': actor.baseId || actor.instanceId || actor.id || 'unknown',
+      'target.id': target.baseId || target.instanceId || target.id || 'unknown',
+      damage: data.damage ?? data.amount ?? '?',
+      amount: data.amount ?? data.damage ?? '?',
+      element: data.element || 'Physical',
+      skill: data.skill || 'attack',
+      'skill.name': skillName(),
+      status: data.statusId || 'status',
+      item: data.itemId || data.id || 'item',
+      'campaign.name': campaign?.name || 'the campaign',
+      world: state?.currentWorld || 'haven',
+      chapter: state?.currentChapter || 1
+    };
+
+    return String(text || '').replace(/\{([a-zA-Z0-9_.]+)\}/g, (match, key) => (
+      Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match
+    ));
+  }
+
   // Pick + show a line for a registry "reactions" key (used outside combat
   // narrator, e.g. campaign + click + turn_start).
   function _react(key, override = {}) {
     if (!_throttle(key)) return;
     const reactions = STATE.cfg?.reactions || {};
     const r = reactions[key];
+    const cjs = override.line ? null : _pickCjsQuip(_reactionTags(key, override), override);
 
-    const expr = override.expression || r?.expression;
+    const expr = override.expression || cjs?.expression || r?.expression;
     if (expr && STATE.avatar) STATE.avatar.setExpression(expr);
 
-    let line = override.line;
+    let line = override.line || cjs?.line;
     if (!line && r?.lines?.length) {
       line = r.lines[Math.floor(Math.random() * r.lines.length)];
     }
     if (!line) return;
     const ms = override.holdMs;
     _showLine(line, ms);
-    _playVoice({ eventKey: key }, line, ms);
+    _playVoice({ eventKey: key, type: override.entry?.type, fragmentId: cjs?.fragmentId }, line, ms);
   }
 
   // ── Expression picker from a CombatLog entry (narrator path) ────
@@ -113,6 +205,10 @@ window.CJS.L2DCompanion = (() => {
       if (tags.has('winner_enemy'))  return 'sad';
     }
     if (type === 'battle_start') return 'happy';
+    if (type === 'turn_start')    return actorPlayer ? 'neutral' : null;
+    if (type === 'move')          return actorPlayer ? 'playful' : null;
+    if (type === 'defend')        return actorPlayer ? 'hat' : null;
+    if (type === 'item_used')     return actorPlayer ? 'love' : null;
     if (type === 'kill') {
       if (tags.has('comeback') || tags.has('first_blood') || tags.has('revenge_kill')) return 'happy';
       return actorPlayer ? 'happy' : 'sad';
@@ -216,15 +312,21 @@ window.CJS.L2DCompanion = (() => {
       STATE.busUnsubs.push(u);
     }
 
-    // SECONDARY: AnimationBus turn_start — narrator doesn't fire on turn
-    // boundaries, so we cover that ourselves so she doesn't go silent
-    // between rounds.
-    const Bus = window.CJS.AnimationBus;
-    if (Bus) {
-      STATE.busUnsubs.push(Bus.on('turn_start', (p) => {
-        if (p?.unit?.team === 'player') _react('turn_start');
-      }));
-    }
+    // SECONDARY: CombatLog events that NarratorEngine intentionally keeps
+    // out of the battle report still deserve Peri/CJS bubble commentary.
+    const Log = window.CJS.CombatLog;
+    if (Log?.subscribe) STATE.busUnsubs.push(Log.subscribe(_onCombatLogReaction));
+  }
+
+  function _onCombatLogReaction(entry) {
+    if (!entry || !COMBAT_LOG_REACTION_TYPES.has(entry.type)) return;
+    if (entry.actor?.team !== 'player') return;
+    const key = entry.type === 'item_used' ? 'item_used' : entry.type;
+    _react(key, {
+      entry,
+      expression: _pickExpressionFromEntry(entry),
+      tags: [`l2d_${key}`]
+    });
   }
 
   function _onNarration(narrationText, entry) {
@@ -259,41 +361,55 @@ window.CJS.L2DCompanion = (() => {
     if (!change) return null;
     const src    = String(change.source || '').toLowerCase();
     const type   = String(change.type   || '').toLowerCase();
-    const detail = String(change.detail || '').toLowerCase();
+    const ops    = Array.isArray(change.detail) ? change.detail.filter(Boolean) : [];
+    const opText = ops.map((op) => String(op.op || '')).join(' ').toLowerCase();
+    const detail = `${String(change.detail || '').toLowerCase()} ${opText}`;
 
+    if (src === 'load_slot' || src === 'fork' || src === 'import' || src === 'new_save') return 'campaign_load';
     if (type === 'replace') return null;             // bulk reload, quiet
-    if (src === 'state' || src === 'ui' || src === 'clear_log') return null;
+    if (src === 'state' || src === 'clear_log') return null;
+    if (src === 'ui' && !ops.length) return null;    // pure tab/panel UI
 
     // Battle preparation / aftermath — pendingBattle, etc.
     if (src === 'run_pick_battle' || src === 'run_set_battle' ||
-        src === 'beat_battle'      || src === 'manual_battle') return 'campaign_battle';
+        src === 'beat_battle'      || src === 'manual_battle' ||
+        src === 'random_battle'    || detail.includes('start_battle') ||
+        detail.includes('manual_battle_result')) return 'campaign_battle';
     if (src === 'combat_bridge'    || src === 'battle_set_reward') return 'campaign_loot';
-    if (src === 'battle_setback')  return 'campaign_setback';
+    if (src === 'battle_setback'   || detail.includes('damage_character')) return 'campaign_setback';
+
+    // Scenario/map movement and reveal beats.
+    if (src === 'map_move' || src === 'grid_move' || src === 'travel_step' ||
+        src === 'travel_branch' || src === 'travel_branch_grid' ||
+        detail.includes('goto_node') || detail.includes('reveal_node')) return 'campaign_move';
 
     // Mystic / oracle / plot seed
     if (src.includes('oracle')) return 'campaign_oracle';
 
     // Story event / hook / trap
     if (src === 'trap'        || src === 'event'       || src === 'event_pick' ||
-        src === 'event_custom'|| src === 'beat_event'  || src === 'solo_hook') return 'campaign_event';
+        src === 'event_custom'|| src === 'beat_event'  || src === 'solo_hook' ||
+        src.includes('travel_surprise') || detail.includes('roll_event') ||
+        detail.includes('roll_check')) return 'campaign_event';
 
     // Quests
-    if (src.includes('quest')) return 'campaign_quest';
+    if (src.includes('quest') || detail.includes('quest')) return 'campaign_quest';
 
     // Pocket haven / cozy / notes
-    if (src === 'pocket_haven' || src === 'note' || src.includes('haven')) return 'campaign_rest';
-
-    // Save / load / fork
-    if (src === 'load_slot' || src === 'fork' || src === 'import') return 'campaign_load';
+    if (src === 'pocket_haven' || src === 'note' || src.includes('haven') ||
+        detail.includes('full_rest') || detail.includes('camp_rest') ||
+        detail.includes('heal_character')) return 'campaign_rest';
 
     // Inventory hint via detail (CampaignOps emits `detail: applied`)
     if (detail.includes('item') || detail.includes('loot') ||
-        detail.includes('gold') || detail.includes('inventory')) return 'campaign_loot';
+        detail.includes('gold') || detail.includes('inventory') ||
+        detail.includes('money') || detail.includes('craft') ||
+        detail.includes('shop') || detail.includes('farm')) return 'campaign_loot';
 
     // Generic action — covers `ops`, `campaign_ops`, `manual`, `check`,
     // `side_content`. Use a debounced chatter line so spam stays human.
     if (src === 'ops' || src === 'campaign_ops' || src === 'manual' ||
-        src === 'check' || src === 'side_content') return 'campaign_action';
+        src === 'check' || src === 'side_content' || src === 'ui') return 'campaign_action';
 
     // Final catch-all: any other mutate (anything that actually changed
     // game state) gets a generic chatter line. The 1.2 s throttle on the
@@ -314,17 +430,23 @@ window.CJS.L2DCompanion = (() => {
     };
     armIdle();
 
-    const u = CS.subscribe((change) => {
+    const u = CS.subscribe((_state, change) => {
       armIdle();
       const key = _classifyCampaignChange(change);
-      if (key) _react(key);
+      if (key) _react(key, { change });
     });
     STATE.busUnsubs.push(u);
   }
 
   // ── Click on the avatar gives a playful response ────────────────
-  function _wireClick() {
-    window.addEventListener('l2d:click', () => _react('click'));
+  function _wireClick(stage) {
+    const onClick = () => _react('click');
+    window.addEventListener('l2d:click', onClick);
+    STATE.busUnsubs.push(() => window.removeEventListener('l2d:click', onClick));
+    if (stage) {
+      stage.addEventListener('click', onClick);
+      STATE.busUnsubs.push(() => stage.removeEventListener('click', onClick));
+    }
   }
 
   // ── Init ────────────────────────────────────────────────────────
@@ -343,14 +465,15 @@ window.CJS.L2DCompanion = (() => {
       setTimeout(() => STATE.avatar?.relayout?.(), 250);
     });
 
+    _wireClick(stage);
+    if (STATE.mode === 'combat')   _wireCombat();
+    if (STATE.mode === 'campaign') _wireCampaign();
+
     try {
       const av = await window.CJS.L2DAvatar.create(stage, { model: opts.model });
       STATE.avatar = av;
       STATE.cfg = av.cfg;
       if (STATE.name && av.cfg?.name) STATE.name.textContent = av.cfg.name;
-      _wireClick();
-      if (STATE.mode === 'combat')   _wireCombat();
-      if (STATE.mode === 'campaign') _wireCampaign();
       // Greeting: campaign only — combat's first quip will arrive from
       // the narrator's battle_start fragment. Bypass the throttle by
       // passing an explicit line so a startup race can't suppress it.

@@ -51,8 +51,8 @@
   <script src="js/ui/l2d-avatar.js"></script>
   <script src="js/ui/l2d-companion.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      window.CJS.CampaignUI.init(document.getElementById('campaign-root'));
+    document.addEventListener('DOMContentLoaded', async () => {
+      await window.CJS.CampaignUI.init(document.getElementById('campaign-root'));
       if (window.CJS.L2DCompanion) {
         window.CJS.L2DCompanion.init({ mode: 'campaign' }).catch(err => console.warn('L2D init:', err));
       }

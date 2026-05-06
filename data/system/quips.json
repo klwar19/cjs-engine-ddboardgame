@@ -1869,6 +1869,191 @@
       "weight": 1
     },
     {
+      "id": "e_l2d_click_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Peri catches the poke in 4K. Bold interaction choice, captain.",
+      "required_tags": [
+        "l2d_click"
+      ],
+      "weight": 8,
+      "expression": "playful"
+    },
+    {
+      "id": "e_l2d_click_02",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Yes, Peri is here. No, poking the commentator is not a strategy.",
+      "required_tags": [
+        "l2d_click"
+      ],
+      "weight": 8,
+      "expression": "playful"
+    },
+    {
+      "id": "e_l2d_turn_start_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Peri leans over the initiative rail. {actor.name}, make this turn worth the popcorn.",
+      "required_tags": [
+        "l2d_turn_start",
+        "actor_team_player"
+      ],
+      "weight": 9,
+      "expression": "happy"
+    },
+    {
+      "id": "e_l2d_turn_start_02",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Player turn. Peri has highlighted three terrible ideas and one excellent one.",
+      "required_tags": [
+        "l2d_turn_start",
+        "actor_team_player"
+      ],
+      "weight": 8,
+      "expression": "neutral"
+    },
+    {
+      "id": "e_l2d_move_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] {actor.name} steps into position. Peri approves of choreography with consequences.",
+      "required_tags": [
+        "l2d_move",
+        "actor_team_player"
+      ],
+      "weight": 8,
+      "expression": "playful"
+    },
+    {
+      "id": "e_l2d_defend_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Defensive stance. Peri files it under survival instincts, finally.",
+      "required_tags": [
+        "l2d_defend",
+        "actor_team_player"
+      ],
+      "weight": 8,
+      "expression": "hat"
+    },
+    {
+      "id": "e_l2d_item_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Item used. Practical, unglamorous, and suspiciously effective.",
+      "required_tags": [
+        "l2d_item_used",
+        "actor_team_player"
+      ],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_l2d_campaign_idle_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Peri floats over {campaign.name} like a tiny executive producer. Give her a scene.",
+      "required_tags": [
+        "campaign_idle"
+      ],
+      "weight": 8,
+      "expression": "neutral"
+    },
+    {
+      "id": "e_l2d_campaign_action_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] The campaign board twitches. Peri is pretending she predicted that.",
+      "required_tags": [
+        "campaign_action"
+      ],
+      "weight": 8,
+      "expression": "playful"
+    },
+    {
+      "id": "e_l2d_campaign_move_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Travel choice locked. Peri marks the map with dramatic little sparkles.",
+      "required_tags": [
+        "campaign_move"
+      ],
+      "weight": 8,
+      "expression": "playful"
+    },
+    {
+      "id": "e_l2d_campaign_loot_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Resources changed. Peri smells loot, profit, or bookkeeping. Maybe all three.",
+      "required_tags": [
+        "campaign_loot"
+      ],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_l2d_campaign_quest_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Quest thread tugged. Peri loves when the plot remembers to pull back.",
+      "required_tags": [
+        "campaign_quest"
+      ],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
+      "id": "e_l2d_campaign_event_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] An event enters stage left. Peri sits up because consequences are arriving.",
+      "required_tags": [
+        "campaign_event"
+      ],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
+      "id": "e_l2d_campaign_oracle_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Oracle static crackles. Peri rates the omen highly for atmosphere.",
+      "required_tags": [
+        "campaign_oracle"
+      ],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_l2d_campaign_battle_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Battle queued. Peri has popcorn in one hand and questionable confidence in the other.",
+      "required_tags": [
+        "campaign_battle"
+      ],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
+      "id": "e_l2d_campaign_setback_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Setback logged. Peri winces, then checks whether it made the story better.",
+      "required_tags": [
+        "campaign_setback"
+      ],
+      "weight": 8,
+      "expression": "sad"
+    },
+    {
+      "id": "e_l2d_campaign_rest_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Rest beats are sacred. Peri allows softness, but only because recovery is tactical.",
+      "required_tags": [
+        "campaign_rest"
+      ],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_l2d_campaign_load_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Save loaded. Peri reopens the cosmic tab exactly where you left off.",
+      "required_tags": [
+        "campaign_load"
+      ],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
       "id": "e_overkill_01",
       "layer": "cjs_editorial",
       "text": "[CJS] Overkill by {overkill}! That was personal. Peri approves of excessive force.",
