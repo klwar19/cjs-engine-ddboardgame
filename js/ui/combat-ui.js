@@ -1028,7 +1028,6 @@ window.CJS.CombatUI = (() => {
       html += '<div class="skill-list">';
       for (const skillEntry of available.skills) {
         const skillName = skillEntry.skill?.name || skillEntry.id;
-        const skillIcon = skillEntry.skill?.icon || '*';
         const disabled = !skillEntry.usable ? 'disabled' : '';
         const costParts = [`AP ${skillEntry.apCost || 0}`];
         if (skillEntry.mpCost) costParts.push(`MP ${skillEntry.mpCost}`);
@@ -1037,9 +1036,11 @@ window.CJS.CombatUI = (() => {
           : '';
         const reasonText = weaponReason || (skillEntry.cooldown > 0 ? `Cooldown: ${skillEntry.cooldown} turns` : '');
         const reason = reasonText ? `title="${_escAttr(reasonText)}"` : '';
+        const iconHtml = _renderEntityIcon(skillEntry.skill, 'skill', 'sm');
         html += `
           <button class="btn btn-action btn-skill" data-action="skill" data-skill="${_escAttr(skillEntry.id)}" ${disabled} ${reason}>
-            ${_escHtml(skillIcon)} ${_escHtml(skillName)}
+            ${iconHtml}
+            <span class="btn-action-name">${_escHtml(skillName)}</span>
             <span class="skill-cost">${_escHtml(costParts.join(' | '))}</span>
           </button>
         `;
@@ -1051,9 +1052,11 @@ window.CJS.CombatUI = (() => {
       html += '<div class="item-list">';
       for (const itemEntry of available.items) {
         const itemName = itemEntry.item?.name || itemEntry.id;
+        const iconHtml = _renderEntityIcon(itemEntry.item, 'item', 'sm');
         html += `
           <button class="btn btn-action btn-item" data-action="item" data-item="${_escAttr(itemEntry.id)}">
-            Item ${_escHtml(itemName)}
+            ${iconHtml}
+            <span class="btn-action-name">${_escHtml(itemName)}</span>
           </button>
         `;
       }
@@ -1490,6 +1493,13 @@ window.CJS.CombatUI = (() => {
       petrify: 'X'
     };
     return icons[id] || '*';
+  }
+
+  function _renderEntityIcon(entity, kind, size) {
+    const I = window.CJS && window.CJS.UIIcons;
+    if (I) return I.renderIcon(entity || {}, { kind, size });
+    const fb = entity?.icon || (kind === 'item' ? '🎁' : '⚔️');
+    return `<span class="cjs-icon cjs-icon-${size}">${_escHtml(fb)}</span>`;
   }
 
   function _renderPortraitMarkup(path, imageClass, fallbackClass, icon) {

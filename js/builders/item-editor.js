@@ -87,7 +87,14 @@ window.CJS.ItemEditor = (() => {
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Name</label><input type="text" id="itm-name" value="${_esc(item.name||'')}"></div>
-          <div class="form-group" style="flex:0 0 80px"><label class="form-label">Icon</label><input type="text" id="itm-icon" value="${_esc(item.icon||'📦')}" style="text-align:center;font-size:1.2em"></div>
+          <div class="form-group" style="flex:0 0 240px"><label class="form-label">Icon (emoji or image)</label>
+            <div class="cjs-icon-upload" data-icon-upload data-icon-target="itm-icon" data-icon-kind="item">
+              <span class="cjs-icon-preview" data-icon-preview></span>
+              <input type="text" id="itm-icon" value="${_esc(item.icon||'📦')}" placeholder="emoji or image URL">
+              <button type="button" class="btn btn-sm btn-ghost" data-icon-upload-trigger title="Upload image">📁</button>
+              <input type="file" accept="image/*" data-icon-upload-input style="display:none">
+            </div>
+          </div>
         </div>
         <div id="itm-portrait-area" style="margin-bottom:8px"></div>
         <div class="form-row">

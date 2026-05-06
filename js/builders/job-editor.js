@@ -84,7 +84,14 @@ window.CJS.JobEditor = (() => {
 
         <div class="form-row">
           <div class="form-group"><label class="form-label">Name</label><input type="text" id="job-name" value="${_esc(j.name || '')}"></div>
-          <div class="form-group" style="flex:0 0 80px"><label class="form-label">Icon</label><input type="text" id="job-icon" value="${_esc(j.icon || '🛡️')}" style="text-align:center;font-size:1.2em"></div>
+          <div class="form-group" style="flex:0 0 240px"><label class="form-label">Icon (emoji or image)</label>
+            <div class="cjs-icon-upload" data-icon-upload data-icon-target="job-icon" data-icon-kind="job">
+              <span class="cjs-icon-preview" data-icon-preview></span>
+              <input type="text" id="job-icon" value="${_esc(j.icon || '🛡️')}" placeholder="emoji or image URL">
+              <button type="button" class="btn btn-sm btn-ghost" data-icon-upload-trigger title="Upload image">📁</button>
+              <input type="file" accept="image/*" data-icon-upload-input style="display:none">
+            </div>
+          </div>
           <div class="form-group" style="flex:0 0 100px"><label class="form-label">Max Level</label><input type="number" id="job-maxlvl" value="${j.maxLevel || 10}" min="1" max="20"></div>
         </div>
 

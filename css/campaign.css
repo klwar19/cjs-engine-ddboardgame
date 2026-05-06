@@ -442,13 +442,212 @@ body.campaign-page {
 }
 
 .campaign-roster-member {
-  border-top: 1px solid var(--campaign-line);
-  padding: 14px 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 16px 18px;
+  margin-top: 16px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.18) 100%),
+    var(--campaign-panel, #15201f);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.campaign-roster-member::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  background: linear-gradient(180deg, var(--campaign-accent, #b8a04a), transparent);
+}
+
+.campaign-roster-member.is-bench::before {
+  background: linear-gradient(180deg, #5b6775, transparent);
+}
+
+.campaign-roster-member.is-unavailable {
+  opacity: 0.78;
 }
 
 .campaign-roster-member:first-of-type {
-  border-top: 0;
-  padding-top: 0;
+  margin-top: 0;
+}
+
+.campaign-roster-hero {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.campaign-roster-portrait {
+  flex: 0 0 200px;
+  width: 200px;
+  height: 240px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--cmp-frame-gold, #c9a44e);
+  background: linear-gradient(180deg, #1a2422 0%, #050a09 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.campaign-roster-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.campaign-roster-portrait-fallback {
+  font-family: 'Cinzel', 'Inter', serif;
+  font-size: 5.4rem;
+  color: rgba(243, 220, 146, 0.55);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.campaign-roster-hero-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.campaign-roster-hero-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--campaign-line);
+  padding-bottom: 6px;
+}
+
+.campaign-roster-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.55rem;
+  color: var(--campaign-accent, #f3dc92);
+  letter-spacing: 0.02em;
+  margin-right: 4px;
+}
+
+.campaign-roster-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.84rem;
+  color: var(--campaign-muted);
+}
+
+.campaign-roster-hero-meta b {
+  color: rgba(243, 220, 146, 0.85);
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+.campaign-roster-hero-meta small {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.campaign-roster-hero-job .cjs-icon {
+  margin-right: 4px;
+}
+
+.campaign-roster-hero-actions {
+  margin-top: auto;
+}
+
+.campaign-roster-vitals-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+}
+
+.campaign-roster-detail-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.campaign-roster-card {
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.26);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.campaign-roster-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--campaign-line);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  color: var(--campaign-accent, #f3dc92);
+  font-family: 'Cinzel', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.campaign-roster-card-title small {
+  margin-left: auto;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.campaign-roster-card-title button {
+  margin-left: auto;
+}
+
+.campaign-roster-card-title small + button {
+  margin-left: 4px;
+}
+
+.campaign-roster-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 14px;
+  font-size: 0.82rem;
+  padding: 6px 0 0;
+}
+
+.campaign-roster-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.05);
+}
+
+.campaign-roster-stat span {
+  color: var(--campaign-muted);
+}
+
+.campaign-roster-stat strong {
+  color: var(--cmp-parchment, #ece4d2);
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .campaign-roster-hero { flex-direction: column; }
+  .campaign-roster-portrait { width: 100%; height: 220px; flex: 0 0 auto; }
+  .campaign-roster-vitals-row,
+  .campaign-roster-detail-row { grid-template-columns: 1fr; }
 }
 
 .campaign-roster-head,
@@ -532,11 +731,21 @@ body.campaign-page {
 
 .campaign-equipment-line {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
   align-items: start;
   border-top: 1px solid var(--campaign-line);
   padding: 8px 0;
+}
+
+.campaign-equipment-line .campaign-equipment-icon {
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.campaign-equipment-line:first-child {
+  border-top: 0;
 }
 
 .campaign-equipment-line strong,
@@ -2666,6 +2875,12 @@ body.campaign-page::before {
 .campaign-slot-icon {
   font-size: 1.1rem;
   flex: 0 0 auto;
+}
+
+.campaign-slot .cjs-icon {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
 }
 
 .campaign-slot-name {

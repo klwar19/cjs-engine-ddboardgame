@@ -18,6 +18,15 @@ window.CJS.CampaignUI = (() => {
   const Gen = () => window.CJS.CampaignScenarioGenerator;
   const Chat = () => window.CJS.CampaignPartyChat;
   const C = () => window.CJS.CONST;
+  const Icons = () => window.CJS.UIIcons;
+
+  // Render an entity icon using UIIcons; safe fallback if module is missing.
+  function _icon(entity, opts = {}) {
+    const I = Icons();
+    if (I) return I.renderIcon(entity, opts);
+    const fallback = entity?.icon || (opts.kind === 'passive' ? '🛡️' : '⚔️');
+    return `<span class="cjs-icon cjs-icon-${opts.size || 'md'}">${_esc(fallback)}</span>`;
+  }
 
   let _root = null;
   let _activeMode = 'town';
@@ -333,7 +342,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
         <div class="campaign-character-head">
-          <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _esc(member.icon || member.name?.[0] || '?')}</div>
+          <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id })}</div>
           <div>
             <strong>${_esc(member.name || id)}</strong>
             <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(member.rank || 'F')}</div>
@@ -390,80 +399,93 @@ window.CJS.CampaignUI = (() => {
     const charXp = Number(member.xp || 0);
     const xpToNext = F?.calcCharXpToNextLevel ? F.calcCharXpToNextLevel(charXp, charLevel) : null;
     const charXpMeta = xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`;
+    const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
+    const availLabel = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
+    const portraitContent = member.portrait
+      ? `<img src="${_escAttr(member.portrait)}" alt="">`
+      : `<span class="campaign-roster-portrait-fallback">${_esc(member.icon || member.name?.[0] || '?')}</span>`;
     return `
-      <div class="campaign-roster-member" style="display:flex; flex-direction:column; gap:16px;">
-        <div style="display:flex; gap:20px; align-items:stretch;">
-          <!-- HUGE PORTRAIT (left) -->
-          <div style="width:230px; flex-shrink:0; border-radius:6px; overflow:hidden; border:2px solid var(--cmp-frame-gold, #aaa); background:#111; display:flex;">
-            ${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="" style="width:100%; object-fit:cover;">` : `<div style="display:grid; place-items:center; width:100%; font-size:6rem; color:#555;">${_esc(member.icon || member.name?.[0] || '?')}</div>`}
-          </div>
-          
-          <!-- STATS/INFO (right) -->
-          <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
-            <!-- HEADER -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; border-bottom:1px solid var(--campaign-line); padding-bottom:8px;">
-              <div>
-                <strong style="font-size:1.6rem; color:var(--campaign-accent); font-family:'Cinzel', serif;">${_esc(member.name || base?.name || id)}</strong>
-                <div class="campaign-muted">Lv ${charLevel} | Rank ${_esc(member.rank || base?.rank || 'F')} | ${isBench ? 'Bench' : 'Active'}</div>
-                <div class="campaign-muted">${_renderJobChip(id, member)} | ${charXpMeta} | ${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</div>
-              </div>
-              <div class="campaign-row-actions" style="margin-top:0;">
-                <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
-                <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
-                <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
-                <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
-                <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
-                <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
-                <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
-                <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
-              </div>
+      <article class="campaign-roster-member ${isBench ? 'is-bench' : 'is-active'} ${battleReady ? '' : 'is-unavailable'}">
+        <header class="campaign-roster-hero">
+          <div class="campaign-roster-portrait">${portraitContent}</div>
+          <div class="campaign-roster-hero-info">
+            <div class="campaign-roster-hero-title">
+              <strong class="campaign-roster-name">${_esc(member.name || base?.name || id)}</strong>
+              <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${_esc(availLabel)}</span>
+              <span class="campaign-pill">${isBench ? 'Bench' : 'Active'}</span>
             </div>
-            
-            <!-- MID: HP/MP/Stats + Elements -->
-            <div style="display:flex; gap:24px; flex:1;">
-              <!-- HP/MP & core stats -->
-              <div style="flex: 0 0 220px; display:flex; flex-direction:column; justify-content:flex-start;">
-                <div class="campaign-bar" style="margin-bottom:6px;"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
-                <div class="campaign-bar" style="margin-bottom:16px;"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
-                
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2px 12px; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px; border:1px solid var(--campaign-line);">
-                  ${Object.entries(stats).map(([stat, value]) => `
-                    <div style="display:flex; justify-content:space-between;">
-                      <span style="color:var(--campaign-muted);">${_esc(_statName(stat))}</span>
-                      <strong style="color:var(--cmp-parchment, #fff);">${Number(value || 0)}</strong>
-                    </div>
-                  `).join('')}
+            <div class="campaign-roster-hero-meta">
+              <span><b>Lv</b> ${charLevel}</span>
+              <span><b>Rank</b> ${_esc(member.rank || base?.rank || 'F')}</span>
+              <span class="campaign-roster-hero-job">${_renderJobChip(id, member)}</span>
+              <span title="${_escAttr(charXpMeta)}"><b>XP</b> ${charXp}${xpToNext != null ? ` <small>(${xpToNext} to next)</small>` : ' <small>(max)</small>'}</span>
+              <span class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</span>
+            </div>
+            <div class="campaign-roster-hero-actions campaign-row-actions">
+              <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
+              <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
+              <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
+              <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
+              <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
+              <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
+              <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
+              <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="campaign-roster-vitals-row">
+          <section class="campaign-roster-card campaign-roster-vitals">
+            <div class="campaign-roster-card-title">Vitals</div>
+            <div class="campaign-bar"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
+            <div class="campaign-bar"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
+            <div class="campaign-roster-stats-grid">
+              ${Object.entries(stats).map(([stat, value]) => `
+                <div class="campaign-roster-stat">
+                  <span>${_esc(_statName(stat))}</span>
+                  <strong>${Number(value || 0)}</strong>
                 </div>
-              </div>
-              
-              <!-- Affinities -->
-              <div style="flex:1;">
-                ${_renderResistances(base, member, stats)}
-              </div>
+              `).join('')}
             </div>
-          </div>
+          </section>
+          <section class="campaign-roster-card campaign-roster-affinities">
+            <div class="campaign-roster-card-title">Affinities</div>
+            ${_renderResistances(base, member, stats)}
+          </section>
         </div>
-        <div class="campaign-detail-grid">
-          <div>
-            <div class="campaign-section-title">Skills <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'skill')}</small> <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}" title="Add to pool">+</button></div>
+
+        <div class="campaign-roster-detail-row">
+          <section class="campaign-roster-card campaign-roster-skills">
+            <div class="campaign-roster-card-title">
+              <span>Skills</span>
+              <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'skill')}</small>
+              <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}" title="Add to pool">+</button>
+            </div>
             ${_renderSkillSlotView(id, member)}
             <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberSkillPoolCount(id, member)} in pool)</summary>${_renderSkillPoolList(id, member, skills)}</details>
-          </div>
-          <div>
-            <div class="campaign-section-title">Passives <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'passive')}</small> <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}" title="Add to pool">+</button></div>
+          </section>
+          <section class="campaign-roster-card campaign-roster-passives">
+            <div class="campaign-roster-card-title">
+              <span>Passives</span>
+              <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'passive')}</small>
+              <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}" title="Add to pool">+</button>
+            </div>
             ${_renderPassiveSlotView(id, member)}
             <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberPassivePoolCount(id, member)} in pool)</summary>${_renderPassivePoolList(id, member, passives)}</details>
-          </div>
-          <div>
-            <div class="campaign-section-title">Statuses <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${_escAttr(id)}">+</button></div>
+          </section>
+          <section class="campaign-roster-card campaign-roster-statuses">
+            <div class="campaign-roster-card-title">
+              <span>Statuses</span>
+              <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${_escAttr(id)}">+</button>
+            </div>
             ${statuses.length ? statuses.map((status) => _renderKnownStatus(status)).join('') : '<div class="campaign-empty">No statuses.</div>'}
-          </div>
-          <div>
-            <div class="campaign-section-title">Equipment</div>
+          </section>
+          <section class="campaign-roster-card campaign-roster-equipment">
+            <div class="campaign-roster-card-title"><span>Equipment</span></div>
             ${_renderEquipmentLoadout(id, member)}
-          </div>
+          </section>
         </div>
-      </div>
+      </article>
     `;
   }
 
@@ -527,7 +549,7 @@ window.CJS.CampaignUI = (() => {
         const skill = DS().get('skills', sid);
         const spCost = F.calcSpCost ? F.calcSpCost(skill) : 1;
         html += `<div class="campaign-slot filled" title="${_escAttr(skill?.name || sid)} (SP ${spCost})">
-          <span class="campaign-slot-icon">${skill?.icon || '⚔️'}</span>
+          ${_icon(skill, { kind: 'skill', size: 'md', alt: skill?.name || sid })}
           <span class="campaign-slot-name">${_esc(skill?.name || sid)}</span>
           <button class="campaign-slot-remove" data-campaign-action="unequip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(sid)}" title="Unequip">✕</button>
         </div>`;
@@ -554,7 +576,7 @@ window.CJS.CampaignUI = (() => {
         const passive = DS().get('passives', pid) || DS().get('effects', pid);
         const spCost = F.calcSpCost ? F.calcSpCost(passive) : 1;
         html += `<div class="campaign-slot filled" title="${_escAttr(passive?.name || pid)} (SP ${spCost})">
-          <span class="campaign-slot-icon">${passive?.icon || '🛡️'}</span>
+          ${_icon(passive, { kind: 'passive', size: 'md', alt: passive?.name || pid })}
           <span class="campaign-slot-name">${_esc(passive?.name || pid)}</span>
           <button class="campaign-slot-remove" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(pid)}" title="Unequip">✕</button>
         </div>`;
@@ -615,7 +637,7 @@ window.CJS.CampaignUI = (() => {
         const row = document.createElement('div');
         row.className = 'data-list-item';
         row.style.cursor = 'pointer';
-        row.innerHTML = `<span class="item-icon">${skill.icon || '⚔️'}</span><div><div class="item-name">${_esc(skill.name || sid)}</div><div class="item-sub">SP ${spCost} | Lv ${prog.level || 1} | ${_esc(skill.description?.substring(0, 60) || '')}</div></div>`;
+        row.innerHTML = `${_icon(skill, { kind: 'skill', size: 'sm', alt: skill.name || sid })}<div><div class="item-name">${_esc(skill.name || sid)}</div><div class="item-sub">SP ${spCost} | Lv ${prog.level || 1} | ${_esc(skill.description?.substring(0, 60) || '')}</div></div>`;
         row.onclick = () => {
           Ops().apply({ op: 'equip_skill', target: memberId, skillId: sid }, { source: 'ui' });
           UI().closeModal(overlay);
@@ -667,7 +689,7 @@ window.CJS.CampaignUI = (() => {
         const row = document.createElement('div');
         row.className = 'data-list-item';
         row.style.cursor = 'pointer';
-        row.innerHTML = `<span class="item-icon">${passive.icon || '🛡️'}</span><div><div class="item-name">${_esc(passive.name || pid)}</div><div class="item-sub">SP ${spCost} | ${_esc(passive.trigger || passive.category || '')} | ${_esc(passive.description?.substring(0, 60) || '')}</div></div>`;
+        row.innerHTML = `${_icon(passive, { kind: 'passive', size: 'sm', alt: passive.name || pid })}<div><div class="item-name">${_esc(passive.name || pid)}</div><div class="item-sub">SP ${spCost} | ${_esc(passive.trigger || passive.category || '')} | ${_esc(passive.description?.substring(0, 60) || '')}</div></div>`;
         row.onclick = () => {
           Ops().apply({ op: 'equip_passive', target: memberId, passiveId: pid }, { source: 'ui' });
           UI().closeModal(overlay);
@@ -4673,7 +4695,7 @@ Recover the relic x 1"></textarea>
     const body = document.createElement('div');
     body.innerHTML = `
       <div style="margin-bottom:12px">
-        <div><b>${_esc(skill.icon || '⚔️')} ${_esc(skill.name || skillId)}</b></div>
+        <div><b>${_icon(skill, { kind: 'skill', size: 'sm' })} ${_esc(skill.name || skillId)}</b></div>
         <div class="campaign-muted">${_esc(skill.description || '')}</div>
         <div style="margin-top:6px">
           ${_esc(_skillMeta(skill, { level }))}
@@ -4817,7 +4839,7 @@ Recover the relic x 1"></textarea>
       return `
         <div class="campaign-record-line" style="margin-bottom:8px">
           <div>
-            <strong>${_esc(job.icon || '🛡️')} ${_esc(job.name || job.id)} <small style="color:var(--text-mute)">tier ${job.tier || 1}</small></strong>
+            <strong>${_icon(job, { kind: 'job', size: 'sm' })} ${_esc(job.name || job.id)} <small style="color:var(--text-mute)">tier ${job.tier || 1}</small></strong>
             <small>${statusBadge} | ${_esc(xpMeta)}</small>
             <p>${_esc(job.description || '')}</p>
             <div style="margin-top:4px">${levelLines || '<i class="campaign-muted">No level data authored.</i>'}</div>
@@ -5292,8 +5314,13 @@ Recover the relic x 1"></textarea>
       const itemName = item?.name || itemId || 'Empty';
       const type = item ? _equipmentType(item) : '';
       const meta = item ? [type, item.rarity].filter(Boolean).join(' | ') : 'Empty';
+      const slotKind = _slotKind(slot) || 'item';
+      const iconHtml = item
+        ? _icon(item, { kind: slotKind, size: 'md', alt: itemName })
+        : `<span class="cjs-icon cjs-icon-md cjs-icon-${slotKind}" style="opacity:.4">+</span>`;
       return `
         <div class="campaign-equipment-line">
+          <div class="campaign-equipment-icon">${iconHtml}</div>
           <div>
             <strong>${_esc(_slotLabel(slot))}</strong>
             <small>${_esc(itemName)}${meta ? ` | ${_esc(meta)}` : ''}</small>
@@ -5609,7 +5636,7 @@ Recover the relic x 1"></textarea>
     const xp = Number(prog.xp || 0);
     const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
     const meta = level >= cap ? `(max)` : (xpToNext != null ? `(${xpToNext} XP to next)` : '');
-    return `${_esc(job.icon || '🛡️')} ${_esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}`;
+    return `${_icon(job, { kind: 'job', size: 'xs' })} ${_esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}`;
   }
 
   function _skillMeta(skill = {}, entry = {}) {

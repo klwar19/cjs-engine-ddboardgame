@@ -1219,3 +1219,376 @@
     white-space: normal;
   }
 }
+
+/* ── JRPG VISUAL POLISH ───────────────────────────────────────────── */
+/* Layered backgrounds, gold accents, decorative panel borders.
+   Targets existing classes — does not change DOM, only paints. */
+
+:root {
+  --jrpg-gold:        #f3dc92;
+  --jrpg-gold-dim:    #c9a44e;
+  --jrpg-gold-line:   rgba(243, 220, 146, 0.45);
+  --jrpg-shadow:      rgba(0, 0, 0, 0.55);
+  --jrpg-panel-1:     #1a2330;
+  --jrpg-panel-2:     #0d141d;
+  --jrpg-panel-edge:  #2a3a4f;
+  --jrpg-bevel-hi:    rgba(255, 255, 255, 0.05);
+  --jrpg-bevel-lo:    rgba(0, 0, 0, 0.45);
+  --jrpg-player:      #5dbcff;
+  --jrpg-enemy:       #ff6b6b;
+}
+
+/* Header — gilded title bar */
+.combat-header {
+  background:
+    linear-gradient(180deg, #1c2434 0%, #0d141d 100%);
+  border-bottom: 1px solid var(--jrpg-gold-line);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4), inset 0 -1px 0 rgba(243, 220, 146, 0.08);
+  padding: 12px 18px;
+}
+.combat-header h1 {
+  color: var(--jrpg-gold);
+  font-family: 'Cinzel', 'Inter', serif;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 4px var(--jrpg-shadow);
+}
+
+/* Top initiative band */
+.combat-top {
+  background:
+    radial-gradient(ellipse at top, rgba(243, 220, 146, 0.05), transparent 60%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.25));
+  border-bottom: 1px solid rgba(243, 220, 146, 0.12);
+  padding: 8px 14px;
+}
+
+.init-unit {
+  background: linear-gradient(180deg, var(--jrpg-panel-1), var(--jrpg-panel-2));
+  border: 1px solid var(--jrpg-panel-edge);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 var(--jrpg-bevel-hi), 0 2px 0 var(--jrpg-bevel-lo);
+}
+.init-player { border-color: rgba(93, 188, 255, 0.55); }
+.init-enemy  { border-color: rgba(255, 107, 107, 0.55); }
+.init-active {
+  border-color: var(--jrpg-gold) !important;
+  box-shadow:
+    0 0 0 1px var(--jrpg-gold),
+    0 0 14px rgba(243, 220, 146, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(243,220,146,0.18), rgba(0,0,0,0.35));
+}
+
+/* Sidebar / unit card frame */
+.combat-sidebar { padding-right: 2px; }
+
+.unit-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--jrpg-panel-1), var(--jrpg-panel-2));
+  border: 1px solid var(--jrpg-gold-line);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow:
+    inset 0 1px 0 var(--jrpg-bevel-hi),
+    0 4px 14px var(--jrpg-shadow);
+}
+.unit-card::before,
+.unit-card::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border: 1px solid var(--jrpg-gold-dim);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.unit-card::before {
+  top: 4px; left: 4px;
+  border-right: 0; border-bottom: 0;
+  border-top-left-radius: 6px;
+}
+.unit-card::after {
+  bottom: 4px; right: 4px;
+  border-left: 0; border-top: 0;
+  border-bottom-right-radius: 6px;
+}
+
+.unit-card.player {
+  border-left: 3px solid var(--jrpg-player);
+  box-shadow: inset 0 1px 0 var(--jrpg-bevel-hi), 0 4px 14px var(--jrpg-shadow), inset 4px 0 12px rgba(93, 188, 255, 0.08);
+}
+.unit-card.enemy {
+  border-left: 3px solid var(--jrpg-enemy);
+  box-shadow: inset 0 1px 0 var(--jrpg-bevel-hi), 0 4px 14px var(--jrpg-shadow), inset 4px 0 12px rgba(255, 107, 107, 0.08);
+}
+
+.unit-name {
+  font-family: 'Cinzel', 'Inter', serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--jrpg-gold);
+  text-shadow: 0 1px 2px var(--jrpg-shadow);
+}
+.unit-rank { color: rgba(243, 220, 146, 0.65); font-size: 0.78rem; }
+
+.unit-portrait,
+.unit-icon-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #25344a, #0e1620);
+  border: 1px solid var(--jrpg-gold-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  color: var(--jrpg-gold);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  object-fit: cover;
+}
+
+/* Resource bars — segmented JRPG style */
+.bar-track {
+  height: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  background: linear-gradient(180deg, #050a10, #1a2330);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+.bar-fill {
+  position: relative;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.bar-track.hp .bar-fill {
+  background: linear-gradient(180deg, #6dd86d 0%, #1f8a3a 100%);
+}
+.bar-track.mp .bar-fill {
+  background: linear-gradient(180deg, #80b5ff 0%, #1d4ed8 100%);
+}
+.bar-track.hp .bar-fill::after,
+.bar-track.mp .bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 50% 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent);
+  pointer-events: none;
+}
+.bar-num {
+  font-family: 'Cinzel', 'Inter', monospace;
+  color: var(--jrpg-gold);
+  text-shadow: 0 1px 2px var(--jrpg-shadow);
+}
+.bar-label {
+  font-family: 'Cinzel', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--jrpg-gold-dim);
+}
+
+/* Status chips — small gemmed pills */
+.status-chip {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.25), rgba(0, 0, 0, 0.4));
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  color: #f3e8ff;
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* Action buttons — gilded JRPG menu */
+.action-panel {
+  padding-right: 4px;
+}
+.btn-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #233144 0%, #101824 100%);
+  border: 1px solid var(--jrpg-panel-edge);
+  border-left-width: 3px;
+  border-radius: 6px;
+  color: #e7e2cc;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 9px 12px;
+  box-shadow:
+    inset 0 1px 0 var(--jrpg-bevel-hi),
+    0 2px 0 var(--jrpg-bevel-lo);
+  transition: transform 60ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+.btn-action:hover:not(:disabled) {
+  border-color: var(--jrpg-gold-line);
+  color: var(--jrpg-gold);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 12px rgba(243, 220, 146, 0.18),
+    0 2px 0 var(--jrpg-bevel-lo);
+}
+.btn-action:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.btn-action .cjs-icon {
+  border: 0;
+  background: transparent;
+  width: 26px;
+  height: 26px;
+  font-size: 1.1rem;
+}
+.btn-action .btn-action-name {
+  flex: 1;
+  text-align: left;
+}
+.skill-cost {
+  font-family: 'Cinzel', monospace;
+  font-size: 0.72rem;
+  color: var(--jrpg-gold-dim);
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(243, 220, 146, 0.25);
+}
+
+.btn-move    { border-left-color: var(--jrpg-player); }
+.btn-attack  { border-left-color: var(--jrpg-enemy); }
+.btn-defend  { border-left-color: #6dd86d; }
+.btn-skill   { border-left-color: #c084fc; }
+.btn-item    { border-left-color: #f59e0b; }
+.btn-end-turn{ border-left-color: var(--jrpg-gold-dim); }
+
+.action-wait {
+  font-family: 'Cinzel', serif;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: rgba(243, 220, 146, 0.55);
+}
+
+/* Battle log — leather/parchment tone */
+.battle-log-panel {
+  background:
+    linear-gradient(180deg, rgba(20, 14, 8, 0.7), rgba(8, 5, 2, 0.7));
+  border: 1px solid var(--jrpg-gold-line);
+  border-radius: 8px;
+  font-family: 'Cormorant Garamond', 'Courier New', monospace;
+  font-size: 0.86rem;
+  color: #d8cfb6;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.log-entry {
+  border-bottom: 1px dashed rgba(243, 220, 146, 0.08);
+  padding: 2px 0;
+}
+.log-turn_start {
+  color: var(--jrpg-gold);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  border-top: 1px solid var(--jrpg-gold-line);
+  text-transform: uppercase;
+}
+.log-battle_start, .log-battle_end {
+  color: var(--jrpg-gold);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, transparent, rgba(243,220,146,0.1), transparent);
+  border-radius: 4px;
+}
+
+/* Narrator panel — magical lavender frame */
+.narrator-panel {
+  background:
+    linear-gradient(135deg, rgba(40, 22, 60, 0.7) 0%, rgba(15, 10, 30, 0.85) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 24px rgba(168, 85, 247, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  font-family: 'Cormorant Garamond', 'Cinzel', serif;
+  font-style: italic;
+  color: #e8e0ff;
+}
+.narrator-line p { color: #ece4ff; }
+
+/* Battle End — gilded victory / scarred defeat */
+.battle-end-panel {
+  border-radius: 12px;
+  padding: 28px 24px;
+  background:
+    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.06), transparent 60%);
+}
+.battle-end-panel.victory {
+  background:
+    radial-gradient(ellipse at top, rgba(243, 220, 146, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(34, 197, 94, 0.15), rgba(20, 50, 30, 0.4));
+  border: 1px solid var(--jrpg-gold-line);
+  box-shadow:
+    inset 0 0 30px rgba(243, 220, 146, 0.15),
+    0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.battle-end-panel.defeat {
+  background:
+    radial-gradient(ellipse at top, rgba(239, 68, 68, 0.2), transparent 70%),
+    linear-gradient(180deg, rgba(70, 15, 15, 0.5), rgba(15, 5, 5, 0.6));
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow:
+    inset 0 0 30px rgba(239, 68, 68, 0.15),
+    0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.battle-end-panel h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+.battle-end-panel.victory h2 { color: var(--jrpg-gold); }
+
+/* Loot panel — treasure chest */
+.loot-panel {
+  background: linear-gradient(180deg, var(--jrpg-panel-1), var(--jrpg-panel-2));
+  border: 1px solid var(--jrpg-gold-line);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 var(--jrpg-bevel-hi), 0 6px 20px var(--jrpg-shadow);
+}
+.loot-title {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--jrpg-gold);
+}
+.loot-item {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.3));
+  border-color: rgba(243, 220, 146, 0.2) !important;
+}
+.loot-name { color: var(--jrpg-gold); font-family: 'Cinzel', serif; }
+.loot-icon { color: var(--jrpg-gold); }
+
+/* Mode hint — herald banner */
+.mode-hint {
+  background: linear-gradient(180deg, rgba(243, 220, 146, 0.18), rgba(243, 220, 146, 0.05));
+  border: 1px solid var(--jrpg-gold-line);
+  color: var(--jrpg-gold);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Auto-control mini buttons */
+.auto-controls {
+  border-top: 1px solid var(--jrpg-gold-line);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+.auto-controls .btn {
+  background: linear-gradient(180deg, #1c2532, #0e1520);
+  border: 1px solid var(--jrpg-panel-edge);
+  color: var(--jrpg-gold-dim);
+}
+.auto-controls .btn:hover {
+  color: var(--jrpg-gold);
+  border-color: var(--jrpg-gold-line);
+}
