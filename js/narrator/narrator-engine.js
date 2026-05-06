@@ -23,7 +23,8 @@ window.CJS.NarratorEngine = (() => {
   let _recentlyUsed = [];   // [{ fragmentId, turn }] — dedup window
   const DEDUP_WINDOW = 5;    // don't repeat same fragment within N turns
   let _currentTurn = 0;
-  let _subscribers = [];     // called with (narration, logEntry)
+  let _subscribers = [];     // called with (narration, logEntry); reset on destroy
+  let _persistentSubscribers = [];  // survives destroy/init (e.g. L2D companion)
   let _unsubLog = null;      // CombatLog unsubscribe handle
 
   // Only narrate these event types (skip bookkeeping noise)
@@ -73,9 +74,12 @@ window.CJS.NarratorEngine = (() => {
       // Substitute variables
       const final = _substitute(narration, entry);
 
-      // Emit to subscribers
+      // Emit to subscribers (per-combat + persistent)
       for (const cb of _subscribers) {
         try { cb(final, entry); } catch (e) { console.error('NarratorEngine subscriber error:', e); }
+      }
+      for (const cb of _persistentSubscribers) {
+        try { cb(final, entry); } catch (e) { console.error('NarratorEngine persistent subscriber error:', e); }
       }
     }
   }
@@ -212,11 +216,23 @@ window.CJS.NarratorEngine = (() => {
     };
   }
 
+  // Subscribers that survive destroy() — useful for page-level consumers
+  // (e.g. the L2D companion) that want narration across multiple combats
+  // without re-attaching every time CombatUI starts a new battle.
+  function subscribePersistent(fn) {
+    _persistentSubscribers.push(fn);
+    return () => {
+      const i = _persistentSubscribers.indexOf(fn);
+      if (i >= 0) _persistentSubscribers.splice(i, 1);
+    };
+  }
+
   // ── PUBLIC API ────────────────────────────────────────────────────
   return Object.freeze({
     init,
     destroy,
     narrate,
-    subscribe
+    subscribe,
+    subscribePersistent
   });
 })();

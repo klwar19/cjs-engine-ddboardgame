@@ -1,46 +1,92 @@
-# Live2D Avatars
+# Live2D Companion (Peri)
 
-This folder hosts Live2D Cubism models used by the in-game avatar (combat & campaign modes).
+Avatar mounted in the right-side dock of `combat.html` and `campaign.html`.
+Powered by Pixi v6 + Live2D Cubism Core + pixi-live2d-display (lazy-loaded
+from CDN by `js/ui/l2d-avatar.js`).
 
-## How to upload your model
-
-1. Open this folder on GitHub: `assets/live2d/`
-2. Click **Add file → Upload files**
-3. Drag the **entire** model folder from your local machine here
-   (e.g. `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\l2d neko loli Peri`)
-4. Make sure the `.model3.json` (or `.model.json` for Cubism 2) is at a known path
-5. Commit the upload
-
-## Expected layout
-
-A Cubism 4 (`.moc3`) model usually looks like this:
+## Folder layout
 
 ```
 assets/live2d/
-  peri/
-    peri.model3.json          <- entry file (engine loads this)
-    peri.moc3
-    peri.physics3.json        (optional)
-    peri.pose3.json           (optional)
-    peri.cdi3.json            (optional)
-    textures/
-      texture_00.png
-    motions/
-      idle_01.motion3.json
-      tap_body.motion3.json
-      ...
-    expressions/
-      smile.exp3.json
-      ...
+  README.md
+  registry.json                  ← model + reactions + voice mapping
+  peri/                          ← the Cubism model files
+    mianyin.model3.json          ← entry file
+    mianyin.moc3
+    mianyin.physics3.json
+    mianyin.cdi3.json
+    mianyin.png                  ← used as static fallback if Live2D fails
+    mianyin.8192/texture_00.png
+    motions/                     ← *.motion3.json
+    expressions/                 ← *.exp3.json
+  voice/
+    peri/                        ← *.mp3 / *.ogg / *.wav (optional)
 ```
 
-Cubism 2 models use `.model.json` + `.moc` + `.mtn` motions instead. Both versions are supported.
+## Voice clips (optional, future-friendly)
 
-## Registry
+The companion plays an audio file *when one is mapped* and stays silent
+otherwise — there are no missing-file errors when the folder is empty.
 
-After uploading, edit `assets/live2d/registry.json` and point `path` at your model entry file.
-The viewer will pick up the registry on next page load.
+To wire up voice:
+
+1. Drop audio into `assets/live2d/voice/peri/` (any web-friendly format).
+2. Edit `registry.json` → `models.peri.voice` and map clips by:
+   * **`byFragmentId`** — keyed by quip id from `data/quips.json`
+     (e.g. `"e_excited_01": ["excited_01.mp3","excited_01b.mp3"]`).
+     Most specific; wins over the others.
+   * **`byEventType`** — keyed by combat-log event type
+     (`hit`, `miss`, `kill`, `heal`, `battle_start`, `battle_end`,
+      `status_applied`, `qte_result`, `knockback`, `dodge`).
+   * **`byEventKey`** — keyed by reaction key in this registry
+     (`turn_start`, `click`, `campaign_move`, `campaign_loot`,
+      `campaign_quest`, `campaign_rest`, `campaign_idle`).
+
+   Each value can be a single filename or an array (random pick per fire).
+
+3. Reload combat.html / campaign.html — Peri's lip-sync now uses the
+   audio duration instead of an estimate from text length.
+
+Example voice section:
+
+```json
+"voice": {
+  "directory": "assets/live2d/voice/peri/",
+  "byFragmentId": {
+    "e_bored_01": ["bored_yawn.mp3"],
+    "e_excited_01": ["lean_forward.mp3", "ratings_climbing.mp3"]
+  },
+  "byEventType": {
+    "battle_start": ["fight_on_01.mp3","fight_on_02.mp3"],
+    "kill":         ["another_one.mp3"],
+    "heal":         ["all_better.mp3"]
+  },
+  "byEventKey": {
+    "turn_start": ["your_move.mp3"],
+    "click":      ["hi_there.mp3","poke_me.mp3"]
+  }
+}
+```
+
+The companion respects `window.CJS.AudioManager.isMuted()` if present, so
+the global mute also silences voice. Set per-channel volume/mute via
+`window.CJS.L2DCompanion.setVoiceVolume(0..1)` /
+`setVoiceMuted(true|false)`.
+
+## How combat dialogue is sourced
+
+In combat, Peri's speech bubble is fed by the existing **NarratorEngine**:
+`data/quips.json` already contains a `cjs_editorial` layer (the lines
+prefixed with `[CJS] ` in the battle log) — that's literally Peri talking.
+The companion subscribes to `NarratorEngine.subscribe()` and shows the
+`[CJS]` line in the bubble while picking an expression from the entry's
+type and tags. To extend her vocabulary, just add fragments to
+`data/quips.json` with `"layer": "cjs_editorial"` — no code changes
+needed.
+
+In campaign mode the bubble is driven by `registry.json → reactions.*`
+(no narrator there yet).
 
 ## Licensing
 
-Make sure you have rights to use any Live2D model you upload. Live2D Cubism models created from copyrighted character art typically require permission from the artist.
+Make sure you have rights to redistribute any Live2D model or voice clip.
