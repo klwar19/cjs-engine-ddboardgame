@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/combat.css" />
   <link rel="stylesheet" href="css/combat-animations.css" />
+  <link rel="stylesheet" href="css/l2d-avatar.css" />
 </head>
 <body>
   <div id="combat-app">
@@ -80,6 +81,8 @@
   <script src="js/ui/animation-bus.js"></script>
   <script src="js/ui/combat-ui.js"></script>
   <script src="js/ui/loot-roller.js"></script>
+  <script src="js/ui/l2d-avatar.js"></script>
+  <script src="js/ui/l2d-companion.js"></script>
   <script src="js/campaign/campaign-combat-bridge.js"></script>
 
   <script>
@@ -459,6 +462,9 @@
     await loadData();
     if (window.CJS.PortraitPicker) {
       await window.CJS.PortraitPicker.loadManifest().catch(() => {});
+    }
+    if (window.CJS.L2DCompanion) {
+      window.CJS.L2DCompanion.init({ mode: 'combat' }).catch(err => console.warn('L2D init:', err));
     }
 
     populateEncounters();

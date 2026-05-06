@@ -4,20 +4,40 @@
   "models": {
     "peri": {
       "name": "Peri",
-      "path": "assets/live2d/peri/peri.model3.json",
-      "scale": 0.18,
+      "path": "assets/live2d/peri/mianyin.model3.json",
+      "scale": 0.16,
       "offsetX": 0,
       "offsetY": 0.05,
-      "motions": {
-        "idle":    "Idle",
-        "hit":     "TapBody",
-        "victory": "TapHead",
-        "ko":      "Shake"
-      },
       "expressions": {
-        "happy": null,
-        "sad":   null,
-        "angry": null
+        "neutral":     null,
+        "happy":       "星星眼",
+        "love":        "爱心",
+        "angry":       "生气",
+        "sad":         "眼泪",
+        "playful":     "舌头",
+        "hat":         "帽子"
+      },
+      "motions": {
+        "idle": { "group": "", "index": 0 }
+      },
+      "reactions": {
+        "battle_start":  { "expression": "happy",   "lines": ["Let's go! I've got your back!", "Showtime~ try not to die, please?", "Ooh, a fight! Excited!"] },
+        "turn_start":    { "expression": "neutral", "lines": ["Your move, captain!", "Pick a target~", "What's the plan?"] },
+        "hit":           { "expression": "angry",   "lines": ["Smack 'em!", "Nice hit!", "Yes! Direct contact!"] },
+        "miss":          { "expression": "sad",     "lines": ["Aww, missed.", "Tch... bad angle.", "Try again?"] },
+        "ko_enemy":      { "expression": "happy",   "lines": ["Down they go!", "Ehehe, one less!", "Beautiful takedown!"] },
+        "ko_player":     { "expression": "sad",     "lines": ["No! Get up...", "Don't leave me!", "We have to save them!"] },
+        "damage_taken":  { "expression": "angry",   "lines": ["Ow! Watch out!", "Hey! Don't take that!", "We need to retreat?"] },
+        "heal":          { "expression": "love",    "lines": ["Phew, all better!", "That feels much better!", "Nice patch-up~"] },
+        "skill_cast":    { "expression": "happy",   "lines": ["Big move incoming!", "Show 'em, captain!", "Let it rip!"] },
+        "victory":       { "expression": "love",    "lines": ["We did it! Victory!", "I knew you could do it~", "Heroes! That's us!"] },
+        "defeat":        { "expression": "sad",     "lines": ["No... we lost.", "Try again next time...", "Don't give up, okay?"] },
+        "campaign_idle": { "expression": "neutral", "lines": ["What shall we do next?", "I'm bored... let's adventure!", "Pick something fun~"] },
+        "campaign_move": { "expression": "playful", "lines": ["Onward!", "Adventure time!", "I wonder what's there?"] },
+        "campaign_loot": { "expression": "love",    "lines": ["Treasure! Treasure!", "Ooh, shiny~", "We're rich! Sort of!"] },
+        "campaign_quest":{ "expression": "happy",   "lines": ["A new quest! Exciting!", "Let's accept it!", "Adventure awaits~"] },
+        "campaign_rest": { "expression": "love",    "lines": ["Yawn... naptime?", "Rest is best!", "Cozy~"] },
+        "click":         { "expression": "playful", "lines": ["Hi there~", "Hee hee, that tickles!", "Yes, captain?", "Don't poke me too much!"] }
       }
     }
   }

@@ -1,0 +1,250 @@
+// l2d-avatar.js
+// Live2D Cubism 4 viewer wrapper. Lazy-loads PIXI v6 + Live2D Cubism Core +
+// pixi-live2d-display from CDN, mounts the model into a target element, and
+// exposes a tiny imperative API:
+//
+//   const av = await window.CJS.L2DAvatar.create(targetEl, { model: 'peri' });
+//   av.setExpression('happy');
+//   av.playMotion('idle');
+//   av.say('Hi there!');         // animates mouth while text is showing
+//   av.dispose();
+//
+// Reads:  assets/live2d/registry.json
+// Used by: js/ui/l2d-companion.js (single consumer)
+// ─────────────────────────────────────────────────────────────────────
+
+window.CJS = window.CJS || {};
+
+window.CJS.L2DAvatar = (() => {
+  'use strict';
+
+  const CDN = {
+    pixi:    'https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js',
+    core:    'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js',
+    display: 'https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js'
+  };
+
+  let _registry = null;
+  let _registryPromise = null;
+  let _libsPromise = null;
+
+  // ── Library loaders ─────────────────────────────────────────────
+  function _loadScript(src) {
+    return new Promise((resolve, reject) => {
+      // Re-use existing tag if present
+      const existing = document.querySelector(`script[data-l2d-src="${src}"]`);
+      if (existing && existing.dataset.l2dLoaded === '1') return resolve();
+      if (existing) {
+        existing.addEventListener('load', () => resolve());
+        existing.addEventListener('error', () => reject(new Error('script load failed: ' + src)));
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.dataset.l2dSrc = src;
+      s.addEventListener('load', () => { s.dataset.l2dLoaded = '1'; resolve(); });
+      s.addEventListener('error', () => reject(new Error('script load failed: ' + src)));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function _loadLibs() {
+    if (_libsPromise) return _libsPromise;
+    _libsPromise = (async () => {
+      // PIXI must exist before pixi-live2d-display is parsed.
+      await _loadScript(CDN.pixi);
+      await _loadScript(CDN.core);
+      await _loadScript(CDN.display);
+      if (!window.PIXI) throw new Error('PIXI failed to load');
+      if (!window.Live2DCubismCore) throw new Error('Live2D Cubism Core failed to load');
+      const Live2DModel = window.PIXI.live2d?.Live2DModel;
+      if (!Live2DModel) throw new Error('pixi-live2d-display failed to load');
+      // pixi-live2d-display ticker registration
+      Live2DModel.registerTicker(window.PIXI.Ticker);
+      return { PIXI: window.PIXI, Live2DModel };
+    })();
+    return _libsPromise;
+  }
+
+  // ── Registry ────────────────────────────────────────────────────
+  async function _loadRegistry() {
+    if (_registry) return _registry;
+    if (_registryPromise) return _registryPromise;
+    _registryPromise = fetch('assets/live2d/registry.json', { cache: 'no-cache' })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('registry http ' + r.status)))
+      .then(j => (_registry = j))
+      .catch((err) => { console.warn('[L2D] registry load failed:', err.message); _registry = null; throw err; });
+    return _registryPromise;
+  }
+
+  function getRegistrySync() { return _registry; }
+
+  // ── Public: create() returns an instance bound to a DOM target ──
+  async function create(targetEl, opts = {}) {
+    if (!targetEl) throw new Error('L2DAvatar.create: targetEl required');
+
+    const reg = await _loadRegistry();
+    const modelKey = opts.model || reg.default;
+    const cfg = reg.models[modelKey];
+    if (!cfg) throw new Error('L2D model not found: ' + modelKey);
+
+    const { PIXI, Live2DModel } = await _loadLibs();
+
+    // Build canvas + Pixi app sized to the target.
+    const canvas = document.createElement('canvas');
+    canvas.className = 'l2d-canvas';
+    targetEl.innerHTML = '';
+    targetEl.appendChild(canvas);
+
+    const app = new PIXI.Application({
+      view: canvas,
+      autoStart: true,
+      resizeTo: targetEl,
+      backgroundAlpha: 0,
+      antialias: true,
+      powerPreference: 'low-power'
+    });
+
+    let model = null;
+    let disposed = false;
+
+    try {
+      model = await Live2DModel.from(cfg.path, { autoInteract: false });
+    } catch (err) {
+      console.error('[L2D] model load failed:', err);
+      throw err;
+    }
+
+    if (disposed) { try { model.destroy(); } catch (_) {} return _stubInstance(); }
+
+    app.stage.addChild(model);
+
+    // Layout: scale model so its height ~= 95% of target height, anchored to
+    // bottom-center so feet sit at the dock floor.
+    function layoutModel() {
+      if (!model || !targetEl) return;
+      const w = targetEl.clientWidth || 280;
+      const h = targetEl.clientHeight || 480;
+      const baseScale = (cfg.scale || 0.18) * 1.0;
+      // Try to make the model fit by using its internal width/height if
+      // available; otherwise just trust the configured scale.
+      const mw = model.internalModel?.width || model.width || 1024;
+      const mh = model.internalModel?.height || model.height || 1024;
+      const fit = Math.min(w / mw, h / mh) * 1.6; // 1.6 = aesthetic fudge
+      const s = Math.max(0.05, Math.min(baseScale, fit || baseScale));
+      model.scale.set(s);
+      model.anchor.set(0.5, 1.0);
+      model.x = w / 2 + (cfg.offsetX || 0) * w;
+      model.y = h * (1.0 + (cfg.offsetY || 0));
+    }
+    layoutModel();
+    const ro = new ResizeObserver(layoutModel);
+    ro.observe(targetEl);
+
+    // Eye-tracking the mouse pointer (on the page).
+    function onPointerMove(e) {
+      if (!model) return;
+      const rect = targetEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) / Math.max(1, window.innerWidth / 2);
+      const dy = (e.clientY - cy) / Math.max(1, window.innerHeight / 2);
+      try { model.focus?.(dx, dy); } catch (_) {}
+    }
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+
+    // ── Expression / motion / mouth helpers ────────────────────────
+    const expressionMap = cfg.expressions || {};
+    const motionMap = cfg.motions || {};
+
+    function setExpression(key) {
+      try {
+        const id = expressionMap[key];
+        if (id == null) {
+          // null = neutral; reset
+          model.internalModel?.motionManager?.expressionManager?.resetExpression?.();
+          return;
+        }
+        model.expression(id);
+      } catch (e) { console.warn('[L2D] setExpression failed:', e); }
+    }
+
+    function playMotion(key) {
+      try {
+        const m = motionMap[key];
+        if (!m) return;
+        model.motion(m.group ?? '', m.index ?? 0, window.PIXI.live2d.MotionPriority?.NORMAL ?? 2);
+      } catch (e) { console.warn('[L2D] playMotion failed:', e); }
+    }
+
+    // ── Manual lip-sync: bob ParamMouthOpenY while a phrase is "speaking" ──
+    let _mouthRaf = null;
+    let _mouthEndAt = 0;
+    function _drawMouth(open) {
+      try {
+        const cm = model.internalModel?.coreModel;
+        if (!cm) return;
+        if (typeof cm.setParameterValueById === 'function') {
+          cm.setParameterValueById('ParamMouthOpenY', open);
+          cm.setParameterValueById('ParamMouthForm', 0.5 + open * 0.4);
+        }
+      } catch (_) {}
+    }
+    function speakFor(ms) {
+      if (_mouthRaf) cancelAnimationFrame(_mouthRaf);
+      const start = performance.now();
+      _mouthEndAt = start + ms;
+      const tick = (now) => {
+        if (now >= _mouthEndAt) { _drawMouth(0); _mouthRaf = null; return; }
+        const t = (now - start) / 110;
+        const open = Math.max(0, 0.55 + 0.45 * Math.sin(t * Math.PI * 2));
+        _drawMouth(open);
+        _mouthRaf = requestAnimationFrame(tick);
+      };
+      _mouthRaf = requestAnimationFrame(tick);
+    }
+    function silence() {
+      if (_mouthRaf) { cancelAnimationFrame(_mouthRaf); _mouthRaf = null; }
+      _drawMouth(0);
+    }
+
+    function dispose() {
+      disposed = true;
+      try { ro.disconnect(); } catch (_) {}
+      window.removeEventListener('pointermove', onPointerMove);
+      silence();
+      try { app.destroy(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
+      try { targetEl.innerHTML = ''; } catch (_) {}
+    }
+
+    // Optional click reaction
+    targetEl.addEventListener('click', () => {
+      const reactions = cfg.reactions || {};
+      if (!reactions.click) return;
+      try { window.dispatchEvent(new CustomEvent('l2d:click')); } catch (_) {}
+    });
+
+    return Object.freeze({
+      cfg,
+      app,
+      model,
+      setExpression,
+      playMotion,
+      speakFor,
+      silence,
+      relayout: layoutModel,
+      dispose
+    });
+  }
+
+  function _stubInstance() {
+    return Object.freeze({
+      cfg: null, app: null, model: null,
+      setExpression() {}, playMotion() {}, speakFor() {}, silence() {},
+      relayout() {}, dispose() {}
+    });
+  }
+
+  return Object.freeze({ create, getRegistrySync, _loadRegistry: _loadRegistry });
+})();
