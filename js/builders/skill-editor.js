@@ -148,11 +148,11 @@ window.CJS.SkillEditor = (() => {
         <div class="form-row">
           <div class="form-group"><label class="form-label">Power/Level (%)</label><input type="number" id="skl-ppl" value="${(s.levelScaling?.powerPerLevel||0.15)*100}" min="0" max="50" step="1" style="width:100%"></div>
           <div class="form-group"><label class="form-label">Max Level</label><input type="number" id="skl-maxlvl" value="${s.levelScaling?.maxLevel||5}" min="1" max="20" style="width:100%"></div>
-          <div class="form-group"><label class="form-label">AP per Use</label><input type="number" id="skl-apgain" value="${s.apGain != null ? s.apGain : 1}" min="0" max="20" style="width:100%"></div>
+          <div class="form-group"><label class="form-label">AbP per Use</label><input type="number" id="skl-apgain" value="${s.apGain != null ? s.apGain : 1}" min="0" max="20" style="width:100%"></div>
           <div class="form-group"><label class="form-label">SP Cost</label><input type="number" id="skl-spcost" value="${s.spCost != null ? s.spCost : 1}" min="0" max="20" style="width:100%" title="Skill points required to equip this skill"></div>
         </div>
         <div class="form-group">
-          <label class="form-label">AP Thresholds <span class="dim" style="font-size:0.78em">(comma-separated cumulative; blank = use default curve)</span></label>
+          <label class="form-label">AbP Thresholds <span class="dim" style="font-size:0.78em">(comma-separated cumulative; blank = use default curve)</span></label>
           <input type="text" id="skl-apthresholds" value="${_esc(_apThresholdsToText(s.apThresholds))}" placeholder="0, 8, 20, 36, 56, 80, 110, 145, 185, 230, 280">
           <div class="dim" style="font-size:0.78rem;margin-top:4px">Leave blank to use the default curve from CONST.PROGRESSION.skillApThresholds.</div>
         </div>

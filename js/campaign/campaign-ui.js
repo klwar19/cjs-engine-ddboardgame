@@ -413,10 +413,11 @@ window.CJS.CampaignUI = (() => {
             <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
           </div>
         </div>
-        <div class="campaign-roster-resources">
+        <div class="campaign-resources-compact">
           <div class="campaign-bar"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
           <div class="campaign-bar"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
         </div>
+        ${_renderResistances(base, member, stats)}
         <div class="campaign-stat-grid">
           ${Object.entries(stats).map(([stat, value]) => `<span><b>${_esc(stat)}</b>${Number(value || 0)}<small>${_esc(_statName(stat))}</small></span>`).join('')}
         </div>
@@ -674,11 +675,11 @@ window.CJS.CampaignUI = (() => {
     const apToNext = (skill && F?.calcSkillApToNextLevel) ? F.calcSkillApToNextLevel(skill, apTotal, level) : null;
     const apMeta = level >= cap
       ? `Lv ${level}/${cap} (max)`
-      : (apToNext != null ? `Lv ${level}/${cap} | ${apToNext} AP to next` : `Lv ${level}/${cap}`);
+      : (apToNext != null ? `Lv ${level}/${cap} | ${apToNext} AbP to next` : `Lv ${level}/${cap}`);
     const baseMeta = _skillMeta(skill, entry);
     const meta = [baseMeta, apMeta].filter(Boolean).join(' | ');
     const apButton = (skill && level < cap)
-      ? `<button class="campaign-action" data-campaign-action="grant-skill-ap" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Grant AP for this skill (edit-mode)">+AP</button>`
+      ? `<button class="campaign-action" data-campaign-action="grant-skill-ap" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Grant AbP for this skill (edit-mode)">+AbP</button>`
       : '';
     const levelButton = (skill && level < cap)
       ? `<button class="campaign-action" data-campaign-action="level-up-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Force level-up (edit-mode)">+Lv</button>`
@@ -4375,8 +4376,8 @@ window.CJS.CampaignUI = (() => {
     const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
     const apToNext = F?.calcSkillApToNextLevel ? F.calcSkillApToNextLevel(skill, prog.ap, prog.level) : 10;
     _numberModal({
-      title: `Grant ${skill.name || skillId} AP: ${member.name || memberId}`,
-      label: `Current AP: ${prog.ap}, Lv ${prog.level} (${apToNext != null ? `${apToNext} to next` : 'max'})`,
+      title: `Grant ${skill.name || skillId} AbP: ${member.name || memberId}`,
+      label: `Current AbP: ${prog.ap}, Lv ${prog.level} (${apToNext != null ? `${apToNext} to next` : 'max'})`,
       value: Math.max(1, apToNext || 5),
       min: 1,
       max: 9999,
@@ -4425,7 +4426,7 @@ window.CJS.CampaignUI = (() => {
         <div style="margin-top:6px">
           ${_esc(_skillMeta(skill, { level }))}
           | <b>Lv ${level}/${cap}</b>
-          | AP ${ap}${apToNext != null ? ` (${apToNext} to next)` : ' (max)'}
+          | AbP ${ap}${apToNext != null ? ` (${apToNext} to next)` : ' (max)'}
         </div>
       </div>
       <div class="campaign-section-title">Level Perks</div>
@@ -4988,6 +4989,30 @@ window.CJS.CampaignUI = (() => {
     const ordered = {};
     for (const stat of C()?.STATS || Object.keys(stats)) ordered[stat] = stats[stat] || 0;
     return ordered;
+  }
+
+  function _renderResistances(base, member, stats) {
+    const F = window.CJS.Formulas;
+    const weak = [...(base.weak || []), ...(member.weak || [])].filter((v, i, a) => a.indexOf(v) === i);
+    const resist = [...(base.resist || []), ...(member.resist || [])].filter((v, i, a) => a.indexOf(v) === i);
+    const immune = [...(base.immune || []), ...(member.immune || [])].filter((v, i, a) => a.indexOf(v) === i);
+    const hasElements = weak.length || resist.length || immune.length;
+
+    // DR values
+    const physDR = F?.calcPhysicalDR ? F.calcPhysicalDR(stats) : 0;
+    const magDR = F?.calcMagicDR ? F.calcMagicDR(stats) : 0;
+    const chaosDR = F?.calcChaosDR ? F.calcChaosDR(stats) : 0;
+
+    let html = '';
+    if (hasElements) {
+      html += '<div class="campaign-resist-row">';
+      for (const el of weak) html += `<span class="campaign-resist-chip weak">⚡ ${_esc(el)}</span>`;
+      for (const el of resist) html += `<span class="campaign-resist-chip resist">🛡 ${_esc(el)}</span>`;
+      for (const el of immune) html += `<span class="campaign-resist-chip immune">✦ ${_esc(el)}</span>`;
+      html += '</div>';
+    }
+    html += `<div class="campaign-dr-row"><span>🗡 Phys DR ${physDR}</span><span>✨ Mag DR ${magDR}</span><span>🌀 Chaos DR ${chaosDR}</span></div>`;
+    return html;
   }
 
   function _renderEquipmentLoadout(memberId, member = {}) {

@@ -287,14 +287,15 @@ body.campaign-page {
 }
 
 .campaign-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   background: #24303a;
   overflow: hidden;
   flex: 0 0 auto;
+  font-size: 2rem;
 }
 
 .campaign-avatar img {
@@ -500,12 +501,12 @@ body.campaign-page {
 .campaign-bar,
 .campaign-meter {
   position: relative;
-  height: 18px;
+  height: 14px;
   background: #0c0f12;
   border: 1px solid var(--campaign-line);
   border-radius: 999px;
   overflow: hidden;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .campaign-bar span,
@@ -528,8 +529,8 @@ body.campaign-page {
   z-index: 1;
   display: block;
   text-align: center;
-  font-size: 0.78rem;
-  line-height: 18px;
+  font-size: 0.72rem;
+  line-height: 14px;
 }
 
 .campaign-meter span {
@@ -2621,4 +2622,61 @@ body.campaign-page::before {
 
 .campaign-pool-summary:hover {
   color: var(--campaign-accent);
+}
+
+/* ── Resistance / DR display ───────────────────────────────────────── */
+.campaign-resist-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 2px;
+}
+
+.campaign-resist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.campaign-resist-chip.weak {
+  background: rgba(239, 102, 102, 0.12);
+  border: 1px solid rgba(239, 102, 102, 0.4);
+  color: #ffb8b8;
+}
+
+.campaign-resist-chip.resist {
+  background: rgba(93, 143, 217, 0.12);
+  border: 1px solid rgba(93, 143, 217, 0.4);
+  color: #b8d4ff;
+}
+
+.campaign-resist-chip.immune {
+  background: rgba(227, 200, 111, 0.12);
+  border: 1px solid rgba(227, 200, 111, 0.4);
+  color: #f3e49a;
+}
+
+.campaign-dr-row {
+  display: flex;
+  gap: 8px;
+  margin: 2px 0 4px;
+  font-size: 0.76rem;
+  color: var(--campaign-muted);
+}
+
+.campaign-dr-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.campaign-resources-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
