@@ -197,8 +197,12 @@ window.CJS.L2DAvatar = (() => {
       _mouthEndAt = start + ms;
       const tick = (now) => {
         if (now >= _mouthEndAt) { _drawMouth(0); _mouthRaf = null; return; }
-        const t = (now - start) / 110;
-        const open = Math.max(0, 0.55 + 0.45 * Math.sin(t * Math.PI * 2));
+        const elapsed = now - start;
+        const remaining = Math.max(0, _mouthEndAt - now);
+        const fade = Math.min(1, elapsed / 180, remaining / 220);
+        const syllable = 0.5 + 0.5 * Math.sin((elapsed / 185) * Math.PI * 2);
+        const softVariation = 0.5 + 0.5 * Math.sin((elapsed / 430) * Math.PI * 2 + 0.8);
+        const open = fade * (0.08 + syllable * 0.42 + softVariation * 0.12);
         _drawMouth(open);
         _mouthRaf = requestAnimationFrame(tick);
       };

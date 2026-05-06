@@ -52,7 +52,7 @@ window.CJS.L2DCompanion = (() => {
       <div class="l2d-stage" id="l2d-stage" aria-label="Companion avatar"></div>
       <div class="l2d-meta">
         <span class="l2d-name" id="l2d-name">Companion</span>
-        <button class="l2d-mute" id="l2d-mute" type="button" title="Hide companion">×</button>
+        <button class="l2d-mute" id="l2d-mute" type="button" title="Hide companion" aria-label="Hide companion" aria-expanded="true">&gt;</button>
       </div>
       <div class="l2d-bubble" id="l2d-bubble" aria-live="polite">
         <div class="l2d-bubble-text" id="l2d-bubble-text">…</div>
@@ -459,9 +459,14 @@ window.CJS.L2DCompanion = (() => {
 
     const stage = STATE.dock.querySelector('#l2d-stage');
 
-    STATE.dock.querySelector('#l2d-mute').addEventListener('click', () => {
+    const toggleBtn = STATE.dock.querySelector('#l2d-mute');
+    toggleBtn.addEventListener('click', () => {
       const collapsed = STATE.dock.classList.toggle('is-collapsed');
       document.body.classList.toggle('has-l2d-companion', !collapsed);
+      toggleBtn.textContent = collapsed ? '<' : '>';
+      toggleBtn.title = collapsed ? 'Show companion' : 'Hide companion';
+      toggleBtn.setAttribute('aria-label', toggleBtn.title);
+      toggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       setTimeout(() => STATE.avatar?.relayout?.(), 250);
     });
 

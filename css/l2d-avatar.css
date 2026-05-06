@@ -1,10 +1,8 @@
-/* l2d-avatar.css — Always-visible Live2D companion dock
-   Used by: combat.html, campaign.html
-   ──────────────────────────────────────────────────────────────── */
+/* l2d-avatar.css - shared Live2D companion dock for combat and campaign. */
 
 :root {
-  --l2d-dock-w: 300px;
-  --l2d-dock-w-narrow: 240px;
+  --l2d-dock-w: 260px;
+  --l2d-dock-w-narrow: 220px;
   --l2d-dock-bg: linear-gradient(180deg, rgba(20, 22, 38, 0.78) 0%, rgba(8, 10, 18, 0.92) 100%);
   --l2d-dock-border: rgba(168, 85, 247, 0.35);
   --l2d-bubble-bg: rgba(255, 255, 255, 0.96);
@@ -12,13 +10,12 @@
   --l2d-name: #fde68a;
 }
 
-/* Reserve room on the right side of the page so the avatar never overlaps
-   the working UI. Pages opt-in by having body.has-l2d-companion. */
+/* Combat reserves room for the dock. Campaign overrides this below so the
+   command rail keeps its full width. */
 body.has-l2d-companion {
   padding-right: var(--l2d-dock-w);
 }
 
-/* The dock itself: fixed, full height, anchored to right. */
 .l2d-dock {
   position: fixed;
   top: 0;
@@ -38,20 +35,23 @@ body.has-l2d-companion {
   transition: transform 0.25s ease;
   overflow: hidden;
 }
+
 .l2d-dock.is-collapsed {
-  transform: translateX(calc(100% - 28px));
+  transform: translateX(calc(100% - 42px));
 }
+
 .l2d-dock.is-collapsed .l2d-stage,
 .l2d-dock.is-collapsed .l2d-bubble,
 .l2d-dock.is-collapsed .l2d-name {
   visibility: hidden;
 }
-.l2d-dock.is-collapsed .l2d-mute::before {
-  content: '‹';
-}
-.l2d-mute::before { content: '×'; }
 
-/* Pixi canvas mount. */
+.l2d-dock.is-collapsed .l2d-mute {
+  left: 8px;
+  right: auto;
+  visibility: visible;
+}
+
 .l2d-stage {
   position: relative;
   width: 100%;
@@ -59,11 +59,13 @@ body.has-l2d-companion {
   overflow: hidden;
   display: block;
 }
+
 .l2d-stage .l2d-canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
 }
+
 .l2d-stage .l2d-fallback-img {
   position: absolute;
   inset: 0;
@@ -73,7 +75,6 @@ body.has-l2d-companion {
   object-fit: contain;
 }
 
-/* Name + close button. */
 .l2d-meta {
   display: flex;
   align-items: center;
@@ -82,19 +83,25 @@ body.has-l2d-companion {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.35);
 }
+
 .l2d-name {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--l2d-name);
   letter-spacing: 0.5px;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
 }
+
 .l2d-mute {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #fff;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   font-size: 0.95rem;
   font-weight: 700;
   border-radius: 6px;
@@ -103,58 +110,123 @@ body.has-l2d-companion {
   align-items: center;
   justify-content: center;
 }
-.l2d-mute:hover { background: rgba(255,255,255,0.18); }
 
-/* Speech / comment box at the bottom. */
+.l2d-mute:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
 .l2d-bubble {
-  margin: 0 10px 12px;
-  padding: 12px 14px;
+  margin: 0 12px 16px;
+  padding: 14px 16px;
   background: var(--l2d-bubble-bg);
   color: var(--l2d-bubble-text);
-  border-radius: 12px 12px 12px 2px;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  min-height: 56px;
-  max-height: 120px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 18px 18px 18px 4px;
+  font-size: 1rem;
+  line-height: 1.45;
+  min-height: 96px;
+  max-height: 180px;
   overflow: auto;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.18s ease, transform 0.18s ease;
   position: relative;
 }
+
 .l2d-bubble.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
+
 .l2d-bubble::before {
   content: '';
   position: absolute;
-  top: -10px;
-  left: 24px;
+  top: -12px;
+  left: 38px;
   border: 8px solid transparent;
   border-bottom-color: var(--l2d-bubble-bg);
 }
+
 .l2d-bubble-text {
   font-weight: 500;
   white-space: pre-wrap;
 }
 
-/* Mode tints — combat is hotter, campaign is leafier. */
 .l2d-mode-combat {
   --l2d-name: #fbbf24;
   --l2d-dock-border: rgba(251, 191, 36, 0.45);
 }
+
+.l2d-mode-combat .l2d-stage {
+  min-height: 280px;
+}
+
+.l2d-mode-combat .l2d-bubble {
+  min-height: 112px;
+  max-height: 200px;
+}
+
 .l2d-mode-campaign {
   --l2d-name: #86efac;
   --l2d-dock-border: rgba(134, 239, 172, 0.45);
+  top: auto;
+  right: 104px;
+  bottom: 16px;
+  width: 190px;
+  height: 340px;
+  z-index: 24;
+  border: 1px solid var(--l2d-dock-border);
+  border-radius: 10px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
 }
 
-/* Smaller screens: shrink dock; below 900 px hide entirely. */
-@media (max-width: 1180px) {
-  :root { --l2d-dock-w: var(--l2d-dock-w-narrow); }
+.campaign-page.has-l2d-companion {
+  padding-right: 0;
 }
+
+.l2d-mode-campaign .l2d-meta {
+  padding: 5px 10px;
+}
+
+.l2d-mode-campaign .l2d-name {
+  font-size: 0.82rem;
+}
+
+.l2d-mode-campaign .l2d-bubble {
+  margin: 0 8px 10px;
+  padding: 9px 10px;
+  min-height: 64px;
+  max-height: 106px;
+  border-radius: 14px 14px 14px 4px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.l2d-mode-campaign .l2d-bubble::before {
+  left: 28px;
+}
+
+.l2d-mode-campaign.is-collapsed {
+  transform: translateX(calc(100% - 42px));
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --l2d-dock-w: var(--l2d-dock-w-narrow);
+  }
+
+  .l2d-mode-campaign {
+    right: 92px;
+  }
+}
+
 @media (max-width: 900px) {
-  body.has-l2d-companion { padding-right: 0; }
-  .l2d-dock { display: none; }
+  body.has-l2d-companion {
+    padding-right: 0;
+  }
+
+  .l2d-dock {
+    display: none;
+  }
 }
