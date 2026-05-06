@@ -1341,14 +1341,17 @@ window.CJS.CombatUI = (() => {
   function _onNarration(text) {
     if (!text || !$narrator) return;
 
+    // [CJS] editorial lines belong to the L2D companion's speech bubble,
+    // not the battle report. Strip them here so the left panel stays a
+    // clean blow-by-blow.
+    const lines = text.split('\n').filter(l => !/^\s*\[CJS\]/.test(l));
+    if (!lines.length) return;
+
     const block = document.createElement('div');
     block.className = 'narrator-line';
 
-    for (const line of text.split('\n')) {
+    for (const line of lines) {
       const paragraph = document.createElement('p');
-      if (line.startsWith('[CJS]')) {
-        paragraph.className = 'narrator-cjs';
-      }
       paragraph.textContent = line;
       block.appendChild(paragraph);
     }

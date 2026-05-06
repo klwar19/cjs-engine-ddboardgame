@@ -251,6 +251,58 @@ window.CJS.L2DCompanion = (() => {
   }
 
   // ── Campaign wiring ─────────────────────────────────────────────
+  // Maps the actual CampaignState change.source strings (see grep of
+  // js/campaign/*.js for the real set) to a registry reaction key. Returns
+  // null for sources we want to stay silent on (raw state replays, plain
+  // UI toggles, log clears).
+  function _classifyCampaignChange(change) {
+    if (!change) return null;
+    const src    = String(change.source || '').toLowerCase();
+    const type   = String(change.type   || '').toLowerCase();
+    const detail = String(change.detail || '').toLowerCase();
+
+    if (type === 'replace') return null;             // bulk reload, quiet
+    if (src === 'state' || src === 'ui' || src === 'clear_log') return null;
+
+    // Battle preparation / aftermath — pendingBattle, etc.
+    if (src === 'run_pick_battle' || src === 'run_set_battle' ||
+        src === 'beat_battle'      || src === 'manual_battle') return 'campaign_battle';
+    if (src === 'combat_bridge'    || src === 'battle_set_reward') return 'campaign_loot';
+    if (src === 'battle_setback')  return 'campaign_setback';
+
+    // Mystic / oracle / plot seed
+    if (src.includes('oracle')) return 'campaign_oracle';
+
+    // Story event / hook / trap
+    if (src === 'trap'        || src === 'event'       || src === 'event_pick' ||
+        src === 'event_custom'|| src === 'beat_event'  || src === 'solo_hook') return 'campaign_event';
+
+    // Quests
+    if (src.includes('quest')) return 'campaign_quest';
+
+    // Pocket haven / cozy / notes
+    if (src === 'pocket_haven' || src === 'note' || src.includes('haven')) return 'campaign_rest';
+
+    // Save / load / fork
+    if (src === 'load_slot' || src === 'fork' || src === 'import') return 'campaign_load';
+
+    // Inventory hint via detail (CampaignOps emits `detail: applied`)
+    if (detail.includes('item') || detail.includes('loot') ||
+        detail.includes('gold') || detail.includes('inventory')) return 'campaign_loot';
+
+    // Generic action — covers `ops`, `campaign_ops`, `manual`, `check`,
+    // `side_content`. Use a debounced chatter line so spam stays human.
+    if (src === 'ops' || src === 'campaign_ops' || src === 'manual' ||
+        src === 'check' || src === 'side_content') return 'campaign_action';
+
+    // Final catch-all: any other mutate (anything that actually changed
+    // game state) gets a generic chatter line. The 1.2 s throttle on the
+    // 'campaign_action' key keeps batched ops from spamming the bubble.
+    if (type === 'mutate') return 'campaign_action';
+
+    return null;
+  }
+
   function _wireCampaign() {
     const CS = window.CJS.CampaignState;
     if (!CS?.subscribe) return;
@@ -264,15 +316,8 @@ window.CJS.L2DCompanion = (() => {
 
     const u = CS.subscribe((change) => {
       armIdle();
-      const src    = (change?.source || '').toLowerCase();
-      const type   = (change?.type   || '').toLowerCase();
-      const detail = (change?.detail || '').toString().toLowerCase();
-
-      if      (src.includes('move') || detail.includes('move') || src.includes('travel')) _react('campaign_move');
-      else if (src.includes('loot') || src.includes('inventory') || detail.includes('loot')) _react('campaign_loot');
-      else if (src.includes('quest') || detail.includes('quest')) _react('campaign_quest');
-      else if (src.includes('rest')  || src.includes('haven')   || detail.includes('rest'))  _react('campaign_rest');
-      // type === 'replace' on initial load is intentionally quiet.
+      const key = _classifyCampaignChange(change);
+      if (key) _react(key);
     });
     STATE.busUnsubs.push(u);
   }
@@ -307,9 +352,13 @@ window.CJS.L2DCompanion = (() => {
       if (STATE.mode === 'combat')   _wireCombat();
       if (STATE.mode === 'campaign') _wireCampaign();
       // Greeting: campaign only — combat's first quip will arrive from
-      // the narrator's battle_start fragment.
+      // the narrator's battle_start fragment. Bypass the throttle by
+      // passing an explicit line so a startup race can't suppress it.
       if (STATE.mode === 'campaign') {
-        setTimeout(() => _react('campaign_idle'), 600);
+        setTimeout(() => {
+          STATE.lastLineKey = null; // force-clear so throttle never blocks the greeting
+          _react('campaign_idle');
+        }, 600);
       }
     } catch (err) {
       console.warn('[L2DCompanion] avatar init failed, showing fallback:', err);
