@@ -126,17 +126,19 @@ window.CJS.L2DAvatar = (() => {
       if (!model || !targetEl) return;
       const w = targetEl.clientWidth || 280;
       const h = targetEl.clientHeight || 480;
-      const baseScale = (cfg.scale || 0.18) * 1.0;
+      const baseScale = (cfg.scale || 0.18) * (opts.scaleMultiplier || 1.0);
       // Try to make the model fit by using its internal width/height if
       // available; otherwise just trust the configured scale.
       const mw = model.internalModel?.width || model.width || 1024;
       const mh = model.internalModel?.height || model.height || 1024;
-      const fit = Math.min(w / mw, h / mh) * 1.6; // 1.6 = aesthetic fudge
+      const fit = Math.min(w / mw, h / mh) * (opts.fitBoost || 1.6);
       const s = Math.max(0.05, Math.min(baseScale, fit || baseScale));
       model.scale.set(s);
       model.anchor.set(0.5, 1.0);
-      model.x = w / 2 + (cfg.offsetX || 0) * w;
-      model.y = h * (1.0 + (cfg.offsetY || 0));
+      const offsetX = opts.offsetX ?? cfg.offsetX ?? 0;
+      const offsetY = opts.offsetY ?? cfg.offsetY ?? 0;
+      model.x = w / 2 + offsetX * w;
+      model.y = h * (1.0 + offsetY);
     }
     layoutModel();
     const ro = new ResizeObserver(layoutModel);

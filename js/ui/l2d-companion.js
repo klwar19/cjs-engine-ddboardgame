@@ -25,6 +25,7 @@ window.CJS.L2DCompanion = (() => {
     avatar: null,
     dock: null,
     bubble: null,
+    history: null,
     name: null,
     cfg: null,
     mode: 'combat',
@@ -57,6 +58,7 @@ window.CJS.L2DCompanion = (() => {
       <div class="l2d-bubble" id="l2d-bubble" aria-live="polite">
         <div class="l2d-bubble-text" id="l2d-bubble-text">…</div>
       </div>
+      <div class="l2d-history" id="l2d-history" aria-label="Recent Peri comments"></div>
     `;
     document.body.appendChild(dock);
     document.body.classList.add('has-l2d-companion');
@@ -70,6 +72,7 @@ window.CJS.L2DCompanion = (() => {
     const el = STATE.bubble.querySelector('.l2d-bubble-text');
     el.textContent = text;
     STATE.bubble.classList.add('is-visible');
+    _logLine(text);
     if (STATE.avatar?.speakFor) STATE.avatar.speakFor(ms - 200);
     clearTimeout(STATE.bubbleTimer);
     STATE.bubbleTimer = setTimeout(() => {
@@ -83,6 +86,18 @@ window.CJS.L2DCompanion = (() => {
     if (key && key === STATE.lastLineKey && (now - STATE.lastLineAt) < 1200) return false;
     STATE.lastLineKey = key; STATE.lastLineAt = now;
     return true;
+  }
+
+  function _logLine(text) {
+    if (!STATE.history || STATE.mode !== 'combat' || !text) return;
+    const line = document.createElement('div');
+    line.className = 'l2d-history-line';
+    line.textContent = text;
+    STATE.history.appendChild(line);
+    while (STATE.history.children.length > 5) {
+      STATE.history.removeChild(STATE.history.firstChild);
+    }
+    STATE.history.scrollTop = STATE.history.scrollHeight;
   }
 
   function _reactionTags(key, override = {}) {
@@ -455,6 +470,7 @@ window.CJS.L2DCompanion = (() => {
     STATE.mode = opts.mode || 'combat';
     STATE.dock = _buildDock({ mode: STATE.mode });
     STATE.bubble = STATE.dock.querySelector('#l2d-bubble');
+    STATE.history = STATE.dock.querySelector('#l2d-history');
     STATE.name = STATE.dock.querySelector('#l2d-name');
 
     const stage = STATE.dock.querySelector('#l2d-stage');
@@ -475,7 +491,12 @@ window.CJS.L2DCompanion = (() => {
     if (STATE.mode === 'campaign') _wireCampaign();
 
     try {
-      const av = await window.CJS.L2DAvatar.create(stage, { model: opts.model });
+      const av = await window.CJS.L2DAvatar.create(stage, {
+        model: opts.model,
+        scaleMultiplier: STATE.mode === 'campaign' ? 0.68 : 0.9,
+        fitBoost: STATE.mode === 'campaign' ? 1.08 : 1.45,
+        offsetY: STATE.mode === 'campaign' ? -0.02 : undefined
+      });
       STATE.avatar = av;
       STATE.cfg = av.cfg;
       if (STATE.name && av.cfg?.name) STATE.name.textContent = av.cfg.name;
