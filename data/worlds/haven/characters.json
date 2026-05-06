@@ -58,9 +58,15 @@
       "defaultJob": "job_archer",
       "maxJobs": 3,
       "weaponSlots": 2,
-      "weak": [],
-      "resist": [],
-      "immune": [],
+      "weak": [
+        "Earth"
+      ],
+      "resist": [
+        "Lightning"
+      ],
+      "immune": [
+        "Physical"
+      ],
       "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride. Trains as Archer (bow) or Thief (dagger).",
       "movement": 2,
       "size": "1x1",
@@ -98,9 +104,15 @@
       "innatePassives": [
         "haven_veterans_instinct"
       ],
-      "weak": [],
-      "resist": [],
-      "immune": [],
+      "weak": [
+        "Light"
+      ],
+      "resist": [
+        "Wind"
+      ],
+      "immune": [
+        "Water"
+      ],
       "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
       "movement": 3,
       "size": "1x1",
@@ -140,12 +152,14 @@
         "haven_gentle_heart"
       ],
       "weak": [
-        "Fire"
+        "Nature"
       ],
       "resist": [
-        "Water"
+        "Dark"
       ],
-      "immune": [],
+      "immune": [
+        "Chaos"
+      ],
       "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
       "movement": 3,
       "size": "1x1",

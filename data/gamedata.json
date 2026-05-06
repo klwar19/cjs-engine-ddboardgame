@@ -4851,9 +4851,15 @@
         "marksmans_eye",
         "iron_hide"
       ],
-      "weak": [],
-      "resist": [],
-      "immune": [],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [
+        "Light"
+      ],
       "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
       "movement": 2,
       "size": "1x1",
@@ -4918,7 +4924,9 @@
       "resist": [
         "Water"
       ],
-      "immune": [],
+      "immune": [
+        "Light"
+      ],
       "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
       "movement": 3,
       "size": "1x1",
@@ -4956,9 +4964,15 @@
       "innatePassives": [
         "veterans_instinct"
       ],
-      "weak": [],
-      "resist": [],
-      "immune": [],
+      "weak": [
+        "Fire"
+      ],
+      "resist": [
+        "Water"
+      ],
+      "immune": [
+        "Light"
+      ],
       "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
       "movement": 3,
       "size": "1x1",
