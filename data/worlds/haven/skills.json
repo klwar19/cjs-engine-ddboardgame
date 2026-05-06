@@ -381,7 +381,7 @@
         }
       ],
       "description": "A fiery slash. Chance to burn.",
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "haven_fox_fire",

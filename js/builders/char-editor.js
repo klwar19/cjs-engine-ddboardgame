@@ -57,8 +57,8 @@ window.CJS.CharEditor = (() => {
       weaponSlots: 2,
       skillSlots:    Number(PROG.defaultSkillSlots ?? 4),
       passiveSlots:  Number(PROG.defaultPassiveSlots ?? 3),
-      skillPoints:   Number(PROG.defaultSkillPoints ?? 4),
-      passivePoints: Number(PROG.defaultPassivePoints ?? 3),
+      skillPoints:   Number(PROG.defaultSkillPoints ?? 10),
+      passivePoints: Number(PROG.defaultPassivePoints ?? 10),
       weak: [], resist: [], immune: [],
       portrait: '',
       battleSfx: {},
@@ -164,8 +164,8 @@ window.CJS.CharEditor = (() => {
         <div class="form-row">
           <div class="form-group" style="flex:0 0 130px"><label class="form-label">Skill Slots</label><input type="number" id="chr-skill-slots" value="${Number(c.skillSlots ?? C().PROGRESSION?.defaultSkillSlots ?? 4)}" min="0" max="20"></div>
           <div class="form-group" style="flex:0 0 130px"><label class="form-label">Passive Slots</label><input type="number" id="chr-passive-slots" value="${Number(c.passiveSlots ?? C().PROGRESSION?.defaultPassiveSlots ?? 3)}" min="0" max="20"></div>
-          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Skill Points</label><input type="number" id="chr-skill-points" value="${Number(c.skillPoints ?? C().PROGRESSION?.defaultSkillPoints ?? 4)}" min="0" max="50"></div>
-          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Passive Points</label><input type="number" id="chr-passive-points" value="${Number(c.passivePoints ?? C().PROGRESSION?.defaultPassivePoints ?? 3)}" min="0" max="50"></div>
+          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Skill Points</label><input type="number" id="chr-skill-points" value="${Number(c.skillPoints ?? C().PROGRESSION?.defaultSkillPoints ?? 10)}" min="0" max="100"></div>
+          <div class="form-group" style="flex:0 0 130px"><label class="form-label">Passive Points</label><input type="number" id="chr-passive-points" value="${Number(c.passivePoints ?? C().PROGRESSION?.defaultPassivePoints ?? 10)}" min="0" max="100"></div>
           <div class="dim" style="align-self:flex-end;padding-bottom:6px;font-size:0.78rem">Effective values get +bonuses from level / rank / job / item / passive at runtime.</div>
         </div>
 

@@ -38,10 +38,23 @@
         "jester_luck",
         "comedy_armor"
       ],
-      "allowedWeaponTypes": ["sword", "dagger"],
-      "allowedArmorTypes": ["light", "leather", "medium"],
-      "availableBranches": ["warrior", "thief"],
-      "availableJobs": ["job_warrior", "job_thief"],
+      "allowedWeaponTypes": [
+        "sword",
+        "dagger"
+      ],
+      "allowedArmorTypes": [
+        "light",
+        "leather",
+        "medium"
+      ],
+      "availableBranches": [
+        "warrior",
+        "thief"
+      ],
+      "availableJobs": [
+        "job_warrior",
+        "job_thief"
+      ],
       "defaultJob": "job_warrior",
       "maxJobs": 3,
       "weaponSlots": 2,
@@ -50,7 +63,11 @@
       "immune": [],
       "description": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon. Trains as Warrior (sword) or Thief (dagger).",
       "movement": 3,
-      "size": "1x1"
+      "size": "1x1",
+      "skillSlots": 4,
+      "passiveSlots": 3,
+      "skillPoints": 10,
+      "passivePoints": 10
     }
   ]
 }

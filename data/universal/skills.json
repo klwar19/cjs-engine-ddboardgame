@@ -89,7 +89,7 @@
         }
       ],
       "description": "Roll the cosmic dice. High variance chaos damage, boosted crit.",
-      "spCost": 2
+      "spCost": 3
     },
     {
       "id": "taunt_mock",
@@ -156,7 +156,7 @@
         }
       ],
       "description": "Insult so devastating it lowers defenses. Charisma scaling. QTE: English quiz.",
-      "spCost": 1
+      "spCost": 2
     }
   ]
 }

@@ -1168,15 +1168,49 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _craftBasic(state, op) {
-    _consumeBundle(state, op.inputs || {});
+    const inputs = op.inputs || {};
+    if (Object.keys(inputs).length && !_hasBundle(state, inputs)) {
+      const missing = _missingBundleSummary(state, inputs);
+      _log(state, `Cannot craft ${op.label || op.id || 'recipe'} — missing ${missing}.`);
+      return;
+    }
+    _consumeBundle(state, inputs);
     _grantBundle(state, op.outputs || {});
     _log(state, `Crafted ${op.label || op.id || 'recipe'}.`);
   }
 
   function _cookBasic(state, op) {
-    _consumeBundle(state, op.inputs || {});
+    // If ingredients were declared, require them — refuse the cook if any
+    // material is missing instead of silently going negative.
+    const inputs = op.inputs || {};
+    if (Object.keys(inputs).length && !_hasBundle(state, inputs)) {
+      const missing = _missingBundleSummary(state, inputs);
+      _log(state, `Cannot cook ${op.label || op.id || 'food'} — missing ${missing}.`);
+      return;
+    }
+    _consumeBundle(state, inputs);
     _grantBundle(state, op.outputs || { food: { [op.id || 'warm_stew']: op.qty || 1 } });
     _log(state, `Cooked ${op.label || op.id || 'food'}.`);
+  }
+
+  // Stringified list of ingredients/materials/items the player is short on,
+  // used in the cook/craft refusal logs.
+  function _missingBundleSummary(state, bundle = {}) {
+    const out = [];
+    for (const [id, qty] of Object.entries(bundle.currencies || {})) {
+      const have = state.currencies[id] || 0;
+      if (have < Number(qty || 0)) out.push(`${qty - have} ${id}`);
+    }
+    for (const bucket of ['items', 'materials', 'food', 'questItems']) {
+      for (const [id, qty] of Object.entries(bundle[bucket] || {})) {
+        const have = state.inventory?.[bucket]?.[id] || 0;
+        if (have < Number(qty || 0)) {
+          const label = _recordName(bucket, id) || id;
+          out.push(`${qty - have} ${label}`);
+        }
+      }
+    }
+    return out.join(', ') || 'ingredients';
   }
 
   function _consumeBundle(state, bundle) {

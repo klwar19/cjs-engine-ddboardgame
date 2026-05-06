@@ -71,7 +71,7 @@
         }
       ],
       "description": "A heavy committed sword strike. Foundation of every Warrior.",
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "skl_guard_break",
@@ -138,7 +138,7 @@
         }
       ],
       "description": "Crashes through guard, leaving the target with reduced DR.",
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "skl_shield_bash",
@@ -204,7 +204,7 @@
         }
       ],
       "description": "Slams a shield into the target, briefly stunning them.",
-      "spCost": 2
+      "spCost": 3
     },
     {
       "id": "skl_protect_ally",
@@ -266,7 +266,7 @@
         }
       ],
       "description": "Taunts enemies near the chosen ally, drawing fire to the Knight.",
-      "spCost": 2
+      "spCost": 3
     },
     {
       "id": "skl_cleave",
@@ -331,7 +331,7 @@
         }
       ],
       "description": "Wide arc that hits a 2-cell line in front of the wielder.",
-      "spCost": 2
+      "spCost": 3
     },
     {
       "id": "skl_berserker_charge",
@@ -395,7 +395,7 @@
         }
       ],
       "description": "Closes the gap and hits hard. Becomes a signature opener.",
-      "spCost": 2
+      "spCost": 4
     },
     {
       "id": "skl_quick_stab",
@@ -585,7 +585,7 @@
         }
       ],
       "description": "Take aim and fire. The Archer's bread-and-butter.",
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "skl_volley",
@@ -643,7 +643,7 @@
         }
       ],
       "description": "Rains arrows on a small radius. Best opener at long range.",
-      "spCost": 2
+      "spCost": 3
     }
   ]
 }

@@ -1122,31 +1122,82 @@ const sp5 = DS.create('skills', { name: 'E (heavy)', power: 5, ap: 1, mp: 0, sca
 const memberWithPool = {
   baseCharacterId: 'fake_base',
   level: 1, rank: 'F',
-  skillSlots: 4, passiveSlots: 3, skillPoints: 4, passivePoints: 3,
+  skillSlots: 4, passiveSlots: 3, skillPoints: 10, passivePoints: 10,
   equippedSkills: [sp1, sp2],
   equippedPassives: []
 };
 const baseFake = { stats: { S: 5 } };
 assertEq('effective skill slots = base 4 (no level/rank/job/item bonuses)', F.calcEffectiveSkillSlots(memberWithPool, baseFake), 4);
-assertEq('effective skill points = base 4', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 4);
+assertEq('effective skill points = base 10 (new starting budget)', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 10);
 assertEq('current SP usage from 2x cost-1 = 2', F.calcEquippedSpCost([sp1, sp2], 'skills'), 2);
 assertEq('SP cost of heavy skill = 3', F.calcSpCost(DS.get('skills', sp5)), 3);
 
-// Per-level cadence: at level 5 we should gain +1 skill point per the
-// PROGRESSION.skillPointsPerCharLevel cadence (every: 4, amount: 1).
-memberWithPool.level = 5;
-assertEq('level 5 grants +1 skill point (every-4 cadence)', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 5);
+// Per-level cadence: at level 4 we should gain +1 skill point per the
+// PROGRESSION.skillPointsPerCharLevel cadence (every: 3).
+memberWithPool.level = 4;
+assertEq('level 4 grants +1 skill point (every-3 cadence)', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 11);
 
-// Rank E grants +1 skill point per CONST.PROGRESSION.rankSkillPointBonus.
+// Slots are deliberately slow: PROGRESSION.skillSlotsPerCharLevel.every = 10.
+memberWithPool.level = 11;
+assertEq('level 11 grants +1 skill slot (every-10 cadence)', F.calcEffectiveSkillSlots(memberWithPool, baseFake), 5);
+memberWithPool.level = 9;
+assertEq('level 9 still 4 skill slots (cadence not yet hit)', F.calcEffectiveSkillSlots(memberWithPool, baseFake), 4);
+
+// Rank E grants +2 skill points per CONST.PROGRESSION.rankSkillPointBonus.
 memberWithPool.rank = 'E';
 memberWithPool.level = 1;
-assertEq('rank E grants +1 skill point baseline', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 5);
+assertEq('rank E grants +2 skill points baseline', F.calcEffectiveSkillPoints(memberWithPool, baseFake), 12);
 
 DS.remove('skills', sp1);
 DS.remove('skills', sp2);
 DS.remove('skills', sp3);
 DS.remove('skills', sp4);
 DS.remove('skills', sp5);
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 20: Cooking refuses without ingredients, succeeds with them
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 20: Cooking ingredient gating ──');
+// We bypass the full CampaignState/CampaignOps wiring (browser-only) and
+// hit the bundle helpers directly via a tiny synthetic state shape.
+// _hasBundle / _missingBundleSummary live inside CampaignOps's IIFE; we
+// can still verify behavior via the public dispatcher when CampaignState
+// is loaded. Skip if not present in the test sandbox.
+if (CJS.CampaignOps && CJS.CampaignState) {
+  CJS.CampaignState.setState({
+    party: {}, currencies: {}, inventory: { items: {}, materials: {}, food: {}, questItems: {}, equipment: {} },
+    quests: {}, flags: {}, log: [], pinnedNotes: [],
+    pocketHaven: { enabled: true, notes: [], farm: { plots: [] }, stations: [] },
+    sideContent: {}, hubState: {}, scenarioHistory: [], mapState: {},
+    phase: { number: 1, type: 'town_phase', name: 'Town' }, currentWorld: 'haven', currentChapter: 1
+  });
+  // Cook with no ingredients → log line about "missing"
+  CJS.CampaignOps.apply({
+    op: 'cook_basic', id: 'warm_stew', label: 'Warm Stew',
+    inputs: { materials: { haven_bear_hide: 1, haven_ice_crystal: 1 } },
+    outputs: { food: { warm_stew: 1 } }
+  }, { source: 'test' });
+  let foodCount = CJS.CampaignState.getState().inventory.food.warm_stew || 0;
+  assertEq('cook refused without ingredients (food still 0)', foodCount, 0);
+  assert('cook refusal logged', CJS.CampaignState.getState().log.some((l) => /missing/i.test(l.text || '')));
+
+  // Now grant ingredients and try again.
+  CJS.CampaignOps.apply([
+    { op: 'give_material', id: 'haven_bear_hide', qty: 1 },
+    { op: 'give_material', id: 'haven_ice_crystal', qty: 1 }
+  ], { source: 'test' });
+  CJS.CampaignOps.apply({
+    op: 'cook_basic', id: 'warm_stew', label: 'Warm Stew',
+    inputs: { materials: { haven_bear_hide: 1, haven_ice_crystal: 1 } },
+    outputs: { food: { warm_stew: 1 } }
+  }, { source: 'test' });
+  foodCount = CJS.CampaignState.getState().inventory.food.warm_stew || 0;
+  assertEq('cook succeeds once ingredients are stocked', foodCount, 1);
+  const remainingHide = CJS.CampaignState.getState().inventory.materials.haven_bear_hide || 0;
+  assertEq('hide consumed', remainingHide, 0);
+} else {
+  console.log('  (skipping — CampaignOps not loaded in this test sandbox)');
+}
 
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════

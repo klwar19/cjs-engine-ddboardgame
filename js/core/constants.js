@@ -604,20 +604,25 @@ window.CJS.CONST = (() => {
     // Both apply — equipping fails if either is exceeded.
     defaultSkillSlots: 4,
     defaultPassiveSlots: 3,
-    defaultSkillPoints: 4,
-    defaultPassivePoints: 3,
+    defaultSkillPoints: 10,
+    defaultPassivePoints: 10,
     defaultSpCost: 1,
-    // Bonuses gained automatically over the character's career. Kept here so
-    // future content can lean on the same numbers without hard-coding.
-    skillSlotsPerCharLevel:    { every: 5,  amount: 1 },  // +1 slot every 5 levels
-    passiveSlotsPerCharLevel:  { every: 8,  amount: 1 },
-    skillPointsPerCharLevel:   { every: 4,  amount: 1 },  // +1 SP every 4 levels
-    passivePointsPerCharLevel: { every: 6,  amount: 1 },
+    // Long-term progression cadence:
+    //   POINTS grow smoothly so players keep learning new options across
+    //   the whole campaign — every 3 levels = +1 SP.
+    //   SLOTS are intentionally precious — gain about every 8–10 levels
+    //   so the choice of WHICH skills to slot stays meaningful end-game.
+    skillSlotsPerCharLevel:    { every: 10, amount: 1 },
+    passiveSlotsPerCharLevel:  { every: 12, amount: 1 },
+    skillPointsPerCharLevel:   { every: 3,  amount: 1 },
+    passivePointsPerCharLevel: { every: 3,  amount: 1 },
     // Per-rank bonuses (cumulative across the rank order F→SSR).
-    rankSkillSlotBonus:       { F: 0, E: 0, D: 1, C: 1, B: 2, A: 2, S: 3, SR: 3, SSR: 4 },
-    rankPassiveSlotBonus:     { F: 0, E: 0, D: 0, C: 1, B: 1, A: 2, S: 2, SR: 3, SSR: 3 },
-    rankSkillPointBonus:      { F: 0, E: 1, D: 1, C: 2, B: 2, A: 3, S: 3, SR: 4, SSR: 5 },
-    rankPassivePointBonus:    { F: 0, E: 0, D: 1, C: 1, B: 2, A: 2, S: 3, SR: 3, SSR: 4 }
+    // Slots grow slowly across ranks; points grow more generously so
+    // higher-rank characters can field more powerful skill loadouts.
+    rankSkillSlotBonus:       { F: 0, E: 0, D: 0, C: 1, B: 1, A: 1, S: 2, SR: 2, SSR: 3 },
+    rankPassiveSlotBonus:     { F: 0, E: 0, D: 0, C: 0, B: 1, A: 1, S: 1, SR: 2, SSR: 2 },
+    rankSkillPointBonus:      { F: 0, E: 2, D: 4, C: 6, B: 9, A: 12, S: 15, SR: 19, SSR: 24 },
+    rankPassivePointBonus:    { F: 0, E: 2, D: 3, C: 5, B: 7, A: 10, S: 13, SR: 17, SSR: 22 }
   };
 
   // ── PUBLIC API ─────────────────────────────────────────────────────

@@ -31,7 +31,7 @@
       "tags": [
         "job:warrior"
       ],
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "pas_warriors_resolve",
@@ -52,7 +52,7 @@
       "tags": [
         "job:warrior"
       ],
-      "spCost": 2
+      "spCost": 4
     },
     {
       "id": "pas_shield_brace",
@@ -72,7 +72,7 @@
       "tags": [
         "job:knight"
       ],
-      "spCost": 1
+      "spCost": 3
     },
     {
       "id": "pas_bulwark",
@@ -92,7 +92,7 @@
       "tags": [
         "job:knight"
       ],
-      "spCost": 1
+      "spCost": 3
     },
     {
       "id": "pas_indomitable",
@@ -120,7 +120,7 @@
       "tags": [
         "job:knight"
       ],
-      "spCost": 2
+      "spCost": 4
     },
     {
       "id": "pas_rage_buildup",
@@ -140,7 +140,7 @@
       "tags": [
         "job:berserker"
       ],
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "pas_bloodlust",
@@ -161,7 +161,7 @@
       "tags": [
         "job:berserker"
       ],
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "pas_frenzy",
@@ -182,7 +182,7 @@
       "tags": [
         "job:berserker"
       ],
-      "spCost": 2
+      "spCost": 4
     },
     {
       "id": "pas_dodge_step",
@@ -202,7 +202,7 @@
       "tags": [
         "job:thief"
       ],
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "pas_backstab",
@@ -222,7 +222,7 @@
       "tags": [
         "job:thief"
       ],
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "pas_eagle_eye",
@@ -242,7 +242,7 @@
       "tags": [
         "job:archer"
       ],
-      "spCost": 1
+      "spCost": 2
     },
     {
       "id": "pas_marksman",
@@ -262,7 +262,7 @@
       "tags": [
         "job:archer"
       ],
-      "spCost": 2
+      "spCost": 4
     }
   ]
 }

@@ -38,10 +38,23 @@
         "haven_marksmans_eye",
         "haven_iron_hide"
       ],
-      "allowedWeaponTypes": ["bow", "crossbow", "dagger"],
-      "allowedArmorTypes": ["light", "leather"],
-      "availableBranches": ["archer", "thief"],
-      "availableJobs": ["job_archer", "job_thief"],
+      "allowedWeaponTypes": [
+        "bow",
+        "crossbow",
+        "dagger"
+      ],
+      "allowedArmorTypes": [
+        "light",
+        "leather"
+      ],
+      "availableBranches": [
+        "archer",
+        "thief"
+      ],
+      "availableJobs": [
+        "job_archer",
+        "job_thief"
+      ],
       "defaultJob": "job_archer",
       "maxJobs": 3,
       "weaponSlots": 2,
@@ -50,7 +63,11 @@
       "immune": [],
       "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride. Trains as Archer (bow) or Thief (dagger).",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "skillSlots": 4,
+      "passiveSlots": 3,
+      "skillPoints": 10,
+      "passivePoints": 10
     },
     {
       "id": "haven_garr",
@@ -86,7 +103,11 @@
       "immune": [],
       "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
       "movement": 3,
-      "size": "1x1"
+      "size": "1x1",
+      "skillSlots": 4,
+      "passiveSlots": 3,
+      "skillPoints": 10,
+      "passivePoints": 10
     },
     {
       "id": "haven_mitia",
@@ -127,7 +148,11 @@
       "immune": [],
       "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
       "movement": 3,
-      "size": "1x1"
+      "size": "1x1",
+      "skillSlots": 4,
+      "passiveSlots": 3,
+      "skillPoints": 10,
+      "passivePoints": 10
     }
   ]
 }

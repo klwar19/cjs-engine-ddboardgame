@@ -225,6 +225,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-stats campaign-stats-compact" aria-label="Currencies">
         <span><small>Gold</small><b>${values.gold}</b></span>
+        <span title="Jester Points"><small>JP</small><b>${values.jp}</b></span>
       </div>
     `;
   }
@@ -235,7 +236,8 @@ window.CJS.CampaignUI = (() => {
     const goldId = currencies[worldGold] != null ? worldGold
       : Object.keys(currencies).find((id) => String(id).toLowerCase().endsWith('_gold') || String(id).toLowerCase() === 'gold');
     return {
-      gold: goldId ? Number(currencies[goldId] || 0) : 0
+      gold: goldId ? Number(currencies[goldId] || 0) : 0,
+      jp: Number(currencies.jp || currencies.jester_points || 0)
     };
   }
 
@@ -1590,8 +1592,9 @@ window.CJS.CampaignUI = (() => {
         <span class="campaign-rail-btn-icon" aria-hidden="true">⚜</span>
         <span class="campaign-rail-btn-label">GM</span>
       </button>
-      <div class="campaign-rail-currency" title="Gold">
+      <div class="campaign-rail-currency" title="Gold and Jester Points">
         <span>G ${currency.gold}</span>
+        <span class="campaign-rail-jp" title="Jester Points">JP ${currency.jp}</span>
       </div>
     `;
   }
@@ -2365,7 +2368,17 @@ window.CJS.CampaignUI = (() => {
       case 'plant-seed': return _plantSeed(data.plotId);
       case 'harvest-plot': return window.CJS.PocketHaven.harvestPlot(data.plotId);
       case 'craft-recipe': return _craftRecipe(data.recipeId);
-      case 'cook-food': return Ops().apply({ op: 'cook_basic', id: data.foodId, outputs: { food: { [data.foodId]: 1 } } }, { source: 'ui' });
+      case 'cook-food': {
+        const food = DS().get('food', data.foodId);
+        const inputs = food?.inputs || {};
+        return Ops().apply({
+          op: 'cook_basic',
+          id: data.foodId,
+          label: food?.name || data.foodId,
+          inputs,
+          outputs: { food: { [data.foodId]: 1 } }
+        }, { source: 'ui' });
+      }
       case 'add-pocket-note': return _addPocketNote();
       case 'add-note': return _addPinnedNote();
       case 'quest-progress': return _questProgress(data.id);

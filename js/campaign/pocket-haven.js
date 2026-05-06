@@ -40,39 +40,86 @@ window.CJS.PocketHaven = (() => {
   }
 
   function renderCraft() {
-    const recipes = DS().getAllAsArray('crafting').filter((recipe) => !recipe._world || recipe._world === CS().getState().currentWorld);
+    const state = CS().getState();
+    const recipes = DS().getAllAsArray('crafting').filter((recipe) => !recipe._world || recipe._world === state.currentWorld);
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head"><h3>Craft</h3></div>
-        ${recipes.length ? recipes.map((recipe) => `
-          <div class="campaign-row">
-            <div>
-              <strong>${_esc(recipe.name || recipe.id)}</strong>
-              <div class="campaign-muted">${_esc(recipe.description || '')}</div>
-            </div>
-            <button class="campaign-action" data-campaign-action="craft-recipe" data-recipe-id="${_escAttr(recipe.id)}">Craft</button>
-          </div>
-        `).join('') : '<div class="campaign-empty">No recipes yet. Use GM Override for manual crafting.</div>'}
+        ${recipes.length ? recipes.map((recipe) => _renderRecipeRow(state, recipe, 'craft-recipe', 'recipe')).join('') : '<div class="campaign-empty">No recipes yet. Use GM Override for manual crafting.</div>'}
       </section>
     `;
   }
 
   function renderCook() {
     const foods = DS().getAllAsArray('food');
+    const state = CS().getState();
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head"><h3>Cook</h3></div>
-        ${foods.length ? foods.map((food) => `
-          <div class="campaign-row">
-            <div>
-              <strong>${_esc(food.name || food.id)}</strong>
-              <div class="campaign-muted">${_esc(food.description || '')}</div>
-            </div>
-            <button class="campaign-action" data-campaign-action="cook-food" data-food-id="${_escAttr(food.id)}">Cook</button>
-          </div>
-        `).join('') : '<div class="campaign-empty">No food data yet. Use GM Override for manual cooking.</div>'}
+        ${foods.length ? foods.map((food) => _renderRecipeRow(state, food, 'cook-food', 'food')).join('') : '<div class="campaign-empty">No food data yet. Use GM Override for manual cooking.</div>'}
       </section>
     `;
+  }
+
+  // Shared row renderer for Cook + Craft. Surfaces required ingredients
+  // and disables the action button when the player is short.
+  function _renderRecipeRow(state, recipe, actionId, idAttr) {
+    const inputs = recipe.inputs || {};
+    const reqLine = _renderIngredientLine(state, inputs);
+    const buff = recipe.buff
+      ? `<div class="campaign-muted">Buff: ${_esc(recipe.buff.stat || '')} +${recipe.buff.amount || 0} (${_esc(recipe.duration || 'next_battle')})</div>`
+      : '';
+    const canMake = _bundleAvailable(state, inputs);
+    const dataAttr = idAttr === 'food'
+      ? `data-food-id="${_escAttr(recipe.id)}"`
+      : `data-recipe-id="${_escAttr(recipe.id)}"`;
+    const btn = canMake
+      ? `<button class="campaign-action" data-campaign-action="${actionId}" ${dataAttr}>${actionId === 'cook-food' ? 'Cook' : 'Craft'}</button>`
+      : `<button class="campaign-action" disabled title="Missing ingredients">Need Ingredients</button>`;
+    return `
+      <div class="campaign-row">
+        <div>
+          <strong>${_esc(recipe.icon || '')} ${_esc(recipe.name || recipe.id)}</strong>
+          <div class="campaign-muted">${_esc(recipe.description || '')}</div>
+          ${buff}
+          ${reqLine}
+        </div>
+        ${btn}
+      </div>
+    `;
+  }
+
+  function _renderIngredientLine(state, inputs = {}) {
+    const parts = [];
+    for (const [id, qty] of Object.entries(inputs.materials || {})) {
+      const have = state.inventory?.materials?.[id] || 0;
+      const ok = have >= qty;
+      parts.push(`<span style="color:${ok ? 'var(--green)' : 'var(--red)'}">${_esc(_name('materials', id))} ${have}/${qty}</span>`);
+    }
+    for (const [id, qty] of Object.entries(inputs.items || {})) {
+      const have = state.inventory?.items?.[id] || 0;
+      const ok = have >= qty;
+      parts.push(`<span style="color:${ok ? 'var(--green)' : 'var(--red)'}">${_esc(_name('items', id))} ${have}/${qty}</span>`);
+    }
+    for (const [id, qty] of Object.entries(inputs.currencies || {})) {
+      const have = state.currencies?.[id] || 0;
+      const ok = have >= qty;
+      parts.push(`<span style="color:${ok ? 'var(--green)' : 'var(--red)'}">${_esc(id)} ${have}/${qty}</span>`);
+    }
+    if (!parts.length) return '<div class="campaign-muted" style="font-size:0.8em">No ingredients required.</div>';
+    return `<div class="campaign-muted" style="font-size:0.85em">Needs: ${parts.join(' · ')}</div>`;
+  }
+
+  function _bundleAvailable(state, bundle = {}) {
+    for (const [id, qty] of Object.entries(bundle.currencies || {})) {
+      if ((state.currencies?.[id] || 0) < Number(qty || 0)) return false;
+    }
+    for (const bucket of ['items', 'materials', 'food', 'questItems']) {
+      for (const [id, qty] of Object.entries(bundle[bucket] || {})) {
+        if ((state.inventory?.[bucket]?.[id] || 0) < Number(qty || 0)) return false;
+      }
+    }
+    return true;
   }
 
   function renderPocket() {

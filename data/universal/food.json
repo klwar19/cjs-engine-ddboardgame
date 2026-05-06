@@ -10,14 +10,56 @@
     {
       "id": "warm_stew",
       "name": "Warm Stew",
-      "icon": "Stew",
+      "icon": "🍲",
       "rarity": "Common",
       "duration": "next_battle",
       "buff": {
         "stat": "E",
         "amount": 2
       },
-      "description": "Comforting food. Campaign Mode can track it as a next-battle Endurance buff."
+      "inputs": {
+        "materials": {
+          "haven_bear_hide": 1,
+          "haven_ice_crystal": 1
+        }
+      },
+      "description": "Comforting food. Endurance +2 next battle. Requires bear hide + ice crystal — gather, buy, or harvest from Pocket Haven."
+    },
+    {
+      "id": "frostcap_skewer",
+      "name": "Frostcap Skewer",
+      "icon": "🍢",
+      "rarity": "Common",
+      "duration": "next_battle",
+      "buff": {
+        "stat": "P",
+        "amount": 2
+      },
+      "inputs": {
+        "materials": {
+          "haven_ice_crystal": 1,
+          "haven_sprite_dust": 1
+        }
+      },
+      "description": "Light field food. Perception +2 next battle. Cooked from a Frostcap mushroom dusted with sprite essence."
+    },
+    {
+      "id": "hunters_brew",
+      "name": "Hunter's Brew",
+      "icon": "🍵",
+      "rarity": "Uncommon",
+      "duration": "next_battle",
+      "buff": {
+        "stat": "S",
+        "amount": 2
+      },
+      "inputs": {
+        "materials": {
+          "haven_bear_claw": 1,
+          "haven_wolf_pelt": 1
+        }
+      },
+      "description": "A bracing brew. Strength +2 next battle. Trophy-grade ingredients only."
     }
   ]
 }
