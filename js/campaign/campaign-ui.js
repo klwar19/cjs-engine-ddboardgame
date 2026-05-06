@@ -828,49 +828,36 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-dashboard">
         <section class="campaign-panel campaign-actions-panel">
-          <div class="campaign-panel-head"><h2>Adventure Desk</h2></div>
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Adventure Desk</h2>
+              <div class="campaign-muted">Roll something random, pick something specific, or run admin tools. A result card will appear below for you to accept, edit, or discard.</div>
+            </div>
+          </div>
           <div class="campaign-control-stack">
-            ${_controlGroup('Story Prompts', `
-              <button class="campaign-action primary" data-campaign-action="solo-surprise">Story Offer</button>
-              <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Run</button>
-              <button class="campaign-action" data-campaign-action="random-rumor-offer">Rumor Hook</button>
-              <button class="campaign-action" data-campaign-action="roll-event">Event</button>
-              <button class="campaign-action" data-campaign-action="roll-oracle">GM Prompt</button>
-            `)}
-            ${_controlGroup('Manual Control', `
-              <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
-              <button class="campaign-action" data-campaign-action="manual-rumor">Manual Rumor</button>
-              <button class="campaign-action" data-campaign-action="pick-event">Pick Event</button>
-              <button class="campaign-action" data-campaign-action="custom-event">Custom Event</button>
-              <button class="campaign-action" data-campaign-action="pick-oracle">Pick GM Prompt</button>
-              <button class="campaign-action" data-campaign-action="custom-oracle">Custom GM Prompt</button>
-            `)}
-            ${_controlGroup('Campaign Admin', `
-              <button class="campaign-action" data-campaign-action="pass-phase">Pass Phase</button>
-              <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
-              <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
-            `)}
-          </div>
-          <div class="campaign-action-grid" hidden>
-            <button class="campaign-action primary" data-campaign-action="pass-phase">Pass Phase</button>
-            <button class="campaign-action" data-campaign-action="add-quest">Add Quest</button>
-            <button class="campaign-action" data-campaign-action="solo-surprise">Story Offer</button>
-            <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
-            <button class="campaign-action" data-campaign-action="travel-world">Travel World</button>
-          </div>
-          <div class="campaign-trio-row" style="margin-top:12px" hidden>
-            <span class="campaign-trio-label">Event</span>
-            <button class="campaign-action" data-campaign-action="roll-event">🎲 Random</button>
-            <button class="campaign-action" data-campaign-action="pick-event">📋 Pick</button>
-            <button class="campaign-action" data-campaign-action="custom-event">✏️ Custom</button>
-          </div>
-          <div class="campaign-trio-row" hidden>
-            <span class="campaign-trio-label">GM Prompt</span>
-            <button class="campaign-action" data-campaign-action="roll-oracle">🎲 Random</button>
-            <button class="campaign-action" data-campaign-action="pick-oracle">📋 Pick</button>
-            <button class="campaign-action" data-campaign-action="custom-oracle">✏️ Custom</button>
+            ${_controlGroup('Roll Random', `
+              ${_actionBtn({ action: 'solo-surprise',       label: 'Story Offer',  hint: 'Hook card you can turn into a quest, rumor, or saved idea', kind: 'primary' })}
+              ${_actionBtn({ action: 'random-quest-offer',  label: 'Quest Run',    hint: 'Pick a random quest template AND auto-start its map run' })}
+              ${_actionBtn({ action: 'random-rumor-offer',  label: 'Rumor Hook',   hint: 'Hook card you can plant in the hub as a rumor' })}
+              ${_actionBtn({ action: 'roll-event',          label: 'Roll Event',   hint: 'Table event with stat/loot consequences. You choose: Apply, Edit, Save, or Ignore' })}
+              ${_actionBtn({ action: 'roll-oracle',         label: 'Roll GM Prompt', hint: 'GM inspiration text only. No bonuses applied. Use it to riff a scene' })}
+            `, 'Random outputs land below as preview cards. Nothing is committed until you accept it.')}
+            ${_controlGroup('Pick / Customize', `
+              ${_actionBtn({ action: 'add-quest',      label: 'Add Quest',     hint: 'Quest builder: pick template, edit fields, optionally start its run' })}
+              ${_actionBtn({ action: 'manual-rumor',   label: 'Write Rumor',   hint: 'Type a custom rumor and add it to the hub' })}
+              ${_actionBtn({ action: 'pick-event',     label: 'Pick Event',    hint: 'Choose a specific authored event from the catalog' })}
+              ${_actionBtn({ action: 'custom-event',   label: 'Custom Event',  hint: 'Write your own event with optional quick consequence' })}
+              ${_actionBtn({ action: 'pick-oracle',    label: 'Pick GM Prompt', hint: 'Pick a specific GM prompt from the catalog' })}
+              ${_actionBtn({ action: 'custom-oracle',  label: 'Custom Prompt', hint: 'Type your own GM scene prompt' })}
+            `, 'Same outputs as Roll Random but you choose what shows up.')}
+            ${_controlGroup('Run Admin', `
+              ${_actionBtn({ action: 'pass-phase',    label: 'Pass Phase',  hint: 'Advance the campaign phase: ticks timers, ages rumors, advances quests' })}
+              ${_actionBtn({ action: 'full-rest',     label: 'Full Rest',   hint: 'Restore party HP/MP and clear non-permanent statuses' })}
+              ${_actionBtn({ action: 'travel-world',  label: 'Travel World', hint: 'Switch to a different world / region in your campaign' })}
+            `, 'Game-state controls. These commit immediately.')}
           </div>
         </section>
+        ${_renderAdventureLegend(state)}
         ${_renderSoloNotice(state)}
         ${_renderScenarioSummary(state)}
         ${_renderTravelSurprise(state)}
@@ -881,6 +868,43 @@ window.CJS.CampaignUI = (() => {
         ${_renderOracle(state)}
         ${_renderLastReport(state)}
       </div>
+    `;
+  }
+
+  function _renderAdventureLegend(state) {
+    const hasResult = state?.lastEvent || state?.lastOracle || state?.pendingSoloHook || state?.pendingBattle;
+    if (hasResult) return '';
+    return `
+      <section class="campaign-panel campaign-legend">
+        <div class="campaign-panel-head">
+          <h3>What each output means</h3>
+          <small class="campaign-muted">Click any Adventure Desk button to see a result here</small>
+        </div>
+        <div class="campaign-legend-grid">
+          <div class="campaign-legend-item">
+            <strong>📜 Story Offer / Hook</strong>
+            <p>A narrative card with a suggested choice. Buttons let you <b>Accept</b> (apply choice's ops),
+            <b>Make Quest</b> (add to Quest Tracker), <b>Make Rumor</b> (post to hub), or <b>Save</b>/<b>Ignore</b>.
+            Accepting a quest offer also auto-starts its map run.</p>
+          </div>
+          <div class="campaign-legend-item">
+            <strong>🎴 Event</strong>
+            <p>A table-rolled event with prepared consequence ops (gold, danger, status, etc.).
+            <b>Apply</b> commits the ops; <b>Edit First</b> lets you change them; <b>Save Note</b> just logs it;
+            <b>Pin Plot Seed</b> stores it as a future hook; <b>Ignore</b> discards it.</p>
+          </div>
+          <div class="campaign-legend-item">
+            <strong>🔮 GM Prompt (Oracle)</strong>
+            <p>Pure inspiration text. <b>No bonuses</b> are applied to the campaign. Use it to riff a scene,
+            then either <b>Save as Note</b> for later or <b>Reroll</b>.</p>
+          </div>
+          <div class="campaign-legend-item">
+            <strong>⚔ Battle / Scenario</strong>
+            <p>Battle Ready cards run combat (or take a manual result). Scenarios are the run/map flow;
+            quests with linked maps will create one when you press <b>Map Run</b> in the Quest Tracker.</p>
+          </div>
+        </div>
+      </section>
     `;
   }
 
@@ -1239,12 +1263,31 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _controlGroup(title, buttons) {
+  function _controlGroup(title, buttons, description = '') {
     return `
       <div class="campaign-control-group">
         <div class="campaign-control-title">${_esc(title)}</div>
+        ${description ? `<div class="campaign-control-help">${_esc(description)}</div>` : ''}
         <div class="campaign-action-grid">${buttons}</div>
       </div>
+    `;
+  }
+
+  function _actionBtn({ action, label, hint, kind = '', data = {}, disabled = false }) {
+    const cls = ['campaign-action'];
+    if (kind) cls.push(kind);
+    if (hint) cls.push('has-hint');
+    const dataAttrs = Object.entries(data)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => `data-${k}="${_escAttr(String(v))}"`)
+      .join(' ');
+    const disable = disabled ? 'disabled' : '';
+    const titleAttr = hint ? ` title="${_escAttr(hint)}"` : '';
+    return `
+      <button class="${cls.join(' ')}" data-campaign-action="${_escAttr(action)}" ${dataAttrs}${titleAttr} ${disable}>
+        <span class="campaign-action-label">${_esc(label)}</span>
+        ${hint ? `<small class="campaign-action-hint">${_esc(hint)}</small>` : ''}
+      </button>
     `;
   }
 
@@ -1254,24 +1297,32 @@ window.CJS.CampaignUI = (() => {
     const kind = state.pendingSoloHook?.kind || card.type || 'hook';
     const risk = Side().risk(card.canonRisk);
     const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
-    const choice = card.suggestedChoices?.[0]?.label || 'Apply the first suggested choice';
+    const choice = card.suggestedChoices?.[0];
+    const choiceLabel = choice?.label || 'Apply the first suggested choice';
+    const choiceOpsDesc = (choice?.ops?.length ? Ops().describe(choice.ops) : []).filter(Boolean);
+    const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer');
+    const acceptHint = isQuestOffer
+      ? 'Add quest to tracker AND auto-start its map run'
+      : (choiceOpsDesc.length ? `Apply: ${choiceOpsDesc.join('; ')}` : 'Apply the suggested choice (story-only if no ops)');
     return `
       <section class="campaign-panel campaign-solo-notice ${risk === 'red' ? 'risk-red' : ''}">
         <div class="campaign-panel-head">
           <div>
             <h2>Story Offer</h2>
-            <div class="campaign-muted">${_esc(_label(kind))} | ${_esc(choice)}</div>
+            <div class="campaign-muted">${_esc(_label(kind))} | Suggested: ${_esc(choiceLabel)}</div>
           </div>
           <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
         </div>
         <strong>${_esc(card.title || card.name || card.id)}</strong>
         ${prompt ? `<p>${_esc(prompt)}</p>` : ''}
+        ${choiceOpsDesc.length ? `<div class="campaign-preview"><b>Accept does</b><br>${choiceOpsDesc.map(_esc).join('<br>')}</div>` : ''}
+        <div class="campaign-control-help">Pick one: <b>Accept</b> commits the suggested choice. <b>Make Quest</b> only adds it to the Quest Tracker (no run started). <b>Make Rumor</b> plants it in the hub. <b>Save</b> stores the card as a saved idea. <b>Ignore</b> drops it.</div>
         <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="accept-solo-hook">Accept</button>
-          <button class="campaign-action" data-campaign-action="solo-hook-quest">Make Quest</button>
-          <button class="campaign-action" data-campaign-action="solo-hook-rumor">Make Rumor</button>
-          <button class="campaign-action" data-campaign-action="save-solo-hook">Save</button>
-          <button class="campaign-action danger" data-campaign-action="ignore-solo-hook">Ignore</button>
+          ${_actionBtn({ action: 'accept-solo-hook',   label: 'Accept',     hint: acceptHint, kind: 'primary' })}
+          ${_actionBtn({ action: 'solo-hook-quest',    label: 'Make Quest', hint: 'Add to Quest Tracker, no map run yet' })}
+          ${_actionBtn({ action: 'solo-hook-rumor',    label: 'Make Rumor', hint: 'Add as a hub rumor' })}
+          ${_actionBtn({ action: 'save-solo-hook',     label: 'Save',       hint: 'Store in Saved Ideas to use later' })}
+          ${_actionBtn({ action: 'ignore-solo-hook',   label: 'Ignore',     hint: 'Discard this hook', kind: 'danger' })}
         </div>
       </section>
     `;
@@ -1292,11 +1343,13 @@ window.CJS.CampaignUI = (() => {
     const location = run.travelMode === 'grid_map' && run.currentCell
       ? `${run.currentCell.x},${run.currentCell.y}`
       : (run.currentNode || '-');
+    const questPill = _runQuestPill(state, run, scenario);
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>${_esc(scenario?.name || run.scenarioId)}</h2>
           <span class="campaign-pill">Danger ${run.danger}/${run.dangerMax}</span>
+          ${questPill}
         </div>
         <div class="campaign-stat-grid">
           <span>${run.travelMode === 'grid_map' ? 'Cell' : 'Node'} <b>${_esc(location)}</b></span>
@@ -1373,14 +1426,15 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '')}</div>
         ${battle.battleMap?.theme ? `<div class="campaign-muted">Auto map: ${_esc(_label(battle.battleMap.theme))}</div>` : ''}
         ${_renderBattlePartySummary(state)}
+        <div class="campaign-control-help">Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.</div>
         <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="run-battle" ${canRun ? '' : 'disabled'}>Run in Combat App</button>
-          <button class="campaign-action" data-campaign-action="manual-battle">Resolve Manually</button>
-          ${isRandom ? '<button class="campaign-action" data-campaign-action="battle-reroll">🎲 Reroll</button>' : ''}
-          <button class="campaign-action" data-campaign-action="battle-override">📋 Override</button>
-          <button class="campaign-action" data-campaign-action="skip-victory">Manual Victory</button>
-          <button class="campaign-action" data-campaign-action="skip-defeat">Manual Defeat (Penalty)</button>
-          <button class="campaign-action danger" data-campaign-action="cancel-battle">Cancel</button>
+          ${_actionBtn({ action: 'run-battle',       label: 'Run in Combat App',     hint: 'Open the tactical combat screen with this encounter', kind: 'primary', disabled: !canRun })}
+          ${_actionBtn({ action: 'manual-battle',    label: 'Resolve Manually',      hint: 'Type a custom outcome and rewards' })}
+          ${isRandom ? _actionBtn({ action: 'battle-reroll', label: '🎲 Reroll', hint: 'Re-roll from the same random table' }) : ''}
+          ${_actionBtn({ action: 'battle-override',  label: '📋 Override',           hint: 'Pick a specific encounter from the catalog' })}
+          ${_actionBtn({ action: 'skip-victory',     label: 'Manual Victory',        hint: 'Skip the fight as a win (basic rewards)' })}
+          ${_actionBtn({ action: 'skip-defeat',      label: 'Manual Defeat',         hint: 'Skip as a loss (default: danger +2 and 10% currency loss)' })}
+          ${_actionBtn({ action: 'cancel-battle',    label: 'Cancel',                hint: 'Remove pending battle, no effect', kind: 'danger' })}
         </div>
       </section>
     `;
@@ -1519,6 +1573,8 @@ window.CJS.CampaignUI = (() => {
       mystery: '🔮 Mystery hook'
     };
     const ideaPill = event.gmIdea ? `<span class="campaign-pill">${_esc(ideaLabels[event.gmIdea] || event.gmIdea)}</span>` : '';
+    const opsDesc = (event.suggested || []).length ? Ops().describe(event.suggested).filter(Boolean) : [];
+    const consequenceLabel = opsDesc.length ? 'Consequences if applied' : 'Story-only event (no automatic ops)';
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
@@ -1528,16 +1584,20 @@ window.CJS.CampaignUI = (() => {
         </div>
         <p>${_esc(event.prompt || '')}</p>
         ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
-        ${(event.suggested || []).length ? `<div class="campaign-preview">${Ops().describe(event.suggested).map(_esc).join('<br>')}</div>` : ''}
+        <div class="campaign-preview">
+          <b>${_esc(consequenceLabel)}</b>
+          ${opsDesc.length ? `<br>${opsDesc.map(_esc).join('<br>')}` : '<br>Read the prompt aloud or pin it as a plot seed.'}
+        </div>
+        <div class="campaign-control-help">Pick one: <b>Apply</b> commits the listed ops now. <b>Edit First</b> lets you tweak ops before applying. <b>Save Note</b> only logs the event text. <b>Ignore</b> drops it. Reroll/Override change which event is shown.</div>
         <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="apply-event">Apply</button>
-          <button class="campaign-action" data-campaign-action="edit-event">Edit First</button>
-          <button class="campaign-action" data-campaign-action="note-event">Save Note</button>
-          ${(event.gmHook || event.gmIdea) ? '<button class="campaign-action" data-campaign-action="pin-plot-seed">📌 Pin Plot Seed</button>' : ''}
-          ${event.oracleTableId ? '<button class="campaign-action" data-campaign-action="event-to-oracle">🎴 Roll Oracle</button>' : ''}
-          <button class="campaign-action danger" data-campaign-action="ignore-event">Ignore</button>
-          <button class="campaign-action" data-campaign-action="roll-event">🎲 Reroll</button>
-          <button class="campaign-action" data-campaign-action="pick-event">📋 Override</button>
+          ${_actionBtn({ action: 'apply-event',  label: 'Apply',      hint: opsDesc.length ? `Commit: ${opsDesc.join('; ')}` : 'Log the event with no stat changes', kind: 'primary' })}
+          ${_actionBtn({ action: 'edit-event',   label: 'Edit First', hint: 'Tweak the ops, then apply' })}
+          ${_actionBtn({ action: 'note-event',   label: 'Save Note',  hint: 'Log the event text without applying ops' })}
+          ${(event.gmHook || event.gmIdea) ? _actionBtn({ action: 'pin-plot-seed',  label: '📌 Pin Plot Seed', hint: 'Save as a future plot hook in pinned notes' }) : ''}
+          ${event.oracleTableId ? _actionBtn({ action: 'event-to-oracle', label: '🎴 Roll Oracle', hint: 'Roll an oracle prompt linked to this event' }) : ''}
+          ${_actionBtn({ action: 'ignore-event', label: 'Ignore',     hint: 'Discard this event with no log entry', kind: 'danger' })}
+          ${_actionBtn({ action: 'roll-event',   label: '🎲 Reroll',  hint: 'Roll a different random event' })}
+          ${_actionBtn({ action: 'pick-event',   label: '📋 Override', hint: 'Replace with a specific event from the catalog' })}
         </div>
       </section>
     `;
@@ -1547,12 +1607,16 @@ window.CJS.CampaignUI = (() => {
     if (!state.lastOracle) return '';
     return `
       <section class="campaign-panel oracle">
-        <div class="campaign-panel-head"><h2>GM Prompt</h2></div>
+        <div class="campaign-panel-head">
+          <h2>GM Prompt</h2>
+          <span class="campaign-pill">narrative only</span>
+        </div>
         <p>${_esc(state.lastOracle.text)}</p>
+        <div class="campaign-control-help">Pure narrative. <b>No stats or items change.</b> Use the prompt to describe a scene, then <b>Save as Note</b> to remember it or <b>Reroll</b> for a new one.</div>
         <div class="campaign-action-grid">
-          <button class="campaign-action" data-campaign-action="oracle-note">Save as Note</button>
-          <button class="campaign-action" data-campaign-action="roll-oracle">🎲 Reroll</button>
-          <button class="campaign-action" data-campaign-action="pick-oracle">📋 Override</button>
+          ${_actionBtn({ action: 'oracle-note',  label: 'Save as Note', hint: 'Pin this prompt to your notes' })}
+          ${_actionBtn({ action: 'roll-oracle',  label: '🎲 Reroll',    hint: 'Roll a different prompt' })}
+          ${_actionBtn({ action: 'pick-oracle',  label: '📋 Override',  hint: 'Pick a specific prompt from the catalog' })}
         </div>
       </section>
     `;
@@ -2019,6 +2083,7 @@ window.CJS.CampaignUI = (() => {
             <div class="campaign-panel-head">
               <h3>${_esc(scenario.name || scenario.id)}</h3>
               <span class="campaign-pill">${_esc(scenario.generated ? `generated · ${scenario.source?.kind || 'random'}` : (scenario.type || 'scenario'))}</span>
+              ${_scenarioQuestPill(scenario, state)}
             </div>
             ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
@@ -2032,6 +2097,20 @@ window.CJS.CampaignUI = (() => {
         </div>
       </div>
     `;
+  }
+
+  function _scenarioQuestPill(scenario = {}, state = CS().getState()) {
+    const src = scenario.source || {};
+    const questId = src.questId;
+    if (questId) {
+      const quest = state?.quests?.[questId];
+      const title = quest?.title || src.title || questId;
+      return `<span class="campaign-pill" title="Generated for this quest">📌 Quest: ${_esc(title)}</span>`;
+    }
+    if (src.questChainId) {
+      return `<span class="campaign-pill" title="Generated for this quest arc">📌 Arc: ${_esc(src.title || src.questChainId)}</span>`;
+    }
+    return '';
   }
 
   function _renderShapePills(scenario) {
@@ -2091,11 +2170,13 @@ window.CJS.CampaignUI = (() => {
   function _renderRunFreeform(state, run) {
     const scenario = CS().getActiveScenario();
     const setBattles = scenario?.setBattles || [];
+    const questPill = _runQuestPill(state, run, scenario);
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>${_esc(scenario?.name || 'Run')}</h2>
           <span class="campaign-pill">Freeform</span>
+          ${questPill}
         </div>
         ${_renderShapePills(scenario || {})}
         <div class="campaign-muted">${_esc(scenario?.notes || 'No map. Pick what happens next.')}</div>
@@ -2106,17 +2187,17 @@ window.CJS.CampaignUI = (() => {
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
         </div>
         <div class="campaign-control-stack">
-          ${_controlGroup('Solo / Random', `
-            <button class="campaign-action primary" data-campaign-action="run-roll-battle">Random Battle</button>
-            <button class="campaign-action" data-campaign-action="run-roll-event">Random Event</button>
-            <button class="campaign-action" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
-          `)}
-          ${_controlGroup('Manual Control', `
-            <button class="campaign-action" data-campaign-action="run-pick-battle">Pick Battle</button>
-            <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-            <button class="campaign-action" data-campaign-action="run-tick-danger">Tick Danger +1</button>
-            <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
-          `)}
+          ${_controlGroup('Roll Random', `
+            ${_actionBtn({ action: 'run-roll-battle',     label: 'Random Battle',    hint: 'Roll from this scenario’s battle pool', kind: 'primary' })}
+            ${_actionBtn({ action: 'run-roll-event',      label: 'Random Event',     hint: 'Roll a scenario event with consequences' })}
+            ${_actionBtn({ action: 'roll-travel-surprise', label: 'Movement Surprise', hint: 'Random encounter from movement (loot, danger, NPC)' })}
+          `, 'Random output appears below the panel as a card you accept, edit, or ignore.')}
+          ${_controlGroup('Pick / Manual', `
+            ${_actionBtn({ action: 'run-pick-battle',  label: 'Pick Battle',  hint: 'Pick a specific battle from the catalog' })}
+            ${_actionBtn({ action: 'camp-rest',         label: 'Camp Rest',     hint: 'Spend a camp slot to heal and recover' })}
+            ${_actionBtn({ action: 'run-tick-danger',  label: 'Tick Danger +1', hint: 'Manually raise danger (GM control)' })}
+            ${_actionBtn({ action: 'end-scenario',      label: 'End Scenario',  hint: 'Finish run and write a report', kind: 'danger' })}
+          `, 'Direct controls. End Scenario writes a report; Cancel (in summary) discards without one.')}
         </div>
         <div class="campaign-action-grid" hidden>
           <button class="campaign-action primary" data-campaign-action="run-roll-battle">🎲 Random Battle</button>
@@ -2148,11 +2229,13 @@ window.CJS.CampaignUI = (() => {
     const beats = scenario?.beats || [];
     const idx = run.currentBeatIndex ?? 0;
     const done = idx >= beats.length;
+    const questPill = _runQuestPill(state, run, scenario);
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h2>${_esc(scenario?.name || 'Run')}</h2>
           <span class="campaign-pill">Linear · Beat ${Math.min(idx + 1, beats.length)}/${beats.length}</span>
+          ${questPill}
         </div>
         ${_renderShapePills(scenario || {})}
         <div class="campaign-muted">${_esc(scenario?.notes || '')}</div>
@@ -2267,12 +2350,14 @@ window.CJS.CampaignUI = (() => {
     const isRunQuest = _activeRunQuestId(activeRun, activeScenario) === quest.id;
     const scenarioDisabled = activeRun && !isRunQuest;
     const scenarioLabel = isRunQuest ? 'Open Map' : 'Map Run';
+    const scenarioPill = _questScenarioPill(quest, activeRun, activeScenario);
     return `
       <article class="campaign-quest-card ${opts.resolved ? 'is-resolved' : ''}">
         <div class="campaign-quest-main">
           <div class="campaign-quest-title-row">
             <strong>${_esc(quest.title || quest.id)}</strong>
             <span class="campaign-pill campaign-quest-status ${_escAttr(_questStatusClass(quest))}">${_esc(_label(quest.status || 'active'))}</span>
+            ${scenarioPill}
           </div>
           ${meta ? `<div class="campaign-muted">${_esc(meta)}</div>` : ''}
           ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
@@ -2287,15 +2372,15 @@ window.CJS.CampaignUI = (() => {
         </div>
         ${opts.resolved ? '' : `
           <div class="campaign-quest-actions">
-            <button class="campaign-action primary" data-campaign-action="quest-scenario" data-id="${_escAttr(quest.id)}" ${scenarioDisabled ? 'disabled' : ''}>${scenarioLabel}</button>
-            <button class="campaign-action" data-campaign-action="quest-battle" data-id="${_escAttr(quest.id)}">Battle</button>
-            <button class="campaign-action" data-campaign-action="quest-event" data-id="${_escAttr(quest.id)}">Event</button>
-            <button class="campaign-action" data-campaign-action="quest-check" data-id="${_escAttr(quest.id)}">Check</button>
-            <button class="campaign-action" data-campaign-action="quest-hand-in" data-id="${_escAttr(quest.id)}">Hand In</button>
-            <button class="campaign-action" data-campaign-action="quest-answer" data-id="${_escAttr(quest.id)}">Answer</button>
-            <button class="campaign-action" data-campaign-action="quest-progress" data-id="${_escAttr(quest.id)}">Progress</button>
-            <button class="campaign-action" data-campaign-action="quest-complete" data-id="${_escAttr(quest.id)}">Resolve</button>
-            <button class="campaign-action danger" data-campaign-action="quest-fail" data-id="${_escAttr(quest.id)}">Fail</button>
+            ${_actionBtn({ action: 'quest-scenario', label: scenarioLabel, hint: isRunQuest ? 'Jump to the active map for this quest' : 'Start (or generate) the map run for this quest', kind: 'primary', data: { id: quest.id }, disabled: scenarioDisabled })}
+            ${_actionBtn({ action: 'quest-battle',  label: 'Battle',   hint: 'Run a battle linked to this quest', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-event',   label: 'Event',    hint: 'Roll an event tagged for this quest', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-check',   label: 'Check',    hint: 'Make a stat or skill check toward this quest', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-hand-in', label: 'Hand In',  hint: 'Deliver an item to complete an objective', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-answer',  label: 'Answer',   hint: 'Resolve a riddle / dialog objective', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-progress', label: 'Progress', hint: 'Tick an objective forward by 1', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-complete', label: 'Resolve', hint: 'Mark complete and grant rewards', data: { id: quest.id } })}
+            ${_actionBtn({ action: 'quest-fail',     label: 'Fail',     hint: 'Mark failed (no rewards)', kind: 'danger', data: { id: quest.id } })}
           </div>
         `}
       </article>
@@ -2335,6 +2420,37 @@ window.CJS.CampaignUI = (() => {
     if (status === 'failed') return 'is-failed';
     if (_isQuestResolved(quest)) return 'is-complete';
     return 'is-active';
+  }
+
+  function _runQuestPill(state, run, scenario) {
+    const questId = _activeRunQuestId(run, scenario);
+    if (questId) {
+      const quest = state?.quests?.[questId];
+      const title = quest?.title || run?.questTitle || questId;
+      return `<span class="campaign-pill campaign-pill-link" title="This run is linked to a quest">📌 Quest: ${_esc(title)}</span>`;
+    }
+    if (scenario?.source?.questChainId) {
+      return `<span class="campaign-pill" title="This run is part of a quest arc">📌 Arc: ${_esc(scenario.source.title || scenario.source.questChainId)}</span>`;
+    }
+    return '<span class="campaign-pill campaign-muted-pill" title="Standalone run, not bound to a quest">no quest binding</span>';
+  }
+
+  function _questScenarioPill(quest = {}, activeRun = null, activeScenario = null) {
+    if (!quest?.id) return '';
+    if (_activeRunQuestId(activeRun, activeScenario) === quest.id) {
+      return `<span class="campaign-pill campaign-pill-link" title="A scenario for this quest is currently running">▶ Running: ${_esc(activeScenario?.name || activeRun?.scenarioId || 'scenario')}</span>`;
+    }
+    const linkedId = quest.linkedScenario || quest.scenarioId || quest.scenario;
+    if (linkedId) {
+      const sc = CS().getScenarioById?.(linkedId);
+      return `<span class="campaign-pill" title="This quest has a pre-built scenario linked to it">📜 Linked: ${_esc(sc?.name || linkedId)}</span>`;
+    }
+    const generated = Object.values(CS().getState()?.sideContent?.generatedScenarios || {})
+      .find((sc) => sc?.source?.questId === quest.id);
+    if (generated) {
+      return `<span class="campaign-pill" title="A scenario was previously generated for this quest">🗺 Generated: ${_esc(generated.name || generated.id)}</span>`;
+    }
+    return `<span class="campaign-pill campaign-muted-pill" title="No scenario yet — Map Run will generate one">no map yet</span>`;
   }
 
   function _renderLogPanel(state) {
@@ -3211,41 +3327,155 @@ window.CJS.CampaignUI = (() => {
   function _openQuestModal() {
     const templates = Object.values(CS().getContent().campaignQuests).flatMap((record) => record.templates || []);
     const body = document.createElement('div');
+    body.className = 'campaign-quest-builder';
     body.innerHTML = `
-      <label class="form-label">Template</label>
-      <select id="campaign-quest-template">
-        <option value="">Custom quest</option>
-        ${templates.map((quest) => `<option value="${_escAttr(quest.id)}">${_esc(quest.title || quest.id)}</option>`).join('')}
+      <div class="campaign-control-help">
+        Build a quest from scratch, fill from a template, or roll a random one. Edit any field before
+        committing. <b>Add Quest</b> only adds it to the tracker. <b>Add &amp; Start Run</b> also auto-starts the map run.
+      </div>
+      <div class="campaign-quest-builder-row">
+        <label class="form-label">Template (optional)</label>
+        <div class="campaign-row-actions">
+          <select id="campaign-quest-template" class="campaign-grow">
+            <option value="">Custom quest (blank)</option>
+            ${templates.map((quest) => `<option value="${_escAttr(quest.id)}">${_esc(quest.title || quest.id)}</option>`).join('')}
+          </select>
+          <button type="button" class="campaign-action" id="campaign-quest-roll" ${templates.length ? '' : 'disabled'}>🎲 Roll Random</button>
+          <button type="button" class="campaign-action" id="campaign-quest-clear">Clear</button>
+        </div>
+      </div>
+      <label class="form-label">Title</label>
+      <input id="campaign-quest-title" type="text" placeholder="Quest title">
+      <label class="form-label">Summary <small class="campaign-muted">— shown to players in Quest Tracker</small></label>
+      <textarea id="campaign-quest-summary" placeholder="One-paragraph hook describing what the party is asked to do."></textarea>
+      <div class="campaign-quest-builder-grid">
+        <label class="form-label">Giver <small class="campaign-muted">— optional NPC name</small>
+          <input id="campaign-quest-giver" type="text" placeholder="e.g. Captain Reed">
+        </label>
+        <label class="form-label">Tags <small class="campaign-muted">— comma separated</small>
+          <input id="campaign-quest-tags" type="text" placeholder="e.g. forest, escort">
+        </label>
+      </div>
+      <label class="form-label">Objectives <small class="campaign-muted">— one per line, "label x required" (e.g. "Find clue x 3")</small></label>
+      <textarea id="campaign-quest-objectives" placeholder="Reach the ruins x 1
+Recover the relic x 1"></textarea>
+      <label class="form-label">Map type <small class="campaign-muted">— used if you start the run</small></label>
+      <select id="campaign-quest-map-type">
+        ${(Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'ruins', 'temple']).map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
       </select>
-      <label class="form-label">Custom title</label>
-      <input id="campaign-quest-title" type="text" placeholder="New quest">
-      <label class="form-label">Summary</label>
-      <textarea id="campaign-quest-summary"></textarea>
+      <div class="campaign-preview" id="campaign-quest-preview" hidden></div>
     `;
     const footer = document.createElement('div');
     footer.innerHTML = `
-      <button class="btn" id="campaign-add-quest-back">Back</button>
-      <button class="btn btn-primary" id="campaign-add-quest-commit">Add Quest</button>
+      <button class="btn" id="campaign-add-quest-back">Cancel</button>
+      <button class="btn" id="campaign-add-quest-commit">Add Quest</button>
+      <button class="btn btn-primary" id="campaign-add-quest-start">Add &amp; Start Run</button>
     `;
-    const overlay = UI().openModal({ title: 'Add Quest', content: body, footer, width: '520px' });
-    footer.querySelector('#campaign-add-quest-back').onclick = () => UI().closeModal(overlay);
-    footer.querySelector('#campaign-add-quest-commit').onclick = () => {
-      const template = templates.find((quest) => quest.id === body.querySelector('#campaign-quest-template').value);
-      const customTitle = body.querySelector('#campaign-quest-title').value.trim();
-      const summary = body.querySelector('#campaign-quest-summary').value.trim();
-      const quest = template ? CS().clone(template) : {
+    const overlay = UI().openModal({ title: 'Add Quest', content: body, footer, width: '600px' });
+
+    const $ = (sel) => body.querySelector(sel);
+    const previewBox = $('#campaign-quest-preview');
+
+    function applyTemplate(template) {
+      $('#campaign-quest-title').value = template?.title || '';
+      $('#campaign-quest-summary').value = template?.summary || '';
+      $('#campaign-quest-giver').value = template?.giver || '';
+      $('#campaign-quest-tags').value = (template?.tags || []).join(', ');
+      const objs = template?.objectives || [];
+      $('#campaign-quest-objectives').value = objs.length
+        ? objs.map((obj) => `${obj.label || obj.id || 'Objective'} x ${Math.max(1, Number(obj.required || 1))}`).join('\n')
+        : '';
+      const mapType = template?.mapType || _questMapType(template || {});
+      const sel = $('#campaign-quest-map-type');
+      if (sel && Array.from(sel.options).some((opt) => opt.value === mapType)) sel.value = mapType;
+      refreshPreview();
+    }
+
+    function buildQuest() {
+      const templateId = $('#campaign-quest-template').value;
+      const template = templates.find((q) => q.id === templateId);
+      const title = $('#campaign-quest-title').value.trim();
+      const summary = $('#campaign-quest-summary').value.trim();
+      const giver = $('#campaign-quest-giver').value.trim();
+      const tags = $('#campaign-quest-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
+      const objectiveLines = $('#campaign-quest-objectives').value.split('\n').map((s) => s.trim()).filter(Boolean);
+      const objectives = objectiveLines.map((line, idx) => {
+        const match = line.match(/^(.*?)(?:\s*[x×]\s*(\d+))?$/i);
+        const label = (match?.[1] || line).trim();
+        const required = Math.max(1, Number(match?.[2] || 1));
+        return { id: `obj_${idx + 1}`, label: label || `Objective ${idx + 1}`, current: 0, required };
+      });
+      const base = template ? CS().clone(template) : {
         id: `quest_${Date.now()}`,
-        title: customTitle || 'New Quest',
+        title: title || 'New Quest',
         status: 'active',
         summary,
-        objectives: [{ id: 'objective_1', label: 'Objective', current: 0, required: 1 }],
+        objectives: objectives.length ? objectives : [{ id: 'obj_1', label: 'Objective', current: 0, required: 1 }],
         rewards: []
       };
-      if (customTitle) quest.title = customTitle;
-      if (summary) quest.summary = summary;
+      base.id = base.id || `quest_${Date.now()}`;
+      base.status = 'active';
+      if (title) base.title = title;
+      if (summary) base.summary = summary;
+      if (giver) base.giver = giver;
+      if (tags.length) base.tags = tags;
+      if (objectives.length) base.objectives = objectives;
+      const mapType = $('#campaign-quest-map-type').value;
+      if (mapType) base.mapType = mapType;
+      return base;
+    }
+
+    function refreshPreview() {
+      const quest = buildQuest();
+      const lines = [];
+      lines.push(`<b>${_esc(quest.title || 'Untitled quest')}</b>`);
+      if (quest.summary) lines.push(_esc(quest.summary));
+      if (quest.objectives?.length) {
+        lines.push(`<b>Objectives:</b> ${quest.objectives.map((o) => `${_esc(o.label)} (0/${o.required})`).join(' · ')}`);
+      }
+      if (quest.giver) lines.push(`<b>Giver:</b> ${_esc(quest.giver)}`);
+      if (quest.tags?.length) lines.push(`<b>Tags:</b> ${quest.tags.map(_esc).join(', ')}`);
+      previewBox.innerHTML = lines.join('<br>');
+      previewBox.hidden = false;
+    }
+
+    $('#campaign-quest-template').addEventListener('change', (ev) => {
+      const tpl = templates.find((q) => q.id === ev.target.value);
+      applyTemplate(tpl || null);
+    });
+    body.querySelectorAll('input, textarea, select').forEach((el) => {
+      if (el.id !== 'campaign-quest-template') el.addEventListener('input', refreshPreview);
+    });
+    $('#campaign-quest-roll').onclick = () => {
+      if (!templates.length) return;
+      const tpl = templates[Math.floor(Math.random() * templates.length)];
+      $('#campaign-quest-template').value = tpl.id;
+      applyTemplate(tpl);
+    };
+    $('#campaign-quest-clear').onclick = () => {
+      $('#campaign-quest-template').value = '';
+      applyTemplate(null);
+    };
+    footer.querySelector('#campaign-add-quest-back').onclick = () => UI().closeModal(overlay);
+    footer.querySelector('#campaign-add-quest-commit').onclick = () => {
+      const quest = buildQuest();
       Ops().apply({ op: 'add_quest', quest }, { source: 'ui' });
       UI().closeModal(overlay);
+      UI().toast(`Quest added: ${quest.title}`, 'success');
     };
+    footer.querySelector('#campaign-add-quest-start').onclick = () => {
+      if (CS().getState()?.activeScenarioRun) {
+        UI().toast('Finish the active scenario before starting a new run', 'info');
+        return;
+      }
+      const quest = buildQuest();
+      Ops().apply({ op: 'add_quest', quest }, { source: 'ui' });
+      UI().closeModal(overlay);
+      UI().toast(`Quest added: ${quest.title}. Starting run…`, 'success');
+      _startQuestScenario(quest.id, { quest, mapType: quest.mapType });
+    };
+
+    refreshPreview();
   }
 
   function _manualRumorModal() {

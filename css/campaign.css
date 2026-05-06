@@ -266,8 +266,123 @@ body.campaign-page {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   text-transform: uppercase;
+}
+
+.campaign-control-help {
+  color: var(--campaign-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.campaign-action.has-hint {
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 8px 12px;
+  min-height: 52px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.campaign-action .campaign-action-label {
+  font-weight: 600;
+}
+
+.campaign-action .campaign-action-hint {
+  display: block;
+  color: var(--campaign-muted);
+  font-size: 0.74rem;
+  font-weight: 400;
+  margin-top: 2px;
+  white-space: normal;
+}
+
+.campaign-action.primary .campaign-action-hint {
+  color: #b9eedb;
+}
+
+.campaign-action.danger .campaign-action-hint {
+  color: #ffd7d7;
+}
+
+.campaign-legend .campaign-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.campaign-legend-item {
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.campaign-legend-item strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.92rem;
+}
+
+.campaign-legend-item p {
+  margin: 0;
+  color: var(--campaign-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.campaign-pill.campaign-pill-link {
+  border-color: var(--campaign-accent);
+  color: #d3ffec;
+}
+
+.campaign-pill.campaign-muted-pill {
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.campaign-quest-builder .campaign-quest-builder-row {
+  margin-bottom: 8px;
+}
+
+.campaign-quest-builder .campaign-quest-builder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.campaign-quest-builder .campaign-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.campaign-quest-builder textarea {
+  min-height: 90px;
+}
+
+.campaign-quest-builder input,
+.campaign-quest-builder textarea,
+.campaign-quest-builder select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.campaign-quest-builder .campaign-quest-builder-grid input {
+  width: 100%;
+}
+
+.campaign-quest-builder .campaign-quest-builder-grid label {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 540px) {
+  .campaign-quest-builder .campaign-quest-builder-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .campaign-panel-head h2,
