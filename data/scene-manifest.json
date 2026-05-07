@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "defaults": {
+    "fit": "cover",
+    "timeoutMs": 6000,
+    "readyTimeoutMs": 2500
+  },
+  "triggers": {
+    "campaignSources": {
+      "event_roll": "campaign.roll_event",
+      "oracle": "campaign.oracle",
+      "random_battle": "campaign.random_battle",
+      "random_battle_fallback": "campaign.random_battle"
+    },
+    "combatLogTypes": {
+      "hit": "combat.attack"
+    }
+  },
+  "scenes": {
+    "campaign.roll_event": {
+      "label": "Campaign / Roll Event",
+      "group": "campaign",
+      "sort": 100,
+      "fit": "cover",
+      "triggers": [
+        "CampaignState.source:event_roll"
+      ],
+      "clips": [
+        {
+          "id": "campaign-roll-event-01",
+          "src": "assets/scenes/campaign/roll-event-01.mp4",
+          "world": "any",
+          "functionKey": "roll_event",
+          "tags": ["campaign", "roll", "event"],
+          "sort": 10,
+          "weight": 1
+        }
+      ]
+    },
+    "campaign.random_battle": {
+      "label": "Campaign / Random Battle",
+      "group": "campaign",
+      "sort": 110,
+      "fit": "cover",
+      "triggers": [
+        "CampaignState.source:random_battle",
+        "CampaignState.source:random_battle_fallback"
+      ],
+      "clips": [
+        {
+          "id": "campaign-random-battle-01",
+          "src": "assets/scenes/campaign/random-battle-01.mp4",
+          "world": "any",
+          "functionKey": "random_battle",
+          "tags": ["campaign", "battle", "random"],
+          "sort": 10,
+          "weight": 1
+        }
+      ]
+    },
+    "campaign.oracle": {
+      "label": "Campaign / Oracle",
+      "group": "campaign",
+      "sort": 120,
+      "fit": "cover",
+      "triggers": [
+        "CampaignState.source:oracle"
+      ],
+      "clips": [
+        {
+          "id": "campaign-oracle-01",
+          "src": "assets/scenes/campaign/oracle-01.mp4",
+          "world": "any",
+          "functionKey": "oracle",
+          "tags": ["campaign", "oracle", "prompt"],
+          "sort": 10,
+          "weight": 1
+        }
+      ]
+    },
+    "combat.attack": {
+      "label": "Combat / Player Attack",
+      "group": "combat",
+      "sort": 200,
+      "fit": "cover",
+      "triggers": [
+        "CombatLog.type:hit",
+        "CombatLog.actor.team:player"
+      ],
+      "clips": [
+        {
+          "id": "combat-attack-01",
+          "src": "assets/scenes/combat/attack-01.mp4",
+          "world": "any",
+          "functionKey": "combat_attack",
+          "tags": ["combat", "attack", "hit"],
+          "sort": 10,
+          "weight": 1
+        }
+      ]
+    }
+  }
+}

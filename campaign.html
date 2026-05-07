@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/campaign.css">
+  <link rel="stylesheet" href="css/scene-player.css">
   <link rel="stylesheet" href="css/l2d-avatar.css">
 </head>
 <body class="campaign-page">
@@ -26,6 +27,7 @@
   <script src="js/core/skill-resolver.js"></script>
   <script src="js/ui/ui-helpers.js"></script>
   <script src="js/ui/ui-icons.js"></script>
+  <script src="js/ui/scene-player.js"></script>
 
   <script src="js/campaign/campaign-state.js"></script>
   <script src="js/campaign/campaign-data-loader.js"></script>
@@ -53,6 +55,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       await window.CJS.CampaignUI.init(document.getElementById('campaign-root'));
+      window.CJS.ScenePlayer?.wireCampaign?.();
       if (window.CJS.L2DCompanion) {
         window.CJS.L2DCompanion.init({ mode: 'campaign' }).catch(err => console.warn('L2D init:', err));
       }

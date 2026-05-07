@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/combat.css" />
   <link rel="stylesheet" href="css/combat-animations.css" />
+  <link rel="stylesheet" href="css/scene-player.css" />
   <link rel="stylesheet" href="css/l2d-avatar.css" />
 </head>
 <body>
@@ -79,6 +80,7 @@
   <script src="js/ui/portrait-picker.js?v=portrait-cache-20260426"></script>
   <script src="js/ui/audio-manager.js"></script>
   <script src="js/ui/animation-bus.js"></script>
+  <script src="js/ui/scene-player.js"></script>
   <script src="js/ui/combat-ui.js"></script>
   <script src="js/ui/loot-roller.js"></script>
   <script src="js/ui/l2d-avatar.js"></script>
@@ -463,6 +465,7 @@
     if (window.CJS.PortraitPicker) {
       await window.CJS.PortraitPicker.loadManifest().catch(() => {});
     }
+    window.CJS.ScenePlayer?.wireCombat?.();
     if (window.CJS.L2DCompanion) {
       window.CJS.L2DCompanion.init({ mode: 'combat' }).catch(err => console.warn('L2D init:', err));
     }
