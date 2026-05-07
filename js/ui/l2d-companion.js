@@ -493,9 +493,8 @@ window.CJS.L2DCompanion = (() => {
     try {
       const av = await window.CJS.L2DAvatar.create(stage, {
         model: opts.model,
-        scaleMultiplier: STATE.mode === 'campaign' ? 0.68 : 0.9,
-        fitBoost: STATE.mode === 'campaign' ? 1.08 : 1.45,
-        offsetY: STATE.mode === 'campaign' ? -0.02 : undefined
+        scaleMultiplier: STATE.mode === 'campaign' ? 0.8 : 0.84,
+        fitBoost: STATE.mode === 'campaign' ? 1.12 : 1.12
       });
       STATE.avatar = av;
       STATE.cfg = av.cfg;

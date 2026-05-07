@@ -3,8 +3,13 @@
 :root {
   --l2d-dock-w: 260px;
   --l2d-dock-w-narrow: 220px;
+  --l2d-combat-w: clamp(380px, 34vw, 520px);
+  --l2d-combat-h: min(410px, calc(100vh - 96px));
   --l2d-dock-bg: linear-gradient(180deg, rgba(20, 22, 38, 0.78) 0%, rgba(8, 10, 18, 0.92) 100%);
   --l2d-dock-border: rgba(168, 85, 247, 0.35);
+  --l2d-stage-bg:
+    radial-gradient(circle at 28% 16%, rgba(255, 255, 255, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(20, 26, 34, 0.82) 0%, rgba(7, 10, 15, 0.92) 100%);
   --l2d-bubble-bg: rgba(255, 255, 255, 0.96);
   --l2d-bubble-text: #1f1f2a;
   --l2d-name: #fde68a;
@@ -14,6 +19,15 @@
    command rail keeps its full width. */
 body.has-l2d-companion {
   padding-right: var(--l2d-dock-w);
+}
+
+body.has-l2d-companion:not(.campaign-page) {
+  padding-right: 0;
+}
+
+body.has-l2d-companion:not(.campaign-page) #combat-app {
+  box-sizing: border-box;
+  padding-right: calc(var(--l2d-combat-w) + 20px);
 }
 
 .l2d-dock {
@@ -59,9 +73,23 @@ body.has-l2d-companion {
   min-height: 0;
   overflow: hidden;
   display: block;
+  background: var(--l2d-stage-bg);
+  background-position: center;
+  background-size: cover;
+}
+
+.l2d-stage.has-l2d-background {
+  background-image:
+    linear-gradient(180deg, rgba(4, 8, 14, 0.12), rgba(4, 8, 14, 0.32)),
+    var(--l2d-background-image),
+    var(--l2d-stage-bg);
+  background-position: center;
+  background-size: cover;
 }
 
 .l2d-stage .l2d-canvas {
+  position: relative;
+  z-index: 1;
   width: 100% !important;
   height: 100% !important;
   display: block;
@@ -161,64 +189,59 @@ body.has-l2d-companion {
 .l2d-mode-combat {
   --l2d-name: #fbbf24;
   --l2d-dock-border: rgba(251, 191, 36, 0.45);
-  overflow: visible;
+  top: 76px;
+  right: 14px;
+  bottom: auto;
+  width: var(--l2d-combat-w);
+  height: var(--l2d-combat-h);
+  min-height: 300px;
+  max-height: 430px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  border: 1px solid var(--l2d-dock-border);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .l2d-mode-combat .l2d-stage {
-  min-height: 260px;
+  min-height: 0;
+}
+
+.l2d-mode-combat .l2d-meta {
+  padding: 5px 10px;
 }
 
 .l2d-mode-combat .l2d-bubble {
   position: absolute;
-  right: calc(100% + 16px);
-  bottom: 116px;
-  width: min(360px, calc(100vw - var(--l2d-dock-w) - 40px));
-  min-height: 112px;
-  max-height: 220px;
+  left: 14px;
+  right: 14px;
+  bottom: 44px;
+  width: auto;
+  min-height: 58px;
+  max-height: 104px;
   margin: 0;
-  padding: 18px 20px;
+  padding: 10px 12px;
   border: 2px solid #111827;
-  border-radius: 26px 26px 8px 26px;
-  font-size: 1.02rem;
-  line-height: 1.5;
+  border-radius: 14px 14px 14px 4px;
+  font-size: 0.86rem;
+  line-height: 1.34;
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.42),
     0 0 0 4px rgba(255, 255, 255, 0.22);
-  transform: translate(8px, 10px) rotate(-1deg);
+  transform: translateY(8px);
+  z-index: 3;
 }
 
 .l2d-mode-combat .l2d-bubble.is-visible {
-  transform: translate(0, 0) rotate(-1deg);
+  transform: translateY(0);
 }
 
-.l2d-mode-combat .l2d-bubble::before {
-  top: 58%;
-  right: -20px;
-  left: auto;
-  border: 10px solid transparent;
-  border-left-color: #111827;
-  border-bottom-color: transparent;
-  transform: translateY(-50%);
-}
-
+.l2d-mode-combat .l2d-bubble::before,
 .l2d-mode-combat .l2d-bubble::after {
-  content: '';
-  position: absolute;
-  top: 58%;
-  right: -15px;
-  border: 8px solid transparent;
-  border-left-color: var(--l2d-bubble-bg);
-  transform: translateY(-50%);
+  display: none;
 }
 
 .l2d-mode-combat .l2d-history {
-  display: grid;
-  gap: 6px;
-  max-height: 124px;
-  overflow: auto;
-  padding: 8px 10px 12px;
-  background: rgba(0, 0, 0, 0.38);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: none;
 }
 
 .l2d-history-line {
@@ -235,11 +258,12 @@ body.has-l2d-companion {
   --l2d-name: #86efac;
   --l2d-dock-border: rgba(134, 239, 172, 0.45);
   top: auto;
-  right: 100px;
-  bottom: 14px;
-  width: 220px;
-  height: min(560px, calc(100vh - 28px));
+  right: 92px;
+  bottom: 18px;
+  width: min(390px, calc(100vw - 124px));
+  height: min(360px, calc(100vh - 42px));
   z-index: 24;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   border: 1px solid var(--l2d-dock-border);
   border-radius: 10px;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
@@ -259,14 +283,14 @@ body.has-l2d-companion {
 }
 
 .l2d-mode-campaign .l2d-stage {
-  min-height: 380px;
+  min-height: 0;
 }
 
 .l2d-mode-campaign .l2d-bubble {
   margin: 0 8px 10px;
   padding: 9px 10px;
-  min-height: 64px;
-  max-height: 106px;
+  min-height: 54px;
+  max-height: 86px;
   border-radius: 14px 14px 14px 4px;
   font-size: 0.82rem;
   line-height: 1.35;
@@ -287,17 +311,17 @@ body.has-l2d-companion {
 
   .l2d-mode-campaign {
     right: 88px;
-    width: 208px;
-    height: min(520px, calc(100vh - 24px));
-  }
-
-  .l2d-mode-campaign .l2d-stage {
-    min-height: 350px;
+    width: min(350px, calc(100vw - 112px));
+    height: min(330px, calc(100vh - 34px));
   }
 }
 
 @media (max-width: 900px) {
   body.has-l2d-companion {
+    padding-right: 0;
+  }
+
+  body.has-l2d-companion:not(.campaign-page) #combat-app {
     padding-right: 0;
   }
 

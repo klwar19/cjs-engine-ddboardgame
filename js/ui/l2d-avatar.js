@@ -80,6 +80,26 @@ window.CJS.L2DAvatar = (() => {
 
   function getRegistrySync() { return _registry; }
 
+  function _applyStageBackground(targetEl, cfg) {
+    targetEl.classList.remove('has-l2d-background');
+    targetEl.style.removeProperty('--l2d-background-image');
+    targetEl.style.removeProperty('background-position');
+    targetEl.style.removeProperty('background-size');
+
+    const src = cfg?.backgroundImage;
+    if (!src) return;
+
+    const img = new Image();
+    img.onload = () => {
+      const safeSrc = String(src).replace(/"/g, '\\"');
+      targetEl.style.setProperty('--l2d-background-image', `url("${safeSrc}")`);
+      targetEl.style.backgroundPosition = cfg.backgroundPosition || 'center';
+      targetEl.style.backgroundSize = cfg.backgroundFit || 'cover';
+      targetEl.classList.add('has-l2d-background');
+    };
+    img.src = src;
+  }
+
   // ── Public: create() returns an instance bound to a DOM target ──
   async function create(targetEl, opts = {}) {
     if (!targetEl) throw new Error('L2DAvatar.create: targetEl required');
@@ -92,6 +112,7 @@ window.CJS.L2DAvatar = (() => {
     const { PIXI, Live2DModel } = await _loadLibs();
 
     // Build canvas + Pixi app sized to the target.
+    _applyStageBackground(targetEl, cfg);
     const canvas = document.createElement('canvas');
     canvas.className = 'l2d-canvas';
     targetEl.innerHTML = '';

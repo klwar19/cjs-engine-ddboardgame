@@ -290,7 +290,10 @@
       "fallbackImage": "assets/live2d/peri-v2/QQ_1761598388961.png",
       "lockedParameters": {
         "Param106": 1
-      }
+      },
+      "backgroundImage": "assets/live2d/peri-v2/background.png",
+      "backgroundFit": "cover",
+      "backgroundPosition": "center"
     }
   }
 }
