@@ -11,9 +11,11 @@ window.CJS.CampaignEconomy = (() => {
 
   function renderShops() {
     const state = CS().getState();
-    const shops = DS().getAllAsArray('shops').filter((shop) => !shop._world || shop._world === state.currentWorld || shop.world === state.currentWorld);
+    const shops = DS().getAllAsArray('shops')
+      .filter((shop) => !shop._world || shop._world === state.currentWorld || shop.world === state.currentWorld)
+      .filter((shop) => _shopOpen(shop, state));
     if (!shops.length) {
-      return '<section class="campaign-panel"><h3>Shops</h3><div class="campaign-empty">No shop data for this world yet. Use GM Override for manual buys and sells.</div></section>';
+      return '<section class="campaign-panel"><h3>Shops</h3><div class="campaign-empty">No shop is open for this world and phase. Use GM Override for manual buys and sells.</div></section>';
     }
     return `<div class="campaign-tab-grid">${shops.map((shop) => _renderShop(shop, state)).join('')}</div>`;
   }
@@ -67,6 +69,16 @@ window.CJS.CampaignEconomy = (() => {
   function _recordName(type, id) {
     const bucket = type === 'material' ? 'materials' : type === 'food' ? 'food' : 'items';
     return DS().get(bucket, id)?.name || id;
+  }
+
+  function _shopOpen(shop, state) {
+    const phaseType = state?.phase?.type || '';
+    const phases = shop.phaseTypes || shop.allowedPhases || shop.phases || shop.openPhaseTypes;
+    if (Array.isArray(phases) && phases.length) return phases.includes(phaseType);
+    if (shop.phaseType || shop.allowedPhase || shop.openPhase) {
+      return [shop.phaseType, shop.allowedPhase, shop.openPhase].filter(Boolean).includes(phaseType);
+    }
+    return true;
   }
 
   function _canBuy(state, item, currency) {

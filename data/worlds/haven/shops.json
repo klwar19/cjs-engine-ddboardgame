@@ -50,6 +50,20 @@
       "description": "Hub special shop that can require materials in addition to gold."
     },
     {
+      "id": "haven_interdimension_bazaar",
+      "name": "Interdimension Bazaar",
+      "world": "haven",
+      "currency": "haven_gold",
+      "phaseTypes": ["town_phase", "pocket_haven_phase"],
+      "unlockFlags": [],
+      "restockRule": "phase",
+      "stock": [
+        { "id": "haven_memory_shard", "type": "material", "price": 75, "qty": 1 },
+        { "id": "haven_sprite_dust", "type": "material", "price": 18, "qty": 2 }
+      ],
+      "description": "A special shop for rare progression material. Opens only during town or Pocket Haven phases."
+    },
+    {
       "id": "haven_jester_system_shop",
       "name": "CJS Jester System Shop",
       "world": "haven",

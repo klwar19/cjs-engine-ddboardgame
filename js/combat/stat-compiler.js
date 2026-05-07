@@ -147,6 +147,7 @@ window.CJS.StatCompiler = (() => {
       skills:        _mergeSkills(baseUnit.skills || [], baseUnit.equipment || []),
       equipment:     baseUnit.equipment || [],
       innatePassives:baseUnit.innatePassives || [],
+      passiveRanks:  baseUnit.passiveRanks || {},
 
       // ── Authored runtime fields (must survive compile for combat systems) ──
       behaviorAI:       baseUnit.behaviorAI || null,
@@ -179,6 +180,7 @@ window.CJS.StatCompiler = (() => {
   // ── GATHER ALL EFFECT REFS ─────────────────────────────────────────
   function _gatherEffectRefs(unit, activeStatuses) {
     const refs = [];
+    const passiveRanks = unit.passiveRanks || {};
 
     // From innate passives
     for (const pid of (unit.innatePassives || [])) {
@@ -186,7 +188,13 @@ window.CJS.StatCompiler = (() => {
       // or a raw Effect. Support both.
       if (DS().exists('passives', pid)) {
         const passive = DS().get('passives', pid);
-        for (const ref of (passive.effects || [])) refs.push(ref);
+        const rank = Math.max(1, Number(passiveRanks[pid] || 1));
+        const rankedPassive = window.CJS.Formulas?.applyPassiveRankPerks
+          ? window.CJS.Formulas.applyPassiveRankPerks(passive, rank)
+          : passive;
+        for (const ref of (rankedPassive.effects || [])) {
+          refs.push({ ...ref, _passiveId: pid, _passiveRank: rank });
+        }
       } else if (DS().exists('effects', pid)) {
         refs.push({ effectId: pid, overrides: {} });
       }
@@ -319,13 +327,32 @@ window.CJS.StatCompiler = (() => {
         // Skip missing effects silently (already warned by DataStore)
         continue;
       }
-      if (!ref.overrides || Object.keys(ref.overrides).length === 0) {
-        resolved.push({ ...master });
+      let merged = (!ref.overrides || Object.keys(ref.overrides).length === 0)
+        ? { ...master }
+        : { ...master, ...ref.overrides, id: master.id };
+      merged = _applyPassiveRankFieldDeltas(merged, ref);
+      if (ref._passiveId && ref._passiveRank > 1 && !ref._passivePerkEffect && window.CJS.Formulas?.applyPassiveRankToEffect) {
+        const passive = DS().get('passives', ref._passiveId);
+        resolved.push(window.CJS.Formulas.applyPassiveRankToEffect(merged, passive, ref._passiveRank));
       } else {
-        resolved.push({ ...master, ...ref.overrides, id: master.id });
+        resolved.push(merged);
       }
     }
     return resolved;
+  }
+
+  function _applyPassiveRankFieldDeltas(effect, ref = {}) {
+    const out = { ...effect };
+    const legacyValueDelta = Number(ref._passiveRankValueDelta || 0);
+    if (legacyValueDelta && typeof out.value === 'number') out.value += legacyValueDelta;
+
+    const deltas = ref._passiveRankFieldDeltas || {};
+    for (const [field, rawDelta] of Object.entries(deltas)) {
+      const delta = Number(rawDelta || 0);
+      if (!field || !delta || !Number.isFinite(delta) || typeof out[field] !== 'number') continue;
+      out[field] = Math.round((out[field] + delta) * 100) / 100;
+    }
+    return out;
   }
 
   // ── INDEX EFFECTS BY TRIGGER FOR FAST LOOKUP ───────────────────────

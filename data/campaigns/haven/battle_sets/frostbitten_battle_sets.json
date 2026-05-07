@@ -156,7 +156,8 @@
           "objective": "Survive strange guardians and decide whether to retreat before the inner shrine.",
           "gimmick": "The bell may ring once; GM decides if this is canon, atmosphere, or a false omen.",
           "rewardOps": [
-            { "op": "give_material", "id": "haven_ice_crystal", "qty": 1 }
+            { "op": "give_material", "id": "haven_ice_crystal", "qty": 1 },
+            { "op": "give_material", "id": "haven_memory_shard", "qty": 1 }
           ],
           "complications": ["Red-risk content must be reviewed before applying memory or story meaning."]
         },
@@ -176,6 +177,7 @@
           "gimmick": "Use only if the GM wants the party to learn the chimera rhythm early.",
           "rewardOps": [
             { "op": "give_jp", "amount": 1 },
+            { "op": "give_material", "id": "haven_memory_shard", "qty": 1 },
             { "op": "clock_tick", "clockId": "chimera_attention", "label": "Chimera Attention", "max": 4, "amount": 1 }
           ],
           "complications": ["Yellow risk because it foreshadows a serious fight."]

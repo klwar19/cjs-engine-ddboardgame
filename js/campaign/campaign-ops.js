@@ -75,6 +75,8 @@ window.CJS.CampaignOps = (() => {
         case 'unlock_job': return `Unlock job ${op.jobId || op.id}`;
         case 'gain_job_xp': return `Gain ${op.amount || 0} job XP`;
         case 'set_job_level': return `Set job ${op.jobId || op.id} level to ${op.level || 1}`;
+        case 'rank_up_passive': return `Rank up passive ${op.passiveId || op.id}`;
+        case 'set_passive_rank': return `Set passive ${op.passiveId || op.id} rank to ${op.rank || 1}`;
         case 'equip_skill': return `Equip skill ${op.skillId || op.id}`;
         case 'unequip_skill': return `Unequip skill ${op.skillId || op.id}`;
         case 'equip_passive': return `Equip passive ${op.passiveId || op.id}`;
@@ -87,6 +89,11 @@ window.CJS.CampaignOps = (() => {
 
   function _applyOne(state, op, options) {
     if (!op || !op.op) return;
+    if (op.chance != null) {
+      const chance = Math.max(0, Math.min(1, Number(op.chance)));
+      if (Number.isFinite(chance) && chance <= 0) return;
+      if (Number.isFinite(chance) && chance < 1 && Math.random() >= chance) return;
+    }
 
     switch (op.op) {
       case 'log': return _log(state, op.text || '', op);
@@ -151,6 +158,8 @@ window.CJS.CampaignOps = (() => {
       case 'unlock_job': return _unlockJob(state, op);
       case 'gain_job_xp': return _gainJobXp(state, op);
       case 'set_job_level': return _setJobLevel(state, op);
+      case 'rank_up_passive': return _rankUpPassive(state, op);
+      case 'set_passive_rank': return _setPassiveRank(state, op);
       // ── Skill / passive selection (slot + SP budget) ──
       case 'equip_skill': return _equipSelection(state, op, 'skill');
       case 'unequip_skill': return _unequipSelection(state, op, 'skill');
@@ -412,6 +421,9 @@ window.CJS.CampaignOps = (() => {
         member.learnedPassives.push(passiveId);
         _log(state, `${member.name || id} learned passive ${_recordName('passives', passiveId) || passiveId}.`);
       }
+      member.passiveProgress = member.passiveProgress || {};
+      member.passiveProgress[passiveId] = member.passiveProgress[passiveId] || { rank: 1 };
+      member.passiveProgress[passiveId].rank = Math.max(1, Number(member.passiveProgress[passiveId].rank || 1));
     }
   }
 
@@ -424,6 +436,7 @@ window.CJS.CampaignOps = (() => {
       // Also drop from equippedPassives if it was equipped, so the budget
       // recovers and downstream snapshots don't reference a missing entry.
       member.equippedPassives = (member.equippedPassives || []).filter((entry) => entry !== passiveId);
+      if (member.passiveProgress) delete member.passiveProgress[passiveId];
       _log(state, `${member.name || id} removed passive ${_recordName('passives', passiveId) || passiveId}.`);
     }
   }
@@ -885,10 +898,77 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
+  function _rankUpPassive(state, op) {
+    const passiveId = op.passiveId || op.id;
+    if (!passiveId) return;
+    const passive = DS().get('passives', passiveId);
+    if (!passive) {
+      _log(state, `Passive ${passiveId} not found.`);
+      return;
+    }
+    const F = window.CJS.Formulas;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      const base = DS().get('characters', member.baseCharacterId || id) || {};
+      const pool = CS().passivePoolIds ? CS().passivePoolIds(member, base) : [...(base.innatePassives || []), ...(member.learnedPassives || [])];
+      if (!pool.includes(passiveId)) {
+        _log(state, `${member.name || id} cannot rank up ${passive.name || passiveId}: passive is not known.`);
+        continue;
+      }
+      member.passiveProgress = member.passiveProgress || {};
+      const prog = member.passiveProgress[passiveId] = member.passiveProgress[passiveId] || { rank: 1 };
+      const oldRank = Math.max(1, Number(prog.rank || 1));
+      const maxRank = F?.getPassiveMaxRank ? F.getPassiveMaxRank(passive) : 5;
+      if (oldRank >= maxRank) {
+        _log(state, `${member.name || id}'s ${passive.name || passiveId} is already max rank.`);
+        continue;
+      }
+      const cost = F?.calcPassiveRankCost ? F.calcPassiveRankCost(passive, oldRank) : null;
+      if (!cost || !_hasBundle(state, cost)) {
+        _log(state, `${member.name || id} cannot rank up ${passive.name || passiveId}: missing ${_missingBundleSummary(state, cost || {}) || 'rank material'}.`);
+        continue;
+      }
+      _consumeBundle(state, cost);
+      prog.rank = oldRank + 1;
+      _log(state, `${member.name || id}'s ${passive.name || passiveId} reached Rank ${prog.rank}.`);
+    }
+  }
+
+  function _setPassiveRank(state, op) {
+    const passiveId = op.passiveId || op.id;
+    if (!passiveId) return;
+    const passive = DS().get('passives', passiveId) || {};
+    const F = window.CJS.Formulas;
+    const maxRank = F?.getPassiveMaxRank ? F.getPassiveMaxRank(passive) : 5;
+    const rank = Math.max(1, Math.min(maxRank, Number(op.rank || 1)));
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      member.passiveProgress = member.passiveProgress || {};
+      member.passiveProgress[passiveId] = member.passiveProgress[passiveId] || { rank: 1 };
+      member.passiveProgress[passiveId].rank = rank;
+      _log(state, `${member.name || id}'s ${_recordName('passives', passiveId)} set to Rank ${rank}.`);
+    }
+  }
+
+  function _persistJobGrantsForJob(state, id, member, jobId) {
+    if (!jobId || !window.CJS.Formulas?.collectJobGrants) return;
+    const job = DS().get('jobs', jobId);
+    if (!job) return;
+    const level = Math.max(1, Number(member.jobProgress?.[jobId]?.level || 1));
+    const grants = window.CJS.Formulas.collectJobGrants(job, level);
+    for (const skillId of grants.skills || []) {
+      _learnSkill(state, { target: id, skillId, source: `job:${jobId}` });
+    }
+    for (const passiveId of grants.passives || []) {
+      _learnPassive(state, { target: id, passiveId, source: `job:${jobId}` });
+    }
+  }
+
   function _setJob(state, op) {
     const jobId = op.jobId || op.id;
     for (const id of _resolveTargets(state, op.target || op.characterId)) {
       const member = state.party[id];
+      _persistJobGrantsForJob(state, id, member, member.currentJob);
       if (jobId === null || jobId === '' || jobId === undefined) {
         member.currentJob = null;
         _log(state, `${member.name || id} has no active job.`);
@@ -915,6 +995,7 @@ window.CJS.CampaignOps = (() => {
       member.jobProgress = member.jobProgress || {};
       if (!member.jobProgress[jobId]) member.jobProgress[jobId] = { xp: 0, level: 1 };
       member.currentJob = jobId;
+      _persistJobGrantsForJob(state, id, member, jobId);
       _log(state, `${member.name || id} took the ${job.name || jobId} job.`);
 
       // Re-validate equipment against the new job's weapon/armor profile.
@@ -1128,6 +1209,11 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _shopBuy(state, op) {
+    const shop = op.shopId ? DS().get('shops', op.shopId) : null;
+    if (shop && !_shopOpenForPhase(shop, state)) {
+      _log(state, `Shop buy skipped: ${shop.name || op.shopId} is closed during ${state.phase?.name || state.phase?.type || 'this phase'}.`);
+      return;
+    }
     const currency = op.currency || _worldCurrency(state);
     const qty = Number(op.qty || 1);
     const price = Number(op.price || 0) * qty;
@@ -1165,6 +1251,16 @@ window.CJS.CampaignOps = (() => {
     if (type === 'food') return 'food';
     if (type === 'questItem') return 'questItems';
     return 'items';
+  }
+
+  function _shopOpenForPhase(shop, state) {
+    const phaseType = state?.phase?.type || '';
+    const phases = shop.phaseTypes || shop.allowedPhases || shop.phases || shop.openPhaseTypes;
+    if (Array.isArray(phases) && phases.length) return phases.includes(phaseType);
+    if (shop.phaseType || shop.allowedPhase || shop.openPhase) {
+      return [shop.phaseType, shop.allowedPhase, shop.openPhase].filter(Boolean).includes(phaseType);
+    }
+    return true;
   }
 
   function _craftBasic(state, op) {

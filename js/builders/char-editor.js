@@ -53,7 +53,8 @@ window.CJS.CharEditor = (() => {
       skills: [], equipment: [], innatePassives: [],
       allowedWeaponTypes: ['sword', 'bow', 'staff'],
       allowedArmorTypes: ['light', 'robe'],
-      availableJobs: [], defaultJob: null,
+      availableJobs: [], availableBranches: [], defaultJob: null,
+      maxJobs: Number(PROG.maxJobsDefault ?? 3),
       weaponSlots: 2,
       skillSlots:    Number(PROG.defaultSkillSlots ?? 4),
       passiveSlots:  Number(PROG.defaultPassiveSlots ?? 3),
@@ -156,6 +157,18 @@ window.CJS.CharEditor = (() => {
             <label class="form-label">Default Job</label>
             <select id="chr-default-job"></select>
             <div class="dim" style="font-size:0.74rem">— None — keeps the character jobless until campaign assigns one.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Available Branches</label>
+            <div id="chr-job-branches-area"></div>
+            <div class="dim" style="font-size:0.74rem">Branches allow later-tier jobs such as warrior -> knight after prerequisites are met.</div>
+          </div>
+          <div class="form-group" style="flex:0 0 130px">
+            <label class="form-label">Max Jobs</label>
+            <input type="number" id="chr-max-jobs" value="${Number(c.maxJobs ?? C().PROGRESSION?.maxJobsDefault ?? 3)}" min="1" max="20">
           </div>
         </div>
 
@@ -268,6 +281,16 @@ window.CJS.CharEditor = (() => {
     const jobsArea = _formEl.querySelector('#chr-jobs-area');
     const jobsPicker = _createRefPicker('jobs', c.availableJobs || [], 'job');
     jobsArea.appendChild(jobsPicker.el);
+    const branchSuggestions = Array.from(new Set((DS().getAllAsArray('jobs') || [])
+      .map((job) => job.branch)
+      .filter(Boolean)))
+      .sort();
+    const jobBranchWidget = UI().createTagInput({
+      tags: Array.isArray(c.availableBranches) ? c.availableBranches : [c.availableBranches].filter(Boolean),
+      placeholder: 'warrior + Enter',
+      suggestions: branchSuggestions
+    });
+    _formEl.querySelector('#chr-job-branches-area').appendChild(jobBranchWidget);
 
     const defaultJobSel = _formEl.querySelector('#chr-default-job');
     function _refreshDefaultJobOptions() {
@@ -302,6 +325,7 @@ window.CJS.CharEditor = (() => {
       const availableJobs = jobsPicker.getIds();
       const chosenDefaultJob = defaultJobSel.value || null;
       DS().replace('characters', c.id, {
+        ...c,
         id: c.id,
         name: _formEl.querySelector('#chr-name').value,
         icon: _formEl.querySelector('#chr-icon').value,
@@ -322,12 +346,14 @@ window.CJS.CharEditor = (() => {
         skillPoints:   Math.max(0, Number(_formEl.querySelector('#chr-skill-points').value) || 0),
         passivePoints: Math.max(0, Number(_formEl.querySelector('#chr-passive-points').value) || 0),
         availableJobs,
+        availableBranches: jobBranchWidget._getTags(),
+        maxJobs: Math.max(1, Number(_formEl.querySelector('#chr-max-jobs').value) || Number(C().PROGRESSION?.maxJobsDefault ?? 3)),
         defaultJob: availableJobs.includes(chosenDefaultJob) ? chosenDefaultJob : null,
         innatePassives: passivePicker.getIds(),
         weak: weakWidget._getTags(),
         resist: resistWidget._getTags(),
         immune: immuneWidget._getTags(),
-        ...(Object.keys(battleSfx).length ? { battleSfx } : {}),
+        battleSfx: Object.keys(battleSfx).length ? battleSfx : {},
         description: _formEl.querySelector('#chr-desc').value
       });
       _renderList(); _load(c.id);

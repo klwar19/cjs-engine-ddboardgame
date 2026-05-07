@@ -124,7 +124,58 @@
           }
         }
       ],
-      "description": "Hidden Fae heritage. Natural mana recovery and magic resistance."
+      "description": "Hidden Fae heritage. Natural mana recovery and magic resistance.",
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "Max MP +5.",
+          "addEffects": [
+            {
+              "effectId": "mp_mod_flat",
+              "overrides": {
+                "value": 5
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Magic DR +1.",
+          "addEffects": [
+            {
+              "effectId": "dr_mod_magic",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "MP regen +1%.",
+          "addEffects": [
+            {
+              "effectId": "regen_mp",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Stun resist +10%.",
+          "addEffects": [
+            {
+              "effectId": "status_resist_mod",
+              "overrides": {
+                "statusId": "stun",
+                "value": 10
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "haven_frostbitten_flesh",
@@ -211,7 +262,57 @@
           }
         }
       ],
-      "description": "Mitia's kindness strengthens her magic and charm."
+      "description": "Mitia's kindness strengthens her magic and charm.",
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "INT +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_int",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "CHA +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_cha",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "HP regen +1%.",
+          "addEffects": [
+            {
+              "effectId": "regen_hp",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Magic damage +3%.",
+          "addEffects": [
+            {
+              "effectId": "damage_mod_magic",
+              "overrides": {
+                "value": 3
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "haven_iron_hide",
@@ -236,7 +337,58 @@
           }
         }
       ],
-      "description": "Half-orc/half-boar toughness. Thick skin."
+      "description": "Half-orc/half-boar toughness. Thick skin.",
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "Max HP +5.",
+          "addEffects": [
+            {
+              "effectId": "hp_mod_flat",
+              "overrides": {
+                "value": 5
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "All DR +1.",
+          "addEffects": [
+            {
+              "effectId": "dr_mod_all",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "END +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_end",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Stun resist +10%.",
+          "addEffects": [
+            {
+              "effectId": "status_resist_mod",
+              "overrides": {
+                "statusId": "stun",
+                "value": 10
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "haven_marksmans_eye",
@@ -262,7 +414,57 @@
           }
         }
       ],
-      "description": "Bowy's trained eye. Better accuracy and extended basic attack range."
+      "description": "Bowy's trained eye. Better accuracy and extended basic attack range.",
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "PER +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_per",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Accuracy +1.",
+          "addEffects": [
+            {
+              "effectId": "accuracy_mod",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "Crit rate +2%.",
+          "addEffects": [
+            {
+              "effectId": "crit_rate_mod",
+              "overrides": {
+                "value": 2
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Physical damage +3%.",
+          "addEffects": [
+            {
+              "effectId": "damage_mod_physical",
+              "overrides": {
+                "value": 3
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "haven_nine_tails",
@@ -387,7 +589,57 @@
           }
         }
       ],
-      "description": "Decades of hunting hone reflexes. Counter chance on melee + perception."
+      "description": "Decades of hunting hone reflexes. Counter chance on melee + perception.",
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "PER +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_per",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Accuracy +1.",
+          "addEffects": [
+            {
+              "effectId": "accuracy_mod",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "Crit rate +2%.",
+          "addEffects": [
+            {
+              "effectId": "crit_rate_mod",
+              "overrides": {
+                "value": 2
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Dodging an adjacent attacker can counter for 40% damage.",
+          "addEffects": [
+            {
+              "effectId": "counter_on_dodge",
+              "overrides": {
+                "value": 40
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

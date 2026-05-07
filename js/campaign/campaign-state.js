@@ -267,6 +267,7 @@ window.CJS.CampaignState = (() => {
       xp: 0,
       // Progression: per-skill AP/level + jobs
       skillProgress: _initialSkillProgress(base),
+      passiveProgress: _initialPassiveProgress(base),
       currentJob: base.defaultJob || null,
       unlockedJobs: clone(base.availableJobs || (base.defaultJob ? [base.defaultJob] : [])),
       jobProgress: {},
@@ -284,6 +285,7 @@ window.CJS.CampaignState = (() => {
     };
     if (initial.currentJob) {
       initial.jobProgress[initial.currentJob] = { xp: 0, level: 1 };
+      _persistJobGrants(initial, base, initial.currentJob);
     }
     // Auto-fill the equipped sets so a freshly recruited member is combat-ready.
     _autoFillEquipped(initial, base);
@@ -369,6 +371,65 @@ window.CJS.CampaignState = (() => {
       if (id) out[id] = { ap: 0, level: Math.max(1, level) };
     }
     return out;
+  }
+
+  function _initialPassiveProgress(base = {}) {
+    const out = {};
+    for (const id of base.innatePassives || []) {
+      if (id) out[id] = { rank: 1 };
+    }
+    return out;
+  }
+
+  function _ensureSkillProgress(member, skillId, level = 1) {
+    if (!skillId) return;
+    member.skillProgress = member.skillProgress || {};
+    if (!member.skillProgress[skillId]) {
+      member.skillProgress[skillId] = { ap: 0, level: Math.max(1, Number(level || 1)) };
+    } else {
+      member.skillProgress[skillId].ap = Number(member.skillProgress[skillId].ap || 0);
+      member.skillProgress[skillId].level = Math.max(1, Number(member.skillProgress[skillId].level || level || 1));
+    }
+  }
+
+  function _ensurePassiveProgress(member, passiveId, rank = 1) {
+    if (!passiveId) return;
+    member.passiveProgress = member.passiveProgress || {};
+    if (!member.passiveProgress[passiveId]) {
+      member.passiveProgress[passiveId] = { rank: Math.max(1, Number(rank || 1)) };
+    } else {
+      member.passiveProgress[passiveId].rank = Math.max(1, Number(member.passiveProgress[passiveId].rank || rank || 1));
+    }
+  }
+
+  function _persistJobGrants(member, base = {}, jobId) {
+    if (!member || !jobId || !window.CJS.Formulas?.collectJobGrants) return;
+    const job = DS().get('jobs', jobId);
+    const level = Math.max(1, Number(member.jobProgress?.[jobId]?.level || 1));
+    const grants = window.CJS.Formulas.collectJobGrants(job || {}, level);
+
+    member.learnedSkills = Array.isArray(member.learnedSkills) ? member.learnedSkills : [];
+    const baseSkillIds = new Set((base.skills || []).map((entry) => typeof entry === 'string' ? entry : entry?.skillId).filter(Boolean));
+    const learnedSkillIds = new Set(member.learnedSkills.map((entry) => typeof entry === 'string' ? entry : entry?.skillId).filter(Boolean));
+    for (const sid of grants.skills || []) {
+      if (!sid) continue;
+      if (!baseSkillIds.has(sid) && !learnedSkillIds.has(sid)) {
+        member.learnedSkills.push({ skillId: sid, level: 1, source: `job:${jobId}` });
+        learnedSkillIds.add(sid);
+      }
+      _ensureSkillProgress(member, sid, 1);
+    }
+
+    member.learnedPassives = Array.isArray(member.learnedPassives) ? member.learnedPassives : [];
+    const passiveIds = new Set([...(base.innatePassives || []), ...member.learnedPassives].filter(Boolean));
+    for (const pid of grants.passives || []) {
+      if (!pid) continue;
+      if (!passiveIds.has(pid)) {
+        member.learnedPassives.push(pid);
+        passiveIds.add(pid);
+      }
+      _ensurePassiveProgress(member, pid, 1);
+    }
   }
 
   function _partyHpContext(base = {}, id = '') {
@@ -589,6 +650,9 @@ window.CJS.CampaignState = (() => {
     member.skillProgress = (member.skillProgress && typeof member.skillProgress === 'object')
       ? member.skillProgress
       : {};
+    member.passiveProgress = (member.passiveProgress && typeof member.passiveProgress === 'object')
+      ? member.passiveProgress
+      : {};
 
     // Make sure every authored + learned skill has a progress entry.
     const known = new Set();
@@ -601,12 +665,12 @@ window.CJS.CampaignState = (() => {
       if (sid) known.add(sid);
     }
     for (const sid of known) {
-      if (!member.skillProgress[sid]) {
-        member.skillProgress[sid] = { ap: 0, level: 1 };
-      } else {
-        member.skillProgress[sid].ap = Number(member.skillProgress[sid].ap || 0);
-        member.skillProgress[sid].level = Math.max(1, Number(member.skillProgress[sid].level || 1));
-      }
+      _ensureSkillProgress(member, sid, 1);
+    }
+
+    const knownPassives = new Set([...(base.innatePassives || []), ...(member.learnedPassives || [])].filter(Boolean));
+    for (const pid of knownPassives) {
+      _ensurePassiveProgress(member, pid, 1);
     }
 
     // Branches / job allow-list / slot caps (from char base when missing)
@@ -647,6 +711,7 @@ window.CJS.CampaignState = (() => {
     if (member.currentJob && !member.jobProgress[member.currentJob]) {
       member.jobProgress[member.currentJob] = { xp: 0, level: 1 };
     }
+    _persistJobGrants(member, base, member.currentJob);
 
     // SP / slot budgets — fall back to base char's authored values, then to
     // PROGRESSION defaults. Re-compute on every load so editing the base

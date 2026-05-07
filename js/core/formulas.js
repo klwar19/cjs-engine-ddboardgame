@@ -557,7 +557,175 @@ window.CJS.Formulas = (() => {
       .sort((a, b) => Number(a.level) - Number(b.level));
   }
 
-  // ── SP / SLOT BUDGETS ─────────────────────────────────────────────
+  // ── PASSIVE RANK PROGRESSION ──────────────────────────────────────
+  function applyPassiveRankPerks(passive, rank) {
+    if (!passive) return passive;
+    const lvl = Math.max(1, Math.min(getPassiveMaxRank(passive), Number(rank || 1)));
+    const earned = getEarnedPassiveRankPerks(passive, lvl);
+    if (!earned.length) return passive;
+
+    const merged = {
+      ...passive,
+      effects: (passive.effects || []).map((ref) => _cloneEffectRef(_normalizeEffectRef(ref))).filter(Boolean)
+    };
+    const baseFieldDeltas = {};
+    const extraEffects = [];
+
+    for (const perk of earned) {
+      const modifiers = perk.modifiers || {};
+      const valueDelta = _cleanNumber(modifiers.value ?? modifiers.effectValue);
+      if (valueDelta) baseFieldDeltas.value = _cleanNumber((baseFieldDeltas.value || 0) + valueDelta);
+
+      const fieldDeltas = modifiers.fields || modifiers.effectFields || {};
+      for (const [field, delta] of Object.entries(fieldDeltas)) {
+        const clean = _cleanNumber(delta);
+        if (field && clean) baseFieldDeltas[field] = _cleanNumber((baseFieldDeltas[field] || 0) + clean);
+      }
+
+      for (const ref of [...(perk.addEffects || []), ...(perk.effects || [])]) {
+        const normalized = _cloneEffectRef(_normalizeEffectRef(ref));
+        if (normalized?.effectId) extraEffects.push({ ...normalized, _passivePerkEffect: true });
+      }
+    }
+
+    if (Object.keys(baseFieldDeltas).length) {
+      merged.effects = merged.effects.map((ref) => ({
+        ...ref,
+        _passiveRankFieldDeltas: {
+          ...(ref._passiveRankFieldDeltas || {}),
+          ...baseFieldDeltas
+        }
+      }));
+    }
+    if (extraEffects.length) merged.effects = [...merged.effects, ...extraEffects];
+    return merged;
+  }
+
+  function getNextPassiveRankPerk(passive, rank) {
+    if (!passive || !Array.isArray(passive.rankPerks)) return null;
+    const lvl = Math.max(1, Number(rank || 1));
+    let best = null;
+    for (const perk of passive.rankPerks) {
+      const perkRank = _perkRank(perk);
+      if (!perkRank || perkRank <= lvl) continue;
+      if (!best || perkRank < _perkRank(best)) best = perk;
+    }
+    return best;
+  }
+
+  function getEarnedPassiveRankPerks(passive, rank) {
+    if (!passive || !Array.isArray(passive.rankPerks)) return [];
+    const lvl = Math.max(1, Number(rank || 1));
+    return passive.rankPerks
+      .filter((perk) => {
+        const perkRank = _perkRank(perk);
+        return perkRank && perkRank <= lvl;
+      })
+      .sort((a, b) => _perkRank(a) - _perkRank(b));
+  }
+
+  function _perkRank(perk = {}) {
+    return Number(perk.rank ?? perk.level ?? perk.targetRank ?? 0);
+  }
+
+  function _normalizeEffectRef(ref) {
+    if (!ref) return null;
+    if (typeof ref === 'string') return { effectId: ref, overrides: {} };
+    const out = { ...ref };
+    if (!out.effectId && out.id) {
+      out.effectId = out.id;
+      delete out.id;
+    }
+    return out;
+  }
+
+  function _cloneEffectRef(ref) {
+    if (!ref) return null;
+    const out = { ...ref };
+    if (ref.overrides) out.overrides = { ...ref.overrides };
+    if (ref.conditions) out.conditions = Array.isArray(ref.conditions) ? [...ref.conditions] : { ...ref.conditions };
+    if (ref.children) out.children = ref.children.map((child) => _cloneEffectRef(child)).filter(Boolean);
+    if (ref._passiveRankFieldDeltas) out._passiveRankFieldDeltas = { ...ref._passiveRankFieldDeltas };
+    return out;
+  }
+
+  function getPassiveMaxRank(passive = {}) {
+    const PROG = _progress();
+    const authored = Number(passive?.rankScaling?.maxRank ?? passive?.maxRank ?? PROG.passiveMaxRankDefault ?? 5);
+    let cap = Math.max(1, Math.floor(Number.isFinite(authored) ? authored : 5));
+    const hardCap = PROG.passiveMaxRankCap;
+    if (hardCap != null) cap = Math.min(cap, Math.max(1, Number(hardCap || cap)));
+    return cap;
+  }
+
+  function calcPassiveRankCost(passive = {}, currentRank = 1) {
+    const now = Math.max(1, Number(currentRank || 1));
+    const targetRank = now + 1;
+    if (!passive || targetRank > getPassiveMaxRank(passive)) return null;
+
+    const explicit = (Array.isArray(passive.rankRequirements) ? passive.rankRequirements : [])
+      .find((entry) => Number(entry?.rank || entry?.targetRank || 0) === targetRank);
+    if (explicit) {
+      return _normalizeBundle(explicit.cost || explicit.costs || explicit.requires || {
+        materials: explicit.materials || {}
+      });
+    }
+
+    const PROG = _progress();
+    const authoredCost = passive.rankUpCost || {};
+    const materialId = authoredCost.materialId || passive.rankMaterialId || PROG.passiveRankMaterialDefault;
+    if (!materialId) return null;
+    const baseQty = Number(authoredCost.baseQty ?? 1);
+    const qtyPerRank = Number(authoredCost.qtyPerRank ?? 1);
+    const qty = Math.max(1, Math.round(baseQty + Math.max(0, targetRank - 2) * qtyPerRank));
+    return { materials: { [materialId]: qty } };
+  }
+
+  function applyPassiveRankToEffect(effect = {}, passive = {}, rank = 1) {
+    const lvl = Math.max(1, Math.min(getPassiveMaxRank(passive), Number(rank || 1)));
+    const scaling = passive?.rankScaling || {};
+    if (!effect || lvl <= 1 || scaling.enabled === false) return effect;
+
+    const perRank = Number(scaling.valuePerRank ?? _progress().passiveRankValuePerRank ?? 0.15);
+    if (!perRank) return { ...effect, passiveRank: lvl };
+
+    const multiplier = 1 + (perRank * (lvl - 1));
+    const fields = Array.isArray(scaling.fields) && scaling.fields.length ? scaling.fields : ['value'];
+    const out = { ...effect, passiveRank: lvl };
+    for (const field of fields) {
+      if (typeof out[field] === 'number') out[field] = _scaleRankNumber(out[field], multiplier);
+    }
+    if (Array.isArray(out.children) && out.children.length) {
+      out.children = out.children.map((child) => applyPassiveRankToEffect(child, passive, lvl));
+    }
+    return out;
+  }
+
+  function _scaleRankNumber(value, multiplier) {
+    const scaled = Number(value || 0) * Number(multiplier || 1);
+    return Math.round(scaled * 100) / 100;
+  }
+
+  function _cleanNumber(value) {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n)) return 0;
+    return Math.round(n * 100) / 100;
+  }
+
+  function _normalizeBundle(bundle = {}) {
+    const out = {};
+    for (const bucket of ['currencies', 'items', 'materials', 'food', 'questItems']) {
+      const src = bundle?.[bucket] || {};
+      const clean = {};
+      for (const [id, qty] of Object.entries(src)) {
+        const n = Math.max(0, Number(qty || 0));
+        if (id && n > 0) clean[id] = n;
+      }
+      if (Object.keys(clean).length) out[bucket] = clean;
+    }
+    return out;
+  }
+
   // Effective skill/passive slot caps and SP budgets are computed from:
   //   1. base authored value on the character (or defaults)
   //   2. + per-level steps (every N levels → +X)
@@ -705,6 +873,9 @@ window.CJS.Formulas = (() => {
     calcCharLevelStatBonus, calcJobLevelStatBonus, collectJobGrants,
     canUnlockJob,
     applySkillLevelPerks, getNextSkillPerk, getEarnedSkillPerks,
+    getPassiveMaxRank, calcPassiveRankCost,
+    applyPassiveRankPerks, getNextPassiveRankPerk, getEarnedPassiveRankPerks,
+    applyPassiveRankToEffect,
     // SP / slot budgets
     calcEffectiveSkillSlots, calcEffectivePassiveSlots,
     calcEffectiveSkillPoints, calcEffectivePassivePoints,

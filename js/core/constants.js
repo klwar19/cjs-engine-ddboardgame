@@ -569,6 +569,12 @@ window.CJS.CONST = (() => {
     // Hard ceiling: even if a skill authors a higher maxLevel it is clamped
     // to this for now. Set to null to disable the clamp.
     skillMaxLevelCap: 5,
+    // Passive ranks are upgraded with materials in Campaign Mode. Rank 1 is
+    // the authored baseline; higher ranks strengthen passive effect values.
+    passiveMaxRankDefault: 5,
+    passiveMaxRankCap: 5,
+    passiveRankValuePerRank: 0.15,
+    passiveRankMaterialDefault: 'haven_memory_shard',
     // Default char cap when not overridden anywhere.
     charMaxLevel: 20,
     // Default job cap when authors don't supply maxLevel.

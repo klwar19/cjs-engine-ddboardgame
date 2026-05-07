@@ -49,6 +49,10 @@ window.CJS.JobEditor = (() => {
       name: 'New Job',
       icon: '🛡️',
       description: '',
+      branch: '',
+      tier: 1,
+      unlockRequirement: null,
+      xpThresholds: null,
       weaponTypes: [],
       armorTypes: [],
       maxLevel: 10,
@@ -71,6 +75,13 @@ window.CJS.JobEditor = (() => {
 
   function _renderForm(j) {
     const levels = Array.isArray(j.levels) ? j.levels : [];
+    const unlockJobId = j.unlockRequirement?.jobId || '';
+    const unlockMinLevel = Math.max(1, Number(j.unlockRequirement?.minLevel || 1));
+    const unlockOptions = (DS().getAllAsArray('jobs') || [])
+      .filter((job) => job.id !== j.id)
+      .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)))
+      .map((job) => `<option value="${_esc(job.id)}" ${unlockJobId === job.id ? 'selected' : ''}>${_esc(job.name || job.id)}</option>`)
+      .join('');
 
     _formEl.innerHTML = `
       <div class="card">
@@ -93,6 +104,31 @@ window.CJS.JobEditor = (() => {
             </div>
           </div>
           <div class="form-group" style="flex:0 0 100px"><label class="form-label">Max Level</label><input type="number" id="job-maxlvl" value="${j.maxLevel || 10}" min="1" max="20"></div>
+        </div>
+
+        <h3>Progression Tree</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Branch</label>
+            <input type="text" id="job-branch" value="${_esc(j.branch || '')}" placeholder="warrior">
+          </div>
+          <div class="form-group" style="flex:0 0 100px">
+            <label class="form-label">Tier</label>
+            <input type="number" id="job-tier" value="${Number(j.tier || 1)}" min="1" max="20">
+          </div>
+          <div class="form-group" style="flex:0 0 220px">
+            <label class="form-label">Unlock Job</label>
+            <select id="job-unlock-job"><option value="">None</option>${unlockOptions}</select>
+          </div>
+          <div class="form-group" style="flex:0 0 130px">
+            <label class="form-label">Unlock Level</label>
+            <input type="number" id="job-unlock-level" value="${unlockMinLevel}" min="1" max="20">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">XP Thresholds</label>
+          <input type="text" id="job-xp-thresholds" value="${_esc(_numberListToText(j.xpThresholds))}" placeholder="0, 80, 220, 440, 760">
+          <div class="dim" style="font-size:0.78rem;margin-top:4px">Leave blank to use the default job XP curve.</div>
         </div>
 
         <h3>Equipment Profile</h3>
@@ -168,16 +204,32 @@ window.CJS.JobEditor = (() => {
     };
 
     _formEl.querySelector('#job-save').onclick = () => {
+      const branch = (_formEl.querySelector('#job-branch').value || '').trim();
+      const unlockJob = _formEl.querySelector('#job-unlock-job').value || '';
+      const xpThresholds = _parseNumberList(_formEl.querySelector('#job-xp-thresholds').value);
       const payload = {
+        ...j,
         id: j.id,
         name: _formEl.querySelector('#job-name').value,
         icon: _formEl.querySelector('#job-icon').value,
+        branch,
+        tier: Math.max(1, Number(_formEl.querySelector('#job-tier').value) || 1),
+        unlockRequirement: unlockJob
+          ? {
+              jobId: unlockJob,
+              minLevel: Math.max(1, Number(_formEl.querySelector('#job-unlock-level').value) || 1)
+            }
+          : null,
+        xpThresholds,
         maxLevel: Number(_formEl.querySelector('#job-maxlvl').value) || 10,
         weaponTypes: weaponWidget._getTags(),
         armorTypes: armorWidget._getTags(),
         levels: levelEditors.map((ed) => ed.snapshot()).sort((a, b) => Number(a.level) - Number(b.level)),
         description: _formEl.querySelector('#job-desc').value
       };
+      if (!payload.branch) delete payload.branch;
+      if (!payload.unlockRequirement) delete payload.unlockRequirement;
+      if (!payload.xpThresholds) delete payload.xpThresholds;
       DS().replace('jobs', j.id, payload);
       _renderList(); _load(j.id);
       UI().toast('Job saved', 'success');
@@ -233,6 +285,24 @@ window.CJS.JobEditor = (() => {
           <input type="text" class="job-tier-passives" value="${_esc((tier.grantsPassives || []).join(', '))}">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 130px">
+          <label class="form-label">Skill Slots +</label>
+          <input type="number" class="job-tier-prog" data-key="skillSlotBonus" value="${Number(tier.skillSlotBonus || 0)}" style="width:100%">
+        </div>
+        <div class="form-group" style="flex:0 0 130px">
+          <label class="form-label">Passive Slots +</label>
+          <input type="number" class="job-tier-prog" data-key="passiveSlotBonus" value="${Number(tier.passiveSlotBonus || 0)}" style="width:100%">
+        </div>
+        <div class="form-group" style="flex:0 0 130px">
+          <label class="form-label">Skill Points +</label>
+          <input type="number" class="job-tier-prog" data-key="skillPointBonus" value="${Number(tier.skillPointBonus || 0)}" style="width:100%">
+        </div>
+        <div class="form-group" style="flex:0 0 130px">
+          <label class="form-label">Passive Points +</label>
+          <input type="number" class="job-tier-prog" data-key="passivePointBonus" value="${Number(tier.passivePointBonus || 0)}" style="width:100%">
+        </div>
+      </div>
     `;
 
     const removeBtn = el.querySelector('.job-tier-remove');
@@ -240,6 +310,7 @@ window.CJS.JobEditor = (() => {
 
     function snapshot() {
       const out = {
+        ...tier,
         level: Number(el.querySelector('.job-tier-level').value || 1),
         description: el.querySelector('.job-tier-desc').value,
         statBonus: {},
@@ -249,6 +320,12 @@ window.CJS.JobEditor = (() => {
       el.querySelectorAll('.job-tier-stat').forEach((inp) => {
         const v = Number(inp.value || 0);
         if (v) out.statBonus[inp.dataset.stat] = v;
+      });
+      el.querySelectorAll('.job-tier-prog').forEach((inp) => {
+        const key = inp.dataset.key;
+        const v = Number(inp.value || 0);
+        if (v) out[key] = v;
+        else delete out[key];
       });
       onChange(out);
       return out;
@@ -260,6 +337,15 @@ window.CJS.JobEditor = (() => {
   }
 
   function _esc(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function _numberListToText(values) {
+    return Array.isArray(values) ? values.map((v) => Number(v || 0)).join(', ') : '';
+  }
+  function _parseNumberList(raw) {
+    const text = String(raw || '').trim();
+    if (!text) return null;
+    const values = text.split(',').map((part) => Number(part.trim())).filter((v) => Number.isFinite(v) && v >= 0);
+    return values.length ? values : null;
+  }
   function refresh() { if (_container) _renderList(); }
   return Object.freeze({ init, refresh });
 })();

@@ -255,6 +255,10 @@ window.CJS.CampaignCombatBridge = (() => {
     // but auto-fill pre-selects them, so existing characters keep their
     // innate behavior.
     const passives = (member.equippedPassives || []).slice();
+    const passiveRanks = {};
+    for (const pid of passives) {
+      passiveRanks[pid] = Math.max(1, Number(member.passiveProgress?.[pid]?.rank || 1));
+    }
     return {
       ..._clone(base),
       id,
@@ -269,6 +273,7 @@ window.CJS.CampaignCombatBridge = (() => {
       stats,
       skills,
       innatePassives: passives,
+      passiveRanks,
       allowedWeaponTypes: _mergeIds(base.allowedWeaponTypes || [], member.allowedWeaponTypes || []),
       allowedArmorTypes: _mergeIds(base.allowedArmorTypes || [], member.allowedArmorTypes || []),
       equipment: Array.isArray(member.equipment) ? _clone(member.equipment) : _clone(base.equipment || []),

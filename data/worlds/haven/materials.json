@@ -45,6 +45,15 @@
       "value": 16
     },
     {
+      "id": "haven_memory_shard",
+      "name": "Memory Shard",
+      "icon": "*",
+      "rarity": "Rare",
+      "subCategory": "passive_rank_material",
+      "description": "Catalyst used to rank up passives.",
+      "value": 60
+    },
+    {
       "id": "haven_sprite_dust",
       "name": "Sprite Dust",
       "icon": "✨",

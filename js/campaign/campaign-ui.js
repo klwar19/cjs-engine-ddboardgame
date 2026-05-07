@@ -575,9 +575,10 @@ window.CJS.CampaignUI = (() => {
         const pid = equipped[i];
         const passive = DS().get('passives', pid) || DS().get('effects', pid);
         const spCost = F.calcSpCost ? F.calcSpCost(passive) : 1;
-        html += `<div class="campaign-slot filled" title="${_escAttr(passive?.name || pid)} (SP ${spCost})">
+        const rankInfo = _passiveRankInfo(memberId, pid, passive);
+        html += `<div class="campaign-slot filled" title="${_escAttr(passive?.name || pid)} (SP ${spCost}, Rank ${rankInfo.rank}/${rankInfo.max})">
           ${_icon(passive, { kind: 'passive', size: 'md', alt: passive?.name || pid })}
-          <span class="campaign-slot-name">${_esc(passive?.name || pid)}</span>
+          <span class="campaign-slot-name">${_esc(passive?.name || pid)} <small>R ${rankInfo.rank}/${rankInfo.max}</small></span>
           <button class="campaign-slot-remove" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(pid)}" title="Unequip">✕</button>
         </div>`;
       } else {
@@ -686,10 +687,11 @@ window.CJS.CampaignUI = (() => {
         if (!passive) continue;
         if (query && !(passive.name || '').toLowerCase().includes(query) && !pid.toLowerCase().includes(query)) continue;
         const spCost = F?.calcSpCost ? F.calcSpCost(passive) : 1;
+        const rankInfo = _passiveRankInfo(memberId, pid, passive);
         const row = document.createElement('div');
         row.className = 'data-list-item';
         row.style.cursor = 'pointer';
-        row.innerHTML = `${_icon(passive, { kind: 'passive', size: 'sm', alt: passive.name || pid })}<div><div class="item-name">${_esc(passive.name || pid)}</div><div class="item-sub">SP ${spCost} | ${_esc(passive.trigger || passive.category || '')} | ${_esc(passive.description?.substring(0, 60) || '')}</div></div>`;
+        row.innerHTML = `${_icon(passive, { kind: 'passive', size: 'sm', alt: passive.name || pid })}<div><div class="item-name">${_esc(passive.name || pid)}</div><div class="item-sub">SP ${spCost} | Rank ${rankInfo.rank}/${rankInfo.max} | ${_esc(passive.trigger || passive.category || '')} | ${_esc(passive.description?.substring(0, 60) || '')}</div></div>`;
         row.onclick = () => {
           Ops().apply({ op: 'equip_passive', target: memberId, passiveId: pid }, { source: 'ui' });
           UI().closeModal(overlay);
@@ -752,7 +754,6 @@ window.CJS.CampaignUI = (() => {
       : '';
     const baseDesc = _desc(skill) || '';
     const descriptionHtml = `<p>${_esc(baseDesc || 'No description yet.')}</p>${earnedLine}${nextLine}`;
-
     const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
     return _renderKnownRecord({
       title: `${titlePrefix}${skill?.name || skillId}`,
@@ -765,24 +766,58 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderKnownPassive(memberId, passiveId, isEquipped) {
-    const passive = DS().get('passives', passiveId) || DS().get('effects', passiveId);
+    const passiveRecord = DS().get('passives', passiveId);
+    const passive = passiveRecord || DS().get('effects', passiveId);
     const learned = (CS().getState()?.party?.[memberId]?.learnedPassives || []).includes(passiveId);
     const spCost = (passive && window.CJS.Formulas?.calcSpCost) ? window.CJS.Formulas.calcSpCost(passive) : 1;
+    const rankInfo = _passiveRankInfo(memberId, passiveId, passive);
+    const rankCostText = _passiveRankCostText(passive, rankInfo.rank);
     const equippedFlag = isEquipped === true;
     const equipButton = isEquipped == null
       ? ''
       : (equippedFlag
           ? `<button class="campaign-action danger" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Unequip (frees slot/SP)">Unequip</button>`
           : `<button class="campaign-action" data-campaign-action="equip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
+    const rankButton = (passiveRecord && !rankInfo.isMax)
+      ? `<button class="campaign-action" data-campaign-action="rank-up-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Consumes ${_escAttr(rankCostText || 'rank material')}">Rank Up</button>`
+      : '';
+    const F = window.CJS.Formulas;
+    const earned = (passiveRecord && F?.getEarnedPassiveRankPerks) ? F.getEarnedPassiveRankPerks(passiveRecord, rankInfo.rank) : [];
+    const next = (passiveRecord && F?.getNextPassiveRankPerk) ? F.getNextPassiveRankPerk(passiveRecord, rankInfo.rank) : null;
+    const earnedLine = earned.length
+      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `R${_passivePerkRank(p)} - ${_esc(p.description || '...')}`).join(' | ')}</div>`
+      : '';
+    const nextLine = next
+      ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at R${_passivePerkRank(next)}: ${_esc(next.description || '...')}</div>`
+      : '';
+    const descriptionHtml = `<p>${_esc(_desc(passive) || 'No description yet.')}</p>${earnedLine}${nextLine}`;
     const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
     return _renderKnownRecord({
       title: `${titlePrefix}${passive?.name || passiveId}`,
-      meta: `SP ${spCost} | ${passive?.trigger || passive?.category || passiveId}`,
-      description: _desc(passive),
+      meta: `SP ${spCost} | Rank ${rankInfo.rank}/${rankInfo.max}${rankInfo.isMax ? ' (max)' : ''} | ${passive?.trigger || passive?.category || passiveId}`,
+      descriptionHtml,
       removeAction: learned ? 'unlearn-passive' : '',
       removeData: learned ? `data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}"` : '',
-      extraActions: equipButton
+      extraActions: `${equipButton}${rankButton}`
     });
+  }
+
+  function _passivePerkRank(perk = {}) {
+    return Number(perk.rank ?? perk.level ?? perk.targetRank ?? 0) || '?';
+  }
+
+  function _passiveRankInfo(memberId, passiveId, passive = null) {
+    const member = CS().getState()?.party?.[memberId] || {};
+    const rank = Math.max(1, Number(member.passiveProgress?.[passiveId]?.rank || 1));
+    const F = window.CJS.Formulas;
+    const max = F?.getPassiveMaxRank ? F.getPassiveMaxRank(passive || DS().get('passives', passiveId) || {}) : 5;
+    return { rank, max, isMax: rank >= max };
+  }
+
+  function _passiveRankCostText(passive, currentRank) {
+    const F = window.CJS.Formulas;
+    const cost = passive && F?.calcPassiveRankCost ? F.calcPassiveRankCost(passive, currentRank) : null;
+    return _formatBundleText(cost);
   }
 
   function _renderKnownStatus(status) {
@@ -2748,6 +2783,7 @@ window.CJS.CampaignUI = (() => {
       case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
+      case 'rank-up-passive': return _rankUpPassiveConfirm(data.id, data.passiveId);
       case 'equip-skill':    return Ops().apply({ op: 'equip_skill',    target: data.id, skillId:   data.skillId   }, { source: 'ui' });
       case 'unequip-skill':  return Ops().apply({ op: 'unequip_skill',  target: data.id, skillId:   data.skillId   }, { source: 'ui' });
       case 'equip-passive':  return Ops().apply({ op: 'equip_passive',  target: data.id, passiveId: data.passiveId }, { source: 'ui' });
@@ -3951,6 +3987,7 @@ Recover the relic x 1"></textarea>
     const stock = _shopStock(data.shopId, data.stockIndex);
     Ops().apply({
       op: 'shop_buy',
+      shopId: data.shopId,
       id: data.id || stock?.id,
       type: data.type || stock?.type || 'item',
       bucket: stock?.bucket,
@@ -4676,6 +4713,21 @@ Recover the relic x 1"></textarea>
     }
     UI().confirm(`Force ${skill.name || skillId} to Lv ${target}? (Edit-mode only.)`, () => {
       Ops().apply({ op: 'set_skill_level', target: memberId, skillId, level: target }, { source: 'ui' });
+    });
+  }
+
+  function _rankUpPassiveConfirm(memberId, passiveId) {
+    const member = CS().getState()?.party?.[memberId];
+    const passive = DS().get('passives', passiveId);
+    if (!member || !passive) return;
+    const info = _passiveRankInfo(memberId, passiveId, passive);
+    if (info.isMax) {
+      UI().toast('Passive is already at max rank.', 'info');
+      return;
+    }
+    const costText = _passiveRankCostText(passive, info.rank) || 'rank material';
+    UI().confirm(`Rank up ${passive.name || passiveId} to Rank ${info.rank + 1}? Consumes ${costText}.`, () => {
+      Ops().apply({ op: 'rank_up_passive', target: memberId, passiveId }, { source: 'ui' });
     });
   }
 
@@ -5883,6 +5935,16 @@ Recover the relic x 1"></textarea>
         : bucketOrType === 'questItem' ? 'questItems'
           : bucketOrType || 'items';
     return DS().get(bucket, id)?.name || id;
+  }
+
+  function _formatBundleText(bundle) {
+    const parts = [];
+    for (const [id, qty] of Object.entries(bundle?.currencies || {})) parts.push(`${qty} ${_currencyLabel(id)}`);
+    for (const [id, qty] of Object.entries(bundle?.items || {})) parts.push(`${qty} ${_recordName('items', id)}`);
+    for (const [id, qty] of Object.entries(bundle?.materials || {})) parts.push(`${qty} ${_recordName('materials', id)}`);
+    for (const [id, qty] of Object.entries(bundle?.food || {})) parts.push(`${qty} ${_recordName('food', id)}`);
+    for (const [id, qty] of Object.entries(bundle?.questItems || {})) parts.push(`${qty} ${_recordName('questItems', id)}`);
+    return parts.join(', ');
   }
 
   function _label(value) {

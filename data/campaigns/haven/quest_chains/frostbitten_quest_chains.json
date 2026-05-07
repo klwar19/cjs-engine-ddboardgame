@@ -138,6 +138,7 @@
           "mapSeedIds": ["haven_mseed_frozen_creek_trail"],
           "rewardOps": [
             { "op": "give_material", "id": "haven_frost_fang", "qty": 1 },
+            { "op": "give_material", "id": "haven_memory_shard", "qty": 1, "chance": 0.25 },
             { "op": "bond_change", "npcId": "haven_bowy", "field": "confidence", "amount": 1 }
           ],
           "gmNote": "Do not force Garr's hidden truth. This is a soft character beat."

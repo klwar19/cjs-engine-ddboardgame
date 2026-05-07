@@ -4546,7 +4546,57 @@
         }
       ],
       "description": "The universe finds Bin entertaining. Slightly better luck and crits.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "LCK +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_lck",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Crit rate +2%.",
+          "addEffects": [
+            {
+              "effectId": "crit_rate_mod",
+              "overrides": {
+                "value": 2
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "Evasion +1.",
+          "addEffects": [
+            {
+              "effectId": "evasion_mod",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Crit damage +10%.",
+          "addEffects": [
+            {
+              "effectId": "crit_damage_mod",
+              "overrides": {
+                "value": 10
+              }
+            }
+          ]
+        }
+      ]
     },
     "comedy_armor": {
       "id": "comedy_armor",
@@ -4572,7 +4622,58 @@
         }
       ],
       "description": "If you're already the joke, nothing hits as hard. Minor DR and evasion.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "Max HP +5.",
+          "addEffects": [
+            {
+              "effectId": "hp_mod_flat",
+              "overrides": {
+                "value": 5
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Evasion +1.",
+          "addEffects": [
+            {
+              "effectId": "evasion_mod",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "All DR +1.",
+          "addEffects": [
+            {
+              "effectId": "dr_mod_all",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Stun resist +10%.",
+          "addEffects": [
+            {
+              "effectId": "status_resist_mod",
+              "overrides": {
+                "statusId": "stun",
+                "value": 10
+              }
+            }
+          ]
+        }
+      ]
     },
     "marksmans_eye": {
       "id": "marksmans_eye",
@@ -4599,7 +4700,57 @@
         }
       ],
       "description": "Bowy's trained eye. Better accuracy and extended basic attack range.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "PER +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_per",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Accuracy +1.",
+          "addEffects": [
+            {
+              "effectId": "accuracy_mod",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "Crit rate +2%.",
+          "addEffects": [
+            {
+              "effectId": "crit_rate_mod",
+              "overrides": {
+                "value": 2
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Physical damage +3%.",
+          "addEffects": [
+            {
+              "effectId": "damage_mod_physical",
+              "overrides": {
+                "value": 3
+              }
+            }
+          ]
+        }
+      ]
     },
     "iron_hide": {
       "id": "iron_hide",
@@ -4625,7 +4776,58 @@
         }
       ],
       "description": "Half-orc/half-boar toughness. Thick skin.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "Max HP +5.",
+          "addEffects": [
+            {
+              "effectId": "hp_mod_flat",
+              "overrides": {
+                "value": 5
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "All DR +1.",
+          "addEffects": [
+            {
+              "effectId": "dr_mod_all",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "END +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_end",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Stun resist +10%.",
+          "addEffects": [
+            {
+              "effectId": "status_resist_mod",
+              "overrides": {
+                "statusId": "stun",
+                "value": 10
+              }
+            }
+          ]
+        }
+      ]
     },
     "fae_blood": {
       "id": "fae_blood",
@@ -4651,7 +4853,58 @@
         }
       ],
       "description": "Hidden Fae heritage. Natural mana recovery and magic resistance.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "Max MP +5.",
+          "addEffects": [
+            {
+              "effectId": "mp_mod_flat",
+              "overrides": {
+                "value": 5
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Magic DR +1.",
+          "addEffects": [
+            {
+              "effectId": "dr_mod_magic",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "MP regen +1%.",
+          "addEffects": [
+            {
+              "effectId": "regen_mp",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Stun resist +10%.",
+          "addEffects": [
+            {
+              "effectId": "status_resist_mod",
+              "overrides": {
+                "statusId": "stun",
+                "value": 10
+              }
+            }
+          ]
+        }
+      ]
     },
     "gentle_heart": {
       "id": "gentle_heart",
@@ -4677,7 +4930,57 @@
         }
       ],
       "description": "Mitia's kindness strengthens her magic and charm.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "INT +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_int",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "CHA +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_cha",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "HP regen +1%.",
+          "addEffects": [
+            {
+              "effectId": "regen_hp",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Magic damage +3%.",
+          "addEffects": [
+            {
+              "effectId": "damage_mod_magic",
+              "overrides": {
+                "value": 3
+              }
+            }
+          ]
+        }
+      ]
     },
     "veterans_instinct": {
       "id": "veterans_instinct",
@@ -4703,7 +5006,57 @@
         }
       ],
       "description": "Decades of hunting hone reflexes. Counter chance on melee + perception.",
-      "spCost": 2
+      "spCost": 2,
+      "rankPerks": [
+        {
+          "rank": 2,
+          "description": "PER +1.",
+          "addEffects": [
+            {
+              "effectId": "stat_mod_per",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 3,
+          "description": "Accuracy +1.",
+          "addEffects": [
+            {
+              "effectId": "accuracy_mod",
+              "overrides": {
+                "value": 1
+              }
+            }
+          ]
+        },
+        {
+          "rank": 4,
+          "description": "Crit rate +2%.",
+          "addEffects": [
+            {
+              "effectId": "crit_rate_mod",
+              "overrides": {
+                "value": 2
+              }
+            }
+          ]
+        },
+        {
+          "rank": 5,
+          "description": "Dodging an adjacent attacker can counter for 40% damage.",
+          "addEffects": [
+            {
+              "effectId": "counter_on_dodge",
+              "overrides": {
+                "value": 40
+              }
+            }
+          ]
+        }
+      ]
     },
     "alpha_presence": {
       "id": "alpha_presence",
