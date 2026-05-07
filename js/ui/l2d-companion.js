@@ -36,7 +36,8 @@ window.CJS.L2DCompanion = (() => {
     voiceVolume: 0.85,
     voiceMuted: false,
     bubbleTimer: null,
-    endedAnnounced: false
+    endedAnnounced: false,
+    expressionCycles: Object.create(null)
   };
 
   const CJS_PREFIX = /^\[CJS\]\s*/i;
@@ -186,6 +187,27 @@ window.CJS.L2DCompanion = (() => {
     ));
   }
 
+  function _hasExpressionKey(key) {
+    return Object.prototype.hasOwnProperty.call(STATE.cfg?.expressions || {}, key);
+  }
+
+  function _pickExpressionVariant(key) {
+    if (!key) return key;
+    const sets = STATE.cfg?.expressionSets || {};
+    const pool = Array.isArray(sets[key])
+      ? sets[key].filter((candidate) => candidate === key || _hasExpressionKey(candidate))
+      : null;
+    if (!pool?.length) return key;
+    const index = STATE.expressionCycles[key] || 0;
+    STATE.expressionCycles[key] = index + 1;
+    return pool[index % pool.length];
+  }
+
+  function _setExpression(key) {
+    if (!key || !STATE.avatar) return;
+    STATE.avatar.setExpression(_pickExpressionVariant(key));
+  }
+
   // Pick + show a line for a registry "reactions" key (used outside combat
   // narrator, e.g. campaign + click + turn_start).
   function _react(key, override = {}) {
@@ -195,7 +217,7 @@ window.CJS.L2DCompanion = (() => {
     const cjs = override.line ? null : _pickCjsQuip(_reactionTags(key, override), override);
 
     const expr = override.expression || cjs?.expression || r?.expression;
-    if (expr && STATE.avatar) STATE.avatar.setExpression(expr);
+    _setExpression(expr);
 
     let line = override.line || cjs?.line;
     if (!line && r?.lines?.length) {
@@ -359,7 +381,7 @@ window.CJS.L2DCompanion = (() => {
     if (!bubbleLine) return;
 
     const expr = _pickExpressionFromEntry(entry);
-    if (expr) STATE.avatar?.setExpression(expr);
+    _setExpression(expr);
     _showLine(bubbleLine);
     _playVoice(entry, bubbleLine);
 
@@ -455,7 +477,7 @@ window.CJS.L2DCompanion = (() => {
 
   // ── Click on the avatar gives a playful response ────────────────
   function _wireClick(stage) {
-    const onClick = () => _react('click');
+    const onClick = () => _react('click', { expression: 'all' });
     window.addEventListener('l2d:click', onClick);
     STATE.busUnsubs.push(() => window.removeEventListener('l2d:click', onClick));
     if (stage) {
@@ -468,6 +490,7 @@ window.CJS.L2DCompanion = (() => {
   async function init(opts = {}) {
     if (STATE.avatar) return STATE.avatar;
     STATE.mode = opts.mode || 'combat';
+    STATE.expressionCycles = Object.create(null);
     STATE.dock = _buildDock({ mode: STATE.mode });
     STATE.bubble = STATE.dock.querySelector('#l2d-bubble');
     STATE.history = STATE.dock.querySelector('#l2d-history');
@@ -542,7 +565,7 @@ window.CJS.L2DCompanion = (() => {
   // External API for other modules to push a custom line.
   function say(text, opts = {}) {
     if (!_throttle('_custom')) return;
-    if (opts.expression && STATE.avatar) STATE.avatar.setExpression(opts.expression);
+    _setExpression(opts.expression);
     _showLine(text, opts.holdMs);
     _playVoice({ eventKey: opts.eventKey || '_custom', type: opts.eventType }, text, opts.holdMs);
   }
