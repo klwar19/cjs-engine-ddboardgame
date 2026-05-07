@@ -30,6 +30,7 @@ window.CJS.StatusManager = (() => {
   const Log = () => window.CJS.CombatLog;
   const VC  = () => window.CJS.ValueCalc;
   const C   = () => window.CJS.CONST;
+  const AM  = () => window.CJS.AudioManager;
 
   // ── DUAL LOOKUP ─────────────────────────────────────────────────────
   // Check DataStore first (custom statuses from editor), then fall back
@@ -172,6 +173,7 @@ window.CJS.StatusManager = (() => {
         actor: sourceUnit, target, statusId,
         duration: existing.duration, stacks: existing.stacks
       });
+      if (_isBuff(def)) _playBattleSfx(target, 'happy', 0.44);
       return { applied: true, instance: existing, refreshed: true };
     }
 
@@ -214,6 +216,7 @@ window.CJS.StatusManager = (() => {
     }
 
     try { window.CJS.AudioManager?.playSfx('status_apply'); } catch (e) {}
+    if (_isBuff(def)) _playBattleSfx(target, 'happy', 0.44);
 
     return { applied: true, instance };
   }
@@ -433,6 +436,34 @@ window.CJS.StatusManager = (() => {
   function _isBuff(def) {
     if (def.isBuff !== undefined) return def.isBuff;
     return def.category === 'buff';
+  }
+
+  function _playBattleSfx(unit, event, volume) {
+    const key = _battleSfxKey(unit, event);
+    if (!key) return;
+    try { AM()?.playSfx(key, { volume }); } catch (e) {}
+  }
+
+  function _battleSfxKey(unit, event) {
+    const slots = unit?.battleSfx || {};
+    const aliases = {
+      happy: ['happy', 'happyLine', 'voiceHappy']
+    }[event] || [event];
+    for (const alias of aliases) {
+      const picked = _pickSfxValue(slots[alias]);
+      if (picked) return picked;
+    }
+    return '';
+  }
+
+  function _pickSfxValue(value) {
+    if (typeof value === 'string') return value.trim();
+    if (Array.isArray(value)) {
+      const options = value.map((item) => String(item || '').trim()).filter(Boolean);
+      return options.length ? options[Math.floor(Math.random() * options.length)] : '';
+    }
+    if (value && typeof value === 'object') return _pickSfxValue(value.id || value.key || value.sfx);
+    return '';
   }
 
   // ── BREAK CONDITIONS ──────────────────────────────────────────────

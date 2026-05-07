@@ -634,7 +634,7 @@ Built-in SFX keys (resolved by `AudioManager.playSfx`):
 - Weapon by element: `weapon_hit_physical`, `weapon_hit_fire`, `weapon_hit_ice`, `weapon_hit_lightning`, `weapon_hit_water`, `weapon_hit_wind`, `weapon_hit_earth`, `weapon_hit_holy`, `weapon_hit_dark`
 - Magic: `magic_cast`, `magic_hit`, `magic_fire`, `magic_ice`, `magic_lightning`, `magic_holy`, `magic_dark`
 - Movement / defense / reactions: `move_step`, `defend_guard`, `miss`, `heal`, `crit_sting`, `absorb_guard`
-- Battle voice / creature placeholders: `voice_attack`, `voice_hurt`, `voice_happy`, `voice_expression`, `weapon_bow_shot`, `monster_attack`, `monster_hurt`
+- Reserved voice slots: `bin_fight`, `bin_hurt`, `bin_happy`, `bin_angry`, `weapon_bow_shot`, `zombie_attack`, `zombie_hurt`, plus Peri v2 L2D ids prefixed `peri_v2_l2d_`
 - Combat events: `critical`, `dodge`, `defend`, `victory`, `defeat`, `level_up`
 - Items: `item_use`, `item_potion`, `item_buff`, `item_throw`
 - Statuses: `status_apply`, `status_buff`, `status_debuff`
@@ -651,12 +651,12 @@ Skills can override SFX directly via two optional fields on the skill record:
 The skill editor's Audio section exposes both as dropdowns populated from the manifest + built-in keys.
 
 Characters and monsters can also carry a `battleSfx` object for voice or
-creature reactions. The character and monster editors expose the common
-slots: `attack`, `hurt`, `happy`, `expression`, and `archerAttack` for
-characters; `attack` and `hurt` for monsters. If a slot is empty, combat
-falls back to the reserved ids above, so uploading `voice_attack`,
-`weapon_bow_shot`, `monster_attack`, or `monster_hurt` later wires into
-battles without code changes.
+creature reactions. The character editor exposes `attack`, `hurt`, `happy`,
+`angry`, `expression`, and `archerAttack`; the monster editor exposes
+`attack` and `hurt`. Bin is prewired to `bin_fight`, `bin_hurt`,
+`bin_happy`, and `bin_angry`; current zombie monsters are prewired to
+`zombie_attack` and `zombie_hurt`. Empty slots stay silent until an explicit
+id is assigned and uploaded.
 
 Starter assets bundled in the repo:
 - BGM: `battle_1`, `codex_battle_loop`, `codex_shadow_skirmish`

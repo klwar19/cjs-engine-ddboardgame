@@ -21,6 +21,7 @@ assets/live2d/
     expressions/                 ← *.exp3.json
   voice/
     peri/                        ← *.mp3 / *.ogg / *.wav (optional)
+    peri-v2/                     ← optional direct Peri v2 voice files
 ```
 
 ## Voice clips (optional, future-friendly)
@@ -30,8 +31,8 @@ otherwise — there are no missing-file errors when the folder is empty.
 
 To wire up voice:
 
-1. Drop audio into `assets/live2d/voice/peri/` (any web-friendly format).
-2. Edit `registry.json` → `models.peri.voice` and map clips by:
+1. Drop audio into `assets/live2d/voice/peri/` or `assets/live2d/voice/peri-v2/` (any web-friendly format), or upload Peri v2 clips through the Audio Library using the reserved `peri_v2_l2d_*` ids.
+2. Edit `registry.json` → `models.peri.voice` / `models.peri_v2.voice` and map clips by:
    * **`byFragmentId`** — keyed by quip id from `data/quips.json`
      (e.g. `"e_excited_01": ["excited_01.mp3","excited_01b.mp3"]`).
      Most specific; wins over the others.
@@ -42,7 +43,8 @@ To wire up voice:
      (`turn_start`, `click`, `campaign_move`, `campaign_loot`,
       `campaign_quest`, `campaign_rest`, `campaign_idle`).
 
-   Each value can be a single filename or an array (random pick per fire).
+   Each value can be a single filename, an array (random pick per fire), or
+   an Audio Library reference such as `sfx:peri_v2_l2d_click`.
 
 3. Reload combat.html / campaign.html — Peri's lip-sync now uses the
    audio duration instead of an estimate from text length.

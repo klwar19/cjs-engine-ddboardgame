@@ -67,7 +67,13 @@
       "skillSlots": 4,
       "passiveSlots": 3,
       "skillPoints": 10,
-      "passivePoints": 10
+      "passivePoints": 10,
+      "battleSfx": {
+        "attack": "bin_fight",
+        "hurt": "bin_hurt",
+        "happy": "bin_happy",
+        "angry": "bin_angry"
+      }
     }
   ]
 }

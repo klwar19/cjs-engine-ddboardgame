@@ -36,13 +36,20 @@ Reserved battle voice ids are also defined in `data/audio-manifest.json`
 under `sfxSlots`. They do not ship with files yet; upload your own files
 with these ids when you are ready:
 
-- `sfx.voice_attack` -> `audio/sfx/voice_attack.wav`
-- `sfx.voice_hurt` -> `audio/sfx/voice_hurt.wav`
-- `sfx.voice_happy` -> `audio/sfx/voice_happy.wav`
-- `sfx.voice_expression` -> `audio/sfx/voice_expression.wav`
+- `sfx.bin_fight` -> `audio/sfx/bin_fight.wav`
+- `sfx.bin_hurt` -> `audio/sfx/bin_hurt.wav`
+- `sfx.bin_happy` -> `audio/sfx/bin_happy.wav`
+- `sfx.bin_angry` -> `audio/sfx/bin_angry.wav`
 - `sfx.weapon_bow_shot` -> `audio/sfx/weapon_bow_shot.wav`
-- `sfx.monster_attack` -> `audio/sfx/monster_attack.wav`
-- `sfx.monster_hurt` -> `audio/sfx/monster_hurt.wav`
+- `sfx.zombie_attack` -> `audio/sfx/zombie_attack.wav`
+- `sfx.zombie_hurt` -> `audio/sfx/zombie_hurt.wav`
+- `sfx.peri_v2_l2d_greeting` -> `audio/sfx/peri_v2_l2d_greeting.wav`
+- `sfx.peri_v2_l2d_idle` -> `audio/sfx/peri_v2_l2d_idle.wav`
+- `sfx.peri_v2_l2d_click` -> `audio/sfx/peri_v2_l2d_click.wav`
+- `sfx.peri_v2_l2d_battle_start` -> `audio/sfx/peri_v2_l2d_battle_start.wav`
+- `sfx.peri_v2_l2d_react_happy` -> `audio/sfx/peri_v2_l2d_react_happy.wav`
+- `sfx.peri_v2_l2d_react_angry` -> `audio/sfx/peri_v2_l2d_react_angry.wav`
+- `sfx.peri_v2_l2d_react_sad` -> `audio/sfx/peri_v2_l2d_react_sad.wav`
 
 To add a new file by hand:
 

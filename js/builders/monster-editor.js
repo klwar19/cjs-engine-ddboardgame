@@ -133,8 +133,8 @@ window.CJS.MonsterEditor = (() => {
 
         <h3>Battle SFX</h3>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Attack SFX ID</label><input type="text" id="mon-sfx-attack" value="${_esc(m.battleSfx?.attack || m.battleSfx?.monsterAttack || '')}" placeholder="monster_attack"></div>
-          <div class="form-group"><label class="form-label">Hurt SFX ID</label><input type="text" id="mon-sfx-hurt" value="${_esc(m.battleSfx?.hurt || m.battleSfx?.monsterHurt || '')}" placeholder="monster_hurt"></div>
+          <div class="form-group"><label class="form-label">Attack SFX ID</label><input type="text" id="mon-sfx-attack" value="${_esc(m.battleSfx?.attack || m.battleSfx?.monsterAttack || '')}" placeholder="zombie_attack"></div>
+          <div class="form-group"><label class="form-label">Hurt SFX ID</label><input type="text" id="mon-sfx-hurt" value="${_esc(m.battleSfx?.hurt || m.battleSfx?.monsterHurt || '')}" placeholder="zombie_hurt"></div>
         </div>
 
         <h3>AI Behavior Rules</h3>

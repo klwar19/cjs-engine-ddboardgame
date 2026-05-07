@@ -101,40 +101,75 @@ window.CJS.AudioManager = (() => {
   };
 
   const DEFAULT_SFX_SLOTS = {
-    voice_attack: {
-      label: 'Character attack line',
-      path: 'audio/sfx/voice_attack.wav',
-      events: ['character.basic_attack', 'character.skill_attack']
+    bin_fight: {
+      label: 'Bin fight line',
+      path: 'audio/sfx/bin_fight.wav',
+      events: ['bin.basic_attack', 'bin.skill_attack']
     },
-    voice_hurt: {
-      label: 'Character hurt line',
-      path: 'audio/sfx/voice_hurt.wav',
-      events: ['character.damage_taken']
+    bin_hurt: {
+      label: 'Bin hurt line',
+      path: 'audio/sfx/bin_hurt.wav',
+      events: ['bin.damage_taken']
     },
-    voice_happy: {
-      label: 'Character happy line',
-      path: 'audio/sfx/voice_happy.wav',
-      events: ['character.kill', 'player.victory']
+    bin_happy: {
+      label: 'Bin happy line',
+      path: 'audio/sfx/bin_happy.wav',
+      events: ['bin.critical_hit', 'bin.buff_received', 'bin.kill']
     },
-    voice_expression: {
-      label: 'Character expression line',
-      path: 'audio/sfx/voice_expression.wav',
-      events: ['character.defend', 'character.turn_start']
+    bin_angry: {
+      label: 'Bin angry line',
+      path: 'audio/sfx/bin_angry.wav',
+      events: ['bin.miss']
     },
     weapon_bow_shot: {
       label: 'Bow or crossbow shot',
       path: 'audio/sfx/weapon_bow_shot.wav',
       events: ['weapon.ranged_basic_attack']
     },
-    monster_attack: {
-      label: 'Monster attack',
-      path: 'audio/sfx/monster_attack.wav',
-      events: ['monster.basic_attack', 'monster.skill_attack']
+    zombie_attack: {
+      label: 'Zombie attack line',
+      path: 'audio/sfx/zombie_attack.wav',
+      events: ['zombie.basic_attack', 'zombie.skill_attack']
     },
-    monster_hurt: {
-      label: 'Monster hurt',
-      path: 'audio/sfx/monster_hurt.wav',
-      events: ['monster.damage_taken']
+    zombie_hurt: {
+      label: 'Zombie hurt line',
+      path: 'audio/sfx/zombie_hurt.wav',
+      events: ['zombie.damage_taken']
+    },
+    peri_v2_l2d_greeting: {
+      label: 'Peri v2 L2D greeting voice',
+      path: 'audio/sfx/peri_v2_l2d_greeting.wav',
+      events: ['l2d.campaign_load']
+    },
+    peri_v2_l2d_idle: {
+      label: 'Peri v2 L2D idle voice',
+      path: 'audio/sfx/peri_v2_l2d_idle.wav',
+      events: ['l2d.campaign_idle']
+    },
+    peri_v2_l2d_click: {
+      label: 'Peri v2 L2D click voice',
+      path: 'audio/sfx/peri_v2_l2d_click.wav',
+      events: ['l2d.click']
+    },
+    peri_v2_l2d_battle_start: {
+      label: 'Peri v2 L2D battle voice',
+      path: 'audio/sfx/peri_v2_l2d_battle_start.wav',
+      events: ['l2d.battle_start', 'l2d.campaign_battle']
+    },
+    peri_v2_l2d_react_happy: {
+      label: 'Peri v2 L2D happy reaction',
+      path: 'audio/sfx/peri_v2_l2d_react_happy.wav',
+      events: ['l2d.kill', 'l2d.heal', 'l2d.campaign_loot']
+    },
+    peri_v2_l2d_react_angry: {
+      label: 'Peri v2 L2D angry reaction',
+      path: 'audio/sfx/peri_v2_l2d_react_angry.wav',
+      events: ['l2d.miss', 'l2d.status_applied']
+    },
+    peri_v2_l2d_react_sad: {
+      label: 'Peri v2 L2D sad reaction',
+      path: 'audio/sfx/peri_v2_l2d_react_sad.wav',
+      events: ['l2d.battle_end', 'l2d.campaign_setback']
     }
   };
 

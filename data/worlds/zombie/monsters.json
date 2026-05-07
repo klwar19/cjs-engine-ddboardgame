@@ -87,7 +87,11 @@
       ],
       "description": "B-rank boss zombie. Towering mass of fused corpses — impervious to mundane weapons. Only fire, explosives, or boss-tier abilities deal real damage. Each blow ignores light armor.",
       "movement": 2,
-      "size": "2x2"
+      "size": "2x2",
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     },
     {
       "id": "zombie_crawler",
@@ -144,7 +148,11 @@
       ],
       "description": "Half-eaten zombie dragging itself along the ground. Hard to hit with ranged weapons — high evasion vs. arrows and bullets.",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     },
     {
       "id": "zombie_fatty",
@@ -216,7 +224,11 @@
       ],
       "description": "Bloated zombie, swollen on rot. Two damage minimum to kill — anything weaker just bounces off. When it dies, two Walkers spawn from the splash.",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     },
     {
       "id": "zombie_necromancer",
@@ -296,7 +308,11 @@
       "description": "C-rank caster. The most dangerous threat in any horde — opens new spawn zones each turn and floods the map with walkers. Always kill the Necromancer first.",
       "movement": 3,
       "size": "1x1",
-      "basicAttackRange": 3
+      "basicAttackRange": 3,
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     },
     {
       "id": "zombie_runner",
@@ -358,7 +374,11 @@
       ],
       "description": "Sprinting corpse. Activates twice on Necromancer turns — covers ground frighteningly fast. Goes for the wounded first.",
       "movement": 5,
-      "size": "1x1"
+      "size": "1x1",
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     },
     {
       "id": "zombie_toxic_walker",
@@ -419,7 +439,11 @@
       ],
       "description": "Pus-bloated walker leaking acid bile. Releases a poison cloud when killed — close-range melee carries serious risk.",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     },
     {
       "id": "zombie_walker",
@@ -474,7 +498,11 @@
       ],
       "description": "Standard shambling corpse. Slow, weak, individually no threat. The horde is the threat.",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "battleSfx": {
+        "attack": "zombie_attack",
+        "hurt": "zombie_hurt"
+      }
     }
   ]
 }

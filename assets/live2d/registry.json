@@ -300,10 +300,37 @@
         }
       },
       "voice": {
-        "directory": "assets/live2d/voice/peri/",
+        "directory": "assets/live2d/voice/peri-v2/",
+        "slots": {
+          "greeting": "sfx:peri_v2_l2d_greeting",
+          "idle": "sfx:peri_v2_l2d_idle",
+          "click": "sfx:peri_v2_l2d_click",
+          "battleStart": "sfx:peri_v2_l2d_battle_start",
+          "happyReaction": "sfx:peri_v2_l2d_react_happy",
+          "angryReaction": "sfx:peri_v2_l2d_react_angry",
+          "sadReaction": "sfx:peri_v2_l2d_react_sad"
+        },
         "byFragmentId": {},
-        "byEventType": {},
-        "byEventKey": {}
+        "byEventType": {
+          "battle_start": "sfx:peri_v2_l2d_battle_start",
+          "kill": "sfx:peri_v2_l2d_react_happy",
+          "heal": "sfx:peri_v2_l2d_react_happy",
+          "hit": "sfx:peri_v2_l2d_react_happy",
+          "miss": "sfx:peri_v2_l2d_react_angry",
+          "status_applied": "sfx:peri_v2_l2d_react_angry",
+          "battle_end": "sfx:peri_v2_l2d_react_sad"
+        },
+        "byEventKey": {
+          "campaign_load": "sfx:peri_v2_l2d_greeting",
+          "campaign_idle": "sfx:peri_v2_l2d_idle",
+          "click": "sfx:peri_v2_l2d_click",
+          "campaign_battle": "sfx:peri_v2_l2d_battle_start",
+          "campaign_loot": "sfx:peri_v2_l2d_react_happy",
+          "campaign_quest": "sfx:peri_v2_l2d_react_happy",
+          "campaign_rest": "sfx:peri_v2_l2d_react_happy",
+          "campaign_event": "sfx:peri_v2_l2d_react_happy",
+          "campaign_setback": "sfx:peri_v2_l2d_react_sad"
+        }
       },
       "fallbackImage": "assets/live2d/peri-v2/QQ_1761598388961.png",
       "lockedParameters": {

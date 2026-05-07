@@ -285,7 +285,7 @@ window.CJS.L2DCompanion = (() => {
       if (!cand) return null;
       const arr = Array.isArray(cand) ? cand : [cand];
       const f = arr[Math.floor(Math.random() * arr.length)];
-      return f ? dir + f : null;
+      return _resolveVoiceCandidate(f, dir);
     };
 
     if (entry?.fragmentId && v.byFragmentId) {
@@ -300,6 +300,27 @@ window.CJS.L2DCompanion = (() => {
       const u = pick(v.byEventKey[eventKey]);
       if (u) return u;
     }
+    return null;
+  }
+
+  function _resolveVoiceCandidate(candidate, dir) {
+    const value = String(candidate || '').trim();
+    if (!value) return null;
+    if (value.startsWith('sfx:')) return _resolveSfxVoiceUrl(value.slice(4));
+    if (/^(?:https?:|data:|blob:|\/|\.\/|\.\.\/)/i.test(value)) return value;
+    return (dir || '') + value;
+  }
+
+  function _resolveSfxVoiceUrl(id) {
+    const key = String(id || '').trim();
+    if (!key) return null;
+    const manifest = window.CJS.AudioManager?.getManifest?.();
+    const entry = manifest?.sfx?.[key];
+    if (Array.isArray(entry)) {
+      const paths = entry.map((item) => String(item || '').trim()).filter(Boolean);
+      return paths.length ? paths[Math.floor(Math.random() * paths.length)] : null;
+    }
+    if (typeof entry === 'string') return entry.trim() || null;
     return null;
   }
 
@@ -510,6 +531,7 @@ window.CJS.L2DCompanion = (() => {
     });
 
     _wireClick(stage);
+    window.CJS.AudioManager?.loadManifest?.().catch(() => {});
     if (STATE.mode === 'combat')   _wireCombat();
     if (STATE.mode === 'campaign') _wireCampaign();
 

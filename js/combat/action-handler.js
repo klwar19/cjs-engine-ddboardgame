@@ -55,21 +55,22 @@ window.CJS.ActionHandler = (() => {
   function _battleSfxKey(unit, event, ctx = {}) {
     const authored = _authoredBattleSfx(unit, event);
     if (authored) return authored;
-    const monster = _isMonsterUnit(unit);
     if (event === 'archerAttack') return _isArcherWeapon(unit, ctx.weaponData) ? 'weapon_bow_shot' : null;
-    if (event === 'attack') return monster ? 'monster_attack' : 'voice_attack';
-    if (event === 'hurt') return monster ? 'monster_hurt' : 'voice_hurt';
-    if (event === 'happy') return monster ? null : 'voice_happy';
-    if (event === 'expression') return monster ? null : 'voice_expression';
+    if (event === 'attack') return null;
+    if (event === 'hurt') return null;
+    if (event === 'happy') return null;
+    if (event === 'angry') return null;
+    if (event === 'expression') return null;
     return null;
   }
 
   function _authoredBattleSfx(unit, event) {
     const slots = unit?.battleSfx || {};
     const aliases = {
-      attack: ['attack', 'attackLine', 'voiceAttack', 'monsterAttack'],
+      attack: ['attack', 'fight', 'attackLine', 'fightLine', 'voiceAttack', 'monsterAttack'],
       hurt: ['hurt', 'hurtLine', 'voiceHurt', 'monsterHurt'],
       happy: ['happy', 'happyLine', 'voiceHappy'],
+      angry: ['angry', 'angryLine', 'voiceAngry', 'miss', 'missLine'],
       expression: ['expression', 'expressionLine', 'voiceExpression'],
       archerAttack: ['archerAttack', 'bowShot', 'rangedAttack'],
       monsterAttack: ['monsterAttack', 'attack'],
@@ -90,11 +91,6 @@ window.CJS.ActionHandler = (() => {
     }
     if (value && typeof value === 'object') return _pickSfxValue(value.id || value.key || value.sfx);
     return '';
-  }
-
-  function _isMonsterUnit(unit) {
-    const baseId = unit?.baseId || unit?.id || unit?.instanceId;
-    return unit?.team === 'enemy' || (baseId && DS()?.exists?.('monsters', baseId));
   }
 
   function _isArcherWeapon(unit, weaponData) {
@@ -305,6 +301,7 @@ window.CJS.ActionHandler = (() => {
     if (attack.miss) {
       Log().logMiss({ actor: unit, target, skill: null });
       _anim('miss', { attacker: unit, target, skill: null });
+      _battleSfx(unit, 'angry', { target, volume: 0.5 });
       _sfx('miss', { volume: 0.58 });
       ER().fireTrigger('on_miss', {
         unit, attacker: unit, target, allUnits: GE().getAllUnits(),
@@ -337,7 +334,10 @@ window.CJS.ActionHandler = (() => {
       weaponShape: weaponShapeKey,           // 'weapon_slash' | 'weapon_pierce' | 'weapon_blunt' | null
       isCritical: !!attack.isCritical
     });
-    if (attack.isCritical) _sfx('crit_sting', { volume: 0.52, fallbacks: ['critical'] });
+    if (attack.isCritical) {
+      _sfx('crit_sting', { volume: 0.52, fallbacks: ['critical'] });
+      if (!applied.killed) _battleSfx(unit, 'happy', { target, volume: 0.5 });
+    }
 
     // Fire on_hit (attacker-side)
     ER().fireTrigger('on_hit', {
@@ -424,6 +424,7 @@ window.CJS.ActionHandler = (() => {
     const hits = [];
     if (skill.power) {
       _battleSfx(unit, 'attack', { skill, volume: 0.48 });
+      let missVoicePlayed = false;
       for (const t of targets) {
         const attack = DC().computeAttack({
           attacker: unit, target: t, skill, qteMultiplier, qteGrade
@@ -431,6 +432,10 @@ window.CJS.ActionHandler = (() => {
         if (attack.miss) {
           Log().logMiss({ actor: unit, target: t, skill });
           _anim('miss', { attacker: unit, target: t, skill });
+          if (!missVoicePlayed) {
+            _battleSfx(unit, 'angry', { target: t, skill, volume: 0.5 });
+            missVoicePlayed = true;
+          }
           _sfx('miss', { volume: 0.58 });
           hits.push({ target: t, missed: true });
           continue;
@@ -461,6 +466,7 @@ window.CJS.ActionHandler = (() => {
         }
         if (attack.isCritical) {
           _sfx('crit_sting', { volume: 0.52, fallbacks: ['critical'] });
+          if (!applied.killed) _battleSfx(unit, 'happy', { target: t, skill, volume: 0.5 });
         }
 
         // Animation: emit hit so combat-ui can render slash + shake

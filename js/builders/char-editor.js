@@ -194,12 +194,13 @@ window.CJS.CharEditor = (() => {
 
         <h3>Battle SFX</h3>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Attack Line ID</label><input type="text" id="chr-sfx-attack" value="${_esc(c.battleSfx?.attack || '')}" placeholder="voice_attack"></div>
-          <div class="form-group"><label class="form-label">Hurt Line ID</label><input type="text" id="chr-sfx-hurt" value="${_esc(c.battleSfx?.hurt || '')}" placeholder="voice_hurt"></div>
-          <div class="form-group"><label class="form-label">Happy Line ID</label><input type="text" id="chr-sfx-happy" value="${_esc(c.battleSfx?.happy || '')}" placeholder="voice_happy"></div>
+          <div class="form-group"><label class="form-label">Fight Line ID</label><input type="text" id="chr-sfx-attack" value="${_esc(c.battleSfx?.attack || c.battleSfx?.fight || '')}" placeholder="bin_fight"></div>
+          <div class="form-group"><label class="form-label">Hurt Line ID</label><input type="text" id="chr-sfx-hurt" value="${_esc(c.battleSfx?.hurt || '')}" placeholder="bin_hurt"></div>
+          <div class="form-group"><label class="form-label">Happy Line ID</label><input type="text" id="chr-sfx-happy" value="${_esc(c.battleSfx?.happy || '')}" placeholder="bin_happy"></div>
+          <div class="form-group"><label class="form-label">Angry Line ID</label><input type="text" id="chr-sfx-angry" value="${_esc(c.battleSfx?.angry || c.battleSfx?.miss || '')}" placeholder="bin_angry"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Expression ID</label><input type="text" id="chr-sfx-expression" value="${_esc(c.battleSfx?.expression || '')}" placeholder="voice_expression"></div>
+          <div class="form-group"><label class="form-label">Expression ID</label><input type="text" id="chr-sfx-expression" value="${_esc(c.battleSfx?.expression || '')}" placeholder="optional_expression"></div>
           <div class="form-group"><label class="form-label">Archer Shot ID</label><input type="text" id="chr-sfx-archerAttack" value="${_esc(c.battleSfx?.archerAttack || '')}" placeholder="weapon_bow_shot"></div>
         </div>
 
@@ -321,7 +322,7 @@ window.CJS.CharEditor = (() => {
     _formEl.querySelector('#chr-save').onclick = () => {
       const currentStats = {};
       for (const s of C().STATS) currentStats[s] = statSliders[s]._getValue();
-      const battleSfx = _collectBattleSfx(c, 'chr', ['attack', 'hurt', 'happy', 'expression', 'archerAttack']);
+      const battleSfx = _collectBattleSfx(c, 'chr', ['attack', 'hurt', 'happy', 'angry', 'expression', 'archerAttack']);
       const availableJobs = jobsPicker.getIds();
       const chosenDefaultJob = defaultJobSel.value || null;
       DS().replace('characters', c.id, {
