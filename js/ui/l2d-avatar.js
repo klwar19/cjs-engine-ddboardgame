@@ -89,15 +89,16 @@ window.CJS.L2DAvatar = (() => {
     const src = cfg?.backgroundImage;
     if (!src) return;
 
+    const resolvedSrc = new URL(src, document.baseURI).href;
     const img = new Image();
     img.onload = () => {
-      const safeSrc = String(src).replace(/"/g, '\\"');
+      const safeSrc = String(img.currentSrc || img.src || resolvedSrc).replace(/"/g, '\\"');
       targetEl.style.setProperty('--l2d-background-image', `url("${safeSrc}")`);
       targetEl.style.backgroundPosition = cfg.backgroundPosition || 'center';
       targetEl.style.backgroundSize = cfg.backgroundFit || 'cover';
       targetEl.classList.add('has-l2d-background');
     };
-    img.src = src;
+    img.src = resolvedSrc;
   }
 
   // ── Public: create() returns an instance bound to a DOM target ──
