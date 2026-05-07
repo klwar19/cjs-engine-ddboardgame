@@ -1,0 +1,158 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "ｷﾛﾉｫﾐ｡ﾌ・ｹ.moc3",
+		"Textures": [
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_00.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_01.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_02.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_03.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_04.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_05.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_06.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_07.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_08.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_09.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_10.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_11.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_12.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_13.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_14.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_15.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_16.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_17.png",
+			"ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_18.png"
+		],
+		"Physics": "ｷﾛﾉｫﾐ｡ﾌ・ｹ.physics3.json",
+		"DisplayInfo": "ｷﾛﾉｫﾐ｡ﾌ・ｹ.cdi3.json",
+		"Expressions": [
+			{
+				"Name": "1ｰｮﾐﾄ",
+				"File": "1ｰｮﾐﾄ.exp3.json"
+			},
+			{
+				"Name": "1ｰﾗﾉｫｽﾞﾃｫ",
+				"File": "1ｰﾗﾉｫｽﾞﾃｫ.exp3.json"
+			},
+			{
+				"Name": "1ｻ｢ﾑﾀ",
+				"File": "1ｻ｢ﾑﾀ.exp3.json"
+			},
+			{
+				"Name": "1ﾁｳｺ・",
+				"File": "1ﾁｳｺ・exp3.json"
+			},
+			{
+				"Name": "1ﾁｳｺﾚ",
+				"File": "1ﾁｳｺﾚ.exp3.json"
+			},
+			{
+				"Name": "1ﾁ・",
+				"File": "1ﾁ・exp3.json"
+			},
+			{
+				"Name": "1ﾉ憘・",
+				"File": "1ﾉ憘・exp3.json"
+			},
+			{
+				"Name": "1ﾐﾇﾐﾇﾑﾛ",
+				"File": "1ﾐﾇﾐﾇﾑﾛ.exp3.json"
+			},
+			{
+				"Name": "1ﾑﾛﾖ・",
+				"File": "1ﾑﾛﾖ・exp3.json"
+			},
+			{
+				"Name": "2ｻｰﾍｲ",
+				"File": "2ｻｰﾍｲ.exp3.json"
+			},
+			{
+				"Name": "2ｻｨ",
+				"File": "2ｻｨ.exp3.json"
+			},
+			{
+				"Name": "2ｿﾚｺ・",
+				"File": "2ｿﾚｺ・exp3.json"
+			},
+			{
+				"Name": "2ﾋｿｴ・",
+				"File": "2ﾋｿｴ・exp3.json"
+			},
+			{
+				"Name": "2ﾍﾃﾗﾓ",
+				"File": "2ﾍﾃﾗﾓ.exp3.json"
+			},
+			{
+				"Name": "3ｰﾗﾉｫﾋｫﾂ﨔ｲ",
+				"File": "3ｰﾗﾉｫﾋｫﾂ﨔ｲ.exp3.json"
+			},
+			{
+				"Name": "3ﾈ･ｵｫﾂ﨔ｲ",
+				"File": "3ﾈ･ｵｫﾂ﨔ｲ.exp3.json"
+			},
+			{
+				"Name": "3ﾍﾏﾎｲ",
+				"File": "3ﾍﾏﾎｲ.exp3.json"
+			},
+			{
+				"Name": "3ﾒﾂｷ",
+				"File": "3ﾒﾂｷ.exp3.json"
+			},
+			{
+				"Name": "4ｷ｢ｼﾐ2",
+				"File": "4ｷ｢ｼﾐ2.exp3.json"
+			},
+			{
+				"Name": "4ｷ｢ﾊﾎ1",
+				"File": "4ｷ｢ﾊﾎ1.exp3.json"
+			},
+			{
+				"Name": "4ｷ｢ﾊﾎ3",
+				"File": "4ｷ｢ﾊﾎ3.exp3.json"
+			},
+			{
+				"Name": "4ｷ｢ﾊﾎﾋｫﾂ﨔ｲ4",
+				"File": "4ｷ｢ﾊﾎﾋｫﾂ﨔ｲ4.exp3.json"
+			},
+			{
+				"Name": "ｲｼｾｰ",
+				"File": "ｲｼｾｰ.exp3.json"
+			},
+			{
+				"Name": "ｳ皺・",
+				"File": "ｳ皺・exp3.json"
+			},
+			{
+				"Name": "ﾋｮﾓ｡",
+				"File": "ﾋｮﾓ｡.exp3.json"
+			},
+			{
+				"Name": "ﾍｷ",
+				"File": "ﾍｷ.exp3.json"
+			}
+		],
+		"Motions": {
+			"": [
+				{
+					"File": "ｴｻ巐ｯｻｭ.motion3.json"
+				},
+				{
+					"File": "ﾍｿｿﾚｺ・motion3.json"
+				}
+			]
+		}
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		}
+	],
+	"HitAreas": []
+}

@@ -1,0 +1,30 @@
+{
+    "Type": "Live2D Expression",
+    "Parameters": [
+        {
+            "Id": "tuzi",
+            "Value": 0.0,
+            "Blend": "Add"
+        },
+        {
+            "Id": "hua",
+            "Value": 0.0,
+            "Blend": "Add"
+        },
+        {
+            "Id": "huatong",
+            "Value": 0.0,
+            "Blend": "Add"
+        },
+        {
+            "Id": "kouhong",
+            "Value": 1.0,
+            "Blend": "Add"
+        },
+        {
+            "Id": "kouhong13",
+            "Value": 0.0,
+            "Blend": "Add"
+        }
+    ]
+}
