@@ -10,6 +10,9 @@
   --campaign-warn: #f5b84b;
   --campaign-danger: #ef6666;
   --campaign-good: #8bd17c;
+  --campaign-info: #7fb9ff;
+  --campaign-plot: #c9a46a;
+  --campaign-flavor: #b7c0c7;
 
   /* JRPG palette extension (Persona 4 / Chrono Trigger inspired) */
   --cmp-ink: #0c1413;
@@ -888,6 +891,324 @@ body.campaign-page {
   padding: 9px;
 }
 
+.campaign-town-dashboard {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  align-items: start;
+}
+
+.campaign-town-snapshot {
+  grid-column: 1 / -1;
+}
+
+.campaign-town-float-stack {
+  display: grid;
+  gap: 14px;
+  grid-column: 2;
+  grid-row: 2 / span 8;
+  position: sticky;
+  top: 178px;
+  z-index: 6;
+}
+
+.campaign-town-actions {
+  grid-column: 1;
+}
+
+.campaign-town-summary,
+.campaign-town-columns,
+.campaign-town-now,
+.campaign-town-option-grid,
+.campaign-impact-row,
+.campaign-impact-legend,
+.campaign-consequence-head {
+  display: flex;
+  gap: 10px;
+}
+
+.campaign-town-summary {
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.campaign-town-stats {
+  flex: 1 1 420px;
+}
+
+.campaign-town-now {
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+}
+
+.campaign-town-kpi {
+  flex: 1 1 120px;
+  min-width: 110px;
+  padding: 10px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #111614;
+}
+
+.campaign-town-kpi b {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+.campaign-town-kpi span,
+.campaign-town-line span,
+.campaign-town-option span,
+.campaign-random-float p,
+.campaign-consequence span,
+.campaign-flavor-trail span {
+  color: var(--campaign-muted);
+  font-size: 0.88rem;
+}
+
+.campaign-town-kpi.is-risk {
+  border-color: rgba(239, 102, 102, 0.6);
+}
+
+.campaign-town-kpi.is-plot {
+  border-color: rgba(201, 164, 106, 0.75);
+}
+
+.campaign-town-columns {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.campaign-town-columns > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.campaign-town-line {
+  display: grid;
+  gap: 2px;
+  padding: 9px 0;
+  border-top: 1px solid var(--campaign-line);
+}
+
+.campaign-town-line:first-of-type {
+  border-top: 0;
+}
+
+.campaign-town-line.is-risk strong {
+  color: #ffb8b8;
+}
+
+.campaign-town-line.is-plot strong {
+  color: #f0d29c;
+}
+
+.campaign-town-option-grid {
+  flex-wrap: wrap;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.campaign-town-option {
+  flex: 1 1 210px;
+  min-width: 180px;
+  min-height: 132px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #121819;
+  color: var(--campaign-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.campaign-town-option:hover {
+  border-color: var(--campaign-accent);
+}
+
+.campaign-town-option.is-reward,
+.campaign-result-card.is-reward {
+  border-color: rgba(139, 209, 124, 0.62);
+}
+
+.campaign-town-option.is-risk,
+.campaign-result-card.is-risk {
+  border-color: rgba(239, 102, 102, 0.7);
+}
+
+.campaign-town-option.is-quest,
+.campaign-result-card.is-quest {
+  border-color: rgba(127, 185, 255, 0.68);
+}
+
+.campaign-town-option.is-plot,
+.campaign-result-card.is-plot {
+  border-color: rgba(201, 164, 106, 0.72);
+}
+
+.campaign-town-option.is-flavor,
+.campaign-result-card.is-flavor {
+  border-color: rgba(183, 192, 199, 0.58);
+}
+
+.campaign-town-option.is-mixed,
+.campaign-result-card.is-mixed {
+  border-color: rgba(227, 200, 111, 0.7);
+}
+
+.campaign-random-float {
+  background: #161b1a;
+  border-color: var(--campaign-accent-2);
+}
+
+.campaign-random-float.has-pending {
+  border-color: var(--campaign-warn);
+  box-shadow: 0 0 0 1px rgba(245, 184, 75, 0.28), 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.campaign-floating-eyebrow {
+  color: var(--campaign-accent-2);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.campaign-random-float h3 {
+  margin: 4px 0 8px;
+  font-size: 1.02rem;
+}
+
+.campaign-roll-now {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.campaign-impact-row,
+.campaign-impact-legend,
+.campaign-consequence-head {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.campaign-impact-legend {
+  margin-top: 12px;
+  gap: 6px;
+}
+
+.campaign-impact-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 999px;
+  background: #0f1416;
+  color: var(--campaign-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.campaign-impact-badge.is-reward {
+  border-color: rgba(139, 209, 124, 0.7);
+  color: #baf0b0;
+}
+
+.campaign-impact-badge.is-risk {
+  border-color: rgba(239, 102, 102, 0.78);
+  color: #ffc1c1;
+}
+
+.campaign-impact-badge.is-quest {
+  border-color: rgba(127, 185, 255, 0.78);
+  color: #b9d8ff;
+}
+
+.campaign-impact-badge.is-plot {
+  border-color: rgba(201, 164, 106, 0.84);
+  color: #f0d29c;
+}
+
+.campaign-impact-badge.is-flavor {
+  border-color: rgba(183, 192, 199, 0.7);
+  color: #d8dee3;
+}
+
+.campaign-impact-badge.is-mixed {
+  border-color: rgba(227, 200, 111, 0.85);
+  color: #f3dc92;
+}
+
+.campaign-consequence,
+.campaign-flavor-trail,
+.campaign-rumor-purpose {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: #101419;
+}
+
+.campaign-rumor-purpose {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  border-color: rgba(201, 164, 106, 0.64);
+}
+
+.campaign-rumor-purpose span:last-child {
+  color: var(--campaign-muted);
+  font-size: 0.88rem;
+}
+
+.campaign-consequence.is-reward {
+  border-left: 4px solid var(--campaign-good);
+}
+
+.campaign-consequence.is-risk {
+  border-left: 4px solid var(--campaign-danger);
+}
+
+.campaign-consequence.is-quest {
+  border-left: 4px solid var(--campaign-info);
+}
+
+.campaign-consequence.is-plot {
+  border-left: 4px solid var(--campaign-plot);
+}
+
+.campaign-consequence.is-flavor {
+  border-left: 4px solid var(--campaign-flavor);
+}
+
+.campaign-consequence.is-mixed {
+  border-left: 4px solid var(--campaign-accent-2);
+}
+
+.campaign-consequence ul {
+  margin: 2px 0 0 18px;
+  padding: 0;
+  color: var(--campaign-text);
+}
+
+.campaign-choice-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.campaign-flavor-trail {
+  background: #12161a;
+}
+
+.campaign-flavor-trail div {
+  display: grid;
+  gap: 2px;
+}
+
 .campaign-tabs,
 .campaign-subtabs {
   display: flex;
@@ -1022,6 +1343,24 @@ body.campaign-page {
 }
 
 @media (max-width: 1080px) {
+  .campaign-town-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-town-float-stack {
+    grid-column: auto;
+    grid-row: auto;
+    position: static;
+  }
+
+  .campaign-town-actions {
+    grid-column: auto;
+  }
+
+  .campaign-town-summary {
+    flex-direction: column;
+  }
+
   .campaign-modes {
     grid-template-columns: 1fr;
   }
@@ -1486,6 +1825,26 @@ body.campaign-page {
 }
 
 @media (max-width: 640px) {
+  .campaign-town-option {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .campaign-town-now {
+    flex-direction: column;
+  }
+
+  .campaign-town-line,
+  .campaign-consequence,
+  .campaign-flavor-trail,
+  .campaign-rumor-purpose {
+    overflow-wrap: anywhere;
+  }
+
+  .campaign-rumor-purpose {
+    grid-template-columns: 1fr;
+  }
+
   .campaign-body {
     width: calc(100% - 20px);
     padding: 10px 0;

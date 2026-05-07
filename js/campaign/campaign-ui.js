@@ -883,30 +883,35 @@ window.CJS.CampaignUI = (() => {
 
   function _renderOverview(state) {
     return `
-      <div class="campaign-dashboard">
-        <section class="campaign-panel campaign-actions-panel">
+      <div class="campaign-dashboard campaign-town-dashboard">
+        ${_renderTownSnapshot(state)}
+        <div class="campaign-town-float-stack">
+          ${_renderTownRollFloat(state)}
+          ${_renderSoloNotice(state)}
+        </div>
+        <section class="campaign-panel campaign-actions-panel campaign-town-actions">
           <div class="campaign-panel-head">
             <div>
               <h2>Adventure Desk</h2>
-              <div class="campaign-muted">Roll something random, pick something specific, or run admin tools. A result card will appear below for you to accept, edit, or discard.</div>
+              <div class="campaign-muted">Roll something random, pick something specific, or run admin tools. Every result shows its consequence before it touches the save.</div>
             </div>
           </div>
           <div class="campaign-control-stack">
             ${_controlGroup('Roll Random', `
-              ${_actionBtn({ action: 'solo-surprise',       label: 'Story Offer',  hint: 'Hook card you can turn into a quest, rumor, or saved idea', kind: 'primary' })}
-              ${_actionBtn({ action: 'random-quest-offer',  label: 'Quest Run',    hint: 'Pick a random quest template AND auto-start its map run' })}
-              ${_actionBtn({ action: 'random-rumor-offer',  label: 'Rumor Hook',   hint: 'Hook card you can plant in the hub as a rumor' })}
-              ${_actionBtn({ action: 'roll-event',          label: 'Roll Event',   hint: 'Table event with stat/loot consequences. You choose: Apply, Edit, Save, or Ignore' })}
-              ${_actionBtn({ action: 'roll-oracle',         label: 'Roll GM Prompt', hint: 'GM inspiration text only. No bonuses applied. Use it to riff a scene' })}
-            `, 'Random outputs land below as preview cards. Nothing is committed until you accept it.')}
+              ${_actionBtn({ action: 'solo-surprise',       label: 'Story Offer',  hint: 'Hook card you can accept, make quest, plant as rumor, save, or ignore', kind: 'primary' })}
+              ${_actionBtn({ action: 'random-quest-offer',  label: 'Quest Run',    hint: 'Pick a random quest template and auto-start its map run' })}
+              ${_actionBtn({ action: 'random-rumor-offer',  label: 'Rumor Hook',   hint: 'Create a marked lead bank item. No mechanics happen until you promote it later' })}
+              ${_actionBtn({ action: 'roll-event',          label: 'Roll Event',   hint: 'Table event with visible gain/risk/quest/plot consequences before apply' })}
+              ${_actionBtn({ action: 'roll-oracle',         label: 'Roll GM Prompt', hint: 'GM inspiration text only. No bonuses applied' })}
+            `, 'Random outputs land in the floating box and result cards. Nothing is committed until you accept it.')}
             ${_controlGroup('Pick / Customize', `
               ${_actionBtn({ action: 'add-quest',      label: 'Add Quest',     hint: 'Quest builder: pick template, edit fields, optionally start its run' })}
-              ${_actionBtn({ action: 'manual-rumor',   label: 'Write Rumor',   hint: 'Type a custom rumor and add it to the hub' })}
+              ${_actionBtn({ action: 'manual-rumor',   label: 'Write Rumor',   hint: 'Type a custom lead into the hub rumor bank' })}
               ${_actionBtn({ action: 'pick-event',     label: 'Pick Event',    hint: 'Choose a specific authored event from the catalog' })}
               ${_actionBtn({ action: 'custom-event',   label: 'Custom Event',  hint: 'Write your own event with optional quick consequence' })}
               ${_actionBtn({ action: 'pick-oracle',    label: 'Pick GM Prompt', hint: 'Pick a specific GM prompt from the catalog' })}
               ${_actionBtn({ action: 'custom-oracle',  label: 'Custom Prompt', hint: 'Type your own GM scene prompt' })}
-            `, 'Same outputs as Roll Random but you choose what shows up.')}
+            `, 'Same outputs as Roll Random but you choose what shows up. Rumors are saved leads, not automatic mechanics.')}
             ${_controlGroup('Run Admin', `
               ${_actionBtn({ action: 'pass-phase',    label: 'Pass Phase',  hint: 'Advance the campaign phase: ticks timers, ages rumors, advances quests' })}
               ${_actionBtn({ action: 'full-rest',     label: 'Full Rest',   hint: 'Restore party HP/MP and clear non-permanent statuses' })}
@@ -915,7 +920,6 @@ window.CJS.CampaignUI = (() => {
           </div>
         </section>
         ${_renderAdventureLegend(state)}
-        ${_renderSoloNotice(state)}
         ${_renderScenarioSummary(state)}
         ${_renderTravelSurprise(state)}
         ${_renderPendingBattle(state)}
@@ -1014,11 +1018,12 @@ window.CJS.CampaignUI = (() => {
         </section>
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Rumors</h3><button class="campaign-action" data-campaign-action="manual-rumor">Add Rumor</button></div>
+          ${_renderRumorPurpose()}
           ${(hubState?.rumors || []).slice(0, 6).map((rumor) => `
             <div class="campaign-row">
               <div>
                 <strong>${_esc(rumor.text || rumor.id)}</strong>
-                <div class="campaign-muted">${_esc(rumor.status || 'active')}</div>
+                <div class="campaign-muted">${_esc(rumor.status || 'active')} | hold until promoted</div>
               </div>
               <span class="campaign-risk ${Side().riskClass(rumor.canonRisk)}">${_esc(rumor.canonRisk || 'green')}</span>
             </div>
@@ -1068,6 +1073,142 @@ window.CJS.CampaignUI = (() => {
         </section>
         ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No quest arc templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
       </div>
+    `;
+  }
+
+  function _renderTownSnapshot(state) {
+    const hub = window.CJS.CampaignHub?.getCurrentHubDefinition?.();
+    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
+    const activeQuests = Object.values(state.quests || {}).filter((quest) => !_isQuestResolved(quest));
+    const activeChains = CS().getActiveQuestChains?.() || [];
+    const problems = hubState?.activeProblems || [];
+    const rumors = (hubState?.rumors || []).filter((rumor) => rumor.status !== 'resolved');
+    const metrics = ['security', 'prosperity', 'warmth', 'weirdness']
+      .map((stat) => `<span>${_esc(_label(stat))} <b>${_esc(hubState?.[stat] ?? 0)}</b></span>`)
+      .join('');
+    const locations = (hub?.locations || []).slice(0, 5).map((loc) => `
+      <div class="campaign-town-line">
+        <strong>${_esc(loc.name || loc.id)}</strong>
+        <span>${_esc(loc.notes || _label(loc.type || 'location'))}</span>
+      </div>
+    `).join('');
+
+    return `
+      <section class="campaign-panel campaign-town-snapshot">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>${_esc(hub?.name || 'Town Overview')}</h2>
+            <div class="campaign-muted">${_esc(hub?.description || 'Town phase command view.')}</div>
+          </div>
+          <span class="campaign-pill">${_esc(_label(hubState?.mood || 'neutral'))}</span>
+        </div>
+        <div class="campaign-town-summary">
+          <div class="campaign-stat-grid campaign-town-stats">${metrics}</div>
+          <div class="campaign-town-now">
+            <div class="campaign-town-kpi">
+              <b>${activeQuests.length}</b>
+              <span>Open quests</span>
+            </div>
+            <div class="campaign-town-kpi">
+              <b>${activeChains.length}</b>
+              <span>Quest arcs</span>
+            </div>
+            <div class="campaign-town-kpi ${problems.length ? 'is-risk' : ''}">
+              <b>${problems.length}</b>
+              <span>Problems</span>
+            </div>
+            <div class="campaign-town-kpi ${rumors.length ? 'is-plot' : ''}">
+              <b>${rumors.length}</b>
+              <span>Rumors</span>
+            </div>
+          </div>
+        </div>
+        ${_renderRumorPurpose()}
+        <div class="campaign-town-columns">
+          <div>
+            <div class="campaign-section-title">Pressure</div>
+            ${(problems.length ? problems.slice(0, 4).map((problem) => `
+              <div class="campaign-town-line is-risk">
+                <strong>${_esc(_label(problem))}</strong>
+                <span>Active town problem</span>
+              </div>
+            `).join('') : '<div class="campaign-empty">No active town problems.</div>')}
+            ${(rumors.length ? rumors.slice(0, 3).map((rumor) => `
+              <div class="campaign-town-line is-plot">
+                <strong>${_esc(rumor.text || rumor.id)}</strong>
+                <span>${_esc(_label(rumor.canonRisk || 'green'))} lead | promote later</span>
+              </div>
+            `).join('') : '')}
+          </div>
+          <div>
+            <div class="campaign-section-title">Places</div>
+            ${locations || '<div class="campaign-empty">No hub locations loaded.</div>'}
+          </div>
+          <div>
+            <div class="campaign-section-title">Fast Actions</div>
+            <div class="campaign-action-grid">
+              <button class="campaign-action" data-campaign-action="open-quests-tab">Quests</button>
+              <button class="campaign-action" data-campaign-action="open-shops-tab">Shops & Rest</button>
+              <button class="campaign-action" data-campaign-action="open-roster-tab">Roster</button>
+              <button class="campaign-action" data-campaign-action="open-sideforge-tab">Hub Pulse</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderTownRollFloat(state) {
+    const pending = _pendingSoloHookCard(state);
+    const pendingOps = pending ? _cardChoiceOps(pending) : [];
+    const pendingSummary = pending
+      ? _consequenceSummary(pendingOps, { hasText: !!(pending.prompt || pending.summary || pending.text) })
+      : null;
+    return `
+      <section class="campaign-panel campaign-random-float ${pending ? 'has-pending' : ''}">
+        <div class="campaign-floating-eyebrow">Roll Random</div>
+        <h3>${pending ? 'Resolve Current Roll' : 'Town Pulse Box'}</h3>
+        ${pending
+          ? `<p>${_esc(pending.title || pending.name || pending.id)}</p>
+             <div class="campaign-impact-row">
+               <span class="campaign-impact-badge is-${_escAttr(pendingSummary.tone)}">${_esc(pendingSummary.label)}</span>
+               <span>${_esc(pendingSummary.short)}</span>
+             </div>`
+          : '<p>Click once, then deal with the result before rolling again.</p>'}
+        <div class="campaign-action-grid">
+          ${pending
+            ? `<button class="campaign-action primary" data-campaign-action="accept-solo-hook">${pendingOps.length ? 'Accept & Apply' : 'Accept as Quest'}</button>
+               <button class="campaign-action" data-campaign-action="save-solo-hook">Save Text</button>
+               <button class="campaign-action danger" data-campaign-action="ignore-solo-hook">Reject</button>`
+            : '<button class="campaign-action primary campaign-roll-now" data-campaign-action="solo-surprise">Roll Random</button>'}
+        </div>
+        <div class="campaign-impact-legend">
+          ${_impactLegendItem('reward', 'gain')}
+          ${_impactLegendItem('risk', 'risk')}
+          ${_impactLegendItem('quest', 'quest')}
+          ${_impactLegendItem('plot', 'plot')}
+          ${_impactLegendItem('flavor', 'text')}
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderRumorPurpose() {
+    return `
+      <div class="campaign-rumor-purpose">
+        <span class="campaign-impact-badge is-plot">Rumor purpose</span>
+        <span>Rumors are a safe lead bank: collect whispers now, read their canon risk, then promote one later into a quest, map seed, NPC beat, oracle prompt, or town problem when the party is ready.</span>
+      </div>
+    `;
+  }
+
+  function _renderTownActionButton({ action, tone, title, meta, text }) {
+    return `
+      <button class="campaign-town-option is-${_escAttr(tone)}" data-campaign-action="${_escAttr(action)}">
+        <span class="campaign-impact-badge is-${_escAttr(tone)}">${_esc(meta)}</span>
+        <strong>${_esc(title)}</strong>
+        <span>${_esc(text)}</span>
+      </button>
     `;
   }
 
@@ -1290,34 +1431,151 @@ window.CJS.CampaignUI = (() => {
   function _renderSideCard(card, options = {}) {
     const compact = !!options.compact;
     const choices = card.suggestedChoices || [];
+    const primaryOps = _cardChoiceOps(card);
+    const summary = _consequenceSummary(primaryOps, { hasText: !!(card.prompt || card.text || card.summary) });
     return `
-      <section class="campaign-panel campaign-side-card ${compact ? 'compact' : ''}">
+      <section class="campaign-panel campaign-side-card campaign-result-card is-${_escAttr(summary.tone)} ${compact ? 'compact' : ''}">
         <div class="campaign-panel-head">
           <div>
             <h3>${_esc(card.title || card.name || card.id)}</h3>
             <div class="campaign-muted">${_esc(card.type || 'side content')} | ${_esc(card.source || '')}</div>
           </div>
-          <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
+          <div class="campaign-impact-row">
+            <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
+            <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
+          </div>
         </div>
         ${card.prompt ? `<p>${_esc(card.prompt)}</p>` : ''}
         ${card.text ? `<p>${_esc(card.text)}</p>` : ''}
         ${card.summary && !compact ? `<p>${_esc(card.summary)}</p>` : ''}
+        ${!compact ? _renderFlavorTrail(card) : ''}
         ${card.gmKeywords?.length && !compact ? `<div class="campaign-chip-row">${card.gmKeywords.map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>` : ''}
         ${card.gmNote && !compact ? `<div class="campaign-warning">${_esc(card.gmNote)}</div>` : ''}
-        ${choices.length && !compact ? choices.map((choice, index) => `
-          <div class="campaign-preview">
-            <b>${_esc(choice.label || `Choice ${index + 1}`)}</b><br>
-            ${Ops().describe(choice.ops || []).map(_esc).join('<br>')}
-          </div>
-        `).join('') : ''}
+        ${choices.length && !compact ? `<div class="campaign-choice-stack">${choices.map((choice, index) => _renderChoiceConsequence(choice, index)).join('')}</div>` : ''}
         <div class="campaign-action-grid">
-          ${choices.length ? `<button class="campaign-action primary" data-campaign-action="apply-side-choice" data-id="${_escAttr(card.id)}" data-choice="0">Apply Choice</button>` : ''}
+          ${choices.length ? choices.map((choice, index) => `
+            <button class="campaign-action ${index === 0 ? 'primary' : ''}" data-campaign-action="apply-side-choice" data-id="${_escAttr(card.id)}" data-choice="${index}">Apply: ${_esc(choice.label || `Choice ${index + 1}`)}</button>
+          `).join('') : ''}
           <button class="campaign-action" data-campaign-action="save-side-idea" data-id="${_escAttr(card.id)}">Save</button>
           <button class="campaign-action" data-campaign-action="copy-side-card" data-id="${_escAttr(card.id)}">Copy</button>
           <button class="campaign-action danger" data-campaign-action="reject-side-idea" data-id="${_escAttr(card.id)}">Reject</button>
         </div>
       </section>
     `;
+  }
+
+  function _cardChoiceOps(card = {}) {
+    const firstChoice = card.suggestedChoices?.[0]?.ops;
+    const ops = firstChoice || card.suggested || card.suggestedOps || card.rewardOps || [];
+    return Array.isArray(ops) ? ops : [];
+  }
+
+  function _renderChoiceConsequence(choice = {}, index = 0) {
+    return _renderConsequencePreview(choice.ops || [], {
+      title: choice.label || `Choice ${index + 1}`,
+      emptyTitle: choice.label || `Choice ${index + 1}`,
+      emptyText: 'Flavor choice only. Save it as text or use it to steer the next scene.'
+    });
+  }
+
+  function _renderConsequencePreview(ops = [], options = {}) {
+    const list = Array.isArray(ops) ? ops.filter(Boolean) : [];
+    const summary = _consequenceSummary(list, { hasText: options.hasText });
+    const title = options.title || (list.length ? summary.title : options.emptyTitle) || summary.title;
+    const text = list.length ? summary.detail : (options.emptyText || summary.detail);
+    const lines = list.length ? Ops().describe(list) : [];
+    return `
+      <div class="campaign-consequence is-${_escAttr(summary.tone)}">
+        <div class="campaign-consequence-head">
+          <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
+          <strong>${_esc(title)}</strong>
+        </div>
+        <span>${_esc(text)}</span>
+        ${lines.length ? `<ul>${lines.map((line) => `<li>${_esc(line)}</li>`).join('')}</ul>` : ''}
+      </div>
+    `;
+  }
+
+  function _renderFlavorTrail(entry = {}) {
+    const lines = [];
+    if (entry.suggestedUse) lines.push(['Use', entry.suggestedUse]);
+    if (entry.objective) lines.push(['Objective', entry.objective]);
+    if (entry.gimmick) lines.push(['Scene logic', entry.gimmick]);
+    if (entry.followUpHooks?.length) lines.push(['Follow-up', entry.followUpHooks.join(' / ')]);
+    if (entry.oracleTableId) lines.push(['Oracle', 'Roll a linked prompt if the text needs a sharper direction.']);
+    if (!lines.length) return '';
+    return `
+      <div class="campaign-flavor-trail">
+        ${lines.map(([label, text]) => `
+          <div>
+            <b>${_esc(label)}</b>
+            <span>${_esc(text)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function _consequenceSummary(ops = [], options = {}) {
+    const list = Array.isArray(ops) ? ops.filter(Boolean) : [];
+    const counts = { reward: 0, risk: 0, quest: 0, plot: 0, flavor: 0 };
+    for (const op of list) counts[_operationTone(op)] += 1;
+    let tone = 'flavor';
+    if (counts.reward && !counts.risk && !counts.quest && !counts.plot) tone = 'reward';
+    else if (counts.risk && !counts.reward && !counts.quest && !counts.plot) tone = 'risk';
+    else if (counts.quest && !counts.reward && !counts.risk) tone = 'quest';
+    else if (counts.plot && !counts.reward && !counts.risk && !counts.quest) tone = 'plot';
+    else if (counts.reward || counts.risk || counts.quest || counts.plot) tone = 'mixed';
+    else if (options.hasText) tone = 'flavor';
+
+    const labels = {
+      reward: 'Gain',
+      risk: 'Risk / Cost',
+      quest: 'Quest / Progress',
+      plot: 'Plot / Text',
+      flavor: 'Flavor Only',
+      mixed: 'Mixed'
+    };
+    const titles = {
+      reward: 'Applies rewards',
+      risk: 'Applies a cost or danger',
+      quest: 'Changes quest or hub progress',
+      plot: 'Adds plot state or table text',
+      flavor: 'Flavor text only',
+      mixed: 'Applies mixed consequences'
+    };
+    const details = {
+      reward: 'Clicking applies gains such as items, money, JP, healing, unlocks, or roster growth.',
+      risk: 'Clicking applies loss, damage, danger, status pressure, or a similar cost.',
+      quest: 'Clicking starts or advances a quest, scenario, hub problem, service, map, or clock.',
+      plot: 'Clicking records story state such as rumors, flags, bonds, reputation, notes, or review items.',
+      flavor: 'No mechanical change yet. Keep it as narration, save it as a note, or turn it into a plot seed.',
+      mixed: 'Clicking applies more than one kind of result. Review the exact list before applying.'
+    };
+    const shorts = {
+      reward: 'You get something.',
+      risk: 'Something pushes back.',
+      quest: 'The campaign state moves forward.',
+      plot: 'Story text or plot state changes.',
+      flavor: 'Text only until you save or promote it.',
+      mixed: 'Multiple consequences apply.'
+    };
+    return { tone, label: labels[tone], title: titles[tone], detail: details[tone], short: shorts[tone] };
+  }
+
+  function _operationTone(op = {}) {
+    const name = String(op.op || '').toLowerCase();
+    if (!name || name === 'log') return 'flavor';
+    if (/^(give_|heal_|restore_mp|recruit_character|learn_|unlock_|add_xp|add_level)/.test(name)) return 'reward';
+    if (/^(take_|damage_|spend_|add_status|remove_character|bench_character)/.test(name)) return 'risk';
+    if (name === 'danger') return Number(op.amount || 0) > 0 ? 'risk' : 'reward';
+    if (/quest|scenario|battle|node|map|hub_problem|hub_service|clock/.test(name)) return 'quest';
+    if (/rumor|flag|bond|reputation|npc_mood|hub_mood|hub_stat|memory|side_idea|review|world_transition|chapter_transition/.test(name)) return 'plot';
+    return 'plot';
+  }
+
+  function _impactLegendItem(tone, label) {
+    return `<span class="campaign-impact-badge is-${_escAttr(tone)}">${_esc(label)}</span>`;
   }
 
   function _controlGroup(title, buttons, description = '') {
@@ -1354,32 +1612,40 @@ window.CJS.CampaignUI = (() => {
     const kind = state.pendingSoloHook?.kind || card.type || 'hook';
     const risk = Side().risk(card.canonRisk);
     const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
-    const choice = card.suggestedChoices?.[0];
-    const choiceLabel = choice?.label || 'Apply the first suggested choice';
-    const choiceOpsDesc = (choice?.ops?.length ? Ops().describe(choice.ops) : []).filter(Boolean);
+    const ops = _cardChoiceOps(card);
+    const summary = _consequenceSummary(ops, { hasText: !!prompt });
+    const firstChoice = card.suggestedChoices?.[0];
+    const choiceLabel = firstChoice?.label || 'Apply the first suggested choice';
     const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer');
     const acceptHint = isQuestOffer
-      ? 'Add quest to tracker AND auto-start its map run'
-      : (choiceOpsDesc.length ? `Apply: ${choiceOpsDesc.join('; ')}` : 'Apply the suggested choice (story-only if no ops)');
+      ? 'Add quest to tracker and auto-start its map run'
+      : (ops.length ? `Apply: ${Ops().describe(ops).join('; ')}` : 'Create a quest from this story-only hook');
     return `
-      <section class="campaign-panel campaign-solo-notice ${risk === 'red' ? 'risk-red' : ''}">
+      <section class="campaign-panel campaign-solo-notice campaign-result-card is-${_escAttr(summary.tone)} ${risk === 'red' ? 'risk-red' : ''}">
         <div class="campaign-panel-head">
           <div>
-            <h2>Story Offer</h2>
+            <h2>Immediate Roll Result</h2>
             <div class="campaign-muted">${_esc(_label(kind))} | Suggested: ${_esc(choiceLabel)}</div>
           </div>
-          <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
+          <div class="campaign-impact-row">
+            <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
+            <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
+          </div>
         </div>
         <strong>${_esc(card.title || card.name || card.id)}</strong>
         ${prompt ? `<p>${_esc(prompt)}</p>` : ''}
-        ${choiceOpsDesc.length ? `<div class="campaign-preview"><b>Accept does</b><br>${choiceOpsDesc.map(_esc).join('<br>')}</div>` : ''}
-        <div class="campaign-control-help">Pick one: <b>Accept</b> commits the suggested choice. <b>Make Quest</b> only adds it to the Quest Tracker (no run started). <b>Make Rumor</b> plants it in the hub. <b>Save</b> stores the card as a saved idea. <b>Ignore</b> drops it.</div>
+        ${_renderConsequencePreview(ops, {
+          emptyTitle: 'Flavor only',
+          emptyText: 'No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest.'
+        })}
+        ${_renderFlavorTrail(card)}
+        <div class="campaign-control-help">Pick one: <b>Accept</b> commits the suggested choice. <b>Make Quest</b> only adds it to the Quest Tracker when possible. <b>Make Rumor</b> plants it in the hub lead bank. <b>Save</b> stores the card as a saved idea. <b>Ignore</b> drops it.</div>
         <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'accept-solo-hook',   label: 'Accept',     hint: acceptHint, kind: 'primary' })}
-          ${_actionBtn({ action: 'solo-hook-quest',    label: 'Make Quest', hint: 'Add to Quest Tracker, no map run yet' })}
-          ${_actionBtn({ action: 'solo-hook-rumor',    label: 'Make Rumor', hint: 'Add as a hub rumor' })}
-          ${_actionBtn({ action: 'save-solo-hook',     label: 'Save',       hint: 'Store in Saved Ideas to use later' })}
-          ${_actionBtn({ action: 'ignore-solo-hook',   label: 'Ignore',     hint: 'Discard this hook', kind: 'danger' })}
+          ${_actionBtn({ action: 'accept-solo-hook', label: ops.length ? 'Accept & Apply' : 'Accept as Quest', hint: acceptHint, kind: 'primary' })}
+          ${_actionBtn({ action: 'solo-hook-quest', label: 'Make Quest', hint: 'Add to Quest Tracker, no map run yet' })}
+          ${_actionBtn({ action: 'solo-hook-rumor', label: 'Make Rumor', hint: 'Add as a hub rumor / lead bank item' })}
+          ${_actionBtn({ action: 'save-solo-hook', label: 'Save Text', hint: 'Store in Saved Ideas to use later' })}
+          ${_actionBtn({ action: 'ignore-solo-hook', label: 'Ignore', hint: 'Discard this hook', kind: 'danger' })}
         </div>
       </section>
     `;
@@ -1619,6 +1885,8 @@ window.CJS.CampaignUI = (() => {
   function _renderEventResult(state) {
     const event = state.lastEvent;
     if (!event) return '';
+    const suggested = event.suggested || [];
+    const summary = _consequenceSummary(suggested, { hasText: !!(event.prompt || event.gmHook) });
     const ideaLabels = {
       new_char: '👤 New NPC',
       new_item: '🎁 Item idea',
@@ -1633,28 +1901,35 @@ window.CJS.CampaignUI = (() => {
     const opsDesc = (event.suggested || []).length ? Ops().describe(event.suggested).filter(Boolean) : [];
     const consequenceLabel = opsDesc.length ? 'Consequences if applied' : 'Story-only event (no automatic ops)';
     return `
-      <section class="campaign-panel">
+      <section class="campaign-panel campaign-event-result campaign-result-card is-${_escAttr(summary.tone)}">
         <div class="campaign-panel-head">
-          <h2>${_esc(event.title || event.id || 'Event')}</h2>
-          <span class="campaign-pill">${_esc(event.tableName || event.type || 'event')}</span>
-          ${ideaPill}
+          <div>
+            <h2>${_esc(event.title || event.id || 'Event')}</h2>
+            <div class="campaign-muted">${_esc(event.tableName || event.type || 'event')}</div>
+          </div>
+          <div class="campaign-impact-row">
+            <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
+            ${ideaPill}
+          </div>
         </div>
         <p>${_esc(event.prompt || '')}</p>
         ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
-        <div class="campaign-preview">
-          <b>${_esc(consequenceLabel)}</b>
-          ${opsDesc.length ? `<br>${opsDesc.map(_esc).join('<br>')}` : '<br>Read the prompt aloud or pin it as a plot seed.'}
-        </div>
+        ${_renderConsequencePreview(suggested, {
+          emptyTitle: 'Flavor or plot text only',
+          emptyText: 'No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.'
+        })}
+        ${_renderFlavorTrail(event)}
         <div class="campaign-control-help">Pick one: <b>Apply</b> commits the listed ops now. <b>Edit First</b> lets you tweak ops before applying. <b>Save Note</b> only logs the event text. <b>Ignore</b> drops it. Reroll/Override change which event is shown.</div>
         <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'apply-event',  label: 'Apply',      hint: opsDesc.length ? `Commit: ${opsDesc.join('; ')}` : 'Log the event with no stat changes', kind: 'primary' })}
-          ${_actionBtn({ action: 'edit-event',   label: 'Edit First', hint: 'Tweak the ops, then apply' })}
-          ${_actionBtn({ action: 'note-event',   label: 'Save Note',  hint: 'Log the event text without applying ops' })}
-          ${(event.gmHook || event.gmIdea) ? _actionBtn({ action: 'pin-plot-seed',  label: '📌 Pin Plot Seed', hint: 'Save as a future plot hook in pinned notes' }) : ''}
-          ${event.oracleTableId ? _actionBtn({ action: 'event-to-oracle', label: '🎴 Roll Oracle', hint: 'Roll an oracle prompt linked to this event' }) : ''}
-          ${_actionBtn({ action: 'ignore-event', label: 'Ignore',     hint: 'Discard this event with no log entry', kind: 'danger' })}
-          ${_actionBtn({ action: 'roll-event',   label: '🎲 Reroll',  hint: 'Roll a different random event' })}
-          ${_actionBtn({ action: 'pick-event',   label: '📋 Override', hint: 'Replace with a specific event from the catalog' })}
+          ${_actionBtn({ action: 'apply-event', label: suggested.length ? 'Apply Listed Changes' : 'Log Flavor', hint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes', kind: 'primary' })}
+          ${_actionBtn({ action: 'edit-event', label: 'Edit Changes', hint: 'Tweak the ops, then apply' })}
+          ${_actionBtn({ action: 'note-event', label: 'Save Text Note', hint: 'Log the event text without applying ops' })}
+          ${(event.gmHook || event.gmIdea) ? _actionBtn({ action: 'pin-plot-seed', label: 'Pin Plot Seed', hint: 'Save as a future plot hook in pinned notes' }) : ''}
+          ${event.oracleTableId ? _actionBtn({ action: 'event-to-oracle', label: 'Roll Linked Oracle', hint: 'Roll an oracle prompt linked to this event' }) : ''}
+          ${_actionBtn({ action: 'ignore-event', label: 'Ignore', hint: 'Discard this event with no log entry', kind: 'danger' })}
+          ${_actionBtn({ action: 'roll-event', label: 'Reroll Event', hint: 'Roll a different random event' })}
+          ${_actionBtn({ action: 'pick-event', label: 'Pick Different', hint: 'Replace with a specific event from the catalog' })}
+
         </div>
       </section>
     `;
@@ -1663,17 +1938,22 @@ window.CJS.CampaignUI = (() => {
   function _renderOracle(state) {
     if (!state.lastOracle) return '';
     return `
-      <section class="campaign-panel oracle">
+      <section class="campaign-panel oracle campaign-result-card is-flavor">
         <div class="campaign-panel-head">
           <h2>GM Prompt</h2>
-          <span class="campaign-pill">narrative only</span>
+          <span class="campaign-impact-badge is-flavor">Text only</span>
         </div>
         <p>${_esc(state.lastOracle.text)}</p>
-        <div class="campaign-control-help">Pure narrative. <b>No stats or items change.</b> Use the prompt to describe a scene, then <b>Save as Note</b> to remember it or <b>Reroll</b> for a new one.</div>
+        ${_renderConsequencePreview([], {
+          emptyTitle: 'Flavor prompt',
+          emptyText: 'Use as narration now, save it as a note, or reroll for a sharper prompt.'
+        })}
+        <div class="campaign-control-help">Pure narrative. <b>No stats or items change.</b> Use the prompt to describe a scene, then <b>Save Text Note</b> to remember it or <b>Reroll</b> for a new one.</div>
         <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'oracle-note',  label: 'Save as Note', hint: 'Pin this prompt to your notes' })}
-          ${_actionBtn({ action: 'roll-oracle',  label: '🎲 Reroll',    hint: 'Roll a different prompt' })}
-          ${_actionBtn({ action: 'pick-oracle',  label: '📋 Override',  hint: 'Pick a specific prompt from the catalog' })}
+          ${_actionBtn({ action: 'oracle-note', label: 'Save Text Note', hint: 'Pin this prompt to your notes', kind: 'primary' })}
+          ${_actionBtn({ action: 'roll-oracle', label: 'Reroll Prompt', hint: 'Roll a different prompt' })}
+          ${_actionBtn({ action: 'pick-oracle', label: 'Pick Different', hint: 'Pick a specific prompt from the catalog' })}
+
         </div>
       </section>
     `;
@@ -2009,7 +2289,7 @@ window.CJS.CampaignUI = (() => {
       const action = e.target.closest('[data-campaign-action]');
       if (action) {
         e.preventDefault();
-        const closesPanel = ['open-inventory-tab', 'open-roster-tab', 'open-scenarios-tab', 'open-maps-tab'];
+        const closesPanel = ['open-inventory-tab', 'open-roster-tab', 'open-scenarios-tab', 'open-maps-tab', 'open-quests-tab', 'open-shops-tab', 'open-sideforge-tab'];
         if (closesPanel.includes(action.dataset.campaignAction)) _closePanel();
         _handleAction(action.dataset, action);
       }
@@ -2703,6 +2983,9 @@ window.CJS.CampaignUI = (() => {
       case 'open-scenarios-tab': return _goto('scenario', 'scenarios');
       case 'open-maps-tab': return _goto('scenario', 'maps');
       case 'open-inventory-tab': return _goto('workshop', 'inventory');
+      case 'open-quests-tab': return _goto('town', 'quests');
+      case 'open-shops-tab': return _goto('town', 'shops');
+      case 'open-sideforge-tab': return _goto('town', 'sideForge');
       case 'roll-party-chat': return _rollPartyChat();
       case 'clear-banter': return _clearBanter();
       case 'run-roll-battle': return _runRollBattle();
@@ -3538,6 +3821,11 @@ Recover the relic x 1"></textarea>
 
   function _manualRumorModal() {
     const body = document.createElement('div');
+    const hint = document.createElement('div');
+    hint.className = 'campaign-muted';
+    hint.style.marginBottom = '8px';
+    hint.textContent = 'Rumors are stored leads. They do not change mechanics until you promote or apply them later.';
+    body.appendChild(hint);
     body.appendChild(_formLabel('Rumor'));
     const text = document.createElement('textarea');
     text.style.width = '100%';

@@ -437,6 +437,252 @@
           "suggestedChoices": [
             { "label": "Save map seed for later", "ops": [{ "op": "side_idea_save", "contentCard": { "id": "idea_frostwood_supply_trail", "type": "map_seed", "title": "Frostwood Supply Trail", "canonRisk": "green", "mapSeedId": "haven_mseed_frostwood_supply_trail" } }] }
           ]
+        },
+        {
+          "id": "haven_hub_evt_notice_board_blank_space",
+          "table": "haven_frostbitten_guild_events",
+          "title": "The Blank Space on the Board",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 11,
+          "tierHint": "early_to_mid",
+          "tags": ["rumor", "guild", "future_job", "subtle"],
+          "prompt": "A clean rectangle on the guild board keeps appearing between posted jobs, as if a larger notice was removed before anyone woke up.",
+          "suggestedUse": "Keep as a rumor until the party can handle bigger guild work; promote it into a C-rank board job later.",
+          "gmKeywords": ["empty notice", "future rank", "too clean", "board job"],
+          "suggestedChoices": [
+            { "label": "Bank it as a future job rumor", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A clean blank space keeps returning to the guild board where a bigger job should be.", "canonRisk": "green", "tags": ["guild", "future_job", "mid_party"] }] }
+          ],
+          "followUpHooks": ["When the party grows stronger, Tessa admits the removed notice was not meant for rookies."]
+        },
+        {
+          "id": "haven_hub_evt_rooftop_blue_sash",
+          "table": "haven_frostbitten_town_events",
+          "title": "Blue Sash on the Roofline",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 10,
+          "tierHint": "early",
+          "tags": ["rumor", "urban", "runner", "map_seed"],
+          "prompt": "Three witnesses describe a runner with a blue sash crossing rooftops above the market, but each insists the runner moved in a different direction.",
+          "suggestedUse": "Use as a light chase, informant, or recurring watcher. It can stay rumor-only until the GM wants an urban map.",
+          "gmKeywords": ["blue sash", "rooftop line", "three directions", "watcher"],
+          "suggestedChoices": [
+            { "label": "Save as a future rooftop route", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A blue-sashed rooftop runner watches Frostbitten's market routes.", "canonRisk": "green", "tags": ["urban", "runner"] }, { "op": "side_idea_save", "contentCard": { "id": "idea_blue_sash_rooftops", "type": "map_seed", "title": "Blue Sash Rooftop Chase", "canonRisk": "green", "mapSeedId": "haven_mseed_market_rooftops_urban_small" } }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_cold_seal_wax",
+          "table": "haven_frostbitten_tavern_events",
+          "title": "Cold Seal Wax",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "yellow",
+          "weight": 8,
+          "tierHint": "early_to_mid",
+          "tags": ["rumor", "letter", "mystery", "subtle"],
+          "prompt": "A courier's wax seal refuses to melt near the tavern fire. The letter is addressed only to 'the party that comes back alive.'",
+          "suggestedUse": "Good bridge from town banter into a later scenario. Keep recipient and sender undecided.",
+          "gmKeywords": ["cold wax", "unnamed sender", "alive enough", "delayed letter"],
+          "suggestedChoices": [
+            { "label": "Hold the letter as yellow rumor", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A cold-sealed letter waits for the party that comes back alive.", "canonRisk": "yellow", "tags": ["letter", "future_job"] }, { "op": "set_flag", "flag": "haven_cold_seal_letter_waiting", "value": true }] }
+          ],
+          "gmNote": "Do not name the sender until the next chapter needs pressure."
+        },
+        {
+          "id": "haven_hub_evt_laughing_snowdrift",
+          "table": "haven_frostbitten_weird_events",
+          "title": "The Laughing Snowdrift",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "green",
+          "weight": 9,
+          "tierHint": "early",
+          "tags": ["rumor", "comedy", "weird", "creative_event"],
+          "prompt": "A snowdrift beside the tavern laughs whenever someone lies about being warm enough.",
+          "suggestedUse": "Use as comic texture, a social truth check, or a tiny town spirit if the table likes it.",
+          "gmKeywords": ["laughing snow", "truth gag", "warm enough", "tiny spirit maybe"],
+          "suggestedChoices": [
+            { "label": "Keep it as a harmless town rumor", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "The tavern snowdrift laughs when people lie about the cold.", "canonRisk": "green", "tags": ["comedy", "weird"] }, { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_black_sled_at_dawn",
+          "table": "haven_frostbitten_town_events",
+          "title": "Black Sled at Dawn",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "yellow",
+          "weight": 6,
+          "tierHint": "mid_party",
+          "tags": ["rumor", "direct", "escort", "future_job"],
+          "prompt": "A black sled arrives before dawn, leaves no hoofprints, and pays the guild clerk in old coins for an unnamed escort.",
+          "suggestedUse": "Promote once the party can survive a harsher route or a social trap.",
+          "gmKeywords": ["black sled", "old coins", "escort", "no hoofprints"],
+          "suggestedChoices": [
+            { "label": "Bank it for a stronger-party escort job", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A black sled paid for an unnamed escort before dawn and left no hoofprints.", "canonRisk": "yellow", "tags": ["escort", "mid_party"] }, { "op": "side_idea_save", "contentCard": { "id": "idea_black_sled_escort", "type": "map_seed", "title": "Black Sled Escort", "canonRisk": "yellow", "mapSeedId": "haven_mseed_switchback_pass_mountain_medium" } }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_hilda_star_iron",
+          "table": "haven_frostbitten_forge_events",
+          "title": "Hilda's Star-Iron Refusal",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_ironhand_forge",
+          "canonRisk": "green",
+          "weight": 8,
+          "tierHint": "mid_party",
+          "tags": ["rumor", "forge", "crafting", "future_upgrade"],
+          "prompt": "Hilda refuses to sell a thumb-sized lump of star-iron because it has started humming at people with ambition.",
+          "suggestedUse": "A future weapon or crafting upgrade seed. Keep as rumor until the party has earned a custom gear moment.",
+          "gmKeywords": ["star-iron", "humming metal", "ambition", "custom weapon"],
+          "suggestedChoices": [
+            { "label": "Save as future forge upgrade lead", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Hilda has star-iron that hums at ambitious adventurers.", "canonRisk": "green", "tags": ["forge", "weapon", "mid_party"] }] }
+          ],
+          "followUpHooks": ["Ask which party member the iron hums for once someone has a defining victory."]
+        },
+        {
+          "id": "haven_hub_evt_silent_adventurers_return",
+          "table": "haven_frostbitten_tavern_events",
+          "title": "The Silent Return",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "yellow",
+          "weight": 5,
+          "tierHint": "mid_party",
+          "tags": ["rumor", "direct", "rival_party", "future_event"],
+          "prompt": "A rival party returns from the ridge without wounds, without loot, and without speaking above a whisper.",
+          "suggestedUse": "Make this a direct social scene when the party has enough reputation to ask hard questions.",
+          "gmKeywords": ["silent party", "no wounds", "no loot", "ridge"],
+          "suggestedChoices": [
+            { "label": "Hold it as a rival-party lead", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A rival party returned from the ridge silent, clean, and empty-handed.", "canonRisk": "yellow", "tags": ["rival_party", "mid_party"] }, { "op": "reputation_change", "target": "haven_zon_frostbitten", "amount": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_bell_tower_invitation",
+          "table": "haven_frostbitten_weird_events",
+          "title": "Invitation from the Bell Tower",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_old_temple_ruins",
+          "canonRisk": "red",
+          "weight": 2,
+          "tierHint": "high_party",
+          "tags": ["rumor", "direct", "shrine", "high_party", "review"],
+          "prompt": "A paper invitation appears under every inn door at once: 'When you can hear the bell under the snow, come armed.'",
+          "suggestedUse": "High-party shrine escalation. It is intentionally direct, but should stay rumor-only until the GM wants red-risk plot pressure.",
+          "gmKeywords": ["invitation", "bell under snow", "come armed", "red risk"],
+          "suggestedChoices": [
+            { "label": "Quarantine as red rumor", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "An invitation says: When you can hear the bell under the snow, come armed.", "canonRisk": "red", "tags": ["shrine", "high_party", "bell"] }] }
+          ],
+          "gmNote": "Requires GM approval. Use only when the party can survive a major shrine arc."
+        },
+        {
+          "id": "haven_hub_evt_soup_tastes_like_memory",
+          "table": "haven_frostbitten_tavern_events",
+          "title": "Soup That Tastes Like Memory",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_frosted_mug",
+          "canonRisk": "yellow",
+          "weight": 7,
+          "tierHint": "early_to_mid",
+          "tags": ["rumor", "food", "memory", "character_beat"],
+          "prompt": "Tonight's stew tastes different to each person. One guest starts crying because it tastes like a birthday they never had.",
+          "suggestedUse": "Use for a gentle character beat, then decide later whether it was magic, grief, or blue mushroom nonsense.",
+          "gmKeywords": ["memory stew", "personal taste", "birthday", "blue mushroom"],
+          "suggestedChoices": [
+            { "label": "Make it a character-beat rumor", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "The tavern stew tasted like a memory different for each person.", "canonRisk": "yellow", "tags": ["memory", "food"] }, { "op": "give_food", "id": "warm_stew", "qty": 1 }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_old_map_margin",
+          "table": "haven_frostbitten_guild_events",
+          "title": "Map Margin That Was Not There",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "green",
+          "weight": 6,
+          "tierHint": "mid_party",
+          "tags": ["rumor", "map_seed", "exploration", "future_content"],
+          "prompt": "An old guild map has grown a new margin overnight, complete with tiny inked trees nobody remembers drawing.",
+          "suggestedUse": "Future exploration seed for when the party wants a broader outdoor route.",
+          "gmKeywords": ["new map margin", "inked trees", "route seed", "guild map"],
+          "suggestedChoices": [
+            { "label": "Save the grown map margin", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "The guild map grew a new forest margin overnight.", "canonRisk": "green", "tags": ["map_seed", "exploration"] }, { "op": "side_idea_save", "contentCard": { "id": "idea_grown_map_margin", "type": "map_seed", "title": "Grown Map Margin", "canonRisk": "green", "mapSeedId": "haven_mseed_frostwood_open_outdoor_large" } }] }
+          ]
+        },
+        {
+          "id": "haven_hub_evt_deep_ice_bounty",
+          "table": "haven_frostbitten_guild_events",
+          "title": "The Deep-Ice Bounty",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_adventurers_guild",
+          "canonRisk": "yellow",
+          "weight": 3,
+          "tierHint": "high_party",
+          "tags": ["rumor", "bounty", "deep_ice", "high_party"],
+          "prompt": "Corvin quietly files a bounty written on blue hide. He says the reward is real, but the rank mark has been scratched off.",
+          "suggestedUse": "High-party dungeon lead. Let it sit in rumors until the party has gear, reputation, and enough map confidence.",
+          "gmKeywords": ["blue hide", "scratched rank", "deep ice", "real reward"],
+          "suggestedChoices": [
+            { "label": "Hold as high-party dungeon lead", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A blue-hide bounty with the rank scratched off waits in Corvin's files.", "canonRisk": "yellow", "tags": ["high_party", "deep_ice"] }, { "op": "side_idea_save", "contentCard": { "id": "idea_deep_ice_bounty", "type": "map_seed", "title": "Deep-Ice Bounty", "canonRisk": "yellow", "mapSeedId": "haven_mseed_deep_ice_dungeon_large" } }] }
+          ],
+          "followUpHooks": ["When promoted, pair with frost sprites first and save the chimera echo for the vault."]
+        },
+        {
+          "id": "haven_hub_evt_chimera_name_in_ash",
+          "table": "haven_frostbitten_weird_events",
+          "title": "A Name in Forge Ash",
+          "type": "hub_event",
+          "world": "haven",
+          "zone": "haven_zon_frostbitten",
+          "hubId": "haven_hub_frostbitten",
+          "locationId": "loc_ironhand_forge",
+          "canonRisk": "red",
+          "weight": 1,
+          "tierHint": "high_party",
+          "tags": ["rumor", "boss_seed", "forge", "red_risk"],
+          "prompt": "The forge ash forms a name Hilda refuses to pronounce, and the cooling metal nearby bends away from it.",
+          "suggestedUse": "Very late escalation seed. Keep vague until the party is strong enough for a boss rumor to matter.",
+          "gmKeywords": ["forge ash", "unspoken name", "bending metal", "boss seed"],
+          "suggestedChoices": [
+            { "label": "Seal as red high-party rumor", "ops": [{ "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Forge ash formed an unspoken name, and metal bent away from it.", "canonRisk": "red", "tags": ["high_party", "boss_seed"] }] }
+          ],
+          "gmNote": "Do not reveal the name until a boss arc is ready."
         }
       ],
       "notes": "GM controls canon. This pack provides side content only."
