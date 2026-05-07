@@ -120,6 +120,37 @@ window.CJS.L2DAvatar = (() => {
 
     app.stage.addChild(model);
 
+    const initialParameters = cfg.initialParameters || {};
+    const lockedParameters = cfg.lockedParameters || {};
+    const hasInitialParameters = initialParameters && typeof initialParameters === 'object' && Object.keys(initialParameters).length > 0;
+    const hasLockedParameters = lockedParameters && typeof lockedParameters === 'object' && Object.keys(lockedParameters).length > 0;
+
+    function applyParameters(parameters) {
+      if (!parameters || typeof parameters !== 'object') return;
+      const coreModel = model.internalModel?.coreModel;
+      for (const [id, value] of Object.entries(parameters)) {
+        const n = Number(value);
+        if (coreModel && Number.isFinite(n)) {
+          try { coreModel.setParameterValueById(id, n); } catch (_) {}
+        }
+      }
+    }
+    function applyConfiguredParameters() {
+      applyParameters(initialParameters);
+      applyParameters(lockedParameters);
+    }
+    const applyLockedParameters = () => applyParameters(lockedParameters);
+    applyConfiguredParameters();
+    if (hasInitialParameters || hasLockedParameters) {
+      requestAnimationFrame(applyConfiguredParameters);
+      setTimeout(applyConfiguredParameters, 150);
+    }
+    if (hasLockedParameters) {
+      const priority = window.PIXI.UPDATE_PRIORITY?.LOW ?? -25;
+      app.ticker.add(applyLockedParameters, undefined, priority);
+      window.PIXI.Ticker.shared.add(applyLockedParameters, undefined, priority);
+    }
+
     // Layout: scale model so its height ~= 95% of target height, anchored to
     // bottom-center so feet sit at the dock floor.
     function layoutModel() {
@@ -166,10 +197,11 @@ window.CJS.L2DAvatar = (() => {
         if (id == null) {
           // null = neutral; reset
           model.internalModel?.motionManager?.expressionManager?.resetExpression?.();
-          return;
+        } else {
+          model.expression(id);
         }
-        model.expression(id);
       } catch (e) { console.warn('[L2D] setExpression failed:', e); }
+      applyConfiguredParameters();
     }
 
     function playMotion(key) {
@@ -178,6 +210,7 @@ window.CJS.L2DAvatar = (() => {
         if (!m) return;
         model.motion(m.group ?? '', m.index ?? 0, window.PIXI.live2d.MotionPriority?.NORMAL ?? 2);
       } catch (e) { console.warn('[L2D] playMotion failed:', e); }
+      applyConfiguredParameters();
     }
 
     // ── Manual lip-sync: bob ParamMouthOpenY while a phrase is "speaking" ──
@@ -219,6 +252,10 @@ window.CJS.L2DAvatar = (() => {
       disposed = true;
       try { ro.disconnect(); } catch (_) {}
       window.removeEventListener('pointermove', onPointerMove);
+      if (hasLockedParameters) {
+        try { app.ticker.remove(applyLockedParameters); } catch (_) {}
+        try { window.PIXI.Ticker.shared.remove(applyLockedParameters); } catch (_) {}
+      }
       silence();
       try { app.destroy(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
       try { targetEl.innerHTML = ''; } catch (_) {}

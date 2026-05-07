@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "default": "peri",
+  "default": "peri_v2",
   "models": {
     "peri": {
       "name": "Peri",
@@ -9,38 +9,287 @@
       "offsetX": 0,
       "offsetY": 0.05,
       "expressions": {
-        "neutral":  null,
-        "happy":    "星星眼",
-        "love":     "爱心",
-        "angry":    "生气",
-        "sad":      "眼泪",
-        "playful":  "舌头",
-        "hat":      "帽子"
+        "neutral": null,
+        "happy": "星星眼",
+        "love": "爱心",
+        "angry": "生气",
+        "sad": "眼泪",
+        "playful": "舌头",
+        "hat": "帽子"
       },
       "motions": {
-        "idle": { "group": "", "index": 0 }
+        "idle": {
+          "group": "",
+          "index": 0
+        }
       },
       "reactions": {
-        "turn_start":       { "expression": "neutral", "lines": ["Your move, captain!", "Pick a target~", "What's the plan?"] },
-        "click":            { "expression": "playful", "lines": ["Hi there~", "Hee hee, that tickles!", "Yes, captain?", "Don't poke me too much!"] },
-
-        "campaign_idle":    { "expression": "neutral", "lines": ["What shall we do next?", "I'm bored... let's adventure!", "Pick something fun~", "Hmm... time to make a choice."] },
-        "campaign_action":  { "expression": "playful", "lines": ["Doing things~", "Mm-hm, mm-hm.", "I see, captain.", "Plotting and scheming!"] },
-        "campaign_move":    { "expression": "playful", "lines": ["Onward!", "Adventure time!", "I wonder what's there?"] },
-        "campaign_loot":    { "expression": "love",    "lines": ["Treasure! Treasure!", "Ooh, shiny~", "We're rich! Sort of!", "Loot acquired, captain!"] },
-        "campaign_quest":   { "expression": "happy",   "lines": ["A new quest! Exciting!", "Let's accept it!", "Adventure awaits~", "Quest log updated!"] },
-        "campaign_event":   { "expression": "happy",   "lines": ["Ooh, something's happening!", "Plot twist incoming~", "Now this is interesting!", "Pay attention, captain!"] },
-        "campaign_oracle":  { "expression": "love",    "lines": ["The cosmic oracle speaks!", "Mystic vibes~", "Fate is whispering...", "Ooh, prophecy time!"] },
-        "campaign_battle":  { "expression": "happy",   "lines": ["A fight! Time to brawl!", "Showtime!", "Ready the popcorn!", "I love this part~"] },
-        "campaign_setback": { "expression": "sad",     "lines": ["Oof... that didn't go well.", "Setback! Don't lose heart~", "We'll get them next time!"] },
-        "campaign_rest":    { "expression": "love",    "lines": ["Yawn... naptime?", "Rest is best!", "Cozy~", "Pocket haven, sweet haven."] },
-        "campaign_load":    { "expression": "happy",   "lines": ["Welcome back!", "Ready when you are~", "Save loaded, captain!"] }
+        "turn_start": {
+          "expression": "neutral",
+          "lines": [
+            "Your move, captain!",
+            "Pick a target~",
+            "What's the plan?"
+          ]
+        },
+        "click": {
+          "expression": "playful",
+          "lines": [
+            "Hi there~",
+            "Hee hee, that tickles!",
+            "Yes, captain?",
+            "Don't poke me too much!"
+          ]
+        },
+        "campaign_idle": {
+          "expression": "neutral",
+          "lines": [
+            "What shall we do next?",
+            "I'm bored... let's adventure!",
+            "Pick something fun~",
+            "Hmm... time to make a choice."
+          ]
+        },
+        "campaign_action": {
+          "expression": "playful",
+          "lines": [
+            "Doing things~",
+            "Mm-hm, mm-hm.",
+            "I see, captain.",
+            "Plotting and scheming!"
+          ]
+        },
+        "campaign_move": {
+          "expression": "playful",
+          "lines": [
+            "Onward!",
+            "Adventure time!",
+            "I wonder what's there?"
+          ]
+        },
+        "campaign_loot": {
+          "expression": "love",
+          "lines": [
+            "Treasure! Treasure!",
+            "Ooh, shiny~",
+            "We're rich! Sort of!",
+            "Loot acquired, captain!"
+          ]
+        },
+        "campaign_quest": {
+          "expression": "happy",
+          "lines": [
+            "A new quest! Exciting!",
+            "Let's accept it!",
+            "Adventure awaits~",
+            "Quest log updated!"
+          ]
+        },
+        "campaign_event": {
+          "expression": "happy",
+          "lines": [
+            "Ooh, something's happening!",
+            "Plot twist incoming~",
+            "Now this is interesting!",
+            "Pay attention, captain!"
+          ]
+        },
+        "campaign_oracle": {
+          "expression": "love",
+          "lines": [
+            "The cosmic oracle speaks!",
+            "Mystic vibes~",
+            "Fate is whispering...",
+            "Ooh, prophecy time!"
+          ]
+        },
+        "campaign_battle": {
+          "expression": "happy",
+          "lines": [
+            "A fight! Time to brawl!",
+            "Showtime!",
+            "Ready the popcorn!",
+            "I love this part~"
+          ]
+        },
+        "campaign_setback": {
+          "expression": "sad",
+          "lines": [
+            "Oof... that didn't go well.",
+            "Setback! Don't lose heart~",
+            "We'll get them next time!"
+          ]
+        },
+        "campaign_rest": {
+          "expression": "love",
+          "lines": [
+            "Yawn... naptime?",
+            "Rest is best!",
+            "Cozy~",
+            "Pocket haven, sweet haven."
+          ]
+        },
+        "campaign_load": {
+          "expression": "happy",
+          "lines": [
+            "Welcome back!",
+            "Ready when you are~",
+            "Save loaded, captain!"
+          ]
+        }
       },
       "voice": {
         "directory": "assets/live2d/voice/peri/",
         "byFragmentId": {},
-        "byEventType":  {},
-        "byEventKey":   {}
+        "byEventType": {},
+        "byEventKey": {}
+      }
+    },
+    "peri_v2": {
+      "name": "Peri v2",
+      "path": "assets/live2d/peri-v2/ｷﾛﾉｫﾐ｡ﾌ・ｹ.model3.json",
+      "scale": 0.12,
+      "offsetX": -0.02,
+      "offsetY": 0.02,
+      "expressions": {
+        "neutral": null,
+        "happy": "1ｰｮﾐﾄ",
+        "love": "1ｰﾗﾉｫｽﾞﾃｫ",
+        "angry": "1ｻ｢ﾑﾀ",
+        "sad": "1ﾁｳｺ・",
+        "playful": "1ﾁｳｺﾚ",
+        "hat": "1ﾁ・"
+      },
+      "motions": {
+        "idle": {
+          "group": "",
+          "index": 0
+        }
+      },
+      "reactions": {
+        "turn_start": {
+          "expression": "neutral",
+          "lines": [
+            "Your move, captain!",
+            "Pick a target~",
+            "What's the plan?"
+          ]
+        },
+        "click": {
+          "expression": "playful",
+          "lines": [
+            "Hi there~",
+            "Hee hee, that tickles!",
+            "Yes, captain?",
+            "Don't poke me too much!"
+          ]
+        },
+        "campaign_idle": {
+          "expression": "neutral",
+          "lines": [
+            "What shall we do next?",
+            "I'm bored... let's adventure!",
+            "Pick something fun~",
+            "Hmm... time to make a choice."
+          ]
+        },
+        "campaign_action": {
+          "expression": "playful",
+          "lines": [
+            "Doing things~",
+            "Mm-hm, mm-hm.",
+            "I see, captain.",
+            "Plotting and scheming!"
+          ]
+        },
+        "campaign_move": {
+          "expression": "playful",
+          "lines": [
+            "Onward!",
+            "Adventure time!",
+            "I wonder what's there?"
+          ]
+        },
+        "campaign_loot": {
+          "expression": "love",
+          "lines": [
+            "Treasure! Treasure!",
+            "Ooh, shiny~",
+            "We're rich! Sort of!",
+            "Loot acquired, captain!"
+          ]
+        },
+        "campaign_quest": {
+          "expression": "happy",
+          "lines": [
+            "A new quest! Exciting!",
+            "Let's accept it!",
+            "Adventure awaits~",
+            "Quest log updated!"
+          ]
+        },
+        "campaign_event": {
+          "expression": "happy",
+          "lines": [
+            "Ooh, something's happening!",
+            "Plot twist incoming~",
+            "Now this is interesting!",
+            "Pay attention, captain!"
+          ]
+        },
+        "campaign_oracle": {
+          "expression": "love",
+          "lines": [
+            "The cosmic oracle speaks!",
+            "Mystic vibes~",
+            "Fate is whispering...",
+            "Ooh, prophecy time!"
+          ]
+        },
+        "campaign_battle": {
+          "expression": "happy",
+          "lines": [
+            "A fight! Time to brawl!",
+            "Showtime!",
+            "Ready the popcorn!",
+            "I love this part~"
+          ]
+        },
+        "campaign_setback": {
+          "expression": "sad",
+          "lines": [
+            "Oof... that didn't go well.",
+            "Setback! Don't lose heart~",
+            "We'll get them next time!"
+          ]
+        },
+        "campaign_rest": {
+          "expression": "love",
+          "lines": [
+            "Yawn... naptime?",
+            "Rest is best!",
+            "Cozy~",
+            "Pocket haven, sweet haven."
+          ]
+        },
+        "campaign_load": {
+          "expression": "happy",
+          "lines": [
+            "Welcome back!",
+            "Ready when you are~",
+            "Save loaded, captain!"
+          ]
+        }
+      },
+      "voice": {
+        "directory": "assets/live2d/voice/peri/",
+        "byFragmentId": {},
+        "byEventType": {},
+        "byEventKey": {}
+      },
+      "fallbackImage": "assets/live2d/peri-v2/QQ_1761598388961.png",
+      "lockedParameters": {
+        "Param106": 1
       }
     }
   }

@@ -511,19 +511,21 @@ window.CJS.L2DCompanion = (() => {
       }
     } catch (err) {
       console.warn('[L2DCompanion] avatar init failed, showing fallback:', err);
-      _showFallback(stage);
+      _showFallback(stage, opts.model);
       _showLine('Hi! (Live2D failed to load — using static portrait.)', 4500);
     }
 
     return STATE.avatar;
   }
 
-  function _showFallback(stage) {
+  function _showFallback(stage, modelKey) {
     stage.innerHTML = '';
     const img = document.createElement('img');
     img.className = 'l2d-fallback-img';
     img.alt = 'Companion';
-    img.src = 'assets/live2d/peri/mianyin.png';
+    const reg = window.CJS.L2DAvatar?.getRegistrySync?.();
+    const key = modelKey || reg?.default;
+    img.src = reg?.models?.[key]?.fallbackImage || 'assets/live2d/peri/mianyin.png';
     img.onerror = () => { img.style.display = 'none'; };
     stage.appendChild(img);
   }
