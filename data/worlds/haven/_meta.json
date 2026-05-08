@@ -12,6 +12,14 @@
     "order": 1,
     "tone": "fantasy_warm",
     "color": "#3b82f6",
-    "status": "stub"
+    "status": "stub",
+    "storyModeTheme": {
+      "id": "frost",
+      "className": "story-theme-frost",
+      "backdrop": "images/story-mode/haven/frostwood-vn.png",
+      "accent": "#9dd8ff",
+      "danger": "#ef6666",
+      "motif": "frost"
+    }
   }
 }

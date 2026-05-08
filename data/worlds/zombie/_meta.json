@@ -12,6 +12,14 @@
     "order": 2,
     "tone": "horror_grim",
     "color": "#ef4444",
-    "status": "stub"
+    "status": "stub",
+    "storyModeTheme": {
+      "id": "rot",
+      "className": "story-theme-rot",
+      "backdrop": "images/story-mode/zombie/rot-city-vn.png",
+      "accent": "#95d16f",
+      "danger": "#c83b38",
+      "motif": "plague"
+    }
   }
 }
