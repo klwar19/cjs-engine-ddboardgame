@@ -19,6 +19,7 @@ Campaign Mode is now a GM dashboard above the tactical combat simulator. It supp
 - Combat bridge from Campaign Mode into `combat.html`.
 - Inventory, shops, rest, farming, cooking, crafting/forging, and Pocket Haven.
 - Side Content Forge for living hubs, hub pulses, quest chains, battle cards, map seeds, oracle prompts, imported ideas, saved ideas, and canon-risk review.
+- Story Director for stage-aware scene beats, Peri interruptions, memory shards, pressure ticks, and side quest flow.
 - Editor support for campaign data categories.
 - Frostbitten starter campaign content for Haven.
 
@@ -50,6 +51,7 @@ Side Content Forge:
 ```text
 js/campaign/campaign-data-loader.js
 js/campaign/campaign-side-content.js
+js/campaign/campaign-story-director.js
 js/campaign/campaign-hub.js
 js/campaign/campaign-quest-chains.js
 js/campaign/campaign-battle-set-forge.js
@@ -101,6 +103,7 @@ data/campaigns/haven/quest_chains/
 data/campaigns/haven/battle_sets/
 data/campaigns/haven/map_seeds/
 data/campaigns/haven/oracles/
+data/campaigns/haven/story_director/
 data/campaigns/universal/
 ```
 
@@ -120,6 +123,7 @@ questChains
 battleSets
 mapSeeds
 oracleTables
+storyDirectorPacks
 carryoverProfiles
 pocketHavenRules
 ```
@@ -146,6 +150,7 @@ bonds
 pinnedNotes
 log
 settings
+storyDirector
 ```
 
 Side content lives under:

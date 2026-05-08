@@ -1,0 +1,766 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "haven",
+    "category": "storyDirectorPacks",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "haven_story_director_v1",
+      "name": "Haven Arc 1 Story Director",
+      "version": 1,
+      "world": "haven",
+      "zone": "haven_zon_frostbitten",
+      "hubId": "haven_hub_frostbitten",
+      "summary": "Arc-aware solo/GM guidance for Bin's Frostbitten return, Frostwood escalation, Chimera hunt, and Pocket Haven unlock.",
+      "defaultCanonRisk": "green",
+      "pressureRule": "Use pressure ticks when the scene stalls, a phase passes, or the player wants offscreen consequences. They suggest trouble; the GM/player still decides what becomes canon.",
+      "tonePillars": [
+        "snark without cruelty",
+        "pathetic but hopeful",
+        "trolling system comedy",
+        "face-saving schemes that backfire sideways",
+        "warm found-family downtime",
+        "absurd side quests that later matter",
+        "danger that remembers the jokes",
+        "competence that looks stupid until it works"
+      ],
+      "plotPolicy": {
+        "editable": true,
+        "notes": "This pack is a v1 arc guide, not a locked novel outline. Change stages, retire beats, replace the Chimera, or move Pocket Haven later without changing the engine.",
+        "doNotOverfocus": ["mask theme", "therapy language", "solemn cosmic destiny"],
+        "preferredFeel": ["ordinary human banter", "Chinese webnovel system trolling", "Key-style daily-life warmth", "Gintama-like absurdity", "RPG boardgame consequences", "underdog schemes that are funny before they are impressive"]
+      },
+      "metrics": [
+        { "id": "peri_attention", "label": "Peri Attention", "min": 0, "max": 12 },
+        { "id": "earth_heat", "label": "Earth Heat", "min": 0, "max": 12 },
+        { "id": "frostwood_threat", "label": "Frostwood Threat", "min": 0, "max": 12 },
+        { "id": "guild_noise", "label": "Guild Noise", "min": 0, "max": 12 },
+        { "id": "pocket_haven_seed", "label": "Pocket Seed", "min": 0, "max": 6 }
+      ],
+      "protectedTruths": [
+        {
+          "id": "bin_haven_origin",
+          "title": "Bin lived in Haven before Earth",
+          "rule": "Green clues may imply familiarity. Full confirmation is red until the Old Temple or later."
+        },
+        {
+          "id": "garr_peri_secret",
+          "title": "Garr met Peri when Bin was younger",
+          "rule": "Let Garr dodge. He can slip emotionally, but the actual meeting stays red."
+        },
+        {
+          "id": "mitia_true_bloodline",
+          "title": "Mitia's hidden Fae/legacy identity",
+          "rule": "Use physical signs and dreams. Do not name the full truth unless promoted by GM."
+        },
+        {
+          "id": "lily_cure_path",
+          "title": "Lily's long-term cure path",
+          "rule": "Pressure is okay. A complete cure answer is red and should wait."
+        },
+        {
+          "id": "zhao_stardust_trade",
+          "title": "Black Tortoise Stardust trafficking",
+          "rule": "Earth-side hints are yellow. Direct Zhao involvement in Haven is red until chosen."
+        },
+        {
+          "id": "previous_jesters",
+          "title": "The last twelve candidates",
+          "rule": "Peri can joke around it. Details remain red."
+        }
+      ],
+      "stages": [
+        {
+          "id": "haven_stage_return",
+          "name": "Return & Guild Noise",
+          "chapterMin": 1,
+          "chapterMax": 1,
+          "summary": "Bin lands badly, gets recognized, is hugged with possible rib damage, and returns to the guild where bureaucracy treats death as a filing problem.",
+          "tags": ["return", "guild", "comedy", "reunion"]
+        },
+        {
+          "id": "haven_stage_frostwood_open",
+          "name": "Frostwood Opens",
+          "chapterMin": 2,
+          "chapterMax": 2,
+          "summary": "Warm-up quests, mushroom trouble, Dain rivalry, missing hunters, and first clues that the Frostwood has stopped behaving like tutorial content.",
+          "tags": ["frostwood", "side_quest", "wolves", "tutorial"]
+        },
+        {
+          "id": "haven_stage_temple_pressure",
+          "name": "Old Temple Pressure",
+          "chapterMin": 3,
+          "chapterMax": 3,
+          "summary": "The old temple, memory leaks, Mitia resonance, Garr dodging questions, and the first real shape of the Chimera threat.",
+          "tags": ["temple", "memory", "mystery", "chimera"]
+        },
+        {
+          "id": "haven_stage_chimera_prep",
+          "name": "Chimera Prep",
+          "chapterMin": 4,
+          "chapterMax": 5,
+          "summary": "The party prepares for a C-rank problem with F-rank money, questionable confidence, and the kind of plan that only sounds worse when explained.",
+          "tags": ["boss", "prep", "crafting", "dain"]
+        },
+        {
+          "id": "haven_stage_pocket_haven",
+          "name": "Pocket Haven Aftermath",
+          "chapterMin": 6,
+          "chapterMax": 99,
+          "summary": "Pocket Haven unlocks, Frostbitten reacts, old side threads either become recurring comforts or expire, and Earth starts making rude noises offscreen.",
+          "tags": ["pocket_haven", "aftermath", "earth_hook"]
+        }
+      ],
+      "sceneBeats": [
+        {
+          "id": "haven_sd_scene_cold_awakening",
+          "title": "Cold Awakening, Bad Landing",
+          "stageIds": ["haven_stage_return"],
+          "phaseTypes": ["travel_phase", "scenario_phase", "town_phase"],
+          "canonRisk": "green",
+          "weight": 11,
+          "tags": ["portal_arrival", "tutorial", "frostwood", "peri"],
+          "prompt": "Bin wakes up in snow with winter gear he half-remembers owning, a sword his hands know before his brain does, and a CJS overlay pretending this is a clean tutorial. Peri calls it production value. Bin calls it getting kicked into weather.",
+          "gmNote": "Good first Story Director roll if the session starts before the guild. Pick one route and let the rest stay as rumors.",
+          "suggestedChoices": [
+            {
+              "label": "Walk to the gate openly",
+              "ops": [
+                { "op": "story_thread_status", "threadId": "return_route", "status": "public_gate", "note": "Bin's return becomes public immediately." },
+                { "op": "story_metric_change", "metric": "guild_noise", "amount": 1, "max": 12 },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            },
+            {
+              "label": "Sneak toward Garr's hut first",
+              "ops": [
+                { "op": "story_thread_status", "threadId": "return_route", "status": "quiet_hut", "note": "Start with family before the guild gets its teeth into him." },
+                { "op": "bond_change", "npcId": "haven_garr", "field": "trust", "amount": 1 }
+              ]
+            },
+            {
+              "label": "Stop at the Frosted Mug",
+              "ops": [
+                { "op": "story_thread_status", "threadId": "return_route", "status": "rumor_first", "note": "Bin hears how people talked about his disappearance before anyone knows he is back." },
+                { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Someone in Earth clothes was seen freezing politely near the eastern road.", "canonRisk": "green", "tags": ["bin_return", "frosted_mug"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_gate_guard_ghost",
+          "title": "The Gate Guard Says The Quiet Part",
+          "stageIds": ["haven_stage_return"],
+          "phaseTypes": ["town_phase", "travel_phase"],
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["return", "two_months", "frostbitten"],
+          "prompt": "A gate guard recognizes Bin and goes pale. Not heroic pale. Paperwork pale. He says, 'Garr's kid? We thought you were dead.' Then he immediately regrets being the first person to say it out loud.",
+          "gmNote": "Use this when the player needs the two-month absence to land without getting too heavy.",
+          "suggestedChoices": [
+            {
+              "label": "Play it cool badly",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "story_metric_change", "metric": "guild_noise", "amount": 1, "max": 12 },
+                { "op": "story_clue_add", "clueId": "haven_clue_two_month_gap", "title": "Two Months Missing", "text": "Frostbitten remembers Bin being gone for two months. Bin does not remember the gap clearly.", "canonRisk": "green", "tags": ["return", "memory"] }
+              ]
+            },
+            {
+              "label": "Admit the memory is messy",
+              "ops": [
+                { "op": "bond_change", "npcId": "haven_garr", "field": "trust", "amount": 1 },
+                { "op": "story_clue_add", "clueId": "haven_clue_memory_gap_honest", "title": "Honest Memory Gap", "text": "Bin admits he does not fully know where he was.", "canonRisk": "yellow", "tags": ["memory", "garr"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_dinner_galaxy_eyes",
+          "title": "Dinner And The Galaxy Eyes Problem",
+          "stageIds": ["haven_stage_return"],
+          "phaseTypes": ["town_phase"],
+          "canonRisk": "yellow",
+          "weight": 9,
+          "tags": ["garr", "peri", "family", "secret"],
+          "prompt": "Dinner at Garr's hut is stew, hard bread, warm silence, and the terrible realization that Garr recognizes the phrase 'galaxy eyes.' Bowy decides the important part is that Bin is eating. Mitia watches every dodge like she is saving them for later.",
+          "gmNote": "This is the softer version of Garr's Peri secret. Direct confirmation that Garr met Peri remains red-risk.",
+          "suggestedChoices": [
+            {
+              "label": "Tell the edited truth",
+              "ops": [
+                { "op": "story_clue_add", "clueId": "haven_clue_garr_knows_peri_name", "title": "Garr Knows The Weaver", "text": "Garr recognizes enough about Peri to know Bin's story is not nonsense.", "canonRisk": "yellow", "tags": ["garr", "peri"] },
+                { "op": "bond_change", "npcId": "haven_garr", "field": "trust", "amount": 1 },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            },
+            {
+              "label": "Press Garr for the real answer",
+              "ops": [
+                { "op": "story_clue_add", "clueId": "haven_clue_garr_peri_meeting", "title": "Garr Met Peri", "text": "Garr may have met Peri decades before Bin returned.", "canonRisk": "red", "tags": ["garr", "peri", "protected_truth"] },
+                { "op": "story_thread_status", "threadId": "garr_peri_secret", "status": "review", "note": "Save for GM approval before direct reveal." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_ledger_of_the_living",
+          "title": "Corvin's Living Person Waiver",
+          "stageIds": ["haven_stage_return"],
+          "phaseTypes": ["town_phase"],
+          "canonRisk": "green",
+          "weight": 14,
+          "tags": ["guild", "paperwork", "comedy"],
+          "prompt": "Corvin presents a waiver confirming Bin is not a corpse, ghost, technically undead, legally missing, spiritually misplaced, or a tax problem. There are initials required beside 'tax problem.'",
+          "suggestedChoices": [
+            {
+              "label": "Sign with dramatic dignity",
+              "ops": [
+                { "op": "start_quest_chain", "templateId": "haven_qchain_ledger_of_the_ghost" },
+                { "op": "story_thread_status", "threadId": "haven_qchain_ledger_of_the_ghost", "status": "promoted", "note": "The paperwork comedy is now directly tied to Bin's return." },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            },
+            {
+              "label": "Argue the tax problem line",
+              "ops": [
+                { "op": "story_metric_change", "metric": "guild_noise", "amount": 2, "max": 12 },
+                { "op": "bond_change", "npcId": "corvin", "field": "patience_damage", "amount": 1 },
+                { "op": "log", "text": "Bin contested whether interdimensional absence counts as taxable travel." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_brinna_debt_with_interest",
+          "title": "Three Silver Has Emotional Interest",
+          "stageIds": ["haven_stage_return", "haven_stage_frostwood_open"],
+          "phaseTypes": ["town_phase"],
+          "canonRisk": "green",
+          "weight": 10,
+          "tags": ["brinna_twins", "debt", "comedy", "side_quest"],
+          "prompt": "Ella and Nessa Brinna appear with the confidence of debt collectors and the moral authority of people who remember a bet Bin forgot. The debt is three silver. The emotional interest is negotiable but aggressively itemized.",
+          "suggestedChoices": [
+            {
+              "label": "Turn it into a tavern arbitration",
+              "ops": [
+                { "op": "start_quest_chain", "templateId": "haven_qchain_three_silver_discount" },
+                { "op": "story_thread_status", "threadId": "haven_qchain_three_silver_discount", "status": "active", "note": "Keep as recurring low-stakes comedy unless the arc becomes too crowded." },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_mushroom_tutorial_bad_luck",
+          "title": "Mushroom Quest Becomes Too Confident",
+          "stageIds": ["haven_stage_frostwood_open"],
+          "phaseTypes": ["town_phase", "travel_phase", "scenario_phase"],
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["mushroom", "frostwood", "tutorial"],
+          "prompt": "The Frostcap job starts as the classic harmless first quest. Then Bowy's boot hits a root, Thunder misfires into a snowbank, and the snowbank makes a noise snowbanks should not make.",
+          "suggestedChoices": [
+            {
+              "label": "Use it as the warm-up run",
+              "ops": [
+                { "op": "start_quest_chain", "templateId": "haven_qchain_frostcap_fever" },
+                { "op": "story_metric_change", "metric": "frostwood_threat", "amount": 1, "max": 12 },
+                { "op": "log", "text": "The Frostcap run was promoted as Arc 1's warm-up field quest." }
+              ]
+            },
+            {
+              "label": "Keep it as comedy only",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "story_thread_status", "threadId": "haven_qchain_frostcap_fever", "status": "kept_optional", "note": "Still available, but not required for the Chimera track." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_missing_hunter_first_real_dread",
+          "title": "The Missing Hunter Is Not A Joke",
+          "stageIds": ["haven_stage_frostwood_open", "haven_stage_temple_pressure"],
+          "phaseTypes": ["town_phase", "travel_phase", "scenario_phase"],
+          "canonRisk": "yellow",
+          "weight": 9,
+          "tags": ["missing_hunter", "chimera", "dread"],
+          "prompt": "A hunter comes back alive but wrong around the edges. He is not injured enough for the fear to make sense. He keeps saying the thing in the north looked at him like it was deciding whether he counted as food or punctuation.",
+          "gmNote": "This can become Rolf, Kael, or an unnamed hunter. Keep the Chimera implied until the temple beat.",
+          "suggestedChoices": [
+            {
+              "label": "Promote to Chimera clue",
+              "ops": [
+                { "op": "story_metric_change", "metric": "frostwood_threat", "amount": 2, "max": 12 },
+                { "op": "story_clue_add", "clueId": "haven_clue_chimera_witness", "title": "Two-Season Eyes", "text": "A survivor describes a huge creature with fire and cold in the same body.", "canonRisk": "yellow", "tags": ["chimera", "hunter"] },
+                { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A hunter saw something in the north with eyes like two different seasons.", "canonRisk": "yellow", "tags": ["chimera", "frostwood"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_dain_wrong_kind_of_rival",
+          "title": "Dain Tries To Be The Arc Villain",
+          "stageIds": ["haven_stage_return", "haven_stage_frostwood_open", "haven_stage_chimera_prep"],
+          "phaseTypes": ["town_phase", "scenario_phase"],
+          "canonRisk": "green",
+          "weight": 8,
+          "tags": ["dain", "rival", "guild"],
+          "prompt": "Dain tries to mock Bin's F-rank comeback, but Mara ruins the rhythm by pointing out that disappearing for two months is still more interesting than Dain's last three jobs.",
+          "suggestedChoices": [
+            {
+              "label": "Roast him, but leave room for growth",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "bond_change", "npcId": "dain", "field": "rivalry", "amount": 1 },
+                { "op": "story_thread_status", "threadId": "dain_rivalry", "status": "seeded", "note": "Use as annoying rival, possible late-fight assist, not a main villain." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_echo_bridge",
+          "title": "Echo Bridge Has Notes",
+          "stageIds": ["haven_stage_temple_pressure"],
+          "phaseTypes": ["travel_phase", "scenario_phase"],
+          "canonRisk": "yellow",
+          "weight": 8,
+          "tags": ["echo_bridge", "temple", "fear", "memory"],
+          "prompt": "On the approach to the old temple, the bridge starts doing unpaid emotional labor. Bin hears Lily asking why he is not home yet. Bowy hears a language he does not know but still misses. Mitia hears a name that makes the frost answer. Garr hears nothing, which is somehow worse.",
+          "gmNote": "Use as tabletop fear check, app event, or scene card. Comedy can bracket it, but do not undercut the core fear.",
+          "suggestedChoices": [
+            {
+              "label": "Face the echoes",
+              "ops": [
+                { "op": "memory_shard_add", "shardId": "haven_mem_echo_bridge_lily", "title": "Echo Bridge: Lily", "text": "The temple approach uses Lily's voice to test Bin's guilt and resolve.", "source": "story_director", "canonRisk": "yellow" },
+                { "op": "story_metric_change", "metric": "peri_attention", "amount": 1, "max": 12 },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            },
+            {
+              "label": "Treat it like a dungeon mechanic",
+              "ops": [
+                { "op": "story_thread_status", "threadId": "echo_bridge", "status": "mechanical_check", "note": "Resolve with PER/CHA checks, haunted/resolved statuses, or manual tabletop consequences." },
+                { "op": "log", "text": "The Echo Bridge was framed as a fear-check encounter instead of a full confession scene." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_old_temple_token",
+          "title": "A Token Knows Mitia's Hand",
+          "stageIds": ["haven_stage_temple_pressure"],
+          "phaseTypes": ["scenario_phase", "travel_phase"],
+          "canonRisk": "red",
+          "weight": 6,
+          "tags": ["mitia", "temple", "bloodline", "review"],
+          "prompt": "In the old temple, Mitia touches a carved token and the frost patterns around her hand become too perfect. Not stronger. Cleaner. Like the magic recognized her before she recognized it.",
+          "reviewReason": "This can point at Mitia's hidden bloodline. Review before making the bloodline name or source canon.",
+          "suggestedChoices": [
+            {
+              "label": "Keep as visual clue only",
+              "ops": [
+                { "op": "story_clue_add", "clueId": "haven_clue_mitia_token_resonance", "title": "Mitia Token Resonance", "text": "A temple token reacts to Mitia with precise frost patterns.", "canonRisk": "red", "tags": ["mitia", "bloodline"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_garr_campfire_talks_around_it",
+          "title": "Garr Talks Around The Truth",
+          "stageIds": ["haven_stage_temple_pressure", "haven_stage_chimera_prep"],
+          "phaseTypes": ["town_phase", "travel_phase", "scenario_phase"],
+          "canonRisk": "yellow",
+          "weight": 7,
+          "tags": ["garr", "memory", "campfire"],
+          "prompt": "At camp, Garr tells a story about a hunter who found a child in the snow and decided not to ask the impossible questions on the first night. He never says the child's name. He does not need to.",
+          "suggestedChoices": [
+            {
+              "label": "Let the almost-confession stand",
+              "ops": [
+                { "op": "bond_change", "npcId": "haven_garr", "field": "trust", "amount": 2 },
+                { "op": "story_clue_add", "clueId": "haven_clue_garr_found_child", "title": "Garr Found A Child", "text": "Garr implies he found Bin as a child in the snow and chose patience over answers.", "canonRisk": "yellow", "tags": ["garr", "bin_past"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_chimera_plan_bad_whiteboard",
+          "title": "The Chimera Plan Sounds Worse Out Loud",
+          "stageIds": ["haven_stage_chimera_prep"],
+          "phaseTypes": ["town_phase"],
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["chimera", "prep", "comedy", "crafting"],
+          "prompt": "The party explains the Chimera plan on a guild table using mugs, spoons, and one mushroom. Halfway through, the mushroom represents Bin. Nobody likes what that implies.",
+          "suggestedChoices": [
+            {
+              "label": "Commit to the bad plan intelligently",
+              "ops": [
+                { "op": "start_quest_chain", "templateId": "haven_qchain_ironhand_errand" },
+                { "op": "story_metric_change", "metric": "frostwood_threat", "amount": 1, "max": 12 },
+                { "op": "log", "text": "The party entered Chimera prep with an actual plan and suspicious spoon placement." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_chimera_scale_moral_wrinkle",
+          "title": "The Chimera Was Protecting Something",
+          "stageIds": ["haven_stage_pocket_haven"],
+          "phaseTypes": ["town_phase", "scenario_phase", "pocket_haven_phase"],
+          "canonRisk": "yellow",
+          "weight": 7,
+          "tags": ["chimera", "aftermath", "mitia", "future_hook"],
+          "prompt": "After the fight, Mitia touches a warm scale and goes quiet. The Chimera was not just a roaring loot container with poor manners. It was protecting something. Maybe a cub. Maybe an egg. Maybe a problem with tiny teeth.",
+          "gmNote": "This should add moral texture, not invalidate the boss victory. Promote the cub only if the campaign wants a future companion or complication.",
+          "suggestedChoices": [
+            {
+              "label": "Save as future hook",
+              "ops": [
+                { "op": "story_clue_add", "clueId": "haven_clue_chimera_protected_something", "title": "Chimera Protected Something", "text": "Mitia senses the Chimera fought to protect something vulnerable.", "canonRisk": "yellow", "tags": ["chimera", "mitia", "future_companion"] },
+                { "op": "story_thread_status", "threadId": "chimera_cub_hook", "status": "seeded", "note": "Possible future companion, moral complication, or rumor. Not mandatory." }
+              ]
+            },
+            {
+              "label": "Resolve as emotional color only",
+              "ops": [
+                { "op": "story_thread_status", "threadId": "chimera_cub_hook", "status": "color_only", "note": "Keep the moment as Mitia empathy without adding a new creature thread." },
+                { "op": "bond_change", "npcId": "haven_mitia", "field": "empathy", "amount": 1 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_pocket_haven_fix_upper",
+          "title": "Pocket Haven Is A Fixer-Upper",
+          "stageIds": ["haven_stage_pocket_haven"],
+          "phaseTypes": ["town_phase", "pocket_haven_phase"],
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["pocket_haven", "aftermath", "comedy"],
+          "prompt": "Pocket Haven opens as a tiny platform, one workbench, one fire pit, and the spiritual presence of an unfurnished rental. Peri calls it 'minimalist.' Bin calls it 'cosmic landlord behavior.'",
+          "suggestedChoices": [
+            {
+              "label": "Unlock the first home-base loop",
+              "ops": [
+                { "op": "set_flag", "flag": "pocket_haven_story_unlocked" },
+                { "op": "story_metric_change", "metric": "pocket_haven_seed", "amount": 3, "max": 6 },
+                { "op": "unlock_recipe", "recipeId": "warm_stew" },
+                { "op": "log", "text": "Pocket Haven story loop unlocked: workshop, garden hook, recruitment fire hook." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_scene_crystal_of_eos_shop_window",
+          "title": "The Shop Shows Lily A Door",
+          "stageIds": ["haven_stage_pocket_haven"],
+          "phaseTypes": ["town_phase", "pocket_haven_phase"],
+          "canonRisk": "green",
+          "weight": 8,
+          "tags": ["lily", "earth", "shop", "hope"],
+          "prompt": "In Pocket Haven, the CJS shop quietly shows a healing crystal option for Earth-bound allies. It is expensive enough to be rude. It is also proof that Lily is not just motivation in a notebook. There is a path.",
+          "gmNote": "Use after the boss or first Pocket Haven scene. Do not make this an instant cure. Make it a concrete hope with cost.",
+          "suggestedChoices": [
+            {
+              "label": "Mark the cure path as possible",
+              "ops": [
+                { "op": "story_fact_reveal", "factId": "crystal_of_eos_can_help_lily", "title": "Crystal Of Eos Can Help Lily", "text": "The CJS shop can provide a healing crystal that may stabilize Lily, but it costs a real JP windfall.", "canonRisk": "green" },
+                { "op": "story_thread_status", "threadId": "lily_cure_path", "status": "hope_with_cost", "note": "Possible, not solved. Keep future treatment flexible." },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            }
+          ]
+        }
+      ],
+      "periInterruptions": [
+        {
+          "id": "haven_sd_peri_ratings_note",
+          "title": "Peri Gives Notes Nobody Asked For",
+          "stageIds": ["haven_stage_return", "haven_stage_frostwood_open", "haven_stage_temple_pressure", "haven_stage_chimera_prep"],
+          "canonRisk": "green",
+          "weight": 16,
+          "tags": ["peri", "comedy", "cjs"],
+          "prompt": "Peri appears in the CJS overlay with a tiny scorecard. 'Current episode: good pacing, questionable footwear, strong emotional damage potential. Six out of ten. Could use a chair hitting someone.'",
+          "suggestedChoices": [
+            {
+              "label": "Let Bin argue with the rating",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "story_metric_change", "metric": "peri_attention", "amount": 1, "max": 12 },
+                { "op": "log", "text": "Bin argued with a divine rating system and somehow did not lose." }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_peri_cursed_bargain_coupon",
+          "title": "Peri Offers A Terrible Coupon",
+          "stageIds": ["haven_stage_frostwood_open", "haven_stage_temple_pressure", "haven_stage_chimera_prep"],
+          "canonRisk": "yellow",
+          "weight": 8,
+          "tags": ["peri", "jp", "bargain"],
+          "prompt": "Peri offers Bin a coupon: one useful hint, 50 percent off, only costs one public embarrassment later. The CJS insists this is a limited-time offer. The CJS is lying badly.",
+          "suggestedChoices": [
+            {
+              "label": "Take the hint and owe embarrassment",
+              "ops": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "clock_tick", "clockId": "peri_embarrassment_debt", "label": "Peri Embarrassment Debt", "max": 4, "amount": 1 },
+                { "op": "story_metric_change", "metric": "peri_attention", "amount": 2, "max": 12 }
+              ]
+            },
+            {
+              "label": "Refuse out of dignity",
+              "ops": [
+                { "op": "log", "text": "Bin refused Peri's coupon. Peri marked this as cowardice in a very fancy font." },
+                { "op": "story_metric_change", "metric": "peri_attention", "amount": 1, "max": 12 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_peri_previous_candidates_slip",
+          "title": "Peri Almost Mentions Candidate Thirteen",
+          "stageIds": ["haven_stage_temple_pressure", "haven_stage_chimera_prep", "haven_stage_pocket_haven"],
+          "canonRisk": "red",
+          "weight": 3,
+          "tags": ["peri", "previous_jesters", "review"],
+          "prompt": "Peri starts to say, 'The last candidate did this too,' then stops so sharply even the system window looks guilty.",
+          "reviewReason": "Previous Jester details are protected. Use only as a saved red clue unless GM promotes it.",
+          "suggestedChoices": [
+            {
+              "label": "Save the slip as a clue",
+              "ops": [
+                { "op": "story_clue_add", "clueId": "haven_clue_previous_candidate_slip", "title": "Previous Candidate Slip", "text": "Peri nearly compared Bin to a prior candidate.", "canonRisk": "red", "tags": ["peri", "previous_jesters"] }
+              ]
+            }
+          ]
+        }
+      ],
+      "memoryShards": [
+        {
+          "id": "haven_sd_memory_crossbow_smoke",
+          "title": "Crossbow Smoke And Pine",
+          "stageIds": ["haven_stage_return", "haven_stage_frostwood_open"],
+          "canonRisk": "yellow",
+          "weight": 8,
+          "tags": ["memory", "bowy", "frostwood"],
+          "prompt": "A crossbow shot cracks through the trees and Bin remembers pine smoke, a younger Bowy laughing too loudly, and someone telling him to breathe before he shoots.",
+          "suggestedChoices": [
+            {
+              "label": "Record as memory shard",
+              "ops": [
+                { "op": "memory_shard_add", "shardId": "haven_mem_crossbow_smoke", "title": "Crossbow Smoke And Pine", "text": "Bin remembers training around a fire with Bowy nearby.", "source": "story_director", "canonRisk": "yellow" },
+                { "op": "bond_change", "npcId": "haven_bowy", "field": "brotherhood", "amount": 1 }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_memory_child_handwriting",
+          "title": "The Disc With His Own Handwriting",
+          "stageIds": ["haven_stage_temple_pressure", "haven_stage_pocket_haven"],
+          "canonRisk": "red",
+          "weight": 5,
+          "tags": ["memory", "temple", "bin_past", "review"],
+          "prompt": "Bin finds a carved wooden disc. The handwriting is childish and awful. The awful part is that it is his.",
+          "reviewReason": "This confirms strong past-life/Haven continuity. Save and review before revealing the message.",
+          "suggestedChoices": [
+            {
+              "label": "Keep the object, hide the message",
+              "ops": [
+                { "op": "give_quest_item", "id": "haven_child_handwriting_disc", "qty": 1 },
+                { "op": "memory_shard_add", "shardId": "haven_mem_child_handwriting_disc", "title": "Child Handwriting Disc", "text": "Bin finds a wooden disc written in his childhood handwriting.", "source": "story_director", "canonRisk": "red" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_memory_lily_after_boss",
+          "title": "Lily Returns To The Front Of His Mind",
+          "stageIds": ["haven_stage_pocket_haven"],
+          "canonRisk": "green",
+          "weight": 10,
+          "tags": ["lily", "aftermath", "hope"],
+          "prompt": "After the fight, when the noise finally stops, Bin thinks of Lily. Not as guilt bait. As the reason he can stand up again even when his legs are politely resigning.",
+          "suggestedChoices": [
+            {
+              "label": "Mark a hopeful promise",
+              "ops": [
+                { "op": "story_fact_reveal", "factId": "bin_keeps_lily_as_anchor", "title": "Lily Is The Anchor", "text": "Bin's choices in Haven still point back to Lily's survival.", "canonRisk": "green" },
+                { "op": "give_jp", "amount": 1 }
+              ]
+            }
+          ]
+        }
+      ],
+      "pressureTicks": [
+        {
+          "id": "haven_sd_pressure_earth_heat",
+          "title": "Earth Notices The Noise",
+          "stageIds": ["haven_stage_temple_pressure", "haven_stage_chimera_prep", "haven_stage_pocket_haven"],
+          "canonRisk": "yellow",
+          "weight": 8,
+          "tags": ["earth", "luna", "zhao", "pressure"],
+          "prompt": "Somewhere on Earth, an instrument that should not exist notices a spike that looks suspiciously like Bin making poor life choices in another world.",
+          "suggestedChoices": [
+            {
+              "label": "Tick Earth heat",
+              "ops": [
+                { "op": "story_metric_change", "metric": "earth_heat", "amount": 1, "max": 12 },
+                { "op": "clock_tick", "clockId": "earth_organization_attention", "label": "Earth Organization Attention", "max": 6, "amount": 1 },
+                { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "Peri hints that Earth-side people may have noticed portal noise.", "canonRisk": "yellow", "tags": ["earth", "luna"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_pressure_frostwood_worsens",
+          "title": "The Frostwood Moves South",
+          "stageIds": ["haven_stage_frostwood_open", "haven_stage_temple_pressure"],
+          "canonRisk": "green",
+          "weight": 12,
+          "tags": ["frostwood", "chimera", "town_problem"],
+          "prompt": "Wolves, deer, and things people prefer not to name begin moving south. Frostbitten does not panic. Frostbitten makes tea and starts counting arrows.",
+          "suggestedChoices": [
+            {
+              "label": "Tick Frostwood threat",
+              "ops": [
+                { "op": "story_metric_change", "metric": "frostwood_threat", "amount": 1, "max": 12 },
+                { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "frostwood_pressure", "label": "Frostwood Pressure" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "haven_sd_pressure_guild_noise",
+          "title": "The Guild Starts Talking",
+          "stageIds": ["haven_stage_return", "haven_stage_frostwood_open", "haven_stage_chimera_prep"],
+          "canonRisk": "green",
+          "weight": 9,
+          "tags": ["guild", "rumor", "dain"],
+          "prompt": "Bin's return becomes the guild's favorite topic. Corvin hates this. Lysa loves this. Dain pretends not to care so loudly that everyone cares on his behalf.",
+          "suggestedChoices": [
+            {
+              "label": "Tick Guild noise",
+              "ops": [
+                { "op": "story_metric_change", "metric": "guild_noise", "amount": 1, "max": 12 },
+                { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "People are arguing whether Bin counts as returned, respawned, or dramatically misplaced.", "canonRisk": "green", "tags": ["guild", "bin_return"] }
+              ]
+            }
+          ]
+        }
+      ],
+      "sideQuestFlow": [
+        {
+          "stageId": "haven_stage_return",
+          "summary": "Early Frostbitten should feel crowded, friendly, annoying, and alive. Keep small comedy quests available while promoting only one or two.",
+          "keep": [
+            { "id": "haven_qchain_three_silver_discount", "title": "Three Silver and a Funeral Discount", "reason": "Pure comedy and rivalry. Good pressure valve." },
+            { "id": "haven_qchain_ledger_of_the_ghost", "title": "The Ledger of the Ghost", "reason": "Directly supports Bin's return." }
+          ],
+          "promote": [
+            { "id": "haven_qchain_ledger_of_the_ghost", "title": "The Ledger of the Ghost", "reason": "Best first town quest because it makes the setting laugh at the premise." }
+          ],
+          "retire": [
+            { "id": "haven_scn_sewer_crawl", "title": "Sewer Crawl", "reason": "Keep for later unless the player wants a sudden smell episode." }
+          ],
+          "ops": [
+            { "op": "story_thread_status", "threadId": "haven_qchain_ledger_of_the_ghost", "status": "promote", "note": "Best first town side quest." },
+            { "op": "story_thread_status", "threadId": "haven_qchain_three_silver_discount", "status": "keep", "note": "Low-stakes recurring comedy." }
+          ]
+        },
+        {
+          "stageId": "haven_stage_frostwood_open",
+          "summary": "The warm-up quest should feed the main arc without eating the whole session. Use one comedy quest, one field quest, one threat clue.",
+          "keep": [
+            { "id": "haven_qchain_three_silver_discount", "title": "Three Silver and a Funeral Discount", "reason": "Good between field runs." },
+            { "id": "haven_qchain_ironhand_errand", "title": "Ironhand Errand", "reason": "Save as prep for the boss." },
+            { "id": "haven_qchain_warm_lights_cold_hands", "title": "Warm Lights, Cold Hands", "reason": "Good survival-side pressure if the town needs a practical problem." }
+          ],
+          "promote": [
+            { "id": "haven_qchain_frostcap_fever", "title": "Frostcap Fever", "reason": "Best tutorial field run." },
+            { "id": "missing_hunter_hook", "title": "Missing Hunter", "reason": "Adds the first Chimera shadow." },
+            { "id": "haven_qchain_warm_lights_cold_hands", "title": "Warm Lights, Cold Hands", "reason": "Promote if the players need an escort/supply quest before the temple." }
+          ],
+          "retire": [
+            { "id": "generic_tavern_food_only", "title": "Food-only tavern bits", "reason": "Keep as color unless the party needs a break." }
+          ],
+          "ops": [
+            { "op": "story_thread_status", "threadId": "haven_qchain_frostcap_fever", "status": "promote", "note": "Use as first Frostwood run." },
+            { "op": "story_thread_status", "threadId": "haven_qchain_warm_lights_cold_hands", "status": "keep", "note": "Use as town survival pressure if the party wants a supply run." },
+            { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "text": "A hunter says the north treeline has gone quiet in the wrong way.", "canonRisk": "yellow", "tags": ["missing_hunter", "chimera"] }
+          ]
+        },
+        {
+          "stageId": "haven_stage_temple_pressure",
+          "summary": "Main story pressure rises. Low-stakes side quests should either become preparation, become rumors, or pause.",
+          "keep": [
+            { "id": "haven_qchain_thunder_needs_a_voice", "title": "Thunder Needs A Voice", "reason": "Bowy side beat can point at old routes without revealing Garr's truth." }
+          ],
+          "promote": [
+            { "id": "old_temple_route", "title": "Old Temple Route", "reason": "Main arc route. Pull memory, Mitia resonance, and Chimera clues together." },
+            { "id": "echo_bridge", "title": "Echo Bridge", "reason": "Use if the session wants fear checks and character vulnerability before the temple." }
+          ],
+          "retire": [
+            { "id": "haven_qchain_three_silver_discount", "title": "Three Silver and a Funeral Discount", "reason": "Pause if the old temple is active. Bring it back after the boss." }
+          ],
+          "ops": [
+            { "op": "story_thread_status", "threadId": "old_temple_route", "status": "main", "note": "Current main story route." },
+            { "op": "story_thread_status", "threadId": "echo_bridge", "status": "available", "note": "Optional fear-check scene on the temple approach." },
+            { "op": "story_thread_status", "threadId": "haven_qchain_three_silver_discount", "status": "paused", "note": "Pause until the pressure releases." }
+          ]
+        },
+        {
+          "stageId": "haven_stage_chimera_prep",
+          "summary": "Side content should become preparation: gear, scouting, Dain/Mara rival assist, Bowy's Thunder, Mitia's token, Garr's warning.",
+          "keep": [
+            { "id": "haven_qchain_ironhand_errand", "title": "Ironhand Errand", "reason": "Direct gear-prep value." },
+            { "id": "dain_rivalry", "title": "Dain Rivalry", "reason": "Can turn into rivalry, alliance, or rescue complication." }
+          ],
+          "promote": [
+            { "id": "lightning_prep", "title": "Lightning Prep", "reason": "Chimera weakness setup." },
+            { "id": "kael_scouting", "title": "Kael Scouting", "reason": "Useful underdog NPC setup." },
+            { "id": "haven_qchain_thunder_needs_a_voice", "title": "Thunder Needs A Voice", "reason": "Promote if Bowy needs a practical emotional beat before the boss." }
+          ],
+          "retire": [
+            { "id": "warm_stew_shortage", "title": "Warm Stew Shortage", "reason": "If unresolved, convert to a background town problem." }
+          ],
+          "ops": [
+            { "op": "story_thread_status", "threadId": "haven_qchain_ironhand_errand", "status": "promote", "note": "Use for boss prep." },
+            { "op": "story_thread_status", "threadId": "haven_qchain_thunder_needs_a_voice", "status": "prep_option", "note": "Can become Bowy's lightning/Thunder prep scene." },
+            { "op": "story_thread_status", "threadId": "dain_rivalry", "status": "boss_complication", "note": "Dain can help, interfere, or need saving." },
+            { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "chimera_preparation_pressure", "label": "Chimera Preparation Pressure" }
+          ]
+        },
+        {
+          "stageId": "haven_stage_pocket_haven",
+          "summary": "After the Chimera, retire the immediate monster threat and keep side quests that create recurring home-base loops.",
+          "keep": [
+            { "id": "haven_qchain_three_silver_discount", "title": "Three Silver and a Funeral Discount", "reason": "Bring comedy back after the boss." },
+            { "id": "kael_recruitment", "title": "Kael Recruitment", "reason": "Pocket Haven can support recruit/fire mechanics later." }
+          ],
+          "promote": [
+            { "id": "pocket_haven_garden", "title": "Pocket Haven Garden", "reason": "Turns Frostcap and crafting into a recurring loop." },
+            { "id": "earth_heat_hook", "title": "Earth Heat Hook", "reason": "Luna/Zhao/Organization pressure enters gently." }
+          ],
+          "retire": [
+            { "id": "frostwood_pressure", "title": "Frostwood Pressure", "reason": "Resolve or downgrade after the Chimera falls." }
+          ],
+          "ops": [
+            { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "frostwood_pressure" },
+            { "op": "story_thread_status", "threadId": "pocket_haven_garden", "status": "new_loop", "note": "Home-base farming/crafting/recruiting loop is now story-relevant." },
+            { "op": "clock_tick", "clockId": "earth_organization_attention", "label": "Earth Organization Attention", "max": 6, "amount": 1 }
+          ]
+        }
+      ]
+    }
+  ]
+}

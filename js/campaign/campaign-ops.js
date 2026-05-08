@@ -69,6 +69,13 @@ window.CJS.CampaignOps = (() => {
         case 'advance_quest_chain_step': return `Advance quest chain ${op.templateId || op.id}`;
         case 'complete_quest_chain': return `Complete quest chain ${op.templateId || op.id}`;
         case 'clock_tick': return `Clock ${op.clockId || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'story_stage_set': return `Story stage ${op.stageId || op.id}`;
+        case 'story_beat_save': return `Save story beat ${op.beat?.title || op.beatId || op.id || ''}`;
+        case 'story_beat_resolve': return `Resolve story beat ${op.beatId || op.id || ''}`;
+        case 'story_clue_add': return `Add story clue ${op.title || op.clueId || op.id || ''}`;
+        case 'story_fact_reveal': return `Reveal story fact ${op.title || op.factId || op.id || ''}`;
+        case 'story_thread_status': return `Story thread ${op.threadId || op.id} -> ${op.status || 'active'}`;
+        case 'story_metric_change': return `Story ${op.metric || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
         case 'gain_skill_ap': return `Gain ${op.amount || 0} AP for skill ${op.skillId || op.id}`;
         case 'set_skill_level': return `Set skill ${op.skillId || op.id} to Lv ${op.level || 1}`;
         case 'set_job': return `Set ${op.target || op.characterId || 'member'} job → ${op.jobId || op.id || 'none'}`;
@@ -208,6 +215,13 @@ window.CJS.CampaignOps = (() => {
       case 'clock_tick': return _clockTick(state, op);
       case 'clock_reset': return _clockReset(state, op);
       case 'clock_complete': return _clockComplete(state, op);
+      case 'story_stage_set': return _storyStageSet(state, op);
+      case 'story_beat_save': return _storyBeatSave(state, op);
+      case 'story_beat_resolve': return _storyBeatResolve(state, op);
+      case 'story_clue_add': return _storyClueAdd(state, op);
+      case 'story_fact_reveal': return _storyFactReveal(state, op);
+      case 'story_thread_status': return _storyThreadStatus(state, op);
+      case 'story_metric_change': return _storyMetricChange(state, op);
       case 'memory_shard_add': return _memoryShardAdd(state, op);
       case 'bond_change': return _bondChange(state, op);
       default:
@@ -1849,6 +1863,116 @@ window.CJS.CampaignOps = (() => {
     clock.current = clock.max || 6;
     clock.status = op.status || 'complete';
     _log(state, `Clock complete: ${op.clockId || op.id}.`);
+  }
+
+  function _storyState(state) {
+    state.storyDirector = state.storyDirector || {};
+    state.storyDirector.storyQueue = state.storyDirector.storyQueue || {};
+    state.storyDirector.clueLedger = state.storyDirector.clueLedger || {};
+    state.storyDirector.revealedFacts = state.storyDirector.revealedFacts || {};
+    state.storyDirector.threadStatus = state.storyDirector.threadStatus || {};
+    state.storyDirector.metrics = state.storyDirector.metrics || {};
+    state.storyDirector.lastBeatIds = state.storyDirector.lastBeatIds || [];
+    state.storyDirector.sideQuestSync = state.storyDirector.sideQuestSync || {};
+    return state.storyDirector;
+  }
+
+  function _storyStageSet(state, op) {
+    const sd = _storyState(state);
+    const stageId = op.stageId || op.id;
+    if (!stageId) return;
+    sd.activeStageId = stageId;
+    _log(state, `Story stage set: ${stageId}.`);
+  }
+
+  function _storyBeatSave(state, op) {
+    const sd = _storyState(state);
+    const beat = CS().clone(op.beat || {});
+    const id = op.beatId || beat.id || op.id || `story_beat_${Date.now()}`;
+    if (!id) return;
+    sd.storyQueue[id] = {
+      ...beat,
+      id,
+      status: op.status || beat.status || 'saved',
+      savedAtPhase: state.phase?.number || 1,
+      savedAt: new Date().toISOString()
+    };
+    if (op.setLast !== false) state.lastStoryDirectorBeat = sd.storyQueue[id];
+    _log(state, `Story beat saved: ${sd.storyQueue[id].title || id}.`);
+  }
+
+  function _storyBeatResolve(state, op) {
+    const sd = _storyState(state);
+    const id = op.beatId || op.id;
+    if (!id) return;
+    const entry = sd.storyQueue[id] || (state.lastStoryDirectorBeat?.id === id ? state.lastStoryDirectorBeat : null);
+    if (!entry) return;
+    entry.status = op.status || 'resolved';
+    entry.resolvedAtPhase = state.phase?.number || 1;
+    entry.resolution = op.resolution || entry.resolution || '';
+    if (sd.storyQueue[id]) sd.storyQueue[id] = entry;
+    if (state.lastStoryDirectorBeat?.id === id) state.lastStoryDirectorBeat = entry;
+    _log(state, `Story beat resolved: ${entry.title || id}.`);
+  }
+
+  function _storyClueAdd(state, op) {
+    const sd = _storyState(state);
+    const id = op.clueId || op.id || `clue_${Date.now()}`;
+    sd.clueLedger[id] = {
+      ...(sd.clueLedger[id] || {}),
+      id,
+      title: op.title || id,
+      text: op.text || op.summary || '',
+      stageId: op.stageId || sd.activeStageId || null,
+      source: op.source || 'story_director',
+      canonRisk: _risk(op.canonRisk),
+      tags: op.tags || [],
+      status: op.status || sd.clueLedger[id]?.status || 'unresolved',
+      createdAtPhase: sd.clueLedger[id]?.createdAtPhase || state.phase?.number || 1
+    };
+    if (_risk(op.canonRisk) === 'red') _reviewQueueAdd(state, { contentId: id, canonRisk: op.canonRisk, reason: 'Story clue touches a protected truth.' });
+    _log(state, `Story clue added: ${sd.clueLedger[id].title}.`);
+  }
+
+  function _storyFactReveal(state, op) {
+    const sd = _storyState(state);
+    const id = op.factId || op.id;
+    if (!id) return;
+    sd.revealedFacts[id] = {
+      id,
+      title: op.title || id,
+      text: op.text || '',
+      stageId: op.stageId || sd.activeStageId || null,
+      canonRisk: _risk(op.canonRisk),
+      revealedAtPhase: state.phase?.number || 1
+    };
+    if (op.flag) _setFlag(state, op.flag, true, op.value === undefined ? true : op.value);
+    _log(state, `Story fact revealed: ${sd.revealedFacts[id].title}.`);
+  }
+
+  function _storyThreadStatus(state, op) {
+    const sd = _storyState(state);
+    const threadId = op.threadId || op.id;
+    if (!threadId) return;
+    sd.threadStatus[threadId] = {
+      ...(sd.threadStatus[threadId] || {}),
+      id: threadId,
+      status: op.status || 'active',
+      note: op.note || op.notes || sd.threadStatus[threadId]?.note || '',
+      stageId: op.stageId || sd.activeStageId || null,
+      updatedAtPhase: state.phase?.number || 1
+    };
+    _log(state, `Story thread ${threadId}: ${sd.threadStatus[threadId].status}.`);
+  }
+
+  function _storyMetricChange(state, op) {
+    const sd = _storyState(state);
+    const metric = op.metric || op.id;
+    if (!metric) return;
+    sd.metrics[metric] = (sd.metrics[metric] || 0) + Number(op.amount || 0);
+    if (op.min != null) sd.metrics[metric] = Math.max(Number(op.min), sd.metrics[metric]);
+    if (op.max != null) sd.metrics[metric] = Math.min(Number(op.max), sd.metrics[metric]);
+    _log(state, `Story metric ${metric} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}.`);
   }
 
   function _memoryShardAdd(state, op) {

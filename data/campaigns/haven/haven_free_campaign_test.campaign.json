@@ -81,6 +81,7 @@
       "carryoverProfiles": ["carryover_new_world_default"],
       "hubs": ["haven_hub_frostbitten"],
       "sideContentPacks": ["haven_scp_frostbitten_v1"],
+      "storyDirectorPacks": ["haven_story_director_v1"],
       "startingState": {
         "currencies": { "haven_gold": 20, "jp": 1 },
         "items": { "haven_minor_potion": 2, "haven_basic_tent": 1 },

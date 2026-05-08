@@ -28,6 +28,7 @@ window.CJS.CampaignState = (() => {
       battleSets: {},
       mapSeeds: {},
       oracleTables: {},
+      storyDirectorPacks: {},
       worlds: {}
     };
   }
@@ -55,6 +56,7 @@ window.CJS.CampaignState = (() => {
       battleSets: DS().getAll('battleSets'),
       mapSeeds: DS().getAll('mapSeeds'),
       oracleTables: DS().getAll('oracleTables'),
+      storyDirectorPacks: DS().getAll('storyDirectorPacks'),
       worlds: DS().getAll('worlds')
     };
     return getContent();
@@ -216,6 +218,17 @@ window.CJS.CampaignState = (() => {
       clocks: {},
       memoryShards: {},
       bonds: {},
+      storyDirector: {
+        mode: 'solo_gm',
+        activeStageId: null,
+        storyQueue: {},
+        clueLedger: {},
+        revealedFacts: {},
+        threadStatus: {},
+        metrics: {},
+        lastBeatIds: [],
+        sideQuestSync: {}
+      },
       pinnedNotes: [],
       log: [],
       settings: {
@@ -594,6 +607,16 @@ window.CJS.CampaignState = (() => {
     next.clocks = next.clocks || {};
     next.memoryShards = next.memoryShards || {};
     next.bonds = next.bonds || {};
+    next.storyDirector = next.storyDirector || {};
+    next.storyDirector.mode = next.storyDirector.mode || 'solo_gm';
+    next.storyDirector.activeStageId = next.storyDirector.activeStageId || null;
+    next.storyDirector.storyQueue = next.storyDirector.storyQueue || {};
+    next.storyDirector.clueLedger = next.storyDirector.clueLedger || {};
+    next.storyDirector.revealedFacts = next.storyDirector.revealedFacts || {};
+    next.storyDirector.threadStatus = next.storyDirector.threadStatus || {};
+    next.storyDirector.metrics = next.storyDirector.metrics || {};
+    next.storyDirector.lastBeatIds = next.storyDirector.lastBeatIds || [];
+    next.storyDirector.sideQuestSync = next.storyDirector.sideQuestSync || {};
     next.reputation = next.reputation || {};
     next.unlockedRecipes = next.unlockedRecipes || {};
     next.pocketHaven = next.pocketHaven || { enabled: true, notes: [], farm: { plots: [] }, stations: [] };

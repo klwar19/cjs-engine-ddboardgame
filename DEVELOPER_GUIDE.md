@@ -13,6 +13,7 @@ Main entry points:
 - `index.html` - test page / launcher
 - `editor.html` - content editor
 - `combat.html` - combat simulator
+- `campaign.html` - campaign GM dashboard, scenario runner, Story Director, and tabletop ledger
 
 Core runtime files:
 - `js/core/constants.js` - enums, rank tables, terrain, status defs, shared rules
@@ -54,6 +55,7 @@ The app has 3 layers:
 Important rule:
 - Most new features should plug into `DataStore` shape first, then the UI.
 - If runtime shape stays stable, combat and editor stay easier to maintain.
+- Plot-heavy campaign features should be table-driven where possible. For Story Director work, edit `data/campaigns/<world>/story_director/` and `docs/CJS_STORY_DIRECTOR_REFERENCE.md` before changing engine code.
 
 ## 3. High-Level Flow
 

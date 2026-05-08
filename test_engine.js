@@ -168,6 +168,7 @@ const recipeId = DS.create('crafting', { name: 'Test Recipe' });
 const foodId = DS.create('food', { name: 'Test Food' });
 const materialId = DS.create('materials', { name: 'Test Material' });
 const storyId = DS.create('stories', { name: 'Test Story' });
+const storyDirectorPackId = DS.create('storyDirectorPacks', { name: 'Test Story Director Pack' });
 
 DS.replace('worlds', 'haven', { id: 'haven', name: 'Haven' });
 
@@ -178,11 +179,12 @@ assertEq('crafting ID prefix', recipeId, 'rcp_001');
 assertEq('food ID prefix', foodId, 'fod_001');
 assertEq('material ID prefix', materialId, 'mat_001');
 assertEq('story ID prefix', storyId, 'sto_001');
+assertEq('story director pack ID prefix', storyDirectorPackId, 'sdp_001');
 assertEq('world count exposed', DS.getCounts().worlds, 1);
 assertEq('zone count exposed', DS.getCounts().zones, 1);
 assert('exportJSON includes future collections', (() => {
   const exported = JSON.parse(DS.exportJSON());
-  return exported.worlds && exported.zones && exported.food && exported.materials && exported.crafting;
+  return exported.worlds && exported.zones && exported.food && exported.materials && exported.crafting && exported.storyDirectorPacks;
 })());
 
 DS.reset();

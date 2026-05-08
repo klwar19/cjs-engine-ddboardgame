@@ -444,7 +444,7 @@
         }
 
         statusCounts.innerHTML = Object.entries(counts)
-          .filter(([key, value]) => ['effects', 'skills', 'jobs', 'items', 'food', 'materials', 'passives', 'characters', 'monsters', 'encounters', 'crafting', 'crops', 'shops', 'zones', 'stories', 'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents', 'campaignQuests', 'campaignHubs', 'sideContentPacks', 'questChains', 'battleSets', 'mapSeeds', 'oracleTables'].includes(key) && value > 0)
+          .filter(([key, value]) => ['effects', 'skills', 'jobs', 'items', 'food', 'materials', 'passives', 'characters', 'monsters', 'encounters', 'crafting', 'crops', 'shops', 'zones', 'stories', 'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents', 'campaignQuests', 'campaignHubs', 'sideContentPacks', 'questChains', 'battleSets', 'mapSeeds', 'oracleTables', 'storyDirectorPacks'].includes(key) && value > 0)
           .map(([key, value]) => `<span>${key}: <b>${value}</b></span>`)
           .join('');
 

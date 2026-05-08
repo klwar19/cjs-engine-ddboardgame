@@ -15,6 +15,7 @@ window.CJS.CampaignUI = (() => {
   const Runner = () => window.CJS.ScenarioRunner;
   const Bridge = () => window.CJS.CampaignCombatBridge;
   const Side = () => window.CJS.CampaignSideContent;
+  const SD = () => window.CJS.CampaignStoryDirector;
   const Gen = () => window.CJS.CampaignScenarioGenerator;
   const Chat = () => window.CJS.CampaignPartyChat;
   const C = () => window.CJS.CONST;
@@ -50,6 +51,7 @@ window.CJS.CampaignUI = (() => {
   const MODE_TABS = {
     town: [
       ['overview', 'Overview'],
+      ['storyDirector', 'Story Director'],
       ['roster', 'Roster'],
       ['oracleForge', 'Events & Oracle'],
       ['sideForge', 'Hub Pulse'],
@@ -860,6 +862,7 @@ window.CJS.CampaignUI = (() => {
   function _renderMain(state) {
     switch (_activeTab) {
       case 'roster': return _renderRoster(state);
+      case 'storyDirector': return _renderStoryDirector(state);
       case 'sideForge': return _renderSideForge(state);
       case 'questChains': return _renderQuestChains(state);
       case 'battleSets': return _renderBattleSets(state);
@@ -929,6 +932,183 @@ window.CJS.CampaignUI = (() => {
         ${_renderOracle(state)}
         ${_renderLastReport(state)}
       </div>
+    `;
+  }
+
+  function _renderStoryDirector(state) {
+    const director = SD();
+    if (!director) return '<div class="campaign-empty">Story Director module is not loaded.</div>';
+    const snap = director.snapshot();
+    const pack = snap.pack;
+    if (!pack) {
+      return `
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h2>Story Director</h2></div>
+          <div class="campaign-empty">No Story Director pack loaded for this world.</div>
+        </section>
+      `;
+    }
+    const stage = snap.stage || {};
+    const stages = pack.stages || [];
+    const metrics = pack.metrics || [];
+    const flow = snap.flow;
+    const queue = snap.queue.slice(0, 8);
+    const clues = snap.clues.slice(0, 8);
+    const facts = snap.facts.slice(0, 8);
+
+    return `
+      <div class="campaign-dashboard">
+        <section class="campaign-panel campaign-wide-panel">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>${_esc(pack.name || 'Story Director')}</h2>
+              <div class="campaign-muted">${_esc(pack.summary || 'Arc-aware solo/GM story guidance.')}</div>
+            </div>
+            <span class="campaign-pill">${_esc(stage.name || stage.id || 'No stage')}</span>
+          </div>
+          <div class="campaign-chip-row">
+            ${(pack.tonePillars || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}
+          </div>
+          <div class="campaign-action-grid">
+            <button class="campaign-action primary" data-campaign-action="story-roll-scene">Scene Beat</button>
+            <button class="campaign-action" data-campaign-action="story-roll-peri">Peri Interruption</button>
+            <button class="campaign-action" data-campaign-action="story-roll-memory">Memory Shard</button>
+            <button class="campaign-action" data-campaign-action="story-pressure-tick">Pressure Tick</button>
+            <button class="campaign-action" data-campaign-action="story-sync-sidequests">Sync Side Quests</button>
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Arc Stage</h3></div>
+          <div class="campaign-action-grid">
+            ${stages.map((entry) => `
+              <button class="campaign-action ${entry.id === stage.id ? 'primary' : ''}" data-campaign-action="story-set-stage" data-id="${_escAttr(entry.id)}">${_esc(entry.name || entry.id)}</button>
+            `).join('') || '<div class="campaign-empty">No stages authored.</div>'}
+          </div>
+          <p class="campaign-muted">${_esc(stage.summary || '')}</p>
+        </section>
+
+        ${snap.last ? _renderStoryDirectorCard(snap.last) : _renderStoryDirectorEmptyCard()}
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Pressure Board</h3></div>
+          <div class="campaign-stat-grid">
+            ${metrics.map((metric) => `<span>${_esc(metric.label || _label(metric.id))} <b>${_esc(snap.metrics[metric.id] || 0)}</b></span>`).join('') || '<span>No metrics authored.</span>'}
+          </div>
+          <div class="campaign-control-help">${_esc(pack.pressureRule || 'Pressure ticks suggest offscreen consequences. Apply only what fits the session.')}</div>
+        </section>
+
+        ${_renderStorySideFlow(flow)}
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Clues & Reveals</h3></div>
+          ${clues.length ? clues.map((clue) => `
+            <div class="campaign-row">
+              <div>
+                <strong>${_esc(clue.title || clue.id)}</strong>
+                <div class="campaign-muted">${_esc(clue.text || '')}</div>
+              </div>
+              <span class="campaign-risk ${Side().riskClass(clue.canonRisk)}">${_esc(clue.canonRisk || 'green')}</span>
+            </div>
+          `).join('') : '<div class="campaign-empty">No story clues recorded yet.</div>'}
+          ${facts.length ? `<div class="campaign-section-title">Revealed Facts</div>${facts.map((fact) => `<div class="campaign-town-line is-plot"><strong>${_esc(fact.title || fact.id)}</strong><span>${_esc(fact.text || '')}</span></div>`).join('')}` : ''}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Queued Story Beats</h3></div>
+          ${queue.length ? queue.map((beat) => `
+            <div class="campaign-row">
+              <div>
+                <strong>${_esc(beat.title || beat.id)}</strong>
+                <div class="campaign-muted">${_esc(beat.status || 'saved')} | ${_esc(beat.stageName || beat.stageId || '')}</div>
+              </div>
+              <span class="campaign-risk ${Side().riskClass(beat.canonRisk)}">${_esc(beat.canonRisk || 'green')}</span>
+            </div>
+          `).join('') : '<div class="campaign-empty">Save a beat to keep it here for later.</div>'}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Protected Truths</h3></div>
+          ${(pack.protectedTruths || []).slice(0, 10).map((truth) => `
+            <div class="campaign-town-line is-risk">
+              <strong>${_esc(truth.title || truth.id)}</strong>
+              <span>${_esc(truth.rule || 'Red-risk until the GM promotes it.')}</span>
+            </div>
+          `).join('') || '<div class="campaign-empty">No protected truths listed.</div>'}
+        </section>
+      </div>
+    `;
+  }
+
+  function _renderStoryDirectorEmptyCard() {
+    return `
+      <section class="campaign-panel campaign-solo-notice">
+        <div class="campaign-panel-head"><h3>No Story Beat Rolled</h3></div>
+        <p>Use the buttons above when the table needs a scene nudge, Peri nonsense, a memory leak, or offscreen pressure.</p>
+      </section>
+    `;
+  }
+
+  function _renderStoryDirectorCard(card) {
+    const choices = card.suggestedChoices || [];
+    return `
+      <section class="campaign-panel campaign-side-card campaign-result-card">
+        <div class="campaign-panel-head">
+          <div>
+            <h3>${_esc(card.title || card.id)}</h3>
+            <div class="campaign-muted">${_esc(card.stageName || card.stageId || '')} | ${_esc(_label(card.kind || 'story'))}</div>
+          </div>
+          <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
+        </div>
+        ${card.prompt ? `<p>${_esc(card.prompt)}</p>` : ''}
+        ${card.text ? `<p>${_esc(card.text)}</p>` : ''}
+        ${card.summary ? `<p class="campaign-muted">${_esc(card.summary)}</p>` : ''}
+        ${card.gmNote ? `<div class="campaign-warning">${_esc(card.gmNote)}</div>` : ''}
+        ${card.tags?.length ? `<div class="campaign-chip-row">${card.tags.map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>` : ''}
+        ${choices.length ? `<div class="campaign-choice-stack">${choices.map((choice, index) => _renderConsequencePreview(choice.ops || [], {
+          title: choice.label || `Choice ${index + 1}`,
+          emptyTitle: choice.label || `Choice ${index + 1}`,
+          emptyText: 'Story-only choice. Apply it if it fits the current scene.'
+        })).join('')}</div>` : ''}
+        <div class="campaign-action-grid">
+          ${choices.length ? choices.map((choice, index) => `<button class="campaign-action ${index === 0 ? 'primary' : ''}" data-campaign-action="story-apply-choice" data-id="${_escAttr(card.id)}" data-choice="${index}">Apply: ${_esc(choice.label || `Choice ${index + 1}`)}</button>`).join('') : `<button class="campaign-action primary" data-campaign-action="story-apply-choice" data-id="${_escAttr(card.id)}" data-choice="0">Accept Note</button>`}
+          <button class="campaign-action" data-campaign-action="story-save-beat">Save Beat</button>
+          <button class="campaign-action danger" data-campaign-action="story-reject-beat">Reject</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderStorySideFlow(flow) {
+    if (!flow) {
+      return `
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Side Quest Flow</h3></div>
+          <div class="campaign-empty">No side quest flow authored for this stage.</div>
+        </section>
+      `;
+    }
+    const row = (label, list, tone) => list?.length ? `
+      <div>
+        <div class="campaign-section-title">${_esc(label)}</div>
+        ${list.map((item) => `<div class="campaign-town-line is-${_escAttr(tone)}"><strong>${_esc(item.title || item.id || item)}</strong><span>${_esc(item.reason || item.note || '')}</span></div>`).join('')}
+      </div>
+    ` : '';
+    return `
+      <section class="campaign-panel campaign-wide-panel">
+        <div class="campaign-panel-head">
+          <div>
+            <h3>Side Quest Flow</h3>
+            <div class="campaign-muted">${_esc(flow.summary || 'Keep, promote, or retire optional content as the main arc moves.')}</div>
+          </div>
+          <button class="campaign-action" data-campaign-action="story-sync-sidequests">Sync Now</button>
+        </div>
+        <div class="campaign-town-columns">
+          ${row('Keep Available', flow.keep, 'flavor')}
+          ${row('Promote Soon', flow.promote, 'plot')}
+          ${row('Retire / Downgrade', flow.retire, 'risk')}
+        </div>
+      </section>
     `;
   }
 
@@ -2966,6 +3146,15 @@ window.CJS.CampaignUI = (() => {
       case 'save-map-seed': return window.CJS.CampaignMapSeedForge.saveSeed(data.id);
       case 'copy-map-seed': return _copyMapSeed(data.id);
       case 'roll-forge-oracle': return _rollForgeOracle();
+      case 'story-roll-scene': return _rollStoryDirector('scene');
+      case 'story-roll-peri': return _rollStoryDirector('peri');
+      case 'story-roll-memory': return _rollStoryDirector('memory');
+      case 'story-pressure-tick': return _rollStoryDirector('pressure');
+      case 'story-save-beat': return _saveStoryDirectorBeat();
+      case 'story-reject-beat': return _rejectStoryDirectorBeat();
+      case 'story-apply-choice': return _applyStoryDirectorChoice(data.id, Number(data.choice || 0));
+      case 'story-set-stage': return _setStoryDirectorStage(data.id);
+      case 'story-sync-sidequests': return _syncStoryDirectorSideQuests();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
       case 'oracle-note': return _saveOracleNote();
@@ -3571,6 +3760,57 @@ window.CJS.CampaignUI = (() => {
     const card = window.CJS.CampaignIdeaForge.rollOracle();
     if (!card) return UI().toast('No oracle table available', 'info');
     render();
+  }
+
+  function _rollStoryDirector(kind) {
+    _activeMode = 'town';
+    _activeTab = 'storyDirector';
+    const card = SD()?.roll(kind);
+    if (!card) return UI().toast('No matching story beat available', 'info');
+    render();
+  }
+
+  function _saveStoryDirectorBeat() {
+    const card = SD()?.saveLast?.('saved');
+    if (!card) return UI().toast('No story beat to save', 'info');
+    render();
+    UI().toast('Story beat saved', 'success');
+  }
+
+  function _rejectStoryDirectorBeat() {
+    const card = SD()?.rejectLast?.();
+    if (!card) return UI().toast('No story beat to reject', 'info');
+    render();
+    UI().toast('Story beat rejected', 'info');
+  }
+
+  function _applyStoryDirectorChoice(cardId, choiceIndex = 0) {
+    const result = SD()?.applyChoice?.(cardId, choiceIndex);
+    if (result?.queued) {
+      render();
+      return UI().toast('Red-risk story beat queued for review', 'info');
+    }
+    if (result?.applied) {
+      render();
+      return UI().toast('Story beat applied', 'success');
+    }
+    return UI().toast('Story beat not found', 'info');
+  }
+
+  function _setStoryDirectorStage(stageId) {
+    if (!stageId) return;
+    SD()?.setStage?.(stageId);
+    render();
+  }
+
+  function _syncStoryDirectorSideQuests() {
+    const result = SD()?.syncSideQuestFlow?.();
+    if (result?.already) return UI().toast('Side quest flow already synced for this stage', 'info');
+    if (result?.synced) {
+      render();
+      return UI().toast('Side quest flow synced', 'success');
+    }
+    return UI().toast('No side quest flow for this stage', 'info');
   }
 
   function _importSidePack() {

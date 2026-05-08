@@ -23,7 +23,7 @@ window.CJS.DataBrowser = (() => {
         <div class="flex gap-sm items-center" style="flex-shrink:0">
           <h3 style="margin:0;color:var(--accent)">📊 Data Browser</h3>
           <div class="btn-group" id="db-tabs">
-            ${['effects','skills','jobs','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables'].map(t =>
+            ${['effects','skills','jobs','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables','storyDirectorPacks'].map(t =>
               `<button class="btn btn-sm ${t===_activeTab?'btn-primary':''}" data-tab="${t}">${t}</button>`
             ).join('')}
           </div>
@@ -78,6 +78,7 @@ window.CJS.DataBrowser = (() => {
       case 'battleSets':
       case 'mapSeeds':
       case 'oracleTables':
+      case 'storyDirectorPacks':
         _renderGeneric(area, status, _activeTab, q, ['ID','Name','Description','Scope','World','Origin']);
         break;
     }

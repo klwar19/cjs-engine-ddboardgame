@@ -541,6 +541,7 @@ window.CJS.CONST = (() => {
     battleSet: 'bst',
     mapSeed: 'msd',
     oracleTable: 'orc',
+    storyDirectorPack: 'sdp',
     world:     'wld',
     character: 'chr',
     monster:   'mon',

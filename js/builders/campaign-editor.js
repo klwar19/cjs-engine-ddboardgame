@@ -22,6 +22,7 @@ window.CJS.CampaignEditor = (() => {
     ['battleSets', 'Battle Sets'],
     ['mapSeeds', 'Map Seeds'],
     ['oracleTables', 'Oracles'],
+    ['storyDirectorPacks', 'Story Director'],
     ['campaignProfiles', 'Carryover'],
     ['pocketHavenRules', 'Pocket Haven']
   ];
@@ -45,7 +46,7 @@ window.CJS.CampaignEditor = (() => {
     _container.innerHTML = `
       <div style="display:grid;grid-template-columns:280px minmax(0,1fr);gap:12px;height:100%">
         <aside style="border-right:1px solid var(--border);padding-right:12px;overflow:auto">
-          <div class="hint-box hint-info">Campaign data is authored as plain JSON. Side Forge cards, hubs, quest chains, battle sets, map seeds, and oracle tables live in separate files for easy future edits.</div>
+          <div class="hint-box hint-info">Campaign data is authored as plain JSON. Side Forge cards, hubs, quest chains, battle sets, map seeds, oracle tables, and Story Director packs live in separate files for easy future edits.</div>
           <div class="btn-group" style="flex-wrap:wrap;margin-bottom:10px">
             ${TYPES.map(([type, label]) => `<button class="btn btn-sm ${type === _activeType ? 'btn-primary' : ''}" data-campaign-type="${type}">${label}</button>`).join('')}
           </div>
@@ -200,6 +201,8 @@ window.CJS.CampaignEditor = (() => {
         return { id: '', name: 'New Map Seeds', world, zone: '', hubId: '', seeds: [] };
       case 'oracleTables':
         return { id: '', name: 'New Oracle Table', world, zone: '', hubId: '', defaultCanonRisk: 'green', tables: {}, prompts: [] };
+      case 'storyDirectorPacks':
+        return { id: '', name: 'New Story Director Pack', version: 1, world, zone: '', hubId: '', stages: [], sceneBeats: [], periInterruptions: [], memoryShards: [], pressureTicks: [], sideQuestFlow: [] };
       case 'campaignProfiles':
         return { id: '', name: 'New Carryover Profile', rules: [] };
       case 'pocketHavenRules':

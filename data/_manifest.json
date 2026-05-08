@@ -298,6 +298,12 @@
       "category": "oracleTables"
     },
     {
+      "path": "data/campaigns/haven/story_director/haven_story_director_v1.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "storyDirectorPacks"
+    },
+    {
       "path": "data/worlds/zombie/_meta.json",
       "scope": "world",
       "world": "zombie",

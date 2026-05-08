@@ -107,6 +107,22 @@ window.CJS.CampaignDataLoader = (() => {
     return getOracleTables()[0] || null;
   }
 
+  function getStoryDirectorPacks(worldId, zoneId, hubId) {
+    return DS().getAllAsArray('storyDirectorPacks')
+      .filter((pack) => _matchesWorld(pack, worldId) && _matchesZone(pack, zoneId) && _matchesHub(pack, hubId));
+  }
+
+  function getStoryDirectorPack(packId, worldId, zoneId, hubId) {
+    if (packId) return _byIdOrAlias('storyDirectorPacks', packId);
+    const campaign = CS().getCurrentCampaign();
+    const preferredIds = campaign?.storyDirectorPacks || [];
+    for (const id of preferredIds) {
+      const pack = _byIdOrAlias('storyDirectorPacks', id);
+      if (pack && _matchesWorld(pack, worldId) && _matchesZone(pack, zoneId) && _matchesHub(pack, hubId)) return pack;
+    }
+    return getStoryDirectorPacks(worldId, zoneId, hubId)[0] || null;
+  }
+
   return Object.freeze({
     getSideContentPacks,
     getSideContentPack,
@@ -119,6 +135,8 @@ window.CJS.CampaignDataLoader = (() => {
     getMapSeeds,
     getMapSeed,
     getOracleTables,
-    getOracleTable
+    getOracleTable,
+    getStoryDirectorPacks,
+    getStoryDirectorPack
   });
 })();

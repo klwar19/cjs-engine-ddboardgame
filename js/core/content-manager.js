@@ -48,7 +48,8 @@ window.CJS.ContentManager = (() => {
     questChains: 'questChains',
     battleSets: 'battleSets',
     mapSeeds: 'mapSeeds',
-    oracleTables: 'oracleTables'
+    oracleTables: 'oracleTables',
+    storyDirectorPacks: 'storyDirectorPacks'
   };
 
   const CATEGORY_TO_TYPE = Object.freeze(
@@ -65,7 +66,7 @@ window.CJS.ContentManager = (() => {
     'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
     'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
     'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
-    'mapSeeds', 'oracleTables'
+    'mapSeeds', 'oracleTables', 'storyDirectorPacks'
   ];
 
   const SCOPE_LABELS = {
@@ -211,6 +212,7 @@ window.CJS.ContentManager = (() => {
       case 'battleSets':
       case 'mapSeeds':
       case 'oracleTables':
+      case 'storyDirectorPacks':
         return ['world'];
       case 'campaignProfiles':
       case 'pocketHavenRules':

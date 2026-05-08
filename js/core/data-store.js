@@ -46,6 +46,7 @@ window.CJS.DataStore = (() => {
     battleSets: {}, // id -> GM battle set card collection
     mapSeeds: {}, // id -> node map seed collection
     oracleTables: {}, // id -> oracle keyword/prompt table
+    storyDirectorPacks: {}, // id -> story director arc/beat/clue pack
     worlds:     {},   // id -> world meta object
     passives:   {},   // id → passive object
     jobs:       {},   // id → job (class) object
@@ -175,6 +176,7 @@ window.CJS.DataStore = (() => {
       battleSets: _stripMeta({ ..._data.battleSets }),
       mapSeeds: _stripMeta({ ..._data.mapSeeds }),
       oracleTables: _stripMeta({ ..._data.oracleTables }),
+      storyDirectorPacks: _stripMeta({ ..._data.storyDirectorPacks }),
       worlds:     _stripMeta({ ..._data.worlds }),
       passives:   _stripMeta({ ..._data.passives }),
       jobs:       _stripMeta({ ..._data.jobs }),
@@ -227,6 +229,7 @@ window.CJS.DataStore = (() => {
       bst: _data.battleSets,
       msd: _data.mapSeeds,
       orc: _data.oracleTables,
+      sdp: _data.storyDirectorPacks,
       wld: _data.worlds,
       pas: _data.passives,
       chr: _data.characters,
@@ -618,7 +621,7 @@ window.CJS.DataStore = (() => {
       'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
       'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
       'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
-      'mapSeeds', 'oracleTables',
+      'mapSeeds', 'oracleTables', 'storyDirectorPacks',
       'characters', 'monsters', 'encounters', 'statuses'
     ];
     for (const col of collections) {
@@ -671,6 +674,7 @@ window.CJS.DataStore = (() => {
       bst: _data.battleSets,
       msd: _data.mapSeeds,
       orc: _data.oracleTables,
+      sdp: _data.storyDirectorPacks,
       wld: _data.worlds,
       pas: _data.passives,
       job: _data.jobs,
@@ -701,7 +705,7 @@ window.CJS.DataStore = (() => {
       campaigns: {}, scenarios: {}, scenarioMaps: {}, campaignEvents: {},
       campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
       sideContentPacks: {}, campaignHubs: {}, questChains: {},
-      battleSets: {}, mapSeeds: {}, oracleTables: {},
+      battleSets: {}, mapSeeds: {}, oracleTables: {}, storyDirectorPacks: {},
       characters: {}, monsters: {}, encounters: {}, statuses: {},
       quips: [], quizBank: []
     };
@@ -739,6 +743,7 @@ window.CJS.DataStore = (() => {
       battleSets: Object.keys(_data.battleSets).length,
       mapSeeds: Object.keys(_data.mapSeeds).length,
       oracleTables: Object.keys(_data.oracleTables).length,
+      storyDirectorPacks: Object.keys(_data.storyDirectorPacks).length,
       worlds:     Object.keys(_data.worlds).length,
       passives:   Object.keys(_data.passives).length,
       jobs:       Object.keys(_data.jobs).length,
