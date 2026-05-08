@@ -10,6 +10,7 @@ window.CJS.PocketHaven = (() => {
   const DS = () => window.CJS.DataStore;
 
   function renderFarm() {
+    if (window.CJS.FarmingMode?.renderFarm) return window.CJS.FarmingMode.renderFarm();
     const plots = CS().getState().pocketHaven?.farm?.plots || [];
     return `
       <section class="campaign-panel">
@@ -66,6 +67,7 @@ window.CJS.PocketHaven = (() => {
   function _renderRecipeRow(state, recipe, actionId, idAttr) {
     const inputs = recipe.inputs || {};
     const reqLine = _renderIngredientLine(state, inputs);
+    const outputLine = _renderOutputLine(recipe.outputs || {});
     const buff = recipe.buff
       ? `<div class="campaign-muted">Buff: ${_esc(recipe.buff.stat || '')} +${recipe.buff.amount || 0} (${_esc(recipe.duration || 'next_battle')})</div>`
       : '';
@@ -83,6 +85,7 @@ window.CJS.PocketHaven = (() => {
           <div class="campaign-muted">${_esc(recipe.description || '')}</div>
           ${buff}
           ${reqLine}
+          ${outputLine}
         </div>
         ${btn}
       </div>
@@ -110,6 +113,17 @@ window.CJS.PocketHaven = (() => {
     return `<div class="campaign-muted" style="font-size:0.85em">Needs: ${parts.join(' · ')}</div>`;
   }
 
+  function _renderOutputLine(outputs = {}) {
+    const parts = [];
+    for (const [id, qty] of Object.entries(outputs.items || {})) parts.push(`${qty} ${_name('items', id)}`);
+    for (const [id, qty] of Object.entries(outputs.materials || {})) parts.push(`${qty} ${_name('materials', id)}`);
+    for (const [id, qty] of Object.entries(outputs.food || {})) parts.push(`${qty} ${_name('food', id)}`);
+    for (const [id, qty] of Object.entries(outputs.seeds || {})) parts.push(`${qty} ${_name('crops', id)}`);
+    for (const [id, qty] of Object.entries(outputs.farmFertilizer || {})) parts.push(`${qty} ${_name('materials', id)}`);
+    if (!parts.length) return '';
+    return `<div class="campaign-muted" style="font-size:0.85em">Makes: ${_esc(parts.join(' | '))}</div>`;
+  }
+
   function _bundleAvailable(state, bundle = {}) {
     for (const [id, qty] of Object.entries(bundle.currencies || {})) {
       if ((state.currencies?.[id] || 0) < Number(qty || 0)) return false;
@@ -118,6 +132,12 @@ window.CJS.PocketHaven = (() => {
       for (const [id, qty] of Object.entries(bundle[bucket] || {})) {
         if ((state.inventory?.[bucket]?.[id] || 0) < Number(qty || 0)) return false;
       }
+    }
+    for (const [id, qty] of Object.entries(bundle.seeds || {})) {
+      if ((state.pocketHaven?.farm?.seedStock?.[id] || 0) < Number(qty || 0)) return false;
+    }
+    for (const [id, qty] of Object.entries(bundle.farmFertilizer || {})) {
+      if ((state.pocketHaven?.farm?.fertilizerStock?.[id] || 0) < Number(qty || 0)) return false;
     }
     return true;
   }

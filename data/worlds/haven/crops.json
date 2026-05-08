@@ -13,9 +13,21 @@
       "name": "Frostcap Seed",
       "cropId": "haven_frostcap_mushroom",
       "growthTicks": 3,
+      "spriteKey": "frostcap",
+      "stages": [
+        { "id": "seed", "label": "Seed" },
+        { "id": "sprout", "label": "Sprout" },
+        { "id": "cap", "label": "Cap" },
+        { "id": "ready", "label": "Ready" }
+      ],
       "harvest": {
         "materials": {
           "haven_ice_crystal": 1
+        }
+      },
+      "seedCost": {
+        "materials": {
+          "haven_sprite_dust": 1
         }
       },
       "description": "Starter Pocket Haven crop used by Campaign Mode phase ticking."

@@ -45,6 +45,24 @@
       "value": 16
     },
     {
+      "id": "haven_grass_clippings",
+      "name": "Grass Clippings",
+      "icon": "Grass",
+      "rarity": "Common",
+      "subCategory": "farm_material",
+      "description": "Cut from Pocket Haven grass. Useful for simple fertilizer.",
+      "value": 2
+    },
+    {
+      "id": "haven_basic_fertilizer",
+      "name": "Basic Fertilizer",
+      "icon": "Fert",
+      "rarity": "Common",
+      "subCategory": "farm_supply",
+      "description": "A simple soil booster for Pocket Haven crops.",
+      "value": 6
+    },
+    {
       "id": "haven_memory_shard",
       "name": "Memory Shard",
       "icon": "*",

@@ -88,6 +88,10 @@ window.CJS.CampaignOps = (() => {
         case 'unequip_skill': return `Unequip skill ${op.skillId || op.id}`;
         case 'equip_passive': return `Equip passive ${op.passiveId || op.id}`;
         case 'unequip_passive': return `Unequip passive ${op.passiveId || op.id}`;
+        case 'farm_grant_seed': return `Give ${op.qty || op.amount || 1} seed ${op.seedId || op.id}`;
+        case 'farm_add_fertilizer': return `Add ${op.qty || op.amount || 1} fertilizer ${op.fertilizerId || op.id || ''}`;
+        case 'farm_unlock_slots': return `Unlock ${op.qty || op.amount || 1} farm slot`;
+        case 'farm_upgrade_tool': return `Upgrade farm tool ${op.toolId || op.id}`;
         case 'log': return op.text || 'Log entry';
         default: return op.op || 'operation';
       }
@@ -186,6 +190,10 @@ window.CJS.CampaignOps = (() => {
       case 'craft_basic': return _craftBasic(state, op);
       case 'cook_basic': return _cookBasic(state, op);
       case 'farm_tick': return _farmTick(state, op.amount || 1);
+      case 'farm_grant_seed': return _farmGrantSeed(state, op);
+      case 'farm_add_fertilizer': return _farmAddFertilizer(state, op);
+      case 'farm_unlock_slots': return _farmUnlockSlots(state, op);
+      case 'farm_upgrade_tool': return _farmUpgradeTool(state, op);
       case 'world_transition': return _worldTransition(state, op);
       case 'chapter_transition': return _chapterTransition(state, op);
       case 'reset_campaign_state': return _resetCampaignState(state, op);
@@ -1248,7 +1256,13 @@ window.CJS.CampaignOps = (() => {
     _money(state, currency, -price);
     if (op.consumeRequires) _consumeBundle(state, requires);
     _consumeBundle(state, costs);
-    _inventory(state, op.bucket || _bucketForType(op.type), op.id, qty);
+    if (op.type === 'seed' || op.bucket === 'seeds') {
+      window.CJS.FarmingMode?.grantSeed?.(state, op.id, qty);
+    } else if (op.type === 'farmFertilizer' || op.bucket === 'farmFertilizer') {
+      window.CJS.FarmingMode?.addFertilizer?.(state, op.id, qty);
+    } else {
+      _inventory(state, op.bucket || _bucketForType(op.type), op.id, qty);
+    }
     _log(state, `Bought ${qty} ${op.id}.`);
   }
 
@@ -1264,6 +1278,8 @@ window.CJS.CampaignOps = (() => {
     if (type === 'material') return 'materials';
     if (type === 'food') return 'food';
     if (type === 'questItem') return 'questItems';
+    if (type === 'seed') return 'seeds';
+    if (type === 'farmFertilizer') return 'farmFertilizer';
     return 'items';
   }
 
@@ -1337,6 +1353,8 @@ window.CJS.CampaignOps = (() => {
     for (const [id, qty] of Object.entries(bundle.materials || {})) _inventory(state, 'materials', id, qty);
     for (const [id, qty] of Object.entries(bundle.food || {})) _inventory(state, 'food', id, qty);
     for (const [id, qty] of Object.entries(bundle.questItems || {})) _inventory(state, 'questItems', id, qty);
+    for (const [id, qty] of Object.entries(bundle.seeds || {})) window.CJS.FarmingMode?.grantSeed?.(state, id, qty);
+    for (const [id, qty] of Object.entries(bundle.farmFertilizer || {})) window.CJS.FarmingMode?.addFertilizer?.(state, id, qty);
   }
 
   function _hasBundle(state, bundle) {
@@ -1366,12 +1384,41 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _farmTick(state, amount, log = true) {
+    if (window.CJS.FarmingMode?.tickGrowth) {
+      const result = window.CJS.FarmingMode.tickGrowth(state, amount || 1);
+      if (log) {
+        const parts = [];
+        if (result.advanced) parts.push(`${result.advanced} crop${result.advanced === 1 ? '' : 's'} grew`);
+        if (result.ready) parts.push(`${result.ready} ready`);
+        if (result.neglected) parts.push(`${result.neglected} dry`);
+        _log(state, `Farm growth tick +${amount || 1}: ${parts.join(', ') || 'no planted crops changed'}.`);
+      }
+      return;
+    }
     for (const plot of state.pocketHaven.farm.plots || []) {
       if (!plot.seedId || plot.ready) continue;
       plot.progress = Math.min(plot.required || 3, (plot.progress || 0) + Number(amount || 1));
       plot.ready = plot.progress >= (plot.required || 3);
     }
     if (log) _log(state, `Farm growth tick +${amount || 1}.`);
+  }
+
+  function _farmGrantSeed(state, op) {
+    const seedId = op.seedId || op.id;
+    if (!seedId) return;
+    window.CJS.FarmingMode?.grantSeed?.(state, seedId, op.qty || op.amount || 1);
+  }
+
+  function _farmAddFertilizer(state, op) {
+    window.CJS.FarmingMode?.addFertilizer?.(state, op.fertilizerId || op.id || 'haven_basic_fertilizer', op.qty || op.amount || 1);
+  }
+
+  function _farmUnlockSlots(state, op) {
+    window.CJS.FarmingMode?.unlockSlots?.(state, op.qty || op.amount || 1);
+  }
+
+  function _farmUpgradeTool(state, op) {
+    window.CJS.FarmingMode?.upgradeTool?.(state, op.toolId || op.id || 'hand', op.levels || op.amount || 1);
   }
 
   function _worldTransition(state, op) {

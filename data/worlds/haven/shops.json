@@ -16,6 +16,7 @@
       "unlockFlags": [],
       "restockRule": "manual_or_chapter",
       "stock": [
+        { "id": "haven_frostcap_seed", "type": "seed", "price": 3, "qty": 12 },
         { "id": "haven_minor_potion", "type": "item", "price": 8, "qty": 6 },
         { "id": "haven_basic_tent", "type": "item", "price": 12, "qty": 3 },
         { "id": "haven_frostbitten_writ", "type": "item", "price": 30, "qty": 1 }
@@ -59,7 +60,8 @@
       "restockRule": "phase",
       "stock": [
         { "id": "haven_memory_shard", "type": "material", "price": 75, "qty": 1 },
-        { "id": "haven_sprite_dust", "type": "material", "price": 18, "qty": 2 }
+        { "id": "haven_sprite_dust", "type": "material", "price": 18, "qty": 2 },
+        { "id": "haven_basic_fertilizer", "type": "farmFertilizer", "price": 45, "qty": 1 }
       ],
       "description": "A special shop for rare progression material. Opens only during town or Pocket Haven phases."
     },

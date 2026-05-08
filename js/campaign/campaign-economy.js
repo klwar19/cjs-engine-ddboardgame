@@ -33,6 +33,7 @@ window.CJS.CampaignEconomy = (() => {
         ${stock.length ? stock.map((item, index) => {
           const itemCurrency = item.currency || currency;
           const canBuy = _canBuy(state, item, itemCurrency);
+          const farmStock = item.type === 'seed' || item.type === 'farmFertilizer';
           return `
           <div class="campaign-row">
             <div>
@@ -44,7 +45,7 @@ window.CJS.CampaignEconomy = (() => {
             <div class="campaign-row-actions">
               <span class="campaign-pill">${Number(item.price || 0)} ${_esc(_currencyLabel(itemCurrency))}</span>
               <button class="campaign-action" data-campaign-action="shop-buy" data-shop-id="${_escAttr(shop.id)}" data-stock-index="${index}" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Number(item.price || 0)}" data-currency="${_escAttr(itemCurrency)}" ${canBuy ? '' : 'disabled'}>Buy</button>
-              <button class="campaign-action" data-campaign-action="shop-sell" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Math.floor(Number(item.price || 0) / 2)}" data-currency="${_escAttr(itemCurrency)}">Sell</button>
+              ${farmStock ? '' : `<button class="campaign-action" data-campaign-action="shop-sell" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Math.floor(Number(item.price || 0) / 2)}" data-currency="${_escAttr(itemCurrency)}">Sell</button>`}
             </div>
           </div>
         `; }).join('') : '<div class="campaign-empty">No stock yet.</div>'}
@@ -67,6 +68,8 @@ window.CJS.CampaignEconomy = (() => {
   }
 
   function _recordName(type, id) {
+    if (type === 'seed') return DS().get('crops', id)?.name || id;
+    if (type === 'farmFertilizer') return DS().get('materials', id)?.name || id;
     const bucket = type === 'material' ? 'materials' : type === 'food' ? 'food' : 'items';
     return DS().get(bucket, id)?.name || id;
   }

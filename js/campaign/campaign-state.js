@@ -623,6 +623,13 @@ window.CJS.CampaignState = (() => {
     next.pocketHaven.notes = next.pocketHaven.notes || [];
     next.pocketHaven.farm = next.pocketHaven.farm || { plots: [] };
     next.pocketHaven.farm.plots = next.pocketHaven.farm.plots || [];
+    if (window.CJS.FarmingMode?.normalizeFarm) {
+      const rule = Object.values(_content.pocketHavenRules || {})[0] || {};
+      next.pocketHaven.farm = window.CJS.FarmingMode.normalizeFarm(next.pocketHaven.farm, {
+        rule,
+        world: next.currentWorld
+      });
+    }
     next.pocketHaven.stations = next.pocketHaven.stations || [];
     next.pinnedNotes = next.pinnedNotes || [];
     next.log = next.log || [];

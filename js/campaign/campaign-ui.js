@@ -139,6 +139,7 @@ window.CJS.CampaignUI = (() => {
 
     const mapRegion = _root.querySelector('#campaign-map-region');
     if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+    if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
     _bindRunPanel();
     _renderPanelLayer();
   }
@@ -3089,6 +3090,11 @@ window.CJS.CampaignUI = (() => {
     });
 
     _root.addEventListener('change', (event) => {
+      const farmSelect = event.target.closest?.('[data-farm-select]');
+      if (farmSelect) {
+        if (farmSelect.dataset.farmSelect === 'seed') window.CJS.FarmingMode?.selectSeed?.(farmSelect.value);
+        return;
+      }
       if (event.target.id === 'campaign-import-file') {
         Save().importFile(event.target.files?.[0]).then(() => {
           UI().toast('Campaign save imported', 'success');
@@ -3207,6 +3213,15 @@ window.CJS.CampaignUI = (() => {
       case 'shop-buy': return _shopBuy(data);
       case 'shop-sell': return Ops().apply({ op: 'shop_sell', id: data.id, type: data.type, price: Number(data.price || 0), currency: data.currency, qty: 1 }, { source: 'ui' });
       case 'farm-tick': return Ops().apply({ op: 'farm_tick', amount: 1 }, { source: 'ui' });
+      case 'farm-move': return window.CJS.FarmingMode?.move?.(data.dir);
+      case 'farm-interact': return window.CJS.FarmingMode?.interact?.();
+      case 'farm-tile': return window.CJS.FarmingMode?.faceOrUseTile?.(data.x, data.y);
+      case 'farm-select-tool': return window.CJS.FarmingMode?.selectTool?.(data.tool);
+      case 'farm-tile-action': return window.CJS.FarmingMode?.tileAction?.(data.tileAction, data.x, data.y);
+      case 'farm-tile-menu-close': return window.CJS.FarmingMode?.closeTileMenu?.();
+      case 'farm-qte-open': return window.CJS.FarmingMode?.openQte?.();
+      case 'farm-qte-hit': return window.CJS.FarmingMode?.hitQte?.();
+      case 'farm-qte-close': return window.CJS.FarmingMode?.closeQte?.();
       case 'plant-seed': return _plantSeed(data.plotId);
       case 'harvest-plot': return window.CJS.PocketHaven.harvestPlot(data.plotId);
       case 'craft-recipe': return _craftRecipe(data.recipeId);

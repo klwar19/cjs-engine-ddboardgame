@@ -24,6 +24,23 @@
         }
       },
       "description": "Campaign crafting recipe; GM can adjust the exact output before applying."
+    },
+    {
+      "id": "haven_recipe_basic_fertilizer",
+      "name": "Basic Fertilizer",
+      "station": "workbench",
+      "inputs": {
+        "materials": {
+          "haven_grass_clippings": 2,
+          "haven_sprite_dust": 1
+        }
+      },
+      "outputs": {
+        "farmFertilizer": {
+          "haven_basic_fertilizer": 2
+        }
+      },
+      "description": "Turns farm clippings into fertilizer stock for Pocket Haven crops."
     }
   ]
 }

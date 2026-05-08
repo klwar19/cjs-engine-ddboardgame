@@ -11,9 +11,17 @@
       "id": "pocket_haven_default",
       "name": "Pocket Haven Default Rules",
       "farm": {
-        "startingPlots": 1,
-        "maxPlots": 12,
-        "defaultGrowthTicks": 3
+        "width": 8,
+        "height": 6,
+        "startingPlots": 4,
+        "maxPlots": 24,
+        "defaultGrowthTicks": 3,
+        "startingSeeds": {
+          "haven_frostcap_seed": 6
+        },
+        "startingFertilizer": {
+          "haven_basic_fertilizer": 0
+        }
       },
       "stations": [
         { "id": "campfire", "name": "Campfire", "kind": "cook" },
