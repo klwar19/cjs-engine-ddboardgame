@@ -956,10 +956,12 @@ window.CJS.CampaignUI = (() => {
     const queue = snap.queue.slice(0, 8);
     const clues = snap.clues.slice(0, 8);
     const facts = snap.facts.slice(0, 8);
+    const syncKey = pack.id && flow?.stageId ? `${pack.id}:${flow.stageId}` : '';
+    const flowSynced = !!(syncKey && state.storyDirector?.sideQuestSync?.[syncKey]);
 
     return `
-      <div class="campaign-dashboard">
-        <section class="campaign-panel campaign-wide-panel">
+      <div class="campaign-dashboard campaign-story-dashboard">
+        <section class="campaign-panel campaign-wide-panel campaign-story-command">
           <div class="campaign-panel-head">
             <div>
               <h2>${_esc(pack.name || 'Story Director')}</h2>
@@ -970,22 +972,27 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-chip-row">
             ${(pack.tonePillars || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}
           </div>
-          <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="story-roll-scene">Scene Beat</button>
-            <button class="campaign-action" data-campaign-action="story-roll-peri">Peri Interruption</button>
-            <button class="campaign-action" data-campaign-action="story-roll-memory">Memory Shard</button>
-            <button class="campaign-action" data-campaign-action="story-pressure-tick">Pressure Tick</button>
-            <button class="campaign-action" data-campaign-action="story-sync-sidequests">Sync Side Quests</button>
+          <div class="campaign-story-command-grid">
+            ${_renderStorySoloGuide(snap, state, flowSynced)}
+            <div class="campaign-story-roll-pad">
+              <div class="campaign-section-title">Roll / Manual Control</div>
+              <div class="campaign-action-grid">
+                ${_actionBtn({ action: 'story-roll-scene', label: 'Scene Beat', hint: 'Random main scene nudge. Opens a popup before anything is applied.', kind: 'primary story' })}
+                ${_actionBtn({ action: 'story-roll-peri', label: 'Peri Chaos', hint: 'Comic system interruption, trolling hint, or suspiciously useful nonsense.', kind: 'random' })}
+                ${_actionBtn({ action: 'story-roll-memory', label: 'Memory Shard', hint: 'Mystery clue or emotional leak. Good when the scene needs plot smoke.', kind: 'plot' })}
+                ${_actionBtn({ action: 'story-pressure-tick', label: 'Pressure Tick', hint: 'Offscreen trouble. Use when time passes or the table stalls.', kind: 'risk' })}
+                ${_actionBtn({ action: 'story-sync-sidequests', label: flowSynced ? 'Side Flow Synced' : 'Sync Side Quests', hint: 'Marks which side quests should stay, rise, or pause for this stage.', kind: flowSynced ? 'manual' : 'quest', disabled: !flow || flowSynced })}
+                ${_actionBtn({ action: 'story-manual-note', label: 'Manual Note', hint: 'Write your own table beat and save it without random rolling.', kind: 'manual' })}
+                ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copies current stage, last beat, clues, and queue for outside AI or GM drafting.', kind: 'manual' })}
+                ${_actionBtn({ action: 'story-help', label: 'How To Play', hint: 'Short solo/GM instructions for this Story Mode desk.' })}
+              </div>
+            </div>
           </div>
         </section>
 
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Arc Stage</h3></div>
-          <div class="campaign-action-grid">
-            ${stages.map((entry) => `
-              <button class="campaign-action ${entry.id === stage.id ? 'primary' : ''}" data-campaign-action="story-set-stage" data-id="${_escAttr(entry.id)}">${_esc(entry.name || entry.id)}</button>
-            `).join('') || '<div class="campaign-empty">No stages authored.</div>'}
-          </div>
+          ${_renderStoryStageRail(stages, stage)}
           <p class="campaign-muted">${_esc(stage.summary || '')}</p>
         </section>
 
@@ -999,7 +1006,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-control-help">${_esc(pack.pressureRule || 'Pressure ticks suggest offscreen consequences. Apply only what fits the session.')}</div>
         </section>
 
-        ${_renderStorySideFlow(flow)}
+        ${_renderStorySideFlow(flow, flowSynced)}
 
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Clues & Reveals</h3></div>
@@ -1045,15 +1052,139 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-panel campaign-solo-notice">
         <div class="campaign-panel-head"><h3>No Story Beat Rolled</h3></div>
-        <p>Use the buttons above when the table needs a scene nudge, Peri nonsense, a memory leak, or offscreen pressure.</p>
+        <p>Roll a scene when you want the app to surprise you. Use Manual Note when you already know what should happen and just want the campaign log to remember it.</p>
       </section>
     `;
   }
 
-  function _renderStoryDirectorCard(card) {
-    const choices = card.suggestedChoices || [];
+  function _renderStorySoloGuide(snap, state, flowSynced) {
+    const next = _storyNextStep(snap, state, flowSynced);
+    const steps = [
+      ['Stage', 'Pick the current arc stage. You can jump manually.'],
+      ['Roll', 'Roll a scene, chaos, memory, or pressure beat.'],
+      ['Branch', 'Read the consequences and choose one branch.'],
+      ['Commit', 'Apply, save for later, or reject. Nothing random commits early.'],
+      ['Table', 'Sync side quests, then play on the map or at the real table.']
+    ];
     return `
-      <section class="campaign-panel campaign-side-card campaign-result-card">
+      <div class="campaign-story-guide">
+        <div class="campaign-story-next">
+          <span class="campaign-story-step-badge">Next</span>
+          <strong>${_esc(next.title)}</strong>
+          <p>${_esc(next.text)}</p>
+          ${next.actions?.length ? `<div class="campaign-action-grid campaign-story-next-actions">${next.actions.join('')}</div>` : ''}
+        </div>
+        <div class="campaign-story-ladder" aria-label="Solo story flow">
+          ${steps.map((step, index) => `
+            <div class="campaign-story-ladder-step ${index === next.index ? 'is-active' : index < next.index ? 'is-done' : ''}">
+              <span>${index + 1}</span>
+              <b>${_esc(step[0])}</b>
+              <small>${_esc(step[1])}</small>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function _storyNextStep(snap, state, flowSynced) {
+    const last = snap?.last;
+    const choices = last?.suggestedChoices || [];
+    if (!snap?.stage) {
+      return {
+        index: 0,
+        title: 'Pick an arc stage',
+        text: 'Choose the part of the story you are actually playing now. This only guides tables; it does not lock the plot.',
+        actions: []
+      };
+    }
+    if (!last) {
+      return {
+        index: 1,
+        title: 'Roll or write the next beat',
+        text: 'Use Scene Beat for normal story flow, Peri Chaos for comedy, Memory Shard for clues, or Manual Note when you want GM control.',
+        actions: [
+          _actionBtn({ action: 'story-roll-scene', label: 'Roll Scene', hint: 'Best default for solo play', kind: 'primary story' }),
+          _actionBtn({ action: 'story-manual-note', label: 'Manual Note', hint: 'Save your own beat', kind: 'manual' })
+        ]
+      };
+    }
+    if (!['resolved', 'rejected', 'saved', 'manual', 'review'].includes(last.status || '')) {
+      return {
+        index: 2,
+        title: 'Choose a branch',
+        text: 'Read the branch cards below. Apply one if it fits, save it if it smells useful later, or reject it with no guilt.',
+        actions: [
+          _actionBtn({ action: 'story-open-last', label: 'Open Popup', hint: 'Reopen the current beat window', kind: 'primary story' }),
+          _actionBtn({ action: 'story-save-beat', label: 'Save Beat', hint: 'Keep it in the queue without applying consequences', kind: 'manual' }),
+          _actionBtn({
+            action: 'story-apply-choice',
+            label: choices[0]?.label ? `Apply: ${choices[0].label}` : 'Accept Note',
+            hint: 'Apply the first branch',
+            kind: 'quest',
+            data: { id: last.id, choice: 0 }
+          })
+        ]
+      };
+    }
+    if (snap.flow && !flowSynced) {
+      return {
+        index: 4,
+        title: 'Sync side quest flow',
+        text: 'This stage has advice for which side quests should stay available, get promoted, or politely leave the room.',
+        actions: [
+          _actionBtn({ action: 'story-sync-sidequests', label: 'Sync Side Quests', hint: 'Applies this stage side-flow once', kind: 'quest' })
+        ]
+      };
+    }
+    if (state?.activeScenarioRun) {
+      return {
+        index: 4,
+        title: 'Continue the tabletop run',
+        text: 'A scenario is active. Use the story beat as table color, then continue moving pieces and resolving encounters on the map.',
+        actions: [
+          _actionBtn({ action: 'open-maps-tab', label: 'Open Run Map', hint: 'Return to the tactical board', kind: 'primary' })
+        ]
+      };
+    }
+    return {
+      index: 1,
+      title: 'Ready for the next beat',
+      text: 'The last beat is handled. Roll again, write a manual note, or just let the table breathe for a scene.',
+      actions: [
+        _actionBtn({ action: 'story-roll-scene', label: 'Roll Scene', hint: 'Continue the story flow', kind: 'primary story' }),
+        _actionBtn({ action: 'roll-party-chat', label: 'Party Banter', hint: 'Let the cast talk before more trouble arrives', kind: 'random' })
+      ]
+    };
+  }
+
+  function _renderStoryStageRail(stages, stage = {}) {
+    if (!stages.length) return '<div class="campaign-empty">No stages authored.</div>';
+    const activeIndex = Math.max(0, stages.findIndex((entry) => entry.id === stage.id));
+    return `
+      <div class="campaign-story-stage-rail">
+        ${stages.map((entry, index) => {
+          const cls = ['campaign-story-stage'];
+          if (entry.id === stage.id) cls.push('is-active');
+          else if (index < activeIndex) cls.push('is-past');
+          return `
+            <button class="${cls.join(' ')}" data-campaign-action="story-set-stage" data-id="${_escAttr(entry.id)}" title="${_escAttr(entry.summary || '')}">
+              <span>${index + 1}</span>
+              <strong>${_esc(entry.name || entry.id)}</strong>
+              <small>${_esc(entry.summary || '')}</small>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function _renderStoryDirectorCard(card, options = {}) {
+    const choices = card.suggestedChoices || [];
+    const cardClass = ['campaign-panel', 'campaign-side-card', 'campaign-result-card', 'campaign-story-card'];
+    if (options.modal) cardClass.push('is-modal');
+    return `
+      <section class="${cardClass.join(' ')}">
         <div class="campaign-panel-head">
           <div>
             <h3>${_esc(card.title || card.id)}</h3>
@@ -1066,21 +1197,54 @@ window.CJS.CampaignUI = (() => {
         ${card.summary ? `<p class="campaign-muted">${_esc(card.summary)}</p>` : ''}
         ${card.gmNote ? `<div class="campaign-warning">${_esc(card.gmNote)}</div>` : ''}
         ${card.tags?.length ? `<div class="campaign-chip-row">${card.tags.map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>` : ''}
-        ${choices.length ? `<div class="campaign-choice-stack">${choices.map((choice, index) => _renderConsequencePreview(choice.ops || [], {
-          title: choice.label || `Choice ${index + 1}`,
-          emptyTitle: choice.label || `Choice ${index + 1}`,
-          emptyText: 'Story-only choice. Apply it if it fits the current scene.'
-        })).join('')}</div>` : ''}
-        <div class="campaign-action-grid">
-          ${choices.length ? choices.map((choice, index) => `<button class="campaign-action ${index === 0 ? 'primary' : ''}" data-campaign-action="story-apply-choice" data-id="${_escAttr(card.id)}" data-choice="${index}">Apply: ${_esc(choice.label || `Choice ${index + 1}`)}</button>`).join('') : `<button class="campaign-action primary" data-campaign-action="story-apply-choice" data-id="${_escAttr(card.id)}" data-choice="0">Accept Note</button>`}
-          <button class="campaign-action" data-campaign-action="story-save-beat">Save Beat</button>
-          <button class="campaign-action danger" data-campaign-action="story-reject-beat">Reject</button>
-        </div>
+        ${_renderStoryBranchMap(card, options)}
+        ${options.modal ? '' : `
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'story-open-last', label: 'Open Popup', hint: 'Show this beat in a decision window again', kind: 'story' })}
+            ${_actionBtn({ action: 'story-save-beat', label: 'Save Beat', hint: 'Queue this for later without applying it', kind: 'manual' })}
+            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copy this beat and current context', kind: 'manual' })}
+            ${_actionBtn({ action: 'story-reject-beat', label: 'Reject', hint: 'Save as rejected and clear it', kind: 'danger' })}
+          </div>
+        `}
       </section>
     `;
   }
 
-  function _renderStorySideFlow(flow) {
+  function _renderStoryBranchMap(card, options = {}) {
+    const choices = card.suggestedChoices || [];
+    const branchChoices = choices.length ? choices : [{
+      label: 'Accept as story note',
+      ops: [{ op: 'log', text: card.prompt || card.text || card.summary || card.title || 'Story beat accepted.' }]
+    }];
+    return `
+      <div class="campaign-story-branch-map">
+        <div class="campaign-section-title">Branching Choices</div>
+        ${branchChoices.map((choice, index) => {
+          const buttonAttrs = options.modal
+            ? `data-story-modal-choice="${index}"`
+            : `data-campaign-action="story-apply-choice" data-id="${_escAttr(card.id)}" data-choice="${index}"`;
+          return `
+            <div class="campaign-story-branch ${index === 0 ? 'is-recommended' : ''}">
+              <div class="campaign-story-branch-head">
+                <span>${index + 1}</span>
+                <strong>${_esc(choice.label || `Choice ${index + 1}`)}</strong>
+              </div>
+              ${_renderConsequencePreview(choice.ops || [], {
+                title: choice.label || `Choice ${index + 1}`,
+                emptyTitle: choice.label || `Choice ${index + 1}`,
+                emptyText: 'Story-only branch. Apply it if it fits the current scene.'
+              })}
+              <button class="campaign-action ${index === 0 ? 'primary' : 'quest'}" ${buttonAttrs} title="Apply this branch and commit its listed consequences">
+                Apply Branch ${index + 1}
+              </button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function _renderStorySideFlow(flow, flowSynced = false) {
     if (!flow) {
       return `
         <section class="campaign-panel">
@@ -1102,7 +1266,10 @@ window.CJS.CampaignUI = (() => {
             <h3>Side Quest Flow</h3>
             <div class="campaign-muted">${_esc(flow.summary || 'Keep, promote, or retire optional content as the main arc moves.')}</div>
           </div>
-          <button class="campaign-action" data-campaign-action="story-sync-sidequests">Sync Now</button>
+          <div class="campaign-row-actions">
+            <span class="campaign-chip ${flowSynced ? 'is-good' : 'is-warn'}">${flowSynced ? 'Synced' : 'Not synced'}</span>
+            <button class="campaign-action ${flowSynced ? '' : 'quest'}" data-campaign-action="story-sync-sidequests" ${flowSynced ? 'disabled' : ''}>Sync Now</button>
+          </div>
         </div>
         <div class="campaign-town-columns">
           ${row('Keep Available', flow.keep, 'flavor')}
@@ -3161,6 +3328,10 @@ window.CJS.CampaignUI = (() => {
       case 'story-apply-choice': return _applyStoryDirectorChoice(data.id, Number(data.choice || 0));
       case 'story-set-stage': return _setStoryDirectorStage(data.id);
       case 'story-sync-sidequests': return _syncStoryDirectorSideQuests();
+      case 'story-open-last': return _openLastStoryBeatModal();
+      case 'story-manual-note': return _manualStoryNote();
+      case 'story-copy-prompt': return _copyStoryPrompt();
+      case 'story-help': return _openStoryHelpModal();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
       case 'oracle-note': return _saveOracleNote();
@@ -3783,6 +3954,7 @@ window.CJS.CampaignUI = (() => {
     const card = SD()?.roll(kind);
     if (!card) return UI().toast('No matching story beat available', 'info');
     render();
+    _openStoryBeatModal(card);
   }
 
   function _saveStoryDirectorBeat() {
@@ -3810,6 +3982,195 @@ window.CJS.CampaignUI = (() => {
       return UI().toast('Story beat applied', 'success');
     }
     return UI().toast('Story beat not found', 'info');
+  }
+
+  function _openLastStoryBeatModal() {
+    const card = CS().getState()?.lastStoryDirectorBeat;
+    if (!card) return UI().toast('No story beat to show', 'info');
+    _openStoryBeatModal(card);
+  }
+
+  function _openStoryBeatModal(card) {
+    if (!card || !UI()?.openModal) return;
+    const body = document.createElement('div');
+    body.className = 'campaign-story-modal-body';
+    body.innerHTML = `
+      <div class="campaign-story-popup-hint">
+        This roll has not forced the story yet. Pick a branch, save it for later, or reject it if the table says "nice try, app."
+      </div>
+      ${_renderStoryDirectorCard(card, { modal: true })}
+    `;
+
+    const footer = document.createElement('div');
+    footer.innerHTML = `
+      <button class="btn btn-ghost" data-story-modal-close>Keep On Page</button>
+      <button class="btn btn-ghost" data-story-modal-save>Save Beat</button>
+      <button class="btn btn-danger" data-story-modal-reject>Reject</button>
+    `;
+    const overlay = UI().openModal({
+      title: `${_label(card.kind || 'story')} - ${card.title || card.id}`,
+      content: body,
+      footer,
+      width: '780px'
+    });
+
+    body.querySelectorAll('[data-story-modal-choice]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const choiceIndex = Number(btn.dataset.storyModalChoice || 0);
+        UI().closeModal(overlay);
+        _applyStoryDirectorChoice(card.id, choiceIndex);
+      });
+    });
+    footer.querySelector('[data-story-modal-close]').onclick = () => UI().closeModal(overlay);
+    footer.querySelector('[data-story-modal-save]').onclick = () => {
+      UI().closeModal(overlay);
+      _saveStoryDirectorBeat();
+    };
+    footer.querySelector('[data-story-modal-reject]').onclick = () => {
+      UI().closeModal(overlay);
+      _rejectStoryDirectorBeat();
+    };
+  }
+
+  function _manualStoryNote() {
+    const snap = SD()?.snapshot?.();
+    const stage = snap?.stage || {};
+    _textareaModal({
+      title: 'Manual Story Note',
+      label: 'Write the beat you want the campaign to remember',
+      placeholder: 'Example: Bin lets the official explain the rule, then signs the wrong form on purpose. Corvin suffers professionally.',
+      primaryLabel: 'Save Note',
+      width: '620px',
+      onSubmit: (raw) => {
+        const text = raw.trim();
+        if (!text) {
+          UI().toast('Story note is empty', 'info');
+          return false;
+        }
+        const title = text.split(/\n+/)[0].slice(0, 78) || 'Manual Story Note';
+        const beat = {
+          id: `story_manual_${Date.now()}`,
+          type: 'story_manual',
+          kind: 'manual',
+          title,
+          prompt: text,
+          stageId: stage.id || '',
+          stageName: stage.name || '',
+          canonRisk: 'green',
+          tags: ['manual', 'table_control'],
+          suggestedChoices: [
+            {
+              label: 'Accept as table note',
+              ops: [{ op: 'log', text: `Story note: ${text}` }]
+            }
+          ]
+        };
+        Ops().apply({ op: 'story_beat_save', beat, status: 'manual' }, { source: 'story_director_manual' });
+        render();
+        UI().toast('Manual story note saved', 'success');
+      }
+    });
+  }
+
+  function _copyStoryPrompt() {
+    const text = _storyPromptText();
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => UI().toast('Story prompt copied', 'success'))
+        .catch(() => _openCopyTextModal('Story Prompt', text));
+      return;
+    }
+    _openCopyTextModal('Story Prompt', text);
+  }
+
+  function _storyPromptText() {
+    const state = CS().getState() || {};
+    const snap = SD()?.snapshot?.() || {};
+    const pack = snap.pack || {};
+    const stage = snap.stage || {};
+    const last = snap.last || {};
+    const party = Object.entries(state.party || {})
+      .filter(([, member]) => (member.rosterRole || 'active') !== 'bench')
+      .map(([id, member]) => member.name || DS().get('characters', member.baseCharacterId || id)?.name || id)
+      .join(', ') || 'Current party';
+    const queue = (snap.queue || []).slice(0, 5).map((beat) => `- ${beat.title || beat.id} (${beat.status || 'saved'})`).join('\n') || '- None';
+    const clues = (snap.clues || []).slice(0, 5).map((clue) => `- ${clue.title || clue.id}: ${clue.text || ''}`).join('\n') || '- None';
+    const facts = (snap.facts || []).slice(0, 5).map((fact) => `- ${fact.title || fact.id}: ${fact.text || ''}`).join('\n') || '- None';
+    const choices = (last.suggestedChoices || []).map((choice, index) => {
+      const ops = (choice.ops || []).map((op) => `    - ${Ops().describe([op])[0] || op.op}`).join('\n') || '    - Story only';
+      return `${index + 1}. ${choice.label || `Choice ${index + 1}`}\n${ops}`;
+    }).join('\n') || 'No current branch choices.';
+    return [
+      'CJS Story Mode GM Prompt',
+      '',
+      `Tone: ${(pack.tonePillars || []).join(', ') || 'light, human, funny, hopeful, slightly snarky'}`,
+      `Campaign: ${pack.name || 'Campaign story'}`,
+      `Current stage: ${stage.name || stage.id || 'No stage'} - ${stage.summary || ''}`,
+      `Party: ${party}`,
+      `Chapter/phase: chapter ${state.currentChapter || 1}, phase ${state.phase?.number || 1} (${state.phase?.type || 'unknown'})`,
+      '',
+      'Current beat:',
+      last.title ? `${last.title}\n${last.prompt || last.text || last.summary || ''}` : 'No current beat rolled.',
+      '',
+      'Branch choices and consequences:',
+      choices,
+      '',
+      'Saved/queued beats:',
+      queue,
+      '',
+      'Known clues:',
+      clues,
+      '',
+      'Revealed facts:',
+      facts,
+      '',
+      'Request:',
+      'Suggest the next playable scene for solo or GM-led tabletop play. Keep it clear, practical, funny when appropriate, and avoid locking protected canon unless explicitly chosen.'
+    ].join('\n');
+  }
+
+  function _openCopyTextModal(title, text) {
+    const body = document.createElement('div');
+    const hint = document.createElement('div');
+    hint.className = 'campaign-muted';
+    hint.style.marginBottom = '8px';
+    hint.textContent = 'Clipboard was not available. Copy this text manually:';
+    const ta = document.createElement('textarea');
+    ta.readOnly = true;
+    ta.style.width = '100%';
+    ta.style.minHeight = '280px';
+    ta.style.fontFamily = 'monospace';
+    ta.value = text;
+    body.appendChild(hint);
+    body.appendChild(ta);
+    UI().openModal({ title, content: body, width: '680px' });
+    setTimeout(() => { ta.focus(); ta.select(); }, 30);
+  }
+
+  function _openStoryHelpModal() {
+    const body = document.createElement('div');
+    body.className = 'campaign-story-help';
+    body.innerHTML = `
+      <div class="campaign-story-help-grid">
+        <div>
+          <strong>Solo default</strong>
+          <p>Pick the current stage, roll Scene Beat, read the popup, then apply one branch. The app handles clocks, rumors, clues, and queue changes only after you choose.</p>
+        </div>
+        <div>
+          <strong>Manual GM control</strong>
+          <p>Use the stage rail to jump anywhere, Manual Note to write your own beat, Save Beat to keep an idea, and Reject when the random roll is being dramatic for attention.</p>
+        </div>
+        <div>
+          <strong>Random spice</strong>
+          <p>Peri Chaos is for system comedy, Memory Shard is for clue pressure, and Pressure Tick is for offscreen trouble when time passes or the table gets too comfortable.</p>
+        </div>
+        <div>
+          <strong>Tabletop flow</strong>
+          <p>Use Story Director for scenes and branches, then switch to Scenario Run for tactical movement and encounters. Side Quest Flow tells you what content should stay, rise, or pause.</p>
+        </div>
+      </div>
+    `;
+    UI().openModal({ title: 'Story Mode Flow', content: body, width: '720px' });
   }
 
   function _setStoryDirectorStage(stageId) {

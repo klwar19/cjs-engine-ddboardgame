@@ -4283,3 +4283,322 @@ body.campaign-page::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================== */
+/* Story Director flow helpers                                         */
+/* ================================================================== */
+
+.campaign-story-dashboard {
+  align-items: start;
+}
+
+.campaign-story-command-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.05fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.campaign-story-guide,
+.campaign-story-roll-pad,
+.campaign-story-help-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.campaign-story-next,
+.campaign-story-popup-hint {
+  border: 1px solid rgba(103, 198, 255, 0.38);
+  border-left: 4px solid #67c6ff;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(22, 43, 51, 0.72), rgba(11, 19, 22, 0.78));
+  padding: 12px;
+}
+
+.campaign-story-next strong {
+  display: block;
+  margin-top: 5px;
+  color: #e8f7ff;
+}
+
+.campaign-story-next p,
+.campaign-story-help p {
+  margin: 6px 0 0;
+  color: var(--campaign-muted);
+  line-height: 1.45;
+}
+
+.campaign-story-step-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid rgba(103, 198, 255, 0.5);
+  border-radius: 999px;
+  color: #c7ecff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.campaign-story-next-actions {
+  margin-top: 10px;
+}
+
+.campaign-story-ladder {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.campaign-story-ladder-step {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 4px;
+  min-height: 92px;
+  padding: 8px;
+  border: 1px solid rgba(227, 200, 111, 0.22);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.16);
+  color: var(--campaign-muted);
+}
+
+.campaign-story-ladder-step span {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(227, 200, 111, 0.38);
+  color: var(--cmp-frame-gold-hi, #f3dc92);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.campaign-story-ladder-step b {
+  color: var(--campaign-text);
+  font-size: 0.82rem;
+}
+
+.campaign-story-ladder-step small {
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.campaign-story-ladder-step.is-active {
+  border-color: rgba(103, 198, 255, 0.66);
+  background: rgba(27, 66, 79, 0.45);
+  color: #c7ecff;
+}
+
+.campaign-story-ladder-step.is-done {
+  border-color: rgba(93, 201, 145, 0.4);
+  color: #bdebd0;
+}
+
+.campaign-story-stage-rail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.campaign-story-stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 4px 8px;
+  min-height: 92px;
+  padding: 9px;
+  border: 1px solid rgba(227, 200, 111, 0.28);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(38, 57, 58, 0.85), rgba(18, 29, 28, 0.9));
+  color: var(--campaign-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.campaign-story-stage:hover {
+  border-color: rgba(243, 220, 146, 0.75);
+}
+
+.campaign-story-stage span {
+  display: inline-grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--cmp-frame-gold-hi, #f3dc92);
+  font-weight: 800;
+}
+
+.campaign-story-stage strong {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-story-stage small {
+  display: -webkit-box;
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--campaign-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.campaign-story-stage.is-active {
+  border-color: #67c6ff;
+  background: linear-gradient(180deg, rgba(39, 77, 90, 0.95), rgba(20, 41, 48, 0.95));
+  box-shadow: inset 0 0 0 1px rgba(103, 198, 255, 0.35);
+}
+
+.campaign-story-stage.is-past {
+  border-color: rgba(93, 201, 145, 0.34);
+}
+
+.campaign-story-card.is-modal {
+  margin: 0;
+}
+
+.campaign-story-branch-map {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.campaign-story-branch {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(227, 200, 111, 0.22);
+  border-left: 4px solid rgba(227, 200, 111, 0.65);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.campaign-story-branch.is-recommended {
+  border-left-color: #5dc991;
+}
+
+.campaign-story-branch-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.campaign-story-branch-head span {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: rgba(93, 201, 145, 0.14);
+  color: #bdebd0;
+  font-weight: 800;
+}
+
+.campaign-story-branch-head strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-story-branch .campaign-consequence {
+  margin: 0;
+}
+
+.campaign-story-branch > .campaign-action {
+  justify-self: start;
+  white-space: normal;
+}
+
+.campaign-action.random {
+  border-color: rgba(168, 160, 255, 0.68);
+}
+
+.campaign-action.random:hover {
+  border-color: #c7c1ff;
+  color: #e5e1ff;
+}
+
+.campaign-action.plot {
+  border-color: rgba(217, 156, 255, 0.64);
+}
+
+.campaign-action.plot:hover {
+  border-color: #e8bcff;
+  color: #f2dcff;
+}
+
+.campaign-action.risk {
+  border-color: rgba(239, 102, 102, 0.7);
+  color: #ffd7d7;
+}
+
+.campaign-action.quest {
+  border-color: rgba(103, 198, 255, 0.68);
+}
+
+.campaign-action.quest:hover {
+  border-color: #67c6ff;
+  color: #d6f2ff;
+}
+
+.campaign-action.manual {
+  border-color: rgba(240, 207, 131, 0.68);
+}
+
+.campaign-chip.is-good {
+  border-color: rgba(93, 201, 145, 0.55);
+  color: #bdebd0;
+}
+
+.campaign-chip.is-warn {
+  border-color: rgba(245, 184, 75, 0.6);
+  color: #ffe3a8;
+}
+
+.campaign-story-help-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.campaign-story-help-grid > div {
+  padding: 10px;
+  border: 1px solid rgba(227, 200, 111, 0.24);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.campaign-story-help-grid strong {
+  color: var(--cmp-frame-gold-hi, #f3dc92);
+}
+
+@media (max-width: 980px) {
+  .campaign-story-command-grid,
+  .campaign-story-help-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-story-ladder {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .campaign-story-ladder,
+  .campaign-story-stage-rail {
+    grid-template-columns: 1fr;
+  }
+}
