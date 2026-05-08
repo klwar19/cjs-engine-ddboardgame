@@ -220,14 +220,20 @@ window.CJS.CampaignUI = (() => {
         </div>
         ${_renderCompactCurrencies(state)}
         <div class="campaign-header-actions">
-          <button class="campaign-action" data-campaign-action="new-save">New</button>
-          <button class="campaign-action" data-campaign-action="save-slot">Save</button>
-          <button class="campaign-action" data-campaign-action="fork-save">Fork</button>
-          <button class="campaign-action" data-campaign-action="export-save">Export</button>
-          <button class="campaign-action" data-campaign-action="import-save">Import</button>
-          <button class="campaign-action" data-campaign-action="push-github">GitHub</button>
-          <a class="campaign-action" href="editor.html">Editor</a>
-          <a class="campaign-action" href="combat.html">Combat</a>
+          ${_actionMenu('Save', `
+            <button class="campaign-action" data-campaign-action="save-slot">Quick Save</button>
+            <button class="campaign-action" data-campaign-action="new-save">New Save</button>
+            <button class="campaign-action" data-campaign-action="fork-save">Fork Save</button>
+          `)}
+          ${_actionMenu('Transfer', `
+            <button class="campaign-action" data-campaign-action="export-save">Export</button>
+            <button class="campaign-action" data-campaign-action="import-save">Import</button>
+            <button class="campaign-action" data-campaign-action="push-github">GitHub Sync</button>
+          `)}
+          ${_actionMenu('Apps', `
+            <a class="campaign-action" href="editor.html">Editor</a>
+            <a class="campaign-action" href="combat.html">Combat</a>
+          `)}
         </div>
       </header>
     `;
@@ -1106,13 +1112,17 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-section-title">Scene Controls</div>
         <div class="campaign-action-grid">
           ${_actionBtn({ action: 'story-roll-scene', label: 'Next Scene', hint: 'Default story roll. Opens a popup before anything is applied.', kind: 'primary story' })}
-          ${_actionBtn({ action: 'story-roll-peri', label: 'Peri Interrupt', hint: 'Comic system interruption, trolling hint, or suspiciously useful nonsense.', kind: 'random' })}
-          ${_actionBtn({ action: 'story-roll-memory', label: 'Memory / Clue', hint: 'Mystery clue or emotional leak. Good when the scene needs plot smoke.', kind: 'plot' })}
-          ${_actionBtn({ action: 'story-pressure-tick', label: 'Offscreen Trouble', hint: 'Pressure that happens away from the current scene when time passes or the table stalls.', kind: 'risk' })}
-          ${_actionBtn({ action: 'story-sync-sidequests', label: flowSynced ? 'Routes Updated' : 'Update Side Routes', hint: 'Marks which side routes should stay, rise, or pause for this episode.', kind: flowSynced ? 'manual' : 'quest', disabled: !flow || flowSynced })}
           ${_actionBtn({ action: 'story-manual-note', label: 'Write Scene', hint: 'Write your own table beat and save it without random rolling.', kind: 'manual' })}
-          ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copies current stage, last beat, clues, and queue for outside AI or GM drafting.', kind: 'manual' })}
-          ${_actionBtn({ action: 'story-help', label: 'Flow Help', hint: 'Short solo/GM instructions for this Story Mode desk.' })}
+          ${_actionMenu('Roll Type', `
+            ${_actionBtn({ action: 'story-roll-peri', label: 'Peri Interrupt', hint: 'Comic system interruption, helpful glitch, or suspicious advice.', kind: 'random' })}
+            ${_actionBtn({ action: 'story-roll-memory', label: 'Memory / Clue', hint: 'Mystery clue or emotional leak. Good when the scene needs plot smoke.', kind: 'plot' })}
+            ${_actionBtn({ action: 'story-pressure-tick', label: 'Offscreen Trouble', hint: 'Pressure that happens away from the current scene when time passes or the table stalls.', kind: 'risk' })}
+          `)}
+          ${_actionMenu('Story Tools', `
+            ${_actionBtn({ action: 'story-sync-sidequests', label: flowSynced ? 'Routes Updated' : 'Update Side Routes', hint: 'Marks which side routes should stay, rise, or pause for this episode.', kind: flowSynced ? 'manual' : 'quest', disabled: !flow || flowSynced })}
+            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copies current stage, last beat, clues, and queue for outside AI or GM drafting.', kind: 'manual' })}
+            ${_actionBtn({ action: 'story-help', label: 'Flow Help', hint: 'Short solo/GM instructions for this Story Mode desk.' })}
+          `)}
         </div>
       </div>
     `;
@@ -1236,9 +1246,11 @@ window.CJS.CampaignUI = (() => {
         ${options.modal ? '' : `
           <div class="campaign-action-grid">
             ${_actionBtn({ action: 'story-open-last', label: 'Open Popup', hint: 'Show this beat in a decision window again', kind: 'story' })}
-            ${_actionBtn({ action: 'story-save-beat', label: 'Hold For Later', hint: 'Queue this for later without applying it', kind: 'manual' })}
-            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copy this beat and current context', kind: 'manual' })}
-            ${_actionBtn({ action: 'story-reject-beat', label: 'Skip Roll', hint: 'Save as skipped and clear it', kind: 'danger' })}
+            ${_actionMenu('Beat Options', `
+              ${_actionBtn({ action: 'story-save-beat', label: 'Hold For Later', hint: 'Queue this for later without applying it', kind: 'manual' })}
+              ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copy this beat and current context', kind: 'manual' })}
+              ${_actionBtn({ action: 'story-reject-beat', label: 'Skip Roll', hint: 'Save as skipped and clear it', kind: 'danger' })}
+            `)}
           </div>
         `}
       </section>
@@ -2033,6 +2045,22 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _actionMenu(label, buttons, options = {}) {
+    const cls = ['campaign-action-menu'];
+    if (options.align === 'end') cls.push('align-end');
+    if (options.compact) cls.push('is-compact');
+    return `
+      <details class="${cls.join(' ')}">
+        <summary class="campaign-action-menu-trigger">
+          <span>${_esc(label)}</span>
+        </summary>
+        <div class="campaign-action-menu-panel">
+          ${buttons}
+        </div>
+      </details>
+    `;
+  }
+
   function _actionBtn({ action, label, hint, kind = '', data = {}, disabled = false }) {
     const cls = ['campaign-action'];
     if (kind) cls.push(kind);
@@ -2195,7 +2223,18 @@ window.CJS.CampaignUI = (() => {
         ${battle.battleMap?.theme ? `<div class="campaign-muted">Auto map: ${_esc(_label(battle.battleMap.theme))}</div>` : ''}
         ${_renderBattlePartySummary(state)}
         <div class="campaign-control-help">Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.</div>
-        <div class="campaign-action-grid">
+        <div class="campaign-action-grid campaign-battle-primary-actions">
+          ${_actionBtn({ action: 'run-battle',       label: 'Run in Combat App', hint: 'Open the tactical combat screen with this encounter', kind: 'primary', disabled: !canRun })}
+          ${_actionBtn({ action: 'manual-battle',    label: 'Resolve Manually',  hint: 'Type a custom outcome and rewards' })}
+          ${_actionMenu('Battle Options', `
+            ${isRandom ? _actionBtn({ action: 'battle-reroll', label: 'Reroll', hint: 'Re-roll from the same random table' }) : ''}
+            ${_actionBtn({ action: 'battle-override',  label: 'Override',        hint: 'Pick a specific encounter from the catalog' })}
+            ${_actionBtn({ action: 'skip-victory',     label: 'Manual Victory',  hint: 'Skip the fight as a win (basic rewards)' })}
+            ${_actionBtn({ action: 'skip-defeat',      label: 'Manual Defeat',   hint: 'Skip as a loss (default: danger +2 and 10% currency loss)' })}
+            ${_actionBtn({ action: 'cancel-battle',    label: 'Cancel Battle',   hint: 'Remove pending battle, no effect', kind: 'danger' })}
+          `)}
+        </div>
+        <div class="campaign-action-grid campaign-battle-legacy-actions" hidden>
           ${_actionBtn({ action: 'run-battle',       label: 'Run in Combat App',     hint: 'Open the tactical combat screen with this encounter', kind: 'primary', disabled: !canRun })}
           ${_actionBtn({ action: 'manual-battle',    label: 'Resolve Manually',      hint: 'Type a custom outcome and rewards' })}
           ${isRandom ? _actionBtn({ action: 'battle-reroll', label: '🎲 Reroll', hint: 'Re-roll from the same random table' }) : ''}
@@ -3155,14 +3194,16 @@ window.CJS.CampaignUI = (() => {
         ${opts.resolved ? '' : `
           <div class="campaign-quest-actions">
             ${_actionBtn({ action: 'quest-scenario', label: scenarioLabel, hint: isRunQuest ? 'Jump to the active map for this quest' : 'Start (or generate) the map run for this quest', kind: 'primary', data: { id: quest.id }, disabled: scenarioDisabled })}
-            ${_actionBtn({ action: 'quest-battle',  label: 'Battle',   hint: 'Run a battle linked to this quest', data: { id: quest.id } })}
-            ${_actionBtn({ action: 'quest-event',   label: 'Event',    hint: 'Roll an event tagged for this quest', data: { id: quest.id } })}
-            ${_actionBtn({ action: 'quest-check',   label: 'Check',    hint: 'Make a stat or skill check toward this quest', data: { id: quest.id } })}
-            ${_actionBtn({ action: 'quest-hand-in', label: 'Hand In',  hint: 'Deliver an item to complete an objective', data: { id: quest.id } })}
-            ${_actionBtn({ action: 'quest-answer',  label: 'Answer',   hint: 'Resolve a riddle / dialog objective', data: { id: quest.id } })}
             ${_actionBtn({ action: 'quest-progress', label: 'Progress', hint: 'Tick an objective forward by 1', data: { id: quest.id } })}
-            ${_actionBtn({ action: 'quest-complete', label: 'Resolve', hint: 'Mark complete and grant rewards', data: { id: quest.id } })}
-            ${_actionBtn({ action: 'quest-fail',     label: 'Fail',     hint: 'Mark failed (no rewards)', kind: 'danger', data: { id: quest.id } })}
+            ${_actionMenu('Quest Actions', `
+              ${_actionBtn({ action: 'quest-battle',  label: 'Battle',   hint: 'Run a battle linked to this quest', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-event',   label: 'Event',    hint: 'Roll an event tagged for this quest', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-check',   label: 'Check',    hint: 'Make a stat or skill check toward this quest', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-hand-in', label: 'Hand In',  hint: 'Deliver an item to complete an objective', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-answer',  label: 'Answer',   hint: 'Resolve a riddle / dialog objective', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-complete', label: 'Resolve', hint: 'Mark complete and grant rewards', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-fail',     label: 'Fail',     hint: 'Mark failed (no rewards)', kind: 'danger', data: { id: quest.id } })}
+            `)}
           </div>
         `}
       </article>

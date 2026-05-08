@@ -1,3 +1,15 @@
+@font-face {
+  font-family: "Kenney Future";
+  src: url("../assets/ui/kenney-scifi/font/Kenney%20Future.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Kenney Future Narrow";
+  src: url("../assets/ui/kenney-scifi/font/Kenney%20Future%20Narrow.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --campaign-bg: #101312;
   --campaign-panel: #171c1b;
@@ -5274,5 +5286,666 @@ body.campaign-page::before {
 
   .campaign-vn-choices {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Gacha VN polish pass */
+:root {
+  --gacha-bg: #07121d;
+  --gacha-bg-2: #102434;
+  --gacha-panel: rgba(246, 252, 255, 0.9);
+  --gacha-panel-soft: rgba(226, 244, 255, 0.7);
+  --gacha-ink: #15263a;
+  --gacha-muted: #5f7489;
+  --gacha-line: rgba(91, 170, 224, 0.34);
+  --gacha-blue: #4da3ff;
+  --gacha-cyan: #67d8ff;
+  --gacha-mint: #7be3bd;
+  --gacha-pink: #ff7fa4;
+  --gacha-amber: #ffd36f;
+  --gacha-shadow: 0 18px 48px rgba(7, 22, 36, 0.2);
+}
+
+body.campaign-page {
+  background:
+    linear-gradient(180deg, #edf8ff 0%, #dff2ff 48%, #f8fbff 100%);
+  color: var(--gacha-ink);
+  font-family: Inter, "M PLUS 1p", Segoe UI, system-ui, sans-serif;
+}
+
+.campaign-shell {
+  background:
+    linear-gradient(120deg, rgba(77, 163, 255, 0.12), transparent 34%),
+    linear-gradient(240deg, rgba(255, 127, 164, 0.12), transparent 38%),
+    linear-gradient(180deg, #eef9ff 0%, #f9fcff 100%);
+}
+
+.campaign-header {
+  grid-template-columns: auto minmax(260px, 1fr) minmax(150px, auto) auto;
+  border-bottom: 1px solid rgba(96, 166, 214, 0.28);
+  background: rgba(244, 251, 255, 0.88);
+  backdrop-filter: blur(18px) saturate(1.15);
+  box-shadow: 0 12px 32px rgba(71, 127, 176, 0.16);
+}
+
+.campaign-back,
+.campaign-action,
+.campaign-tab,
+.campaign-gm,
+.campaign-icon-btn,
+.campaign-mini-actions button,
+.campaign-action-menu-trigger {
+  border-color: rgba(89, 168, 221, 0.3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(225, 244, 255, 0.86));
+  color: var(--gacha-ink);
+  box-shadow: 0 8px 18px rgba(78, 148, 201, 0.12);
+  transition: transform 140ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.campaign-back:hover,
+.campaign-action:hover,
+.campaign-tab:hover,
+.campaign-gm:hover,
+.campaign-icon-btn:hover,
+.campaign-mini-actions button:hover,
+.campaign-action-menu-trigger:hover {
+  border-color: rgba(77, 163, 255, 0.7);
+  box-shadow: 0 12px 24px rgba(77, 163, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.campaign-action.primary,
+.campaign-tab.active,
+.campaign-action.story {
+  border-color: rgba(77, 163, 255, 0.74);
+  background:
+    linear-gradient(180deg, rgba(96, 203, 255, 0.94), rgba(67, 142, 255, 0.94));
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(77, 163, 255, 0.28);
+}
+
+.campaign-action.random,
+.campaign-action.plot,
+.campaign-action.quest {
+  border-color: rgba(123, 227, 189, 0.55);
+}
+
+.campaign-action.risk,
+.campaign-action.danger {
+  border-color: rgba(255, 127, 164, 0.62);
+  color: #84304c;
+}
+
+.campaign-action.danger {
+  background: linear-gradient(180deg, rgba(255, 244, 248, 0.95), rgba(255, 221, 232, 0.88));
+}
+
+.campaign-action .campaign-action-label,
+.campaign-control-title,
+.campaign-panel-head h2,
+.campaign-panel-head h3,
+.campaign-title h1,
+.campaign-story-dialogue-head h3 {
+  color: var(--gacha-ink);
+  font-family: "Kenney Future Narrow", Inter, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.campaign-title span,
+.campaign-muted,
+.campaign-action .campaign-action-hint,
+.campaign-control-help {
+  color: var(--gacha-muted);
+}
+
+.campaign-action.primary .campaign-action-hint,
+.campaign-action.story .campaign-action-hint {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.campaign-panel,
+.campaign-character,
+.campaign-side-section,
+.campaign-log-strip,
+.campaign-quest-card {
+  border-color: var(--gacha-line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(236, 248, 255, 0.86));
+  color: var(--gacha-ink);
+  box-shadow: var(--gacha-shadow);
+  backdrop-filter: blur(14px) saturate(1.08);
+}
+
+.campaign-panel {
+  position: relative;
+  overflow: visible;
+}
+
+.campaign-quest-card,
+.battle-ready,
+.campaign-story-dialogue {
+  position: relative;
+  overflow: visible;
+}
+
+.campaign-panel::before,
+.campaign-quest-card::before,
+.battle-ready::before,
+.campaign-story-dialogue::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gacha-cyan), var(--gacha-mint), var(--gacha-pink), var(--gacha-amber));
+  pointer-events: none;
+}
+
+.campaign-panel > *,
+.campaign-quest-card > * {
+  position: relative;
+}
+
+.campaign-pill,
+.campaign-chip,
+.campaign-risk,
+.campaign-stats span {
+  border-color: rgba(84, 158, 211, 0.28);
+  background: rgba(255, 255, 255, 0.64);
+  color: #29415a;
+}
+
+.campaign-stats span small {
+  color: var(--gacha-muted);
+}
+
+.campaign-stats span b {
+  color: #1766a7;
+}
+
+.campaign-action-menu {
+  position: relative;
+  display: inline-block;
+  min-width: 0;
+}
+
+.campaign-action-menu[open] {
+  z-index: 80;
+}
+
+.campaign-action-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  min-width: 112px;
+  padding: 8px 12px;
+  border: 1px solid rgba(89, 168, 221, 0.3);
+  border-radius: 8px;
+  color: var(--gacha-ink);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(225, 244, 255, 0.54)),
+    url("../assets/ui/kenney-scifi/png/button_square_header_notch_rectangle.png");
+  background-size: 100% 100%;
+  background-blend-mode: screen;
+}
+
+.campaign-action-menu-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.campaign-action-menu-trigger::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 20px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(77, 163, 255, 0.14);
+  color: #1766a7;
+  font-weight: 800;
+}
+
+.campaign-action-menu[open] .campaign-action-menu-trigger::after {
+  content: "-";
+}
+
+.campaign-action-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 8px;
+  min-width: min(300px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid rgba(89, 168, 221, 0.32);
+  border-radius: 8px;
+  background: rgba(247, 252, 255, 0.96);
+  box-shadow: 0 18px 44px rgba(31, 91, 140, 0.22);
+  backdrop-filter: blur(18px);
+}
+
+.campaign-action-menu-panel .campaign-action {
+  width: 100%;
+}
+
+.campaign-action-grid .campaign-action-menu,
+.campaign-quest-actions .campaign-action-menu {
+  width: 100%;
+}
+
+.campaign-action-grid .campaign-action-menu-trigger,
+.campaign-quest-actions .campaign-action-menu-trigger {
+  width: 100%;
+}
+
+.campaign-action-grid .campaign-action-menu-panel,
+.campaign-quest-actions .campaign-action-menu-panel {
+  left: 0;
+  right: auto;
+}
+
+.campaign-story-vn {
+  --story-panel: rgba(248, 252, 255, 0.88);
+  --story-panel-hi: rgba(255, 255, 255, 0.95);
+  --story-line: rgba(102, 192, 255, 0.38);
+  --story-text: #f7fbff;
+  --story-muted: #d8edf7;
+  --story-glow: rgba(103, 216, 255, 0.22);
+}
+
+.campaign-story-vn .campaign-panel {
+  border-color: var(--story-line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(235, 248, 255, 0.88));
+  color: var(--gacha-ink);
+}
+
+.campaign-story-vn-hero {
+  min-height: 390px;
+  border-color: rgba(103, 216, 255, 0.44);
+  background: linear-gradient(135deg, #0d2435, #133b55);
+  box-shadow: 0 24px 64px rgba(20, 87, 137, 0.3);
+}
+
+.campaign-story-vn-hero::after {
+  background:
+    linear-gradient(90deg, rgba(6, 19, 32, 0.78) 0%, rgba(15, 53, 78, 0.34) 44%, rgba(11, 25, 44, 0.66) 100%),
+    linear-gradient(180deg, rgba(103, 216, 255, 0.18), rgba(0, 0, 0, 0.58));
+}
+
+.campaign-story-vn-content {
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 430px);
+  padding: 26px;
+}
+
+.campaign-story-vn-kicker span,
+.campaign-story-motif,
+.campaign-story-step-badge {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(8, 22, 35, 0.52);
+  color: #f7fbff;
+  backdrop-filter: blur(10px);
+}
+
+.campaign-story-vn-title h2 {
+  font-family: "Kenney Future", Inter, system-ui, sans-serif;
+  font-size: clamp(1.65rem, 2.2vw, 2.35rem);
+  letter-spacing: 0;
+  text-shadow: 0 3px 22px rgba(0, 0, 0, 0.62);
+}
+
+.campaign-story-vn-title p {
+  max-width: 720px;
+  color: rgba(241, 250, 255, 0.92);
+  font-size: 1rem;
+}
+
+.campaign-story-vn-next {
+  border-color: rgba(255, 255, 255, 0.36);
+  border-left-color: var(--gacha-cyan);
+  background:
+    linear-gradient(180deg, rgba(19, 43, 62, 0.8), rgba(8, 20, 34, 0.78));
+  color: #f7fbff;
+}
+
+.campaign-story-vn-next strong,
+.campaign-story-vn-next p,
+.campaign-story-vn-next small {
+  color: #f7fbff;
+}
+
+.campaign-story-ladder-step,
+.campaign-story-stage,
+.campaign-story-route,
+.campaign-story-dialogue-box,
+.campaign-preview,
+.campaign-quest-phase,
+.campaign-control-group {
+  border-color: rgba(89, 168, 221, 0.28);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.campaign-control-group {
+  border: 1px solid rgba(89, 168, 221, 0.22);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.campaign-control-group:first-child {
+  border-top: 1px solid rgba(89, 168, 221, 0.22);
+  padding-top: 12px;
+}
+
+.campaign-story-dialogue-box {
+  padding: 20px 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(235, 248, 255, 0.74));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+}
+
+.campaign-story-dialogue-box p {
+  color: var(--gacha-ink);
+  font-size: 1.02rem;
+}
+
+.campaign-story-dialogue-box small {
+  color: var(--gacha-muted);
+}
+
+.campaign-story-speaker {
+  border-color: rgba(77, 163, 255, 0.45);
+  background:
+    linear-gradient(180deg, rgba(96, 203, 255, 0.95), rgba(67, 142, 255, 0.92));
+  color: #ffffff;
+}
+
+.campaign-story-route {
+  border-left-color: var(--gacha-amber);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(237, 249, 255, 0.78));
+}
+
+.campaign-story-route.is-recommended {
+  border-left-color: var(--gacha-cyan);
+  box-shadow: 0 18px 36px rgba(77, 163, 255, 0.18);
+}
+
+.campaign-story-route-head span,
+.campaign-story-route-head small {
+  border-color: rgba(89, 168, 221, 0.24);
+  background: rgba(235, 248, 255, 0.78);
+  color: var(--gacha-muted);
+}
+
+.campaign-story-route-head strong {
+  color: var(--gacha-ink);
+}
+
+.campaign-modes {
+  border-bottom: 1px solid rgba(89, 168, 221, 0.24);
+  background: rgba(246, 252, 255, 0.76);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px rgba(71, 127, 176, 0.12);
+}
+
+.campaign-mode-btn,
+.campaign-util-btn,
+.campaign-rail-btn {
+  border-color: rgba(89, 168, 221, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(225, 244, 255, 0.84));
+  color: var(--gacha-ink);
+  font-family: "Kenney Future Narrow", Inter, system-ui, sans-serif;
+  letter-spacing: 0;
+  box-shadow: 0 10px 22px rgba(78, 148, 201, 0.12);
+}
+
+.campaign-mode-btn:hover,
+.campaign-util-btn:hover,
+.campaign-rail-btn:hover {
+  border-color: rgba(77, 163, 255, 0.7);
+  color: #1766a7;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(214, 241, 255, 0.94));
+}
+
+.campaign-mode-btn.active,
+.campaign-util-btn.active,
+.campaign-rail-btn.is-active {
+  border-color: rgba(77, 163, 255, 0.74);
+  background:
+    linear-gradient(180deg, rgba(96, 203, 255, 0.96), rgba(67, 142, 255, 0.94));
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(77, 163, 255, 0.24);
+}
+
+.campaign-rail {
+  border: 1px solid rgba(89, 168, 221, 0.22);
+  border-radius: 8px;
+  background: rgba(246, 252, 255, 0.82);
+  box-shadow: var(--gacha-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.campaign-rail-btn.is-gm {
+  border-color: rgba(255, 211, 111, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 247, 224, 0.96), rgba(255, 227, 145, 0.86));
+  color: #7a5313;
+}
+
+.campaign-rail-btn-label,
+.campaign-rail-currency {
+  color: var(--gacha-ink);
+}
+
+.campaign-rail-dot {
+  background: var(--gacha-amber);
+  box-shadow: 0 0 10px rgba(255, 211, 111, 0.8);
+}
+
+.campaign-subtabs {
+  border-bottom: 0;
+  background: transparent;
+}
+
+.campaign-tab {
+  border-color: rgba(89, 168, 221, 0.24);
+  background: rgba(255, 255, 255, 0.72);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+
+.campaign-tab.active {
+  border-color: rgba(77, 163, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(96, 203, 255, 0.96), rgba(67, 142, 255, 0.94));
+  color: #ffffff;
+}
+
+.campaign-stat-grid span,
+.campaign-empty,
+.campaign-preview,
+.campaign-warning,
+.campaign-chat-line {
+  border-color: rgba(89, 168, 221, 0.24);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--gacha-ink);
+}
+
+.campaign-stat-grid b {
+  color: #1766a7;
+}
+
+.campaign-empty {
+  font-family: Inter, system-ui, sans-serif;
+  font-style: normal;
+}
+
+.campaign-row {
+  border-color: rgba(89, 168, 221, 0.18);
+}
+
+.campaign-town-columns > div,
+.campaign-rumor-purpose {
+  border-color: rgba(89, 168, 221, 0.22);
+}
+
+.campaign-town-kpi {
+  border-color: rgba(89, 168, 221, 0.24);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--gacha-ink);
+}
+
+.campaign-town-kpi b {
+  color: #1766a7;
+}
+
+.campaign-town-kpi span,
+.campaign-town-line span,
+.campaign-town-option span {
+  color: var(--gacha-muted);
+}
+
+.campaign-town-kpi.is-risk {
+  border-color: rgba(255, 127, 164, 0.42);
+  background: rgba(255, 244, 248, 0.8);
+}
+
+.campaign-town-kpi.is-plot {
+  border-color: rgba(255, 211, 111, 0.46);
+  background: rgba(255, 248, 226, 0.78);
+}
+
+.campaign-town-line.is-risk strong {
+  color: #94304f;
+}
+
+.campaign-town-line.is-plot strong {
+  color: #8a5b0c;
+}
+
+.campaign-rumor-purpose {
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--gacha-ink);
+}
+
+.campaign-rumor-purpose span:not(.campaign-impact-badge) {
+  color: var(--gacha-muted);
+}
+
+.battle-ready {
+  border-color: rgba(255, 127, 164, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 252, 0.94), rgba(236, 248, 255, 0.9));
+  box-shadow: 0 20px 46px rgba(255, 127, 164, 0.16);
+}
+
+.battle-ready::before {
+  height: 4px;
+  background: linear-gradient(90deg, var(--gacha-pink), var(--gacha-amber), var(--gacha-cyan));
+}
+
+.battle-ready > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--gacha-ink);
+  font-family: "Kenney Future Narrow", Inter, system-ui, sans-serif;
+  font-size: 1.2rem;
+}
+
+.campaign-battle-primary-actions {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.battle-result {
+  border-color: rgba(123, 227, 189, 0.45);
+  background: linear-gradient(180deg, rgba(244, 255, 251, 0.94), rgba(236, 248, 255, 0.9));
+}
+
+.campaign-quest-card {
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.46fr);
+}
+
+.campaign-quest-actions {
+  grid-template-columns: 1fr;
+}
+
+.campaign-quest-progress {
+  border-color: rgba(77, 163, 255, 0.24);
+  background: rgba(229, 244, 255, 0.82);
+}
+
+.campaign-quest-progress span {
+  background: linear-gradient(90deg, var(--gacha-blue), var(--gacha-mint));
+}
+
+.campaign-vn-overlay {
+  background: rgba(5, 15, 28, 0.9);
+}
+
+.campaign-vn-stage::after {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 32, 0.78), rgba(18, 62, 89, 0.28) 48%, rgba(8, 20, 36, 0.68)),
+    linear-gradient(180deg, rgba(103, 216, 255, 0.15), rgba(0, 0, 0, 0.62));
+}
+
+.campaign-vn-dialogue {
+  border-color: rgba(103, 216, 255, 0.42);
+  background:
+    linear-gradient(180deg, rgba(246, 252, 255, 0.95), rgba(225, 243, 255, 0.9));
+  color: var(--gacha-ink);
+  box-shadow: 0 28px 56px rgba(6, 31, 55, 0.38), 0 0 28px rgba(103, 216, 255, 0.18);
+}
+
+.campaign-vn-speaker {
+  border-color: rgba(77, 163, 255, 0.45);
+  background:
+    linear-gradient(180deg, rgba(96, 203, 255, 0.95), rgba(67, 142, 255, 0.92));
+  color: #ffffff;
+}
+
+.campaign-vn-dialogue p,
+.campaign-vn-dialogue small {
+  color: var(--gacha-ink);
+}
+
+.campaign-vn-choice {
+  border-color: rgba(103, 216, 255, 0.42);
+  border-left-color: var(--gacha-cyan);
+  background: rgba(247, 252, 255, 0.92);
+  color: var(--gacha-ink);
+  box-shadow: 0 14px 30px rgba(7, 31, 52, 0.18);
+}
+
+.campaign-vn-choice span {
+  color: var(--gacha-muted);
+}
+
+@media (max-width: 760px) {
+  .campaign-header {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-header-actions,
+  .campaign-action-grid,
+  .campaign-quest-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-action-menu,
+  .campaign-action-menu-trigger {
+    width: 100%;
+  }
+
+  .campaign-action-menu-panel {
+    position: static;
+    margin-top: 8px;
+    min-width: 0;
   }
 }

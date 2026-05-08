@@ -667,23 +667,28 @@ window.CJS.CombatUI = (() => {
             </div>
             <div id="cbt-unit-info" class="unit-info-panel"></div>
             <div id="cbt-actions" class="action-panel"></div>
-            <div class="dice-controls">
-              <div class="dice-mode-row">
-                <span class="dice-label">Dice:</span>
-                <button id="btn-dice-auto" class="btn btn-sm dice-mode-btn active">Auto</button>
-                <button id="btn-dice-manual" class="btn btn-sm dice-mode-btn">Manual</button>
+            <details class="combat-assist-menu">
+              <summary>Battle Assist</summary>
+              <div class="combat-assist-panel">
+                <div class="dice-controls">
+                  <div class="dice-mode-row">
+                    <span class="dice-label">Dice</span>
+                    <button id="btn-dice-auto" class="btn btn-sm dice-mode-btn active">Auto</button>
+                    <button id="btn-dice-manual" class="btn btn-sm dice-mode-btn">Manual</button>
+                  </div>
+                  <div id="dice-queue-row" class="dice-queue-row" style="display:none">
+                    <input type="text" id="dice-queue-input" placeholder="Pre-queue: 14,7,3,18" class="dice-queue-field">
+                    <button id="btn-dice-queue" class="btn btn-sm">Queue</button>
+                  </div>
+                </div>
+                <div class="auto-controls">
+                  <button id="btn-auto-turn" class="btn btn-sm">Auto Turn</button>
+                  <button id="btn-auto-round" class="btn btn-sm">Auto Round</button>
+                  <button id="btn-auto-all" class="btn btn-sm">Auto All</button>
+                  <button id="btn-stop-auto" class="btn btn-sm btn-danger" style="display:none">Stop</button>
+                </div>
               </div>
-              <div id="dice-queue-row" class="dice-queue-row" style="display:none">
-                <input type="text" id="dice-queue-input" placeholder="Pre-queue: 14,7,3,18" class="dice-queue-field">
-                <button id="btn-dice-queue" class="btn btn-sm">Queue</button>
-              </div>
-            </div>
-            <div class="auto-controls">
-              <button id="btn-auto-turn" class="btn btn-sm">Auto Turn</button>
-              <button id="btn-auto-round" class="btn btn-sm">Auto Round</button>
-              <button id="btn-auto-all" class="btn btn-sm">Auto All</button>
-              <button id="btn-stop-auto" class="btn btn-sm btn-danger" style="display:none">Stop</button>
-            </div>
+            </details>
           </div>
         </div>
         <div class="combat-bottom">
@@ -1011,6 +1016,7 @@ window.CJS.CombatUI = (() => {
     }
 
     let html = '<div class="action-buttons">';
+    html += '<div class="combat-action-core">';
 
     if (available.move) {
       html += '<button class="btn btn-action btn-move" data-action="move">Move</button>';
@@ -1024,8 +1030,11 @@ window.CJS.CombatUI = (() => {
       html += '<button class="btn btn-action btn-defend" data-action="defend">Defend</button>';
     }
 
+    html += '<button class="btn btn-action btn-end-turn" data-action="end_turn">End Turn</button>';
+    html += '</div>';
+
     if (available.skills?.length > 0) {
-      html += '<div class="skill-list">';
+      html += `<details class="combat-action-menu"><summary>Skills <span>${available.skills.length}</span></summary><div class="skill-list">`;
       for (const skillEntry of available.skills) {
         const skillName = skillEntry.skill?.name || skillEntry.id;
         const disabled = !skillEntry.usable ? 'disabled' : '';
@@ -1045,11 +1054,11 @@ window.CJS.CombatUI = (() => {
           </button>
         `;
       }
-      html += '</div>';
+      html += '</div></details>';
     }
 
     if (available.items?.length > 0) {
-      html += '<div class="item-list">';
+      html += `<details class="combat-action-menu"><summary>Items <span>${available.items.length}</span></summary><div class="item-list">`;
       for (const itemEntry of available.items) {
         const itemName = itemEntry.item?.name || itemEntry.id;
         const iconHtml = _renderEntityIcon(itemEntry.item, 'item', 'sm');
@@ -1060,10 +1069,9 @@ window.CJS.CombatUI = (() => {
           </button>
         `;
       }
-      html += '</div>';
+      html += '</div></details>';
     }
 
-    html += '<button class="btn btn-action btn-end-turn" data-action="end_turn">End Turn</button>';
     html += '</div>';
     $actions.innerHTML = html;
 
