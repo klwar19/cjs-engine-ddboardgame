@@ -21,6 +21,8 @@
           "kind": "entrance",
           "x": 110,
           "y": 260,
+          "storySceneId": "haven_story_guild_dain_route_choice",
+          "entryPolicy": "once",
           "tags": ["forest", "cold"],
           "discoveredByDefault": true,
           "onEnter": [
@@ -76,6 +78,8 @@
             { "to": "wolf_den", "label": "Press toward the den", "dangerChange": 1 },
             { "to": "old_shrine", "label": "Skirt toward old shrine" },
             { "to": "hunter_cache", "label": "Check the hunter cache" },
+            { "to": "campfire_pine", "label": "Fall back to a pine campfire" },
+            { "to": "old_stardust_vein", "label": "Trace the odd blue glimmer", "dangerChange": 1 },
             { "to": "frostwood_edge", "label": "Return to the edge" }
           ]
         },
@@ -139,7 +143,33 @@
           "exits": [
             { "to": "wolf_tracks", "label": "Return to the tracks" },
             { "to": "frozen_creek", "label": "Drop to the creek" },
+            { "to": "campfire_pine", "label": "Warm up at the pine campfire" },
             { "to": "watch_ridge", "label": "Climb to watch ridge", "dangerChange": 1 }
+          ]
+        },
+        {
+          "id": "campfire_pine",
+          "title": "Pine Campfire",
+          "kind": "campfire",
+          "x": 455,
+          "y": 305,
+          "storySceneId": "haven_story_campfire_chat",
+          "entryPolicy": "repeat",
+          "tags": ["campfire", "rest", "forest"],
+          "campfire": {
+            "rest": true,
+            "partyChat": true,
+            "services": ["cook", "craft", "inventory"],
+            "jpShopPrompt": true
+          },
+          "onEnter": [
+            { "op": "log", "text": "Campfire found: the party can rest, cook, craft, or sort inventory here." }
+          ],
+          "exits": [
+            { "to": "wolf_tracks", "label": "Return to wolf tracks" },
+            { "to": "hunter_cache", "label": "Check the hunter cache" },
+            { "to": "old_shrine", "label": "Climb toward the old shrine" },
+            { "to": "old_stardust_vein", "label": "Inspect the blue glimmer", "dangerChange": 1 }
           ]
         },
         {
@@ -163,7 +193,42 @@
           "exits": [
             { "to": "wolf_tracks", "label": "Fall back to tracks" },
             { "to": "old_shrine", "label": "Push through to old shrine" },
+            { "to": "old_stardust_vein", "label": "Follow the pup trail to the vein" },
             { "to": "watch_ridge", "label": "Take the ridge after the den" }
+          ]
+        },
+        {
+          "id": "old_stardust_vein",
+          "title": "Old Stardust Vein",
+          "kind": "resource",
+          "x": 625,
+          "y": 205,
+          "storySceneId": "haven_story_wolf_pup_branch",
+          "entryPolicy": "once",
+          "tags": ["resource", "stardust", "wolf", "hidden"],
+          "discoveredByDefault": false,
+          "randomBattle": {
+            "chance": 1,
+            "battleSetId": "haven_bset_wolf_pack_bent_pine",
+            "label": "Vein-Guard Wolf Pack"
+          },
+          "capture": {
+            "id": "frostwood_stardust_vein",
+            "title": "Old Stardust Vein",
+            "notes": "A cold blue seam that sheds sprite dust once the den wolves stop guarding it.",
+            "incomeOps": [
+              { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 }
+            ]
+          },
+          "onEnter": [
+            { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "clear_wolves", "amount": 1 },
+            { "op": "log", "text": "Resource: the old stardust vein can supply Pocket Haven after it is secured." }
+          ],
+          "exits": [
+            { "to": "wolf_tracks", "label": "Return to wolf tracks" },
+            { "to": "wolf_den", "label": "Cut back through the den" },
+            { "to": "campfire_pine", "label": "Return to the pine campfire" },
+            { "to": "old_shrine", "label": "Mark the shrine route" }
           ]
         },
         {
@@ -194,6 +259,8 @@
           "kind": "exit",
           "x": 545,
           "y": 250,
+          "storySceneId": "haven_story_old_shrine_route_hook",
+          "entryPolicy": "once",
           "tags": ["ruins", "objective"],
           "onEnter": [
             { "op": "update_quest_progress", "questId": "quest_clear_wolf_pack", "objectiveId": "clear_wolves", "amount": 1 },
@@ -203,6 +270,8 @@
           "exits": [
             { "to": "wolf_tracks", "label": "Backtrack to wolf tracks" },
             { "to": "wolf_den", "label": "Return through the den" },
+            { "to": "campfire_pine", "label": "Descend to the pine campfire" },
+            { "to": "old_stardust_vein", "label": "Inspect the stardust vein" },
             { "to": "watch_ridge", "label": "Take the ridge route" },
             { "to": "frozen_creek", "label": "Descend to frozen creek" }
           ]

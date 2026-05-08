@@ -71,7 +71,11 @@ const loadOrder = [
   'ai/ai-targeting.js',
   'ai/ai-controller.js',
   'combat/combat-manager.js',
-  'qte/qte-manager.js'
+  'qte/qte-manager.js',
+  'campaign/campaign-state.js',
+  'campaign/campaign-ops.js',
+  'campaign/campaign-events.js',
+  'campaign/campaign-story-scenes.js'
 ];
 
 for (const file of loadOrder) {
@@ -1197,6 +1201,133 @@ if (CJS.CampaignOps && CJS.CampaignState) {
   assertEq('cook succeeds once ingredients are stocked', foodCount, 1);
   const remainingHide = CJS.CampaignState.getState().inventory.materials.haven_bear_hide || 0;
   assertEq('hide consumed', remainingHide, 0);
+} else {
+  console.log('  (skipping — CampaignOps not loaded in this test sandbox)');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 21: Story scene normalization and gated node entry
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 21: Campaign story scene flow ──');
+if (CJS.CampaignStoryScenes && CJS.CampaignState && CJS.CampaignOps) {
+  DS.replace('stories', 'story_flow_test_scene', {
+    id: 'story_flow_test_scene',
+    title: 'Story Flow Test',
+    story_sequence: [{ speaker: 'System', line: 'Legacy line format still plays.' }],
+    choices: [{
+      label: 'Spend JP and speak clearly',
+      requiresFlags: ['route_open'],
+      jpCost: 1,
+      statCheck: { stat: 'C', dc: 10 },
+      successOps: [{ op: 'set_flag', flag: 'story_choice_success' }],
+      failOps: [{ op: 'set_flag', flag: 'story_choice_fail' }]
+    }]
+  });
+  CJS.CampaignState.loadContentFromDataStore();
+  CJS.CampaignState.setState({
+    campaignId: 'test_campaign',
+    currentWorld: 'haven',
+    currentChapter: 1,
+    phase: { number: 1, type: 'town_phase', name: 'Town' },
+    party: {},
+    currencies: { jp: 1 },
+    inventory: { items: {}, materials: {}, food: {}, questItems: {}, equipment: {} },
+    quests: {},
+    flags: { route_open: true },
+    log: [],
+    pinnedNotes: [],
+    pocketHaven: { enabled: true, notes: [], farm: { plots: [] }, stations: [], incomeNodes: [] },
+    sideContent: {},
+    hubState: {},
+    scenarioHistory: [],
+    mapState: { map_story_test: {} },
+    activeScenarioRun: {
+      scenarioId: 'test_scenario',
+      mapId: 'map_story_test',
+      currentNode: 'node_a',
+      completedBeats: [],
+      completedBattles: [],
+      notes: [],
+      proceduralMap: {
+        id: 'map_story_test',
+        nodes: [{ id: 'node_a', title: 'Node A', storySceneId: 'missing_story_scene', entryPolicy: 'once' }]
+      }
+    },
+    storyChoices: 'legacy_bad_value'
+  });
+
+  const normalizedStoryState = CJS.CampaignState.getState();
+  const scene = CJS.CampaignStoryScenes.getScene('story_flow_test_scene');
+  assert('campaign content exposes stories category', !!CJS.CampaignState.getContent().stories.story_flow_test_scene);
+  assert('storyChoices legacy value normalizes to array', Array.isArray(normalizedStoryState.storyChoices));
+  assert('map state entryResolved normalizes', !!normalizedStoryState.mapState.map_story_test.entryResolved);
+  assertEq('legacy story_sequence normalizes as line', scene.lines.length, 1);
+  assertEq('choice jpCost normalizes', scene.choices[0].jpCost, 1);
+
+  const available = CJS.CampaignStoryScenes.choiceAvailability(scene.choices[0]);
+  const blocked = CJS.CampaignStoryScenes.choiceAvailability({ label: 'Blocked', requiresFlags: ['missing_flag'], jpCost: 2 });
+  assert('flag and JP gated choice can pass', available.ok);
+  assert('missing flag and JP gated choice blocks', !blocked.ok && blocked.reasons.length >= 2);
+
+  const preview = CJS.CampaignStoryScenes.previewChoiceOps(scene, scene.choices[0]);
+  assert('choice preview includes JP spend', preview.some((op) => op.op === 'take_jp' && op.amount === 1));
+  assert('choice preview wraps stat check consequences', preview.some((op) => op.op === 'roll_check' && op.success?.some?.((next) => next.op === 'set_flag')));
+
+  const node = CJS.CampaignState.getState().activeScenarioRun.proceduralMap.nodes[0];
+  const prepared = CJS.CampaignStoryScenes.prepareNodeEntry(node, CJS.CampaignState.getState().activeScenarioRun.proceduralMap, {
+    mapId: 'map_story_test',
+    source: 'test'
+  });
+  assert('one-time story node prepares pending entry even if scene is missing', prepared);
+  assert('pending node entry stored on active run', !!CJS.CampaignState.getState().activeScenarioRun.pendingNodeEntry);
+  assert('pending node entry can finish without applying node effects', CJS.CampaignStoryScenes.finishPendingNodeEntry({ skipNodeEffects: true }));
+  assert('one-time node entry marks resolved', !!CJS.CampaignState.getState().mapState.map_story_test.entryResolved.node_a);
+  assertEq('resolved one-time node does not prepare again', CJS.CampaignStoryScenes.prepareNodeEntry(node, CJS.CampaignState.getState().activeScenarioRun.proceduralMap, { mapId: 'map_story_test' }), false);
+} else {
+  console.log('  (skipping — Campaign story modules not loaded in this test sandbox)');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEST 22: Captured node income applies on phase pass
+// ═══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 22: Captured resource income ──');
+if (CJS.CampaignOps && CJS.CampaignState) {
+  CJS.CampaignState.setState({
+    campaignId: 'test_campaign',
+    currentWorld: 'haven',
+    currentChapter: 1,
+    phase: { number: 1, type: 'town_phase', name: 'Town' },
+    party: {},
+    currencies: {},
+    inventory: { items: {}, materials: {}, food: {}, questItems: {}, equipment: {} },
+    quests: {},
+    flags: {},
+    log: [],
+    pinnedNotes: [],
+    pocketHaven: { enabled: true, notes: [], farm: { plots: [] }, stations: [], incomeNodes: {} },
+    sideContent: {},
+    hubState: {},
+    scenarioHistory: [],
+    mapState: {},
+    activeScenarioRun: { scenarioId: 'test_scenario', mapId: 'map_income_test', currentNode: 'vein', completedBeats: [], completedBattles: [], notes: [] },
+    storyChoices: []
+  });
+
+  CJS.CampaignOps.apply({
+    op: 'capture_node',
+    mapId: 'map_income_test',
+    nodeId: 'vein',
+    title: 'Test Vein',
+    incomeOps: [{ op: 'give_material', id: 'haven_sprite_dust', qty: 1 }]
+  }, { source: 'test' });
+  let incomeState = CJS.CampaignState.getState();
+  assert('capture marks map node captured', !!incomeState.mapState.map_income_test.captured.vein);
+  assert('capture registers Pocket Haven income node', Object.keys(incomeState.pocketHaven.incomeNodes).length === 1);
+
+  CJS.CampaignOps.apply({ op: 'pass_phase' }, { source: 'test' });
+  incomeState = CJS.CampaignState.getState();
+  assertEq('phase pass grants captured-node material income', incomeState.inventory.materials.haven_sprite_dust, 1);
+  assert('income production appears in log', incomeState.log.some((entry) => /Income produced: Test Vein/.test(entry.text || '')));
 } else {
   console.log('  (skipping — CampaignOps not loaded in this test sandbox)');
 }

@@ -62,6 +62,7 @@ window.CJS.CampaignOps = (() => {
         case 'hub_problem_add': return `Add hub problem ${op.problemId || op.id}`;
         case 'hub_problem_remove': return `Resolve hub problem ${op.problemId || op.id}`;
         case 'hub_stat_change': return `Hub ${op.stat} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'capture_node': return `Capture node ${op.title || op.nodeId || op.id}`;
         case 'add_rumor': return `Add rumor: ${op.text || op.id || 'rumor'}`;
         case 'side_idea_save': return `Save side idea ${op.contentCard?.title || op.contentCard?.id || op.contentId || ''}`;
         case 'side_idea_reject': return `Reject side idea ${op.contentId || op.id || ''}`;
@@ -114,6 +115,7 @@ window.CJS.CampaignOps = (() => {
       case 'reveal_node': return _setNodeFlag(state, op.mapId, op.nodeId, 'revealed', true);
       case 'lock_node': return _setNodeFlag(state, op.mapId, op.nodeId, 'locked', true);
       case 'unlock_node': return _setNodeFlag(state, op.mapId, op.nodeId, 'locked', false);
+      case 'capture_node': return _captureNode(state, op);
       case 'pass_phase': return passPhase(state, op);
       case 'start_scenario': return window.CJS.ScenarioRunner?.startScenario(op.scenarioId || op.id);
       case 'end_scenario': return window.CJS.ScenarioRunner?.endScenario(op.outcome || 'manual');
@@ -251,6 +253,7 @@ window.CJS.CampaignOps = (() => {
     const activeRule = CS().getPhaseRule(state.phase.type);
     if (activeRule?.questTimersAdvance !== false) _tickQuestTimers(state);
     if (activeRule?.farmGrowth) _farmTick(state, activeRule.farmGrowth, false);
+    _applyIncomeNodes(state);
     _clearDuration(state, 'phase');
     state.eventCharges = { ...(activeRule?.eventCharges || {}) };
     _log(state, `Phase ${state.phase.number}: ${state.phase.name || state.phase.type}.`);
@@ -288,7 +291,53 @@ window.CJS.CampaignOps = (() => {
   function _mapState(state, mapId) {
     const id = mapId || state.activeScenarioRun?.mapId || 'freeform';
     state.mapState[id] = state.mapState[id] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
+    state.mapState[id].visited = state.mapState[id].visited || {};
+    state.mapState[id].revealed = state.mapState[id].revealed || {};
+    state.mapState[id].locked = state.mapState[id].locked || {};
+    state.mapState[id].cleared = state.mapState[id].cleared || {};
+    state.mapState[id].notes = state.mapState[id].notes || {};
+    state.mapState[id].entryResolved = state.mapState[id].entryResolved || {};
+    state.mapState[id].captured = state.mapState[id].captured || {};
+    state.mapState[id].campfires = state.mapState[id].campfires || {};
     return state.mapState[id];
+  }
+
+  function _captureNode(state, op = {}) {
+    const nodeId = op.nodeId || op.id;
+    if (!nodeId) return;
+    const mapId = op.mapId || state.activeScenarioRun?.mapId || 'freeform';
+    const map = _mapState(state, mapId);
+    if (map.captured[nodeId]) return;
+    const recordId = op.captureId || op.incomeId || `${mapId}:${nodeId}`;
+    const record = {
+      id: recordId,
+      mapId,
+      nodeId,
+      title: op.title || nodeId,
+      incomeOps: _asOps(op.incomeOps || op.dailyOps),
+      notes: op.notes || '',
+      capturedAt: new Date().toISOString(),
+      source: op.source || 'campaign_ops'
+    };
+    map.captured[nodeId] = record;
+    map.cleared[nodeId] = true;
+    map.entryResolved[nodeId] = map.entryResolved[nodeId] || { at: record.capturedAt, source: 'capture' };
+    state.pocketHaven = state.pocketHaven || {};
+    state.pocketHaven.incomeNodes = state.pocketHaven.incomeNodes || {};
+    state.pocketHaven.incomeNodes[recordId] = record;
+    _log(state, `Captured resource node: ${record.title}.`);
+    if (record.incomeOps.length) _log(state, `${record.title} will produce income each phase.`);
+  }
+
+  function _applyIncomeNodes(state) {
+    const nodes = Object.values(state.pocketHaven?.incomeNodes || {});
+    if (!nodes.length) return;
+    for (const node of nodes) {
+      const ops = _asOps(node.incomeOps || node.dailyOps);
+      if (!ops.length) continue;
+      for (const incomeOp of ops) _applyOne(state, incomeOp, { source: 'income_node' });
+      _log(state, `Income produced: ${node.title || node.nodeId || node.id}.`);
+    }
   }
 
   function _setNodeFlag(state, mapId, nodeId, key, value) {
@@ -2103,6 +2152,7 @@ window.CJS.CampaignOps = (() => {
       battleSetId: op.battleSetId || null,
       monsterIds: op.monsterIds || [],
       label: op.label || op.encounterId,
+      mapId: op.mapId || state.activeScenarioRun?.mapId || null,
       nodeId: op.nodeId || state.activeScenarioRun?.currentNode || null,
       source: op.source || 'manual',
       rewardOps: op.rewardOps || [],
@@ -2130,6 +2180,11 @@ window.CJS.CampaignOps = (() => {
     _applyBattleSetback(state, outcome, op);
     if (outcome === 'victory' && op.applyRewards !== false) {
       for (const reward of pending.rewardOps || []) _applyOne(state, reward, { source: 'battle_set_reward' });
+    }
+    if (outcome === 'victory' && pending.nodeId) {
+      const map = _mapState(state, pending.mapId || state.activeScenarioRun?.mapId);
+      map.cleared[pending.nodeId] = true;
+      window.CJS.CampaignStoryScenes?.captureNodeAfterBattle?.(state, pending, outcome);
     }
     if (state.activeScenarioRun) {
       state.activeScenarioRun.completedBattles.push({

@@ -7,5 +7,271 @@
     "category": "stories",
     "status": "stub"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "haven_story_guild_dain_route_choice",
+      "world": "haven",
+      "title": "Guild Noise Before The Trees",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["guild", "dain", "return", "route_choice"],
+      "lines": [
+        {
+          "speaker": "System",
+          "style": "terminal",
+          "text": "NOTICE: F-RANK REENTRY PAPERWORK ACCEPTED. Social damage pending."
+        },
+        {
+          "speaker": "Dain",
+          "text": "So the ghost came back and immediately picked a wolf job. Brave. Or cheap."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "Those can be the same thing if the guild refuses to pay a living wage."
+        },
+        {
+          "speaker": "Peri",
+          "style": "terminal",
+          "text": "Audience note: public humiliation routes may produce Jester Points. Try not to die before the punchline."
+        }
+      ],
+      "choices": [
+        {
+          "id": "ignore_dain",
+          "label": "Ignore Dain and leave cleanly",
+          "ops": [
+            { "op": "set_flag", "flag": "dain_ignored", "value": true },
+            { "op": "story_thread_status", "threadId": "dain_rivalry", "status": "seeded_quiet", "note": "Bin refused the bait before Frostwood." },
+            { "op": "log", "text": "Bin ignored Dain and kept the party focused on the Frostwood job." }
+          ],
+          "nextSceneId": "haven_story_frostwood_edge_briefing"
+        },
+        {
+          "id": "roast_dain",
+          "label": "Verbally destroy him",
+          "statCheck": { "stat": "C", "dc": 12 },
+          "successOps": [
+            { "op": "set_flag", "flag": "dain_humiliated", "value": true },
+            { "op": "bond_change", "npcId": "dain", "field": "rivalry", "amount": 2 },
+            { "op": "give_jp", "amount": 1 },
+            { "op": "log", "text": "Bin roasted Dain hard enough that the guild counted it as public service." }
+          ],
+          "failOps": [
+            { "op": "set_flag", "flag": "dain_unimpressed", "value": true },
+            { "op": "take_jp", "amount": 1 },
+            { "op": "log", "text": "Bin's comeback arrived late and in poor condition." }
+          ],
+          "nextSceneId": "haven_story_frostwood_edge_briefing"
+        },
+        {
+          "id": "system_hack_shortcut",
+          "label": "Spend 1 JP to scan for a side lead",
+          "jpCost": 1,
+          "ops": [
+            { "op": "set_flag", "flag": "frostwood_side_lead_scanned", "value": true },
+            { "op": "reveal_node", "nodeId": "old_stardust_vein" },
+            { "op": "log", "text": "CJS scan revealed an unstable resource lead deeper in Frostwood." }
+          ],
+          "nextSceneId": "haven_story_frostwood_edge_briefing"
+        }
+      ]
+    },
+    {
+      "id": "haven_story_frostwood_edge_briefing",
+      "world": "haven",
+      "title": "Frostwood Edge Briefing",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["frostwood", "briefing", "tutorial"],
+      "lines": [
+        {
+          "speaker": "Bowy",
+          "speakerId": "haven_bowy",
+          "text": "Tracks split ahead. Wolves went north, something heavy dragged east, and the creek looks like it hates ankles."
+        },
+        {
+          "speaker": "Mitia",
+          "speakerId": "haven_mitia",
+          "text": "The snow is too quiet. Not empty quiet. Listening quiet."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "Good. If the forest is listening, it can hear my formal complaint."
+        },
+        {
+          "speaker": "System",
+          "style": "terminal",
+          "text": "ROUTE LOOP ONLINE: explore, survive, loot, upgrade, make a questionable decision, repeat."
+        }
+      ],
+      "choices": [
+        {
+          "id": "steady_route",
+          "label": "Mark the route and move carefully",
+          "ops": [
+            { "op": "story_metric_change", "metric": "frostwood_threat", "amount": 1, "max": 12 },
+            { "op": "log", "text": "The party marked Frostwood Edge as the route start." }
+          ]
+        },
+        {
+          "id": "perform_confidence",
+          "label": "Act confident for party morale",
+          "ops": [
+            { "op": "give_jp", "amount": 1 },
+            { "op": "bond_change", "npcId": "haven_bowy", "field": "morale", "amount": 1 },
+            { "op": "log", "text": "Bin weaponized false confidence. It helped more than it should have." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "haven_story_campfire_chat",
+      "world": "haven",
+      "title": "Smoke Under Bent Pines",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["campfire", "downtime", "party"],
+      "lines": [
+        {
+          "speaker": "Garr",
+          "speakerId": "haven_garr",
+          "text": "Small fire. Low smoke. No loud victory stories until we are behind a wall."
+        },
+        {
+          "speaker": "Bowy",
+          "speakerId": "haven_bowy",
+          "text": "So Bin's normal talking volume is banned."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "My normal talking volume is a tactical resource."
+        },
+        {
+          "speaker": "Peri",
+          "style": "terminal",
+          "text": "CAMPFIRE FUNCTIONS AVAILABLE: rest, cook, craft, inventory panic, emotionally suspicious silence."
+        }
+      ],
+      "choices": [
+        {
+          "id": "rest",
+          "label": "Spend the camp rest",
+          "ops": [
+            { "op": "camp_rest", "dangerChange": 1 },
+            { "op": "log", "text": "The party used the Frostwood campfire for a cautious rest." }
+          ]
+        },
+        {
+          "id": "talk",
+          "label": "Talk instead of resting",
+          "ops": [
+            { "op": "give_jp", "amount": 1 },
+            { "op": "bond_change", "npcId": "haven_mitia", "field": "trust", "amount": 1 },
+            { "op": "log", "text": "The party kept the fire low and talked long enough to remember why they came together." }
+          ]
+        },
+        {
+          "id": "supplies",
+          "label": "Review supplies and keep moving",
+          "ops": [
+            { "op": "log", "text": "Campfire services are available from this node: cook, craft, inventory, and camp chat." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "haven_story_wolf_pup_branch",
+      "world": "haven",
+      "title": "The Pup At The Vein",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["wolf", "resource", "choice"],
+      "lines": [
+        {
+          "speaker": "Mitia",
+          "speakerId": "haven_mitia",
+          "text": "There is stardust in the old stone, but something small is hiding beside it."
+        },
+        {
+          "speaker": "Bowy",
+          "speakerId": "haven_bowy",
+          "text": "Wolf pup. Mother is close, or the pack left it as bait."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "The correct answer to 'bait with feelings' is usually 'walk away,' which is why this job pays badly."
+        }
+      ],
+      "choices": [
+        {
+          "id": "spare_pup",
+          "label": "Spare the pup and give it space",
+          "ops": [
+            { "op": "set_flag", "flag": "spared_wolf_pup", "value": true },
+            { "op": "danger", "amount": 1 },
+            { "op": "bond_change", "npcId": "haven_mitia", "field": "empathy", "amount": 1 },
+            { "op": "log", "text": "The party spared the wolf pup. The pack noticed." }
+          ]
+        },
+        {
+          "id": "drive_off",
+          "label": "Drive it off before the pack arrives",
+          "ops": [
+            { "op": "set_flag", "flag": "drove_off_wolf_pup", "value": true },
+            { "op": "log", "text": "The party drove the pup away and prepared for the pack." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "haven_story_old_shrine_route_hook",
+      "world": "haven",
+      "title": "Old Shrine, Quiet Enough",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["shrine", "route_clear", "branch"],
+      "lines": [
+        {
+          "speaker": "System",
+          "style": "terminal",
+          "text": "ROUTE OBJECTIVE REACHED. Shrine silence is not a warranty."
+        },
+        {
+          "speaker": "Garr",
+          "speakerId": "haven_garr",
+          "text": "Quiet enough to call the route clear. Not quiet enough to trust."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "That is the most northern sentence anyone has ever said."
+        }
+      ],
+      "choices": [
+        {
+          "id": "call_clear",
+          "label": "Mark the route clear",
+          "ops": [
+            { "op": "give_jp", "amount": 1 },
+            { "op": "story_thread_status", "threadId": "frostwood_short_route", "status": "clear", "note": "The party reached the old shrine route marker." },
+            { "op": "log", "text": "The old shrine route was marked clear." }
+          ]
+        },
+        {
+          "id": "wolf_path",
+          "label": "Use the pup's safer path",
+          "requiresFlags": ["spared_wolf_pup"],
+          "ops": [
+            { "op": "danger", "amount": -1 },
+            { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 },
+            { "op": "log", "text": "The spared wolf pup's trail revealed a safer path and a dust pocket." }
+          ]
+        }
+      ]
+    }
+  ]
 }

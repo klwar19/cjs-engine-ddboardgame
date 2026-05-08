@@ -168,6 +168,8 @@ window.CJS.CampaignMap = (() => {
     const map = CS().getActiveMap();
     const isCurrent = run?.currentNode === node.id;
     const canMove = _canMoveTo(node.id, run, map);
+    const captured = mapState.captured?.[node.id];
+    const entryResolved = mapState.entryResolved?.[node.id];
     const exits = (node.exits || []).map((exit) => {
       const target = Runner().findNode(map, exit.to);
       const locked = mapState.locked?.[exit.to] || exit.locked;
@@ -188,14 +190,28 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-chip-row">${tags}</div>
       <div class="campaign-node-actions">
         ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
+        ${captured ? `<span class="campaign-pill is-current">Captured</span>` : ''}
+        ${entryResolved && !captured ? `<span class="campaign-pill">Story Resolved</span>` : ''}
         <button class="campaign-action" data-campaign-action="reveal-node" data-node-id="${_escAttr(node.id)}">Reveal</button>
         <button class="campaign-action" data-campaign-action="clear-node" data-node-id="${_escAttr(node.id)}">Clear</button>
       </div>
+      ${node.campfire && isCurrent ? `
+        <div class="campaign-node-actions">
+          <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
+          <button class="campaign-action" data-campaign-action="roll-party-chat">Camp Chat</button>
+          <button class="campaign-action" data-campaign-tab="cook">Cook</button>
+          <button class="campaign-action" data-campaign-tab="craft">Craft</button>
+          <button class="campaign-action" data-campaign-tab="inventory">Inventory</button>
+        </div>
+      ` : ''}
+      ${captured?.incomeOps?.length ? `<div class="campaign-muted">Income: ${_esc(captured.incomeOps.map((op) => op.op || 'op').join(', '))}</div>` : ''}
       ${exits ? `<div class="campaign-link-list"><div class="campaign-section-label">Exits</div>${exits}</div>` : '<div class="campaign-empty">No exits.</div>'}
     `;
   }
 
   function _nodeIcon(node) {
+    if (node.capture) return '*';
+    if (node.campfire) return 'C';
     const map = {
       entrance: 'E',
       exit: 'X',
@@ -204,6 +220,9 @@ window.CJS.CampaignMap = (() => {
       event: '?',
       trap: 'T',
       rest: 'R',
+      campfire: 'C',
+      resource: '*',
+      reward: '$',
       shop: 'S',
       boss: '!'
     };

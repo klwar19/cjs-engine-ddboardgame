@@ -142,6 +142,7 @@ window.CJS.CampaignUI = (() => {
     if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
     _bindRunPanel();
     _renderPanelLayer();
+    setTimeout(() => window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.(), 0);
   }
 
   function _bindRunPanel() {
@@ -4666,6 +4667,7 @@ Recover the relic x 1"></textarea>
     const link = (current?.exits || []).find((exit) => exit.to === nodeId) || null;
     const moved = Runner().moveToNode(nodeId, link);
     if (!moved) UI().toast('That node is not connected from here yet', 'info');
+    else window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
   }
 
   function _moveCell(x, y) {

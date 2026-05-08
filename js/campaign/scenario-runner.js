@@ -261,6 +261,16 @@ window.CJS.ScenarioRunner = (() => {
     Ops().apply(scenario.entryOps || [], { source: 'scenario_entry' });
     Ops().apply({ op: 'log', text: `Scenario started: ${scenario.name || scenario.id} (${travelMode}).` }, { source: 'scenario' });
     window.CJS.CampaignPartyChat?.auto?.({ world: scenario.world || CS().getState()?.currentWorld, situation: 'scenario_start', scenarioId, tags: scenario.tags || [] }, { chance: 0.65 });
+    if (startNode && (travelMode === 'node_map' || travelMode === 'procedural')) {
+      const activeMap = CS().getActiveMap() || map;
+      const node = findNode(activeMap, startNode);
+      if (node) {
+        window.CJS.CampaignStoryScenes?.prepareNodeEntry?.(node, activeMap, {
+          source: 'scenario_start',
+          mapId: CS().getState()?.activeScenarioRun?.mapId || activeMap?.id
+        });
+      }
+    }
     return CS().getState().activeScenarioRun;
   }
 
@@ -311,6 +321,10 @@ window.CJS.ScenarioRunner = (() => {
 
     Ops().apply({ op: 'goto_node', nodeId }, { source: 'map_move' });
     _revealNodeNeighborhood(map, nodeId);
+
+    if (window.CJS.CampaignStoryScenes?.prepareNodeEntry?.(node, map, { source: 'node_enter' })) {
+      return node;
+    }
 
     if (Array.isArray(node.onEnter) && node.onEnter.length) {
       Ops().apply(node.onEnter, { source: 'node_enter' });
@@ -412,8 +426,10 @@ window.CJS.ScenarioRunner = (() => {
   }
 
   function maybeTriggerRandomBattle(randomBattle) {
-    const run = CS().getState().activeScenarioRun;
+    const state = CS().getState();
+    const run = state.activeScenarioRun;
     if (!run) return null;
+    if (state.pendingBattle) return null;
     const chance = Number(randomBattle.chance ?? 1);
     if (Math.random() > chance) return null;
     if (randomBattle.battleSetId || randomBattle.encounterId) return _queueBattleEntry(randomBattle, { source: 'random' });
@@ -1390,6 +1406,7 @@ window.CJS.ScenarioRunner = (() => {
       battleSetId: normalized.battleSetId || null,
       monsterIds: normalized.monsterIds || [],
       label: normalized.label || normalized.encounterId || normalized.battleSetId,
+      mapId: run?.mapId || null,
       tableId: meta.tableId || normalized.tableId || null,
       nodeId: run?.currentNode || null,
       cellKey: run?.currentCell ? _cellKey(run.currentCell.x, run.currentCell.y) : null,

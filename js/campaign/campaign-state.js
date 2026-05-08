@@ -29,6 +29,7 @@ window.CJS.CampaignState = (() => {
       mapSeeds: {},
       oracleTables: {},
       storyDirectorPacks: {},
+      stories: {},
       worlds: {}
     };
   }
@@ -57,6 +58,7 @@ window.CJS.CampaignState = (() => {
       mapSeeds: DS().getAll('mapSeeds'),
       oracleTables: DS().getAll('oracleTables'),
       storyDirectorPacks: DS().getAll('storyDirectorPacks'),
+      stories: DS().getAll('stories'),
       worlds: DS().getAll('worlds')
     };
     return getContent();
@@ -193,6 +195,7 @@ window.CJS.CampaignState = (() => {
       pocketHaven: {
         enabled: true,
         notes: [],
+        incomeNodes: {},
         farm: {
           plots: Array.from({ length: plotCount }, (_, index) => ({
             id: `plot_${index + 1}`,
@@ -215,6 +218,7 @@ window.CJS.CampaignState = (() => {
         reviewQueue: [],
         importedPacks: {}
       },
+      storyChoices: [],
       clocks: {},
       memoryShards: {},
       bonds: {},
@@ -577,6 +581,16 @@ window.CJS.CampaignState = (() => {
     next.flags = next.flags || {};
     next.scenarioHistory = next.scenarioHistory || [];
     next.mapState = next.mapState || {};
+    for (const map of Object.values(next.mapState)) {
+      map.visited = map.visited || {};
+      map.revealed = map.revealed || {};
+      map.locked = map.locked || {};
+      map.cleared = map.cleared || {};
+      map.notes = map.notes || {};
+      map.entryResolved = map.entryResolved || {};
+      map.captured = map.captured || {};
+      map.campfires = map.campfires || {};
+    }
     next.worldArchive = next.worldArchive || {};
     next.hubState = next.hubState || {};
     const campaign = _content.campaigns[next.campaignId];
@@ -619,8 +633,13 @@ window.CJS.CampaignState = (() => {
     next.storyDirector.sideQuestSync = next.storyDirector.sideQuestSync || {};
     next.reputation = next.reputation || {};
     next.unlockedRecipes = next.unlockedRecipes || {};
-    next.pocketHaven = next.pocketHaven || { enabled: true, notes: [], farm: { plots: [] }, stations: [] };
+    next.pocketHaven = next.pocketHaven || { enabled: true, notes: [], incomeNodes: {}, farm: { plots: [] }, stations: [] };
     next.pocketHaven.notes = next.pocketHaven.notes || [];
+    if (Array.isArray(next.pocketHaven.incomeNodes)) {
+      next.pocketHaven.incomeNodes = Object.fromEntries(next.pocketHaven.incomeNodes.map((entry) => [entry.id || `${entry.mapId || 'map'}:${entry.nodeId || Date.now()}`, entry]));
+    } else {
+      next.pocketHaven.incomeNodes = next.pocketHaven.incomeNodes || {};
+    }
     next.pocketHaven.farm = next.pocketHaven.farm || { plots: [] };
     next.pocketHaven.farm.plots = next.pocketHaven.farm.plots || [];
     if (window.CJS.FarmingMode?.normalizeFarm) {
@@ -631,6 +650,13 @@ window.CJS.CampaignState = (() => {
       });
     }
     next.pocketHaven.stations = next.pocketHaven.stations || [];
+    next.storyChoices = Array.isArray(next.storyChoices) ? next.storyChoices : [];
+    if (next.activeScenarioRun) {
+      next.activeScenarioRun.completedBeats = next.activeScenarioRun.completedBeats || [];
+      next.activeScenarioRun.completedBattles = next.activeScenarioRun.completedBattles || [];
+      next.activeScenarioRun.notes = next.activeScenarioRun.notes || [];
+      next.activeScenarioRun.pendingNodeEntry = next.activeScenarioRun.pendingNodeEntry || null;
+    }
     next.pinnedNotes = next.pinnedNotes || [];
     next.log = next.log || [];
     next.settings = next.settings || {};
