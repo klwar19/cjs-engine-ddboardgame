@@ -1502,7 +1502,7 @@ window.CJS.CampaignUI = (() => {
               <div class="campaign-row-actions">
                 <span class="campaign-risk ${Side().riskClass(item.canonRisk)}">${_esc(item.canonRisk || 'red')}</span>
                 <button class="campaign-action" data-campaign-action="review-resolve" data-id="${_escAttr(item.id)}" data-decision="approved">Approve</button>
-                <button class="campaign-action danger" data-campaign-action="review-resolve" data-id="${_escAttr(item.id)}" data-decision="rejected">Reject</button>
+                <button class="campaign-action campaign-action-reject" data-campaign-action="review-resolve" data-id="${_escAttr(item.id)}" data-decision="rejected" title="Reject this content. It will not be added.">Reject</button>
               </div>
             </div>
           `).join('') : '<div class="campaign-empty">No pending review.</div>'}
@@ -1903,11 +1903,11 @@ window.CJS.CampaignUI = (() => {
         ${choices.length && !compact ? `<div class="campaign-choice-stack">${choices.map((choice, index) => _renderChoiceConsequence(choice, index)).join('')}</div>` : ''}
         <div class="campaign-action-grid">
           ${choices.length ? choices.map((choice, index) => `
-            <button class="campaign-action ${index === 0 ? 'primary' : ''}" data-campaign-action="apply-side-choice" data-id="${_escAttr(card.id)}" data-choice="${index}">Apply: ${_esc(choice.label || `Choice ${index + 1}`)}</button>
+            <button class="campaign-action ${index === 0 ? 'primary' : ''}" data-campaign-action="apply-side-choice" data-id="${_escAttr(card.id)}" data-choice="${index}" title="${_escAttr('Apply: ' + (choice.label || ('Choice ' + (index + 1))))}"><span class="ku-action-prefix">Apply</span><span class="ku-action-label">${_esc(choice.label || `Choice ${index + 1}`)}</span></button>
           `).join('') : ''}
-          <button class="campaign-action" data-campaign-action="save-side-idea" data-id="${_escAttr(card.id)}">Save</button>
-          <button class="campaign-action" data-campaign-action="copy-side-card" data-id="${_escAttr(card.id)}">Copy</button>
-          <button class="campaign-action danger" data-campaign-action="reject-side-idea" data-id="${_escAttr(card.id)}">Reject</button>
+          <button class="campaign-action" data-campaign-action="save-side-idea" data-id="${_escAttr(card.id)}" title="Save this idea to the bank without committing it.">Save</button>
+          <button class="campaign-action" data-campaign-action="copy-side-card" data-id="${_escAttr(card.id)}" title="Copy the card text to clipboard.">Copy</button>
+          <button class="campaign-action campaign-action-reject" data-campaign-action="reject-side-idea" data-id="${_escAttr(card.id)}" title="Discard this idea. Nothing is committed.">Reject</button>
         </div>
       </section>
     `;

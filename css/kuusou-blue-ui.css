@@ -3535,12 +3535,7 @@ body.campaign-page .campaign-story-vn-title h2 {
   text-shadow: 0 2px 2px rgba(0, 83, 118, 0.42);
 }
 
-/* --- Sub-tab strip: pin to top so important tabs are always reachable --- */
-.campaign-subtabs {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
+/* (Subtabs sticky removed in rev 7 - was causing overlap with modes bar.) */
 
 /* --- Add a "jump to story" affordance for above-the-fold visibility --- */
 .campaign-story-vn-hero {
@@ -3571,4 +3566,498 @@ body.campaign-page .campaign-story-vn-title h2 {
   .campaign-panel-head h2,
   .campaign-panel-head h3 { font-size: 1.05rem; }
   body.campaign-page .campaign-story-vn-hero { min-height: 180px; }
+}
+
+/* ================================================================== */
+/* === REV 7 (2026-05-09): much bigger fonts + critical fixes ====== */
+/* Fixes: subtabs always prominent at the top; bigger fonts overall;  */
+/* button wrap (Apply / Start / Add Quest / Town Pulse / Roll Oracle  */
+/* now wrap cleanly); Apply: split visual; black flavor-trail bg;     */
+/* combat HP/MP numbers restored; reject button stays neutral on tap. */
+/* ================================================================== */
+
+/* --- Bigger base fonts (much bigger) --- */
+body.campaign-page,
+body.combat-page {
+  font-size: 18px !important;
+  line-height: 1.6;
+}
+
+.campaign-title h1,
+.combat-header h1 { font-size: 1.95rem !important; letter-spacing: 0.02em; }
+.campaign-title span { font-size: 1rem !important; }
+
+.campaign-panel-head h2,
+.campaign-panel-head h3,
+.setup-header h2,
+.setup-panel h3,
+.preview-label,
+.loot-title,
+.battle-end-panel h2 {
+  font-size: 1.18rem !important;
+  min-height: 44px;
+  padding: 8px 36px 10px;
+}
+
+.campaign-panel-head .campaign-muted,
+.campaign-control-help,
+.campaign-empty,
+.campaign-muted {
+  font-size: 1.02rem !important;
+  line-height: 1.6 !important;
+}
+
+.campaign-pill,
+.campaign-chip,
+.status-chip,
+.tag,
+.skill-cost,
+.setup-unit-rank,
+.campaign-impact-badge {
+  font-size: 0.95rem !important;
+}
+
+.campaign-action,
+.campaign-back,
+.btn,
+.btn-action,
+.combat-action-menu summary,
+.combat-assist-menu summary,
+.setup-tab,
+.campaign-tab,
+.campaign-mode-btn,
+.campaign-util-btn,
+.campaign-icon-btn,
+.campaign-mini-actions button,
+.btn-skill,
+.btn-item,
+button {
+  font-size: 1.02rem !important;
+}
+
+.campaign-action.has-hint .campaign-action-label { font-size: 1.16rem !important; }
+.campaign-action.has-hint .campaign-action-hint { font-size: 0.96rem !important; line-height: 1.45; }
+
+.campaign-stat-grid b { font-size: 1.45rem !important; }
+.campaign-stat-grid small,
+.campaign-stat-grid > span > * { font-size: 0.9rem !important; }
+
+.campaign-town-kpi b { font-size: 2.2rem !important; }
+.campaign-town-kpi span { font-size: 0.94rem !important; }
+
+.campaign-section-title {
+  font-size: 1rem !important;
+  min-height: 32px;
+  padding: 6px 18px 8px;
+}
+
+.narrator-panel,
+.battle-log-panel { font-size: 1.06rem !important; }
+.log-entry { font-size: 1.02rem !important; }
+
+.campaign-story-dialogue-box p,
+.campaign-vn-dialogue p { font-size: 1.08rem !important; line-height: 1.6 !important; }
+.campaign-story-dialogue-box small,
+.campaign-vn-dialogue small { font-size: 0.94rem !important; }
+
+/* --- Sub-tabs: always prominent, attached under the mode bar --- */
+.campaign-modes {
+  position: relative !important;
+  top: auto !important;
+  margin-bottom: 8px !important;
+}
+
+.campaign-header {
+  position: relative !important;
+  top: auto !important;
+}
+
+.campaign-subtabs {
+  position: relative !important;
+  z-index: 5 !important;
+  margin: 0 auto 12px !important;
+  width: min(1640px, calc(100% - 32px)) !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  border-radius: var(--ku-radius) !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 248, 255, 0.86)), var(--ku-panel) !important;
+  background-size: 100% 100% !important;
+  box-shadow: var(--ku-shadow), inset 0 0 0 1px rgba(34, 169, 214, 0.18) !important;
+  border-top: 0 !important;
+  top: auto !important;
+}
+
+.campaign-subtabs .campaign-tab {
+  flex: 0 1 auto !important;
+  min-width: 130px !important;
+  min-height: 48px !important;
+  padding: 10px 22px !important;
+  font-size: 1.04rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  white-space: normal !important;
+  text-align: center;
+  line-height: 1.18;
+}
+.campaign-subtabs .campaign-tab.active {
+  background-image: var(--ku-tab-active) !important;
+  color: #fff !important;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.42);
+  box-shadow: 0 6px 14px rgba(8, 118, 156, 0.32);
+  transform: translateY(-1px);
+}
+
+/* --- Recent Log strip: more compact so subtabs stay visible --- */
+.campaign-log-strip {
+  padding: 10px 16px !important;
+}
+.campaign-log-strip .campaign-panel-head {
+  margin-bottom: 6px;
+}
+.campaign-log-strip .campaign-panel-head h2 {
+  min-height: 36px;
+  padding: 6px 26px 8px;
+  font-size: 1rem !important;
+}
+
+/* --- Buttons: allow wrap for long labels (Start scenario, Add Quest, Town Pulse, Roll Oracle, Apply) --- */
+.campaign-action,
+.campaign-action[data-campaign-action="start-scenario"],
+.campaign-action[data-campaign-action="add-quest"],
+.campaign-action[data-campaign-action="roll-hub-pulse"],
+.campaign-action[data-campaign-action="roll-forge-oracle"],
+.campaign-action[data-campaign-action="random-quest-offer"],
+.campaign-action[data-campaign-action="random-rumor-offer"],
+.campaign-action[data-campaign-action="apply-side-choice"],
+.campaign-action[data-campaign-action="accept-solo-hook"],
+.campaign-action[data-campaign-action="apply-event"],
+.campaign-action[data-campaign-action="manual-rumor"] {
+  white-space: normal !important;
+  text-align: center;
+  line-height: 1.22;
+  min-height: 50px;
+  padding: 10px 18px !important;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* --- Apply button: render the prefix and label as a clean flat panel
+       (don't use the kuusou button-rectangle image which has a center notch
+       that visually divides long labels in two). --- */
+.campaign-action[data-campaign-action="apply-side-choice"] {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: 2px;
+  padding: 10px 18px 12px !important;
+  min-height: 64px;
+  text-align: center;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.7)) !important;
+  background-color: transparent;
+  background-size: 100% 100% !important;
+  border-radius: 12px !important;
+  box-shadow:
+    var(--ku-shadow-soft),
+    inset 0 0 0 1px rgba(34, 169, 214, 0.34) !important;
+  color: var(--ku-blue-deep) !important;
+  text-shadow: none !important;
+  transition: transform 160ms ease, box-shadow 200ms ease;
+}
+.campaign-action[data-campaign-action="apply-side-choice"]:hover {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.86)) !important;
+  box-shadow:
+    var(--ku-shadow),
+    inset 0 0 0 1px rgba(34, 169, 214, 0.55) !important;
+  transform: translateY(-1px);
+}
+
+.campaign-action[data-campaign-action="apply-side-choice"].primary {
+  background-image:
+    linear-gradient(180deg, rgba(34, 169, 214, 0.96), rgba(8, 118, 156, 0.96)) !important;
+  color: #fff !important;
+  box-shadow:
+    var(--ku-shadow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22) !important;
+  text-shadow: 0 1px 2px rgba(0, 60, 90, 0.4) !important;
+}
+.campaign-action[data-campaign-action="apply-side-choice"].primary:hover {
+  background-image:
+    linear-gradient(180deg, rgba(54, 195, 240, 0.98), rgba(28, 138, 176, 0.98)) !important;
+  box-shadow:
+    var(--ku-shadow-lift),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35) !important;
+}
+
+.campaign-action .ku-action-prefix {
+  display: block;
+  font-family: var(--ku-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0.9;
+  line-height: 1.2;
+}
+.campaign-action:not(.primary) .ku-action-prefix {
+  color: var(--ku-blue-deep);
+  opacity: 0.7;
+}
+.campaign-action .ku-action-label {
+  display: block;
+  font-family: var(--ku-font-display);
+  font-size: 1.04rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+/* --- Reject button: neutral, never red on click --- */
+.campaign-action.campaign-action-reject,
+.campaign-action.campaign-action-reject:hover,
+.campaign-action.campaign-action-reject:active,
+.campaign-action.campaign-action-reject:focus {
+  color: var(--ku-ink) !important;
+  background-image: var(--ku-button) !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--ku-line-soft) !important;
+}
+.campaign-action.campaign-action-reject:hover {
+  background-image: var(--ku-button-hover) !important;
+  color: var(--ku-blue-deep) !important;
+}
+.campaign-action.campaign-action-reject:active {
+  background-image: var(--ku-button-click) !important;
+}
+
+/* --- Combat HP/MP unit-info bars: numbers visible inline --- */
+.unit-card .resource-bars,
+.unit-info-panel .resource-bars {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.unit-card .bar-row,
+.unit-info-panel .bar-row {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  align-items: center;
+  gap: 10px;
+}
+
+.unit-card .bar-label,
+.unit-info-panel .bar-label {
+  flex: 0 0 auto;
+  font-family: var(--ku-font-display);
+  font-size: 0.94rem !important;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ku-blue-deep);
+  min-width: 28px;
+}
+
+.unit-card .bar-track,
+.unit-info-panel .bar-track {
+  position: relative;
+  height: 22px !important;
+  padding: 4px 5px !important;
+  background-image: var(--ku-gauge-base) !important;
+  background-size: 100% 100% !important;
+  border-radius: var(--ku-radius-pill);
+}
+.unit-card .bar-track .bar-fill,
+.unit-info-panel .bar-track .bar-fill {
+  height: 14px !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat;
+  background-image: var(--ku-gauge-special);
+  border-radius: var(--ku-radius-pill);
+}
+.unit-card .bar-track.hp .bar-fill,
+.unit-info-panel .bar-track.hp .bar-fill { background-image: var(--ku-gauge-hp) !important; }
+.unit-card .bar-track.mp .bar-fill,
+.unit-info-panel .bar-track.mp .bar-fill { background-image: var(--ku-gauge-mp) !important; }
+
+/* CRITICAL FIX: bar-num is INLINE, not absolute (combat & init only).
+   Restores the readable "53/53" text next to the bar. */
+.unit-card .bar-num,
+.unit-info-panel .bar-num,
+.combat-screen .bar-num {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  inset: auto !important;
+  pointer-events: auto !important;
+  flex: 0 0 auto;
+  min-width: 76px;
+  font-family: var(--ku-font-display);
+  font-size: 1rem !important;
+  font-weight: 700;
+  color: var(--ku-blue-deep) !important;
+  text-shadow: none !important;
+  letter-spacing: 0.02em;
+}
+
+/* --- Initiative HP gauge: show numbers as overlay text --- */
+.init-unit { position: relative; }
+.init-hp-bar {
+  position: relative;
+  height: 18px !important;
+  padding: 3px 4px !important;
+  background-image: var(--ku-gauge-base) !important;
+  background-size: 100% 100% !important;
+  border-radius: var(--ku-radius-pill);
+}
+.init-hp-fill {
+  height: 12px !important;
+  background-image: var(--ku-gauge-hp) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat;
+  border-radius: var(--ku-radius-pill);
+}
+
+/* --- Black flavor-trail background fix --- */
+.campaign-flavor-trail,
+.campaign-flavor-trail div {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(232, 248, 255, 0.62)) !important;
+  border: 1px solid var(--ku-line-soft);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--ku-ink) !important;
+  font-size: 1rem !important;
+  line-height: 1.55;
+}
+.campaign-flavor-trail strong { color: var(--ku-blue-deep); }
+
+/* --- Side card / result card: kill any leftover dark bg --- */
+.campaign-result-card,
+.campaign-side-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.74)) !important,
+    var(--ku-panel) !important;
+  background-size: 100% 100% !important;
+  color: var(--ku-ink) !important;
+  border: 0 !important;
+}
+.campaign-result-card.is-reward { box-shadow: var(--ku-shadow), inset 4px 0 0 rgba(74, 179, 156, 0.55); }
+.campaign-result-card.is-risk { box-shadow: var(--ku-shadow), inset 4px 0 0 rgba(210, 101, 155, 0.55); }
+.campaign-result-card.is-quest { box-shadow: var(--ku-shadow), inset 4px 0 0 rgba(34, 169, 214, 0.55); }
+.campaign-result-card.is-plot { box-shadow: var(--ku-shadow), inset 4px 0 0 rgba(211, 146, 55, 0.6); }
+.campaign-result-card.is-flavor { box-shadow: var(--ku-shadow), inset 4px 0 0 rgba(126, 113, 122, 0.36); }
+.campaign-result-card.is-mixed { box-shadow: var(--ku-shadow), inset 4px 0 0 rgba(245, 184, 75, 0.55); }
+
+.campaign-result-card h3,
+.campaign-side-card h3 { color: var(--ku-blue-deep) !important; }
+.campaign-result-card .campaign-muted,
+.campaign-side-card .campaign-muted { color: var(--ku-ink-soft) !important; }
+.campaign-result-card p,
+.campaign-side-card p { color: var(--ku-ink) !important; font-size: 1.04rem !important; line-height: 1.55; }
+
+/* Choice consequences inside a side card */
+.campaign-choice-stack { gap: 8px; }
+.campaign-consequence {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(232, 248, 255, 0.56)) !important;
+  border: 1px solid var(--ku-line-soft) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  color: var(--ku-ink) !important;
+  font-size: 0.98rem;
+}
+.campaign-consequence strong { color: var(--ku-blue-deep); }
+
+/* --- Recent Log entries / Saved Side Idea log: light bg --- */
+.campaign-log-line,
+.campaign-log-strip .campaign-log-entry,
+.campaign-recent-log-line,
+.campaign-side-log-line {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid var(--ku-line-soft) !important;
+  border-radius: 10px !important;
+  color: var(--ku-ink) !important;
+  padding: 8px 12px !important;
+  margin-bottom: 6px;
+  font-size: 1rem !important;
+}
+.campaign-log-line span,
+.campaign-recent-log-line span { color: var(--ku-ink) !important; }
+.campaign-log-line small,
+.campaign-recent-log-line small { color: var(--ku-ink-soft) !important; }
+
+/* --- Modal overlay & inner content: more readable bg --- */
+.modal,
+.modal .modal-body {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 250, 255, 0.82)) !important,
+    var(--ku-panel) !important;
+  background-size: 100% 100% !important;
+  color: var(--ku-ink) !important;
+}
+.modal h2,
+.modal h3,
+.modal .modal-title { color: var(--ku-blue-deep) !important; }
+.modal p,
+.modal label { color: var(--ku-ink) !important; }
+
+/* Strong / b in panels: visible color */
+.campaign-panel strong,
+.campaign-panel b,
+.campaign-side-card strong,
+.campaign-side-card b,
+.campaign-result-card strong,
+.campaign-result-card b { color: var(--ku-blue-deep); }
+
+/* --- iPad and smaller --- */
+@media (max-width: 1180px) {
+  body.campaign-page,
+  body.combat-page { font-size: 17px !important; }
+  .campaign-subtabs .campaign-tab {
+    min-width: 120px !important;
+    padding: 8px 14px !important;
+    font-size: 0.96rem !important;
+  }
+  .campaign-modes-primary,
+  .campaign-modes-utility {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 980px) {
+  body.campaign-page,
+  body.combat-page { font-size: 16.5px !important; }
+  .campaign-subtabs .campaign-tab {
+    min-width: 100px !important;
+    padding: 8px 12px !important;
+    font-size: 0.94rem !important;
+  }
+}
+
+/* === REV 7c: kill remaining dark chip backgrounds (gmKeywords etc.) === */
+.campaign-chip-row .campaign-chip,
+.campaign-chip,
+.campaign-stats span,
+.turn-state span {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.62)) !important;
+  border: 1px solid rgba(34, 169, 214, 0.32) !important;
+  color: var(--ku-blue-deep) !important;
+  text-shadow: none !important;
+}
+
+.campaign-chip.is-good { color: #1f7a6a !important; border-color: rgba(74, 179, 156, 0.55) !important; }
+.campaign-chip.is-warn { color: #8a571a !important; border-color: rgba(245, 184, 75, 0.6) !important; }
+
+/* Anywhere a span has the kuusou name-tag background but is unwanted black */
+.campaign-warning {
+  background: linear-gradient(180deg, rgba(255, 244, 218, 0.92), rgba(255, 232, 192, 0.78)) !important;
+  border: 1px solid rgba(245, 184, 75, 0.5) !important;
+  color: #8a571a !important;
 }
