@@ -1440,9 +1440,9 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-panel-head">
             <div>
               <h2>${_esc(hub?.name || 'Living Hub')}</h2>
-              <div class="campaign-muted">${_esc(hub?.description || '')}</div>
+              <div class="campaign-muted">${_esc(hub?.description || 'Town pulse, rumors, problems, and content review queue.')}</div>
             </div>
-            <span class="campaign-pill">${_esc(hubState?.mood || 'neutral')}</span>
+            <span class="campaign-pill">${_esc(_label(hubState?.mood || 'neutral'))}</span>
           </div>
           <div class="campaign-stat-grid">
             <span>Security <b>${hubState?.security ?? 0}</b></span>
@@ -1450,26 +1450,27 @@ window.CJS.CampaignUI = (() => {
             <span>Warmth <b>${hubState?.warmth ?? 0}</b></span>
             <span>Weirdness <b>${hubState?.weirdness ?? 0}</b></span>
           </div>
+          <div class="campaign-control-help">Roll a pulse table for a flavorful idea, or roll a quest / rumor hook. Each result lands in the floating box and only commits when you accept it.</div>
           <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="roll-hub-pulse" data-table="town">Town Pulse</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="guild">Guild</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern">Tavern</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge">Forge</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="weird">Weird</button>
-            <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Run</button>
-            <button class="campaign-action" data-campaign-action="random-rumor-offer">Rumor Hook</button>
-            <button class="campaign-action" data-campaign-action="manual-rumor">Manual Rumor</button>
-            <button class="campaign-action" data-campaign-action="roll-forge-oracle">Oracle</button>
+            <button class="campaign-action primary" data-campaign-action="roll-hub-pulse" data-table="town" title="Roll the general town pulse table — gossip, mood, mundane problems.">Town Pulse</button>
+            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="guild" title="Roll the adventurer guild table — contracts, recruits, factions.">Guild</button>
+            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern" title="Roll the tavern table — gossip, suppliers, drinking-spot drama.">Tavern</button>
+            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge" title="Roll the forge / craft table — weapons, materials, smith requests.">Forge</button>
+            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="weird" title="Roll the weirdness table — ominous omens, supernatural beats.">Weird</button>
+            <button class="campaign-action" data-campaign-action="random-quest-offer" title="Pick a random quest template and auto-start its map run.">Quest Run</button>
+            <button class="campaign-action" data-campaign-action="random-rumor-offer" title="Create a marked lead. Mechanics only happen when you promote it later.">Rumor Hook</button>
+            <button class="campaign-action" data-campaign-action="manual-rumor" title="Type a custom rumor / lead into the hub bank.">Manual Rumor</button>
+            <button class="campaign-action" data-campaign-action="roll-forge-oracle" title="Roll a GM inspiration prompt — text only, no mechanics.">Oracle</button>
           </div>
         </section>
         ${_renderSoloNotice(state)}
         ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Hub Problems</h3></div>
+          <div class="campaign-panel-head"><h3>Hub Problems</h3><span class="campaign-muted">Pressure cards on this town. Resolve them by spending phases or addressing the cause.</span></div>
           ${(hubState?.activeProblems || []).map((problem) => `
             <div class="campaign-row">
-              <strong>${_esc(problem)}</strong>
-              <button class="campaign-action" data-campaign-action="resolve-hub-problem" data-id="${_escAttr(problem)}" data-hub-id="${_escAttr(hub?.id || '')}">Resolve</button>
+              <strong>${_esc(_label(problem))}</strong>
+              <button class="campaign-action" data-campaign-action="resolve-hub-problem" data-id="${_escAttr(problem)}" data-hub-id="${_escAttr(hub?.id || '')}" title="Mark this problem solved. Frees Pressure budget.">Resolve</button>
             </div>
           `).join('') || '<div class="campaign-empty">No active hub problems.</div>'}
         </section>
@@ -2900,8 +2901,8 @@ window.CJS.CampaignUI = (() => {
             ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
             <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''}>Start</button>
-              <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}">Inspect</button>
+              <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''} title="Begin this scenario as the current run. Generates a map, applies danger, and switches to Run / Maps view.">Start</button>
+              <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}" title="Open a read-only sheet showing this scenario's beats, danger budget, and rewards. Does not start it.">Inspect</button>
               ${scenario.generated ? `<button class="campaign-action danger" data-campaign-action="discard-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun?.scenarioId === scenario.id ? 'disabled' : ''}>Discard</button>` : ''}
             </div>
           </section>
@@ -6356,37 +6357,37 @@ Recover the relic x 1"></textarea>
     const weak = [...(base.weak || []), ...(member.weak || [])].filter((v, i, a) => a.indexOf(v) === i);
     const resist = [...(base.resist || []), ...(member.resist || [])].filter((v, i, a) => a.indexOf(v) === i);
     const immune = [...(base.immune || []), ...(member.immune || [])].filter((v, i, a) => a.indexOf(v) === i);
-    
+
     const elements = C()?.ELEMENTS || ['Physical', 'Fire', 'Water', 'Lightning', 'Earth', 'Wind', 'Nature', 'Light', 'Dark', 'Chaos'];
-    
-    let html = '<div style="font-size:0.85rem; font-weight:700; color:var(--campaign-muted); margin-bottom:8px; border-bottom:1px solid var(--campaign-line); padding-bottom:4px;">Affinities</div>';
-    html += '<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap:6px 12px; font-size:0.8rem; margin-bottom:16px;">';
-    
+
+    let html = '<div class="campaign-affinity-grid">';
+
     for (const el of elements) {
-      let state = '<span style="color:var(--campaign-muted); opacity:0.5;">--</span>';
-      if (immune.includes(el)) state = '<strong style="color:#f3e49a;">Nu</strong>';
-      else if (resist.includes(el)) state = '<strong style="color:#b8d4ff;">Rs</strong>';
-      else if (weak.includes(el)) state = '<strong style="color:#ffb8b8;">Wk</strong>';
-      
-      html += `<div style="display:flex; justify-content:space-between; background:rgba(0,0,0,0.25); padding:3px 8px; border-radius:4px; border:1px solid var(--campaign-line);">
-        <span style="color:var(--cmp-parchment, #ddd);">${_esc(el)}</span>
-        <span>${state}</span>
+      const slug = String(el).toLowerCase();
+      let stateClass = 'is-neutral';
+      let stateText = '<span class="campaign-affinity-state">--</span>';
+      if (immune.includes(el)) { stateClass = 'is-immune'; stateText = '<strong class="campaign-affinity-state">Nu</strong>'; }
+      else if (resist.includes(el)) { stateClass = 'is-resist'; stateText = '<strong class="campaign-affinity-state">Rs</strong>'; }
+      else if (weak.includes(el)) { stateClass = 'is-weak'; stateText = '<strong class="campaign-affinity-state">Wk</strong>'; }
+
+      html += `<div class="campaign-affinity-pill el-${slug} ${stateClass}" data-element="${slug}" title="${_escAttr(el + ': ' + (immune.includes(el) ? 'Immune (Nu)' : resist.includes(el) ? 'Resists (Rs)' : weak.includes(el) ? 'Weak (Wk)' : 'Neutral'))}">
+        <span class="campaign-affinity-name">${_esc(el)}</span>
+        ${stateText}
       </div>`;
     }
     html += '</div>';
 
-    // DR values
     const physDR = F?.calcPhysicalDR ? F.calcPhysicalDR(stats) : 0;
     const magDR = F?.calcMagicDR ? F.calcMagicDR(stats) : 0;
     const chaosDR = F?.calcChaosDR ? F.calcChaosDR(stats) : 0;
 
-    html += '<div style="font-size:0.85rem; font-weight:700; color:var(--campaign-muted); margin-bottom:8px; border-bottom:1px solid var(--campaign-line); padding-bottom:4px;">Damage Reduction</div>';
-    html += `<div style="display:flex; gap:16px; font-size:0.8rem; color:var(--campaign-muted); background:rgba(0,0,0,0.25); padding:8px; border-radius:4px; border:1px solid var(--campaign-line);">
-      <span>🗡 Phys DR <b style="color:var(--cmp-parchment, #fff); margin-left:4px;">${physDR}</b></span>
-      <span>✨ Mag DR <b style="color:var(--cmp-parchment, #fff); margin-left:4px;">${magDR}</b></span>
-      <span>🌀 Chaos DR <b style="color:var(--cmp-parchment, #fff); margin-left:4px;">${chaosDR}</b></span>
+    html += '<div class="campaign-affinity-subheading">Damage Reduction</div>';
+    html += `<div class="campaign-dr-row">
+      <span class="campaign-dr-chip" title="Reduces incoming Physical damage"><b class="campaign-dr-icon">🗡</b><span class="campaign-dr-label">Phys</span><b class="campaign-dr-value">${physDR}</b></span>
+      <span class="campaign-dr-chip" title="Reduces incoming Magical damage"><b class="campaign-dr-icon">✨</b><span class="campaign-dr-label">Magic</span><b class="campaign-dr-value">${magDR}</b></span>
+      <span class="campaign-dr-chip" title="Reduces incoming Chaos damage"><b class="campaign-dr-icon">🌀</b><span class="campaign-dr-label">Chaos</span><b class="campaign-dr-value">${chaosDR}</b></span>
     </div>`;
-    
+
     return html;
   }
 
