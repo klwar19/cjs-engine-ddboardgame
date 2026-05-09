@@ -4701,3 +4701,404 @@ body.has-l2d-companion .side-forge-hero .campaign-action-grid {
   min-height: 32px;
   font-size: 1.05rem !important;
 }
+
+/* ================================================================== */
+/* === REV 10 (2026-05-09): combat compact layout + AD scene bg ==== */
+/* Goals: every action button visible without page scroll. BGM is now */
+/* a collapsed details widget. Skills / Items lists scroll inside     */
+/* their own panel. Battle Assist always shown (no disclosure click). */
+/* ================================================================== */
+
+/* --- BGM controls: collapsed by default, expand on click --- */
+.bgm-controls {
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.bgm-controls .bgm-summary {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px !important;
+  cursor: pointer;
+  border: 2px solid rgba(34, 169, 214, 0.32);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.7));
+  font-family: var(--ku-font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ku-blue-deep);
+  list-style: none;
+  user-select: none;
+  text-shadow: none;
+  min-height: 36px;
+}
+.bgm-controls .bgm-summary::-webkit-details-marker { display: none; }
+
+.bgm-controls .bgm-summary-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.bgm-controls .bgm-summary-label {
+  flex: 1;
+  text-transform: uppercase;
+}
+.bgm-controls .bgm-summary-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 10px;
+  border-radius: var(--ku-radius-pill);
+  background: rgba(34, 169, 214, 0.14);
+  border: 1px solid rgba(34, 169, 214, 0.32);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--ku-blue-deep);
+  font-weight: 600;
+}
+
+.bgm-controls[open] .bgm-summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.bgm-controls .bgm-row,
+.bgm-controls .bgm-status-row {
+  padding: 6px 12px;
+}
+.bgm-controls > .bgm-row:first-of-type {
+  padding-top: 10px;
+}
+.bgm-controls > .bgm-row:last-of-type {
+  padding-bottom: 10px;
+}
+
+.bgm-controls[open] .bgm-row,
+.bgm-controls[open] .bgm-status-row {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 248, 255, 0.84));
+}
+
+.bgm-controls[open] > .bgm-row:last-of-type,
+.bgm-controls[open] > .bgm-status-row {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  border: 2px solid rgba(34, 169, 214, 0.32);
+  border-top: 0;
+}
+
+/* Make bgm rows visually contained within an open shell */
+.bgm-controls[open] {
+  border: 2px solid rgba(34, 169, 214, 0.32);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 248, 255, 0.84)) !important;
+}
+.bgm-controls[open] > .bgm-row,
+.bgm-controls[open] > .bgm-status-row {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+/* --- Combat sidebar: tight vertical rhythm so all panels fit --- */
+.combat-sidebar {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px !important;
+  min-width: 0;
+}
+
+/* --- Unit info panel: more compact --- */
+.unit-info-panel {
+  padding: 12px 14px !important;
+  margin: 0 !important;
+}
+
+.unit-card {
+  padding: 12px 14px !important;
+  display: grid !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.unit-header {
+  display: grid !important;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.unit-portrait,
+.unit-icon-lg {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 8px;
+  background: rgba(34, 169, 214, 0.12);
+  border: 1px solid rgba(34, 169, 214, 0.28);
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.unit-portrait img,
+.unit-icon-lg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.unit-name {
+  font-family: var(--ku-font-display);
+  font-size: 1.1rem !important;
+  font-weight: 800;
+  color: var(--ku-blue-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.unit-rank {
+  font-size: 0.86rem;
+  color: var(--ku-ink-soft);
+}
+
+.resource-bars {
+  display: grid;
+  gap: 6px;
+}
+
+.bar-row {
+  display: grid !important;
+  grid-template-columns: 32px 1fr auto !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.unit-info-panel .turn-state,
+.unit-card .turn-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.unit-info-panel .turn-state span,
+.unit-card .turn-state span {
+  flex: 1 1 auto;
+  padding: 4px 8px !important;
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+/* --- Action panel: 2-column action core, then skills/items --- */
+.action-panel {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.action-buttons {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.combat-action-core {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+}
+.combat-action-core .btn-action {
+  padding: 8px 10px !important;
+  font-size: 0.94rem !important;
+  min-height: 38px !important;
+  justify-content: center !important;
+}
+.combat-action-core .btn-action::before {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+.combat-action-core .btn-end-turn {
+  grid-column: 1 / -1;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.6)) !important;
+  font-weight: 700;
+}
+
+/* Skills / Items: scroll internally so they don't push other content */
+.combat-action-section {
+  margin: 0 !important;
+  padding: 8px 10px !important;
+}
+.combat-action-section-head {
+  font-size: 0.86rem !important;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+}
+.combat-action-section .skill-list,
+.combat-action-section .item-list {
+  max-height: 144px;
+  overflow-y: auto;
+  padding-right: 4px;
+  gap: 4px !important;
+}
+.btn-skill,
+.btn-item {
+  padding: 6px 10px !important;
+  font-size: 0.88rem !important;
+  min-height: 34px !important;
+}
+.btn-skill .btn-action-name,
+.btn-item .btn-action-name {
+  font-size: 0.9rem;
+}
+.btn-skill .skill-cost {
+  font-size: 0.74rem !important;
+  padding: 1px 8px !important;
+}
+
+/* --- Battle Assist: always visible flat panel (no <details>) --- */
+.combat-assist-menu {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: var(--ku-shadow-soft) !important;
+  border-radius: 10px;
+  display: block;
+}
+
+.combat-assist-summary {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px !important;
+  background: linear-gradient(180deg, rgba(34, 169, 214, 0.96), rgba(8, 118, 156, 0.96)) !important;
+  border: 2px solid rgba(8, 118, 156, 0.85);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  color: #fff !important;
+  font-family: var(--ku-font-display);
+  font-size: 0.94rem !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 60, 90, 0.42);
+  cursor: default;
+}
+
+.combat-assist-panel {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.7)) !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 10px 10px !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.combat-assist-panel .auto-controls {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 6px !important;
+}
+.combat-assist-panel .auto-controls .btn {
+  min-height: 32px !important;
+  padding: 6px 10px !important;
+  font-size: 0.86rem !important;
+}
+.combat-assist-panel .dice-mode-row {
+  gap: 6px;
+}
+.combat-assist-panel .dice-mode-btn {
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  font-size: 0.82rem !important;
+}
+.combat-assist-panel .dice-label {
+  font-size: 0.72rem !important;
+}
+
+/* --- Adventure Desk: Frostwood-vn scene background --- */
+.campaign-town-actions {
+  position: relative;
+  overflow: hidden;
+  background:
+    /* white-to-cyan overlay so content stays readable */
+    linear-gradient(180deg, rgba(248, 252, 255, 0.78) 0%, rgba(228, 246, 255, 0.7) 50%, rgba(207, 240, 255, 0.7) 100%),
+    /* Frostwood VN scene */
+    url("../images/story-mode/haven/frostwood-vn.png") center / cover no-repeat,
+    var(--ku-panel) !important;
+  background-size: 100% 100%, cover, 100% 100% !important;
+  box-shadow:
+    var(--ku-shadow-lift),
+    inset 0 0 0 2px rgba(34, 169, 214, 0.22) !important;
+  border-radius: var(--ku-radius-lg) !important;
+}
+
+/* Soft vignette + warm highlight for atmosphere */
+.campaign-town-actions::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.55), transparent 55%),
+    radial-gradient(circle at 14% 100%, rgba(207, 240, 255, 0.55), transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(34, 169, 214, 0.18), transparent 45%);
+  z-index: 0;
+}
+
+.campaign-town-actions::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  border: 1px dashed rgba(34, 169, 214, 0.28);
+  border-radius: calc(var(--ku-radius-lg) - 8px);
+  z-index: 0;
+}
+
+.campaign-town-actions > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hint cards inside Adventure Desk: keep readable on the painted bg */
+.campaign-town-actions .campaign-action.has-hint {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 250, 255, 0.86)) !important;
+  border: 2px solid rgba(34, 169, 214, 0.36) !important;
+  box-shadow:
+    0 4px 10px rgba(8, 118, 156, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+}
+
+.campaign-town-actions .campaign-action.has-hint.primary,
+.campaign-town-actions .campaign-action.has-hint.story {
+  background-image:
+    linear-gradient(180deg, rgba(34, 169, 214, 0.96), rgba(8, 118, 156, 0.96)) !important;
+  border-color: rgba(8, 118, 156, 0.85) !important;
+}
+
+.campaign-town-actions .campaign-control-help,
+.campaign-town-actions .campaign-control-title {
+  background: rgba(255, 255, 255, 0.55);
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* --- Battle log + narrator: more compact for combat --- */
+.battle-log-panel,
+.narrator-panel {
+  max-height: 200px !important;
+  padding: 12px 16px !important;
+  font-size: 0.96rem !important;
+}
+

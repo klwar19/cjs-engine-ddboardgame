@@ -106,6 +106,13 @@ window.CJS.CombatUI = (() => {
         statusEl.textContent = 'No BGM loaded';
       }
     }
+    const summaryStatus = _container.querySelector('#bgm-summary-status');
+    if (summaryStatus) {
+      if (AM().isMuted()) summaryStatus.textContent = 'muted';
+      else if (state?.playing) summaryStatus.textContent = 'playing';
+      else if (state?.currentId) summaryStatus.textContent = 'paused';
+      else summaryStatus.textContent = 'silent';
+    }
   }
 
   function _bindBgmControls() {
@@ -641,7 +648,8 @@ window.CJS.CombatUI = (() => {
             <div id="cbt-fx-layer" class="cjs-fx-layer"></div>
           </div>
           <div class="combat-sidebar">
-            <div id="cbt-bgm-controls" class="bgm-controls">
+            <details id="cbt-bgm-controls" class="bgm-controls">
+              <summary class="bgm-summary"><span class="bgm-summary-icon">&#127925;</span><span class="bgm-summary-label">Audio &amp; Anim</span><span id="bgm-summary-status" class="bgm-summary-status">silent</span></summary>
               <div class="bgm-row">
                 <span class="bgm-label">BGM</span>
                 <select id="bgm-track-select"><option value="">-- none --</option></select>
@@ -664,11 +672,11 @@ window.CJS.CombatUI = (() => {
               <div class="bgm-row bgm-status-row">
                 <span id="bgm-status" class="bgm-status">No BGM loaded</span>
               </div>
-            </div>
+            </details>
             <div id="cbt-unit-info" class="unit-info-panel"></div>
             <div id="cbt-actions" class="action-panel"></div>
-            <details class="combat-assist-menu">
-              <summary>Battle Assist</summary>
+            <section class="combat-assist-menu" open>
+              <header class="combat-assist-summary">Battle Assist</header>
               <div class="combat-assist-panel">
                 <div class="dice-controls">
                   <div class="dice-mode-row">
@@ -688,7 +696,7 @@ window.CJS.CombatUI = (() => {
                   <button id="btn-stop-auto" class="btn btn-sm btn-danger" style="display:none">Stop</button>
                 </div>
               </div>
-            </details>
+            </section>
           </div>
         </div>
         <div class="combat-bottom">
