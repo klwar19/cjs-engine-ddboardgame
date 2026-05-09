@@ -1,6 +1,6 @@
 # KUUSOU Blue UI Pack
 
-Imported for in-app UI use from the purchased BOOTH material pack.
+Imported for in-app UI use from the purchased BOOTH material pack. PSD files are converted into flattened PNG previews and individual layer PNGs.
 
 - Creator/site: KUUSOU-KYOKUSEN / 空想曲線
 - BOOTH item: https://ko10panda.booth.pm/items/3485930

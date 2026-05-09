@@ -77,9 +77,113 @@ function uniqueDestination(dir, baseName, ext, used) {
   return path.join(dir, candidate);
 }
 
+function repoPath(filePath) {
+  return path.relative(repoRoot, filePath).replace(/\\/g, '/');
+}
+
+function sourcePath(filePath) {
+  return path.relative(sourceRoot, filePath).replace(/\\/g, '/');
+}
+
+function resetDir(dir) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  ensureDir(dir);
+}
+
+function layerInfo(node, psdName, source, dest, index) {
+  return {
+    type: 'psd-layer',
+    category: '22-psd-layers',
+    source: sourcePath(source),
+    psd: psdName,
+    layerIndex: index,
+    layerPath: node.path(),
+    visible: node.visible(),
+    opacity: node.layer.opacity / 255,
+    blendingMode: node.layer.blendingMode(),
+    left: node.left,
+    top: node.top,
+    width: node.width,
+    height: node.height,
+    path: repoPath(dest)
+  };
+}
+
+async function extractPsdLayers(PSD, psdDir, manifest) {
+  const outputRoot = path.join(destRoot, '22-psd-layers');
+  resetDir(outputRoot);
+
+  const exported = [];
+  for (const file of fs.readdirSync(psdDir, { withFileTypes: true })) {
+    if (!file.isFile() || path.extname(file.name).toLowerCase() !== '.psd') continue;
+
+    const source = path.join(psdDir, file.name);
+    const psdSlug = toSafeSegment(file.name);
+    const psdOutputDir = path.join(outputRoot, psdSlug);
+    ensureDir(psdOutputDir);
+
+    try {
+      const psd = await PSD.open(source);
+      const layers = psd.tree().descendants()
+        .filter((node) => node.isLayer())
+        .filter((node) => !(node.isEmpty && node.isEmpty()));
+      const used = new Set();
+      const records = [];
+
+      for (let index = 0; index < layers.length; index += 1) {
+        const node = layers[index];
+        const layerNumber = index + 1;
+        const pathParts = node.path(true);
+        const folderParts = pathParts.slice(0, -1).map(toSafeSegment);
+        const destDir = path.join(psdOutputDir, ...folderParts);
+        const fileBase = `${String(layerNumber).padStart(3, '0')}-${toSafeSegment(pathParts[pathParts.length - 1] || node.name)}`;
+        const dest = uniqueDestination(destDir, fileBase, '.png', used);
+
+        ensureDir(destDir);
+        try {
+          await node.saveAsPng(dest);
+        } catch (error) {
+          console.warn(`PSD layer extraction failed for ${file.name} / ${node.path()}: ${error.message}`);
+          continue;
+        }
+
+        const record = layerInfo(node, file.name, source, dest, layerNumber);
+        records.push(record);
+        exported.push(record.path);
+        manifest.assets.push(record);
+      }
+
+      const indexPath = path.join(psdOutputDir, 'layers.json');
+      fs.writeFileSync(indexPath, `${JSON.stringify({
+        psd: file.name,
+        source: sourcePath(source),
+        document: {
+          width: psd.header.width,
+          height: psd.header.height
+        },
+        layerCount: records.length,
+        layers: records
+      }, null, 2)}\n`, 'utf8');
+
+      manifest.assets.push({
+        type: 'psd-layer-index',
+        category: '22-psd-layers',
+        source: sourcePath(source),
+        psd: file.name,
+        layerCount: records.length,
+        path: repoPath(indexPath)
+      });
+    } catch (error) {
+      console.warn(`PSD layer extraction failed for ${file.name}: ${error.message}`);
+    }
+  }
+
+  return exported;
+}
+
 async function convertPsdFiles(manifest) {
   const psdDir = path.join(materialRoot, '22_編集用psd');
-  if (!fs.existsSync(psdDir)) return [];
+  if (!fs.existsSync(psdDir)) return { flattened: [], layers: [] };
 
   let PSD;
   try {
@@ -87,10 +191,11 @@ async function convertPsdFiles(manifest) {
   } catch (error) {
     console.warn(`PSD conversion skipped: cannot load psd.js at ${psdJsRoot}`);
     console.warn(error.message);
-    return [];
+    return { flattened: [], layers: [] };
   }
 
   const converted = [];
+  const layers = await extractPsdLayers(PSD, psdDir, manifest);
   const outputDir = path.join(destRoot, '22-psd-flattened');
   ensureDir(outputDir);
 
@@ -105,7 +210,7 @@ async function convertPsdFiles(manifest) {
       converted.push(rel);
       manifest.assets.push({
         type: 'psd-flattened',
-        source: path.relative(sourceRoot, source).replace(/\\/g, '/'),
+        source: sourcePath(source),
         path: rel
       });
     } catch (error) {
@@ -113,7 +218,7 @@ async function convertPsdFiles(manifest) {
     }
   }
 
-  return converted;
+  return { flattened: converted, layers };
 }
 
 async function main() {
@@ -155,17 +260,17 @@ async function main() {
     manifest.assets.push({
       type: ext.slice(1),
       category: categoryDir,
-      source: path.relative(sourceRoot, source).replace(/\\/g, '/'),
-      path: path.relative(repoRoot, dest).replace(/\\/g, '/')
+      source: sourcePath(source),
+      path: repoPath(dest)
     });
   }
 
-  const converted = await convertPsdFiles(manifest);
+  const psdExports = await convertPsdFiles(manifest);
 
   const credit = [
     '# KUUSOU Blue UI Pack',
     '',
-    'Imported for in-app UI use from the purchased BOOTH material pack.',
+    'Imported for in-app UI use from the purchased BOOTH material pack. PSD files are converted into flattened PNG previews and individual layer PNGs.',
     '',
     '- Creator/site: KUUSOU-KYOKUSEN / 空想曲線',
     '- BOOTH item: https://ko10panda.booth.pm/items/3485930',
@@ -178,7 +283,8 @@ async function main() {
   fs.writeFileSync(path.join(destRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
   console.log(`Copied ${copied} image assets to ${path.relative(repoRoot, destRoot)}`);
-  console.log(`Converted ${converted.length} PSD files`);
+  console.log(`Converted ${psdExports.flattened.length} flattened PSD previews`);
+  console.log(`Extracted ${psdExports.layers.length} PSD layer PNGs`);
   console.log(`Manifest: ${path.relative(repoRoot, path.join(destRoot, 'manifest.json'))}`);
 }
 
