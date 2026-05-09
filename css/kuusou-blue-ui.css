@@ -4061,3 +4061,400 @@ button {
   border: 1px solid rgba(245, 184, 75, 0.5) !important;
   color: #8a571a !important;
 }
+
+/* ================================================================== */
+/* === REV 8 (2026-05-09): button frame fix + battle assist scroll == */
+/* Replaces decorative kuusou button images (rectangle / hover / choice)*/
+/* with flat full-border panels for action buttons that have long       */
+/* labels or function as primary CTAs. Removes overflow:hidden on the   */
+/* combat-assist-menu so its disclosure panel renders fully. Scales up  */
+/* monster +/- buttons to be tappable. Adds bottom padding to campaign  */
+/* main so hub-pulse buttons don't sit under the L2D dock.              */
+/* ================================================================== */
+
+/* --- Action buttons: clean full-border panel design ---
+   The kuusou button-rectangle.png and choice asset both have decorative
+   center notches and soft edges. For action buttons we want clean
+   bordered rectangles that read as clearly clickable. */
+.campaign-action,
+.campaign-back,
+.campaign-tab,
+.campaign-gm,
+.campaign-icon-btn,
+.campaign-mini-actions button,
+.campaign-mode-btn,
+.campaign-util-btn,
+.campaign-rail-btn,
+.back-link,
+.btn,
+.btn-action,
+.setup-tab,
+.setup-size-btn,
+.setup-select,
+.setup-enc-card,
+.placement-chip,
+.setup-unit-card,
+.mon-btn,
+.filter-btn,
+.dice-mode-btn,
+.combat-action-menu summary,
+.combat-assist-menu summary {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.6)) !important;
+  background-color: transparent !important;
+  background-size: 100% 100% !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+  border-radius: 10px !important;
+  color: var(--ku-blue-deep) !important;
+  text-shadow: none !important;
+  box-shadow: 0 4px 10px rgba(8, 118, 156, 0.1) !important;
+}
+
+.campaign-action:hover,
+.campaign-back:hover,
+.campaign-tab:hover,
+.campaign-gm:hover,
+.campaign-icon-btn:hover,
+.campaign-mini-actions button:hover,
+.campaign-mode-btn:hover,
+.campaign-util-btn:hover,
+.back-link:hover,
+.btn:hover,
+.btn-action:hover:not(:disabled),
+.setup-tab:hover,
+.setup-enc-card:hover,
+.placement-chip:hover,
+.setup-unit-card:hover,
+.mon-btn:hover,
+.filter-btn:hover,
+.dice-mode-btn:hover,
+.combat-action-menu summary:hover,
+.combat-assist-menu summary:hover {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.86)) !important;
+  border-color: rgba(34, 169, 214, 0.62) !important;
+  box-shadow: 0 6px 14px rgba(8, 118, 156, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+.campaign-action:active,
+.btn:active,
+.btn-action:active:not(:disabled),
+.setup-tab:active,
+.dice-mode-btn:active {
+  background-image: linear-gradient(180deg, rgba(34, 169, 214, 0.32), rgba(8, 118, 156, 0.22)) !important;
+  transform: translateY(1px);
+}
+
+.campaign-action.primary,
+.campaign-tab.active,
+.campaign-action.story,
+.campaign-mode-btn.active,
+.campaign-util-btn.active,
+.campaign-rail-btn.is-active,
+.btn-primary,
+.setup-tab.active,
+.setup-size-btn.active,
+.setup-enc-card.selected,
+.placement-chip.active,
+.dice-mode-btn.active,
+.combat-action-menu[open] > summary,
+.combat-assist-menu[open] > summary {
+  background-image: linear-gradient(180deg, rgba(34, 169, 214, 0.96), rgba(8, 118, 156, 0.96)) !important;
+  border-color: rgba(8, 118, 156, 0.85) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 60, 90, 0.45) !important;
+  box-shadow: 0 6px 16px rgba(8, 118, 156, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.22) !important;
+}
+
+.campaign-action.primary:hover,
+.campaign-action.story:hover,
+.campaign-mode-btn.active:hover,
+.btn-primary:hover {
+  background-image: linear-gradient(180deg, rgba(54, 195, 240, 0.98), rgba(28, 138, 176, 0.98)) !important;
+  box-shadow: 0 8px 20px rgba(8, 118, 156, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.32) !important;
+}
+
+.campaign-action.danger:not(.campaign-action-reject) {
+  border-color: rgba(210, 101, 155, 0.55) !important;
+  color: #8a3d4d !important;
+}
+
+.campaign-action.danger:not(.campaign-action-reject):hover {
+  background-image: linear-gradient(180deg, rgba(255, 244, 248, 0.98), rgba(255, 218, 230, 0.92)) !important;
+  border-color: rgba(210, 101, 155, 0.75) !important;
+}
+
+/* Reject button stays neutral (overrides the .danger style) */
+.campaign-action.campaign-action-reject {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.6)) !important;
+  border-color: rgba(34, 169, 214, 0.32) !important;
+  color: var(--ku-ink) !important;
+}
+.campaign-action.campaign-action-reject:hover {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.86)) !important;
+  border-color: rgba(34, 169, 214, 0.62) !important;
+  color: var(--ku-blue-deep) !important;
+}
+
+/* Subtab tabs use the kuusou tab asset which is decorative; give them
+   the same flat panel treatment so all action buttons share a coherent
+   look. */
+.campaign-subtabs .campaign-tab {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.7)) !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+  color: var(--ku-blue-deep) !important;
+  text-shadow: none !important;
+}
+.campaign-subtabs .campaign-tab:hover {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.88)) !important;
+  border-color: rgba(34, 169, 214, 0.62) !important;
+}
+.campaign-subtabs .campaign-tab.active {
+  background-image: linear-gradient(180deg, rgba(34, 169, 214, 0.96), rgba(8, 118, 156, 0.96)) !important;
+  border-color: rgba(8, 118, 156, 0.85) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 60, 90, 0.45) !important;
+}
+
+/* Mode bar uses the same flat treatment */
+.campaign-mode-btn {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.7)) !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+}
+
+/* Util buttons (Quests / Logs / Settings) keep flat treatment too */
+.campaign-util-btn {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.7)) !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+}
+
+/* --- Combat Battle Assist: remove overflow:hidden so the disclosure
+       panel can render below the summary instead of being clipped. --- */
+.combat-assist-menu {
+  overflow: visible !important;
+}
+
+.combat-assist-menu[open] {
+  background: transparent !important;
+}
+
+.combat-assist-panel {
+  position: relative;
+  z-index: 5;
+  margin-top: 4px;
+  padding: 14px 16px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 248, 255, 0.86)) !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 18px rgba(8, 118, 156, 0.2);
+  display: grid;
+  gap: 12px;
+}
+
+.combat-assist-menu summary::after {
+  content: "";
+  width: 18px !important;
+  height: 18px !important;
+  background: var(--ku-arrow-right) center / contain no-repeat !important;
+  filter: hue-rotate(0deg);
+}
+.combat-assist-menu[open] summary::after {
+  transform: rotate(90deg);
+}
+
+/* --- Combat sidebar: ensure it doesn't get clipped by combat-app
+       padding. Allow the page to scroll if the sidebar overflows. --- */
+.combat-sidebar {
+  overflow: visible;
+}
+#combat-app,
+.combat-screen {
+  overflow: visible !important;
+}
+
+/* --- Monster picker: scale up +/- buttons, restructure card --- */
+.setup-unit-card.monster-card {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto auto !important;
+  grid-template-areas: "icon name rank controls" "count count count controls" !important;
+  gap: 6px 10px !important;
+  align-items: center;
+  padding: 10px 12px !important;
+  min-height: 56px;
+}
+
+.setup-unit-card.monster-card .setup-unit-icon { grid-area: icon; font-size: 1.4rem; }
+.setup-unit-card.monster-card .setup-unit-name { grid-area: name; font-weight: 700; color: var(--ku-blue-deep) !important; }
+.setup-unit-card.monster-card .setup-unit-rank { grid-area: rank; }
+.setup-unit-card.monster-card .setup-unit-count {
+  grid-area: count;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 10px;
+  border-radius: var(--ku-radius-pill);
+  background: rgba(34, 169, 214, 0.16);
+  border: 1px solid rgba(34, 169, 214, 0.42);
+  color: var(--ku-blue-deep) !important;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.setup-unit-card.monster-card .monster-controls {
+  grid-area: controls;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: center;
+}
+
+.mon-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px !important;
+  border: 2px solid rgba(34, 169, 214, 0.32) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.62)) !important;
+  background-color: transparent !important;
+  color: var(--ku-blue-deep) !important;
+  font-size: 1.2rem !important;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0 !important;
+}
+.mon-btn:hover:not(:disabled) {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.86)) !important;
+  border-color: rgba(34, 169, 214, 0.62) !important;
+}
+.mon-add {
+  color: #1f7a6a !important;
+  border-color: rgba(74, 179, 156, 0.42) !important;
+}
+.mon-add:hover:not(:disabled) {
+  border-color: rgba(74, 179, 156, 0.72) !important;
+}
+.mon-remove {
+  color: #b54a76 !important;
+  border-color: rgba(210, 101, 155, 0.42) !important;
+}
+.mon-remove:hover:not(:disabled) {
+  border-color: rgba(210, 101, 155, 0.72) !important;
+}
+.mon-btn:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+}
+
+/* --- Player party setup card: keep checkbox visible --- */
+.setup-unit-card:not(.monster-card) {
+  display: grid !important;
+  grid-template-columns: auto auto 1fr auto !important;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px !important;
+  min-height: 48px;
+}
+.setup-unit-card input[type="checkbox"] {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  width: 22px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  cursor: pointer;
+  accent-color: var(--ku-blue) !important;
+  background-image: none !important;
+  background: transparent !important;
+}
+
+.setup-unit-name {
+  font-weight: 700;
+  color: var(--ku-blue-deep) !important;
+}
+.setup-unit-rank {
+  background: rgba(245, 184, 75, 0.22) !important;
+  color: #8a571a !important;
+  border-color: rgba(245, 184, 75, 0.52) !important;
+}
+
+/* --- Hub Pulse: prevent action buttons from hiding under L2D dock --- */
+body.campaign-page.has-l2d-companion .campaign-main {
+  padding-bottom: 380px;
+}
+
+@media (max-width: 1180px) {
+  body.campaign-page.has-l2d-companion .campaign-main {
+    padding-bottom: 340px;
+  }
+}
+
+@media (max-width: 900px) {
+  body.campaign-page.has-l2d-companion .campaign-main {
+    padding-bottom: 0;
+  }
+}
+
+/* --- Town Pulse and similar primary buttons: same height as siblings --- */
+.side-forge-hero .campaign-action {
+  min-height: 48px !important;
+  max-height: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Combat Battle Assist disclosure on smaller screens (iPad) so
+       panel content remains fully visible. --- */
+@media (max-width: 1180px) {
+  .combat-sidebar {
+    padding-bottom: 24px;
+  }
+  body.combat-page.has-l2d-companion #combat-app {
+    padding-bottom: 24px;
+  }
+}
+
+/* === REV 8b: tighten side-forge grid + ensure Battle Assist visible === */
+
+/* Constrain hub-pulse button grid so it doesn't extend under the L2D dock */
+body.has-l2d-companion .side-forge-hero .campaign-action-grid {
+  max-width: 920px;
+}
+@media (max-width: 1180px) {
+  body.has-l2d-companion .side-forge-hero .campaign-action-grid {
+    max-width: 720px;
+  }
+}
+@media (max-width: 900px) {
+  body.has-l2d-companion .side-forge-hero .campaign-action-grid {
+    max-width: 100%;
+  }
+}
+
+/* Battle Assist: wider panel, force visible content, never clip */
+.combat-sidebar .combat-assist-menu {
+  width: 100%;
+}
+.combat-assist-menu summary {
+  width: 100%;
+}
+.combat-assist-panel {
+  position: relative !important;
+  z-index: 6 !important;
+  width: 100%;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Auto-controls: stack buttons in a clean grid */
+.auto-controls {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px !important;
+}
+.auto-controls .btn { min-height: 40px !important; }
+
+/* Dice mode row: stack on small screens */
+.dice-mode-row {
+  flex-wrap: wrap;
+}
