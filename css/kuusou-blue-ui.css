@@ -1,0 +1,724 @@
+/* KUUSOU-KYOKUSEN blue UI pack skin for campaign and combat screens. */
+
+:root {
+  --ku-bg-paper: url("../assets/ui/kuusou-blue/20-backgrounds/background-02.png");
+  --ku-bg-checks: url("../assets/ui/kuusou-blue/20-backgrounds/background-03.png");
+  --ku-panel: url("../assets/ui/kuusou-blue/09-settings-parts/config-panel.png");
+  --ku-message: url("../assets/ui/kuusou-blue/01-message-window/messagewindow.png");
+  --ku-text-window: url("../assets/ui/kuusou-blue/01-message-window/textwindow.png");
+  --ku-name-tag: url("../assets/ui/kuusou-blue/01-message-window/nametag.png");
+  --ku-button: url("../assets/ui/kuusou-blue/04-common-buttons/button-rectangle.png");
+  --ku-button-hover: url("../assets/ui/kuusou-blue/04-common-buttons/button-rectangle-hover.png");
+  --ku-button-click: url("../assets/ui/kuusou-blue/04-common-buttons/button-rectangle-click.png");
+  --ku-button-round: url("../assets/ui/kuusou-blue/04-common-buttons/button-round.png");
+  --ku-button-close: url("../assets/ui/kuusou-blue/04-common-buttons/button-close.png");
+  --ku-choice: url("../assets/ui/kuusou-blue/03-choice-buttons/button-select-01.png");
+  --ku-choice-hover: url("../assets/ui/kuusou-blue/03-choice-buttons/button-select-01-hover.png");
+  --ku-tab: url("../assets/ui/kuusou-blue/13-tabs/tab.png");
+  --ku-tab-active: url("../assets/ui/kuusou-blue/13-tabs/tab-active-01.png");
+  --ku-heading: url("../assets/ui/kuusou-blue/06-heading-plates/text-plate-01.png");
+  --ku-gauge-base: url("../assets/ui/kuusou-blue/16-health-gauge/gauge-base.png");
+  --ku-gauge-hp: url("../assets/ui/kuusou-blue/16-health-gauge/gauge-active-01.png");
+  --ku-gauge-mp: url("../assets/ui/kuusou-blue/16-health-gauge/gauge-active-02.png");
+  --ku-gauge-special: url("../assets/ui/kuusou-blue/16-health-gauge/gauge-active-03.png");
+  --ku-save-slot: url("../assets/ui/kuusou-blue/11-save-slots/saveslot.png");
+  --ku-save-slot-hover: url("../assets/ui/kuusou-blue/11-save-slots/saveslot-hover.png");
+  --ku-scroll-track: url("../assets/ui/kuusou-blue/09-settings-parts/02/scrollbar-track.png");
+  --ku-scroll-thumb: url("../assets/ui/kuusou-blue/09-settings-parts/02/scrollbar-thumb.png");
+  --ku-checkbox-off: url("../assets/ui/kuusou-blue/09-settings-parts/04/checkbox-off.png");
+  --ku-checkbox-on: url("../assets/ui/kuusou-blue/09-settings-parts/04/checkbox-on.png");
+  --ku-radio-off: url("../assets/ui/kuusou-blue/09-settings-parts/05/radiobutton-off.png");
+  --ku-radio-on: url("../assets/ui/kuusou-blue/09-settings-parts/05/radiobutton-on.png");
+  --ku-slider-base: url("../assets/ui/kuusou-blue/09-settings-parts/01/slider-base.png");
+  --ku-slider-active: url("../assets/ui/kuusou-blue/09-settings-parts/01/slider-active.png");
+  --ku-slider-thumb: url("../assets/ui/kuusou-blue/09-settings-parts/01/slider-tab.png");
+  --ku-arrow-right: url("../assets/ui/kuusou-blue/21-arrow-buttons/arrow-right.png");
+  --ku-arrow-left: url("../assets/ui/kuusou-blue/21-arrow-buttons/arrow-left.png");
+  --ku-ink: #514750;
+  --ku-ink-soft: #766d74;
+  --ku-blue: #22a9d6;
+  --ku-blue-deep: #08769c;
+  --ku-blue-soft: #dff8ff;
+  --ku-line: rgba(126, 113, 122, 0.52);
+  --ku-shadow: 0 18px 40px rgba(62, 106, 132, 0.18);
+}
+
+body.campaign-page,
+body.combat-page {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(232, 248, 255, 0.5)),
+    var(--ku-bg-checks),
+    var(--ku-bg-paper);
+  background-size: auto, 640px auto, cover;
+  color: var(--ku-ink);
+}
+
+.campaign-shell,
+.setup-screen,
+.combat-screen {
+  background: transparent;
+}
+
+.campaign-header,
+.campaign-modes,
+.campaign-rail,
+.combat-header,
+.combat-top,
+.setup-header {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(224, 248, 255, 0.44)),
+    var(--ku-panel);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+  box-shadow: var(--ku-shadow);
+}
+
+.campaign-panel,
+.campaign-character,
+.campaign-side-section,
+.campaign-roster-card,
+.campaign-story-dialogue,
+.campaign-story-dialogue-box,
+.campaign-story-route,
+.campaign-story-stage,
+.campaign-story-ladder-step,
+.campaign-preview,
+.campaign-town-kpi,
+.campaign-town-columns > div,
+.campaign-rumor-purpose,
+.campaign-log-strip,
+.campaign-quest-card,
+.campaign-quest-phase,
+.battle-ready,
+.battle-result,
+.campaign-empty,
+.campaign-warning,
+.campaign-chat-line,
+.unit-card,
+.action-panel,
+.dice-controls,
+.combat-assist-menu,
+.battle-log-panel,
+.narrator-panel,
+.loot-panel,
+.battle-end-panel,
+.setup-panel,
+.map-preview,
+.setup-launch,
+.setup-empty,
+.modal,
+.dice-modal {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(237, 250, 255, 0.62)),
+    var(--ku-panel);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+  box-shadow: var(--ku-shadow);
+}
+
+.campaign-panel::before,
+.campaign-panel::after,
+.campaign-character::before,
+.campaign-character::after,
+.campaign-side-section::before,
+.campaign-side-section::after,
+.campaign-quest-card::before,
+.campaign-quest-card::after,
+.battle-ready::before,
+.battle-ready::after,
+.campaign-story-dialogue::before,
+.campaign-story-dialogue::after {
+  content: none;
+  display: none;
+}
+
+.campaign-panel-head h2,
+.campaign-panel-head h3,
+.setup-header h2,
+.setup-panel h3,
+.preview-label,
+.loot-title,
+.battle-end-panel h2 {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 28px 8px;
+  border: 0;
+  background: var(--ku-heading);
+  background-size: 100% 100%;
+  color: #fff;
+  font-family: "Kenney Future Narrow", Inter, system-ui, sans-serif;
+  letter-spacing: 0;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.36);
+}
+
+.campaign-title h1,
+.combat-header h1 {
+  color: var(--ku-blue-deep);
+  font-family: "Kenney Future Narrow", Inter, system-ui, sans-serif;
+  letter-spacing: 0;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.campaign-title span,
+.campaign-muted,
+.campaign-action .campaign-action-hint,
+.campaign-control-help,
+.unit-rank,
+.dice-label,
+.bgm-label,
+.bgm-status,
+.setup-hint,
+.setup-count,
+.setup-field .form-label,
+.setup-launch-hint,
+.enc-card-meta,
+.placement-summary,
+.placement-chip-meta,
+.preview-legend,
+.battle-log-panel,
+.narrator-panel {
+  color: var(--ku-ink-soft);
+}
+
+.campaign-back,
+.campaign-action,
+.campaign-tab,
+.campaign-gm,
+.campaign-icon-btn,
+.campaign-mini-actions button,
+.campaign-action-menu-trigger,
+.campaign-mode-btn,
+.campaign-util-btn,
+.campaign-rail-btn,
+.back-link,
+.header-controls select,
+.btn,
+.combat-action-menu summary,
+.combat-assist-menu summary,
+.btn-action,
+.setup-tab,
+.setup-size-btn,
+.setup-select,
+.setup-enc-card,
+.placement-chip,
+.setup-unit-card,
+.mon-btn,
+.filter-btn,
+button {
+  border: 0;
+  background-color: transparent;
+  background-image: var(--ku-button);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+  border-radius: 8px;
+  box-shadow: none;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.campaign-back:hover,
+.campaign-action:hover,
+.campaign-tab:hover,
+.campaign-gm:hover,
+.campaign-icon-btn:hover,
+.campaign-mini-actions button:hover,
+.campaign-action-menu-trigger:hover,
+.campaign-mode-btn:hover,
+.campaign-util-btn:hover,
+.campaign-rail-btn:hover,
+.back-link:hover,
+.btn:hover,
+.combat-action-menu summary:hover,
+.combat-assist-menu summary:hover,
+.btn-action:hover:not(:disabled),
+.setup-tab:hover,
+.setup-size-btn:hover,
+.setup-enc-card:hover,
+.placement-chip:hover,
+.setup-unit-card:hover,
+.mon-btn:hover {
+  background-image: var(--ku-button-hover);
+  color: var(--ku-blue-deep);
+  transform: translateY(-1px);
+}
+
+.campaign-action:active,
+.campaign-back:active,
+.btn:active,
+.btn-action:active:not(:disabled),
+.setup-tab:active {
+  background-image: var(--ku-button-click);
+  transform: translateY(1px);
+}
+
+.campaign-action.primary,
+.campaign-tab.active,
+.campaign-action.story,
+.campaign-mode-btn.active,
+.campaign-util-btn.active,
+.campaign-rail-btn.is-active,
+.btn-primary,
+.setup-tab.active,
+.setup-size-btn.active,
+.setup-enc-card.selected,
+.placement-chip.active,
+.dice-mode-btn.active {
+  background-image: var(--ku-button-hover);
+  color: var(--ku-blue-deep);
+}
+
+.campaign-action.danger,
+.btn-danger {
+  color: #8a4f67;
+}
+
+.campaign-action:disabled,
+.btn:disabled,
+.btn-action:disabled,
+.campaign-map-layer:disabled {
+  opacity: 0.48;
+  filter: grayscale(0.25);
+}
+
+.campaign-action-menu-panel {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(234, 249, 255, 0.76)),
+    var(--ku-panel);
+  background-size: 100% 100%;
+  box-shadow: var(--ku-shadow);
+}
+
+.campaign-tab,
+.campaign-subtabs .campaign-tab {
+  min-width: 120px;
+  clip-path: none;
+  background-image: var(--ku-tab);
+}
+
+.campaign-tab:hover {
+  background-image: var(--ku-tab);
+}
+
+.campaign-tab.active {
+  background-image: var(--ku-tab-active);
+  color: #fff;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.34);
+}
+
+.campaign-pill,
+.campaign-chip,
+.campaign-risk,
+.campaign-stats span,
+.turn-state span,
+.status-chip,
+.tag,
+.skill-cost,
+.setup-unit-rank {
+  border-color: rgba(34, 169, 214, 0.22);
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--ku-ink);
+}
+
+.campaign-stats span b,
+.campaign-stat-grid b,
+.campaign-town-kpi b,
+.unit-name,
+.bar-label,
+.bar-num,
+.loot-name,
+.setup-unit-name,
+.enc-card-name {
+  color: var(--ku-blue-deep);
+}
+
+.campaign-bar,
+.campaign-meter,
+.bar-track,
+.init-hp-bar {
+  border: 0;
+  background-color: transparent;
+  background-image: var(--ku-gauge-base);
+  background-size: 100% 100%;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.campaign-bar span,
+.campaign-meter span,
+.bar-fill,
+.init-hp-fill {
+  background-image: var(--ku-gauge-special);
+  background-size: 100% 100%;
+  border-radius: 999px;
+}
+
+.campaign-bar .hp,
+.bar-track.hp .bar-fill,
+.init-hp-fill {
+  background-image: var(--ku-gauge-hp);
+}
+
+.campaign-bar .mp,
+.bar-track.mp .bar-fill {
+  background-image: var(--ku-gauge-mp);
+}
+
+.campaign-vn-dialogue,
+.campaign-story-dialogue-box {
+  min-height: 156px;
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(237, 250, 255, 0.16)),
+    var(--ku-message);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+  box-shadow: 0 18px 36px rgba(41, 87, 112, 0.22);
+}
+
+.campaign-vn-dialogue p,
+.campaign-vn-dialogue small,
+.campaign-vn-choice,
+.campaign-vn-choice span,
+.campaign-story-dialogue-box p,
+.campaign-story-dialogue-box small {
+  color: var(--ku-ink);
+}
+
+.campaign-vn-speaker,
+.campaign-story-speaker {
+  min-width: 150px;
+  min-height: 34px;
+  border: 0;
+  background: var(--ku-name-tag);
+  background-size: 100% 100%;
+  color: #fff;
+  justify-content: center;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.34);
+}
+
+.campaign-vn-choice {
+  min-height: 66px;
+  border: 0;
+  border-left: 0;
+  background-image: var(--ku-choice);
+  background-size: 100% 100%;
+  box-shadow: none;
+}
+
+.campaign-vn-choice:hover {
+  background-image: var(--ku-choice-hover);
+}
+
+.combat-grid-wrap {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(223, 248, 255, 0.55)),
+    var(--ku-panel);
+  background-size: 100% 100%;
+  box-shadow: var(--ku-shadow);
+}
+
+.combat-grid-wrap::before {
+  border-color: rgba(34, 169, 214, 0.2);
+}
+
+.combat-grid-wrap canvas {
+  border-radius: 8px;
+  box-shadow: 0 18px 36px rgba(41, 87, 112, 0.18);
+}
+
+.unit-card.player {
+  box-shadow: var(--ku-shadow), inset 6px 0 0 rgba(34, 169, 214, 0.35);
+}
+
+.unit-card.enemy {
+  box-shadow: var(--ku-shadow), inset 6px 0 0 rgba(255, 127, 164, 0.32);
+}
+
+.btn-move { box-shadow: inset 5px 0 0 rgba(77, 163, 255, 0.45); }
+.btn-attack { box-shadow: inset 5px 0 0 rgba(255, 127, 164, 0.45); }
+.btn-defend { box-shadow: inset 5px 0 0 rgba(123, 227, 189, 0.45); }
+.btn-skill { box-shadow: inset 5px 0 0 rgba(103, 216, 255, 0.45); }
+.btn-item { box-shadow: inset 5px 0 0 rgba(255, 211, 111, 0.5); }
+.btn-end-turn { box-shadow: inset 5px 0 0 rgba(118, 109, 116, 0.42); }
+
+.init-unit {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(225, 248, 255, 0.6)),
+    var(--ku-button-round);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+}
+
+.init-active {
+  background-image: var(--ku-button-hover);
+  color: var(--ku-blue-deep);
+  transform: translateY(-2px);
+}
+
+.init-name,
+.log-entry,
+.narrator-line p {
+  color: var(--ku-ink);
+}
+
+.log-turn_start,
+.log-battle_start,
+.log-battle_end {
+  color: var(--ku-blue-deep);
+  background: linear-gradient(90deg, transparent, rgba(34, 169, 214, 0.16), transparent);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+textarea,
+.dice-queue-field,
+.dice-modal-field,
+.portrait-path-input {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(233, 250, 255, 0.44)),
+    var(--ku-text-window);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.dice-modal-field:focus {
+  outline: 2px solid rgba(34, 169, 214, 0.32);
+  outline-offset: 2px;
+}
+
+body.campaign-page input[type="checkbox"],
+body.combat-page input[type="checkbox"],
+body.campaign-page input[type="radio"],
+body.combat-page input[type="radio"] {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border: 0;
+  background-size: 100% 100%;
+  background-color: transparent;
+  vertical-align: middle;
+}
+
+body.campaign-page input[type="checkbox"],
+body.combat-page input[type="checkbox"] {
+  background-image: var(--ku-checkbox-off);
+}
+
+body.campaign-page input[type="checkbox"]:checked,
+body.combat-page input[type="checkbox"]:checked {
+  background-image: var(--ku-checkbox-on);
+}
+
+body.campaign-page input[type="radio"],
+body.combat-page input[type="radio"] {
+  background-image: var(--ku-radio-off);
+}
+
+body.campaign-page input[type="radio"]:checked,
+body.combat-page input[type="radio"]:checked {
+  background-image: var(--ku-radio-on);
+}
+
+body.campaign-page input[type="range"],
+body.combat-page input[type="range"] {
+  accent-color: var(--ku-blue);
+}
+
+body.campaign-page input[type="range"]::-webkit-slider-runnable-track,
+body.combat-page input[type="range"]::-webkit-slider-runnable-track {
+  height: 14px;
+  border: 0;
+  background-image: var(--ku-slider-base);
+  background-size: 100% 100%;
+}
+
+body.campaign-page input[type="range"]::-webkit-slider-thumb,
+body.combat-page input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -7px;
+  border: 0;
+  background: var(--ku-slider-thumb);
+  background-size: 100% 100%;
+}
+
+.campaign-page ::-webkit-scrollbar,
+.combat-page ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.campaign-page ::-webkit-scrollbar-track,
+.combat-page ::-webkit-scrollbar-track {
+  background-image: var(--ku-scroll-track);
+  background-size: 100% 100%;
+}
+
+.campaign-page ::-webkit-scrollbar-thumb,
+.combat-page ::-webkit-scrollbar-thumb {
+  background-image: var(--ku-scroll-thumb);
+  background-size: 100% 100%;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.campaign-record-line,
+.campaign-equipment-line,
+.campaign-row,
+.log-entry {
+  border-color: rgba(34, 169, 214, 0.15);
+}
+
+.campaign-action-menu-trigger::after,
+.combat-action-menu summary::after,
+.combat-assist-menu summary::after {
+  border-radius: 0;
+  background: var(--ku-arrow-right);
+  background-size: 100% 100%;
+  color: transparent;
+}
+
+.campaign-action-menu[open] .campaign-action-menu-trigger::after,
+.combat-action-menu[open] summary::after,
+.combat-assist-menu[open] summary::after {
+  background-image: var(--ku-arrow-left);
+}
+
+.battle-end-buttons,
+.dice-modal-buttons,
+.campaign-row-actions,
+.campaign-header-actions,
+.header-controls {
+  gap: 10px;
+}
+
+.combat-page .header-controls {
+  justify-content: flex-end;
+}
+
+.combat-page .header-controls select {
+  width: min(360px, 34vw);
+  flex: 0 1 360px;
+}
+
+.campaign-action.has-hint {
+  min-height: 74px;
+  padding: 12px 20px 14px;
+  gap: 3px;
+  overflow: hidden;
+  background-image: var(--ku-choice);
+}
+
+.campaign-action.has-hint:hover {
+  background-image: var(--ku-choice-hover);
+}
+
+.campaign-action.has-hint .campaign-action-label {
+  font-size: 0.86rem;
+  line-height: 1.12;
+}
+
+.campaign-action.has-hint .campaign-action-hint {
+  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.24;
+}
+
+.campaign-control-group .campaign-action-grid {
+  gap: 12px;
+  align-items: stretch;
+}
+
+.campaign-story-vn .campaign-story-dialogue-box,
+.campaign-story-dialogue-box {
+  min-height: 132px;
+  padding: 26px 30px 22px;
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(237, 250, 255, 0.14)),
+    var(--ku-text-window);
+  background-size: 100% 100%;
+  box-shadow: 0 10px 22px rgba(41, 87, 112, 0.12);
+}
+
+.campaign-story-dialogue-box .campaign-story-speaker {
+  margin-bottom: 2px;
+}
+
+.campaign-story-support-grid .campaign-town-columns,
+.campaign-story-support-panel .campaign-town-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: stretch;
+}
+
+.campaign-town-columns > div,
+.campaign-story-support-grid .campaign-town-columns > div,
+.campaign-story-support-panel .campaign-town-columns > div {
+  padding: 12px;
+  border: 1px solid rgba(34, 169, 214, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: none;
+}
+
+.campaign-story-support-panel .campaign-town-line:first-of-type {
+  border-top: 0;
+  padding-top: 3px;
+}
+
+.campaign-rumor-purpose {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(34, 169, 214, 0.22);
+  border-left: 4px solid rgba(255, 211, 111, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
+}
+
+.campaign-rumor-purpose span:not(.campaign-impact-badge) {
+  color: var(--ku-ink-soft);
+}
+
+.campaign-empty {
+  border: 1px dashed rgba(34, 169, 214, 0.24);
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .campaign-panel-head h2,
+  .campaign-panel-head h3,
+  .setup-header h2,
+  .setup-panel h3 {
+    min-height: 34px;
+    padding-inline: 20px;
+  }
+
+  .campaign-vn-dialogue {
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(237, 250, 255, 0.16)),
+      var(--ku-text-window);
+  }
+
+  .combat-page .header-controls select {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

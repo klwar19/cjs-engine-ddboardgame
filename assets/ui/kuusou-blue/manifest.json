@@ -1,0 +1,2659 @@
+{
+  "name": "kuusou-blue",
+  "vendor": "KUUSOU-KYOKUSEN / 空想曲線",
+  "source": "Purchased BOOTH pack; local source path intentionally omitted.",
+  "importedAt": "2026-05-09T07:25:26.969Z",
+  "termsUrl": "https://kopacurve.blog.fc2.com/blog-entry-394.html",
+  "boothUrl": "https://ko10panda.booth.pm/items/3485930",
+  "assets": [
+    {
+      "type": "png",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/messagewindow.png",
+      "path": "assets/ui/kuusou-blue/01-message-window/messagewindow.png"
+    },
+    {
+      "type": "png",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/nametag.png",
+      "path": "assets/ui/kuusou-blue/01-message-window/nametag.png"
+    },
+    {
+      "type": "png",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/textwindow.png",
+      "path": "assets/ui/kuusou-blue/01-message-window/textwindow.png"
+    },
+    {
+      "type": "png",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/クリック待ちグリフ/Uiset_13_Blue_pagebreak.png",
+      "path": "assets/ui/kuusou-blue/01-message-window/asset/uiset-13-blue-pagebreak.png"
+    },
+    {
+      "type": "webp",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/クリック待ちグリフ/Uiset_13_Blue_pagebreak.webp",
+      "path": "assets/ui/kuusou-blue/01-message-window/asset/uiset-13-blue-pagebreak.webp"
+    },
+    {
+      "type": "png",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/クリック待ちグリフ/UIset_13_Blue_pagebreak_base.png",
+      "path": "assets/ui/kuusou-blue/01-message-window/asset/uiset-13-blue-pagebreak-base.png"
+    },
+    {
+      "type": "png",
+      "category": "01-message-window",
+      "source": "material/01_メッセージウィンドウ/クリック待ちグリフ/UIset_13_Blue_pagebreak_celanim.png",
+      "path": "assets/ui/kuusou-blue/01-message-window/asset/uiset-13-blue-pagebreak-celanim.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_auto.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-auto.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_auto_active.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-auto-active.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_auto_clik.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-auto-clik.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_auto_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-auto-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_config.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-config.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_config_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-config-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_config_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-config-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_help.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-help.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_help_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-help-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_help_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-help-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_load.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-load.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_load_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-load-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_load_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-load-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_log.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-log.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_log_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-log-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_log_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-log-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_menu.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-menu.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_menu_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-menu-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_menu_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-menu-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_qload.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-qload.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_qload_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-qload-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_qload_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-qload-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_qsave.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-qsave.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_qsave_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-qsave-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_qsave_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-qsave-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_save.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-save.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_save_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-save-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_save_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-save-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_screen.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-screen.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_screen_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-screen-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_screen_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-screen-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_share.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-share.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_share_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-share-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_share_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-share-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_skip.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-skip.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_skip_active.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-skip-active.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_skip_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-skip-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_skip_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-skip-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_tips.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-tips.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_tips_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-tips-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_tips_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-tips-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_title.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-title.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_title_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-title-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/01/sysbtn_01_title_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/01/sysbtn-01-title-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_auto.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-auto.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_auto_active.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-auto-active.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_auto_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-auto-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_auto_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-auto-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_close.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-close.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_close_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-close-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_close_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-close-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_config.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-config.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_config_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-config-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_config_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-config-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_help.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-help.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_help_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-help-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_help_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-help-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_load.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-load.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_load_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-load-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_load_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-load-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_log.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-log.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_log_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-log-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_log_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-log-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_menu.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-menu.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_menu_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-menu-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_menu_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-menu-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_qload.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-qload.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_qload_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-qload-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_qload_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-qload-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_qsave.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-qsave.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_qsave_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-qsave-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_qsave_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-qsave-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_save.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-save.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_save_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-save-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_save_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-save-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_screen.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-screen.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_screen_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-screen-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_screen_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-screen-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_share.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-share.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_share_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-share-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_share_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-share-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_skip.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-skip.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_skip_active.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-skip-active.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_skip_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-skip-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_skip_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-skip-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_tips.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-tips.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_tips_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-tips-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_tips_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-tips-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_title.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-title.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_title_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-title-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/02/sysbtn_02_title_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/02/sysbtn-02-title-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_auto.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-auto.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_auto_active.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-auto-active.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_auto_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-auto-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_auto_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-auto-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_config.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-config.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_config_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-config-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_config_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-config-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_help.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-help.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_help_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-help-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_help_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-help-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_load.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-load.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_load_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-load-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_load_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-load-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_log.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-log.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_log_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-log-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_log_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-log-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_menu.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-menu.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_menu_active.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-menu-active.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_menu_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-menu-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_menu_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-menu-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_save.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-save.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_save_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-save-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_save_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-save-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_screen.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-screen.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_screen_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-screen-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_screen_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-screen-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_share.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-share.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_share_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-share-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_share_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-share-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_skip.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-skip.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_skip_ative.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-skip-ative.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_skip_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-skip-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_skip_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-skip-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_tips.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-tips.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_tips_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-tips-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_tips_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-tips-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_title.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-title.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_title_click.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-title-click.png"
+    },
+    {
+      "type": "png",
+      "category": "02-system-buttons",
+      "source": "material/02_システムボタン/03/sysbtn_03_title_hover.png",
+      "path": "assets/ui/kuusou-blue/02-system-buttons/03/sysbtn-03-title-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "03-choice-buttons",
+      "source": "material/03_選択肢ボタン/button_select_01.png",
+      "path": "assets/ui/kuusou-blue/03-choice-buttons/button-select-01.png"
+    },
+    {
+      "type": "png",
+      "category": "03-choice-buttons",
+      "source": "material/03_選択肢ボタン/button_select_01_click.png",
+      "path": "assets/ui/kuusou-blue/03-choice-buttons/button-select-01-click.png"
+    },
+    {
+      "type": "png",
+      "category": "03-choice-buttons",
+      "source": "material/03_選択肢ボタン/button_select_01_hover.png",
+      "path": "assets/ui/kuusou-blue/03-choice-buttons/button-select-01-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "03-choice-buttons",
+      "source": "material/03_選択肢ボタン/button_select_02.png",
+      "path": "assets/ui/kuusou-blue/03-choice-buttons/button-select-02.png"
+    },
+    {
+      "type": "png",
+      "category": "03-choice-buttons",
+      "source": "material/03_選択肢ボタン/button_select_02_click.png",
+      "path": "assets/ui/kuusou-blue/03-choice-buttons/button-select-02-click.png"
+    },
+    {
+      "type": "png",
+      "category": "03-choice-buttons",
+      "source": "material/03_選択肢ボタン/button_select_02_hover.png",
+      "path": "assets/ui/kuusou-blue/03-choice-buttons/button-select-02-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_back.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-back.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_back_click.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-back-click.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_back_hover.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-back-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_circle.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-circle.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_circle_click.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-circle-click.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_circle_hover.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-circle-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_close.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-close.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_close_click.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-close-click.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_close_hover.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-close-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_rectangle.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-rectangle.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_rectangle_click.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-rectangle-click.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_rectangle_hover.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-rectangle-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_round.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-round.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_round_click.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-round-click.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_round_hover.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-round-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_square.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-square.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_square_click.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-square-click.png"
+    },
+    {
+      "type": "png",
+      "category": "04-common-buttons",
+      "source": "material/04_汎用ボタン/button_square_hover.png",
+      "path": "assets/ui/kuusou-blue/04-common-buttons/button-square-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_01_01.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-01-01.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_01_02.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-01-02.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_01_03.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-01-03.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_01_04.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-01-04.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_01_05.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-01-05.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_02_01.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-02-01.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_02_02.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-02-02.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_02_03.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-02-03.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_02_04.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-02-04.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_02_05.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-02-05.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_03_01.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-03-01.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_03_02.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-03-02.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_03_03.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-03-03.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_03_04.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-03-04.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_03_05.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-03-05.png"
+    },
+    {
+      "type": "png",
+      "category": "05-scalable-windows",
+      "source": "material/05_可変ウィンドウ/multiwindow_04.png",
+      "path": "assets/ui/kuusou-blue/05-scalable-windows/multiwindow-04.png"
+    },
+    {
+      "type": "png",
+      "category": "06-heading-plates",
+      "source": "material/06_見出し背景/text_plate_01.png",
+      "path": "assets/ui/kuusou-blue/06-heading-plates/text-plate-01.png"
+    },
+    {
+      "type": "png",
+      "category": "06-heading-plates",
+      "source": "material/06_見出し背景/text_plate_02.png",
+      "path": "assets/ui/kuusou-blue/06-heading-plates/text-plate-02.png"
+    },
+    {
+      "type": "png",
+      "category": "06-heading-plates",
+      "source": "material/06_見出し背景/text_plate_03.png",
+      "path": "assets/ui/kuusou-blue/06-heading-plates/text-plate-03.png"
+    },
+    {
+      "type": "png",
+      "category": "06-heading-plates",
+      "source": "material/06_見出し背景/text_plate_04.png",
+      "path": "assets/ui/kuusou-blue/06-heading-plates/text-plate-04.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_cancel.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-cancel.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_cancel2.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-cancel2.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_cancel_click.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-cancel-click.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_cancel_hover.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-cancel-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_no.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-no.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_no2.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-no2.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_no_click.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-no-click.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_no_hover.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-no-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_ok.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-ok.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_ok_click.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-ok-click.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_ok_hover.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-ok-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_yes.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-yes.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_yes_click.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-yes-click.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/button_yes_hover.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/button-yes-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "07-yes-no-dialog",
+      "source": "material/07_YesNoダイアログ/dialog_base.png",
+      "path": "assets/ui/kuusou-blue/07-yes-no-dialog/dialog-base.png"
+    },
+    {
+      "type": "png",
+      "category": "08-thumbnails",
+      "source": "material/08_サムネイル/gallery_thumbnail.png",
+      "path": "assets/ui/kuusou-blue/08-thumbnails/gallery-thumbnail.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/01_スライダー/slider_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/01/slider-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/01_スライダー/slider_base.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/01/slider-base.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/01_スライダー/slider_tab.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/01/slider-tab.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/02_スクロールバー/scrollbar_thumb.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/02/scrollbar-thumb.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/02_スクロールバー/scrollbar_track.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/02/scrollbar-track.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/03_トグルボタン/toggle_off.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/03/toggle-off.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/03_トグルボタン/toggle_on.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/03/toggle-on.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/04_チェックボックス/checkbox_off.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/04/checkbox-off.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/04_チェックボックス/checkbox_on.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/04/checkbox-on.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/05_ラジオボタン/radiobutton_off.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/05/radiobutton-off.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/05_ラジオボタン/radiobutton_on.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/05/radiobutton-on.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_sound.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-sound.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_sound_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-sound-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_sound_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-sound-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_system.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-system.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_system_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-system-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_system_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-system-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_text.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-text.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_text_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-text-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_text_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-text-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_voice.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-voice.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_voice_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-voice-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/06_タブ_文字入り/tab_voice_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/06/tab-voice-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_off.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-off.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_off_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-off-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_off_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-off-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_off_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-off-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_on.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-on.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_on_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-on-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_on_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-on-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_オンオフ/button_on_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-on-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_cien.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-cien.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_cien_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-cien-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_cien_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-cien-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_facebook.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-facebook.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_facebook_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-facebook-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_facebook_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-facebook-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_officialsite.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-officialsite.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_officialsite_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-officialsite-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_officialsite_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-officialsite-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_twitter.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-twitter.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_twitter_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-twitter-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/button_twitter_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-twitter-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_cien.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-cien.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_cien_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-cien-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_cien_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-cien-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_facebook.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-facebook.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_facebook_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-facebook-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_facebook_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-facebook-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_officialsite.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-officialsite.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_officialsite_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-officialsite-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_officialsite_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-officialsite-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_twitter.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-twitter.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_twitter_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-twitter-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_外部リンク/old/button_twitter_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/old/button-twitter-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_fullscreen.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-fullscreen.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_fullscreen_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-fullscreen-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_fullscreen_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-fullscreen-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_fullscreen_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-fullscreen-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_window.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-window.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_window_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-window-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_window_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-window-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_画面サイズ/button_window_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-window-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_english.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-english.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_english_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-english-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_english_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-english-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_english_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-english-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_hantai.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-hantai.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_hantai_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-hantai-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_hantai_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-hantai-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_hantai_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-hantai-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_japanese.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-japanese.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_japanese_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-japanese-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_japanese_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-japanese-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_japanese_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-japanese-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_kantai.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-kantai.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_kantai_active.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-kantai-active.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_kantai_click.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-kantai-click.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/07_ボタン_文字入り/ボタン_言語設定/button_kantai_hover.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/07/asset/button-kantai-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/08_ミニアイコン/icon_new_01.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/08/icon-new-01.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/08_ミニアイコン/icon_new_02.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/08/icon-new-02.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/08_ミニアイコン/icon_textspeed_fast.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/08/icon-textspeed-fast.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/08_ミニアイコン/icon_textspeed_slow.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/08/icon-textspeed-slow.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/08_ミニアイコン/icon_vol_max.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/08/icon-vol-max.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/08_ミニアイコン/icon_vol_min.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/08/icon-vol-min.png"
+    },
+    {
+      "type": "png",
+      "category": "09-settings-parts",
+      "source": "material/09_システム設定用パーツ/config_panel.png",
+      "path": "assets/ui/kuusou-blue/09-settings-parts/config-panel.png"
+    },
+    {
+      "type": "png",
+      "category": "10-steppers",
+      "source": "material/10_ステッパー/stepper_minus.png",
+      "path": "assets/ui/kuusou-blue/10-steppers/stepper-minus.png"
+    },
+    {
+      "type": "png",
+      "category": "10-steppers",
+      "source": "material/10_ステッパー/stepper_minus_click.png",
+      "path": "assets/ui/kuusou-blue/10-steppers/stepper-minus-click.png"
+    },
+    {
+      "type": "png",
+      "category": "10-steppers",
+      "source": "material/10_ステッパー/stepper_minus_hover.png",
+      "path": "assets/ui/kuusou-blue/10-steppers/stepper-minus-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "10-steppers",
+      "source": "material/10_ステッパー/stepper_plus.png",
+      "path": "assets/ui/kuusou-blue/10-steppers/stepper-plus.png"
+    },
+    {
+      "type": "png",
+      "category": "10-steppers",
+      "source": "material/10_ステッパー/stepper_plus_click.png",
+      "path": "assets/ui/kuusou-blue/10-steppers/stepper-plus-click.png"
+    },
+    {
+      "type": "png",
+      "category": "10-steppers",
+      "source": "material/10_ステッパー/stepper_plus_hover.png",
+      "path": "assets/ui/kuusou-blue/10-steppers/stepper-plus-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "11-save-slots",
+      "source": "material/11_セーブスロット/saveslot.png",
+      "path": "assets/ui/kuusou-blue/11-save-slots/saveslot.png"
+    },
+    {
+      "type": "png",
+      "category": "11-save-slots",
+      "source": "material/11_セーブスロット/saveslot_hover.png",
+      "path": "assets/ui/kuusou-blue/11-save-slots/saveslot-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_config.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-config.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_config_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-config-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_config_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-config-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_extra.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-extra.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_extra_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-extra-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_extra_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-extra-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_gallery.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-gallery.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_gallery_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-gallery-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_gallery_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-gallery-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_loadgame.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-loadgame.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_loadgame_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-loadgame-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_loadgame_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-loadgame-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_musicbox.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-musicbox.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_musicbox_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-musicbox-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_musicbox_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-musicbox-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_newgame.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-newgame.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_newgame_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-newgame-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_newgame_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-newgame-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_quitgame.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-quitgame.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_quitgame_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-quitgame-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_quitgame_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-quitgame-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_recollection.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-recollection.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_recollection_click.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-recollection-click.png"
+    },
+    {
+      "type": "png",
+      "category": "12-title-menu",
+      "source": "material/12_タイトルメニュー/button_title_recollection_hover.png",
+      "path": "assets/ui/kuusou-blue/12-title-menu/button-title-recollection-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab_active_01.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab-active-01.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab_active_02.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab-active-02.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab_active_03.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab-active-03.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab_hover_01.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab-hover-01.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab_hover_02.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab-hover-02.png"
+    },
+    {
+      "type": "png",
+      "category": "13-tabs",
+      "source": "material/13_タブ/tab_hover_03.png",
+      "path": "assets/ui/kuusou-blue/13-tabs/tab-hover-03.png"
+    },
+    {
+      "type": "png",
+      "category": "14-backlog-parts",
+      "source": "material/14_バックログ画面用パーツ/backlog_panel.png",
+      "path": "assets/ui/kuusou-blue/14-backlog-parts/backlog-panel.png"
+    },
+    {
+      "type": "png",
+      "category": "14-backlog-parts",
+      "source": "material/14_バックログ画面用パーツ/button_play_voice.png",
+      "path": "assets/ui/kuusou-blue/14-backlog-parts/button-play-voice.png"
+    },
+    {
+      "type": "png",
+      "category": "14-backlog-parts",
+      "source": "material/14_バックログ画面用パーツ/button_play_voice_click.png",
+      "path": "assets/ui/kuusou-blue/14-backlog-parts/button-play-voice-click.png"
+    },
+    {
+      "type": "png",
+      "category": "14-backlog-parts",
+      "source": "material/14_バックログ画面用パーツ/button_play_voice_hover.png",
+      "path": "assets/ui/kuusou-blue/14-backlog-parts/button-play-voice-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_1.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-1.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_1_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-1-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_1_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-1-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_1_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-1-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_2.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-2.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_2_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-2-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_2_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-2-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_2_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-2-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_3.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-3.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_3_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-3-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_3_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-3-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_3_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-3-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_4.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-4.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_4_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-4-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_4_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-4-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_4_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-4-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_5.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-5.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_5_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-5-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_5_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-5-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_5_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-5-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_6.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-6.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_6_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-6-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_6_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-6-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_6_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-6-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_7.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-7.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_7_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-7-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_7_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-7-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_7_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-7-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_8.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-8.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_8_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-8-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_8_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-8-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_8_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-8-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_9.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-9.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_9_active.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-9-active.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_9_click.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-9-click.png"
+    },
+    {
+      "type": "png",
+      "category": "15-pagination",
+      "source": "material/15_ページネーション/button_num_9_hover.png",
+      "path": "assets/ui/kuusou-blue/15-pagination/button-num-9-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "16-health-gauge",
+      "source": "material/16_ヘルスゲージ/gauge base.png",
+      "path": "assets/ui/kuusou-blue/16-health-gauge/gauge-base.png"
+    },
+    {
+      "type": "png",
+      "category": "16-health-gauge",
+      "source": "material/16_ヘルスゲージ/gauge_active_01.png",
+      "path": "assets/ui/kuusou-blue/16-health-gauge/gauge-active-01.png"
+    },
+    {
+      "type": "png",
+      "category": "16-health-gauge",
+      "source": "material/16_ヘルスゲージ/gauge_active_02.png",
+      "path": "assets/ui/kuusou-blue/16-health-gauge/gauge-active-02.png"
+    },
+    {
+      "type": "png",
+      "category": "16-health-gauge",
+      "source": "material/16_ヘルスゲージ/gauge_active_03.png",
+      "path": "assets/ui/kuusou-blue/16-health-gauge/gauge-active-03.png"
+    },
+    {
+      "type": "png",
+      "category": "16-health-gauge",
+      "source": "material/16_ヘルスゲージ/hp_icon_active.png",
+      "path": "assets/ui/kuusou-blue/16-health-gauge/hp-icon-active.png"
+    },
+    {
+      "type": "png",
+      "category": "16-health-gauge",
+      "source": "material/16_ヘルスゲージ/hp_icon_base.png",
+      "path": "assets/ui/kuusou-blue/16-health-gauge/hp-icon-base.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_config.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-config.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_config_click.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-config-click.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_config_hover.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-config-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_load.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-load.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_load_click.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-load-click.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_load_hover.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-load-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_log.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-log.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_log_click.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-log-click.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_log_hover.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-log-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_save.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-save.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_save_click.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-save-click.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_save_hover.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-save-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_title.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-title.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_title_click.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-title-click.png"
+    },
+    {
+      "type": "png",
+      "category": "17-menu-parts",
+      "source": "material/17_メニュー画面用パーツ/button_menu_title_hover.png",
+      "path": "assets/ui/kuusou-blue/17-menu-parts/button-menu-title-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_next.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-next.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_next_click.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-next-click.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_next_hover.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-next-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_pause.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-pause.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_pause_active.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-pause-active.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_pause_click.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-pause-click.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_pause_hover.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-pause-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_play.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-play.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_play_active.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-play-active.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_play_click.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-play-click.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_play_hover.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-play-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_prev.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-prev.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_prev_click.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-prev-click.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_prev_hover.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-prev-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_repeat.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-repeat.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_repeat_active.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-repeat-active.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_repeat_click.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-repeat-click.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_repeat_hover.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-repeat-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_shuffle.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-shuffle.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_shuffle_active.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-shuffle-active.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_shuffle_click.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-shuffle-click.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/button_shuffle_hover.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/button-shuffle-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/musicbox_panel.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/musicbox-panel.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/playlist_01.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/playlist-01.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/playlist_02.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/playlist-02.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/playlist_03.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/playlist-03.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/playlist_04.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/playlist-04.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/play_gauge.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/play-gauge.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/play_gauge_active.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/play-gauge-active.png"
+    },
+    {
+      "type": "png",
+      "category": "18-music-parts",
+      "source": "material/18_音楽鑑賞画面用パーツ/play_gauge_base.png",
+      "path": "assets/ui/kuusou-blue/18-music-parts/play-gauge-base.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_backlog.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-backlog.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_gallery.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-gallery.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_loaddata.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-loaddata.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_menu.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-menu.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_musicbox.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-musicbox.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_recollection.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-recollection.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_savedata.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-savedata.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_sound.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-sound.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_system.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-system.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_text.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-text.png"
+    },
+    {
+      "type": "png",
+      "category": "19-major-headings",
+      "source": "material/19_大見出し/label_voice.png",
+      "path": "assets/ui/kuusou-blue/19-major-headings/label-voice.png"
+    },
+    {
+      "type": "png",
+      "category": "20-backgrounds",
+      "source": "material/20_汎用背景/background_01.png",
+      "path": "assets/ui/kuusou-blue/20-backgrounds/background-01.png"
+    },
+    {
+      "type": "png",
+      "category": "20-backgrounds",
+      "source": "material/20_汎用背景/background_02.png",
+      "path": "assets/ui/kuusou-blue/20-backgrounds/background-02.png"
+    },
+    {
+      "type": "png",
+      "category": "20-backgrounds",
+      "source": "material/20_汎用背景/background_03.png",
+      "path": "assets/ui/kuusou-blue/20-backgrounds/background-03.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_down.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-down.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_down_click.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-down-click.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_down_hover.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-down-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_left.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-left.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_left_click.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-left-click.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_left_hover.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-left-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_right.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-right.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_right_click.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-right-click.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_right_hover.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-right-hover.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_up.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-up.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_up_click.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-up-click.png"
+    },
+    {
+      "type": "png",
+      "category": "21-arrow-buttons",
+      "source": "material/21_矢印ボタン/arrow_up_hover.png",
+      "path": "assets/ui/kuusou-blue/21-arrow-buttons/arrow-up-hover.png"
+    },
+    {
+      "type": "psd-flattened",
+      "source": "material/22_編集用psd/UIset_13_Blue_01.psd",
+      "path": "assets/ui/kuusou-blue/22-psd-flattened/uiset-13-blue-01.png"
+    },
+    {
+      "type": "psd-flattened",
+      "source": "material/22_編集用psd/UIset_13_Blue_02.psd",
+      "path": "assets/ui/kuusou-blue/22-psd-flattened/uiset-13-blue-02.png"
+    },
+    {
+      "type": "psd-flattened",
+      "source": "material/22_編集用psd/UIset_13_Blue_multiwindow.psd",
+      "path": "assets/ui/kuusou-blue/22-psd-flattened/uiset-13-blue-multiwindow.png"
+    }
+  ]
+}
