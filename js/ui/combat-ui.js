@@ -1034,7 +1034,7 @@ window.CJS.CombatUI = (() => {
     html += '</div>';
 
     if (available.skills?.length > 0) {
-      html += `<details class="combat-action-menu"><summary>Skills <span>${available.skills.length}</span></summary><div class="skill-list">`;
+      html += `<div class="combat-action-section combat-action-skills"><div class="combat-action-section-head">Skills <span class="combat-action-count">${available.skills.length}</span></div><div class="skill-list">`;
       for (const skillEntry of available.skills) {
         const skillName = skillEntry.skill?.name || skillEntry.id;
         const disabled = !skillEntry.usable ? 'disabled' : '';
@@ -1054,11 +1054,11 @@ window.CJS.CombatUI = (() => {
           </button>
         `;
       }
-      html += '</div></details>';
+      html += '</div></div>';
     }
 
     if (available.items?.length > 0) {
-      html += `<details class="combat-action-menu"><summary>Items <span>${available.items.length}</span></summary><div class="item-list">`;
+      html += `<div class="combat-action-section combat-action-items"><div class="combat-action-section-head">Items <span class="combat-action-count">${available.items.length}</span></div><div class="item-list">`;
       for (const itemEntry of available.items) {
         const itemName = itemEntry.item?.name || itemEntry.id;
         const iconHtml = _renderEntityIcon(itemEntry.item, 'item', 'sm');
@@ -1069,7 +1069,7 @@ window.CJS.CombatUI = (() => {
           </button>
         `;
       }
-      html += '</div></details>';
+      html += '</div></div>';
     }
 
     html += '</div>';
