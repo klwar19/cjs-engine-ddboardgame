@@ -4458,3 +4458,246 @@ body.has-l2d-companion .side-forge-hero .campaign-action-grid {
 .dice-mode-row {
   flex-wrap: wrap;
 }
+
+/* ================================================================== */
+/* === REV 9 (2026-05-09): always-show skills / monster fix /        */
+/*     HP-MP text contrast / Adventure Desk background ============= */
+/* ================================================================== */
+
+/* --- Combat skills + items: always-visible flat sections --- */
+.combat-action-section {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.7));
+  border: 2px solid rgba(34, 169, 214, 0.32);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(8, 118, 156, 0.1);
+}
+
+.combat-action-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(34, 169, 214, 0.32);
+  font-family: var(--ku-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ku-blue-deep);
+}
+
+.combat-action-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  margin-left: auto;
+  border-radius: var(--ku-radius-pill);
+  background: linear-gradient(180deg, rgba(34, 169, 214, 0.32), rgba(8, 118, 156, 0.18));
+  border: 1px solid rgba(34, 169, 214, 0.42);
+  color: var(--ku-blue-deep);
+  font-family: var(--ku-font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.combat-action-section .skill-list,
+.combat-action-section .item-list {
+  display: grid;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* --- Monster picker card: clean horizontal row, both buttons visible --- */
+.setup-unit-card.monster-card {
+  display: grid !important;
+  grid-template-columns: 40px 1fr auto auto auto !important;
+  grid-template-areas: "icon name rank add minus" "count count count count count" !important;
+  gap: 8px 10px !important;
+  align-items: center !important;
+  padding: 10px 12px !important;
+  min-height: 64px !important;
+}
+
+.setup-unit-card.monster-card .setup-unit-icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.4rem;
+  background: rgba(34, 169, 214, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(34, 169, 214, 0.22);
+}
+.setup-unit-card.monster-card .setup-unit-name {
+  grid-area: name;
+  font-weight: 700;
+  color: var(--ku-blue-deep) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.setup-unit-card.monster-card .setup-unit-rank {
+  grid-area: rank;
+}
+.setup-unit-card.monster-card .setup-unit-count {
+  grid-area: count;
+  align-self: start;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 12px;
+  border-radius: var(--ku-radius-pill);
+  background: rgba(34, 169, 214, 0.16);
+  border: 1px solid rgba(34, 169, 214, 0.42);
+  color: var(--ku-blue-deep) !important;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.setup-unit-card.monster-card .monster-controls {
+  display: contents !important;
+}
+.setup-unit-card.monster-card .mon-btn.mon-add {
+  grid-area: add;
+}
+.setup-unit-card.monster-card .mon-btn.mon-remove {
+  grid-area: minus;
+}
+
+/* Even when count is 0 and remove is disabled, the button stays in grid */
+.mon-btn.mon-remove:disabled {
+  opacity: 0.36 !important;
+  cursor: not-allowed;
+  display: grid !important;
+  visibility: visible !important;
+}
+
+/* --- HP/MP text contrast: stronger color, bigger shadow halo --- */
+.unit-card .bar-num,
+.unit-info-panel .bar-num,
+.combat-screen .bar-num {
+  color: #03384e !important;
+  font-weight: 800 !important;
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.95),
+    0 1px 0 rgba(255, 255, 255, 0.85),
+    0 -1px 0 rgba(255, 255, 255, 0.6) !important;
+  letter-spacing: 0.04em;
+  font-size: 1.04rem !important;
+}
+
+.unit-card .bar-label,
+.unit-info-panel .bar-label {
+  color: #044a66 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* HP/MP text overlaid on .campaign-bar (which uses the gauge-base image) */
+.campaign-bar b,
+.campaign-meter b,
+.bar-num {
+  color: #03384e !important;
+  font-weight: 800 !important;
+  text-shadow:
+    0 0 5px rgba(255, 255, 255, 0.95),
+    0 1px 0 rgba(255, 255, 255, 0.92),
+    0 -1px 0 rgba(255, 255, 255, 0.7) !important;
+  letter-spacing: 0.06em;
+}
+
+/* --- Adventure Desk: nice layered background --- */
+.campaign-town-actions {
+  position: relative;
+  overflow: hidden;
+  background:
+    /* soft blue overlay so content stays readable */
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(228, 246, 255, 0.78) 60%, rgba(207, 240, 255, 0.78) 100%),
+    /* aurora kuusou paper */
+    var(--ku-bg-aurora) center / cover no-repeat,
+    var(--ku-panel) !important;
+  background-size: 100% 100%, cover, 100% 100% !important;
+  box-shadow:
+    var(--ku-shadow-lift),
+    inset 0 0 0 2px rgba(34, 169, 214, 0.22) !important;
+  border-radius: var(--ku-radius-lg) !important;
+}
+
+.campaign-town-actions::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.35), transparent 32%),
+    radial-gradient(circle at 88% 82%, rgba(34, 169, 214, 0.16), transparent 38%);
+  z-index: 0;
+}
+
+.campaign-town-actions::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  border: 1px dashed rgba(34, 169, 214, 0.18);
+  border-radius: calc(var(--ku-radius-lg) - 8px);
+  z-index: 0;
+}
+
+.campaign-town-actions > * {
+  position: relative;
+  z-index: 1;
+}
+
+.campaign-town-actions .campaign-panel-head h2 {
+  font-size: 1.32rem !important;
+  min-height: 46px;
+  padding: 8px 38px 10px !important;
+  letter-spacing: 0.05em;
+}
+
+/* Subtle floating decoration: page-break ornament */
+.campaign-town-actions .campaign-panel-head {
+  position: relative;
+}
+.campaign-town-actions .campaign-panel-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 6px;
+  background: var(--ku-pagebreak) center / contain no-repeat;
+  opacity: 0.32;
+}
+
+/* Rev 9b: tighten monster card so names get more space */
+.setup-unit-card.monster-card {
+  grid-template-columns: 36px minmax(0, 1fr) auto auto auto !important;
+  padding: 8px 10px !important;
+}
+.setup-unit-card.monster-card .setup-unit-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+}
+.setup-unit-card.monster-card .setup-unit-name {
+  font-size: 0.94rem;
+}
+.setup-unit-card.monster-card .mon-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 1.05rem !important;
+}
