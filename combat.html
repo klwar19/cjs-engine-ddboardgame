@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/combat-animations.css" />
   <link rel="stylesheet" href="css/scene-player.css" />
   <link rel="stylesheet" href="css/l2d-avatar.css?v=peri-v2-wide" />
-  <link rel="stylesheet" href="css/kuusou-blue-ui.css?v=20260509-2" />
+  <link rel="stylesheet" href="css/kuusou-blue-ui.css?v=20260509-3" />
 </head>
 <body class="combat-page">
   <div id="combat-app">
@@ -28,9 +28,105 @@
       </div>
     </header>
 
+    <div class="ku-phase-strip" aria-label="Combat phases" id="ku-phase-strip">
+      <span class="ku-phase-step is-active" data-phase="setup"><b>1</b>Setup</span>
+      <span class="ku-phase-divider"></span>
+      <span class="ku-phase-step" data-phase="initiative"><b>2</b>Initiative</span>
+      <span class="ku-phase-divider"></span>
+      <span class="ku-phase-step" data-phase="action"><b>3</b>Take Action</span>
+      <span class="ku-phase-divider"></span>
+      <span class="ku-phase-step" data-phase="resolve"><b>4</b>Resolve</span>
+      <span class="ku-phase-divider"></span>
+      <span class="ku-phase-step" data-phase="end"><b>5</b>Outcome</span>
+    </div>
+
     <main id="battle-setup-container"></main>
     <main id="combat-container" style="display:none"></main>
   </div>
+
+  <button type="button" class="ku-help-fab" id="ku-help-fab"
+          aria-label="Open quick guide" aria-expanded="false"
+          aria-controls="ku-help-popover">?</button>
+  <aside class="ku-help-popover" id="ku-help-popover" role="dialog"
+         aria-labelledby="ku-help-popover-title" aria-hidden="true">
+    <div class="ku-help-popover-head">
+      <h3 id="ku-help-popover-title">Combat Quick Guide</h3>
+      <button type="button" class="ku-help-popover-close"
+              data-ku-help-close aria-label="Close quick guide"></button>
+    </div>
+    <ol>
+      <li><b>Setup</b>Pick units, place them on the grid. The blue "Start" button below the grid begins the battle.</li>
+      <li><b>Initiative</b>The top bar shows the turn order. The unit with the glowing "Acting" tag is up.</li>
+      <li><b>Take Action</b>On your turn, pick from Move / Attack / Defend / Skill / Item / End. Hover the grid to preview range.</li>
+      <li><b>Dice &amp; Assist</b>Open Battle Assist for Auto Turn / Auto Round, manual dice queue, and animation toggle.</li>
+      <li><b>Outcome</b>When all of one team falls, you'll see Victory or Defeat with loot. Campaign battles return automatically.</li>
+    </ol>
+  </aside>
+
+  <script>
+    (function () {
+      function bindHelpFab() {
+        var fab = document.getElementById('ku-help-fab');
+        var pop = document.getElementById('ku-help-popover');
+        if (!fab || !pop) return;
+        function setOpen(open) {
+          pop.dataset.open = open ? 'true' : 'false';
+          pop.setAttribute('aria-hidden', open ? 'false' : 'true');
+          fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        fab.addEventListener('click', function () {
+          setOpen(pop.dataset.open !== 'true');
+        });
+        pop.querySelectorAll('[data-ku-help-close]').forEach(function (btn) {
+          btn.addEventListener('click', function () { setOpen(false); });
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape' && pop.dataset.open === 'true') setOpen(false);
+        });
+      }
+
+      function bindPhaseStrip() {
+        var strip = document.getElementById('ku-phase-strip');
+        if (!strip) return;
+        var setupEl = document.getElementById('battle-setup-container');
+        var combatEl = document.getElementById('combat-container');
+        var steps = Array.prototype.slice.call(strip.querySelectorAll('[data-phase]'));
+        function setPhase(phaseId) {
+          var idx = steps.findIndex(function (s) { return s.dataset.phase === phaseId; });
+          steps.forEach(function (s, i) {
+            s.classList.toggle('is-active', i === idx);
+            s.classList.toggle('is-done', idx >= 0 && i < idx);
+          });
+        }
+        function syncFromDom() {
+          if (combatEl && combatEl.style.display !== 'none' && combatEl.children.length) {
+            var state = window.CJS && window.CJS.CombatManager &&
+                        typeof window.CJS.CombatManager.getState === 'function'
+                          ? window.CJS.CombatManager.getState() : null;
+            if (state && state.phase === 'battle_end') return setPhase('end');
+            if (state && state.phase === 'turn') return setPhase('action');
+            if (state && state.phase === 'init') return setPhase('initiative');
+            return setPhase('action');
+          }
+          setPhase('setup');
+        }
+        // Poll lightly — no business logic, just visual synchronisation.
+        setInterval(syncFromDom, 800);
+        syncFromDom();
+      }
+
+      function init() {
+        bindHelpFab();
+        bindPhaseStrip();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
 
   <script src="js/core/constants.js"></script>
   <script src="js/core/formulas.js"></script>

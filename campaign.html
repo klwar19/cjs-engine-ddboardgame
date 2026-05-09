@@ -11,12 +11,60 @@
   <link rel="stylesheet" href="css/campaign.css?v=gacha-vn-20260508">
   <link rel="stylesheet" href="css/scene-player.css">
   <link rel="stylesheet" href="css/l2d-avatar.css?v=peri-v2-wide">
-  <link rel="stylesheet" href="css/kuusou-blue-ui.css?v=20260509-2">
+  <link rel="stylesheet" href="css/kuusou-blue-ui.css?v=20260509-3">
 </head>
 <body class="campaign-page">
   <div id="campaign-root" class="campaign-root">
     <div class="campaign-loading">Loading Campaign Mode...</div>
   </div>
+
+  <button type="button" class="ku-help-fab" id="ku-help-fab"
+          aria-label="Open quick guide" aria-expanded="false"
+          aria-controls="ku-help-popover">?</button>
+  <aside class="ku-help-popover" id="ku-help-popover" role="dialog"
+         aria-labelledby="ku-help-popover-title" aria-hidden="true">
+    <div class="ku-help-popover-head">
+      <h3 id="ku-help-popover-title">Campaign Quick Guide</h3>
+      <button type="button" class="ku-help-popover-close"
+              data-ku-help-close aria-label="Close quick guide"></button>
+    </div>
+    <ol>
+      <li><b>Pick a Mode</b>The top bar selects what you do next: Story for narrative beats, Town for shops &amp; recruiting, Run to launch a scenario.</li>
+      <li><b>Watch the Story Hero</b>The big banner shows the next narrative step. Click the blue "Next Action" button when you're ready.</li>
+      <li><b>Manage your Party</b>Sidebar lists Active members. Use Sheet, Heal, Status to inspect or adjust them. Bench swaps are free.</li>
+      <li><b>Launch Combat</b>From Run / Maps, pick a battle &mdash; you'll be sent to the Combat screen. Results return here automatically.</li>
+      <li><b>Save Anywhere</b>Top-right Save menu &mdash; Quick Save overwrites; New Save creates a fresh slot; Fork branches a save.</li>
+    </ol>
+  </aside>
+
+  <script>
+    (function () {
+      function bindHelpFab() {
+        var fab = document.getElementById('ku-help-fab');
+        var pop = document.getElementById('ku-help-popover');
+        if (!fab || !pop) return;
+        function setOpen(open) {
+          pop.dataset.open = open ? 'true' : 'false';
+          pop.setAttribute('aria-hidden', open ? 'false' : 'true');
+          fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        fab.addEventListener('click', function () {
+          setOpen(pop.dataset.open !== 'true');
+        });
+        pop.querySelectorAll('[data-ku-help-close]').forEach(function (btn) {
+          btn.addEventListener('click', function () { setOpen(false); });
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape' && pop.dataset.open === 'true') setOpen(false);
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindHelpFab);
+      } else {
+        bindHelpFab();
+      }
+    })();
+  </script>
 
   <script src="js/core/constants.js"></script>
   <script src="js/core/formulas.js"></script>
