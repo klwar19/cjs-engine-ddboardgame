@@ -111,7 +111,7 @@ body.combat-page::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   background:
     radial-gradient(2px 2px at 18% 22%, rgba(255, 255, 255, 0.7) 0, transparent 60%),
     radial-gradient(2px 2px at 72% 38%, rgba(207, 240, 255, 0.6) 0, transparent 60%),
@@ -130,9 +130,6 @@ body.combat-page::before {
   body.campaign-page::before,
   body.combat-page::before { animation: none; }
 }
-
-body.campaign-page > *,
-body.combat-page > * { position: relative; z-index: 1; }
 
 .campaign-shell,
 .setup-screen,
@@ -880,10 +877,9 @@ body.combat-page input[type="range"]::-webkit-slider-thumb {
 /* improved gauges/buttons/cards/dialogs using more kuusou assets.   */
 /* ================================================================== */
 
-/* Make all panel content elevate above rotating ambient particles. */
-.campaign-shell,
-.combat-screen,
-.setup-screen { position: relative; z-index: 1; }
+/* The body::before particle layer sits at z-index: -1 so all real
+   content (including the L2D dock and floating help FAB) can stay at
+   their natural z-indices and remain interactive. */
 
 /* === Header polish: add an animated "currents" highlight === */
 .campaign-header,
@@ -1983,3 +1979,897 @@ body.combat-page .ku-help-popover { z-index: 65; }
   .ku-phase-strip { font-size: 0.8rem; padding: 8px 10px; gap: 8px; }
   .ku-phase-divider { display: none; }
 }
+
+/* ================================================================== */
+/* === REV 3 (2026-05-09): readability + flow cleanup ============== */
+/* Restores L2D dock to fixed; fixes dark roster panels; restyles    */
+/* Adventure Desk hint buttons as cards; widens Roll Random float;   */
+/* tightens combat sidebar; raises base font sizes for iPad clarity. */
+/* ================================================================== */
+
+/* --- L2D dock: keep its native fixed positioning --- */
+body.has-l2d-companion .l2d-dock {
+  position: fixed !important;
+  z-index: 40 !important;
+}
+body.combat-page .l2d-dock.l2d-mode-combat {
+  z-index: 35 !important;
+}
+body.campaign-page .l2d-dock.l2d-mode-campaign {
+  z-index: 24 !important;
+}
+
+/* --- Make sure the help FAB/popover sit above the L2D dock --- */
+body.campaign-page .ku-help-fab,
+body.combat-page .ku-help-fab,
+body.campaign-page .ku-help-popover,
+body.combat-page .ku-help-popover { z-index: 70 !important; }
+
+/* --- Body base typography: more readable, slightly larger --- */
+body.campaign-page,
+body.combat-page {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* --- Mode bar: drop the decorative pagebreak overlay (was visually noisy) --- */
+.campaign-mode-btn.active::after { display: none !important; }
+
+/* --- Mode buttons: clearer label/icon balance --- */
+.campaign-mode-btn {
+  font-size: 0.98rem;
+  padding: 10px 18px;
+  min-height: 46px;
+}
+.campaign-mode-btn .campaign-mode-icon {
+  font-size: 1.25rem;
+  margin-right: 4px;
+}
+
+/* --- Util pills (Quests / Logs / Settings) clearer --- */
+.campaign-util-btn {
+  min-height: 38px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.campaign-util-btn.active {
+  background-image: var(--ku-tab-active);
+  color: #fff;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.42);
+}
+
+/* --- Subtab strip: ensure inactive tabs are readable --- */
+.campaign-subtabs .campaign-tab {
+  color: var(--ku-blue-deep);
+  background-image: var(--ku-tab);
+}
+.campaign-subtabs .campaign-tab:hover {
+  background-image: var(--ku-tab-hover);
+}
+
+/* --- Headers: stronger contrast, larger title --- */
+.campaign-panel-head h2,
+.campaign-panel-head h3,
+.setup-header h2,
+.setup-panel h3,
+.preview-label,
+.loot-title,
+.battle-end-panel h2 {
+  font-size: 1.04rem;
+  min-height: 40px;
+  padding: 6px 32px 8px;
+}
+
+.campaign-panel-head .campaign-muted,
+.setup-hint,
+.preview-legend {
+  color: var(--ku-ink-soft) !important;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* --- Adventure Desk: convert .has-hint buttons into clean panel cards --- */
+.campaign-action.has-hint,
+.campaign-action.story.has-hint {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch !important;
+  gap: 4px;
+  padding: 12px 16px 14px !important;
+  min-height: 76px;
+  border: 0;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.78)) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.78)) !important;
+  background-size: 100% 100% !important;
+  background-color: transparent;
+  box-shadow:
+    var(--ku-shadow-soft),
+    inset 0 0 0 1px rgba(34, 169, 214, 0.3);
+  color: var(--ku-blue-deep);
+  text-align: left;
+  white-space: normal;
+  text-shadow: none;
+  transition: transform 160ms ease, box-shadow 200ms ease;
+}
+
+.campaign-action.has-hint:hover {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.86)) !important;
+  box-shadow:
+    var(--ku-shadow-lift),
+    inset 0 0 0 1px rgba(34, 169, 214, 0.5);
+  transform: translateY(-1px);
+}
+
+.campaign-action.has-hint.primary,
+.campaign-action.has-hint.story {
+  background-image:
+    linear-gradient(180deg, rgba(34, 169, 214, 0.95), rgba(8, 118, 156, 0.95)) !important;
+  color: #fff;
+  box-shadow:
+    var(--ku-shadow),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 60, 90, 0.4);
+}
+
+.campaign-action.has-hint.primary:hover,
+.campaign-action.has-hint.story:hover {
+  background-image:
+    linear-gradient(180deg, rgba(54, 195, 240, 0.98), rgba(28, 138, 176, 0.98)) !important;
+  box-shadow:
+    var(--ku-shadow-lift),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+}
+
+.campaign-action.has-hint.danger {
+  background-image:
+    linear-gradient(180deg, rgba(255, 244, 248, 0.98), rgba(255, 218, 230, 0.92)) !important;
+  color: #8a3d4d;
+  box-shadow:
+    var(--ku-shadow-soft),
+    inset 0 0 0 1px rgba(210, 101, 155, 0.5);
+}
+
+.campaign-action.has-hint .campaign-action-label {
+  font-family: var(--ku-font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.18;
+}
+
+.campaign-action.has-hint .campaign-action-hint {
+  display: block !important;
+  max-width: 100%;
+  margin-top: 4px !important;
+  color: var(--ku-ink-soft);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.36;
+  letter-spacing: 0;
+}
+
+.campaign-action.has-hint.primary .campaign-action-hint,
+.campaign-action.has-hint.story .campaign-action-hint {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.campaign-control-help {
+  font-size: 0.86rem;
+  color: var(--ku-ink-soft) !important;
+  line-height: 1.5;
+}
+
+.campaign-control-title {
+  font-family: var(--ku-font-display);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ku-blue-deep);
+}
+
+/* --- Roll Random / floating box: wider, prominent header --- */
+.campaign-random-float {
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.74)),
+    var(--ku-panel) !important;
+  background-size: 100% 100% !important;
+  border-radius: var(--ku-radius);
+  padding: 18px 20px 16px;
+  box-shadow: var(--ku-shadow);
+}
+
+.campaign-random-float.has-pending {
+  box-shadow: var(--ku-shadow), 0 0 0 2px rgba(245, 184, 75, 0.5), 0 0 28px rgba(245, 184, 75, 0.18);
+}
+
+.campaign-random-float .campaign-floating-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 14px 6px;
+  background: var(--ku-name-tag);
+  background-size: 100% 100%;
+  color: #fff;
+  font-family: var(--ku-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.42);
+}
+
+.campaign-random-float h3 {
+  margin: 8px 0 6px;
+  font-family: var(--ku-font-display);
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--ku-blue-deep);
+}
+
+.campaign-random-float p {
+  margin: 0 0 10px;
+  color: var(--ku-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.campaign-roll-now {
+  width: 100%;
+  min-height: 50px;
+  font-family: var(--ku-font-display);
+  font-size: 1.04rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background-image: var(--ku-choice) !important;
+  color: var(--ku-blue-deep) !important;
+}
+.campaign-roll-now:hover {
+  background-image: var(--ku-choice-hover) !important;
+}
+
+.campaign-impact-legend {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(34, 169, 214, 0.28);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.campaign-impact-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid rgba(34, 169, 214, 0.32);
+  border-radius: var(--ku-radius-pill);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ku-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.campaign-impact-badge.is-reward { border-color: rgba(74, 179, 156, 0.6); color: #1f7a6a; }
+.campaign-impact-badge.is-risk { border-color: rgba(210, 101, 155, 0.6); color: #8a3d6c; }
+.campaign-impact-badge.is-quest { border-color: rgba(34, 169, 214, 0.6); color: var(--ku-blue-deep); }
+.campaign-impact-badge.is-plot { border-color: rgba(211, 146, 55, 0.7); color: #8a571a; }
+.campaign-impact-badge.is-flavor { border-color: rgba(126, 113, 122, 0.42); color: var(--ku-ink-soft); }
+
+/* --- Town snapshot --- */
+.campaign-town-columns {
+  display: grid;
+  gap: 14px;
+}
+
+.campaign-town-line {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ku-line-soft);
+  background: rgba(255, 255, 255, 0.74);
+  margin-bottom: 8px;
+  color: var(--ku-ink);
+}
+.campaign-town-line strong {
+  display: block;
+  color: var(--ku-blue-deep);
+  font-family: var(--ku-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.campaign-town-line span {
+  color: var(--ku-ink-soft);
+  font-size: 0.86rem;
+}
+.campaign-town-line.is-risk {
+  border-left: 4px solid rgba(210, 101, 155, 0.6);
+  background: linear-gradient(180deg, rgba(255, 234, 240, 0.88), rgba(255, 255, 255, 0.7));
+}
+.campaign-town-line.is-plot {
+  border-left: 4px solid rgba(211, 146, 55, 0.7);
+  background: linear-gradient(180deg, rgba(255, 246, 220, 0.86), rgba(255, 255, 255, 0.7));
+}
+
+.campaign-town-now {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.campaign-town-kpi {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--ku-line-soft);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(237, 250, 255, 0.7));
+  text-align: center;
+}
+.campaign-town-kpi b {
+  display: block;
+  font-family: var(--ku-font-display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--ku-blue-deep);
+  line-height: 1.05;
+}
+.campaign-town-kpi span {
+  font-size: 0.78rem;
+  color: var(--ku-ink-soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.campaign-town-kpi.is-risk b { color: #b54a76; }
+.campaign-town-kpi.is-plot b { color: #b06d2c; }
+
+.campaign-section-title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 14px 6px;
+  margin-bottom: 8px;
+  background: var(--ku-heading-2);
+  background-size: 100% 100%;
+  color: #fff;
+  font-family: var(--ku-font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 2px rgba(0, 83, 118, 0.42);
+  border-radius: 4px;
+}
+
+/* --- Roster member: light backgrounds, readable skill/passive panels --- */
+.campaign-roster-member {
+  border: 0;
+  border-radius: var(--ku-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.74)),
+    var(--ku-panel);
+  background-size: 100% 100%;
+  color: var(--ku-ink);
+  box-shadow: var(--ku-shadow);
+  margin-bottom: 18px;
+  padding: 18px 20px;
+}
+.campaign-roster-member::before { display: none; }
+
+.campaign-roster-card {
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.6)) !important;
+  color: var(--ku-ink) !important;
+  box-shadow: 0 6px 14px rgba(8, 118, 156, 0.12), inset 0 0 0 1px rgba(34, 169, 214, 0.18) !important;
+  padding: 14px 16px !important;
+}
+
+.campaign-roster-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-family: var(--ku-font-display);
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ku-blue-deep);
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(34, 169, 214, 0.3);
+}
+.campaign-roster-card-title small,
+.campaign-roster-card-title .campaign-muted {
+  color: var(--ku-ink-soft) !important;
+  font-size: 0.74rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+/* Stats grid inside roster: light cells with clear values */
+.campaign-stat-grid {
+  margin: 12px 0;
+}
+.campaign-stat-grid span,
+.campaign-stat-grid > span {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.62)) !important;
+  border: 1px solid rgba(34, 169, 214, 0.22) !important;
+  border-radius: 10px !important;
+  color: var(--ku-ink) !important;
+  padding: 10px 12px !important;
+  display: grid;
+  gap: 2px;
+  align-items: start !important;
+  white-space: normal;
+  font-size: 0.86rem !important;
+}
+.campaign-stat-grid b {
+  font-family: var(--ku-font-display);
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--ku-blue-deep);
+}
+.campaign-stat-grid small {
+  color: var(--ku-ink-soft) !important;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.campaign-roster-stat {
+  border-bottom: 1px dotted rgba(34, 169, 214, 0.18) !important;
+  padding: 4px 2px;
+  font-size: 0.92rem;
+}
+.campaign-roster-stat span { color: var(--ku-ink-soft) !important; }
+.campaign-roster-stat strong { color: var(--ku-blue-deep) !important; }
+
+/* Pool details (skill/passive expandable) */
+.campaign-pool-details {
+  margin-top: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--ku-line-soft);
+  padding: 4px 8px;
+}
+.campaign-pool-summary {
+  cursor: pointer;
+  padding: 6px 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ku-blue-deep);
+  list-style: none;
+}
+.campaign-pool-summary::-webkit-details-marker { display: none; }
+.campaign-pool-summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--ku-blue);
+  transition: transform 160ms ease;
+}
+.campaign-pool-details[open] .campaign-pool-summary::before { transform: rotate(90deg); }
+
+/* Skill / passive slot rendering — better readability */
+.campaign-slot {
+  border-radius: 10px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(232, 248, 255, 0.58)) !important;
+  border: 1px solid var(--ku-line-soft) !important;
+  color: var(--ku-ink) !important;
+  padding: 10px 12px !important;
+}
+.campaign-slot.empty {
+  border: 1px dashed rgba(34, 169, 214, 0.36) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  color: var(--ku-ink-soft) !important;
+}
+.campaign-slot strong { color: var(--ku-blue-deep); }
+.campaign-slot small { color: var(--ku-ink-soft); }
+
+.campaign-skill-pool-item,
+.campaign-passive-pool-item,
+.campaign-skill-line,
+.campaign-passive-line,
+.campaign-equipment-line,
+.campaign-record-line {
+  border-bottom: 1px dashed rgba(34, 169, 214, 0.22) !important;
+  padding: 8px 4px !important;
+  color: var(--ku-ink) !important;
+}
+
+/* Affinity / resistance lists */
+.campaign-resistance-line,
+.campaign-affinity-row,
+.campaign-roster-affinities .campaign-row {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border-radius: 8px !important;
+  padding: 6px 8px !important;
+  margin-bottom: 4px;
+  border: 1px solid var(--ku-line-soft);
+  color: var(--ku-ink) !important;
+}
+
+/* Status chips on roster */
+.campaign-known-status {
+  background: rgba(255, 255, 255, 0.74) !important;
+  border: 1px solid var(--ku-line-soft) !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  margin-bottom: 6px;
+  color: var(--ku-ink) !important;
+}
+
+/* Equipment loadout */
+.campaign-equip-slot,
+.campaign-equip-row {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid var(--ku-line-soft) !important;
+  color: var(--ku-ink) !important;
+}
+
+/* --- Scenario Start button: prominent and clear --- */
+.campaign-action[data-campaign-action="start-scenario"] {
+  min-height: 46px;
+  padding: 10px 24px;
+  font-family: var(--ku-font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background-image: var(--ku-choice) !important;
+  color: var(--ku-blue-deep) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.campaign-action[data-campaign-action="start-scenario"]:hover:not(:disabled) {
+  background-image: var(--ku-choice-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(34, 169, 214, 0.28);
+}
+.campaign-action[data-campaign-action="start-scenario"]::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: var(--ku-arrow-right) center / contain no-repeat;
+}
+
+/* --- Generic action button text wrap fix (some labels with parens / special chars) --- */
+.campaign-action {
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+.campaign-action-grid .campaign-action { white-space: normal; }
+
+/* --- Combat: tame the BGM panel and tighten the action stack --- */
+.combat-sidebar {
+  display: grid;
+  gap: 12px;
+}
+
+.combat-assist-menu {
+  border-radius: var(--ku-radius);
+  overflow: hidden;
+  background: transparent !important;
+  box-shadow: var(--ku-shadow-soft);
+}
+.combat-assist-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 18px !important;
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--ku-font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--ku-blue-deep) !important;
+  background-image: var(--ku-button) !important;
+  background-size: 100% 100% !important;
+  border-radius: 10px !important;
+}
+.combat-assist-menu summary::-webkit-details-marker { display: none; }
+.combat-assist-menu summary:hover {
+  background-image: var(--ku-button-hover) !important;
+}
+.combat-assist-menu summary::after {
+  width: 18px !important;
+  height: 18px !important;
+}
+.combat-assist-menu[open] summary {
+  background-image: var(--ku-button-hover) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.combat-assist-panel {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.6));
+  border: 1px solid var(--ku-line-soft);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  display: grid;
+  gap: 12px;
+}
+
+.dice-controls {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.dice-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dice-label {
+  flex: 0 0 auto;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ku-ink-soft);
+}
+.dice-mode-btn {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 0.86rem;
+}
+.auto-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.auto-controls .btn { flex: 1 1 auto; min-height: 36px; }
+
+/* --- Combat unit-info panel sizing --- */
+.unit-info-panel {
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.unit-card {
+  padding: 14px 16px !important;
+  display: grid;
+  gap: 10px;
+}
+
+/* --- Initiative chip: avoid super-narrow columns --- */
+.init-unit {
+  flex: 0 0 auto;
+  min-width: 100px;
+  max-width: 130px;
+}
+.init-unit .init-name {
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Combat narrator/log: bigger, scroll-safe --- */
+.narrator-panel,
+.battle-log-panel {
+  font-size: 0.95rem;
+  padding: 14px 18px;
+  max-height: 240px;
+}
+.narrator-panel p,
+.log-entry { line-height: 1.55; }
+
+/* --- Setup/encounter cards: bigger & clearer --- */
+.setup-enc-card {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px 16px !important;
+  text-align: left;
+  white-space: normal !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 248, 255, 0.62)) !important;
+  background-color: transparent;
+  background-size: 100% 100% !important;
+  border-radius: 12px !important;
+  box-shadow:
+    var(--ku-shadow-soft),
+    inset 0 0 0 1px var(--ku-line-soft);
+}
+.setup-enc-card:hover {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(207, 240, 255, 0.85)) !important;
+  box-shadow:
+    var(--ku-shadow),
+    inset 0 0 0 1px rgba(34, 169, 214, 0.5);
+}
+.setup-enc-card.selected {
+  background-image:
+    linear-gradient(180deg, rgba(34, 169, 214, 0.16), rgba(8, 118, 156, 0.06)) !important;
+  box-shadow:
+    var(--ku-shadow),
+    inset 0 0 0 2px rgba(34, 169, 214, 0.55);
+}
+.enc-card-name {
+  font-family: var(--ku-font-display);
+  font-size: 1.04rem;
+  font-weight: 700;
+  color: var(--ku-blue-deep);
+}
+.enc-card-meta { font-size: 0.84rem; color: var(--ku-ink-soft); }
+
+/* --- Setup roster picker: keep visible, clean rows --- */
+.setup-unit-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(232, 248, 255, 0.6)) !important;
+  background-size: 100% 100% !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 0 0 1px var(--ku-line-soft);
+  text-align: left;
+  white-space: normal !important;
+}
+
+.setup-unit-name { font-weight: 700; color: var(--ku-blue-deep); }
+.setup-unit-rank { color: var(--ku-ink); }
+
+/* --- Combat header: keep full-bleed across viewport, no gap --- */
+.combat-header {
+  width: min(1640px, calc(100% - 32px));
+  margin: 12px auto 0;
+  padding: 14px 22px;
+}
+.combat-header h1 { font-size: 1.5rem; }
+
+/* --- L2D companion: small breathing room when adjacent to combat sidebar --- */
+body.combat-page.has-l2d-companion #combat-app {
+  padding-right: calc(var(--l2d-combat-w) + 28px);
+}
+
+@media (max-width: 1280px) {
+  body.combat-page.has-l2d-companion #combat-app {
+    padding-right: calc(var(--l2d-combat-w) * 0.86 + 18px);
+  }
+}
+
+/* --- iPad-friendly: 1024-1280 stacking + spacing --- */
+@media (max-width: 1180px) {
+  body.campaign-page,
+  body.combat-page { font-size: 14.5px; }
+
+  .campaign-modes { flex-direction: column; align-items: stretch; padding: 10px; }
+  .campaign-modes-primary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .campaign-modes-utility { display: flex; gap: 6px; }
+  .campaign-mode-btn { justify-content: center; padding: 8px 12px; min-height: 42px; font-size: 0.9rem; }
+
+  .campaign-body {
+    grid-template-columns: minmax(0, 1fr) 64px !important;
+    gap: 12px !important;
+  }
+  .campaign-rail {
+    position: sticky !important;
+    top: 12px !important;
+    max-height: calc(100vh - 24px) !important;
+  }
+  .campaign-rail-btn {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .campaign-action.has-hint { padding: 10px 14px 12px !important; min-height: 70px; }
+  .campaign-action.has-hint .campaign-action-label { font-size: 0.96rem; }
+  .campaign-action.has-hint .campaign-action-hint { font-size: 0.78rem; }
+
+  .campaign-roster-member { padding: 14px 16px; }
+  .campaign-roster-card { padding: 12px 14px !important; }
+
+  .ku-phase-strip { padding: 8px 12px; gap: 8px; font-size: 0.88rem; }
+  .ku-phase-step { padding: 4px 10px; }
+}
+
+@media (max-width: 980px) {
+  .campaign-body {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .campaign-rail {
+    position: static !important;
+    max-height: none !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center;
+    overflow: visible !important;
+  }
+  .campaign-roster-detail-row,
+  .campaign-roster-vitals-row {
+    grid-template-columns: 1fr !important;
+  }
+  .combat-sidebar { gap: 10px; }
+}
+
+/* When L2D is hidden under 900px, restore the full grid */
+@media (max-width: 900px) {
+  body.has-l2d-companion #combat-app { padding-right: 0 !important; }
+  body.has-l2d-companion { padding-right: 0 !important; }
+}
+
+/* --- Final overrides to keep bright text visible everywhere --- */
+.campaign-muted,
+.campaign-muted *,
+.campaign-control-help,
+.campaign-control-help * {
+  color: var(--ku-ink-soft) !important;
+}
+
+.campaign-empty {
+  color: var(--ku-ink-soft) !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px dashed rgba(34, 169, 214, 0.32) !important;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+/* Buttons inside cards stay readable on hover */
+.btn-primary,
+.btn-success {
+  background-image: var(--ku-choice) !important;
+  color: var(--ku-blue-deep) !important;
+  font-weight: 700;
+}
+.btn-primary:hover,
+.btn-success:hover {
+  background-image: var(--ku-choice-hover) !important;
+}
+.btn-danger {
+  background-image: var(--ku-button) !important;
+  color: #8a3d4d !important;
+  box-shadow: inset 0 0 0 1px rgba(210, 101, 155, 0.5);
+}
+
+/* Quest cards / chain cards readability */
+.campaign-quest-card,
+.campaign-quest-phase,
+.campaign-chain-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.74)),
+    var(--ku-panel) !important;
+  background-size: 100% 100% !important;
+  color: var(--ku-ink);
+}
+.campaign-quest-card strong,
+.campaign-chain-card strong { color: var(--ku-blue-deep); }
+.campaign-quest-card small,
+.campaign-chain-card small { color: var(--ku-ink-soft); }
+
+/* --- Story-VN dashboard: keep dark hero but ensure surrounding panels are light --- */
+body.campaign-page .campaign-story-vn .campaign-story-empty-world,
+body.campaign-page .campaign-story-vn .campaign-story-control-deck,
+body.campaign-page .campaign-story-vn .campaign-story-episode-panel,
+body.campaign-page .campaign-story-vn .campaign-story-support-grid > .campaign-panel,
+body.campaign-page .campaign-story-vn .campaign-story-support-panel {
+  color: var(--ku-ink) !important;
+}
+
+/* --- Body content elevation above ambient particles via implicit stacking --- */
+.campaign-shell,
+.combat-screen,
+.setup-screen,
+#combat-app,
+#campaign-root,
+#battle-setup-container,
+#combat-container { isolation: isolate; }

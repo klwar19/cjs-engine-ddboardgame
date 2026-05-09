@@ -1601,15 +1601,6 @@ window.CJS.CampaignUI = (() => {
             <div class="campaign-section-title">Places</div>
             ${locations || '<div class="campaign-empty">No hub locations loaded.</div>'}
           </div>
-          <div>
-            <div class="campaign-section-title">Fast Actions</div>
-            <div class="campaign-action-grid">
-              <button class="campaign-action" data-campaign-action="open-quests-tab">Quests</button>
-              <button class="campaign-action" data-campaign-action="open-shops-tab">Shops & Rest</button>
-              <button class="campaign-action" data-campaign-action="open-roster-tab">Roster</button>
-              <button class="campaign-action" data-campaign-action="open-sideforge-tab">Hub Pulse</button>
-            </div>
-          </div>
         </div>
       </section>
     `;
