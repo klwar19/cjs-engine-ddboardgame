@@ -1124,6 +1124,25 @@ window.CJS.CombatUI = (() => {
     const unit = CM().getCurrentUnit();
     if (!unit) return;
 
+    // Clicking the active mode's button again cancels back to idle.
+    if (type === 'move' && _mode === 'move') {
+      _exitMode();
+      return;
+    }
+    if ((type === 'attack' || type === 'skill' || type === 'item') &&
+        (_mode === 'target_single' || _mode === 'target_aoe')) {
+      const pending = _pendingAction || {};
+      const sameAttack = type === 'attack' && pending.type === 'attack';
+      const sameSkill = type === 'skill' && pending.type === 'skill' &&
+                        pending.skillId === button.dataset.skill;
+      const sameItem = type === 'item' && pending.type === 'item' &&
+                       pending.itemId === button.dataset.item;
+      if (sameAttack || sameSkill || sameItem) {
+        _exitMode();
+        return;
+      }
+    }
+
     switch (type) {
       case 'move':
         _enterMoveMode(unit);
@@ -1156,15 +1175,25 @@ window.CJS.CombatUI = (() => {
     }
   }
 
+  function _exitMode() {
+    _mode = 'idle';
+    _pendingAction = null;
+    GR().clearHighlights();
+    _clearModeHint();
+  }
+
   function _enterMoveMode(unit) {
+    GR().clearHighlights();
+    _pendingAction = null;
     _mode = 'move';
     const moves = GE().getValidMoves(unit.instanceId);
     const cells = Array.isArray(moves) ? moves.map(([r, c]) => ({ r, c })) : [];
     GR().setHighlights(cells, 'rgba(59,130,246,0.4)', 'move');
-    _setModeHint('Click a blue cell to move, or press Esc to cancel.');
+    _setModeHint('Click a blue cell to move, or click Move again / press Esc to cancel.');
   }
 
   function _enterTargetMode(unit, action) {
+    GR().clearHighlights();
     _mode = 'target_single';
     _pendingAction = action;
 
@@ -1188,10 +1217,11 @@ window.CJS.CombatUI = (() => {
     }
 
     GR().setHighlights(cells, 'rgba(239,68,68,0.4)', 'target');
-    _setModeHint('Click a valid target, or press Esc to cancel.');
+    _setModeHint('Click a valid target, or click the same action again / press Esc to cancel.');
   }
 
   function _enterAoETargetMode(unit, skill) {
+    GR().clearHighlights();
     _mode = 'target_aoe';
     _pendingAction = { type: 'skill', skillId: skill.id };
 
@@ -1199,7 +1229,7 @@ window.CJS.CombatUI = (() => {
     const rawCells = GE().getCellsInRange(unit.pos[0], unit.pos[1], range);
     const cells = rawCells.map(([r, c]) => ({ r, c }));
     GR().setHighlights(cells, 'rgba(168,85,247,0.3)', 'target');
-    _setModeHint('Click a cell for the AoE center, or press Esc to cancel.');
+    _setModeHint('Click a cell for the AoE center, or click the same skill again / press Esc to cancel.');
   }
 
   function _onCellClick(r, c) {
