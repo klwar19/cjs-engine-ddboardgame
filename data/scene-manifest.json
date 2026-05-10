@@ -25,17 +25,7 @@
       "triggers": [
         "CampaignState.source:event_roll"
       ],
-      "clips": [
-        {
-          "id": "campaign-roll-event-01",
-          "src": "assets/scenes/campaign/roll-event-01.mp4",
-          "world": "any",
-          "functionKey": "roll_event",
-          "tags": ["campaign", "roll", "event"],
-          "sort": 10,
-          "weight": 1
-        }
-      ]
+      "clips": []
     },
     "campaign.random_battle": {
       "label": "Campaign / Random Battle",

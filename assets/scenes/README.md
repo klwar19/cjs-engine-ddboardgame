@@ -2,18 +2,11 @@
 
 Drop short scene clips here and register them in `data/scene-manifest.json`.
 
-Recommended first test file:
-
-```text
-assets/scenes/campaign/roll-event-01.mp4
-```
-
 Suggested layout:
 
 ```text
 assets/scenes/
   campaign/
-    roll-event-01.mp4
     random-battle-01.mp4
     oracle-01.mp4
     frostbitten/
@@ -39,7 +32,6 @@ assets/scenes/<area>/<world-or-shared>/<function>-NN.mp4
 Examples:
 
 ```text
-assets/scenes/campaign/roll-event-01.mp4
 assets/scenes/campaign/frostbitten/roll-event-01.mp4
 assets/scenes/campaign/frostbitten/random-battle-01.mp4
 assets/scenes/combat/attack-01.mp4
@@ -58,8 +50,8 @@ assets/scenes/combat/attack-01.mp4
 - `clips[].weight` changes random-pick frequency when several clips match.
 - If a clip matches the current world, it is preferred over `world: "any"`.
 
-To add a world-specific roll-event scene, add the file and then add another
-clip entry under `scenes.campaign.roll_event.clips`:
+To add a world-specific roll-event scene, add the file and then add a clip
+entry under `scenes.campaign.roll_event.clips`:
 
 ```json
 {
