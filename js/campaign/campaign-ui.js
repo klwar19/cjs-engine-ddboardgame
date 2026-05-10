@@ -30,8 +30,8 @@ window.CJS.CampaignUI = (() => {
   }
 
   let _root = null;
-  let _activeMode = 'town';
-  let _activeTab = 'overview';
+  let _activeMode = 'story';
+  let _activeTab = 'storyHome';
   let _booted = false;
   let _combatResultUnsub = null;
   let _combatReturnEventsBound = false;
@@ -86,6 +86,53 @@ window.CJS.CampaignUI = (() => {
     return out;
   })();
 
+  const APP_MODES = [
+    ['story', 'Story', 'ST'],
+    ['quest', 'Quest', 'QT'],
+    ['event', 'Event', 'EV']
+  ];
+
+  const APP_MODE_TABS = {
+    story: [
+      ['storyHome', 'Story Home'],
+      ['storyDirector', 'Director']
+    ],
+    quest: [
+      ['questHome', 'Quest Home'],
+      ['quests', 'Normal Quests'],
+      ['farm', 'Farm'],
+      ['cook', 'Cook'],
+      ['craft', 'Forge'],
+      ['inventory', 'Inventory']
+    ],
+    event: [
+      ['eventHome', 'Event Home'],
+      ['questChains', 'Side Stories'],
+      ['sideForge', 'Hub'],
+      ['oracleForge', 'Oracle'],
+      ['battleSets', 'Battles'],
+      ['mapSeeds', 'Map Seeds']
+    ]
+  };
+
+  const APP_UTILITY_TABS = [
+    ['maps', 'Current Run'],
+    ['scenarios', 'Run Setup'],
+    ['roster', 'Party'],
+    ['shops', 'Shop/Rest'],
+    ['pocket', 'Pocket Haven'],
+    ['logs', 'Logs'],
+    ['settings', 'Settings']
+  ];
+
+  const APP_TAB_TO_MODE = (() => {
+    const out = {};
+    for (const [mode, tabs] of Object.entries(APP_MODE_TABS)) {
+      for (const [id] of tabs) out[id] = mode;
+    }
+    return out;
+  })();
+
   async function init(root) {
     _root = root;
     _root.innerHTML = '<div class="campaign-loading">Loading Campaign Mode...</div>';
@@ -120,8 +167,8 @@ window.CJS.CampaignUI = (() => {
     const state = CS().getState();
     const campaign = CS().getCurrentCampaign();
 
-    const isUtility = UTILITY_TABS.some(([id]) => id === _activeTab);
-    const subTabs = isUtility ? UTILITY_TABS : (MODE_TABS[_activeMode] || []);
+    const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
+    const subTabs = isUtility ? APP_UTILITY_TABS : (APP_MODE_TABS[_activeMode] || []);
 
     _root.innerHTML = `
       <div class="campaign-shell ${_activePanel ? 'has-drawer-open' : ''}">
@@ -176,7 +223,7 @@ window.CJS.CampaignUI = (() => {
     const key = _combatResultKey(result);
     if (key && (key === _lastCombatResultKey || key === state?.lastCombatResultKey)) return true;
     _lastCombatResultKey = key;
-    _activeMode = 'scenario';
+    _activeMode = 'quest';
     _activeTab = 'maps';
     Bridge().applyResult(result);
     UI()?.toast?.(`Combat ${result.result || 'result'} applied to campaign.`, 'success');
@@ -277,13 +324,13 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderModeBar(state) {
-    const modeButtons = MODES.map(([id, label, icon]) => {
-      const active = id === _activeMode && !UTILITY_TABS.some(([u]) => u === _activeTab);
+    const modeButtons = APP_MODES.map(([id, label, icon]) => {
+      const active = id === _activeMode && !APP_UTILITY_TABS.some(([u]) => u === _activeTab);
       return `<button class="campaign-mode-btn ${active ? 'active' : ''}" data-campaign-mode="${id}">
         <span class="campaign-mode-icon">${icon}</span><span>${label}</span>
       </button>`;
     }).join('');
-    const utilityButtons = UTILITY_TABS.map(([id, label]) => {
+    const utilityButtons = APP_UTILITY_TABS.map(([id, label]) => {
       const active = id === _activeTab;
       return `<button class="campaign-util-btn ${active ? 'active' : ''}" data-campaign-tab="${id}">${label}</button>`;
     }).join('');
@@ -869,6 +916,9 @@ window.CJS.CampaignUI = (() => {
 
   function _renderMain(state) {
     switch (_activeTab) {
+      case 'storyHome': return _renderStoryHome(state);
+      case 'questHome': return _renderQuestHome(state);
+      case 'eventHome': return _renderEventHome(state);
       case 'roster': return _renderRoster(state);
       case 'storyDirector': return _renderStoryDirector(state);
       case 'sideForge': return _renderSideForge(state);
@@ -890,6 +940,454 @@ window.CJS.CampaignUI = (() => {
       case 'overview':
       default: return _renderOverview(state);
     }
+  }
+
+  function _renderStoryHome(state) {
+    const director = SD();
+    const snap = director?.snapshot?.() || {};
+    const pack = snap.pack || null;
+    const stage = snap.stage || {};
+    const flow = snap.flow || null;
+    const syncKey = pack?.id && flow?.stageId ? `${pack.id}:${flow.stageId}` : '';
+    const flowSynced = !!(syncKey && state.storyDirector?.sideQuestSync?.[syncKey]);
+    const theme = _storyTheme(state);
+    const next = director
+      ? _storyNextStep(snap, state, flowSynced)
+      : {
+          index: 0,
+          title: 'Story tools are offline',
+          text: 'Story Mode could not find the Story Director module.',
+          actions: []
+        };
+    const queue = (snap.queue || []).slice(0, 3);
+    const clues = (snap.clues || []).slice(0, 4);
+    const activeRun = state.activeScenarioRun;
+    const campaign = CS().getCurrentCampaign();
+    const authoredRuns = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
+
+    return `
+      <div class="campaign-dashboard campaign-mode-home campaign-story-home campaign-story-vn ${_escAttr(theme.className)}" ${_storyThemeStyle(theme)}>
+        ${_renderStoryVnHero({ state, pack, stage, next, theme })}
+        ${_renderModeFlow('Story Flow', [
+          ['Episode', 'Pick the current chapter beat.'],
+          ['Scene', 'Roll or write VN/table text.'],
+          ['Choice', 'Choose the route to commit.'],
+          ['Run', 'Launch a map or battle if needed.'],
+          ['Reward', 'Save consequences to the campaign.']
+        ], Math.min(next.index || 0, 4))}
+
+        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Main Story</h2>
+              <div class="campaign-muted">${_esc(stage.summary || pack?.summary || 'Play the main arc, one episode at a time.')}</div>
+            </div>
+            <span class="campaign-pill">${_esc(stage.name || 'No stage selected')}</span>
+          </div>
+          <div class="campaign-home-actions">
+            ${_actionBtn({ action: 'story-roll-scene', label: 'Next Story Scene', hint: 'Rolls a route popup before applying anything', kind: 'primary story' })}
+            ${_actionBtn({ action: 'story-manual-note', label: 'Write Scene', hint: 'Manual story beat, saved to the story queue', kind: 'manual' })}
+            ${_actionBtn({ action: 'open-scenarios-tab', label: activeRun ? 'Open Run Setup' : 'Story Run Setup', hint: 'Pick or generate a playable run' })}
+            ${_actionBtn({ action: 'open-maps-tab', label: activeRun ? 'Continue Current Run' : 'Current Run', hint: activeRun ? 'Return to the active map' : 'No run active yet', kind: activeRun ? 'primary' : '' })}
+          </div>
+        </section>
+
+        <section class="campaign-panel campaign-wide-panel">
+          <div class="campaign-panel-head">
+            <div>
+              <h3>Episode Route</h3>
+              <div class="campaign-muted">This guides tables and random rolls; it does not lock the story.</div>
+            </div>
+          </div>
+          ${_renderStoryStageRail(pack?.stages || [], stage)}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Current Story Card</h3></div>
+          ${snap.last ? `
+            <div class="campaign-home-card">
+              <strong>${_esc(snap.last.title || snap.last.id)}</strong>
+              <p>${_esc(snap.last.prompt || snap.last.summary || snap.last.text || '')}</p>
+              <div class="campaign-chip-row">
+                <span class="campaign-chip">${_esc(snap.last.kind || snap.last.type || 'scene')}</span>
+                <span class="campaign-risk ${Side().riskClass(snap.last.canonRisk)}">${_esc(snap.last.canonRisk || 'green')}</span>
+              </div>
+              <div class="campaign-action-grid">
+                ${_actionBtn({ action: 'story-open-last', label: 'Open Popup', hint: 'Review route choices' })}
+                ${_actionBtn({ action: 'story-save-beat', label: 'Hold', hint: 'Keep this scene for later' })}
+                ${_actionBtn({ action: 'story-reject-beat', label: 'Skip', hint: 'Reject this roll', kind: 'danger' })}
+              </div>
+            </div>
+          ` : '<div class="campaign-empty">No active story roll. Use Next Story Scene when you want the app to offer a beat.</div>'}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Held Scenes</h3><button class="campaign-action" data-campaign-action="story-open-last">Open Last</button></div>
+          ${queue.length ? queue.map((card) => `<div class="campaign-row"><div><strong>${_esc(card.title || card.id)}</strong><div class="campaign-muted">${_esc(card.status || 'saved')} | ${_esc(card.kind || card.type || 'scene')}</div></div><span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span></div>`).join('') : '<div class="campaign-empty">No held scenes yet.</div>'}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Story Clues</h3><button class="campaign-action" data-campaign-action="story-roll-memory">Memory / Clue</button></div>
+          ${clues.length ? clues.map((clue) => `<div class="campaign-row"><div><strong>${_esc(clue.title || clue.id)}</strong><div class="campaign-muted">${_esc(clue.text || '')}</div></div><span class="campaign-risk ${Side().riskClass(clue.canonRisk)}">${_esc(clue.canonRisk || 'green')}</span></div>`).join('') : '<div class="campaign-empty">No clue ledger entries yet.</div>'}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Manual Story Control</h3></div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'story-roll-peri', label: 'Peri Interrupt', hint: 'Comedy/system beat' })}
+            ${_actionBtn({ action: 'story-pressure-tick', label: 'Offscreen Trouble', hint: 'Advance pressure without forcing canon', kind: 'risk' })}
+            ${_actionBtn({ action: 'story-sync-sidequests', label: flowSynced ? 'Routes Updated' : 'Update Side Routes', hint: 'Syncs recommended side route pressure once', disabled: !flow || flowSynced, kind: 'quest' })}
+            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Current stage, card, clues, and queue' })}
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Story-Ready Runs</h3></div>
+          ${authoredRuns.slice(0, 3).map((scenario) => `
+            <div class="campaign-row">
+              <div>
+                <strong>${_esc(scenario.name || scenario.id)}</strong>
+                <div class="campaign-muted">${_esc(scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform'))} | ${_esc(scenario.notes || '')}</div>
+              </div>
+              <button class="campaign-action" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${activeRun ? 'disabled' : ''}>Start</button>
+            </div>
+          `).join('') || '<div class="campaign-empty">No story runs loaded.</div>'}
+        </section>
+
+        ${_renderPurposeGuide(['hubPulse', 'rumor', 'problem', 'oracle'], {
+          wide: true,
+          note: 'Use the lightest tool first, then promote only when you want commitment.'
+        })}
+        ${_renderSoloNotice(state)}
+        ${activeRun ? _renderScenarioSummary(state) : ''}
+        ${_renderPendingBattle(state)}
+        ${_renderCombatResult(state)}
+        ${_renderTravelSurprise(state)}
+        ${_renderEventResult(state)}
+        ${_renderOracle(state)}
+      </div>
+    `;
+  }
+
+  function _renderQuestHome(state) {
+    const quests = Object.values(state.quests || {});
+    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
+    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
+    const nextQuest = active[0] || null;
+    const templateCount = Object.values(CS().getContent().campaignQuests || {})
+      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
+    const run = state.activeScenarioRun;
+
+    return `
+      <div class="campaign-dashboard campaign-mode-home campaign-quest-home">
+        ${_renderGachaHomeHero({
+          tone: 'quest',
+          kicker: 'Normal Quest',
+          title: nextQuest ? nextQuest.title || nextQuest.id : 'Quest Board',
+          text: nextQuest
+            ? nextQuest.summary || 'Continue the current farming/adventure request.'
+            : 'Pick repeatable work, farm resources, or create a small story-flavored quest run.',
+          meta: [`${active.length} active`, `${finished.length} resolved`, `${templateCount} templates`],
+          actions: [
+            _actionBtn({ action: 'add-quest', label: 'Add Quest', hint: 'Create or edit a normal quest', kind: 'primary' }),
+            _actionBtn({ action: 'random-quest-offer', label: 'Quick Quest Run', hint: 'Pick a quest template and start its run' }),
+            _actionBtn({ action: 'generate-quest-scenario', label: 'Generate From Quest', hint: 'Use the active quest to create a run', disabled: !!run }),
+            _actionBtn({ action: 'open-maps-tab', label: run ? 'Continue Run' : 'Current Run', hint: run ? 'Return to the active run' : 'No run is active yet' })
+          ]
+        })}
+        ${_renderModeFlow('Quest Flow', [
+          ['Accept', 'Add a normal quest.'],
+          ['Run', 'Start a linked or generated stage.'],
+          ['Farm', 'Collect drops and materials.'],
+          ['Wrap', 'Apply run result to objectives.'],
+          ['Turn In', 'Resolve or leave open.']
+        ], run ? 2 : (nextQuest ? 1 : 0))}
+
+        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Normal Quest Board</h2>
+              <div class="campaign-muted">Repeatable and low-canon content. It can still have scenes, banter, events, and choices.</div>
+            </div>
+            <span class="campaign-pill">${active.length} active</span>
+          </div>
+          <div class="campaign-quest-list">
+            ${active.length ? active.slice(0, 4).map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active normal quests. Add one or use Quick Quest Run.</div>'}
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Farming Stages</h3></div>
+          <div class="campaign-stage-grid">
+            ${_renderFarmingStageCard('Materials', 'Forest and cave routes for pelts, crystals, food hooks, and craft parts.', 'generate-material-run')}
+            ${_renderFarmingStageCard('Gold / JP', 'Short guild work with light story color and manual result support.', 'random-quest-offer')}
+            ${_renderFarmingStageCard('Pocket Haven', 'Farm growth, cooking, and forge prep between runs.', 'open-farm-tab')}
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Quest Story Wrapper</h3></div>
+          <div class="campaign-muted">Use these to add a small scene around a farming run without turning it into main canon.</div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'roll-event', label: 'Draw Quest Event', hint: 'A table event with visible consequences' })}
+            ${_actionBtn({ action: 'roll-oracle', label: 'Quest Oracle', hint: 'Prompt only, no mechanics' })}
+            ${_actionBtn({ action: 'random-rumor-offer', label: 'Rumor Lead', hint: 'Save a lead to the hub bank' })}
+            ${_actionBtn({ action: 'roll-party-chat', label: 'Party Banter', hint: 'Small character beat' })}
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Manual Quest Control</h3></div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'open-scenarios-tab', label: 'Run Setup', hint: 'Pick authored or generated scenarios' })}
+            ${_actionBtn({ action: 'manual-battle', label: 'Manual Battle Result', hint: 'Resolve without opening combat' })}
+            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Advance timers and phase state' })}
+            ${_actionBtn({ action: 'full-rest', label: 'Full Rest', hint: 'Restore party in allowed phases' })}
+          </div>
+        </section>
+
+        ${_renderSoloNotice(state)}
+        ${run ? _renderScenarioSummary(state) : ''}
+        ${_renderPendingBattle(state)}
+        ${_renderCombatResult(state)}
+        ${_renderEventResult(state)}
+        ${_renderOracle(state)}
+        ${_renderLastReport(state)}
+      </div>
+    `;
+  }
+
+  function _renderEventHome(state) {
+    const hub = window.CJS.CampaignHub?.getCurrentHubDefinition?.();
+    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
+    const activeChains = window.CJS.CampaignQuestChains?.getActive?.() || [];
+    const availableChains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
+    const review = state.sideContent?.reviewQueue || [];
+    const last = state.lastSideContentCard;
+    const run = state.activeScenarioRun;
+
+    return `
+      <div class="campaign-dashboard campaign-mode-home campaign-event-home">
+        ${_renderGachaHomeHero({
+          tone: 'event',
+          kicker: 'Current Event',
+          title: hub?.name ? `${hub.name} Side Stories` : 'Event Hub',
+          text: hub?.description || 'Special side stories, hub pulses, event quests, oracle prompts, and challenge battles.',
+          meta: [`${activeChains.length} active stories`, `${availableChains.length} available`, `${review.length} review`],
+          actions: [
+            _actionBtn({ action: 'roll-hub-pulse', label: 'Draw Event Pulse', hint: 'Roll hub content for the current event', kind: 'primary', data: { table: 'town' } }),
+            _actionBtn({ action: 'open-event-stories-tab', label: 'Side Stories', hint: 'Open event questlines' }),
+            _actionBtn({ action: 'roll-forge-oracle', label: 'Event Oracle', hint: 'Prompt only, no mechanics' }),
+            _actionBtn({ action: 'open-event-battles-tab', label: 'Challenge Battles', hint: 'Open event battle cards' })
+          ]
+        })}
+        ${_renderModeFlow('Event Flow', [
+          ['Banner', 'Pick the current event.'],
+          ['Side Story', 'Start a questline.'],
+          ['Event Quest', 'Run map/battle content.'],
+          ['Shop/Hub', 'Spend rewards or solve pressure.'],
+          ['Challenge', 'Optional harder battle.']
+        ], activeChains.length ? 2 : 0)}
+        ${_renderPurposeGuide(['oracle', 'rumor', 'problem', 'hubPulse', 'event'], {
+          wide: true,
+          note: 'Same idea, different commitment level.'
+        })}
+
+        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Event Side Stories</h2>
+              <div class="campaign-muted">Quest chains live here. They are special/event stories, not normal farming quests.</div>
+            </div>
+            <span class="campaign-pill">${activeChains.length} active</span>
+          </div>
+          ${activeChains.length
+            ? activeChains.slice(0, 3).map((chain) => _renderQuestChainActive(chain)).join('')
+            : (availableChains.length
+              ? `<div class="campaign-tab-grid">${availableChains.slice(0, 3).map((chain) => _renderQuestChainTemplate(chain)).join('')}</div>`
+              : '<div class="campaign-empty">No event side stories available.</div>')}
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Hub State</h3><button class="campaign-action" data-campaign-action="open-sideforge-tab">Open Hub</button></div>
+          <div class="campaign-stat-grid">
+            <span>Security <b>${hubState?.security ?? 0}</b></span>
+            <span>Prosperity <b>${hubState?.prosperity ?? 0}</b></span>
+            <span>Warmth <b>${hubState?.warmth ?? 0}</b></span>
+            <span>Weirdness <b>${hubState?.weirdness ?? 0}</b></span>
+          </div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'roll-hub-pulse', label: 'Hub Pulse', hint: 'General event hub card', data: { table: 'town' } })}
+            ${_actionBtn({ action: 'roll-hub-pulse', label: 'Guild Pulse', hint: 'Contracts and rivals', data: { table: 'guild' } })}
+            ${_actionBtn({ action: 'roll-hub-pulse', label: 'Tavern Pulse', hint: 'Rumors and social beats', data: { table: 'tavern' } })}
+            ${_actionBtn({ action: 'manual-rumor', label: 'Manual Rumor', hint: 'Add a lead by hand' })}
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Event Tools</h3></div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'roll-event', label: 'Draw Random Event', hint: 'Prepared event table result' })}
+            ${_actionBtn({ action: 'pick-event', label: 'Pick Event', hint: 'Manual event selection' })}
+            ${_actionBtn({ action: 'roll-oracle', label: 'Roll Oracle', hint: 'Prompt only' })}
+            ${_actionBtn({ action: 'custom-oracle', label: 'Custom Prompt', hint: 'Write your own event prompt' })}
+          </div>
+        </section>
+
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Problems & Rumors</h3></div>
+          ${_renderInlinePurpose('problem')}
+          ${_renderInlinePurpose('rumor')}
+          ${(hubState?.activeProblems || []).slice(0, 3).map((problem) => `<div class="campaign-town-line is-risk"><strong>${_esc(_label(problem))}</strong><span>Active event pressure</span></div>`).join('') || '<div class="campaign-empty">No active hub problems.</div>'}
+          ${(hubState?.rumors || []).slice(0, 3).map((rumor) => `<div class="campaign-town-line is-plot"><strong>${_esc(rumor.text || rumor.id)}</strong><span>${_esc(rumor.canonRisk || 'green')} lead</span></div>`).join('')}
+        </section>
+
+        ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
+        ${_renderSoloNotice(state)}
+        ${run ? _renderScenarioSummary(state) : ''}
+        ${_renderPendingBattle(state)}
+        ${_renderCombatResult(state)}
+        ${_renderEventResult(state)}
+        ${_renderOracle(state)}
+      </div>
+    `;
+  }
+
+  function _renderGachaHomeHero({ tone = 'story', kicker = '', title = '', text = '', meta = [], actions = [] } = {}) {
+    return `
+      <section class="campaign-gacha-hero campaign-wide-panel is-${_escAttr(tone)}">
+        <div class="campaign-gacha-hero-copy">
+          <div class="campaign-gacha-kicker">${_esc(kicker)}</div>
+          <h2>${_esc(title)}</h2>
+          <p>${_esc(text)}</p>
+          <div class="campaign-chip-row">${meta.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>
+        </div>
+        <div class="campaign-gacha-hero-actions">${actions.join('')}</div>
+      </section>
+    `;
+  }
+
+  function _renderModeFlow(title, steps, activeIndex = 0) {
+    return `
+      <section class="campaign-panel campaign-wide-panel campaign-flow-panel">
+        <div class="campaign-panel-head"><h3>${_esc(title)}</h3></div>
+        <div class="campaign-flow-steps">
+          ${steps.map(([label, text], index) => `
+            <div class="campaign-flow-step ${index === activeIndex ? 'is-active' : index < activeIndex ? 'is-done' : ''}">
+              <span>${index + 1}</span>
+              <b>${_esc(label)}</b>
+              <small>${_esc(text)}</small>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderFarmingStageCard(title, text, action) {
+    return `
+      <article class="campaign-stage-card">
+        <strong>${_esc(title)}</strong>
+        <p>${_esc(text)}</p>
+        <button class="campaign-action" data-campaign-action="${_escAttr(action)}">Start</button>
+      </article>
+    `;
+  }
+
+  const TOOL_PURPOSES = {
+    oracle: {
+      label: 'Oracle',
+      role: 'GM prompt / keywords',
+      use: 'Use when you need inspiration, a line of narration, or a sharper scene image.',
+      flow: 'Text only -> Save Note -> Make Rumor/Event if you want it to matter later.',
+      commit: 'No mechanics by default.'
+    },
+    rumor: {
+      label: 'Rumor',
+      role: 'Stored lead bank',
+      use: 'Use when an idea is interesting but should not become canon or a quest yet.',
+      flow: 'Hear lead -> Hold in hub -> Promote later to quest, event, NPC scene, map seed, oracle, or problem.',
+      commit: 'Saved as a lead until promoted.'
+    },
+    problem: {
+      label: 'Problem',
+      role: 'Active hub pressure',
+      use: 'Use when the hub is already affected and the party should see pressure building.',
+      flow: 'Add pressure -> Show in hub -> Resolve manually or through quest/event results.',
+      commit: 'Counts as active state until resolved.'
+    },
+    hubPulse: {
+      label: 'Hub Pulse',
+      role: 'Living hub moment',
+      use: 'Use when you want town, guild, tavern, forge, or weird local activity.',
+      flow: 'Roll/pick pulse -> Review card -> Apply choice, save idea, make rumor, or reject.',
+      commit: 'Only commits when you apply a choice.'
+    },
+    event: {
+      label: 'Random Event',
+      role: 'Immediate happening',
+      use: 'Use during story, quest, travel, aftermath, or event play when something happens now.',
+      flow: 'Roll/pick event -> Review rewards/risks/text -> Apply, edit, note only, pin, or ignore.',
+      commit: 'May change rewards, danger, flags, rumors, quests, or notes.'
+    }
+  };
+
+  function _renderPurposeGuide(keys = ['oracle', 'rumor', 'problem', 'hubPulse', 'event'], options = {}) {
+    const title = options.title || 'Purpose & Flow';
+    return `
+      <section class="campaign-panel campaign-purpose-guide ${options.wide ? 'campaign-wide-panel' : ''}">
+        <div class="campaign-panel-head">
+          <h3>${_esc(title)}</h3>
+          ${options.note ? `<span class="campaign-muted">${_esc(options.note)}</span>` : ''}
+        </div>
+        <div class="campaign-purpose-grid">
+          ${keys.map((key) => _renderPurposeCard(key)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderPurposeCard(key, options = {}) {
+    const item = TOOL_PURPOSES[key] || TOOL_PURPOSES.oracle;
+    const compact = options.compact ? 'is-compact' : '';
+    return `
+      <article class="campaign-purpose-card ${compact}">
+        <div>
+          <span class="campaign-impact-badge is-${_escAttr(_purposeTone(key))}">${_esc(item.label)}</span>
+          <strong>${_esc(item.role)}</strong>
+        </div>
+        <p>${_esc(item.use)}</p>
+        <small>${_esc(item.flow)}</small>
+        <em>${_esc(item.commit)}</em>
+      </article>
+    `;
+  }
+
+  function _renderInlinePurpose(key) {
+    const item = TOOL_PURPOSES[key] || TOOL_PURPOSES.oracle;
+    return `
+      <div class="campaign-purpose-inline">
+        <span class="campaign-impact-badge is-${_escAttr(_purposeTone(key))}">${_esc(item.label)}</span>
+        <span><b>${_esc(item.role)}.</b> ${_esc(item.flow)} ${_esc(item.commit)}</span>
+      </div>
+    `;
+  }
+
+  function _purposeTone(key) {
+    if (key === 'event') return 'mixed';
+    if (key === 'hubPulse' || key === 'problem') return 'quest';
+    if (key === 'rumor') return 'plot';
+    return 'flavor';
+  }
+
+  function _purposeKeyForCard(card = {}) {
+    const type = String(card.type || '').toLowerCase();
+    const source = String(card.source || '').toLowerCase();
+    if (type.includes('oracle') || source.includes('oracle')) return 'oracle';
+    if (type.includes('rumor')) return 'rumor';
+    if (source.includes('hub_pulse') || type.includes('hub_pulse')) return 'hubPulse';
+    if (type.includes('event')) return 'event';
+    return 'hubPulse';
   }
 
   function _renderOverview(state) {
@@ -1452,7 +1950,7 @@ window.CJS.CampaignUI = (() => {
           </div>
           <div class="campaign-control-help">Roll a pulse table for a flavorful idea, or roll a quest / rumor hook. Each result lands in the floating box and only commits when you accept it.</div>
           <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="roll-hub-pulse" data-table="town" title="Roll the general town pulse table — gossip, mood, mundane problems.">Town Pulse</button>
+            <button class="campaign-action primary" data-campaign-action="roll-hub-pulse" data-table="town" title="Roll the general hub pulse table - gossip, mood, mundane problems.">Hub Pulse</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="guild" title="Roll the adventurer guild table — contracts, recruits, factions.">Guild</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern" title="Roll the tavern table — gossip, suppliers, drinking-spot drama.">Tavern</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge" title="Roll the forge / craft table — weapons, materials, smith requests.">Forge</button>
@@ -1466,7 +1964,8 @@ window.CJS.CampaignUI = (() => {
         ${_renderSoloNotice(state)}
         ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Hub Problems</h3><span class="campaign-muted">Pressure cards on this town. Resolve them by spending phases or addressing the cause.</span></div>
+          <div class="campaign-panel-head"><h3>Hub Problems</h3><span class="campaign-muted">Pressure cards on this hub. Resolve them by spending phases or addressing the cause.</span></div>
+          ${_renderInlinePurpose('problem')}
           ${(hubState?.activeProblems || []).map((problem) => `
             <div class="campaign-row">
               <strong>${_esc(_label(problem))}</strong>
@@ -1523,13 +2022,13 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-tab-grid">
         <section class="campaign-panel campaign-wide-panel">
           <div class="campaign-panel-head">
-            <h2>Quest Arcs</h2>
+            <h2>Event Side Stories</h2>
             <span class="campaign-pill">${active.length} active · ${available.length} available</span>
           </div>
-          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active quest arcs. Start one below or use Quest Run for a single quest.</div>'}
-          ${finished.length ? `<details class="campaign-resolved-quests"><summary>Resolved arcs (${finished.length})</summary>${finished.map(_renderQuestChainResolved).join('')}</details>` : ''}
+          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side stories. Start one below or use Normal Quest for a single farming run.</div>'}
+          ${finished.length ? `<details class="campaign-resolved-quests"><summary>Resolved side stories (${finished.length})</summary>${finished.map(_renderQuestChainResolved).join('')}</details>` : ''}
         </section>
-        ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No quest arc templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
+        ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No side-story templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
       </div>
     `;
   }
@@ -1588,9 +2087,9 @@ window.CJS.CampaignUI = (() => {
             ${(problems.length ? problems.slice(0, 4).map((problem) => `
               <div class="campaign-town-line is-risk">
                 <strong>${_esc(_label(problem))}</strong>
-                <span>Active town problem</span>
+                <span>Active hub problem</span>
               </div>
-            `).join('') : '<div class="campaign-empty">No active town problems.</div>')}
+            `).join('') : '<div class="campaign-empty">No active hub problems.</div>')}
             ${(rumors.length ? rumors.slice(0, 3).map((rumor) => `
               <div class="campaign-town-line is-plot">
                 <strong>${_esc(rumor.text || rumor.id)}</strong>
@@ -1616,7 +2115,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-panel campaign-random-float ${pending ? 'has-pending' : ''}">
         <div class="campaign-floating-eyebrow">Roll Random</div>
-        <h3>${pending ? 'Resolve Current Roll' : 'Town Pulse Box'}</h3>
+        <h3>${pending ? 'Resolve Current Roll' : 'Hub Pulse Box'}</h3>
         ${pending
           ? `<p>${_esc(pending.title || pending.name || pending.id)}</p>
              <div class="campaign-impact-row">
@@ -1646,7 +2145,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-rumor-purpose">
         <span class="campaign-impact-badge is-plot">Rumor purpose</span>
-        <span>Rumors are a safe lead bank: collect whispers now, read their canon risk, then promote one later into a quest, map seed, NPC beat, oracle prompt, or town problem when the party is ready.</span>
+        <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, NPC beat, oracle prompt, or hub problem when the party is ready.</span>
       </div>
     `;
   }
@@ -1735,7 +2234,7 @@ window.CJS.CampaignUI = (() => {
     const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
     if (!chain) return UI().toast('Quest arc not found', 'info');
     if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'scenario';
+      _activeMode = 'event';
       _activeTab = 'maps';
       render();
       return UI().toast('A scenario is already active. Finish it before starting a quest arc run.', 'info');
@@ -1752,7 +2251,7 @@ window.CJS.CampaignUI = (() => {
     const activeRun = CS().getState()?.activeScenarioRun;
     const activeScenario = CS().getActiveScenario?.();
     if (activeRun) {
-      if (_activeRunQuestId(activeRun, activeScenario) === quest.id || activeRun.questChainId === templateId) return _goto('scenario', 'maps');
+      if (_activeRunQuestId(activeRun, activeScenario) === quest.id || activeRun.questChainId === templateId) return _goto(null, 'maps');
       return UI().toast('End the active scenario before starting this quest arc map', 'info');
     }
     return _startQuestScenario(quest.id, {
@@ -1785,10 +2284,10 @@ window.CJS.CampaignUI = (() => {
 
   function _addQuestChainToTracker(templateId) {
     window.CJS.CampaignQuestChains.start(templateId);
-    _activeMode = 'town';
-    _activeTab = 'quests';
+    _activeMode = 'event';
+    _activeTab = 'questChains';
     render();
-    UI().toast('Quest arc added to Quests', 'success');
+    UI().toast('Side story added to Event', 'success');
   }
 
   function _advanceQuestChainStep(templateId) {
@@ -1865,6 +2364,7 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-dashboard">
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h2>Oracle / Keyword Forge</h2></div>
+          ${_renderInlinePurpose('oracle')}
           <div class="campaign-muted">${tables.map((table) => _esc(table.name || table.id)).join(', ') || 'No oracle tables loaded.'}</div>
           <div class="campaign-action-grid">
             <button class="campaign-action primary" data-campaign-action="roll-forge-oracle">Roll Oracle</button>
@@ -1894,6 +2394,7 @@ window.CJS.CampaignUI = (() => {
             <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
           </div>
         </div>
+        ${!compact ? _renderInlinePurpose(_purposeKeyForCard(card)) : ''}
         ${card.prompt ? `<p>${_esc(card.prompt)}</p>` : ''}
         ${card.text ? `<p>${_esc(card.text)}</p>` : ''}
         ${card.summary && !compact ? `<p>${_esc(card.summary)}</p>` : ''}
@@ -2097,6 +2598,7 @@ window.CJS.CampaignUI = (() => {
             <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
           </div>
         </div>
+        ${_renderInlinePurpose(kind === 'rumor_offer' ? 'rumor' : _purposeKeyForCard(card))}
         <strong>${_esc(card.title || card.name || card.id)}</strong>
         ${prompt ? `<p>${_esc(prompt)}</p>` : ''}
         ${_renderConsequencePreview(ops, {
@@ -2121,9 +2623,9 @@ window.CJS.CampaignUI = (() => {
     if (!run) {
       return `
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Scenario</h2></div>
-          <div class="campaign-empty">No active scenario.</div>
-          <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Start Scenario</button>
+          <div class="campaign-panel-head"><h2>Current Run</h2></div>
+          <div class="campaign-empty">No active run.</div>
+          <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Run Setup</button>
         </section>
       `;
     }
@@ -2147,7 +2649,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         ${_renderQuestRunTask(state, run, scenario)}
         <div class="campaign-control-stack">
-          ${_controlGroup('Scenario Tools', `
+          ${_controlGroup('Run Tools', `
             <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
             <button class="campaign-action primary" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
             <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
@@ -2155,8 +2657,8 @@ window.CJS.CampaignUI = (() => {
           `)}
           ${_controlGroup('Manual Control', `
             <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
-            <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
-            ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Scenario</button>' : ''}
+            <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
+            ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Run</button>' : ''}
           `)}
         </div>
         <div class="campaign-action-grid" hidden>
@@ -2165,8 +2667,8 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
-          <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
-          ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Scenario</button>' : ''}
+          <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
+          ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Run</button>' : ''}
         </div>
       </section>
     `;
@@ -2388,6 +2890,7 @@ window.CJS.CampaignUI = (() => {
             ${ideaPill}
           </div>
         </div>
+        ${_renderInlinePurpose('event')}
         <p>${_esc(event.prompt || '')}</p>
         ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
         ${_renderConsequencePreview(suggested, {
@@ -2419,6 +2922,7 @@ window.CJS.CampaignUI = (() => {
           <h2>GM Prompt</h2>
           <span class="campaign-impact-badge is-flavor">Text only</span>
         </div>
+        ${_renderInlinePurpose('oracle')}
         <p>${_esc(state.lastOracle.text)}</p>
         ${_renderConsequencePreview([], {
           emptyTitle: 'Flavor prompt',
@@ -2765,7 +3269,12 @@ window.CJS.CampaignUI = (() => {
       const action = e.target.closest('[data-campaign-action]');
       if (action) {
         e.preventDefault();
-        const closesPanel = ['open-inventory-tab', 'open-roster-tab', 'open-scenarios-tab', 'open-maps-tab', 'open-quests-tab', 'open-shops-tab', 'open-sideforge-tab'];
+        const closesPanel = [
+          'open-inventory-tab', 'open-roster-tab', 'open-scenarios-tab', 'open-maps-tab',
+          'open-quests-tab', 'open-shops-tab', 'open-sideforge-tab', 'open-story-home',
+          'open-quest-home', 'open-event-home', 'open-farm-tab', 'open-event-stories-tab',
+          'open-event-battles-tab'
+        ];
         if (closesPanel.includes(action.dataset.campaignAction)) _closePanel();
         _handleAction(action.dataset, action);
       }
@@ -2850,7 +3359,7 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-dashboard">
         <section class="campaign-panel">
           <div class="campaign-panel-head">
-            <h2>Generate Scenario</h2>
+            <h2>Run Setup</h2>
             <span class="campaign-pill">Save-local</span>
           </div>
           <div class="campaign-generator-controls">
@@ -2858,7 +3367,7 @@ window.CJS.CampaignUI = (() => {
               <select id="campaign-gen-source">
                 <option value="random">Random</option>
                 <option value="active_quest">Active Quest</option>
-                <option value="quest_chain">Quest Arc</option>
+                <option value="quest_chain">Side Story</option>
               </select>
             </label>
             <label>Form
@@ -2901,12 +3410,12 @@ window.CJS.CampaignUI = (() => {
             ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
             <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''} title="Begin this scenario as the current run. Generates a map, applies danger, and switches to Run / Maps view.">Start</button>
-              <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}" title="Open a read-only sheet showing this scenario's beats, danger budget, and rewards. Does not start it.">Inspect</button>
+              <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''} title="Begin this as the current run. Generates a map, applies danger, and switches to Current Run.">Start Run</button>
+              <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}" title="Open a read-only sheet showing beats, danger budget, and rewards. Does not start it.">Inspect</button>
               ${scenario.generated ? `<button class="campaign-action danger" data-campaign-action="discard-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun?.scenarioId === scenario.id ? 'disabled' : ''}>Discard</button>` : ''}
             </div>
           </section>
-        `).join('') || '<div class="campaign-empty">No scenarios available.</div>'}
+        `).join('') || '<div class="campaign-empty">No runs available.</div>'}
         </div>
       </div>
     `;
@@ -2955,10 +3464,10 @@ window.CJS.CampaignUI = (() => {
     if (!run) {
       return `
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Scenario Run</h2></div>
-          <div class="campaign-empty">No scenario active. Start one from the Briefing tab.</div>
+          <div class="campaign-panel-head"><h2>Current Run</h2></div>
+          <div class="campaign-empty">No run active. Start one from Run Setup.</div>
           <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Briefing</button>
+            <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Run Setup</button>
           </div>
         </section>
       `;
@@ -3009,8 +3518,8 @@ window.CJS.CampaignUI = (() => {
             ${_actionBtn({ action: 'run-pick-battle',  label: 'Pick Battle',  hint: 'Pick a specific battle from the catalog' })}
             ${_actionBtn({ action: 'camp-rest',         label: 'Camp Rest',     hint: 'Spend a camp slot to heal and recover' })}
             ${_actionBtn({ action: 'run-tick-danger',  label: 'Tick Danger +1', hint: 'Manually raise danger (GM control)' })}
-            ${_actionBtn({ action: 'end-scenario',      label: 'End Scenario',  hint: 'Finish run and write a report', kind: 'danger' })}
-          `, 'Direct controls. End Scenario writes a report; Cancel (in summary) discards without one.')}
+            ${_actionBtn({ action: 'end-scenario',      label: 'End Run',       hint: 'Finish run and write a report', kind: 'danger' })}
+          `, 'Direct controls. End Run writes a report; Cancel (in summary) discards without one.')}
         </div>
         <div class="campaign-action-grid" hidden>
           <button class="campaign-action primary" data-campaign-action="run-roll-battle">🎲 Random Battle</button>
@@ -3019,7 +3528,7 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
           <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
           <button class="campaign-action" data-campaign-action="run-tick-danger">⚠ Tick Danger +1</button>
-          <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+          <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
         </div>
         ${setBattles.length ? `
           <div class="campaign-panel-head" style="margin-top:14px"><h3>Set Battles</h3></div>
@@ -3069,7 +3578,7 @@ window.CJS.CampaignUI = (() => {
           `).join('')}
         </ol>
         <div class="campaign-control-stack">
-          ${_controlGroup('Scenario Flow', `
+          ${_controlGroup('Run Flow', `
             <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat'}</button>
             <button class="campaign-action" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
             <button class="campaign-action" data-campaign-action="run-roll-event">Random Event</button>
@@ -3077,7 +3586,7 @@ window.CJS.CampaignUI = (() => {
           ${_controlGroup('Manual Control', `
             <button class="campaign-action" data-campaign-action="run-pick-battle">Pick Battle</button>
             <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-            <button class="campaign-action danger" data-campaign-action="end-scenario">End Scenario</button>
+            <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
           `)}
         </div>
         <div class="campaign-action-grid" hidden>
@@ -3120,17 +3629,18 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-quest-list">
           ${active.length ? active.map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests.</div>'}
         </div>
-        ${activeChains.length ? `
+        ${activeChains.length || availableChains.length ? `
           <section class="campaign-subpanel">
-            <div class="campaign-panel-head"><h3>Quest Arcs</h3><span class="campaign-pill">${activeChains.length} active</span></div>
-            ${activeChains.map((chain) => _renderQuestChainActive(chain)).join('')}
+            <div class="campaign-panel-head">
+              <h3>Event Side Stories</h3>
+              <span class="campaign-pill">${activeChains.length} active | ${availableChains.length} available</span>
+            </div>
+            <div class="campaign-muted">Side-story chains now live in Event so Normal Quest can stay focused on farming and repeatable runs.</div>
+            <div class="campaign-action-grid">
+              <button class="campaign-action" data-campaign-action="open-event-stories-tab">Open Side Stories</button>
+              <button class="campaign-action" data-campaign-action="open-event-home">Event Home</button>
+            </div>
           </section>
-        ` : ''}
-        ${availableChains.length ? `
-          <details class="campaign-resolved-quests">
-            <summary>Available Quest Arcs (${availableChains.length})</summary>
-            <div class="campaign-tab-grid">${availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')}</div>
-          </details>
         ` : ''}
         ${finished.length ? `
           <details class="campaign-resolved-quests">
@@ -3140,7 +3650,7 @@ window.CJS.CampaignUI = (() => {
         ` : ''}
         ${finishedChains.length ? `
           <details class="campaign-resolved-quests">
-            <summary>Resolved Quest Arcs (${finishedChains.length})</summary>
+            <summary>Resolved Side Stories (${finishedChains.length})</summary>
             ${finishedChains.map(_renderQuestChainResolved).join('')}
           </details>
         ` : ''}
@@ -3364,7 +3874,7 @@ window.CJS.CampaignUI = (() => {
       if (mode) {
         const id = mode.dataset.campaignMode;
         _activeMode = id;
-        const firstTab = (MODE_TABS[id] || [])[0];
+        const firstTab = (APP_MODE_TABS[id] || [])[0];
         if (firstTab) _activeTab = firstTab[0];
         render();
         return;
@@ -3374,7 +3884,7 @@ window.CJS.CampaignUI = (() => {
       if (tab) {
         const id = tab.dataset.campaignTab;
         _activeTab = id;
-        const owningMode = TAB_TO_MODE[id];
+        const owningMode = APP_TAB_TO_MODE[id];
         if (owningMode) _activeMode = owningMode;
         render();
         return;
@@ -3475,13 +3985,19 @@ window.CJS.CampaignUI = (() => {
       case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
       case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
-      case 'open-roster-tab': return _goto('town', 'roster');
-      case 'open-scenarios-tab': return _goto('scenario', 'scenarios');
-      case 'open-maps-tab': return _goto('scenario', 'maps');
-      case 'open-inventory-tab': return _goto('workshop', 'inventory');
-      case 'open-quests-tab': return _goto('town', 'quests');
-      case 'open-shops-tab': return _goto('town', 'shops');
-      case 'open-sideforge-tab': return _goto('town', 'sideForge');
+      case 'open-story-home': return _goto('story', 'storyHome');
+      case 'open-quest-home': return _goto('quest', 'questHome');
+      case 'open-event-home': return _goto('event', 'eventHome');
+      case 'open-roster-tab': return _goto(null, 'roster');
+      case 'open-scenarios-tab': return _goto(null, 'scenarios');
+      case 'open-maps-tab': return _goto(null, 'maps');
+      case 'open-inventory-tab': return _goto('quest', 'inventory');
+      case 'open-farm-tab': return _goto('quest', 'farm');
+      case 'open-quests-tab': return _goto('quest', 'quests');
+      case 'open-shops-tab': return _goto(null, 'shops');
+      case 'open-sideforge-tab': return _goto('event', 'sideForge');
+      case 'open-event-stories-tab': return _goto('event', 'questChains');
+      case 'open-event-battles-tab': return _goto('event', 'battleSets');
       case 'roll-party-chat': return _rollPartyChat();
       case 'clear-banter': return _clearBanter();
       case 'run-roll-battle': return _runRollBattle();
@@ -3493,7 +4009,8 @@ window.CJS.CampaignUI = (() => {
       case 'run-next-beat': return _runNextBeat();
       case 'generate-scenario': return _generateScenario();
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
-      case 'start-scenario': return Runner().startScenario(data.id);
+      case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
+      case 'start-scenario': return _startScenarioFromUi(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
       case 'cancel-scenario': return _cancelScenario();
       case 'discard-scenario': return _discardGeneratedScenario(data.id);
@@ -3795,7 +4312,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _rollHubPulse(table) {
-    _activeMode = 'town';
+    _activeMode = 'event';
     _activeTab = 'sideForge';
     const card = window.CJS.CampaignHub.rollHubPulse(table);
     if (!card) return UI().toast('No hub events available', 'info');
@@ -3808,8 +4325,8 @@ window.CJS.CampaignUI = (() => {
     const card = window.CJS.CampaignHub.rollHubPulse(table);
     if (!card) return UI().toast('No solo hooks available', 'info');
     _setPendingSoloHook(card, 'surprise');
-    _activeMode = 'town';
-    _activeTab = 'overview';
+    _activeMode = 'story';
+    _activeTab = 'storyHome';
     render();
     UI().toast('Story offer ready', 'success');
   }
@@ -3825,7 +4342,7 @@ window.CJS.CampaignUI = (() => {
 
   function _offerRandomQuest() {
     if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'scenario';
+      _activeMode = 'quest';
       _activeTab = 'maps';
       render();
       return UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
@@ -3866,7 +4383,7 @@ window.CJS.CampaignUI = (() => {
   function _startQuestRunFromOffer(card) {
     if (!card) return null;
     if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'scenario';
+      _activeMode = 'quest';
       _activeTab = 'maps';
       render();
       UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
@@ -3889,7 +4406,7 @@ window.CJS.CampaignUI = (() => {
       mapType: quest.mapType || _questMapType(quest)
     });
     if (result?.error) {
-      _activeMode = 'town';
+      _activeMode = 'quest';
       _activeTab = 'quests';
       render();
     }
@@ -3950,8 +4467,8 @@ window.CJS.CampaignUI = (() => {
         return;
       }
       _clearPendingSoloHook();
-      _activeMode = 'town';
-      _activeTab = 'overview';
+      _activeMode = 'story';
+      _activeTab = 'storyHome';
       render();
       UI().toast('Story offer accepted', 'success');
     };
@@ -3972,7 +4489,7 @@ window.CJS.CampaignUI = (() => {
       if (choice?.ops?.length) Ops().apply(choice.ops, { source: 'solo_hook_chain' });
       Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain', approved: true }, { source: 'solo_hook' });
       _clearPendingSoloHook();
-      _activeMode = 'town';
+      _activeMode = 'quest';
       _activeTab = 'quests';
       render();
       UI().toast('Quest arc added', 'success');
@@ -3989,7 +4506,7 @@ window.CJS.CampaignUI = (() => {
     Ops().apply({ op: 'add_quest', quest }, { source: 'solo_hook_quest' });
     Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'accepted_hook', approved: true }, { source: 'solo_hook' });
     _clearPendingSoloHook();
-    _activeMode = 'town';
+    _activeMode = 'quest';
     _activeTab = 'quests';
     render();
     UI().toast(`Quest added: ${quest.title || quest.id}`, 'success');
@@ -4071,7 +4588,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _rollForgeOracle() {
-    _activeMode = 'town';
+    _activeMode = 'event';
     _activeTab = 'oracleForge';
     const card = window.CJS.CampaignIdeaForge.rollOracle();
     if (!card) return UI().toast('No oracle table available', 'info');
@@ -4079,7 +4596,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _rollStoryDirector(kind) {
-    _activeMode = 'town';
+    _activeMode = 'story';
     _activeTab = 'storyDirector';
     const card = SD()?.roll(kind);
     if (!card) return UI().toast('No matching story beat available', 'info');
@@ -4296,7 +4813,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div>
           <strong>Tabletop flow</strong>
-          <p>Use Story Mode for scenes and route choices, then switch to Scenario Run for tactical movement and encounters. Side Routes tells you what content should stay, rise, or pause.</p>
+          <p>Use Story for scenes and route choices, then switch to Current Run for tactical movement and encounters. Side Routes tells you what content should stay, rise, or pause.</p>
         </div>
       </div>
     `;
@@ -4631,11 +5148,24 @@ Recover the relic x 1"></textarea>
       UI().toast(msg, 'info');
       return result;
     }
-    _activeMode = 'scenario';
+    _activeMode = 'quest';
     _activeTab = 'maps';
     render();
     UI().toast(`Started ${result.scenario.name}`, 'success');
     return result;
+  }
+
+  function _startScenarioFromUi(scenarioId) {
+    if (!scenarioId) return null;
+    try {
+      const run = Runner().startScenario(scenarioId);
+      _activeTab = 'maps';
+      render();
+      return run;
+    } catch (error) {
+      UI().toast(error?.message || 'Scenario could not start', 'error');
+      return null;
+    }
   }
 
   function _discardGeneratedScenario(scenarioId) {
@@ -4681,7 +5211,7 @@ Recover the relic x 1"></textarea>
         }
       }, { source: 'scenario_cancel' });
       Ops().apply({ op: 'log', text: `Scenario cancelled: ${scenarioId}.` }, { source: 'scenario_cancel' });
-      _activeMode = 'scenario';
+      _activeMode = 'quest';
       _activeTab = 'scenarios';
       render();
       UI().toast('Scenario cancelled', 'info');
@@ -5143,7 +5673,7 @@ Recover the relic x 1"></textarea>
     const activeRun = CS().getState()?.activeScenarioRun;
     const activeScenario = CS().getActiveScenario?.();
     if (activeRun) {
-      if (_activeRunQuestId(activeRun, activeScenario) === questId) return _goto('scenario', 'maps');
+      if (_activeRunQuestId(activeRun, activeScenario) === questId) return _goto(null, 'maps');
       return UI().toast('End the active scenario before starting a quest map', 'info');
     }
     return _startQuestScenario(questId);
@@ -5158,7 +5688,7 @@ Recover the relic x 1"></textarea>
     }
     _runRollBattle();
     Ops().apply({ op: 'log', text: `Quest battle queued: ${quest.title || quest.id}.` }, { source: 'quest_battle' });
-    _activeMode = 'scenario';
+    _activeMode = 'quest';
     _activeTab = 'maps';
     render();
   }
@@ -5293,7 +5823,7 @@ Recover the relic x 1"></textarea>
       return { error: 'start_failed' };
     }
     _annotateQuestRun(quest, scenario);
-    _activeMode = 'scenario';
+    _activeMode = 'quest';
     _activeTab = 'maps';
     render();
     UI().toast(`Started ${scenario.name || scenario.id}`, 'success');
