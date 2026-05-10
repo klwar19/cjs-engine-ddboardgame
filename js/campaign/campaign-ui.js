@@ -1545,7 +1545,10 @@ window.CJS.CampaignUI = (() => {
     const summary = pack?.summary || 'Story Mode is ready for this world theme, but no authored story pack is loaded yet.';
     const actions = next.actions?.length ? `<div class="campaign-story-next-actions">${next.actions.join('')}</div>` : '';
     return `
-      <section class="campaign-story-vn-hero campaign-wide-panel">
+      <section class="campaign-story-vn-hero campaign-wide-panel has-video">
+        <video class="campaign-story-vn-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+          <source src="assets/videos/story-mode/banners/3%20f%C3%ACght%20chimera_reduced.mp4" type="video/mp4">
+        </video>
         <div class="campaign-story-vn-shade" aria-hidden="true"></div>
         <div class="campaign-story-vn-content">
           <div class="campaign-story-vn-kicker">
