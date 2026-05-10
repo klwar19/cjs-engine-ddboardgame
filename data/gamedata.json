@@ -5173,166 +5173,6 @@
       "passiveSlots": 3,
       "skillPoints": 10,
       "passivePoints": 10
-    },
-    "bowy": {
-      "id": "bowy",
-      "name": "Bowy",
-      "icon": "🐗",
-      "team": "player",
-      "rank": "F",
-      "type": "humanoid",
-      "stats": {
-        "S": 7,
-        "P": 8,
-        "E": 7,
-        "C": 4,
-        "I": 3,
-        "A": 5,
-        "L": 4
-      },
-      "skills": [
-        "thunder_shot",
-        "piercing_bolt",
-        "suppressive_fire"
-      ],
-      "equipment": [
-        "thunder_crossbow",
-        "leather_armor",
-        "warm_boots"
-      ],
-      "innatePassives": [
-        "marksmans_eye",
-        "iron_hide"
-      ],
-      "weak": [
-        "Fire"
-      ],
-      "resist": [
-        "Water"
-      ],
-      "immune": [
-        "Light"
-      ],
-      "description": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride.",
-      "movement": 2,
-      "size": "1x1",
-      "allowedWeaponTypes": [
-        "bow",
-        "crossbow",
-        "dagger"
-      ],
-      "allowedArmorTypes": [
-        "light",
-        "leather"
-      ],
-      "availableBranches": [
-        "archer",
-        "thief"
-      ],
-      "availableJobs": [
-        "job_archer",
-        "job_thief"
-      ],
-      "defaultJob": "job_archer",
-      "maxJobs": 3,
-      "weaponSlots": 2,
-      "skillSlots": 4,
-      "passiveSlots": 3,
-      "skillPoints": 10,
-      "passivePoints": 10
-    },
-    "mitia": {
-      "id": "mitia",
-      "name": "Mitia",
-      "icon": "🧊",
-      "team": "player",
-      "rank": "F",
-      "type": "humanoid",
-      "stats": {
-        "S": 3,
-        "P": 5,
-        "E": 4,
-        "C": 6,
-        "I": 8,
-        "A": 5,
-        "L": 5
-      },
-      "skills": [
-        "frost_touch",
-        "ice_shield",
-        "healing_light"
-      ],
-      "equipment": [
-        "frost_staff",
-        "adventurers_cloak",
-        "healers_pendant"
-      ],
-      "innatePassives": [
-        "fae_blood",
-        "gentle_heart"
-      ],
-      "weak": [
-        "Fire"
-      ],
-      "resist": [
-        "Water"
-      ],
-      "immune": [
-        "Light"
-      ],
-      "description": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic.",
-      "movement": 3,
-      "size": "1x1",
-      "skillSlots": 4,
-      "passiveSlots": 3,
-      "skillPoints": 10,
-      "passivePoints": 10
-    },
-    "garr": {
-      "id": "garr",
-      "name": "Garr",
-      "icon": "🐾",
-      "team": "player",
-      "rank": "F",
-      "type": "humanoid",
-      "stats": {
-        "S": 7,
-        "P": 7,
-        "E": 6,
-        "C": 5,
-        "I": 4,
-        "A": 5,
-        "L": 4
-      },
-      "skills": [
-        "hunters_strike",
-        "trap_set",
-        "rally_cry"
-      ],
-      "equipment": [
-        "hunters_blade",
-        "leather_armor",
-        "warm_boots"
-      ],
-      "innatePassives": [
-        "veterans_instinct"
-      ],
-      "weak": [
-        "Fire"
-      ],
-      "resist": [
-        "Water"
-      ],
-      "immune": [
-        "Light"
-      ],
-      "description": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable.",
-      "movement": 3,
-      "size": "1x1",
-      "skillSlots": 4,
-      "passiveSlots": 3,
-      "skillPoints": 10,
-      "passivePoints": 10
     }
   },
   "monsters": {
@@ -5720,7 +5560,7 @@
           "size": "1x1"
         },
         {
-          "id": "bowy",
+          "id": "haven_bowy",
           "pos": [
             7,
             0
@@ -5728,7 +5568,7 @@
           "size": "1x1"
         },
         {
-          "id": "mitia",
+          "id": "haven_mitia",
           "pos": [
             7,
             2
@@ -5736,7 +5576,7 @@
           "size": "1x1"
         },
         {
-          "id": "garr",
+          "id": "haven_garr",
           "pos": [
             6,
             0
@@ -5882,7 +5722,7 @@
           "size": "1x1"
         },
         {
-          "id": "bowy",
+          "id": "haven_bowy",
           "pos": [
             7,
             1
@@ -5890,7 +5730,7 @@
           "size": "1x1"
         },
         {
-          "id": "mitia",
+          "id": "haven_mitia",
           "pos": [
             7,
             3
@@ -5898,7 +5738,7 @@
           "size": "1x1"
         },
         {
-          "id": "garr",
+          "id": "haven_garr",
           "pos": [
             6,
             1
@@ -6076,7 +5916,7 @@
           "size": "1x1"
         },
         {
-          "id": "bowy",
+          "id": "haven_bowy",
           "pos": [
             8,
             6
@@ -6084,7 +5924,7 @@
           "size": "1x1"
         },
         {
-          "id": "mitia",
+          "id": "haven_mitia",
           "pos": [
             9,
             4
@@ -6092,7 +5932,7 @@
           "size": "1x1"
         },
         {
-          "id": "garr",
+          "id": "haven_garr",
           "pos": [
             8,
             2
@@ -6222,7 +6062,7 @@
           "size": "1x1"
         },
         {
-          "id": "bowy",
+          "id": "haven_bowy",
           "pos": [
             7,
             1
@@ -6230,7 +6070,7 @@
           "size": "1x1"
         },
         {
-          "id": "mitia",
+          "id": "haven_mitia",
           "pos": [
             7,
             3
@@ -6238,7 +6078,7 @@
           "size": "1x1"
         },
         {
-          "id": "garr",
+          "id": "haven_garr",
           "pos": [
             6,
             1
