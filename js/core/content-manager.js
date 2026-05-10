@@ -273,23 +273,24 @@ window.CJS.ContentManager = (() => {
   }
 
   function _shadowedLegacyIds(items) {
-    const worldIds = new Set();
-    const legacyIds = new Set();
+    const allIds = new Set();
     for (const item of items) {
-      if (!item || !item.id) continue;
-      const scope = item._scope || 'legacy';
-      if (scope === 'legacy') legacyIds.add(item.id);
-      else worldIds.add(item.id);
+      if (item && item.id) allIds.add(item.id);
     }
-    const shadowed = new Set();
-    if (!legacyIds.size || !worldIds.size) return shadowed;
+    if (allIds.size < 2) return new Set();
+
     const worldRoots = (DS().getAllAsArray('worlds') || [])
       .map((world) => world?.id)
       .filter(Boolean);
-    for (const legacyId of legacyIds) {
+    if (!worldRoots.length) return new Set();
+
+    // Hide the unprefixed entry whenever a "<world>_<id>" twin is present,
+    // regardless of whether _scope survived an import/merge.
+    const shadowed = new Set();
+    for (const id of allIds) {
       for (const worldId of worldRoots) {
-        if (worldIds.has(`${worldId}_${legacyId}`)) {
-          shadowed.add(legacyId);
+        if (allIds.has(`${worldId}_${id}`)) {
+          shadowed.add(id);
           break;
         }
       }
