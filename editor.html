@@ -123,6 +123,18 @@
           <span>Items</span>
           <span class="badge" id="count-items">0</span>
         </div>
+        <div class="nav-item" data-panel="food">
+          <span>Food</span>
+          <span class="badge" id="count-food">0</span>
+        </div>
+        <div class="nav-item" data-panel="materials">
+          <span>Materials</span>
+          <span class="badge" id="count-materials">0</span>
+        </div>
+        <div class="nav-item" data-panel="crafting">
+          <span>Crafting</span>
+          <span class="badge" id="count-crafting">0</span>
+        </div>
 
         <div class="nav-section">Units</div>
         <div class="nav-item" data-panel="characters">
@@ -162,6 +174,9 @@
         <div class="editor-panel" id="panel-skills"></div>
         <div class="editor-panel" id="panel-jobs"></div>
         <div class="editor-panel" id="panel-items"></div>
+        <div class="editor-panel" id="panel-food"></div>
+        <div class="editor-panel" id="panel-materials"></div>
+        <div class="editor-panel" id="panel-crafting"></div>
         <div class="editor-panel" id="panel-characters"></div>
         <div class="editor-panel" id="panel-monsters"></div>
         <div class="editor-panel" id="panel-encounters"></div>
@@ -219,6 +234,7 @@
   <script src="js/builders/skill-editor.js"></script>
   <script src="js/builders/job-editor.js"></script>
   <script src="js/builders/item-editor.js"></script>
+  <script src="js/builders/simple-collection-editor.js"></script>
   <script src="js/builders/char-editor.js"></script>
   <script src="js/builders/monster-editor.js"></script>
   <script src="js/builders/encounter-editor.js"></script>
@@ -252,6 +268,9 @@
         skills: CJS.SkillEditor,
         jobs: CJS.JobEditor,
         items: CJS.ItemEditor,
+        food: CJS.SimpleCollectionEditor.food,
+        materials: CJS.SimpleCollectionEditor.materials,
+        crafting: CJS.SimpleCollectionEditor.crafting,
         characters: CJS.CharEditor,
         monsters: CJS.MonsterEditor,
         encounters: CJS.EncounterEditor,

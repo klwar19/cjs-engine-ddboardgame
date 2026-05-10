@@ -259,8 +259,10 @@ window.CJS.ContentManager = (() => {
 
   function getVisibleItems(type, query) {
     const items = query ? DS().search(type, query) : DS().getAllAsArray(type);
+    const shadowed = _shadowedLegacyIds(items);
     return items
       .filter((item) => _matchesFilters(item))
+      .filter((item) => !shadowed.has(item.id))
       .sort((a, b) => {
         const scopeDelta = _scopeOrder(a._scope) - _scopeOrder(b._scope);
         if (scopeDelta !== 0) return scopeDelta;
@@ -268,6 +270,31 @@ window.CJS.ContentManager = (() => {
         if (worldDelta !== 0) return worldDelta;
         return String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''));
       });
+  }
+
+  function _shadowedLegacyIds(items) {
+    const worldIds = new Set();
+    const legacyIds = new Set();
+    for (const item of items) {
+      if (!item || !item.id) continue;
+      const scope = item._scope || 'legacy';
+      if (scope === 'legacy') legacyIds.add(item.id);
+      else worldIds.add(item.id);
+    }
+    const shadowed = new Set();
+    if (!legacyIds.size || !worldIds.size) return shadowed;
+    const worldRoots = (DS().getAllAsArray('worlds') || [])
+      .map((world) => world?.id)
+      .filter(Boolean);
+    for (const legacyId of legacyIds) {
+      for (const worldId of worldRoots) {
+        if (worldIds.has(`${worldId}_${legacyId}`)) {
+          shadowed.add(legacyId);
+          break;
+        }
+      }
+    }
+    return shadowed;
   }
 
   function _matchesFilters(item) {

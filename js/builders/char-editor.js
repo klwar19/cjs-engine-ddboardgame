@@ -42,7 +42,23 @@ window.CJS.CharEditor = (() => {
 
   function _renderList(q) {
     const items = CM()?.getVisibleItems?.('characters', q) || (q ? DS().search('characters', q) : DS().getAllAsArray('characters'));
-    UI().renderDataList({ container: _listEl, items, activeId: _activeId, onSelect: (c) => _load(c.id) });
+    UI().renderDataList({
+      container: _listEl,
+      items,
+      activeId: _activeId,
+      onSelect: (c) => _load(c.id),
+      renderItem: (c) => {
+        const team = c.team === 'enemy' ? '🟥 enemy' : '🟦 player';
+        const sub = `${team} · ${c.rank || 'F'} · ${c.type || ''}`;
+        return `
+          <span class="item-icon">${c.icon || '🧑'}</span>
+          <div style="min-width:0">
+            <div class="item-name">${c.name || c.id}</div>
+            <div class="item-sub">${sub}</div>
+          </div>
+        `;
+      }
+    });
   }
 
   function _createNew() {

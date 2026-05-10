@@ -4953,7 +4953,8 @@ window.CJS.CampaignUI = (() => {
         options.push({ value: id, label: `${label} (party)` });
       }
     }
-    for (const character of DS().getAllAsArray('characters').slice(0, 80)) {
+    const source = CM()?.getVisibleItems?.('characters') || DS().getAllAsArray('characters');
+    for (const character of source.slice(0, 80)) {
       if (!character.id || seen.has(character.id)) continue;
       seen.add(character.id);
       options.push({ value: character.id, label: character.name || character.id });
@@ -8150,7 +8151,8 @@ Recover the relic x 1"></textarea>
   function _characterOptions() {
     const state = CS().getState();
     const current = new Set(Object.keys(state?.party || {}));
-    return DS().getAllAsArray('characters')
+    const source = CM()?.getVisibleItems?.('characters') || DS().getAllAsArray('characters');
+    return source
       .filter((entry) => entry?.id && !current.has(entry.id) && (entry.team || 'player') !== 'enemy')
       .map((entry) => ({
         value: entry.id,
@@ -8164,7 +8166,8 @@ Recover the relic x 1"></textarea>
 
   function _skillOptions(memberId) {
     const known = new Set(_memberSkillEntries(memberId).map(_skillEntryId));
-    return DS().getAllAsArray('skills')
+    const source = CM()?.getVisibleItems?.('skills') || DS().getAllAsArray('skills');
+    return source
       .filter((entry) => entry?.id && !known.has(entry.id))
       .map((entry) => ({
         value: entry.id,
@@ -8179,7 +8182,8 @@ Recover the relic x 1"></textarea>
   function _passiveOptions(memberId) {
     const member = CS().getState()?.party?.[memberId] || {};
     const known = new Set(_memberPassives(memberId, member));
-    const passiveOptions = DS().getAllAsArray('passives').map((entry) => ({
+    const passiveSource = CM()?.getVisibleItems?.('passives') || DS().getAllAsArray('passives');
+    const passiveOptions = passiveSource.map((entry) => ({
       value: entry.id,
       label: entry.name || entry.id,
       sub: 'Passive',
