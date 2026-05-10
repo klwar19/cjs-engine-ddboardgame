@@ -4851,6 +4851,34 @@ body.campaign-page::before {
   z-index: -1;
 }
 
+.campaign-story-vn-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: -3;
+  pointer-events: none;
+  user-select: none;
+  filter: blur(2px) saturate(1.05) brightness(0.82);
+  opacity: 0.92;
+  transform: scale(1.04);
+}
+
+.campaign-story-vn-hero.has-video::before {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campaign-story-vn-video {
+    display: none;
+  }
+  .campaign-story-vn-hero.has-video::before {
+    display: block;
+  }
+}
+
 .campaign-story-vn-content {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 390px);
