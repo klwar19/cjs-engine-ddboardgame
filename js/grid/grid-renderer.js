@@ -21,6 +21,8 @@ window.CJS.GridRenderer = (() => {
   let _canvas = null;
   let _ctx = null;
   let _cellSize = 64;
+  let _baseCellSize = 64;      // size before zoom multiplier (auto-fit)
+  let _zoom = 1.0;             // user-controlled zoom multiplier
   let _width = 8;
   let _height = 8;
   let _animFrame = null;
@@ -33,11 +35,17 @@ window.CJS.GridRenderer = (() => {
   let _lastDamageFloats = [];  // [{ x, y, text, color, birth, dur }]
   let _ready = false;          // true after resize() — safe to render
 
+  const ZOOM_MIN = 0.5;
+  const ZOOM_MAX = 2.5;
+  const ZOOM_STEP = 0.15;
+
   // ── INIT ──────────────────────────────────────────────────────────
   function init(canvasEl, opts) {
     _canvas = canvasEl;
     _ctx = _canvas.getContext('2d');
     _cellSize = opts?.cellSize || 64;
+    _baseCellSize = _cellSize;
+    _zoom = 1.0;
     _onCellClick = opts?.onCellClick || null;
     _onCellHover = opts?.onCellHover || null;
 
@@ -55,15 +63,23 @@ window.CJS.GridRenderer = (() => {
     _width = dims.width;
     _height = dims.height;
 
-    // Determine cell size to fit container
+    // Determine the auto-fit base cell size from the container.
+    // Zoom is applied as a multiplier on top so the user can zoom past auto-fit.
     const container = _canvas.parentElement;
     if (container) {
       const maxW = container.clientWidth - 4;
       const maxH = container.clientHeight - 4;
-      _cellSize = Math.floor(Math.min(maxW / _width, maxH / _height, 80));
-      _cellSize = Math.max(_cellSize, 32); // minimum
+      let fit = Math.floor(Math.min(maxW / _width, maxH / _height, 80));
+      fit = Math.max(fit, 32); // minimum
+      _baseCellSize = fit;
     }
 
+    _applyCellSize();
+  }
+
+  function _applyCellSize() {
+    if (!_canvas || !_ctx) return;
+    _cellSize = Math.max(16, Math.floor(_baseCellSize * _zoom));
     const dpr = window.devicePixelRatio || 1;
     _canvas.width = _width * _cellSize * dpr;
     _canvas.height = _height * _cellSize * dpr;
@@ -72,6 +88,20 @@ window.CJS.GridRenderer = (() => {
     _ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     _ready = true;
   }
+
+  function setZoom(value) {
+    const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Number(value) || 1));
+    if (Math.abs(next - _zoom) < 0.001) return _zoom;
+    _zoom = next;
+    _applyCellSize();
+    return _zoom;
+  }
+
+  function zoomIn() { return setZoom(_zoom + ZOOM_STEP); }
+  function zoomOut() { return setZoom(_zoom - ZOOM_STEP); }
+  function resetZoom() { return setZoom(1.0); }
+  function getZoom() { return _zoom; }
+  function getZoomBounds() { return { min: ZOOM_MIN, max: ZOOM_MAX, step: ZOOM_STEP }; }
 
   function destroy() {
     if (_animFrame) cancelAnimationFrame(_animFrame);
@@ -353,6 +383,7 @@ window.CJS.GridRenderer = (() => {
     init, resize, destroy,
     setHighlights, clearHighlights, setSelectedUnit,
     addDamageFloat,
-    getCellSize
+    getCellSize,
+    setZoom, zoomIn, zoomOut, resetZoom, getZoom, getZoomBounds
   });
 })();
