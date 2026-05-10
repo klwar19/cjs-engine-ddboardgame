@@ -170,6 +170,7 @@ window.CJS.CampaignMap = (() => {
     const canMove = _canMoveTo(node.id, run, map);
     const captured = mapState.captured?.[node.id];
     const entryResolved = mapState.entryResolved?.[node.id];
+    const notes = mapState.notes?.[node.id] || [];
     const exits = (node.exits || []).map((exit) => {
       const target = Runner().findNode(map, exit.to);
       const locked = mapState.locked?.[exit.to] || exit.locked;
@@ -205,6 +206,17 @@ window.CJS.CampaignMap = (() => {
         </div>
       ` : ''}
       ${captured?.incomeOps?.length ? `<div class="campaign-muted">Income: ${_esc(captured.incomeOps.map((op) => op.op || 'op').join(', '))}</div>` : ''}
+      ${notes.length ? `
+        <div class="campaign-link-list">
+          <div class="campaign-section-label">Manual Notes</div>
+          ${notes.slice(0, 5).map((note) => `
+            <div class="campaign-town-line is-${_escAttr(note.kind || 'event')}">
+              <strong>${_esc(note.title || note.kind || 'Note')}</strong>
+              <span>${_esc(note.text || '')}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
       ${exits ? `<div class="campaign-link-list"><div class="campaign-section-label">Exits</div>${exits}</div>` : '<div class="campaign-empty">No exits.</div>'}
     `;
   }

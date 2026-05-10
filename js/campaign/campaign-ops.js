@@ -63,6 +63,9 @@ window.CJS.CampaignOps = (() => {
         case 'hub_problem_remove': return `Resolve hub problem ${op.problemId || op.id}`;
         case 'hub_stat_change': return `Hub ${op.stat} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
         case 'capture_node': return `Capture node ${op.title || op.nodeId || op.id}`;
+        case 'map_note': return `Map note: ${op.title || op.nodeId || 'event'}`;
+        case 'map_layer_set': return `Map layer: ${op.layer || op.layerId || ''}`;
+        case 'start_battle': return `Queue battle ${op.label || op.encounterId || op.battleSetId || 'manual battle'}`;
         case 'add_rumor': return `Add rumor: ${op.text || op.id || 'rumor'}`;
         case 'side_idea_save': return `Save side idea ${op.contentCard?.title || op.contentCard?.id || op.contentId || ''}`;
         case 'side_idea_reject': return `Reject side idea ${op.contentId || op.id || ''}`;
@@ -77,12 +80,14 @@ window.CJS.CampaignOps = (() => {
         case 'story_fact_reveal': return `Reveal story fact ${op.title || op.factId || op.id || ''}`;
         case 'story_thread_status': return `Story thread ${op.threadId || op.id} -> ${op.status || 'active'}`;
         case 'story_metric_change': return `Story ${op.metric || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'bond_change': return `Bond ${op.npcId || op.target || op.id || 'character'} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
         case 'gain_skill_ap': return `Gain ${op.amount || 0} AP for skill ${op.skillId || op.id}`;
         case 'set_skill_level': return `Set skill ${op.skillId || op.id} to Lv ${op.level || 1}`;
         case 'set_job': return `Set ${op.target || op.characterId || 'member'} job → ${op.jobId || op.id || 'none'}`;
         case 'unlock_job': return `Unlock job ${op.jobId || op.id}`;
         case 'gain_job_xp': return `Gain ${op.amount || 0} job XP`;
         case 'set_job_level': return `Set job ${op.jobId || op.id} level to ${op.level || 1}`;
+        case 'add_quest': return `Add quest ${op.quest?.title || op.title || op.questId || op.id || ''}`;
         case 'rank_up_passive': return `Rank up passive ${op.passiveId || op.id}`;
         case 'set_passive_rank': return `Set passive ${op.passiveId || op.id} rank to ${op.rank || 1}`;
         case 'equip_skill': return `Equip skill ${op.skillId || op.id}`;
@@ -115,6 +120,8 @@ window.CJS.CampaignOps = (() => {
       case 'reveal_node': return _setNodeFlag(state, op.mapId, op.nodeId, 'revealed', true);
       case 'lock_node': return _setNodeFlag(state, op.mapId, op.nodeId, 'locked', true);
       case 'unlock_node': return _setNodeFlag(state, op.mapId, op.nodeId, 'locked', false);
+      case 'map_note': return _mapNote(state, op);
+      case 'map_layer_set': return _mapLayerSet(state, op);
       case 'capture_node': return _captureNode(state, op);
       case 'pass_phase': return passPhase(state, op);
       case 'start_scenario': return window.CJS.ScenarioRunner?.startScenario(op.scenarioId || op.id);
@@ -300,6 +307,31 @@ window.CJS.CampaignOps = (() => {
     state.mapState[id].captured = state.mapState[id].captured || {};
     state.mapState[id].campfires = state.mapState[id].campfires || {};
     return state.mapState[id];
+  }
+
+  function _mapNote(state, op = {}) {
+    const mapId = op.mapId || state.activeScenarioRun?.mapId || 'freeform';
+    const nodeId = op.nodeId || state.activeScenarioRun?.currentNode || op.cellKey || 'freeform';
+    const map = _mapState(state, mapId);
+    map.notes[nodeId] = map.notes[nodeId] || [];
+    map.notes[nodeId].unshift({
+      id: op.noteId || `map_note_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      title: op.title || 'Manual Map Event',
+      text: op.text || op.notes || '',
+      kind: op.kind || 'event',
+      layer: op.layer || op.layerId || state.activeScenarioRun?.mapLayer || null,
+      createdAt: new Date().toISOString()
+    });
+    _log(state, `Map note added: ${op.title || nodeId}.`);
+  }
+
+  function _mapLayerSet(state, op = {}) {
+    if (!state.activeScenarioRun) {
+      _log(state, `Map layer change ignored outside active run (${op.layer || op.layerId || ''}).`);
+      return;
+    }
+    state.activeScenarioRun.mapLayer = String(op.layer || op.layerId || 'layer_1').replace(/\s+/g, '_').toLowerCase();
+    _log(state, `Map layer set: ${state.activeScenarioRun.mapLayer}.`);
   }
 
   function _captureNode(state, op = {}) {

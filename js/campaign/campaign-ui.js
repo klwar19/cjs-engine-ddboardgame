@@ -1229,6 +1229,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-action-grid">
             ${_actionBtn({ action: 'roll-event', label: 'Draw Random Event', hint: 'Prepared event table result' })}
             ${_actionBtn({ action: 'pick-event', label: 'Pick Event', hint: 'Manual event selection' })}
+            ${_actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'Guided builder for quest, map, battle, plot, character, rewards, and summary', kind: 'manual' })}
             ${_actionBtn({ action: 'roll-oracle', label: 'Roll Oracle', hint: 'Prompt only' })}
             ${_actionBtn({ action: 'custom-oracle', label: 'Custom Prompt', hint: 'Write your own event prompt' })}
           </div>
@@ -1239,7 +1240,7 @@ window.CJS.CampaignUI = (() => {
           ${_renderInlinePurpose('problem')}
           ${_renderInlinePurpose('rumor')}
           ${(hubState?.activeProblems || []).slice(0, 3).map((problem) => `<div class="campaign-town-line is-risk"><strong>${_esc(_label(problem))}</strong><span>Active event pressure</span></div>`).join('') || '<div class="campaign-empty">No active hub problems.</div>'}
-          ${(hubState?.rumors || []).slice(0, 3).map((rumor) => `<div class="campaign-town-line is-plot"><strong>${_esc(rumor.text || rumor.id)}</strong><span>${_esc(rumor.canonRisk || 'green')} lead</span></div>`).join('')}
+          ${_openRumors(hubState).slice(0, 3).map((rumor) => _renderRumorRow(rumor, { compact: true })).join('') || '<div class="campaign-empty">No open rumors.</div>'}
         </section>
 
         ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
@@ -1976,15 +1977,7 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Rumors</h3><button class="campaign-action" data-campaign-action="manual-rumor">Add Rumor</button></div>
           ${_renderRumorPurpose()}
-          ${(hubState?.rumors || []).slice(0, 6).map((rumor) => `
-            <div class="campaign-row">
-              <div>
-                <strong>${_esc(rumor.text || rumor.id)}</strong>
-                <div class="campaign-muted">${_esc(rumor.status || 'active')} | hold until promoted</div>
-              </div>
-              <span class="campaign-risk ${Side().riskClass(rumor.canonRisk)}">${_esc(rumor.canonRisk || 'green')}</span>
-            </div>
-          `).join('') || '<div class="campaign-empty">No rumors yet.</div>'}
+          ${_openRumors(hubState).slice(0, 6).map((rumor) => _renderRumorRow(rumor)).join('') || '<div class="campaign-empty">No open rumors.</div>'}
         </section>
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Saved Ideas</h3></div>
@@ -2025,6 +2018,7 @@ window.CJS.CampaignUI = (() => {
             <h2>Event Side Stories</h2>
             <span class="campaign-pill">${active.length} active · ${available.length} available</span>
           </div>
+          ${_renderSideStoryFlowGuide(active[0]?.template || available[0])}
           ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side stories. Start one below or use Normal Quest for a single farming run.</div>'}
           ${finished.length ? `<details class="campaign-resolved-quests"><summary>Resolved side stories (${finished.length})</summary>${finished.map(_renderQuestChainResolved).join('')}</details>` : ''}
         </section>
@@ -2039,7 +2033,7 @@ window.CJS.CampaignUI = (() => {
     const activeQuests = Object.values(state.quests || {}).filter((quest) => !_isQuestResolved(quest));
     const activeChains = CS().getActiveQuestChains?.() || [];
     const problems = hubState?.activeProblems || [];
-    const rumors = (hubState?.rumors || []).filter((rumor) => rumor.status !== 'resolved');
+    const rumors = _openRumors(hubState);
     const metrics = ['security', 'prosperity', 'warmth', 'weirdness']
       .map((stat) => `<span>${_esc(_label(stat))} <b>${_esc(hubState?.[stat] ?? 0)}</b></span>`)
       .join('');
@@ -2090,12 +2084,7 @@ window.CJS.CampaignUI = (() => {
                 <span>Active hub problem</span>
               </div>
             `).join('') : '<div class="campaign-empty">No active hub problems.</div>')}
-            ${(rumors.length ? rumors.slice(0, 3).map((rumor) => `
-              <div class="campaign-town-line is-plot">
-                <strong>${_esc(rumor.text || rumor.id)}</strong>
-                <span>${_esc(_label(rumor.canonRisk || 'green'))} lead | promote later</span>
-              </div>
-            `).join('') : '')}
+            ${(rumors.length ? rumors.slice(0, 3).map((rumor) => _renderRumorRow(rumor, { compact: true })).join('') : '')}
           </div>
           <div>
             <div class="campaign-section-title">Places</div>
@@ -2150,6 +2139,33 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _isRumorOpen(rumor = {}) {
+    return !['resolved', 'promoted', 'dismissed', 'archived'].includes(String(rumor.status || 'active').toLowerCase());
+  }
+
+  function _openRumors(hubState) {
+    return (hubState?.rumors || []).filter(_isRumorOpen);
+  }
+
+  function _renderRumorRow(rumor = {}, options = {}) {
+    const hubId = window.CJS.CampaignHub?.getCurrentHubId?.() || '';
+    const compact = !!options.compact;
+    return `
+      <div class="campaign-row campaign-rumor-row ${compact ? 'is-compact' : ''}">
+        <div>
+          <strong>${_esc(rumor.text || rumor.id)}</strong>
+          <div class="campaign-muted">${_esc(rumor.status || 'active')} | ${_esc(_label(rumor.canonRisk || 'green'))} lead | parked until promoted</div>
+        </div>
+        <div class="campaign-row-actions">
+          <span class="campaign-risk ${Side().riskClass(rumor.canonRisk)}">${_esc(rumor.canonRisk || 'green')}</span>
+          <button class="campaign-action" data-campaign-action="rumor-to-quest" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Make Quest</button>
+          <button class="campaign-action" data-campaign-action="rumor-to-problem" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Make Problem</button>
+          <button class="campaign-action danger" data-campaign-action="resolve-rumor" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Resolve</button>
+        </div>
+      </div>
+    `;
+  }
+
   function _renderTownActionButton({ action, tone, title, meta, text }) {
     return `
       <button class="campaign-town-option is-${_escAttr(tone)}" data-campaign-action="${_escAttr(action)}">
@@ -2171,6 +2187,7 @@ window.CJS.CampaignUI = (() => {
           <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
           <div class="campaign-muted">${_esc(chain.status)} | Step ${currentIndex + 1}/${steps.length || 1}: ${_esc(step?.label || chain.currentStepId || '-')}</div>
           <div class="campaign-muted">${_esc(step?.text || '')}</div>
+          ${_renderQuestChainVnPanel(chain, { active: true })}
           ${_renderChainStakes(template)}
         </div>
         <div class="campaign-row-actions">
@@ -2204,6 +2221,7 @@ window.CJS.CampaignUI = (() => {
           <span class="campaign-risk ${Side().riskClass(chain.canonRisk)}">${_esc(chain.canonRisk || 'green')}</span>
         </div>
         <div class="campaign-muted">${_esc(chain.summary || '')}</div>
+        ${_renderQuestChainVnPanel(chain)}
         <div class="campaign-chip-row">${(chain.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>
         ${_renderChainStakes(chain)}
         ${(chain.steps || []).map((step) => `<div class="campaign-step"><b>${_esc(step.label || step.id)}</b><span>${_esc(step.text || '')}</span></div>`).join('')}
@@ -2213,6 +2231,47 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action" data-campaign-action="promote-chain" data-id="${_escAttr(chain.id)}">Add To Quests</button>
         </div>
       </section>
+    `;
+  }
+
+  function _renderSideStoryFlowGuide(chain = {}) {
+    if (!chain) return '';
+    return `
+      <div class="campaign-side-story-guide">
+        <span class="campaign-impact-badge is-plot">Side Story VN</span>
+        <strong>${_esc(chain.title || chain.name || 'Side Story')}</strong>
+        <span>${_esc(chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.')}</span>
+      </div>
+    `;
+  }
+
+  function _renderQuestChainVnPanel(chain = {}, options = {}) {
+    const template = chain.template || chain || {};
+    const steps = template.steps || [];
+    const currentId = options.active ? chain.currentStepId : steps[0]?.id;
+    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === currentId));
+    const current = steps[currentIndex] || steps[0] || {};
+    const npcs = (template.mainNpcs || []).slice(0, 4);
+    return `
+      <div class="campaign-side-story-vn">
+        <div class="campaign-side-story-scene">
+          <span class="campaign-impact-badge is-plot">${options.active ? 'Current Scene' : 'Opening Scene'}</span>
+          <strong>${_esc(current.label || template.title || template.id || 'Side Story')}</strong>
+          <p>${_esc(current.text || template.summary || 'Pick a scene, run it as VN/table narration, then decide whether it becomes a map, battle, quest progress, or a parked lead.')}</p>
+        </div>
+        <div class="campaign-side-story-meta">
+          <span><b>Plot</b> ${_esc(template.type || 'side story')}</span>
+          <span><b>NPCs</b> ${_esc(npcs.join(', ') || 'GM choice')}</span>
+          <span><b>Control</b> Start map, battle manually, complete step, resolve, or fail.</span>
+        </div>
+        <div class="campaign-side-story-steps">
+          ${steps.map((step, index) => `
+            <span class="${index === currentIndex ? 'is-current' : index < currentIndex ? 'is-done' : ''}">
+              <b>${index + 1}</b>${_esc(step.label || step.id)}
+            </span>
+          `).join('')}
+        </div>
+      </div>
     `;
   }
 
@@ -2387,7 +2446,7 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-panel-head">
           <div>
             <h3>${_esc(card.title || card.name || card.id)}</h3>
-            <div class="campaign-muted">${_esc(card.type || 'side content')} | ${_esc(card.source || '')}</div>
+            <div class="campaign-muted">${_esc(card.type || 'side content')} | ${_esc(card.source || '')} | ${_esc(card.status || 'idea')}</div>
           </div>
           <div class="campaign-impact-row">
             <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
@@ -2408,6 +2467,7 @@ window.CJS.CampaignUI = (() => {
           `).join('') : ''}
           <button class="campaign-action" data-campaign-action="save-side-idea" data-id="${_escAttr(card.id)}" title="Save this idea to the bank without committing it.">Save</button>
           <button class="campaign-action" data-campaign-action="copy-side-card" data-id="${_escAttr(card.id)}" title="Copy the card text to clipboard.">Copy</button>
+          ${!compact ? `<button class="campaign-action" data-campaign-action="dismiss-side-card" data-id="${_escAttr(card.id)}" title="Hide this card from the current result slot.">Dismiss</button>` : ''}
           <button class="campaign-action campaign-action-reject" data-campaign-action="reject-side-idea" data-id="${_escAttr(card.id)}" title="Discard this idea. Nothing is committed.">Reject</button>
         </div>
       </section>
@@ -2891,6 +2951,7 @@ window.CJS.CampaignUI = (() => {
           </div>
         </div>
         ${_renderInlinePurpose('event')}
+        ${event.manualSummary ? _renderManualEventSummary(event) : ''}
         <p>${_esc(event.prompt || '')}</p>
         ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
         ${_renderConsequencePreview(suggested, {
@@ -2902,6 +2963,7 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-action-grid">
           ${_actionBtn({ action: 'apply-event', label: suggested.length ? 'Apply Listed Changes' : 'Log Flavor', hint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes', kind: 'primary' })}
           ${_actionBtn({ action: 'edit-event', label: 'Edit Changes', hint: 'Tweak the ops, then apply' })}
+          ${event.manualSummary ? _actionBtn({ action: 'copy-event-summary', label: 'Copy Summary', hint: 'Copy the event summary and separate main-story notes for outside writing', kind: 'manual' }) : ''}
           ${_actionBtn({ action: 'note-event', label: 'Save Text Note', hint: 'Log the event text without applying ops' })}
           ${(event.gmHook || event.gmIdea) ? _actionBtn({ action: 'pin-plot-seed', label: 'Pin Plot Seed', hint: 'Save as a future plot hook in pinned notes' }) : ''}
           ${event.oracleTableId ? _actionBtn({ action: 'event-to-oracle', label: 'Roll Linked Oracle', hint: 'Roll an oracle prompt linked to this event' }) : ''}
@@ -2911,6 +2973,26 @@ window.CJS.CampaignUI = (() => {
 
         </div>
       </section>
+    `;
+  }
+
+  function _renderManualEventSummary(event = {}) {
+    const summary = event.manualSummary || {};
+    const tags = (summary.tags || []).filter(Boolean);
+    return `
+      <div class="campaign-manual-summary">
+        <div>
+          <strong>Event Summary</strong>
+          <span>${_esc(summary.short || 'No short result written yet.')}</span>
+        </div>
+        ${summary.main ? `
+          <div>
+            <strong>Main Story</strong>
+            <span>${_esc(summary.main)}</span>
+          </div>
+        ` : ''}
+        ${tags.length ? `<div class="campaign-manual-summary-tags">${tags.map((tag) => `<span>${_esc(tag)}</span>`).join('')}</div>` : ''}
+      </div>
     `;
   }
 
@@ -3410,14 +3492,27 @@ window.CJS.CampaignUI = (() => {
             ${_renderShapePills(scenario)}
             <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
             <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun ? 'disabled' : ''} title="Begin this as the current run. Generates a map, applies danger, and switches to Current Run.">Start Run</button>
-              <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}" title="Open a read-only sheet showing beats, danger budget, and rewards. Does not start it.">Inspect</button>
+              ${_renderScenarioRunActions(scenario, state)}
               ${scenario.generated ? `<button class="campaign-action danger" data-campaign-action="discard-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun?.scenarioId === scenario.id ? 'disabled' : ''}>Discard</button>` : ''}
             </div>
           </section>
         `).join('') || '<div class="campaign-empty">No runs available.</div>'}
         </div>
       </div>
+    `;
+  }
+
+  function _renderScenarioRunActions(scenario, state) {
+    const activeRun = state.activeScenarioRun;
+    const isCurrent = activeRun?.scenarioId === scenario.id;
+    const start = activeRun
+      ? (isCurrent
+        ? '<button class="campaign-action primary" data-campaign-action="open-maps-tab" title="This run is already active.">Continue Run</button>'
+        : '<button class="campaign-action" disabled title="Finish or cancel the current run before starting another.">Current Run Active</button>')
+      : `<button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" title="Begin this as the current run. Generates a map, applies danger, and switches to Current Run.">Start Run</button>`;
+    return `
+      ${start}
+      <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}" title="Open a read-only sheet showing beats, danger budget, and rewards. Does not start it.">Inspect</button>
     `;
   }
 
@@ -3942,7 +4037,11 @@ window.CJS.CampaignUI = (() => {
       case 'apply-side-choice': return _applySideChoice(data.id, Number(data.choice || 0));
       case 'save-side-idea': return _saveSideIdea(data.id);
       case 'reject-side-idea': return _rejectSideIdea(data.id);
+      case 'dismiss-side-card': return _dismissSideCard(data.id);
       case 'copy-side-card': return _copySideCard(data.id);
+      case 'resolve-rumor': return _resolveRumor(data.id, data.hubId);
+      case 'rumor-to-quest': return _rumorToQuest(data.id, data.hubId);
+      case 'rumor-to-problem': return _rumorToProblem(data.id, data.hubId);
       case 'review-resolve': return Ops().apply({ op: 'review_queue_resolve', reviewId: data.id, decision: data.decision }, { source: 'ui' });
       case 'resolve-hub-problem': return Ops().apply({ op: 'hub_problem_remove', hubId: data.hubId, problemId: data.id }, { source: 'ui' });
       case 'start-chain': return _startQuestChainRun(data.id);
@@ -3977,6 +4076,7 @@ window.CJS.CampaignUI = (() => {
       case 'oracle-note': return _saveOracleNote();
       case 'apply-event': return _applyEvent();
       case 'edit-event': return _editEvent();
+      case 'copy-event-summary': return _copyEventSummary();
       case 'note-event': return _noteEvent();
       case 'ignore-event': return _ignoreEvent();
       case 'pin-plot-seed': return _pinPlotSeed();
@@ -4011,6 +4111,7 @@ window.CJS.CampaignUI = (() => {
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
       case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
       case 'start-scenario': return _startScenarioFromUi(data.id);
+      case 'inspect-scenario': return _inspectScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
       case 'cancel-scenario': return _cancelScenario();
       case 'discard-scenario': return _discardGeneratedScenario(data.id);
@@ -4176,6 +4277,10 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _customEvent() {
+    _openManualEventBuilder();
+  }
+
+  function _legacyCustomEventUnused() {
     const body = document.createElement('div');
     body.appendChild(_formLabel('Title'));
     const title = document.createElement('input');
@@ -4226,6 +4331,637 @@ window.CJS.CampaignUI = (() => {
         CS().mutate((state) => { state.lastEvent = event; }, { source: 'event_custom' });
       }
     });
+  }
+
+  function _openManualEventBuilder() {
+    const state = CS().getState() || {};
+    const run = state.activeScenarioRun || null;
+    const currentMap = CS().getActiveMap?.();
+    const currentNode = Runner()?.findCurrentNode?.();
+    const rumorOptions = _manualEventRumorOptions();
+    const battleOptions = _manualEventBattleOptions();
+    const layerOptions = _manualEventLayerOptions();
+    const characterOptions = _manualEventCharacterOptions();
+    const bank = _manualKeywordBank();
+    const runLine = run
+      ? `Active run: ${currentMap?.name || run.mapId || run.scenarioId || 'map'} / ${currentNode?.name || currentNode?.label || run.currentNode || 'current point'}`
+      : 'No active run. Map notes are saved to a freeform map bucket until you start a run.';
+
+    const body = document.createElement('div');
+    body.className = 'campaign-manual-event-builder';
+    body.innerHTML = `
+      <section class="campaign-builder-block">
+        <div class="campaign-builder-title">
+          <span>1</span>
+          <div>
+            <h3>Seed</h3>
+            <small>Oracle, rumor, keywords, AI draft, or your own note.</small>
+          </div>
+        </div>
+        <div class="campaign-row-actions">
+          <button type="button" class="campaign-action primary" id="manual-roll-oracle">Roll Oracle</button>
+          <button type="button" class="campaign-action" id="manual-use-rumor" ${rumorOptions.length ? '' : 'disabled'}>Use Rumor</button>
+          <button type="button" class="campaign-action" id="manual-roll-keywords">Roll Keywords</button>
+          <button type="button" class="campaign-action" id="manual-clear-seed">Clear</button>
+        </div>
+        <div class="campaign-builder-grid">
+          <label class="form-label">Source
+            <select id="manual-source">
+              <option value="manual">Manual</option>
+              <option value="oracle">Oracle</option>
+              <option value="rumor">Rumor</option>
+              <option value="keywords">Keywords</option>
+              <option value="ai_draft">AI Draft</option>
+            </select>
+          </label>
+          <label class="form-label">Open Rumor
+            <select id="manual-rumor">
+              <option value="">No rumor selected</option>
+              ${rumorOptions.map((rumor) => `<option value="${_escAttr(rumor.value)}">${_esc(rumor.label)}</option>`).join('')}
+            </select>
+          </label>
+        </div>
+        <textarea id="manual-seed" placeholder="Seed, oracle line, rumor, or outside AI draft."></textarea>
+        <details class="campaign-builder-details">
+          <summary>Keyword bank</summary>
+          <div class="campaign-builder-grid">
+            <label class="form-label">Adjectives<input id="manual-kw-adj" type="text" value="${_escAttr(bank.adjectives)}"></label>
+            <label class="form-label">Nouns<input id="manual-kw-noun" type="text" value="${_escAttr(bank.nouns)}"></label>
+            <label class="form-label">Verbs<input id="manual-kw-verb" type="text" value="${_escAttr(bank.verbs)}"></label>
+            <label class="form-label">Twists<input id="manual-kw-twist" type="text" value="${_escAttr(bank.twists)}"></label>
+          </div>
+        </details>
+      </section>
+
+      <section class="campaign-builder-block">
+        <div class="campaign-builder-title">
+          <span>2</span>
+          <div>
+            <h3>Scene</h3>
+            <small>Short record first, longer prose optional.</small>
+          </div>
+        </div>
+        <div class="campaign-builder-grid">
+          <label class="form-label">Title<input id="manual-title" type="text" placeholder="Event title"></label>
+          <label class="form-label">Scope
+            <select id="manual-scope">
+              <option value="event">Event / table beat</option>
+              <option value="quest">Quest support</option>
+              <option value="main_story">Main story</option>
+              <option value="hub">Hub / town</option>
+            </select>
+          </label>
+        </div>
+        <label class="form-label">Very Short Event Summary
+          <textarea id="manual-short" placeholder="One sentence: what happened at the table?"></textarea>
+        </label>
+        <label class="form-label">Scene / Conversation / Hook
+          <textarea id="manual-scene" placeholder="Dialogue, hook, clue, obstacle, or GM note."></textarea>
+        </label>
+        <label class="form-label">Main Story Summary (separate)
+          <textarea id="manual-main" placeholder="Only the main-plot meaning, if any. Leave blank for side or farming events."></textarea>
+        </label>
+      </section>
+
+      <section class="campaign-builder-block">
+        <div class="campaign-builder-title">
+          <span>3</span>
+          <div>
+            <h3>Turn Into</h3>
+            <small>Choose only the pieces you want to commit.</small>
+          </div>
+        </div>
+        <div class="campaign-builder-checks">
+          <label><input id="manual-save-rumor" type="checkbox">Save as rumor</label>
+          <label><input id="manual-add-quest" type="checkbox">Build quest</label>
+          <label><input id="manual-map-note" type="checkbox" ${run ? 'checked' : ''}>Write map event/trap</label>
+          <label><input id="manual-queue-battle" type="checkbox">Queue battle</label>
+          <label><input id="manual-save-plot" type="checkbox" checked>Save plot hook</label>
+          <label><input id="manual-character" type="checkbox">Add character beat</label>
+          <label><input id="manual-move" type="checkbox">Move / return marker</label>
+        </div>
+
+        <div class="campaign-builder-grid">
+          <label class="form-label">Quest Title<input id="manual-quest-title" type="text" placeholder="Defaults to event title"></label>
+          <label class="form-label">Quest Objective<input id="manual-quest-objective" type="text" placeholder="Resolve the hook"></label>
+          <label class="form-label">Map Note Type
+            <select id="manual-map-kind">
+              <option value="event">Event</option>
+              <option value="trap">Trap</option>
+              <option value="clue">Clue</option>
+              <option value="shortcut">Shortcut</option>
+              <option value="reward">Reward</option>
+            </select>
+          </label>
+          <label class="form-label">Map Layer
+            <select id="manual-map-layer">
+              ${layerOptions.map((layer) => `<option value="${_escAttr(layer.value)}">${_esc(layer.label)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="form-label">Battle
+            <select id="manual-battle">
+              <option value="">No set battle</option>
+              <option value="custom">Custom/manual battle</option>
+              ${battleOptions.map((battle) => `<option value="${_escAttr(battle.value)}">${_esc(battle.label)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="form-label">Battle Label<input id="manual-battle-label" type="text" placeholder="Ambush, duel, defense, etc."></label>
+          <label class="form-label">Related Character
+            <select id="manual-character-id">
+              <option value="">No character selected</option>
+              ${characterOptions.map((character) => `<option value="${_escAttr(character.value)}">${_esc(character.label)}</option>`).join('')}
+            </select>
+          </label>
+          <label class="form-label">Bond Change<input id="manual-bond" type="number" value="0" step="1"></label>
+          <label class="form-label">Return / New Place<input id="manual-return" type="text" placeholder="Return to guild, lower layer, old shrine..."></label>
+          <label class="form-label">Quick Reward / Consequence
+            <select id="manual-consequence">
+              <option value="none">None</option>
+              <option value="gain_gold">Gain gold</option>
+              <option value="lose_gold">Lose gold</option>
+              <option value="give_jp">Gain JP</option>
+              <option value="take_jp">Lose JP</option>
+              <option value="damage_party">Damage party</option>
+              <option value="heal_party">Heal party</option>
+              <option value="add_status_cold">Cold status on party</option>
+              <option value="danger">Danger change</option>
+            </select>
+          </label>
+          <label class="form-label">Gold Amount<input id="manual-gold" type="number" value="25" step="1"></label>
+          <label class="form-label">JP Amount<input id="manual-jp" type="number" value="5" step="1"></label>
+          <label class="form-label">Danger / HP Amount<input id="manual-amount" type="number" value="1" step="1"></label>
+        </div>
+        <label class="form-label">Map Event / Trap Text
+          <textarea id="manual-map-text" placeholder="${_escAttr(runLine)}"></textarea>
+        </label>
+        <label class="form-label">Character Beat
+          <textarea id="manual-character-note" placeholder="What changed with this character, NPC, rival, or party member?"></textarea>
+        </label>
+      </section>
+
+      <section class="campaign-builder-block">
+        <div class="campaign-builder-title">
+          <span>4</span>
+          <div>
+            <h3>Summary</h3>
+            <small>Copy this for writing outside the app. Apply later if the ops look right.</small>
+          </div>
+        </div>
+        <div id="manual-ops-preview" class="campaign-preview"></div>
+        <label class="form-label">Event Summary<textarea id="manual-summary-event" readonly></textarea></label>
+        <label class="form-label">Main Story Summary<textarea id="manual-summary-main" readonly></textarea></label>
+        <label class="form-label">Full Export<textarea id="manual-summary-full" readonly></textarea></label>
+      </section>
+    `;
+
+    const footer = document.createElement('div');
+    footer.className = 'campaign-builder-footer';
+    footer.innerHTML = `
+      <button class="btn" id="manual-cancel">Cancel</button>
+      <button class="btn" id="manual-copy">Copy Summary</button>
+      <button class="btn btn-primary" id="manual-use">Use Event</button>
+    `;
+    const overlay = UI().openModal({ title: 'Manual Event Builder', content: body, footer, width: '860px' });
+    const $ = (sel) => body.querySelector(sel);
+
+    function refresh() {
+      const draft = _manualEventDraftFromBody(body, { rumorOptions, battleOptions, characterOptions });
+      const ops = _manualEventOps(draft);
+      $('#manual-summary-event').value = _eventShortSummary(draft);
+      $('#manual-summary-main').value = draft.mainStory || '';
+      $('#manual-summary-full').value = _manualEventSummaryText(draft, ops);
+      const descriptions = Ops().describe(ops).filter(Boolean);
+      $('#manual-ops-preview').innerHTML = descriptions.length
+        ? `<b>Changes if applied:</b><br>${descriptions.map(_esc).join('<br>')}`
+        : '<b>Changes if applied:</b><br>Story-only event. No automatic mechanics yet.';
+    }
+
+    $('#manual-roll-oracle').onclick = () => {
+      const oracle = window.CJS.CampaignOracle?.roll?.();
+      if (!oracle) return UI().toast('No oracle table available', 'info');
+      $('#manual-source').value = 'oracle';
+      $('#manual-seed').value = oracle.text || oracle.prompt || '';
+      if (!$('#manual-title').value.trim()) $('#manual-title').value = 'Oracle Event';
+      if (!$('#manual-short').value.trim()) $('#manual-short').value = _truncate(oracle.text || oracle.prompt || '', 140);
+      refresh();
+    };
+    $('#manual-use-rumor').onclick = () => {
+      const picked = rumorOptions.find((rumor) => rumor.value === $('#manual-rumor').value) || rumorOptions[0];
+      if (!picked) return UI().toast('No open rumor selected', 'info');
+      $('#manual-rumor').value = picked.value;
+      $('#manual-source').value = 'rumor';
+      $('#manual-seed').value = picked.text || picked.label || '';
+      $('#manual-save-rumor').checked = false;
+      if (!$('#manual-title').value.trim()) $('#manual-title').value = `Rumor: ${_truncate(picked.text || picked.label || '', 48)}`;
+      if (!$('#manual-short').value.trim()) $('#manual-short').value = picked.text || picked.label || '';
+      refresh();
+    };
+    $('#manual-roll-keywords').onclick = () => {
+      $('#manual-source').value = 'keywords';
+      const text = _manualKeywordPrompt({
+        adjectives: $('#manual-kw-adj').value,
+        nouns: $('#manual-kw-noun').value,
+        verbs: $('#manual-kw-verb').value,
+        twists: $('#manual-kw-twist').value
+      });
+      $('#manual-seed').value = text;
+      if (!$('#manual-title').value.trim()) $('#manual-title').value = `Keyword Event: ${text.split(';')[0] || 'Hook'}`;
+      if (!$('#manual-short').value.trim()) $('#manual-short').value = text;
+      refresh();
+    };
+    $('#manual-clear-seed').onclick = () => {
+      $('#manual-seed').value = '';
+      $('#manual-source').value = 'manual';
+      refresh();
+    };
+    body.querySelectorAll('input, textarea, select').forEach((el) => {
+      el.addEventListener('input', refresh);
+      el.addEventListener('change', refresh);
+    });
+    footer.querySelector('#manual-cancel').onclick = () => UI().closeModal(overlay);
+    footer.querySelector('#manual-copy').onclick = () => {
+      const draft = _manualEventDraftFromBody(body, { rumorOptions, battleOptions, characterOptions });
+      const ops = _manualEventOps(draft);
+      _copyPlainText('Manual Event Summary', _manualEventSummaryText(draft, ops), 'Manual event summary copied');
+    };
+    footer.querySelector('#manual-use').onclick = () => {
+      const draft = _manualEventDraftFromBody(body, { rumorOptions, battleOptions, characterOptions });
+      const event = _manualEventFromDraft(draft);
+      CS().mutate((next) => { next.lastEvent = event; }, { source: 'event_custom' });
+      UI().closeModal(overlay);
+      render();
+      UI().toast('Manual event ready. Review the summary and apply when you want it committed.', 'success');
+    };
+
+    refresh();
+  }
+
+  function _manualEventDraftFromBody(body, context = {}) {
+    const $ = (sel) => body.querySelector(sel);
+    const bool = (sel) => !!$(sel)?.checked;
+    const battleValue = $('#manual-battle')?.value || '';
+    const characterId = $('#manual-character-id')?.value || '';
+    const selectedBattle = (context.battleOptions || []).find((battle) => battle.value === battleValue) || null;
+    const selectedRumor = (context.rumorOptions || []).find((rumor) => rumor.value === $('#manual-rumor')?.value) || null;
+    const selectedCharacter = (context.characterOptions || []).find((character) => character.value === characterId) || null;
+    return {
+      title: $('#manual-title')?.value.trim() || 'Manual Event',
+      source: $('#manual-source')?.value || 'manual',
+      seed: $('#manual-seed')?.value.trim() || '',
+      scope: $('#manual-scope')?.value || 'event',
+      short: $('#manual-short')?.value.trim() || '',
+      scene: $('#manual-scene')?.value.trim() || '',
+      mainStory: $('#manual-main')?.value.trim() || '',
+      selectedRumor,
+      selectedBattle,
+      battleValue,
+      battleLabel: $('#manual-battle-label')?.value.trim() || '',
+      selectedCharacter,
+      characterId,
+      bondAmount: Number($('#manual-bond')?.value || 0),
+      characterNote: $('#manual-character-note')?.value.trim() || '',
+      questTitle: $('#manual-quest-title')?.value.trim() || '',
+      questObjective: $('#manual-quest-objective')?.value.trim() || '',
+      mapKind: $('#manual-map-kind')?.value || 'event',
+      mapLayer: $('#manual-map-layer')?.value || '',
+      mapText: $('#manual-map-text')?.value.trim() || '',
+      returnPlace: $('#manual-return')?.value.trim() || '',
+      consequence: $('#manual-consequence')?.value || 'none',
+      goldAmount: Math.abs(Number($('#manual-gold')?.value || 0)),
+      jpAmount: Math.abs(Number($('#manual-jp')?.value || 0)),
+      amount: Number($('#manual-amount')?.value || 0),
+      saveRumor: bool('#manual-save-rumor'),
+      addQuest: bool('#manual-add-quest'),
+      mapNote: bool('#manual-map-note'),
+      queueBattle: bool('#manual-queue-battle'),
+      savePlot: bool('#manual-save-plot'),
+      character: bool('#manual-character'),
+      move: bool('#manual-move')
+    };
+  }
+
+  function _manualEventFromDraft(draft = {}) {
+    const ops = _manualEventOps(draft);
+    const short = _eventShortSummary(draft);
+    const prompt = [
+      draft.seed ? `Seed: ${draft.seed}` : '',
+      draft.scene,
+      draft.mapText ? `Map note: ${draft.mapText}` : '',
+      draft.characterNote ? `Character: ${draft.characterNote}` : ''
+    ].filter(Boolean).join('\n\n') || short;
+    return {
+      id: `manual_event_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      title: draft.title || 'Manual Event',
+      prompt,
+      gmHook: draft.scene || draft.seed || '',
+      suggested: ops,
+      tableName: 'Manual Builder',
+      type: draft.scope || 'event',
+      source: draft.source || 'manual',
+      rolledAt: new Date().toISOString(),
+      manualSummary: {
+        short,
+        main: draft.mainStory || '',
+        full: _manualEventSummaryText(draft, ops),
+        tags: _manualEventTags(draft)
+      }
+    };
+  }
+
+  function _manualEventOps(draft = {}) {
+    const state = CS().getState() || {};
+    const world = state.currentWorld;
+    const run = state.activeScenarioRun || null;
+    const mapId = run?.mapId || 'freeform';
+    const nodeId = run?.currentNode || run?.currentCell || 'freeform';
+    const short = _eventShortSummary(draft);
+    const title = draft.title || 'Manual Event';
+    const ops = [];
+
+    ops.push({ op: 'log', text: `Manual event: ${short}` });
+
+    if (draft.saveRumor) {
+      ops.push({
+        op: 'add_rumor',
+        hubId: window.CJS.CampaignHub?.getCurrentHubId?.(),
+        text: draft.seed || short,
+        canonRisk: 'green',
+        tags: _manualEventTags(draft),
+        source: 'manual_event'
+      });
+    }
+
+    if (draft.addQuest) {
+      const questId = `manual_quest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      ops.push({
+        op: 'add_quest',
+        quest: {
+          id: questId,
+          title: draft.questTitle || title,
+          status: 'active',
+          summary: short,
+          notes: [draft.seed, draft.scene].filter(Boolean).join('\n\n'),
+          objectives: [{
+            id: 'obj_1',
+            label: draft.questObjective || 'Resolve the event hook',
+            current: 0,
+            required: 1
+          }],
+          rewards: [],
+          tags: _manualEventTags(draft)
+        }
+      });
+    }
+
+    if (draft.mapNote) {
+      ops.push({
+        op: 'map_note',
+        mapId,
+        nodeId,
+        title,
+        kind: draft.mapKind || 'event',
+        layer: draft.mapLayer || run?.mapLayer || null,
+        text: draft.mapText || draft.scene || short
+      });
+    }
+
+    if (draft.move && draft.mapLayer) {
+      ops.push({ op: 'map_layer_set', layer: draft.mapLayer });
+    }
+    if (draft.move && draft.returnPlace) {
+      ops.push({ op: 'log', text: `Manual movement marker: ${draft.returnPlace}.` });
+    }
+
+    if (draft.queueBattle) {
+      const battle = draft.selectedBattle?.battle || {};
+      ops.push({
+        op: 'start_battle',
+        encounterId: battle.encounterId || null,
+        battleSetId: battle.battleSetId || null,
+        monsterIds: battle.monsterIds || [],
+        label: draft.battleLabel || battle.label || `Manual battle: ${title}`,
+        source: 'manual_event',
+        rewardOps: battle.rewardOps || [],
+        ..._battleDefeatFields(battle),
+        objective: battle.objective || draft.questObjective || '',
+        notes: battle.notes || draft.scene || short,
+        battleMap: battle.battleMap || _battleMapForArea(CS().getActiveScenario?.()?.setting || 'outdoor')
+      });
+    }
+
+    if (draft.savePlot) {
+      ops.push({
+        op: 'side_idea_save',
+        status: 'saved',
+        contentCard: {
+          id: `manual_plot_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+          type: draft.scope === 'main_story' ? 'main_story_hook' : 'plot_hook',
+          title,
+          summary: short,
+          prompt: draft.scene || draft.seed || '',
+          canonRisk: draft.scope === 'main_story' ? 'yellow' : 'green',
+          source: 'manual_event',
+          tags: _manualEventTags(draft)
+        },
+        setLast: false
+      });
+    }
+
+    if (draft.character) {
+      const characterName = draft.selectedCharacter?.label || draft.characterId || 'character';
+      if (draft.characterNote) {
+        ops.push({
+          op: 'side_idea_save',
+          status: 'saved',
+          contentCard: {
+            id: `manual_character_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+            type: 'character_beat',
+            title: `${title}: ${characterName}`,
+            summary: draft.characterNote,
+            prompt: draft.scene || draft.seed || '',
+            canonRisk: 'green',
+            source: 'manual_event',
+            tags: [..._manualEventTags(draft), 'character']
+          },
+          setLast: false
+        });
+      }
+      if (draft.characterId && draft.bondAmount) {
+        ops.push({ op: 'bond_change', npcId: draft.characterId, amount: draft.bondAmount, field: 'value' });
+      }
+    }
+
+    if (draft.mainStory || draft.scope === 'main_story') {
+      ops.push({
+        op: 'story_beat_save',
+        status: 'manual',
+        beat: {
+          id: `manual_story_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+          type: 'manual_event_main_story',
+          kind: 'manual',
+          title,
+          summary: draft.mainStory || short,
+          prompt: draft.scene || draft.seed || '',
+          tags: [..._manualEventTags(draft), 'main_story']
+        }
+      });
+    }
+
+    ops.push(..._manualRewardOps(draft, world));
+    return ops;
+  }
+
+  function _manualRewardOps(draft = {}, world) {
+    const currency = `${world || 'haven'}_gold`;
+    const amount = Math.abs(Number(draft.amount || 0)) || 1;
+    switch (draft.consequence) {
+      case 'gain_gold': return [{ op: 'give_money', currency, amount: Math.abs(Number(draft.goldAmount || 0)) || 25 }];
+      case 'lose_gold': return [{ op: 'take_money', currency, amount: Math.abs(Number(draft.goldAmount || 0)) || 15 }];
+      case 'give_jp': return [{ op: 'give_jp', amount: Math.abs(Number(draft.jpAmount || 0)) || 5 }];
+      case 'take_jp': return [{ op: 'take_jp', amount: Math.abs(Number(draft.jpAmount || 0)) || 5 }];
+      case 'damage_party': return [{ op: 'damage_party', amount: amount || 5 }];
+      case 'heal_party': return [{ op: 'heal_party', amount: amount || 10 }];
+      case 'add_status_cold': return [{ op: 'add_status', target: 'party', status: 'cold', duration: 'scenario' }];
+      case 'danger': return [{ op: 'danger', amount: Number(draft.amount || 1) }];
+      default: return [];
+    }
+  }
+
+  function _manualEventSummaryText(draft = {}, ops = []) {
+    const lines = [
+      'Manual Event Summary',
+      '',
+      `Title: ${draft.title || 'Manual Event'}`,
+      `Source: ${_label(draft.source || 'manual')}`,
+      `Scope: ${_label(draft.scope || 'event')}`,
+      '',
+      'Event short summary:',
+      _eventShortSummary(draft),
+      ''
+    ];
+    if (draft.seed) lines.push('Seed:', draft.seed, '');
+    if (draft.scene) lines.push('Scene / hook:', draft.scene, '');
+    lines.push('Main story summary:', draft.mainStory || '(none)', '');
+    if (draft.addQuest) lines.push('Quest:', `${draft.questTitle || draft.title || 'Manual Quest'} - ${draft.questObjective || 'Resolve the event hook'}`, '');
+    if (draft.mapNote) lines.push('Map:', `${_label(draft.mapKind || 'event')} - ${draft.mapText || draft.scene || _eventShortSummary(draft)}`, '');
+    if (draft.queueBattle) lines.push('Battle:', draft.battleLabel || draft.selectedBattle?.label || `Manual battle: ${draft.title || 'Event'}`, '');
+    if (draft.character) {
+      lines.push('Character:', `${draft.selectedCharacter?.label || draft.characterId || 'Character'}${draft.characterNote ? ` - ${draft.characterNote}` : ''}`, '');
+    }
+    if (draft.move && (draft.mapLayer || draft.returnPlace)) {
+      lines.push('Move / return:', [draft.mapLayer ? `Layer: ${draft.mapLayer}` : '', draft.returnPlace ? `Return/place: ${draft.returnPlace}` : ''].filter(Boolean).join(' | '), '');
+    }
+    const descriptions = Ops().describe(ops).filter(Boolean);
+    lines.push('Applied changes preview:');
+    lines.push(...(descriptions.length ? descriptions.map((line) => `- ${line}`) : ['- Story-only event.']));
+    return lines.join('\n');
+  }
+
+  function _eventShortSummary(draft = {}) {
+    const text = draft.short || draft.scene || draft.seed || draft.mapText || draft.mainStory || draft.title || 'Manual event happened.';
+    return _truncate(String(text).replace(/\s+/g, ' ').trim(), 180) || 'Manual event happened.';
+  }
+
+  function _manualKeywordBank() {
+    return {
+      adjectives: 'hidden, urgent, broken, tender, absurd, cursed, rival, lost, glittering, forbidden, overdue, suspicious',
+      nouns: 'letter, contract, shrine, mirror, debt, festival, bridge, relic, witness, map, recipe, monster trail',
+      verbs: 'betrays, protects, vanishes, returns, accuses, demands, interrupts, awakens, bargains, follows, fractures, remembers',
+      twists: 'someone is lying, the reward has a cost, the map is wrong, an ally recognizes the sign, it connects to a rumor, the safe route is blocked'
+    };
+  }
+
+  function _manualKeywordPrompt(source = {}) {
+    const pick = (text) => {
+      const list = String(text || '').split(',').map((item) => item.trim()).filter(Boolean);
+      return list.length ? list[Math.floor(Math.random() * list.length)] : '';
+    };
+    const adjective = pick(source.adjectives);
+    const noun = pick(source.nouns);
+    const verb = pick(source.verbs);
+    const twist = pick(source.twists);
+    return [
+      [adjective, noun].filter(Boolean).join(' '),
+      verb ? `action: ${verb}` : '',
+      twist ? `twist: ${twist}` : ''
+    ].filter(Boolean).join('; ');
+  }
+
+  function _manualEventRumorOptions() {
+    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
+    return _openRumors(hubState).map((rumor) => ({
+      value: rumor.id,
+      label: _truncate(rumor.text || rumor.id, 90),
+      text: rumor.text || rumor.id,
+      rumor
+    }));
+  }
+
+  function _manualEventBattleOptions() {
+    const scenario = CS().getActiveScenario?.();
+    const setBattles = (scenario?.setBattles || []).map((battle, index) => ({
+      value: `scenario_${battle.id || battle.encounterId || index}`,
+      label: battle.label || battle.name || battle.encounterId || battle.battleSetId || `Set Battle ${index + 1}`,
+      battle: {
+        ...battle,
+        label: battle.label || battle.name || battle.encounterId || battle.battleSetId || `Set Battle ${index + 1}`
+      }
+    }));
+    const fallback = _fallbackBattlePool().slice(0, 10).map((battle, index) => ({
+      value: `pool_${battle.id || battle.encounterId || battle.battleSetId || index}`,
+      label: battle.label || battle.name || battle.encounterId || battle.battleSetId || `Battle ${index + 1}`,
+      battle
+    }));
+    const seen = new Set();
+    return [...setBattles, ...fallback].filter((entry) => {
+      if (seen.has(entry.value)) return false;
+      seen.add(entry.value);
+      return true;
+    });
+  }
+
+  function _manualEventLayerOptions() {
+    const run = CS().getState()?.activeScenarioRun;
+    const map = CS().getActiveMap?.();
+    const layers = (map?.layers || []).map((layer) => ({
+      value: layer.id,
+      label: layer.name || layer.id
+    }));
+    if (layers.length) return [{ value: '', label: `Stay on ${run?.mapLayer || layers[0].label || 'current layer'}` }, ...layers];
+    return [
+      { value: '', label: 'Stay on current layer' },
+      { value: 'surface', label: 'Surface / town layer' },
+      { value: 'underground', label: 'Underground layer' },
+      { value: 'upper', label: 'Upper layer' },
+      { value: 'dream', label: 'Dream / memory layer' },
+      { value: 'return_route', label: 'Return route' }
+    ];
+  }
+
+  function _manualEventCharacterOptions() {
+    const state = CS().getState() || {};
+    const seen = new Set();
+    const options = [];
+    for (const [id, member] of Object.entries(state.party || {})) {
+      const base = DS().get('characters', member.baseCharacterId || id);
+      const label = member.name || base?.name || id;
+      if (!seen.has(id)) {
+        seen.add(id);
+        options.push({ value: id, label: `${label} (party)` });
+      }
+    }
+    for (const character of DS().getAllAsArray('characters').slice(0, 80)) {
+      if (!character.id || seen.has(character.id)) continue;
+      seen.add(character.id);
+      options.push({ value: character.id, label: character.name || character.id });
+    }
+    return options.sort(_sortOptionLabel);
+  }
+
+  function _manualEventTags(draft = {}) {
+    return ['manual_event', draft.scope || 'event', draft.source || 'manual']
+      .concat(draft.selectedRumor ? ['rumor'] : [])
+      .filter(Boolean);
   }
 
   function _consequenceOps(choice, world) {
@@ -4546,19 +5282,28 @@ window.CJS.CampaignUI = (() => {
 
   function _applySideChoice(id, choiceIndex) {
     const card = _sideCardById(id);
+    const applyNow = (approved) => {
+      window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved });
+      _clearCurrentSideCard(id);
+      render();
+      UI().toast(approved ? 'Pulse applied and cleared' : 'Pulse sent to review and cleared', approved ? 'success' : 'info');
+    };
     if (card?.canonRisk === 'red') {
       UI().confirm('This is red-risk content. Approve and apply it now?',
-        () => window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved: true }),
-        () => window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved: false }));
+        () => applyNow(true),
+        () => applyNow(false));
       return;
     }
-    window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved: true });
+    applyNow(true);
   }
 
   function _saveSideIdea(id) {
     const card = _sideCardById(id);
     if (!card) return;
     Side().saveCard(card, { status: 'saved', source: 'ui' });
+    _clearCurrentSideCard(id);
+    render();
+    UI().toast('Idea saved and cleared from current result', 'success');
   }
 
   function _rejectSideIdea(id) {
@@ -4567,8 +5312,83 @@ window.CJS.CampaignUI = (() => {
       label: 'Reason (optional)',
       placeholder: 'Why is this rejected?',
       primaryLabel: 'Reject',
-      onSubmit: (reason) => Side().rejectCard(id, reason || '')
+      onSubmit: (reason) => {
+        Side().rejectCard(id, reason || '');
+        _clearCurrentSideCard(id);
+        render();
+      }
     });
+  }
+
+  function _dismissSideCard(id) {
+    _clearCurrentSideCard(id);
+    render();
+  }
+
+  function _clearCurrentSideCard(id) {
+    CS().mutate((state) => {
+      if (!id || state.lastSideContentCard?.id === id) state.lastSideContentCard = null;
+    }, { source: 'side_card_clear' });
+  }
+
+  function _rumorById(rumorId, hubId) {
+    const id = hubId || window.CJS.CampaignHub?.getCurrentHubId?.();
+    const hub = id ? CS().getHubState(id) : window.CJS.CampaignHub?.getCurrentHubState?.();
+    return { hubId: id, rumor: (hub?.rumors || []).find((entry) => entry.id === rumorId) };
+  }
+
+  function _resolveRumor(rumorId, hubId, status = 'resolved') {
+    const found = _rumorById(rumorId, hubId);
+    if (!found.rumor) return UI().toast('Rumor not found', 'info');
+    Ops().apply({ op: 'resolve_rumor', hubId: found.hubId, rumorId, status }, { source: 'rumor' });
+    render();
+    UI().toast(status === 'promoted' ? 'Rumor promoted and removed from open leads' : 'Rumor resolved', 'success');
+  }
+
+  function _rumorToQuest(rumorId, hubId) {
+    const found = _rumorById(rumorId, hubId);
+    const rumor = found.rumor;
+    if (!rumor) return UI().toast('Rumor not found', 'info');
+    const title = _truncate(rumor.text || rumor.id, 52);
+    const questId = `quest_rumor_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    Ops().apply([
+      {
+        op: 'add_quest',
+        quest: {
+          id: questId,
+          title: `Rumor: ${title}`,
+          status: 'active',
+          summary: rumor.text || '',
+          tags: ['rumor', ...(rumor.tags || [])],
+          objectives: [{ id: 'follow_lead', label: 'Follow the rumor lead', current: 0, required: 1 }],
+          rewards: []
+        }
+      },
+      { op: 'resolve_rumor', hubId: found.hubId, rumorId, status: 'promoted' }
+    ], { source: 'rumor_to_quest' });
+    _activeMode = 'quest';
+    _activeTab = 'quests';
+    render();
+    UI().toast('Rumor promoted to Quest', 'success');
+  }
+
+  function _rumorToProblem(rumorId, hubId) {
+    const found = _rumorById(rumorId, hubId);
+    const rumor = found.rumor;
+    if (!rumor) return UI().toast('Rumor not found', 'info');
+    const label = _truncate(rumor.text || rumor.id, 48);
+    Ops().apply([
+      {
+        op: 'hub_problem_add',
+        hubId: found.hubId,
+        problemId: `rumor_problem_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+        label,
+        notes: rumor.text || ''
+      },
+      { op: 'resolve_rumor', hubId: found.hubId, rumorId, status: 'promoted' }
+    ], { source: 'rumor_to_problem' });
+    render();
+    UI().toast('Rumor escalated to hub problem', 'success');
   }
 
   function _copySideCard(id) {
@@ -4928,6 +5748,79 @@ window.CJS.CampaignUI = (() => {
     UI().toast('Oracle rolled from event', 'success');
   }
 
+  function _copyEventSummary() {
+    const event = CS().getState().lastEvent;
+    const text = event?.manualSummary?.full || [
+      event?.title || 'Event',
+      event?.prompt || '',
+      event?.gmHook ? `GM hook: ${event.gmHook}` : ''
+    ].filter(Boolean).join('\n\n');
+    _copyPlainText('Event Summary', text, 'Event summary copied');
+  }
+
+  function _copyPlainText(title, text, successMessage = 'Copied') {
+    if (!text) return UI().toast('Nothing to copy', 'info');
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => UI().toast(successMessage, 'success'))
+        .catch(() => _openCopyTextModal(title, text));
+      return;
+    }
+    _openCopyTextModal(title, text);
+  }
+
+  function _randomizedQuestTemplate(template = {}) {
+    const variants = [
+      {
+        label: 'weather turn',
+        summary: 'A weather shift changes the approach and adds a small travel complication.',
+        objective: 'Handle the weather complication',
+        tag: 'weather',
+        mapType: 'outdoor'
+      },
+      {
+        label: 'rival claim',
+        summary: 'Another party, clerk, or local rival wants credit for the same job.',
+        objective: 'Deal with the rival claim',
+        tag: 'rival',
+        mapType: 'urban'
+      },
+      {
+        label: 'strange trace',
+        summary: 'The job leaves behind one odd clue that can stay rumor-only unless promoted.',
+        objective: 'Decide what the strange trace means',
+        tag: 'mystery',
+        mapType: 'ruins'
+      },
+      {
+        label: 'resource bonus',
+        summary: 'The route has better materials than expected, but one extra obstacle guards them.',
+        objective: 'Secure the bonus materials',
+        tag: 'materials',
+        mapType: 'forest'
+      },
+      {
+        label: 'NPC request',
+        summary: 'A nearby NPC asks for a small extra favor while the party is already out.',
+        objective: 'Answer the extra request',
+        tag: 'npc',
+        mapType: 'urban'
+      }
+    ];
+    const variant = variants[Math.floor(Math.random() * variants.length)];
+    const next = CS().clone(template || {});
+    next.randomVariant = _label(variant.label);
+    next.title = `${template.title || template.id || 'Quest'} (${next.randomVariant})`;
+    next.summary = [template.summary || '', `Variant: ${variant.summary}`].filter(Boolean).join(' ');
+    next.tags = Array.from(new Set([...(template.tags || []), variant.tag, 'randomized']));
+    next.objectives = [
+      ...(template.objectives || []),
+      { id: `variant_${_safe(variant.label)}`, label: variant.objective, current: 0, required: 1 }
+    ];
+    if (!template.mapType || template.mapType === 'any') next.mapType = variant.mapType;
+    return next;
+  }
+
   function _openQuestModal() {
     const templates = Object.values(CS().getContent().campaignQuests).flatMap((record) => record.templates || []);
     const body = document.createElement('div');
@@ -4979,8 +5872,10 @@ Recover the relic x 1"></textarea>
 
     const $ = (sel) => body.querySelector(sel);
     const previewBox = $('#campaign-quest-preview');
+    let currentTemplateVariant = null;
 
     function applyTemplate(template) {
+      currentTemplateVariant = template?.randomVariant ? template : null;
       $('#campaign-quest-title').value = template?.title || '';
       $('#campaign-quest-summary').value = template?.summary || '';
       $('#campaign-quest-giver').value = template?.giver || '';
@@ -4997,7 +5892,8 @@ Recover the relic x 1"></textarea>
 
     function buildQuest() {
       const templateId = $('#campaign-quest-template').value;
-      const template = templates.find((q) => q.id === templateId);
+      const rawTemplate = templates.find((q) => q.id === templateId);
+      const template = currentTemplateVariant || rawTemplate;
       const title = $('#campaign-quest-title').value.trim();
       const summary = $('#campaign-quest-summary').value.trim();
       const giver = $('#campaign-quest-giver').value.trim();
@@ -5017,7 +5913,12 @@ Recover the relic x 1"></textarea>
         objectives: objectives.length ? objectives : [{ id: 'obj_1', label: 'Objective', current: 0, required: 1 }],
         rewards: []
       };
-      base.id = base.id || `quest_${Date.now()}`;
+      if (rawTemplate) {
+        base.templateId = rawTemplate.id;
+        base.id = `quest_${_safe(rawTemplate.id)}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      } else {
+        base.id = base.id || `quest_${Date.now()}`;
+      }
       base.status = 'active';
       if (title) base.title = title;
       if (summary) base.summary = summary;
@@ -5039,12 +5940,14 @@ Recover the relic x 1"></textarea>
       }
       if (quest.giver) lines.push(`<b>Giver:</b> ${_esc(quest.giver)}`);
       if (quest.tags?.length) lines.push(`<b>Tags:</b> ${quest.tags.map(_esc).join(', ')}`);
+      if (quest.randomVariant) lines.push(`<b>Variant:</b> ${_esc(quest.randomVariant)}`);
       previewBox.innerHTML = lines.join('<br>');
       previewBox.hidden = false;
     }
 
     $('#campaign-quest-template').addEventListener('change', (ev) => {
       const tpl = templates.find((q) => q.id === ev.target.value);
+      currentTemplateVariant = null;
       applyTemplate(tpl || null);
     });
     body.querySelectorAll('input, textarea, select').forEach((el) => {
@@ -5052,12 +5955,13 @@ Recover the relic x 1"></textarea>
     });
     $('#campaign-quest-roll').onclick = () => {
       if (!templates.length) return;
-      const tpl = templates[Math.floor(Math.random() * templates.length)];
+      const tpl = _randomizedQuestTemplate(templates[Math.floor(Math.random() * templates.length)]);
       $('#campaign-quest-template').value = tpl.id;
       applyTemplate(tpl);
     };
     $('#campaign-quest-clear').onclick = () => {
       $('#campaign-quest-template').value = '';
+      currentTemplateVariant = null;
       applyTemplate(null);
     };
     footer.querySelector('#campaign-add-quest-back').onclick = () => UI().closeModal(overlay);
@@ -5166,6 +6070,66 @@ Recover the relic x 1"></textarea>
       UI().toast(error?.message || 'Scenario could not start', 'error');
       return null;
     }
+  }
+
+  function _inspectScenario(scenarioId) {
+    const scenario = CS().getScenarioById(scenarioId);
+    if (!scenario) return UI().toast('Run not found', 'info');
+    const body = document.createElement('div');
+    body.className = 'campaign-inspect-sheet';
+    const beats = scenario.beats || [];
+    const nodes = scenario.nodes || scenario.map?.nodes || [];
+    const rewards = Ops().describe(scenario.rewardOps || scenario.rewards || []);
+    const dangers = [
+      scenario.dangerMax ? `Danger max ${scenario.dangerMax}` : '',
+      scenario.limits?.events !== undefined ? `${scenario.limits.events} event rolls` : '',
+      scenario.limits?.randomBattles !== undefined ? `${scenario.limits.randomBattles} random battles` : '',
+      scenario.limits?.campRests !== undefined ? `${scenario.limits.campRests} camp rests` : ''
+    ].filter(Boolean);
+    body.innerHTML = `
+      <div class="campaign-preview">
+        <b>${_esc(scenario.name || scenario.id)}</b><br>
+        ${_esc(scenario.notes || scenario.summary || 'No notes.')}<br>
+        ${_renderShapePills(scenario)}
+      </div>
+      <div class="campaign-inspect-grid">
+        <section>
+          <h3>Flow</h3>
+          <div class="campaign-muted">${_esc(scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform'))}</div>
+          ${(beats.length ? beats : nodes).slice(0, 12).map((entry, index) => `
+            <div class="campaign-step">
+              <b>${index + 1}. ${_esc(entry.label || entry.name || entry.id)}</b>
+              <span>${_esc(entry.prompt || entry.notes || entry.kind || entry.role || '')}</span>
+            </div>
+          `).join('') || '<div class="campaign-empty">Freeform run. Use manual controls, random events, and battle picks.</div>'}
+        </section>
+        <section>
+          <h3>Rules</h3>
+          ${dangers.map((line) => `<div class="campaign-town-line"><strong>${_esc(line)}</strong><span>Run limit</span></div>`).join('') || '<div class="campaign-empty">No special limits listed.</div>'}
+          <h3>Rewards</h3>
+          ${rewards.map((line) => `<div class="campaign-town-line is-reward"><strong>${_esc(line)}</strong><span>On resolve</span></div>`).join('') || '<div class="campaign-empty">No authored rewards listed.</div>'}
+        </section>
+      </div>
+    `;
+    const footer = document.createElement('div');
+    footer.innerHTML = `
+      <button class="btn" data-inspect-close>Close</button>
+      ${CS().getState()?.activeScenarioRun
+        ? '<button class="btn btn-primary" data-inspect-current>Open Current Run</button>'
+        : '<button class="btn btn-primary" data-inspect-start>Start Run</button>'}
+    `;
+    const overlay = UI().openModal({ title: 'Run Inspect', content: body, footer, width: '760px' });
+    footer.querySelector('[data-inspect-close]').onclick = () => UI().closeModal(overlay);
+    const current = footer.querySelector('[data-inspect-current]');
+    if (current) current.onclick = () => {
+      UI().closeModal(overlay);
+      _goto(null, 'maps');
+    };
+    const start = footer.querySelector('[data-inspect-start]');
+    if (start) start.onclick = () => {
+      UI().closeModal(overlay);
+      _startScenarioFromUi(scenarioId);
+    };
   }
 
   function _discardGeneratedScenario(scenarioId) {
@@ -7518,6 +8482,11 @@ Recover the relic x 1"></textarea>
 
   function _safe(value) {
     return String(value || 'campaign').toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
+  }
+
+  function _truncate(value, max = 60) {
+    const text = String(value || '').trim();
+    return text.length > max ? `${text.slice(0, Math.max(0, max - 3))}...` : text;
   }
 
   function _esc(value) {
