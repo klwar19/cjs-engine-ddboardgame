@@ -259,9 +259,9 @@ window.CJS.ContentManager = (() => {
 
   function getVisibleItems(type, query) {
     const items = query ? DS().search(type, query) : DS().getAllAsArray(type);
-    const shadowed = _shadowedLegacyIds(items);
-    return items
-      .filter((item) => _matchesFilters(item))
+    const visibleItems = items.filter((item) => _matchesFilters(item));
+    const shadowed = _shadowedLegacyIds(type, visibleItems);
+    return visibleItems
       .filter((item) => !shadowed.has(item.id))
       .sort((a, b) => {
         const scopeDelta = _scopeOrder(a._scope) - _scopeOrder(b._scope);
@@ -272,9 +272,9 @@ window.CJS.ContentManager = (() => {
       });
   }
 
-  function _shadowedLegacyIds(items) {
+  function _shadowedLegacyIds(type, items) {
     const allIds = new Set();
-    for (const item of items) {
+    for (const item of DS().getAllAsArray(type)) {
       if (item && item.id) allIds.add(item.id);
     }
     if (allIds.size < 2) return new Set();
@@ -284,10 +284,10 @@ window.CJS.ContentManager = (() => {
       .filter(Boolean);
     if (!worldRoots.length) return new Set();
 
-    // Hide the unprefixed entry whenever a "<world>_<id>" twin is present,
-    // regardless of whether _scope survived an import/merge.
     const shadowed = new Set();
-    for (const id of allIds) {
+    for (const item of items) {
+      const id = item?.id;
+      if (!_isShadowableLegacyTwin(item, worldRoots)) continue;
       for (const worldId of worldRoots) {
         if (allIds.has(`${worldId}_${id}`)) {
           shadowed.add(id);
@@ -296,6 +296,17 @@ window.CJS.ContentManager = (() => {
       }
     }
     return shadowed;
+  }
+
+  function _isShadowableLegacyTwin(item, worldRoots) {
+    const id = item?.id;
+    if (!id) return false;
+    if (worldRoots.some((worldId) => String(id).startsWith(`${worldId}_`))) return false;
+
+    // Draft restores can lose metadata, so unscoped records are treated like
+    // legacy aliases. Explicit universal/system records are real content.
+    const scope = item._scope || 'legacy';
+    return scope === 'legacy';
   }
 
   function _matchesFilters(item) {

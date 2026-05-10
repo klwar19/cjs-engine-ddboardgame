@@ -55,6 +55,7 @@ const loadOrder = [
   'core/dice.js',
   'core/undo-manager.js',
   'core/data-store.js',
+  'core/content-manager.js',
   'core/skill-resolver.js',
   'effects/value-calc.js',
   'effects/conditions.js',
@@ -190,6 +191,26 @@ assert('exportJSON includes future collections', (() => {
   const exported = JSON.parse(DS.exportJSON());
   return exported.worlds && exported.zones && exported.food && exported.materials && exported.crafting && exported.storyDirectorPacks;
 })());
+
+DS.reset();
+
+console.log('\n-- TEST 0b: ContentManager legacy duplicate visibility --');
+
+DS.replace('worlds', 'haven', { id: 'haven', name: 'Haven' });
+DS.replace('characters', 'bowy', { id: 'bowy', name: 'Bowy', _scope: 'legacy' });
+DS.replace('characters', 'haven_bowy', { id: 'haven_bowy', name: 'Bowy', _scope: 'world', _world: 'haven' });
+DS.replace('characters', 'garr', { id: 'garr', name: 'Garr' });
+DS.replace('characters', 'haven_garr', { id: 'haven_garr', name: 'Garr', _scope: 'world', _world: 'haven' });
+DS.replace('characters', 'mitia', { id: 'mitia', name: 'Mitia', _scope: 'universal' });
+DS.replace('characters', 'haven_mitia', { id: 'haven_mitia', name: 'Mitia', _scope: 'world', _world: 'haven' });
+
+const visibleCharacterIds = CJS.ContentManager.getVisibleItems('characters').map((entry) => entry.id);
+assert('legacy duplicate bowy is hidden when haven_bowy exists',
+  !visibleCharacterIds.includes('bowy') && visibleCharacterIds.includes('haven_bowy'));
+assert('unscoped draft duplicate garr is hidden when haven_garr exists',
+  !visibleCharacterIds.includes('garr') && visibleCharacterIds.includes('haven_garr'));
+assert('explicit universal mitia remains visible beside haven_mitia',
+  visibleCharacterIds.includes('mitia') && visibleCharacterIds.includes('haven_mitia'));
 
 DS.reset();
 
