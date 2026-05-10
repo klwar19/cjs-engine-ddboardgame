@@ -646,6 +646,12 @@ window.CJS.CombatUI = (() => {
           <div class="combat-grid-wrap">
             <canvas id="cbt-canvas"></canvas>
             <div id="cbt-fx-layer" class="cjs-fx-layer"></div>
+            <div class="combat-zoom-controls" role="group" aria-label="Board zoom">
+              <button id="btn-zoom-out" type="button" class="combat-zoom-btn" title="Zoom out" aria-label="Zoom out">&minus;</button>
+              <span id="cbt-zoom-level" class="combat-zoom-level" aria-live="polite">100%</span>
+              <button id="btn-zoom-in" type="button" class="combat-zoom-btn" title="Zoom in" aria-label="Zoom in">+</button>
+              <button id="btn-zoom-reset" type="button" class="combat-zoom-btn" title="Reset zoom" aria-label="Reset zoom">&#x21BA;</button>
+            </div>
           </div>
           <div class="combat-sidebar">
             <details id="cbt-bgm-controls" class="bgm-controls">
@@ -804,6 +810,30 @@ window.CJS.CombatUI = (() => {
       _container.querySelector('#btn-stop-auto').style.display = 'none';
       _refresh();
     });
+
+    _bindZoomControls();
+  }
+
+  function _updateZoomLabel() {
+    const label = _container?.querySelector('#cbt-zoom-level');
+    if (!label) return;
+    const z = GR().getZoom ? GR().getZoom() : 1;
+    label.textContent = Math.round(z * 100) + '%';
+    const bounds = GR().getZoomBounds ? GR().getZoomBounds() : { min: 0.5, max: 2.5 };
+    const inBtn = _container.querySelector('#btn-zoom-in');
+    const outBtn = _container.querySelector('#btn-zoom-out');
+    if (inBtn) inBtn.disabled = z >= bounds.max - 0.001;
+    if (outBtn) outBtn.disabled = z <= bounds.min + 0.001;
+  }
+
+  function _bindZoomControls() {
+    const inBtn = _container.querySelector('#btn-zoom-in');
+    const outBtn = _container.querySelector('#btn-zoom-out');
+    const resetBtn = _container.querySelector('#btn-zoom-reset');
+    inBtn?.addEventListener('click', () => { GR().zoomIn(); _updateZoomLabel(); });
+    outBtn?.addEventListener('click', () => { GR().zoomOut(); _updateZoomLabel(); });
+    resetBtn?.addEventListener('click', () => { GR().resetZoom(); _updateZoomLabel(); });
+    _updateZoomLabel();
   }
 
   function _bindWindowEvents() {
@@ -867,6 +897,7 @@ window.CJS.CombatUI = (() => {
     CM().startEncounter(encounterId);
     _unsubCM = CM().subscribe(_onStateChange);
     GR().resize();
+    _updateZoomLabel();
 
     const portraitPicker = window.CJS.PortraitPicker;
     if (portraitPicker) {
@@ -1473,6 +1504,7 @@ window.CJS.CombatUI = (() => {
   function _handleResize() {
     if (_container && CM().getState()) {
       GR().resize();
+      _updateZoomLabel();
     }
   }
 

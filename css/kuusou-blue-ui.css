@@ -5097,8 +5097,173 @@ body.has-l2d-companion .side-forge-hero .campaign-action-grid {
 /* --- Battle log + narrator: more compact for combat --- */
 .battle-log-panel,
 .narrator-panel {
-  max-height: 200px !important;
+  max-height: 220px !important;
   padding: 12px 16px !important;
   font-size: 0.96rem !important;
+}
+
+/* ================================================================== */
+/* === REV 9 (2026-05-10): Battle Sim single-scroll, zoomable board, */
+/* compact initiative bar, all skills visible.                       */
+/* ================================================================== */
+
+.combat-screen {
+  height: auto !important;
+  min-height: calc(100vh - 52px);
+  overflow: visible !important;
+}
+
+.combat-middle {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  min-height: 0;
+  align-items: flex-start !important;
+}
+
+.combat-grid-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 480px;
+  display: flex !important;
+  align-items: safe center;
+  justify-content: safe center;
+  overflow: auto !important;
+}
+
+.combat-sidebar {
+  flex: 0 0 320px !important;
+  overflow: visible !important;
+  min-height: 0;
+}
+
+.combat-bottom {
+  flex: 0 0 auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Skills + items: show every entry, no inner scroll */
+.combat-action-section .skill-list,
+.combat-action-section .item-list,
+.skill-list,
+.item-list {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.action-panel {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Compact initiative / turn-order bar */
+.combat-top {
+  padding: 4px 10px !important;
+}
+.initiative-bar {
+  padding: 4px 6px !important;
+  gap: 4px !important;
+}
+.init-unit {
+  min-width: 56px !important;
+  padding: 3px 6px !important;
+  font-size: 0.7rem !important;
+  gap: 1px !important;
+  border-radius: 8px !important;
+}
+.init-unit .init-icon,
+.init-unit .init-portrait {
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 0.95rem !important;
+}
+.init-unit .init-name {
+  max-width: 52px !important;
+  font-size: 0.66rem !important;
+}
+.init-unit .init-hp-bar {
+  height: 2px !important;
+  margin-top: 1px !important;
+}
+.init-active::after {
+  font-size: 0.55rem !important;
+  margin-top: 0 !important;
+  letter-spacing: 0.06em !important;
+}
+
+/* Board zoom controls overlay */
+.combat-zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 4px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(34, 169, 214, 0.35);
+  border-radius: 8px;
+  padding: 3px;
+  box-shadow: 0 4px 10px rgba(8, 118, 156, 0.18);
+  align-items: center;
+}
+.combat-zoom-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(34, 169, 214, 0.4);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 248, 255, 0.74));
+  color: #08769C;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.combat-zoom-btn:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(207, 240, 255, 0.86));
+  border-color: rgba(34, 169, 214, 0.65);
+}
+.combat-zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.combat-zoom-level {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 0.74rem;
+  color: #08769C;
+  font-weight: 700;
+  min-width: 40px;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .combat-middle {
+    flex-direction: column !important;
+  }
+  .combat-sidebar {
+    flex: 0 0 auto !important;
+    width: 100%;
+    max-height: none !important;
+  }
+  .combat-grid-wrap {
+    width: 100%;
+  }
+  .combat-bottom {
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .combat-sidebar {
+    max-height: none !important;
+  }
+  .combat-bottom {
+    max-height: none !important;
+  }
 }
 
