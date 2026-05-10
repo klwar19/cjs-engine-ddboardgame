@@ -11,6 +11,7 @@
     {
       "id": "haven_bowy",
       "name": "Bowy",
+      "portrait": "images/characters/haven_bowy.png",
       "icon": "🐗",
       "team": "player",
       "rank": "F",
@@ -78,6 +79,7 @@
     {
       "id": "haven_garr",
       "name": "Garr",
+      "portrait": "images/characters/haven_garr.png",
       "icon": "🐾",
       "team": "player",
       "rank": "F",
@@ -124,6 +126,7 @@
     {
       "id": "haven_mitia",
       "name": "Mitia",
+      "portrait": "images/characters/haven_mitia.png",
       "icon": "🧊",
       "team": "player",
       "rank": "F",
