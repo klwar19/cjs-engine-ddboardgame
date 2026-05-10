@@ -731,6 +731,23 @@ const realGamedata = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'data', 'gamedata.json'), 'utf8')
 );
 
+// gamedata.json no longer carries Bowy/Mitia/Garr — those moved to the haven
+// world file. Splice the haven characters and the skills/items/passives they
+// reference back in so legacy encounter refs still resolve in tests.
+function _spliceHavenCollection(target, file, collection) {
+  const doc = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'data', 'worlds', 'haven', file), 'utf8')
+  );
+  target[collection] = target[collection] || {};
+  for (const entry of (doc.entries || [])) {
+    if (!target[collection][entry.id]) target[collection][entry.id] = entry;
+  }
+}
+_spliceHavenCollection(realGamedata, 'characters.json', 'characters');
+_spliceHavenCollection(realGamedata, 'skills.json', 'skills');
+_spliceHavenCollection(realGamedata, 'items.json', 'items');
+_spliceHavenCollection(realGamedata, 'passives.json', 'passives');
+
 DS.reset();
 const realLoad = DS.loadData(realGamedata);
 assert('real gamedata.json loads successfully', !!realLoad?.success);
@@ -750,7 +767,21 @@ assertEq('legacy thunder shot range normalized to 4', DS.get('skills', 'thunder_
 assertEq('legacy piercing bolt range normalized to 3', DS.get('skills', 'piercing_bolt')?.range, 3);
 assertEq('legacy rally range normalized to 2', DS.get('skills', 'rally_cry')?.range, 2);
 assertEq('legacy crossbow basic range normalized to 3', DS.get('items', 'thunder_crossbow')?.weaponData?.range, 3);
-const bowyCompiled = SC.compileUnit(DS.get('characters', 'bowy'), 'bowy_test');
+
+// Synthesize a marksman to test marksmans_eye passive without depending on a
+// legacy "bowy" entry that was removed when haven_bowy became canonical.
+DS.replace('characters', 'marksman_test', {
+  id: 'marksman_test',
+  name: 'Marksman Test',
+  team: 'player',
+  rank: 'F',
+  type: 'humanoid',
+  stats: { S: 7, P: 8, E: 7, C: 4, I: 3, A: 5, L: 4 },
+  skills: ['thunder_shot', 'piercing_bolt'],
+  equipment: ['thunder_crossbow', 'leather_armor', 'warm_boots'],
+  innatePassives: ['marksmans_eye', 'iron_hide']
+});
+const bowyCompiled = SC.compileUnit(DS.get('characters', 'marksman_test'), 'bowy_test');
 assertEq('Bowy passive does not add generic skill rangeBonus', bowyCompiled.rangeBonus, 0);
 assertEq('Bowy passive adds basic attack range bonus', bowyCompiled.basicAttackRangeBonus, 1);
 assertEq('Bowy basic attack range is crossbow 3 plus passive 1', AH.getAttackRange(bowyCompiled), 4);
