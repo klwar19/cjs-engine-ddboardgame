@@ -54,11 +54,15 @@ window.CJS.CampaignMap = (() => {
       const locked = mapState.locked?.[node.id];
       const cleared = mapState.cleared?.[node.id];
       const kind = String(node.kind || 'node').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+      const objective = node.questObjective;
+      const objectiveDone = objective && _isObjectiveDone(state, objective);
       return `
-        <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
+        <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
           <circle cx="${node.x}" cy="${node.y}" r="${active ? 20 : 16}"></circle>
+          ${objective ? `<circle class="campaign-map-objective-ring" cx="${node.x}" cy="${node.y}" r="${active ? 24 : 20}" />` : ''}
           <text class="campaign-map-icon" x="${node.x}" y="${node.y + 4}" text-anchor="middle">${_nodeIcon(node)}</text>
           <text class="campaign-map-label" x="${node.x}" y="${node.y + 34}" text-anchor="middle">${_esc(_shortLabel(node.title || node.id))}</text>
+          ${objective ? `<text class="campaign-map-objective-label" x="${node.x}" y="${node.y - 22}" text-anchor="middle">${_esc(_objectiveTag(objective))}</text>` : ''}
         </g>
       `;
     }).join('');
@@ -108,10 +112,15 @@ window.CJS.CampaignMap = (() => {
         const isVisited = visited[key] || (run.visitedCells || []).includes(key);
         const passable = _cellPassable(map, x, y);
         const canMove = isRevealed && passable && _canMoveCell(run, x, y);
+        const objective = cell.questObjective;
+        const objectiveDone = objective && _isObjectiveDone(state, objective);
+        const objectiveTitle = objective
+          ? `${objectiveDone ? '✓ ' : '★ '}${objective.label}`
+          : '';
         cells.push(`
-          <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'}"
-            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(cell.title || key)}">
-            <span>${isRevealed ? _gridIcon(cell, passable) : ''}</span>
+          <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}"
+            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(objectiveTitle ? `${objectiveTitle} — ${cell.title || key}` : cell.title || key)}">
+            <span>${isRevealed ? (objective ? _objectiveIcon(objective) : _gridIcon(cell, passable)) : ''}</span>
             <small>${isRevealed ? _esc(_shortLabel(cell.title || key)) : ''}</small>
           </button>
         `);
@@ -140,10 +149,14 @@ window.CJS.CampaignMap = (() => {
     if (!cell) return '<div class="campaign-empty">No current cell.</div>';
     const key = _cellKey(cell.x, cell.y);
     const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
+    const objective = cell.questObjective;
+    const state = CS().getState();
+    const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
     return `
       <div class="campaign-detail-title">
         <span>${_esc(cell.title || key)}</span>
         <span class="campaign-pill">${_esc(cell.kind || 'floor')}</span>
+        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '✓ ' : ''}${_esc(objective.label)}</span>` : ''}
       </div>
       <div class="campaign-muted">${_esc(cell.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
@@ -182,10 +195,14 @@ window.CJS.CampaignMap = (() => {
     }).join('');
 
     const tags = (node.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
+    const objective = node.questObjective;
+    const state = CS().getState();
+    const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
     return `
       <div class="campaign-detail-title">
         <span>${_esc(node.title || node.id)}</span>
         <span class="campaign-pill">${_esc(node.kind || 'node')}</span>
+        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '✓ ' : ''}${_esc(objective.label)}</span>` : ''}
       </div>
       <div class="campaign-muted">${_esc(node.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
@@ -222,6 +239,7 @@ window.CJS.CampaignMap = (() => {
   }
 
   function _nodeIcon(node) {
+    if (node.questObjective) return _objectiveIcon(node.questObjective);
     if (node.capture) return '*';
     if (node.campfire) return 'C';
     const map = {
@@ -239,6 +257,35 @@ window.CJS.CampaignMap = (() => {
       boss: '!'
     };
     return map[node.kind] || '.';
+  }
+
+  function _objectiveIcon(objective = {}) {
+    const icons = {
+      defeat: '⚔',
+      recover: '★',
+      reach: '◆',
+      escort: '☗',
+      investigate: '?',
+      talk: '!',
+      survive: '⌛',
+      gather: '✿',
+      craft: '⚒',
+      custom: '◯'
+    };
+    return icons[objective.kind] || '★';
+  }
+
+  function _objectiveTag(objective = {}) {
+    const short = String(objective.label || '').slice(0, 18);
+    return short.length === 18 ? `${short}…` : short;
+  }
+
+  function _isObjectiveDone(state, objective) {
+    if (!objective?.questId || !objective?.id) return false;
+    const quest = state?.quests?.[objective.questId];
+    const entry = (quest?.objectives || []).find((o) => o.id === objective.id);
+    if (!entry) return false;
+    return Number(entry.current || 0) >= Math.max(1, Number(entry.required || 1));
   }
 
   function _layers(map) {
