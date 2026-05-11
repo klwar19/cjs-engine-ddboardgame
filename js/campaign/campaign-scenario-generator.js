@@ -159,11 +159,18 @@ window.CJS.CampaignScenarioGenerator = (() => {
       return {
         source,
         questId: quest.id,
+        questTitle: quest.title || quest.id,
         title: quest.title || quest.id,
         summary: quest.summary || '',
         tags: quest.tags || [],
         battleSetIds: quest.battleSetIds || [],
-        mapSeedIds: quest.mapSeedIds || []
+        mapSeedIds: quest.mapSeedIds || [],
+        objectives: (quest.objectives || []).map((obj) => ({
+          id: obj.id,
+          label: obj.label || obj.id,
+          kind: obj.kind || 'custom',
+          required: Math.max(1, Number(obj.required || 1))
+        }))
       };
     }
 
@@ -224,6 +231,8 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const autoBattlePool = _worldBattlePool(world, { setting, size: opts.size, tags: _scenarioTags(seed, context) }, context, seed);
     _ensurePointBattles(points, autoBattlePool, { setting, size: opts.size });
     _ensureBattleDensity(points, autoBattlePool, { setting, size: opts.size, tags: _scenarioTags(seed, context) });
+    // Tag map nodes/cells with their quest objective (if this run is bound to a quest).
+    _attachQuestObjectivesToPoints(points, context);
     const battleRefs = _unique([
       ...(context.battleSetIds || []),
       ...points.flatMap((point) => [...(point.battleSetIds || []), ...(point.encounterIds || [])])
@@ -365,6 +374,57 @@ window.CJS.CampaignScenarioGenerator = (() => {
     };
     point.tags = _unique([...(point.tags || []), 'auto_battle', context.setting || '']);
     point.notes = [point.notes, `Auto battle: ${entry.label || entry.encounterId || entry.battleSetId}.`].filter(Boolean).join(' ');
+  }
+
+  // Distribute quest objectives across map points so the player can see what each
+  // node represents. The first objective lands on a meaningful early-to-mid node,
+  // the final objective lands on (or near) the exit, and any extras spread evenly.
+  function _attachQuestObjectivesToPoints(points, context = {}) {
+    const objectives = Array.isArray(context.objectives) ? context.objectives.filter(Boolean) : [];
+    if (!Array.isArray(points) || !points.length || !objectives.length) return;
+    const total = points.length;
+    const exitIdx = (() => {
+      for (let i = total - 1; i >= 0; i--) {
+        const kind = String(points[i].kind || '').toLowerCase();
+        if (kind === 'exit' || kind === 'boss') return i;
+      }
+      return total - 1;
+    })();
+    const usable = points.map((p, idx) => ({ point: p, idx })).filter(({ point, idx }) => {
+      const kind = String(point.kind || '').toLowerCase();
+      if (idx === 0 && kind === 'entrance') return false;
+      return true;
+    });
+    if (!usable.length) return;
+    const slots = objectives.length;
+    for (let i = 0; i < slots; i++) {
+      const objective = objectives[i];
+      // Last objective → exit/boss point. Otherwise spread across remaining usable points.
+      let targetIdx;
+      if (i === slots - 1) {
+        targetIdx = exitIdx;
+      } else {
+        const pct = (i + 1) / (slots + 1);
+        targetIdx = Math.max(1, Math.min(exitIdx - 1, Math.round(pct * exitIdx)));
+      }
+      const target = points[targetIdx] || usable[usable.length - 1].point;
+      if (!target) continue;
+      target.questObjective = {
+        id: objective.id,
+        label: objective.label,
+        kind: objective.kind || 'custom',
+        required: objective.required || 1,
+        questId: context.questId || null,
+        questTitle: context.questTitle || context.title || ''
+      };
+      target.tags = _unique([...(target.tags || []), 'quest_objective', `objective_${objective.kind || 'custom'}`]);
+      const labelLine = `Quest objective: ${objective.label}.`;
+      target.notes = [target.notes, labelLine].filter(Boolean).join(' ');
+      // Display title gets the quest objective if it's blank or generic.
+      if (!target.title || /^(node|point|step) ?\d*$/i.test(String(target.title))) {
+        target.title = objective.label;
+      }
+    }
   }
 
   function _worldBattlePool(world, area = {}, context = {}, seed = {}) {

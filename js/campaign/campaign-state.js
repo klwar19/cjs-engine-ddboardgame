@@ -672,6 +672,11 @@ window.CJS.CampaignState = (() => {
       member.learnedSkills = Array.isArray(member.learnedSkills) ? member.learnedSkills.filter(Boolean) : [];
       member.learnedPassives = Array.isArray(member.learnedPassives) ? member.learnedPassives.filter(Boolean) : [];
       const base = DS().get('characters', member.baseCharacterId || id) || {};
+      // Refresh portrait & icon from the base character so older saves (or saves
+      // taken before a portrait was published) pick up the latest art automatically.
+      if (!member.portrait && base.portrait) member.portrait = base.portrait;
+      if (!member.icon && base.icon) member.icon = base.icon;
+      if (!member.name && base.name) member.name = base.name;
       member.allowedWeaponTypes = Array.isArray(member.allowedWeaponTypes) ? member.allowedWeaponTypes : clone(base.allowedWeaponTypes || []);
       member.allowedArmorTypes = Array.isArray(member.allowedArmorTypes) ? member.allowedArmorTypes : clone(base.allowedArmorTypes || []);
       member.equipment = Array.isArray(member.equipment) ? member.equipment : clone(base.equipment || []);

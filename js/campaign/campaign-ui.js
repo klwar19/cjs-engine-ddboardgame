@@ -29,6 +29,17 @@ window.CJS.CampaignUI = (() => {
     return `<span class="cjs-icon cjs-icon-${opts.size || 'md'}">${_esc(fallback)}</span>`;
   }
 
+  // Resolve a member's portrait, falling back to the base character record so
+  // legacy saves still show art if the character file has it.
+  function _memberPortrait(member, memberId) {
+    if (!member) return '';
+    if (member.portrait) return member.portrait;
+    const DS = window.CJS.DataStore;
+    const baseId = member.baseCharacterId || memberId;
+    const base = DS?.get?.('characters', baseId);
+    return base?.portrait || '';
+  }
+
   let _root = null;
   let _activeMode = 'story';
   let _activeTab = 'storyHome';
@@ -399,7 +410,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
         <div class="campaign-character-head">
-          <div class="campaign-avatar">${member.portrait ? `<img src="${_escAttr(member.portrait)}" alt="">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id })}</div>
+          <div class="campaign-avatar">${(() => { const p = _memberPortrait(member, id); return p ? `<img src="${_escAttr(p)}" alt="">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id }); })()}</div>
           <div>
             <strong>${_esc(member.name || id)}</strong>
             <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(member.rank || 'F')}</div>
@@ -458,8 +469,9 @@ window.CJS.CampaignUI = (() => {
     const charXpMeta = xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`;
     const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
     const availLabel = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
-    const portraitContent = member.portrait
-      ? `<img src="${_escAttr(member.portrait)}" alt="">`
+    const resolvedPortrait = _memberPortrait(member, id);
+    const portraitContent = resolvedPortrait
+      ? `<img src="${_escAttr(resolvedPortrait)}" alt="">`
       : `<span class="campaign-roster-portrait-fallback">${_esc(member.icon || member.name?.[0] || '?')}</span>`;
     return `
       <article class="campaign-roster-member ${isBench ? 'is-bench' : 'is-active'} ${battleReady ? '' : 'is-unavailable'}">
@@ -1078,6 +1090,20 @@ window.CJS.CampaignUI = (() => {
       .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
     const run = state.activeScenarioRun;
 
+    const heroActions = run
+      ? [
+        _actionBtn({ action: 'open-maps-tab', label: 'Continue Run', hint: 'Return to the active map run', kind: 'primary' }),
+        _actionBtn({ action: 'add-quest', label: 'Add Quest', hint: 'Create a custom quest with objectives, rewards, and consequences' }),
+        _actionBtn({ action: 'random-quest-offer', label: 'Roll Random Quest', hint: 'Pick a random template quest (no auto-run)' }),
+        _actionBtn({ action: 'open-quests-tab', label: 'Quest Tracker', hint: 'See all active and resolved quests' })
+      ]
+      : [
+        _actionBtn({ action: 'add-quest', label: 'Add Quest', hint: 'Create or pick a quest. You can start its run from the modal.', kind: 'primary' }),
+        _actionBtn({ action: 'random-quest-offer', label: 'Quick Quest Run', hint: 'Roll a random quest template and auto-start its run' }),
+        _actionBtn({ action: 'generate-quest-scenario', label: 'Generate Map for Active Quest', hint: nextQuest ? `Build a fresh map for "${nextQuest.title || nextQuest.id}"` : 'Add a quest first', disabled: !nextQuest }),
+        _actionBtn({ action: 'open-quests-tab', label: 'Quest Tracker', hint: 'See all active and resolved quests' })
+      ];
+
     return `
       <div class="campaign-dashboard campaign-mode-home campaign-quest-home">
         ${_renderGachaHomeHero({
@@ -1088,61 +1114,65 @@ window.CJS.CampaignUI = (() => {
             ? nextQuest.summary || 'Continue the current farming/adventure request.'
             : 'Pick repeatable work, farm resources, or create a small story-flavored quest run.',
           meta: [`${active.length} active`, `${finished.length} resolved`, `${templateCount} templates`],
-          actions: [
-            _actionBtn({ action: 'add-quest', label: 'Add Quest', hint: 'Create or edit a normal quest', kind: 'primary' }),
-            _actionBtn({ action: 'random-quest-offer', label: 'Quick Quest Run', hint: 'Pick a quest template and start its run' }),
-            _actionBtn({ action: 'generate-quest-scenario', label: 'Generate From Quest', hint: 'Use the active quest to create a run', disabled: !!run }),
-            _actionBtn({ action: 'open-maps-tab', label: run ? 'Continue Run' : 'Current Run', hint: run ? 'Return to the active run' : 'No run is active yet' })
-          ]
+          actions: heroActions
         })}
         ${_renderModeFlow('Quest Flow', [
-          ['Accept', 'Add a normal quest.'],
-          ['Run', 'Start a linked or generated stage.'],
-          ['Farm', 'Collect drops and materials.'],
-          ['Wrap', 'Apply run result to objectives.'],
-          ['Turn In', 'Resolve or leave open.']
+          ['Accept', 'Add a quest (custom or template).'],
+          ['Run', 'Start the auto-generated or linked map.'],
+          ['Farm', 'Collect drops and materials on the map.'],
+          ['Wrap', 'Tick objectives as you complete them.'],
+          ['Turn In', 'Resolve for rewards or mark failed.']
         ], run ? 2 : (nextQuest ? 1 : 0))}
 
         <section class="campaign-panel campaign-wide-panel campaign-home-focus">
           <div class="campaign-panel-head">
             <div>
-              <h2>Normal Quest Board</h2>
-              <div class="campaign-muted">Repeatable and low-canon content. It can still have scenes, banter, events, and choices.</div>
+              <h2>Active Quest Board</h2>
+              <div class="campaign-muted">Use <b>Map Run</b> on a quest row to start (or jump back into) its scenario. Each quest row also exposes Progress, Battle, Hand In, Resolve and Fail actions.</div>
             </div>
             <span class="campaign-pill">${active.length} active</span>
           </div>
           <div class="campaign-quest-list">
-            ${active.length ? active.slice(0, 4).map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active normal quests. Add one or use Quick Quest Run.</div>'}
+            ${active.length ? active.slice(0, 4).map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests yet. Press <b>Add Quest</b> to create one, or <b>Quick Quest Run</b> to roll and auto-start a template.</div>'}
           </div>
         </section>
 
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Farming Stages</h3></div>
+          <div class="campaign-panel-head">
+            <h3>Farming Stages</h3>
+            <span class="campaign-muted">One-shot maps for resources, gold, training, and farm chores. None of these require a quest.</span>
+          </div>
           <div class="campaign-stage-grid">
-            ${_renderFarmingStageCard('Materials', 'Forest and cave routes for pelts, crystals, food hooks, and craft parts.', 'generate-material-run')}
-            ${_renderFarmingStageCard('Gold / JP', 'Short guild work with light story color and manual result support.', 'random-quest-offer')}
-            ${_renderFarmingStageCard('Pocket Haven', 'Farm growth, cooking, and forge prep between runs.', 'open-farm-tab')}
+            ${_renderFarmingStageCard('Material Run', 'Forest/cave field map. Pelts, crystals, herbs, food hooks. ~7 nodes, mostly battle + resource.', 'generate-material-run', { tag: 'Outdoor', icon: '🌿' })}
+            ${_renderFarmingStageCard('Bounty Hunt', 'Short hunt against a beast or rival. Battle-focused, exit unlocks on victory. ~5 nodes.', 'generate-bounty-run', { tag: 'Hunt', icon: '🏹' })}
+            ${_renderFarmingStageCard('Dungeon Sweep', 'Mid-length dungeon crawl with traps, treasure, and a boss room. ~9 nodes.', 'generate-dungeon-run', { tag: 'Dungeon', icon: '🗝' })}
+            ${_renderFarmingStageCard('Urban Errands', 'Town circuit with social checks, mild brawls, and rumor leads. ~7 nodes.', 'generate-urban-run', { tag: 'Urban', icon: '🏘' })}
+            ${_renderFarmingStageCard('Training Drill', 'Tiny arena map for grinding XP without travel time. ~5 nodes, dense battles.', 'generate-training-run', { tag: 'Arena', icon: '🥋' })}
+            ${_renderFarmingStageCard('Gold / JP Job', 'Short guild work with light story color. Use Manual Battle Result if you want to fast-resolve.', 'random-quest-offer', { tag: 'Gold', icon: '💰' })}
+            ${_renderFarmingStageCard('Pocket Haven', 'Farm plots, cooking pot, forge prep. Tick growth between runs.', 'open-farm-tab', { tag: 'Base', icon: '🏡' })}
+            ${_renderFarmingStageCard('Inventory & Crafting', 'Sort the bag, cook food, craft gear. No map involved.', 'open-inventory-tab', { tag: 'Workshop', icon: '🎒' })}
           </div>
         </section>
 
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Quest Story Wrapper</h3></div>
-          <div class="campaign-muted">Use these to add a small scene around a farming run without turning it into main canon.</div>
+          <div class="campaign-panel-head"><h3>Scene Color (Optional)</h3></div>
+          <div class="campaign-muted">Light add-ons to colour the current run with text or a small mechanical beat. None of these advance objectives by themselves — they just add flavour or trigger an event/banter.</div>
           <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'roll-event', label: 'Draw Quest Event', hint: 'A table event with visible consequences' })}
-            ${_actionBtn({ action: 'roll-oracle', label: 'Quest Oracle', hint: 'Prompt only, no mechanics' })}
-            ${_actionBtn({ action: 'random-rumor-offer', label: 'Rumor Lead', hint: 'Save a lead to the hub bank' })}
-            ${_actionBtn({ action: 'roll-party-chat', label: 'Party Banter', hint: 'Small character beat' })}
+            ${_actionBtn({ action: 'roll-event', label: 'Draw Event', hint: 'Random event with mechanical effect (uses an event slot for the run)' })}
+            ${_actionBtn({ action: 'roll-oracle', label: 'Roll Oracle', hint: 'Text-only GM prompt. No mechanics.' })}
+            ${_actionBtn({ action: 'random-rumor-offer', label: 'Save Rumor Lead', hint: 'Park a lead in the hub bank, promote to quest later' })}
+            ${_actionBtn({ action: 'roll-party-chat', label: 'Party Banter', hint: 'Small character beat between party members' })}
           </div>
         </section>
 
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Manual Quest Control</h3></div>
+          <div class="campaign-panel-head"><h3>GM Quick Tools</h3></div>
+          <div class="campaign-muted">Bypass mechanics when the table moves faster than the system: build a one-off scenario, write the battle outcome by hand, or tick the world forward.</div>
           <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'open-scenarios-tab', label: 'Run Setup', hint: 'Pick authored or generated scenarios' })}
-            ${_actionBtn({ action: 'manual-battle', label: 'Manual Battle Result', hint: 'Resolve without opening combat' })}
-            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Advance timers and phase state' })}
-            ${_actionBtn({ action: 'full-rest', label: 'Full Rest', hint: 'Restore party in allowed phases' })}
+            ${_actionBtn({ action: 'open-scenarios-tab', label: 'Custom Scenario Setup', hint: 'Pick an authored or saved generated scenario' })}
+            ${_actionBtn({ action: 'manual-battle', label: 'Manual Battle Result', hint: 'Apply a win/loss/escape without opening combat' })}
+            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Advance the campaign phase (Town → Travel → Adventure → Rest)' })}
+            ${_actionBtn({ action: 'full-rest', label: 'Full Rest', hint: 'Restore party HP/MP between runs in allowed phases' })}
           </div>
         </section>
 
@@ -1285,10 +1315,16 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderFarmingStageCard(title, text, action) {
+  function _renderFarmingStageCard(title, text, action, opts = {}) {
+    const tag = opts.tag ? `<span class="campaign-stage-tag">${_esc(opts.tag)}</span>` : '';
+    const icon = opts.icon ? `<span class="campaign-stage-icon" aria-hidden="true">${_esc(opts.icon)}</span>` : '';
     return `
       <article class="campaign-stage-card">
-        <strong>${_esc(title)}</strong>
+        <div class="campaign-stage-head">
+          ${icon}
+          <strong>${_esc(title)}</strong>
+          ${tag}
+        </div>
         <p>${_esc(text)}</p>
         <button class="campaign-action" data-campaign-action="${_escAttr(action)}">Start</button>
       </article>
@@ -3183,7 +3219,7 @@ window.CJS.CampaignUI = (() => {
   function _speakerPortrait(speakerId) {
     if (!speakerId) return null;
     const member = CS().getState()?.party?.[speakerId];
-    return member?.portrait || null;
+    return _memberPortrait(member, speakerId) || null;
   }
 
   function _renderNotesPanel(state) {
@@ -4113,6 +4149,10 @@ window.CJS.CampaignUI = (() => {
       case 'generate-scenario': return _generateScenario();
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
       case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
+      case 'generate-bounty-run': return _generateScenario({ source: 'random', mapType: 'outdoor', size: 'tiny', mapForm: 'node_map' });
+      case 'generate-dungeon-run': return _generateScenario({ source: 'random', mapType: 'dungeon', size: 'medium', mapForm: 'node_map' });
+      case 'generate-urban-run': return _generateScenario({ source: 'random', mapType: 'urban', size: 'small', mapForm: 'node_map' });
+      case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'node_map' });
       case 'start-scenario': return _startScenarioFromUi(data.id);
       case 'inspect-scenario': return _inspectScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
@@ -5825,10 +5865,37 @@ window.CJS.CampaignUI = (() => {
     return next;
   }
 
-  function _openQuestModal() {
+  // Library of objective archetypes for the structured quest builder.
+  const QUEST_OBJECTIVE_PRESETS = [
+    { kind: 'defeat',      label: 'Defeat targets',      template: 'Defeat the {what}',         icon: '⚔', required: 1 },
+    { kind: 'recover',     label: 'Recover item',        template: 'Recover the {what}',        icon: '📦', required: 1 },
+    { kind: 'reach',       label: 'Reach location',      template: 'Reach the {what}',          icon: '📍', required: 1 },
+    { kind: 'escort',      label: 'Escort NPC',          template: 'Escort {what} safely',      icon: '🛡', required: 1 },
+    { kind: 'investigate', label: 'Investigate / clue',  template: 'Investigate the {what}',    icon: '🔍', required: 1 },
+    { kind: 'talk',        label: 'Talk to NPC',         template: 'Speak with {what}',         icon: '💬', required: 1 },
+    { kind: 'survive',     label: 'Survive waves',       template: 'Hold the {what} for 3 turns', icon: '⏳', required: 3 },
+    { kind: 'gather',      label: 'Gather materials',    template: 'Gather {what}',             icon: '🌿', required: 3 },
+    { kind: 'craft',       label: 'Craft / deliver',     template: 'Craft and deliver {what}',  icon: '🛠', required: 1 },
+    { kind: 'custom',      label: 'Custom',              template: '',                          icon: '✎', required: 1 }
+  ];
+
+  const QUEST_REWARD_PRESETS = [
+    { op: 'give_money', label: 'Gold', defaultAmount: 50 },
+    { op: 'give_jp',    label: 'JP',   defaultAmount: 25 },
+    { op: 'add_xp',     label: 'XP (party)', defaultAmount: 100, broadcast: true }
+  ];
+
+  const QUEST_CONSEQUENCE_PRESETS = [
+    { op: 'take_money',      label: 'Lose Gold',         defaultAmount: 50 },
+    { op: 'reputation_change', label: 'Reputation -1',   defaultAmount: -1 },
+    { op: 'hub_problem_add', label: 'Trigger Hub Problem', defaultAmount: 0 }
+  ];
+
+  function _openQuestModal(prefill = {}) {
     const templates = Object.values(CS().getContent().campaignQuests).flatMap((record) => record.templates || []);
     const body = document.createElement('div');
     body.className = 'campaign-quest-builder';
+    const mapTypeOptions = Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'ruins', 'temple'];
     body.innerHTML = `
       <div class="campaign-control-help">
         Build a quest from scratch, fill from a template, or roll a random one. Edit any field before
@@ -5857,13 +5924,68 @@ window.CJS.CampaignUI = (() => {
           <input id="campaign-quest-tags" type="text" placeholder="e.g. forest, escort">
         </label>
       </div>
-      <label class="form-label">Objectives <small class="campaign-muted">— one per line, "label x required" (e.g. "Find clue x 3")</small></label>
-      <textarea id="campaign-quest-objectives" placeholder="Reach the ruins x 1
-Recover the relic x 1"></textarea>
-      <label class="form-label">Map type <small class="campaign-muted">— used if you start the run</small></label>
-      <select id="campaign-quest-map-type">
-        ${(Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'ruins', 'temple']).map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
-      </select>
+
+      <div class="campaign-quest-section">
+        <div class="campaign-quest-section-title">
+          <span>Objectives</span>
+          <small class="campaign-muted">Each row becomes a tracker step. The first objective marks the map's primary node.</small>
+        </div>
+        <div class="campaign-objective-presets" id="campaign-objective-presets">
+          ${QUEST_OBJECTIVE_PRESETS.map((preset) => `
+            <button type="button" class="campaign-action campaign-objective-preset"
+                    data-preset-kind="${_escAttr(preset.kind)}"
+                    title="${_escAttr(preset.template || 'Custom objective')}">
+              ${preset.icon} ${_esc(preset.label)}
+            </button>
+          `).join('')}
+        </div>
+        <div class="campaign-objective-list" id="campaign-objective-list"></div>
+      </div>
+
+      <div class="campaign-quest-section">
+        <div class="campaign-quest-section-title">
+          <span>Rewards on Resolve</span>
+          <small class="campaign-muted">Granted when you mark the quest complete.</small>
+        </div>
+        <div class="campaign-objective-presets">
+          ${QUEST_REWARD_PRESETS.map((preset, idx) => `
+            <button type="button" class="campaign-action" data-reward-add="${idx}">+ ${_esc(preset.label)}</button>
+          `).join('')}
+          <button type="button" class="campaign-action" data-reward-add-item>+ Item</button>
+        </div>
+        <div class="campaign-reward-list" id="campaign-reward-list"></div>
+      </div>
+
+      <div class="campaign-quest-section">
+        <div class="campaign-quest-section-title">
+          <span>Failure Consequences</span>
+          <small class="campaign-muted">Optional. Applied if you mark the quest Failed.</small>
+        </div>
+        <div class="campaign-objective-presets">
+          ${QUEST_CONSEQUENCE_PRESETS.map((preset, idx) => `
+            <button type="button" class="campaign-action" data-conseq-add="${idx}">+ ${_esc(preset.label)}</button>
+          `).join('')}
+          <button type="button" class="campaign-action" data-conseq-add-note>+ Note Only</button>
+        </div>
+        <div class="campaign-reward-list" id="campaign-consequence-list"></div>
+      </div>
+
+      <div class="campaign-quest-builder-grid">
+        <label class="form-label">Map type <small class="campaign-muted">— used if you start the run</small>
+          <select id="campaign-quest-map-type">
+            ${mapTypeOptions.map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
+          </select>
+        </label>
+        <label class="form-label">Map size <small class="campaign-muted">— scenario length</small>
+          <select id="campaign-quest-map-size">
+            <option value="tiny">Tiny (~5 nodes)</option>
+            <option value="small" selected>Small (~7 nodes)</option>
+            <option value="medium">Medium (~9 nodes)</option>
+            <option value="large">Large (~12 nodes)</option>
+          </select>
+        </label>
+      </div>
+
       <div class="campaign-preview" id="campaign-quest-preview" hidden></div>
     `;
     const footer = document.createElement('div');
@@ -5872,11 +5994,119 @@ Recover the relic x 1"></textarea>
       <button class="btn" id="campaign-add-quest-commit">Add Quest</button>
       <button class="btn btn-primary" id="campaign-add-quest-start">Add &amp; Start Run</button>
     `;
-    const overlay = UI().openModal({ title: 'Add Quest', content: body, footer, width: '600px' });
+    const overlay = UI().openModal({ title: 'Add Quest', content: body, footer, width: '680px' });
 
     const $ = (sel) => body.querySelector(sel);
     const previewBox = $('#campaign-quest-preview');
+    const objList = $('#campaign-objective-list');
+    const rewardList = $('#campaign-reward-list');
+    const consequenceList = $('#campaign-consequence-list');
     let currentTemplateVariant = null;
+    let objSeq = 0;
+
+    function objectiveRow({ id, kind = 'custom', label = '', required = 1 } = {}) {
+      objSeq += 1;
+      const rowId = id || `obj_${objSeq}`;
+      const row = document.createElement('div');
+      row.className = 'campaign-objective-row';
+      row.dataset.rowId = rowId;
+      row.innerHTML = `
+        <select class="campaign-objective-kind">
+          ${QUEST_OBJECTIVE_PRESETS.map((p) => `<option value="${p.kind}" ${p.kind === kind ? 'selected' : ''}>${p.icon} ${_esc(p.label)}</option>`).join('')}
+        </select>
+        <input class="campaign-objective-label" type="text" value="${_escAttr(label)}" placeholder="Objective label (use {what} to replace)">
+        <input class="campaign-objective-count" type="number" min="1" max="99" value="${Math.max(1, Number(required) || 1)}" title="Required count">
+        <button type="button" class="campaign-icon-btn campaign-objective-remove" aria-label="Remove">×</button>
+      `;
+      row.querySelector('.campaign-objective-remove').onclick = () => { row.remove(); refreshPreview(); };
+      row.querySelectorAll('select,input').forEach((el) => el.addEventListener('input', refreshPreview));
+      return row;
+    }
+
+    function addObjective(opts = {}) {
+      objList.appendChild(objectiveRow(opts));
+      refreshPreview();
+    }
+
+    function rewardRow({ op = 'give_money', label = 'Gold', amount = 50, itemId = '' } = {}) {
+      const row = document.createElement('div');
+      row.className = 'campaign-reward-row';
+      const isItem = op === 'give_item' || op === 'give_material' || op === 'give_quest_item';
+      row.innerHTML = `
+        <span class="campaign-pill">${_esc(label)}</span>
+        ${isItem
+          ? `<input class="campaign-reward-id" type="text" placeholder="item_id" value="${_escAttr(itemId)}">`
+          : ''}
+        <input class="campaign-reward-amount" type="number" value="${Number(amount) || 0}" min="0">
+        <button type="button" class="campaign-icon-btn campaign-reward-remove" aria-label="Remove">×</button>
+      `;
+      row.dataset.op = op;
+      row.dataset.label = label;
+      row.querySelector('.campaign-reward-remove').onclick = () => { row.remove(); refreshPreview(); };
+      row.querySelectorAll('input').forEach((el) => el.addEventListener('input', refreshPreview));
+      return row;
+    }
+
+    function consequenceRow({ op = 'take_money', label = 'Lose Gold', amount = 50, text = '' } = {}) {
+      const row = document.createElement('div');
+      row.className = 'campaign-reward-row';
+      const isNote = op === 'log';
+      row.innerHTML = `
+        <span class="campaign-pill is-danger">${_esc(label)}</span>
+        ${isNote
+          ? `<input class="campaign-reward-text" type="text" placeholder="Note text" value="${_escAttr(text)}">`
+          : `<input class="campaign-reward-amount" type="number" value="${Number(amount) || 0}">`}
+        <button type="button" class="campaign-icon-btn campaign-reward-remove" aria-label="Remove">×</button>
+      `;
+      row.dataset.op = op;
+      row.dataset.label = label;
+      row.querySelector('.campaign-reward-remove').onclick = () => { row.remove(); refreshPreview(); };
+      row.querySelectorAll('input').forEach((el) => el.addEventListener('input', refreshPreview));
+      return row;
+    }
+
+    function readObjectives() {
+      return Array.from(objList.querySelectorAll('.campaign-objective-row')).map((row, idx) => {
+        const kind = row.querySelector('.campaign-objective-kind').value;
+        const label = row.querySelector('.campaign-objective-label').value.trim();
+        const required = Math.max(1, Number(row.querySelector('.campaign-objective-count').value) || 1);
+        return {
+          id: row.dataset.rowId || `obj_${idx + 1}`,
+          label: label || `Objective ${idx + 1}`,
+          kind,
+          current: 0,
+          required
+        };
+      });
+    }
+
+    function readRewards() {
+      return Array.from(rewardList.querySelectorAll('.campaign-reward-row')).map((row) => {
+        const op = row.dataset.op;
+        const amount = Number(row.querySelector('.campaign-reward-amount')?.value || 0);
+        if (op === 'give_item' || op === 'give_material' || op === 'give_quest_item') {
+          const id = row.querySelector('.campaign-reward-id')?.value.trim() || '';
+          return { op, id, amount };
+        }
+        if (op === 'add_xp') return { op, amount, broadcast: true };
+        return { op, amount };
+      }).filter((entry) => entry.amount > 0 || (entry.op?.startsWith('give_') && entry.id));
+    }
+
+    function readConsequences() {
+      return Array.from(consequenceList.querySelectorAll('.campaign-reward-row')).map((row) => {
+        const op = row.dataset.op;
+        if (op === 'log') {
+          const text = row.querySelector('.campaign-reward-text')?.value.trim() || '';
+          return text ? { op: 'log', text } : null;
+        }
+        if (op === 'hub_problem_add') {
+          return { op: 'hub_problem_add', label: 'Quest failed' };
+        }
+        const amount = Number(row.querySelector('.campaign-reward-amount')?.value || 0);
+        return { op, amount };
+      }).filter(Boolean);
+    }
 
     function applyTemplate(template) {
       currentTemplateVariant = template?.randomVariant ? template : null;
@@ -5884,13 +6114,43 @@ Recover the relic x 1"></textarea>
       $('#campaign-quest-summary').value = template?.summary || '';
       $('#campaign-quest-giver').value = template?.giver || '';
       $('#campaign-quest-tags').value = (template?.tags || []).join(', ');
-      const objs = template?.objectives || [];
-      $('#campaign-quest-objectives').value = objs.length
-        ? objs.map((obj) => `${obj.label || obj.id || 'Objective'} x ${Math.max(1, Number(obj.required || 1))}`).join('\n')
-        : '';
+      objList.innerHTML = '';
+      (template?.objectives || []).forEach((obj) => addObjective({
+        id: obj.id,
+        kind: obj.kind || _inferObjectiveKind(obj.label || ''),
+        label: obj.label || obj.id || '',
+        required: Math.max(1, Number(obj.required || 1))
+      }));
+      if (!objList.children.length) addObjective({ kind: 'reach', label: 'Reach the destination', required: 1 });
+      rewardList.innerHTML = '';
+      (template?.rewards || template?.rewardOps || []).forEach((reward) => {
+        if (!reward?.op) return;
+        const preset = QUEST_REWARD_PRESETS.find((p) => p.op === reward.op);
+        rewardList.appendChild(rewardRow({
+          op: reward.op,
+          label: preset?.label || _label(reward.op),
+          amount: reward.amount || preset?.defaultAmount || 0,
+          itemId: reward.id || ''
+        }));
+      });
+      consequenceList.innerHTML = '';
+      (template?.failureConsequences || template?.failureOps || []).forEach((entry) => {
+        if (!entry?.op) return;
+        const preset = QUEST_CONSEQUENCE_PRESETS.find((p) => p.op === entry.op);
+        consequenceList.appendChild(consequenceRow({
+          op: entry.op,
+          label: preset?.label || _label(entry.op),
+          amount: Math.abs(entry.amount || preset?.defaultAmount || 0),
+          text: entry.text || ''
+        }));
+      });
       const mapType = template?.mapType || _questMapType(template || {});
       const sel = $('#campaign-quest-map-type');
       if (sel && Array.from(sel.options).some((opt) => opt.value === mapType)) sel.value = mapType;
+      const sizeSel = $('#campaign-quest-map-size');
+      if (sizeSel && template?.mapSize && Array.from(sizeSel.options).some((opt) => opt.value === template.mapSize)) {
+        sizeSel.value = template.mapSize;
+      }
       refreshPreview();
     }
 
@@ -5902,19 +6162,15 @@ Recover the relic x 1"></textarea>
       const summary = $('#campaign-quest-summary').value.trim();
       const giver = $('#campaign-quest-giver').value.trim();
       const tags = $('#campaign-quest-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
-      const objectiveLines = $('#campaign-quest-objectives').value.split('\n').map((s) => s.trim()).filter(Boolean);
-      const objectives = objectiveLines.map((line, idx) => {
-        const match = line.match(/^(.*?)(?:\s*[x×]\s*(\d+))?$/i);
-        const label = (match?.[1] || line).trim();
-        const required = Math.max(1, Number(match?.[2] || 1));
-        return { id: `obj_${idx + 1}`, label: label || `Objective ${idx + 1}`, current: 0, required };
-      });
+      const objectives = readObjectives();
+      const rewards = readRewards();
+      const failureConsequences = readConsequences();
       const base = template ? CS().clone(template) : {
         id: `quest_${Date.now()}`,
         title: title || 'New Quest',
         status: 'active',
         summary,
-        objectives: objectives.length ? objectives : [{ id: 'obj_1', label: 'Objective', current: 0, required: 1 }],
+        objectives: [],
         rewards: []
       };
       if (rawTemplate) {
@@ -5928,9 +6184,16 @@ Recover the relic x 1"></textarea>
       if (summary) base.summary = summary;
       if (giver) base.giver = giver;
       if (tags.length) base.tags = tags;
-      if (objectives.length) base.objectives = objectives;
+      base.objectives = objectives.length
+        ? objectives
+        : [{ id: 'obj_1', kind: 'reach', label: 'Reach the destination', current: 0, required: 1 }];
+      base.rewards = rewards;
+      if (failureConsequences.length) base.failureConsequences = failureConsequences;
+      else delete base.failureConsequences;
       const mapType = $('#campaign-quest-map-type').value;
       if (mapType) base.mapType = mapType;
+      const mapSize = $('#campaign-quest-map-size').value;
+      if (mapSize) base.mapSize = mapSize;
       return base;
     }
 
@@ -5941,6 +6204,12 @@ Recover the relic x 1"></textarea>
       if (quest.summary) lines.push(_esc(quest.summary));
       if (quest.objectives?.length) {
         lines.push(`<b>Objectives:</b> ${quest.objectives.map((o) => `${_esc(o.label)} (0/${o.required})`).join(' · ')}`);
+      }
+      if (quest.rewards?.length) {
+        lines.push(`<b>Rewards:</b> ${quest.rewards.map((r) => `${_label(r.op)} ${r.amount || r.id || ''}`).join(' · ')}`);
+      }
+      if (quest.failureConsequences?.length) {
+        lines.push(`<b>On fail:</b> ${quest.failureConsequences.map((r) => `${_label(r.op)} ${r.amount || r.text || ''}`).join(' · ')}`);
       }
       if (quest.giver) lines.push(`<b>Giver:</b> ${_esc(quest.giver)}`);
       if (quest.tags?.length) lines.push(`<b>Tags:</b> ${quest.tags.map(_esc).join(', ')}`);
@@ -5954,9 +6223,46 @@ Recover the relic x 1"></textarea>
       currentTemplateVariant = null;
       applyTemplate(tpl || null);
     });
-    body.querySelectorAll('input, textarea, select').forEach((el) => {
+    body.querySelectorAll('input:not(.campaign-objective-label):not(.campaign-objective-count):not(.campaign-reward-amount):not(.campaign-reward-id):not(.campaign-reward-text), textarea, select').forEach((el) => {
       if (el.id !== 'campaign-quest-template') el.addEventListener('input', refreshPreview);
     });
+
+    body.querySelectorAll('[data-preset-kind]').forEach((btn) => {
+      btn.onclick = () => {
+        const preset = QUEST_OBJECTIVE_PRESETS.find((p) => p.kind === btn.dataset.presetKind);
+        if (!preset) return;
+        addObjective({
+          kind: preset.kind,
+          label: preset.template.replace('{what}', '...') || preset.label,
+          required: preset.required
+        });
+      };
+    });
+    body.querySelectorAll('[data-reward-add]').forEach((btn) => {
+      btn.onclick = () => {
+        const preset = QUEST_REWARD_PRESETS[Number(btn.dataset.rewardAdd)];
+        if (!preset) return;
+        rewardList.appendChild(rewardRow({ op: preset.op, label: preset.label, amount: preset.defaultAmount }));
+        refreshPreview();
+      };
+    });
+    body.querySelector('[data-reward-add-item]').onclick = () => {
+      rewardList.appendChild(rewardRow({ op: 'give_item', label: 'Item', amount: 1, itemId: '' }));
+      refreshPreview();
+    };
+    body.querySelectorAll('[data-conseq-add]').forEach((btn) => {
+      btn.onclick = () => {
+        const preset = QUEST_CONSEQUENCE_PRESETS[Number(btn.dataset.conseqAdd)];
+        if (!preset) return;
+        consequenceList.appendChild(consequenceRow({ op: preset.op, label: preset.label, amount: preset.defaultAmount }));
+        refreshPreview();
+      };
+    });
+    body.querySelector('[data-conseq-add-note]').onclick = () => {
+      consequenceList.appendChild(consequenceRow({ op: 'log', label: 'Note Only', text: 'Quest failed.' }));
+      refreshPreview();
+    };
+
     $('#campaign-quest-roll').onclick = () => {
       if (!templates.length) return;
       const tpl = _randomizedQuestTemplate(templates[Math.floor(Math.random() * templates.length)]);
@@ -5984,10 +6290,32 @@ Recover the relic x 1"></textarea>
       Ops().apply({ op: 'add_quest', quest }, { source: 'ui' });
       UI().closeModal(overlay);
       UI().toast(`Quest added: ${quest.title}. Starting run…`, 'success');
-      _startQuestScenario(quest.id, { quest, mapType: quest.mapType });
+      _startQuestScenario(quest.id, { quest, mapType: quest.mapType, size: quest.mapSize || 'small' });
     };
 
+    if (prefill && prefill.template) {
+      const tpl = templates.find((q) => q.id === prefill.template) || null;
+      $('#campaign-quest-template').value = prefill.template;
+      applyTemplate(tpl);
+    } else {
+      applyTemplate(null);
+    }
     refreshPreview();
+  }
+
+  // Guess an objective kind from free-form label text.
+  function _inferObjectiveKind(label = '') {
+    const s = String(label).toLowerCase();
+    if (/defeat|slay|kill|fight|battle|hunt/.test(s)) return 'defeat';
+    if (/recover|retrieve|find|fetch|bring/.test(s)) return 'recover';
+    if (/reach|arrive|enter|explore/.test(s)) return 'reach';
+    if (/escort|protect|guard/.test(s)) return 'escort';
+    if (/investigate|clue|inspect|search/.test(s)) return 'investigate';
+    if (/talk|speak|negotiate|ask/.test(s)) return 'talk';
+    if (/survive|hold|defend|withstand/.test(s)) return 'survive';
+    if (/gather|collect|harvest|mine/.test(s)) return 'gather';
+    if (/craft|deliver|build|forge/.test(s)) return 'craft';
+    return 'custom';
   }
 
   function _manualRumorModal() {
@@ -7018,8 +7346,9 @@ Recover the relic x 1"></textarea>
 
   function _renderPortraitHero(id, member) {
     const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
-    const portrait = member.portrait
-      ? `<img src="${_escAttr(member.portrait)}" alt="${_escAttr(member.name || id)}">`
+    const portraitSrc = _memberPortrait(member, id);
+    const portrait = portraitSrc
+      ? `<img src="${_escAttr(portraitSrc)}" alt="${_escAttr(member.name || id)}">`
       : `<div class="fallback">${_esc(initial)}</div>`;
     const lvl = member.level || 1;
     const rank = member.rank || 'F';

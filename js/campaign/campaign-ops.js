@@ -1246,9 +1246,14 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _setQuestStatus(state, questId, status) {
-    if (!state.quests[questId]) return;
-    state.quests[questId].status = status;
-    _log(state, `Quest ${questId} marked ${status}.`);
+    const quest = state.quests[questId];
+    if (!quest) return;
+    quest.status = status;
+    _log(state, `Quest ${quest.title || questId} marked ${status}.`);
+    if (status === 'failed') {
+      const consequences = quest.failureConsequences || quest.failureOps || [];
+      for (const entry of consequences) _applyOne(state, entry, { source: 'quest_fail' });
+    }
   }
 
   function _danger(state, amount) {
