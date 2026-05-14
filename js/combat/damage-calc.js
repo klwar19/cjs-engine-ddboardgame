@@ -151,6 +151,14 @@ window.CJS.DamageCalc = (() => {
       bonusDamagePercent: bonusPercent
     });
 
+    // Persona cross-world multipliers: attacker pays for being out of world,
+    // target pays for being out of world. Default to 1 for non-campaign units.
+    const dealtMult = Number(attacker.damageDealtMultiplier ?? 1) || 1;
+    const takenMult = Number(target.damageTakenMultiplier ?? 1) || 1;
+    if (dealtMult !== 1 || takenMult !== 1) {
+      result.final = Math.max(0, Math.round(result.final * dealtMult * takenMult));
+    }
+
     // Hook overkill in
     const overkill = Math.max(0, result.final - (target.currentHP || 0));
 

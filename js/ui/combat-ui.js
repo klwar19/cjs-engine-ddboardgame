@@ -996,6 +996,23 @@ window.CJS.CombatUI = (() => {
 
     const portraitHtml = _renderPortraitMarkup(unit.portrait, 'unit-portrait', 'unit-icon-lg', unit.icon || '?');
 
+    // Persona chip: shown when this unit was snapshotted from a campaign party
+    // member with an active persona. Out-of-world personas display the dealt /
+    // taken multipliers so the player sees the penalty without opening a tab.
+    let personaChipHtml = '';
+    if (unit.activePersona) {
+      const personaName = _escHtml(unit.personaName || unit.activePersona);
+      const out = !!unit.personaOutOfWorld;
+      const dealt = Number(unit.damageDealtMultiplier ?? 1);
+      const taken = Number(unit.damageTakenMultiplier ?? 1);
+      const tooltip = out
+        ? `${personaName} (out of world: ${_escAttr(unit.personaWorld || '')}). Damage ×${dealt} dealt / ×${taken} taken.`
+        : `${personaName} (${_escAttr(unit.personaWorld || '')})`;
+      personaChipHtml = `<div class="unit-persona-chip" title="${tooltip}" style="font-size:0.74rem;margin-top:2px;color:${out ? '#f59e0b' : 'var(--text-mute)'}">
+        🎭 ${personaName}${out ? ` ⚠ ×${dealt}/×${taken}` : ''}
+      </div>`;
+    }
+
     $unitInfo.innerHTML = `
       <div class="unit-card ${_escAttr(unit.team || 'player')}">
         <div class="unit-header">
@@ -1003,6 +1020,7 @@ window.CJS.CombatUI = (() => {
           <div>
             <div class="unit-name">${_escHtml(unit.name || unit.baseId || '?')}</div>
             <div class="unit-rank">Rank ${_escHtml(unit.rank || '?')} ${_escHtml(unit.type || '')}</div>
+            ${personaChipHtml}
           </div>
         </div>
         <div class="resource-bars">

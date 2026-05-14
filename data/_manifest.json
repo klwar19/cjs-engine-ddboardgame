@@ -68,6 +68,11 @@
       "category": "jobs"
     },
     {
+      "path": "data/universal/personas.json",
+      "scope": "universal",
+      "category": "personas"
+    },
+    {
       "path": "data/universal/items.json",
       "scope": "universal",
       "category": "items"

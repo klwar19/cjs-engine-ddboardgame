@@ -156,6 +156,15 @@ window.CJS.StatCompiler = (() => {
       inventory:        baseUnit.inventory || [],
       battleSfx:        baseUnit.battleSfx || {},
       statusImmunities: baseUnit.statusImmunities || [],
+      // Persona carryovers: combat HUD displays activePersona / personaName;
+      // damageCalc respects damageDealtMultiplier / damageTakenMultiplier so
+      // a cross-world persona pays for being out of place.
+      activePersona:          baseUnit.activePersona || null,
+      personaName:            baseUnit.personaName || '',
+      personaWorld:           baseUnit.personaWorld || '',
+      personaOutOfWorld:      !!baseUnit.personaOutOfWorld,
+      damageDealtMultiplier:  Number(baseUnit.damageDealtMultiplier ?? 1),
+      damageTakenMultiplier:  Number(baseUnit.damageTakenMultiplier ?? 1),
 
       // Active statuses (carried through from opts — status-manager owns these)
       activeStatuses: opts.activeStatuses || [],

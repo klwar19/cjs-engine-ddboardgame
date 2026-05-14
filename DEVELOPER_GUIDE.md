@@ -781,7 +781,54 @@ The combat bridge also injects active-job grants into the per-battle
 snapshot in case the campaign was loaded from a save predating the
 auto-grant pass.
 
-### 16.4 Backward compatibility
+### 16.4 Personas (world skins)
+
+Personas are a new authorable type (`personas` collection, prefix `prs`) that
+let a single character behave very differently in each world without forking
+the base character record. A persona pins:
+
+- `characterId` (owner) and `world` (home world)
+- `statOverrides` (added on top of the character's universal SPECIAL stats)
+- `defaultJob` / `availableJobs` / `availableBranches`
+- `skills` / `equipment` / `innatePassives`
+- `allowedWeaponTypes` / `allowedArmorTypes`
+- `unlock` rules — `default`, `requiresChapter`, `requiresPhaseNumber`,
+  `requiresPhaseType`, `requiresFlag`, plus an implicit `world` gate
+- `crossWorldPenalty` — `statFlat`, `damageDealtMultiplier`,
+  `damageTakenMultiplier`, `relationshipModifier`, `tags` (used outside the
+  home world)
+- `relationshipPerWorld` for NPC / quip systems
+
+Per-party-member state lives on the campaign save:
+
+- `member.activePersona` — currently active persona id (or null)
+- `member.unlockedPersonas[]` — persona ids unlocked for this member
+- `member.personaProgress[personaId]` — saved loadout (job, skills,
+  passives, equipment, stat overrides) so each persona keeps its own
+  progression
+
+Files:
+
+- `data/universal/personas.json` — starter personas for Bin
+- `js/services/persona-service.js` — runtime brain (lookups, unlock
+  evaluation, loadout capture / seed / apply, cross-world stats + damage
+  multipliers)
+- `js/builders/persona-editor.js` — editor panel
+- `js/campaign/campaign-state.js` — `_normalizePersona` seeds active
+  persona + slots on save load; `switchPersona()` swaps loadouts
+- `js/campaign/campaign-ops.js` — `set_persona`, `unlock_persona`,
+  `evaluate_persona_unlocks`; `pass_phase`, `set_flag`, `world_transition`,
+  `chapter_transition` re-evaluate unlocks
+- `js/campaign/campaign-combat-bridge.js` — snapshot includes persona
+  icon/portrait, persona-derived skill pool, cross-world damage modifiers
+- `js/combat/stat-compiler.js` — preserves `damageDealtMultiplier` /
+  `damageTakenMultiplier` from baseUnit to compiled unit
+- `js/combat/damage-calc.js` — applies dealt × taken multipliers at the
+  end of damage resolution
+- `js/campaign/campaign-ui.js` — "Persona" button on roster, persona chip
+  next to job chip with out-of-world warning
+
+### 16.5 Backward compatibility
 
 `CampaignState._normalizeProgression` runs on every save load and:
 - ensures every authored / learned skill has a `skillProgress` entry,
@@ -793,7 +840,7 @@ Old saves without any of these fields therefore continue to load and run
 identically, then start collecting AP / XP the moment a member uses a
 skill or wins a battle.
 
-### 16.5 Where to edit
+### 16.6 Where to edit
 
 | Change | File |
 | --- | --- |
@@ -801,10 +848,12 @@ skill or wins a battle.
 | Level / XP / AP math | `js/core/formulas.js` |
 | Skill `apGain` / `apThresholds` UI | `js/builders/skill-editor.js` |
 | Job authoring UI | `js/builders/job-editor.js` |
+| Persona authoring UI | `js/builders/persona-editor.js` |
+| Persona runtime (unlocks, snapshot stats, cross-world penalty) | `js/services/persona-service.js` |
 | Character `availableJobs`, `defaultJob`, `weaponSlots` | `js/builders/char-editor.js` |
 | Campaign ops dispatch | `js/campaign/campaign-ops.js` |
 | Per-battle skill-use → AP gain plumbing | `js/combat/action-handler.js` (`_doSkill`) and `js/campaign/campaign-combat-bridge.js` |
-| Roster level / AP / job UI buttons | `js/campaign/campaign-ui.js` (`_renderRosterMember`, `_renderKnownSkill`, `_grantSkillApModal`, `_changeJobModal`, etc.) |
+| Roster level / AP / job / persona UI buttons | `js/campaign/campaign-ui.js` (`_renderRosterMember`, `_renderKnownSkill`, `_grantSkillApModal`, `_changeJobModal`, `_changePersonaModal`, etc.) |
 
 - damage flash / KO fade / cast / move / banner visuals - `js/ui/combat-ui.js` (`_animXxx`) + `css/combat-animations.css`
 - BGM resolution at battle start - `js/ui/combat-ui.js` (`_startEncounterBgm`)

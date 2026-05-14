@@ -188,6 +188,10 @@ window.CJS.CharEditor = (() => {
           </div>
         </div>
 
+        <h3>Personas (World Skins)</h3>
+        <div class="hint-box">Personas reshape this character per world (job, skills, equipment, stat overrides). Edit them in the Personas panel — this is a read-only summary.</div>
+        <div id="chr-personas-summary"></div>
+
         <h3>Selection Budget</h3>
         <div class="hint-box">In Campaign Mode the player explicitly equips a subset of known skills/passives. Both caps apply: total count must fit slots, and total spCost must fit the points budget.</div>
         <div class="form-row">
@@ -325,6 +329,31 @@ window.CJS.CharEditor = (() => {
     // Re-render the default job dropdown whenever the available list changes.
     const jobsRefreshObserver = new MutationObserver(_refreshDefaultJobOptions);
     jobsRefreshObserver.observe(jobsArea, { childList: true, subtree: true });
+
+    // ── Personas summary (read-only; full editor lives in Personas panel) ──
+    const personasSummary = _formEl.querySelector('#chr-personas-summary');
+    if (personasSummary) {
+      const PS = window.CJS.PersonaService;
+      const personas = PS ? PS.personasForCharacter(c.id) : (DS().getAllAsArray('personas') || []).filter((p) => p.characterId === c.id);
+      if (!personas.length) {
+        personasSummary.innerHTML = '<div class="dim" style="font-size:0.85rem">No personas authored for this character yet.</div>';
+      } else {
+        personasSummary.innerHTML = personas.map((p) => {
+          const worldRec = p.world ? DS().get('worlds', p.world) : null;
+          const worldName = worldRec?.displayName || p.world || '—';
+          const unlockBits = [];
+          if (p.unlock?.default) unlockBits.push('default');
+          if (p.unlock?.requiresChapter) unlockBits.push(`ch ≥ ${p.unlock.requiresChapter}`);
+          if (p.unlock?.requiresPhaseNumber) unlockBits.push(`phase ≥ ${p.unlock.requiresPhaseNumber}`);
+          if (p.unlock?.requiresFlag) unlockBits.push(`flag: ${p.unlock.requiresFlag}`);
+          const overrides = Object.entries(p.statOverrides || {}).map(([s, v]) => `${s}${v >= 0 ? '+' : ''}${v}`).join(' ');
+          return `<div style="padding:6px 10px;border:1px solid rgba(255,255,255,0.1);border-radius:6px;margin-bottom:6px">
+            <div><b>${p.icon || '🎭'} ${p.name || p.id}</b> <span class="dim">[${p.id}]</span> — <span style="color:var(--accent)">${worldName}</span></div>
+            <div class="dim" style="font-size:0.78rem">${unlockBits.length ? `Unlock: ${unlockBits.join(', ')}` : 'No unlock rule'}${overrides ? ` · Stat: ${overrides}` : ''}${p.defaultJob ? ` · Job: ${p.defaultJob}` : ''}</div>
+          </div>`;
+        }).join('');
+      }
+    }
 
     // ── Elemental tag inputs ──
     const weakWidget = UI().createTagInput({ tags: c.weak || [], placeholder: 'e.g. Fire + Enter' });

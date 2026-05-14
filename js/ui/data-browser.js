@@ -23,7 +23,7 @@ window.CJS.DataBrowser = (() => {
         <div class="flex gap-sm items-center" style="flex-shrink:0">
           <h3 style="margin:0;color:var(--accent)">📊 Data Browser</h3>
           <div class="btn-group" id="db-tabs">
-            ${['effects','skills','jobs','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables','storyDirectorPacks'].map(t =>
+            ${['effects','skills','jobs','personas','items','food','materials','passives','characters','monsters','encounters','crafting','crops','shops','zones','stories','worlds','campaigns','scenarios','scenarioMaps','campaignEvents','campaignQuests','campaignHubs','sideContentPacks','questChains','battleSets','mapSeeds','oracleTables','storyDirectorPacks'].map(t =>
               `<button class="btn btn-sm ${t===_activeTab?'btn-primary':''}" data-tab="${t}">${t}</button>`
             ).join('')}
           </div>
@@ -54,6 +54,7 @@ window.CJS.DataBrowser = (() => {
       case 'effects':    _renderEffects(area, status, q); break;
       case 'skills':     _renderSkills(area, status, q); break;
       case 'jobs':       _renderJobs(area, status, q); break;
+      case 'personas':   _renderPersonas(area, status, q); break;
       case 'items':      _renderItems(area, status, q); break;
       case 'food':       _renderGeneric(area, status, 'food', q, ['ID','Name','Description','Scope','World','Origin']); break;
       case 'materials':  _renderGeneric(area, status, 'materials', q, ['ID','Name','Description','Scope','World','Origin']); break;
@@ -124,6 +125,30 @@ window.CJS.DataBrowser = (() => {
     ]);
     area.innerHTML = _table(cols, rows);
     status.textContent = `${items.length} jobs`;
+  }
+
+  function _renderPersonas(area, status, q) {
+    let items = CM()?.getVisibleItems?.('personas', q) || DS().getAllAsArray('personas');
+    if (q) items = items.filter(e => _match(e, q));
+    const cols = ['ID','Icon','Name','Character','World','Default Job','Unlock','Stat Overrides','Penalty (dealt/taken)','Description'];
+    let rows = items.map(p => {
+      const u = p.unlock || {};
+      const unlockBits = [];
+      if (u.default) unlockBits.push('default');
+      if (u.requiresChapter) unlockBits.push(`ch≥${u.requiresChapter}`);
+      if (u.requiresPhaseNumber) unlockBits.push(`ph≥${u.requiresPhaseNumber}`);
+      if (u.requiresFlag) unlockBits.push(`flag:${u.requiresFlag}`);
+      const overrides = Object.entries(p.statOverrides || {}).map(([s, v]) => `${s}${v >= 0 ? '+' : ''}${v}`).join(' ');
+      const pen = p.crossWorldPenalty || {};
+      return [
+        p.id, p.icon || '🎭', p.name || '', p.characterId || '—', p.world || '—',
+        p.defaultJob || '—', unlockBits.join(', ') || '—', overrides || '—',
+        `×${Number(pen.damageDealtMultiplier ?? 1)} / ×${Number(pen.damageTakenMultiplier ?? 1)}`,
+        (p.description || '').substring(0, 60)
+      ];
+    });
+    area.innerHTML = _table(cols, rows);
+    status.textContent = `${items.length} personas`;
   }
 
   function _renderItems(area, status, q) {

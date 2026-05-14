@@ -135,6 +135,7 @@
   <script src="js/core/data-store.js"></script>
   <script src="js/core/content-manager.js?v=portrait-cache-20260426"></script>
   <script src="js/core/skill-resolver.js"></script>
+  <script src="js/services/persona-service.js"></script>
 
   <script src="js/effects/value-calc.js"></script>
   <script src="js/effects/conditions.js"></script>
@@ -330,10 +331,27 @@
       banner.className = 'campaign-bridge-banner';
       banner.style.cssText = 'margin:12px;padding:12px;border:1px solid #64b5f6;border-radius:8px;background:#101923;color:#f5f7fa;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap';
       const lootText = result ? Bridge.summarizeLoot(result) : '';
+      // Surface each player's active persona + any out-of-world penalty so the
+      // player sees what skin they're fighting under (and what it cost).
+      let personaSummary = '';
+      const overlay = campaignRequest?.partyOverlay || {};
+      const personas = [];
+      for (const [id, patch] of Object.entries(overlay)) {
+        const unit = patch?.unit || {};
+        if (!unit.activePersona) continue;
+        const out = unit.personaOutOfWorld;
+        const dealt = Number(unit.damageDealtMultiplier ?? 1);
+        const taken = Number(unit.damageTakenMultiplier ?? 1);
+        personas.push(`<span style="color:${out ? '#fbbf24' : '#a9b4c0'}">${unit.name || id}: 🎭 ${unit.personaName || unit.activePersona}${out ? ` ⚠ ×${dealt}/×${taken}` : ''}</span>`);
+      }
+      if (personas.length) {
+        personaSummary = `<div style="color:#a9b4c0;font-size:0.85rem;margin-top:4px">${personas.join(' · ')}</div>`;
+      }
       banner.innerHTML = `
         <div>
           <strong>Campaign Battle</strong>
           <div style="color:#a9b4c0;font-size:0.9rem">${result ? `Result saved: ${result.result} in ${result.rounds || 0} rounds. Returning to Campaign...` : (campaignRequest.label || campaignRequest.encounterId || 'Ready')}</div>
+          ${personaSummary}
           ${result ? `<div style="color:#c8df83;font-size:0.9rem">Loot: ${lootText}</div>` : ''}
         </div>
         <button id="campaign-return-btn" class="btn btn-primary">${result ? 'Return Now' : 'Return to Campaign'}</button>

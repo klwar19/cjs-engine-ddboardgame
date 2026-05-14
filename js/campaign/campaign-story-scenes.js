@@ -166,6 +166,23 @@ window.CJS.CampaignStoryScenes = (() => {
     for (const flag of _flagList(choice.blocksFlags || choice.blockFlags || choice.excludesFlags || choice.excludesFlag)) {
       if (flags[flag]) reasons.push(`Blocked by ${flag}`);
     }
+    // Persona gates: requiresPersonas / blocksPersonas. Author beats with a
+    // choice that's only visible when Bin is wearing his Survivor Leader skin,
+    // for example. requiresPersonas[] passes if ANY active persona matches.
+    const requiresPersonas = _flagList(choice.requiresPersonas || choice.requiresPersona);
+    const blocksPersonas = _flagList(choice.blocksPersonas || choice.blocksPersona);
+    if (requiresPersonas.length || blocksPersonas.length) {
+      const active = new Set();
+      for (const member of Object.values(state?.party || {})) {
+        if (member.activePersona) active.add(member.activePersona);
+      }
+      if (requiresPersonas.length && !requiresPersonas.some((pid) => active.has(pid))) {
+        reasons.push(`Requires persona ${requiresPersonas.join(' or ')}`);
+      }
+      for (const pid of blocksPersonas) {
+        if (active.has(pid)) reasons.push(`Blocked while ${pid} is active`);
+      }
+    }
     const cost = Number(choice.jpCost || choice.cost?.jp || 0);
     if (cost > _jp(state)) reasons.push(`Needs ${cost} JP`);
     return { ok: reasons.length === 0, reasons };

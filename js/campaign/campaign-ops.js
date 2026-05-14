@@ -87,6 +87,9 @@ window.CJS.CampaignOps = (() => {
         case 'unlock_job': return `Unlock job ${op.jobId || op.id}`;
         case 'gain_job_xp': return `Gain ${op.amount || 0} job XP`;
         case 'set_job_level': return `Set job ${op.jobId || op.id} level to ${op.level || 1}`;
+        case 'set_persona': return `Switch ${op.target || op.characterId || 'member'} persona → ${op.personaId || op.id || 'none'}`;
+        case 'unlock_persona': return `Unlock persona ${op.personaId || op.id}`;
+        case 'evaluate_persona_unlocks': return `Evaluate persona unlocks${op.target ? ` for ${op.target}` : ''}`;
         case 'add_quest': return `Add quest ${op.quest?.title || op.title || op.questId || op.id || ''}`;
         case 'rank_up_passive': return `Rank up passive ${op.passiveId || op.id}`;
         case 'set_passive_rank': return `Set passive ${op.passiveId || op.id} rank to ${op.rank || 1}`;
@@ -178,6 +181,10 @@ window.CJS.CampaignOps = (() => {
       case 'unlock_job': return _unlockJob(state, op);
       case 'gain_job_xp': return _gainJobXp(state, op);
       case 'set_job_level': return _setJobLevel(state, op);
+      // ── Personas (world-specific character skins) ─────────────────
+      case 'set_persona': return _setPersona(state, op);
+      case 'unlock_persona': return _unlockPersona(state, op);
+      case 'evaluate_persona_unlocks': return _evaluatePersonaUnlocks(state, op);
       case 'rank_up_passive': return _rankUpPassive(state, op);
       case 'set_passive_rank': return _setPassiveRank(state, op);
       // ── Skill / passive selection (slot + SP budget) ──
@@ -263,6 +270,8 @@ window.CJS.CampaignOps = (() => {
     _applyIncomeNodes(state);
     _clearDuration(state, 'phase');
     state.eventCharges = { ...(activeRule?.eventCharges || {}) };
+    // Re-evaluate persona unlocks: phase-locked personas come online here.
+    _evaluatePersonaUnlocks(state, { target: 'party' });
     _log(state, `Phase ${state.phase.number}: ${state.phase.name || state.phase.type}.`);
   }
 
@@ -293,6 +302,7 @@ window.CJS.CampaignOps = (() => {
     if (enabled) state.flags[flag] = value === undefined ? true : value;
     else delete state.flags[flag];
     _log(state, `${enabled ? 'Set' : 'Cleared'} flag ${flag}.`);
+    if (enabled) _evaluatePersonaUnlocks(state, { target: 'party' });
   }
 
   function _mapState(state, mapId) {
@@ -1211,6 +1221,88 @@ window.CJS.CampaignOps = (() => {
     if (CS().syncPartyMember) CS().syncPartyMember(id, member);
   }
 
+  // ── Personas (world skins) ─────────────────────────────────────────
+  // set_persona swaps the member's active loadout to the persona slot,
+  // saving the outgoing loadout into the previous persona's slot first.
+  // If the persona is not yet unlocked, it is unlocked first (so manual
+  // edits from the campaign UI still work; story scripts should call
+  // unlock_persona separately to be explicit).
+  function _setPersona(state, op) {
+    const personaId = op.personaId || op.id || null;
+    const PS = window.CJS.PersonaService;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      if (!member) continue;
+      // null/empty personaId means "clear active persona" — restore base
+      // character loadout from the _legacy slot (or leave fields as-is).
+      if (!personaId) {
+        if (member.activePersona) {
+          member.personaProgress = member.personaProgress || {};
+          member.personaProgress[member.activePersona] = PS
+            ? PS.captureLoadoutFromMember(member)
+            : member.personaProgress[member.activePersona];
+        }
+        member.activePersona = null;
+        _log(state, `${member.name || id} no longer carries a persona.`);
+        continue;
+      }
+      const persona = DS().get('personas', personaId);
+      if (!persona) {
+        _log(state, `${member.name || id} cannot switch to ${personaId}: persona not found.`);
+        continue;
+      }
+      // Auto-unlock if needed so ad-hoc edits from the GM dashboard work.
+      member.unlockedPersonas = Array.isArray(member.unlockedPersonas) ? member.unlockedPersonas : [];
+      if (!member.unlockedPersonas.includes(personaId)) member.unlockedPersonas.push(personaId);
+      if (CS()?.switchPersona) {
+        CS().switchPersona(member, personaId, state);
+      } else if (PS) {
+        // Fallback if CampaignState helper isn't loaded for some reason.
+        const base = DS().get('characters', member.baseCharacterId || id) || {};
+        const slot = member.personaProgress?.[personaId] || PS.seedLoadoutFromPersona(persona, base);
+        PS.applyLoadoutToMember(member, slot, persona, base);
+      }
+      _log(state, `${member.name || id} switched persona → ${persona.name || personaId}${persona.world ? ` (${persona.world})` : ''}.`);
+    }
+  }
+
+  function _unlockPersona(state, op) {
+    const personaId = op.personaId || op.id;
+    if (!personaId) return;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      if (!member) continue;
+      member.unlockedPersonas = Array.isArray(member.unlockedPersonas) ? member.unlockedPersonas : [];
+      if (member.unlockedPersonas.includes(personaId)) continue;
+      member.unlockedPersonas.push(personaId);
+      const persona = DS().get('personas', personaId);
+      _log(state, `${member.name || id} unlocked persona ${persona?.name || personaId}.`);
+    }
+  }
+
+  // Walks the persona unlock rules for the given member(s) and pushes any
+  // that now satisfy their conditions into the unlocked list. Safe to call
+  // after pass_phase / set_flag / chapter_transition so phase-locked
+  // personas appear at the right moment without explicit story scripting.
+  function _evaluatePersonaUnlocks(state, op) {
+    const PS = window.CJS.PersonaService;
+    if (!PS) return;
+    const targets = op.target || op.characterId || 'party';
+    for (const id of _resolveTargets(state, targets)) {
+      const member = state.party[id];
+      if (!member) continue;
+      const evaluated = PS.evaluateUnlocks(member, state);
+      const before = new Set(member.unlockedPersonas || []);
+      const next = new Set([...before, ...evaluated]);
+      const added = evaluated.filter((pid) => !before.has(pid));
+      member.unlockedPersonas = Array.from(next);
+      for (const pid of added) {
+        const persona = DS().get('personas', pid);
+        _log(state, `${member.name || id} unlocked persona ${persona?.name || pid}.`);
+      }
+    }
+  }
+
   function _addQuest(state, quest) {
     if (!quest.id) quest.id = `quest_${Date.now()}`;
     state.quests[quest.id] = {
@@ -1540,12 +1632,42 @@ window.CJS.CampaignOps = (() => {
     state.phase = { number: 1, type: op.entryPhase || 'town_phase', name: op.entryPhaseName || 'Arrival Phase' };
     _clearDuration(state, 'scenario');
     _clearDuration(state, 'phase');
+    // After arriving in a new world, auto-switch each member to a world-native
+    // persona if they have one unlocked (or auto-unlock the default one). This
+    // is what makes "Bin in Haven" vs "Bin in Last Light" feel different
+    // without forcing the player to manually swap each member on arrival.
+    _autoSwitchPersonasForWorld(state, toWorld);
+    _evaluatePersonaUnlocks(state, { target: 'party' });
     _log(state, `World transition: ${fromWorld} to ${toWorld}.`);
+  }
+
+  function _autoSwitchPersonasForWorld(state, worldId) {
+    const PS = window.CJS.PersonaService;
+    if (!PS) return;
+    for (const [id, member] of Object.entries(state.party || {})) {
+      const charId = member.baseCharacterId || id;
+      const personas = PS.personasForCharacterInWorld(charId, worldId);
+      if (!personas.length) continue;
+      // Already on a persona for this world? Leave it.
+      const activePersona = member.activePersona ? DS().get('personas', member.activePersona) : null;
+      if (activePersona && activePersona.world === worldId) continue;
+      // Prefer an already-unlocked persona for this world; else a default one.
+      const unlocked = new Set(member.unlockedPersonas || []);
+      const unlockedForWorld = personas.find((p) => unlocked.has(p.id));
+      const defaultForWorld = personas.find((p) => p.unlock?.default);
+      const target = unlockedForWorld || defaultForWorld;
+      if (!target) continue;
+      if (!unlocked.has(target.id)) {
+        member.unlockedPersonas = Array.from(new Set([...(member.unlockedPersonas || []), target.id]));
+      }
+      _setPersona(state, { target: id, personaId: target.id });
+    }
   }
 
   function _chapterTransition(state, op) {
     state.currentChapter = op.toChapter || ((state.currentChapter || 1) + 1);
     if (op.entryPhase) state.phase = { number: 1, type: op.entryPhase, name: op.entryPhaseName || op.entryPhase };
+    _evaluatePersonaUnlocks(state, { target: 'party' });
     _log(state, `Chapter transition: chapter ${state.currentChapter}.`);
   }
 

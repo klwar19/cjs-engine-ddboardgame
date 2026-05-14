@@ -42,9 +42,35 @@ window.CJS.CampaignPartyChat = (() => {
     const readyIds = new Set(Object.entries(party)
       .filter(([, member]) => !Bridge()?.isMemberBattleReady || Bridge().isMemberBattleReady(member))
       .map(([id]) => id));
-    const pool = _rows.filter((row) => matches(row, context, state, readyIds));
+    // Auto-inject persona tags so chatter CSV rows tagged "rot_smell" or
+    // "guild_adventurer" can match when the speaker's active persona carries
+    // those tags. Context-provided tags still take precedence.
+    const enrichedContext = _withPersonaTags(context, state);
+    const pool = _rows.filter((row) => matches(row, enrichedContext, state, readyIds));
     const picked = weightedPick(pool);
-    return picked ? hydrate(picked, party, context) : null;
+    return picked ? hydrate(picked, party, enrichedContext) : null;
+  }
+
+  // Collect persona tags from every battle-ready party member (and the
+  // out-of-world penalty tags if applicable). Allows beats authored against
+  // "out_of_place" / "rot_smell" to fire when Bin's persona doesn't fit.
+  function _withPersonaTags(context = {}, state) {
+    const PS = window.CJS.PersonaService;
+    if (!PS || !state?.party) return context;
+    const currentWorld = state.currentWorld;
+    const tags = new Set((context.tags || []).map((tag) => String(tag).toLowerCase()));
+    for (const member of Object.values(state.party)) {
+      const persona = PS.getActivePersona(member);
+      if (!persona) continue;
+      for (const tag of persona.tags || []) tags.add(String(tag).toLowerCase());
+      const rel = PS.relationshipModifier(member, currentWorld);
+      for (const tag of rel.tags || []) tags.add(String(tag).toLowerCase());
+      if (PS.isOutOfWorld(member, currentWorld)) {
+        for (const tag of persona.crossWorldPenalty?.tags || []) tags.add(String(tag).toLowerCase());
+        tags.add('persona_out_of_world');
+      }
+    }
+    return { ...context, tags: Array.from(tags) };
   }
 
   function auto(context = {}, options = {}) {

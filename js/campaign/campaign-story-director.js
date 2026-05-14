@@ -175,6 +175,10 @@ window.CJS.CampaignStoryDirector = (() => {
     const run = state?.activeScenarioRun || null;
     const nodeId = run?.currentNode || null;
     const node = nodeId && activeMap?.nodes ? activeMap.nodes.find((entry) => entry.id === nodeId) : null;
+    // Persona tags: combine persona.tags, relationshipPerWorld[currentWorld].tags,
+    // and crossWorldPenalty.tags (when out of world) so author-side beats can
+    // require/exclude by persona context using normal tag rules.
+    const personaTags = _personaTags(state);
     return {
       pack,
       stage,
@@ -188,12 +192,41 @@ window.CJS.CampaignStoryDirector = (() => {
         ...(stage.tags || []),
         ...(activeScenario?.tags || []),
         ...(node?.tags || []),
+        ...personaTags,
         ...(options.tags || [])
       ].map((tag) => String(tag).toLowerCase())),
+      activePersonas: _activePersonaIds(state),
       flags: state?.flags || {},
       story: state?.storyDirector || {},
       danger: state?.danger || 0
     };
+  }
+
+  function _personaTags(state) {
+    const PS = window.CJS.PersonaService;
+    if (!PS || !state?.party) return [];
+    const out = [];
+    const currentWorld = state.currentWorld;
+    for (const member of Object.values(state.party)) {
+      const persona = PS.getActivePersona(member);
+      if (!persona) continue;
+      for (const tag of persona.tags || []) out.push(tag);
+      const rel = PS.relationshipModifier(member, currentWorld);
+      for (const tag of rel.tags || []) out.push(tag);
+      if (PS.isOutOfWorld(member, currentWorld)) {
+        for (const tag of persona.crossWorldPenalty?.tags || []) out.push(tag);
+        out.push('persona_out_of_world');
+      }
+    }
+    return out;
+  }
+
+  function _activePersonaIds(state) {
+    const out = [];
+    for (const member of Object.values(state?.party || {})) {
+      if (member.activePersona) out.push(member.activePersona);
+    }
+    return out;
   }
 
   function _eligible(entry, context) {
@@ -209,6 +242,19 @@ window.CJS.CampaignStoryDirector = (() => {
     if (entry.tags?.length && context.tags.size) {
       const tags = entry.tags.map((tag) => String(tag).toLowerCase());
       if (!tags.some((tag) => context.tags.has(tag))) return false;
+    }
+    // Persona gates: requiresPersonas / blocksPersonas. Authors can match the
+    // active persona on Bin (or any member). "requiresPersonas" passes when at
+    // least one active persona matches; "blocksPersonas" excludes when any
+    // active persona matches. Use this to author beats that only fire when a
+    // specific world skin is on.
+    if (entry.requiresPersonas?.length && context.activePersonas?.length) {
+      if (!entry.requiresPersonas.some((pid) => context.activePersonas.includes(pid))) return false;
+    } else if (entry.requiresPersonas?.length && !context.activePersonas?.length) {
+      return false;
+    }
+    if (entry.blocksPersonas?.length && context.activePersonas?.length) {
+      if (entry.blocksPersonas.some((pid) => context.activePersonas.includes(pid))) return false;
     }
     return true;
   }

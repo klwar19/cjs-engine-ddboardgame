@@ -549,7 +549,8 @@ window.CJS.CONST = (() => {
     passive:   'pas',
     status:    'sts',
     quip:      'qip',
-    job:       'job'
+    job:       'job',
+    persona:   'prs'
   };
 
   // ── PROGRESSION (skill AP + character/job XP) ─────────────────────

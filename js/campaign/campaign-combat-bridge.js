@@ -12,6 +12,7 @@ window.CJS.CampaignCombatBridge = (() => {
 
   const DS = () => window.CJS.DataStore;
   const CS = () => window.CJS.CampaignState;
+  const PS = () => window.CJS.PersonaService;
 
   function _session() {
     try { return window.sessionStorage; }
@@ -217,19 +218,36 @@ window.CJS.CampaignCombatBridge = (() => {
   function _campaignUnitSnapshot(id, member = {}) {
     const baseId = member.baseCharacterId || id;
     const base = DS().get('characters', baseId) || {};
-    const stats = { ...(base.stats || {}) };
-    // statOverrides already accumulate char-level + job-level + manual deltas.
-    for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
-      stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
-    }
+    const currentWorld = CS()?.getState?.()?.currentWorld || '';
+    const persona = PS()?.getActivePersona?.(member) || null;
+    // Stats: base + statOverrides + persona cross-world penalty (if any).
+    // PersonaService is the single source for cross-world adjustments so the
+    // logic stays consistent with the editor preview and any future UI.
+    const stats = PS()?.computeSnapshotStats
+      ? PS().computeSnapshotStats(base.stats || {}, member, currentWorld)
+      : (() => {
+          const s = { ...(base.stats || {}) };
+          for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
+            s[stat] = Number(s[stat] || 0) + Number(amount || 0);
+          }
+          return s;
+        })();
 
     // Filter to only the EQUIPPED skills the player has selected. The pool
-    // may include base.skills, learnedSkills, and job grants; equippedSkills
-    // (set by campaign-ops + auto-fill normalization) is the player's
-    // chosen subset. Item-granted skills are layered in by stat-compiler at
-    // combat time; they don't need a slot.
+    // may include base.skills (or persona.skills if a persona is active),
+    // learnedSkills, and job grants; equippedSkills (set by campaign-ops +
+    // auto-fill normalization) is the player's chosen subset. Item-granted
+    // skills are layered in by stat-compiler at combat time; they don't
+    // need a slot.
     const equippedSkillIds = new Set(member.equippedSkills || []);
-    const fullSkills = _mergeSkillEntries(base.skills || [], member.learnedSkills || []);
+    // When a persona is active, its authored skill list replaces the base
+    // character's skill list as the pool's foundation. Universal carry-over
+    // skills (base.skills) are still tracked under member.learnedSkills if
+    // they were preserved from before the switch.
+    const poolBaseSkills = persona && Array.isArray(persona.skills) && persona.skills.length
+      ? persona.skills
+      : (base.skills || []);
+    const fullSkills = _mergeSkillEntries(poolBaseSkills, member.learnedSkills || []);
     const F = window.CJS.Formulas;
 
     // Job-granted skills can be equipped if the player picked them; they get
@@ -259,29 +277,41 @@ window.CJS.CampaignCombatBridge = (() => {
     for (const pid of passives) {
       passiveRanks[pid] = Math.max(1, Number(member.passiveProgress?.[pid]?.rank || 1));
     }
+    const damageMods = PS()?.crossWorldDamageMods?.(member, currentWorld) || { dealt: 1, taken: 1 };
+    const personaPortrait = persona?.portrait || member.personaPortrait || '';
+    const personaIcon = persona?.icon || member.personaIcon || '';
     return {
       ..._clone(base),
       id,
       baseTemplateId: baseId,
       campaignPartyId: id,
       name: member.name || base.name || id,
-      icon: member.icon || base.icon || '',
-      portrait: member.portrait || base.portrait || '',
+      // Persona icon/portrait take precedence so combat shows the correct
+      // world-skin avatar without the editor needing to fork the base record.
+      icon: personaIcon || member.icon || base.icon || '',
+      portrait: personaPortrait || member.portrait || base.portrait || '',
       team: 'player',
       level: Number(member.level || base.level || 1),
-      rank: member.rank || base.rank || 'F',
+      rank: persona?.rank || member.rank || base.rank || 'F',
       stats,
       skills,
       innatePassives: passives,
       passiveRanks,
-      allowedWeaponTypes: _mergeIds(base.allowedWeaponTypes || [], member.allowedWeaponTypes || []),
-      allowedArmorTypes: _mergeIds(base.allowedArmorTypes || [], member.allowedArmorTypes || []),
-      equipment: Array.isArray(member.equipment) ? _clone(member.equipment) : _clone(base.equipment || []),
+      allowedWeaponTypes: _mergeIds(persona?.allowedWeaponTypes || base.allowedWeaponTypes || [], member.allowedWeaponTypes || []),
+      allowedArmorTypes: _mergeIds(persona?.allowedArmorTypes || base.allowedArmorTypes || [], member.allowedArmorTypes || []),
+      equipment: Array.isArray(member.equipment) ? _clone(member.equipment) : _clone(persona?.equipment || base.equipment || []),
       equipmentSlots: _clone(member.equipmentSlots || {}),
       battleSfx: member.battleSfx || base.battleSfx || {},
       // Carryovers for combat to render & for telemetry to be reattached on result.
       currentJob: member.currentJob || null,
-      jobLevel: member.currentJob ? Number(member.jobProgress?.[member.currentJob]?.level || 1) : 0
+      jobLevel: member.currentJob ? Number(member.jobProgress?.[member.currentJob]?.level || 1) : 0,
+      // Persona info — combat HUD + damage-calc both read these.
+      activePersona: persona?.id || null,
+      personaName: persona?.name || '',
+      personaWorld: persona?.world || '',
+      personaOutOfWorld: !!(persona && persona.world && persona.world !== currentWorld),
+      damageDealtMultiplier: Number(damageMods.dealt || 1),
+      damageTakenMultiplier: Number(damageMods.taken || 1)
     };
   }
 

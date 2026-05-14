@@ -8,6 +8,7 @@ window.CJS.CampaignState = (() => {
 
   const DS = () => window.CJS.DataStore;
   const F = () => window.CJS.Formulas;
+  const PS = () => window.CJS.PersonaService;
 
   let _state = null;
   let _content = _emptyContent();
@@ -298,7 +299,13 @@ window.CJS.CampaignState = (() => {
       skillPoints:   Number(base.skillPoints ?? PROG.defaultSkillPoints ?? 4),
       passivePoints: Number(base.passivePoints ?? PROG.defaultPassivePoints ?? 3),
       equippedSkills: [],
-      equippedPassives: []
+      equippedPassives: [],
+      // Personas: world-specific skins. activePersona seeds the loadout for
+      // this member; personaProgress stores per-persona saved loadouts so
+      // switching between personas preserves each persona's progression.
+      activePersona: null,
+      unlockedPersonas: [],
+      personaProgress: {}
     };
     if (initial.currentJob) {
       initial.jobProgress[initial.currentJob] = { xp: 0, level: 1 };
@@ -685,6 +692,7 @@ window.CJS.CampaignState = (() => {
       member.notes = member.notes || [];
       member.availability = normalizeAvailability(member.availability, member);
       _normalizeProgression(member, base);
+      _normalizePersona(member, base, next);
       _syncPartyMaxHp(id, member);
     }
     next.lastUpdated = next.lastUpdated || nowIso();
@@ -811,6 +819,101 @@ window.CJS.CampaignState = (() => {
     }
   }
 
+  // ── Persona normalization ────────────────────────────────────────
+  // Backfills persona fields on save load: ensures unlockedPersonas,
+  // personaProgress, activePersona are all valid. If a member has no
+  // active persona but personas exist for their base character in the
+  // current world, the first qualifying default-unlocked persona is
+  // auto-activated and seeded so existing characters smoothly adopt
+  // a Haven/Zombie/etc. skin without breaking older saves.
+  function _normalizePersona(member, base = {}, save = {}) {
+    if (!PS()) return;
+    const charId = member.baseCharacterId || base.id;
+    const allPersonas = PS().personasForCharacter(charId);
+    if (!allPersonas.length) {
+      // No personas authored for this character. Keep fields tidy but inert.
+      member.activePersona = member.activePersona || null;
+      member.unlockedPersonas = Array.isArray(member.unlockedPersonas) ? member.unlockedPersonas : [];
+      member.personaProgress = (member.personaProgress && typeof member.personaProgress === 'object') ? member.personaProgress : {};
+      return;
+    }
+    if (!Array.isArray(member.unlockedPersonas)) member.unlockedPersonas = [];
+    if (!member.personaProgress || typeof member.personaProgress !== 'object') member.personaProgress = {};
+
+    // Refresh unlocks from the current save state. Conditions that are now
+    // satisfied (phase, chapter, flag) auto-add personas; previously unlocked
+    // personas stay unlocked (`evaluateUnlocks` seeds from existing list).
+    const evaluated = PS().evaluateUnlocks(member, save);
+    member.unlockedPersonas = Array.from(new Set([...member.unlockedPersonas, ...evaluated]));
+
+    // If there's no active persona, pick a sensible default: a persona whose
+    // world matches the save's currentWorld and is unlocked.
+    const currentWorld = save.currentWorld || '';
+    if (!member.activePersona) {
+      const preferred = allPersonas.find((p) => p.world === currentWorld && member.unlockedPersonas.includes(p.id))
+                     || allPersonas.find((p) => member.unlockedPersonas.includes(p.id));
+      if (preferred) {
+        const seeded = PS().seedLoadoutFromPersona(preferred, base);
+        // Inherit member's existing live progression as the persona's initial
+        // captured snapshot, so legacy saves don't lose their job/skill state.
+        const existing = PS().captureLoadoutFromMember(member);
+        member.personaProgress[preferred.id] = {
+          ...seeded,
+          ...existing,
+          // Seed equipment / weapon-armor lists from the persona only if the
+          // member is still wearing the base character's defaults.
+          equipment: existing.equipment?.length ? existing.equipment : seeded.equipment,
+          allowedWeaponTypes: existing.allowedWeaponTypes?.length ? existing.allowedWeaponTypes : seeded.allowedWeaponTypes,
+          allowedArmorTypes: existing.allowedArmorTypes?.length ? existing.allowedArmorTypes : seeded.allowedArmorTypes
+        };
+        member.activePersona = preferred.id;
+        if (preferred.icon) member.personaIcon = preferred.icon;
+        if (preferred.portrait) member.personaPortrait = preferred.portrait;
+      }
+    }
+
+    // Make sure every unlocked persona has a progress slot. We seed missing
+    // ones from the persona template so the player can switch in cleanly.
+    for (const pid of member.unlockedPersonas) {
+      if (member.personaProgress[pid]) continue;
+      const persona = PS().getPersona(pid);
+      if (!persona) continue;
+      member.personaProgress[pid] = PS().seedLoadoutFromPersona(persona, base);
+    }
+  }
+
+  // Public helpers for ops:
+  //
+  //   PersonaService is the runtime brain; CampaignState exposes a switch
+  //   helper that updates the live member fields and the persona progress
+  //   slots in one step. This lives here (not in PersonaService) because it
+  //   needs to call into the same auto-fill / progression normalization the
+  //   roster relies on.
+  function switchPersona(member, nextPersonaId, save) {
+    if (!member || !PS()) return false;
+    const base = DS().get('characters', member.baseCharacterId || member.id) || {};
+    const persona = PS().getPersona(nextPersonaId);
+    if (!persona) return false;
+
+    // Capture the live loadout under the OUTGOING persona (or _legacy for
+    // members that never activated a persona).
+    const outgoingId = member.activePersona || '_legacy';
+    member.personaProgress = member.personaProgress || {};
+    member.personaProgress[outgoingId] = PS().captureLoadoutFromMember(member);
+
+    // Activate the new persona — restore saved slot, or seed from template.
+    const slot = member.personaProgress[nextPersonaId] || PS().seedLoadoutFromPersona(persona, base);
+    PS().applyLoadoutToMember(member, slot, persona, base);
+
+    // Re-merge job grants + auto-fill if needed.
+    if (member.currentJob) _persistJobGrants(member, base, member.currentJob);
+    if ((member.equippedSkills || []).length === 0 || (member.equippedPassives || []).length === 0) {
+      _autoFillEquipped(member, base);
+    }
+    _syncPartyMaxHp(member.baseCharacterId || base.id, member);
+    return true;
+  }
+
   function snapshotState() {
     return clone(_state);
   }
@@ -873,6 +976,7 @@ window.CJS.CampaignState = (() => {
     skillPoolIds: _skillPoolIds,
     passivePoolIds: _passivePoolIds,
     autoFillEquipped: _autoFillEquipped,
+    switchPersona,
     snapshotState,
     getHubState,
     getActiveHubProblems,
