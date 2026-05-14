@@ -33,8 +33,15 @@ window.CJS.CampaignUI = (() => {
   // legacy saves still show art if the character file has it.
   function _memberPortrait(member, memberId) {
     if (!member) return '';
-    if (member.portrait) return member.portrait;
+    // Persona portrait takes precedence so the world-skin's art shows in the
+    // roster card. Fallback: member-saved portrait, then base character art.
     const DS = window.CJS.DataStore;
+    if (member.activePersona) {
+      const persona = DS?.get?.('personas', member.activePersona);
+      if (persona?.portrait) return persona.portrait;
+    }
+    if (member.personaPortrait) return member.personaPortrait;
+    if (member.portrait) return member.portrait;
     const baseId = member.baseCharacterId || memberId;
     const base = DS?.get?.('characters', baseId);
     return base?.portrait || '';
@@ -482,6 +489,7 @@ window.CJS.CampaignUI = (() => {
               <strong class="campaign-roster-name">${_esc(member.name || base?.name || id)}</strong>
               <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${_esc(availLabel)}</span>
               <span class="campaign-pill">${isBench ? 'Bench' : 'Active'}</span>
+              ${_renderPersonaPill(id, member)}
             </div>
             <div class="campaign-roster-hero-meta">
               <span><b>Lv</b> ${charLevel}</span>
@@ -497,6 +505,7 @@ window.CJS.CampaignUI = (() => {
               <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
               <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
               <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
+              <button class="campaign-action" data-campaign-action="change-persona" data-id="${_escAttr(id)}" title="Switch world persona">Persona</button>
               <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
               <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
             </div>
@@ -4230,6 +4239,7 @@ window.CJS.CampaignUI = (() => {
       case 'grant-job-xp': return _grantJobXpModal(data.id);
       case 'change-job': return _changeJobModal(data.id);
       case 'show-job-tree': return _showJobTreeModal(data.id);
+      case 'change-persona': return _changePersonaModal(data.id);
       case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
       case 'rank-up-passive': return _rankUpPassiveConfirm(data.id, data.passiveId);
@@ -7496,6 +7506,99 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
+  function _changePersonaModal(id) {
+    const state = CS().getState();
+    const member = state?.party?.[id];
+    if (!member) return;
+    const PS = window.CJS.PersonaService;
+    if (!PS) {
+      UI().toast('Persona system not loaded.', 'error');
+      return;
+    }
+    const charId = member.baseCharacterId || id;
+    const personas = PS.personasForCharacter(charId);
+    if (!personas.length) {
+      UI().toast(`No personas authored for ${member.name || id}. Open the editor → Personas to create one.`, 'info');
+      return;
+    }
+    const currentWorld = state.currentWorld || '';
+    const unlocked = new Set(member.unlockedPersonas || []);
+    // Group: unlocked first, then locked. Sort each group by world matching the
+    // current world first so the player can pick a same-world skin quickly.
+    const score = (p) => {
+      let s = 0;
+      if (unlocked.has(p.id)) s += 10;
+      if (p.world === currentWorld) s += 4;
+      if (p.unlock?.default) s += 1;
+      return s;
+    };
+    const sorted = personas.slice().sort((a, b) => score(b) - score(a) || String(a.name || a.id).localeCompare(String(b.name || b.id)));
+
+    const options = [
+      { value: '', label: '— No persona (use base character) —' },
+      ...sorted.map((p) => {
+        const isUnlocked = unlocked.has(p.id);
+        const worldLabel = p.world ? (DS().get('worlds', p.world)?.displayName || p.world) : '—';
+        const outOfWorld = p.world && p.world !== currentWorld;
+        const flag = isUnlocked ? '' : ' [LOCKED]';
+        const here = p.id === member.activePersona ? ' (current)' : '';
+        const penalty = outOfWorld ? ' (out of world)' : '';
+        return {
+          value: p.id,
+          label: `${p.icon || '🎭'} ${p.name || p.id} — ${worldLabel}${penalty}${here}${flag}`,
+          disabled: !isUnlocked
+        };
+      })
+    ];
+
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Persona'));
+    const sel = UI().createSelect({ options, value: member.activePersona || '' });
+    body.appendChild(sel);
+
+    // Live preview: show description / unlock rule / penalty on selection.
+    const preview = document.createElement('div');
+    preview.style.marginTop = '12px';
+    preview.style.padding = '8px 10px';
+    preview.style.borderRadius = '6px';
+    preview.style.background = 'rgba(255,255,255,0.04)';
+    preview.style.fontSize = '0.85rem';
+    body.appendChild(preview);
+    const renderPreview = () => {
+      const pid = sel.value;
+      if (!pid) {
+        preview.innerHTML = '<em class="campaign-muted">Clears the active persona. Combat will use the base character record.</em>';
+        return;
+      }
+      const persona = DS().get('personas', pid);
+      if (!persona) { preview.innerHTML = ''; return; }
+      const pen = persona.crossWorldPenalty || {};
+      const outOfWorld = persona.world && persona.world !== currentWorld;
+      const unlockedBits = [];
+      if (persona.unlock?.default) unlockedBits.push('Default unlock');
+      if (persona.unlock?.requiresPhaseNumber) unlockedBits.push(`Phase ≥ ${persona.unlock.requiresPhaseNumber}`);
+      if (persona.unlock?.requiresChapter) unlockedBits.push(`Chapter ≥ ${persona.unlock.requiresChapter}`);
+      if (persona.unlock?.requiresFlag) unlockedBits.push(`Flag: ${persona.unlock.requiresFlag}`);
+      preview.innerHTML = `
+        <div><b>${_esc(persona.name)}</b> ${persona.world ? `<span class="campaign-muted">(${_esc(persona.world)})</span>` : ''}</div>
+        ${persona.description ? `<div style="margin-top:4px">${_esc(persona.description)}</div>` : ''}
+        ${unlockedBits.length ? `<div class="campaign-muted" style="margin-top:4px">Unlock: ${_esc(unlockedBits.join(', '))}</div>` : ''}
+        ${outOfWorld ? `<div style="margin-top:6px;color:#f59e0b">⚠ Out of world. Damage dealt ×${Number(pen.damageDealtMultiplier ?? 1)}, taken ×${Number(pen.damageTakenMultiplier ?? 1)}, relationship ${Number(pen.relationshipModifier ?? 0)}.</div>` : ''}
+      `;
+    };
+    sel.addEventListener('change', renderPreview);
+    renderPreview();
+
+    _formModal({
+      title: `Switch Persona: ${member.name || id}`,
+      body,
+      primaryLabel: 'Apply',
+      onSubmit: () => {
+        Ops().apply({ op: 'set_persona', target: id, personaId: sel.value || null }, { source: 'ui' });
+      }
+    });
+  }
+
   function _changeJobModal(id) {
     const member = CS().getState()?.party?.[id];
     if (!member) return;
@@ -7866,7 +7969,118 @@ window.CJS.CampaignUI = (() => {
       placeholder: 'Search worlds…',
       primaryLabel: 'Travel',
       onSubmit: ({ value }) => {
-        Ops().apply({ op: 'world_transition', toWorld: value, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+        // Show a persona-choice modal first when meaningful — i.e. at least one
+        // party member has multiple persona options for the destination world.
+        // If no member has a real choice, skip straight to the transition.
+        const meaningful = _hasMeaningfulPersonaChoice(value);
+        if (meaningful) {
+          _openPreTravelPersonaPicker(value);
+        } else {
+          Ops().apply({ op: 'world_transition', toWorld: value, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+        }
+      }
+    });
+  }
+
+  function _hasMeaningfulPersonaChoice(targetWorld) {
+    const PS = window.CJS.PersonaService;
+    if (!PS) return false;
+    const state = CS().getState();
+    if (!state?.party) return false;
+    for (const [id, member] of Object.entries(state.party)) {
+      const charId = member.baseCharacterId || id;
+      const choices = PS.personasForCharacterInWorld(charId, targetWorld);
+      if (!choices.length) continue;
+      // Meaningful = at least two unlocked-or-default personas for that world,
+      // OR exactly one persona that is NOT the currently active one.
+      const unlocked = new Set(member.unlockedPersonas || []);
+      const eligible = choices.filter((p) => unlocked.has(p.id) || p.unlock?.default);
+      if (eligible.length >= 2) return true;
+      if (eligible.length === 1 && eligible[0].id !== member.activePersona) return true;
+    }
+    return false;
+  }
+
+  function _openPreTravelPersonaPicker(targetWorld) {
+    const PS = window.CJS.PersonaService;
+    const state = CS().getState();
+    const worldName = DS().get('worlds', targetWorld)?.displayName || targetWorld;
+    const body = document.createElement('div');
+    body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
+      Heading to <b>${_esc(worldName)}</b>. Pick a persona for each member who has one — out-of-world personas keep their loadout but pay penalties in combat and with NPCs. Unset members will auto-switch on arrival.
+    </div>`;
+    const choicesArea = document.createElement('div');
+    choicesArea.style.display = 'grid';
+    choicesArea.style.gridTemplateColumns = '1fr';
+    choicesArea.style.gap = '10px';
+    body.appendChild(choicesArea);
+
+    const memberChoices = new Map();
+    for (const [id, member] of Object.entries(state.party || {})) {
+      const charId = member.baseCharacterId || id;
+      const choices = PS ? PS.personasForCharacterInWorld(charId, targetWorld) : [];
+      const otherWorlds = PS ? PS.personasForCharacter(charId).filter((p) => p.world !== targetWorld) : [];
+      if (!choices.length && !otherWorlds.length) continue;
+      const unlocked = new Set(member.unlockedPersonas || []);
+      const eligibleWorld = choices.filter((p) => unlocked.has(p.id) || p.unlock?.default);
+      const eligibleOther = otherWorlds.filter((p) => unlocked.has(p.id));
+
+      const options = [
+        { value: '__keep__', label: '— Keep current persona (out-of-world penalty if any) —' },
+        ...eligibleWorld.map((p) => ({
+          value: p.id,
+          label: `${p.icon || '🎭'} ${p.name} ${p.id === member.activePersona ? '(current)' : ''}`
+        })),
+        ...(eligibleOther.length ? [{ value: '__hr__', label: '── Out-of-world (penalty applies) ──', disabled: true }] : []),
+        ...eligibleOther.map((p) => ({
+          value: p.id,
+          label: `${p.icon || '🎭'} ${p.name} — ${p.world} (penalty)`
+        }))
+      ];
+
+      const sel = UI().createSelect({
+        options,
+        value: eligibleWorld.find((p) => p.id === member.activePersona)?.id || (eligibleWorld[0]?.id || '__keep__')
+      });
+
+      const card = document.createElement('div');
+      card.style.padding = '10px';
+      card.style.border = '1px solid rgba(255,255,255,0.1)';
+      card.style.borderRadius = '8px';
+      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b>${_esc(member.name || id)}</b>
+          <span class="campaign-muted" style="font-size:0.78rem">${_esc(charId)}</span>
+        </div>`;
+      const label = document.createElement('div');
+      label.innerHTML = '<div class="form-label" style="font-size:0.78rem">Persona for ' + _esc(worldName) + '</div>';
+      card.appendChild(label);
+      card.appendChild(sel);
+      choicesArea.appendChild(card);
+      memberChoices.set(id, sel);
+    }
+
+    if (!memberChoices.size) {
+      // Nothing meaningful after all — skip the modal.
+      Ops().apply({ op: 'world_transition', toWorld: targetWorld, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+      return;
+    }
+
+    _formModal({
+      title: `Travel: → ${worldName}`,
+      body,
+      primaryLabel: 'Travel',
+      onSubmit: () => {
+        // Apply the persona picks BEFORE transition so the autoSwitch step in
+        // world_transition doesn't overwrite the player's chosen personas.
+        const ops = [];
+        for (const [id, sel] of memberChoices) {
+          const value = sel.value;
+          if (!value || value === '__keep__' || value === '__hr__') continue;
+          ops.push({ op: 'unlock_persona', target: id, personaId: value });
+          ops.push({ op: 'set_persona', target: id, personaId: value });
+        }
+        ops.push({ op: 'world_transition', toWorld: targetWorld, carryoverProfile: 'carryover_new_world_default' });
+        Ops().apply(ops, { source: 'ui' });
       }
     });
   }
@@ -8553,7 +8767,43 @@ window.CJS.CampaignUI = (() => {
     const xp = Number(prog.xp || 0);
     const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
     const meta = level >= cap ? `(max)` : (xpToNext != null ? `(${xpToNext} XP to next)` : '');
-    return `${_icon(job, { kind: 'job', size: 'xs' })} ${_esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}`;
+    const personaChip = _renderPersonaChip(memberId, member);
+    const personaSuffix = personaChip ? ` <span class="campaign-muted">·</span> ${personaChip}` : '';
+    return `${_icon(job, { kind: 'job', size: 'xs' })} ${_esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}${personaSuffix}`;
+  }
+
+  function _renderPersonaChip(memberId, member = {}) {
+    const personaId = member.activePersona || null;
+    if (!personaId) return '';
+    const persona = DS().get('personas', personaId);
+    if (!persona) return `<span class="campaign-muted" title="Unknown persona">${_esc(personaId)}</span>`;
+    const state = CS().getState();
+    const outOfWorld = persona.world && state?.currentWorld && persona.world !== state.currentWorld;
+    const worldChip = persona.world ? (DS().get('worlds', persona.world)?.displayName || persona.world) : '';
+    const tooltip = outOfWorld
+      ? `${persona.name} (${worldChip}) — out of world. Damage dealt ×${Number(persona.crossWorldPenalty?.damageDealtMultiplier ?? 1)}, taken ×${Number(persona.crossWorldPenalty?.damageTakenMultiplier ?? 1)}.`
+      : `${persona.name}${worldChip ? ` (${worldChip})` : ''}`;
+    const style = outOfWorld ? ' style="color:#f59e0b"' : '';
+    return `<span title="${_escAttr(tooltip)}"${style}>${_esc(persona.icon || '🎭')} ${_esc(persona.name)}${outOfWorld ? ' ⚠' : ''}</span>`;
+  }
+
+  // Compact pill next to the name. Shows "<world> <PersonaName> | Job/Branch"
+  // when meaningful, or "Out of world ⚠" when the persona doesn't match.
+  function _renderPersonaPill(memberId, member = {}) {
+    const personaId = member.activePersona || null;
+    if (!personaId) return '';
+    const persona = DS().get('personas', personaId);
+    if (!persona) return '';
+    const state = CS().getState();
+    const outOfWorld = persona.world && state?.currentWorld && persona.world !== state.currentWorld;
+    const worldName = persona.world ? (DS().get('worlds', persona.world)?.displayName || persona.world) : '';
+    const jobShort = member.currentJob ? (DS().get('jobs', member.currentJob)?.name || member.currentJob) : '';
+    const tooltip = outOfWorld
+      ? `${persona.name} (${worldName}) — out of world. ⚠`
+      : `${persona.name} (${worldName})`;
+    const cls = outOfWorld ? 'campaign-pill is-blocked' : 'campaign-pill';
+    const label = jobShort ? `${persona.name} · ${jobShort}` : persona.name;
+    return `<span class="${cls}" title="${_escAttr(tooltip)}" data-campaign-action="change-persona" data-id="${_escAttr(memberId)}" style="cursor:pointer">${_esc(persona.icon || '🎭')} ${_esc(label)}${outOfWorld ? ' ⚠' : ''}</span>`;
   }
 
   function _skillMeta(skill = {}, entry = {}) {

@@ -57,6 +57,7 @@ const loadOrder = [
   'core/data-store.js',
   'core/content-manager.js',
   'core/skill-resolver.js',
+  'services/persona-service.js',
   'effects/value-calc.js',
   'effects/conditions.js',
   'effects/effect-registry.js',
@@ -1382,6 +1383,102 @@ if (CJS.CampaignOps && CJS.CampaignState) {
   assert('income production appears in log', incomeState.log.some((entry) => /Income produced: Test Vein/.test(entry.text || '')));
 } else {
   console.log('  (skipping — CampaignOps not loaded in this test sandbox)');
+}
+
+console.log('\n── TEST 23: Persona system (world skins) ──');
+if (CJS.CampaignState && CJS.CampaignOps && CJS.PersonaService) {
+  DS.reset();
+  DS.replace('worlds', 'haven', { id: 'haven', displayName: 'Haven' });
+  DS.replace('worlds', 'zombie', { id: 'zombie', displayName: 'Last Light' });
+  DS.replace('characters', 'bin', {
+    id: 'bin', name: 'Bin Chen', team: 'player', rank: 'F',
+    stats: { S: 5, P: 6, E: 5, C: 8, I: 7, A: 6, L: 5 },
+    skills: [], equipment: [], innatePassives: [],
+    availableJobs: [], defaultJob: null,
+    allowedWeaponTypes: ['sword'], allowedArmorTypes: ['light']
+  });
+  DS.replace('personas', 'persona_bin_haven_adv', {
+    id: 'persona_bin_haven_adv', name: 'Adventurer', characterId: 'bin', world: 'haven',
+    statOverrides: { S: 1, A: 1 },
+    skills: [], equipment: [], innatePassives: [],
+    allowedWeaponTypes: ['sword'], allowedArmorTypes: ['light'],
+    unlock: { default: true },
+    crossWorldPenalty: { statFlat: { S: -2 }, damageDealtMultiplier: 0.7, damageTakenMultiplier: 1.3 }
+  });
+  DS.replace('personas', 'persona_bin_zombie_scavenger', {
+    id: 'persona_bin_zombie_scavenger', name: 'Scavenger', characterId: 'bin', world: 'zombie',
+    statOverrides: { P: 2, A: 1 },
+    skills: [], equipment: [], innatePassives: [],
+    unlock: { default: true, world: 'zombie' },
+    crossWorldPenalty: { damageDealtMultiplier: 0.85, damageTakenMultiplier: 1.15 }
+  });
+  DS.replace('personas', 'persona_bin_zombie_leader', {
+    id: 'persona_bin_zombie_leader', name: 'Survivor Leader', characterId: 'bin', world: 'zombie',
+    statOverrides: { C: 3 },
+    skills: [], equipment: [], innatePassives: [],
+    unlock: { requiresPhaseNumber: 4, world: 'zombie' },
+    crossWorldPenalty: { damageDealtMultiplier: 0.9 }
+  });
+  DS.replace('campaigns', 'cmp_test', {
+    id: 'cmp_test', name: 'Test Campaign', world: 'haven', startPhase: 'town_phase',
+    phaseRules: [{ id: 'town_phase', name: 'Town' }, { id: 'travel_phase', name: 'Travel' }],
+    startingState: { party: ['bin'], currencies: { haven_gold: 100 }, items: {}, materials: {}, food: {}, questItems: {} }
+  });
+  CJS.CampaignState.loadContentFromDataStore();
+  const personaSave = CJS.CampaignState.createNewSave('cmp_test');
+  const binMember = personaSave.party.bin;
+  assert('member.unlockedPersonas exists after save creation', Array.isArray(binMember.unlockedPersonas));
+  assert('haven adventurer auto-unlocked (default)', binMember.unlockedPersonas.includes('persona_bin_haven_adv'));
+  assert('zombie scavenger auto-unlocked (default but wrong world — should NOT unlock yet)',
+    !binMember.unlockedPersonas.includes('persona_bin_zombie_scavenger'));
+  assert('survivor leader not unlocked (phase too low)', !binMember.unlockedPersonas.includes('persona_bin_zombie_leader'));
+  assertEq('active persona seeded for current world', binMember.activePersona, 'persona_bin_haven_adv');
+
+  // Switch to a different persona via the op
+  CJS.CampaignOps.apply({ op: 'set_persona', target: 'bin', personaId: 'persona_bin_haven_adv' }, { source: 'test' });
+  assertEq('set_persona keeps active persona on same id', CJS.CampaignState.getState().party.bin.activePersona, 'persona_bin_haven_adv');
+
+  // Cross-world penalty: stamp the haven adventurer into the zombie world
+  CJS.CampaignState.mutate((s) => { s.currentWorld = 'zombie'; });
+  const penalty = CJS.PersonaService.crossWorldPenalty(CJS.CampaignState.getState().party.bin, 'zombie');
+  assert('cross-world penalty is non-null when out of world', !!penalty);
+  assertEq('cross-world damage dealt multiplier', Number(penalty.damageDealtMultiplier), 0.7);
+
+  // Snapshot stats should drop S by the flat penalty
+  const snapStats = CJS.PersonaService.computeSnapshotStats({ S: 5, P: 6, E: 5, C: 8, I: 7, A: 6, L: 5 }, CJS.CampaignState.getState().party.bin, 'zombie');
+  assert('persona snapshot stats drop S out of world', Number(snapStats.S) <= 5);
+
+  // Phase-locked unlock: pass to phase 4, evaluate
+  CJS.CampaignState.mutate((s) => { s.phase = { number: 4, type: 'town_phase', name: 'Town' }; });
+  CJS.CampaignOps.apply({ op: 'evaluate_persona_unlocks', target: 'bin' }, { source: 'test' });
+  // The survivor leader requires world=zombie AND phase>=4 — both satisfied now.
+  assert('survivor leader unlocks at phase 4 (zombie world)',
+    CJS.CampaignState.getState().party.bin.unlockedPersonas.includes('persona_bin_zombie_leader'));
+
+  // Switch personas — verify loadout swap preserves slots
+  CJS.CampaignOps.apply({ op: 'set_persona', target: 'bin', personaId: 'persona_bin_zombie_leader' }, { source: 'test' });
+  const switched = CJS.CampaignState.getState().party.bin;
+  assertEq('switch_persona updates active', switched.activePersona, 'persona_bin_zombie_leader');
+  assert('persona progress slot retains stat overrides from leader',
+    Number(switched.statOverrides.C || 0) === 3);
+
+  // Auto-switch on world transition: travel from zombie back to haven and the
+  // engine should re-activate the haven adventurer persona automatically.
+  CJS.CampaignState.mutate((s) => { s.currentWorld = 'zombie'; });
+  CJS.CampaignOps.apply({ op: 'world_transition', toWorld: 'haven' }, { source: 'test' });
+  const afterTravel = CJS.CampaignState.getState().party.bin;
+  assertEq('world_transition auto-switches to a haven persona', afterTravel.activePersona, 'persona_bin_haven_adv');
+
+  // PersonaService.crossWorldDamageMods reflects the persona's authored values
+  // even without loading the full combat bridge — sufficient to confirm the
+  // numbers feeding the snapshot path are correct.
+  CJS.CampaignState.mutate((s) => { s.currentWorld = 'zombie'; });
+  CJS.CampaignState.mutate((s) => { s.party.bin.activePersona = 'persona_bin_haven_adv'; });
+  const mods = CJS.PersonaService.crossWorldDamageMods(CJS.CampaignState.getState().party.bin, 'zombie');
+  assertNear('cross-world damage dealt mod for haven adv in zombie', mods.dealt, 0.7, 0.001);
+  assertNear('cross-world damage taken mod for haven adv in zombie', mods.taken, 1.3, 0.001);
+} else {
+  console.log('  (skipping — PersonaService not loaded in this test sandbox)');
 }
 
 // RESULTS

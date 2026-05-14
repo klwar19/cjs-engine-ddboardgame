@@ -25,6 +25,7 @@ window.CJS.DataStore = (() => {
   let _data = {
     effects:    {},   // id → effect object
     skills:     {},   // id → skill object
+    personas:   {},   // id → persona (world-specific character skin)
     items:      {},   // id → item object
     food:       {},   // id -> food object
     materials:  {},   // id -> material object
@@ -180,6 +181,7 @@ window.CJS.DataStore = (() => {
       worlds:     _stripMeta({ ..._data.worlds }),
       passives:   _stripMeta({ ..._data.passives }),
       jobs:       _stripMeta({ ..._data.jobs }),
+      personas:   _stripMeta({ ..._data.personas }),
       characters: _normalizeCollection('characters', _data.characters),
       monsters:   _normalizeCollection('monsters', _data.monsters),
       encounters: _stripMeta({ ..._data.encounters }),
@@ -232,6 +234,7 @@ window.CJS.DataStore = (() => {
       sdp: _data.storyDirectorPacks,
       wld: _data.worlds,
       pas: _data.passives,
+      prs: _data.personas,
       chr: _data.characters,
       mon: _data.monsters,
       enc: _data.encounters,
@@ -489,6 +492,37 @@ window.CJS.DataStore = (() => {
       });
     }
 
+    // Validate personas → characters, skills, items, passives, jobs
+    for (const [id, persona] of Object.entries(_data.personas)) {
+      if (persona.characterId && !exists('characters', persona.characterId)) {
+        warnings.push(`Persona "${id}" references missing character "${persona.characterId}"`);
+      }
+      (persona.skills || []).forEach((entry) => {
+        const sid = typeof entry === 'string' ? entry : entry?.skillId;
+        if (sid && !exists('skills', sid)) {
+          warnings.push(`Persona "${id}" references missing skill "${sid}"`);
+        }
+      });
+      (persona.equipment || []).forEach((iid) => {
+        if (iid && !exists('items', iid)) {
+          warnings.push(`Persona "${id}" references missing item "${iid}"`);
+        }
+      });
+      (persona.innatePassives || []).forEach((pid) => {
+        if (pid && !exists('passives', pid) && !exists('effects', pid)) {
+          warnings.push(`Persona "${id}" references unknown passive/effect "${pid}"`);
+        }
+      });
+      (persona.availableJobs || []).forEach((jid) => {
+        if (jid && !exists('jobs', jid)) {
+          warnings.push(`Persona "${id}" references missing job "${jid}"`);
+        }
+      });
+      if (persona.defaultJob && !exists('jobs', persona.defaultJob)) {
+        warnings.push(`Persona "${id}" defaultJob "${persona.defaultJob}" not found`);
+      }
+    }
+
     // Validate encounters → characters/monsters
     for (const [id, enc] of Object.entries(_data.encounters)) {
       (enc.units || []).forEach(u => {
@@ -617,7 +651,7 @@ window.CJS.DataStore = (() => {
     // Merge or replace each collection
     const collections = [
       'effects', 'skills', 'items', 'food', 'materials', 'crafting',
-      'crops', 'shops', 'zones', 'stories', 'worlds', 'passives', 'jobs',
+      'crops', 'shops', 'zones', 'stories', 'worlds', 'passives', 'jobs', 'personas',
       'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
       'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
       'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
@@ -678,6 +712,7 @@ window.CJS.DataStore = (() => {
       wld: _data.worlds,
       pas: _data.passives,
       job: _data.jobs,
+      prs: _data.personas,
       chr: _data.characters,
       mon: _data.monsters,
       enc: _data.encounters,
@@ -701,7 +736,7 @@ window.CJS.DataStore = (() => {
   function reset() {
     _data = {
       effects: {}, skills: {}, items: {}, food: {}, materials: {}, crafting: {},
-      crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {}, jobs: {},
+      crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {}, jobs: {}, personas: {},
       campaigns: {}, scenarios: {}, scenarioMaps: {}, campaignEvents: {},
       campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
       sideContentPacks: {}, campaignHubs: {}, questChains: {},
@@ -747,6 +782,7 @@ window.CJS.DataStore = (() => {
       worlds:     Object.keys(_data.worlds).length,
       passives:   Object.keys(_data.passives).length,
       jobs:       Object.keys(_data.jobs).length,
+      personas:   Object.keys(_data.personas).length,
       characters: Object.keys(_data.characters).length,
       monsters:   Object.keys(_data.monsters).length,
       encounters: Object.keys(_data.encounters).length,

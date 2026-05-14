@@ -1,0 +1,165 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "personas",
+    "status": "active",
+    "notes": [
+      "Personas (a.k.a. world skins) reshape how a character is played in a specific world.",
+      "Each persona carries: world, defaultJob, availableJobs, skills, equipment, statOverrides, innatePassives, unlock rules, and a cross-world penalty.",
+      "Universal character.stats remain the carry-over SPECIAL baseline; statOverrides are applied on top.",
+      "Unlock rules can be phase-locked (requiresPhase/chapter/flag) so worlds gradually unlock more personas.",
+      "When the player's currentWorld differs from the persona's home world, crossWorldPenalty applies to the combat snapshot."
+    ]
+  },
+  "entries": [
+    {
+      "id": "persona_bin_haven_adventurer",
+      "name": "F-Rank Adventurer",
+      "characterId": "bin",
+      "world": "haven",
+      "icon": "🗡️",
+      "portrait": "images/characters/bin.png",
+      "rank": "F",
+      "description": "Bin's Haven guild card. Cracked sword, cheap leather, undeserved swagger.",
+      "statOverrides": { "S": 1, "A": 1 },
+      "defaultJob": "job_warrior",
+      "availableJobs": ["job_warrior", "job_thief"],
+      "availableBranches": ["warrior", "thief"],
+      "innatePassives": ["jester_luck", "comedy_armor"],
+      "skills": ["haven_ember_slash", "taunt_mock", "jester_gambit"],
+      "equipment": ["haven_rusty_sword", "haven_leather_armor", "haven_lucky_coin"],
+      "allowedWeaponTypes": ["sword", "dagger"],
+      "allowedArmorTypes": ["light", "leather", "medium"],
+      "unlock": {
+        "default": true
+      },
+      "crossWorldPenalty": {
+        "statFlat": { "S": -1, "E": -1, "A": -1 },
+        "damageDealtMultiplier": 0.75,
+        "damageTakenMultiplier": 1.25,
+        "relationshipModifier": -2,
+        "tags": ["guild_adventurer", "out_of_place"],
+        "notes": "Guild armor screams 'tourist' in worlds that don't honor the F-rank system."
+      },
+      "relationshipPerWorld": {
+        "haven": { "modifier": 0, "tags": ["guild_adventurer"] },
+        "zombie": { "modifier": -2, "tags": ["clean_clothes", "outsider"] }
+      },
+      "tags": ["adventurer", "guild", "fantasy"]
+    },
+    {
+      "id": "persona_bin_haven_rogue",
+      "name": "Backalley Rogue",
+      "characterId": "bin",
+      "world": "haven",
+      "icon": "🃏",
+      "portrait": "images/characters/bin.png",
+      "rank": "F",
+      "description": "When the F-rank card stops paying, Bin works the alleys. Pickpocket grin, cheap dagger.",
+      "statOverrides": { "A": 2, "L": 1, "S": -1 },
+      "defaultJob": "job_thief",
+      "availableJobs": ["job_thief"],
+      "availableBranches": ["thief"],
+      "innatePassives": ["jester_luck"],
+      "skills": ["taunt_mock", "jester_gambit"],
+      "equipment": ["haven_lucky_coin"],
+      "allowedWeaponTypes": ["dagger"],
+      "allowedArmorTypes": ["light", "leather"],
+      "unlock": {
+        "requiresChapter": 1,
+        "requiresPhaseNumber": 2,
+        "world": "haven",
+        "description": "Unlocks once Bin has spent at least one travel/scenario phase in Haven."
+      },
+      "crossWorldPenalty": {
+        "statFlat": { "S": -2, "E": -2 },
+        "damageDealtMultiplier": 0.8,
+        "damageTakenMultiplier": 1.2,
+        "relationshipModifier": -1,
+        "tags": ["streetwise", "out_of_place"]
+      },
+      "relationshipPerWorld": {
+        "haven": { "modifier": 0, "tags": ["streetwise", "no_guild_card"] },
+        "zombie": { "modifier": 1, "tags": ["streetwise", "scrappy"] }
+      },
+      "tags": ["thief", "rogue", "fantasy"]
+    },
+    {
+      "id": "persona_bin_zombie_scavenger",
+      "name": "Scavenger",
+      "characterId": "bin",
+      "world": "zombie",
+      "icon": "🎒",
+      "portrait": "images/characters/bin.png",
+      "rank": "F",
+      "description": "Bin in Last Light: hood up, crowbar in one hand, looted lucky coin in the other.",
+      "statOverrides": { "P": 2, "A": 1, "L": 1 },
+      "defaultJob": "job_thief",
+      "availableJobs": ["job_thief"],
+      "availableBranches": ["thief"],
+      "innatePassives": ["jester_luck"],
+      "skills": ["taunt_mock"],
+      "equipment": ["haven_lucky_coin"],
+      "allowedWeaponTypes": ["dagger", "knuckles", "unarmed"],
+      "allowedArmorTypes": ["light", "leather"],
+      "unlock": {
+        "default": true,
+        "world": "zombie",
+        "description": "Default Last Light start: low-tier scavenger before the survivors trust him."
+      },
+      "crossWorldPenalty": {
+        "statFlat": { "C": -2, "I": -1 },
+        "damageDealtMultiplier": 0.85,
+        "damageTakenMultiplier": 1.15,
+        "relationshipModifier": -1,
+        "tags": ["rot_smell", "out_of_place"],
+        "notes": "Haven adventurers cross the street when the Scavenger walks by."
+      },
+      "relationshipPerWorld": {
+        "zombie": { "modifier": 0, "tags": ["scavenger", "trusted_loner"] },
+        "haven": { "modifier": -2, "tags": ["rot_smell", "outsider"] }
+      },
+      "tags": ["scavenger", "survivor", "horror"]
+    },
+    {
+      "id": "persona_bin_zombie_survivor_leader",
+      "name": "Survivor Leader",
+      "characterId": "bin",
+      "world": "zombie",
+      "icon": "🛡️",
+      "portrait": "images/characters/bin.png",
+      "rank": "F",
+      "description": "After a few scrapes the survivors start listening when Bin gives orders. The Cosmic Jester learns to lead.",
+      "statOverrides": { "C": 3, "I": 1, "E": 1 },
+      "defaultJob": "job_warrior",
+      "availableJobs": ["job_warrior", "job_thief"],
+      "availableBranches": ["warrior", "thief"],
+      "innatePassives": ["jester_luck", "comedy_armor"],
+      "skills": ["haven_ember_slash", "taunt_mock", "jester_gambit"],
+      "equipment": ["haven_leather_armor", "haven_lucky_coin"],
+      "allowedWeaponTypes": ["sword", "dagger", "spear"],
+      "allowedArmorTypes": ["light", "leather", "medium"],
+      "unlock": {
+        "requiresChapter": 1,
+        "requiresPhaseNumber": 4,
+        "requiresFlag": "zombie_first_camp_secured",
+        "world": "zombie",
+        "description": "Earned after surviving long enough to be trusted by Last Light camp leaders."
+      },
+      "crossWorldPenalty": {
+        "statFlat": { "C": -1 },
+        "damageDealtMultiplier": 0.9,
+        "damageTakenMultiplier": 1.1,
+        "relationshipModifier": 0,
+        "tags": ["survivor_leader", "out_of_place"]
+      },
+      "relationshipPerWorld": {
+        "zombie": { "modifier": 2, "tags": ["camp_leader", "trusted"] },
+        "haven": { "modifier": -1, "tags": ["rough_around_edges"] }
+      },
+      "tags": ["leader", "survivor", "horror"]
+    }
+  ]
+}

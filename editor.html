@@ -119,6 +119,10 @@
           <span>Jobs</span>
           <span class="badge" id="count-jobs">0</span>
         </div>
+        <div class="nav-item" data-panel="personas">
+          <span>Personas</span>
+          <span class="badge" id="count-personas">0</span>
+        </div>
         <div class="nav-item" data-panel="items">
           <span>Items</span>
           <span class="badge" id="count-items">0</span>
@@ -173,6 +177,7 @@
         <div class="editor-panel" id="panel-passives"></div>
         <div class="editor-panel" id="panel-skills"></div>
         <div class="editor-panel" id="panel-jobs"></div>
+        <div class="editor-panel" id="panel-personas"></div>
         <div class="editor-panel" id="panel-items"></div>
         <div class="editor-panel" id="panel-food"></div>
         <div class="editor-panel" id="panel-materials"></div>
@@ -233,6 +238,8 @@
   <script src="js/builders/passive-editor.js"></script>
   <script src="js/builders/skill-editor.js"></script>
   <script src="js/builders/job-editor.js"></script>
+  <script src="js/services/persona-service.js"></script>
+  <script src="js/builders/persona-editor.js"></script>
   <script src="js/builders/item-editor.js"></script>
   <script src="js/builders/simple-collection-editor.js"></script>
   <script src="js/builders/char-editor.js"></script>
@@ -267,6 +274,7 @@
         passives: CJS.PassiveEditor,
         skills: CJS.SkillEditor,
         jobs: CJS.JobEditor,
+        personas: CJS.PersonaEditor,
         items: CJS.ItemEditor,
         food: CJS.SimpleCollectionEditor.food,
         materials: CJS.SimpleCollectionEditor.materials,
