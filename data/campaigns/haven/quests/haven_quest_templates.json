@@ -242,7 +242,13 @@
                 "label": "Puzzle Slip",
                 "summary": "The board asks someone expendable to test a tiny dungeon mechanism.",
                 "objectiveOverrides": [
-                  { "id": "notice_task", "kind": "minigame", "label": "Clear 1 mini-game room", "required": 1 }
+                  {
+                    "id": "notice_task",
+                    "kind": "minigame",
+                    "label": "Clear 1 mini-game room",
+                    "required": 1,
+                    "minigame": { "gameId": "push_box", "difficulty": 1, "theme": "ruins" }
+                  }
                 ],
                 "contextTags": ["dungeon", "puzzle", "training"],
                 "monsterTags": ["sprite", "guardian"]
@@ -260,7 +266,14 @@
           "summary": "Corvin needs one simple mechanism tested so he can file it as safe, unsafe, or personally insulting.",
           "objectives": [
             { "id": "reach_room", "kind": "reach", "label": "Reach the puzzle room", "current": 0, "required": 1 },
-            { "id": "clear_minigame", "kind": "minigame", "label": "Clear 1 mini-game room", "current": 0, "required": 1 }
+            {
+              "id": "clear_minigame",
+              "kind": "minigame",
+              "label": "Clear 1 mini-game room",
+              "current": 0,
+              "required": 1,
+              "minigame": { "gameId": "mummy_maze", "difficulty": 2, "theme": "tomb" }
+            }
           ],
           "rewards": [
             { "op": "give_money", "currency": "haven_gold", "amount": 16 },

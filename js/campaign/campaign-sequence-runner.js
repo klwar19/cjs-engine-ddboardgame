@@ -236,6 +236,23 @@ window.CJS.CampaignSequences = (() => {
         const partId = record.sequenceId;
         next.storyMode.completedParts[partId] = true;
         next.storyMode.partResults[partId] = record;
+      } else if (record.scope === 'event') {
+        next.eventLog = next.eventLog || {};
+        next.eventLog.entries = Array.isArray(next.eventLog.entries) ? next.eventLog.entries : [];
+        next.eventLog.entries.unshift({
+          id: `event_log_${record.sequenceId}_${Date.now()}`,
+          at: record.completedAt,
+          phase: next.phase?.number || 1,
+          world: next.currentWorld,
+          title: record.title || record.sequenceId,
+          summary: (record.log || []).map((line) => line.summary).filter(Boolean).slice(-3).join(' | ') || record.result || 'Event sequence completed.',
+          source: 'sequence',
+          scope: 'event',
+          relatedId: record.sequenceId,
+          tags: ['sequence_event', record.result || 'complete'],
+          consequences: []
+        });
+        next.eventLog.entries = next.eventLog.entries.slice(0, 300);
       }
     }, { source: 'sequence_complete' });
     Ops()?.apply?.({ op: 'log', text: `Sequence complete: ${current.title || current.sequenceId} (${result}).` }, { source: 'sequence_runtime' });

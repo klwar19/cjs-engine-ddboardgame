@@ -122,18 +122,48 @@ window.CJS.CampaignEvents = (() => {
     const ops = operations || event?.suggested || [];
     if (!event) return [];
     const applied = Ops().apply(ops, { source: 'event' });
+    if (!ops.some((op) => op?.op === 'event_log_add')) {
+      Ops().apply({ op: 'event_log_add', entry: _eventLogEntry(event, ops, 'applied') }, { source: 'event' });
+    }
     Ops().apply({ op: 'log', text: `Event applied: ${event.title || event.id}.` }, { source: 'event' });
     return applied;
   }
 
   function ignoreEvent(event, noteOnly = false) {
     if (!event) return;
+    if (noteOnly) {
+      Ops().apply({ op: 'event_log_add', entry: _eventLogEntry(event, [], 'noted') }, { source: 'event_note' });
+    }
     Ops().apply({
       op: 'log',
       text: noteOnly
         ? `Event saved as note: ${event.title || event.id} - ${event.prompt || ''}`
         : `Event ignored: ${event.title || event.id}.`
     }, { source: 'event' });
+  }
+
+  function _eventLogEntry(event = {}, ops = [], status = 'noted') {
+    const summary = event.manualSummary?.short
+      || event.summary
+      || event.prompt
+      || event.gmHook
+      || event.title
+      || event.id
+      || 'Event happened.';
+    return {
+      id: `event_log_${event.id || Date.now()}_${status}`,
+      title: event.title || event.id || 'Event',
+      summary,
+      source: event.source || event.tableName || 'event',
+      scope: event.type || event.kind || event.scope || 'event',
+      relatedId: event.id || null,
+      tags: [
+        ...(event.tags || []),
+        ...(event.manualSummary?.tags || []),
+        status
+      ],
+      consequences: Ops().describe(ops || []).filter(Boolean)
+    };
   }
 
   function pinAsPlotSeed(event) {

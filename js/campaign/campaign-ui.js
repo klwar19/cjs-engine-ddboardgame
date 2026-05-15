@@ -79,7 +79,6 @@ window.CJS.CampaignUI = (() => {
       ['cook', 'Cook'],
       ['craft', 'Forge'],
       ['farm', 'Farm'],
-      ['pocket', 'Pocket Haven'],
       ['inventory', 'Inventory']
     ],
     scenario: [
@@ -112,24 +111,25 @@ window.CJS.CampaignUI = (() => {
   const APP_MODE_TABS = {
     story: [
       ['storyHome', 'Story'],
-      ['storySummary', 'Summary']
+      ['storySummary', 'Story Log']
     ],
     quest: [
       ['questHome', 'Quest'],
-      ['quests', 'Quest Board']
+      ['quests', 'Tracker']
     ],
     event: [
-      ['eventHome', 'Event']
+      ['eventCharacter', 'Character'],
+      ['eventSpecial', 'Special'],
+      ['eventSide', 'Side Stories'],
+      ['eventLog', 'Event Log']
     ],
     activities: [
-      ['activityHome', 'Activity Home'],
       ['sideForge', 'Hub'],
-      ['oracleForge', 'Oracle/Manual'],
-      ['pocket', 'Pocket Haven'],
+      ['oracleForge', 'Oracle / Manual'],
       ['farm', 'Farm'],
       ['craft', 'Forge'],
       ['cook', 'Cook'],
-      ['shops', 'Shops'],
+      ['shops', 'Shops & Rest'],
       ['inventory', 'Inventory']
     ]
   };
@@ -939,8 +939,11 @@ window.CJS.CampaignUI = (() => {
       case 'storyHome': return _renderStoryHome(state);
       case 'storySummary': return _renderStorySummary(state);
       case 'questHome': return _renderQuestHome(state);
-      case 'eventHome': return _renderEventHome(state);
-      case 'activityHome': return _renderActivityHome(state);
+      case 'eventHome': return _renderEventTypeTab(state, 'character');
+      case 'eventCharacter': return _renderEventTypeTab(state, 'character');
+      case 'eventSpecial': return _renderEventTypeTab(state, 'special');
+      case 'eventSide': return _renderEventTypeTab(state, 'side');
+      case 'eventLog': return _renderEventLog(state);
       case 'roster': return _renderRoster(state);
       case 'storyDirector': return _renderStoryDirector(state);
       case 'sideForge': return _renderSideForge(state);
@@ -953,7 +956,6 @@ window.CJS.CampaignUI = (() => {
       case 'craft': return window.CJS.PocketHaven.renderCraft();
       case 'cook': return window.CJS.PocketHaven.renderCook();
       case 'farm': return window.CJS.PocketHaven.renderFarm();
-      case 'pocket': return window.CJS.PocketHaven.renderPocket();
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
@@ -1044,9 +1046,9 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-dashboard campaign-story-summary">
         ${_renderGachaHomeHero({
           tone: 'story',
-          kicker: 'Story Summary',
-          title: 'Current Arc Ledger',
-          text: 'Readable memory for what the main story has revealed, defaulted, or manually added.',
+          kicker: 'Story Log',
+          title: 'Current Arc Summary',
+          text: 'Readable memory for main-story parts, defaults, and GM-written story addenda. Event notes live in the separate Event Log.',
           meta: [`${storyHistory.length} story parts`, `${manual.length} manual notes`, `${facts.length} facts`],
           actions: [
             _actionBtn({ action: 'open-story-home', label: 'Story Home', hint: 'Return to chapter play', kind: 'primary' }),
@@ -1070,8 +1072,9 @@ window.CJS.CampaignUI = (() => {
           `).join('') : '<div class="campaign-empty">No completed story sequence parts yet.</div>'}
         </section>
         <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Manual Summary</h3></div>
-          ${manual.length ? manual.map((entry) => `<div class="campaign-row"><div><strong>${_esc(entry.title || 'Manual Note')}</strong><div class="campaign-muted">${_esc(entry.at || '')}</div><p>${_esc(entry.text || '')}</p></div></div>`).join('') : '<div class="campaign-empty">Manual GM story notes will appear here.</div>'}
+          <div class="campaign-panel-head"><h3>GM Manual Bookkeeping</h3></div>
+          <div class="campaign-muted">These are hand-written main-story addenda, separate from oracle/event notes.</div>
+          ${manual.length ? manual.map((entry) => `<div class="campaign-row"><div><strong>${_esc(entry.title || 'Manual Note')}</strong><div class="campaign-muted">${_esc(entry.at || '')}</div><p>${_esc(entry.text || '')}</p></div></div>`).join('') : '<div class="campaign-empty">Manual GM story addenda will appear here.</div>'}
         </section>
         <section class="campaign-panel">
           <div class="campaign-panel-head"><h3>Revealed Facts</h3></div>
@@ -1087,195 +1090,10 @@ window.CJS.CampaignUI = (() => {
 
   function _renderQuestHome(state) {
     return _renderQuestHomeClean(state);
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const nextQuest = active[0] || null;
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    const run = state.activeScenarioRun;
-
-    const heroActions = run
-      ? [
-        _actionBtn({ action: 'open-maps-tab', label: 'Continue Run', hint: 'Return to the active map run', kind: 'primary' }),
-        _actionBtn({ action: 'add-quest', label: 'Add Quest', hint: 'Create a custom quest with objectives, rewards, and consequences' }),
-        _actionBtn({ action: 'random-quest-offer', label: 'Roll Random Quest', hint: 'Pick a random template quest (no auto-run)' }),
-        _actionBtn({ action: 'open-quests-tab', label: 'Quest Tracker', hint: 'See all active and resolved quests' })
-      ]
-      : [
-        _actionBtn({ action: 'add-quest', label: 'Add Quest', hint: 'Create or pick a quest. You can start its run from the modal.', kind: 'primary' }),
-        _actionBtn({ action: 'random-quest-offer', label: 'Quick Quest Run', hint: 'Roll a random quest template and auto-start its run' }),
-        _actionBtn({ action: 'generate-quest-scenario', label: 'Generate Map for Active Quest', hint: nextQuest ? `Build a fresh map for "${nextQuest.title || nextQuest.id}"` : 'Add a quest first', disabled: !nextQuest }),
-        _actionBtn({ action: 'open-quests-tab', label: 'Quest Tracker', hint: 'See all active and resolved quests' })
-      ];
-
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-quest-home">
-        ${_renderGachaHomeHero({
-          tone: 'quest',
-          kicker: 'Normal Quest',
-          title: nextQuest ? nextQuest.title || nextQuest.id : 'Quest Board',
-          text: nextQuest
-            ? nextQuest.summary || 'Continue the current farming/adventure request.'
-            : 'Pick repeatable work, farm resources, or create a small story-flavored quest run.',
-          meta: [`${active.length} active`, `${finished.length} resolved`, `${templateCount} templates`],
-          actions: heroActions
-        })}
-        ${_renderActiveSequence(state, ['quest'])}
-        ${_renderSequenceShelf('quest', {
-          wide: true,
-          title: 'Quest Board Papers',
-          note: 'Light quest papers can add daily missions, harvest jobs, hub errands, puzzle rooms, or battle tasks.'
-        })}
-        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Active Quest Board</h2>
-              <div class="campaign-muted">Use <b>Map Run</b> on a quest row to start (or jump back into) its scenario. Each quest row also exposes Progress, Battle, Hand In, Resolve and Fail actions.</div>
-            </div>
-            <span class="campaign-pill">${active.length} active</span>
-          </div>
-          <div class="campaign-quest-list">
-            ${active.length ? active.slice(0, 4).map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests yet. Press <b>Add Quest</b> to create one, or <b>Quick Quest Run</b> to roll and auto-start a template.</div>'}
-          </div>
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h3>Farming Stages</h3>
-            <span class="campaign-muted">One-shot maps for resources, gold, training, and farm chores. None of these require a quest.</span>
-          </div>
-          <div class="campaign-stage-grid">
-            ${_renderFarmingStageCard('Material Run', 'Forest/cave field map. Pelts, crystals, herbs, food hooks. ~7 nodes, mostly battle + resource.', 'generate-material-run', { tag: 'Outdoor', icon: '🌿' })}
-            ${_renderFarmingStageCard('Bounty Hunt', 'Short hunt against a beast or rival. Battle-focused, exit unlocks on victory. ~5 nodes.', 'generate-bounty-run', { tag: 'Hunt', icon: '🏹' })}
-            ${_renderFarmingStageCard('Dungeon Sweep', 'Mid-length dungeon crawl with traps, treasure, and a boss room. ~9 nodes.', 'generate-dungeon-run', { tag: 'Dungeon', icon: '🗝' })}
-            ${_renderFarmingStageCard('Urban Errands', 'Town circuit with social checks, mild brawls, and rumor leads. ~7 nodes.', 'generate-urban-run', { tag: 'Urban', icon: '🏘' })}
-            ${_renderFarmingStageCard('Training Drill', 'Tiny arena map for grinding XP without travel time. ~5 nodes, dense battles.', 'generate-training-run', { tag: 'Arena', icon: '🥋' })}
-            ${_renderFarmingStageCard('Gold / JP Job', 'Short guild work with light story color. Use Manual Battle Result if you want to fast-resolve.', 'random-quest-offer', { tag: 'Gold', icon: '💰' })}
-            ${_renderFarmingStageCard('Pocket Haven', 'Farm plots, cooking pot, forge prep. Tick growth between runs.', 'open-farm-tab', { tag: 'Base', icon: '🏡' })}
-            ${_renderFarmingStageCard('Inventory & Crafting', 'Sort the bag, cook food, craft gear. No map involved.', 'open-inventory-tab', { tag: 'Workshop', icon: '🎒' })}
-          </div>
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Scene Color (Optional)</h3></div>
-          <div class="campaign-muted">Light add-ons to colour the current run with text or a small mechanical beat. None of these advance objectives by themselves — they just add flavour or trigger an event/banter.</div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'roll-oracle', label: 'Roll Oracle', hint: 'Text-only GM prompt. No mechanics.' })}
-            ${_actionBtn({ action: 'random-rumor-offer', label: 'Save Rumor Lead', hint: 'Park a lead in the hub bank, promote to quest later' })}
-            ${_actionBtn({ action: 'roll-party-chat', label: 'Party Banter', hint: 'Small character beat between party members' })}
-          </div>
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>GM Quick Tools</h3></div>
-          <div class="campaign-muted">Bypass mechanics when the table moves faster than the system: build a one-off scenario, write the battle outcome by hand, or tick the world forward.</div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'open-scenarios-tab', label: 'Custom Scenario Setup', hint: 'Pick an authored or saved generated scenario' })}
-            ${_actionBtn({ action: 'manual-battle', label: 'Manual Battle Result', hint: 'Apply a win/loss/escape without opening combat' })}
-            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Advance the campaign phase (Town → Travel → Adventure → Rest)' })}
-            ${_actionBtn({ action: 'full-rest', label: 'Full Rest', hint: 'Restore party HP/MP between runs in allowed phases' })}
-          </div>
-        </section>
-
-        ${_renderSoloNotice(state)}
-        ${run ? _renderScenarioSummary(state) : ''}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderEventResult(state)}
-        ${_renderOracle(state)}
-        ${_renderLastReport(state)}
-      </div>
-    `;
   }
 
   function _renderEventHome(state) {
-    return _renderEventHomeClean(state);
-    const hub = window.CJS.CampaignHub?.getCurrentHubDefinition?.();
-    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
-    const activeChains = window.CJS.CampaignQuestChains?.getActive?.() || [];
-    const availableChains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
-    const review = state.sideContent?.reviewQueue || [];
-    const last = state.lastSideContentCard;
-    const run = state.activeScenarioRun;
-
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-event-home">
-        ${_renderGachaHomeHero({
-          tone: 'event',
-          kicker: 'Current Event',
-          title: hub?.name ? `${hub.name} Side Stories` : 'Event Hub',
-          text: hub?.description || 'Special side stories, hub pulses, event quests, oracle prompts, and challenge battles.',
-          meta: [`${activeChains.length} active stories`, `${availableChains.length} available`, `${review.length} review`],
-          actions: [
-            _actionBtn({ action: 'open-event-stories-tab', label: 'Side Stories', hint: 'Open event questlines' }),
-            _actionBtn({ action: 'roll-forge-oracle', label: 'Event Oracle', hint: 'Prompt only, no mechanics' }),
-          ]
-        })}
-        ${_renderActiveSequence(state, ['event'])}
-        ${_renderSequenceShelf('event', {
-          wide: true,
-          title: 'Event Files',
-          note: 'Character events, special events, and side scenes use the same simple state-machine format as Story.'
-        })}
-        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Event Side Stories</h2>
-              <div class="campaign-muted">Quest chains live here. They are special/event stories, not normal farming quests.</div>
-            </div>
-            <span class="campaign-pill">${activeChains.length} active</span>
-          </div>
-          ${activeChains.length
-            ? activeChains.slice(0, 3).map((chain) => _renderQuestChainActive(chain)).join('')
-            : (availableChains.length
-              ? `<div class="campaign-tab-grid">${availableChains.slice(0, 3).map((chain) => _renderQuestChainTemplate(chain)).join('')}</div>`
-              : '<div class="campaign-empty">No event side stories available.</div>')}
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Hub State</h3><button class="campaign-action" data-campaign-action="open-sideforge-tab">Open Hub</button></div>
-          <div class="campaign-stat-grid">
-            <span>Security <b>${hubState?.security ?? 0}</b></span>
-            <span>Prosperity <b>${hubState?.prosperity ?? 0}</b></span>
-            <span>Warmth <b>${hubState?.warmth ?? 0}</b></span>
-            <span>Weirdness <b>${hubState?.weirdness ?? 0}</b></span>
-          </div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'roll-hub-pulse', label: 'Hub Pulse', hint: 'General event hub card', data: { table: 'town' } })}
-            ${_actionBtn({ action: 'roll-hub-pulse', label: 'Guild Pulse', hint: 'Contracts and rivals', data: { table: 'guild' } })}
-            ${_actionBtn({ action: 'roll-hub-pulse', label: 'Tavern Pulse', hint: 'Rumors and social beats', data: { table: 'tavern' } })}
-            ${_actionBtn({ action: 'manual-rumor', label: 'Manual Rumor', hint: 'Add a lead by hand' })}
-          </div>
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Event Tools</h3></div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'pick-event', label: 'Pick Event', hint: 'Manual event selection' })}
-            ${_actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'Guided builder for quest, map, battle, plot, character, rewards, and summary', kind: 'manual' })}
-            ${_actionBtn({ action: 'roll-oracle', label: 'Roll Oracle', hint: 'Prompt only' })}
-            ${_actionBtn({ action: 'custom-oracle', label: 'Custom Prompt', hint: 'Write your own event prompt' })}
-          </div>
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Problems & Rumors</h3></div>
-          ${_renderInlinePurpose('problem')}
-          ${_renderInlinePurpose('rumor')}
-          ${(hubState?.activeProblems || []).slice(0, 3).map((problem) => `<div class="campaign-town-line is-risk"><strong>${_esc(_label(problem))}</strong><span>Active event pressure</span></div>`).join('') || '<div class="campaign-empty">No active hub problems.</div>'}
-          ${_openRumors(hubState).slice(0, 3).map((rumor) => _renderRumorRow(rumor, { compact: true })).join('') || '<div class="campaign-empty">No open rumors.</div>'}
-        </section>
-
-        ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
-        ${_renderSoloNotice(state)}
-        ${run ? _renderScenarioSummary(state) : ''}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderEventResult(state)}
-        ${_renderOracle(state)}
-      </div>
-    `;
+    return _renderEventTypeTab(state, 'character');
   }
 
   function _renderQuestHomeClean(state) {
@@ -1296,10 +1114,10 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-dashboard campaign-mode-home campaign-quest-home">
         ${_renderGachaHomeHero({
           tone: 'quest',
-          kicker: 'Quest Board',
+          kicker: 'Quest',
           title: nextQuest ? nextQuest.title || nextQuest.id : 'Daily, Normal, Story Quest',
           text: nextQuest
-            ? nextQuest.summary || 'Continue the current request, then use its row for map, battle, harvest, hub, or mini-game progress.'
+            ? nextQuest.summary || 'Continue the current request, then use its row for map, battle, harvest, hub, or check progress.'
             : 'Quest keeps repeatable work, random/flavored jobs, and one-time or chapter-repeat quest papers in one place.',
           meta: [`${active.length} active`, `${finished.length} resolved`, `${templateCount} templates`],
           actions: [
@@ -1314,7 +1132,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-panel-head">
             <div>
               <h2>Quest Types</h2>
-              <div class="campaign-muted">Only three buckets: daily reset work, normal/random board jobs, and story quests that are one-time or return on chapter beats.</div>
+              <div class="campaign-muted">Only three buckets: daily reset work, normal/random jobs, and story quests that are one-time or return on chapter beats.</div>
             </div>
             <span class="campaign-pill">${questEntries.length} papers</span>
           </div>
@@ -1322,7 +1140,7 @@ window.CJS.CampaignUI = (() => {
             <article class="campaign-sequence-card is-quest">
               <div class="campaign-sequence-kind">Daily Quest</div>
               <strong>Reset by Phase</strong>
-              <p>Small chores, kill counts, harvests, hub errands, or mini-game rooms. Light flavor only.</p>
+              <p>Small chores, kill counts, harvests, hub errands, or mini-game results. Light flavor only.</p>
               <div class="campaign-action-grid">
                 ${dailyPapers.length ? _renderQuestPaperButtons(dailyPapers.slice(0, 2)) : _actionBtn({ action: 'random-quest-offer', label: 'Roll Daily Style', hint: 'Use a normal quest template as a light daily job' })}
                 ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Refresh daily/repeatable quest timing' })}
@@ -1351,8 +1169,8 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-panel campaign-wide-panel campaign-home-focus">
           <div class="campaign-panel-head">
             <div>
-              <h2>Active Quest Board</h2>
-              <div class="campaign-muted">Use a quest row for progress, map, battle, harvest, hub scene, mini-game, hand-in, resolve, or fail.</div>
+              <h2>Active Quests</h2>
+              <div class="campaign-muted">Use a quest row for progress, map, battle, harvest, hub scene, check, hand-in, resolve, or fail.</div>
             </div>
             <span class="campaign-pill">${active.length} active</span>
           </div>
@@ -1368,7 +1186,6 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-action-grid">
             ${_actionBtn({ action: 'generate-quest-scenario', label: 'Generate Quest Map', hint: nextQuest ? `Build a map for "${nextQuest.title || nextQuest.id}"` : 'Add a quest first', disabled: !nextQuest })}
             ${_actionBtn({ action: 'manual-battle', label: 'Manual Battle Result', hint: 'Apply a win/loss/escape without opening combat' })}
-            ${_actionBtn({ action: 'quest-minigame', label: 'Mini-game Result', hint: 'Resolve a puzzle objective for the active quest', data: { id: nextQuest?.id }, disabled: !nextQuest })}
             ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Advance phase and refresh daily/repeatable quest timing' })}
           </div>
         </section>
@@ -1417,7 +1234,8 @@ window.CJS.CampaignUI = (() => {
           meta: [`${characterEvents.length} character`, `${specialEvents.length} special`, `${sideEvents.length + activeChains.length + availableChains.length} side`],
           actions: [
             _actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'GM-authored event/consequence', kind: 'manual' }),
-            _actionBtn({ action: 'open-story-summary', label: 'Story Summary', hint: 'Read current story context before choosing an event' })
+            _actionBtn({ action: 'open-event-log', label: 'Event Log', hint: 'Read oracle/event bookkeeping' }),
+            _actionBtn({ action: 'open-story-summary', label: 'Story Log', hint: 'Read main-story context before choosing an event' })
           ]
         })}
         ${_renderActiveSequence(state, ['event'])}
@@ -1463,6 +1281,94 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _renderEventTypeTab(state, kind = 'character') {
+    const Seq = window.CJS.CampaignSequences;
+    const entries = (Seq?.list?.('event') || []).filter((entry) => _eventFileKind(entry) === kind);
+    const labels = {
+      character: {
+        kicker: 'Character Event',
+        title: 'Relationship / Persona Scenes',
+        text: 'Focused authored scenes for party members, dialogue, relationship flags, and small consequences.',
+        empty: 'No character events loaded yet.'
+      },
+      special: {
+        kicker: 'Special Event',
+        title: 'Limited or Plot-Timed',
+        text: 'Rank-up, holiday, unlock, or story-progression events with proper authored flow.',
+        empty: 'No special events loaded yet.'
+      },
+      side: {
+        kicker: 'Side Stories',
+        title: 'Optional Story Content',
+        text: 'Side-story files and existing side-story chains. Battles and map runs should be attached through Quest.',
+        empty: 'No side stories loaded yet.'
+      }
+    };
+    const activeChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getActive?.() || []) : [];
+    const availableChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getAvailable?.() || []) : [];
+    const info = labels[kind] || labels.character;
+    return `
+      <div class="campaign-dashboard campaign-mode-home campaign-event-home">
+        ${_renderGachaHomeHero({
+          tone: 'event',
+          kicker: info.kicker,
+          title: info.title,
+          text: info.text,
+          meta: kind === 'side'
+            ? [`${entries.length} files`, `${activeChains.length} active`, `${availableChains.length} available`]
+            : [`${entries.length} files`, 'authored flow', 'event log ready'],
+          actions: [
+            _actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'GM-authored event/consequence', kind: 'manual' }),
+            _actionBtn({ action: 'open-event-log', label: 'Event Log', hint: 'Read oracle/event bookkeeping' }),
+            _actionBtn({ action: 'open-story-summary', label: 'Story Log', hint: 'Read main-story context before choosing an event' })
+          ]
+        })}
+        ${_renderActiveSequence(state, ['event'])}
+        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>${_esc(info.kicker)} Files</h2>
+              <div class="campaign-muted">Event has three content tabs only: Character, Special, and Side Stories. Bookkeeping goes to Event Log.</div>
+            </div>
+            <span class="campaign-pill">${entries.length} files</span>
+          </div>
+          <div class="campaign-sequence-grid">
+            ${entries.length ? entries.map((entry) => `
+              <article class="campaign-sequence-card is-event">
+                <div class="campaign-sequence-paper-pin"></div>
+                <div class="campaign-sequence-kind">${_esc(_label(entry.kind || kind))}</div>
+                <strong>${_esc(entry.title || entry.id)}</strong>
+                ${entry.summary?.short || entry.summary?.default || entry.description ? `<p>${_esc(entry.summary?.short || entry.summary?.default || entry.description)}</p>` : ''}
+                <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
+                <button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}">Start</button>
+              </article>
+            `).join('') : `<div class="campaign-empty">${_esc(info.empty)}</div>`}
+          </div>
+        </section>
+        ${kind === 'side' ? `
+          <section class="campaign-panel campaign-wide-panel">
+            <div class="campaign-panel-head">
+              <div>
+                <h2>Side Story Chains</h2>
+                <div class="campaign-muted">Existing side-story chains stay here, separate from normal quests.</div>
+              </div>
+              <span class="campaign-pill">${activeChains.length} active | ${availableChains.length} available</span>
+            </div>
+            ${activeChains.length
+              ? activeChains.map((chain) => _renderQuestChainActive(chain)).join('')
+              : (availableChains.length
+                ? `<div class="campaign-tab-grid">${availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')}</div>`
+                : '<div class="campaign-empty">No side-story chains available.</div>')}
+          </section>
+        ` : ''}
+        ${_renderSoloNotice(state)}
+        ${_renderPendingBattle(state)}
+        ${_renderCombatResult(state)}
+        ${_renderEventResult(state)}
+      </div>
+    `;
+  }
+
   function _eventFileKind(entry = {}) {
     const kind = String(entry.kind || '').toLowerCase();
     const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
@@ -1485,70 +1391,55 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderActivityHome(state) {
-    const hub = window.CJS.CampaignHub?.getCurrentHubDefinition?.();
-    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
-    const plots = state.pocketHaven?.farm?.plots || [];
-    const readyPlots = plots.filter((plot) => plot.ready).length;
-    const shopCount = Object.keys(CS().getContent()?.shops || DS()?.getAll?.('shops') || {}).length;
+  function _renderEventLog(state) {
+    const entries = state.eventLog?.entries || [];
+    const oracleCount = entries.filter((entry) => String(entry.source || '').includes('oracle') || (entry.tags || []).includes('oracle')).length;
+    const manualCount = entries.filter((entry) => String(entry.source || '').includes('manual') || (entry.tags || []).includes('manual_event')).length;
     return `
-      <div class="campaign-dashboard campaign-mode-home campaign-activity-home">
+      <div class="campaign-dashboard campaign-event-log">
         ${_renderGachaHomeHero({
-          tone: 'activities',
-          kicker: 'Activities',
-          title: hub?.name || 'Hub & Pocket Haven',
-          text: 'Town actions, oracle/event prompts, Pocket Haven farming and forging, shops, rest, and inventory.',
-          meta: [`${readyPlots}/${plots.length} plots ready`, `${shopCount} shops`, `Phase ${state.phase?.number || 1}`],
+          tone: 'event',
+          kicker: 'Event Log',
+          title: 'Events, Oracle Notes, Consequences',
+          text: 'Bookkeeping for event-side happenings only. Main story addenda stay in Story Log.',
+          meta: [`${entries.length} entries`, `${oracleCount} oracle`, `${manualCount} manual`],
           actions: [
-            _actionBtn({ action: 'open-sideforge-tab', label: 'Hub', hint: 'Town problems, rumors, and pulses', kind: 'primary' }),
-            _actionBtn({ action: 'open-oracle-event-tab', label: 'Oracle/Manual', hint: 'Prompt or manual event from one place' }),
-            _actionBtn({ action: 'open-pocket-tab', label: 'Pocket Haven', hint: 'Base, farm, forge, cooking' }),
-            _actionBtn({ action: 'open-shops-tab', label: 'Shops', hint: 'Buy, sell, and rest' })
+            _actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'Write an event with quest, reward, consequence, tag, and log options', kind: 'manual' }),
+            _actionBtn({ action: 'roll-oracle', label: 'Oracle Prompt', hint: 'Roll a prompt, then convert or log it' }),
+            _actionBtn({ action: 'export-event-log', label: 'Export', hint: 'Download the event ledger' })
           ]
         })}
         <section class="campaign-panel campaign-wide-panel">
           <div class="campaign-panel-head">
             <div>
-              <h2>Hub Snapshot</h2>
-              <div class="campaign-muted">${_esc(hub?.description || 'Current settlement and base activity.')}</div>
+              <h2>Event Ledger</h2>
+              <div class="campaign-muted">Separate from the Story Log and the raw session log.</div>
             </div>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="town">Hub Pulse</button>
+            ${entries.length ? '<button class="campaign-action danger" data-campaign-action="clear-event-log">Clear Event Log</button>' : ''}
           </div>
-          <div class="campaign-stat-grid">
-            <span>Security <b>${hubState?.security ?? 0}</b></span>
-            <span>Prosperity <b>${hubState?.prosperity ?? 0}</b></span>
-            <span>Warmth <b>${hubState?.warmth ?? 0}</b></span>
-            <span>Weirdness <b>${hubState?.weirdness ?? 0}</b></span>
-          </div>
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Oracle / Manual Event</h3></div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'roll-oracle', label: 'Oracle Prompt', hint: 'Text-only inspiration' })}
-            ${_actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'GM-authored event/consequence', kind: 'manual' })}
-            ${_actionBtn({ action: 'manual-rumor', label: 'Add Rumor', hint: 'Store a lead without committing mechanics' })}
-          </div>
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Pocket Haven</h3></div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'open-farm-tab', label: 'Farm', hint: `${readyPlots} ready plots` })}
-            ${_actionBtn({ action: 'open-craft-tab', label: 'Forge', hint: 'Craft gear and station output' })}
-            ${_actionBtn({ action: 'open-cook-tab', label: 'Cook', hint: 'Convert ingredients into food' })}
-            ${_actionBtn({ action: 'open-inventory-tab', label: 'Inventory', hint: 'Manage items and materials' })}
-          </div>
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Shops & Rest</h3></div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'open-shops-tab', label: 'Open Shops', hint: 'Buy or sell supplies' })}
-            ${_actionBtn({ action: 'full-rest', label: 'Full Rest', hint: 'Restore party HP/MP' })}
-            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Refresh daily/repeat quests and phase systems' })}
-          </div>
+          ${entries.length ? entries.map((entry) => _renderEventLogEntry(entry)).join('') : '<div class="campaign-empty">No event ledger entries yet. Use Oracle Prompt, Manual Event, or an Event card and choose Event Log.</div>'}
         </section>
         ${_renderEventResult(state)}
         ${_renderOracle(state)}
       </div>
+    `;
+  }
+
+  function _renderEventLogEntry(entry = {}) {
+    const consequences = entry.consequences || [];
+    return `
+      <article class="campaign-log-line campaign-log-event campaign-event-log-entry">
+        <div class="campaign-log-main">
+          <span class="campaign-log-type">${_esc(_label(entry.scope || entry.source || 'event'))}</span>
+          <div>
+            <strong>${_esc(entry.title || 'Event')}</strong>
+            ${entry.summary ? `<p>${_esc(entry.summary)}</p>` : ''}
+            ${consequences.length ? `<div class="campaign-muted">${consequences.map(_esc).join(' | ')}</div>` : ''}
+            ${entry.tags?.length ? `<div class="campaign-chip-row">${entry.tags.slice(0, 8).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>` : ''}
+          </div>
+        </div>
+        <small>${_esc([entry.phase ? `Phase ${entry.phase}` : '', _formatLogTime(entry.at)].filter(Boolean).join(' | '))}</small>
+      </article>
     `;
   }
 
@@ -1647,13 +1538,15 @@ window.CJS.CampaignUI = (() => {
       `;
     }
     if (type === 'minigame') {
+      const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
       return `
         <div class="campaign-story-dialogue-box">
-          <p>${_esc(text || `${_label(node.minigameId || 'Mini-game')} challenge`)}</p>
+          <p>${_esc(text || `${_label(gameId || 'Mini-game')} challenge`)}</p>
           ${_sequenceNodeMeta(node)}
           <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'sequence-win', label: 'Clear', hint: 'Manual mini-game success', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-lose', label: 'Fail', hint: 'Manual mini-game failure', kind: 'danger' })}
+            ${_actionBtn({ action: 'sequence-play-minigame', label: 'Play Mini-Game', hint: gameId ? `Open ${_label(gameId)}` : 'Open the linked mini-game', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-win', label: 'Manual Clear', hint: 'Advance as mini-game success' })}
+            ${_actionBtn({ action: 'sequence-lose', label: 'Manual Fail', hint: 'Advance as mini-game failure', kind: 'danger' })}
           </div>
         </div>
       `;
@@ -1683,7 +1576,9 @@ window.CJS.CampaignUI = (() => {
     if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || '?'}`);
     if (node.encounterId) bits.push(node.encounterId);
     if (node.battleSetId) bits.push(node.battleSetId);
-    if (node.minigameId) bits.push(`${_label(node.minigameId)} Lv ${node.difficulty || 1}`);
+    const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
+    const difficulty = node.minigame?.difficulty || node.difficulty;
+    if (gameId) bits.push(`Mini-Game: ${_label(gameId)} Lv ${difficulty || 1}`);
     if (node.tags?.length) bits.push((node.tags || []).map(_label).join(', '));
     return bits.length ? `<div class="campaign-chip-row">${bits.map((bit) => `<span class="campaign-chip">${_esc(bit)}</span>`).join('')}</div>` : '';
   }
@@ -3357,12 +3252,14 @@ window.CJS.CampaignUI = (() => {
           emptyText: 'No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.'
         })}
         ${_renderFlavorTrail(event)}
-        <div class="campaign-control-help">Pick one: <b>Apply</b> commits the listed ops now. <b>Edit First</b> lets you tweak ops before applying. <b>Save Note</b> only logs the event text. <b>Ignore</b> drops it. Pick Different selects another authored event.</div>
+        <div class="campaign-control-help">Pick one: <b>Apply</b> commits listed ops and writes the event ledger. <b>Edit Rewards/Consequences</b> lets you tweak ops. <b>Event Log</b> records summary only. <b>To Quest</b> promotes the hook into the quest tracker.</div>
         <div class="campaign-action-grid">
           ${_actionBtn({ action: 'apply-event', label: suggested.length ? 'Apply Listed Changes' : 'Log Flavor', hint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes', kind: 'primary' })}
-          ${_actionBtn({ action: 'edit-event', label: 'Edit Changes', hint: 'Tweak the ops, then apply' })}
+          ${_actionBtn({ action: 'edit-event', label: 'Edit Rewards/Consequences', hint: 'Tweak the ops, then apply' })}
+          ${_actionBtn({ action: 'event-to-quest', label: 'To Quest', hint: 'Create a tracked quest from this event' })}
+          ${_actionBtn({ action: 'event-log-only', label: 'Event Log', hint: 'Summarize this event without applying mechanics' })}
+          ${_actionBtn({ action: 'event-add-tags', label: 'Add Tags', hint: 'Tag this event in the campaign ledger' })}
           ${event.manualSummary ? _actionBtn({ action: 'copy-event-summary', label: 'Copy Summary', hint: 'Copy the event summary and separate main-story notes for outside writing', kind: 'manual' }) : ''}
-          ${_actionBtn({ action: 'note-event', label: 'Save Text Note', hint: 'Log the event text without applying ops' })}
           ${(event.gmHook || event.gmIdea) ? _actionBtn({ action: 'pin-plot-seed', label: 'Pin Plot Seed', hint: 'Save as a future plot hook in pinned notes' }) : ''}
           ${event.oracleTableId ? _actionBtn({ action: 'event-to-oracle', label: 'Roll Linked Oracle', hint: 'Roll an oracle prompt linked to this event' }) : ''}
           ${_actionBtn({ action: 'ignore-event', label: 'Ignore', hint: 'Discard this event with no log entry', kind: 'danger' })}
@@ -3407,9 +3304,12 @@ window.CJS.CampaignUI = (() => {
           emptyTitle: 'Flavor prompt',
           emptyText: 'Use as narration now, save it as a note, or reroll for a sharper prompt.'
         })}
-        <div class="campaign-control-help">Pure narrative. <b>No stats or items change.</b> Use the prompt to describe a scene, then <b>Save Text Note</b> to remember it or <b>Reroll</b> for a new one.</div>
+        <div class="campaign-control-help">Pure narrative until promoted. Turn it into a quest, summarize it into Event Log, or open the event builder when you want rewards, consequences, or tags.</div>
         <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'oracle-note', label: 'Save Text Note', hint: 'Pin this prompt to your notes', kind: 'primary' })}
+          ${_actionBtn({ action: 'oracle-event-log', label: 'Event Log', hint: 'Summarize this prompt into the event ledger', kind: 'primary' })}
+          ${_actionBtn({ action: 'oracle-to-quest', label: 'To Quest', hint: 'Create a tracked quest from this prompt' })}
+          ${_actionBtn({ action: 'oracle-to-event-builder', label: 'Event Builder', hint: 'Add rewards, consequences, tags, or a main-story note' })}
+          ${_actionBtn({ action: 'oracle-add-tags', label: 'Add Tags', hint: 'Tag this oracle result' })}
           ${_actionBtn({ action: 'roll-oracle', label: 'Reroll Prompt', hint: 'Roll a different prompt' })}
           ${_actionBtn({ action: 'pick-oracle', label: 'Pick Different', hint: 'Pick a specific prompt from the catalog' })}
 
@@ -3752,7 +3652,7 @@ window.CJS.CampaignUI = (() => {
           'open-inventory-tab', 'open-roster-tab', 'open-scenarios-tab', 'open-maps-tab',
           'open-quests-tab', 'open-shops-tab', 'open-sideforge-tab', 'open-story-home',
           'open-quest-home', 'open-event-home', 'open-farm-tab', 'open-event-stories-tab',
-          'open-event-battles-tab'
+          'open-event-battles-tab', 'open-event-log'
         ];
         if (closesPanel.includes(action.dataset.campaignAction)) _closePanel();
         _handleAction(action.dataset, action);
@@ -4143,6 +4043,7 @@ window.CJS.CampaignUI = (() => {
     const scenarioDisabled = activeRun && !isRunQuest;
     const scenarioLabel = isRunQuest ? 'Open Map' : 'Map Run';
     const scenarioPill = _questScenarioPill(quest, activeRun, activeScenario);
+    const hasMiniGame = !!_questMiniGameObjective(quest);
     return `
       <article class="campaign-quest-card ${opts.resolved ? 'is-resolved' : ''}">
         <div class="campaign-quest-main">
@@ -4172,7 +4073,7 @@ window.CJS.CampaignUI = (() => {
               ${_actionBtn({ action: 'quest-battle',  label: 'Battle',   hint: 'Run a battle linked to this quest', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-hub-event', label: 'Hub Scene', hint: 'Run one logical hub scene and tick an objective', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-harvest', label: 'Harvest', hint: 'Manual harvest/gather progress with light loot', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-minigame', label: 'Mini-game', hint: 'Resolve a maze, push-box, ice-slide, pipe, or balance room', data: { id: quest.id } })}
+              ${hasMiniGame ? _actionBtn({ action: 'quest-minigame', label: 'Mini-Game', hint: 'Play the linked puzzle room and apply its result', data: { id: quest.id } }) : ''}
               ${_actionBtn({ action: 'quest-check',   label: 'Check',    hint: 'Make a stat or skill check toward this quest', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-hand-in', label: 'Hand In',  hint: 'Deliver an item to complete an objective', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-answer',  label: 'Answer',   hint: 'Resolve a riddle / dialog objective', data: { id: quest.id } })}
@@ -4278,6 +4179,14 @@ window.CJS.CampaignUI = (() => {
   function _questNextObjective(quest = {}) {
     const objectives = quest.objectives || [];
     return objectives.find((entry) => !_questObjectiveDone(entry)) || objectives[0] || null;
+  }
+
+  function _questMiniGameObjective(quest = {}) {
+    return (quest.objectives || []).find((objective) => {
+      if (_questObjectiveDone(objective)) return false;
+      const kind = String(objective.kind || '').toLowerCase();
+      return !!(objective.minigame || objective.miniGame || objective.minigameId || kind === 'minigame' || kind === 'puzzle');
+    }) || null;
   }
 
   function _questObjectiveDone(obj = {}) {
@@ -4531,14 +4440,22 @@ window.CJS.CampaignUI = (() => {
       case 'sequence-pass': return _advanceSequenceFromUi('pass');
       case 'sequence-fail': return _advanceSequenceFromUi('fail');
       case 'sequence-queue-battle': return _advanceSequenceFromUi('queue');
+      case 'sequence-play-minigame': return _playSequenceMiniGame();
       case 'sequence-win': return _advanceSequenceFromUi('win');
       case 'sequence-lose': return _advanceSequenceFromUi('lose');
       case 'sequence-complete': return _completeSequenceFromUi();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
       case 'oracle-note': return _saveOracleNote();
+      case 'oracle-event-log': return _oracleToEventLog();
+      case 'oracle-to-quest': return _oracleToQuest();
+      case 'oracle-to-event-builder': return _oracleToEventBuilder();
+      case 'oracle-add-tags': return _oracleAddTags();
       case 'apply-event': return _applyEvent();
       case 'edit-event': return _editEvent();
+      case 'event-to-quest': return _eventToQuest();
+      case 'event-log-only': return _eventLogOnly();
+      case 'event-add-tags': return _eventAddTags();
       case 'copy-event-summary': return _copyEventSummary();
       case 'note-event': return _noteEvent();
       case 'ignore-event': return _ignoreEvent();
@@ -4551,8 +4468,8 @@ window.CJS.CampaignUI = (() => {
       case 'open-story-home': return _goto('story', 'storyHome');
       case 'open-story-summary': return _goto('story', 'storySummary');
       case 'open-quest-home': return _goto('quest', 'questHome');
-      case 'open-event-home': return _goto('event', 'eventHome');
-      case 'open-activity-home': return _goto('activities', 'activityHome');
+      case 'open-event-home': return _goto('event', 'eventCharacter');
+      case 'open-event-log': return _goto('event', 'eventLog');
       case 'open-roster-tab': return _goto(null, 'roster');
       case 'open-scenarios-tab': return _goto(null, 'scenarios');
       case 'open-maps-tab': return _goto(null, 'maps');
@@ -4560,12 +4477,11 @@ window.CJS.CampaignUI = (() => {
       case 'open-farm-tab': return _goto('activities', 'farm');
       case 'open-craft-tab': return _goto('activities', 'craft');
       case 'open-cook-tab': return _goto('activities', 'cook');
-      case 'open-pocket-tab': return _goto('activities', 'pocket');
       case 'open-oracle-event-tab': return _goto('activities', 'oracleForge');
       case 'open-quests-tab': return _goto('quest', 'quests');
       case 'open-shops-tab': return _goto('activities', 'shops');
       case 'open-sideforge-tab': return _goto('activities', 'sideForge');
-      case 'open-event-stories-tab': return _goto('event', 'questChains');
+      case 'open-event-stories-tab': return _goto('event', 'eventSide');
       case 'open-event-battles-tab': return _goto('event', 'battleSets');
       case 'roll-party-chat': return _rollPartyChat();
       case 'clear-banter': return _clearBanter();
@@ -4633,7 +4549,7 @@ window.CJS.CampaignUI = (() => {
       case 'quest-progress': return _questProgress(data.id);
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
-      case 'quest-event': return UI().toast('Random quest events are disabled. Use Hub Scene, Mini-game, Battle, or authored Event files.', 'info');
+      case 'quest-event': return UI().toast('Random quest events are disabled. Use Hub Scene, Check, Battle, or authored Event files.', 'info');
       case 'quest-hub-event': return _questHubEvent(data.id);
       case 'quest-harvest': return _questHarvest(data.id);
       case 'quest-minigame': return _questMiniGame(data.id);
@@ -4683,6 +4599,8 @@ window.CJS.CampaignUI = (() => {
       case 'delete-slot': Save().deleteSlot(data.id); return render();
       case 'export-log': return _exportLog();
       case 'clear-log': return _clearLog();
+      case 'export-event-log': return _exportEventLog();
+      case 'clear-event-log': return _clearEventLog();
       default: break;
     }
   }
@@ -4810,7 +4728,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _openManualEventBuilder() {
+  function _openManualEventBuilder(prefill = {}) {
     const state = CS().getState() || {};
     const run = state.activeScenarioRun || null;
     const currentMap = CS().getActiveMap?.();
@@ -4844,11 +4762,11 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-builder-grid">
           <label class="form-label">Source
             <select id="manual-source">
-              <option value="manual">Manual</option>
-              <option value="oracle">Oracle</option>
+              <option value="manual" ${prefill.source === 'manual' || !prefill.source ? 'selected' : ''}>Manual</option>
+              <option value="oracle" ${prefill.source === 'oracle' ? 'selected' : ''}>Oracle</option>
               <option value="rumor">Rumor</option>
               <option value="keywords">Keywords</option>
-              <option value="ai_draft">AI Draft</option>
+              <option value="ai_draft" ${prefill.source === 'ai_draft' ? 'selected' : ''}>AI Draft</option>
             </select>
           </label>
           <label class="form-label">Open Rumor
@@ -4858,7 +4776,7 @@ window.CJS.CampaignUI = (() => {
             </select>
           </label>
         </div>
-        <textarea id="manual-seed" placeholder="Seed, oracle line, rumor, or outside AI draft."></textarea>
+        <textarea id="manual-seed" placeholder="Seed, oracle line, rumor, or outside AI draft.">${_esc(prefill.seed || '')}</textarea>
         <details class="campaign-builder-details">
           <summary>Keyword bank</summary>
           <div class="campaign-builder-grid">
@@ -4879,24 +4797,27 @@ window.CJS.CampaignUI = (() => {
           </div>
         </div>
         <div class="campaign-builder-grid">
-          <label class="form-label">Title<input id="manual-title" type="text" placeholder="Event title"></label>
+          <label class="form-label">Title<input id="manual-title" type="text" placeholder="Event title" value="${_escAttr(prefill.title || '')}"></label>
           <label class="form-label">Scope
             <select id="manual-scope">
-              <option value="event">Event / table beat</option>
-              <option value="quest">Quest support</option>
-              <option value="main_story">Main story</option>
-              <option value="hub">Hub / town</option>
+              <option value="event" ${!prefill.scope || prefill.scope === 'event' ? 'selected' : ''}>Event / table beat</option>
+              <option value="quest" ${prefill.scope === 'quest' ? 'selected' : ''}>Quest support</option>
+              <option value="main_story" ${prefill.scope === 'main_story' ? 'selected' : ''}>Main story</option>
+              <option value="hub" ${prefill.scope === 'hub' ? 'selected' : ''}>Hub / town</option>
             </select>
           </label>
         </div>
         <label class="form-label">Very Short Event Summary
-          <textarea id="manual-short" placeholder="One sentence: what happened at the table?"></textarea>
+          <textarea id="manual-short" placeholder="One sentence: what happened at the table?">${_esc(prefill.short || '')}</textarea>
         </label>
         <label class="form-label">Scene / Conversation / Hook
-          <textarea id="manual-scene" placeholder="Dialogue, hook, clue, obstacle, or GM note."></textarea>
+          <textarea id="manual-scene" placeholder="Dialogue, hook, clue, obstacle, or GM note.">${_esc(prefill.scene || '')}</textarea>
         </label>
         <label class="form-label">Main Story Summary (separate)
-          <textarea id="manual-main" placeholder="Only the main-plot meaning, if any. Leave blank for side or farming events."></textarea>
+          <textarea id="manual-main" placeholder="Only the main-plot meaning, if any. Leave blank for side or farming events.">${_esc(prefill.mainStory || '')}</textarea>
+        </label>
+        <label class="form-label">Event Tags
+          <input id="manual-tags" type="text" placeholder="comma-separated tags" value="${_escAttr((prefill.tags || []).join(', '))}">
         </label>
       </section>
 
@@ -4910,6 +4831,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div class="campaign-builder-checks">
           <label><input id="manual-save-rumor" type="checkbox">Save as rumor</label>
+          <label><input id="manual-event-log" type="checkbox" checked>Add to event log</label>
           <label><input id="manual-add-quest" type="checkbox">Build quest</label>
           <label><input id="manual-map-note" type="checkbox" ${run ? 'checked' : ''}>Write map event/trap</label>
           <label><input id="manual-queue-battle" type="checkbox">Queue battle</label>
@@ -5089,6 +5011,7 @@ window.CJS.CampaignUI = (() => {
       short: $('#manual-short')?.value.trim() || '',
       scene: $('#manual-scene')?.value.trim() || '',
       mainStory: $('#manual-main')?.value.trim() || '',
+      customTags: _tagList($('#manual-tags')?.value || ''),
       selectedRumor,
       selectedBattle,
       battleValue,
@@ -5108,6 +5031,7 @@ window.CJS.CampaignUI = (() => {
       jpAmount: Math.abs(Number($('#manual-jp')?.value || 0)),
       amount: Number($('#manual-amount')?.value || 0),
       saveRumor: bool('#manual-save-rumor'),
+      logEvent: bool('#manual-event-log'),
       addQuest: bool('#manual-add-quest'),
       mapNote: bool('#manual-map-note'),
       queueBattle: bool('#manual-queue-battle'),
@@ -5156,6 +5080,20 @@ window.CJS.CampaignUI = (() => {
     const ops = [];
 
     ops.push({ op: 'log', text: `Manual event: ${short}` });
+
+    if (draft.logEvent) {
+      ops.push({
+        op: 'event_log_add',
+        entry: {
+          title,
+          summary: short,
+          source: draft.source || 'manual',
+          scope: draft.scope || 'event',
+          tags: _manualEventTags(draft),
+          consequences: []
+        }
+      });
+    }
 
     if (draft.saveRumor) {
       ops.push({
@@ -5318,7 +5256,9 @@ window.CJS.CampaignUI = (() => {
     ];
     if (draft.seed) lines.push('Seed:', draft.seed, '');
     if (draft.scene) lines.push('Scene / hook:', draft.scene, '');
+    if (draft.customTags?.length) lines.push('Tags:', draft.customTags.join(', '), '');
     lines.push('Main story summary:', draft.mainStory || '(none)', '');
+    lines.push('Event log:', draft.logEvent ? 'yes' : 'no', '');
     if (draft.addQuest) lines.push('Quest:', `${draft.questTitle || draft.title || 'Manual Quest'} - ${draft.questObjective || 'Resolve the event hook'}`, '');
     if (draft.mapNote) lines.push('Map:', `${_label(draft.mapKind || 'event')} - ${draft.mapText || draft.scene || _eventShortSummary(draft)}`, '');
     if (draft.queueBattle) lines.push('Battle:', draft.battleLabel || draft.selectedBattle?.label || `Manual battle: ${draft.title || 'Event'}`, '');
@@ -5436,10 +5376,18 @@ window.CJS.CampaignUI = (() => {
     return options.sort(_sortOptionLabel);
   }
 
+  function _tagList(text = '') {
+    return String(text || '')
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
   function _manualEventTags(draft = {}) {
     return ['manual_event', draft.scope || 'event', draft.source || 'manual']
+      .concat(draft.customTags || [])
       .concat(draft.selectedRumor ? ['rumor'] : [])
-      .filter(Boolean);
+      .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
   }
 
   function _consequenceOps(choice, world) {
@@ -5965,6 +5913,90 @@ window.CJS.CampaignUI = (() => {
     }
   }
 
+  async function _playSequenceMiniGame() {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState();
+    const active = Seq?.active?.(state);
+    const sequence = active ? Seq.cachedSequence?.(active.sequenceId, state.currentWorld) : null;
+    const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
+    if (!node || String(node.type || '').toLowerCase() !== 'minigame') {
+      return UI().toast('No active mini-game node', 'info');
+    }
+    const config = _miniGameConfig(node, { includeOps: false });
+    config.seed = config.seed || `${active.sequenceId}:${node.id}`;
+    return _openMiniGameSession(config, {
+      source: 'sequence_minigame',
+      eventId: active.sequenceId,
+      nodeId: node.id,
+      onComplete: (result) => {
+        _applyMiniGameResult(result, 'sequence_minigame');
+        if (result?.status === 'win') return _advanceSequenceFromUi('win');
+        if (result?.status === 'fail' || result?.status === 'giveup') return _advanceSequenceFromUi('lose');
+        return UI().toast('Mini-game could not resolve this sequence node', 'error');
+      }
+    });
+  }
+
+  function _miniGameConfig(source = {}, options = {}) {
+    const raw = source.minigame || source.miniGame || {};
+    const nested = typeof raw === 'string' ? { gameId: raw } : raw;
+    const includeOps = options.includeOps !== false;
+    return {
+      gameId: nested.gameId || source.minigameId || source.gameId || '',
+      levelId: nested.levelId || source.levelId || '',
+      difficulty: Number(nested.difficulty || source.difficulty || 1),
+      seed: nested.seed || source.seed || '',
+      theme: nested.theme || source.theme || '',
+      onWinOps: includeOps ? (nested.onWinOps || source.onWinOps || source.winOps || []) : [],
+      onLoseOps: includeOps ? (nested.onLoseOps || source.onLoseOps || source.failOps || source.loseOps || []) : []
+    };
+  }
+
+  async function _openMiniGameSession(config = {}, context = {}) {
+    const MG = window.CJS.Minigames;
+    if (!MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
+    if (!config.gameId) return UI().toast('No mini-game is linked here', 'info');
+    const questId = context.questId && context.objectiveId ? context.questId : null;
+    const objectiveId = context.questId && context.objectiveId ? context.objectiveId : null;
+    try {
+      const session = await MG.openMiniGame({
+        gameId: config.gameId,
+        levelId: config.levelId || undefined,
+        difficulty: config.difficulty || undefined,
+        seed: config.seed || undefined,
+        theme: config.theme || undefined,
+        source: context.source || 'campaign_minigame',
+        questId,
+        objectiveId,
+        eventId: context.eventId || null,
+        mapId: context.mapId || null,
+        nodeId: context.nodeId || null,
+        onWinOps: config.onWinOps || [],
+        onLoseOps: config.onLoseOps || [],
+        onComplete: context.onComplete || ((result) => _applyMiniGameResult(result, context.source || 'campaign_minigame'))
+      });
+      if (!session) UI().toast('Mini-game could not open', 'error');
+      return session;
+    } catch (error) {
+      console.error(error);
+      UI().toast(error?.message || 'Mini-game failed to open', 'error');
+      return null;
+    }
+  }
+
+  function _applyMiniGameResult(result, source = 'campaign_minigame') {
+    if (!result) return;
+    const ops = (result.suggestedOps || []).filter((op) => {
+      return !(op?.op === 'update_quest_progress' && (!op.questId || !op.objectiveId));
+    });
+    if (ops.length) Ops().apply(ops, { source });
+    else render();
+    if (result.status === 'win') return UI().toast('Mini-game cleared', 'success');
+    if (result.status === 'fail') return UI().toast('Mini-game failed', 'info');
+    if (result.status === 'giveup') return UI().toast('Mini-game abandoned', 'info');
+    if (result.status === 'error') return UI().toast('Mini-game returned an error', 'error');
+  }
+
   async function _completeSequenceFromUi() {
     const result = await window.CJS.CampaignSequences?.complete?.('manual');
     render();
@@ -6265,6 +6297,55 @@ window.CJS.CampaignUI = (() => {
     Ops().apply({ op: 'log', text: 'GM prompt saved as note.' }, { source: 'oracle' });
   }
 
+  function _oracleToEventLog() {
+    const oracle = CS().getState().lastOracle;
+    if (!oracle) return;
+    Ops().apply({
+      op: 'event_log_add',
+      entry: {
+        title: oracle.title || 'Oracle Prompt',
+        summary: oracle.text || oracle.prompt || '',
+        source: oracle.source || 'oracle',
+        scope: 'oracle',
+        relatedId: oracle.id || null,
+        tags: ['oracle', ...(oracle.tags || [])]
+      }
+    }, { source: 'oracle_event_log' });
+    CS().mutate((state) => { state.lastOracle = null; }, { source: 'oracle_event_log' });
+    UI().toast('Oracle summarized in Event Log', 'success');
+  }
+
+  function _oracleToQuest() {
+    const oracle = CS().getState().lastOracle;
+    if (!oracle) return;
+    _addQuestFromPrompt({
+      title: 'Oracle Quest',
+      summary: oracle.text || oracle.prompt || '',
+      source: 'oracle',
+      tags: ['oracle', ...(oracle.tags || [])]
+    });
+    CS().mutate((state) => { state.lastOracle = null; }, { source: 'oracle_quest' });
+  }
+
+  function _oracleToEventBuilder() {
+    const oracle = CS().getState().lastOracle;
+    if (!oracle) return;
+    _openManualEventBuilder({
+      title: 'Oracle Event',
+      source: 'oracle',
+      scope: 'event',
+      seed: oracle.text || oracle.prompt || '',
+      short: _truncate(oracle.text || oracle.prompt || '', 160),
+      tags: ['oracle', ...(oracle.tags || [])]
+    });
+  }
+
+  function _oracleAddTags() {
+    const oracle = CS().getState().lastOracle;
+    if (!oracle) return;
+    _tagPromptModal('Tag Oracle Prompt', oracle.text || oracle.prompt || 'Oracle prompt', 'oracle', oracle.id || null);
+  }
+
   function _applyEvent() {
     const event = CS().getState().lastEvent;
     window.CJS.CampaignEvents.applyEvent(event);
@@ -6277,6 +6358,43 @@ window.CJS.CampaignUI = (() => {
       window.CJS.CampaignEvents.applyEvent(event, ops);
       CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
     });
+  }
+
+  function _eventToQuest() {
+    const event = CS().getState().lastEvent;
+    if (!event) return;
+    _addQuestFromPrompt({
+      title: event.title || 'Event Quest',
+      summary: _eventSummary(event),
+      source: event.source || event.tableName || 'event',
+      tags: ['event', ...(event.tags || []), ...(event.manualSummary?.tags || [])]
+    });
+    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event_quest' });
+  }
+
+  function _eventLogOnly() {
+    const event = CS().getState().lastEvent;
+    if (!event) return;
+    Ops().apply({
+      op: 'event_log_add',
+      entry: {
+        title: event.title || event.id || 'Event',
+        summary: _eventSummary(event),
+        source: event.source || event.tableName || 'event',
+        scope: event.type || event.kind || 'event',
+        relatedId: event.id || null,
+        tags: ['event', ...(event.tags || []), ...(event.manualSummary?.tags || [])],
+        consequences: Ops().describe(event.suggested || []).filter(Boolean)
+      }
+    }, { source: 'event_log_only' });
+    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event_log_only' });
+    UI().toast('Event summarized in Event Log', 'success');
+  }
+
+  function _eventAddTags() {
+    const event = CS().getState().lastEvent;
+    if (!event) return;
+    _tagPromptModal('Tag Event', _eventSummary(event), 'event', event.id || null);
   }
 
   function _noteEvent() {
@@ -6314,6 +6432,76 @@ window.CJS.CampaignUI = (() => {
       event?.gmHook ? `GM hook: ${event.gmHook}` : ''
     ].filter(Boolean).join('\n\n');
     _copyPlainText('Event Summary', text, 'Event summary copied');
+  }
+
+  function _eventSummary(event = {}) {
+    return event.manualSummary?.short
+      || event.summary
+      || event.prompt
+      || event.gmHook
+      || event.text
+      || event.title
+      || event.id
+      || 'Event happened.';
+  }
+
+  function _addQuestFromPrompt({ title = 'Event Quest', summary = '', source = 'event', tags = [] } = {}) {
+    const cleanTitle = title || 'Event Quest';
+    const questId = `${source || 'event'}_quest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const quest = {
+      id: _safe(questId),
+      title: cleanTitle,
+      status: 'active',
+      summary: summary || cleanTitle,
+      notes: summary || '',
+      objectives: [{
+        id: 'obj_1',
+        label: 'Resolve the hook',
+        current: 0,
+        required: 1
+      }],
+      rewards: [],
+      tags: Array.from(new Set(['promoted_event', source, ...tags].filter(Boolean)))
+    };
+    Ops().apply({ op: 'add_quest', quest }, { source: `${source}_to_quest` });
+    Ops().apply({
+      op: 'event_log_add',
+      entry: {
+        title: cleanTitle,
+        summary: summary || cleanTitle,
+        source,
+        scope: 'quest',
+        relatedId: quest.id,
+        tags: quest.tags,
+        consequences: [`Quest created: ${cleanTitle}`]
+      }
+    }, { source: `${source}_to_quest` });
+    UI().toast('Quest created from prompt', 'success');
+  }
+
+  function _tagPromptModal(title, note, scope, targetId) {
+    _textareaModal({
+      title,
+      label: 'Tags',
+      placeholder: 'comma-separated tags',
+      primaryLabel: 'Add Tags',
+      onSubmit: (text) => {
+        const tags = _tagList(text);
+        if (!tags.length) {
+          UI().toast('Add at least one tag', 'info');
+          return false;
+        }
+        Ops().apply(tags.map((tag) => ({
+          op: 'tag_add',
+          tag,
+          scope,
+          targetType: scope,
+          targetId,
+          note,
+          source: 'event_oracle_ui'
+        })), { source: 'event_oracle_tags' });
+      }
+    });
   }
 
   function _copyPlainText(title, text, successMessage = 'Copied') {
@@ -6360,13 +6548,14 @@ window.CJS.CampaignUI = (() => {
         mapType: 'forest'
       },
       {
-        label: 'puzzle room',
-        summary: 'The job includes a tiny dungeon mechanism that can be resolved as a mini-game or manual check.',
+        label: 'challenge room',
+        summary: 'The job includes a tiny dungeon mechanism resolved by the mini-game module or a manual check.',
         objective: 'Clear the mini-game room',
         kind: 'minigame',
         required: 1,
         tag: 'minigame',
-        mapType: 'dungeon'
+        mapType: 'dungeon',
+        minigame: { gameId: 'push_box', difficulty: 1, theme: 'ruins' }
       },
       {
         label: 'hub errand',
@@ -6393,9 +6582,17 @@ window.CJS.CampaignUI = (() => {
     next.title = `${template.title || template.id || 'Quest'} (${next.randomVariant})`;
     next.summary = [template.summary || '', `Variant: ${variant.summary}`].filter(Boolean).join(' ');
     next.tags = Array.from(new Set([...(template.tags || []), variant.tag, 'randomized']));
+    const variantObjective = {
+      id: `variant_${_safe(variant.label)}`,
+      kind: variant.kind || 'custom',
+      label: variant.objective,
+      current: 0,
+      required: Math.max(1, Number(variant.required || 1))
+    };
+    if (variant.minigame) variantObjective.minigame = variant.minigame;
     next.objectives = [
       ...(template.objectives || []),
-      { id: `variant_${_safe(variant.label)}`, kind: variant.kind || 'custom', label: variant.objective, current: 0, required: Math.max(1, Number(variant.required || 1)) }
+      variantObjective
     ];
     if (!template.mapType || template.mapType === 'any') next.mapType = variant.mapType;
     return next;
@@ -6421,7 +6618,7 @@ window.CJS.CampaignUI = (() => {
   QUEST_OBJECTIVE_PRESETS.splice(QUEST_OBJECTIVE_PRESETS.findIndex((p) => p.kind === 'craft'), 0,
     { kind: 'harvest', label: 'Harvest', template: 'Harvest {what}', icon: 'H', required: 3 },
     { kind: 'hub_event', label: 'Run hub event', template: 'Run {what} hub event', icon: 'E', required: 1 },
-    { kind: 'minigame', label: 'Mini-game room', template: 'Clear {what} mini-game', icon: 'M', required: 1 }
+    { kind: 'minigame', label: 'Mini-game room', template: 'Clear {what} mini-game room', icon: 'M', required: 1, minigame: { gameId: 'push_box', difficulty: 1, theme: 'ruins' } }
   );
 
   const QUEST_REWARD_PRESETS = [
@@ -6549,12 +6746,16 @@ window.CJS.CampaignUI = (() => {
     let currentTemplateVariant = null;
     let objSeq = 0;
 
-    function objectiveRow({ id, kind = 'custom', label = '', required = 1 } = {}) {
+    function objectiveRow({ id, kind = 'custom', label = '', required = 1, minigame = null } = {}) {
       objSeq += 1;
       const rowId = id || `obj_${objSeq}`;
       const row = document.createElement('div');
       row.className = 'campaign-objective-row';
       row.dataset.rowId = rowId;
+      if (minigame?.gameId) row.dataset.minigameGameId = minigame.gameId;
+      if (minigame?.levelId) row.dataset.minigameLevelId = minigame.levelId;
+      if (minigame?.difficulty) row.dataset.minigameDifficulty = minigame.difficulty;
+      if (minigame?.theme) row.dataset.minigameTheme = minigame.theme;
       row.innerHTML = `
         <select class="campaign-objective-kind">
           ${QUEST_OBJECTIVE_PRESETS.map((p) => `<option value="${p.kind}" ${p.kind === kind ? 'selected' : ''}>${p.icon} ${_esc(p.label)}</option>`).join('')}
@@ -6615,13 +6816,22 @@ window.CJS.CampaignUI = (() => {
         const kind = row.querySelector('.campaign-objective-kind').value;
         const label = row.querySelector('.campaign-objective-label').value.trim();
         const required = Math.max(1, Number(row.querySelector('.campaign-objective-count').value) || 1);
-        return {
+        const objective = {
           id: row.dataset.rowId || `obj_${idx + 1}`,
           label: label || `Objective ${idx + 1}`,
           kind,
           current: 0,
           required
         };
+        if (kind === 'minigame') {
+          objective.minigame = {
+            gameId: row.dataset.minigameGameId || 'push_box',
+            difficulty: Number(row.dataset.minigameDifficulty || 1),
+            theme: row.dataset.minigameTheme || 'ruins'
+          };
+          if (row.dataset.minigameLevelId) objective.minigame.levelId = row.dataset.minigameLevelId;
+        }
+        return objective;
       });
     }
 
@@ -6664,7 +6874,8 @@ window.CJS.CampaignUI = (() => {
         id: obj.id,
         kind: obj.kind || _inferObjectiveKind(obj.label || ''),
         label: obj.label || obj.id || '',
-        required: Math.max(1, Number(obj.required || 1))
+        required: Math.max(1, Number(obj.required || 1)),
+        minigame: obj.minigame || obj.miniGame || null
       }));
       if (!objList.children.length) addObjective({ kind: 'reach', label: 'Reach the destination', required: 1 });
       rewardList.innerHTML = '';
@@ -6779,7 +6990,8 @@ window.CJS.CampaignUI = (() => {
         addObjective({
           kind: preset.kind,
           label: preset.template.replace('{what}', '...') || preset.label,
-          required: preset.required
+          required: preset.required,
+          minigame: preset.minigame || null
         });
       };
     });
@@ -6861,7 +7073,7 @@ window.CJS.CampaignUI = (() => {
     if (/survive|hold|defend|withstand/.test(s)) return 'survive';
     if (/harvest|forage|reap/.test(s)) return 'harvest';
     if (/hub event|town event|guild pulse|tavern pulse/.test(s)) return 'hub_event';
-    if (/mini.?game|puzzle|maze|push box|ice slide|pipe/.test(s)) return 'minigame';
+    if (/challenge|puzzle|maze|trial|mechanism/.test(s)) return 'check';
     if (/gather|collect|mine/.test(s)) return 'gather';
     if (/craft|deliver|build|forge/.test(s)) return 'craft';
     return 'custom';
@@ -6982,7 +7194,7 @@ window.CJS.CampaignUI = (() => {
               <b>${index + 1}. ${_esc(entry.label || entry.name || entry.id)}</b>
               <span>${_esc(entry.prompt || entry.notes || entry.kind || entry.role || '')}</span>
             </div>
-          `).join('') || '<div class="campaign-empty">Freeform run. Use manual controls, random events, and battle picks.</div>'}
+          `).join('') || '<div class="campaign-empty">Freeform run. Use manual controls, event notes, and battle picks.</div>'}
         </section>
         <section>
           <h3>Rules</h3>
@@ -7545,7 +7757,7 @@ window.CJS.CampaignUI = (() => {
 
   function _addPocketNote() {
     _textareaModal({
-      title: 'Pocket Haven Note',
+      title: 'Activity Note',
       label: 'Note',
       placeholder: 'A short note about your haven…',
       primaryLabel: 'Save Note',
@@ -7615,7 +7827,7 @@ window.CJS.CampaignUI = (() => {
   function _questEvent(questId) {
     const quest = _activeQuestById(questId);
     if (!quest) return UI().toast('Quest is not active', 'info');
-    UI().toast('Random quest events are disabled. Use Hub Scene, Mini-game, Battle, or authored Event files.', 'info');
+    UI().toast('Random quest events are disabled. Use Hub Scene, Check, Battle, or authored Event files.', 'info');
   }
 
   function _questHubEvent(questId) {
@@ -7651,38 +7863,48 @@ window.CJS.CampaignUI = (() => {
   function _questMiniGame(questId) {
     const quest = _activeQuestById(questId);
     if (!quest) return UI().toast('Quest is not active', 'info');
-    const objective = _questObjectiveByKinds(quest, ['minigame', 'puzzle']) || _questNextObjective(quest);
+    const objective = _questMiniGameObjective(quest);
+    if (!objective) return UI().toast('This quest has no mini-game objective', 'info');
+    const config = _miniGameConfig(objective);
+    if (config.gameId) {
+      config.seed = config.seed || `${quest.id}:${objective.id || 'objective'}`;
+      return _openMiniGameSession(config, {
+        source: 'quest_minigame',
+        questId,
+        objectiveId: objective.id
+      });
+    }
+    const MG = window.CJS.Minigames;
+    if (!MG?.listGames || !MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
+    const games = MG.listGames() || [];
+    if (!games.length) return UI().toast('No mini-games are registered', 'info');
     const body = document.createElement('div');
-    body.appendChild(_formLabel('Mini-game'));
+    body.appendChild(_formLabel('Mini-Game'));
     const game = UI().createSelect({
-      options: [
-        { value: 'mummy_maze', label: 'Mummy Maze' },
-        { value: 'push_box', label: 'Push Box' },
-        { value: 'ice_slide', label: 'Ice Slide' },
-        { value: 'pipe_connection', label: 'Pipe Connection' },
-        { value: 'weight_balance', label: 'Weight Balance' }
-      ],
-      value: quest.tags?.includes('dungeon') ? 'push_box' : 'mummy_maze'
+      options: games.map((entry) => ({ value: entry.id, label: entry.title || _label(entry.id) })),
+      value: games[0]?.id || ''
     });
     body.appendChild(game);
-    body.appendChild(_formLabel('Result'));
-    const result = UI().createSelect({
-      options: [
-        { value: 'win', label: 'Clear' },
-        { value: 'fail', label: 'Fail / setback' }
-      ],
-      value: 'win'
+    body.appendChild(_formLabel('Difficulty'));
+    const difficulty = UI().createSelect({
+      options: [1, 2, 3, 4, 5].map((value) => ({ value: String(value), label: `Difficulty ${value}` })),
+      value: '1'
     });
-    body.appendChild(result);
+    body.appendChild(difficulty);
     _formModal({
-      title: `Mini-game: ${quest.title || quest.id}`,
+      title: `Mini-Game: ${quest.title || quest.id}`,
       body,
-      primaryLabel: 'Resolve',
+      primaryLabel: 'Play',
       onSubmit: () => {
-        const ops = [{ op: 'log', text: `Quest mini-game ${result.value}: ${_label(game.value)} for ${quest.title || quest.id}.` }];
-        if (result.value === 'win' && objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
-        if (result.value !== 'win') ops.push({ op: 'danger', amount: 1 });
-        Ops().apply(ops, { source: 'quest_minigame' });
+        _openMiniGameSession({
+          gameId: game.value,
+          difficulty: Number(difficulty.value || 1),
+          seed: `${quest.id}:${objective.id || 'objective'}`
+        }, {
+          source: 'quest_minigame',
+          questId,
+          objectiveId: objective.id
+        });
       }
     });
   }
@@ -9059,6 +9281,29 @@ window.CJS.CampaignUI = (() => {
     UI().confirm('Clear the session log?', () => {
       CS().mutate((state) => { state.log = []; }, { source: 'clear_log' });
       UI().toast('Log cleared', 'info');
+    });
+  }
+
+  function _exportEventLog() {
+    const state = CS().getState();
+    const entries = state.eventLog?.entries || [];
+    const text = entries.map((entry) => [
+      `[${entry.at || ''}] Phase ${entry.phase || '?'} ${entry.world || ''}`,
+      entry.title || 'Event',
+      entry.summary || '',
+      entry.tags?.length ? `Tags: ${entry.tags.join(', ')}` : '',
+      entry.consequences?.length ? `Consequences: ${entry.consequences.join('; ')}` : ''
+    ].filter(Boolean).join('\n')).join('\n\n');
+    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-event-log.txt`, `${text}\n`, 'text/plain');
+  }
+
+  function _clearEventLog() {
+    UI().confirm('Clear the event log?', () => {
+      CS().mutate((state) => {
+        state.eventLog = state.eventLog || {};
+        state.eventLog.entries = [];
+      }, { source: 'clear_event_log' });
+      UI().toast('Event log cleared', 'info');
     });
   }
 

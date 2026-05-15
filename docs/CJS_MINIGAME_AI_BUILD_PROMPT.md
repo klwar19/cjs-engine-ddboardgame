@@ -9,7 +9,7 @@ Build two browser mini-games for the CJS Campaign Mode app:
 1. `mummy_maze`: a turn-based tomb chase puzzle inspired by Theseus-and-Minotaur / Mummy Maze style logic.
 2. `push_box`: a Sokoban-style crate puzzle.
 
-Do not copy proprietary art, names, levels, UI, or sprites from commercial games. Use the internet only for rules research and puzzle-design references, then create original mechanics, levels, art, and sprites for CJS.
+Find and download proper art on the internet. Use the internet for rules research and puzzle-design references, can also create original mechanics, levels, art, and sprites for CJS.
 
 Reference mechanics to study:
 
@@ -91,7 +91,7 @@ assets/minigames/
 minigames.html
 ```
 
-If using downloaded assets, only use CC0, public-domain, or clearly compatible licensed assets. Put source, author, license, and URL in `assets/minigames/ATTRIBUTION.md`. Prefer original generated or hand-drawn pixel sprites.
+If using downloaded assets,. Put source, author, license, and URL in `assets/minigames/ATTRIBUTION.md`. 
 
 ## Shared UI Requirements
 

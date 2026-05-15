@@ -262,6 +262,9 @@ window.CJS.CampaignState = (() => {
         active: null,
         history: []
       },
+      eventLog: {
+        entries: []
+      },
       pinnedNotes: [],
       log: [],
       settings: {
@@ -704,6 +707,8 @@ window.CJS.CampaignState = (() => {
     next.sequenceRuntime = next.sequenceRuntime || {};
     next.sequenceRuntime.active = next.sequenceRuntime.active || null;
     next.sequenceRuntime.history = Array.isArray(next.sequenceRuntime.history) ? next.sequenceRuntime.history : [];
+    next.eventLog = next.eventLog || {};
+    next.eventLog.entries = Array.isArray(next.eventLog.entries) ? next.eventLog.entries : [];
     next.reputation = next.reputation || {};
     next.unlockedRecipes = next.unlockedRecipes || {};
     next.pocketHaven = next.pocketHaven || { enabled: true, notes: [], incomeNodes: {}, farm: { plots: [] }, stations: [] };

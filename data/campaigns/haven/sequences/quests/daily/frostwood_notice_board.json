@@ -5,7 +5,7 @@
   "scope": "quest",
   "kind": "daily",
   "startNode": "paper",
-  "tags": ["daily", "quest_board", "forest", "rank:F"],
+  "tags": ["daily", "notice_board", "forest", "rank:F"],
   "summary": {
     "short": "A light guild-board quest that can become battle, harvest, hub event, or mini-game work.",
     "default": "Bin accepts a simple Frostwood notice-board job."
@@ -119,36 +119,33 @@
         },
         {
           "id": "minigame",
-          "label": "Clear a small dungeon puzzle",
-          "next": "puzzle"
+          "label": "Clear a small dungeon mini-game",
+          "next": "add_minigame"
         }
       ]
     },
     {
-      "id": "puzzle",
-      "type": "minigame",
-      "minigameId": "push_box",
-      "variant": "notice_board_tutorial",
-      "difficulty": 1,
-      "manualResolveAllowed": true,
-      "onWin": "add_puzzle",
-      "onLose": "puzzle_penalty"
-    },
-    {
-      "id": "add_puzzle",
+      "id": "add_minigame",
       "type": "ops",
       "ops": [
         {
           "op": "add_quest",
           "quest": {
-            "id": "daily_dungeon_puzzle_chit",
-            "title": "Daily: Dungeon Puzzle Chit",
+            "id": "daily_dungeon_minigame_chit",
+            "title": "Daily: Dungeon Mini-Game Chit",
             "kind": "daily",
             "summary": "Clear one tiny puzzle room for the guild's training ledger.",
             "tags": ["daily", "dungeon", "minigame", "rank:F"],
-            "contextTags": ["dungeon", "puzzle", "training"],
+            "contextTags": ["dungeon", "puzzle", "training", "mini_game"],
             "objectives": [
-              { "id": "minigame_1", "kind": "minigame", "label": "Clear 1 mini-game room", "current": 1, "required": 1 }
+              {
+                "id": "clear_minigame_1",
+                "kind": "minigame",
+                "label": "Clear 1 mini-game room",
+                "current": 0,
+                "required": 1,
+                "minigame": { "gameId": "push_box", "difficulty": 1, "theme": "ruins" }
+              }
             ],
             "rewards": [
               { "op": "give_money", "currency": "haven_gold", "amount": 10 },
@@ -158,15 +155,26 @@
           }
         }
       ],
-      "next": "end"
+      "next": "puzzle_room"
     },
     {
-      "id": "puzzle_penalty",
-      "type": "ops",
-      "ops": [
-        { "op": "log", "text": "The puzzle room wins this round. The guild stamp looks judgemental." }
+      "id": "puzzle_room",
+      "type": "minigame",
+      "minigameId": "push_box",
+      "difficulty": 1,
+      "theme": "ruins",
+      "seed": "frostwood_notice_board_daily",
+      "text": "The guild's tiny training room clicks awake. Clear the mechanism, or mark the job as a setback.",
+      "winOps": [
+        { "op": "update_quest_progress", "questId": "daily_dungeon_minigame_chit", "objectiveId": "clear_minigame_1", "amount": 1 },
+        { "op": "log", "text": "Daily mini-game room cleared for the guild ledger." }
       ],
-      "next": "end"
+      "failOps": [
+        { "op": "log", "text": "Daily mini-game room failed. The guild marks it as a training setback." },
+        { "op": "danger", "amount": 1 }
+      ],
+      "onWin": "end",
+      "onLose": "end"
     },
     { "id": "add_hunt", "type": "end", "result": "quest_added" },
     { "id": "add_harvest", "type": "end", "result": "quest_added" },

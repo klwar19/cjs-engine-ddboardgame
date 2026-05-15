@@ -9,6 +9,8 @@ This plan turns Campaign Mode into four clear modes:
 
 The goal is a smoother solo-GM app that still allows manual GM changes without making the user manage ten disconnected systems. The engine should stay simple. The richness should come from small, readable content files.
 
+Update: mini-games are owned by the separate `window.CJS.Minigames` module. Campaign only launches that host, then records returned results, consequences, quest progress, and notes.
+
 ## Product Shape
 
 ### Story Tab
@@ -29,7 +31,7 @@ Required UI:
 Behavior:
 
 - Main story is divided into chapters, and chapters into smaller parts.
-- A part can switch between visual novel dialogue, narration, map movement, stat checks, combat, mini-games, rewards, penalties, and conclusion.
+- A part can switch between visual novel dialogue, narration, map movement, stat checks, combat, mini-game results, rewards, penalties, and conclusion.
 - Replaying a part should not re-apply consequences unless the GM explicitly chooses "apply override".
 - Jumping ahead should use default path operations only once, then mark those parts as defaulted.
 - Manual story entries do not need VN scenes, but they must be readable later and included in summary.
@@ -74,7 +76,7 @@ Event families:
 Behavior:
 
 - Events use the same sequence runtime as Story.
-- Events can have VN dialogue, consequences, map movement, combat, mini-games, and summaries.
+- Events can have VN dialogue, consequences, map movement, combat, mini-game result notes, and summaries.
 - Events exist to enrich the plot, not replace the main arc.
 - Event availability is controlled by tags, flags, rank, chapter, phase, relationship, persona, and cooldown.
 - Event is not a random-event roller. The visible Event tab has exactly three families: character events, special events, and side stories.
@@ -88,14 +90,14 @@ Sections:
 
 - Hub.
 - Oracle/manual event notes.
-- Pocket Haven: farm, forge, cooking, station upgrades.
+- Farm / forge / cooking.
 - Shops.
 
 Behavior:
 
 - Hub should show practical actions first: rest, talk, shop, craft, farm, travel.
 - Oracle should provide prompts. Manual event notes can be added here, but random event rolling should not be surfaced.
-- Pocket Haven should be a base screen, not scattered across side tools.
+- Farm, forge, and cooking should stay as direct activity tabs, not as a separate base tab.
 - Shops should remain ledger-backed and predictable.
 
 ## What To Remove Or Fold Away
@@ -134,7 +136,7 @@ Responsibilities:
 - Load separate small sequence files.
 - Validate node ids and transitions.
 - Render visual novel style dialogue/narration/choices.
-- Dispatch combat, map movement, mini-game, quest update, and CampaignOps nodes.
+- Dispatch combat, map movement, mini-game result records, quest update, and CampaignOps nodes.
 - Return to the same sequence after combat/manual result.
 - Log summaries and consequences.
 
@@ -385,7 +387,7 @@ Start with these:
 - `combat`
 - `map_move`
 - `quest_update`
-- `minigame`
+- `minigame` (launches the separate mini-game host, with manual clear/fail fallback)
 - `summary`
 - `include`
 - `end`
@@ -469,30 +471,22 @@ Later additions can be plugged in without rewriting content files.
 }
 ```
 
-### Mini-Game
+### Mini-Game Result
 
 ```json
 {
-  "id": "mummy_maze_intro",
+  "id": "challenge_room_result",
   "type": "minigame",
-  "minigameId": "mummy_maze",
+  "minigameId": "push_box",
   "variant": "tutorial",
   "difficulty": 1,
-  "onWin": "maze_clear",
-  "onLose": "maze_penalty",
+  "onWin": "challenge_clear",
+  "onLose": "challenge_penalty",
   "manualResolveAllowed": true
 }
 ```
 
-Mini-game ids planned:
-
-- `mummy_maze`
-- `push_box`
-- `ice_slide`
-- `pipe_connection`
-- `weight_balance`
-
-The first implementation can render a placeholder resolver with win/loss/manual buttons and save result tags. The real mini-games can come later.
+The real mini-game modules live elsewhere. Campaign launches them through `window.CJS.Minigames` and records win/loss/manual result tags, quest progress, and consequences.
 
 ## Quest Format
 
@@ -657,7 +651,7 @@ Target:
 - Current context tags:
 - Required characters:
 - Tone:
-- Desired gameplay pieces: dialogue, choice, stat_check, combat, map_move, minigame, reward, penalty
+- Desired gameplay pieces: dialogue, choice, stat_check, combat, map_move, mini-game result, reward, penalty
 - Consequences allowed:
 - Consequences not allowed:
 - Default path:
@@ -715,21 +709,21 @@ Rules:
 - Add daily reset by phase/beat.
 - Add context-aware random quest picker.
 - Keep quest buckets visible as Daily, Normal/Random, and Story Quest.
-- Move map generation, battle shortcuts, hub scenes, harvests, and mini-games into quest rows/tools.
+- Move map generation, battle shortcuts, hub scenes, harvests, and mini-game launch/result recording into quest rows/tools.
 - Add quest objective triggers from combat action tags.
 - Add normal/story quest generation using rank, story, persona, and map tags.
 
 ### Phase 6: Activities Tab Rebuild
 
-- Consolidate hub, oracle/manual event notes, Pocket Haven, farm, forge, and shops.
+- Consolidate hub, oracle/manual event notes, farm, forge, cooking, shops, rest, and inventory.
 - Remove obsolete panels.
 - Keep manual GM actions in the shared drawer.
 
-### Phase 7: Mini-Game Foundation
+### Phase 7: Mini-Game Handoff
 
-- Add minigame node type and placeholder resolver.
-- Store result tags and return node.
-- Later build real mini-game modules one by one.
+- Do not build mini-games inside Campaign Mode.
+- Store mini-game result tags and return node.
+- Let the separate mini-game layer own actual play; Campaign only opens it and applies the returned result payload.
 
 ## First Thin Slice
 

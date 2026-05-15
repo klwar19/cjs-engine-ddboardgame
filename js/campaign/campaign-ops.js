@@ -82,6 +82,7 @@ window.CJS.CampaignOps = (() => {
         case 'story_fact_reveal': return `Reveal story fact ${op.title || op.factId || op.id || ''}`;
         case 'story_thread_status': return `Story thread ${op.threadId || op.id} -> ${op.status || 'active'}`;
         case 'story_metric_change': return `Story ${op.metric || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'event_log_add': return `Event log: ${op.entry?.title || op.title || op.id || 'entry'}`;
         case 'tag_add': return `Add tag ${op.tag || op.id}`;
         case 'tag_resolve': return `Resolve tag ${op.tag || op.id}`;
         case 'tag_archive': return `Archive tag ${op.tag || op.id}`;
@@ -253,6 +254,7 @@ window.CJS.CampaignOps = (() => {
       case 'story_fact_reveal': return _storyFactReveal(state, op);
       case 'story_thread_status': return _storyThreadStatus(state, op);
       case 'story_metric_change': return _storyMetricChange(state, op);
+      case 'event_log_add': return _eventLogAdd(state, op);
       case 'tag_add': return _tagAdd(state, op);
       case 'tag_resolve': return _tagResolve(state, op);
       case 'tag_archive': return _tagArchive(state, op);
@@ -311,6 +313,34 @@ window.CJS.CampaignOps = (() => {
       op: op.op || 'log'
     });
     state.log = state.log.slice(0, 500);
+  }
+
+  function _eventLogAdd(state, op = {}) {
+    const raw = op.entry || op;
+    const title = raw.title || raw.label || raw.id || 'Event';
+    const summary = raw.summary || raw.text || raw.prompt || raw.note || raw.short || '';
+    state.eventLog = state.eventLog || {};
+    state.eventLog.entries = Array.isArray(state.eventLog.entries) ? state.eventLog.entries : [];
+    const tags = Array.from(new Set([
+      ...(Array.isArray(raw.tags) ? raw.tags : []),
+      raw.scope ? `scope:${raw.scope}` : '',
+      raw.source ? `source:${raw.source}` : ''
+    ].filter(Boolean)));
+    state.eventLog.entries.unshift({
+      id: raw.logId || raw.id || `event_log_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      at: raw.at || new Date().toISOString(),
+      phase: state.phase?.number || 1,
+      world: state.currentWorld,
+      title,
+      summary,
+      source: raw.source || op.source || 'event',
+      scope: raw.scope || op.scope || 'event',
+      tags,
+      relatedId: raw.relatedId || op.relatedId || null,
+      consequences: Array.isArray(raw.consequences) ? raw.consequences : []
+    });
+    state.eventLog.entries = state.eventLog.entries.slice(0, 300);
+    _log(state, `Event log added: ${title}.`, { op: 'event_log_add' });
   }
 
   function _setFlag(state, flag, enabled, value) {
