@@ -323,5 +323,11 @@ window.CJS.Minigames = (() => {
     return activeSession;
   }
 
-  return { listGames, getGame, openMiniGame };
+  function useSpriteMap(urlOrObject) {
+    if (window.CJS?.MinigameSprites?.setMap) {
+      window.CJS.MinigameSprites.setMap(urlOrObject);
+    }
+  }
+
+  return { listGames, getGame, openMiniGame, useSpriteMap };
 })();

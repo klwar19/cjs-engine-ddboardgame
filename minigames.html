@@ -26,6 +26,14 @@
     </section>
 
     <section>
+      <h2 style="font-size:14px;opacity:.7;margin:0 0 8px;">Sprite map</h2>
+      <p style="margin:0 0 8px;font-size:12px;opacity:.7;">
+        Demonstrates <code>window.CJS.Minigames.useSpriteMap()</code>. Toggle to fall back to canvas-drawn shapes, then launch a level to see the difference. The host call is what an event would use to reskin a session.
+      </p>
+      <button id="toggle-sprites" style="background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.16);padding:6px 12px;border-radius:6px;cursor:pointer;">Disable spritesheet (use canvas fallback)</button>
+    </section>
+
+    <section>
       <h2 style="font-size:14px;opacity:.7;margin:0 0 8px;">Self-tests</h2>
       <button id="run-tests" style="background:rgba(95,176,255,0.18);color:#cfe6ff;border:1px solid rgba(95,176,255,0.5);padding:6px 12px;border-radius:6px;cursor:pointer;">Run acceptance tests</button>
       <pre class="log-pane" id="test-log" style="margin-top:8px;">Tests not run.</pre>
@@ -33,6 +41,7 @@
   </div>
 
   <script src="js/minigames/minigame-registry.js"></script>
+  <script src="js/minigames/minigame-sprites.js"></script>
   <script src="js/minigames/mummy-maze.js"></script>
   <script src="js/minigames/push-box.js"></script>
   <script src="js/minigames/minigame-host.js"></script>
@@ -105,6 +114,18 @@
     }
 
     document.getElementById('run-tests').addEventListener('click', runTests);
+
+    let spritesEnabled = true;
+    document.getElementById('toggle-sprites').addEventListener('click', (ev) => {
+      spritesEnabled = !spritesEnabled;
+      if (spritesEnabled) {
+        window.CJS.Minigames.useSpriteMap('assets/minigames/spritesheet.json');
+        ev.target.textContent = 'Disable spritesheet (use canvas fallback)';
+      } else {
+        window.CJS.Minigames.useSpriteMap({ sheets: {}, mummy_maze: { sprites: {} }, push_box: { sprites: {} } });
+        ev.target.textContent = 'Re-enable spritesheet';
+      }
+    });
 
     async function runTests() {
       const lines = [];

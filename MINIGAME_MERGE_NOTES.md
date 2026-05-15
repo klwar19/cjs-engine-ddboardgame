@@ -8,19 +8,25 @@ opt-in.
 
 ```
 js/minigames/
-  minigame-registry.js
-  minigame-host.js
-  mummy-maze.js
-  push-box.js
+  minigame-registry.js          // registry, listGames/getGame
+  minigame-sprites.js           // loads spritesheet.json, resolves sprite rects
+  minigame-host.js              // openMiniGame() modal, result-builder, useSpriteMap()
+  mummy-maze.js                 // game logic + BFS solver for hints
+  push-box.js                   // game logic + BFS solver for hints
 css/
   minigames.css
 data/minigames/
-  mummy_maze_levels.json
-  push_box_levels.json
+  mummy_maze_levels.json        // 5 levels, one per difficulty band 1–5
+  push_box_levels.json          // 5 levels, one per difficulty band 1–5
 assets/minigames/
   ATTRIBUTION.md
-minigames.html              standalone harness + acceptance tests
-MINIGAME_MERGE_NOTES.md     this file
+  dungeon_sheet.png             // Kenney Tiny Dungeon (CC0) — used by mummy_maze
+  sokoban_sheet.png             // Kenney Sokoban Pack (CC0) — used by push_box
+  spritesheet.json              // logical-name → sprite-rect map (editable)
+  KENNEY_DUNGEON_LICENSE.txt
+  KENNEY_SOKOBAN_LICENSE.txt
+minigames.html                  // standalone harness + acceptance tests
+MINIGAME_MERGE_NOTES.md         // this file
 ```
 
 ## Script tags
@@ -31,13 +37,30 @@ likely `campaign.html` after merge), include in this order:
 ```html
 <link rel="stylesheet" href="css/minigames.css">
 <script src="js/minigames/minigame-registry.js"></script>
+<script src="js/minigames/minigame-sprites.js"></script>
 <script src="js/minigames/mummy-maze.js"></script>
 <script src="js/minigames/push-box.js"></script>
 <script src="js/minigames/minigame-host.js"></script>
 ```
 
-Registry must load first; game files self-register; host loads last and reads
-the registry.
+Registry must load first; sprite loader next so the game modules can grab
+their sprite handles on construction; game files self-register; host loads
+last and reads the registry.
+
+## Three ways to play
+
+These exist side-by-side; each goes through the same `openMiniGame()` entry
+point so the result handling is identical.
+
+| Entry point | Where the user starts | Section below |
+|-------------|----------------------|---------------|
+| **Solo** | a "Mini-Games" menu or dev harness | see `minigames.html` |
+| **Event / sequence node** | mid-story choice resolved by a puzzle | "Wiring into Campaign sequence nodes" |
+| **Map node** | a tagged room on the world map | "Wiring into map nodes" |
+| **Quest objective** | "Clear 1 tomb puzzle" row in a quest | "Wiring into quest objectives" |
+
+Solo play is already wired — `minigames.html` is shippable as-is. The other
+three paths are about three lines of glue each.
 
 ## Public API
 
@@ -45,6 +68,7 @@ the registry.
 window.CJS.Minigames.listGames();          // -> [{id, title, theme, ...}, ...]
 window.CJS.Minigames.getGame(gameId);      // -> meta or null
 window.CJS.Minigames.openMiniGame(opts);   // -> session handle
+window.CJS.Minigames.useSpriteMap(url|obj);// swap art at runtime, see below
 ```
 
 `opts` accepts:
@@ -224,6 +248,79 @@ Map node JSON:
 The host is free to ignore `suggestedOps` and synthesize its own ops, or to
 filter the list (e.g., reject `update_quest_progress` if the relevant quest
 is not active).
+
+## Reskinning / replacing art
+
+Sprites are resolved through `assets/minigames/spritesheet.json`:
+
+```json
+{
+  "sheets": {
+    "dungeon": { "src": "assets/minigames/dungeon_sheet.png", "tileSize": 16, "cols": 12 },
+    "sokoban": { "src": "assets/minigames/sokoban_sheet.png" }
+  },
+  "mummy_maze": {
+    "sheet": "dungeon",
+    "sprites": {
+      "floor": { "tile": 48 }, "wall": { "tile": 14 },
+      "player": { "tile": 85 }, "mummy": { "tile": 111 },
+      "exit": { "tile": 7 }, "gate": { "tile": 45 }
+    }
+  },
+  "push_box": {
+    "sheet": "sokoban",
+    "sprites": {
+      "floor": { "x": 320, "y": 192, "w": 64, "h": 64 },
+      "player": { "x": 512, "y": 54, "w": 46, "h": 54 }, ...
+    }
+  }
+}
+```
+
+Three reskinning workflows:
+
+1. **Edit `spritesheet.json` in place.** Repoint a sprite at a different tile
+   index or pixel rect. Reload — game picks it up.
+2. **Drop in replacement PNGs at the same paths.** Useful when an artist
+   produces a redrawn version of the bundled sheets.
+3. **Swap maps at runtime per session.** Useful for themed events:
+   ```js
+   window.CJS.Minigames.useSpriteMap('events/cursed-vault/sprites.json');
+   window.CJS.Minigames.openMiniGame({ gameId: 'mummy_maze', levelId: 'mummy_03' });
+   // pass null to revert to the default map
+   window.CJS.Minigames.useSpriteMap(null);
+   ```
+
+If a sprite can't be loaded (missing entry, sheet 404), the game's
+procedural canvas fallback runs instead — no broken visuals, just less
+flashy art. This is why every renderable thing in the games has both a
+sprite name AND a procedural drawer.
+
+## Extending the games
+
+The pieces are small enough to fork or extend in place:
+
+- **Add a new level** — append a JSON object to `data/minigames/{game}_levels.json`.
+  Required keys: `id`, `title`, `difficulty`, `theme`, `width`, `height`,
+  `player`, plus game-specific (`exit`+`mummies` for maze; `boxes`+`goals`
+  for push). Optional: `walls`, `keys`, `gates`, `traps`, `optimalTurns`,
+  `optimalPushes`, `tags`, `hint`. The harness's **Run acceptance tests**
+  button will refuse to greenlight an unsolvable level.
+- **Add a new game** — write `js/minigames/<game>.js` exporting a factory
+  that returns `{ mount, unmount, handleAction, undo, reset, hint,
+  getTurns, getHintsUsed, getState }`. Self-register with the registry. Add
+  a `<game>` entry to the sprite map. Provide
+  `data/minigames/<game>_levels.json`. The host treats every registered
+  game uniformly.
+- **Tweak the AI / mechanics** — `mummy-maze.js#mummyMoveStep` is the
+  greedy mummy AI (replaceable with anything that returns a new mummy pos);
+  `push-box.js#deadlockBoxes` is the heuristic deadlock detector (extend
+  with frozen-cluster detection, see
+  https://jsokoapplet.sourceforge.io/sokoban/deadlocks.html).
+- **Make sprites animated** — each game's render path treats one sprite as
+  a static frame. The sprite loader (`minigame-sprites.js`) returns an
+  `img` handle, so animated rendering is a per-game change to draw based
+  on `state.turns % N` rather than a sprite-loader change.
 
 ## Save data
 

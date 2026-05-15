@@ -278,10 +278,10 @@
     }
 
     const SPRITE_COLORS = {
-      floor: '#1d2231',
-      floorAlt: '#252a3a',
-      wall: '#3a3221',
-      wallTop: '#5e4a2c',
+      floor: '#3a2c1b',
+      floorAlt: '#43331f',
+      wall: '#5a4226',
+      wallTop: '#7d5c34',
       exit: '#f0c674',
       player: '#5fb0ff',
       mummy: '#c9b070',
@@ -290,93 +290,104 @@
       trap: '#a23838'
     };
 
+    let sprites = null;
+    (window.CJS?.MinigameSprites?.get?.('mummy_maze') || Promise.resolve(null))
+      .then((api) => { sprites = api; render(); })
+      .catch(() => { sprites = null; });
+
     function render() {
       computeTileSize();
       const w = level.width, h = level.height;
       for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          drawTile(x, y);
-        }
+        for (let x = 0; x < w; x++) drawTile(x, y);
       }
-      const ex = level.exit[0], ey = level.exit[1];
-      drawExit(ex, ey);
-      for (const trap of state.traps) {
-        if (trap.armed) drawTrap(trap.pos[0], trap.pos[1]);
-      }
-      for (const gate of state.gates) {
-        if (!gate.open) drawGate(gate.pos[0], gate.pos[1]);
-      }
-      for (const key of state.keys) {
-        if (!key.taken) drawKey(key.pos[0], key.pos[1]);
-      }
+      drawExit(level.exit[0], level.exit[1]);
+      for (const trap of state.traps) if (trap.armed) drawTrap(trap.pos[0], trap.pos[1]);
+      for (const gate of state.gates) if (!gate.open) drawGate(gate.pos[0], gate.pos[1]);
+      for (const key of state.keys) if (!key.taken) drawKey(key.pos[0], key.pos[1]);
       drawPlayer(state.player[0], state.player[1]);
       for (const m of state.mummies) drawMummy(m.pos[0], m.pos[1]);
     }
 
-    function drawTile(x, y) {
+    function drawSpriteOrFallback(name, x, y, fallback) {
       const px = x * tilePx, py = y * tilePx;
+      if (sprites?.has?.(name) && sprites.draw(ctx, name, px, py, tilePx, tilePx)) return true;
+      fallback(px, py);
+      return false;
+    }
+
+    function drawTile(x, y) {
       if (isWallTile(x, y)) {
-        ctx.fillStyle = SPRITE_COLORS.wall;
-        ctx.fillRect(px, py, tilePx, tilePx);
-        ctx.fillStyle = SPRITE_COLORS.wallTop;
-        ctx.fillRect(px + 2, py + 2, tilePx - 4, Math.max(2, Math.floor(tilePx * 0.18)));
-        ctx.strokeStyle = '#1a160d';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        drawSpriteOrFallback('wall', x, y, (px, py) => {
+          ctx.fillStyle = SPRITE_COLORS.wall;
+          ctx.fillRect(px, py, tilePx, tilePx);
+          ctx.fillStyle = SPRITE_COLORS.wallTop;
+          ctx.fillRect(px + 2, py + 2, tilePx - 4, Math.max(2, Math.floor(tilePx * 0.18)));
+          ctx.strokeStyle = '#1a160d';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        });
       } else {
-        ctx.fillStyle = (x + y) % 2 === 0 ? SPRITE_COLORS.floor : SPRITE_COLORS.floorAlt;
-        ctx.fillRect(px, py, tilePx, tilePx);
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        const altName = ((x + y) % 2 === 0) ? 'floor' : 'floor_alt';
+        drawSpriteOrFallback(altName, x, y, (px, py) => {
+          ctx.fillStyle = (x + y) % 2 === 0 ? SPRITE_COLORS.floor : SPRITE_COLORS.floorAlt;
+          ctx.fillRect(px, py, tilePx, tilePx);
+          ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+          ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        });
       }
     }
 
     function drawExit(x, y) {
-      const px = x * tilePx, py = y * tilePx;
-      ctx.fillStyle = SPRITE_COLORS.exit;
-      ctx.fillRect(px + 4, py + 4, tilePx - 8, tilePx - 8);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      for (let i = 0; i < 4; i++) {
-        ctx.fillRect(px + 6, py + 6 + i * Math.floor((tilePx - 12) / 4), tilePx - 12, 2);
-      }
+      drawSpriteOrFallback('exit', x, y, (px, py) => {
+        ctx.fillStyle = SPRITE_COLORS.exit;
+        ctx.fillRect(px + 4, py + 4, tilePx - 8, tilePx - 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        for (let i = 0; i < 4; i++) {
+          ctx.fillRect(px + 6, py + 6 + i * Math.floor((tilePx - 12) / 4), tilePx - 12, 2);
+        }
+      });
     }
 
     function drawPlayer(x, y) {
-      const px = x * tilePx, py = y * tilePx;
-      const cx = px + tilePx / 2, cy = py + tilePx / 2;
-      ctx.fillStyle = SPRITE_COLORS.player;
-      ctx.beginPath();
-      ctx.arc(cx, cy - tilePx * 0.12, tilePx * 0.18, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(px + tilePx * 0.3, py + tilePx * 0.42, tilePx * 0.4, tilePx * 0.35);
-      ctx.fillStyle = '#1a1f2c';
-      ctx.fillRect(px + tilePx * 0.32, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
-      ctx.fillRect(px + tilePx * 0.56, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
+      drawSpriteOrFallback('player', x, y, (px, py) => {
+        const cx = px + tilePx / 2, cy = py + tilePx / 2;
+        ctx.fillStyle = SPRITE_COLORS.player;
+        ctx.beginPath();
+        ctx.arc(cx, cy - tilePx * 0.12, tilePx * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(px + tilePx * 0.3, py + tilePx * 0.42, tilePx * 0.4, tilePx * 0.35);
+        ctx.fillStyle = '#1a1f2c';
+        ctx.fillRect(px + tilePx * 0.32, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
+        ctx.fillRect(px + tilePx * 0.56, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
+      });
     }
 
     function drawMummy(x, y) {
-      const px = x * tilePx, py = y * tilePx;
-      const cx = px + tilePx / 2, cy = py + tilePx / 2;
-      ctx.fillStyle = SPRITE_COLORS.mummy;
-      ctx.beginPath();
-      ctx.arc(cx, cy - tilePx * 0.12, tilePx * 0.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(px + tilePx * 0.28, py + tilePx * 0.4, tilePx * 0.44, tilePx * 0.4);
-      ctx.strokeStyle = '#7c6533';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(px + tilePx * 0.28, py + tilePx * 0.5);
-      ctx.lineTo(px + tilePx * 0.72, py + tilePx * 0.55);
-      ctx.moveTo(px + tilePx * 0.3, py + tilePx * 0.66);
-      ctx.lineTo(px + tilePx * 0.7, py + tilePx * 0.62);
-      ctx.stroke();
-      ctx.fillStyle = '#1a1f2c';
-      ctx.fillRect(cx - tilePx * 0.12, cy - tilePx * 0.18, tilePx * 0.06, tilePx * 0.06);
-      ctx.fillRect(cx + tilePx * 0.06, cy - tilePx * 0.18, tilePx * 0.06, tilePx * 0.06);
+      drawSpriteOrFallback('mummy', x, y, (px, py) => {
+        const cx = px + tilePx / 2, cy = py + tilePx / 2;
+        ctx.fillStyle = SPRITE_COLORS.mummy;
+        ctx.beginPath();
+        ctx.arc(cx, cy - tilePx * 0.12, tilePx * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(px + tilePx * 0.28, py + tilePx * 0.4, tilePx * 0.44, tilePx * 0.4);
+        ctx.strokeStyle = '#7c6533';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + tilePx * 0.28, py + tilePx * 0.5);
+        ctx.lineTo(px + tilePx * 0.72, py + tilePx * 0.55);
+        ctx.moveTo(px + tilePx * 0.3, py + tilePx * 0.66);
+        ctx.lineTo(px + tilePx * 0.7, py + tilePx * 0.62);
+        ctx.stroke();
+        ctx.fillStyle = '#1a1f2c';
+        ctx.fillRect(cx - tilePx * 0.12, cy - tilePx * 0.18, tilePx * 0.06, tilePx * 0.06);
+        ctx.fillRect(cx + tilePx * 0.06, cy - tilePx * 0.18, tilePx * 0.06, tilePx * 0.06);
+      });
     }
 
     function drawKey(x, y) {
       const px = x * tilePx, py = y * tilePx;
+      if (sprites?.has?.('key') && sprites.draw(ctx, 'key', px, py, tilePx, tilePx)) return;
       ctx.fillStyle = SPRITE_COLORS.key;
       ctx.beginPath();
       ctx.arc(px + tilePx * 0.35, py + tilePx * 0.5, tilePx * 0.12, 0, Math.PI * 2);
@@ -386,21 +397,23 @@
     }
 
     function drawGate(x, y) {
-      const px = x * tilePx, py = y * tilePx;
-      ctx.fillStyle = SPRITE_COLORS.gate;
-      ctx.fillRect(px + 4, py + 4, tilePx - 8, tilePx - 8);
-      ctx.fillStyle = '#3b2715';
-      for (let i = 0; i < 3; i++) {
-        ctx.fillRect(px + 6, py + 8 + i * Math.floor((tilePx - 12) / 3), tilePx - 12, 2);
-      }
+      drawSpriteOrFallback('gate', x, y, (px, py) => {
+        ctx.fillStyle = SPRITE_COLORS.gate;
+        ctx.fillRect(px + 4, py + 4, tilePx - 8, tilePx - 8);
+        ctx.fillStyle = '#3b2715';
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(px + 6, py + 8 + i * Math.floor((tilePx - 12) / 3), tilePx - 12, 2);
+        }
+      });
     }
 
     function drawTrap(x, y) {
       const px = x * tilePx, py = y * tilePx;
+      if (sprites?.has?.('trap') && sprites.draw(ctx, 'trap', px, py, tilePx, tilePx)) return;
       ctx.fillStyle = SPRITE_COLORS.trap;
       ctx.beginPath();
       const cx = px + tilePx / 2, cy = py + tilePx / 2;
-      const r = tilePx * 0.25;
+      const r = tilePx * 0.28;
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2;
         const rx = cx + Math.cos(a) * r;
@@ -409,6 +422,9 @@
       }
       ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = '#5b1a1a';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
 
     function mount() {

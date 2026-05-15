@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "note": "Logical-name → sprite-rect map for CJS mini-games. Edit this file (or call window.CJS.Minigames.useSpriteMap with a new map) to reskin the games without touching JS. Sprites listed under 'procedural' are drawn by the game's canvas fallback.",
+  "sheets": {
+    "dungeon": {
+      "src": "assets/minigames/dungeon_sheet.png",
+      "tileSize": 16,
+      "cols": 12,
+      "rows": 11,
+      "credit": "Tiny Dungeon by Kenney (kenney.nl) — CC0"
+    },
+    "sokoban": {
+      "src": "assets/minigames/sokoban_sheet.png",
+      "credit": "Sokoban Pack by Kenney (kenney.nl) — CC0"
+    }
+  },
+  "mummy_maze": {
+    "sheet": "dungeon",
+    "sprites": {
+      "floor":     { "tile": 48 },
+      "floor_alt": { "tile": 49 },
+      "wall":      { "tile": 14 },
+      "exit":      { "tile":  7 },
+      "gate":      { "tile": 45 },
+      "player":    { "tile": 85 },
+      "mummy":     { "tile": 111 }
+    },
+    "procedural": ["key", "trap"]
+  },
+  "push_box": {
+    "sheet": "sokoban",
+    "sprites": {
+      "floor":         { "x": 320, "y": 192, "w": 64, "h": 64 },
+      "wall":          { "x": 384, "y": 384, "w": 64, "h": 64 },
+      "crate":         { "x":   0, "y": 256, "w": 64, "h": 64 },
+      "crate_on_goal": { "x":   0, "y": 512, "w": 64, "h": 64 },
+      "goal":          { "x":   0, "y": 576, "w": 20, "h": 20 },
+      "player":        { "x": 512, "y":  54, "w": 46, "h": 54 }
+    },
+    "procedural": ["deadlock_outline"]
+  }
+}

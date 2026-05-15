@@ -270,13 +270,16 @@
       deadlock: '#c14848'
     };
 
+    let sprites = null;
+    (window.CJS?.MinigameSprites?.get?.('push_box') || Promise.resolve(null))
+      .then((api) => { sprites = api; render(); })
+      .catch(() => { sprites = null; });
+
     function render() {
       computeTileSize();
       const w = level.width, h = level.height;
       for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          drawTile(x, y);
-        }
+        for (let x = 0; x < w; x++) drawTile(x, y);
       }
       for (const g of (level.goals || [])) drawGoal(g[0], g[1]);
       const dead = deadlockBoxes(state);
@@ -288,25 +291,40 @@
       drawPlayer(state.player[0], state.player[1]);
     }
 
-    function drawTile(x, y) {
+    function drawSpriteOrFallback(name, x, y, fallback) {
       const px = x * tilePx, py = y * tilePx;
+      if (sprites?.has?.(name) && sprites.draw(ctx, name, px, py, tilePx, tilePx)) return true;
+      fallback(px, py);
+      return false;
+    }
+
+    function drawTile(x, y) {
       if (isWallTile(x, y)) {
-        ctx.fillStyle = COLORS.wall;
-        ctx.fillRect(px, py, tilePx, tilePx);
-        ctx.fillStyle = COLORS.wallTop;
-        ctx.fillRect(px + 2, py + 2, tilePx - 4, Math.max(2, Math.floor(tilePx * 0.2)));
-        ctx.strokeStyle = '#1a160d';
-        ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        drawSpriteOrFallback('wall', x, y, (px, py) => {
+          ctx.fillStyle = COLORS.wall;
+          ctx.fillRect(px, py, tilePx, tilePx);
+          ctx.fillStyle = COLORS.wallTop;
+          ctx.fillRect(px + 2, py + 2, tilePx - 4, Math.max(2, Math.floor(tilePx * 0.2)));
+          ctx.strokeStyle = '#1a160d';
+          ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        });
       } else {
-        ctx.fillStyle = (x + y) % 2 === 0 ? COLORS.floor : COLORS.floorAlt;
-        ctx.fillRect(px, py, tilePx, tilePx);
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        drawSpriteOrFallback('floor', x, y, (px, py) => {
+          ctx.fillStyle = (x + y) % 2 === 0 ? COLORS.floor : COLORS.floorAlt;
+          ctx.fillRect(px, py, tilePx, tilePx);
+          ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+          ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        });
       }
     }
 
     function drawGoal(x, y) {
       const px = x * tilePx, py = y * tilePx;
+      if (sprites?.has?.('goal')) {
+        const inset = Math.floor(tilePx * 0.25);
+        sprites.draw(ctx, 'goal', px + inset, py + inset, tilePx - inset * 2, tilePx - inset * 2);
+        return;
+      }
       const cx = px + tilePx / 2, cy = py + tilePx / 2;
       ctx.strokeStyle = COLORS.goal;
       ctx.lineWidth = 2;
@@ -323,6 +341,15 @@
 
     function drawBox(x, y, onGoal, isDead) {
       const px = x * tilePx, py = y * tilePx;
+      const spriteName = onGoal ? 'crate_on_goal' : 'crate';
+      if (sprites?.has?.(spriteName) && sprites.draw(ctx, spriteName, px, py, tilePx, tilePx)) {
+        if (isDead && !onGoal) {
+          ctx.strokeStyle = COLORS.deadlock;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px + 2, py + 2, tilePx - 4, tilePx - 4);
+        }
+        return;
+      }
       ctx.fillStyle = onGoal ? COLORS.boxOnGoal : (isDead ? COLORS.deadlock : COLORS.box);
       ctx.fillRect(px + 4, py + 4, tilePx - 8, tilePx - 8);
       ctx.strokeStyle = '#000';
@@ -338,16 +365,17 @@
     }
 
     function drawPlayer(x, y) {
-      const px = x * tilePx, py = y * tilePx;
-      const cx = px + tilePx / 2, cy = py + tilePx / 2;
-      ctx.fillStyle = COLORS.player;
-      ctx.beginPath();
-      ctx.arc(cx, cy - tilePx * 0.12, tilePx * 0.18, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(px + tilePx * 0.3, py + tilePx * 0.42, tilePx * 0.4, tilePx * 0.35);
-      ctx.fillStyle = '#1a1f2c';
-      ctx.fillRect(px + tilePx * 0.32, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
-      ctx.fillRect(px + tilePx * 0.56, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
+      drawSpriteOrFallback('player', x, y, (px, py) => {
+        const cx = px + tilePx / 2, cy = py + tilePx / 2;
+        ctx.fillStyle = COLORS.player;
+        ctx.beginPath();
+        ctx.arc(cx, cy - tilePx * 0.12, tilePx * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(px + tilePx * 0.3, py + tilePx * 0.42, tilePx * 0.4, tilePx * 0.35);
+        ctx.fillStyle = '#1a1f2c';
+        ctx.fillRect(px + tilePx * 0.32, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
+        ctx.fillRect(px + tilePx * 0.56, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
+      });
     }
 
     function mount() {
