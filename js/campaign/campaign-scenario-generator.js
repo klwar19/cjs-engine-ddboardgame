@@ -699,15 +699,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
       { op: 'log', text: `Brief rest: ${node.name || node.id}.` }
     ];
     if (kind === 'event') {
-      const tableId = _eventTableId(world);
-      return tableId ? [{ op: 'roll_event', table: tableId, chance: 0.65 }] : undefined;
+      return [
+        { op: 'log', text: `Quest scene beat: ${node.name || node.id}.` }
+      ];
     }
     return undefined;
-  }
-
-  function _eventTableId(world) {
-    const campaign = CS().getCurrentCampaign();
-    return (campaign?.eventTables || []).find((id) => id.includes(world)) || campaign?.eventTables?.[0] || null;
   }
 
   function _roleToKind(role) {

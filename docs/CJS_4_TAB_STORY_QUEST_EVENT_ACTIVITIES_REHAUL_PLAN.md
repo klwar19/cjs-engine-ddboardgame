@@ -17,13 +17,14 @@ Story is the main arc player.
 
 Required UI:
 
-- Arc, chapter, and part picker.
-- Continue current part button.
+- Compact arc/chapter part picker.
+- Active VN sequence panel.
 - Warning when selecting ahead: previous unreached parts will be marked revealed using their authored default path and default consequences.
 - Summary tab showing what happened up to the current chapter.
 - Replay/re-read mode for old chapters.
 - Manual GM addendum form for adding notes to the story summary.
 - Consequence drawer for manual reward, penalty, flag, relationship, battle, map move, or quest update.
+- Old Story Director random-roll panels should stay out of the main Story UI.
 
 Behavior:
 
@@ -69,7 +70,6 @@ Event families:
 - Character events.
 - Special events.
 - Side stories.
-- Random/context events.
 
 Behavior:
 
@@ -77,7 +77,8 @@ Behavior:
 - Events can have VN dialogue, consequences, map movement, combat, mini-games, and summaries.
 - Events exist to enrich the plot, not replace the main arc.
 - Event availability is controlled by tags, flags, rank, chapter, phase, relationship, persona, and cooldown.
-- Oracle and event rolling should be one flow, not separate confusing panels.
+- Event is not a random-event roller. The visible Event tab has exactly three families: character events, special events, and side stories.
+- Battle cards, map seeds, and challenge jobs belong in Quest or Current Run when they need gameplay structure.
 
 ### Activities Tab
 
@@ -86,14 +87,14 @@ Activities is the town/base/system layer.
 Sections:
 
 - Hub.
-- Oracle/Event.
+- Oracle/manual event notes.
 - Pocket Haven: farm, forge, cooking, station upgrades.
 - Shops.
 
 Behavior:
 
 - Hub should show practical actions first: rest, talk, shop, craft, farm, travel.
-- Oracle/Event should roll prompts or events from one place.
+- Oracle should provide prompts. Manual event notes can be added here, but random event rolling should not be surfaced.
 - Pocket Haven should be a base screen, not scattered across side tools.
 - Shops should remain ledger-backed and predictable.
 
@@ -103,6 +104,8 @@ Remove or fold into the four tabs:
 
 - Old hints that explain obvious UI.
 - Duplicate event/oracle controls.
+- Random event buttons from Event, Quest home, Activities, and Current Run controls.
+- Event-owned battle/map-seed tabs; battle and map tools belong in Quest or Current Run.
 - Old "flow suggestions" that do not write to state.
 - Side Forge panels that do not fit Hub, Quest, Event, or Activities.
 - Any quest button that creates content but does not track state.
@@ -692,8 +695,8 @@ Rules:
 
 ### Phase 3: Story Tab Rebuild
 
-- Replace old Story Director-heavy UI with chapter/part navigator.
-- Add VN player panel.
+- Replace old Story Director-heavy UI with a compact chapter/part navigator.
+- Add active VN player panel.
 - Add summary view.
 - Add jump-ahead defaulting.
 - Add replay mode.
@@ -701,21 +704,24 @@ Rules:
 
 ### Phase 4: Event Tab Rebuild
 
-- Add event library filters.
+- Limit Event to character events, special events, and side stories.
+- Remove random-event surface from Event.
+- Fold event battles and map seeds into Quest/Current Run.
 - Use the same sequence runner.
-- Merge oracle/event into one context picker.
 - Add cooldown/history so events do not repeat badly.
 
 ### Phase 5: Quest Tab Rebuild
 
 - Add daily reset by phase/beat.
 - Add context-aware random quest picker.
+- Keep quest buckets visible as Daily, Normal/Random, and Story Quest.
+- Move map generation, battle shortcuts, hub scenes, harvests, and mini-games into quest rows/tools.
 - Add quest objective triggers from combat action tags.
 - Add normal/story quest generation using rank, story, persona, and map tags.
 
 ### Phase 6: Activities Tab Rebuild
 
-- Consolidate hub, oracle/event, Pocket Haven, farm, forge, and shops.
+- Consolidate hub, oracle/manual event notes, Pocket Haven, farm, forge, and shops.
 - Remove obsolete panels.
 - Keep manual GM actions in the shared drawer.
 

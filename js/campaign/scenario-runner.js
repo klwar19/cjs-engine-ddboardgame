@@ -626,8 +626,7 @@ window.CJS.ScenarioRunner = (() => {
       ops.push({ op: 'danger', amount: 2 });
       ops.push({ op: 'log', text: `Boss approach: ${node.name || node.id}.` });
     } else if (kind === 'event_battle') {
-      const tableId = _campaignEventTableId();
-      if (tableId) ops.push({ op: 'roll_event', table: tableId, chance: 0.6 });
+      ops.push({ op: 'log', text: `Quest scene beat: ${node.name || node.id}.` });
     }
     return ops.length ? ops : undefined;
   }
@@ -644,13 +643,6 @@ window.CJS.ScenarioRunner = (() => {
     const list = all.filter((m) => !m._world || m._world === world);
     if (!list.length) return 'haven_wolf_pelt';
     return list[Math.floor(Math.random() * list.length)].id;
-  }
-
-  function _campaignEventTableId() {
-    const campaign = CS().getCurrentCampaign();
-    const world = CS().getState()?.currentWorld;
-    const list = campaign?.eventTables || [];
-    return list.find((id) => id.includes(world)) || list[0] || null;
   }
 
   function rollTravelSurprise(context = {}) {
