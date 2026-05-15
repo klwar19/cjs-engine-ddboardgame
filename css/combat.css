@@ -2245,3 +2245,85 @@ body {
     padding: 0 8px 8px;
   }
 }
+
+/* ── GM Controls panel ───────────────────────────────────────────── */
+.gm-menu summary {
+  background:
+    linear-gradient(180deg, rgba(254, 240, 200, 0.92), rgba(248, 219, 160, 0.66)) !important;
+  color: #5a3b00;
+}
+.gm-panel {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+}
+.gm-section {
+  border: 1px solid rgba(89, 168, 221, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 8px 10px;
+}
+.gm-section-bulk {
+  background: rgba(254, 246, 226, 0.84);
+  border-color: rgba(216, 158, 60, 0.32);
+}
+.gm-section-flow {
+  background: rgba(248, 232, 232, 0.84);
+  border-color: rgba(216, 84, 84, 0.32);
+}
+.gm-section-head {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #1766a7;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gm-section-bulk .gm-section-head {
+  color: #92590f;
+}
+.gm-section-flow .gm-section-head {
+  color: #9a3030;
+}
+.gm-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.gm-row > * {
+  min-width: 0;
+}
+.gm-grid-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.gm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  color: var(--combat-muted, #4b5563);
+}
+.gm-input {
+  flex: 1 1 auto;
+  min-width: 70px;
+  padding: 4px 6px;
+  border: 1px solid rgba(89, 168, 221, 0.28);
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.78rem;
+  color: #1f2937;
+}
+.gm-input-sm {
+  flex: 0 0 auto;
+  width: 90px;
+}
+.gm-tool-btn.active {
+  background: #1766a7 !important;
+  color: #fff !important;
+  border-color: #0e4d80 !important;
+  box-shadow: 0 0 0 2px rgba(23, 102, 167, 0.32);
+}

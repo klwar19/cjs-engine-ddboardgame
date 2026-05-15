@@ -458,12 +458,33 @@ window.CJS.GridEngine = (() => {
     return true;
   }
 
+  // ── TERRAIN MUTATION (GM live-edit) ───────────────────────────────
+  function setTerrain(r, c, terrainType) {
+    if (!_inBounds(r, c)) return false;
+    if (!C().TERRAIN_TYPES[terrainType]) return false;
+    _cells[r][c] = terrainType;
+    return true;
+  }
+
+  function getEmptyCells() {
+    const cells = [];
+    for (let r = 0; r < _height; r++) {
+      for (let c = 0; c < _width; c++) {
+        const td = C().TERRAIN_TYPES[_cells[r][c]];
+        if (td && td.passable && !_occupancy[r][c]) {
+          cells.push([r, c]);
+        }
+      }
+    }
+    return cells;
+  }
+
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     init,
     // Queries
     getCell, getTerrain, getUnitAt, getUnit, getAllUnits,
-    getAliveUnitsByTeam, getDims,
+    getAliveUnitsByTeam, getDims, getEmptyCells,
     // Distance
     distance, distanceBetween, footprintDistance, isAdjacent,
     // Movement
@@ -475,6 +496,8 @@ window.CJS.GridEngine = (() => {
     // Knockback
     knockback, resolveKnockbackCollisions,
     // Lifecycle
-    removeFromBoard, addUnit
+    removeFromBoard, addUnit,
+    // Terrain mutation
+    setTerrain
   });
 })();

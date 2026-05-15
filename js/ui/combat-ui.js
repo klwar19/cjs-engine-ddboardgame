@@ -19,6 +19,7 @@ window.CJS.CombatUI = (() => {
   const Log = () => window.CJS.CombatLog;
   const AM = () => window.CJS.AudioManager;
   const AB = () => window.CJS.AnimationBus;
+  const GM = () => window.CJS.GMControls;
 
   let _container = null;
   let _bgmUnsubs = [];
@@ -703,6 +704,10 @@ window.CJS.CombatUI = (() => {
                 </div>
               </div>
             </section>
+            <details class="combat-assist-menu gm-menu">
+              <summary class="combat-assist-summary">GM Controls</summary>
+              <div id="cbt-gm-panel" class="combat-assist-panel"></div>
+            </details>
           </div>
         </div>
         <div class="combat-bottom">
@@ -743,6 +748,15 @@ window.CJS.CombatUI = (() => {
       onCellClick: _onCellClick,
       onCellHover: _onCellHover
     });
+
+    const gmHost = _container.querySelector('#cbt-gm-panel');
+    if (gmHost && GM()) {
+      GM().mount(gmHost, {
+        onRefresh: _refresh,
+        onHint: _setModeHint,
+        onClearHint: _clearModeHint
+      });
+    }
   }
 
   function _bindEvents() {
@@ -1251,6 +1265,11 @@ window.CJS.CombatUI = (() => {
   }
 
   function _onCellClick(r, c) {
+    // GM tool takes precedence over player input modes.
+    if (GM()?.isToolActive() && GM().handleCellClick(r, c)) {
+      return;
+    }
+
     if (_mode === 'move') {
       const result = CM().submitAction({ type: 'move', targetPos: [r, c] });
       if (result.success) {
@@ -1559,6 +1578,12 @@ window.CJS.CombatUI = (() => {
   function _handleKeydown(event) {
     if (event.key !== 'Escape') return;
 
+    if (GM()?.isToolActive()) {
+      GM().cancelTool();
+      _refresh();
+      return;
+    }
+
     if (_mode !== 'idle' && _mode !== 'qte') {
       _mode = 'idle';
       _pendingAction = null;
@@ -1632,6 +1657,7 @@ window.CJS.CombatUI = (() => {
     _detachAnimationBus();
     _clearPresentationFx();
     try { AM()?.stopBgm(); } catch (_) {}
+    try { GM()?.unmount(); } catch (_) {}
 
     try { NE().destroy(); } catch (_) {}
     try { GR().destroy(); } catch (_) {}
