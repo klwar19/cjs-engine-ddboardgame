@@ -82,7 +82,7 @@ window.CJS.CampaignMap = (() => {
           ${nodeMarkup}
         </svg>
         <div class="campaign-node-detail">
-          ${renderNodeDetail(currentNode, mapState)}
+          ${renderNodeDetailSafe(currentNode, mapState)}
         </div>
       </div>
     `;
@@ -110,6 +110,7 @@ window.CJS.CampaignMap = (() => {
       for (let x = 0; x < width; x++) {
         const key = _cellKey(x, y, activeLevelId, map);
         const cell = Runner().findCell?.(map, x, y, run.mapLayer) || { x, y, kind: _terrainAt(map, x, y), title: key };
+        const threat = _movingThreatAt(run, map, x, y, activeLevelId);
         const isCurrent = Number(current.x) === x && Number(current.y) === y;
         const isRevealed = revealed[key] || (run.revealedCells || []).includes(key) || cell.discoveredByDefault || isCurrent;
         const isVisited = visited[key] || (run.visitedCells || []).includes(key);
@@ -123,7 +124,7 @@ window.CJS.CampaignMap = (() => {
         cells.push(`
           <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}"
             data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(objectiveTitle ? `${objectiveTitle} — ${cell.title || key}` : cell.title || key)}">
-            <span>${isRevealed ? (objective ? _objectiveIcon(objective) : _gridIcon(cell, passable)) : ''}</span>
+            <span>${isRevealed ? `${objective ? _objectiveIcon(objective) : _gridIcon(cell, passable)}${threat ? ` ${_esc(threat.icon || '!')}` : ''}` : ''}</span>
             <small>${isRevealed ? _esc(_shortLabel(cell.title || key)) : ''}</small>
           </button>
         `);
@@ -142,7 +143,7 @@ window.CJS.CampaignMap = (() => {
           ${cells.join('')}
         </div>
         <div class="campaign-node-detail">
-          ${renderGridCellDetail(currentCell, mapState)}
+          ${renderGridCellDetailSafe(currentCell, mapState)}
         </div>
       </div>
     `;
@@ -177,7 +178,7 @@ window.CJS.CampaignMap = (() => {
     const state = CS().getState();
     const node = Runner().findNode(map, nodeId);
     const detail = container.querySelector('.campaign-node-detail');
-    if (detail) detail.innerHTML = renderNodeDetail(node, state.mapState[map.id] || {});
+    if (detail) detail.innerHTML = renderNodeDetailSafe(node, state.mapState[map.id] || {});
   }
 
   function renderNodeDetail(node, mapState = {}) {
@@ -208,6 +209,95 @@ window.CJS.CampaignMap = (() => {
         <span>${_esc(node.title || node.id)}</span>
         <span class="campaign-pill">${_esc(node.kind || 'node')}</span>
         ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '✓ ' : ''}${_esc(objective.label)}</span>` : ''}
+      </div>
+      <div class="campaign-muted">${_esc(node.notes || '')}</div>
+      <div class="campaign-chip-row">${tags}</div>
+      <div class="campaign-node-actions">
+        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
+        ${captured ? `<span class="campaign-pill is-current">Captured</span>` : ''}
+        ${entryResolved && !captured ? `<span class="campaign-pill">Story Resolved</span>` : ''}
+        <button class="campaign-action" data-campaign-action="reveal-node" data-node-id="${_escAttr(node.id)}">Reveal</button>
+        <button class="campaign-action" data-campaign-action="clear-node" data-node-id="${_escAttr(node.id)}">Clear</button>
+      </div>
+      ${node.campfire && isCurrent ? `
+        <div class="campaign-node-actions">
+          <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
+          <button class="campaign-action" data-campaign-action="roll-party-chat">Camp Chat</button>
+          <button class="campaign-action" data-campaign-tab="cook">Cook</button>
+          <button class="campaign-action" data-campaign-tab="craft">Craft</button>
+          <button class="campaign-action" data-campaign-tab="inventory">Inventory</button>
+        </div>
+      ` : ''}
+      ${captured?.incomeOps?.length ? `<div class="campaign-muted">Income: ${_esc(captured.incomeOps.map((op) => op.op || 'op').join(', '))}</div>` : ''}
+      ${notes.length ? `
+        <div class="campaign-link-list">
+          <div class="campaign-section-label">Manual Notes</div>
+          ${notes.slice(0, 5).map((note) => `
+            <div class="campaign-town-line is-${_escAttr(note.kind || 'event')}">
+              <strong>${_esc(note.title || note.kind || 'Note')}</strong>
+              <span>${_esc(note.text || '')}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${exits ? `<div class="campaign-link-list"><div class="campaign-section-label">Exits</div>${exits}</div>` : '<div class="campaign-empty">No exits.</div>'}
+    `;
+  }
+
+  function renderGridCellDetailSafe(cell, mapState = {}) {
+    if (!cell) return '<div class="campaign-empty">No current cell.</div>';
+    const state = CS().getState();
+    const map = CS().getActiveMap();
+    const key = _cellKey(cell.x, cell.y, cell.levelId, map);
+    const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
+    const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
+    const threat = _movingThreatAt(state?.activeScenarioRun, map, cell.x, cell.y, cell.levelId);
+    const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
+    return `
+      <div class="campaign-detail-title">
+        <span>${_esc(cell.title || key)}</span>
+        <span class="campaign-pill">${_esc(cell.kind || 'floor')}</span>
+        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '笨・' : ''}${_esc(objective.label)}</span>` : ''}
+        ${threat ? `<span class="campaign-pill is-objective">${_esc(threat.icon || '!')} ${_esc(threat.label || threat.id)}</span>` : ''}
+      </div>
+      <div class="campaign-muted">${_esc(cell.notes || '')}</div>
+      <div class="campaign-chip-row">${tags}</div>
+      <div class="campaign-node-actions">
+        <span class="campaign-pill is-current">Current ${_esc(key)}</span>
+        ${cell.levelName ? `<span class="campaign-pill">${_esc(cell.levelName)}</span>` : ''}
+        ${cell.nextLevelId ? `<span class="campaign-pill">Leads to ${_esc(cell.nextLevelId.replace(/_/g, ' '))}</span>` : ''}
+        ${mapState.clearedCells?.[key] ? '<span class="campaign-pill">Cleared</span>' : ''}
+      </div>
+    `;
+  }
+
+  function renderNodeDetailSafe(node, mapState = {}) {
+    if (!node) return '<div class="campaign-empty">Select a node.</div>';
+    const state = CS().getState();
+    const run = state?.activeScenarioRun;
+    const map = CS().getActiveMap();
+    const isCurrent = run?.currentNode === node.id;
+    const canMove = _canMoveTo(node.id, run, map);
+    const captured = mapState.captured?.[node.id];
+    const entryResolved = mapState.entryResolved?.[node.id];
+    const notes = mapState.notes?.[node.id] || [];
+    const exits = (node.exits || []).map((exit) => {
+      const target = Runner().findNode(map, exit.to);
+      const locked = mapState.locked?.[exit.to] || exit.locked;
+      return `
+        <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
+          ${_esc(exit.label || target?.title || exit.to)}
+        </button>
+      `;
+    }).join('');
+    const tags = (node.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
+    const objective = node.questObjective || Runner().objectiveForNode?.(node.id, state, map);
+    const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
+    return `
+      <div class="campaign-detail-title">
+        <span>${_esc(node.title || node.id)}</span>
+        <span class="campaign-pill">${_esc(node.kind || 'node')}</span>
+        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '笨・' : ''}${_esc(objective.label)}</span>` : ''}
       </div>
       <div class="campaign-muted">${_esc(node.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
@@ -396,8 +486,16 @@ window.CJS.CampaignMap = (() => {
     return !['wall', 'obstacle', 'blocked', 'void'].includes(String(_terrainAt(map, x, y)).toLowerCase());
   }
 
-  function _cellKey(x, y) {
-    return `${Number(x)},${Number(y)}`;
+  function _movingThreatAt(run, map, x, y, levelId = null) {
+    if (!run || !Array.isArray(run.movingThreats)) return null;
+    const key = _cellKey(x, y, levelId);
+    return run.movingThreats.find((threat) => _cellKey(threat.x, threat.y, threat.levelId || levelId) === key) || null;
+  }
+
+  function _cellKey(x, y, levelId = null) {
+    const base = `${Number(x)},${Number(y)}`;
+    const level = levelId ? _normalizeLayerId(levelId) : '';
+    return level && level !== 'level_1' ? `${level}:${base}` : base;
   }
 
   function _esc(value) {

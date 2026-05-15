@@ -77,6 +77,24 @@ const mockFiles = {
           short: 'Chapter two starts.',
           default: 'Chapter two starts.'
         }
+      },
+      {
+        id: 'story_ch2_part2_in_update',
+        scope: 'story',
+        kind: 'main_story',
+        chapterId: 'arc1_ch02',
+        chapterLabel: '2.1',
+        orderKey: '2.1',
+        partId: 'part4',
+        partLabel: 'Part 2',
+        title: 'Chapter Two Follow-up',
+        deliveryStatus: 'in_update',
+        deliveryNote: 'This follow-up is intentionally blocked while the earlier part is still being integrated.',
+        nextCandidates: ['2.1a branch follow-up', 'Hub sync pass'],
+        summary: {
+          short: 'The next chapter-two story file is still in update.',
+          default: 'This file is not ready yet.'
+        }
       }
     ]
   },
@@ -94,6 +112,10 @@ const mockFiles = {
       short: 'Bin arrives and picks a route.',
       default: 'Bin takes the authored gate route by default.'
     },
+    defaultCompletionOps: [{ op: 'set_flag', flag: 'part1_sync_defaulted', value: true }],
+    completionOps: [{ op: 'set_flag', flag: 'part1_sync_played', value: true }],
+    defaultSyncSummary: ['Default sync applied to part 1.'],
+    syncSummary: ['Live sync applied to part 1.'],
     nodes: [
       { id: 'open', type: 'narration', text: 'Bin reaches the city gates.', next: 'route_choice' },
       {
@@ -364,7 +386,7 @@ function buildState() {
   const ordered = CJS.CampaignSequences.list('story', 'test').map((entry) => entry.id);
   assertEq('story files sort by order key',
     ordered.join(','),
-    'story_ch1_part1,story_ch1_part2_gate,story_ch1_part2_tavern,story_ch2_part1');
+    'story_ch1_part1,story_ch1_part2_gate,story_ch1_part2_tavern,story_ch2_part1,story_ch2_part2_in_update');
 
   const started = await CJS.CampaignSequences.start('story_ch2_part1', { world: 'test' });
   assertEq('starting later chapter defaults only eligible earlier parts', started.defaulted.length, 2);
@@ -372,10 +394,12 @@ function buildState() {
   let state = CJS.CampaignState.getState();
   assert('default path sets gate route flag', !!state.flags.route_gate);
   assert('default path sets part1 completion flag', !!state.flags.part1_done);
+  assert('default path applies default completion sync ops', !!state.flags.part1_sync_defaulted);
   assert('default path sets gate follow-up flag', !!state.flags.gate_followup_done);
   assert('default path skips tavern follow-up route', !state.flags.tavern_followup_done);
   assertEq('current chapter label follows active story part', state.storyMode.currentChapterLabel, '2');
   assertEq('canonical record stores defaulted mode', state.storyMode.partResults.story_ch1_part1.mode, 'defaulted');
+  assertEq('defaulted record keeps sync summary', state.storyMode.partResults.story_ch1_part1.syncSummary[0], 'Default sync applied to part 1.');
   assertEq('replayed chapter count is still zero', Object.keys(state.storyMode.completedParts).length, 0);
 
   await CJS.CampaignSequences.complete('manual');
@@ -396,6 +420,11 @@ function buildState() {
   state = CJS.CampaignState.getState();
   assertEq('canonical part1 record remains defaulted after replay', state.storyMode.partResults.story_ch1_part1.mode, 'defaulted');
   assert('story summary keeps two chapter-one records plus chapter two', Object.keys(state.storyMode.partResults).length === 3);
+
+  const blocked = await CJS.CampaignSequences.start('story_ch2_part2_in_update', { world: 'test' });
+  assert('in-update story file returns a blocked payload', !!blocked?.blocked);
+  assertEq('in-update story file reports its delivery status', blocked?.meta?.deliveryStatus, 'in_update');
+  assertEq('blocked story file preserves its delivery note', blocked?.meta?.deliveryNote, 'This follow-up is intentionally blocked while the earlier part is still being integrated.');
 
   console.log(`\nRESULTS: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);

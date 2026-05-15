@@ -224,6 +224,11 @@ window.CJS.ScenarioRunner = (() => {
       startCell,
       levelId: startLevelId
     });
+    const movingThreats = _normalizeMovingThreats(scenario, map, {
+      travelMode,
+      startLevelId,
+      startCell
+    });
     const entrySnapshot = _snapshotForReport(CS().getState());
 
     CS().mutate((state) => {
@@ -260,6 +265,7 @@ window.CJS.ScenarioRunner = (() => {
         surpriseHistory: [],
         notes: [],
         objectiveState: objective,
+        movingThreats,
         progressTriggerState: {},
         sequenceLink: options.sequenceLink || null
       };
@@ -277,6 +283,10 @@ window.CJS.ScenarioRunner = (() => {
     applyAutomaticPartyAvailability(scenario);
     Ops().apply(scenario.entryOps || [], { source: 'scenario_entry' });
     Ops().apply({ op: 'log', text: `Scenario started: ${scenario.name || scenario.id} (${travelMode}).` }, { source: 'scenario' });
+    _refreshObjectiveVisibility(CS().getState(), map, {
+      levelId: startLevelId,
+      explorationPercent: _explorationPercent(CS().getState()?.activeScenarioRun || {}, map)
+    });
     window.CJS.CampaignPartyChat?.auto?.({ world: scenario.world || CS().getState()?.currentWorld, situation: 'scenario_start', scenarioId, tags: scenario.tags || [] }, { chance: 0.65 });
     if (startNode && (travelMode === 'node_map' || travelMode === 'procedural')) {
       const activeMap = CS().getActiveMap() || map;
@@ -394,6 +404,7 @@ window.CJS.ScenarioRunner = (() => {
     const map = CS().getActiveMap();
     if (!run || !map || run.travelMode !== 'grid_map') return null;
     const activeLevelId = _defaultGridLevelId(map, run.mapLayer);
+    const previousLevelId = activeLevelId;
     let target = _gridCell(map, x, y, activeLevelId);
     if (!target || !_cellPassable(map, target.x, target.y)) return null;
     const current = run.currentCell || _normalizeCell(map.defaultStartCell || [0, 0]);
@@ -444,11 +455,13 @@ window.CJS.ScenarioRunner = (() => {
       locationKind: target.kind || _terrainAt(map, target.x, target.y),
       tags: target.tags || []
     }, { chance: 0.28 });
+    let enteredLevelId = null;
     if (target.nextLevelId) {
       const arrival = _transitionGridLevel(map, target);
       if (arrival) {
         target = arrival;
         targetKey = _cellKey(arrival.x, arrival.y, arrival.levelId, map);
+        enteredLevelId = arrival.levelId || null;
         if (Array.isArray(arrival.onEnter) && arrival.onEnter.length) {
           Ops().apply(arrival.onEnter, { source: 'grid_level_arrival' });
         }
@@ -457,7 +470,29 @@ window.CJS.ScenarioRunner = (() => {
         }
       }
     }
-    handleLocationEntry('cell', target, { map, run, cellKey: targetKey });
+    const activeRun = CS().getState()?.activeScenarioRun || run;
+    const explorationPercent = _explorationPercent(activeRun || {}, map);
+    if (enteredLevelId) {
+      _refreshObjectiveVisibility(CS().getState(), map, {
+        levelId: enteredLevelId,
+        explorationPercent
+      });
+      _runProgressTriggers({
+        type: 'enter_layer',
+        state: CS().getState(),
+        run: activeRun,
+        scenario,
+        map,
+        location: target,
+        levelId: enteredLevelId,
+        previousLevelId,
+        explorationPercent
+      });
+    }
+    if (!CS().getState()?.pendingBattle) {
+      _stepMovingThreats(map, target, targetKey);
+    }
+    handleLocationEntry('cell', target, { map, run: CS().getState()?.activeScenarioRun || run, cellKey: targetKey });
     return target;
   }
 
@@ -467,14 +502,14 @@ window.CJS.ScenarioRunner = (() => {
 
   function objectiveForNode(nodeId, state = CS().getState(), map = CS().getActiveMap()) {
     const objective = currentObjective(state);
-    if (!objective || objective.marker === false || !nodeId) return null;
+    if (!objective || objective.marker === false || (!objective.visible && !objective.completed) || !nodeId) return null;
     return objective.nodeId === nodeId ? objective : null;
   }
 
   function objectiveForCell(cell = {}, state = CS().getState(), map = CS().getActiveMap()) {
     const objective = currentObjective(state);
     const run = state?.activeScenarioRun;
-    if (!objective || objective.marker === false || !cell || !run) return null;
+    if (!objective || objective.marker === false || (!objective.visible && !objective.completed) || !cell || !run) return null;
     const key = _cellKey(cell.x, cell.y, cell.levelId || run.mapLayer, map);
     return objective.cellKey === key ? objective : null;
   }
@@ -487,6 +522,12 @@ window.CJS.ScenarioRunner = (() => {
     if (!run || !scenario || !location) return null;
 
     const explorationPercent = _explorationPercent(run, map);
+    _refreshObjectiveVisibility(state, map, {
+      explorationPercent,
+      levelId: kind === 'cell' ? (location.levelId || run.mapLayer) : run.mapLayer,
+      location,
+      type: kind
+    });
     let objectiveCompleted = false;
     if (_objectiveLocationMatch(run.objectiveState, kind, location, map, run)) {
       if (!_objectiveNeedsBattle(run.objectiveState)) {
@@ -526,6 +567,7 @@ window.CJS.ScenarioRunner = (() => {
     const map = CS().getActiveMap();
     if (!run || !scenario) return null;
     const normalized = String(outcome || 'victory').toLowerCase();
+    _resolveMovingThreatBattle(normalized, pending);
     let objectiveCompleted = false;
     if ((normalized === 'victory' || normalized === 'win' || normalized === 'success')
       && _objectiveBattleMatch(run.objectiveState, pending, result, map, run)) {
@@ -572,11 +614,22 @@ window.CJS.ScenarioRunner = (() => {
     const kind = String(source.kind || source.type || (fallback?.type === 'reach_cell' || fallback?.type === 'reach_node' ? 'reach' : 'objective')).toLowerCase();
     const levelId = cell ? _defaultGridLevelId(map, source.levelId || source.layerId || source.layer || startLevelId) : null;
     const cellKey = cell ? _cellKey(cell.x, cell.y, levelId, map) : null;
+    const reveal = _objectiveRevealConfig(source, scenario, map, {
+      ...options,
+      levelId
+    });
     return {
       id: source.id || 'objective_main',
       label: source.label || source.title || _objectiveLabel(source, fallback, map),
       kind,
       marker: source.marker !== false,
+      visible: reveal.visible,
+      revealAtPercent: reveal.revealAtPercent,
+      revealAtLevelId: reveal.revealAtLevelId,
+      revealAtLayerIndex: reveal.revealAtLayerIndex,
+      revealHint: reveal.revealHint,
+      revealedAt: source.revealedAt || null,
+      revealSource: source.revealSource || '',
       nodeId: source.nodeId || fallback?.nodeId || null,
       levelId,
       cell,
@@ -586,6 +639,79 @@ window.CJS.ScenarioRunner = (() => {
       completed: !!source.completed,
       completedAt: source.completedAt || null
     };
+  }
+
+  function _objectiveRevealConfig(source = {}, scenario = {}, map = null, options = {}) {
+    const explicitVisible = source.visible ?? source.revealed;
+    const levelCount = _gridLevels(map).length;
+    const totalExplorable = _totalExplorableCount(map);
+    const sizeText = String(source.size || scenario.size || map?.size || '').toLowerCase();
+    const layered = levelCount > 1;
+    const bigGrid = layered || totalExplorable >= 24 || sizeText === 'big' || sizeText === 'large';
+    const revealAtPercent = Number(source.revealAtPercent ?? source.revealPercent ?? (options.travelMode === 'grid_map' || map?.type === 'grid_map' ? 60 : 0)) || 0;
+    const explicitLevelId = source.revealAtLevelId || source.revealLevelId || source.revealLayerId || source.revealLayer || null;
+    const explicitLayerIndex = Number(source.revealAtLayerIndex || source.revealLayerIndex || 0) || 0;
+    let revealAtLayerIndex = explicitLayerIndex;
+    if (!revealAtLayerIndex && layered && levelCount >= 3) revealAtLayerIndex = 3;
+    let revealAtLevelId = explicitLevelId ? _defaultGridLevelId(map, explicitLevelId) : null;
+    if (!revealAtLevelId && revealAtLayerIndex > 0 && levelCount >= revealAtLayerIndex) {
+      revealAtLevelId = _defaultGridLevelId(map, _gridLevels(map)[revealAtLayerIndex - 1]?.id || null);
+    }
+    const shouldHide = source.marker !== false && (map?.type === 'grid_map' || options.travelMode === 'grid_map') && (bigGrid || revealAtPercent > 0);
+    const visible = explicitVisible != null ? !!explicitVisible : !shouldHide;
+    return {
+      visible,
+      revealAtPercent: revealAtPercent > 0 ? revealAtPercent : null,
+      revealAtLevelId,
+      revealAtLayerIndex: revealAtLayerIndex > 0 ? revealAtLayerIndex : null,
+      revealHint: _objectiveRevealHint(map, {
+        revealAtPercent,
+        revealAtLevelId,
+        revealAtLayerIndex
+      })
+    };
+  }
+
+  function _objectiveRevealHint(map = null, config = {}) {
+    const bits = [];
+    if (Number(config.revealAtPercent || 0) > 0) bits.push(`reveal near ${Number(config.revealAtPercent)}% explored`);
+    if (config.revealAtLevelId) bits.push(`or reach ${_gridLevelName(map, config.revealAtLevelId)}`);
+    else if (Number(config.revealAtLayerIndex || 0) > 0) bits.push(`or reach layer ${Number(config.revealAtLayerIndex)}`);
+    return bits.join(' | ');
+  }
+
+  function _refreshObjectiveVisibility(state = CS().getState(), map = CS().getActiveMap(), context = {}) {
+    const run = state?.activeScenarioRun;
+    const objective = run?.objectiveState;
+    if (!run || !objective || objective.marker === false || objective.completed || objective.visible) return objective;
+    const explorationPercent = Number(context.explorationPercent ?? _explorationPercent(run, map));
+    const levelId = _defaultGridLevelId(map, context.levelId || run.mapLayer);
+    const currentLayerIndex = _gridLevelIndex(map, levelId);
+    const targetLayerIndex = Number(objective.revealAtLayerIndex || 0);
+    const levelMatch = objective.revealAtLevelId
+      ? _defaultGridLevelId(map, objective.revealAtLevelId) === levelId
+      : false;
+    const percentMatch = Number(objective.revealAtPercent || 0) > 0 && explorationPercent >= Number(objective.revealAtPercent || 0);
+    const layerMatch = targetLayerIndex > 0 && currentLayerIndex >= targetLayerIndex;
+    if (!percentMatch && !levelMatch && !layerMatch) return objective;
+    let revealed = null;
+    CS().mutate((next) => {
+      const activeObjective = next.activeScenarioRun?.objectiveState;
+      if (!activeObjective || activeObjective.visible || activeObjective.completed) return;
+      activeObjective.visible = true;
+      activeObjective.revealedAt = new Date().toISOString();
+      activeObjective.revealSource = levelMatch
+        ? _gridLevelName(map, levelId)
+        : (layerMatch ? `layer_${currentLayerIndex}` : `${explorationPercent}% explored`);
+      revealed = {
+        label: activeObjective.label || 'Objective',
+        source: activeObjective.revealSource || ''
+      };
+    }, { source: 'scenario_objective_reveal' });
+    if (revealed) {
+      Ops().apply({ op: 'log', text: `Objective revealed: ${revealed.label}.` }, { source: 'scenario_objective_reveal' });
+    }
+    return CS().getState()?.activeScenarioRun?.objectiveState || objective;
   }
 
   function _objectiveLabel(source = {}, fallback = null, map = null) {
@@ -724,6 +850,12 @@ window.CJS.ScenarioRunner = (() => {
           onLoseOps: trigger.onLoseOps || trigger.minigame?.onLoseOps || []
         });
       }
+      if (trigger.revealObjective) {
+        actions.push({
+          type: 'reveal_objective',
+          ...(typeof trigger.revealObjective === 'object' ? trigger.revealObjective : {})
+        });
+      }
       if (trigger.endScenario) {
         actions.push({
           type: 'end_scenario',
@@ -757,6 +889,16 @@ window.CJS.ScenarioRunner = (() => {
       if (when.cellKey) return when.cellKey === context.cellKey;
       if (when.x != null || when.y != null) {
         return Number(when.x) === Number(context.location?.x) && Number(when.y) === Number(context.location?.y);
+      }
+      return true;
+    }
+    if (type === 'enter_layer' || type === 'enter_level') {
+      if (context.type !== 'enter_layer' && context.type !== 'enter_level') return false;
+      const entered = _defaultGridLevelId(context.map, context.levelId || context.location?.levelId || context.run?.mapLayer);
+      const wanted = when.levelId || when.layerId || when.level || when.layer || null;
+      if (wanted && _defaultGridLevelId(context.map, wanted) !== entered) return false;
+      if (Number(when.layerIndex || when.levelIndex || 0) > 0) {
+        return _gridLevelIndex(context.map, entered) >= Number(when.layerIndex || when.levelIndex || 0);
       }
       return true;
     }
@@ -828,6 +970,10 @@ window.CJS.ScenarioRunner = (() => {
     }
     if (type === 'minigame') {
       return _openTriggerMiniGame(action, context, next);
+    }
+    if (type === 'reveal_objective') {
+      _forceRevealObjective(action, context);
+      return next();
     }
     if (type === 'end_scenario') {
       endScenario(action.outcome || 'success');
@@ -1894,8 +2040,9 @@ window.CJS.ScenarioRunner = (() => {
       mapId: run?.mapId || null,
       tableId: meta.tableId || normalized.tableId || null,
       nodeId: run?.currentNode || null,
-      cellKey: run?.currentCell ? _cellKey(run.currentCell.x, run.currentCell.y) : null,
+      cellKey: meta.cellKey || (run?.currentCell ? _cellKey(run.currentCell.x, run.currentCell.y, run.mapLayer, CS().getActiveMap()) : null),
       source: meta.source || normalized.source || 'random',
+      threatId: meta.threatId || normalized.threatId || null,
       rewardOps: normalized.rewardOps || [],
       ..._defeatFields(normalized),
       objective: normalized.objective || '',
@@ -2301,6 +2448,126 @@ window.CJS.ScenarioRunner = (() => {
     const level = _gridLevel(map, levelId);
     if (_usesGridLevels(map)) return level?.cells || [];
     return map.cells || [];
+  }
+
+  function _gridLevelIndex(map = {}, levelId = null) {
+    const wanted = _defaultGridLevelId(map, levelId);
+    const levels = _gridLevels(map);
+    const index = levels.findIndex((level) => _normalizeLayerId(level.id || level.layerId || 'level_1') === wanted);
+    return index >= 0 ? index + 1 : 1;
+  }
+
+  function _normalizeMovingThreats(scenario = {}, map = null, options = {}) {
+    const raw = [
+      ...((Array.isArray(scenario?.movingThreats) ? scenario.movingThreats : [])),
+      ...((Array.isArray(map?.movingThreats) ? map.movingThreats : []))
+    ];
+    if ((options.travelMode || map?.type) !== 'grid_map' && map?.type !== 'grid_map') return [];
+    return raw.map((threat, index) => {
+      const cell = _normalizeCell(threat.cell || [threat.x, threat.y]);
+      const levelId = _defaultGridLevelId(map, threat.levelId || threat.layerId || threat.layer || options.startLevelId);
+      return {
+        id: threat.id || `moving_threat_${index + 1}`,
+        label: threat.label || threat.title || `Roaming Threat ${index + 1}`,
+        levelId,
+        x: Number(cell.x || 0),
+        y: Number(cell.y || 0),
+        icon: threat.icon || '!',
+        moveMode: threat.moveMode || threat.move || 'random',
+        moveChance: Number(threat.moveChance ?? 1),
+        encounterId: threat.encounterId || null,
+        battleSetId: threat.battleSetId || null,
+        monsterIds: Array.isArray(threat.monsterIds) ? threat.monsterIds.slice() : [],
+        rewardOps: Array.isArray(threat.rewardOps) ? threat.rewardOps.slice() : [],
+        defeatOps: Array.isArray(threat.defeatOps) ? threat.defeatOps.slice() : [],
+        drawOps: Array.isArray(threat.drawOps) ? threat.drawOps.slice() : [],
+        defeatOutcome: threat.defeatOutcome || null,
+        defeatMode: threat.defeatMode || null,
+        defeatNoRecovery: !!threat.defeatNoRecovery,
+        notes: threat.notes || 'A moving threat can trigger an immediate battle on contact.',
+        objective: threat.objective || '',
+        tags: Array.isArray(threat.tags) ? threat.tags.slice() : []
+      };
+    }).filter((threat) => Number.isFinite(threat.x) && Number.isFinite(threat.y));
+  }
+
+  function _stepMovingThreats(map, target = {}, targetKey = '') {
+    const state = CS().getState();
+    const run = state?.activeScenarioRun;
+    if (!run || run.travelMode !== 'grid_map' || !map) return null;
+    const currentLevelId = _defaultGridLevelId(map, target.levelId || run.mapLayer);
+    const threats = Array.isArray(run.movingThreats) ? run.movingThreats.slice() : [];
+    if (!threats.length) return null;
+    const contact = threats.find((threat) =>
+      _defaultGridLevelId(map, threat.levelId) === currentLevelId
+      && _cellKey(threat.x, threat.y, threat.levelId, map) === targetKey);
+    if (contact) return _queueMovingThreatBattle(contact, map, targetKey);
+    const occupied = new Set(threats.map((threat) => _cellKey(threat.x, threat.y, threat.levelId, map)));
+    let nextThreats = threats.map((threat) => ({ ...threat }));
+    let triggered = null;
+    for (const threat of nextThreats) {
+      if (_defaultGridLevelId(map, threat.levelId) !== currentLevelId) continue;
+      if (threat.moveMode !== 'random') continue;
+      if (Math.random() > Math.max(0, Math.min(1, Number(threat.moveChance || 1)))) continue;
+      const fromKey = _cellKey(threat.x, threat.y, threat.levelId, map);
+      occupied.delete(fromKey);
+      const options = _adjacentCells(map, threat.x, threat.y, threat.levelId)
+        .filter((cell) => !occupied.has(_cellKey(cell.x, cell.y, cell.levelId || threat.levelId, map)));
+      if (options.length) {
+        const pick = options[Math.floor(Math.random() * options.length)];
+        threat.x = Number(pick.x);
+        threat.y = Number(pick.y);
+        threat.levelId = _defaultGridLevelId(map, pick.levelId || threat.levelId);
+      }
+      const movedKey = _cellKey(threat.x, threat.y, threat.levelId, map);
+      occupied.add(movedKey);
+      if (movedKey === targetKey && !triggered) triggered = { ...threat };
+    }
+    CS().mutate((next) => {
+      if (!next.activeScenarioRun) return;
+      next.activeScenarioRun.movingThreats = nextThreats;
+    }, { source: 'moving_threat_step' });
+    if (triggered) return _queueMovingThreatBattle(triggered, map, targetKey);
+    return null;
+  }
+
+  function _queueMovingThreatBattle(threat = {}, map = null, cellKey = '') {
+    if (!threat) return null;
+    Ops().apply({ op: 'log', text: `Moving threat intercepts the party: ${threat.label || threat.id}.` }, { source: 'moving_threat' });
+    return _queueBattleEntry(threat, {
+      source: 'moving_threat',
+      threatId: threat.id,
+      cellKey
+    });
+  }
+
+  function _resolveMovingThreatBattle(outcome = 'victory', pending = {}) {
+    if (pending?.source !== 'moving_threat' || !pending?.threatId) return;
+    const normalized = String(outcome || '').toLowerCase();
+    if (!['victory', 'win', 'success'].includes(normalized)) return;
+    CS().mutate((state) => {
+      const threats = state.activeScenarioRun?.movingThreats;
+      if (!Array.isArray(threats)) return;
+      state.activeScenarioRun.movingThreats = threats.filter((threat) => threat.id !== pending.threatId);
+    }, { source: 'moving_threat_clear' });
+    Ops().apply({ op: 'log', text: `Moving threat cleared: ${pending.label || pending.threatId}.` }, { source: 'moving_threat' });
+  }
+
+  function _forceRevealObjective(action = {}, context = {}) {
+    const map = context.map || CS().getActiveMap();
+    let changed = false;
+    CS().mutate((state) => {
+      const objective = state.activeScenarioRun?.objectiveState;
+      if (!objective || objective.visible) return;
+      objective.visible = true;
+      objective.revealedAt = new Date().toISOString();
+      objective.revealSource = action.reason || action.source || 'trigger';
+      changed = true;
+    }, { source: 'scenario_objective_force_reveal' });
+    if (changed) {
+      Ops().apply({ op: 'log', text: `Objective revealed: ${CS().getState()?.activeScenarioRun?.objectiveState?.label || 'Objective'}.` }, { source: 'scenario_objective_force_reveal' });
+    }
+    return map;
   }
 
   function _transitionGridLevel(map, cell = {}) {

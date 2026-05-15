@@ -5,16 +5,47 @@
   "scope": "story",
   "arcId": "haven_arc1",
   "chapterId": "arc1_ch01",
-  "chapterLabel": "1",
-  "orderKey": "1",
+  "chapterLabel": "1.1",
+  "orderKey": "1.1",
   "partId": "ch01_part01",
-  "partLabel": "Part 1",
+  "partLabel": "1.1",
   "startNode": "open",
   "tags": ["world:haven", "arc:1", "chapter:return", "frostwood"],
   "summary": {
-    "short": "Bin returns to Haven through the Frostwood.",
-    "default": "Bin reaches the Frostwood road and chooses the safe gate route by default."
+    "short": "Bin reaches Haven's edge and the town starts reacting to the rumor that he is alive.",
+    "default": "Bin reaches the Frostwood road, takes the gate route by default, and the return becomes public."
   },
+  "nextCandidates": [
+    "1.1a Bent Pine Patrol",
+    "1.2 Frostbitten Gate Debrief (in update)"
+  ],
+  "syncSummary": [
+    "Rumor added: Bin was seen alive on the Frostwood road.",
+    "Hub mood set: Frostbitten shifts to uneasy relief.",
+    "Peri's follow-up can branch from the chosen return route."
+  ],
+  "completionOps": [
+    {
+      "op": "add_rumor",
+      "hubId": "haven_hub_frostbitten",
+      "id": "rumor_bin_alive_return",
+      "text": "Bin was seen alive on the Frostwood road before dawn.",
+      "tags": ["story", "bin", "return"]
+    },
+    {
+      "op": "hub_mood_set",
+      "hubId": "haven_hub_frostbitten",
+      "mood": "uneasy_relief"
+    },
+    {
+      "op": "event_log_add",
+      "title": "Story Sync: Frostwood Return",
+      "summary": "Bin makes it back to Haven's road and the town starts reacting in public.",
+      "scope": "story",
+      "source": "story_sync",
+      "tags": ["story_part", "chapter_1_1"]
+    }
+  ],
   "nodes": [
     {
       "id": "open",
@@ -58,9 +89,11 @@
     },
     {
       "id": "gate_move",
-      "type": "map_move",
-      "mapId": "haven_map_frostwood_short_route",
-      "nodeId": "wolf_tracks",
+      "type": "ops",
+      "summary": "Bin stays visible on purpose so the gate rumor reaches Haven first.",
+      "ops": [
+        { "op": "log", "text": "Bin keeps to the gate line so his return becomes impossible to deny." }
+      ],
       "next": "first_check"
     },
     {
@@ -88,19 +121,26 @@
       "type": "dialogue",
       "speaker": "Bin",
       "text": "I am alive, mostly employed, and legally not a ghost.",
-      "next": "finish_ops"
+      "next": "handoff"
     },
     {
       "id": "fail_line",
       "type": "dialogue",
       "speaker": "Bin",
       "text": "I can explain. Badly, but with confidence.",
+      "next": "handoff"
+    },
+    {
+      "id": "handoff",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "text": "Good. Stay alive long enough to help me sweep Bent Pine. If something is tailing the patrol line, I want eyes on it before the gate calms down.",
       "next": "finish_ops"
     },
     {
       "id": "finish_ops",
       "type": "ops",
-      "summary": "The return scene is recorded for the chapter summary.",
+      "summary": "The return scene is recorded and Bent Pine becomes the next chapter handoff.",
       "ops": [
         { "op": "set_flag", "flag": "story_haven_return_seen", "value": true },
         { "op": "tag_add", "tag": "bin_returned_to_haven", "scope": "story", "source": "sequence" }

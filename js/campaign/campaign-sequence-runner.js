@@ -101,7 +101,12 @@ window.CJS.CampaignSequences = (() => {
       partLabel: sequence?.partLabel || indexEntry?.partLabel || _labelFromPart(sequence?.partId || indexEntry?.partId || ''),
       orderKey: sequence?.orderKey || indexEntry?.orderKey || sequence?.chapterOrderKey || indexEntry?.chapterOrderKey || chapterLabel || fallbackOrder,
       title: sequence?.title || indexEntry?.title || sequence?.id || indexEntry?.id || '',
-      summary: sequence?.summary || indexEntry?.summary || null
+      summary: sequence?.summary || indexEntry?.summary || null,
+      deliveryStatus: _deliveryStatus(sequence?.deliveryStatus || indexEntry?.deliveryStatus),
+      deliveryBlocked: _deliveryBlocked(sequence || indexEntry),
+      deliveryNote: sequence?.deliveryNote || indexEntry?.deliveryNote || '',
+      nextCandidates: _asArray(sequence?.nextCandidates ?? indexEntry?.nextCandidates),
+      syncSummary: _summaryLines(sequence?.syncSummary ?? indexEntry?.syncSummary)
     };
   }
 
@@ -117,15 +122,34 @@ window.CJS.CampaignSequences = (() => {
       applied: !!(applied || defaulted || completed),
       completed,
       defaulted: !!defaulted,
-      replayOnly: !!(applied || defaulted || completed)
+      replayOnly: !!(applied || defaulted || completed),
+      deliveryStatus: meta.deliveryStatus || 'ready',
+      deliveryBlocked: !!meta.deliveryBlocked,
+      deliveryNote: meta.deliveryNote || ''
     };
   }
 
   async function start(sequenceId, options = {}) {
     const state = CS()?.getState?.();
     const world = options.world || state?.currentWorld || _activeWorld || 'haven';
+    const indexEntry = entry(sequenceId, world);
+    if (!indexEntry) return null;
+    if (_deliveryBlocked(indexEntry) || !indexEntry.file) {
+      return {
+        blocked: true,
+        reason: _deliveryStatus(indexEntry.deliveryStatus) || 'in_update',
+        meta: storyMeta(indexEntry, world)
+      };
+    }
     const sequence = await loadSequence(sequenceId, world);
     if (!sequence) return null;
+    if (_deliveryBlocked(sequence) || !sequence._file) {
+      return {
+        blocked: true,
+        reason: _deliveryStatus(sequence.deliveryStatus) || 'in_update',
+        meta: storyMeta(sequence, world)
+      };
+    }
 
     const scope = sequence.scope || options.scope || sequence._indexEntry?.scope || 'event';
     const meta = storyMeta(sequence, world);
@@ -340,13 +364,23 @@ window.CJS.CampaignSequences = (() => {
     const state = CS()?.getState?.();
     const current = active(state);
     if (!current) return { ok: false, reason: 'no_active_sequence' };
+    const world = state?.currentWorld || _activeWorld || 'haven';
+    const sequence = cachedSequence(current.sequenceId, world) || null;
+    const meta = storyMeta(sequence || current.sequenceId, world);
 
     const record = {
       ..._clone(current),
       result,
       completedAt: new Date().toISOString(),
-      mode: current.startMode || (current.applyConsequences === false ? 'replay' : 'played')
+      mode: current.startMode || (current.applyConsequences === false ? 'replay' : 'played'),
+      syncSummary: _syncSummary(sequence, meta, current.applyConsequences === false ? 'replay' : 'played'),
+      deliveryStatus: meta.deliveryStatus || 'ready'
     };
+
+    if (current.applyConsequences !== false) {
+      const completionOps = _completionOps(sequence, 'played');
+      if (completionOps.length) Ops()?.apply?.(completionOps, { source: 'sequence_completion' });
+    }
 
     CS().mutate((next) => {
       const runtime = next.sequenceRuntime = next.sequenceRuntime || { active: null, history: [] };
@@ -412,6 +446,7 @@ window.CJS.CampaignSequences = (() => {
       const state = CS()?.getState?.() || {};
       if (storyStatus(storyEntry.id, state, world).applied) continue;
       if (!_entryEligible(storyEntry, state)) continue;
+      if (_deliveryBlocked(storyEntry) || !storyEntry.file) continue;
       const sequence = await loadSequence(storyEntry.id, world);
       if (!sequence) continue;
       const record = _playSequenceDefault(sequence, world);
@@ -453,6 +488,11 @@ window.CJS.CampaignSequences = (() => {
       node = findNode(sequence, transition.next);
     }
 
+    const completionOps = _completionOps(sequence, 'defaulted');
+    if (completionOps.length) {
+      Ops()?.apply?.(completionOps, { source: 'sequence_default_completion' });
+    }
+
     const record = {
       sequenceId: sequence.id,
       title: sequence.title || sequence.id,
@@ -468,7 +508,9 @@ window.CJS.CampaignSequences = (() => {
       storyOrderKey: meta.orderKey || '',
       chapterId: meta.chapterId || '',
       chapterLabel: meta.chapterLabel || '',
-      summaryText: _storySummaryText(sequence, log, 'defaulted')
+      summaryText: _storySummaryText(sequence, log, 'defaulted'),
+      syncSummary: _syncSummary(sequence, meta, 'defaulted'),
+      deliveryStatus: meta.deliveryStatus || 'ready'
     };
 
     _commitStoryRecord(record, { pushHistory: true });
@@ -763,6 +805,41 @@ window.CJS.CampaignSequences = (() => {
   function _labelFromPart(value = '') {
     const match = String(value || '').match(/part[_-]?([a-z0-9.]+)/i);
     return match ? `Part ${String(match[1]).replace(/_/g, '.')}` : '';
+  }
+
+  function _deliveryStatus(value = '') {
+    const normalized = String(value || 'ready').trim().toLowerCase().replace(/\s+/g, '_');
+    return normalized || 'ready';
+  }
+
+  function _deliveryBlocked(value = {}) {
+    const status = _deliveryStatus(value?.deliveryStatus);
+    return status === 'in_update' || status === 'blocked';
+  }
+
+  function _completionOps(sequence = {}, mode = 'played') {
+    if (!sequence) return [];
+    const preferred = mode === 'defaulted'
+      ? (sequence.defaultCompletionOps ?? sequence.completionOps)
+      : sequence.completionOps;
+    return _asArray(preferred);
+  }
+
+  function _syncSummary(sequence = {}, meta = {}, mode = 'played') {
+    const preferred = mode === 'defaulted'
+      ? (sequence?.defaultSyncSummary ?? sequence?.syncSummary ?? meta?.syncSummary)
+      : (sequence?.syncSummary ?? meta?.syncSummary);
+    return _summaryLines(preferred);
+  }
+
+  function _summaryLines(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map((line) => String(line || '').trim()).filter(Boolean);
+    if (typeof value === 'string') return [value].filter(Boolean);
+    if (typeof value === 'object') {
+      return Object.values(value).map((line) => String(line || '').trim()).filter(Boolean);
+    }
+    return [];
   }
 
   function _asArray(value) {

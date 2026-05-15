@@ -981,6 +981,7 @@ window.CJS.CampaignUI = (() => {
     const manualCount = state.storyMode?.manualSummaryEntries?.length || 0;
     const defaultedCount = Object.keys(state.storyMode?.defaultedParts || {}).length;
     const activeRun = state.activeScenarioRun;
+    const pipeline = _storyPipelineSnapshot(state);
     const next = {
       index: activeSequence?.scope === 'story' ? 1 : 0,
       title: activeSequence?.scope === 'story' ? 'Continue Current Story Part' : 'Choose a Chapter Part',
@@ -1031,6 +1032,9 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-muted">Jumping ahead defaults earlier unrevealed parts once. Re-reading a played/defaulted part stays in story-only replay unless you add a future override flow.</div>
         </section>
 
+        ${_renderStoryPipelinePanel(pipeline)}
+        ${_renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle)}
+
         ${_renderSoloNotice(state)}
         ${activeRun ? _renderScenarioSummary(state) : ''}
         ${_renderPendingBattle(state)}
@@ -1075,6 +1079,7 @@ window.CJS.CampaignUI = (() => {
                 <div class="campaign-muted">${_esc(entry.result || 'complete')} | ${_esc(entry.completedAt || entry.startedAt || '')}</div>
                 <p>${_esc(entry.summaryText || _storySummaryTextFromRecord(entry))}</p>
                 ${entry.routeChoices?.length ? `<div class="campaign-muted">Route: ${_esc(entry.routeChoices.map((choice) => choice.label || choice.choiceId).filter(Boolean).join(' -> '))}</div>` : ''}
+                ${entry.syncSummary?.length ? `<div class="campaign-muted">State Sync: ${_esc(entry.syncSummary.join(' | '))}</div>` : ''}
               </div>
             </div>
           `).join('') : '<div class="campaign-empty">No completed story sequence parts yet.</div>'}
@@ -1348,7 +1353,8 @@ window.CJS.CampaignUI = (() => {
                 <strong>${_esc(entry.title || entry.id)}</strong>
                 ${entry.summary?.short || entry.summary?.default || entry.description ? `<p>${_esc(entry.summary?.short || entry.summary?.default || entry.description)}</p>` : ''}
                 <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
-                <button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}">Start</button>
+                ${_renderSequenceDeliveryState(entry, 'event')}
+                ${_renderSequenceActionButton(entry, 'event')}
               </article>
             `).join('') : `<div class="campaign-empty">${_esc(info.empty)}</div>`}
           </div>
@@ -1389,12 +1395,7 @@ window.CJS.CampaignUI = (() => {
     if (!entries.length) return emptyText ? `<div class="campaign-empty">${_esc(emptyText)}</div>` : '';
     return `
       <div class="campaign-action-grid">
-        ${entries.slice(0, 3).map((entry) => _actionBtn({
-          action: 'sequence-start',
-          label: entry.title || entry.id,
-          hint: _label(entry.kind || 'event'),
-          data: { id: entry.id }
-        })).join('')}
+        ${entries.slice(0, 3).map((entry) => _renderSequenceActionButton(entry, 'event')).join('')}
       </div>
     `;
   }
@@ -1472,10 +1473,11 @@ window.CJS.CampaignUI = (() => {
               <div class="campaign-sequence-kind">${_esc(_label(entry.kind || scope))}</div>
               <strong>${_esc(entry.title || entry.id)}</strong>
               ${scope === 'story' ? _renderStorySequenceMeta(entry) : ''}
-              ${scope === 'story' ? `<p>${_esc(_storySequenceSummary(entry))}</p>` : ''}
+              ${(scope === 'story' || entry.summary?.short || entry.summary?.default || entry.description) ? `<p>${_esc(_storySequenceSummary(entry))}</p>` : ''}
               <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
+              ${_renderSequenceDeliveryState(entry, scope)}
               ${scope === 'story' ? _renderStorySequenceStatus(entry) : ''}
-              <button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}">${scope === 'story' ? _storySequenceActionLabel(entry) : 'Start'}</button>
+              ${_renderSequenceActionButton(entry, scope)}
             </article>
           `).join('') : '<div class="campaign-empty">No sequence files loaded for this scope.</div>'}
         </div>
@@ -1641,6 +1643,7 @@ window.CJS.CampaignUI = (() => {
     const Seq = window.CJS.CampaignSequences;
     const state = CS().getState() || {};
     const status = Seq?.storyStatus?.(entry.id, state, state.currentWorld);
+    if (status?.deliveryBlocked) return 'In Update';
     return status?.replayOnly ? 'Read' : 'Start';
   }
 
@@ -1651,6 +1654,101 @@ window.CJS.CampaignUI = (() => {
     if (!status?.record) return '';
     const label = status.defaulted ? 'Defaulted' : (status.completed ? 'Played' : 'Read');
     return `<div class="campaign-chip-row"><span class="campaign-chip">${_esc(label)}</span></div>`;
+  }
+
+  function _renderSequenceActionButton(entry = {}, scope = 'story') {
+    const blocked = _sequenceDeliveryBlocked(entry, scope);
+    const label = scope === 'story' ? _storySequenceActionLabel(entry) : (blocked ? 'In Update' : 'Start');
+    return `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}" ${blocked ? 'disabled' : ''}>${_esc(label)}</button>`;
+  }
+
+  function _renderSequenceDeliveryState(entry = {}, scope = 'story') {
+    const status = _sequenceDeliveryStatus(entry, scope);
+    const note = _sequenceDeliveryNote(entry, scope);
+    if (!status || status === 'ready') return note ? `<div class="campaign-muted">${_esc(note)}</div>` : '';
+    return `
+      <div class="campaign-chip-row"><span class="campaign-chip">${_esc(_label(status))}</span></div>
+      ${note ? `<div class="campaign-muted">${_esc(note)}</div>` : ''}
+    `;
+  }
+
+  function _sequenceDeliveryStatus(entry = {}, scope = 'story') {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    if (scope === 'story') {
+      return Seq?.storyStatus?.(entry.id, state, state.currentWorld)?.deliveryStatus
+        || Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryStatus
+        || 'ready';
+    }
+    return Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryStatus || 'ready';
+  }
+
+  function _sequenceDeliveryBlocked(entry = {}, scope = 'story') {
+    return _sequenceDeliveryStatus(entry, scope) === 'in_update' || _sequenceDeliveryStatus(entry, scope) === 'blocked';
+  }
+
+  function _sequenceDeliveryNote(entry = {}, scope = 'story') {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    if (scope === 'story') {
+      return Seq?.storyStatus?.(entry.id, state, state.currentWorld)?.deliveryNote
+        || Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryNote
+        || '';
+    }
+    return Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryNote || '';
+  }
+
+  function _storyPipelineSnapshot(state = CS().getState() || {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const active = Seq?.active?.(state);
+    const summary = _storySummaryEntries(state);
+    const anchorId = active?.scope === 'story'
+      ? active.sequenceId
+      : (summary[summary.length - 1]?.sequenceId || (Seq?.list?.('story', state.currentWorld) || [])[0]?.id || null);
+    const meta = anchorId ? (Seq?.storyMeta?.(anchorId, state.currentWorld) || {}) : {};
+    return {
+      anchorId,
+      anchorTitle: meta.title || '',
+      nextCandidates: meta.nextCandidates || [],
+      syncSummary: meta.syncSummary || [],
+      syncTitle: meta.title || meta.partLabel || meta.sequenceId || ''
+    };
+  }
+
+  function _renderStoryPipelinePanel(pipeline = {}) {
+    const items = Array.isArray(pipeline.nextCandidates) ? pipeline.nextCandidates.filter(Boolean) : [];
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head">
+          <h3>Next Planned Parts</h3>
+          <span class="campaign-pill">${items.length}</span>
+        </div>
+        <div class="campaign-muted">${pipeline.anchorTitle ? `Following ${pipeline.anchorTitle}` : 'Upcoming story delivery for this arc.'}</div>
+        ${items.length
+          ? `<div class="campaign-chip-row">${items.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>`
+          : '<div class="campaign-empty">No next-part notes yet.</div>'}
+      </section>
+    `;
+  }
+
+  function _renderSyncSummaryPanel(title = 'State Sync', lines = [], sourceTitle = '') {
+    const items = Array.isArray(lines) ? lines.filter(Boolean) : [];
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head">
+          <h3>${_esc(title)}</h3>
+          ${sourceTitle ? `<span class="campaign-pill">${_esc(_shortenPanelLabel(sourceTitle))}</span>` : ''}
+        </div>
+        ${items.length
+          ? items.map((line) => `<div class="campaign-row"><div>${_esc(line)}</div></div>`).join('')
+          : '<div class="campaign-empty">No quest, hub, or rumor sync notes for this part yet.</div>'}
+      </section>
+    `;
+  }
+
+  function _shortenPanelLabel(value = '') {
+    const text = String(value || '');
+    return text.length > 24 ? `${text.slice(0, 22)}..` : text;
   }
 
   function _storySummaryEntries(state = CS().getState() || {}) {
@@ -1668,7 +1766,8 @@ window.CJS.CampaignUI = (() => {
         title: record.title || storyEntry.title || storyEntry.id,
         chapterLabel: record.chapterLabel || meta.chapterLabel || '',
         partLabel: meta.partLabel || '',
-        summaryText: record.summaryText || _storySummaryTextFromRecord(record)
+        summaryText: record.summaryText || _storySummaryTextFromRecord(record),
+        syncSummary: record.syncSummary || meta.syncSummary || []
       };
     }).filter(Boolean);
     for (const record of Object.values(records)) {
@@ -1678,7 +1777,8 @@ window.CJS.CampaignUI = (() => {
         title: record.title || record.sequenceId,
         chapterLabel: record.chapterLabel || '',
         partLabel: '',
-        summaryText: record.summaryText || _storySummaryTextFromRecord(record)
+        summaryText: record.summaryText || _storySummaryTextFromRecord(record),
+        syncSummary: record.syncSummary || []
       });
     }
     return out;
@@ -3106,10 +3206,11 @@ window.CJS.CampaignUI = (() => {
           <span>Camp <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
+          ${run.movingThreats?.length ? `<span>Roamers <b>${run.movingThreats.length}</b></span>` : ''}
         </div>
         ${objective ? `
           <div class="campaign-quest-phase campaign-scenario-task">
-            <span>${objective.completed ? 'Objective Complete' : 'Current Objective'}</span>
+            <span>${objective.completed ? 'Objective Complete' : (objective.visible === false ? 'Objective Hidden' : 'Current Objective')}</span>
             <strong>${_esc(objective.label || 'Reach the target')}</strong>
             <small>${_esc(_scenarioObjectiveMeta(run, objective))}</small>
           </div>
@@ -3235,6 +3336,7 @@ window.CJS.CampaignUI = (() => {
   function _battleSourceLabel(battle) {
     const map = { random: '🎲 Random Roll', set: '📌 Set Battle', manual_pick: '📋 Picked', beat: '📜 Beat', manual: 'Manual' };
     if (battle.source === 'travel_surprise') return 'Travel Surprise';
+    if (battle.source === 'moving_threat') return 'Moving Threat';
     if (battle.source === 'random_monster_pool') return 'Monster Pool';
     return map[battle.source] || battle.source || 'manual';
   }
@@ -4299,10 +4401,12 @@ window.CJS.CampaignUI = (() => {
 
   function _scenarioObjectiveMeta(run = {}, objective = {}) {
     const bits = [];
+    if (objective.visible === false && objective.revealHint) bits.push(objective.revealHint);
     if (run.travelMode === 'grid_map' && objective.levelId) bits.push(objective.levelId.replace(/_/g, ' '));
     if (objective.nodeId) bits.push(objective.nodeId);
     if (objective.cell) bits.push(`${objective.cell.x},${objective.cell.y}`);
     if (objective.completedAt) bits.push('resolved');
+    else if (objective.visible === false) bits.push('hidden');
     else bits.push(`${window.CJS.ScenarioRunner?.explorationPercent?.(CS().getState(), CS().getActiveMap()) || 0}% explored`);
     return bits.join(' | ');
   }
@@ -6014,6 +6118,10 @@ window.CJS.CampaignUI = (() => {
     if (!sequenceId) return;
     try {
       const started = await window.CJS.CampaignSequences?.start?.(sequenceId);
+      if (started?.blocked) {
+        render();
+        return UI().toast(started?.meta?.deliveryNote || 'That chapter part is still in update.', 'info');
+      }
       const sequence = started?.sequence || null;
       if (!sequence) return UI().toast('Sequence file not found', 'info');
       const scope = sequence.scope || sequence._indexEntry?.scope || 'event';
@@ -6037,6 +6145,7 @@ window.CJS.CampaignUI = (() => {
   async function _advanceSequenceFromUi(action, value = null) {
     try {
       const result = await window.CJS.CampaignSequences?.advance?.(action, value);
+      if (result?.scenarioStarted || result?.queued) _activeTab = 'maps';
       render();
       if (result?.replayOnly && result?.reason === 'replay_queue_blocked') {
         return UI().toast('Replay mode keeps consequences frozen. Use the continue buttons instead of queuing battle.', 'info');

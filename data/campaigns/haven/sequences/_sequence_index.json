@@ -10,17 +10,75 @@
       "kind": "main_story",
       "arcId": "haven_arc1",
       "chapterId": "arc1_ch01",
-      "chapterLabel": "1",
-      "orderKey": "1",
+      "chapterLabel": "1.1",
+      "orderKey": "1.1",
       "partId": "ch01_part01",
-      "partLabel": "Part 1",
+      "partLabel": "1.1",
       "title": "Frostwood Return",
       "file": "story/arc1/ch01_return/part01_frostwood_return.json",
       "summary": {
-        "short": "Bin returns to Haven through the Frostwood.",
-        "default": "Bin reaches the Frostwood road and chooses the safe gate route by default."
+        "short": "Bin reaches Haven's edge and the town starts reacting to the rumor that he is alive.",
+        "default": "Bin reaches the Frostwood road, takes the gate route by default, and the return becomes public."
       },
+      "nextCandidates": [
+        "1.1a Bent Pine Patrol",
+        "1.2 Frostbitten Gate Debrief (in update)"
+      ],
+      "syncSummary": [
+        "Rumor update: Bin was seen alive on the Frostwood road.",
+        "Hub mood shift: Frostbitten moves from anxious to uneasy relief."
+      ],
       "tags": ["world:haven", "arc:1", "chapter:return", "story"]
+    },
+    {
+      "id": "story_haven_arc1_ch01_part01a_bent_pine_patrol",
+      "scope": "story",
+      "kind": "main_story",
+      "arcId": "haven_arc1",
+      "chapterId": "arc1_ch01",
+      "chapterLabel": "1.1",
+      "orderKey": "1.1.a",
+      "partId": "ch01_part01a",
+      "partLabel": "1.1a",
+      "title": "Bent Pine Patrol",
+      "file": "story/arc1/ch01_return/part01a_bent_pine_patrol.json",
+      "requiresStoryParts": ["story_haven_arc1_ch01_part01_frostwood_return"],
+      "summary": {
+        "short": "Bin and Peri test the Bent Pine line before Haven can settle.",
+        "default": "The patrol reaches Watch Ridge and confirms the route is not safe yet."
+      },
+      "nextCandidates": [
+        "1.2 Frostbitten Gate Debrief (in update)"
+      ],
+      "syncSummary": [
+        "Quest follow-up: Watch Ridge Cleanup can open from the patrol report.",
+        "Hub problem: Something is stalking the patrol line up close."
+      ],
+      "tags": ["world:haven", "arc:1", "chapter:return", "story", "map_run"]
+    },
+    {
+      "id": "story_haven_arc1_ch01_part02_gate_debrief",
+      "scope": "story",
+      "kind": "main_story",
+      "arcId": "haven_arc1",
+      "chapterId": "arc1_ch01",
+      "chapterLabel": "1.2",
+      "orderKey": "1.2",
+      "partId": "ch01_part02",
+      "partLabel": "1.2",
+      "title": "Frostbitten Gate Debrief",
+      "deliveryStatus": "in_update",
+      "deliveryNote": "Chapter 1.2 is intentionally held while 1.1 and 1.1a are used for flow and integration testing.",
+      "requiresStoryParts": ["story_haven_arc1_ch01_part01a_bent_pine_patrol"],
+      "nextCandidates": [
+        "Gate debrief VN follow-up",
+        "Quest + rumor reaction pass",
+        "Custom branch checks after patrol result"
+      ],
+      "syncSummary": [
+        "This slot will update gate NPC reactions, follow-up quests, and the next Haven rumor pass."
+      ],
+      "tags": ["world:haven", "arc:1", "chapter:return", "story", "in_update"]
     },
     {
       "id": "event_bin_peri_luck_check",
@@ -29,6 +87,15 @@
       "title": "Peri Tests Bin's Luck",
       "file": "events/character/bin_peri_luck_check.json",
       "tags": ["peri", "luck", "comedy", "character_event"]
+    },
+    {
+      "id": "event_peri_patrol_debrief",
+      "scope": "event",
+      "kind": "special",
+      "title": "Peri Patrol Debrief",
+      "deliveryStatus": "in_update",
+      "deliveryNote": "This event will unlock after the Bent Pine Patrol pass is stable.",
+      "tags": ["peri", "special_event", "in_update"]
     },
     {
       "id": "quest_notice_board_frostwood_job",

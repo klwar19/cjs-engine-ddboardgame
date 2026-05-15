@@ -317,7 +317,23 @@ function seedContent() {
       cell: { x: 1, y: 0 },
       marker: true
     },
+    movingThreats: [
+      {
+        id: 'roamer_floor_1',
+        label: 'Roaming Test Threat',
+        levelId: 'floor_1',
+        cell: { x: 1, y: 0 },
+        battleSetId: 'bset_roamer_floor_1',
+        moveMode: 'random',
+        icon: '!'
+      }
+    ],
     progressTriggers: [
+      {
+        id: 'upper_floor',
+        when: { type: 'enter_layer', levelId: 'floor_2' },
+        setFlags: { entered_upper: true }
+      },
       {
         id: 'midpoint',
         when: { type: 'explore_percent', gte: 60 },
@@ -340,13 +356,14 @@ function seedContent() {
       {
         id: 'floor_1',
         name: 'Lower Hall',
-        width: 2,
+        width: 3,
         height: 1,
         defaultStartCell: [0, 0],
-        terrain: [['floor', 'floor']],
+        terrain: [['floor', 'floor', 'floor']],
         cells: [
           { id: 'lower_start', x: 0, y: 0, kind: 'entrance', title: 'Lower Start', discoveredByDefault: true },
-          { id: 'stairs_up', x: 1, y: 0, kind: 'stairs', title: 'Stairs Up', nextLevelId: 'floor_2', nextCell: [0, 0] }
+          { id: 'threat_lane', x: 1, y: 0, kind: 'event', title: 'Threat Lane' },
+          { id: 'stairs_up', x: 2, y: 0, kind: 'stairs', title: 'Stairs Up', nextLevelId: 'floor_2', nextCell: [0, 0] }
         ]
       },
       {
@@ -386,12 +403,28 @@ function waitTick() {
   state = CJS.CampaignState.getState();
   assert('scenario node starts a linked run', !!startRun?.scenarioStarted && state.activeScenarioRun?.scenarioId === 'scn_grid_levels');
   assertEq('grid run starts on floor 1', state.activeScenarioRun.mapLayer, 'floor_1');
+  assert('grid objective starts hidden on authored map run', state.activeScenarioRun.objectiveState?.visible === false);
 
   CJS.ScenarioRunner.moveToCell(1, 0);
   state = CJS.CampaignState.getState();
+  assertEq('moving threat contact queues an immediate battle', state.pendingBattle?.source, 'moving_threat');
+
+  CJS.CampaignOps.apply({
+    op: 'manual_battle_result',
+    result: 'victory',
+    summary: 'Moving threat test.'
+  }, { source: 'test' });
+  await waitTick();
+  state = CJS.CampaignState.getState();
+  assertEq('clearing the moving threat removes it from the active run', state.activeScenarioRun.movingThreats.length, 0);
+
+  CJS.ScenarioRunner.moveToCell(2, 0);
+  state = CJS.CampaignState.getState();
   assertEq('stairs move transitions to floor 2', state.activeScenarioRun.mapLayer, 'floor_2');
   assertEq('stairs move lands on the authored arrival cell', `${state.activeScenarioRun.currentCell.x},${state.activeScenarioRun.currentCell.y}`, '0,0');
+  assert('enter-layer trigger sets a flag on floor 2 arrival', !!state.flags.entered_upper);
   assert('60 percent exploration trigger sets a flag', !!state.flags.explored_60);
+  assert('objective reveals after the deeper push', state.activeScenarioRun.objectiveState?.visible === true);
 
   CJS.ScenarioRunner.moveToCell(1, 0);
   await waitTick();

@@ -30,6 +30,31 @@
       ],
       "limits": { "campRests": 1, "randomBattles": 3, "events": 3 },
       "danger": { "start": 0, "max": 8 },
+      "objective": {
+        "id": "watch_ridge_objective",
+        "kind": "reach",
+        "label": "Reach Watch Ridge",
+        "cell": { "x": 5, "y": 1 },
+        "marker": true,
+        "revealAtPercent": 60
+      },
+      "movingThreats": [
+        {
+          "id": "bent_pine_shadow_wolf",
+          "label": "Shadow Wolf Rusher",
+          "cell": { "x": 4, "y": 3 },
+          "battleSetId": "haven_bset_wolf_pack_bent_pine",
+          "moveMode": "random",
+          "moveChance": 1,
+          "icon": "!",
+          "notes": "The wolf line cuts across the party and forces an immediate fight on contact.",
+          "tags": ["wolf", "moving_threat"],
+          "defeatOps": [
+            { "op": "danger", "amount": 2 },
+            { "op": "log", "text": "The roaming threat breaks the patrol line and forces a retreat." }
+          ]
+        }
+      ],
       "setBattles": [
         {
           "id": "grid_wolf_cutoff",
@@ -60,6 +85,20 @@
       ],
       "successConditions": [
         { "type": "reach_cell", "x": 5, "y": 1 }
+      ],
+      "progressTriggers": [
+        {
+          "id": "patrol_midpoint",
+          "when": { "type": "explore_percent", "gte": 30 },
+          "log": "Mid-beat: Bent Pine closes in and the patrol starts tracking a second set of movements.",
+          "setFlags": { "story_frostwood_patrol_midbeat": true }
+        },
+        {
+          "id": "patrol_objective_reveal",
+          "when": { "type": "explore_percent", "gte": 60 },
+          "revealObjective": { "reason": "60_percent_explored" },
+          "log": "Final objective area revealed: Watch Ridge is finally in sight."
+        }
       ],
       "entryOps": [
         { "op": "log", "text": "Grid patrol started. Garr stays with the sled route." },
