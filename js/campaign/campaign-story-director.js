@@ -10,6 +10,8 @@ window.CJS.CampaignStoryDirector = (() => {
   const Loader = () => window.CJS.CampaignDataLoader;
   const Ops = () => window.CJS.CampaignOps;
   const Side = () => window.CJS.CampaignSideContent;
+  const Tags = () => window.CJS.CampaignTags;
+  const Conditions = () => window.CJS.CampaignConditions;
 
   const KIND_TO_FIELD = {
     scene: 'sceneBeats',
@@ -193,7 +195,8 @@ window.CJS.CampaignStoryDirector = (() => {
         ...(activeScenario?.tags || []),
         ...(node?.tags || []),
         ...personaTags,
-        ...(options.tags || [])
+        ...(options.tags || []),
+        ...(Tags()?.getActiveTags?.(state) || []).map((entry) => entry.tag)
       ].map((tag) => String(tag).toLowerCase())),
       activePersonas: _activePersonaIds(state),
       flags: state?.flags || {},
@@ -231,6 +234,7 @@ window.CJS.CampaignStoryDirector = (() => {
 
   function _eligible(entry, context) {
     if (!entry || entry.disabled) return false;
+    if (entry.conditions && Conditions()?.evaluate && !Conditions().evaluate(entry.conditions, CS().getState(), { tags: Array.from(context.tags) }).ok) return false;
     if (entry.stageIds?.length && !entry.stageIds.includes(context.stage.id)) return false;
     if (entry.phaseTypes?.length && !entry.phaseTypes.includes(context.phaseType)) return false;
     if (entry.scenarioIds?.length && !entry.scenarioIds.includes(context.scenarioId)) return false;

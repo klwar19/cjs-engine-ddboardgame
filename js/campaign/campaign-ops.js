@@ -9,6 +9,8 @@ window.CJS.CampaignOps = (() => {
   const CS = () => window.CJS.CampaignState;
   const D = () => window.CJS.Dice;
   const DS = () => window.CJS.DataStore;
+  const Tags = () => window.CJS.CampaignTags;
+  const QuestPulse = () => window.CJS.CampaignQuestPulse;
 
   const INVENTORY_BUCKETS = {
     give_item: 'items',
@@ -80,6 +82,11 @@ window.CJS.CampaignOps = (() => {
         case 'story_fact_reveal': return `Reveal story fact ${op.title || op.factId || op.id || ''}`;
         case 'story_thread_status': return `Story thread ${op.threadId || op.id} -> ${op.status || 'active'}`;
         case 'story_metric_change': return `Story ${op.metric || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'tag_add': return `Add tag ${op.tag || op.id}`;
+        case 'tag_resolve': return `Resolve tag ${op.tag || op.id}`;
+        case 'tag_archive': return `Archive tag ${op.tag || op.id}`;
+        case 'tag_remove': return `Remove tag ${op.tag || op.id}`;
+        case 'tag_strength_change': return `Tag ${op.tag || op.id} ${Number(op.amount || op.delta || 0) >= 0 ? '+' : ''}${op.amount || op.delta || 0}`;
         case 'bond_change': return `Bond ${op.npcId || op.target || op.id || 'character'} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
         case 'gain_skill_ap': return `Gain ${op.amount || 0} AP for skill ${op.skillId || op.id}`;
         case 'set_skill_level': return `Set skill ${op.skillId || op.id} to Lv ${op.level || 1}`;
@@ -246,6 +253,11 @@ window.CJS.CampaignOps = (() => {
       case 'story_fact_reveal': return _storyFactReveal(state, op);
       case 'story_thread_status': return _storyThreadStatus(state, op);
       case 'story_metric_change': return _storyMetricChange(state, op);
+      case 'tag_add': return _tagAdd(state, op);
+      case 'tag_resolve': return _tagResolve(state, op);
+      case 'tag_archive': return _tagArchive(state, op);
+      case 'tag_remove': return _tagRemove(state, op);
+      case 'tag_strength_change': return _tagStrengthChange(state, op);
       case 'memory_shard_add': return _memoryShardAdd(state, op);
       case 'bond_change': return _bondChange(state, op);
       default:
@@ -269,6 +281,10 @@ window.CJS.CampaignOps = (() => {
     if (activeRule?.farmGrowth) _farmTick(state, activeRule.farmGrowth, false);
     _applyIncomeNodes(state);
     _clearDuration(state, 'phase');
+    const expiredTags = Tags()?.expirePhaseTags?.(state) || [];
+    if (expiredTags.length) _log(state, `Expired ${expiredTags.length} temporary tag${expiredTags.length === 1 ? '' : 's'}.`);
+    const repeatedQuests = QuestPulse()?.resetRepeatableQuests?.(state) || [];
+    for (const line of repeatedQuests) _log(state, `Repeat quest refreshed: ${line}.`);
     state.eventCharges = { ...(activeRule?.eventCharges || {}) };
     // Re-evaluate persona unlocks: phase-locked personas come online here.
     _evaluatePersonaUnlocks(state, { target: 'party' });
@@ -303,6 +319,31 @@ window.CJS.CampaignOps = (() => {
     else delete state.flags[flag];
     _log(state, `${enabled ? 'Set' : 'Cleared'} flag ${flag}.`);
     if (enabled) _evaluatePersonaUnlocks(state, { target: 'party' });
+  }
+
+  function _tagAdd(state, op) {
+    const entry = Tags()?.addTag?.(state, op);
+    if (entry) _log(state, `Tag added: ${entry.label || entry.tag}.`, op);
+  }
+
+  function _tagResolve(state, op) {
+    const count = Tags()?.resolveTag?.(state, op) || 0;
+    if (count) _log(state, `Tag resolved: ${op.tag || op.id}.`, op);
+  }
+
+  function _tagArchive(state, op) {
+    const count = Tags()?.archiveTag?.(state, op) || 0;
+    if (count) _log(state, `Tag archived: ${op.tag || op.id}.`, op);
+  }
+
+  function _tagRemove(state, op) {
+    const count = Tags()?.removeTag?.(state, op) || 0;
+    if (count) _log(state, `Tag removed: ${op.tag || op.id}.`, op);
+  }
+
+  function _tagStrengthChange(state, op) {
+    const count = Tags()?.changeStrength?.(state, op) || 0;
+    if (count) _log(state, `Tag strength changed: ${op.tag || op.id}.`, op);
   }
 
   function _mapState(state, mapId) {
@@ -1236,13 +1277,15 @@ window.CJS.CampaignOps = (() => {
       // null/empty personaId means "clear active persona" — restore base
       // character loadout from the _legacy slot (or leave fields as-is).
       if (!personaId) {
-        if (member.activePersona) {
-          member.personaProgress = member.personaProgress || {};
-          member.personaProgress[member.activePersona] = PS
-            ? PS.captureLoadoutFromMember(member)
-            : member.personaProgress[member.activePersona];
+        if (!CS()?.switchPersona?.(member, null, state)) {
+          if (member.activePersona) {
+            member.personaProgress = member.personaProgress || {};
+            member.personaProgress[member.activePersona] = PS
+              ? PS.captureLoadoutFromMember(member)
+              : member.personaProgress[member.activePersona];
+          }
+          member.activePersona = null;
         }
-        member.activePersona = null;
         _log(state, `${member.name || id} no longer carries a persona.`);
         continue;
       }
@@ -1305,13 +1348,14 @@ window.CJS.CampaignOps = (() => {
 
   function _addQuest(state, quest) {
     if (!quest.id) quest.id = `quest_${Date.now()}`;
-    state.quests[quest.id] = {
+    const prepared = QuestPulse()?.prepareQuest?.(quest, state) || CS().clone(quest);
+    state.quests[prepared.id] = {
       status: 'active',
       objectives: [],
       notes: '',
-      ...CS().clone(quest)
+      ...prepared
     };
-    _log(state, `Quest added: ${quest.title || quest.id}.`);
+    _log(state, `Quest added: ${prepared.title || prepared.id}.`);
   }
 
   function _questProgress(state, op) {
@@ -1335,6 +1379,8 @@ window.CJS.CampaignOps = (() => {
     if (options.applyRewards !== false) {
       for (const reward of quest.rewards || []) _applyOne(state, reward, { source: 'quest_reward' });
     }
+    for (const tag of quest.resolveTags || []) Tags()?.resolveTag?.(state, { tag, scope: 'quest', targetType: 'quest', targetId: quest.id });
+    for (const tag of quest.completeTags || []) Tags()?.addTag?.(state, { tag, scope: 'quest', targetType: 'quest', targetId: quest.id, source: 'quest_complete' });
   }
 
   function _setQuestStatus(state, questId, status) {
@@ -2004,8 +2050,14 @@ window.CJS.CampaignOps = (() => {
       completedSteps: [],
       startedAtPhase: state.phase?.number || 1,
       notes: [],
-      rewardsApplied: false
+      rewardsApplied: false,
+      tags: template.tags || [],
+      contextTags: template.contextTags || [],
+      monsterTags: template.monsterTags || []
     };
+    for (const tag of template.startTags || []) {
+      Tags()?.addTag?.(state, { tag, scope: 'quest_chain', targetType: 'quest_chain', targetId: templateId, source: 'quest_chain_start' });
+    }
     _history(state, 'quest_chain', template.title || templateId, 'active');
     _log(state, `Started quest chain: ${template.title || templateId}.`);
   }
@@ -2061,6 +2113,8 @@ window.CJS.CampaignOps = (() => {
       const rewards = template?.rewardOps || template?.rewards || [];
       for (const reward of rewards) _applyOne(state, reward, { source: 'quest_chain_reward' });
     }
+    for (const tag of template?.resolveTags || []) Tags()?.resolveTag?.(state, { tag, scope: 'quest_chain', targetType: 'quest_chain', targetId: templateId });
+    for (const tag of template?.completeTags || []) Tags()?.addTag?.(state, { tag, scope: 'quest_chain', targetType: 'quest_chain', targetId: templateId, source: 'quest_chain_complete' });
     _history(state, 'quest_chain', chain.title || templateId, 'complete');
     _log(state, `Quest chain complete: ${chain.title || templateId}.`);
   }
@@ -2326,7 +2380,14 @@ window.CJS.CampaignOps = (() => {
       notes: op.notes || '',
       objective: op.objective || '',
       battleMap: op.battleMap || null,
-      setting: op.setting || null
+      setting: op.setting || null,
+      tags: op.tags || [],
+      contextTags: op.contextTags || [],
+      monsterTags: op.monsterTags || [],
+      questId: op.questId || op.questContext?.questId || null,
+      questChainId: op.questChainId || op.questContext?.questChainId || null,
+      objectiveId: op.objectiveId || op.questContext?.objectiveId || null,
+      questContext: op.questContext || null
     };
     _log(state, `Battle ready: ${state.pendingBattle.label}.`);
   }
@@ -2334,6 +2395,7 @@ window.CJS.CampaignOps = (() => {
   function _manualBattleResult(state, op, options = {}) {
     const outcome = String(op.result || 'victory').toLowerCase();
     const pending = state.pendingBattle || {};
+    const combatPulse = op.combatPulse || _syntheticCombatPulse(state, pending, outcome);
     _log(state, `Manual battle result: ${outcome || 'resolved'}${op.summary ? ` - ${op.summary}` : ''}.`);
     for (const change of op.changes || []) _applyOne(state, change, { source: 'manual_battle' });
     _applyBattleSetback(state, outcome, op);
@@ -2353,6 +2415,17 @@ window.CJS.CampaignOps = (() => {
         encounterId: op.encounterId || pending.encounterId || null
       });
     }
+    if (combatPulse && op.questPulseApplied !== true) {
+      const pulseResult = {
+        result: outcome,
+        encounterId: op.encounterId || pending.encounterId || null,
+        combatPulse,
+        questContext: op.questContext || pending.questContext || null
+      };
+      for (const questOp of QuestPulse()?.opsForCombatResult?.(state, pulseResult) || []) {
+        _applyOne(state, questOp, { source: 'quest_pulse' });
+      }
+    }
     state.lastCombatResult = {
       result: outcome || 'manual',
       summary: op.summary || '',
@@ -2361,9 +2434,24 @@ window.CJS.CampaignOps = (() => {
       label: pending.label || op.encounterId || '',
       rounds: Number(op.rounds || 0),
       loot: Array.isArray(op.loot) ? op.loot : [],
+      combatPulse,
+      questContext: op.questContext || pending.questContext || null,
       completedAt: op.completedAt || new Date().toISOString(),
       source: options.source || op.source || 'manual'
     };
+    if (combatPulse) {
+      state.questPulse = state.questPulse || { recent: [], settings: { autoApplyCombat: true } };
+      state.questPulse.recent = state.questPulse.recent || [];
+      state.questPulse.recent.unshift({
+        at: state.lastCombatResult.completedAt,
+        result: state.lastCombatResult.result,
+        encounterId: state.lastCombatResult.encounterId,
+        summary: combatPulse.summary || '',
+        tags: (combatPulse.tags || []).slice(0, 24),
+        questContext: op.questContext || pending.questContext || null
+      });
+      state.questPulse.recent = state.questPulse.recent.slice(0, 20);
+    }
     state.lastCombatResultKey = op.resultKey || op.requestId || [
       state.saveId,
       state.lastCombatResult.encounterId,
@@ -2371,6 +2459,53 @@ window.CJS.CampaignOps = (() => {
       state.lastCombatResult.result
     ].filter(Boolean).join('|');
     state.pendingBattle = null;
+  }
+
+  function _syntheticCombatPulse(state, pending = {}, outcome = 'victory') {
+    const tags = new Set();
+    const add = (values) => {
+      for (const value of Array.isArray(values) ? values : [values]) {
+        const tag = Tags()?.cleanTag?.(value);
+        if (tag) tags.add(tag);
+      }
+    };
+    add(`outcome:${outcome}`);
+    add(pending.tags || []);
+    add(pending.contextTags || []);
+    add(pending.monsterTags || []);
+    add(pending.questContext?.tags || []);
+    add(pending.questContext?.contextTags || []);
+    add(pending.questContext?.monsterTags || []);
+    const card = pending.battleSetId ? _battleSetCardForPulse(pending.battleSetId) : null;
+    for (const tag of card?.tags || []) add([tag, `battle_tag:${tag}`]);
+    if (outcome === 'victory') {
+      for (const monsterId of pending.monsterIds || []) {
+        const monster = DS().get('monsters', monsterId) || {};
+        add(`defeated:${monsterId}`);
+        if (monster.type) add(`defeated_type:${monster.type}`);
+        for (const tag of QuestPulse()?.monsterTags?.(monster) || []) add(`defeated_tag:${tag}`);
+      }
+    }
+    return {
+      tags: Array.from(tags),
+      playerActionTags: [],
+      skillUse: {},
+      statusIds: [],
+      defeatedEnemies: [],
+      questContext: pending.questContext || null,
+      battleSetId: pending.battleSetId || null,
+      encounterId: pending.encounterId || null,
+      summary: 'Manual battle context recorded.'
+    };
+  }
+
+  function _battleSetCardForPulse(cardId) {
+    if (!cardId) return null;
+    for (const set of DS().getAllAsArray('battleSets')) {
+      const card = (set.cards || []).find((entry) => entry.id === cardId);
+      if (card) return card;
+    }
+    return null;
   }
 
   function _applyBattleSetback(state, outcome, op = {}) {

@@ -289,6 +289,18 @@ window.CJS.ActionHandler = (() => {
     const weaponData = _getWeaponData(unit);
     _battleSfx(unit, 'attack', { weaponData, target, volume: 0.5 });
     _battleSfx(unit, 'archerAttack', { weaponData, target, volume: 0.62 });
+    Log().record({
+      type: 'action_used',
+      actor: unit,
+      target,
+      tags: [
+        'action_used',
+        'basic_attack',
+        'attack',
+        ...((weaponData?.tags || []).map((tag) => `weapon_tag:${tag}`))
+      ],
+      data: { action: 'attack', weaponId: weaponData?.itemId || weaponData?.id || null }
+    });
     const attack = DC().computeAttack({
       attacker: unit, target, skill: null,
       qteMultiplier: ctx.qteMultiplier || 1.0,

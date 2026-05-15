@@ -20,8 +20,37 @@
           "summary": "Clear the wolf pack troubling the Frostwood road.",
           "objectives": [
             { "id": "read_tracks", "label": "Read the tracks at Wolf Tracks", "current": 0, "required": 1 },
-            { "id": "break_den", "label": "Break the Wolf Den ambush", "current": 0, "required": 1 },
-            { "id": "clear_wolves", "label": "Secure the Old Shrine route", "current": 0, "required": 1 }
+            {
+              "id": "break_den",
+              "label": "Break the Wolf Den ambush",
+              "current": 0,
+              "required": 1,
+              "progressTriggers": [
+                {
+                  "id": "wolf_den_victory",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["battle_tag:wolf", "defeated_tag:wolf", "defeated:haven_ice_wolf"],
+                  "amount": 1,
+                  "log": "Quest pulse: the wolf den ambush is broken."
+                }
+              ]
+            },
+            {
+              "id": "clear_wolves",
+              "label": "Secure the Old Shrine route",
+              "current": 0,
+              "required": 1,
+              "progressTriggers": [
+                {
+                  "id": "wolf_route_secured",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["defeated_tag:wolf", "battle_tag:wolf", "defeated_type:beast"],
+                  "amount": 1,
+                  "addTags": ["road_safe"],
+                  "log": "Quest pulse: the Frostwood route looks safer."
+                }
+              ]
+            }
           ],
           "rewards": [
             { "op": "give_money", "currency": "haven_gold", "amount": 30 },
@@ -32,6 +61,8 @@
           "linkedScenario": "haven_scn_frostwood_short_run",
           "linkedMapNodes": ["wolf_tracks", "wolf_den", "old_shrine"],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bandit_taxmen_snowblind"],
+          "contextTags": ["forest", "road", "ambush"],
+          "monsterTags": ["wolf", "beast"],
           "tags": ["forest", "wolf", "starter"],
           "notes": "GM may complete this after any wolf-pack result, combat or tabletop."
         },
@@ -43,7 +74,21 @@
           "summary": "Gather mushrooms in Frostwood for a warm-up guild job.",
           "objectives": [
             { "id": "find_grove", "label": "Scout the Bent Pine trail", "current": 0, "required": 1 },
-            { "id": "collect_mushrooms", "label": "Collect 5 Frostcap Mushrooms", "current": 0, "required": 5 }
+            {
+              "id": "collect_mushrooms",
+              "label": "Collect 5 Frostcap Mushrooms",
+              "current": 0,
+              "required": 5,
+              "progressTriggers": [
+                {
+                  "id": "grove_success",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["battle_tag:mushroom", "battle_tag:food", "defeated_tag:sprite", "status:desolation_armor_break"],
+                  "amount": 2,
+                  "log": "Quest pulse: the grove yields usable frostcaps."
+                }
+              ]
+            }
           ],
           "rewards": [
             { "op": "give_money", "currency": "haven_gold", "amount": 20 },
@@ -54,8 +99,44 @@
           "mapForm": "grid_map",
           "linkedScenario": "haven_scn_frostwood_grid_patrol",
           "linkedMapCells": ["bent_pine", "frostcap_grove", "watch_ridge"],
-          "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "battleSetIds": ["haven_bset_frost_sprite_grove", "haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "contextTags": ["forest", "grove", "forage", "mushroom"],
+          "monsterTags": ["sprite", "wolf"],
           "tags": ["forest", "forage", "starter"],
+          "repeat": {
+            "reset": "phase",
+            "refreshActive": false,
+            "timerPhases": 4,
+            "variants": [
+              {
+                "id": "stew_shortage",
+                "label": "Stew Pot Low",
+                "summary": "Tessa needs a small basket before the dinner rush.",
+                "dialogue": "Tessa taps the empty stew pot and tries to look casual about it.",
+                "tags": ["food"],
+                "contextTags": ["tavern", "food", "warmth"],
+                "monsterTags": ["rat", "sprite"]
+              },
+              {
+                "id": "blue_cap_sighting",
+                "label": "Blue Cap Sighting",
+                "summary": "Someone saw a brighter frostcap near the grove.",
+                "dialogue": "A guild runner swears the mushroom winked. Nobody writes that part down.",
+                "tags": ["mystery"],
+                "contextTags": ["grove", "mushroom", "magic"],
+                "monsterTags": ["sprite"]
+              },
+              {
+                "id": "safe_forage_loop",
+                "label": "Quiet Forage",
+                "summary": "A simple supply run, useful between heavier scenes.",
+                "dialogue": "Tessa asks for the boring basket. The boring basket sounds wonderful.",
+                "tags": ["low_pressure"],
+                "contextTags": ["forest", "forage"],
+                "monsterTags": ["wolf", "sprite"]
+              }
+            ]
+          },
           "notes": "Good low-pressure resource quest."
         },
         {
@@ -81,6 +162,8 @@
           "linkedScenario": "haven_scn_frostwood_short_run",
           "linkedMapNodes": ["broken_sled", "hunter_cache", "watch_ridge"],
           "battleSetIds": ["haven_bset_bandit_taxmen_snowblind", "haven_bset_wolf_pack_bent_pine"],
+          "contextTags": ["supply", "ridge", "sled", "warmth"],
+          "monsterTags": ["bandit", "wolf"],
           "tags": ["forest", "supply", "starter"],
           "notes": "Use the sled/cache/ridge branch on Frostwood Short Route."
         },
@@ -105,8 +188,89 @@
           "linkedScenario": "haven_scn_frostwood_short_run",
           "linkedMapNodes": ["wolf_tracks", "wolf_den", "old_shrine"],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "contextTags": ["crafting", "pelt", "field_test"],
+          "monsterTags": ["wolf", "bear", "beast"],
           "tags": ["forest", "crafting", "starter"],
           "notes": "A practical forge quest that still uses map movement and combat."
+        },
+        {
+          "id": "quest_daily_notice_board_mix",
+          "title": "Notice Board Mixed Errand",
+          "kind": "daily",
+          "status": "active",
+          "giver": "Frostbitten Guild Board",
+          "summary": "A light repeatable guild-paper job. Pick the logical objective for the current phase: hunt, harvest, hub errand, or puzzle room.",
+          "objectives": [
+            { "id": "notice_task", "kind": "hub_event", "label": "Run 1 logical hub event or field task", "current": 0, "required": 1 },
+            { "id": "notice_wrap", "kind": "talk", "label": "Return to the board and mark the paper stamped", "current": 0, "required": 1 }
+          ],
+          "rewards": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 12 }
+          ],
+          "timer": { "phasesRemaining": 2 },
+          "mapType": "urban",
+          "contextTags": ["guild", "notice_board", "daily", "town"],
+          "monsterTags": ["wolf", "sprite", "rat"],
+          "tags": ["daily", "guild", "repeatable", "starter"],
+          "repeat": {
+            "reset": "phase",
+            "refreshActive": false,
+            "timerPhases": 2,
+            "variants": [
+              {
+                "id": "kill_slip",
+                "label": "Cull Slip",
+                "summary": "The board asks for three small threats cleared near the road.",
+                "objectiveOverrides": [
+                  { "id": "notice_task", "kind": "defeat_count", "label": "Defeat 3 suitable monsters", "required": 3 }
+                ],
+                "contextTags": ["road", "forest", "hunt"],
+                "monsterTags": ["wolf", "sprite"]
+              },
+              {
+                "id": "harvest_slip",
+                "label": "Harvest Slip",
+                "summary": "The board asks for a small basket of usable ingredients.",
+                "objectiveOverrides": [
+                  { "id": "notice_task", "kind": "harvest", "label": "Harvest 3 useful ingredients", "required": 3 }
+                ],
+                "contextTags": ["forage", "mushroom", "food"],
+                "monsterTags": ["sprite"]
+              },
+              {
+                "id": "puzzle_slip",
+                "label": "Puzzle Slip",
+                "summary": "The board asks someone expendable to test a tiny dungeon mechanism.",
+                "objectiveOverrides": [
+                  { "id": "notice_task", "kind": "minigame", "label": "Clear 1 mini-game room", "required": 1 }
+                ],
+                "contextTags": ["dungeon", "puzzle", "training"],
+                "monsterTags": ["sprite", "guardian"]
+              }
+            ]
+          },
+          "notes": "Designed for quick daily/repeat use and manual GM flexibility."
+        },
+        {
+          "id": "quest_dungeon_puzzle_chit",
+          "title": "Dungeon Puzzle Chit",
+          "kind": "normal",
+          "status": "active",
+          "giver": "Corvin",
+          "summary": "Corvin needs one simple mechanism tested so he can file it as safe, unsafe, or personally insulting.",
+          "objectives": [
+            { "id": "reach_room", "kind": "reach", "label": "Reach the puzzle room", "current": 0, "required": 1 },
+            { "id": "clear_minigame", "kind": "minigame", "label": "Clear 1 mini-game room", "current": 0, "required": 1 }
+          ],
+          "rewards": [
+            { "op": "give_money", "currency": "haven_gold", "amount": 16 },
+            { "op": "give_jp", "amount": 1 }
+          ],
+          "mapType": "dungeon",
+          "contextTags": ["dungeon", "puzzle", "training", "guild"],
+          "monsterTags": ["sprite", "guardian"],
+          "tags": ["normal", "minigame", "dungeon", "starter"],
+          "notes": "Foundation quest for future mini-game modules."
         }
       ]
     }

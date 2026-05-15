@@ -1,0 +1,35 @@
+{
+  "id": "haven_sequence_index",
+  "campaignId": "haven_free_campaign_test",
+  "world": "haven",
+  "version": 1,
+  "entries": [
+    {
+      "id": "story_haven_arc1_ch01_part01_frostwood_return",
+      "scope": "story",
+      "kind": "main_story",
+      "arcId": "haven_arc1",
+      "chapterId": "arc1_ch01",
+      "partId": "ch01_part01",
+      "title": "Frostwood Return",
+      "file": "story/arc1/ch01_return/part01_frostwood_return.json",
+      "tags": ["world:haven", "arc:1", "chapter:return", "story"]
+    },
+    {
+      "id": "event_bin_peri_luck_check",
+      "scope": "event",
+      "kind": "character",
+      "title": "Peri Tests Bin's Luck",
+      "file": "events/character/bin_peri_luck_check.json",
+      "tags": ["peri", "luck", "comedy", "character_event"]
+    },
+    {
+      "id": "quest_notice_board_frostwood_job",
+      "scope": "quest",
+      "kind": "daily",
+      "title": "Notice Board: Frostwood Job",
+      "file": "quests/daily/frostwood_notice_board.json",
+      "tags": ["daily", "quest_board", "forest", "rank:F"]
+    }
+  ]
+}

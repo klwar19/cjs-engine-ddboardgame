@@ -134,6 +134,8 @@ window.CJS.CampaignCombatBridge = (() => {
       battleSetId: pendingBattle?.battleSetId || null,
       battleSetCard: _battleSetCard(pendingBattle?.battleSetId),
       monsterIds: (pendingBattle?.monsterIds || []).filter(Boolean),
+      tags: pendingBattle?.tags || [],
+      questContext: _battleQuestContext(state, pendingBattle),
       battleMap: pendingBattle?.battleMap || null,
       setting: pendingBattle?.setting || CS().getActiveScenario?.()?.setting || '',
       defeatOps: pendingBattle?.defeatOps || pendingBattle?.lossOps || [],
@@ -517,6 +519,12 @@ window.CJS.CampaignCombatBridge = (() => {
       partyAfter,
       loot,
       defeatedEnemies,
+      combatPulse: window.CJS.CampaignQuestPulse?.buildCombatPulse?.({
+        request,
+        combatState,
+        entries: window.CJS.CombatLog?.getAll?.() || []
+      }) || null,
+      questContext: request?.questContext || null,
       defeatOps: request?.defeatOps || [],
       drawOps: request?.drawOps || [],
       badEndingOps: request?.badEndingOps || [],
@@ -539,6 +547,41 @@ window.CJS.CampaignCombatBridge = (() => {
       if (card) return { ...card, sourceSetId: set.id, world: card.world || set.world, zone: card.zone || set.zone, hubId: card.hubId || set.hubId };
     }
     return null;
+  }
+
+  function _battleQuestContext(state = {}, pendingBattle = {}) {
+    const run = state.activeScenarioRun || {};
+    const questId = pendingBattle?.questId || pendingBattle?.questContext?.questId || run.questId || null;
+    const quest = questId ? state.quests?.[questId] : null;
+    const base = quest ? window.CJS.CampaignQuestPulse?.battleContextForQuest?.(quest) || {} : {};
+    const card = _battleSetCard(pendingBattle?.battleSetId);
+    const cardTags = card?.tags || [];
+    return {
+      questId,
+      questTitle: quest?.title || pendingBattle?.questContext?.questTitle || run.questTitle || '',
+      questChainId: pendingBattle?.questChainId || pendingBattle?.questContext?.questChainId || run.questChainId || quest?.chainTemplateId || null,
+      objectiveId: pendingBattle?.objectiveId || pendingBattle?.questContext?.objectiveId || run.questObjectiveId || null,
+      tags: _uniqueTags([
+        ...(base.tags || []),
+        ...(pendingBattle?.tags || []),
+        ...(pendingBattle?.questContext?.tags || []),
+        ...cardTags
+      ]),
+      contextTags: _uniqueTags([
+        ...(base.contextTags || []),
+        ...(pendingBattle?.contextTags || []),
+        ...(pendingBattle?.questContext?.contextTags || []),
+        run.questTask?.location || '',
+        card?.objective || ''
+      ]),
+      monsterTags: _uniqueTags([
+        ...(base.monsterTags || []),
+        ...(pendingBattle?.monsterTags || []),
+        ...(pendingBattle?.questContext?.monsterTags || []),
+        ...cardTags
+      ]),
+      variant: base.variant || quest?.activeVariant || null
+    };
   }
 
   function _enemyIdsForRequest(card, request = {}) {
@@ -603,9 +646,14 @@ window.CJS.CampaignCombatBridge = (() => {
   }
 
   function _monsterScore(monster, card = {}, request = {}) {
+    const context = request.questContext || {};
     const text = _normalize([
       request.setting,
       request.label,
+      ...(request.tags || []),
+      ...(context.tags || []),
+      ...(context.contextTags || []),
+      ...(context.monsterTags || []),
       card?.name,
       card?.objective,
       card?.gimmick,
@@ -613,6 +661,11 @@ window.CJS.CampaignCombatBridge = (() => {
     ].join(' '));
     const mon = _normalize(`${monster.id} ${monster.name || ''} ${monster.type || ''} ${monster.rank || ''} ${monster.description || ''}`);
     let score = 1;
+    const desiredMonsterTags = (context.monsterTags || []).map(_normalize).filter(Boolean);
+    for (const tag of desiredMonsterTags) {
+      if (tag && mon.includes(tag)) score += 6;
+      if (tag && String(monster.type || '').toLowerCase() === tag) score += 4;
+    }
     const profile = {
       outdoor: ['wolf', 'bear', 'sprite', 'beast', 'forest', 'snow'],
       forest: ['wolf', 'bear', 'sprite', 'beast', 'forest'],
@@ -629,8 +682,15 @@ window.CJS.CampaignCombatBridge = (() => {
     }[_areaFromText(text)] || ['wolf', 'bear', 'sprite', 'walker'];
     for (const token of profile) if (mon.includes(token) || text.includes(token)) score += 4;
     for (const token of text.split(/\s+/)) if (token && mon.includes(token)) score += 1;
-    if (/\bb\b|\bc\b|boss|chimera|yeti|oni|kumiho/.test(mon) && !/boss|preview|danger|mountain|arena/.test(text)) score -= 2;
+    if (/\bb\b|\bc\b|boss|chimera|yeti|oni|kumiho/.test(mon) && !/boss|preview|danger|mountain|arena|elite/.test(text)) score -= 2;
     return score;
+  }
+
+  function _uniqueTags(tags) {
+    return Array.from(new Set((tags || [])
+      .flat()
+      .map((tag) => String(tag || '').trim().toLowerCase().replace(/[^a-z0-9_:-]+/g, '_').replace(/^_+|_+$/g, ''))
+      .filter(Boolean)));
   }
 
   function _battleMapConfig(card = {}, request = {}) {
@@ -762,6 +822,7 @@ window.CJS.CampaignCombatBridge = (() => {
         else ops.push({ op: 'give_item', id: drop.id, qty: drop.qty || 1 });
       }
     }
+    for (const op of window.CJS.CampaignQuestPulse?.opsForCombatResult?.(state, result) || []) ops.push(op);
     ops.push({
       op: 'manual_battle_result',
       result: outcome,
@@ -779,6 +840,9 @@ window.CJS.CampaignCombatBridge = (() => {
       loot: result.loot || [],
       completedAt: result.completedAt || new Date().toISOString(),
       summary: result.notes || 'Combat bridge result applied.',
+      combatPulse: result.combatPulse || null,
+      questContext: result.questContext || pending.questContext || null,
+      questPulseApplied: true,
       currency: result.currency || `${state.currentWorld || 'haven'}_gold`,
       defeatOps: result.defeatOps || pending.defeatOps || [],
       drawOps: result.drawOps || pending.drawOps || [],

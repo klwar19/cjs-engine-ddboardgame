@@ -194,10 +194,12 @@ window.CJS.CombatLog = (() => {
   }
 
   function logSkillUse({ actor, target, skill, apCost, mpCost }) {
+    const skillTags = (skill?.tags || []).map((tag) => `skill_tag:${tag}`);
+    const behaviorTags = (skill?.questBehaviorTags || []).map((tag) => `behavior:${tag}`);
     return record({
       type: 'skill_used', actor, target,
-      tags: ['skill_used', `skill_${skill.id}`],
-      data: { skill: skill.id, apCost, mpCost }
+      tags: ['skill_used', `skill_${skill.id}`, ...skillTags, ...behaviorTags],
+      data: { skill: skill.id, apCost, mpCost, skillTags: skill?.tags || [], questBehaviorTags: skill?.questBehaviorTags || [] }
     });
   }
 

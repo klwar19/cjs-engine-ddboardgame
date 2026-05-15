@@ -1,0 +1,176 @@
+{
+  "id": "quest_notice_board_frostwood_job",
+  "version": 1,
+  "title": "Notice Board: Frostwood Job",
+  "scope": "quest",
+  "kind": "daily",
+  "startNode": "paper",
+  "tags": ["daily", "quest_board", "forest", "rank:F"],
+  "summary": {
+    "short": "A light guild-board quest that can become battle, harvest, hub event, or mini-game work.",
+    "default": "Bin accepts a simple Frostwood notice-board job."
+  },
+  "nodes": [
+    {
+      "id": "paper",
+      "type": "narration",
+      "text": "The guild board has one paper that looks cheap enough to be honest. Someone has drawn a tiny sword in the margin and then crossed it out.",
+      "next": "pick_job"
+    },
+    {
+      "id": "pick_job",
+      "type": "choice",
+      "prompt": "Which notice does Bin take?",
+      "defaultChoiceId": "harvest",
+      "choices": [
+        {
+          "id": "hunt",
+          "label": "Cull 3 Frostwood pests",
+          "next": "add_hunt",
+          "ops": [
+            {
+              "op": "add_quest",
+              "quest": {
+                "id": "daily_frostwood_cull",
+                "title": "Daily: Frostwood Cull",
+                "kind": "daily",
+                "summary": "Clear a few small threats on the Frostwood edge.",
+                "tags": ["daily", "forest", "hunt", "rank:F"],
+                "contextTags": ["frostwood", "road", "starter"],
+                "monsterTags": ["wolf", "sprite", "beast"],
+                "objectives": [
+                  {
+                    "id": "kill_3",
+                    "kind": "defeat_count",
+                    "label": "Defeat 3 suitable Frostwood monsters",
+                    "current": 0,
+                    "required": 3,
+                    "progressTriggers": [
+                      {
+                        "id": "any_starter_victory",
+                        "outcome": "victory",
+                        "requiresAnyTags": ["defeated_tag:wolf", "defeated_tag:sprite", "defeated_type:beast"],
+                        "amount": 1,
+                        "log": "Quest pulse: the Frostwood cull advances."
+                      }
+                    ]
+                  }
+                ],
+                "rewards": [
+                  { "op": "give_money", "currency": "haven_gold", "amount": 12 },
+                  { "op": "give_jp", "amount": 1 }
+                ],
+                "repeat": { "reset": "phase", "refreshActive": false }
+              }
+            }
+          ]
+        },
+        {
+          "id": "harvest",
+          "label": "Harvest Frostcap mushrooms",
+          "next": "add_harvest",
+          "ops": [
+            {
+              "op": "add_quest",
+              "quest": {
+                "id": "daily_frostcap_basket",
+                "title": "Daily: Frostcap Basket",
+                "kind": "daily",
+                "summary": "Bring back a small basket of Frostcap mushrooms.",
+                "tags": ["daily", "forage", "forest", "rank:F"],
+                "contextTags": ["frostwood", "mushroom", "food"],
+                "monsterTags": ["sprite", "rat"],
+                "objectives": [
+                  { "id": "harvest_3", "kind": "harvest", "label": "Harvest 3 useful ingredients", "current": 0, "required": 3 }
+                ],
+                "rewards": [
+                  { "op": "give_quest_item", "id": "haven_frostcap_mushroom", "qty": 1 },
+                  { "op": "give_money", "currency": "haven_gold", "amount": 8 }
+                ],
+                "repeat": { "reset": "phase", "refreshActive": false }
+              }
+            }
+          ]
+        },
+        {
+          "id": "hub",
+          "label": "Run 1 hub event",
+          "next": "add_hub",
+          "ops": [
+            {
+              "op": "add_quest",
+              "quest": {
+                "id": "daily_frostbitten_errand",
+                "title": "Daily: Frostbitten Errand",
+                "kind": "daily",
+                "summary": "Handle one small town problem before it becomes paperwork.",
+                "tags": ["daily", "hub", "town", "rank:F"],
+                "contextTags": ["frostbitten", "guild", "tavern"],
+                "objectives": [
+                  { "id": "hub_event_1", "kind": "hub_event", "label": "Run 1 logical hub event", "current": 0, "required": 1 }
+                ],
+                "rewards": [
+                  { "op": "give_money", "currency": "haven_gold", "amount": 10 }
+                ],
+                "repeat": { "reset": "phase", "refreshActive": false }
+              }
+            }
+          ]
+        },
+        {
+          "id": "minigame",
+          "label": "Clear a small dungeon puzzle",
+          "next": "puzzle"
+        }
+      ]
+    },
+    {
+      "id": "puzzle",
+      "type": "minigame",
+      "minigameId": "push_box",
+      "variant": "notice_board_tutorial",
+      "difficulty": 1,
+      "manualResolveAllowed": true,
+      "onWin": "add_puzzle",
+      "onLose": "puzzle_penalty"
+    },
+    {
+      "id": "add_puzzle",
+      "type": "ops",
+      "ops": [
+        {
+          "op": "add_quest",
+          "quest": {
+            "id": "daily_dungeon_puzzle_chit",
+            "title": "Daily: Dungeon Puzzle Chit",
+            "kind": "daily",
+            "summary": "Clear one tiny puzzle room for the guild's training ledger.",
+            "tags": ["daily", "dungeon", "minigame", "rank:F"],
+            "contextTags": ["dungeon", "puzzle", "training"],
+            "objectives": [
+              { "id": "minigame_1", "kind": "minigame", "label": "Clear 1 mini-game room", "current": 1, "required": 1 }
+            ],
+            "rewards": [
+              { "op": "give_money", "currency": "haven_gold", "amount": 10 },
+              { "op": "give_jp", "amount": 1 }
+            ],
+            "repeat": { "reset": "phase", "refreshActive": false }
+          }
+        }
+      ],
+      "next": "end"
+    },
+    {
+      "id": "puzzle_penalty",
+      "type": "ops",
+      "ops": [
+        { "op": "log", "text": "The puzzle room wins this round. The guild stamp looks judgemental." }
+      ],
+      "next": "end"
+    },
+    { "id": "add_hunt", "type": "end", "result": "quest_added" },
+    { "id": "add_harvest", "type": "end", "result": "quest_added" },
+    { "id": "add_hub", "type": "end", "result": "quest_added" },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}

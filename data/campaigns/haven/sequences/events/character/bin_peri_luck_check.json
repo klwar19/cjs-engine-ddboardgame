@@ -1,0 +1,108 @@
+{
+  "id": "event_bin_peri_luck_check",
+  "version": 1,
+  "title": "Peri Tests Bin's Luck",
+  "scope": "event",
+  "kind": "character",
+  "startNode": "open",
+  "tags": ["peri", "luck", "comedy", "character_event"],
+  "summary": {
+    "short": "Peri challenges Bin to prove whether he is lucky or just loud.",
+    "default": "Bin takes Peri's luck test and survives the embarrassment."
+  },
+  "nodes": [
+    {
+      "id": "open",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Let's see if you're actually lucky, or just loud.",
+      "next": "bin_reply"
+    },
+    {
+      "id": "bin_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "Those are legally different talents.",
+      "next": "luck_check"
+    },
+    {
+      "id": "luck_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "L",
+      "difficulty": 12,
+      "tags": ["luck", "peri_test"],
+      "pass": "luck_success",
+      "fail": "luck_fail"
+    },
+    {
+      "id": "luck_success",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "text": "Annoying. Useful, but annoying.",
+      "next": "reward_confidence"
+    },
+    {
+      "id": "reward_confidence",
+      "type": "ops",
+      "summary": "Bin passed Peri's luck test.",
+      "ops": [
+        { "op": "set_flag", "flag": "peri_luck_test_passed", "value": true },
+        { "op": "bond_change", "target": "peri", "amount": 1, "reason": "Luck test" }
+      ],
+      "next": "end_success"
+    },
+    {
+      "id": "luck_fail",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "text": "I would like to file a complaint with probability.",
+      "next": "spark_fight"
+    },
+    {
+      "id": "spark_fight",
+      "type": "combat",
+      "battleSetId": "haven_bset_frost_sprite_grove",
+      "label": "Peri's Unhelpful Spark Test",
+      "tags": ["peri_test", "comedy"],
+      "monsterTags": ["sprite", "magic"],
+      "onWin": "loss_recovered",
+      "onLose": "loss_penalty",
+      "manualAllowed": true
+    },
+    {
+      "id": "loss_recovered",
+      "type": "ops",
+      "summary": "Bin failed the check but recovered in combat.",
+      "ops": [
+        { "op": "set_flag", "flag": "peri_luck_test_survived", "value": true },
+        { "op": "tag_add", "tag": "peri_luck_test_survived", "scope": "event", "source": "sequence" }
+      ],
+      "next": "end_success"
+    },
+    {
+      "id": "loss_penalty",
+      "type": "ops",
+      "summary": "Bin failed the test and paid for it.",
+      "ops": [
+        { "op": "damage_character", "target": "bin", "amount": 2 },
+        { "op": "tag_add", "tag": "frostwood_embarrassment", "scope": "event", "source": "sequence" }
+      ],
+      "next": "retry_choice"
+    },
+    {
+      "id": "retry_choice",
+      "type": "choice",
+      "prompt": "Peri offers the look of someone who already wrote the joke.",
+      "defaultChoiceId": "accept_penalty",
+      "choices": [
+        { "id": "retry", "label": "Fight again", "next": "spark_fight" },
+        { "id": "accept_penalty", "label": "Accept the penalty", "next": "end_fail" }
+      ]
+    },
+    { "id": "end_success", "type": "end", "result": "success" },
+    { "id": "end_fail", "type": "end", "result": "fail" }
+  ]
+}

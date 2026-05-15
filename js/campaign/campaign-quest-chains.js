@@ -119,13 +119,21 @@ window.CJS.CampaignQuestChains = (() => {
         label: step.label || step.id,
         current: 0,
         required: 1,
-        text: step.text || ''
+        text: step.text || '',
+        progressTriggers: step.progressTriggers || []
       })),
       rewards: chain.rewardOps || chain.rewards || [],
       failureConsequence: chain.failureOps || chain.failureConsequences || [],
       battleSetIds: chain.battleSetIds || [],
       mapSeedIds: chain.mapSeedIds || [],
       tags: chain.tags || [],
+      contextTags: chain.contextTags || [],
+      monsterTags: chain.monsterTags || [],
+      startTags: chain.startTags || [],
+      resolveTags: chain.resolveTags || [],
+      completeTags: chain.completeTags || [],
+      repeat: chain.repeat || null,
+      repeatVariants: chain.repeatVariants || [],
       notes: chain.type || ''
     };
   }

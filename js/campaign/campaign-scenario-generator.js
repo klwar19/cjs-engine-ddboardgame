@@ -162,7 +162,9 @@ window.CJS.CampaignScenarioGenerator = (() => {
         questTitle: quest.title || quest.id,
         title: quest.title || quest.id,
         summary: quest.summary || '',
-        tags: quest.tags || [],
+        tags: _unique([...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || [])]),
+        contextTags: quest.contextTags || [],
+        monsterTags: quest.monsterTags || [],
         battleSetIds: quest.battleSetIds || [],
         mapSeedIds: quest.mapSeedIds || [],
         objectives: (quest.objectives || []).map((obj) => ({

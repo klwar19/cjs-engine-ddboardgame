@@ -45,6 +45,8 @@
       "aoe": null,
       "aoeSize": 0,
       "qte": "fishing",
+      "tags": ["cjs", "performance", "trolling", "chaos", "high_variance"],
+      "questBehaviorTags": ["performance", "trolling", "chaos"],
       "effects": [
         {
           "effectId": "crit_rate_mod",
@@ -106,6 +108,8 @@
       "aoe": null,
       "aoeSize": 0,
       "qte": "quiz",
+      "tags": ["cjs", "trolling", "self_deprecating", "social", "status_setup"],
+      "questBehaviorTags": ["trolling", "self_deprecating", "status_setup"],
       "effects": [
         {
           "effectId": "desolation_armor_break",

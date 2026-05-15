@@ -1,0 +1,112 @@
+{
+  "id": "story_haven_arc1_ch01_part01_frostwood_return",
+  "version": 1,
+  "title": "Frostwood Return",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch01",
+  "partId": "ch01_part01",
+  "startNode": "open",
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood"],
+  "summary": {
+    "short": "Bin returns to Haven through the Frostwood.",
+    "default": "Bin reaches the Frostwood road and chooses the safe gate route by default."
+  },
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "Snow folds over the Frostwood road like the world is trying to hide the paperwork. Bin lands badly, stands up worse, and hears Peri trying not to laugh.",
+      "next": "peri_open"
+    },
+    {
+      "id": "peri_open",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Welcome home. Try not to die before anyone can be emotionally inconvenient about it.",
+      "next": "route_choice"
+    },
+    {
+      "id": "route_choice",
+      "type": "choice",
+      "prompt": "Where does Bin go first?",
+      "defaultChoiceId": "gate",
+      "choices": [
+        {
+          "id": "gate",
+          "label": "Walk to the gate",
+          "next": "gate_move",
+          "ops": [
+            { "op": "set_flag", "flag": "story_return_route_gate", "value": true },
+            { "op": "log", "text": "Story route: Bin approaches Frostbitten through the gate." }
+          ]
+        },
+        {
+          "id": "tavern",
+          "label": "Sneak toward the Frosted Mug",
+          "next": "tavern_note",
+          "ops": [
+            { "op": "set_flag", "flag": "story_return_route_tavern", "value": true },
+            { "op": "log", "text": "Story route: Bin hears town gossip before the reunion." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gate_move",
+      "type": "map_move",
+      "mapId": "haven_map_frostwood_short_route",
+      "nodeId": "wolf_tracks",
+      "next": "first_check"
+    },
+    {
+      "id": "tavern_note",
+      "type": "ops",
+      "summary": "Bin catches the town calling him a ghost before he can correct the rumor.",
+      "ops": [
+        { "op": "tag_add", "tag": "ghost_rumor_stirring", "scope": "story", "source": "sequence" }
+      ],
+      "next": "first_check"
+    },
+    {
+      "id": "first_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "C",
+      "difficulty": 11,
+      "tags": ["reunion", "rumor"],
+      "pass": "pass_line",
+      "fail": "fail_line"
+    },
+    {
+      "id": "pass_line",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "text": "I am alive, mostly employed, and legally not a ghost.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "fail_line",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "text": "I can explain. Badly, but with confidence.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "The return scene is recorded for the chapter summary.",
+      "ops": [
+        { "op": "set_flag", "flag": "story_haven_return_seen", "value": true },
+        { "op": "tag_add", "tag": "bin_returned_to_haven", "scope": "story", "source": "sequence" }
+      ],
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "result": "complete"
+    }
+  ]
+}

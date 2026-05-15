@@ -16,6 +16,7 @@ window.CJS.CampaignUI = (() => {
   const Bridge = () => window.CJS.CampaignCombatBridge;
   const Side = () => window.CJS.CampaignSideContent;
   const SD = () => window.CJS.CampaignStoryDirector;
+  const QP = () => window.CJS.CampaignQuestPulse;
   const Gen = () => window.CJS.CampaignScenarioGenerator;
   const Chat = () => window.CJS.CampaignPartyChat;
   const C = () => window.CJS.CONST;
@@ -107,38 +108,42 @@ window.CJS.CampaignUI = (() => {
   const APP_MODES = [
     ['story', 'Story', 'ST'],
     ['quest', 'Quest', 'QT'],
-    ['event', 'Event', 'EV']
+    ['event', 'Event', 'EV'],
+    ['activities', 'Activities', 'AC']
   ];
 
   const APP_MODE_TABS = {
     story: [
       ['storyHome', 'Story Home'],
+      ['storySummary', 'Summary'],
       ['storyDirector', 'Director']
     ],
     quest: [
       ['questHome', 'Quest Home'],
-      ['quests', 'Normal Quests'],
-      ['farm', 'Farm'],
-      ['cook', 'Cook'],
-      ['craft', 'Forge'],
-      ['inventory', 'Inventory']
+      ['quests', 'Quest Board']
     ],
     event: [
       ['eventHome', 'Event Home'],
       ['questChains', 'Side Stories'],
-      ['sideForge', 'Hub'],
-      ['oracleForge', 'Oracle'],
       ['battleSets', 'Battles'],
       ['mapSeeds', 'Map Seeds']
+    ],
+    activities: [
+      ['activityHome', 'Activity Home'],
+      ['sideForge', 'Hub'],
+      ['oracleForge', 'Oracle/Event'],
+      ['pocket', 'Pocket Haven'],
+      ['farm', 'Farm'],
+      ['craft', 'Forge'],
+      ['cook', 'Cook'],
+      ['shops', 'Shops'],
+      ['inventory', 'Inventory']
     ]
   };
 
   const APP_UTILITY_TABS = [
     ['maps', 'Current Run'],
-    ['scenarios', 'Run Setup'],
     ['roster', 'Party'],
-    ['shops', 'Shop/Rest'],
-    ['pocket', 'Pocket Haven'],
     ['logs', 'Logs'],
     ['settings', 'Settings']
   ];
@@ -163,6 +168,7 @@ window.CJS.CampaignUI = (() => {
         CS().createNewSave(Object.values(CS().getContent().campaigns)[0]?.id);
         Save().saveCurrent();
       }
+      await window.CJS.CampaignSequences?.loadWorld?.(CS().getState()?.currentWorld || 'haven');
       _bindEvents();
       _bindEscapeForPanels();
       _bindCombatResultListener();
@@ -938,8 +944,10 @@ window.CJS.CampaignUI = (() => {
   function _renderMain(state) {
     switch (_activeTab) {
       case 'storyHome': return _renderStoryHome(state);
+      case 'storySummary': return _renderStorySummary(state);
       case 'questHome': return _renderQuestHome(state);
       case 'eventHome': return _renderEventHome(state);
+      case 'activityHome': return _renderActivityHome(state);
       case 'roster': return _renderRoster(state);
       case 'storyDirector': return _renderStoryDirector(state);
       case 'sideForge': return _renderSideForge(state);
@@ -989,14 +997,12 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-dashboard campaign-mode-home campaign-story-home campaign-story-vn ${_escAttr(theme.className)}" ${_storyThemeStyle(theme)}>
         ${_renderStoryVnHero({ state, pack, stage, next, theme })}
-        ${_renderModeFlow('Story Flow', [
-          ['Episode', 'Pick the current chapter beat.'],
-          ['Scene', 'Roll or write VN/table text.'],
-          ['Choice', 'Choose the route to commit.'],
-          ['Run', 'Launch a map or battle if needed.'],
-          ['Reward', 'Save consequences to the campaign.']
-        ], Math.min(next.index || 0, 4))}
-
+        ${_renderActiveSequence(state, ['story'])}
+        ${_renderSequenceShelf('story', {
+          wide: true,
+          title: 'Chapter Files',
+          note: 'Main story parts are separate files. You can replay/start a part without reapplying old consequences unless the sequence applies new ops.'
+        })}
         <section class="campaign-panel campaign-wide-panel campaign-home-focus">
           <div class="campaign-panel-head">
             <div>
@@ -1075,10 +1081,6 @@ window.CJS.CampaignUI = (() => {
           `).join('') || '<div class="campaign-empty">No story runs loaded.</div>'}
         </section>
 
-        ${_renderPurposeGuide(['hubPulse', 'rumor', 'problem', 'oracle'], {
-          wide: true,
-          note: 'Use the lightest tool first, then promote only when you want commitment.'
-        })}
         ${_renderSoloNotice(state)}
         ${activeRun ? _renderScenarioSummary(state) : ''}
         ${_renderPendingBattle(state)}
@@ -1086,6 +1088,57 @@ window.CJS.CampaignUI = (() => {
         ${_renderTravelSurprise(state)}
         ${_renderEventResult(state)}
         ${_renderOracle(state)}
+      </div>
+    `;
+  }
+
+  function _renderStorySummary(state) {
+    const runtime = state.sequenceRuntime || {};
+    const storyHistory = (runtime.history || []).filter((entry) => entry.scope === 'story');
+    const manual = state.storyMode?.manualSummaryEntries || [];
+    const facts = Object.values(state.storyDirector?.revealedFacts || {}).slice(0, 8);
+    const queue = Object.values(state.storyDirector?.storyQueue || {}).slice(0, 8);
+    return `
+      <div class="campaign-dashboard campaign-story-summary">
+        ${_renderGachaHomeHero({
+          tone: 'story',
+          kicker: 'Story Summary',
+          title: 'Current Arc Ledger',
+          text: 'Readable memory for what the main story has revealed, defaulted, or manually added.',
+          meta: [`${storyHistory.length} story parts`, `${manual.length} manual notes`, `${facts.length} facts`],
+          actions: [
+            _actionBtn({ action: 'open-story-home', label: 'Story Home', hint: 'Return to chapter play', kind: 'primary' }),
+            _actionBtn({ action: 'story-manual-note', label: 'Add Manual Scene', hint: 'Write a GM summary note' }),
+            _actionBtn({ action: 'story-copy-prompt', label: 'Copy Story Prompt', hint: 'Use current story state with AI' })
+          ]
+        })}
+        <section class="campaign-panel campaign-wide-panel">
+          <div class="campaign-panel-head">
+            <h2>Completed Story Parts</h2>
+            <span class="campaign-pill">${storyHistory.length}</span>
+          </div>
+          ${storyHistory.length ? storyHistory.map((entry) => `
+            <div class="campaign-row">
+              <div>
+                <strong>${_esc(entry.title || entry.sequenceId)}</strong>
+                <div class="campaign-muted">${_esc(entry.result || 'complete')} | ${_esc(entry.completedAt || entry.startedAt || '')}</div>
+                ${(entry.log || []).slice(-3).map((line) => `<p>${_esc(line.summary || line.nodeId || '')}</p>`).join('')}
+              </div>
+            </div>
+          `).join('') : '<div class="campaign-empty">No completed story sequence parts yet.</div>'}
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Manual Summary</h3></div>
+          ${manual.length ? manual.map((entry) => `<div class="campaign-row"><div><strong>${_esc(entry.title || 'Manual Note')}</strong><div class="campaign-muted">${_esc(entry.at || '')}</div><p>${_esc(entry.text || '')}</p></div></div>`).join('') : '<div class="campaign-empty">Manual GM story notes will appear here.</div>'}
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Revealed Facts</h3></div>
+          ${facts.length ? facts.map((fact) => `<div class="campaign-row"><div><strong>${_esc(fact.title || fact.id || 'Fact')}</strong><p>${_esc(fact.text || fact.note || '')}</p></div></div>`).join('') : '<div class="campaign-empty">No revealed facts yet.</div>'}
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Held Story Beats</h3></div>
+          ${queue.length ? queue.map((beat) => `<div class="campaign-row"><div><strong>${_esc(beat.title || beat.id)}</strong><div class="campaign-muted">${_esc(beat.status || 'held')}</div><p>${_esc(beat.prompt || beat.summary || '')}</p></div></div>`).join('') : '<div class="campaign-empty">No held beats.</div>'}
+        </section>
       </div>
     `;
   }
@@ -1125,14 +1178,12 @@ window.CJS.CampaignUI = (() => {
           meta: [`${active.length} active`, `${finished.length} resolved`, `${templateCount} templates`],
           actions: heroActions
         })}
-        ${_renderModeFlow('Quest Flow', [
-          ['Accept', 'Add a quest (custom or template).'],
-          ['Run', 'Start the auto-generated or linked map.'],
-          ['Farm', 'Collect drops and materials on the map.'],
-          ['Wrap', 'Tick objectives as you complete them.'],
-          ['Turn In', 'Resolve for rewards or mark failed.']
-        ], run ? 2 : (nextQuest ? 1 : 0))}
-
+        ${_renderActiveSequence(state, ['quest'])}
+        ${_renderSequenceShelf('quest', {
+          wide: true,
+          title: 'Quest Board Papers',
+          note: 'Light quest papers can add daily missions, harvest jobs, hub errands, puzzle rooms, or battle tasks.'
+        })}
         <section class="campaign-panel campaign-wide-panel campaign-home-focus">
           <div class="campaign-panel-head">
             <div>
@@ -1220,18 +1271,12 @@ window.CJS.CampaignUI = (() => {
             _actionBtn({ action: 'open-event-battles-tab', label: 'Challenge Battles', hint: 'Open event battle cards' })
           ]
         })}
-        ${_renderModeFlow('Event Flow', [
-          ['Banner', 'Pick the current event.'],
-          ['Side Story', 'Start a questline.'],
-          ['Event Quest', 'Run map/battle content.'],
-          ['Shop/Hub', 'Spend rewards or solve pressure.'],
-          ['Challenge', 'Optional harder battle.']
-        ], activeChains.length ? 2 : 0)}
-        ${_renderPurposeGuide(['oracle', 'rumor', 'problem', 'hubPulse', 'event'], {
+        ${_renderActiveSequence(state, ['event'])}
+        ${_renderSequenceShelf('event', {
           wide: true,
-          note: 'Same idea, different commitment level.'
+          title: 'Event Files',
+          note: 'Character events, special events, and side scenes use the same simple state-machine format as Story.'
         })}
-
         <section class="campaign-panel campaign-wide-panel campaign-home-focus">
           <div class="campaign-panel-head">
             <div>
@@ -1293,6 +1338,210 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
+  function _renderActivityHome(state) {
+    const hub = window.CJS.CampaignHub?.getCurrentHubDefinition?.();
+    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
+    const plots = state.pocketHaven?.farm?.plots || [];
+    const readyPlots = plots.filter((plot) => plot.ready).length;
+    const shopCount = Object.keys(CS().getContent()?.shops || DS()?.getAll?.('shops') || {}).length;
+    return `
+      <div class="campaign-dashboard campaign-mode-home campaign-activity-home">
+        ${_renderGachaHomeHero({
+          tone: 'activities',
+          kicker: 'Activities',
+          title: hub?.name || 'Hub & Pocket Haven',
+          text: 'Town actions, oracle/event prompts, Pocket Haven farming and forging, shops, rest, and inventory.',
+          meta: [`${readyPlots}/${plots.length} plots ready`, `${shopCount} shops`, `Phase ${state.phase?.number || 1}`],
+          actions: [
+            _actionBtn({ action: 'open-sideforge-tab', label: 'Hub', hint: 'Town problems, rumors, and pulses', kind: 'primary' }),
+            _actionBtn({ action: 'open-oracle-event-tab', label: 'Oracle/Event', hint: 'Prompt or event from one place' }),
+            _actionBtn({ action: 'open-pocket-tab', label: 'Pocket Haven', hint: 'Base, farm, forge, cooking' }),
+            _actionBtn({ action: 'open-shops-tab', label: 'Shops', hint: 'Buy, sell, and rest' })
+          ]
+        })}
+        <section class="campaign-panel campaign-wide-panel">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Hub Snapshot</h2>
+              <div class="campaign-muted">${_esc(hub?.description || 'Current settlement and base activity.')}</div>
+            </div>
+            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="town">Hub Pulse</button>
+          </div>
+          <div class="campaign-stat-grid">
+            <span>Security <b>${hubState?.security ?? 0}</b></span>
+            <span>Prosperity <b>${hubState?.prosperity ?? 0}</b></span>
+            <span>Warmth <b>${hubState?.warmth ?? 0}</b></span>
+            <span>Weirdness <b>${hubState?.weirdness ?? 0}</b></span>
+          </div>
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Oracle/Event</h3></div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'roll-oracle', label: 'Oracle Prompt', hint: 'Text-only inspiration' })}
+            ${_actionBtn({ action: 'roll-event', label: 'Roll Event', hint: 'Immediate event with possible mechanics' })}
+            ${_actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'GM-authored event/consequence', kind: 'manual' })}
+            ${_actionBtn({ action: 'manual-rumor', label: 'Add Rumor', hint: 'Store a lead without committing mechanics' })}
+          </div>
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Pocket Haven</h3></div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'open-farm-tab', label: 'Farm', hint: `${readyPlots} ready plots` })}
+            ${_actionBtn({ action: 'open-craft-tab', label: 'Forge', hint: 'Craft gear and station output' })}
+            ${_actionBtn({ action: 'open-cook-tab', label: 'Cook', hint: 'Convert ingredients into food' })}
+            ${_actionBtn({ action: 'open-inventory-tab', label: 'Inventory', hint: 'Manage items and materials' })}
+          </div>
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head"><h3>Shops & Rest</h3></div>
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'open-shops-tab', label: 'Open Shops', hint: 'Buy or sell supplies' })}
+            ${_actionBtn({ action: 'full-rest', label: 'Full Rest', hint: 'Restore party HP/MP' })}
+            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Refresh daily/repeat quests and phase systems' })}
+          </div>
+        </section>
+        ${_renderEventResult(state)}
+        ${_renderOracle(state)}
+      </div>
+    `;
+  }
+
+  function _renderSequenceShelf(scope, options = {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const entries = Seq?.list?.(scope) || [];
+    const title = options.title || (scope === 'story' ? 'Story Files' : scope === 'event' ? 'Event Files' : 'Quest Papers');
+    const note = options.note || 'Small authored files that can be played one node at a time.';
+    return `
+      <section class="campaign-panel ${options.wide ? 'campaign-wide-panel' : ''} campaign-sequence-shelf">
+        <div class="campaign-panel-head">
+          <div>
+            <h3>${_esc(title)}</h3>
+            <div class="campaign-muted">${_esc(note)}</div>
+          </div>
+          <span class="campaign-pill">${entries.length} files</span>
+        </div>
+        <div class="campaign-sequence-grid">
+          ${entries.length ? entries.map((entry) => `
+            <article class="campaign-sequence-card is-${_escAttr(scope)}">
+              <div class="campaign-sequence-paper-pin"></div>
+              <div class="campaign-sequence-kind">${_esc(_label(entry.kind || scope))}</div>
+              <strong>${_esc(entry.title || entry.id)}</strong>
+              <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
+              <button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}">Start</button>
+            </article>
+          `).join('') : '<div class="campaign-empty">No sequence files loaded for this scope.</div>'}
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderActiveSequence(state, scopes = null) {
+    const Seq = window.CJS.CampaignSequences;
+    const active = Seq?.active?.(state);
+    if (!active || (scopes && !scopes.includes(active.scope))) return '';
+    const sequence = Seq.cachedSequence?.(active.sequenceId, state.currentWorld) || null;
+    const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
+    return `
+      <section class="campaign-panel campaign-wide-panel campaign-sequence-active">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>${_esc(active.title || active.sequenceId)}</h2>
+            <div class="campaign-muted">${_esc(_label(active.scope || 'sequence'))} | ${_esc(active.nodeId || '')}</div>
+          </div>
+          <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
+        </div>
+        ${node ? _renderSequenceNode(node) : '<div class="campaign-empty">Loading sequence node...</div>'}
+      </section>
+    `;
+  }
+
+  function _renderSequenceNode(node = {}) {
+    const type = String(node.type || 'narration').toLowerCase();
+    const speaker = node.speaker ? `<span class="campaign-story-speaker">${_esc(node.speaker)}</span>` : '';
+    const text = node.text || node.prompt || node.summary || node.title || '';
+    if (type === 'choice') {
+      return `
+        <div class="campaign-story-dialogue-box">
+          ${speaker}
+          <p>${_esc(text || 'Choose a path.')}</p>
+          <div class="campaign-action-grid">
+            ${(node.choices || []).map((choice) => _actionBtn({
+              action: 'sequence-choice',
+              label: choice.label || choice.id,
+              hint: choice.summary || choice.next || '',
+              data: { choice: choice.id }
+            })).join('')}
+          </div>
+        </div>
+      `;
+    }
+    if (type === 'stat_check') {
+      return `
+        <div class="campaign-story-dialogue-box">
+          <p>${_esc(text || `${node.actor || 'Party'} checks ${node.stat || '?'} vs ${node.difficulty || node.dc || '?'}.`)}</p>
+          ${_sequenceNodeMeta(node)}
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'sequence-pass', label: 'Pass', hint: 'Route to pass node', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-fail', label: 'Fail', hint: 'Route to fail node', kind: 'danger' })}
+          </div>
+        </div>
+      `;
+    }
+    if (type === 'combat') {
+      return `
+        <div class="campaign-story-dialogue-box">
+          <p>${_esc(text || node.label || 'Combat encounter')}</p>
+          ${_sequenceNodeMeta(node)}
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'sequence-queue-battle', label: 'Queue Battle', hint: node.encounterId || node.battleSetId || 'Open in combat/manual result', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-win', label: 'Manual Win', hint: 'Advance as victory' })}
+            ${_actionBtn({ action: 'sequence-lose', label: 'Manual Loss', hint: 'Advance as defeat', kind: 'danger' })}
+          </div>
+        </div>
+      `;
+    }
+    if (type === 'minigame') {
+      return `
+        <div class="campaign-story-dialogue-box">
+          <p>${_esc(text || `${_label(node.minigameId || 'Mini-game')} challenge`)}</p>
+          ${_sequenceNodeMeta(node)}
+          <div class="campaign-action-grid">
+            ${_actionBtn({ action: 'sequence-win', label: 'Clear', hint: 'Manual mini-game success', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-lose', label: 'Fail', hint: 'Manual mini-game failure', kind: 'danger' })}
+          </div>
+        </div>
+      `;
+    }
+    if (type === 'end') {
+      return `
+        <div class="campaign-story-dialogue-box">
+          <p>${_esc(text || 'This sequence is ready to close.')}</p>
+          <button class="campaign-action primary" data-campaign-action="sequence-complete">Complete</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="campaign-story-dialogue-box">
+        ${speaker}
+        <p>${_esc(text)}</p>
+        ${_sequenceNodeMeta(node)}
+        <div class="campaign-action-grid">
+          ${_actionBtn({ action: type === 'condition' ? 'sequence-resolve' : 'sequence-next', label: type === 'ops' ? 'Apply & Continue' : 'Continue', hint: node.next || '', kind: 'primary' })}
+        </div>
+      </div>
+    `;
+  }
+
+  function _sequenceNodeMeta(node = {}) {
+    const bits = [];
+    if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || '?'}`);
+    if (node.encounterId) bits.push(node.encounterId);
+    if (node.battleSetId) bits.push(node.battleSetId);
+    if (node.minigameId) bits.push(`${_label(node.minigameId)} Lv ${node.difficulty || 1}`);
+    if (node.tags?.length) bits.push((node.tags || []).map(_label).join(', '));
+    return bits.length ? `<div class="campaign-chip-row">${bits.map((bit) => `<span class="campaign-chip">${_esc(bit)}</span>`).join('')}</div>` : '';
+  }
+
   function _renderGachaHomeHero({ tone = 'story', kicker = '', title = '', text = '', meta = [], actions = [] } = {}) {
     return `
       <section class="campaign-gacha-hero campaign-wide-panel is-${_escAttr(tone)}">
@@ -1303,23 +1552,6 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-chip-row">${meta.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>
         </div>
         <div class="campaign-gacha-hero-actions">${actions.join('')}</div>
-      </section>
-    `;
-  }
-
-  function _renderModeFlow(title, steps, activeIndex = 0) {
-    return `
-      <section class="campaign-panel campaign-wide-panel campaign-flow-panel">
-        <div class="campaign-panel-head"><h3>${_esc(title)}</h3></div>
-        <div class="campaign-flow-steps">
-          ${steps.map(([label, text], index) => `
-            <div class="campaign-flow-step ${index === activeIndex ? 'is-active' : index < activeIndex ? 'is-done' : ''}">
-              <span>${index + 1}</span>
-              <b>${_esc(label)}</b>
-              <small>${_esc(text)}</small>
-            </div>
-          `).join('')}
-        </div>
       </section>
     `;
   }
@@ -1377,37 +1609,6 @@ window.CJS.CampaignUI = (() => {
       commit: 'May change rewards, danger, flags, rumors, quests, or notes.'
     }
   };
-
-  function _renderPurposeGuide(keys = ['oracle', 'rumor', 'problem', 'hubPulse', 'event'], options = {}) {
-    const title = options.title || 'Purpose & Flow';
-    return `
-      <section class="campaign-panel campaign-purpose-guide ${options.wide ? 'campaign-wide-panel' : ''}">
-        <div class="campaign-panel-head">
-          <h3>${_esc(title)}</h3>
-          ${options.note ? `<span class="campaign-muted">${_esc(options.note)}</span>` : ''}
-        </div>
-        <div class="campaign-purpose-grid">
-          ${keys.map((key) => _renderPurposeCard(key)).join('')}
-        </div>
-      </section>
-    `;
-  }
-
-  function _renderPurposeCard(key, options = {}) {
-    const item = TOOL_PURPOSES[key] || TOOL_PURPOSES.oracle;
-    const compact = options.compact ? 'is-compact' : '';
-    return `
-      <article class="campaign-purpose-card ${compact}">
-        <div>
-          <span class="campaign-impact-badge is-${_escAttr(_purposeTone(key))}">${_esc(item.label)}</span>
-          <strong>${_esc(item.role)}</strong>
-        </div>
-        <p>${_esc(item.use)}</p>
-        <small>${_esc(item.flow)}</small>
-        <em>${_esc(item.commit)}</em>
-      </article>
-    `;
-  }
 
   function _renderInlinePurpose(key) {
     const item = TOOL_PURPOSES[key] || TOOL_PURPOSES.oracle;
@@ -2235,6 +2436,8 @@ window.CJS.CampaignUI = (() => {
           <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
           <div class="campaign-muted">${_esc(chain.status)} | Step ${currentIndex + 1}/${steps.length || 1}: ${_esc(step?.label || chain.currentStepId || '-')}</div>
           <div class="campaign-muted">${_esc(step?.text || '')}</div>
+          ${_renderContextTags([...(template.tags || []), ...(template.contextTags || []), ...(template.monsterTags || [])])}
+          ${_renderObjectivePulseHint(step)}
           ${_renderQuestChainVnPanel(chain, { active: true })}
           ${_renderChainStakes(template)}
         </div>
@@ -2272,7 +2475,7 @@ window.CJS.CampaignUI = (() => {
         ${_renderQuestChainVnPanel(chain)}
         <div class="campaign-chip-row">${(chain.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>
         ${_renderChainStakes(chain)}
-        ${(chain.steps || []).map((step) => `<div class="campaign-step"><b>${_esc(step.label || step.id)}</b><span>${_esc(step.text || '')}</span></div>`).join('')}
+        ${(chain.steps || []).map((step) => `<div class="campaign-step"><b>${_esc(step.label || step.id)}</b><span>${_esc(step.text || '')}</span>${_renderObjectivePulseHint(step)}</div>`).join('')}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="start-chain" data-id="${_escAttr(chain.id)}">Start Quest Run</button>
           <button class="campaign-action" data-campaign-action="save-chain" data-id="${_escAttr(chain.id)}">Save Idea</button>
@@ -2823,6 +3026,7 @@ window.CJS.CampaignUI = (() => {
         <strong>${_esc(battle.label || battle.encounterId)}</strong>
         <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '')}</div>
         ${battle.battleMap?.theme ? `<div class="campaign-muted">Auto map: ${_esc(_label(battle.battleMap.theme))}</div>` : ''}
+        ${_renderPendingBattleContext(state, battle)}
         ${_renderBattlePartySummary(state)}
         <div class="campaign-control-help">Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.</div>
         <div class="campaign-action-grid campaign-battle-primary-actions">
@@ -2925,6 +3129,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div class="campaign-muted">${_esc(result.encounterId || result.label || 'Campaign battle')} | ${result.rounds || 0} rounds</div>
         ${result.summary ? `<p>${_esc(result.summary)}</p>` : ''}
+        ${_renderCombatPulseSummary(result.combatPulse)}
         ${loot}
       </section>
     `;
@@ -3827,6 +4032,8 @@ window.CJS.CampaignUI = (() => {
           </div>
           ${meta ? `<div class="campaign-muted">${_esc(meta)}</div>` : ''}
           ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
+          ${_renderQuestVariant(quest)}
+          ${_renderContextTags([...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || [])])}
           <div class="campaign-quest-phase">
             <span>Phase</span>
             <strong>${_esc(opts.resolved ? 'Resolved' : (nextObjective?.label || 'Open'))}</strong>
@@ -3843,6 +4050,9 @@ window.CJS.CampaignUI = (() => {
             ${_actionMenu('Quest Actions', `
               ${_actionBtn({ action: 'quest-battle',  label: 'Battle',   hint: 'Run a battle linked to this quest', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-event',   label: 'Event',    hint: 'Roll an event tagged for this quest', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-hub-event', label: 'Hub Event', hint: 'Run one logical hub pulse and tick an objective', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-harvest', label: 'Harvest', hint: 'Manual harvest/gather progress with light loot', data: { id: quest.id } })}
+              ${_actionBtn({ action: 'quest-minigame', label: 'Mini-game', hint: 'Resolve a maze, push-box, ice-slide, pipe, or balance room', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-check',   label: 'Check',    hint: 'Make a stat or skill check toward this quest', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-hand-in', label: 'Hand In',  hint: 'Deliver an item to complete an objective', data: { id: quest.id } })}
               ${_actionBtn({ action: 'quest-answer',  label: 'Answer',   hint: 'Resolve a riddle / dialog objective', data: { id: quest.id } })}
@@ -3866,6 +4076,81 @@ window.CJS.CampaignUI = (() => {
           <small>${current}/${required}</small>
         </div>
         <div class="campaign-quest-progress"><span style="width:${pct}%"></span></div>
+        ${_renderObjectivePulseHint(obj)}
+      </div>
+    `;
+  }
+
+  function _renderQuestVariant(quest = {}) {
+    const variant = quest.activeVariant || null;
+    const label = variant?.label || quest.variantLabel || '';
+    const text = quest.variantDialogue || quest.variantSummary || variant?.dialogue || variant?.summary || '';
+    const repeat = quest.repeatCycle ? `Cycle ${quest.repeatCycle + 1}` : '';
+    if (!label && !text && !repeat) return '';
+    return `
+      <div class="campaign-quest-variant">
+        ${label ? `<strong>${_esc(label)}</strong>` : ''}
+        ${text ? `<span>${_esc(text)}</span>` : ''}
+        ${repeat ? `<small>${_esc(repeat)}</small>` : ''}
+      </div>
+    `;
+  }
+
+  function _renderContextTags(tags = []) {
+    const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
+    if (!list.length) return '';
+    return `
+      <div class="campaign-chip-row campaign-context-tags">
+        ${list.map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}
+      </div>
+    `;
+  }
+
+  function _renderObjectivePulseHint(obj = {}) {
+    const triggers = obj.progressTriggers || [];
+    if (!triggers.length) return '';
+    return `
+      <div class="campaign-quest-pulse">
+        ${triggers.slice(0, 2).map((trigger) => `<span>${_esc(_triggerLabel(trigger))}</span>`).join('')}
+      </div>
+    `;
+  }
+
+  function _triggerLabel(trigger = {}) {
+    const bits = [];
+    if (trigger.outcome) bits.push(_label(trigger.outcome));
+    if (trigger.skillIds?.length) bits.push(trigger.skillIds.map(_label).join(' / '));
+    if (trigger.statusIds?.length) bits.push(`Status ${trigger.statusIds.map(_label).join(' / ')}`);
+    if (trigger.defeatedTypes?.length) bits.push(`Defeat ${trigger.defeatedTypes.map(_label).join(' / ')}`);
+    if (trigger.defeatedMonsterIds?.length) bits.push(`Defeat ${trigger.defeatedMonsterIds.map(_label).join(' / ')}`);
+    const tags = trigger.requiresTags || trigger.requiresAnyTags || trigger.anyTags || [];
+    if (tags.length) bits.push((Array.isArray(tags) ? tags : [tags]).map(_label).join(' / '));
+    if (trigger.onlyPlayerActionTags?.length) bits.push(`Only ${trigger.onlyPlayerActionTags.map(_label).join(' / ')}`);
+    return bits.length ? `Auto: ${bits.join(' + ')}` : 'Auto progress available';
+  }
+
+  function _renderPendingBattleContext(state, battle = {}) {
+    const ctx = QP()?.battleContextForPending?.(state, battle);
+    const tags = [
+      ...(ctx?.contextTags || []),
+      ...(ctx?.monsterTags || [])
+    ];
+    if (!ctx?.questId && !tags.length) return '';
+    return `
+      <div class="campaign-battle-context">
+        ${ctx?.questTitle ? `<strong>${_esc(ctx.questTitle)}</strong>` : ''}
+        ${_renderContextTags(tags)}
+      </div>
+    `;
+  }
+
+  function _renderCombatPulseSummary(pulse = null) {
+    if (!pulse) return '';
+    const tags = (pulse.tags || []).filter((tag) => /^(behavior|defeated_tag|status|skill):/.test(tag)).slice(0, 8);
+    return `
+      <div class="campaign-combat-pulse">
+        ${pulse.summary ? `<span>${_esc(pulse.summary)}</span>` : ''}
+        ${_renderContextTags(tags.map((tag) => tag.replace(/^[^:]+:/, '')))}
       </div>
     `;
   }
@@ -4119,6 +4404,16 @@ window.CJS.CampaignUI = (() => {
       case 'story-manual-note': return _manualStoryNote();
       case 'story-copy-prompt': return _copyStoryPrompt();
       case 'story-help': return _openStoryHelpModal();
+      case 'sequence-start': return _startSequenceFromUi(data.id);
+      case 'sequence-next': return _advanceSequenceFromUi('next');
+      case 'sequence-resolve': return _advanceSequenceFromUi('resolve');
+      case 'sequence-choice': return _advanceSequenceFromUi('choice', data.choice);
+      case 'sequence-pass': return _advanceSequenceFromUi('pass');
+      case 'sequence-fail': return _advanceSequenceFromUi('fail');
+      case 'sequence-queue-battle': return _advanceSequenceFromUi('queue');
+      case 'sequence-win': return _advanceSequenceFromUi('win');
+      case 'sequence-lose': return _advanceSequenceFromUi('lose');
+      case 'sequence-complete': return _completeSequenceFromUi();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
       case 'oracle-note': return _saveOracleNote();
@@ -4136,14 +4431,19 @@ window.CJS.CampaignUI = (() => {
       case 'open-story-home': return _goto('story', 'storyHome');
       case 'open-quest-home': return _goto('quest', 'questHome');
       case 'open-event-home': return _goto('event', 'eventHome');
+      case 'open-activity-home': return _goto('activities', 'activityHome');
       case 'open-roster-tab': return _goto(null, 'roster');
       case 'open-scenarios-tab': return _goto(null, 'scenarios');
       case 'open-maps-tab': return _goto(null, 'maps');
-      case 'open-inventory-tab': return _goto('quest', 'inventory');
-      case 'open-farm-tab': return _goto('quest', 'farm');
+      case 'open-inventory-tab': return _goto('activities', 'inventory');
+      case 'open-farm-tab': return _goto('activities', 'farm');
+      case 'open-craft-tab': return _goto('activities', 'craft');
+      case 'open-cook-tab': return _goto('activities', 'cook');
+      case 'open-pocket-tab': return _goto('activities', 'pocket');
+      case 'open-oracle-event-tab': return _goto('activities', 'oracleForge');
       case 'open-quests-tab': return _goto('quest', 'quests');
-      case 'open-shops-tab': return _goto(null, 'shops');
-      case 'open-sideforge-tab': return _goto('event', 'sideForge');
+      case 'open-shops-tab': return _goto('activities', 'shops');
+      case 'open-sideforge-tab': return _goto('activities', 'sideForge');
       case 'open-event-stories-tab': return _goto('event', 'questChains');
       case 'open-event-battles-tab': return _goto('event', 'battleSets');
       case 'roll-party-chat': return _rollPartyChat();
@@ -4213,6 +4513,9 @@ window.CJS.CampaignUI = (() => {
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
       case 'quest-event': return _questEvent(data.id);
+      case 'quest-hub-event': return _questHubEvent(data.id);
+      case 'quest-harvest': return _questHarvest(data.id);
+      case 'quest-minigame': return _questMiniGame(data.id);
       case 'quest-check': return _questCheck(data.id);
       case 'quest-hand-in': return _questHandIn(data.id);
       case 'quest-answer': return _questAnswer(data.id);
@@ -5153,7 +5456,20 @@ window.CJS.CampaignUI = (() => {
       .filter((quest) => !activeQuestIds.has(quest.id));
     const options = templates.map((quest) => ({ type: 'quest_template', quest }));
     if (!options.length) return null;
-    const pick = options[Math.floor(Math.random() * options.length)];
+    const weighted = options.map((option) => ({
+      option,
+      weight: _questTemplateWeight(option.quest, state)
+    }));
+    const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+    let roll = Math.random() * Math.max(1, total);
+    let pick = weighted[0]?.option;
+    for (const entry of weighted) {
+      roll -= entry.weight;
+      if (roll <= 0) {
+        pick = entry.option;
+        break;
+      }
+    }
     const quest = CS().clone(pick.quest);
     return {
       id: `idea_offer_${quest.id}_${Date.now()}`,
@@ -5168,6 +5484,26 @@ window.CJS.CampaignUI = (() => {
         ops: [{ op: 'add_quest', quest }]
       }]
     };
+  }
+
+  function _questTemplateWeight(quest = {}, state = CS().getState()) {
+    const activeTags = new Set([
+      state?.currentWorld ? `world:${state.currentWorld}` : '',
+      state?.phase?.type ? `phase:${state.phase.type}` : '',
+      state?.currentChapter ? `chapter:${state.currentChapter}` : '',
+      ...(window.CJS.CampaignTags?.getActiveTags?.(state) || []),
+      ...(Object.values(state?.party || {}).flatMap((member) => member.activePersona ? [`persona:${member.activePersona}`] : []) || [])
+    ].filter(Boolean).map((tag) => String(tag).toLowerCase()));
+    let weight = 1;
+    for (const tag of [...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || [])]) {
+      const cleaned = String(tag || '').toLowerCase();
+      if (activeTags.has(cleaned) || activeTags.has(`world:${cleaned}`) || activeTags.has(`phase:${cleaned}`)) weight += 1;
+      if (cleaned.includes(String(state?.currentWorld || '').toLowerCase())) weight += 1;
+    }
+    const rank = Object.values(state?.party || {})[0]?.rank || 'F';
+    if ((quest.rankBand || quest.ranks || []).includes(rank)) weight += 2;
+    if (quest.kind === 'daily' || quest.repeat) weight += 1;
+    return Math.max(1, weight);
   }
 
   function _startQuestRunFromOffer(card) {
@@ -5478,6 +5814,42 @@ window.CJS.CampaignUI = (() => {
     _openStoryBeatModal(card);
   }
 
+  async function _startSequenceFromUi(sequenceId) {
+    if (!sequenceId) return;
+    try {
+      const sequence = await window.CJS.CampaignSequences?.start?.(sequenceId);
+      if (!sequence) return UI().toast('Sequence file not found', 'info');
+      const scope = sequence.scope || sequence._indexEntry?.scope || 'event';
+      if (scope === 'story') _activeMode = 'story';
+      else if (scope === 'quest') _activeMode = 'quest';
+      else if (scope === 'event') _activeMode = 'event';
+      render();
+      UI().toast(`Started ${sequence.title || sequence.id}`, 'success');
+    } catch (error) {
+      console.error(error);
+      UI().toast(error?.message || 'Sequence could not start', 'error');
+    }
+  }
+
+  async function _advanceSequenceFromUi(action, value = null) {
+    try {
+      const result = await window.CJS.CampaignSequences?.advance?.(action, value);
+      render();
+      if (result?.queued) return UI().toast('Battle queued from sequence', 'success');
+      if (result?.complete) return UI().toast('Sequence complete', 'success');
+      if (!result?.ok) return UI().toast('No active sequence node', 'info');
+    } catch (error) {
+      console.error(error);
+      UI().toast(error?.message || 'Sequence could not advance', 'error');
+    }
+  }
+
+  async function _completeSequenceFromUi() {
+    const result = await window.CJS.CampaignSequences?.complete?.('manual');
+    render();
+    if (result?.ok) UI().toast('Sequence closed', 'success');
+  }
+
   function _saveStoryDirectorBeat() {
     const card = SD()?.saveLast?.('saved');
     if (!card) return UI().toast('No story scene to hold', 'info');
@@ -5587,6 +5959,17 @@ window.CJS.CampaignUI = (() => {
           ]
         };
         Ops().apply({ op: 'story_beat_save', beat, status: 'manual' }, { source: 'story_director_manual' });
+        CS().mutate((state) => {
+          state.storyMode = state.storyMode || {};
+          state.storyMode.manualSummaryEntries = state.storyMode.manualSummaryEntries || [];
+          state.storyMode.manualSummaryEntries.unshift({
+            id: beat.id,
+            title,
+            text,
+            stageId: stage.id || '',
+            at: new Date().toISOString()
+          });
+        }, { source: 'story_manual_summary' });
         render();
         UI().toast('Manual story scene held', 'success');
       }
@@ -5850,13 +6233,35 @@ window.CJS.CampaignUI = (() => {
         label: 'resource bonus',
         summary: 'The route has better materials than expected, but one extra obstacle guards them.',
         objective: 'Secure the bonus materials',
+        kind: 'harvest',
+        required: 2,
         tag: 'materials',
         mapType: 'forest'
+      },
+      {
+        label: 'puzzle room',
+        summary: 'The job includes a tiny dungeon mechanism that can be resolved as a mini-game or manual check.',
+        objective: 'Clear the mini-game room',
+        kind: 'minigame',
+        required: 1,
+        tag: 'minigame',
+        mapType: 'dungeon'
+      },
+      {
+        label: 'hub errand',
+        summary: 'A local hub event becomes part of the request before the fieldwork can be closed.',
+        objective: 'Run one hub event',
+        kind: 'hub_event',
+        required: 1,
+        tag: 'hub',
+        mapType: 'urban'
       },
       {
         label: 'NPC request',
         summary: 'A nearby NPC asks for a small extra favor while the party is already out.',
         objective: 'Answer the extra request',
+        kind: 'talk',
+        required: 1,
         tag: 'npc',
         mapType: 'urban'
       }
@@ -5869,7 +6274,7 @@ window.CJS.CampaignUI = (() => {
     next.tags = Array.from(new Set([...(template.tags || []), variant.tag, 'randomized']));
     next.objectives = [
       ...(template.objectives || []),
-      { id: `variant_${_safe(variant.label)}`, label: variant.objective, current: 0, required: 1 }
+      { id: `variant_${_safe(variant.label)}`, kind: variant.kind || 'custom', label: variant.objective, current: 0, required: Math.max(1, Number(variant.required || 1)) }
     ];
     if (!template.mapType || template.mapType === 'any') next.mapType = variant.mapType;
     return next;
@@ -5888,6 +6293,15 @@ window.CJS.CampaignUI = (() => {
     { kind: 'craft',       label: 'Craft / deliver',     template: 'Craft and deliver {what}',  icon: '🛠', required: 1 },
     { kind: 'custom',      label: 'Custom',              template: '',                          icon: '✎', required: 1 }
   ];
+
+  QUEST_OBJECTIVE_PRESETS.splice(1, 0,
+    { kind: 'defeat_count', label: 'Kill X monsters', template: 'Defeat {what} monsters', icon: 'x', required: 3 }
+  );
+  QUEST_OBJECTIVE_PRESETS.splice(QUEST_OBJECTIVE_PRESETS.findIndex((p) => p.kind === 'craft'), 0,
+    { kind: 'harvest', label: 'Harvest', template: 'Harvest {what}', icon: 'H', required: 3 },
+    { kind: 'hub_event', label: 'Run hub event', template: 'Run {what} hub event', icon: 'E', required: 1 },
+    { kind: 'minigame', label: 'Mini-game room', template: 'Clear {what} mini-game', icon: 'M', required: 1 }
+  );
 
   const QUEST_REWARD_PRESETS = [
     { op: 'give_money', label: 'Gold', defaultAmount: 50 },
@@ -6316,6 +6730,7 @@ window.CJS.CampaignUI = (() => {
   // Guess an objective kind from free-form label text.
   function _inferObjectiveKind(label = '') {
     const s = String(label).toLowerCase();
+    if (/kill \d|kill|cull|slay \d|defeat \d/.test(s)) return 'defeat_count';
     if (/defeat|slay|kill|fight|battle|hunt/.test(s)) return 'defeat';
     if (/recover|retrieve|find|fetch|bring/.test(s)) return 'recover';
     if (/reach|arrive|enter|explore/.test(s)) return 'reach';
@@ -6323,7 +6738,10 @@ window.CJS.CampaignUI = (() => {
     if (/investigate|clue|inspect|search/.test(s)) return 'investigate';
     if (/talk|speak|negotiate|ask/.test(s)) return 'talk';
     if (/survive|hold|defend|withstand/.test(s)) return 'survive';
-    if (/gather|collect|harvest|mine/.test(s)) return 'gather';
+    if (/harvest|forage|reap/.test(s)) return 'harvest';
+    if (/hub event|town event|guild pulse|tavern pulse/.test(s)) return 'hub_event';
+    if (/mini.?game|puzzle|maze|push box|ice slide|pipe/.test(s)) return 'minigame';
+    if (/gather|collect|mine/.test(s)) return 'gather';
     if (/craft|deliver|build|forge/.test(s)) return 'craft';
     return 'custom';
   }
@@ -6613,7 +7031,8 @@ window.CJS.CampaignUI = (() => {
     }
     const fallbackPool = _fallbackBattlePool();
     if (!fallbackPool.length) return UI().toast('No battles available in this world', 'info');
-    const pick = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+    const pick = _pickContextualBattle(fallbackPool);
+    const questContext = QP()?.battleContextForPending?.(CS().getState(), pick) || null;
     const pending = {
       encounterId: pick.encounterId || null,
       battleSetId: pick.battleSetId || null,
@@ -6625,7 +7044,14 @@ window.CJS.CampaignUI = (() => {
       objective: pick.objective || '',
       notes: pick.notes || '',
       battleMap: pick.battleMap || null,
-      setting: pick.setting || scenario?.setting || null
+      setting: pick.setting || scenario?.setting || null,
+      tags: pick.tags || [],
+      contextTags: questContext?.contextTags || [],
+      monsterTags: questContext?.monsterTags || pick.monsterTags || [],
+      questId: questContext?.questId || null,
+      questChainId: questContext?.questChainId || null,
+      objectiveId: questContext?.objectiveId || null,
+      questContext
     };
     CS().mutate((state) => {
       state.pendingBattle = pending;
@@ -6653,7 +7079,10 @@ window.CJS.CampaignUI = (() => {
         ..._battleDefeatFields(card),
         objective: card.objective || '',
         notes: card.gimmick || '',
-        battleMap: _battleMapForCard(card)
+        battleMap: _battleMapForCard(card),
+        tags: card.tags || [],
+        contextTags: card.tags || [],
+        monsterTags: card.tags || []
       }))
       .filter((entry) => entry.encounterId || entry.battleSetId);
     if (fromCards.length) return fromCards;
@@ -6671,8 +7100,60 @@ window.CJS.CampaignUI = (() => {
       monsterIds: [monster.id],
       label: monster.name || monster.id,
       setting: CS().getActiveScenario()?.setting || 'outdoor',
-      battleMap: _battleMapForArea(CS().getActiveScenario()?.setting || 'outdoor')
+      battleMap: _battleMapForArea(CS().getActiveScenario()?.setting || 'outdoor'),
+      tags: [monster.type, monster.id].filter(Boolean),
+      monsterTags: QP()?.monsterTags?.(monster) || [monster.type, monster.id].filter(Boolean)
     }));
+  }
+
+  function _pickContextualBattle(pool = []) {
+    const scored = pool
+      .map((entry) => ({ entry, score: _battleContextScore(entry) }))
+      .sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, Math.min(4, scored.length));
+    const total = top.reduce((sum, item) => sum + Math.max(1, item.score), 0);
+    let roll = Math.random() * total;
+    for (const item of top) {
+      roll -= Math.max(1, item.score);
+      if (roll <= 0) return item.entry;
+    }
+    return top[0]?.entry || pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function _battleContextScore(entry = {}) {
+    const context = _battleContextTags();
+    const entryTags = [
+      entry.label,
+      entry.objective,
+      entry.notes,
+      entry.setting,
+      ...(entry.tags || []),
+      ...(entry.contextTags || []),
+      ...(entry.monsterTags || [])
+    ].join(' ').toLowerCase();
+    let score = 1;
+    for (const tag of context) {
+      if (tag && entryTags.includes(tag)) score += 5;
+    }
+    if (/boss|chimera|preview/.test(entryTags) && !context.includes('boss') && !context.includes('training')) score -= 4;
+    return Math.max(1, score);
+  }
+
+  function _battleContextTags() {
+    const state = CS().getState() || {};
+    const ctx = QP()?.battleContextForPending?.(state, state.pendingBattle || {}) || {};
+    const run = state.activeScenarioRun || {};
+    const raw = [
+      run.questTask?.label,
+      run.questTask?.location,
+      ...(ctx.tags || []),
+      ...(ctx.contextTags || []),
+      ...(ctx.monsterTags || [])
+    ].filter(Boolean).map((tag) => String(tag).toLowerCase());
+    return Array.from(new Set(raw.flatMap((tag) => [
+      tag,
+      tag.replace(/[^a-z0-9_:-]+/g, '_')
+    ])));
   }
 
   function _battleMapForArea(area) {
@@ -6745,7 +7226,10 @@ window.CJS.CampaignUI = (() => {
           ..._battleDefeatFields(card),
           objective: card.objective || '',
           notes: card.gimmick || '',
-          battleMap: _battleMapForCard(card)
+          battleMap: _battleMapForCard(card),
+          tags: card.tags || [],
+          contextTags: card.tags || [],
+          monsterTags: card.tags || []
         }
       });
     }
@@ -6774,7 +7258,11 @@ window.CJS.CampaignUI = (() => {
           ..._battleDefeatFields(battle),
           objective: battle.objective || '',
           notes: battle.notes || '',
-          battleMap: battle.battleMap || null
+          battleMap: battle.battleMap || null,
+          tags: battle.tags || [],
+          contextTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.contextTags || [],
+          monsterTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.monsterTags || battle.monsterTags || [],
+          questContext: QP()?.battleContextForPending?.(CS().getState(), battle) || null
         };
         CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_pick_battle' });
         Ops().apply({ op: 'log', text: `Battle queued (manual pick): ${pending.label}.` }, { source: 'run' });
@@ -6814,7 +7302,11 @@ window.CJS.CampaignUI = (() => {
       ..._battleDefeatFields(battle),
       objective: battle.objective || '',
       notes: battle.notes || '',
-      battleMap: battle.battleMap || null
+      battleMap: battle.battleMap || null,
+      tags: battle.tags || [],
+      contextTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.contextTags || [],
+      monsterTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.monsterTags || battle.monsterTags || [],
+      questContext: QP()?.battleContextForPending?.(CS().getState(), battle) || null
     };
     CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_set_battle' });
     Ops().apply({ op: 'log', text: `Set battle queued: ${pending.label}.` }, { source: 'run' });
@@ -7006,6 +7498,88 @@ window.CJS.CampaignUI = (() => {
       { op: 'roll_event', setting: _questMapType(quest), tags: _questTags(quest) },
       { op: 'log', text: `Quest event rolled: ${quest.title || quest.id}.` }
     ], { source: 'quest_event' });
+  }
+
+  function _questHubEvent(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const objective = _questObjectiveByKinds(quest, ['hub_event', 'event']) || _questNextObjective(quest);
+    const table = quest.tags?.includes('tavern') ? 'tavern' : quest.tags?.includes('guild') ? 'guild' : 'town';
+    _rollHubPulse(table);
+    if (objective) {
+      Ops().apply({
+        op: 'update_quest_progress',
+        questId,
+        objectiveId: objective.id,
+        amount: 1
+      }, { source: 'quest_hub_event' });
+    }
+    Ops().apply({ op: 'log', text: `Quest hub event: ${quest.title || quest.id}.` }, { source: 'quest_hub_event' });
+  }
+
+  function _questHarvest(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const objective = _questObjectiveByKinds(quest, ['harvest', 'gather', 'recover']) || _questNextObjective(quest);
+    const loot = _questHarvestLoot(quest);
+    const ops = [
+      { op: loot.op, id: loot.id, qty: loot.qty || 1 },
+      { op: 'log', text: `Quest harvest: ${quest.title || quest.id} - ${loot.qty || 1} ${loot.id}.` }
+    ];
+    if (objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
+    Ops().apply(ops, { source: 'quest_harvest' });
+  }
+
+  function _questMiniGame(questId) {
+    const quest = _activeQuestById(questId);
+    if (!quest) return UI().toast('Quest is not active', 'info');
+    const objective = _questObjectiveByKinds(quest, ['minigame', 'puzzle']) || _questNextObjective(quest);
+    const body = document.createElement('div');
+    body.appendChild(_formLabel('Mini-game'));
+    const game = UI().createSelect({
+      options: [
+        { value: 'mummy_maze', label: 'Mummy Maze' },
+        { value: 'push_box', label: 'Push Box' },
+        { value: 'ice_slide', label: 'Ice Slide' },
+        { value: 'pipe_connection', label: 'Pipe Connection' },
+        { value: 'weight_balance', label: 'Weight Balance' }
+      ],
+      value: quest.tags?.includes('dungeon') ? 'push_box' : 'mummy_maze'
+    });
+    body.appendChild(game);
+    body.appendChild(_formLabel('Result'));
+    const result = UI().createSelect({
+      options: [
+        { value: 'win', label: 'Clear' },
+        { value: 'fail', label: 'Fail / setback' }
+      ],
+      value: 'win'
+    });
+    body.appendChild(result);
+    _formModal({
+      title: `Mini-game: ${quest.title || quest.id}`,
+      body,
+      primaryLabel: 'Resolve',
+      onSubmit: () => {
+        const ops = [{ op: 'log', text: `Quest mini-game ${result.value}: ${_label(game.value)} for ${quest.title || quest.id}.` }];
+        if (result.value === 'win' && objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
+        if (result.value !== 'win') ops.push({ op: 'danger', amount: 1 });
+        Ops().apply(ops, { source: 'quest_minigame' });
+      }
+    });
+  }
+
+  function _questObjectiveByKinds(quest = {}, kinds = []) {
+    const set = new Set(kinds);
+    return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
+  }
+
+  function _questHarvestLoot(quest = {}) {
+    const tags = new Set([...(quest.tags || []), ...(quest.contextTags || [])].map((tag) => String(tag).toLowerCase()));
+    if (tags.has('mushroom') || tags.has('forage') || tags.has('food')) return { op: 'give_quest_item', id: 'haven_frostcap_mushroom', qty: 1 };
+    if (tags.has('pelt') || tags.has('wolf')) return { op: 'give_material', id: 'haven_wolf_pelt', qty: 1 };
+    if (tags.has('ore') || tags.has('forge') || tags.has('crafting')) return { op: 'give_material', id: 'haven_ice_crystal', qty: 1 };
+    return { op: 'give_material', id: 'haven_sprite_dust', qty: 1 };
   }
 
   function _questCheck(questId) {
@@ -7239,7 +7813,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _questTags(quest = {}) {
-    return ['quest', quest.id, ...(quest.tags || []), _questMapType(quest)].filter(Boolean);
+    return ['quest', quest.id, ...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || []), _questMapType(quest)].filter(Boolean);
   }
 
   function _ownedInventoryOptions() {

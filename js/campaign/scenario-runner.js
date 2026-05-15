@@ -1416,8 +1416,20 @@ window.CJS.ScenarioRunner = (() => {
       objective: normalized.objective || '',
       notes: normalized.notes || '',
       battleMap: normalized.battleMap || null,
-      setting: normalized.setting || CS().getActiveScenario()?.setting || null
+      setting: normalized.setting || CS().getActiveScenario()?.setting || null,
+      tags: normalized.tags || [],
+      contextTags: normalized.contextTags || [],
+      monsterTags: normalized.monsterTags || []
     };
+    const questContext = window.CJS.CampaignQuestPulse?.battleContextForPending?.(CS().getState(), pending) || null;
+    if (questContext) {
+      pending.questId = questContext.questId || null;
+      pending.questChainId = questContext.questChainId || null;
+      pending.objectiveId = questContext.objectiveId || null;
+      pending.questContext = questContext;
+      pending.contextTags = questContext.contextTags || pending.contextTags || [];
+      pending.monsterTags = questContext.monsterTags || pending.monsterTags || [];
+    }
     CS().mutate((state) => {
       state.pendingBattle = pending;
       if (state.activeScenarioRun) state.activeScenarioRun.randomBattlesUsed += 1;
@@ -1446,7 +1458,10 @@ window.CJS.ScenarioRunner = (() => {
         ..._defeatFields(entry, card),
         objective: entry.objective || card?.objective || '',
         notes: entry.notes || card?.gimmick || '',
-        battleMap: entry.battleMap || _battleMapForCard(card)
+        battleMap: entry.battleMap || _battleMapForCard(card),
+        tags: entry.tags || card?.tags || [],
+        contextTags: entry.contextTags || card?.tags || [],
+        monsterTags: entry.monsterTags || card?.tags || []
       };
     }
     if (entry.encounterId) {
@@ -1505,7 +1520,10 @@ window.CJS.ScenarioRunner = (() => {
         ..._defeatFields(card),
         objective: card.objective || '',
         notes: card.gimmick || '',
-        battleMap: _battleMapForCard(card)
+        battleMap: _battleMapForCard(card),
+        tags: card.tags || [],
+        contextTags: card.tags || [],
+        monsterTags: card.tags || []
       };
     }
     const encounter = _encounterById(id);

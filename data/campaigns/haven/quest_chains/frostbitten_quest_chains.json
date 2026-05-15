@@ -21,13 +21,28 @@
           "canonRisk": "green",
           "type": "gathering -> mystery -> light combat -> town consequence",
           "tags": ["food", "gathering", "cooking", "starter"],
+          "contextTags": ["frostcap", "grove", "mushroom", "warmth"],
+          "monsterTags": ["sprite", "wolf"],
           "mainNpcs": ["tessa", "frosted_mug_cook", "corvin"],
           "summary": "A safe mushroom-gathering job becomes a useful first field run for Bin's returning party.",
           "steps": [
             { "id": "guild_request", "label": "Guild Request", "text": "Collect Frostcap Mushrooms from the Frostwood edge." },
             { "id": "map_seed", "label": "Map Seed", "text": "Use Frostcap Grove as the route." },
             { "id": "warm_snow", "label": "Warm Snow", "text": "Mushrooms grow in a perfect circle around warm snow." },
-            { "id": "slime_nest", "label": "Light Battle", "text": "Use the Frost Slime Nest battle card or resolve manually." },
+            {
+              "id": "slime_nest",
+              "label": "Light Battle",
+              "text": "Use the Frost Slime Nest battle card or resolve manually.",
+              "progressTriggers": [
+                {
+                  "id": "grove_battle_success",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["battle_tag:mushroom", "battle_tag:sprite", "defeated_tag:sprite"],
+                  "amount": 1,
+                  "log": "Quest pulse: the grove fight is handled."
+                }
+              ]
+            },
             { "id": "return_stew", "label": "Return", "text": "The Frosted Mug can make Warm Stew again." }
           ],
           "battleSetIds": ["haven_bset_frost_sprite_grove"],
@@ -49,13 +64,28 @@
           "canonRisk": "green",
           "type": "town comedy -> social challenge -> optional duel",
           "tags": ["paperwork", "guild", "comedy", "bin_return"],
+          "contextTags": ["guild", "paperwork", "rival", "comedy"],
+          "monsterTags": ["rival", "sparring"],
           "mainNpcs": ["corvin", "lysa", "dain", "brinna_twins"],
           "summary": "Corvin needs proof that Bin is alive enough to sign guild forms.",
           "steps": [
             { "id": "paperwork_problem", "label": "Paperwork Problem", "text": "Gather signatures proving Bin is alive." },
             { "id": "required_signatures", "label": "Required Signatures", "text": "Garr, Tessa, Lysa, and the Brinna Twins each sign for different reasons." },
             { "id": "dain_loophole", "label": "Dain's Claim", "text": "Dain says Bin is exploiting a dramatic return loophole." },
-            { "id": "public_choice", "label": "Public Choice", "text": "Ignore Dain or roast him publicly." },
+            {
+              "id": "public_choice",
+              "label": "Public Choice",
+              "text": "Ignore Dain or roast him publicly.",
+              "progressTriggers": [
+                {
+                  "id": "public_roast",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["behavior:trolling", "skill:taunt_mock", "skill_taunt_mock"],
+                  "amount": 1,
+                  "log": "Quest pulse: Bin turns the paperwork duel into a public laugh."
+                }
+              ]
+            },
             { "id": "stamp_restored", "label": "Stamp Restored", "text": "The guild stamp finally accepts Bin's name." }
           ],
           "battleSetIds": ["haven_bset_guild_sparring_dain"],
@@ -75,13 +105,28 @@
           "canonRisk": "green",
           "type": "supply problem -> escort -> ambush -> hub repair",
           "tags": ["survival", "firemoss", "escort", "battle"],
+          "contextTags": ["supply", "sled", "ridge", "warmth"],
+          "monsterTags": ["bandit", "wolf"],
           "mainNpcs": ["tessa", "hilda_ironhand", "kael"],
           "summary": "The missing firemoss shipment needs a short supply-trail run before Frostbitten's burners dim.",
           "steps": [
             { "id": "shortage_posted", "label": "Shortage Posted", "text": "Tessa posts the firemoss shortage as a local priority." },
             { "id": "south_gate", "label": "South Gate", "text": "Choose who watches the sled and who scouts ahead." },
             { "id": "broken_sled", "label": "Broken Sled", "text": "Repair, search, or abandon a damaged carrier sled." },
-            { "id": "snowblind_ridge", "label": "Snowblind Ridge", "text": "Use Bandit Taxmen or Wolf Pack at Bent Pine." },
+            {
+              "id": "snowblind_ridge",
+              "label": "Snowblind Ridge",
+              "text": "Use Bandit Taxmen or Wolf Pack at Bent Pine.",
+              "progressTriggers": [
+                {
+                  "id": "ridge_cleared",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["battle_tag:bandit", "battle_tag:wolf", "defeated_tag:wolf"],
+                  "amount": 1,
+                  "log": "Quest pulse: Snowblind Ridge is clear enough for the sled."
+                }
+              ]
+            },
             { "id": "cache_return", "label": "Cache Return", "text": "Return the firemoss cache to town." }
           ],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bandit_taxmen_snowblind"],
@@ -103,13 +148,28 @@
           "canonRisk": "green",
           "type": "forge repair -> material hunt -> recipe unlock",
           "tags": ["forge", "crafting", "materials", "repair"],
+          "contextTags": ["forge", "pelt", "field_test"],
+          "monsterTags": ["wolf", "bear", "beast"],
           "mainNpcs": ["hilda_ironhand", "bowy"],
           "summary": "Hilda needs frost-resistant binding material before the forge can repair winter gear reliably.",
           "steps": [
             { "id": "bad_iron", "label": "Bad Iron", "text": "Hilda explains the repair queue and bad iron shipment." },
             { "id": "pelt_wraps", "label": "Grip Wraps", "text": "Gather wolf pelts or bear hide for winter grip wraps." },
             { "id": "forge_check", "label": "Forge Check", "text": "Run a crafting check or spend extra material." },
-            { "id": "field_test", "label": "Field Test", "text": "Use the repaired gear in one fight or travel segment." },
+            {
+              "id": "field_test",
+              "label": "Field Test",
+              "text": "Use the repaired gear in one fight or travel segment.",
+              "progressTriggers": [
+                {
+                  "id": "gear_field_tested",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["defeated_tag:wolf", "defeated_tag:bear", "battle_tag:wolf", "battle_tag:bear"],
+                  "amount": 1,
+                  "log": "Quest pulse: Hilda's winter gear survives a field test."
+                }
+              ]
+            },
             { "id": "recipe_card", "label": "Recipe Card", "text": "Hilda writes down a basic cloak recipe, badly." }
           ],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
@@ -125,13 +185,29 @@
           "canonRisk": "yellow",
           "type": "Bowy side job -> trail clue -> battle -> character beat",
           "tags": ["bowy", "side_character", "wolf", "yellow"],
+          "contextTags": ["frozen_creek", "hunter_marker", "wolf_den"],
+          "monsterTags": ["wolf", "beast"],
           "mainNpcs": ["bowy", "garr", "mara"],
           "summary": "Bowy follows a trail of old crossbow bolts toward a wolf den. Keep Garr clues soft unless GM promotes them.",
           "steps": [
             { "id": "broken_bolt", "label": "Broken Bolt", "text": "Bowy finds an old bolt that warms in his hand." },
             { "id": "frozen_creek", "label": "Frozen Creek Trail", "text": "Use the Frozen Creek Trail map seed." },
             { "id": "hunter_marker", "label": "Hunter's Marker", "text": "A marker suggests someone knew this route well." },
-            { "id": "wolf_den", "label": "Wolf Den", "text": "Use a wolf battle set or resolve manually." },
+            {
+              "id": "wolf_den",
+              "label": "Wolf Den",
+              "text": "Use a wolf battle set or resolve manually.",
+              "progressTriggers": [
+                {
+                  "id": "bowy_wolf_den",
+                  "outcome": "victory",
+                  "requiresAnyTags": ["battle_tag:wolf", "defeated_tag:wolf", "defeated:haven_ice_wolf"],
+                  "amount": 1,
+                  "addTags": ["bowy_confidence_seed"],
+                  "log": "Quest pulse: Bowy's wolf den trail is resolved."
+                }
+              ]
+            },
             { "id": "quiet_return", "label": "Quiet Return", "text": "Bowy decides what kind of archer he wants to be." }
           ],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine"],
@@ -149,13 +225,27 @@
           "canonRisk": "green",
           "type": "rival comedy -> small jobs -> social reward",
           "tags": ["brinna_twins", "debt", "comedy", "town"],
+          "contextTags": ["town", "rival", "comedy", "arbitration"],
+          "monsterTags": ["sparring", "rival"],
           "mainNpcs": ["brinna_twins", "lysa", "corvin"],
           "summary": "The Brinna Twins claim Bin's old three-silver debt accrued emotional interest while he was missing.",
           "steps": [
             { "id": "debt_claim", "label": "Debt Claim", "text": "Hear the twins' itemized argument." },
             { "id": "receipt_hunt", "label": "Receipt Hunt", "text": "Search town for proof of the original debt." },
             { "id": "tiny_jobs", "label": "Tiny Jobs", "text": "Do one tiny helpful town task." },
-            { "id": "public_arbitration", "label": "Public Arbitration", "text": "Let Lysa or Corvin arbitrate the absurd interest." },
+            {
+              "id": "public_arbitration",
+              "label": "Public Arbitration",
+              "text": "Let Lysa or Corvin arbitrate the absurd interest.",
+              "progressTriggers": [
+                {
+                  "id": "self_deprecating_arbitration",
+                  "requiresAnyTags": ["behavior:self_deprecating", "skill:taunt_mock", "skill_taunt_mock"],
+                  "amount": 1,
+                  "log": "Quest pulse: Bin survives arbitration by making himself the punchline."
+                }
+              ]
+            },
             { "id": "friendly_rivals", "label": "Friendly Rivals", "text": "Turn the debt into a recurring friendly rivalry." }
           ],
           "rewardOps": [

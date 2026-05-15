@@ -189,6 +189,20 @@ window.CJS.CampaignState = (() => {
       },
       quests: {},
       flags: {},
+      tagLedger: {
+        entries: {}
+      },
+      questPulse: {
+        recent: [],
+        settings: {
+          autoApplyCombat: true
+        }
+      },
+      legacy: {
+        traits: {},
+        majorChoices: [],
+        unlockedEchoes: []
+      },
       activeScenarioRun: null,
       scenarioHistory: [],
       mapState: {},
@@ -233,6 +247,20 @@ window.CJS.CampaignState = (() => {
         metrics: {},
         lastBeatIds: [],
         sideQuestSync: {}
+      },
+      storyMode: {
+        currentArcId: null,
+        currentChapterId: null,
+        currentPartId: null,
+        completedParts: {},
+        defaultedParts: {},
+        revealedChapters: {},
+        partResults: {},
+        manualSummaryEntries: []
+      },
+      sequenceRuntime: {
+        active: null,
+        history: []
       },
       pinnedNotes: [],
       log: [],
@@ -319,7 +347,7 @@ window.CJS.CampaignState = (() => {
   // Greedy fill of equippedSkills / equippedPassives from the member's pool
   // so brand-new members and legacy saves enter combat with sensible loadouts.
   // Stops adding when either the slot cap or the SP budget is reached.
-  function _autoFillEquipped(member, base) {
+  function _autoFillEquipped(member, base, persona = null) {
     const F = window.CJS.Formulas;
     if (!F) return;
     const slotCapSkills   = F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : (member.skillSlots || 4);
@@ -328,11 +356,11 @@ window.CJS.CampaignState = (() => {
     const spCapPassives   = F.calcEffectivePassivePoints ? F.calcEffectivePassivePoints(member, base) : (member.passivePoints || 3);
 
     if (!Array.isArray(member.equippedSkills) || !member.equippedSkills.length) {
-      const pool = _skillPoolIds(member, base);
+      const pool = _skillPoolIds(member, base, persona);
       member.equippedSkills = _greedyFill(pool, 'skills', slotCapSkills, spCapSkills, F);
     }
     if (!Array.isArray(member.equippedPassives) || !member.equippedPassives.length) {
-      const pool = _passivePoolIds(member, base);
+      const pool = _passivePoolIds(member, base, persona);
       member.equippedPassives = _greedyFill(pool, 'passives', slotCapPassives, spCapPassives, F);
     }
   }
@@ -351,9 +379,19 @@ window.CJS.CampaignState = (() => {
     return out;
   }
 
-  function _skillPoolIds(member = {}, base = {}) {
+  function _activePersonaForPool(member = {}, persona = null) {
+    if (persona) return persona;
+    if (member.activePersona && PS()) return PS().getPersona(member.activePersona);
+    return null;
+  }
+
+  function _skillPoolIds(member = {}, base = {}, persona = null) {
+    const activePersona = _activePersonaForPool(member, persona);
     const ids = new Set();
-    for (const e of base.skills || []) {
+    const authoredSkills = activePersona && Array.isArray(activePersona.skills)
+      ? activePersona.skills
+      : (base.skills || []);
+    for (const e of authoredSkills) {
       const id = typeof e === 'string' ? e : e?.skillId;
       if (id) ids.add(id);
     }
@@ -371,9 +409,13 @@ window.CJS.CampaignState = (() => {
     return Array.from(ids);
   }
 
-  function _passivePoolIds(member = {}, base = {}) {
+  function _passivePoolIds(member = {}, base = {}, persona = null) {
+    const activePersona = _activePersonaForPool(member, persona);
     const ids = new Set();
-    for (const id of base.innatePassives || []) if (id) ids.add(id);
+    const authoredPassives = activePersona && Array.isArray(activePersona.innatePassives)
+      ? activePersona.innatePassives
+      : (base.innatePassives || []);
+    for (const id of authoredPassives) if (id) ids.add(id);
     for (const id of member.learnedPassives || []) if (id) ids.add(id);
     if (member.currentJob && window.CJS.Formulas?.collectJobGrants) {
       const job = DS().get('jobs', member.currentJob);
@@ -586,6 +628,18 @@ window.CJS.CampaignState = (() => {
     next.inventory.equipment = next.inventory.equipment || {};
     next.quests = next.quests || {};
     next.flags = next.flags || {};
+    next.tagLedger = next.tagLedger || {};
+    next.tagLedger.entries = next.tagLedger.entries || {};
+    next.questPulse = next.questPulse || {};
+    next.questPulse.recent = next.questPulse.recent || [];
+    next.questPulse.settings = {
+      autoApplyCombat: true,
+      ...(next.questPulse.settings || {})
+    };
+    next.legacy = next.legacy || {};
+    next.legacy.traits = next.legacy.traits || {};
+    next.legacy.majorChoices = next.legacy.majorChoices || [];
+    next.legacy.unlockedEchoes = next.legacy.unlockedEchoes || [];
     next.scenarioHistory = next.scenarioHistory || [];
     next.mapState = next.mapState || {};
     for (const map of Object.values(next.mapState)) {
@@ -638,6 +692,18 @@ window.CJS.CampaignState = (() => {
     next.storyDirector.metrics = next.storyDirector.metrics || {};
     next.storyDirector.lastBeatIds = next.storyDirector.lastBeatIds || [];
     next.storyDirector.sideQuestSync = next.storyDirector.sideQuestSync || {};
+    next.storyMode = next.storyMode || {};
+    next.storyMode.currentArcId = next.storyMode.currentArcId || null;
+    next.storyMode.currentChapterId = next.storyMode.currentChapterId || null;
+    next.storyMode.currentPartId = next.storyMode.currentPartId || null;
+    next.storyMode.completedParts = next.storyMode.completedParts || {};
+    next.storyMode.defaultedParts = next.storyMode.defaultedParts || {};
+    next.storyMode.revealedChapters = next.storyMode.revealedChapters || {};
+    next.storyMode.partResults = next.storyMode.partResults || {};
+    next.storyMode.manualSummaryEntries = Array.isArray(next.storyMode.manualSummaryEntries) ? next.storyMode.manualSummaryEntries : [];
+    next.sequenceRuntime = next.sequenceRuntime || {};
+    next.sequenceRuntime.active = next.sequenceRuntime.active || null;
+    next.sequenceRuntime.history = Array.isArray(next.sequenceRuntime.history) ? next.sequenceRuntime.history : [];
     next.reputation = next.reputation || {};
     next.unlockedRecipes = next.unlockedRecipes || {};
     next.pocketHaven = next.pocketHaven || { enabled: true, notes: [], incomeNodes: {}, farm: { plots: [] }, stations: [] };
@@ -794,12 +860,13 @@ window.CJS.CampaignState = (() => {
     // was missing entirely (legacy save), auto-fill from the pool so the
     // member is combat-ready out of the gate. If the player previously
     // chose an empty list, that empty list is respected.
-    const skillPool = new Set(_skillPoolIds(member, base));
+    const activePersona = _activePersonaForPool(member);
+    const skillPool = new Set(_skillPoolIds(member, base, activePersona));
     const skillsMissing = !Array.isArray(member.equippedSkills);
     member.equippedSkills = (Array.isArray(member.equippedSkills) ? member.equippedSkills : [])
       .filter((id) => id && skillPool.has(id));
 
-    const passivePool = new Set(_passivePoolIds(member, base));
+    const passivePool = new Set(_passivePoolIds(member, base, activePersona));
     const passivesMissing = !Array.isArray(member.equippedPassives);
     member.equippedPassives = (Array.isArray(member.equippedPassives) ? member.equippedPassives : [])
       .filter((id) => id && passivePool.has(id));
@@ -812,7 +879,7 @@ window.CJS.CampaignState = (() => {
       };
       if (skillsMissing) member.equippedSkills = [];
       if (passivesMissing) member.equippedPassives = [];
-      _autoFillEquipped(member, base);
+      _autoFillEquipped(member, base, activePersona);
       // Restore any side that was already explicitly authored (untouched).
       if (before.equippedSkills) member.equippedSkills = before.equippedSkills;
       if (before.equippedPassives) member.equippedPassives = before.equippedPassives;
@@ -857,18 +924,13 @@ window.CJS.CampaignState = (() => {
         // Inherit member's existing live progression as the persona's initial
         // captured snapshot, so legacy saves don't lose their job/skill state.
         const existing = PS().captureLoadoutFromMember(member);
-        member.personaProgress[preferred.id] = {
-          ...seeded,
-          ...existing,
-          // Seed equipment / weapon-armor lists from the persona only if the
-          // member is still wearing the base character's defaults.
-          equipment: existing.equipment?.length ? existing.equipment : seeded.equipment,
-          allowedWeaponTypes: existing.allowedWeaponTypes?.length ? existing.allowedWeaponTypes : seeded.allowedWeaponTypes,
-          allowedArmorTypes: existing.allowedArmorTypes?.length ? existing.allowedArmorTypes : seeded.allowedArmorTypes
-        };
-        member.activePersona = preferred.id;
-        if (preferred.icon) member.personaIcon = preferred.icon;
-        if (preferred.portrait) member.personaPortrait = preferred.portrait;
+        member.personaProgress._legacy = member.personaProgress._legacy || existing;
+        member.personaProgress[preferred.id] = _mergePersonaSeedWithExisting(seeded, existing);
+        PS().applyLoadoutToMember(member, member.personaProgress[preferred.id], preferred, base);
+        _syncEquipmentSlots(member);
+        if (member.currentJob) _persistJobGrants(member, base, member.currentJob);
+        _autoFillEquipped(member, base, preferred);
+        _syncPartyMaxHp(charId, member);
       }
     }
 
@@ -893,7 +955,6 @@ window.CJS.CampaignState = (() => {
     if (!member || !PS()) return false;
     const base = DS().get('characters', member.baseCharacterId || member.id) || {};
     const persona = PS().getPersona(nextPersonaId);
-    if (!persona) return false;
 
     // Capture the live loadout under the OUTGOING persona (or _legacy for
     // members that never activated a persona).
@@ -901,17 +962,98 @@ window.CJS.CampaignState = (() => {
     member.personaProgress = member.personaProgress || {};
     member.personaProgress[outgoingId] = PS().captureLoadoutFromMember(member);
 
+    if (!nextPersonaId) {
+      const slot = member.personaProgress._legacy || _baseLoadoutFromCharacter(base);
+      PS().applyLoadoutToMember(member, slot, null, base);
+      member.activePersona = null;
+      member.personaIcon = '';
+      member.personaPortrait = '';
+      _syncEquipmentSlots(member);
+      if (member.currentJob) _persistJobGrants(member, base, member.currentJob);
+      if ((member.equippedSkills || []).length === 0 || (member.equippedPassives || []).length === 0) {
+        _autoFillEquipped(member, base, null);
+      }
+      _syncPartyMaxHp(member.baseCharacterId || base.id, member);
+      return true;
+    }
+
+    if (!persona) return false;
+
     // Activate the new persona — restore saved slot, or seed from template.
     const slot = member.personaProgress[nextPersonaId] || PS().seedLoadoutFromPersona(persona, base);
     PS().applyLoadoutToMember(member, slot, persona, base);
+    _syncEquipmentSlots(member);
 
     // Re-merge job grants + auto-fill if needed.
     if (member.currentJob) _persistJobGrants(member, base, member.currentJob);
     if ((member.equippedSkills || []).length === 0 || (member.equippedPassives || []).length === 0) {
-      _autoFillEquipped(member, base);
+      _autoFillEquipped(member, base, persona);
     }
     _syncPartyMaxHp(member.baseCharacterId || base.id, member);
     return true;
+  }
+
+  function _mergePersonaSeedWithExisting(seeded = {}, existing = {}) {
+    const statOverrides = { ...(seeded.statOverrides || {}) };
+    for (const [stat, value] of Object.entries(existing.statOverrides || {})) {
+      statOverrides[stat] = Number(statOverrides[stat] || 0) + Number(value || 0);
+    }
+    const seededEquipment = Array.isArray(seeded.equipment) ? seeded.equipment.filter(Boolean) : [];
+    const existingEquipment = Array.isArray(existing.equipment) ? existing.equipment.filter(Boolean) : [];
+    const seededWeaponTypes = Array.isArray(seeded.allowedWeaponTypes) ? seeded.allowedWeaponTypes.filter(Boolean) : [];
+    const existingWeaponTypes = Array.isArray(existing.allowedWeaponTypes) ? existing.allowedWeaponTypes.filter(Boolean) : [];
+    const seededArmorTypes = Array.isArray(seeded.allowedArmorTypes) ? seeded.allowedArmorTypes.filter(Boolean) : [];
+    const existingArmorTypes = Array.isArray(existing.allowedArmorTypes) ? existing.allowedArmorTypes.filter(Boolean) : [];
+    return {
+      ...seeded,
+      currentJob: seeded.currentJob || existing.currentJob || null,
+      jobProgress: { ...(seeded.jobProgress || {}), ...(existing.jobProgress || {}) },
+      learnedSkills: clone(existing.learnedSkills || []),
+      learnedPassives: clone(existing.learnedPassives || []),
+      statOverrides,
+      equipment: clone(seededEquipment.length ? seededEquipment : existingEquipment),
+      equipmentSlots: clone(seededEquipment.length ? (seeded.equipmentSlots || {}) : (existing.equipmentSlots || seeded.equipmentSlots || {})),
+      equippedSkills: clone(seeded.equippedSkills || []),
+      equippedPassives: clone(seeded.equippedPassives || []),
+      allowedWeaponTypes: clone(seededWeaponTypes.length ? seededWeaponTypes : existingWeaponTypes),
+      allowedArmorTypes: clone(seededArmorTypes.length ? seededArmorTypes : existingArmorTypes),
+      skillProgress: { ...(seeded.skillProgress || {}), ...(existing.skillProgress || {}) },
+      passiveProgress: { ...(seeded.passiveProgress || {}), ...(existing.passiveProgress || {}) }
+    };
+  }
+
+  function _syncEquipmentSlots(member = {}) {
+    member.equipmentSlots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+    member.equipment = _equipmentListFromSlots(member.equipmentSlots);
+  }
+
+  function _baseLoadoutFromCharacter(base = {}) {
+    const PROG = window.CJS.CONST?.PROGRESSION || {};
+    const currentJob = base.defaultJob || null;
+    const jobProgress = {};
+    for (const jid of base.availableJobs || (currentJob ? [currentJob] : [])) {
+      jobProgress[jid] = { xp: 0, level: 1 };
+    }
+    if (currentJob && !jobProgress[currentJob]) jobProgress[currentJob] = { xp: 0, level: 1 };
+    return {
+      currentJob,
+      jobProgress,
+      learnedSkills: [],
+      learnedPassives: [],
+      statOverrides: {},
+      equipment: clone(base.equipment || []),
+      equipmentSlots: _equipmentSlotsFromList(base.equipment || []),
+      equippedSkills: [],
+      equippedPassives: [],
+      allowedWeaponTypes: clone(base.allowedWeaponTypes || []),
+      allowedArmorTypes: clone(base.allowedArmorTypes || []),
+      skillProgress: _initialSkillProgress(base),
+      passiveProgress: _initialPassiveProgress(base),
+      skillSlots: Number(base.skillSlots ?? PROG.defaultSkillSlots ?? 4),
+      passiveSlots: Number(base.passiveSlots ?? PROG.defaultPassiveSlots ?? 3),
+      skillPoints: Number(base.skillPoints ?? PROG.defaultSkillPoints ?? 4),
+      passivePoints: Number(base.passivePoints ?? PROG.defaultPassivePoints ?? 3)
+    };
   }
 
   function snapshotState() {
