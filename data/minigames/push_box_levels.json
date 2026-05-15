@@ -1,0 +1,110 @@
+{
+  "gameId": "push_box",
+  "version": 1,
+  "levels": [
+    {
+      "id": "push_01",
+      "title": "Guild Crate Stamp",
+      "difficulty": 1,
+      "theme": "guild_storehouse",
+      "width": 7,
+      "height": 6,
+      "player": [1, 3],
+      "boxes": [[3, 3]],
+      "goals": [[5, 3]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4]
+      ],
+      "optimalPushes": 2,
+      "optimalMoves": 3,
+      "hint": "Push the crate east twice. Stamp it on the rune.",
+      "tags": ["tutorial", "crate", "guild"]
+    },
+    {
+      "id": "push_02",
+      "title": "L-Bend Loading Dock",
+      "difficulty": 2,
+      "theme": "guild_storehouse",
+      "width": 7,
+      "height": 7,
+      "player": [1, 1],
+      "boxes": [[3, 3]],
+      "goals": [[5, 1]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
+        [4,3],[4,4],[4,5],[3,5]
+      ],
+      "optimalPushes": 4,
+      "optimalMoves": 11,
+      "hint": "Wrong way and the crate is stuck in the corner. Approach from below to push it north before tucking it east.",
+      "tags": ["crate", "guild", "corner-trap"]
+    },
+    {
+      "id": "push_03",
+      "title": "Twin Runes",
+      "difficulty": 3,
+      "theme": "guild_storehouse",
+      "width": 7,
+      "height": 6,
+      "player": [1, 1],
+      "boxes": [[2, 2], [3, 2]],
+      "goals": [[2, 4], [3, 4]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],
+        [4,2]
+      ],
+      "optimalPushes": 4,
+      "optimalMoves": 8,
+      "hint": "Order matters. Park the leftmost crate first, then the right one — otherwise you'll block your own approach.",
+      "tags": ["crate", "guild", "order"]
+    },
+    {
+      "id": "push_04",
+      "title": "Storeroom Aisles",
+      "difficulty": 4,
+      "theme": "guild_storehouse",
+      "width": 8,
+      "height": 7,
+      "player": [1, 1],
+      "boxes": [[3, 1], [3, 5]],
+      "goals": [[6, 1], [6, 5]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
+        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[7,6],
+        [0,1],[7,1],[0,2],[7,2],[0,3],[7,3],[0,4],[7,4],[0,5],[7,5],
+        [2,3],[3,3],[4,3],[5,3]
+      ],
+      "optimalPushes": 6,
+      "optimalMoves": 16,
+      "hint": "Two narrow aisles. Drive the top crate to the top rune, then walk all the way around to do the same below.",
+      "tags": ["crate", "guild", "corridor", "multi-goal"]
+    },
+    {
+      "id": "push_05",
+      "title": "Triple Stack",
+      "difficulty": 5,
+      "theme": "guild_storehouse",
+      "width": 6,
+      "height": 6,
+      "player": [1, 1],
+      "boxes": [[2, 2], [3, 2], [2, 3]],
+      "goals": [[1, 4], [4, 4], [3, 4]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],
+        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],
+        [0,1],[5,1],[0,2],[5,2],[0,3],[5,3],[0,4],[5,4],
+        [4,2]
+      ],
+      "optimalPushes": 8,
+      "optimalMoves": 18,
+      "hint": "Three crates, three runes, one wrong push and a crate is welded to a wall. The deadlock warnings (red boxes) flag the dead state — undo and try a different order.",
+      "tags": ["crate", "guild", "hard", "deadlock"]
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "gameId": "mummy_maze",
+  "version": 1,
+  "levels": [
+    {
+      "id": "mummy_01",
+      "title": "First Tomb",
+      "difficulty": 1,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [0, 0],
+      "exit": [0, 6],
+      "mummies": [
+        { "id": "m1", "pos": [6, 3], "speed": 1, "priority": "horizontal" }
+      ],
+      "walls": [],
+      "keys": [],
+      "gates": [],
+      "traps": [],
+      "optimalTurns": 6,
+      "hint": "The mummy here is slow. Walk straight down to the exit stairs.",
+      "tags": ["tutorial", "tomb", "chase"]
+    },
+    {
+      "id": "mummy_02",
+      "title": "Corridor Lure",
+      "difficulty": 2,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [0, 6],
+      "exit": [6, 0],
+      "mummies": [
+        { "id": "m1", "pos": [6, 6], "speed": 2, "priority": "horizontal" }
+      ],
+      "walls": [[1, 5], [2, 5], [3, 5], [4, 5], [5, 5]],
+      "keys": [],
+      "gates": [],
+      "traps": [],
+      "optimalTurns": 12,
+      "hint": "The corridor wall traps a horizontal mummy. Step up once to let it commit, then climb past.",
+      "tags": ["tomb", "lure", "chase"]
+    },
+    {
+      "id": "mummy_03",
+      "title": "Sealed Vault",
+      "difficulty": 3,
+      "theme": "tomb",
+      "width": 5,
+      "height": 5,
+      "player": [0, 4],
+      "exit": [4, 0],
+      "mummies": [
+        { "id": "m1", "pos": [4, 4], "speed": 1, "priority": "horizontal" }
+      ],
+      "walls": [[1, 3], [2, 3], [3, 3], [3, 0]],
+      "keys": [
+        { "id": "k1", "pos": [0, 0] }
+      ],
+      "gates": [
+        { "requires": "k1", "pos": [4, 1] }
+      ],
+      "traps": [],
+      "optimalTurns": 10,
+      "hint": "Grab the bone key in the upper-left, then loop south of the corridor to the sealed gate.",
+      "tags": ["tomb", "key", "gate"]
+    },
+    {
+      "id": "mummy_04",
+      "title": "Pit and Pendulum",
+      "difficulty": 4,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [0, 6],
+      "exit": [6, 0],
+      "mummies": [
+        { "id": "m1", "pos": [6, 6], "speed": 1, "priority": "vertical" }
+      ],
+      "walls": [[1, 5], [2, 5], [3, 5], [4, 5], [5, 5]],
+      "keys": [],
+      "gates": [],
+      "traps": [
+        { "pos": [3, 0] }
+      ],
+      "optimalTurns": 13,
+      "hint": "This mummy tries to step toward you vertically first. Open with a Wait, then climb. Detour around the floor spike on the top row.",
+      "tags": ["tomb", "trap", "vertical-mummy"]
+    },
+    {
+      "id": "mummy_05",
+      "title": "Eye of Ra",
+      "difficulty": 5,
+      "theme": "tomb",
+      "width": 5,
+      "height": 5,
+      "player": [0, 4],
+      "exit": [4, 0],
+      "mummies": [
+        { "id": "m1", "pos": [4, 4], "speed": 2, "priority": "horizontal" }
+      ],
+      "walls": [[1, 3], [2, 3], [3, 3]],
+      "keys": [],
+      "gates": [],
+      "traps": [
+        { "pos": [3, 1] }
+      ],
+      "optimalTurns": 8,
+      "hint": "Tight quarters. Use the corridor wall to pin the mummy; route around the trap.",
+      "tags": ["tomb", "hard", "compact", "trap"]
+    }
+  ]
+}

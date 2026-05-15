@@ -1,0 +1,330 @@
+/* minigames.css — shared styles for CJS mini-game overlay */
+
+.minigame-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 18, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 16px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #eee;
+}
+
+.minigame-shell {
+  width: min(720px, 100%);
+  max-height: 96vh;
+  background: linear-gradient(180deg, #1a1f2b 0%, #11141d 100%);
+  border: 1px solid #2c3346;
+  border-radius: 12px;
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.minigame-shell.minigame-theme-tomb {
+  background: linear-gradient(180deg, #2b1f10 0%, #1a1108 100%);
+  border-color: #5b4424;
+}
+
+.minigame-shell.minigame-theme-guild_storehouse {
+  background: linear-gradient(180deg, #1d1a14 0%, #100e0a 100%);
+  border-color: #4a3c28;
+}
+
+.minigame-header {
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.minigame-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.minigame-title h2 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.minigame-sub {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.minigame-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-bottom: 4px;
+  width: max-content;
+  opacity: 0.8;
+}
+
+.minigame-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+.minigame-stats span {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.minigame-stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  gap: 16px;
+  outline: none;
+  min-height: 320px;
+}
+
+.minigame-stage:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(95, 176, 255, 0.4);
+}
+
+.minigame-stage canvas {
+  background: #0c0e16;
+  image-rendering: pixelated;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+}
+
+.minigame-touchpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 168px;
+  flex: 0 0 auto;
+}
+
+.minigame-touchpad button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 20px;
+  height: 48px;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.05s ease;
+}
+
+.minigame-touchpad button:active {
+  transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.minigame-touchpad button:focus-visible {
+  outline: 2px solid #5fb0ff;
+  outline-offset: 1px;
+}
+
+.minigame-touchpad > button:first-child { grid-column: 2 / 3; }
+.minigame-touchpad .minigame-touchrow { grid-column: 1 / 4; display: contents; }
+.minigame-touchpad > button:last-child { grid-column: 2 / 3; }
+
+.minigame-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.minigame-controls button {
+  flex: 1 1 auto;
+  min-width: 88px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.minigame-controls button:hover { background: rgba(255, 255, 255, 0.14); }
+.minigame-controls button:focus-visible { outline: 2px solid #5fb0ff; outline-offset: 1px; }
+.minigame-controls .minigame-danger { background: rgba(193, 72, 72, 0.18); border-color: rgba(193, 72, 72, 0.5); }
+.minigame-controls .minigame-ghost { background: transparent; }
+
+.minigame-result {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 12, 20, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  z-index: 5;
+}
+
+.minigame-result h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+
+.minigame-result pre {
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 12px;
+  border-radius: 6px;
+  max-width: min(100%, 540px);
+  max-height: 40vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-align: left;
+}
+
+.minigame-result-actions { display: flex; gap: 8px; }
+.minigame-result-actions button {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.minigame-hint-bubble {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translate(-50%, -10px);
+  background: rgba(95, 176, 255, 0.16);
+  border: 1px solid rgba(95, 176, 255, 0.5);
+  color: #cfe6ff;
+  padding: 6px 12px;
+  border-radius: 18px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.minigame-hint-bubble.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Standalone harness */
+.minigame-harness {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #eee;
+  background: #0b0e16;
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px 16px;
+}
+
+.minigame-harness h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.minigame-harness p { margin: 0 0 16px; opacity: 0.7; font-size: 13px; }
+
+.minigame-harness .panel {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.minigame-harness .level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.minigame-harness .level-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.minigame-harness .level-card h3 { margin: 0; font-size: 14px; }
+.minigame-harness .level-card .meta { font-size: 11px; opacity: 0.7; }
+.minigame-harness .level-card button {
+  margin-top: auto;
+  padding: 6px 10px;
+  background: rgba(95, 176, 255, 0.18);
+  color: #cfe6ff;
+  border: 1px solid rgba(95, 176, 255, 0.5);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.minigame-harness .game-tabs { display: flex; gap: 8px; }
+.minigame-harness .game-tabs button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ddd;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.minigame-harness .game-tabs button.active {
+  background: rgba(95, 176, 255, 0.2);
+  border-color: rgba(95, 176, 255, 0.6);
+  color: #fff;
+}
+
+.minigame-harness .log-pane {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-height: 32vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+@media (max-width: 600px) {
+  .minigame-shell { width: 100%; max-height: 100vh; border-radius: 0; }
+  .minigame-stage { flex-direction: column; padding: 10px; }
+  .minigame-touchpad { width: 192px; }
+  .minigame-stats { font-size: 11px; }
+}
