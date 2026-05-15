@@ -580,6 +580,222 @@ window.CJS.CombatManager = (() => {
     if (CS()) CS().reset();
   }
 
+  // ── GM CONTROLS (live battlefield manipulation) ───────────────────
+  // These let a Game Master mutate the live combat state mid-battle.
+  // All operations go through the same notify/log pipeline as normal
+  // actions so the UI and log stay coherent.
+
+  function gmAddUnit(baseId, r, c, opts = {}) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const base = DS().get('monsters', baseId) || DS().get('characters', baseId);
+    if (!base) return { success: false, reason: 'unit_not_found' };
+
+    // Unique instance ID — count existing instances of this base
+    let n = 1;
+    while (_state.units[n === 1 ? baseId : `${baseId}_${n}`]) n++;
+    const instanceId = n === 1 ? baseId : `${baseId}_${n}`;
+
+    const overrides = { ...base, team: opts.team || base.team || 'enemy' };
+    const compiled = SC().compileUnit(overrides, instanceId, {});
+    if (!compiled) return { success: false, reason: 'compile_failed' };
+
+    const size = opts.size || base.size || '1x1';
+    compiled.size = size;
+    compiled.instanceId = instanceId;
+
+    if (!GE().addUnit(compiled, r, c, size)) {
+      return { success: false, reason: 'cell_blocked' };
+    }
+
+    _state.units[instanceId] = compiled;
+    // Insert into initiative just AFTER the current turn so they act next.
+    const insertAt = Math.min(_state.turnIndex + 1, _state.initiative.length);
+    _state.initiative.splice(insertAt, 0, instanceId);
+
+    Log().logNote(`GM: added ${compiled.name || instanceId} at [${r},${c}] (${compiled.team})`, ['gm', 'gm_add']);
+    try { ER().fireTrigger('on_battle_start', { unit: compiled, allUnits: Object.values(_state.units), turnNumber: _state.roundNumber }); } catch (e) {}
+    _notify();
+    return { success: true, unit: compiled };
+  }
+
+  function gmRemoveUnit(instanceId) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const unit = _state.units[instanceId];
+    if (!unit) return { success: false, reason: 'unit_not_found' };
+
+    GE().removeFromBoard(instanceId);
+    const idx = _state.initiative.indexOf(instanceId);
+    if (idx >= 0) {
+      _state.initiative.splice(idx, 1);
+      if (idx < _state.turnIndex) _state.turnIndex--;
+    }
+    delete _state.units[instanceId];
+
+    Log().logNote(`GM: removed ${unit.name || instanceId}`, ['gm', 'gm_remove']);
+    if (_checkBattleEnd()) { _notify(); return { success: true, ended: true }; }
+    _notify();
+    return { success: true };
+  }
+
+  function gmMoveUnit(instanceId, r, c) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const unit = _state.units[instanceId];
+    if (!unit) return { success: false, reason: 'unit_not_found' };
+    const result = GE().teleportUnit(instanceId, r, c);
+    if (!result.success) return result;
+    Log().logNote(`GM: moved ${unit.name || instanceId} to [${r},${c}]`, ['gm', 'gm_move']);
+    try { AB()?.emit('unit_move', { unit, from: unit.pos, to: [r, c] }); } catch (e) {}
+    _notify();
+    return { success: true };
+  }
+
+  // mode: 'set' | 'delta' | 'full' | 'pct' (pct = % of max)
+  function gmAdjustResource(unit, resource, amount, mode = 'set') {
+    if (!unit) return { success: false, reason: 'unit_not_found' };
+
+    if (resource === 'AP') {
+      const ts = unit.turnState = unit.turnState || { apRemaining: 0 };
+      const cur = Number(ts.apRemaining || 0);
+      if (mode === 'delta') ts.apRemaining = Math.max(0, cur + Number(amount || 0));
+      else if (mode === 'full') ts.apRemaining = (unit.baseAP || 2) + (unit.turnState?.bonusAP || 0);
+      else ts.apRemaining = Math.max(0, Number(amount || 0));
+      Log().logNote(`GM: ${unit.name || unit.instanceId} AP → ${ts.apRemaining}`, ['gm', 'gm_ap']);
+      _notify();
+      return { success: true, value: ts.apRemaining };
+    }
+
+    const maxKey = resource === 'HP' ? 'maxHP' : 'maxMP';
+    const curKey = resource === 'HP' ? 'currentHP' : 'currentMP';
+    const max = Number(unit[maxKey] || 0);
+    const cur = Number(unit[curKey] || 0);
+    let next = cur;
+
+    if (mode === 'full') next = max;
+    else if (mode === 'delta') next = cur + Number(amount || 0);
+    else if (mode === 'pct') next = Math.round(max * (Number(amount || 0) / 100));
+    else next = Number(amount || 0);
+
+    next = Math.max(0, Math.min(max, next));
+    unit[curKey] = next;
+
+    if (resource === 'HP') {
+      if (cur > 0 && next === 0) {
+        unit._deathProcessed = false;
+        _handleDeath(unit);
+      } else if (cur === 0 && next > 0) {
+        // Revive: clear death flag, re-place on grid if needed
+        unit._deathProcessed = false;
+        unit.removed = false;
+      }
+    }
+    Log().logNote(`GM: ${unit.name || unit.instanceId} ${resource} → ${next}/${max}`, ['gm', `gm_${resource.toLowerCase()}`]);
+    if (_checkBattleEnd()) { _notify(); return { success: true, value: next, ended: true }; }
+    _notify();
+    return { success: true, value: next };
+  }
+
+  function gmApplyStatus(unit, statusId, duration) {
+    if (!unit || !statusId) return { success: false, reason: 'bad_args' };
+    if (!SM()) return { success: false, reason: 'no_status_manager' };
+    const res = SM().applyStatus({
+      target: unit,
+      statusId,
+      sourceUnit: null,
+      overrides: { duration: Number(duration) || 3, stacks: 1 },
+      combatContext: { turnNumber: _state?.roundNumber || 1 }
+    });
+    Log().logNote(`GM: applied ${statusId} to ${unit.name || unit.instanceId}`, ['gm', 'gm_status']);
+    SM().processRecompileRequests(Object.values(_state.units), (baseId) =>
+      DS().get('characters', baseId) || DS().get('monsters', baseId));
+    _notify();
+    return { success: true, ...res };
+  }
+
+  function gmCleanseUnit(unit) {
+    if (!unit || !SM()) return { success: false };
+    const n = SM().cleanse({ unit });
+    Log().logNote(`GM: cleansed ${n} status(es) from ${unit.name || unit.instanceId}`, ['gm', 'gm_cleanse']);
+    SM().processRecompileRequests(Object.values(_state.units), (baseId) =>
+      DS().get('characters', baseId) || DS().get('monsters', baseId));
+    _notify();
+    return { success: true, removed: n };
+  }
+
+  function gmSetTerrain(r, c, terrainType) {
+    if (!GE().setTerrain(r, c, terrainType)) {
+      return { success: false, reason: 'invalid_cell_or_terrain' };
+    }
+    Log().logNote(`GM: terrain at [${r},${c}] → ${terrainType}`, ['gm', 'gm_terrain']);
+    _notify();
+    return { success: true };
+  }
+
+  // scope: 'all' | 'player' | 'enemy'
+  function _scopedUnits(scope) {
+    const all = Object.values(_state?.units || {});
+    if (scope === 'player') return all.filter(u => u.team === 'player');
+    if (scope === 'enemy')  return all.filter(u => u.team === 'enemy');
+    return all;
+  }
+
+  function gmBulkAdjust(scope, resource, amount, mode) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const units = _scopedUnits(scope);
+    for (const u of units) gmAdjustResource(u, resource, amount, mode);
+    return { success: true, count: units.length };
+  }
+
+  function gmBulkStatus(scope, statusId, duration) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const units = _scopedUnits(scope).filter(u => u.currentHP > 0);
+    for (const u of units) gmApplyStatus(u, statusId, duration);
+    return { success: true, count: units.length };
+  }
+
+  function gmBulkCleanse(scope) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const units = _scopedUnits(scope);
+    let total = 0;
+    for (const u of units) total += (gmCleanseUnit(u).removed || 0);
+    return { success: true, removed: total };
+  }
+
+  // mode: 'empty' (only empty/passable cells, leave units/walls alone) | 'all'
+  function gmBulkTerrain(terrainType, mode = 'empty') {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    const dims = GE().getDims();
+    let n = 0;
+    if (mode === 'empty') {
+      for (const [r, c] of GE().getEmptyCells()) {
+        if (GE().setTerrain(r, c, terrainType)) n++;
+      }
+    } else {
+      for (let r = 0; r < dims.height; r++) {
+        for (let c = 0; c < dims.width; c++) {
+          if (GE().setTerrain(r, c, terrainType)) n++;
+        }
+      }
+    }
+    Log().logNote(`GM: bulk terrain ${terrainType} → ${n} cells (${mode})`, ['gm', 'gm_terrain_bulk']);
+    _notify();
+    return { success: true, count: n };
+  }
+
+  function gmEndBattle(winner) {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    _endBattle(winner || 'player', 'gm_forced');
+    _notify();
+    return { success: true };
+  }
+
+  function gmSkipTurn() {
+    if (!_state) return { success: false, reason: 'no_combat' };
+    Log().logNote(`GM: skipped ${getCurrentUnit()?.name || 'turn'}`, ['gm', 'gm_skip']);
+    _state.phase = 'turn_end';
+    _notify();
+    return { success: true };
+  }
+
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     startEncounter, step, runUntilInput, submitAction,
@@ -588,6 +804,11 @@ window.CJS.CombatManager = (() => {
     // One-shot auto control (manual-first UX)
     autoOneTurn, autoOneRound, autoUntilStop, stopAuto,
     getState, getUnits, getInitiativeOrder,
-    subscribe, reset
+    subscribe, reset,
+    // GM controls
+    gmAddUnit, gmRemoveUnit, gmMoveUnit,
+    gmAdjustResource, gmApplyStatus, gmCleanseUnit, gmSetTerrain,
+    gmBulkAdjust, gmBulkStatus, gmBulkCleanse, gmBulkTerrain,
+    gmEndBattle, gmSkipTurn
   });
 })();
