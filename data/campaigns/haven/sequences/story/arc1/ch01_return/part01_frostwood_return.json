@@ -5,7 +5,10 @@
   "scope": "story",
   "arcId": "haven_arc1",
   "chapterId": "arc1_ch01",
+  "chapterLabel": "1",
+  "orderKey": "1",
   "partId": "ch01_part01",
+  "partLabel": "Part 1",
   "startNode": "open",
   "tags": ["world:haven", "arc:1", "chapter:return", "frostwood"],
   "summary": {
@@ -75,6 +78,7 @@
       "actor": "bin",
       "stat": "C",
       "difficulty": 11,
+      "defaultResult": "pass",
       "tags": ["reunion", "rumor"],
       "pass": "pass_line",
       "fail": "fail_line"

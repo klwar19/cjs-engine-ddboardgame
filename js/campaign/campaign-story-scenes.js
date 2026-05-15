@@ -34,6 +34,10 @@ window.CJS.CampaignStoryScenes = (() => {
         speakerId: line.speakerId || line.characterId || line.id || '',
         text: line.text || line.line || '',
         portrait: line.portrait || '',
+        sprite: line.sprite || line.spriteId || '',
+        expression: line.expression || line.emotion || '',
+        pose: line.pose || '',
+        variant: line.variant || '',
         side: line.side || 'left',
         style: line.style || '',
         mood: line.mood || ''
@@ -59,6 +63,18 @@ window.CJS.CampaignStoryScenes = (() => {
       || CS().getContent?.().stories?.[sceneId]
       || null;
     return scene ? normalizeScene(scene) : null;
+  }
+
+  function playScene(sceneInput, options = {}) {
+    if (_ui.active || typeof document === 'undefined' || !document.body) return false;
+    const scene = typeof sceneInput === 'string' ? getScene(sceneInput) : normalizeScene(sceneInput);
+    if (!scene) return false;
+    _showScene(scene, { ...options, pendingId: options.pendingId || null });
+    return true;
+  }
+
+  function playSceneById(sceneId, options = {}) {
+    return playScene(getScene(sceneId), options);
   }
 
   function shouldDeferNodeEntry(node = {}, mapId = '') {
@@ -341,20 +357,25 @@ window.CJS.CampaignStoryScenes = (() => {
     _closeOverlay();
 
     if (choice.nextSceneId) {
-      CS().mutate((state) => {
-        const pending = state.activeScenarioRun?.pendingNodeEntry;
-        if (pending && (!context.pendingId || pending.id === context.pendingId)) {
-          pending.storySceneId = choice.nextSceneId;
-          pending.status = 'pending';
-          pending.started = false;
-          pending.startOpsApplied = false;
-        }
-      }, { source: 'story_scene_next' });
-      setTimeout(() => openPendingNodeEntry(), 0);
+      if (context.pendingId) {
+        CS().mutate((state) => {
+          const pending = state.activeScenarioRun?.pendingNodeEntry;
+          if (pending && (!context.pendingId || pending.id === context.pendingId)) {
+            pending.storySceneId = choice.nextSceneId;
+            pending.status = 'pending';
+            pending.started = false;
+            pending.startOpsApplied = false;
+          }
+        }, { source: 'story_scene_next' });
+        setTimeout(() => openPendingNodeEntry(), 0);
+      } else {
+        setTimeout(() => playSceneById(choice.nextSceneId, context), 0);
+      }
       return;
     }
 
-    finishPendingNodeEntry({ reason: 'choice' });
+    if (context.pendingId) finishPendingNodeEntry({ reason: 'choice' });
+    else _completeStandaloneScene(context, { reason: 'choice', sceneId: scene.id, choiceId: choice.id || '' });
   }
 
   function _choiceOps(scene, choice = {}) {
@@ -503,10 +524,23 @@ window.CJS.CampaignStoryScenes = (() => {
     }, { chance: node.campfire ? 0.85 : 0.35 });
   }
 
-  function _logObjectiveIfReached(node) {
-    const scenario = CS().getActiveScenario?.();
-    if ((scenario?.successConditions || []).some((cond) => cond.type === 'reach_node' && cond.nodeId === node.id)) {
-      Ops().apply({ op: 'log', text: `Scenario objective reached: ${node.title || node.id}.` }, { source: 'scenario' });
+  function _logObjectiveIfReached(node, pending = {}) {
+    return window.CJS.ScenarioRunner?.handleLocationEntry?.('node', node, {
+      mapId: pending.mapId,
+      nodeId: node.id
+    });
+  }
+
+  function _completeStandaloneScene(context = {}, details = {}) {
+    if (typeof context.onComplete !== 'function') return;
+    try {
+      context.onComplete({
+        reason: details.reason || 'complete',
+        sceneId: details.sceneId || '',
+        choiceId: details.choiceId || ''
+      });
+    } catch (error) {
+      console.error('Story scene completion callback failed:', error);
     }
   }
 
@@ -657,12 +691,58 @@ window.CJS.CampaignStoryScenes = (() => {
     }
     target.classList.remove('is-system');
     const character = _characterForLine(line);
-    const portrait = line.portrait || character?.portrait || '';
+    const portrait = _portraitForLine(line, character);
+    target.dataset.expression = String(line.expression || line.mood || '').trim().toLowerCase();
+    target.dataset.pose = String(line.pose || '').trim().toLowerCase();
+    target.dataset.variant = String(line.variant || '').trim().toLowerCase();
     target.innerHTML = portrait
       ? `<img src="${_escAttr(portrait)}" alt=""><span>${_esc(line.speaker || character?.name || '')}</span>`
       : `<div class="campaign-vn-avatar-fallback">${_esc(character?.icon || (line.speaker || '?').slice(0, 1))}</div><span>${_esc(line.speaker || character?.name || '')}</span>`;
     target.classList.add('is-active');
     void scene;
+  }
+
+  function _portraitForLine(line = {}, character = null) {
+    if (line.portrait) return line.portrait;
+    const spriteId = String(line.sprite || '').trim();
+    const expression = String(line.expression || line.mood || '').trim();
+    const pose = String(line.pose || '').trim();
+    const variant = String(line.variant || '').trim();
+    const candidateKeys = [variant, expression, pose, spriteId].filter(Boolean);
+    const pools = [
+      character?.storySprites,
+      character?.dialogueSprites,
+      character?.expressionPortraits,
+      character?.portraits,
+      character?.expressions
+    ].filter((pool) => pool && typeof pool === 'object');
+
+    for (const pool of pools) {
+      const resolved = _portraitFromPool(pool, candidateKeys, { expression, pose, variant, spriteId });
+      if (resolved) return resolved;
+    }
+    return character?.portrait || '';
+  }
+
+  function _portraitFromPool(pool = {}, candidateKeys = [], context = {}) {
+    for (const key of candidateKeys) {
+      if (typeof pool[key] === 'string') return pool[key];
+      const nested = pool[key];
+      if (nested && typeof nested === 'object') {
+        const nestedResolved = _portraitFromPool(nested, candidateKeys.filter((candidate) => candidate !== key), context);
+        if (nestedResolved) return nestedResolved;
+      }
+    }
+    for (const key of ['default', 'neutral', context.spriteId]) {
+      if (!key) continue;
+      if (typeof pool[key] === 'string') return pool[key];
+      const nested = pool[key];
+      if (nested && typeof nested === 'object') {
+        const nestedResolved = _portraitFromPool(nested, candidateKeys, context);
+        if (nestedResolved) return nestedResolved;
+      }
+    }
+    return '';
   }
 
   function _characterForLine(line) {
@@ -788,6 +868,8 @@ window.CJS.CampaignStoryScenes = (() => {
   return Object.freeze({
     normalizeScene,
     getScene,
+    playScene,
+    playSceneById,
     shouldDeferNodeEntry,
     isNodeEntryResolved,
     prepareNodeEntry,

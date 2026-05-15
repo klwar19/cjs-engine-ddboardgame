@@ -251,6 +251,8 @@ window.CJS.CampaignState = (() => {
       storyMode: {
         currentArcId: null,
         currentChapterId: null,
+        currentChapterLabel: null,
+        currentChapterOrderKey: null,
         currentPartId: null,
         completedParts: {},
         defaultedParts: {},
@@ -698,6 +700,8 @@ window.CJS.CampaignState = (() => {
     next.storyMode = next.storyMode || {};
     next.storyMode.currentArcId = next.storyMode.currentArcId || null;
     next.storyMode.currentChapterId = next.storyMode.currentChapterId || null;
+    next.storyMode.currentChapterLabel = next.storyMode.currentChapterLabel || null;
+    next.storyMode.currentChapterOrderKey = next.storyMode.currentChapterOrderKey || null;
     next.storyMode.currentPartId = next.storyMode.currentPartId || null;
     next.storyMode.completedParts = next.storyMode.completedParts || {};
     next.storyMode.defaultedParts = next.storyMode.defaultedParts || {};
@@ -734,6 +738,9 @@ window.CJS.CampaignState = (() => {
       next.activeScenarioRun.completedBattles = next.activeScenarioRun.completedBattles || [];
       next.activeScenarioRun.notes = next.activeScenarioRun.notes || [];
       next.activeScenarioRun.pendingNodeEntry = next.activeScenarioRun.pendingNodeEntry || null;
+      next.activeScenarioRun.objectiveState = next.activeScenarioRun.objectiveState || null;
+      next.activeScenarioRun.progressTriggerState = next.activeScenarioRun.progressTriggerState || {};
+      next.activeScenarioRun.sequenceLink = next.activeScenarioRun.sequenceLink || null;
     }
     next.pinnedNotes = next.pinnedNotes || [];
     next.log = next.log || [];

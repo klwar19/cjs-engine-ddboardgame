@@ -1705,6 +1705,9 @@ window.CJS.CampaignOps = (() => {
 
     state.currentWorld = toWorld;
     state.currentChapter = op.toChapter || 1;
+    state.storyMode = state.storyMode || {};
+    state.storyMode.currentChapterLabel = op.toChapterLabel || null;
+    state.storyMode.currentChapterOrderKey = op.toChapterOrderKey || op.toChapterLabel || null;
     state.phase = { number: 1, type: op.entryPhase || 'town_phase', name: op.entryPhaseName || 'Arrival Phase' };
     _clearDuration(state, 'scenario');
     _clearDuration(state, 'phase');
@@ -1742,9 +1745,12 @@ window.CJS.CampaignOps = (() => {
 
   function _chapterTransition(state, op) {
     state.currentChapter = op.toChapter || ((state.currentChapter || 1) + 1);
+    state.storyMode = state.storyMode || {};
+    if (op.toChapterLabel) state.storyMode.currentChapterLabel = op.toChapterLabel;
+    if (op.toChapterOrderKey || op.toChapterLabel) state.storyMode.currentChapterOrderKey = op.toChapterOrderKey || op.toChapterLabel;
     if (op.entryPhase) state.phase = { number: 1, type: op.entryPhase, name: op.entryPhaseName || op.entryPhase };
     _evaluatePersonaUnlocks(state, { target: 'party' });
-    _log(state, `Chapter transition: chapter ${state.currentChapter}.`);
+    _log(state, `Chapter transition: chapter ${op.toChapterLabel || state.currentChapter}.`);
   }
 
   function _resetCampaignState(state, op) {
@@ -2425,6 +2431,7 @@ window.CJS.CampaignOps = (() => {
   function _manualBattleResult(state, op, options = {}) {
     const outcome = String(op.result || 'victory').toLowerCase();
     const pending = state.pendingBattle || {};
+    const pendingSnapshot = CS().clone ? CS().clone(pending) : JSON.parse(JSON.stringify(pending || {}));
     const combatPulse = op.combatPulse || _syntheticCombatPulse(state, pending, outcome);
     _log(state, `Manual battle result: ${outcome || 'resolved'}${op.summary ? ` - ${op.summary}` : ''}.`);
     for (const change of op.changes || []) _applyOne(state, change, { source: 'manual_battle' });
@@ -2488,7 +2495,15 @@ window.CJS.CampaignOps = (() => {
       state.lastCombatResult.completedAt,
       state.lastCombatResult.result
     ].filter(Boolean).join('|');
+    const resultSnapshot = CS().clone ? CS().clone(state.lastCombatResult) : JSON.parse(JSON.stringify(state.lastCombatResult || {}));
     state.pendingBattle = null;
+    setTimeout(() => {
+      window.CJS.ScenarioRunner?.handleBattleOutcome?.(outcome, pendingSnapshot, resultSnapshot);
+      void window.CJS.CampaignSequences?.handleBattleOutcome?.(outcome, {
+        pending: pendingSnapshot,
+        result: resultSnapshot
+      });
+    }, 0);
   }
 
   function _syntheticCombatPulse(state, pending = {}, outcome = 'victory') {

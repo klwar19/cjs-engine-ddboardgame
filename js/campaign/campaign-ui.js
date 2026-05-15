@@ -280,7 +280,7 @@ window.CJS.CampaignUI = (() => {
         <a class="campaign-back" href="index.html">Main Menu</a>
         <div class="campaign-title">
           <h1>${_esc(campaign?.name || 'Campaign')}</h1>
-          <span>${_esc(world?.displayName || state.currentWorld)} | Chapter ${state.currentChapter} | Phase ${state.phase.number}: ${_esc(state.phase.name || state.phase.type)}</span>
+          <span>${_esc(world?.displayName || state.currentWorld)} | Chapter ${_storyChapterText(state)} | Phase ${state.phase.number}: ${_esc(state.phase.name || state.phase.type)}</span>
         </div>
         ${_renderCompactCurrencies(state)}
         <div class="campaign-header-actions">
@@ -977,7 +977,9 @@ window.CJS.CampaignUI = (() => {
     const activeSequence = Seq?.active?.(state);
     const runtime = state.sequenceRuntime || {};
     const storyHistory = (runtime.history || []).filter((entry) => entry.scope === 'story');
+    const storyParts = _storySummaryEntries(state);
     const manualCount = state.storyMode?.manualSummaryEntries?.length || 0;
+    const defaultedCount = Object.keys(state.storyMode?.defaultedParts || {}).length;
     const activeRun = state.activeScenarioRun;
     const next = {
       index: activeSequence?.scope === 'story' ? 1 : 0,
@@ -1018,14 +1020,15 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-panel">
           <div class="campaign-panel-head">
             <h3>Current Arc</h3>
-            <span class="campaign-pill">Chapter ${_esc(state.currentChapter || 1)}</span>
+            <span class="campaign-pill">Chapter ${_storyChapterText(state)}</span>
           </div>
           <div class="campaign-stat-grid">
-            <span>Completed <b>${storyHistory.length}</b></span>
+            <span>Completed <b>${storyParts.length}</b></span>
+            <span>Defaulted <b>${defaultedCount}</b></span>
             <span>Manual Notes <b>${manualCount}</b></span>
             <span>Phase <b>${_esc(state.phase?.number || 1)}</b></span>
           </div>
-          <div class="campaign-muted">Replay is allowed for reading. Consequences should only matter when a new node applies operations.</div>
+          <div class="campaign-muted">Jumping ahead defaults earlier unrevealed parts once. Re-reading a played/defaulted part stays in story-only replay unless you add a future override flow.</div>
         </section>
 
         ${_renderSoloNotice(state)}
@@ -1037,8 +1040,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderStorySummary(state) {
-    const runtime = state.sequenceRuntime || {};
-    const storyHistory = (runtime.history || []).filter((entry) => entry.scope === 'story');
+    const storyParts = _storySummaryEntries(state);
     const manual = state.storyMode?.manualSummaryEntries || [];
     const facts = Object.values(state.storyDirector?.revealedFacts || {}).slice(0, 8);
     const queue = Object.values(state.storyDirector?.storyQueue || {}).slice(0, 8);
@@ -1049,7 +1051,7 @@ window.CJS.CampaignUI = (() => {
           kicker: 'Story Log',
           title: 'Current Arc Summary',
           text: 'Readable memory for main-story parts, defaults, and GM-written story addenda. Event notes live in the separate Event Log.',
-          meta: [`${storyHistory.length} story parts`, `${manual.length} manual notes`, `${facts.length} facts`],
+          meta: [`${storyParts.length} story parts`, `${manual.length} manual notes`, `${facts.length} facts`],
           actions: [
             _actionBtn({ action: 'open-story-home', label: 'Story Home', hint: 'Return to chapter play', kind: 'primary' }),
             _actionBtn({ action: 'story-manual-note', label: 'Add Manual Scene', hint: 'Write a GM summary note' }),
@@ -1059,14 +1061,20 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-panel campaign-wide-panel">
           <div class="campaign-panel-head">
             <h2>Completed Story Parts</h2>
-            <span class="campaign-pill">${storyHistory.length}</span>
+            <span class="campaign-pill">${storyParts.length}</span>
           </div>
-          ${storyHistory.length ? storyHistory.map((entry) => `
+          ${storyParts.length ? storyParts.map((entry) => `
             <div class="campaign-row">
               <div>
                 <strong>${_esc(entry.title || entry.sequenceId)}</strong>
+                <div class="campaign-chip-row">
+                  ${entry.chapterLabel ? `<span class="campaign-chip">Chapter ${_esc(entry.chapterLabel)}</span>` : ''}
+                  ${entry.partLabel ? `<span class="campaign-chip">${_esc(entry.partLabel)}</span>` : ''}
+                  <span class="campaign-chip">${_esc(_label(entry.mode || 'played'))}</span>
+                </div>
                 <div class="campaign-muted">${_esc(entry.result || 'complete')} | ${_esc(entry.completedAt || entry.startedAt || '')}</div>
-                ${(entry.log || []).slice(-3).map((line) => `<p>${_esc(line.summary || line.nodeId || '')}</p>`).join('')}
+                <p>${_esc(entry.summaryText || _storySummaryTextFromRecord(entry))}</p>
+                ${entry.routeChoices?.length ? `<div class="campaign-muted">Route: ${_esc(entry.routeChoices.map((choice) => choice.label || choice.choiceId).filter(Boolean).join(' -> '))}</div>` : ''}
               </div>
             </div>
           `).join('') : '<div class="campaign-empty">No completed story sequence parts yet.</div>'}
@@ -1463,8 +1471,11 @@ window.CJS.CampaignUI = (() => {
               <div class="campaign-sequence-paper-pin"></div>
               <div class="campaign-sequence-kind">${_esc(_label(entry.kind || scope))}</div>
               <strong>${_esc(entry.title || entry.id)}</strong>
+              ${scope === 'story' ? _renderStorySequenceMeta(entry) : ''}
+              ${scope === 'story' ? `<p>${_esc(_storySequenceSummary(entry))}</p>` : ''}
               <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
-              <button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}">Start</button>
+              ${scope === 'story' ? _renderStorySequenceStatus(entry) : ''}
+              <button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}">${scope === 'story' ? _storySequenceActionLabel(entry) : 'Start'}</button>
             </article>
           `).join('') : '<div class="campaign-empty">No sequence files loaded for this scope.</div>'}
         </div>
@@ -1477,23 +1488,26 @@ window.CJS.CampaignUI = (() => {
     const active = Seq?.active?.(state);
     if (!active || (scopes && !scopes.includes(active.scope))) return '';
     const sequence = Seq.cachedSequence?.(active.sequenceId, state.currentWorld) || null;
+    const meta = Seq?.storyMeta?.(sequence || active.sequenceId, state.currentWorld) || {};
     const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
     return `
       <section class="campaign-panel campaign-wide-panel campaign-sequence-active">
         <div class="campaign-panel-head">
           <div>
             <h2>${_esc(active.title || active.sequenceId)}</h2>
-            <div class="campaign-muted">${_esc(_label(active.scope || 'sequence'))} | ${_esc(active.nodeId || '')}</div>
+            <div class="campaign-muted">${_esc(_label(active.scope || 'sequence'))} | ${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} | ` : ''}${_esc(active.nodeId || '')}${active.applyConsequences === false ? ' | Replay mode' : ''}</div>
           </div>
+          ${active.applyConsequences === false ? '<span class="campaign-pill">Replay</span>' : ''}
           <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
         </div>
-        ${node ? _renderSequenceNode(node) : '<div class="campaign-empty">Loading sequence node...</div>'}
+        ${node ? _renderSequenceNode(node, active) : '<div class="campaign-empty">Loading sequence node...</div>'}
       </section>
     `;
   }
 
-  function _renderSequenceNode(node = {}) {
+  function _renderSequenceNode(node = {}, active = {}) {
     const type = String(node.type || 'narration').toLowerCase();
+    const replay = active?.applyConsequences === false;
     const speaker = node.speaker ? `<span class="campaign-story-speaker">${_esc(node.speaker)}</span>` : '';
     const text = node.text || node.prompt || node.summary || node.title || '';
     if (type === 'choice') {
@@ -1530,9 +1544,9 @@ window.CJS.CampaignUI = (() => {
           <p>${_esc(text || node.label || 'Combat encounter')}</p>
           ${_sequenceNodeMeta(node)}
           <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'sequence-queue-battle', label: 'Queue Battle', hint: node.encounterId || node.battleSetId || 'Open in combat/manual result', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-win', label: 'Manual Win', hint: 'Advance as victory' })}
-            ${_actionBtn({ action: 'sequence-lose', label: 'Manual Loss', hint: 'Advance as defeat', kind: 'danger' })}
+            ${replay ? '' : _actionBtn({ action: 'sequence-queue-battle', label: 'Queue Battle', hint: node.encounterId || node.battleSetId || 'Open in combat/manual result', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-win', label: replay ? 'Continue as Win' : 'Manual Win', hint: replay ? 'Advance without reapplying battle rewards or flags' : 'Advance as victory' })}
+            ${_actionBtn({ action: 'sequence-lose', label: replay ? 'Continue as Loss' : 'Manual Loss', hint: replay ? 'Advance without reapplying defeat consequences' : 'Advance as defeat', kind: 'danger' })}
           </div>
         </div>
       `;
@@ -1544,9 +1558,27 @@ window.CJS.CampaignUI = (() => {
           <p>${_esc(text || `${_label(gameId || 'Mini-game')} challenge`)}</p>
           ${_sequenceNodeMeta(node)}
           <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'sequence-play-minigame', label: 'Play Mini-Game', hint: gameId ? `Open ${_label(gameId)}` : 'Open the linked mini-game', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-win', label: 'Manual Clear', hint: 'Advance as mini-game success' })}
-            ${_actionBtn({ action: 'sequence-lose', label: 'Manual Fail', hint: 'Advance as mini-game failure', kind: 'danger' })}
+            ${replay ? '' : _actionBtn({ action: 'sequence-play-minigame', label: 'Play Mini-Game', hint: gameId ? `Open ${_label(gameId)}` : 'Open the linked mini-game', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-win', label: replay ? 'Continue as Clear' : 'Manual Clear', hint: replay ? 'Advance without replaying rewards or flags' : 'Advance as mini-game success' })}
+            ${_actionBtn({ action: 'sequence-lose', label: replay ? 'Continue as Fail' : 'Manual Fail', hint: replay ? 'Advance without replaying failure penalties' : 'Advance as mini-game failure', kind: 'danger' })}
+          </div>
+        </div>
+      `;
+    }
+    if (type === 'scenario') {
+      const state = CS().getState();
+      const activeRun = state.activeScenarioRun;
+      const scenarioId = node.scenarioId || '';
+      const scenarioOpen = activeRun?.scenarioId === scenarioId;
+      return `
+        <div class="campaign-story-dialogue-box">
+          <p>${_esc(text || node.label || node.title || 'Exploration run')}</p>
+          ${_sequenceNodeMeta(node)}
+          <div class="campaign-action-grid">
+            ${replay ? '' : _actionBtn({ action: scenarioOpen ? 'open-maps-tab' : 'sequence-next', label: scenarioOpen ? 'Open Map' : 'Start Exploration', hint: scenarioId || 'Launch the linked scenario', kind: 'primary' })}
+            ${_actionBtn({ action: 'sequence-win', label: 'Continue as Success', hint: 'Resume story after a successful run' })}
+            ${_actionBtn({ action: 'sequence-lose', label: 'Continue as Failure', hint: 'Resume story after a failed run', kind: 'danger' })}
+            ${_actionBtn({ action: 'sequence-abort', label: 'Abort Run', hint: 'Resume story as an aborted exploration' })}
           </div>
         </div>
       `;
@@ -1565,7 +1597,7 @@ window.CJS.CampaignUI = (() => {
         <p>${_esc(text)}</p>
         ${_sequenceNodeMeta(node)}
         <div class="campaign-action-grid">
-          ${_actionBtn({ action: type === 'condition' ? 'sequence-resolve' : 'sequence-next', label: type === 'ops' ? 'Apply & Continue' : 'Continue', hint: node.next || '', kind: 'primary' })}
+          ${_actionBtn({ action: type === 'condition' ? 'sequence-resolve' : 'sequence-next', label: type === 'ops' ? (replay ? 'Continue' : 'Apply & Continue') : 'Continue', hint: node.next || '', kind: 'primary' })}
         </div>
       </div>
     `;
@@ -1576,11 +1608,87 @@ window.CJS.CampaignUI = (() => {
     if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || '?'}`);
     if (node.encounterId) bits.push(node.encounterId);
     if (node.battleSetId) bits.push(node.battleSetId);
+    if (node.scenarioId) bits.push(`Scenario: ${_label(node.scenarioId)}`);
     const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
     const difficulty = node.minigame?.difficulty || node.difficulty;
     if (gameId) bits.push(`Mini-Game: ${_label(gameId)} Lv ${difficulty || 1}`);
     if (node.tags?.length) bits.push((node.tags || []).map(_label).join(', '));
     return bits.length ? `<div class="campaign-chip-row">${bits.map((bit) => `<span class="campaign-chip">${_esc(bit)}</span>`).join('')}</div>` : '';
+  }
+
+  function _storyChapterText(state = CS().getState() || {}) {
+    return _esc(state.storyMode?.currentChapterLabel || state.currentChapter || 1);
+  }
+
+  function _renderStorySequenceMeta(entry = {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    const meta = Seq?.storyMeta?.(entry, state.currentWorld) || {};
+    const bits = [];
+    if (meta.chapterLabel) bits.push(`Chapter ${meta.chapterLabel}`);
+    if (meta.partLabel) bits.push(meta.partLabel);
+    return bits.length ? `<div class="campaign-chip-row">${bits.map((bit) => `<span class="campaign-chip">${_esc(bit)}</span>`).join('')}</div>` : '';
+  }
+
+  function _storySequenceSummary(entry = {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    const meta = Seq?.storyMeta?.(entry, state.currentWorld) || {};
+    return meta.summary?.short || meta.summary?.default || entry.description || '';
+  }
+
+  function _storySequenceActionLabel(entry = {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    const status = Seq?.storyStatus?.(entry.id, state, state.currentWorld);
+    return status?.replayOnly ? 'Read' : 'Start';
+  }
+
+  function _renderStorySequenceStatus(entry = {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    const status = Seq?.storyStatus?.(entry.id, state, state.currentWorld);
+    if (!status?.record) return '';
+    const label = status.defaulted ? 'Defaulted' : (status.completed ? 'Played' : 'Read');
+    return `<div class="campaign-chip-row"><span class="campaign-chip">${_esc(label)}</span></div>`;
+  }
+
+  function _storySummaryEntries(state = CS().getState() || {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const ordered = Seq?.list?.('story', state.currentWorld) || [];
+    const records = state.storyMode?.partResults || {};
+    const seen = new Set();
+    const out = ordered.map((storyEntry) => {
+      const record = records[storyEntry.id];
+      if (!record) return null;
+      seen.add(storyEntry.id);
+      const meta = Seq?.storyMeta?.(storyEntry, state.currentWorld) || {};
+      return {
+        ...record,
+        title: record.title || storyEntry.title || storyEntry.id,
+        chapterLabel: record.chapterLabel || meta.chapterLabel || '',
+        partLabel: meta.partLabel || '',
+        summaryText: record.summaryText || _storySummaryTextFromRecord(record)
+      };
+    }).filter(Boolean);
+    for (const record of Object.values(records)) {
+      if (!record?.sequenceId || seen.has(record.sequenceId)) continue;
+      out.push({
+        ...record,
+        title: record.title || record.sequenceId,
+        chapterLabel: record.chapterLabel || '',
+        partLabel: '',
+        summaryText: record.summaryText || _storySummaryTextFromRecord(record)
+      });
+    }
+    return out;
+  }
+
+  function _storySummaryTextFromRecord(record = {}) {
+    return record.summaryText
+      || (record.log || []).map((line) => line.summary).filter(Boolean).slice(-3).join(' | ')
+      || record.result
+      || 'Story part recorded.';
   }
 
   function _renderGachaHomeHero({ tone = 'story', kicker = '', title = '', text = '', meta = [], actions = [] } = {}) {
@@ -1839,7 +1947,7 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-story-vn-content">
           <div class="campaign-story-vn-kicker">
             <span>${_esc(theme.worldName || state.currentWorld || 'World')}</span>
-            <span>Chapter ${_esc(state.currentChapter || 1)} / Phase ${_esc(phase.number || 1)}</span>
+            <span>Chapter ${_storyChapterText(state)} / Phase ${_esc(phase.number || 1)}</span>
           </div>
           <div class="campaign-story-vn-title">
             <span class="campaign-story-motif">${_esc(theme.motif || 'story')}</span>
@@ -2985,6 +3093,7 @@ window.CJS.CampaignUI = (() => {
       ? `${run.currentCell.x},${run.currentCell.y}`
       : (run.currentNode || '-');
     const questPill = _runQuestPill(state, run, scenario);
+    const objective = run.objectiveState || null;
     return `
       <section class="campaign-panel">
         <div class="campaign-panel-head">
@@ -2998,6 +3107,13 @@ window.CJS.CampaignUI = (() => {
           <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
           <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
         </div>
+        ${objective ? `
+          <div class="campaign-quest-phase campaign-scenario-task">
+            <span>${objective.completed ? 'Objective Complete' : 'Current Objective'}</span>
+            <strong>${_esc(objective.label || 'Reach the target')}</strong>
+            <small>${_esc(_scenarioObjectiveMeta(run, objective))}</small>
+          </div>
+        ` : ''}
         ${_renderQuestRunTask(state, run, scenario)}
         <div class="campaign-control-stack">
           ${_controlGroup('Run Tools', `
@@ -4181,6 +4297,16 @@ window.CJS.CampaignUI = (() => {
     return objectives.find((entry) => !_questObjectiveDone(entry)) || objectives[0] || null;
   }
 
+  function _scenarioObjectiveMeta(run = {}, objective = {}) {
+    const bits = [];
+    if (run.travelMode === 'grid_map' && objective.levelId) bits.push(objective.levelId.replace(/_/g, ' '));
+    if (objective.nodeId) bits.push(objective.nodeId);
+    if (objective.cell) bits.push(`${objective.cell.x},${objective.cell.y}`);
+    if (objective.completedAt) bits.push('resolved');
+    else bits.push(`${window.CJS.ScenarioRunner?.explorationPercent?.(CS().getState(), CS().getActiveMap()) || 0}% explored`);
+    return bits.join(' | ');
+  }
+
   function _questMiniGameObjective(quest = {}) {
     return (quest.objectives || []).find((objective) => {
       if (_questObjectiveDone(objective)) return false;
@@ -4443,6 +4569,7 @@ window.CJS.CampaignUI = (() => {
       case 'sequence-play-minigame': return _playSequenceMiniGame();
       case 'sequence-win': return _advanceSequenceFromUi('win');
       case 'sequence-lose': return _advanceSequenceFromUi('lose');
+      case 'sequence-abort': return _advanceSequenceFromUi('abort');
       case 'sequence-complete': return _completeSequenceFromUi();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
@@ -5886,13 +6013,20 @@ window.CJS.CampaignUI = (() => {
   async function _startSequenceFromUi(sequenceId) {
     if (!sequenceId) return;
     try {
-      const sequence = await window.CJS.CampaignSequences?.start?.(sequenceId);
+      const started = await window.CJS.CampaignSequences?.start?.(sequenceId);
+      const sequence = started?.sequence || null;
       if (!sequence) return UI().toast('Sequence file not found', 'info');
       const scope = sequence.scope || sequence._indexEntry?.scope || 'event';
       if (scope === 'story') _activeMode = 'story';
       else if (scope === 'quest') _activeMode = 'quest';
       else if (scope === 'event') _activeMode = 'event';
       render();
+      if (started?.replayOnly) {
+        return UI().toast(`Opened ${sequence.title || sequence.id} in replay mode`, 'info');
+      }
+      if (started?.defaulted?.length) {
+        return UI().toast(`Started ${sequence.title || sequence.id}; defaulted ${started.defaulted.length} earlier part${started.defaulted.length === 1 ? '' : 's'}`, 'success');
+      }
       UI().toast(`Started ${sequence.title || sequence.id}`, 'success');
     } catch (error) {
       console.error(error);
@@ -5904,6 +6038,13 @@ window.CJS.CampaignUI = (() => {
     try {
       const result = await window.CJS.CampaignSequences?.advance?.(action, value);
       render();
+      if (result?.replayOnly && result?.reason === 'replay_queue_blocked') {
+        return UI().toast('Replay mode keeps consequences frozen. Use the continue buttons instead of queuing battle.', 'info');
+      }
+      if (result?.replayOnly && result?.reason === 'replay_scenario_blocked') {
+        return UI().toast('Replay mode keeps exploration frozen too. Use the continue buttons instead of launching a scenario.', 'info');
+      }
+      if (result?.scenarioStarted) return UI().toast('Exploration run started from sequence', 'success');
       if (result?.queued) return UI().toast('Battle queued from sequence', 'success');
       if (result?.complete) return UI().toast('Sequence complete', 'success');
       if (!result?.ok) return UI().toast('No active sequence node', 'info');
@@ -6164,7 +6305,7 @@ window.CJS.CampaignUI = (() => {
       `Campaign: ${pack.name || 'Campaign story'}`,
       `Current stage: ${stage.name || stage.id || 'No stage'} - ${stage.summary || ''}`,
       `Party: ${party}`,
-      `Chapter/phase: chapter ${state.currentChapter || 1}, phase ${state.phase?.number || 1} (${state.phase?.type || 'unknown'})`,
+      `Chapter/phase: chapter ${_storyChapterText(state)}, phase ${state.phase?.number || 1} (${state.phase?.type || 'unknown'})`,
       '',
       'Current beat:',
       last.title ? `${last.title}\n${last.prompt || last.text || last.summary || ''}` : 'No current beat rolled.',

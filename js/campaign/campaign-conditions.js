@@ -8,6 +8,7 @@ window.CJS.CampaignConditions = (() => {
 
   const CS = () => window.CJS.CampaignState;
   const Tags = () => window.CJS.CampaignTags;
+  const Seq = () => window.CJS.CampaignSequences;
 
   function evaluate(conditions = {}, state = null, context = {}) {
     state = state || CS()?.getState?.() || {};
@@ -49,11 +50,15 @@ window.CJS.CampaignConditions = (() => {
 
     requireFlags(state, cond.requiresFlags || cond.flags, blockers);
     blockFlags(state, cond.blocksFlags || cond.blockedByFlags, blockers);
+    requireStoryParts(state, cond.requiresStoryParts, blockers);
+    blockStoryParts(state, cond.blocksStoryParts, blockers);
 
     if (cond.world && state.currentWorld !== cond.world) blockers.push(`Needs world ${cond.world}.`);
     if (cond.phaseTypes?.length && !cond.phaseTypes.includes(state.phase?.type)) blockers.push(`Needs phase ${cond.phaseTypes.join(', ')}.`);
     if (cond.chapterMin != null && Number(state.currentChapter || 1) < Number(cond.chapterMin)) blockers.push(`Needs chapter ${cond.chapterMin}.`);
     if (cond.chapterMax != null && Number(state.currentChapter || 1) > Number(cond.chapterMax)) blockers.push(`Past chapter ${cond.chapterMax}.`);
+    requireStoryOrder(state, cond.storyOrderMin || cond.chapterOrderMin, blockers, 'min');
+    requireStoryOrder(state, cond.storyOrderMax || cond.chapterOrderMax, blockers, 'max');
 
     if (cond.storyStageIds?.length) {
       const stage = state.storyDirector?.activeStageId;
@@ -147,6 +152,50 @@ window.CJS.CampaignConditions = (() => {
 
   function countMatches(activeTags, tags) {
     return asArray(tags).map(cleanTag).filter((tag) => tag && activeTags.has(tag)).length;
+  }
+
+  function requireStoryParts(state, partIds, blockers) {
+    for (const partId of asArray(partIds)) {
+      if (!state.storyMode?.partResults?.[partId]) blockers.push(`Needs story part ${partId}.`);
+    }
+  }
+
+  function blockStoryParts(state, partIds, blockers) {
+    for (const partId of asArray(partIds)) {
+      if (state.storyMode?.partResults?.[partId]) blockers.push(`Blocked by story part ${partId}.`);
+    }
+  }
+
+  function requireStoryOrder(state, targetOrder, blockers, mode = 'min') {
+    if (!targetOrder) return;
+    const currentOrder = state.storyMode?.currentChapterOrderKey || state.storyMode?.currentChapterLabel || state.currentChapter || 1;
+    const compare = Seq()?.compareOrderKeys
+      ? Seq().compareOrderKeys(String(currentOrder), String(targetOrder))
+      : _compareOrderFallback(String(currentOrder), String(targetOrder));
+    if (mode === 'min' && compare < 0) blockers.push(`Needs story order ${targetOrder}.`);
+    if (mode === 'max' && compare > 0) blockers.push(`Past story order ${targetOrder}.`);
+  }
+
+  function _compareOrderFallback(left = '', right = '') {
+    const a = String(left || '').split(/[^a-zA-Z0-9]+/g).filter(Boolean);
+    const b = String(right || '').split(/[^a-zA-Z0-9]+/g).filter(Boolean);
+    const len = Math.max(a.length, b.length);
+    for (let i = 0; i < len; i += 1) {
+      if (a[i] == null) return -1;
+      if (b[i] == null) return 1;
+      const numA = /^\d+$/.test(a[i]) ? Number(a[i]) : null;
+      const numB = /^\d+$/.test(b[i]) ? Number(b[i]) : null;
+      if (numA != null && numB != null) {
+        if (numA < numB) return -1;
+        if (numA > numB) return 1;
+        continue;
+      }
+      const textA = String(a[i]).toLowerCase();
+      const textB = String(b[i]).toLowerCase();
+      if (textA < textB) return -1;
+      if (textA > textB) return 1;
+    }
+    return 0;
   }
 
   function personaIds(state = {}) {

@@ -54,7 +54,7 @@ window.CJS.CampaignMap = (() => {
       const locked = mapState.locked?.[node.id];
       const cleared = mapState.cleared?.[node.id];
       const kind = String(node.kind || 'node').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
-      const objective = node.questObjective;
+      const objective = node.questObjective || Runner().objectiveForNode?.(node.id, state, map);
       const objectiveDone = objective && _isObjectiveDone(state, objective);
       return `
         <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
@@ -96,8 +96,11 @@ window.CJS.CampaignMap = (() => {
   }
 
   function renderGrid(container, state, run, map) {
-    const width = Number(map.width || map.cols || map.columns || 8);
-    const height = Number(map.height || map.rows || 8);
+    const activeLevelId = run.mapLayer || null;
+    const levels = Array.isArray(map?.levels) ? map.levels : [];
+    const activeLevel = levels.find((entry) => _normalizeLayerId(entry.id || entry.layerId || 'level_1') === _normalizeLayerId(activeLevelId || map.defaultLevelId || 'level_1')) || levels[0] || null;
+    const width = Number(activeLevel?.width || map.width || map.cols || map.columns || 8);
+    const height = Number(activeLevel?.height || map.height || map.rows || 8);
     const mapState = state.mapState[map.id] || {};
     const revealed = mapState.revealedCells || {};
     const visited = mapState.visitedCells || {};
@@ -105,14 +108,14 @@ window.CJS.CampaignMap = (() => {
     const cells = [];
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const key = _cellKey(x, y);
-        const cell = Runner().findCell?.(map, x, y) || { x, y, kind: _terrainAt(map, x, y), title: key };
+        const key = _cellKey(x, y, activeLevelId, map);
+        const cell = Runner().findCell?.(map, x, y, run.mapLayer) || { x, y, kind: _terrainAt(map, x, y), title: key };
         const isCurrent = Number(current.x) === x && Number(current.y) === y;
         const isRevealed = revealed[key] || (run.revealedCells || []).includes(key) || cell.discoveredByDefault || isCurrent;
         const isVisited = visited[key] || (run.visitedCells || []).includes(key);
         const passable = _cellPassable(map, x, y);
         const canMove = isRevealed && passable && _canMoveCell(run, x, y);
-        const objective = cell.questObjective;
+        const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
         const objectiveDone = objective && _isObjectiveDone(state, objective);
         const objectiveTitle = objective
           ? `${objectiveDone ? '✓ ' : '★ '}${objective.label}`
@@ -126,7 +129,7 @@ window.CJS.CampaignMap = (() => {
         `);
       }
     }
-    const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y);
+    const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y, run.mapLayer);
     container.innerHTML = `
       <div class="campaign-map-shell">
         <div class="campaign-map-head">
@@ -147,9 +150,9 @@ window.CJS.CampaignMap = (() => {
 
   function renderGridCellDetail(cell, mapState = {}) {
     if (!cell) return '<div class="campaign-empty">No current cell.</div>';
-    const key = _cellKey(cell.x, cell.y);
+    const key = _cellKey(cell.x, cell.y, cell.levelId, CS().getActiveMap());
     const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
-    const objective = cell.questObjective;
+    const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, CS().getActiveMap());
     const state = CS().getState();
     const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
     return `
@@ -162,6 +165,8 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-chip-row">${tags}</div>
       <div class="campaign-node-actions">
         <span class="campaign-pill is-current">Current ${_esc(key)}</span>
+        ${cell.levelName ? `<span class="campaign-pill">${_esc(cell.levelName)}</span>` : ''}
+        ${cell.nextLevelId ? `<span class="campaign-pill">Leads to ${_esc(cell.nextLevelId.replace(/_/g, ' '))}</span>` : ''}
         ${mapState.clearedCells?.[key] ? '<span class="campaign-pill">Cleared</span>' : ''}
       </div>
     `;
@@ -195,7 +200,7 @@ window.CJS.CampaignMap = (() => {
     }).join('');
 
     const tags = (node.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
-    const objective = node.questObjective;
+    const objective = node.questObjective || Runner().objectiveForNode?.(node.id, state, map);
     const state = CS().getState();
     const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
     return `
@@ -281,6 +286,7 @@ window.CJS.CampaignMap = (() => {
   }
 
   function _isObjectiveDone(state, objective) {
+    if (objective?.completed) return true;
     if (!objective?.questId || !objective?.id) return false;
     const quest = state?.quests?.[objective.questId];
     const entry = (quest?.objectives || []).find((o) => o.id === objective.id);
@@ -326,6 +332,8 @@ window.CJS.CampaignMap = (() => {
     const parts = [];
     if (map.setting) parts.push(map.setting);
     if (map.size) parts.push(map.size);
+    const levelName = Runner().findCurrentCell?.()?.levelName;
+    if (levelName) parts.push(levelName);
     parts.push(`${width}x${height}`);
     parts.push(`${(run.visitedCells || []).length} visited`);
     return parts.join(' | ');
@@ -354,7 +362,7 @@ window.CJS.CampaignMap = (() => {
   function _canMoveCell(run, x, y) {
     const current = run?.currentCell;
     if (!current) return false;
-    const key = _cellKey(x, y);
+    const key = _cellKey(x, y, run?.mapLayer || null);
     if ((run.visitedCells || []).includes(key)) return true;
     return Math.abs(Number(current.x) - Number(x)) + Math.abs(Number(current.y) - Number(y)) <= 1;
   }
@@ -377,7 +385,10 @@ window.CJS.CampaignMap = (() => {
   }
 
   function _terrainAt(map, x, y) {
-    const row = map.terrain?.[Number(y)] || map.grid?.[Number(y)];
+    const levelId = CS().getState()?.activeScenarioRun?.mapLayer || null;
+    const levels = Array.isArray(map?.levels) ? map.levels : [];
+    const level = levels.find((entry) => _normalizeLayerId(entry.id || entry.layerId || 'level_1') === _normalizeLayerId(levelId || map.defaultLevelId || 'level_1')) || levels[0] || null;
+    const row = level?.terrain?.[Number(y)] || level?.grid?.[Number(y)] || map.terrain?.[Number(y)] || map.grid?.[Number(y)];
     return row?.[Number(x)] || 'floor';
   }
 

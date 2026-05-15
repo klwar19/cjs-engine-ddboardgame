@@ -10,9 +10,16 @@
       "kind": "main_story",
       "arcId": "haven_arc1",
       "chapterId": "arc1_ch01",
+      "chapterLabel": "1",
+      "orderKey": "1",
       "partId": "ch01_part01",
+      "partLabel": "Part 1",
       "title": "Frostwood Return",
       "file": "story/arc1/ch01_return/part01_frostwood_return.json",
+      "summary": {
+        "short": "Bin returns to Haven through the Frostwood.",
+        "default": "Bin reaches the Frostwood road and chooses the safe gate route by default."
+      },
       "tags": ["world:haven", "arc:1", "chapter:return", "story"]
     },
     {
