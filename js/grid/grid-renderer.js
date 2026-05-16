@@ -34,6 +34,8 @@ window.CJS.GridRenderer = (() => {
   let _pulsePhase = 0;         // 0–2π for pulsing highlights
   let _lastDamageFloats = [];  // [{ x, y, text, color, birth, dur }]
   let _ready = false;          // true after resize() — safe to render
+  let _themeImg = null;        // optional themed backdrop image
+  let _decorSeed = 0x9E3779B1; // PRNG seed for stable per-cell decorations
 
   const ZOOM_MIN = 0.5;
   const ZOOM_MAX = 2.5;
@@ -165,6 +167,21 @@ window.CJS.GridRenderer = (() => {
 
     ctx.clearRect(0, 0, _width * cs, _height * cs);
 
+    // ── BACKGROUND ─────────────────────────────────────────────────
+    // Themed atmospheric backdrop painted under everything.
+    if (_themeImg && _themeImg.complete && _themeImg.naturalWidth > 0) {
+      ctx.globalAlpha = 0.38;
+      ctx.drawImage(_themeImg, 0, 0, _width * cs, _height * cs);
+      ctx.globalAlpha = 1;
+    } else {
+      // Soft gradient fallback so we never sit on flat black.
+      const grad = ctx.createRadialGradient(_width * cs / 2, _height * cs / 2, cs, _width * cs / 2, _height * cs / 2, _width * cs);
+      grad.addColorStop(0, '#1d2532');
+      grad.addColorStop(1, '#0a0e16');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, _width * cs, _height * cs);
+    }
+
     // ── TERRAIN ─────────────────────────────────────────────────────
     for (let r = 0; r < _height; r++) {
       for (let c = 0; c < _width; c++) {
@@ -172,22 +189,35 @@ window.CJS.GridRenderer = (() => {
         const tData = C().TERRAIN_TYPES[terrain] || C().TERRAIN_TYPES.empty;
         const x = c * cs;
         const y = r * cs;
+        const seed = _cellRand(r, c);
 
-        // Cell background
+        // Cell background with subtle per-cell variation
+        ctx.globalAlpha = 0.78;
         ctx.fillStyle = tData.color || '#1a1a2e';
         ctx.fillRect(x, y, cs, cs);
+        ctx.globalAlpha = 1;
 
-        // Grid lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        // Procedural decoration per terrain kind. This is what makes
+        // the grid feel like an RPG floor instead of a chess board.
+        _drawTerrainDecor(ctx, terrain, x, y, cs, seed, ts);
+
+        // Inner cell border — slight bevel so cells read as tiles
+        ctx.strokeStyle = 'rgba(0,0,0,0.32)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, y + cs - 0.5);
+        ctx.lineTo(x + 0.5, y + 0.5);
+        ctx.lineTo(x + cs - 0.5, y + 0.5);
+        ctx.stroke();
 
-        // Terrain icon
+        // Terrain icon glyph (kept for clarity beside the decoration)
         if (tData.icon) {
-          ctx.font = `${Math.floor(cs * 0.35)}px serif`;
+          ctx.font = `${Math.floor(cs * 0.32)}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.globalAlpha = 0.6;
+          ctx.globalAlpha = 0.55;
           ctx.fillStyle = '#fff';
           ctx.fillText(tData.icon, x + cs / 2, y + cs / 2);
           ctx.globalAlpha = 1;
@@ -333,6 +363,182 @@ window.CJS.GridRenderer = (() => {
     }
   }
 
+  // ── PROCEDURAL TERRAIN DECORATION ────────────────────────────────
+  // Each terrain kind gets simple geometric drawing that hints at its
+  // material (grass tufts, water ripples, cracked stone, fire flickers,
+  // …). We use a stable per-cell PRNG so the pattern doesn't crawl
+  // across animation frames.
+  function _drawTerrainDecor(ctx, terrain, x, y, cs, seed, ts) {
+    const flicker = (Math.sin((ts || 0) / 320 + seed * 6) + 1) * 0.5;
+    switch (terrain) {
+      case 'grass':
+      case 'forest': {
+        ctx.strokeStyle = 'rgba(140, 220, 130, 0.55)';
+        ctx.lineWidth = Math.max(1, cs * 0.04);
+        for (let i = 0; i < 4; i++) {
+          const px = x + cs * ((seed * 13 + i * 17) % 100) / 100;
+          const py = y + cs * 0.55 + cs * ((seed * 7 + i * 29) % 60) / 100;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px - cs * 0.04, py - cs * 0.18);
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + cs * 0.04, py - cs * 0.16);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'water':
+      case 'mud': {
+        const tint = terrain === 'mud' ? 'rgba(140, 95, 60, 0.55)' : 'rgba(110, 190, 230, 0.55)';
+        ctx.strokeStyle = tint;
+        ctx.lineWidth = Math.max(1, cs * 0.04);
+        const phase = ((ts || 0) / 600 + seed) % 1;
+        for (let i = 0; i < 3; i++) {
+          const py = y + cs * (0.25 + i * 0.25 + phase * 0.05);
+          ctx.beginPath();
+          ctx.moveTo(x + cs * 0.1, py);
+          ctx.bezierCurveTo(x + cs * 0.3, py - cs * 0.05, x + cs * 0.5, py + cs * 0.05, x + cs * 0.9, py);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'obstacle':
+      case 'wall':
+      case 'rubble':
+      case 'pillar': {
+        // Brick pattern
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        const rows = 3;
+        for (let i = 0; i < rows; i++) {
+          const py = y + (cs / rows) * i;
+          const offset = i % 2 === 0 ? 0 : cs * 0.25;
+          ctx.fillRect(x + offset, py, cs - offset, cs / rows);
+          ctx.beginPath();
+          ctx.moveTo(x, py + cs / rows);
+          ctx.lineTo(x + cs, py + cs / rows);
+          ctx.stroke();
+          if (offset > 0) {
+            ctx.beginPath();
+            ctx.moveTo(x + offset, py);
+            ctx.lineTo(x + offset, py + cs / rows);
+            ctx.stroke();
+          }
+        }
+        break;
+      }
+      case 'tree': {
+        ctx.fillStyle = 'rgba(70, 130, 70, 0.7)';
+        ctx.beginPath();
+        ctx.arc(x + cs / 2, y + cs * 0.42, cs * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(110, 70, 40, 0.85)';
+        ctx.fillRect(x + cs / 2 - cs * 0.05, y + cs * 0.55, cs * 0.1, cs * 0.35);
+        break;
+      }
+      case 'fire_zone':
+      case 'lava': {
+        ctx.fillStyle = `rgba(255, 140, 60, ${0.45 + flicker * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(x + cs / 2, y + cs * (0.6 - flicker * 0.05), cs * (0.18 + flicker * 0.06), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(255, 240, 180, ${0.6 + flicker * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(x + cs / 2, y + cs * (0.62 - flicker * 0.04), cs * (0.08 + flicker * 0.03), 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      case 'ice_zone': {
+        ctx.strokeStyle = `rgba(180, 230, 255, ${0.6 + flicker * 0.2})`;
+        ctx.lineWidth = Math.max(1, cs * 0.04);
+        const cx = x + cs / 2;
+        const cy = y + cs / 2;
+        for (let a = 0; a < 3; a++) {
+          const rad = (a * Math.PI) / 3;
+          ctx.beginPath();
+          ctx.moveTo(cx - Math.cos(rad) * cs * 0.25, cy - Math.sin(rad) * cs * 0.25);
+          ctx.lineTo(cx + Math.cos(rad) * cs * 0.25, cy + Math.sin(rad) * cs * 0.25);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'thorns': {
+        ctx.strokeStyle = 'rgba(200, 100, 100, 0.7)';
+        ctx.lineWidth = Math.max(1, cs * 0.03);
+        for (let i = 0; i < 4; i++) {
+          const px = x + cs * 0.2 + (cs * 0.6 / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(px, y + cs * 0.85);
+          ctx.lineTo(px, y + cs * 0.4);
+          ctx.lineTo(px + cs * 0.04, y + cs * 0.55);
+          ctx.moveTo(px, y + cs * 0.55);
+          ctx.lineTo(px - cs * 0.04, y + cs * 0.7);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'poison_zone': {
+        ctx.fillStyle = `rgba(180, 110, 220, ${0.35 + flicker * 0.25})`;
+        for (let i = 0; i < 3; i++) {
+          const px = x + cs * (0.25 + i * 0.25);
+          ctx.beginPath();
+          ctx.arc(px, y + cs * (0.55 + Math.sin(flicker + i) * 0.05), cs * 0.08, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+      case 'heal_zone':
+      case 'holy': {
+        ctx.strokeStyle = `rgba(180, 255, 200, ${0.5 + flicker * 0.3})`;
+        ctx.lineWidth = Math.max(1, cs * 0.04);
+        const cx = x + cs / 2;
+        const cy = y + cs / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - cs * 0.22);
+        ctx.lineTo(cx, cy + cs * 0.22);
+        ctx.moveTo(cx - cs * 0.22, cy);
+        ctx.lineTo(cx + cs * 0.22, cy);
+        ctx.stroke();
+        break;
+      }
+      case 'dark': {
+        ctx.fillStyle = `rgba(20, 20, 50, ${0.4 + flicker * 0.2})`;
+        ctx.beginPath();
+        ctx.arc(x + cs / 2, y + cs / 2, cs * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      default: {
+        // Stone floor — subtle speckle
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        for (let i = 0; i < 5; i++) {
+          const sx = x + cs * ((seed * 11 + i * 7) % 100) / 100;
+          const sy = y + cs * ((seed * 17 + i * 13) % 100) / 100;
+          ctx.fillRect(sx, sy, Math.max(1, cs * 0.03), Math.max(1, cs * 0.03));
+        }
+      }
+    }
+  }
+
+  function _cellRand(r, c) {
+    let h = _decorSeed ^ ((r * 374761393) | 0) ^ ((c * 668265263) | 0);
+    h = (h ^ (h >>> 13)) * 1274126177;
+    return ((h ^ (h >>> 16)) >>> 0) / 0xFFFFFFFF;
+  }
+
+  function setTheme(opts = {}) {
+    if (opts.image) {
+      const img = new Image();
+      img.onload = () => { _themeImg = img; };
+      img.onerror = () => { _themeImg = null; };
+      img.src = opts.image;
+    } else if (opts.image === null) {
+      _themeImg = null;
+    }
+    if (opts.seed != null) _decorSeed = Number(opts.seed) || _decorSeed;
+  }
+
   function _statusIcon(statusId) {
     const map = {
       burn: '🔥', poison: '☠️', bleed: '🩸', frostbite: '🥶',
@@ -384,6 +590,7 @@ window.CJS.GridRenderer = (() => {
     setHighlights, clearHighlights, setSelectedUnit,
     addDamageFloat,
     getCellSize,
+    setTheme,
     setZoom, zoomIn, zoomOut, resetZoom, getZoom, getZoomBounds
   });
 })();

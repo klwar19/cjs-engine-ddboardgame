@@ -14,12 +14,52 @@ window.CJS.CampaignStoryScenes = (() => {
     overlay: null,
     active: false,
     typingTimer: 0,
+    autoTimer: 0,
     lineIndex: 0,
     scene: null,
-    pendingId: null
+    pendingId: null,
+    autoPlay: false,
+    history: [],
+    historyOpen: false
   };
 
   const ONCE_KINDS = new Set(['reward', 'exit', 'resource', 'campfire', 'rest']);
+
+  // A "small" event has no real VN content — just summary text or a quick
+  // log line. We surface those inline (toast / event log) instead of taking
+  // over the screen with a fullscreen VN window.
+  function _isSmallEvent(scene) {
+    const lines = Array.isArray(scene?.lines) ? scene.lines : [];
+    const choices = Array.isArray(scene?.choices) ? scene.choices : [];
+    if (choices.length > 0) return false;
+    if (lines.length === 0) return true;
+    if (lines.length === 1) {
+      const single = lines[0];
+      const text = String(single?.text || '').trim();
+      // One short terminal/system line counts as small.
+      if (!single?.speaker && text.length <= 120) return true;
+      if (String(single?.style || '').toLowerCase() === 'terminal' && text.length <= 160) return true;
+    }
+    return false;
+  }
+
+  function _showSmallEvent(scene, context = {}) {
+    const lines = Array.isArray(scene.lines) ? scene.lines : [];
+    const text = lines.map((line) => {
+      const speaker = (line.speaker || '').trim();
+      const body = (line.text || '').trim();
+      if (!body) return '';
+      return speaker ? `${speaker}: ${body}` : body;
+    }).filter(Boolean).join(' / ');
+    const summary = text || scene.title || 'A small event passes.';
+    if (window.CJS.UI?.toast) window.CJS.UI.toast(summary, 'info');
+    Ops().apply({ op: 'log', text: summary }, { source: 'story_scene_small' });
+    if (context.pendingId) {
+      finishPendingNodeEntry({ reason: 'small_event' });
+    } else {
+      _completeStandaloneScene(context, { reason: 'small_event', sceneId: scene.id });
+    }
+  }
 
   function normalizeScene(scene = {}) {
     const lines = Array.isArray(scene.lines) ? scene.lines : (Array.isArray(scene.story_sequence) ? scene.story_sequence : []);
@@ -69,6 +109,11 @@ window.CJS.CampaignStoryScenes = (() => {
     if (_ui.active || typeof document === 'undefined' || !document.body) return false;
     const scene = typeof sceneInput === 'string' ? getScene(sceneInput) : normalizeScene(sceneInput);
     if (!scene) return false;
+    // Small events skip the fullscreen VN window and surface inline.
+    if (!options.forceFullscreen && _isSmallEvent(scene)) {
+      _showSmallEvent(scene, { ...options, pendingId: options.pendingId || null });
+      return true;
+    }
     _showScene(scene, { ...options, pendingId: options.pendingId || null });
     return true;
   }
@@ -228,6 +273,11 @@ window.CJS.CampaignStoryScenes = (() => {
     _ui.scene = normalized;
     _ui.pendingId = context.pendingId || null;
     _ui.lineIndex = 0;
+    _ui.history = [];
+    _ui.historyOpen = false;
+    _ui.autoPlay = false;
+
+    document.body.classList.add('vn-window-open');
 
     const overlay = document.createElement('div');
     overlay.className = 'campaign-vn-overlay';
@@ -238,7 +288,11 @@ window.CJS.CampaignStoryScenes = (() => {
         <div class="campaign-vn-backdrop"></div>
         <div class="campaign-vn-topline">
           <span>${_esc(normalized.title)}</span>
-          <button type="button" data-vn-skip>Skip Text</button>
+          <div>
+            <button type="button" data-vn-auto aria-pressed="false">Auto</button>
+            <button type="button" data-vn-skip>Skip</button>
+            <button type="button" data-vn-log>Log</button>
+          </div>
         </div>
         <button type="button" class="campaign-vn-close" data-vn-close aria-label="Close scene">×</button>
         <div class="campaign-vn-portraits">
@@ -266,6 +320,18 @@ window.CJS.CampaignStoryScenes = (() => {
       event.stopPropagation();
       _skipTypingOrChoices(normalized, context);
     });
+    const autoBtn = overlay.querySelector('[data-vn-auto]');
+    autoBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      _ui.autoPlay = !_ui.autoPlay;
+      autoBtn.setAttribute('aria-pressed', _ui.autoPlay ? 'true' : 'false');
+      if (_ui.autoPlay) _scheduleAutoAdvance(normalized, context);
+      else _cancelAutoAdvance();
+    });
+    overlay.querySelector('[data-vn-log]').addEventListener('click', (event) => {
+      event.stopPropagation();
+      _toggleHistoryPanel(normalized);
+    });
     const closeBtn = overlay.querySelector('[data-vn-close]');
     if (closeBtn) {
       closeBtn.addEventListener('click', (event) => {
@@ -280,6 +346,8 @@ window.CJS.CampaignStoryScenes = (() => {
     }
     overlay.addEventListener('click', (event) => {
       if (event.target.closest('button')) return;
+      if (event.target.closest('.campaign-vn-choices')) return;
+      if (event.target.closest('.campaign-vn-history')) return;
       advance();
     });
     overlay.addEventListener('keydown', (event) => {
@@ -288,12 +356,54 @@ window.CJS.CampaignStoryScenes = (() => {
         advance();
       }
       if (event.key === 'Escape') {
-        _skipTypingOrChoices(normalized, context);
+        if (_ui.historyOpen) _toggleHistoryPanel(normalized);
+        else _skipTypingOrChoices(normalized, context);
       }
     });
     overlay.tabIndex = -1;
     overlay.focus();
     _renderLine(normalized, 0, context);
+  }
+
+  function _scheduleAutoAdvance(scene, context) {
+    _cancelAutoAdvance();
+    _ui.autoTimer = setTimeout(() => {
+      if (!_ui.autoPlay) return;
+      _advanceSceneLine(scene, context);
+    }, 2800);
+  }
+
+  function _cancelAutoAdvance() {
+    if (_ui.autoTimer) { clearTimeout(_ui.autoTimer); _ui.autoTimer = 0; }
+  }
+
+  function _toggleHistoryPanel(scene) {
+    const overlay = _ui.overlay;
+    if (!overlay) return;
+    const existing = overlay.querySelector('.campaign-vn-history');
+    if (existing) {
+      existing.parentNode.removeChild(existing);
+      _ui.historyOpen = false;
+      return;
+    }
+    _ui.historyOpen = true;
+    const panel = document.createElement('div');
+    panel.className = 'campaign-vn-history';
+    const lines = _ui.history.length
+      ? _ui.history.map((entry) => `
+          <div class="campaign-vn-history-line">
+            <strong>${_esc(entry.speaker || 'Narrator')}</strong>
+            <span>${_esc(entry.text)}</span>
+          </div>
+        `).join('')
+      : '<div class="campaign-empty">No lines yet.</div>';
+    panel.innerHTML = `
+      <h3>Scene Log — ${_esc(scene.title || 'Story')}</h3>
+      <button type="button" class="campaign-vn-history-close" data-vn-history-close aria-label="Close log">×</button>
+      <div class="campaign-vn-history-list">${lines}</div>
+    `;
+    overlay.querySelector('.campaign-vn-stage').appendChild(panel);
+    panel.querySelector('[data-vn-history-close]').addEventListener('click', () => _toggleHistoryPanel(scene));
   }
 
   function _renderLine(scene, index, context) {
@@ -311,6 +421,8 @@ window.CJS.CampaignStoryScenes = (() => {
     speaker.textContent = line.speaker || (_lineStyle(line) === 'terminal' ? 'System' : '');
     _renderPortrait(line, scene);
     _typeText(text, line.text || '');
+    _ui.history.push({ speaker: line.speaker || (_lineStyle(line) === 'terminal' ? 'System' : ''), text: line.text || '' });
+    if (_ui.autoPlay) _scheduleAutoAdvance(scene, context);
   }
 
   function _advanceSceneLine(scene, context) {
@@ -801,11 +913,20 @@ window.CJS.CampaignStoryScenes = (() => {
   function _closeOverlay() {
     clearInterval(_ui.typingTimer);
     _ui.typingTimer = 0;
-    if (_ui.overlay?.parentNode) _ui.overlay.parentNode.removeChild(_ui.overlay);
+    _cancelAutoAdvance();
+    if (_ui.overlay) {
+      _ui.overlay.classList.add('is-closing');
+      const overlay = _ui.overlay;
+      setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 220);
+    }
     _ui.overlay = null;
     _ui.active = false;
     _ui.scene = null;
     _ui.pendingId = null;
+    _ui.history = [];
+    _ui.historyOpen = false;
+    _ui.autoPlay = false;
+    document.body.classList.remove('vn-window-open');
   }
 
   function _prefersReducedMotion() {

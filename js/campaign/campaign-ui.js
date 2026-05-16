@@ -167,6 +167,7 @@ window.CJS.CampaignUI = (() => {
       _bindEscapeForPanels();
       _bindCombatResultListener();
       _bindCombatReturnEvents();
+      window.CJS.CampaignObjectiveBanner?.init?.();
       CS().subscribe(() => {
         Save().saveCurrent();
         render();
@@ -228,6 +229,17 @@ window.CJS.CampaignUI = (() => {
     setTimeout(() => {
       if (flash.parentNode) flash.parentNode.removeChild(flash);
     }, 720);
+    // Throw the combat popup directly into the player's face. The popup
+    // pauses everything underneath via body.combat-popup-open until the
+    // player chooses Engage (which navigates to combat.html) or Hold.
+    if (window.CJS.CampaignCombatPopup && !document.body.classList.contains('combat-popup-open')) {
+      window.CJS.CampaignCombatPopup.show(battle, {
+        onEngage: (b) => {
+          try { Save()?.saveCurrent?.(); } catch (_) {}
+          Bridge()?.openBattle?.(b);
+        }
+      });
+    }
   }
 
   function _bindRunPanel() {
@@ -1740,8 +1752,13 @@ window.CJS.CampaignUI = (() => {
   function _renderChapterTreePanel(state = CS().getState() || {}) {
     const Seq = window.CJS.CampaignSequences;
     if (!Seq?.chapterTree) return '';
-    const tree = Seq.chapterTree(state.currentWorld, state);
-    if (!tree || !tree.roots?.length) return '';
+    let tree = Seq.chapterTree(state.currentWorld, state);
+    if (!tree) tree = { roots: [], byPartId: {}, nodes: [] };
+    // Inject runtime branch chapters (1.4.a, 1.4.b, ...) authored via the
+    // Story Controls "Branch from current chapter" panel.
+    const Branch = window.CJS.CampaignStoryBranch;
+    if (Branch?.applyToTree) tree = Branch.applyToTree(tree, state.currentWorld);
+    if (!tree.roots?.length) return '';
     const route = Seq.currentRouteChoices(state, state.currentWorld) || [];
     const routeText = route.length
       ? route.map((entry) => entry.partLabel || entry.title || entry.sequenceId).join(' → ')
@@ -6212,6 +6229,20 @@ window.CJS.CampaignUI = (() => {
 
   async function _startSequenceFromUi(sequenceId) {
     if (!sequenceId) return;
+    // Manual branch chapters live outside the sequence runner — they're
+    // authored at runtime in Story Controls and stored in state. Route
+    // them through CampaignStoryBranch so they play as VN scenes.
+    if (String(sequenceId).startsWith('branch_')) {
+      const Branch = window.CJS.CampaignStoryBranch;
+      const branch = Branch?.getBranch?.(sequenceId);
+      if (!branch) return UI().toast('Branch chapter is missing.', 'error');
+      _activeMode = 'story';
+      const ok = Branch.playBranch(sequenceId, {
+        onComplete: () => { render(); }
+      });
+      if (!ok) UI().toast('Branch chapter could not open.', 'error');
+      return;
+    }
     try {
       const started = await window.CJS.CampaignSequences?.start?.(sequenceId);
       if (started?.blocked) {
@@ -6427,52 +6458,170 @@ window.CJS.CampaignUI = (() => {
   function _manualStoryNote() {
     const snap = SD()?.snapshot?.();
     const stage = snap?.stage || {};
-    _textareaModal({
-      title: 'Write Scene',
-      label: 'Write the scene you want the campaign to remember',
-      placeholder: 'Example: Bin lets the official explain the rule, then signs the wrong form on purpose. Corvin suffers professionally.',
-      primaryLabel: 'Hold Scene',
-      width: '620px',
-      onSubmit: (raw) => {
-        const text = raw.trim();
-        if (!text) {
-          UI().toast('Story scene is empty', 'info');
-          return false;
-        }
-        const title = text.split(/\n+/)[0].slice(0, 78) || 'Manual Story Note';
-        const beat = {
-          id: `story_manual_${Date.now()}`,
-          type: 'story_manual',
-          kind: 'manual',
-          title,
-          prompt: text,
-          stageId: stage.id || '',
-          stageName: stage.name || '',
-          canonRisk: 'green',
-          tags: ['manual', 'table_control'],
-          suggestedChoices: [
-            {
-              label: 'Accept as table note',
-              ops: [{ op: 'log', text: `Story note: ${text}` }]
-            }
-          ]
-        };
-        Ops().apply({ op: 'story_beat_save', beat, status: 'manual' }, { source: 'story_director_manual' });
-        CS().mutate((state) => {
-          state.storyMode = state.storyMode || {};
-          state.storyMode.manualSummaryEntries = state.storyMode.manualSummaryEntries || [];
-          state.storyMode.manualSummaryEntries.unshift({
-            id: beat.id,
-            title,
-            text,
-            stageId: stage.id || '',
-            at: new Date().toISOString()
-          });
-        }, { source: 'story_manual_summary' });
-        render();
-        UI().toast('Manual story scene held', 'success');
-      }
+    _openManualSceneBuilder({ stage });
+  }
+
+  // Manual Scene builder — also creates branching chapters like 1.4.a /
+  // 1.4.b that slot into the auto-generated chapter tree.
+  function _openManualSceneBuilder({ stage = {} } = {}) {
+    const state = CS().getState() || {};
+    const world = state.currentWorld || 'haven';
+    const Seq = window.CJS.CampaignSequences;
+    const Branch = window.CJS.CampaignStoryBranch;
+    const chapterList = (Seq?.list?.('story', world) || []).map((entry) => {
+      const meta = Seq.storyMeta(entry, world);
+      return {
+        id: entry.id,
+        label: meta.partLabel || meta.chapterLabel || entry.id,
+        chapterLabel: meta.chapterLabel || meta.partLabel || entry.id,
+        title: meta.title || entry.title || entry.id
+      };
     });
+    const currentPartId = state.storyMode?.currentPartId || chapterList[0]?.id || '';
+
+    const body = document.createElement('div');
+    body.className = 'campaign-builder-body';
+    body.innerHTML = `
+      <section class="campaign-builder-block">
+        <div class="campaign-builder-title">
+          <span>1</span>
+          <div>
+            <h3>Scene Text</h3>
+            <small>The dialogue, hook, or scene description. Lines starting with "Name:" become VN speaker lines.</small>
+          </div>
+        </div>
+        <label class="form-label">Scene Title
+          <input id="manual-scene-title" type="text" placeholder="What this scene is called">
+        </label>
+        <label class="form-label">Scene / Conversation
+          <textarea id="manual-scene-text" rows="8" placeholder="Bin: I have a terrible idea.&#10;Corvin: Of course you do.&#10;&#10;The hallway echoes with their footsteps."></textarea>
+        </label>
+      </section>
+
+      <section class="campaign-builder-block">
+        <div class="campaign-builder-title">
+          <span>2</span>
+          <div>
+            <h3>Branch Into Chapter Tree</h3>
+            <small>Optional. Hangs this scene off an existing chapter as 1.4.a, 1.4.b, etc. — fully integrated with the auto-generated tree.</small>
+          </div>
+        </div>
+        <label class="form-label">
+          <input id="manual-make-branch" type="checkbox">
+          Create a new branch chapter from a parent chapter
+        </label>
+        <div class="campaign-branch-row" id="manual-branch-row" style="display:none">
+          <label>From parent:
+            <select id="manual-branch-parent">
+              ${chapterList.map((entry) => `<option value="${_escAttr(entry.id)}" ${entry.id === currentPartId ? 'selected' : ''}>${_esc(entry.chapterLabel)} — ${_esc(entry.title)}</option>`).join('')}
+            </select>
+          </label>
+          <label>Suffix:
+            <input id="manual-branch-suffix" type="text" maxlength="2" value="" placeholder="auto">
+          </label>
+          <span class="campaign-branch-preview" id="manual-branch-preview">Branch label: —</span>
+        </div>
+        <div class="campaign-muted" id="manual-branch-help">
+          Without a branch, the scene is recorded as a manual note in the summary.
+          With a branch, it appears as a child chapter (e.g. <b>1.4.a</b>) in the Chapter Routes panel — playable like any other chapter.
+        </div>
+      </section>
+    `;
+    const footer = document.createElement('div');
+    footer.className = 'campaign-builder-footer';
+    footer.innerHTML = `
+      <button class="btn" id="manual-scene-cancel">Cancel</button>
+      <button class="btn" id="manual-scene-as-note">Save as Note</button>
+      <button class="btn btn-primary" id="manual-scene-as-branch">Save & Create Branch</button>
+    `;
+    const overlay = UI().openModal({ title: 'Manual Scene + Branch', content: body, footer, width: '720px' });
+    const $ = (sel) => body.querySelector(sel);
+
+    function updatePreview() {
+      const parent = $('#manual-branch-parent').value || currentPartId;
+      const suffix = $('#manual-branch-suffix').value.trim() || Branch?.nextSuffix?.(parent, world) || 'a';
+      $('#manual-branch-preview').textContent = `Branch label: ${Branch?.previewLabel?.(parent, suffix, world) || '?'}`;
+    }
+    function toggleBranch() {
+      const make = $('#manual-make-branch').checked;
+      $('#manual-branch-row').style.display = make ? 'grid' : 'none';
+      footer.querySelector('#manual-scene-as-branch').disabled = !make && !$('#manual-scene-text').value.trim();
+      if (make) updatePreview();
+    }
+    $('#manual-make-branch').addEventListener('change', toggleBranch);
+    $('#manual-branch-parent').addEventListener('change', updatePreview);
+    $('#manual-branch-suffix').addEventListener('input', updatePreview);
+    $('#manual-scene-text').addEventListener('input', toggleBranch);
+
+    footer.querySelector('#manual-scene-cancel').onclick = () => UI().closeModal(overlay);
+    footer.querySelector('#manual-scene-as-note').onclick = () => {
+      const text = $('#manual-scene-text').value.trim();
+      if (!text) return UI().toast('Scene text is empty', 'info');
+      _saveAsManualNote({ text, title: $('#manual-scene-title').value.trim(), stage });
+      UI().closeModal(overlay);
+      render();
+    };
+    footer.querySelector('#manual-scene-as-branch').onclick = () => {
+      const text = $('#manual-scene-text').value.trim();
+      if (!text) return UI().toast('Scene text is empty', 'info');
+      const title = $('#manual-scene-title').value.trim() || (text.split(/\n+/)[0].slice(0, 78) || 'Manual Branch');
+      const wantBranch = $('#manual-make-branch').checked;
+      if (wantBranch) {
+        const parent = $('#manual-branch-parent').value || currentPartId;
+        const suffix = $('#manual-branch-suffix').value.trim();
+        const result = Branch?.createBranch?.({
+          world,
+          parentSequenceId: parent,
+          suffix,
+          title,
+          scene: text,
+          summary: text.slice(0, 200)
+        });
+        if (!result?.ok) return UI().toast('Could not create branch chapter.', 'error');
+        _saveAsManualNote({ text, title, stage, branchLabel: result.branch.chapterLabel });
+        UI().toast(`Branch ${result.branch.chapterLabel} added to the chapter tree.`, 'success');
+      } else {
+        _saveAsManualNote({ text, title, stage });
+        UI().toast('Manual scene held in summary.', 'success');
+      }
+      UI().closeModal(overlay);
+      render();
+    };
+    toggleBranch();
+  }
+
+  function _saveAsManualNote({ text, title, stage = {}, branchLabel = '' } = {}) {
+    const resolvedTitle = title || text.split(/\n+/)[0].slice(0, 78) || 'Manual Story Note';
+    const beat = {
+      id: `story_manual_${Date.now()}`,
+      type: 'story_manual',
+      kind: 'manual',
+      title: branchLabel ? `[${branchLabel}] ${resolvedTitle}` : resolvedTitle,
+      prompt: text,
+      stageId: stage.id || '',
+      stageName: stage.name || '',
+      canonRisk: 'green',
+      tags: branchLabel ? ['manual', 'table_control', 'branch'] : ['manual', 'table_control'],
+      suggestedChoices: [
+        {
+          label: branchLabel ? 'Open branch chapter' : 'Accept as table note',
+          ops: [{ op: 'log', text: `Story note: ${text}` }]
+        }
+      ]
+    };
+    Ops().apply({ op: 'story_beat_save', beat, status: 'manual' }, { source: 'story_director_manual' });
+    CS().mutate((state) => {
+      state.storyMode = state.storyMode || {};
+      state.storyMode.manualSummaryEntries = state.storyMode.manualSummaryEntries || [];
+      state.storyMode.manualSummaryEntries.unshift({
+        id: beat.id,
+        title: beat.title,
+        text,
+        stageId: stage.id || '',
+        branchLabel: branchLabel || '',
+        at: new Date().toISOString()
+      });
+    }, { source: 'story_manual_summary' });
   }
 
   function _copyStoryPrompt() {
@@ -7736,6 +7885,16 @@ window.CJS.CampaignUI = (() => {
     const readyCount = Object.values(CS().getState().party || {}).filter((member) => Bridge()?.isMemberBattleReady?.(member)).length;
     if (!readyCount) return UI().toast('No available party members can enter this battle', 'error');
     Save().saveCurrent();
+    const Popup = window.CJS.CampaignCombatPopup;
+    if (Popup?.show) {
+      Popup.show(battle, {
+        onEngage: (b) => {
+          UI().toast('Opening combat. Results apply automatically when you return.', 'info');
+          Bridge().openBattle(b);
+        }
+      });
+      return;
+    }
     UI().toast('Opening combat. Results apply automatically when you return.', 'info');
     Bridge().openBattle(battle);
   }

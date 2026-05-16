@@ -540,11 +540,30 @@
         window.CJS.CombatUI.startCombat(encounterId);
         bindCampaignResult();
         renderCampaignBridgeBanner();
+        // Hand the grid renderer a themed backdrop based on the campaign
+        // request so the battle map reads like part of the journey rather
+        // than a blank chessboard.
+        const themeImage = pickGridThemeImage(campaignRequest, encounter);
+        if (themeImage && window.CJS.GridRenderer?.setTheme) {
+          window.CJS.GridRenderer.setTheme({ image: themeImage });
+        }
       } catch (error) {
         console.error('Combat start failed:', error);
         alert(`Combat failed to start: ${error.message}`);
         showSetup();
       }
+    }
+
+    function pickGridThemeImage(request, encounter) {
+      const world = String(request?.world || encounter?.world || '').toLowerCase();
+      const setting = String(request?.setting || encounter?.setting || '').toLowerCase();
+      if (world.includes('haven') || setting.includes('haven') || setting.includes('frost')) {
+        return 'images/story-mode/haven/frostwood-vn.png';
+      }
+      if (world.includes('zombie') || world.includes('rot') || setting.includes('zombie') || setting.includes('rot') || setting.includes('city')) {
+        return 'images/story-mode/zombie/rot-city-vn.png';
+      }
+      return '';
     }
 
     document.getElementById('btn-import').addEventListener('click', () => {
