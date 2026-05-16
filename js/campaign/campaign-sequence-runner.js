@@ -302,6 +302,9 @@ window.CJS.CampaignSequences = (() => {
     if (nextNode.type === 'ops' && nextNode.auto !== false) {
       return advance('next');
     }
+    if (nextNode.type === 'condition' && nextNode.auto !== false) {
+      return advance('resolve');
+    }
     return { ok: true, nodeId: nextNode.id };
   }
 
@@ -341,6 +344,9 @@ window.CJS.CampaignSequences = (() => {
     }, { source: 'sequence_scenario_resume' });
     if (nextNode.type === 'ops' && nextNode.auto !== false) {
       return advance('next');
+    }
+    if (nextNode.type === 'condition' && nextNode.auto !== false) {
+      return advance('resolve');
     }
     return { ok: true, nodeId: nextNode.id };
   }

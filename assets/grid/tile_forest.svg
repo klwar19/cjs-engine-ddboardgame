@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a8a40"/>
+      <stop offset="1" stop-color="#2d5020"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#g)"/>
+  <g fill="#234016" opacity="0.85">
+    <path d="M12 50 L8 36 L16 36 Z"/>
+    <path d="M12 38 L7 24 L17 24 Z"/>
+    <rect x="11" y="50" width="2" height="6" fill="#5a3a1e"/>
+  </g>
+  <g fill="#2e5520" opacity="0.85">
+    <path d="M40 56 L34 38 L46 38 Z"/>
+    <path d="M40 42 L33 24 L47 24 Z"/>
+    <path d="M40 30 L34 14 L46 14 Z"/>
+    <rect x="39" y="56" width="2" height="6" fill="#5a3a1e"/>
+  </g>
+  <g fill="#3a6a26" opacity="0.7">
+    <path d="M54 22 L50 12 L58 12 Z"/>
+    <rect x="53" y="22" width="2" height="4" fill="#5a3a1e"/>
+  </g>
+  <g fill="#4a7a2e" opacity="0.7">
+    <circle cx="24" cy="20" r="2"/>
+    <circle cx="22" cy="60" r="1.5"/>
+    <circle cx="58" cy="56" r="1.6"/>
+  </g>
+  <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#1a2a10" stroke-width="1" opacity="0.6"/>
+</svg>

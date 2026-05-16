@@ -189,7 +189,7 @@
       "tags": ["world:haven", "arc:1", "chapter:meeting", "story", "branch:converge"]
     },
     {
-      "id": "story_haven_arc1_ch04_part04_in_update",
+      "id": "story_haven_arc1_ch04_part04_pre_chimera_prep",
       "scope": "story",
       "kind": "main_story",
       "arcId": "haven_arc1",
@@ -200,18 +200,23 @@
       "partLabel": "1.4",
       "branchOf": "ch03_part03a",
       "branchKey": "trunk",
-      "title": "Arc 1 Continues",
-      "deliveryStatus": "in_update",
-      "deliveryNote": "Chapter 1.4 is intentionally held while 1.1 to 1.3 are used for flow and integration testing.",
+      "title": "Pre-Chimera Prep",
+      "file": "story/arc1/ch04_prep/part04_pre_chimera_prep.json",
       "requiresStoryParts": ["story_haven_arc1_ch03_part03a_frostbitten_town_meeting"],
+      "summary": {
+        "short": "Bin spends the day before the move setting his house, the patrol, and the courier in their right places.",
+        "default": "The town's agenda from 1.3.a becomes one day of real preparation: family location, pre-hunt kit, and the opening move chosen and locked in."
+      },
       "nextCandidates": [
-        "Follow-up will use the agenda chosen in 1.3.a",
-        "Pre-Chimera prep depending on which routes were taken"
+        "1.5 Joint Hunt at Bent Pine (in update)",
+        "1.5 Quiet Watch at South Gate (in update — alt branch from fortify)"
       ],
       "syncSummary": [
-        "This slot will pick up from the town meeting's chosen agenda."
+        "Family location set: hut, captain's house, or Mug upper room.",
+        "Pre-hunt kit picked up at smith or apothecary.",
+        "Opening move locked in for the chosen agenda."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:next", "story", "in_update"]
+      "tags": ["world:haven", "arc:1", "chapter:prep", "story"]
     },
     {
       "id": "event_bin_peri_luck_check",

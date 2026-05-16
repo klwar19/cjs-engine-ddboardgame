@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch02_part02a_watch_ridge_cleanup",
-  "version": 1,
+  "version": 2,
   "title": "Watch Ridge Cleanup",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -16,9 +16,10 @@
   "startNode": "open",
   "background": "images/story-mode/haven/frostwood-vn.png",
   "tags": ["world:haven", "arc:1", "chapter:settle", "watch_ridge", "branch:gate"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "captain lysa", "garr"] },
   "summary": {
     "short": "Bin reports the patrol result at the gate and the town picks a response.",
-    "default": "Frostbitten files Bin under 'returned' and the Bent Pine threat gets a name."
+    "default": "The gate office files the patrol report. Frostbitten chooses how to handle Bent Pine — close it, escort it, or compromise. Garr arrives in the middle of it and Bin discovers what 'home' costs in front of his father."
   },
   "nextCandidates": [
     "1.3.a Frostbitten Town Meeting (convergence point with the tavern route)"
@@ -29,50 +30,26 @@
     "Branch flag set: story_route_a_settled unlocks the converged 1.3.a chapter."
   ],
   "completionOps": [
-    {
-      "op": "update_quest_progress",
-      "questId": "quest_watch_ridge_cleanup",
-      "objectiveId": "report_patrol",
-      "amount": 1
-    },
-    {
-      "op": "hub_mood_set",
-      "hubId": "haven_hub_frostbitten",
-      "mood": "working_calm"
-    },
-    {
-      "op": "add_rumor",
-      "hubId": "haven_hub_frostbitten",
-      "id": "rumor_patrol_named",
-      "text": "Whatever is stalking Bent Pine has been named in writing now. Frostbitten knows what it is hunting.",
-      "tags": ["story", "patrol", "named_threat"]
-    },
-    {
-      "op": "set_flag",
-      "flag": "story_route_a_settled",
-      "value": true
-    },
-    {
-      "op": "event_log_add",
-      "title": "Story Sync: Watch Ridge Cleanup",
-      "summary": "Bent Pine becomes a known problem instead of a quiet one. Frostbitten has work and a name for it.",
-      "scope": "story",
-      "source": "story_sync",
-      "tags": ["story_part", "chapter_1_2a"]
-    }
+    { "op": "update_quest_progress", "questId": "quest_watch_ridge_cleanup", "objectiveId": "report_patrol", "amount": 1 },
+    { "op": "hub_mood_set", "hubId": "haven_hub_frostbitten", "mood": "working_calm" },
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_patrol_named", "text": "Whatever is stalking Bent Pine has been named in writing now. Frostbitten knows what it is hunting.", "tags": ["story", "patrol", "named_threat"] },
+    { "op": "set_flag", "flag": "story_route_a_settled", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Watch Ridge Cleanup", "summary": "Bent Pine becomes a known problem instead of a quiet one. Frostbitten has work and a name for it.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_2a"] }
   ],
   "nodes": [
     {
       "id": "open",
       "type": "narration",
-      "text": "The gate office smells like wet rope and old tea. Captain Lysa has her notes already laid out in three columns: rumor, witness, paperwork. Bin's name appears in every column. Twice in two of them.",
+      "text": "The gate office smells like wet rope and old tea. Captain Lysa has her notes already laid out in three columns: rumor, witness, paperwork. Bin's name appears in every column. Twice in two of them. Snow has melted into the doormat in the shape of his boots, and the kettle has been on for somebody he expected to be a stranger.",
       "next": "lysa_brief"
     },
     {
       "id": "lysa_brief",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Talk me through Bent Pine the way you talked through it for Peri. Then talk me through it again the way you would talk to your father. I need both to write this down honestly.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Talk me through Bent Pine the way you talked through it for Peri. Then talk me through it again the way you would talk to your father. I need both to write this down honestly. The town reads my reports out loud at meetings now, and the children listen.",
       "next": "peri_step_in"
     },
     {
@@ -80,7 +57,9 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "The route is alive. Whatever crosses the line is fast, picks fights up close, and resets when it loses contact. I will allow Bin to say one tasteless joke. I will not allow two.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "The route is alive. Whatever crosses the line is fast, picks fights up close, and resets when it loses contact. I will allow Bin to say one tasteless joke. I will not allow two. The system has set a quota and is, for once, being responsible.",
       "next": "bin_report"
     },
     {
@@ -88,7 +67,19 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "It hunts on a loop. We can clear the ridge once, the next pass it has moved one cell. It does not chase honor. It is patient about the wrong things. I would close Bent Pine until a real party walks it.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "It hunts on a loop. We can clear the ridge once, the next pass it has moved one cell. It does not chase honor. It is patient about the wrong things and fast about the right ones. I would close Bent Pine until a real party walks it. With a writ. With witnesses. With a doctor at the gate.",
+      "next": "lysa_followup"
+    },
+    {
+      "id": "lysa_followup",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "worried",
+      "text": "Closing it is the safest call and the most expensive one. Bent Pine is the firewood road. Every cold week Frostbitten stops trusting that road is a week the elders look at me sideways. I will trust you, but talk through the alternative too. I owe the people in this town a real choice on the page.",
       "next": "response_choice"
     },
     {
@@ -100,7 +91,7 @@
         {
           "id": "close",
           "label": "Close Bent Pine, post warnings",
-          "summary": "Safer. Town mood works calm.",
+          "summary": "Safer. Town mood works calm but firewood gets harder.",
           "next": "close_route",
           "ops": [
             { "op": "set_flag", "flag": "story_bent_pine_closed", "value": true },
@@ -110,7 +101,7 @@
         {
           "id": "escort",
           "label": "Run escorted patrols only",
-          "summary": "Compromise. Trickier later if losses occur.",
+          "summary": "Compromise. Trickier later if losses occur, but the road stays open.",
           "next": "escort_route",
           "ops": [
             { "op": "set_flag", "flag": "story_bent_pine_escorted", "value": true },
@@ -124,14 +115,29 @@
       "id": "close_route",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Closed it is. We will post the warnings inside the hour and a writ goes out by tomorrow. If anyone wants to argue, they can argue with the boots that walked it.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Closed it is. We will post the warnings inside the hour and a writ goes out by tomorrow. If anyone wants to argue, they can argue with the boots that walked it. I will tell the firewood guilds personally. They will not love the news, but they will respect the source.",
       "next": "stat_check"
     },
     {
       "id": "escort_route",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Escort only. Two guards minimum, one bow at distance. I will not pretend that is safe, but I will pretend it is responsible enough for the gate ledger.",
+      "side": "right",
+      "expression": "worried",
+      "text": "Escort only. Two guards minimum, one bow at distance. I will not pretend that is safe, but I will pretend it is responsible enough for the gate ledger. If anyone goes down on the escort, the policy folds and you are the one who walks me through the family. Deal?",
+      "next": "bin_escort_deal"
+    },
+    {
+      "id": "bin_escort_deal",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Deal. If the escort folds, I write the letter. I sit in the kitchen. I bring the bread. That is how this town used to do bad news and I am not interested in upgrading the bad-news system.",
       "next": "stat_check"
     },
     {
@@ -150,7 +156,10 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Then we ask the apothecary about wound packs that hold for nine hours, and we ask the smith about a longer poker. Whatever the thing is, we are about to outlast it once on purpose.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Then we ask the apothecary about wound packs that hold for nine hours, and we ask the smith about a longer poker. Whatever the thing is, we are about to outlast it once on purpose. I want the elders briefed before they hear it secondhand at the kettle.",
       "next": "garr_arrive"
     },
     {
@@ -158,14 +167,51 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Sorry. I lost the thread halfway. Two months of not sleeping in normal beds caught up to me in this exact room. Please pretend that sounded brave when you write it down.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Sorry. I lost the thread halfway. Two months of not sleeping in normal beds caught up to me in this exact room. Please pretend that sounded brave when you write it down. The boots remember the walk even if the mouth is on a strike.",
       "next": "garr_arrive"
     },
     {
       "id": "garr_arrive",
       "type": "dialogue",
       "speaker": "Garr",
-      "text": "I will write it down brave. I will also write it down kindly. Welcome home. Now come back to the hut before your sister Lily decides you are a hallucination.",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "soft",
+      "text": "I will write it down brave. I will also write it down kindly. Welcome home. Now come back to the hut before your sister Lily decides you are a hallucination. She has been adding extra cups to dinner. The shelf is going to crack.",
+      "next": "bin_garr_reply"
+    },
+    {
+      "id": "bin_garr_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "sad",
+      "text": "I owed you a long version. I have a short one ready, with footnotes. I would rather give it across the table than across this counter. Captain — keep the writ. Father — keep the bread warm. I am coming.",
+      "next": "garr_close"
+    },
+    {
+      "id": "garr_close",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "soft",
+      "text": "We will have the table set. Lily made you sit out of the dough for a week before she gave up. Both braids again, by the way. You will know the look.",
+      "next": "peri_segue"
+    },
+    {
+      "id": "peri_segue",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Logged. Tagged. Filed under domestic. The system enjoys it when chapter handoffs are quiet. They are rare. They look good on the ledger.",
       "next": "finish_ops"
     },
     {
@@ -178,10 +224,6 @@
       ],
       "next": "end"
     },
-    {
-      "id": "end",
-      "type": "end",
-      "result": "complete"
-    }
+    { "id": "end", "type": "end", "result": "complete" }
   ]
 }

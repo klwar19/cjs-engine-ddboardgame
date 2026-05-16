@@ -12,6 +12,18 @@
     "sokoban": {
       "src": "assets/minigames/sokoban_sheet.png",
       "credit": "Sokoban Pack by Kenney (kenney.nl) — CC0"
+    },
+    "bin_sprite": {
+      "src": "images/characters/bin_sprite.png",
+      "cols": 4,
+      "rows": 4,
+      "credit": "Bin walk cycle sprite sheet (user-supplied)."
+    },
+    "shadow_stalker": {
+      "src": "images/monsters/shadow_stalker.png",
+      "cols": 4,
+      "rows": 4,
+      "credit": "Shadow stalker pursuit sheet (user-supplied)."
     }
   },
   "mummy_maze": {
@@ -22,8 +34,8 @@
       "wall":      { "tile": 14 },
       "exit":      { "tile":  7 },
       "gate":      { "tile": 45 },
-      "player":    { "tile": 85 },
-      "mummy":     { "tile": 111 }
+      "player":    { "sheet": "bin_sprite", "frame": 0 },
+      "mummy":     { "sheet": "shadow_stalker", "frame": 0 }
     },
     "procedural": ["key", "trap"]
   },

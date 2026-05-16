@@ -11,6 +11,34 @@
       "id": "bin",
       "name": "Bin Chen",
       "portrait": "images/characters/bin.png",
+      "expressionPortraits": {
+        "default": "images/characters/bin.png",
+        "neutral": "images/characters/bin.png",
+        "normal": "images/characters/bin_normal.png",
+        "angry": "images/characters/bin_angry.png",
+        "happy": "images/characters/bin_happy.png",
+        "sad": "images/characters/bin_sad.png",
+        "annoyed": "images/characters/bin_angry.png",
+        "smirk": "images/characters/bin_happy.png",
+        "grin": "images/characters/bin_happy.png",
+        "tired": "images/characters/bin_sad.png",
+        "worried": "images/characters/bin_sad.png",
+        "determined": "images/characters/bin_angry.png",
+        "fierce": "images/characters/bin_angry.png",
+        "soft": "images/characters/bin_sad.png",
+        "warm": "images/characters/bin_happy.png"
+      },
+      "spriteSheet": {
+        "src": "images/characters/bin_sprite.png",
+        "fallback": "assets/sprites/bin_marker.svg",
+        "cols": 4,
+        "rows": 4,
+        "frameSize": 320,
+        "rowDown": 0,
+        "rowUp": 1,
+        "rowLeft": 3,
+        "rowRight": 2
+      },
       "icon": "🃏",
       "team": "player",
       "rank": "F",
@@ -74,6 +102,20 @@
         "happy": "bin_happy",
         "angry": "bin_angry"
       }
+    },
+    {
+      "id": "peri",
+      "name": "Peri",
+      "portrait": "assets/live2d/peri/mianyin.png",
+      "expressionPortraits": {
+        "default": "assets/live2d/peri/mianyin.png",
+        "neutral": "assets/live2d/peri/mianyin.png"
+      },
+      "icon": "🎭",
+      "team": "support",
+      "rank": "?",
+      "type": "system",
+      "description": "Bin's CJS narrator-companion. Speaks in stage directions. Tags her own jokes for the system to log."
     }
   ]
 }

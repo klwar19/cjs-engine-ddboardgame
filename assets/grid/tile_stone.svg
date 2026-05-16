@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8d959a"/>
+      <stop offset="1" stop-color="#5b6266"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#g)"/>
+  <g fill="none" stroke="#3a4044" stroke-width="0.9" opacity="0.75">
+    <path d="M0 16 H64"/>
+    <path d="M0 32 H64"/>
+    <path d="M0 48 H64"/>
+    <path d="M16 0 V16"/>
+    <path d="M40 0 V16"/>
+    <path d="M8 16 V32"/>
+    <path d="M32 16 V32"/>
+    <path d="M52 16 V32"/>
+    <path d="M20 32 V48"/>
+    <path d="M44 32 V48"/>
+    <path d="M12 48 V64"/>
+    <path d="M36 48 V64"/>
+    <path d="M56 48 V64"/>
+  </g>
+  <g fill="#aab0b4" opacity="0.35">
+    <rect x="1" y="1" width="14" height="14"/>
+    <rect x="17" y="17" width="14" height="14"/>
+    <rect x="45" y="33" width="14" height="14"/>
+    <rect x="37" y="49" width="14" height="14"/>
+  </g>
+  <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#2c3134" stroke-width="1" opacity="0.6"/>
+</svg>

@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch02_part02b_inside_track",
-  "version": 1,
+  "version": 2,
   "title": "Inside Track",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -16,9 +16,10 @@
   "startNode": "open",
   "background": "images/story-mode/haven/frostwood-vn.png",
   "tags": ["world:haven", "arc:1", "chapter:settle", "tavern", "branch:tavern"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "tavern host"] },
   "summary": {
     "short": "Bin follows the cellar trail and turns gossip into a usable lead.",
-    "default": "The Mug cellar yields a name, a courier route, and a quiet alliance with the host."
+    "default": "The Mug cellar yields a name, a courier route, and a quiet alliance with the host. Bin decides whether to bring it to the town meeting or hold it inside the family for one more night."
   },
   "nextCandidates": [
     "1.3.a Frostbitten Town Meeting (convergence point with the gate route)"
@@ -29,46 +30,25 @@
     "Branch flag set: story_route_b_settled unlocks the converged 1.3.a chapter."
   ],
   "completionOps": [
-    {
-      "op": "add_rumor",
-      "hubId": "haven_hub_frostbitten",
-      "id": "rumor_courier_south_gate",
-      "text": "An outside courier moves through Frostbitten on market days, paying for questions about Garr's household.",
-      "tags": ["story", "courier", "south_gate"]
-    },
-    {
-      "op": "hub_problem_add",
-      "hubId": "haven_hub_frostbitten",
-      "problemId": "outside_buyer_active",
-      "label": "An outside buyer is active in Frostbitten",
-      "notes": "Tavern lead confirmed a courier route. Worth surfacing at the next town meeting (1.3.a)."
-    },
-    {
-      "op": "set_flag",
-      "flag": "story_route_b_settled",
-      "value": true
-    },
-    {
-      "op": "event_log_add",
-      "title": "Story Sync: Inside Track",
-      "summary": "Bin turns Frosted Mug gossip into a real lead: courier, route, and a usable schedule.",
-      "scope": "story",
-      "source": "story_sync",
-      "tags": ["story_part", "chapter_1_2b"]
-    }
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_courier_south_gate", "text": "An outside courier moves through Frostbitten on market days, paying for questions about Garr's household.", "tags": ["story", "courier", "south_gate"] },
+    { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "outside_buyer_active", "label": "An outside buyer is active in Frostbitten", "notes": "Tavern lead confirmed a courier route. Worth surfacing at the next town meeting (1.3.a)." },
+    { "op": "set_flag", "flag": "story_route_b_settled", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Inside Track", "summary": "Bin turns Frosted Mug gossip into a real lead: courier, route, and a usable schedule.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_2b"] }
   ],
   "nodes": [
     {
       "id": "open",
       "type": "narration",
-      "text": "The Frosted Mug cellar runs cold. Two barrels. One trapdoor. A walking-around stain on the floor that is not from spilled ale, and a tally chalked on the back of a brick that nobody wants to claim drew it.",
+      "text": "The Frosted Mug cellar runs cold. Two barrels. One trapdoor. A walking-around stain on the floor that is not from spilled ale, and a tally chalked on the back of a brick that nobody wants to claim drew it. The lantern keeps swinging by half a hair like the cellar is listening to its own breathing.",
       "next": "host_open"
     },
     {
       "id": "host_open",
       "type": "dialogue",
       "speaker": "Tavern Host",
-      "text": "If you are here for the ghosts, the ghosts left an hour ago. If you are here for the inquiries, sit down before I lose my nerve. I should have told someone weeks ago.",
+      "side": "right",
+      "expression": "worried",
+      "text": "If you are here for the ghosts, the ghosts left an hour ago. If you are here for the inquiries, sit down before I lose my nerve. I should have told someone weeks ago. I told my husband. He told me to wait. He is the kind of man who waits.",
       "next": "peri_listen"
     },
     {
@@ -76,7 +56,9 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "Listen to her. She is the most honest cowardice in this entire town. That is a compliment. It is the kind of compliment the system files under 'useful.'",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Listen to her. She is the most honest cowardice in this entire town. That is a compliment. It is the kind of compliment the system files under 'useful.' I am very fond of her. Do not tell her — she will use it as an excuse to feed me.",
       "next": "stat_check"
     },
     {
@@ -95,7 +77,10 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Tell me what happened in your own order, not mine. I am not the law and I am not in a hurry. The system can wait, the town can wait, you cannot.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "Tell me what happened in your own order, not mine. I am not the law and I am not in a hurry. The system can wait, the town can wait, you cannot. I will not write a single word down until you are ready to lend it to me.",
       "next": "host_reveal"
     },
     {
@@ -103,14 +88,39 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Sorry. I almost said something stupid. Take your time. The cellar is not on fire. Please tell me before the cellar is on fire.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Sorry. I almost said something stupid. Take your time. The cellar is not on fire. Please tell me before the cellar is on fire. I would like at least one indoor location in my life that is not currently in the process of catching.",
       "next": "host_reveal"
     },
     {
       "id": "host_reveal",
       "type": "dialogue",
       "speaker": "Tavern Host",
-      "text": "A courier comes on market days. Comes in on the south gate, asks two questions about Garr's hut, leaves three silver, leaves. Never twice in a row. Never says a name. Pays in coin nobody recognizes. Last visit was six days ago.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "A courier comes on market days. Comes in on the south gate, asks two questions about Garr's hut, leaves three silver, leaves. Never twice in a row. Never says a name. Pays in coin nobody recognizes. Last visit was six days ago. They always order the cider they do not drink. I think it is a signal.",
+      "next": "bin_question_followup"
+    },
+    {
+      "id": "bin_question_followup",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Two questions about Garr's hut. Which two? The kind of questions tells you what the buyer is shopping for. Hours? People? Locks? The shape of the kitchen door?",
+      "next": "host_two_questions"
+    },
+    {
+      "id": "host_two_questions",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "sad",
+      "text": "First question: when does Lily walk the dog at dawn. Second question: who has the key to the back garden. The first one made me sick. The second one made me write the tally on the brick because I needed to count something with my hands.",
       "next": "evidence_check"
     },
     {
@@ -122,7 +132,7 @@
         {
           "id": "share",
           "label": "Plan to bring this to the town meeting",
-          "summary": "Share with Frostbitten openly. Lower danger.",
+          "summary": "Share with Frostbitten openly. Lower danger, more eyes on the route.",
           "next": "share_route",
           "ops": [
             { "op": "set_flag", "flag": "story_courier_public", "value": true },
@@ -132,7 +142,7 @@
         {
           "id": "private",
           "label": "Keep it inside the family first",
-          "summary": "Quiet. Costs trust with the gate later if discovered.",
+          "summary": "Quiet. Costs trust with the gate later if discovered, but the buyer does not hear it yet.",
           "next": "private_route",
           "ops": [
             { "op": "set_flag", "flag": "story_courier_private", "value": true },
@@ -146,14 +156,40 @@
       "id": "share_route",
       "type": "dialogue",
       "speaker": "Tavern Host",
-      "text": "Thank you. I will not stop you, but I will warn you. The courier has Frostbitten friends. People will not be glad to hear their names said out loud at a town meeting.",
+      "side": "right",
+      "expression": "worried",
+      "text": "Thank you. I will not stop you, but I will warn you. The courier has Frostbitten friends. People will not be glad to hear their names said out loud at a town meeting. Some of those names rent rooms upstairs.",
+      "next": "bin_share_reply"
+    },
+    {
+      "id": "bin_share_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Names get said. The town owes itself the truth. We can leave the buyer's name off the room key for one more market day. After that, the courier shops somewhere else or the town learns who is renting eyes inside its walls.",
       "next": "peri_close"
     },
     {
       "id": "private_route",
       "type": "dialogue",
       "speaker": "Tavern Host",
-      "text": "Family it is. I owe you the names, and I owe Garr two of them. Take them home, decide what stays inside the walls.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Family it is. I owe you the names, and I owe Garr two of them. Take them home, decide what stays inside the walls. I will keep the cider order for the next market day so the signal does not go cold.",
+      "next": "bin_private_reply"
+    },
+    {
+      "id": "bin_private_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "Family decides by tomorrow. If the family does not act, the meeting hears it on its own — too late. I am not interested in becoming the kind of person who keeps secrets longer than a market week. The math gets ugly fast.",
       "next": "peri_close"
     },
     {
@@ -161,7 +197,9 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "Good. Now we walk you home before this turns into a domestic emergency. The town meeting is the next chapter no matter which fork you took. Try to arrive with both hands free.",
+      "side": "right",
+      "expression": "soft",
+      "text": "Good. Now we walk you home before this turns into a domestic emergency. The town meeting is the next chapter no matter which fork you took. Try to arrive with both hands free. Try not to arrive bleeding. Try, in short, to arrive.",
       "next": "finish_ops"
     },
     {
@@ -174,10 +212,6 @@
       ],
       "next": "end"
     },
-    {
-      "id": "end",
-      "type": "end",
-      "result": "complete"
-    }
+    { "id": "end", "type": "end", "result": "complete" }
   ]
 }

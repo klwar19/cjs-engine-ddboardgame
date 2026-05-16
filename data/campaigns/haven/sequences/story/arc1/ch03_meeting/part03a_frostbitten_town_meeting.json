@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch03_part03a_frostbitten_town_meeting",
-  "version": 1,
+  "version": 2,
   "title": "Frostbitten Town Meeting",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -17,12 +17,13 @@
   "startNode": "open",
   "background": "images/story-mode/haven/frostwood-vn.png",
   "tags": ["world:haven", "arc:1", "chapter:meeting", "frostbitten", "branch:converge"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "captain lysa", "gate sergeant", "tavern host", "garr"] },
   "summary": {
     "short": "Both routes meet at the Frostbitten town meeting and the arc decides what to act on next.",
-    "default": "Frostbitten merges the patrol problem and the outside-buyer problem into one practical agenda."
+    "default": "The meeting merges the patrol problem and the outside-buyer problem into one practical agenda. Frostbitten picks a posture, names a target, and hands Bin the first move of chapter 1.4."
   },
   "nextCandidates": [
-    "Chapter 1.4 (planned, in update) — the arc moves out of return mode."
+    "1.4 Pre-Chimera Prep (chapter 1.4 picks up the chosen agenda)"
   ],
   "syncSummary": [
     "Town agenda set: Bent Pine and the outside buyer become one combined plan.",
@@ -30,44 +31,25 @@
     "Branch state: 1.3.a is the converged anchor for both 1.1.a/1.2.a and 1.1.b/1.2.b paths."
   ],
   "completionOps": [
-    {
-      "op": "hub_mood_set",
-      "hubId": "haven_hub_frostbitten",
-      "mood": "measured_concern"
-    },
-    {
-      "op": "add_rumor",
-      "hubId": "haven_hub_frostbitten",
-      "id": "rumor_combined_agenda",
-      "text": "Frostbitten is treating the patrol threat and the outside buyer as one problem now. The next move will be planned, not reactive.",
-      "tags": ["story", "town_meeting", "agenda"]
-    },
-    {
-      "op": "set_flag",
-      "flag": "story_town_meeting_held",
-      "value": true
-    },
-    {
-      "op": "event_log_add",
-      "title": "Story Sync: Frostbitten Town Meeting",
-      "summary": "Both routes converge at the town meeting. Bent Pine and the outside buyer are now one combined problem with a real schedule.",
-      "scope": "story",
-      "source": "story_sync",
-      "tags": ["story_part", "chapter_1_3a", "convergence"]
-    }
+    { "op": "hub_mood_set", "hubId": "haven_hub_frostbitten", "mood": "measured_concern" },
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_combined_agenda", "text": "Frostbitten is treating the patrol threat and the outside buyer as one problem now. The next move will be planned, not reactive.", "tags": ["story", "town_meeting", "agenda"] },
+    { "op": "set_flag", "flag": "story_town_meeting_held", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Frostbitten Town Meeting", "summary": "Both routes converge at the town meeting. Bent Pine and the outside buyer are now one combined problem with a real schedule.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_3a", "convergence"] }
   ],
   "nodes": [
     {
       "id": "open",
       "type": "narration",
-      "text": "The Frostbitten meeting hall has more chairs than usual and slightly too few mugs. Captain Lysa is at the front. Corvin is at the back pretending to count something. Peri has chosen a beam to lean against that gives her perfect visibility on every face in the room.",
+      "text": "The Frostbitten meeting hall has more chairs than usual and slightly too few mugs. Captain Lysa is at the front. Garr is at the back pretending to count something. Peri has chosen a beam to lean against that gives her perfect visibility on every face in the room. The lamp oil smells fresh, the way it does on nights the town does not want to fail.",
       "next": "lysa_open"
     },
     {
       "id": "lysa_open",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Two items. One: Bent Pine. Two: the buyer asking after Garr's hut. I would normally take them apart. Tonight I am taking them together. Bin, you have the floor before the floor has you.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Two items. One: Bent Pine. Two: the buyer asking after Garr's hut. I would normally take them apart. Tonight I am taking them together because the calendars match. Bin, you have the floor before the floor has you. Keep it under five minutes and I will not interrupt.",
       "next": "bin_summary"
     },
     {
@@ -75,7 +57,21 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Both stories share a date pattern. Both stories share a courier description, or close enough. Whatever has been watching Garr's hut is on the same calendar as whatever has been moving along Bent Pine. I want them treated as one thing until proven otherwise.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Both stories share a date pattern. Both stories share a courier description, or close enough. Whatever has been watching Garr's hut is on the same calendar as whatever has been moving along Bent Pine. I want them treated as one thing until proven otherwise. The cheaper investigation is the merged one.",
+      "next": "bin_summary_two"
+    },
+    {
+      "id": "bin_summary_two",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "neutral",
+      "text": "If somebody disagrees, I would rather hear it tonight than at a funeral. The patrol can speak. The Mug can speak. The gate can speak. The buyer cannot, which is the only quiet vote we trust.",
       "next": "branch_check"
     },
     {
@@ -95,14 +91,18 @@
       "id": "tavern_voice",
       "type": "dialogue",
       "speaker": "Tavern Host",
-      "text": "I am sorry it took me this long to say this in front of you all. The courier is real. The questions are real. They use the south gate on market days. I will name the two regulars who took the coin if it helps.",
+      "side": "right",
+      "expression": "sad",
+      "text": "I am sorry it took me this long to say this in front of you all. The courier is real. The questions are real. They use the south gate on market days. I will name the two regulars who took the coin if it helps. One of them rents the room above the back stairs. I would like that room empty by the end of the week.",
       "next": "agenda_choice"
     },
     {
       "id": "gate_voice",
       "type": "dialogue",
       "speaker": "Gate Sergeant",
-      "text": "Bent Pine is closed unless escorted. Two of my newer guards walked it again this morning and came back chewed. Whatever it is, it is not getting smaller and it does not appreciate paperwork.",
+      "side": "right",
+      "expression": "worried",
+      "text": "Bent Pine is closed unless escorted. Two of my newer guards walked it again this morning and came back chewed. Whatever it is, it is not getting smaller and it does not appreciate paperwork. I would like the council to fund a full sweep and I would like that vote tonight, not in a memo next month.",
       "next": "agenda_choice"
     },
     {
@@ -147,21 +147,27 @@
       "id": "hunt_route",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Hunt it is. We organize the purge first, the watch second. Bin, Peri, and Garr can lead. If anyone in this room loses their nerve, I would rather know now than during.",
+      "side": "right",
+      "expression": "determined",
+      "text": "Hunt it is. We organize the purge first, the watch second. Bin, Peri, and Garr can lead. If anyone in this room loses their nerve, I would rather know now than during. We will move on the next market day, two cells in, one cell on overwatch.",
       "next": "stat_check"
     },
     {
       "id": "fortify_route",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Fortify it is. Bin and Peri quietly walk the buyer's calendar. Garr keeps the family inside the walls until we know who is being asked about and why.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Fortify it is. Bin and Peri quietly walk the buyer's calendar. Garr keeps the family inside the walls until we know who is being asked about and why. We will look slow on purpose. Slow is sometimes the loudest move a town can make.",
       "next": "stat_check"
     },
     {
       "id": "compromise_route",
       "type": "dialogue",
       "speaker": "Captain Lysa",
-      "text": "Compromise it is. We pretend that two half-jobs add up to a whole one. They will not, but the town can tolerate the lie if we are honest about it later.",
+      "side": "right",
+      "expression": "tired",
+      "text": "Compromise it is. We pretend that two half-jobs add up to a whole one. They will not, but the town can tolerate the lie if we are honest about it later. Escort for Bent Pine. Sealed envelope for the courier names. We meet again in eight days.",
       "next": "stat_check"
     },
     {
@@ -180,15 +186,31 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "I owe the town a clean report. So I will write one. Whatever the plan, I will keep you in it. Frostbitten has been polite about my being missing. It is my turn to be polite about being here.",
-      "next": "peri_close"
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "happy",
+      "text": "I owe the town a clean report. So I will write one. Whatever the plan, I will keep you in it. Frostbitten has been polite about my being missing. It is my turn to be polite about being here. The next chapter is mine. So is the cost.",
+      "next": "garr_speak"
     },
     {
       "id": "stat_fail",
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "I am bad at speeches. Two months of weather did not fix that. I just want all of you to know I am taking the next move seriously. The system says I rate this beat a five out of ten. I am okay with the five.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "sad",
+      "text": "I am bad at speeches. Two months of weather did not fix that. I just want all of you to know I am taking the next move seriously. The system says I rate this beat a five out of ten. I am okay with the five. Five is honest.",
+      "next": "garr_speak"
+    },
+    {
+      "id": "garr_speak",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "soft",
+      "text": "I will not say much, because the room has not asked me to. I will say this: my boy came back. My daughter is still here. Whatever you decide about Bent Pine, decide it like both of them are listening — because they are. And so is the buyer.",
       "next": "peri_close"
     },
     {
@@ -196,7 +218,9 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "And that is the meeting. The arc walks out of return mode now. The system politely informs me that chapter 1.4 is queued and currently in update. I will not let you forget which fork you took. Frostbitten will not either.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "And that is the meeting. The arc walks out of return mode now. The system politely informs me that chapter 1.4 is the next chapter and is now in your hands. I will not let you forget which fork you took. Frostbitten will not either. Sleep, eat, and arrive ready.",
       "next": "finish_ops"
     },
     {
@@ -209,10 +233,6 @@
       ],
       "next": "end"
     },
-    {
-      "id": "end",
-      "type": "end",
-      "result": "complete"
-    }
+    { "id": "end", "type": "end", "result": "complete" }
   ]
 }
