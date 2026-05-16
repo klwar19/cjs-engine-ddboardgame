@@ -15,22 +15,23 @@
       "partId": "ch01_part01",
       "partLabel": "1.1",
       "branchKey": "trunk",
-      "title": "Frostwood Return",
+      "title": "Snow on the Road Home",
       "file": "story/arc1/ch01_return/part01_frostwood_return.json",
       "summary": {
-        "short": "Bin reaches Haven's edge and the town starts reacting to the rumor that he is alive.",
-        "default": "Bin reaches the Frostwood road, takes the gate route by default, and the return becomes public."
+        "short": "Bin gets dumped back into a snowdrift, fends off a frost wolf, finds a weird coin, and picks the gate or the back-alley route into Haven.",
+        "default": "Two months in a portal closet, one wolf, zero dignity. Bin reaches the Frostwood road, picks the gate or the Mug's back door, and goes looking for his sister Lily."
       },
       "nextCandidates": [
-        "1.1.a Bent Pine Patrol (gate route)",
-        "1.1.b Frosted Mug Whispers (tavern route)"
+        "1.1.a Gate Office Day (front-door paperwork, captain's attitude)",
+        "1.1.b Back Door at the Frosted Mug (back-alley soup and a screaming log rumour)"
       ],
       "syncSummary": [
-        "Rumor update: Bin was seen alive on the Frostwood road.",
-        "Hub mood shift: Frostbitten moves from anxious to uneasy relief.",
-        "Branch flag set: the chosen return route gates 1.1.a or 1.1.b."
+        "Rumor: Bin was seen alive on the Frostwood road.",
+        "Hub mood: Frostbitten softens from anxious to mildly relieved.",
+        "Quest seed: Find Lily — Mitia's apothecary, eastern road.",
+        "Mystery seed: a rude-candle coin on the road. Not local."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:return", "story"]
+      "tags": ["world:haven", "arc:1", "chapter:return", "story", "tone:grounded"]
     },
     {
       "id": "story_haven_arc1_ch01_part01a_bent_pine_patrol",
@@ -46,22 +47,23 @@
       "branchKey": "gate",
       "routeKey": "gate",
       "routeLabel": "Gate Route",
-      "title": "Bent Pine Patrol",
-      "file": "story/arc1/ch01_return/part01a_bent_pine_patrol.json",
+      "title": "Gate Office Day",
+      "file": "story/arc1/ch01_return/part01a_gate_office_day.json",
       "requiresStoryParts": ["story_haven_arc1_ch01_part01_frostwood_return"],
       "requiresFlags": ["story_return_route_gate"],
       "summary": {
-        "short": "Bin and Peri test the Bent Pine line before Haven can settle.",
-        "default": "The patrol reaches Watch Ridge and confirms the route is not safe yet."
+        "short": "Captain Lysa is glad Bin is alive and expresses it by handing him two months of unfiled supply manifests.",
+        "default": "Bin sorts the gate office floor, catches the frostcap shortage hidden in the dates, learns Lily is at the apothecary, and pockets a third matching foreign coin."
       },
       "nextCandidates": [
-        "1.2.a Watch Ridge Cleanup"
+        "1.2.a Apothecary's Apprentice (Lily and a herb run)"
       ],
       "syncSummary": [
-        "Quest follow-up: Watch Ridge Cleanup can open from the patrol report.",
-        "Hub problem: Something is stalking the patrol line up close."
+        "Quest started: Find Lily.",
+        "Hub problem: weird foreign coins in the gate's lost-and-found tin.",
+        "Hint: frostcap shipments are being 'redirected' on Wednesdays and over-delivered on Tuesdays in a different handwriting."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:return", "story", "map_run", "branch:gate"]
+      "tags": ["world:haven", "arc:1", "chapter:return", "story", "branch:gate", "minigame", "paperwork"]
     },
     {
       "id": "story_haven_arc1_ch01_part01b_frosted_mug_whispers",
@@ -77,22 +79,23 @@
       "branchKey": "tavern",
       "routeKey": "tavern",
       "routeLabel": "Tavern Route",
-      "title": "Frosted Mug Whispers",
-      "file": "story/arc1/ch01_return/part01b_frosted_mug_whispers.json",
+      "title": "Back Door at the Frosted Mug",
+      "file": "story/arc1/ch01_return/part01b_mug_back_door.json",
       "requiresStoryParts": ["story_haven_arc1_ch01_part01_frostwood_return"],
       "requiresFlags": ["story_return_route_tavern"],
       "summary": {
-        "short": "Bin slips into the Frosted Mug and hears the town's version of his disappearance.",
-        "default": "The tavern crowd is rattled, the cellar has been talking, and one regular knows more than they should."
+        "short": "Bin sneaks in the Mug's back door, eats soup, brawls a drunk patron over a chair, and the host begs him to look at the screaming log in the woodshed.",
+        "default": "Town gossip has a leading 'sea monster' theory. The Mug owes Bin a favour. There is a log behind the woodshed that screams when the wind hits it sideways. Tomorrow's job is the log."
       },
       "nextCandidates": [
-        "1.2.b Inside Track"
+        "1.2.b The Haunted Firewood (a screaming log behind the Mug)"
       ],
       "syncSummary": [
-        "Rumor: someone outside town has been buying questions about Garr's family.",
-        "Hub problem: quiet fear in the Frosted Mug."
+        "Hub problem: the Mug's woodshed has a screaming log.",
+        "Item: a third rude-candle coin appears on the Mug's cellar floor.",
+        "Hint: Lily is at Mitia's apothecary on the eastern road."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:return", "story", "branch:tavern"]
+      "tags": ["world:haven", "arc:1", "chapter:return", "story", "branch:tavern", "minigame", "tavern", "brawl"]
     },
     {
       "id": "story_haven_arc1_ch02_part02a_watch_ridge_cleanup",
@@ -108,21 +111,22 @@
       "branchKey": "gate",
       "routeKey": "gate",
       "routeLabel": "Gate Route",
-      "title": "Watch Ridge Cleanup",
-      "file": "story/arc1/ch02_settle/part02a_watch_ridge_cleanup.json",
+      "title": "Apothecary's Apprentice",
+      "file": "story/arc1/ch02_apprentice/part02a_apothecary_apprentice.json",
       "requiresStoryParts": ["story_haven_arc1_ch01_part01a_bent_pine_patrol"],
       "summary": {
-        "short": "Bin reports the patrol result at the gate and the town picks a response.",
-        "default": "Frostbitten files Bin under 'returned' and the Bent Pine threat gets a name."
+        "short": "Bin reaches Mitia's apothecary and discovers Lily has been quietly running half of it. They walk the frostcap grove together.",
+        "default": "Lily is taller and sharper. Mitia hands Bin a coat. The frostcap grove is missing exactly the shipments the gate logged as 'redirected.' Bin and Lily find out why."
       },
       "nextCandidates": [
-        "1.3.a Frostbitten Town Meeting"
+        "1.3 The Cat Job (a missing tavern cat, both routes converge)"
       ],
       "syncSummary": [
-        "Quest progressed: Watch Ridge Cleanup objective filed.",
-        "Hub mood shift: Frostbitten moves toward working calm."
+        "Quest progress: Find Lily — found, slightly horrified at his beard.",
+        "Quest started: Frostcap Shortage.",
+        "Mystery progress: A fourth rude-candle coin sits on the apothecary windowsill."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:settle", "story", "branch:gate"]
+      "tags": ["world:haven", "arc:1", "chapter:settle", "story", "branch:gate", "scenario", "family"]
     },
     {
       "id": "story_haven_arc1_ch02_part02b_inside_track",
@@ -138,21 +142,22 @@
       "branchKey": "tavern",
       "routeKey": "tavern",
       "routeLabel": "Tavern Route",
-      "title": "Inside Track",
-      "file": "story/arc1/ch02_settle/part02b_inside_track.json",
+      "title": "The Haunted Firewood",
+      "file": "story/arc1/ch02_apprentice/part02b_haunted_firewood.json",
       "requiresStoryParts": ["story_haven_arc1_ch01_part01b_frosted_mug_whispers"],
       "summary": {
-        "short": "Bin follows the cellar trail and turns gossip into a usable lead.",
-        "default": "The Mug cellar yields a name, a courier route, and a quiet alliance with the host."
+        "short": "The Mug's screaming log turns out to contain a grumpy frost sprite. Bin coaxes it out, fights three frost rats, and walks the sprite to the apothecary.",
+        "default": "The log is a sprite. The sprite is rude. Bin delivers it in a labelled jar and meets his sister halfway through the comedy."
       },
       "nextCandidates": [
-        "1.3.a Frostbitten Town Meeting"
+        "1.3 The Cat Job (a missing tavern cat, both routes converge)"
       ],
       "syncSummary": [
-        "Hub problem: outside buyer of inquiries has a delivery route.",
-        "Rumor: the courier uses the south gate on market days."
+        "Hub problem cleared: the Mug's screaming log.",
+        "Item: one frost sprite in a labelled jar.",
+        "Mystery progress: A fourth rude-candle coin sits on the apothecary windowsill."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:settle", "story", "branch:tavern"]
+      "tags": ["world:haven", "arc:1", "chapter:settle", "story", "branch:tavern", "minigame", "comedy"]
     },
     {
       "id": "story_haven_arc1_ch03_part03a_frostbitten_town_meeting",
@@ -161,32 +166,34 @@
       "arcId": "haven_arc1",
       "chapterId": "arc1_ch03",
       "chapterLabel": "1.3",
-      "orderKey": "1.3.a",
+      "orderKey": "1.3",
       "partId": "ch03_part03a",
-      "partLabel": "1.3.a",
+      "partLabel": "1.3",
       "branchOf": "ch02_part02a",
       "alsoBranchOf": ["ch02_part02b"],
       "branchKey": "converge",
-      "routeKey": "converge",
-      "routeLabel": "Convergence",
-      "title": "Frostbitten Town Meeting",
-      "file": "story/arc1/ch03_meeting/part03a_frostbitten_town_meeting.json",
+      "routeKey": "trunk",
+      "routeLabel": "Cat Job (Convergent)",
+      "title": "The Cat Job",
+      "file": "story/arc1/ch03_cat/part03_cat_job.json",
       "requiresAnyStoryParts": [
         "story_haven_arc1_ch02_part02a_watch_ridge_cleanup",
         "story_haven_arc1_ch02_part02b_inside_track"
       ],
       "summary": {
-        "short": "Both routes meet at the Frostbitten town meeting and the arc decides what to act on next.",
-        "default": "Frostbitten merges the patrol problem and the outside-buyer problem into one practical agenda."
+        "short": "A six-year-old hires Bin and Lily to find Mittens the tavern cat. The cat is at a hermit's hut. The hermit has a tin of rude-candle coins.",
+        "default": "Three townsfolk, three sightings, one accurate. Mittens is at Hermit Rolf's. Wolves on the way home. The coin pattern matches a pattern of questions about who is sick in Frostbitten."
       },
       "nextCandidates": [
-        "Chapter 1.4 (planned, in update)"
+        "1.4 Bread, Stew, and a Knock at the Door (family dinner, sealed envelope)"
       ],
       "syncSummary": [
-        "Town agenda set: Bent Pine and the outside buyer are now one combined plan.",
-        "Hub mood shift: Frostbitten reaches measured concern."
+        "Quest cleared: Find Mittens.",
+        "Hub mood: Frostbitten reaches reluctantly cheerful.",
+        "Mystery progress: The buyer is a woman in good boots, paying for cough-related questions.",
+        "Ten rude-candle coins now catalogued."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:meeting", "story", "branch:converge"]
+      "tags": ["world:haven", "arc:1", "chapter:cat", "story", "branch:converge", "comedy", "convergence", "minigame", "combat"]
     },
     {
       "id": "story_haven_arc1_ch04_part04_pre_chimera_prep",
@@ -200,23 +207,25 @@
       "partLabel": "1.4",
       "branchOf": "ch03_part03a",
       "branchKey": "trunk",
-      "title": "Pre-Chimera Prep",
-      "file": "story/arc1/ch04_prep/part04_pre_chimera_prep.json",
+      "title": "Bread, Stew, and a Knock at the Door",
+      "file": "story/arc1/ch04_dinner/part04_family_dinner.json",
       "requiresStoryParts": ["story_haven_arc1_ch03_part03a_frostbitten_town_meeting"],
       "summary": {
-        "short": "Bin spends the day before the move setting his house, the patrol, and the courier in their right places.",
-        "default": "The town's agenda from 1.3.a becomes one day of real preparation: family location, pre-hunt kit, and the opening move chosen and locked in."
+        "short": "Family dinner at Garr's. Stew is on the second boil. A stranger arrives at the door before dessert. The chapter is quiet and closes Arc 1.",
+        "default": "Bin sits at the kitchen table for the first time in two months. There is yelling. There is bread. Garr's journal lists travellers, coins, and a repeated cough-syrup question. A sealed envelope changes hands at the door. Nobody dies."
       },
       "nextCandidates": [
-        "1.5 Joint Hunt at Bent Pine (in update)",
-        "1.5 Quiet Watch at South Gate (in update — alt branch from fortify)"
+        "Arc 1 closes — side quests, daily errands, and slow-build leads continue from the Quest tab.",
+        "Arc 2 begins later: the buyer is named, the coins are explained, the chimera (eventually) wakes up around chapter 5."
       ],
       "syncSummary": [
-        "Family location set: hut, captain's house, or Mug upper room.",
-        "Pre-hunt kit picked up at smith or apothecary.",
-        "Opening move locked in for the chosen agenda."
+        "Quest cleared: Family Dinner.",
+        "Hub mood: Frostbitten reaches settled.",
+        "Lore unlocked: Garr's journal of three travellers, six coins, and one repeating cough-syrup question.",
+        "Mystery: the buyer is a woman in good boots. Name still unknown.",
+        "Arc 1 closes. Side content and Arc 2 build follow."
       ],
-      "tags": ["world:haven", "arc:1", "chapter:prep", "story"]
+      "tags": ["world:haven", "arc:1", "chapter:home", "story", "family", "convergence", "arc_close", "tone:grounded"]
     },
     {
       "id": "event_bin_peri_luck_check",

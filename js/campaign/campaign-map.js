@@ -130,7 +130,7 @@ window.CJS.CampaignMap = (() => {
         const kindClass = _gridKindClass(cell);
         const nodeBadgeClass = _gridNodeBadge(cell, objective);
         const threatMarkup = threat ? _threatMarkupV2(threat, threatAdjacent) : '';
-        const playerMarkup = isCurrent ? _playerMarkupV2() : '';
+        const playerMarkup = isCurrent ? _playerMarkupV2(run) : '';
         const labelMarkup = isRevealed && cell.title
           ? `<span class="campaign-grid-cell-label">${_esc(_shortLabel(cell.title))}</span>`
           : '';
@@ -200,16 +200,33 @@ window.CJS.CampaignMap = (() => {
     return '';
   }
 
-  function _playerMarkupV2() {
+  function _playerMarkupV2(run = {}) {
+    const facing = _normalizeFacing(run?.facing || 'down');
     return `
       <span class="campaign-grid-player-shadow" aria-hidden="true"></span>
-      <span class="campaign-grid-player" aria-label="You are here"></span>
+      <span class="campaign-grid-player" data-facing="${_escAttr(facing)}" aria-label="Bin's party stands here"></span>
+      <span class="campaign-grid-player-tag" aria-hidden="true">Bin</span>
     `;
   }
 
   function _threatMarkupV2(threat = {}, adjacent = false) {
-    const title = _escAttr(`${threat.label || threat.id || 'Threat'} — close to engage`);
-    return `<span class="campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''}" title="${title}" aria-hidden="true"></span>`;
+    const title = _escAttr(`${threat.label || threat.id || 'Threat'} — ${adjacent ? 'one step away!' : 'roaming nearby'}`);
+    const sprite = _threatSprite(threat);
+    const inlineSprite = sprite ? `style="--threat-sprite:url('${_escAttr(sprite)}');"` : '';
+    const cls = `campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''} ${sprite ? 'has-sprite' : ''}`;
+    return `
+      <span class="campaign-grid-threat-shadow" aria-hidden="true"></span>
+      <span class="${cls}" title="${title}" aria-hidden="true" ${inlineSprite}></span>
+      <span class="campaign-grid-threat-tag ${adjacent ? 'is-adjacent' : ''}" aria-hidden="true">${_esc(_shortLabel(threat.label || threat.id || 'Roamer', 12))}</span>
+    `;
+  }
+
+  function _normalizeFacing(value) {
+    const v = String(value || 'down').toLowerCase();
+    if (v === 'up' || v === 'north') return 'up';
+    if (v === 'left' || v === 'west') return 'left';
+    if (v === 'right' || v === 'east') return 'right';
+    return 'down';
   }
 
   function _isAdjacent(current = {}, threat = {}) {
@@ -411,7 +428,7 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-detail-title">
         <span>${_esc(cell.title || key)}</span>
         <span class="campaign-pill">${_esc(cell.kind || 'floor')}</span>
-        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '笨・' : ''}${_esc(objective.label)}</span>` : ''}
+        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '✓ ' : ''}${_esc(objective.label)}</span>` : ''}
         ${threat ? `<span class="campaign-pill is-objective">${_esc(threat.icon || '!')} ${_esc(threat.label || threat.id)}</span>` : ''}
       </div>
       <div class="campaign-muted">${_esc(cell.notes || '')}</div>
@@ -451,7 +468,7 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-detail-title">
         <span>${_esc(node.title || node.id)}</span>
         <span class="campaign-pill">${_esc(node.kind || 'node')}</span>
-        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '笨・' : ''}${_esc(objective.label)}</span>` : ''}
+        ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '✓ ' : ''}${_esc(objective.label)}</span>` : ''}
       </div>
       <div class="campaign-muted">${_esc(node.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
@@ -694,9 +711,9 @@ window.CJS.CampaignMap = (() => {
     return String(value || 'layer_1').replace(/\s+/g, '_').toLowerCase();
   }
 
-  function _shortLabel(value) {
+  function _shortLabel(value, max = 18) {
     const text = String(value || '');
-    return text.length > 18 ? `${text.slice(0, 16)}..` : text;
+    return text.length > max ? `${text.slice(0, Math.max(2, max - 2))}..` : text;
   }
 
   function _canMoveTo(nodeId, run, map) {

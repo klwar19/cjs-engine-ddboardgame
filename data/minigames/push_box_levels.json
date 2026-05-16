@@ -1,6 +1,6 @@
 {
   "gameId": "push_box",
-  "version": 1,
+  "version": 2,
   "levels": [
     {
       "id": "push_01",
@@ -105,6 +105,132 @@
       "optimalMoves": 18,
       "hint": "Three crates, three runes, one wrong push and a crate is welded to a wall. The deadlock warnings (red boxes) flag the dead state — undo and try a different order.",
       "tags": ["crate", "guild", "hard", "deadlock"]
+    },
+    {
+      "id": "push_06",
+      "title": "Frostcap Pantry",
+      "difficulty": 2,
+      "theme": "frostbitten_pantry",
+      "width": 7,
+      "height": 7,
+      "player": [3, 5],
+      "boxes": [[3, 3]],
+      "goals": [[3, 1]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
+        [1,2],[5,2]
+      ],
+      "optimalPushes": 2,
+      "optimalMoves": 4,
+      "hint": "Push the salt barrel due north. The shelves on either side make sure you can't miss.",
+      "tags": ["crate", "pantry", "easy"]
+    },
+    {
+      "id": "push_07",
+      "title": "Switchback Hauling",
+      "difficulty": 3,
+      "theme": "guild_storehouse",
+      "width": 7,
+      "height": 7,
+      "player": [1, 1],
+      "boxes": [[3, 1]],
+      "goals": [[3, 5]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
+        [4,2],[4,3],[2,4],[2,3]
+      ],
+      "optimalPushes": 4,
+      "optimalMoves": 14,
+      "hint": "Push south, but mind the switchback — you'll have to swing the player around the wall to keep pushing.",
+      "tags": ["crate", "guild", "switchback"]
+    },
+    {
+      "id": "push_08",
+      "title": "Three Doors, Three Runes",
+      "difficulty": 4,
+      "theme": "guild_storehouse",
+      "width": 9,
+      "height": 6,
+      "player": [4, 4],
+      "boxes": [[2, 2], [4, 2], [6, 2]],
+      "goals": [[2, 4], [4, 4], [6, 4]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],
+        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],
+        [0,1],[8,1],[0,2],[8,2],[0,3],[8,3],[0,4],[8,4],
+        [1,3],[3,3],[5,3],[7,3]
+      ],
+      "optimalPushes": 6,
+      "optimalMoves": 12,
+      "hint": "Three crates, three runes, three gaps in the divider. Each goes straight down through its own gap.",
+      "tags": ["crate", "guild", "wide", "multi-goal"]
+    },
+    {
+      "id": "push_09",
+      "title": "Vault Forklift",
+      "difficulty": 5,
+      "theme": "guild_storehouse",
+      "width": 7,
+      "height": 7,
+      "player": [3, 5],
+      "boxes": [[2, 3], [4, 3]],
+      "goals": [[1, 1], [5, 1]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
+        [3,2],[3,1]
+      ],
+      "optimalPushes": 8,
+      "optimalMoves": 22,
+      "hint": "Split the crates left and right around the central column. Push each diagonally — north then west / east.",
+      "tags": ["crate", "guild", "diagonal", "hard"]
+    },
+    {
+      "id": "push_10",
+      "title": "Spiral Storeroom",
+      "difficulty": 6,
+      "theme": "guild_storehouse",
+      "width": 7,
+      "height": 7,
+      "player": [3, 5],
+      "boxes": [[3, 3]],
+      "goals": [[1, 1]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
+        [2,2],[2,3],[2,4],[4,2],[4,3],[3,2]
+      ],
+      "optimalPushes": 4,
+      "optimalMoves": 16,
+      "hint": "The spiral forces you around the outside. Push the crate west, then north, hugging the inner wall.",
+      "tags": ["crate", "guild", "spiral", "hardest"]
+    },
+    {
+      "id": "push_11",
+      "title": "Snow Cache Drop",
+      "difficulty": 3,
+      "theme": "frostbitten_pantry",
+      "width": 8,
+      "height": 6,
+      "player": [1, 3],
+      "boxes": [[3, 2], [3, 4]],
+      "goals": [[6, 2], [6, 4]],
+      "walls": [
+        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
+        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],
+        [0,1],[7,1],[0,2],[7,2],[0,3],[7,3],[0,4],[7,4],
+        [5,3]
+      ],
+      "optimalPushes": 6,
+      "optimalMoves": 14,
+      "hint": "Push each crate east. The central pillar keeps you from cutting across, so commit to one row at a time.",
+      "tags": ["crate", "pantry", "multi-goal"]
     }
   ]
 }

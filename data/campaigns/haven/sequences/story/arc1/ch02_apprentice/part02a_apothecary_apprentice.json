@@ -1,0 +1,291 @@
+{
+  "id": "story_haven_arc1_ch02_part02a_watch_ridge_cleanup",
+  "version": 4,
+  "title": "Apothecary's Apprentice",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch02",
+  "chapterLabel": "1.2",
+  "orderKey": "1.2.a",
+  "partId": "ch02_part02a",
+  "partLabel": "1.2.a",
+  "branchOf": "ch01_part01a",
+  "branchKey": "gate",
+  "routeKey": "gate",
+  "routeLabel": "Gate Route",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:settle", "apothecary", "lily", "herbs", "branch:gate", "tone:snark"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "lily", "mitia"] },
+  "summary": {
+    "short": "Bin reaches Mitia's apothecary and discovers his sister has been quietly running half of it. Then a herb run gets complicated.",
+    "default": "Lily is taller, sharper, and substantially more in charge than two months ago. Mitia hands Bin a coat, a basket, and a teenager with strong opinions. The frostcap grove is missing exactly the shipments the gate logged as 'redirected.' Bin and Lily find out why."
+  },
+  "nextCandidates": [
+    "1.3 The Cat Job (the town's wandering tavern cat needs finding)"
+  ],
+  "syncSummary": [
+    "Quest progress: Find Lily — found, slightly horrified at his beard.",
+    "Quest seed: Frostcap shortage — somebody is redirecting shipments before they reach Mitia.",
+    "Hub mood: Mitia's apothecary leaves 'quietly worried' for 'cautiously sarcastic.'",
+    "Mystery seed: A rude-candle coin sits on the apothecary windowsill in plain view.",
+    "Branch flag set: story_apothecary_run_walked converges into the Cat Job."
+  ],
+  "completionOps": [
+    { "op": "update_quest_progress", "questId": "quest_find_lily", "objectiveId": "visit_apothecary", "amount": 1 },
+    { "op": "add_quest", "quest": {
+      "id": "quest_frostcap_shortage",
+      "title": "Frostcap Shortage",
+      "summary": "Mitia is short three weeks of frostcap. The gate logs say 'redirected.' Bin and Lily promised to find out where.",
+      "tags": ["story", "investigate", "apothecary"],
+      "objectives": [
+        { "id": "harvest_frostcap", "label": "Bring back at least 5 frostcap caps from the grove", "required": 5, "current": 0 }
+      ]
+    }},
+    { "op": "give_material", "id": "haven_frostcap_mushroom", "qty": 3 },
+    { "op": "set_flag", "flag": "story_apothecary_run_walked", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Apothecary's Apprentice", "summary": "Bin reunites with Lily at Mitia's. The frostcap grove is short. The siblings are not.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_2a"] }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "Mitia's apothecary smells exactly the way an apothecary should — mostly mint, slightly mistake, a polite undertone of yesterday's burned barley. A bell over the door rings politely. A second bell, smaller, rings out of order. The second bell is the warning bell. The warning bell has been re-tuned by someone with opinions, which is to say, Lily.",
+      "next": "lily_intro"
+    },
+    {
+      "id": "lily_intro",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "neutral",
+      "text": "If you are here for the cough syrup, the table on the left. If you are here for the toothache rub, the table on the right. If you are here because the gate office sent you to yell about the frostcap, the chair is in the back and I will deal with you in eight minutes. — Oh. It is you. Stand still. Mitia, my brother is here, please bring the broom, he has had a year in his beard.",
+      "next": "bin_lily_open"
+    },
+    {
+      "id": "bin_lily_open",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "Hi, Lils. I owe you a longer version. I came with biscuits. I came with two. Mitia gets one. The other one is for whichever of us breaks first. I am very prepared to lose. I have been losing for two months. It is a comfortable rhythm.",
+      "next": "lily_reply"
+    },
+    {
+      "id": "lily_reply",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "soft",
+      "text": "You owe me much more than biscuits. You owe me one ruined batch of stew, three nights of crying that I am not going to itemise, and an explanation that does not include the word 'portal' or the word 'cool.' You may sit. You may have tea. You may not have the chair near the cat — she has decided things about your boots.",
+      "next": "mitia_intro"
+    },
+    {
+      "id": "mitia_intro",
+      "type": "dialogue",
+      "speaker": "Mitia",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Bin. Good. The shop owes you a coat, which I have been keeping by the door since week three. Your sister will not say so, but the broom by the back wall is yours too. The shop has run on her elbows and my temper for six weeks and I will not insult either of them by pretending otherwise. Sit. Tea. The cat will warm to you in three hours, give or take a paw.",
+      "next": "peri_aside"
+    },
+    {
+      "id": "peri_aside",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has filed your sister under 'New Authority — Do Not Argue Loudly.' Mitia has been filed under 'Trust by Default.' The cat is currently filed under 'unwise to disturb.' Drink the tea. Look at the windowsill on the left while you do.",
+      "next": "coin_on_sill"
+    },
+    {
+      "id": "coin_on_sill",
+      "type": "narration",
+      "summary": "A rude-candle coin sits on the apothecary windowsill among the cough drops.",
+      "text": "On the windowsill, between a row of cough drops and a small mortar shaped like a turnip, is a coin. Pale, heavy, rude candle. Whoever left it left it in plain view, which is the most insulting kind of dropping. Mitia notices Bin notice, says nothing, and lets the silence do a small amount of work.",
+      "next": "bin_coin_question"
+    },
+    {
+      "id": "bin_coin_question",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "That coin is the fourth one in two days. One on the road, two in the lost-and-found tin at the gate, one on a tavern floor, and now one on your windowsill. I am keeping count because it is going to matter and because counting calms me down. Whose was it?",
+      "next": "mitia_coin_reply"
+    },
+    {
+      "id": "mitia_coin_reply",
+      "type": "dialogue",
+      "speaker": "Mitia",
+      "side": "right",
+      "expression": "neutral",
+      "text": "A traveller in good boots. Asked for liniment for a horse that was not visible. Paid in three coppers. The candle coin was left as a tip, which means he wanted me to see it. I would not call it a threat. I would not call it polite. I would call it a coin. I have been waiting for somebody worth handing it to. Hello, Bin.",
+      "next": "lily_explainer"
+    },
+    {
+      "id": "lily_explainer",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "We are also short three weeks of frostcap. The grove east of town has had no one in it because Mitia was sick and I was running the front of the shop. Whoever the traveller is, the gate is logging shipments as 'redirected,' which is the gate's polite word for 'I do not know.' I would like to know. I would like to know today, while we still have the daylight.",
+      "next": "bin_lily_offer"
+    },
+    {
+      "id": "bin_lily_offer",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Right. New plan. The biscuit can wait. I take a basket, you take a knife. We walk to the grove, we count what is there, we count what is missing, we come back and we both go home and we yell at our father for not telling us he had been doing two shifts a day for two months. The yelling is non-negotiable.",
+      "next": "mitia_blessing"
+    },
+    {
+      "id": "mitia_blessing",
+      "type": "dialogue",
+      "speaker": "Mitia",
+      "side": "right",
+      "expression": "soft",
+      "text": "Take the small basket. The big one will encourage you to be heroes. Bring back enough for the cough drop run and one labelled jar for the gate office, which is a lie I am going to enjoy telling Captain Lysa. Coats are by the door. The cat will guard the shop. The cat is good at guarding it, in that nothing has ever happened.",
+      "next": "grove_run_setup"
+    },
+    {
+      "id": "grove_run_setup",
+      "type": "narration",
+      "summary": "Bin and Lily walk east. The grove is twenty minutes along a road that is supposed to be empty.",
+      "text": "The eastern road is supposed to be a polite stroll past two wood-fences and a snowbank shaped like a dog. The snowbank is, today, two snowbanks, which is the kind of thing the road usually does not do. Lily walks half a pace ahead because she knows the path and because she does not entirely trust him to keep up. He keeps up. Mostly.",
+      "next": "grove_scenario"
+    },
+    {
+      "id": "grove_scenario",
+      "type": "scenario",
+      "scenarioId": "haven_scn_frostwood_grid_patrol",
+      "text": "Walk the eastern grove route. Pick frostcap. Avoid the wolf line. Find out what is moving the shipments.",
+      "onSuccess": "after_grove",
+      "onFail": "after_grove_loss",
+      "onAbort": "after_grove_abort"
+    },
+    {
+      "id": "after_grove",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "soft",
+      "text": "We have enough caps for the cough drops, half a labelled jar for the captain, and one very angry frost-rat in a sack which I am going to release in Mitia's compost because Mitia owes it a small unpleasantness. The shed near the grove had three crates marked 'frostcap' that were full of straw. Whoever is redirecting these has not stopped redirecting.",
+      "next": "bin_after_grove"
+    },
+    {
+      "id": "after_grove_loss",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "The grove pushed back. We have half a basket, a torn coat, and a lot of opinions about wolves, none of which Lily wants to repeat in front of Mitia. We will go back tomorrow with two more pairs of eyes and one fewer beard.",
+      "next": "after_grove_share"
+    },
+    {
+      "id": "after_grove_abort",
+      "type": "narration",
+      "text": "The grove run breaks off early because Lily catches a sound on the wind that she does not like, and Bin trusts her ear over his own. They retreat with what they have. They will tell the truth about it later, which is more than most patrols would.",
+      "next": "after_grove_share"
+    },
+    {
+      "id": "bin_after_grove",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Straw in the frostcap crates is somebody being deliberate. The gate calls that 'redirected.' I call it a job. Mitia gets the caps. Captain gets the labelled jar. I get to be insufferable about it for the rest of the week.",
+      "next": "after_grove_share"
+    },
+    {
+      "id": "after_grove_share",
+      "type": "choice",
+      "prompt": "How does Bin handle the redirected frostcap?",
+      "defaultChoiceId": "share",
+      "choices": [
+        {
+          "id": "share",
+          "label": "Tell Mitia and the captain together",
+          "summary": "Open. Slower, but the town hears it from both you and Mitia at the same time. Low danger.",
+          "next": "share_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_frostcap_public", "value": true },
+            { "op": "log", "text": "Bin agreed to surface the frostcap redirect at the gate and the apothecary at the same time." }
+          ]
+        },
+        {
+          "id": "quiet",
+          "label": "Keep it inside the apothecary for one more day",
+          "summary": "Quiet. Buys you a day to find the next coin without scaring the gate. +1 danger if the buyer notices.",
+          "next": "quiet_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_frostcap_quiet", "value": true },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Bin chose to keep the frostcap redirect inside Mitia's circle for one more day." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "share_route",
+      "type": "dialogue",
+      "speaker": "Mitia",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Then I will write the captain a polite note that contains the word 'redirected' three times and the word 'unacceptable' once. Lily will deliver it. Lily will not put on a face when she does. Lily will, however, take the biscuit. The good one.",
+      "next": "lily_reply_after"
+    },
+    {
+      "id": "quiet_route",
+      "type": "dialogue",
+      "speaker": "Mitia",
+      "side": "right",
+      "expression": "worried",
+      "text": "One day. Not two. If the next coin appears before tomorrow night, the captain hears it whether you have decided yet or not. I will not run a shop on someone else's secret for longer than one supper.",
+      "next": "lily_reply_after"
+    },
+    {
+      "id": "lily_reply_after",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "smirk",
+      "text": "Good. Now sit down and eat the biscuit. The biscuit is older than the rumour. The biscuit will outlive the rumour. The cat has decided to forgive your boots. This is, by Mitia's measurement, an entire emotional event. Tomorrow we go find the tavern cat — there is a kid at the Mug who thinks her name is Mittens and she has been missing four days.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Filed. Hugged. Threatened with a broom. The next chapter is a missing tavern cat, which the system is happy to report is the lowest-stakes job in this entire town and will absolutely not turn out to be anything else. Wink. The system is winking.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Frostcap shortage logged; the cat job is queued.",
+      "ops": [
+        { "op": "tag_add", "tag": "apothecary_run_done", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Mitia's apothecary is stocked enough for the week. The frostcap redirect is now a quiet ongoing matter." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}

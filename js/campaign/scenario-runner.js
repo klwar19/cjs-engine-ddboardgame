@@ -416,10 +416,17 @@ window.CJS.ScenarioRunner = (() => {
       return null;
     }
 
+    const dxMove = Number(target.x) - Number(current.x);
+    const dyMove = Number(target.y) - Number(current.y);
+    const facing = Math.abs(dxMove) >= Math.abs(dyMove)
+      ? (dxMove >= 0 ? 'right' : 'left')
+      : (dyMove >= 0 ? 'down' : 'up');
+
     CS().mutate((next) => {
       const active = next.activeScenarioRun;
       if (!active) return;
       active.currentCell = { x: Number(target.x), y: Number(target.y) };
+      active.facing = (dxMove === 0 && dyMove === 0) ? (active.facing || 'down') : facing;
       active.visitedCells = active.visitedCells || [];
       active.revealedCells = active.revealedCells || [];
       if (!active.visitedCells.includes(targetKey)) active.visitedCells.push(targetKey);
@@ -2503,18 +2510,57 @@ window.CJS.ScenarioRunner = (() => {
       && _cellKey(threat.x, threat.y, threat.levelId, map) === targetKey);
     if (contact) return _queueMovingThreatBattle(contact, map, targetKey);
     const occupied = new Set(threats.map((threat) => _cellKey(threat.x, threat.y, threat.levelId, map)));
+    occupied.add(targetKey); // player cell is "occupied" so threats don't overlap unless chasing
     let nextThreats = threats.map((threat) => ({ ...threat }));
     let triggered = null;
+    const targetX = Number(target.x);
+    const targetY = Number(target.y);
     for (const threat of nextThreats) {
       if (_defaultGridLevelId(map, threat.levelId) !== currentLevelId) continue;
-      if (threat.moveMode !== 'random') continue;
+      const mode = String(threat.moveMode || 'random').toLowerCase();
+      if (mode === 'static') continue;
       if (Math.random() > Math.max(0, Math.min(1, Number(threat.moveChance || 1)))) continue;
       const fromKey = _cellKey(threat.x, threat.y, threat.levelId, map);
       occupied.delete(fromKey);
-      const options = _adjacentCells(map, threat.x, threat.y, threat.levelId)
-        .filter((cell) => !occupied.has(_cellKey(cell.x, cell.y, cell.levelId || threat.levelId, map)));
-      if (options.length) {
-        const pick = options[Math.floor(Math.random() * options.length)];
+      let neighbors = _adjacentCells(map, threat.x, threat.y, threat.levelId)
+        .filter((cell) => !occupied.has(_cellKey(cell.x, cell.y, cell.levelId || threat.levelId, map))
+                       || (cell.x === targetX && cell.y === targetY));
+      // If totally walled in, allow staying put.
+      let pick = null;
+      if (neighbors.length) {
+        if (mode === 'chase' || mode === 'pursue') {
+          // Lowest manhattan distance to player; deterministic with small jitter.
+          neighbors = neighbors.map((cell) => ({
+            cell,
+            dist: Math.abs(Number(cell.x) - targetX) + Math.abs(Number(cell.y) - targetY)
+          }));
+          const minDist = Math.min(...neighbors.map((n) => n.dist));
+          const best = neighbors.filter((n) => n.dist === minDist);
+          pick = best[Math.floor(Math.random() * best.length)].cell;
+        } else if (mode === 'patrol') {
+          // Prefer continuing in the last direction; otherwise random.
+          const last = threat._lastDir;
+          let preferred = null;
+          if (last) {
+            const want = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[last];
+            if (want) {
+              preferred = neighbors.find((c) =>
+                Number(c.x) - Number(threat.x) === want[0]
+                && Number(c.y) - Number(threat.y) === want[1]);
+            }
+          }
+          pick = preferred || neighbors[Math.floor(Math.random() * neighbors.length)];
+        } else {
+          // random
+          pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+        }
+      }
+      if (pick) {
+        const dx = Number(pick.x) - Number(threat.x);
+        const dy = Number(pick.y) - Number(threat.y);
+        threat._lastDir = Math.abs(dx) >= Math.abs(dy)
+          ? (dx >= 0 ? 'right' : 'left')
+          : (dy >= 0 ? 'down' : 'up');
         threat.x = Number(pick.x);
         threat.y = Number(pick.y);
         threat.levelId = _defaultGridLevelId(map, pick.levelId || threat.levelId);

@@ -1,0 +1,307 @@
+{
+  "id": "story_haven_arc1_ch02_part02b_inside_track",
+  "version": 3,
+  "title": "The Haunted Firewood",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch02",
+  "chapterLabel": "1.2",
+  "orderKey": "1.2.b",
+  "partId": "ch02_part02b",
+  "partLabel": "1.2.b",
+  "branchOf": "ch01_part01b",
+  "branchKey": "tavern",
+  "routeKey": "tavern",
+  "routeLabel": "Tavern Route",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:settle", "tavern", "sprite", "firewood", "branch:tavern", "tone:snark"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "tavern host", "lily", "frost sprite"] },
+  "summary": {
+    "short": "Bin investigates the Frosted Mug's screaming log and discovers a small grumpy frost sprite has been re-housing itself in seasoned wood.",
+    "default": "The log behind the Mug is screaming because there is a frost sprite stuck inside it, and the sprite has opinions. Bin coaxes it out, takes it to Mitia's apothecary on Lily's orders, and meets his sister halfway through the comedy."
+  },
+  "nextCandidates": [
+    "1.3 The Cat Job (the town's wandering tavern cat needs finding)"
+  ],
+  "syncSummary": [
+    "Quest progress: Find Lily — found, sort of, on the way to deliver a small angry magical creature.",
+    "Hub problem cleared: The Mug's screaming log is no longer screaming.",
+    "Hub mood: Frosted Mug is delighted with itself in a way that is dangerous.",
+    "Item gained: One Frost Sprite In A Jar, label 'do not shake.'",
+    "Branch flag set: story_haunted_firewood_walked converges into the Cat Job."
+  ],
+  "completionOps": [
+    { "op": "update_quest_progress", "questId": "quest_find_lily", "objectiveId": "visit_apothecary", "amount": 1 },
+    { "op": "give_item", "id": "haven_frost_sprite_jar", "qty": 1 },
+    { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "mug_screaming_log" },
+    { "op": "set_flag", "flag": "story_haunted_firewood_walked", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: The Haunted Firewood", "summary": "Bin coaxes a frost sprite out of a Mug log and walks it to the apothecary. Lily was unimpressed in seven distinct languages.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_2b"] }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "Morning at the Mug is exactly half as charming as evening at the Mug. The host's hair is in an order that has only one negotiation left. The cook is muttering about turnips. Bin's coat is by the door, his boots are by the fire, and the woodshed log has had a quiet night until exactly twelve minutes ago, when the wind hit it sideways and it screamed loud enough to alarm a goat two streets over.",
+      "next": "host_morning"
+    },
+    {
+      "id": "host_morning",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "worried",
+      "text": "The goat is fine. The goat is offended. The goat's owner is at the door. The log is in the shed. The shed is in the alley. The alley is in my name. I am, in total, doing better than I look, which is not encouraging. Eat the porridge. Investigate the log. In that order, please.",
+      "next": "peri_morning"
+    },
+    {
+      "id": "peri_morning",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has logged the goat under 'witness, easily insulted.' The log is logged under 'log, complicated.' The porridge is logged under 'pretend it has butter and it will.' Drink water. Eat with your mouth closed. You are walking into a screaming wooden situation and we are not having a long debrief about your manners.",
+      "next": "shed_walk"
+    },
+    {
+      "id": "shed_walk",
+      "type": "narration",
+      "summary": "The woodshed door creaks on a hinge that nobody has paid attention to since autumn. Three steps to the back wall.",
+      "text": "The woodshed door creaks on a hinge that has been a creak since autumn and is now a personality. Three steps to the back wall. The seasonally-stacked wood is normal. The log on its own near the back wall is not. It is producing a noise like a kettle that has misplaced its lid. The temperature near it is wrong by three degrees in the wrong direction.",
+      "next": "log_listen_check"
+    },
+    {
+      "id": "log_listen_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "I",
+      "difficulty": 10,
+      "defaultResult": "pass",
+      "tags": ["intuition", "sprite", "listen"],
+      "pass": "listen_pass",
+      "fail": "listen_fail"
+    },
+    {
+      "id": "listen_pass",
+      "type": "narration",
+      "text": "Bin tilts his ear. The noise is not a draft. It is a small, embarrassed wail with a vocabulary. It has three syllables. The middle syllable is a word for cold in a dialect Bin doesn't speak. The first and the third are insults. The wail is also rhyming. Whatever is in there has standards.",
+      "next": "bin_log_react"
+    },
+    {
+      "id": "listen_fail",
+      "type": "narration",
+      "text": "Bin tilts his ear. The noise sounds like a kettle, and then like a kettle that is rude about being a kettle, and then like a kettle that has decided it is going to be a small unhappy person if Bin keeps looking at it. He looks away. The noise dignifies itself slightly.",
+      "next": "bin_log_react"
+    },
+    {
+      "id": "bin_log_react",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Right. There is something in the log. Something small. Something with opinions. Something that did not get a vote about being firewood. I am going to be polite about it because I do not have the energy for being impolite. Hello, log. I would like to speak with the management.",
+      "next": "sprite_emerges"
+    },
+    {
+      "id": "sprite_emerges",
+      "type": "dialogue",
+      "speaker": "Frost Sprite",
+      "side": "right",
+      "expression": "angry",
+      "text": "Two months you have been gone, two months of perfectly avoidable seasoning, and now the wood is short and I am in a log that is too dry for me by half a degree. I am a frost sprite. I require either a colder log or a sympathetic ear. Pick one and stop dragging the door across my register. The hinge is also offensive.",
+      "next": "bin_sprite_reply"
+    },
+    {
+      "id": "bin_sprite_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "I have an ear. I am also very willing to put you in a jar with the apothecary's name on it, where the temperature is correct and the company will at least be educated. The log is staying with the host because the host has a bar tab to fill, and you are not going on the bar tab. We are negotiating.",
+      "next": "sprite_negotiate"
+    },
+    {
+      "id": "sprite_negotiate",
+      "type": "dialogue",
+      "speaker": "Frost Sprite",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Counter-offer. A labelled jar with proper temperature control, a daily complaint window of fifteen minutes, and the apothecary apprentice — the one with the patched coat — agreeing in writing that she will not refer to me as 'the log' once I am out of the log. Those terms are not negotiable. The fifteen minutes are.",
+      "next": "shed_setup_minigame"
+    },
+    {
+      "id": "shed_setup_minigame",
+      "type": "narration",
+      "summary": "Before Bin can move the log he has to clear the path: barrels, ash bin, a stuck door.",
+      "text": "The woodshed is full of the wrong shape of clutter. To get the log out of here without making it angrier, Bin has to rearrange three barrels and an ash bin so the log slides out cleanly. If anything spills, the goat down the street will hear about it within the hour and Bin will be a topic for the second time this week.",
+      "next": "shed_minigame"
+    },
+    {
+      "id": "shed_minigame",
+      "type": "minigame",
+      "gameId": "push_box",
+      "minigame": {
+        "gameId": "push_box",
+        "levelId": "push_11",
+        "difficulty": 3,
+        "theme": "frostbitten_pantry"
+      },
+      "text": "Clear the woodshed path so the screaming log can be removed without bumping it.",
+      "winOps": [
+        { "op": "log", "text": "Path cleared. The sprite stops complaining, briefly, which is the highest compliment available." },
+        { "op": "set_flag", "flag": "story_woodshed_clear", "value": true },
+        { "op": "give_jp", "amount": 1 }
+      ],
+      "failOps": [
+        { "op": "log", "text": "An ash bin tips. The sprite escalates from 'wail' to 'monologue.' The goat will not survive this culturally." },
+        { "op": "danger", "amount": 1 }
+      ],
+      "onWin": "rats_fight_setup",
+      "onLose": "rats_fight_setup"
+    },
+    {
+      "id": "rats_fight_setup",
+      "type": "narration",
+      "summary": "Frost rats hear the noise. The rats are not on the sprite's side.",
+      "text": "The noise from the shed has woken up something the host wishes had stayed asleep — a small congregation of frost rats nesting under the floor of the woodshed. They have one very poor opinion of magical screaming and one very good opinion of small magical creatures as food. Bin steps between the log and the rats with the patience of a man who has had a very long week.",
+      "next": "rats_fight"
+    },
+    {
+      "id": "rats_fight",
+      "type": "combat",
+      "encounterId": "haven_enc_temple_floor1",
+      "battleSetId": "haven_bset_frost_rats_tavern_cellar",
+      "label": "Mug Woodshed — Frost Rats",
+      "text": "Three frost rats decide breakfast is now. The sprite is yelling helpful directions and unhelpful insults.",
+      "tags": ["combat", "frost_rat", "tavern", "tavern_cellar"],
+      "monsterTags": ["frost_rat", "cellar"],
+      "onWin": "after_rats_win",
+      "onLose": "after_rats_lose",
+      "winOps": [
+        { "op": "log", "text": "Rats discouraged. Sprite formally registers approval in a single small bow." },
+        { "op": "set_flag", "flag": "story_woodshed_rats_cleared", "value": true }
+      ],
+      "loseOps": [
+        { "op": "log", "text": "Rats win round one. Bin retreats with the sprite under his arm and a personal grudge that he intends to look up tomorrow." },
+        { "op": "damage_party", "amount": 2 },
+        { "op": "danger", "amount": 1 }
+      ]
+    },
+    {
+      "id": "after_rats_win",
+      "type": "dialogue",
+      "speaker": "Frost Sprite",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Adequate. You have a tolerable left hand and a deeply mediocre right knee. We are going to the apothecary now. I would like to be in the labelled jar before the goat hears any more of this. The goat is the only being in this shed that has not had a constructive day, and I do not want to be associated.",
+      "next": "deliver_to_lily"
+    },
+    {
+      "id": "after_rats_lose",
+      "type": "dialogue",
+      "speaker": "Frost Sprite",
+      "side": "right",
+      "expression": "tired",
+      "text": "We retreat. With dignity. With most of my register intact. The jar is non-negotiable now. Walk faster. The rats have a reputation problem and I refuse to share it.",
+      "next": "deliver_to_lily"
+    },
+    {
+      "id": "deliver_to_lily",
+      "type": "narration",
+      "summary": "Bin walks the sprite across town to the apothecary. People notice. People talk. The sprite enjoys this far too much.",
+      "text": "Bin walks the sprite across town. The sprite makes a polite hissing noise from inside the host's borrowed jam jar. Three people stop him to ask if he is the dead one. Two of them buy him bread for the trouble. By the time he reaches Mitia's door, half of Frostbitten has confirmed that he is alive in detail and rumour has already moved on to the contents of the jar.",
+      "next": "lily_intro"
+    },
+    {
+      "id": "lily_intro",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "Two months, no letter, and the first thing you bring me is a jar that is rude. You have not changed. Put it on the back counter, away from the cat. The cat will eat the rude. We do not want to know what happens after that. Hello, brother. You look exactly as bad as I expected.",
+      "next": "bin_lily_meet"
+    },
+    {
+      "id": "bin_lily_meet",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "Lils. I brought biscuits. They are slightly squished. The sprite insisted on a labelled jar. Mitia is going to love the labelled jar. I will explain the rest after dinner. Dinner is a long topic. Tonight let us start with a label.",
+      "next": "lily_label"
+    },
+    {
+      "id": "lily_label",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "smirk",
+      "text": "Label says 'small frost sprite, do not shake, do not insult, do not feed after lukewarm.' I will write it now. We are out of the good ink, so it gets the cheap ink, which makes the label very honest. Sit. Do not talk over me about the apothecary. I am better at it than you would be. We will both eat after we close.",
+      "next": "coin_aside"
+    },
+    {
+      "id": "coin_aside",
+      "type": "narration",
+      "summary": "On the apothecary windowsill — another rude-candle coin, in plain view.",
+      "text": "On the apothecary windowsill, neatly placed between two cough drops, is a coin. Pale, heavy, rude candle. Same as the road. Same as the gate tin. Same as the floor of the Mug's back corridor. Mitia notices Bin notice, says nothing, and lets the silence work overtime.",
+      "next": "mitia_coin"
+    },
+    {
+      "id": "mitia_coin",
+      "type": "dialogue",
+      "speaker": "Mitia",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Same traveller as the last one. Asked for liniment for a horse. Paid in coppers. Left the coin on the sill. I have been waiting for someone worth handing it to. Hello, Bin. Sit. Tea. The cat will warm to you in three hours, give or take a paw. Lily, do not throw anything for at least the first ten minutes.",
+      "next": "bin_count"
+    },
+    {
+      "id": "bin_count",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "That makes four coins. Road, gate tin, Mug corridor, apothecary sill. Whoever is dropping them is not dropping them by accident. We can complain about this tomorrow. Tonight I want to eat and I want my sister to call me an idiot for at least one specific reason. I have a list. She has a longer list.",
+      "next": "lily_reply"
+    },
+    {
+      "id": "lily_reply",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "soft",
+      "text": "I do have a longer list. We will get to it. Tomorrow, there is a kid at the Mug who has lost a cat. Mittens. She thinks the cat ran out the door four days ago. The kid is six and she is paying in unsalted biscuits, which means the job is on us. You and me. We need a small task we can finish before the bigger ones get any worse.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Filed. Hugged. Slightly damp from the woodshed. The system reminds you that tomorrow's quest is a cat, and the system is choosing to find this funny instead of suspicious. The system is open to revising that. The system will revise it later. Tonight, sleep.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Sprite delivered, woodshed clear, cat job queued.",
+      "ops": [
+        { "op": "tag_add", "tag": "haunted_firewood_walked", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "The Mug's screaming log is now a sealed jar at the apothecary. Frostbitten's gossip will recover in approximately one week." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}

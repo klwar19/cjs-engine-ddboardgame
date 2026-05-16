@@ -7478,10 +7478,11 @@ body.campaign-page {
   text-transform: uppercase;
 }
 
+.campaign-seq-vn-history[hidden] { display: none !important; }
 .campaign-seq-vn-history {
   position: absolute;
   inset: 80px clamp(20px, 6vw, 80px) 120px;
-  z-index: 6;
+  z-index: 60;
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 8px;
@@ -7675,82 +7676,155 @@ body.campaign-page {
 .campaign-grid-cell-node.is-treasure{ background-image: url('../assets/nodes/node_treasure.svg'); }
 .campaign-grid-cell-node.is-event   { background-image: url('../assets/nodes/node_event.svg'); }
 
-/* Player marker — uses sprite sheet if available, SVG fallback otherwise */
+/* Player marker — large readable SVG portrait with facing direction */
 .campaign-grid-player {
   position: absolute;
-  inset: 0;
+  inset: 6% 4% 12% 4%;
   pointer-events: none;
   z-index: 7;
   background-image: url('../assets/sprites/bin_marker.svg');
-  background-position: center 30%;
+  background-position: center 38%;
   background-repeat: no-repeat;
-  background-size: 76% auto;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55));
-  animation: campaign-grid-player-bob 1.4s ease-in-out infinite;
+  background-size: 92% auto;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.7))
+          drop-shadow(0 0 10px rgba(255, 224, 137, 0.35));
+  animation: campaign-grid-player-bob 1.6s ease-in-out infinite;
+  transition: transform 160ms ease;
 }
 
-.campaign-grid-player.has-sprite {
-  background-image: url('../images/characters/bin_sprite.png');
-  background-position: 0 0;          /* JS sets this to walk the right frame */
-  background-size: 400% 400%;        /* 4 cols x 4 rows */
-  background-repeat: no-repeat;
-}
+.campaign-grid-player[data-facing="left"]  { transform: scaleX(-1); }
+.campaign-grid-player[data-facing="right"] { transform: scaleX(1); }
+.campaign-grid-player[data-facing="up"]    { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 10px rgba(157, 216, 255, 0.45)); }
+.campaign-grid-player[data-facing="down"]  { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 10px rgba(255, 224, 137, 0.45)); }
 
 @keyframes campaign-grid-player-bob {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-3px); }
+  50%      { transform: translateY(-4px); }
+}
+.campaign-grid-player[data-facing="left"]  { animation-name: campaign-grid-player-bob-left; }
+@keyframes campaign-grid-player-bob-left {
+  0%, 100% { transform: translateY(0) scaleX(-1); }
+  50%      { transform: translateY(-4px) scaleX(-1); }
+}
+
+/* Glowing name tag under Bin so the player can see where they are at a glance */
+.campaign-grid-player-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  transform: translateX(-50%);
+  z-index: 8;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1c1a0a;
+  background: linear-gradient(180deg, #ffe9a8, #f0c46a);
+  border: 1px solid #6a4818;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
 }
 
 /* Shadow blob under the player feet */
 .campaign-grid-player-shadow {
   position: absolute;
-  left: 18%;
-  right: 18%;
-  bottom: 6%;
+  left: 16%;
+  right: 16%;
+  bottom: 4%;
   height: 14%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 70%);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0) 70%);
   pointer-events: none;
   z-index: 6;
-  animation: campaign-grid-shadow-pulse 1.4s ease-in-out infinite;
+  animation: campaign-grid-shadow-pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes campaign-grid-shadow-pulse {
   0%, 100% { transform: scaleX(1); opacity: 0.7; }
-  50%      { transform: scaleX(0.86); opacity: 0.9; }
+  50%      { transform: scaleX(0.86); opacity: 0.95; }
 }
 
-/* Shadow stalker (chasing threat) — uses sprite sheet if available */
+/* Shadow stalker (chasing threat) — uses the new shadow_marker SVG */
 .campaign-grid-threat.v2 {
   position: absolute;
-  inset: 0;
+  inset: 8% 6% 14% 6%;
   width: auto;
   height: auto;
-  background: url('../assets/sprites/shadow_marker.svg') center 30% / 76% auto no-repeat;
+  background: url('../assets/sprites/shadow_marker.svg') center 40% / 92% auto no-repeat;
   border-radius: 0;
   box-shadow: none;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.85))
+          drop-shadow(0 0 8px rgba(180, 70, 200, 0.5));
   animation: campaign-grid-threat-bob 1.4s ease-in-out infinite;
   z-index: 7;
   font-size: 0;
 }
 
 .campaign-grid-threat.v2.has-sprite {
-  background-image: url('../images/monsters/shadow_stalker.png');
-  background-position: 0 0;
-  background-size: 400% 400%;
+  background-image: var(--threat-sprite, url('../assets/sprites/shadow_marker.svg'));
+  background-size: 92% auto;
+  background-position: center 40%;
   background-repeat: no-repeat;
+}
+
+/* Pulsing threat tag (red when adjacent, dim purple otherwise) */
+.campaign-grid-threat-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  transform: translateX(-50%);
+  z-index: 8;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f7e6ff;
+  background: linear-gradient(180deg, #532876, #2a0e3e);
+  border: 1px solid #8a48b0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.campaign-grid-threat-tag.is-adjacent {
+  color: #fff6ee;
+  background: linear-gradient(180deg, #c22844, #771028);
+  border-color: #ff8aa0;
+  animation: campaign-grid-threat-tag-flash 0.9s ease-in-out infinite;
+}
+@keyframes campaign-grid-threat-tag-flash {
+  0%, 100% { box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+  50%      { box-shadow: 0 0 10px 2px rgba(255, 140, 160, 0.7); }
+}
+
+.campaign-grid-threat-shadow {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 4%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(45, 0, 50, 0.65), rgba(0, 0, 0, 0) 75%);
+  pointer-events: none;
+  z-index: 6;
+  animation: campaign-grid-shadow-pulse 1.4s ease-in-out infinite;
 }
 
 .campaign-grid-threat.v2::after {
   content: "";
   position: absolute;
-  left: 18%;
-  right: 18%;
-  bottom: 6%;
-  height: 14%;
+  inset: -8%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(40, 0, 30, 0.6), rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, rgba(180, 60, 200, 0.18), rgba(0,0,0,0) 70%);
+  z-index: -1;
+}
+.campaign-grid-threat.v2.is-adjacent {
+  animation: campaign-grid-threat-shake 0.5s ease-in-out infinite;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.85))
+          drop-shadow(0 0 10px rgba(255, 80, 120, 0.7));
 }
 
 /* Grid map shell + detail layout */
@@ -7917,3 +7991,73 @@ body.campaign-page {
 .campaign-grid-cell.v2.is-hidden .campaign-grid-player,
 .campaign-grid-cell.v2.is-hidden .campaign-grid-player-shadow,
 .campaign-grid-cell.v2.is-hidden .campaign-grid-threat.v2 { display: none; }
+
+/* ──────────────────────────────────────────────────────────
+   Mini-Game Test Lab — Activities → Mini-Game Test
+   Lets the GM pick any registered mini-game level and play it
+   straight, without quest objective wiring.
+   ────────────────────────────────────────────────────────── */
+.campaign-minigame-test .campaign-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.campaign-minigame-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.campaign-minigame-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px 14px 12px;
+  border-radius: 10px;
+  background: rgba(10, 18, 28, 0.6);
+  border: 1px solid rgba(157, 216, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 10px 22px rgba(0, 0, 0, 0.32);
+  color: #e6eef5;
+}
+
+.campaign-minigame-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.campaign-minigame-card header strong {
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.campaign-minigame-card p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #c2d4e2;
+  line-height: 1.4;
+}
+
+.campaign-minigame-card .campaign-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.campaign-minigame-result {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(6, 12, 22, 0.7);
+  border: 1px solid rgba(157, 216, 255, 0.18);
+  color: #cfe0ec;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 240px;
+  overflow: auto;
+}

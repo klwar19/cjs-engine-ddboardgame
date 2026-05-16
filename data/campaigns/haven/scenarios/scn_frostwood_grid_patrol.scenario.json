@@ -45,14 +45,30 @@
           "cell": { "x": 4, "y": 3 },
           "battleSetId": "haven_bset_wolf_pack_bent_pine",
           "monsterIds": ["haven_ice_wolf"],
-          "moveMode": "random",
+          "moveMode": "chase",
           "moveChance": 1,
           "icon": "🐺",
-          "notes": "The wolf line cuts across the party and forces an immediate fight on contact.",
-          "tags": ["wolf", "moving_threat"],
+          "notes": "The wolf line cuts across the party and forces an immediate fight on contact. It actively chases Bin.",
+          "tags": ["wolf", "moving_threat", "chase"],
           "defeatOps": [
             { "op": "danger", "amount": 2 },
             { "op": "log", "text": "The roaming threat breaks the patrol line and forces a retreat." }
+          ]
+        },
+        {
+          "id": "bent_pine_shadow_stalker",
+          "label": "Shadow Stalker",
+          "cell": { "x": 5, "y": 4 },
+          "battleSetId": "haven_bset_wolf_pack_bent_pine",
+          "monsterIds": ["haven_ice_wolf"],
+          "moveMode": "random",
+          "moveChance": 0.85,
+          "icon": "👤",
+          "notes": "A second silhouette drifts between trees. Not aimed at you, but unpredictable.",
+          "tags": ["shadow", "moving_threat", "random"],
+          "defeatOps": [
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "The drifting shadow finally dissolves under cold dawn light." }
           ]
         }
       ],

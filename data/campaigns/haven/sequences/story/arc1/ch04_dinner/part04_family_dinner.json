@@ -1,0 +1,336 @@
+{
+  "id": "story_haven_arc1_ch04_part04_pre_chimera_prep",
+  "version": 4,
+  "title": "Bread, Stew, and a Knock at the Door",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch04",
+  "chapterLabel": "1.4",
+  "orderKey": "1.4",
+  "partId": "ch04_part04",
+  "partLabel": "1.4",
+  "branchOf": "ch03_part03a",
+  "branchKey": "convergence",
+  "routeKey": "trunk",
+  "routeLabel": "Family Dinner (Convergent)",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:home", "frostbitten", "family", "dinner", "tone:grounded", "tone:snark"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "lily", "garr", "stranger"] },
+  "summary": {
+    "short": "Family dinner at Garr's house. The stew is on the second boil. A stranger arrives at the door before dessert.",
+    "default": "Bin finally sits at the kitchen table he has been promising himself for two months. There is yelling. There is bread. There is a quiet conversation about a journal Garr has been keeping. Then there is a knock. Bin handles it. The chapter closes without any hero choices and with the day's last polite errand."
+  },
+  "nextCandidates": [
+    "Arc 1 closes here. The campaign hands off to local odd-jobs and side content; the bigger thread waits."
+  ],
+  "syncSummary": [
+    "Quest cleared: Family Dinner — survived.",
+    "Hub mood: Garr household is, at last, calm. Frostbitten will tell two more versions of the story by morning.",
+    "Lore unlocked: Garr's journal has notes on the coins, three strange travellers, and a list of cough-related questions.",
+    "Mystery progress: The courier is a woman in good boots who buys cough-medicine questions in bulk. Still unnamed. Still active.",
+    "Arc closes: Arc 1 hands off cleanly to side-quests and Arc 2's slow build."
+  ],
+  "completionOps": [
+    { "op": "add_quest", "quest": {
+      "id": "quest_family_dinner",
+      "title": "Family Dinner",
+      "summary": "Sit at the kitchen table for the first dinner in two months. Survive Lily. Cook one thing. Answer the door once.",
+      "tags": ["story", "family", "home"],
+      "objectives": [
+        { "id": "cook_one_thing", "label": "Help cook one dish", "required": 1, "current": 0 },
+        { "id": "answer_door", "label": "Answer the door without doing anything stupid", "required": 1, "current": 0 }
+      ]
+    }},
+    { "op": "update_quest_progress", "questId": "quest_family_dinner", "objectiveId": "cook_one_thing", "amount": 1 },
+    { "op": "update_quest_progress", "questId": "quest_family_dinner", "objectiveId": "answer_door", "amount": 1 },
+    { "op": "hub_mood_set", "hubId": "haven_hub_frostbitten", "mood": "settled" },
+    { "op": "set_flag", "flag": "story_arc1_closed", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Family Dinner Survived", "summary": "Bin eats. Bin is yelled at, lovingly. A stranger leaves a sealed envelope at the door and walks off without giving a name.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_4", "arc_1_close"] }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "Garr's kitchen smells like a kitchen that has been cooking on principle for two months. The stew on the back of the stove is on its second boil, which is a state that this household has been protecting like a household secret. The table is set for three. The third place was never put away. Lily is at the window with a knife and a turnip and a complaint that involves both of them and possibly the window.",
+      "next": "garr_open"
+    },
+    {
+      "id": "garr_open",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "soft",
+      "text": "Sit. Coat off. Boots off. Hands off the bread until the bread is on the table. I am going to say one sentence about being glad you are home and then I am going to be very angry with you for one more sentence so that the kitchen does not have a record of me being purely sentimental. Welcome home. You absolute lout. There. Done.",
+      "next": "bin_garr_reply"
+    },
+    {
+      "id": "bin_garr_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "Coat off. Boots off. I will not touch the bread. I will hand-on-heart not touch the bread until the bread is on the table. I owe you a long version and a short version. The long version is in the order you would expect. The short version is: I am okay, the wolf was rude, the apothecary is in good hands, the cat is found, the stew is correct.",
+      "next": "lily_window"
+    },
+    {
+      "id": "lily_window",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "If you cry on the turnip I will throw the turnip at you. I have not cried on a turnip in seven weeks. The record stands. Father, the stew needs the herbs we walked for, and the herbs were not all there, which is a different conversation. Brother, the bread is at four bells. You have thirty minutes.",
+      "next": "peri_aside"
+    },
+    {
+      "id": "peri_aside",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has logged the dinner as 'family, low danger.' It also notes that the third plate has been on this table for two months. Try to eat fast enough to honour the plate but slow enough to honour your sister. The plate will not judge. Your sister will. The plate may.",
+      "next": "cook_setup"
+    },
+    {
+      "id": "cook_setup",
+      "type": "narration",
+      "summary": "Bin gets the bread basket assignment. Lily gets to watch.",
+      "text": "Garr hands Bin a wooden plank and three things to put on it: rolls, butter, and a small dish of pickled something that has lived on this table since before he left. Lily is watching. Lily is going to grade this. Lily is going to grade this fairly, which is worse than unfairly.",
+      "next": "cook_minigame"
+    },
+    {
+      "id": "cook_minigame",
+      "type": "minigame",
+      "gameId": "push_box",
+      "minigame": {
+        "gameId": "push_box",
+        "levelId": "push_08",
+        "difficulty": 4,
+        "theme": "guild_storehouse"
+      },
+      "text": "Arrange the bread basket and side dishes on the table in the order Lily would approve of.",
+      "winOps": [
+        { "op": "log", "text": "Plate arranged. Lily nods exactly once, which is the highest honour available short of a second nod." },
+        { "op": "set_flag", "flag": "story_dinner_plate_clean", "value": true },
+        { "op": "give_jp", "amount": 1 }
+      ],
+      "failOps": [
+        { "op": "log", "text": "Bin puts the butter on the wrong side of the bread. Lily says one word that is technically not a word and is, in tone, an entire essay." },
+        { "op": "danger", "amount": 1 }
+      ],
+      "onWin": "dinner_talk",
+      "onLose": "dinner_talk"
+    },
+    {
+      "id": "dinner_talk",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Eat. Drink. I will tell you the part I have been waiting to tell you. I have been keeping a journal since the day you went missing because I needed to count things with my hands. The journal has notes. Three travellers I did not recognise, four times the orchard wall had paw prints from a cat that does not belong to anyone I know of, six coins with a rude candle, and one repeating question. Cough syrup. Specifically, a particular kind. Always the same question, always different people.",
+      "next": "bin_journal_reply"
+    },
+    {
+      "id": "bin_journal_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Cough syrup. The kind Mitia has been short on because the gate keeps redirecting the frostcap. So the question is not 'how is the cough' — the question is 'who is sick.' Somebody outside town is trying to figure out which household in Frostbitten has a sick person, and they are paying in coins to find out. That is not a friendly question, Da.",
+      "next": "lily_aside"
+    },
+    {
+      "id": "lily_aside",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "It is not a friendly question. It is also not our question to answer tonight. Tonight we eat. Tomorrow we walk to Mitia's and we trace the coin pattern. I am going to put four turnips and one sentence about being glad you are home into the same bowl. Eat the bowl in the order I prepared it.",
+      "next": "stat_check_warm"
+    },
+    {
+      "id": "stat_check_warm",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "C",
+      "difficulty": 10,
+      "defaultResult": "pass",
+      "tags": ["composure", "family"],
+      "pass": "warm_pass",
+      "fail": "warm_fail"
+    },
+    {
+      "id": "warm_pass",
+      "type": "narration",
+      "text": "Bin holds it together. He eats. He drinks. He listens to his father describe a journal entry about a woman who came in selling cough drops at a price the apothecary would not endorse. He listens to his sister pretend to be irritated by the fact that he is eating the bread in the wrong order. The fire is warm. The third plate finally feels like it is being honoured.",
+      "next": "knock"
+    },
+    {
+      "id": "warm_fail",
+      "type": "narration",
+      "text": "Bin does not hold it together. He cries on the turnip exactly the way Lily said not to. Lily, who has been waiting for this for two months, does not throw the turnip. She puts the turnip on his plate. The fire is warm. The third plate is, in a way, on duty.",
+      "next": "knock"
+    },
+    {
+      "id": "knock",
+      "type": "narration",
+      "summary": "A knock at the door. Three even taps. Garr puts down the spoon.",
+      "text": "There is a knock at the door. Three even taps. It is the kind of knock that does not belong to anyone you owe money to. Garr puts down the spoon. Lily puts down the knife. Peri, who is technically not in the kitchen and is technically not anywhere, becomes audibly more focused. Bin walks to the door because the door is, by tradition, his.",
+      "next": "stranger_dialog"
+    },
+    {
+      "id": "stranger_dialog",
+      "type": "dialogue",
+      "speaker": "Stranger",
+      "side": "right",
+      "expression": "neutral",
+      "text": "I have an envelope. I am not paid to make conversation. I am paid to deliver. Two things. One: the envelope is for the apothecary, not for you. Two: my employer would like the wolf man to know that the coins were a courtesy, not a threat, and that there will be no more of them after tonight. Good evening. Eat your stew before it goes cold.",
+      "next": "door_choice"
+    },
+    {
+      "id": "door_choice",
+      "type": "choice",
+      "prompt": "How does Bin handle the stranger?",
+      "defaultChoiceId": "accept",
+      "choices": [
+        {
+          "id": "accept",
+          "label": "Take the envelope, let the stranger go",
+          "summary": "Calm. The town learns the buyer's name tomorrow by reading the envelope. Low danger.",
+          "next": "accept_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_envelope_accepted", "value": true },
+            { "op": "log", "text": "Bin takes the envelope. The stranger leaves without giving a name. The envelope is for Mitia's apothecary." }
+          ]
+        },
+        {
+          "id": "press",
+          "label": "Press for a name, one question only",
+          "summary": "Snarky. One question, one answer, +1 danger if the answer is unwelcome.",
+          "next": "press_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_stranger_pressed", "value": true },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Bin asks the stranger one question. The stranger answers, walks off, and is gone before the door closes." }
+          ]
+        },
+        {
+          "id": "scrap",
+          "label": "Block the door, take the envelope by hand",
+          "summary": "Aggressive. Minor scuffle, +1 danger, more details out of the stranger.",
+          "next": "scrap_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_stranger_blocked", "value": true },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Bin blocks the door, the stranger does not stay polite, and there is briefly a small fight in the doorway." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "accept_route",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "neutral",
+      "text": "Envelope received. Apothecary by morning. Have a safe walk. Tell whoever pays you that the wolf man eats his stew warm and reads his envelopes cold, which is the only domestic boast I have left in inventory. Goodnight.",
+      "next": "envelope_open"
+    },
+    {
+      "id": "press_route",
+      "type": "dialogue",
+      "speaker": "Stranger",
+      "side": "right",
+      "expression": "neutral",
+      "text": "One name? She prefers 'the buyer.' She uses no other. I will not say more. Take the envelope. Sleep. Eat. The stew is going to go cold and I will not be responsible for it. Goodnight.",
+      "next": "envelope_open"
+    },
+    {
+      "id": "scrap_route",
+      "type": "combat",
+      "encounterId": "haven_enc_temple_floor1",
+      "battleSetId": "haven_bset_bandit_taxmen_snowblind",
+      "label": "Garr's Doorway — Brief Scuffle",
+      "text": "One stranger, two friends one street over. Take the envelope without breaking the door.",
+      "tags": ["combat", "doorway", "non-lethal"],
+      "monsterTags": ["bandit"],
+      "onWin": "scrap_win",
+      "onLose": "scrap_lose",
+      "winOps": [
+        { "op": "log", "text": "Bin grabs the envelope, the stranger lets go, the friends do not commit, and the door survives. The stew is mostly warm." },
+        { "op": "set_flag", "flag": "story_doorway_scrap_won", "value": true }
+      ],
+      "loseOps": [
+        { "op": "log", "text": "The scuffle gets out of the doorway and into the snow. Bin loses the envelope to the friends, gains a small headache, and the stew is now cold." },
+        { "op": "damage_party", "amount": 3 },
+        { "op": "danger", "amount": 1 }
+      ]
+    },
+    {
+      "id": "scrap_win",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "Door still on its hinges, envelope in your hand, stew at sub-warm. I will charge the stew against your bar tab in this household. I will not yell about the door because the door is, technically, fine. I will instead yell about the bread basket, which you did not fix while you were getting attacked.",
+      "next": "envelope_open"
+    },
+    {
+      "id": "scrap_lose",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "worried",
+      "text": "Door is fine. You are not. Envelope is gone. Sit down. We will write Mitia a note tonight and walk it over before sunrise. The buyer's people heard exactly what they wanted from this, which is that we lose our temper at doorways. Useful information. Annoying delivery.",
+      "next": "envelope_open"
+    },
+    {
+      "id": "envelope_open",
+      "type": "narration",
+      "summary": "The envelope is sealed in cheap wax. Inside, a single line of instructions and a sketch.",
+      "text": "The envelope is sealed in cheap wax with no symbol. Inside is a single short note in a clean hand: 'For the apothecary. The cough drops you asked about will arrive next market day, paid for in full. We are sorry about the redirect. — The Buyer.' Folded with it is a sketch of a coin: rude candle, neat lines, with a small line through the candle's flame. The line was added later, by a different hand.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "soft",
+      "text": "Filed. Tagged. Suspicious in a low-grade and entirely promising way. The system formally closes arc one of your return, and politely informs you that the buyer is now a known unknown. Tonight, sleep. Tomorrow, errands. Next week, possibly a small adventure. Year after, possibly a chimera. The system is being optimistic.",
+      "next": "peri_final"
+    },
+    {
+      "id": "peri_final",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Eat the stew. It is still warm enough. The bread basket will forgive you. Your father will fall asleep in his chair. Your sister will pretend she is not relieved. The third plate has been on this table for two months and it is finally on duty. That is the chapter brief, wolf man. Goodnight.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Arc 1 closes on a quiet kitchen and a sealed envelope.",
+      "ops": [
+        { "op": "tag_add", "tag": "arc1_closed", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Arc 1 closed. The buyer is named only as 'The Buyer.' Tomorrow's job is small. Next week's job will not be." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}

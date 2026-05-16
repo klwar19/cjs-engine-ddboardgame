@@ -1,7 +1,7 @@
 {
   "id": "story_haven_arc1_ch01_part01_frostwood_return",
-  "version": 3,
-  "title": "Frostwood Return",
+  "version": 5,
+  "title": "Snow on the Road Home",
   "scope": "story",
   "arcId": "haven_arc1",
   "chapterId": "arc1_ch01",
@@ -12,31 +12,33 @@
   "branchKey": "trunk",
   "startNode": "open",
   "background": "images/story-mode/haven/frostwood-vn.png",
-  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "branch:open"],
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "branch:open", "tone:grounded", "tone:snark"],
   "_vnLayout": { "left": ["bin"], "right": ["peri", "gate guard", "mug regular"] },
   "summary": {
-    "short": "Bin reaches Haven's edge and the town starts reacting to the rumor that he is alive.",
-    "default": "Bin staggers off the Frostwood road two months late. Peri walks him into the gate or the tavern, and the return becomes public the moment he picks his route."
+    "short": "Bin gets dumped back into a snowdrift outside Haven, gets bitten by a wolf, and decides whether to walk in the front door or the back one.",
+    "default": "Two months in a portal closet, one wolf, zero dignity. Bin reaches Haven's edge with bruises and snow in places he won't mention to his sister. Peri walks him in. Front gate or back alley — the rest of town hears about him either way."
   },
   "nextCandidates": [
-    "1.1.a Bent Pine Patrol (gate route)",
-    "1.1.b Frosted Mug Whispers (tavern route)"
+    "1.1.a Gate Office Day (front door, paperwork, captain's attitude)",
+    "1.1.b Back Door at the Frosted Mug (back alley, drunk patron, soup)"
   ],
   "syncSummary": [
-    "Rumor added: Bin was seen alive on the Frostwood road.",
-    "Hub mood set: Frostbitten shifts from anxious to uneasy relief.",
-    "Branch flag set: the chosen return route gates the next chapter (1.1.a or 1.1.b)."
+    "Rumor: somebody saw Bin alive on the Frostwood road.",
+    "Hub mood: Frostbitten softens from anxious to mildly relieved.",
+    "Quest seed: Find Lily (rumor says apothecary, gossip says market, both will be wrong at least once).",
+    "Mystery seed: A coin with no town stamp is on the road. Someone is going to want it back."
   ],
   "completionOps": [
-    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_bin_alive_return", "text": "Bin was seen alive on the Frostwood road before dawn.", "tags": ["story", "bin", "return"] },
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_bin_alive_return", "text": "Garr's boy was seen alive on the Frostwood road. Not a ghost. Probably.", "tags": ["story", "bin", "return"] },
     { "op": "hub_mood_set", "hubId": "haven_hub_frostbitten", "mood": "uneasy_relief" },
-    { "op": "event_log_add", "title": "Story Sync: Frostwood Return", "summary": "Bin makes it back to Haven's road and the town starts reacting in public.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_1"] }
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_strange_coin", "text": "A coin nobody recognizes was found on the road. Bartender says it 'tastes wrong.' Nobody asked.", "tags": ["mystery", "coin"] },
+    { "op": "event_log_add", "title": "Story Sync: Bin Back in Town (Mostly)", "summary": "Bin makes the gate of Frostbitten by sundown with one wolf bite and a stranger's coin in his pocket.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_1"] }
   ],
   "nodes": [
     {
       "id": "open",
       "type": "narration",
-      "text": "Snow folds over the Frostwood road like the world is trying to hide the paperwork. The portal closed an hour ago — neat seam, no exit wound, no apology. Bin lands hip-first in a drift, swears in three languages, and decides the fourth would be excessive. Somewhere just over his left shoulder, Peri is trying not to laugh and failing on purpose.",
+      "text": "The portal closes behind Bin with the dignified silence of someone who used the bathroom at a party and is pretending the line wasn't long. Snow eats his left boot up to the lace. He has been gone two months. He left with both eyebrows and most of a plan. He returns with neither.",
       "next": "peri_open"
     },
     {
@@ -46,49 +48,148 @@
       "portrait": "peri",
       "side": "right",
       "expression": "smirk",
-      "text": "Welcome home. Try not to die before anyone can be emotionally inconvenient about it. Two months in a portal closet did not improve your posture. The CJS system politely refused to log your dignity tax. I tipped it anyway.",
-      "next": "bin_orient"
+      "text": "Welcome home, kid. I see your composure has been refunded in unmarked snow. The portal recorded your travel time at two months and your dignity tax at four hundred. I tipped on your behalf. Try not to bleed on anything important.",
+      "next": "bin_open_reply"
     },
     {
-      "id": "bin_orient",
+      "id": "bin_open_reply",
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
       "speakerId": "bin",
       "side": "left",
       "expression": "tired",
-      "text": "I have been gone two months and the welcome wagon is already a metaphor. Let me at least pretend I have a plan before the universe charges me overage on suffering. Where is Haven from here, by the way. Memory is a soup.",
-      "next": "peri_lay_land"
+      "text": "Tell the portal I'm filing a complaint. Two months and I come back with one boot, no plan, and the same emotional damage in a fresh wrapper. Is Haven still where I left it? Please say yes. I do not have the strength for cartography today.",
+      "next": "peri_directions"
     },
     {
-      "id": "peri_lay_land",
+      "id": "peri_directions",
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
       "side": "right",
       "expression": "neutral",
-      "text": "Three hundred paces north and a left turn at the burned mile-marker. Gate is straight in. Tavern is the back alley behind the Frosted Mug. Both end with Frostbitten realizing you are not a ghost. Only one keeps you out of the front page.",
-      "next": "bin_check_self"
+      "text": "Haven is exactly where you left it, which is the most insulting thing a town can do to a returning hero. Three hundred paces north, left at the burned mile-marker, do not flirt with the new gate guard, she has opinions about lateness. Front gate is straight in. Back alley behind the Frosted Mug works too, if your ego is still in inventory.",
+      "next": "find_coin"
     },
     {
-      "id": "bin_check_self",
+      "id": "find_coin",
+      "type": "narration",
+      "summary": "Bin spots a coin in the snow that didn't come from any local mint.",
+      "text": "Something winks under the crust of snow at Bin's right heel. He picks it up. It is a coin — heavier than a copper, paler than a silver, with a design that looks like a hand holding a candle and the candle is rude about it. No town stamp he recognises. The metal is cold the way old hands are cold.",
+      "next": "bin_coin"
+    },
+    {
+      "id": "bin_coin",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "That is not local. That is not even the wrong town. That is some other province's idea of a payday. Whoever dropped it was either lost or in a hurry, and the snow says both. Pocketing it. We can be honest about it later, when I have feeling in my fingers.",
+      "next": "peri_coin_quip"
+    },
+    {
+      "id": "peri_coin_quip",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has logged the coin under 'Unknown — Possibly Cursed, Probably Just Awkward.' Wonderful start. Two minutes back and you are already a person of interest in your own pocket. Try not to inhale this one. The last shiny thing you picked up cost us a whole quest.",
+      "next": "wolf_setup"
+    },
+    {
+      "id": "wolf_setup",
+      "type": "narration",
+      "summary": "A branch snaps uphill. A pair of yellow eyes do the math at four legs per second.",
+      "text": "A branch cracks somewhere uphill. Then another, closer. The drift behind Bin breaks open in a long parallel line and the line is moving toward him. Yellow eyes. Frostbitten teeth. The kind of wolf that has been waiting for a slow person to fall out of the sky. Bin obliges.",
+      "next": "peri_wolf"
+    },
+    {
+      "id": "peri_wolf",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "alert",
+      "text": "Frost wolf. Single. Skinny, which means it's hungry and not careful. You owe yourself a clean welcome scene and the wolf is RSVPing late. Crossbow. Now. I will hold your dignity for you and return it after.",
+      "next": "wolf_fight"
+    },
+    {
+      "id": "wolf_fight",
+      "type": "combat",
+      "encounterId": "haven_enc_wolf_pack",
+      "battleSetId": "haven_bset_wolf_pack_bent_pine",
+      "label": "Welcome Wolf — Frostwood Road",
+      "text": "One frost wolf, no manners. Run it off or run it down — pick.",
+      "tags": ["combat", "wolf", "frostwood", "welcome"],
+      "monsterTags": ["wolf", "frostwood"],
+      "onWin": "after_fight_win",
+      "onLose": "after_fight_lose",
+      "winOps": [
+        { "op": "log", "text": "Bin's first shot in two months lands in the wolf's shoulder and the wolf reconsiders dinner." },
+        { "op": "set_flag", "flag": "story_return_wolf_repelled", "value": true }
+      ],
+      "loseOps": [
+        { "op": "log", "text": "Bin eats snow. The wolf eats Bin's left sleeve. Both retreat embarrassed." },
+        { "op": "damage_party", "amount": 3 },
+        { "op": "danger", "amount": 1 },
+        { "op": "set_flag", "flag": "story_return_wolf_grazed", "value": true }
+      ]
+    },
+    {
+      "id": "after_fight_win",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Two months out of practice and the bow remembers more than I do. I'll take the win. Tell the wolf to forward its complaints to the patrol office. I am, regrettably, the patrol office.",
+      "next": "peri_after_fight"
+    },
+    {
+      "id": "after_fight_lose",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "I missed twice and the wolf graded me unfavourably. New sleeve, please. My ribs and the wolf are in a long-term relationship now. I would like to be excused from it.",
+      "next": "peri_after_fight"
+    },
+    {
+      "id": "peri_after_fight",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "soft",
+      "text": "Filed. Two months gone, one wolf welcome, zero requests for sympathy that I will honour. Save your bruise budget — the actual reunion is the expensive part. Lily is at the apothecary, apparently. Or the market. Or both, because she is a small storm in human form.",
+      "next": "bin_lily_thought"
+    },
+    {
+      "id": "bin_lily_thought",
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
       "speakerId": "bin",
       "side": "left",
       "expression": "sad",
-      "text": "Father will be at the gate office before sundown. Lily probably set out a bowl of stew on the porch every night I was gone — the kind of stew you cannot un-set. I do not know which of those is going to hurt more.",
-      "next": "peri_brief"
+      "text": "Lily probably set out three plates every night for two months and refused to put the third one away. Father probably built a second shed and didn't tell anyone why. Both of those are going to hit me in the ribs harder than the wolf did. The town is going to find me before I find them.",
+      "next": "peri_route_offer"
     },
     {
-      "id": "peri_brief",
+      "id": "peri_route_offer",
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
       "side": "right",
-      "expression": "soft",
-      "text": "Both. Different shapes. Pick the route that fits the bruise you are willing to wear in public. Gate is honest and terrifying. Mug is gossip first and apology never. The system rates this beat a soft seven. Listen first, panic second.",
+      "expression": "neutral",
+      "text": "Pick your re-entry. Front gate — your name is announced, the captain gets to insult you on the record, the paperwork starts on time. Back alley to the Frosted Mug — soup, gossip, somebody you do not remember calling you a ghost. Both end the same way: a sister, a father, and a small humiliation.",
       "next": "stat_check_compose"
     },
     {
@@ -110,7 +211,7 @@
       "speakerId": "bin",
       "side": "left",
       "expression": "determined",
-      "text": "Then I walk in like a person, not a rumor. Whatever the cost, I would rather buy it at retail than let the gossip mark it up overnight.",
+      "text": "Right. Whatever I pick, I walk in like a person, not a wet rumour. If the town wants to make this a moment, I am going to make it a quiet moment, and they can be loud about it later when I am at least sitting down.",
       "next": "route_choice"
     },
     {
@@ -121,7 +222,7 @@
       "speakerId": "bin",
       "side": "left",
       "expression": "tired",
-      "text": "My hands will not stop shaking. Fine. Either I let the gate see them or I let the Mug paint over them with bad lager. Pick a kind of shaking.",
+      "text": "My hands have opinions. None of them are useful. Fine. Either I let the gate see them shake, or I let the Mug paint over them with bad lager. Whichever picks me first, I guess.",
       "next": "route_choice"
     },
     {
@@ -132,24 +233,24 @@
       "choices": [
         {
           "id": "gate",
-          "label": "Walk to the gate openly",
-          "summary": "Public return. Lets Garr and the patrol board hear it first. Unlocks chapter 1.1.a Bent Pine Patrol.",
+          "label": "Walk to the front gate openly",
+          "summary": "Public return. Paperwork, captain, official welcome. Unlocks 1.1.a Gate Office Day.",
           "next": "gate_move",
           "ops": [
             { "op": "set_flag", "flag": "story_return_route_gate", "value": true },
             { "op": "clear_flag", "flag": "story_return_route_tavern" },
-            { "op": "log", "text": "Story route: Bin approaches Frostbitten through the gate." }
+            { "op": "log", "text": "Story route: Bin approaches Frostbitten through the front gate." }
           ]
         },
         {
           "id": "tavern",
-          "label": "Sneak toward the Frosted Mug",
-          "summary": "Quiet return. Bin hears the town's version of his disappearance before correcting it. Unlocks chapter 1.1.b Frosted Mug Whispers.",
+          "label": "Sneak around to the Frosted Mug's back door",
+          "summary": "Quiet return. Soup, gossip, no captain. Unlocks 1.1.b Back Door at the Frosted Mug.",
           "next": "tavern_note",
           "ops": [
             { "op": "set_flag", "flag": "story_return_route_tavern", "value": true },
             { "op": "clear_flag", "flag": "story_return_route_gate" },
-            { "op": "log", "text": "Story route: Bin hears town gossip before the reunion." }
+            { "op": "log", "text": "Story route: Bin slips around to the tavern back door." }
           ]
         }
       ]
@@ -157,8 +258,8 @@
     {
       "id": "gate_move",
       "type": "narration",
-      "summary": "Bin stays visible on purpose so the gate rumor reaches Haven first.",
-      "text": "Bin walks the gate line slowly. Half a dozen lanterns swivel in their housings the way townspeople pretend they did not see something. By the time he passes the third lamp, the news is already running ahead of him on a different pair of legs.",
+      "summary": "Bin walks the gate line on purpose, visible to anyone with a window.",
+      "text": "Bin walks the gate line slowly. Half a dozen lanterns swivel in their housings the way townspeople pretend they did not see something. By the time he passes the third lamp, the news is already running ahead of him on a different pair of legs. Frostbitten is a town that gossips faster than it shovels.",
       "next": "gate_guard"
     },
     {
@@ -168,7 +269,7 @@
       "speakerId": "haven_garr",
       "side": "right",
       "expression": "worried",
-      "text": "Garr's kid? We... we thought you were dead. Sorry. That came out faster than I meant. Step inside before someone starts crying on duty. Your father is in the office. He has been in the office every shift since the fall.",
+      "text": "Garr's kid? — sorry, sir, we thought you were dead. That came out faster than I meant. Step inside before someone starts crying on duty. Captain is on rounds. Your father has been doing two shifts a day for two months because he does not know how to sit. Please go inside, please. Please.",
       "next": "bin_gate_reply"
     },
     {
@@ -179,14 +280,14 @@
       "speakerId": "bin",
       "side": "left",
       "expression": "sad",
-      "text": "Tell him I came through the gate. Tell him I walked. Tell him the rest in person, because he has earned the long version, not the gossip-shaped one.",
-      "next": "first_check"
+      "text": "Tell my father I came through the gate. Tell him I walked. Tell him I am unbelievably late for dinner and I will explain in the kitchen, not in the office. And — if you have a clean rag, I will pretend I do not need one and you will hand it to me anyway, please.",
+      "next": "handoff"
     },
     {
       "id": "tavern_note",
       "type": "narration",
-      "summary": "Bin catches the town calling him a ghost before he can correct the rumor.",
-      "text": "Bin takes the back alley behind the Frosted Mug. Light leaks out under the door along with someone's spirited theory that he died face-first in a foreign sea. Another voice corrects: face-first into a portal, far more dramatic. A third voice asks if anyone has told Lily yet. The room goes quiet.",
+      "summary": "Bin slips around the back. The town's version of him is loud through the wall.",
+      "text": "Bin takes the back alley behind the Frosted Mug. Light leaks under the door along with someone's spirited theory that he died face-first in a foreign sea. Another voice corrects: face-first into a portal, more dramatic. A third asks if anyone has told Lily yet. The room is briefly quieter than a tavern is supposed to be.",
       "next": "tavern_overhear"
     },
     {
@@ -195,7 +296,7 @@
       "speaker": "Mug Regular",
       "side": "right",
       "expression": "neutral",
-      "text": "Two months, no body, and his crossbow still hangs on the wall. Either the boy is alive or someone is paying for a very strange long con. The kind where the marks pay you in hope. I do not like the look of either.",
+      "text": "Two months, no body, and his crossbow still hangs on the wall. Either the boy is alive or someone is paying for a very strange long con. The kind where the marks pay you in hope. I do not like either, and I do like soup, so I am picking soup until further notice.",
       "next": "bin_tavern_reply"
     },
     {
@@ -206,40 +307,7 @@
       "speakerId": "bin",
       "side": "left",
       "expression": "annoyed",
-      "text": "Alive, paid by no one, slightly insulted by the long con theory. Save that drink. The next round is on my dignity, which is currently a single copper.",
-      "next": "first_check"
-    },
-    {
-      "id": "first_check",
-      "type": "stat_check",
-      "actor": "bin",
-      "stat": "C",
-      "difficulty": 11,
-      "defaultResult": "pass",
-      "tags": ["reunion", "rumor"],
-      "pass": "pass_line",
-      "fail": "fail_line"
-    },
-    {
-      "id": "pass_line",
-      "type": "dialogue",
-      "speaker": "Bin",
-      "portrait": "bin",
-      "speakerId": "bin",
-      "side": "left",
-      "expression": "smirk",
-      "text": "I am alive, mostly employed, and legally not a ghost. Please direct all sentimental damage through Peri. She enjoys the paperwork. The rest of the story will be told in the kitchen, with my sister present, and only after I have eaten something that was not foraged.",
-      "next": "handoff"
-    },
-    {
-      "id": "fail_line",
-      "type": "dialogue",
-      "speaker": "Bin",
-      "portrait": "bin",
-      "speakerId": "bin",
-      "side": "left",
-      "expression": "tired",
-      "text": "I can explain. Badly, but with confidence. Short version: I am back. Long version: illegal in three jurisdictions I have never visited. Medium version: please, please let me sit down before I become a metaphor.",
+      "text": "Alive, unpaid, slightly insulted by the long con theory. I will accept the soup as an apology from the town. The next round is on my dignity, which is currently a single copper and one weird foreign coin.",
       "next": "handoff"
     },
     {
@@ -249,36 +317,16 @@
       "portrait": "peri",
       "side": "right",
       "expression": "soft",
-      "text": "Good. Stay alive long enough for the next part. If you took the gate, Bent Pine wants eyes on it before the next patrol does something brave. If you took the Mug, the cellar has been talking and the talk is not friendly. Either way, you are walking somewhere by dawn.",
-      "next": "bin_lily_thought"
-    },
-    {
-      "id": "bin_lily_thought",
-      "type": "dialogue",
-      "speaker": "Bin",
-      "portrait": "bin",
-      "speakerId": "bin",
-      "side": "left",
-      "expression": "soft",
-      "text": "Tell Lily I will be home in an hour. Not because it is true. Because she will need that hour to decide which of her three speeches to give me first. I owe her the one she has rehearsed the longest.",
-      "next": "peri_final"
-    },
-    {
-      "id": "peri_final",
-      "type": "dialogue",
-      "speaker": "Peri",
-      "portrait": "peri",
-      "side": "right",
-      "expression": "happy",
-      "text": "Done. The system will hold the door. The town will hold its breath. You — try to hold yourself together for one more block. That is the entire chapter brief, kid.",
+      "text": "Good. Survive the next block. Whichever door you walked through, the next part of the day is a small one with a sister, a captain, and a great deal of paperwork or pickled fish, depending. The system politely informs me that you may now sit down. You may not stay sat. Keep moving.",
       "next": "finish_ops"
     },
     {
       "id": "finish_ops",
       "type": "ops",
-      "summary": "The return scene is recorded and Bent Pine or the Mug becomes the next chapter handoff.",
+      "summary": "The return is on the record. Lily and the coin both need answering.",
       "ops": [
         { "op": "set_flag", "flag": "story_haven_return_seen", "value": true },
+        { "op": "set_flag", "flag": "story_picked_up_strange_coin", "value": true },
         { "op": "tag_add", "tag": "bin_returned_to_haven", "scope": "story", "source": "sequence" }
       ],
       "next": "end"

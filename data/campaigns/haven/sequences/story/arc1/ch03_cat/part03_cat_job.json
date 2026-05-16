@@ -1,0 +1,318 @@
+{
+  "id": "story_haven_arc1_ch03_part03a_frostbitten_town_meeting",
+  "version": 3,
+  "title": "The Cat Job",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch03",
+  "chapterLabel": "1.3",
+  "orderKey": "1.3",
+  "partId": "ch03_part03a",
+  "partLabel": "1.3",
+  "branchOf": "ch02_part02a",
+  "alsoBranchOf": ["ch02_part02b"],
+  "branchKey": "convergence",
+  "routeKey": "trunk",
+  "routeLabel": "Cat Job (Convergent)",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:cat", "frostbitten", "convergence", "tone:absurd"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "lily", "tavern host", "kid", "hermit"] },
+  "summary": {
+    "short": "A six-year-old hires Bin to find the tavern cat, Mittens. The job is small. The town is round. Mittens is opinionated. The hermit knows things.",
+    "default": "Mittens has been gone four days. Bin and Lily walk the south alley, the mill, and the orchard with a kid named Tuli at three different distances. They find the cat at a hermit's hut a mile out of town, get jumped by wolves on the way back, and bring Mittens home in a basket she refuses to ride in."
+  },
+  "nextCandidates": [
+    "1.4 Bread, Stew, and a Knock at the Door (Garr's dinner)"
+  ],
+  "syncSummary": [
+    "Quest cleared: Find Mittens — Mittens located at Hermit Rolf's hut, returned to Tuli.",
+    "Hub mood: Frostbitten upgrades to 'reluctantly cheerful.'",
+    "Hub problem added: Hermit Rolf is sitting on more than one rude-candle coin and has opinions.",
+    "Mystery progress: Coins matched to a courier who buys herbs and gossip in equal volume. Name still unknown.",
+    "Branch flag set: story_cat_job_done unlocks 1.4."
+  ],
+  "completionOps": [
+    { "op": "add_quest", "quest": {
+      "id": "quest_find_mittens",
+      "title": "Find Mittens",
+      "summary": "Tuli, a six-year-old regular at the Mug, paid Bin in unsalted biscuits to find her cat. The cat has opinions about hermits.",
+      "tags": ["story", "cat", "tuli"],
+      "objectives": [
+        { "id": "ask_townsfolk", "label": "Ask townsfolk for sightings", "required": 3, "current": 0 },
+        { "id": "find_cat", "label": "Find Mittens", "required": 1, "current": 0 },
+        { "id": "return_cat", "label": "Return Mittens to Tuli", "required": 1, "current": 0 }
+      ]
+    }},
+    { "op": "update_quest_progress", "questId": "quest_find_mittens", "objectiveId": "ask_townsfolk", "amount": 3 },
+    { "op": "update_quest_progress", "questId": "quest_find_mittens", "objectiveId": "find_cat", "amount": 1 },
+    { "op": "update_quest_progress", "questId": "quest_find_mittens", "objectiveId": "return_cat", "amount": 1 },
+    { "op": "hub_mood_set", "hubId": "haven_hub_frostbitten", "mood": "reluctantly_cheerful" },
+    { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "hermit_with_coins", "label": "Hermit Rolf has rude-candle coins and won't say where", "notes": "Worth circling back to in 1.4 if the dinner permits." },
+    { "op": "set_flag", "flag": "story_cat_job_done", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: The Cat Job", "summary": "Mittens located. Bin and Lily fend off two wolves on the road home. A hermit has a tin of coins and an explanation that nobody asked for.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_3"] }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "Frostbitten is at its second-most-suspicious hour of the day, which is mid-morning. The market has set up exactly enough stalls to look like a fair and exactly enough gaps between them to look like an opinion. A six-year-old in a coat that is mostly older sister steps out from behind the bread stall and approaches Bin with the seriousness of an executive.",
+      "next": "kid_intro"
+    },
+    {
+      "id": "kid_intro",
+      "type": "dialogue",
+      "speaker": "Tuli",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Are you the man who got bit by a wolf? My mother says you are the man who got bit by a wolf. I have a job for you, mister wolf man. The job is Mittens. Mittens is the tavern cat. Mittens is four days late. The biscuits are in my pocket. They are unsalted. I am six. I have a sword.",
+      "next": "bin_kid_reply"
+    },
+    {
+      "id": "bin_kid_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "You have a sword. I had assumed. I will accept the job. I will accept the biscuits as payment in full. The sword stays with you. I will report back by sundown. Sundown is when the sky goes pink. The sky goes pink because the sun is embarrassed. You can quote me on that.",
+      "next": "lily_intro"
+    },
+    {
+      "id": "lily_intro",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "smirk",
+      "text": "I am coming too because if I let you do this alone you will return at midnight with three cats and an injury. Tuli, the wolf man is mine for the morning. By four bells he is yours again. By six bells he is the kitchen's. By seven bells he is mine again because he will need yelling at.",
+      "next": "peri_intro"
+    },
+    {
+      "id": "peri_intro",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has formally logged the cat as a contract. Payment: unsalted biscuits. Term: today. Penalty for non-delivery: a sword from a six-year-old. The system is choosing to enjoy this. Ask three townsfolk. Two of them will be wrong with confidence. The third will be wrong with information.",
+      "next": "townsfolk_setup"
+    },
+    {
+      "id": "townsfolk_setup",
+      "type": "narration",
+      "summary": "Three townsfolk. Three sightings. Two are nonsense. One isn't.",
+      "text": "The market gives Bin three witnesses without being asked. The fishmonger swears Mittens went south through the alley behind the mill. The bread woman says the cat went west toward the orchard. A retired soldier with one wandering eye and two firmly-held opinions says the cat went uphill toward Hermit Rolf's place. The third is the only one who does not also say 'definitely.'",
+      "next": "fishmonger"
+    },
+    {
+      "id": "fishmonger",
+      "type": "dialogue",
+      "speaker": "Fishmonger",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Mittens absolutely went down the south alley. I would swear on the herring. The herring is still alive, so the oath is good. She was after the mice in the mill, definitely the mill, possibly the mill. I am eighty percent of the way to a witness statement and the other twenty percent is just enthusiasm.",
+      "next": "bread_woman"
+    },
+    {
+      "id": "bread_woman",
+      "type": "dialogue",
+      "speaker": "Bread Woman",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Don't listen to the herring. The cat went west. I saw her at sunset two days ago at the orchard wall, sitting on a bag of seed that does not belong to anyone in town. She was, in technical terms, plotting. In non-technical terms, glowering. I waved. She did not wave back. Make of that what you will.",
+      "next": "soldier"
+    },
+    {
+      "id": "soldier",
+      "type": "dialogue",
+      "speaker": "Old Soldier",
+      "side": "right",
+      "expression": "tired",
+      "text": "Don't listen to the bread woman. Or do, but uphill. Mittens has been visiting Rolf's hut for two winters. Rolf feeds her exactly one fish a day and complains the entire time. The cat has manners. Rolf does not. The cat has been there at least three days. I will not bet, but if I did, I would bet uphill.",
+      "next": "route_setup"
+    },
+    {
+      "id": "route_setup",
+      "type": "narration",
+      "summary": "Two false leads first. Bin checks them quickly because Lily would never let him skip ahead.",
+      "text": "Lily insists they check the mill and the orchard first. The mill is loud with grain and quiet on cats. The orchard wall has a faint paw-shaped depression in the snow that points uphill rather than at the wall. Lily, who has been carrying the basket, looks at her brother. Her brother looks at the snow. They go uphill.",
+      "next": "hermit_walk_check"
+    },
+    {
+      "id": "hermit_walk_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "A",
+      "difficulty": 10,
+      "defaultResult": "pass",
+      "tags": ["agility", "tracking"],
+      "pass": "track_pass",
+      "fail": "track_fail"
+    },
+    {
+      "id": "track_pass",
+      "type": "narration",
+      "text": "Bin reads the snow. The paw prints go straight to Rolf's hut, with a single detour at a clump of frostcap mushrooms. The cat had a small, considered opinion about the mushrooms. The opinion did not change her route. She is, by every available sign, a cat with a destination.",
+      "next": "rolf_arrival"
+    },
+    {
+      "id": "track_fail",
+      "type": "narration",
+      "text": "Bin reads the snow with a level of confidence the snow does not deserve. They reach Rolf's hut anyway, slower, because Lily has been the one actually reading the snow this entire time and refuses to admit she enjoyed it.",
+      "next": "rolf_arrival"
+    },
+    {
+      "id": "rolf_arrival",
+      "type": "dialogue",
+      "speaker": "Hermit Rolf",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "The cat is asleep on the kettle. Take her if you can lift her without losing fingers. I have been feeding her one fish a day for three weeks because she refuses to leave and I refuse to be the one to evict a cat in winter. She has not paid rent. She has, however, paid in opinions. I have a tin of coins I have to talk to you about, since you are the wolf man.",
+      "next": "bin_rolf_reply"
+    },
+    {
+      "id": "bin_rolf_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "A tin. Of coins. With a rude candle on them, presumably. Of course. Let me see them. I have been counting them since the road, and adding to a small bad feeling. Three weeks ago is exactly when Mittens went missing and exactly when the gate started losing frostcap shipments. We are about to find that to be a coincidence and it is going to be lying to us.",
+      "next": "rolf_coins"
+    },
+    {
+      "id": "rolf_coins",
+      "type": "dialogue",
+      "speaker": "Hermit Rolf",
+      "side": "right",
+      "expression": "tired",
+      "text": "Six coins. Found four on the path between here and the orchard wall, two by the back of the hut. Same candle. Same insult. A traveller came past three weeks ago, asked me whether I had seen anyone with a bad cough in the last month. I had not. They paid me anyway, in coins, which I am beginning to suspect was a politeness. Take them. They are too rude to live in my tin.",
+      "next": "lily_coins"
+    },
+    {
+      "id": "lily_coins",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "Ten coins now. The captain's tin, the apothecary sill, the Mug corridor, the road, and Rolf's tin. Whoever is dropping them is not poor. Whoever is dropping them is also asking about people, not places. Travelers ask about places. People ask about people. We are dealing with somebody who works for a person, and the person is paying in coin that is meant to be noticed.",
+      "next": "wolves_setup"
+    },
+    {
+      "id": "wolves_setup",
+      "type": "narration",
+      "summary": "Two wolves on the path home. The cat is unimpressed.",
+      "text": "On the way back two wolves materialise out of the line of trees the way wolves do in winter — with no fanfare and a lot of teeth. Mittens, in the basket, makes a noise that is not a meow. It is a complaint. The wolves do not understand the complaint, but the complaint is bracing.",
+      "next": "wolves_fight"
+    },
+    {
+      "id": "wolves_fight",
+      "type": "combat",
+      "encounterId": "haven_enc_wolf_pack",
+      "battleSetId": "haven_bset_wolf_pack_bent_pine",
+      "label": "Hermit Path — Two Wolves and a Cat",
+      "text": "Two wolves, one road, one cat in a basket. Win the path home.",
+      "tags": ["combat", "wolf", "frostwood", "hermit_path"],
+      "monsterTags": ["wolf", "frostwood"],
+      "onWin": "wolves_win",
+      "onLose": "wolves_lose",
+      "winOps": [
+        { "op": "log", "text": "Wolves discouraged. Mittens stops complaining, briefly. Lily takes the credit for the kill shot and is, regrettably, correct." },
+        { "op": "set_flag", "flag": "story_cat_path_wolves_clear", "value": true }
+      ],
+      "loseOps": [
+        { "op": "log", "text": "Wolves win the first exchange. Bin and Lily retreat halfway, regroup, and bluff the wolves off the rest of the path with a torch and one angry cat." },
+        { "op": "damage_party", "amount": 3 },
+        { "op": "danger", "amount": 1 }
+      ]
+    },
+    {
+      "id": "wolves_win",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "smirk",
+      "text": "I will accept the kill shot. The cat has accepted the basket, briefly. We are walking faster now because I would like to be off this road before the wind decides to invent a third wolf.",
+      "next": "cat_carry_minigame_setup"
+    },
+    {
+      "id": "wolves_lose",
+      "type": "dialogue",
+      "speaker": "Lily",
+      "side": "right",
+      "expression": "tired",
+      "text": "We survived. I am going to be sore for two days. The cat is going to be insufferable for four. The town is going to be amused for six. Walk.",
+      "next": "cat_carry_minigame_setup"
+    },
+    {
+      "id": "cat_carry_minigame_setup",
+      "type": "narration",
+      "summary": "The town's market is mid-tear-down. Bin has to carry Mittens through three stalls without bumping the basket into anyone.",
+      "text": "By the time they reach the market, the stalls are being packed. The aisle to the Mug is narrowed to a single line by crates of cabbages, a pile of rolled rugs, and one absent-minded blacksmith. Bin must walk Mittens through the gauntlet without bumping the basket — Mittens has been warning him about basket bumps in a way that is, by Lily's count, the eleventh-most-passive-aggressive thing she has ever heard.",
+      "next": "cat_carry_minigame"
+    },
+    {
+      "id": "cat_carry_minigame",
+      "type": "minigame",
+      "gameId": "mummy_maze",
+      "minigame": {
+        "gameId": "mummy_maze",
+        "levelId": "mummy_02",
+        "difficulty": 2,
+        "theme": "tomb"
+      },
+      "text": "Walk the basket through the closing market without bumping anyone or any cat.",
+      "winOps": [
+        { "op": "log", "text": "Bin clears the market in a record number of small dignified sidesteps. Mittens awards him a long blink, which is the highest honour available." },
+        { "op": "set_flag", "flag": "story_market_cat_carry_clean", "value": true }
+      ],
+      "failOps": [
+        { "op": "log", "text": "A crate of cabbages goes sideways. Mittens makes a noise. Three different vendors have a new opinion about Bin. The opinion is, on balance, fine." },
+        { "op": "danger", "amount": 1 }
+      ],
+      "onWin": "tuli_return",
+      "onLose": "tuli_return"
+    },
+    {
+      "id": "tuli_return",
+      "type": "dialogue",
+      "speaker": "Tuli",
+      "side": "right",
+      "expression": "happy",
+      "text": "You brought my cat. I am going to give you a biscuit. I am also going to give the cat a biscuit. The cat will not eat the biscuit. The cat will sit on the biscuit. The biscuit will be a chair. Thank you, wolf man. I will tell my mother you were polite. You were polite enough.",
+      "next": "host_return"
+    },
+    {
+      "id": "host_return",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "soft",
+      "text": "Mittens is on the bar. Mittens has decided the bar is a kettle and the kettle is also the bar. The town owes you a soup. I owe you two soups, because the one with the dumplings is the one I owe you for the firewood. Sit. Eat. Tomorrow's problem is tomorrow.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Filed. Tagged. Cleared. The system formally announces that you have done a small thing well, which it considers a high-status outcome. Ten coins, one cat, one cough-related question pattern. The next chapter is dinner with your father. We will all pretend the coins are a different night's problem. They are not. Bring bread anyway.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Cat returned, coin trail catalogued, dinner queued.",
+      "ops": [
+        { "op": "tag_add", "tag": "cat_job_done", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Mittens is on the bar. The town is at its first contented hour in three weeks." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}

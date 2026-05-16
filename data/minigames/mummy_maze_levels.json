@@ -1,6 +1,6 @@
 {
   "gameId": "mummy_maze",
-  "version": 1,
+  "version": 2,
   "levels": [
     {
       "id": "mummy_01",
@@ -109,6 +109,148 @@
       "optimalTurns": 8,
       "hint": "Tight quarters. Use the corridor wall to pin the mummy; route around the trap.",
       "tags": ["tomb", "hard", "compact", "trap"]
+    },
+    {
+      "id": "mummy_06",
+      "title": "Twin Sentinels",
+      "difficulty": 4,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [3, 6],
+      "exit": [3, 0],
+      "mummies": [
+        { "id": "m1", "pos": [0, 0], "speed": 1, "priority": "vertical" },
+        { "id": "m2", "pos": [6, 0], "speed": 1, "priority": "vertical" }
+      ],
+      "walls": [[3, 3], [3, 4]],
+      "keys": [],
+      "gates": [],
+      "traps": [],
+      "optimalTurns": 14,
+      "hint": "Two slow vertical mummies converge from the corners. Hug the central column to split them, then sprint up the middle.",
+      "tags": ["tomb", "twin", "vertical-mummy", "lure"]
+    },
+    {
+      "id": "mummy_07",
+      "title": "Key in the Cistern",
+      "difficulty": 5,
+      "theme": "tomb",
+      "width": 6,
+      "height": 6,
+      "player": [0, 5],
+      "exit": [5, 0],
+      "mummies": [
+        { "id": "m1", "pos": [5, 5], "speed": 2, "priority": "horizontal" }
+      ],
+      "walls": [[2, 1], [2, 2], [3, 1], [3, 4], [3, 5]],
+      "keys": [
+        { "id": "k1", "pos": [0, 0] }
+      ],
+      "gates": [
+        { "requires": "k1", "pos": [5, 1] }
+      ],
+      "traps": [
+        { "pos": [2, 3] }
+      ],
+      "optimalTurns": 16,
+      "hint": "Grab the cistern key before approaching the gate. The fast mummy commits east first — bait it into the wall corridor.",
+      "tags": ["tomb", "key", "gate", "trap", "hard"]
+    },
+    {
+      "id": "mummy_08",
+      "title": "Spiral Catacomb",
+      "difficulty": 5,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [3, 3],
+      "exit": [0, 0],
+      "mummies": [
+        { "id": "m1", "pos": [6, 6], "speed": 2, "priority": "horizontal" },
+        { "id": "m2", "pos": [0, 6], "speed": 1, "priority": "vertical" }
+      ],
+      "walls": [
+        [1, 1], [2, 1], [3, 1], [4, 1],
+        [5, 2], [5, 3], [5, 4],
+        [1, 5], [2, 5], [3, 5]
+      ],
+      "keys": [],
+      "gates": [],
+      "traps": [
+        { "pos": [4, 4] }
+      ],
+      "optimalTurns": 18,
+      "hint": "The spiral wall forces you north then east. Two mummies converge — split their lines with the center walls.",
+      "tags": ["tomb", "twin", "spiral", "hard"]
+    },
+    {
+      "id": "mummy_09",
+      "title": "The Long Walk",
+      "difficulty": 2,
+      "theme": "tomb",
+      "width": 9,
+      "height": 5,
+      "player": [0, 2],
+      "exit": [8, 2],
+      "mummies": [
+        { "id": "m1", "pos": [8, 0], "speed": 1, "priority": "vertical" }
+      ],
+      "walls": [[2, 1], [2, 3], [5, 1], [5, 3], [7, 2]],
+      "keys": [],
+      "gates": [],
+      "traps": [],
+      "optimalTurns": 10,
+      "hint": "Long hall with bottleneck pillars. The mummy comes from the top-right corner and prefers vertical moves — drop south once it commits north.",
+      "tags": ["tomb", "long", "bottleneck"]
+    },
+    {
+      "id": "mummy_10",
+      "title": "Two Doors, One Key",
+      "difficulty": 4,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [3, 6],
+      "exit": [6, 0],
+      "mummies": [
+        { "id": "m1", "pos": [0, 0], "speed": 1, "priority": "horizontal" }
+      ],
+      "walls": [[2, 2], [4, 2], [3, 1], [3, 3], [5, 4], [1, 4]],
+      "keys": [
+        { "id": "k1", "pos": [0, 5] }
+      ],
+      "gates": [
+        { "requires": "k1", "pos": [6, 2] },
+        { "requires": "k1", "pos": [3, 4] }
+      ],
+      "traps": [],
+      "optimalTurns": 17,
+      "hint": "One key opens both gates. Pick a route and stick to it — the mummy is slow but greedy west-to-east.",
+      "tags": ["tomb", "key", "gate", "branching"]
+    },
+    {
+      "id": "mummy_11",
+      "title": "Forced March",
+      "difficulty": 6,
+      "theme": "tomb",
+      "width": 7,
+      "height": 7,
+      "player": [0, 6],
+      "exit": [6, 0],
+      "mummies": [
+        { "id": "m1", "pos": [6, 6], "speed": 2, "priority": "horizontal" },
+        { "id": "m2", "pos": [6, 0], "speed": 1, "priority": "vertical" }
+      ],
+      "walls": [[2, 2], [3, 2], [4, 2], [2, 4], [3, 4], [4, 4]],
+      "keys": [],
+      "gates": [],
+      "traps": [
+        { "pos": [3, 3] }
+      ],
+      "optimalTurns": 20,
+      "hint": "A horizontal speedster and a vertical bouncer flank the middle aisle. The trap covers the obvious midline — go around at row 5 or row 1.",
+      "tags": ["tomb", "twin", "trap", "hardest"]
     }
   ]
 }

@@ -1,0 +1,291 @@
+{
+  "id": "story_haven_arc1_ch01_part01b_frosted_mug_whispers",
+  "version": 3,
+  "title": "Back Door at the Frosted Mug",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch01",
+  "chapterLabel": "1.1",
+  "orderKey": "1.1.b",
+  "partId": "ch01_part01b",
+  "partLabel": "1.1.b",
+  "branchOf": "ch01_part01",
+  "branchKey": "tavern",
+  "routeKey": "tavern",
+  "routeLabel": "Tavern Route",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostbitten", "tavern", "branch:tavern", "tone:snark"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "tavern host", "mug regular", "drunk patron"] },
+  "summary": {
+    "short": "Bin slips into the Mug's back door, gets called a ghost by three different drunks, brawls a fourth, eats soup that has feelings.",
+    "default": "The Mug is loud about everything except the cellar pipes, which are loud about themselves. Bin earns a free bowl by fixing the back-room jam and accidentally beats a regular at darts with his elbow. The town's version of his disappearance has a great deal of seafood in it. The truth involves none."
+  },
+  "nextCandidates": [
+    "1.2.b The Haunted Firewood (a screaming log behind the Mug)"
+  ],
+  "syncSummary": [
+    "Quest seed: Help the Frosted Mug host with the screaming log behind the woodshed.",
+    "Hub mood: Frosted Mug is warmer about Bin; a regular owes him a drink.",
+    "Item logged: A second 'rude candle' coin sits on the bar by accident.",
+    "Branch flag set: story_mug_back_door_walked unlocks 1.2.b."
+  ],
+  "completionOps": [
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_mug_screaming_log", "text": "There's a log behind the Mug's woodshed that screams when you stand near it. The host is no longer joking about it.", "tags": ["story", "mug", "firewood", "weird"] },
+    { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "mug_screaming_log", "label": "The Mug's woodshed has a screaming log", "notes": "Worth investigating before the gossip gets organised. Hooked to 1.2.b." },
+    { "op": "set_flag", "flag": "story_mug_back_door_walked", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Back Door at the Frosted Mug", "summary": "Bin returns by tavern, gets soup, makes peace with a drunk, and the Mug owes him a small odd job.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_1b"] }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "The Frosted Mug runs warm even when the town does not. Bin slips in through the side door because the front door has a bell, and the bell does not lie. The room is half-full, which at this hour is a town with something on its mind. The fire is dying like it has been told to. Somebody is losing a darts argument and winning it back with volume.",
+      "next": "host_open"
+    },
+    {
+      "id": "host_open",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "worried",
+      "text": "We are full up on ghosts tonight. If you must haunt anyone, take the corner — the chair has a wobble that hides a limp, and we have both. If you are paying, the coin pouch suggests you are alive enough for soup. The mug on the wall says hello. So does the dust. Welcome home, kid.",
+      "next": "bin_host_reply"
+    },
+    {
+      "id": "bin_host_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Two mugs and a chair I cannot fall out of, please. The soup is for whoever decides to feed me. The story is too long for tonight. Tonight's short version: do not call my sister yet. I am not done being a person again. I am, however, eighty percent of one.",
+      "next": "peri_appear"
+    },
+    {
+      "id": "peri_appear",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "Three tables are already drafting their version of your death. The leading theory is sea monster. The second is bad mushrooms. The third is opera. The system will log whichever one you fail to refute by sunrise. Try the soup. It is genuinely good and entirely unrelated to the seafood theory.",
+      "next": "rumor_check"
+    },
+    {
+      "id": "rumor_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "I",
+      "difficulty": 10,
+      "defaultResult": "pass",
+      "tags": ["tavern", "listen", "rumor"],
+      "pass": "rumor_pass",
+      "fail": "rumor_fail"
+    },
+    {
+      "id": "rumor_pass",
+      "type": "narration",
+      "text": "Bin sorts the room. Five rumours, in order of volume: 1) he died at sea, 2) he ran off with a noble, 3) he was eaten by a portal, 4) he is at this very moment buying a round, 5) something behind the woodshed has been screaming when the wind hits it sideways. The fifth one is the only one nobody is laughing at.",
+      "next": "host_screaming_log"
+    },
+    {
+      "id": "rumor_fail",
+      "type": "narration",
+      "text": "Bin catches half of it and most of it is nonsense. Somebody says 'sea monster' and somebody else says 'opera.' Somebody quieter says 'woodshed.' He does not catch which one, but it sticks the way uncomfortable words stick to your coat in winter.",
+      "next": "host_screaming_log"
+    },
+    {
+      "id": "host_screaming_log",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "neutral",
+      "text": "While you are still mostly alive — there is a log out back. It screams. Not loud. Not always. Mostly when the wind comes off the orchard. I am calling it a draft problem because I will lose customers if I call it anything else, but it is not a draft. If you have ten minutes after you eat, I would owe you a favour for going to look. The kind that doesn't go on the books.",
+      "next": "bin_log_reply"
+    },
+    {
+      "id": "bin_log_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "First night back, screaming firewood. Of course. I will look at your draft problem. After soup. After two mouthfuls of soup, possibly after three. We will see how the soup performs. I will not promise a diagnosis. I will promise a witness.",
+      "next": "drunk_setup"
+    },
+    {
+      "id": "drunk_setup",
+      "type": "narration",
+      "summary": "A drunk at the dart board mistakes Bin for the man who took the last good seat.",
+      "text": "A regular at the dart board turns around. He is mostly belly and mostly grievances and mostly already three rounds in. He sees Bin's chair. He decides the chair is his. He does not have words for the decision. He uses an elbow instead, which is the wrong room for elbows, and the room rotates politely toward the inevitable.",
+      "next": "drunk_dialog"
+    },
+    {
+      "id": "drunk_dialog",
+      "type": "dialogue",
+      "speaker": "Drunk Patron",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "That is my chair, ghost. You died last winter. Ghosts do not get chairs. Ghosts get the windowsill. Move along, ghost. Take your seafood story with you. I have heard four versions and I am ready for the fifth as long as it is on the windowsill.",
+      "next": "drunk_fight"
+    },
+    {
+      "id": "drunk_fight",
+      "type": "combat",
+      "encounterId": "haven_enc_temple_floor1",
+      "battleSetId": "haven_bset_guild_sparring_dain",
+      "label": "Frosted Mug — Pickle Brawl",
+      "text": "One drunk, two friends with bad ideas, and a pickle jar. Win without breaking the host's furniture.",
+      "tags": ["combat", "tavern", "non-lethal", "brawl"],
+      "monsterTags": ["drunk", "townsfolk"],
+      "onWin": "after_brawl_win",
+      "onLose": "after_brawl_lose",
+      "winOps": [
+        { "op": "log", "text": "Bin wins the brawl with the unsanitary creativity of a man who has not slept in three days. The pickle jar survives. The chair does not." },
+        { "op": "set_flag", "flag": "story_mug_brawl_won", "value": true },
+        { "op": "give_money", "currency": "haven_gold", "amount": 4 }
+      ],
+      "loseOps": [
+        { "op": "log", "text": "The drunk has surprisingly good footwork for someone who keeps falling sideways. Bin loses the chair and gains an ice pack." },
+        { "op": "damage_party", "amount": 2 },
+        { "op": "danger", "amount": 1 }
+      ]
+    },
+    {
+      "id": "after_brawl_win",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "soft",
+      "text": "I am going to charge him for the chair and you for the laughter. The laughter is on the house. Eat. The bowl on the right is mine. The bowl on the left used to be his. He does not get to vote on its destination right now.",
+      "next": "log_minigame_setup"
+    },
+    {
+      "id": "after_brawl_lose",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Sit down. He is going to sit down too. Pretend the chair is more comfortable than it is and I will pretend I did not see the elbow. Soup goes in the mouth. We do not have to discuss anything else for at least four spoons.",
+      "next": "log_minigame_setup"
+    },
+    {
+      "id": "log_minigame_setup",
+      "type": "narration",
+      "summary": "Bin steps into the back-of-house to investigate the screaming log. The corridor is full of barrels.",
+      "text": "The back-of-house is half pantry, half loading dock. Three salt barrels block the corridor and the door to the woodshed beyond. Bin has to roll them out of the gap one at a time without knocking anything into the bartender's line of sight. If he wakes the cook, the cook will inform every regular in Frostbitten that Bin is alive, in detail, with footnotes.",
+      "next": "log_minigame"
+    },
+    {
+      "id": "log_minigame",
+      "type": "minigame",
+      "gameId": "push_box",
+      "minigame": {
+        "gameId": "push_box",
+        "levelId": "push_06",
+        "difficulty": 2,
+        "theme": "frostbitten_pantry"
+      },
+      "text": "Roll the salt barrel into the pantry slot before the cook hears.",
+      "winOps": [
+        { "op": "log", "text": "Cleared. The cook keeps singing. The woodshed door is reachable." },
+        { "op": "set_flag", "flag": "story_mug_pantry_quiet", "value": true },
+        { "op": "give_jp", "amount": 1 }
+      ],
+      "failOps": [
+        { "op": "log", "text": "A barrel thumps too loud. The cook stops singing, considers the silence, and resumes singing about you specifically. Bin walks faster." },
+        { "op": "danger", "amount": 1 }
+      ],
+      "onWin": "screaming_log_peek",
+      "onLose": "screaming_log_peek"
+    },
+    {
+      "id": "screaming_log_peek",
+      "type": "narration",
+      "summary": "The woodshed door opens to a stack of logs. One of them is making a noise that is not a draft.",
+      "text": "The woodshed is exactly as wood-shed-shaped as advertised. There is a tin lamp on a nail, three stacks of seasoned wood, and one log on its own near the back wall. It is a perfectly ordinary log. It is also producing a soft, irregular complaint, like an old man trying to whistle in a dream. Bin's neck does the small wrong thing.",
+      "next": "bin_log_examine"
+    },
+    {
+      "id": "bin_log_examine",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "First night back, screaming log. I am going to leave this exactly where it is, mark it with chalk, and tell Mitia about it tomorrow. The apothecary has a jar for everything. There is probably a jar shaped like 'log.' If not, I will help her make one. Tonight I want soup.",
+      "next": "peri_log_aside"
+    },
+    {
+      "id": "peri_log_aside",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Logged the log. The system is delighted. The log is mildly displeased — it is, by the noise, embarrassed. Whatever lives in it is small, awake, and not happy about being firewood. Tomorrow's problem. Tonight's problem is soup, and a sister who has been told a number of versions of your life and would like the actual one.",
+      "next": "coin_drop"
+    },
+    {
+      "id": "coin_drop",
+      "type": "narration",
+      "summary": "On the way back to the bar Bin finds another rude-candle coin on the floor near the cellar door.",
+      "text": "On the way back through the corridor Bin notices something on the floor near the cellar trapdoor. Round, pale, heavy. Rude candle. Same coin as the road. The host has not been near the cellar tonight; nobody he saw matches. The coin was put there by someone who came in, paid for one drink, and left before the laughter started.",
+      "next": "host_coin_reply"
+    },
+    {
+      "id": "host_coin_reply",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "worried",
+      "text": "Third one this month. Two on the bar, one on the cellar floor. Nobody owns up. I have been keeping them in the salt jar because that felt like the right kind of nonsense. Captain Lysa has two more at the gate office. If you find the fourth, I will pay for the soup. The fourth is the one I am dreading.",
+      "next": "bin_lily_news"
+    },
+    {
+      "id": "bin_lily_news",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Tell me my sister is somewhere I can reach without speaking to four more drunks. Please. Use small words. I have used up the big ones.",
+      "next": "host_lily"
+    },
+    {
+      "id": "host_lily",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "soft",
+      "text": "Mitia's apothecary. East road. She has been there six weeks. She brought me three sachets of frostcap last Tuesday because my voice was going. She wouldn't take a copper. She did take two biscuits. The recipe is on the chalkboard. The chalkboard is also the cat. Bring biscuits. Bring two.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Filed. Tagged. Slightly drunk. The system reminds you that you are still going to walk to the apothecary, but you may now do it with soup in you. The next chapter is firewood with feelings and an apprentice with opinions. Try to arrive with your eyebrows in a normal configuration.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Back-door return logged; screaming log + coin trail flagged.",
+      "ops": [
+        { "op": "tag_add", "tag": "mug_back_door_walked", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Frosted Mug back door is now Bin's preferred entrance. The host owes him one favour." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}

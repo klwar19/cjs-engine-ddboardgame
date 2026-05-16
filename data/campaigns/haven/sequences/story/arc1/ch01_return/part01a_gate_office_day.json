@@ -1,0 +1,255 @@
+{
+  "id": "story_haven_arc1_ch01_part01a_bent_pine_patrol",
+  "version": 4,
+  "title": "Gate Office Day",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch01",
+  "chapterLabel": "1.1",
+  "orderKey": "1.1.a",
+  "partId": "ch01_part01a",
+  "partLabel": "1.1.a",
+  "branchOf": "ch01_part01",
+  "branchKey": "gate",
+  "routeKey": "gate",
+  "routeLabel": "Gate Route",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "office", "paperwork", "branch:gate", "tone:snark"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "captain lysa", "gate guard", "garr"] },
+  "summary": {
+    "short": "Bin re-enters Haven through the front gate, gets shouted at lovingly by the captain, and gets buried in two months of unprocessed paperwork.",
+    "default": "The gate office smells like wet wool and old coffee. Captain Lysa has feelings about latecomers. Bin sorts the supply manifests until his hands stop shaking and the captain stops pretending to be angry. By the end of it, he knows where Lily is."
+  },
+  "nextCandidates": [
+    "1.2.a Apothecary's Apprentice (Lily's herb run)"
+  ],
+  "syncSummary": [
+    "Quest started: Find Lily — Mitia's apothecary, eastern road.",
+    "Hub mood: Frostbitten guard rotates 'Bin alive' from rumor to confirmed.",
+    "Item logged: Strange coin sits in the gate office lost-and-found tin (same design as the road coin).",
+    "Branch flag set: story_gate_office_filed unlocks 1.2.a."
+  ],
+  "completionOps": [
+    { "op": "add_quest", "quest": {
+      "id": "quest_find_lily",
+      "title": "Find Lily",
+      "summary": "Lily's been apprenticing at Mitia's apothecary on the eastern road. Bin should go say hello before the rumour mill does it for him.",
+      "tags": ["story", "family", "find"],
+      "objectives": [
+        { "id": "visit_apothecary", "label": "Visit Mitia's apothecary on the eastern road", "required": 1, "current": 0 }
+      ]
+    }},
+    { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "weird_coins_in_lost_and_found", "label": "Weird foreign coins in the lost-and-found tin", "notes": "Two now. Captain Lysa wants someone to track them but is not making it official." },
+    { "op": "set_flag", "flag": "story_gate_office_filed", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Gate Office Day", "summary": "Bin re-files with the gate, gets a hug shaped like paperwork, and learns where his sister is.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_1a"] }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "The gate office is exactly the way it was two months ago, plus three new stacks of unfiled requisitions and one teakettle that has been quietly betraying its owner since the second day. Three lanterns hang in a row over the duty table. Two are honest. The third is a liar with a bad wick.",
+      "next": "lysa_intro"
+    },
+    {
+      "id": "lysa_intro",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "worried",
+      "text": "Bin. You are late. The civilian word for it is 'late.' The professional word for it is 'two months past your last shift, with no resignation letter, no death certificate, and one extremely upset father who keeps washing the same mug.' Sit down. No, that chair has a wobble. Sit on the other one. You look terrible.",
+      "next": "bin_lysa_reply"
+    },
+    {
+      "id": "bin_lysa_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Captain. I would like the record to show that I was kidnapped by geography. The portal was a closet and the closet was a province. I am sorry I missed three rotations of shift cleaning. I am even sorrier I missed Lily's birthday. Yes, that chair has a wobble. I built it. The wobble is original.",
+      "next": "lysa_intake"
+    },
+    {
+      "id": "lysa_intake",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Stop apologising and start filling. Two months of supply manifests on that desk and exactly nobody fast enough to file them. Sort them by week, flag any frostcap shipments — apothecary keeps shouting about them — and tell me by the bottom of the stack which weeks made no sense. I will pretend the wobble is medical leave.",
+      "next": "peri_aside"
+    },
+    {
+      "id": "peri_aside",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has logged the captain's affection as 'paperwork-shaped.' Translation: she is glad you are alive and she is going to express it by giving you the worst desk in the building. The wobble is character. Sort fast — she gets more aggressive if you slow down.",
+      "next": "paperwork_setup"
+    },
+    {
+      "id": "paperwork_setup",
+      "type": "narration",
+      "summary": "Bin shoves the unfiled crates around the office to clear the floor. This is the puzzle.",
+      "text": "Two months of crates piled across the back of the office. The duty floor is supposed to be clear by ten or somebody trips on a halberd. Bin has to push the supply crates onto their painted-rune slots without jamming himself into a corner. The captain politely does not watch. Politely.",
+      "next": "paperwork_minigame"
+    },
+    {
+      "id": "paperwork_minigame",
+      "type": "minigame",
+      "gameId": "push_box",
+      "minigame": {
+        "gameId": "push_box",
+        "levelId": "push_03",
+        "difficulty": 3,
+        "theme": "guild_storehouse"
+      },
+      "text": "Stage the unfiled supply crates onto the painted rune slots so the floor is walkable again.",
+      "winOps": [
+        { "op": "log", "text": "Floor cleared. Captain Lysa pretends she did not time you." },
+        { "op": "give_jp", "amount": 1 },
+        { "op": "set_flag", "flag": "story_gate_office_floor_clear", "value": true }
+      ],
+      "failOps": [
+        { "op": "log", "text": "One crate sits embarrassed in the doorway. The captain steps over it without comment. The comment will arrive later." },
+        { "op": "danger", "amount": 1 }
+      ],
+      "onWin": "after_minigame_dialog",
+      "onLose": "after_minigame_dialog"
+    },
+    {
+      "id": "after_minigame_dialog",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Good. Less terrible than I assumed. The frostcap manifests are short by three crates and the dates skip a week halfway through. Apothecary will yell at me about that until midwinter unless we know why. That's two birds — your sister works the apothecary now, so go yell back for me. Pass through, take a real coat first.",
+      "next": "bin_lily_news"
+    },
+    {
+      "id": "bin_lily_news",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "Lily is at Mitia's? Since when? I left her cleaning fish at the kitchen window. She hated fish at the time, and was very informative about it. I am going to walk into that shop and find a small adult and lose my balance.",
+      "next": "lysa_lily"
+    },
+    {
+      "id": "lysa_lily",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "soft",
+      "text": "Six weeks. She decided one morning at the kitchen table and Mitia did not argue. The kid sorts herbs faster than anyone Mitia has ever paid. She has opinions about you, which she will deliver with the precision of a small bird with a knife. Bring biscuits. Bring two. One is for Mitia, one is the bribe.",
+      "next": "coin_aside"
+    },
+    {
+      "id": "coin_aside",
+      "type": "narration",
+      "summary": "Captain Lysa nudges a tin tray on the desk. Two foreign coins, identical to the one Bin pocketed.",
+      "text": "Lysa shoves a tin across the desk. Inside: two coins. Heavier than copper, paler than silver, the same rude candle on both. One found at the south gate three weeks ago. One outside the apothecary last week. Bin's pocket is the third in a series he did not ask to join.",
+      "next": "bin_coin_check"
+    },
+    {
+      "id": "bin_coin_check",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "annoyed",
+      "text": "I found one on the road home. Same candle. Same insult. I am going to file mine in the tin and pretend I did not, because if these are showing up in three different parts of town we are going to find out whether somebody is dropping them or planting them.",
+      "next": "lysa_coin"
+    },
+    {
+      "id": "lysa_coin",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "worried",
+      "text": "Not making it official yet. The town's nerves are already at the kettle and I am not adding a curse rumour to the boil. Keep yours, log it as 'lost and found, pending owner.' If a fourth one shows up anywhere, I owe the elders a sentence about it. Move along. Lily.",
+      "next": "stat_check_compose"
+    },
+    {
+      "id": "stat_check_compose",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "I",
+      "difficulty": 11,
+      "defaultResult": "pass",
+      "tags": ["composure", "paperwork", "intuition"],
+      "pass": "compose_pass",
+      "fail": "compose_fail"
+    },
+    {
+      "id": "compose_pass",
+      "type": "narration",
+      "text": "Bin actually reads the dates while pretending not to. The frostcap shipments stop on a Wednesday and resume the next Tuesday with no signature from anyone he recognises. The Wednesday cargo never reaches Mitia's. The Tuesday cargo over-delivers by exactly the missing amount and the handwriting is wrong.",
+      "next": "garr_arrives"
+    },
+    {
+      "id": "compose_fail",
+      "type": "narration",
+      "text": "Bin pretends he is reading the dates. His eyes are not co-operating. He is going to walk out of here with the captain's verbal summary and pretend that's research. Mitia is going to spot that immediately. He will deal with that later, when his hands can hold a quill without explaining themselves.",
+      "next": "garr_arrives"
+    },
+    {
+      "id": "garr_arrives",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "soft",
+      "text": "I came through the back door so the room wouldn't have a moment. The moment is going to happen anyway, so I am pretending I am here for paperwork. Bin. Boy. You are late. Dinner is at the second boil and Lily put out three plates again. We can argue about who you are after we are in the kitchen.",
+      "next": "bin_garr_reply"
+    },
+    {
+      "id": "bin_garr_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "sad",
+      "text": "I will be in the kitchen. After Lily. After the apothecary. After biscuits. I want to walk through that door already smelling of frostcap so it counts as a job and not a confession. I owe you the long version of where I have been. Tonight you get the short one. The long one comes with stew.",
+      "next": "garr_close"
+    },
+    {
+      "id": "garr_close",
+      "type": "dialogue",
+      "speaker": "Garr",
+      "speakerId": "haven_garr",
+      "side": "right",
+      "expression": "soft",
+      "text": "Short version is fine. Stew is on the second boil and stays warm until midnight on principle. Take your coat. The good one. The one your sister patched at the elbow because she said the old one was 'an injury waiting to happen.' She was right. She is usually right. Go.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Filed. Tagged. Cried about in a professional manner. The next chapter is your sister, an apothecary, and a herb run with attitude. The system reminds you that bringing biscuits is the actual win condition here. Two biscuits. Do not eat them on the way.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Gate paperwork filed; Bin knows where Lily is and the coin trail is officially unofficial.",
+      "ops": [
+        { "op": "tag_add", "tag": "gate_office_filed", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Gate office paperwork up to date. Bin's coin and the lost-and-found coins now match." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
+  ]
+}
