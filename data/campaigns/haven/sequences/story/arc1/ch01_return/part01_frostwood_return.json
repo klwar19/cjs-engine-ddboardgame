@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch01_part01_frostwood_return",
-  "version": 1,
+  "version": 2,
   "title": "Frostwood Return",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -9,20 +9,22 @@
   "orderKey": "1.1",
   "partId": "ch01_part01",
   "partLabel": "1.1",
+  "branchKey": "trunk",
   "startNode": "open",
-  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood"],
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "branch:open"],
   "summary": {
     "short": "Bin reaches Haven's edge and the town starts reacting to the rumor that he is alive.",
     "default": "Bin reaches the Frostwood road, takes the gate route by default, and the return becomes public."
   },
   "nextCandidates": [
-    "1.1a Bent Pine Patrol",
-    "1.2 Frostbitten Gate Debrief (in update)"
+    "1.1.a Bent Pine Patrol (gate route)",
+    "1.1.b Frosted Mug Whispers (tavern route)"
   ],
   "syncSummary": [
     "Rumor added: Bin was seen alive on the Frostwood road.",
     "Hub mood set: Frostbitten shifts to uneasy relief.",
-    "Peri's follow-up can branch from the chosen return route."
+    "Branch flag set: the chosen return route gates the next chapter (1.1.a or 1.1.b)."
   ],
   "completionOps": [
     {
@@ -50,7 +52,7 @@
     {
       "id": "open",
       "type": "narration",
-      "text": "Snow folds over the Frostwood road like the world is trying to hide the paperwork. Bin lands badly, stands up worse, and hears Peri trying not to laugh.",
+      "text": "Snow folds over the Frostwood road like the world is trying to hide the paperwork. Bin lands badly, stands up worse, and hears Peri trying not to laugh somewhere just over his left shoulder. The CJS overlay flickers once and politely pretends the entire arrival was production-grade.",
       "next": "peri_open"
     },
     {
@@ -58,7 +60,23 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "Welcome home. Try not to die before anyone can be emotionally inconvenient about it.",
+      "text": "Welcome home. Try not to die before anyone can be emotionally inconvenient about it. The patrol board will eat your face. The tavern will eat your reputation. Pick a kind of suffering.",
+      "next": "bin_orient"
+    },
+    {
+      "id": "bin_orient",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "I have been gone for two months and the welcome wagon is already a metaphor. Let me at least pretend I have a plan before the system charges me a dignity tax.",
+      "next": "peri_brief"
+    },
+    {
+      "id": "peri_brief",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Two routes from here. Gate is honest, public, terrifying. Mug is gossip first, fix-the-story-later. Both end at Frostbitten. Only one keeps you out of the front page.",
       "next": "route_choice"
     },
     {
@@ -69,19 +87,23 @@
       "choices": [
         {
           "id": "gate",
-          "label": "Walk to the gate",
+          "label": "Walk to the gate openly",
+          "summary": "Public return. Unlocks chapter 1.1.a Bent Pine Patrol.",
           "next": "gate_move",
           "ops": [
             { "op": "set_flag", "flag": "story_return_route_gate", "value": true },
+            { "op": "clear_flag", "flag": "story_return_route_tavern" },
             { "op": "log", "text": "Story route: Bin approaches Frostbitten through the gate." }
           ]
         },
         {
           "id": "tavern",
           "label": "Sneak toward the Frosted Mug",
+          "summary": "Quiet return. Unlocks chapter 1.1.b Frosted Mug Whispers.",
           "next": "tavern_note",
           "ops": [
             { "op": "set_flag", "flag": "story_return_route_tavern", "value": true },
+            { "op": "clear_flag", "flag": "story_return_route_gate" },
             { "op": "log", "text": "Story route: Bin hears town gossip before the reunion." }
           ]
         }
@@ -89,20 +111,30 @@
     },
     {
       "id": "gate_move",
-      "type": "ops",
+      "type": "narration",
       "summary": "Bin stays visible on purpose so the gate rumor reaches Haven first.",
-      "ops": [
-        { "op": "log", "text": "Bin keeps to the gate line so his return becomes impossible to deny." }
-      ],
+      "text": "Bin walks the gate line slowly. Half a dozen people make eye contact and decide later, simultaneously. By the time he passes the third lantern, the news is already running ahead of him on a different pair of legs.",
+      "next": "gate_guard"
+    },
+    {
+      "id": "gate_guard",
+      "type": "dialogue",
+      "speaker": "Gate Guard",
+      "text": "Garr's kid? We... we thought you were dead. Sorry. That came out faster than I meant. Step inside before someone starts crying on duty.",
       "next": "first_check"
     },
     {
       "id": "tavern_note",
-      "type": "ops",
+      "type": "narration",
       "summary": "Bin catches the town calling him a ghost before he can correct the rumor.",
-      "ops": [
-        { "op": "tag_add", "tag": "ghost_rumor_stirring", "scope": "story", "source": "sequence" }
-      ],
+      "text": "Bin takes the back alley behind the Frosted Mug. Light leaks out under the door along with someone's spirited theory that he died face-first in a foreign sea. Another voice corrects: face-first into a portal, far more dramatic.",
+      "next": "tavern_overhear"
+    },
+    {
+      "id": "tavern_overhear",
+      "type": "dialogue",
+      "speaker": "Mug Regular",
+      "text": "Two months, no body, and his crossbow still hangs on the wall. Either the boy is alive or someone is paying for a very strange long con.",
       "next": "first_check"
     },
     {
@@ -120,27 +152,30 @@
       "id": "pass_line",
       "type": "dialogue",
       "speaker": "Bin",
-      "text": "I am alive, mostly employed, and legally not a ghost.",
+      "portrait": "bin",
+      "text": "I am alive, mostly employed, and legally not a ghost. Please direct all sentimental damage through Peri. She enjoys the paperwork.",
       "next": "handoff"
     },
     {
       "id": "fail_line",
       "type": "dialogue",
       "speaker": "Bin",
-      "text": "I can explain. Badly, but with confidence.",
+      "portrait": "bin",
+      "text": "I can explain. Badly, but with confidence. The short version is that I am back. The long version is illegal in three jurisdictions I have never visited.",
       "next": "handoff"
     },
     {
       "id": "handoff",
       "type": "dialogue",
       "speaker": "Peri",
-      "text": "Good. Stay alive long enough to help me sweep Bent Pine. If something is tailing the patrol line, I want eyes on it before the gate calms down.",
+      "portrait": "peri",
+      "text": "Good. Stay alive long enough for the next part. If you took the gate, Bent Pine wants eyes on it. If you took the Mug, the cellar is talking and the talk is not friendly. Either way, you are walking somewhere.",
       "next": "finish_ops"
     },
     {
       "id": "finish_ops",
       "type": "ops",
-      "summary": "The return scene is recorded and Bent Pine becomes the next chapter handoff.",
+      "summary": "The return scene is recorded and Bent Pine or the Mug becomes the next chapter handoff.",
       "ops": [
         { "op": "set_flag", "flag": "story_haven_return_seen", "value": true },
         { "op": "tag_add", "tag": "bin_returned_to_haven", "scope": "story", "source": "sequence" }

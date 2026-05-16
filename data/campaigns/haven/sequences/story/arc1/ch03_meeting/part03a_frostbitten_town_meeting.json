@@ -1,0 +1,218 @@
+{
+  "id": "story_haven_arc1_ch03_part03a_frostbitten_town_meeting",
+  "version": 1,
+  "title": "Frostbitten Town Meeting",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch03",
+  "chapterLabel": "1.3",
+  "orderKey": "1.3.a",
+  "partId": "ch03_part03a",
+  "partLabel": "1.3.a",
+  "branchOf": "ch02_part02a",
+  "alsoBranchOf": ["ch02_part02b"],
+  "branchKey": "converge",
+  "routeKey": "converge",
+  "routeLabel": "Convergence",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:meeting", "frostbitten", "branch:converge"],
+  "summary": {
+    "short": "Both routes meet at the Frostbitten town meeting and the arc decides what to act on next.",
+    "default": "Frostbitten merges the patrol problem and the outside-buyer problem into one practical agenda."
+  },
+  "nextCandidates": [
+    "Chapter 1.4 (planned, in update) — the arc moves out of return mode."
+  ],
+  "syncSummary": [
+    "Town agenda set: Bent Pine and the outside buyer become one combined plan.",
+    "Hub mood shift: Frostbitten reaches measured concern, ready for the next arc beat.",
+    "Branch state: 1.3.a is the converged anchor for both 1.1.a/1.2.a and 1.1.b/1.2.b paths."
+  ],
+  "completionOps": [
+    {
+      "op": "hub_mood_set",
+      "hubId": "haven_hub_frostbitten",
+      "mood": "measured_concern"
+    },
+    {
+      "op": "add_rumor",
+      "hubId": "haven_hub_frostbitten",
+      "id": "rumor_combined_agenda",
+      "text": "Frostbitten is treating the patrol threat and the outside buyer as one problem now. The next move will be planned, not reactive.",
+      "tags": ["story", "town_meeting", "agenda"]
+    },
+    {
+      "op": "set_flag",
+      "flag": "story_town_meeting_held",
+      "value": true
+    },
+    {
+      "op": "event_log_add",
+      "title": "Story Sync: Frostbitten Town Meeting",
+      "summary": "Both routes converge at the town meeting. Bent Pine and the outside buyer are now one combined problem with a real schedule.",
+      "scope": "story",
+      "source": "story_sync",
+      "tags": ["story_part", "chapter_1_3a", "convergence"]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "The Frostbitten meeting hall has more chairs than usual and slightly too few mugs. Captain Lysa is at the front. Corvin is at the back pretending to count something. Peri has chosen a beam to lean against that gives her perfect visibility on every face in the room.",
+      "next": "lysa_open"
+    },
+    {
+      "id": "lysa_open",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "text": "Two items. One: Bent Pine. Two: the buyer asking after Garr's hut. I would normally take them apart. Tonight I am taking them together. Bin, you have the floor before the floor has you.",
+      "next": "bin_summary"
+    },
+    {
+      "id": "bin_summary",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "Both stories share a date pattern. Both stories share a courier description, or close enough. Whatever has been watching Garr's hut is on the same calendar as whatever has been moving along Bent Pine. I want them treated as one thing until proven otherwise.",
+      "next": "branch_check"
+    },
+    {
+      "id": "branch_check",
+      "type": "condition",
+      "tags": ["branch_check"],
+      "conditions": {
+        "anyOf": [
+          { "flag": "story_courier_public" },
+          { "flag": "story_route_b_settled" }
+        ]
+      },
+      "pass": "tavern_voice",
+      "fail": "gate_voice"
+    },
+    {
+      "id": "tavern_voice",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "text": "I am sorry it took me this long to say this in front of you all. The courier is real. The questions are real. They use the south gate on market days. I will name the two regulars who took the coin if it helps.",
+      "next": "agenda_choice"
+    },
+    {
+      "id": "gate_voice",
+      "type": "dialogue",
+      "speaker": "Gate Sergeant",
+      "text": "Bent Pine is closed unless escorted. Two of my newer guards walked it again this morning and came back chewed. Whatever it is, it is not getting smaller and it does not appreciate paperwork.",
+      "next": "agenda_choice"
+    },
+    {
+      "id": "agenda_choice",
+      "type": "choice",
+      "prompt": "Frostbitten's combined agenda.",
+      "defaultChoiceId": "hunt",
+      "choices": [
+        {
+          "id": "hunt",
+          "label": "Plan a joint hunt and a public watch",
+          "summary": "Aggressive. Bent Pine purge and a south-gate watch on market days.",
+          "next": "hunt_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_meeting_action_hunt", "value": true },
+            { "op": "log", "text": "Frostbitten chose a joint hunt and a public watch." }
+          ]
+        },
+        {
+          "id": "fortify",
+          "label": "Fortify and quietly investigate",
+          "summary": "Patient. Better information, slower escalation.",
+          "next": "fortify_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_meeting_action_fortify", "value": true },
+            { "op": "log", "text": "Frostbitten chose to fortify and investigate quietly." }
+          ]
+        },
+        {
+          "id": "compromise",
+          "label": "Compromise — escorted patrols and a sealed inquiry",
+          "summary": "Middle ground. Both half-done, both moving.",
+          "next": "compromise_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_meeting_action_compromise", "value": true },
+            { "op": "log", "text": "Frostbitten chose escorted patrols and a sealed inquiry." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hunt_route",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "text": "Hunt it is. We organize the purge first, the watch second. Bin, Peri, and Garr can lead. If anyone in this room loses their nerve, I would rather know now than during.",
+      "next": "stat_check"
+    },
+    {
+      "id": "fortify_route",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "text": "Fortify it is. Bin and Peri quietly walk the buyer's calendar. Garr keeps the family inside the walls until we know who is being asked about and why.",
+      "next": "stat_check"
+    },
+    {
+      "id": "compromise_route",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "text": "Compromise it is. We pretend that two half-jobs add up to a whole one. They will not, but the town can tolerate the lie if we are honest about it later.",
+      "next": "stat_check"
+    },
+    {
+      "id": "stat_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "C",
+      "difficulty": 13,
+      "defaultResult": "pass",
+      "tags": ["public_speaking", "diplomacy"],
+      "pass": "stat_pass",
+      "fail": "stat_fail"
+    },
+    {
+      "id": "stat_pass",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "I owe the town a clean report. So I will write one. Whatever the plan, I will keep you in it. Frostbitten has been polite about my being missing. It is my turn to be polite about being here.",
+      "next": "peri_close"
+    },
+    {
+      "id": "stat_fail",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "I am bad at speeches. Two months of weather did not fix that. I just want all of you to know I am taking the next move seriously. The system says I rate this beat a five out of ten. I am okay with the five.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "And that is the meeting. The arc walks out of return mode now. The system politely informs me that chapter 1.4 is queued and currently in update. I will not let you forget which fork you took. Frostbitten will not either.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "The meeting closes; the converged route is recorded.",
+      "ops": [
+        { "op": "tag_add", "tag": "frostbitten_town_meeting_held", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Frostbitten town meeting closed. Arc 1 leaves return mode and the next chapter is queued for delivery." }
+      ],
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "result": "complete"
+    }
+  ]
+}

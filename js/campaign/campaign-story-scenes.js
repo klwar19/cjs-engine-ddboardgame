@@ -240,6 +240,7 @@ window.CJS.CampaignStoryScenes = (() => {
           <span>${_esc(normalized.title)}</span>
           <button type="button" data-vn-skip>Skip Text</button>
         </div>
+        <button type="button" class="campaign-vn-close" data-vn-close aria-label="Close scene">×</button>
         <div class="campaign-vn-portraits">
           <div class="campaign-vn-portrait is-left" data-vn-portrait-left></div>
           <div class="campaign-vn-portrait is-right" data-vn-portrait-right></div>
@@ -247,7 +248,7 @@ window.CJS.CampaignStoryScenes = (() => {
         <section class="campaign-vn-dialogue">
           <div class="campaign-vn-speaker" data-vn-speaker></div>
           <p data-vn-text></p>
-          <small data-vn-hint>Awaiting input</small>
+          <small data-vn-hint>Click or press Space to continue</small>
         </section>
         <section class="campaign-vn-choices" data-vn-choices hidden></section>
       </div>
@@ -265,6 +266,18 @@ window.CJS.CampaignStoryScenes = (() => {
       event.stopPropagation();
       _skipTypingOrChoices(normalized, context);
     });
+    const closeBtn = overlay.querySelector('[data-vn-close]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        _closeOverlay();
+        if (context.pendingId) {
+          finishPendingNodeEntry({ reason: 'user_closed' });
+        } else {
+          _completeStandaloneScene(context, { reason: 'user_closed', sceneId: normalized.id });
+        }
+      });
+    }
     overlay.addEventListener('click', (event) => {
       if (event.target.closest('button')) return;
       advance();

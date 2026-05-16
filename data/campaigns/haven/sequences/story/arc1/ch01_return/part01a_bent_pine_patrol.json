@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch01_part01a_bent_pine_patrol",
-  "version": 1,
+  "version": 2,
   "title": "Bent Pine Patrol",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -8,20 +8,26 @@
   "chapterLabel": "1.1",
   "orderKey": "1.1.a",
   "partId": "ch01_part01a",
-  "partLabel": "1.1a",
+  "partLabel": "1.1.a",
+  "branchOf": "ch01_part01",
+  "branchKey": "gate",
+  "routeKey": "gate",
+  "routeLabel": "Gate Route",
   "startNode": "briefing",
-  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "map_run"],
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "map_run", "branch:gate"],
   "summary": {
     "short": "Bin and Peri test the Bent Pine line before Haven can settle.",
     "default": "The patrol reaches Watch Ridge and confirms the route is not safe yet."
   },
   "nextCandidates": [
-    "1.2 Frostbitten Gate Debrief (in update)"
+    "1.2.a Watch Ridge Cleanup (continues the gate route)"
   ],
   "syncSummary": [
     "Quest added: Watch Ridge Cleanup.",
     "Hub problem added: Something is stalking the patrol line up close.",
-    "Rumor added: the Bent Pine route now has a confirmed moving threat."
+    "Rumor added: the Bent Pine route now has a confirmed moving threat.",
+    "Branch flag set: story_bent_pine_walked unlocks 1.2.a."
   ],
   "completionOps": [
     {
@@ -56,6 +62,11 @@
       "tags": ["story", "patrol", "moving_threat"]
     },
     {
+      "op": "set_flag",
+      "flag": "story_bent_pine_walked",
+      "value": true
+    },
+    {
       "op": "event_log_add",
       "title": "Story Sync: Bent Pine Patrol",
       "summary": "The Bent Pine route stays unstable after a live patrol check.",
@@ -68,14 +79,23 @@
     {
       "id": "briefing",
       "type": "narration",
-      "text": "The gate still smells like wet wool and nerves when Peri drags Bin straight to the patrol board. Bent Pine is the shortest line to Watch Ridge, which is exactly why everyone stopped trusting it.",
+      "text": "The gate still smells like wet wool and nerves when Peri drags Bin straight to the patrol board. Bent Pine is the shortest line to Watch Ridge, which is exactly why everyone stopped trusting it. The pins on the board are the wrong color and the wrong number.",
       "next": "peri_brief"
     },
     {
       "id": "peri_brief",
       "type": "dialogue",
       "speaker": "Peri",
-      "text": "We sweep the line, check the ridge, and if something rushes us face-first we solve it immediately. No heroic paperwork, just movement and results.",
+      "portrait": "peri",
+      "text": "We sweep the line, check the ridge, and if something rushes us face-first we solve it immediately. No heroic paperwork, just movement and results. The system promises a small amount of structured suffering.",
+      "next": "bin_question"
+    },
+    {
+      "id": "bin_question",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "Define structured. Define small. Also define suffering, because the last three uses of those words ended with me bleeding on someone else's roof.",
       "next": "route_choice"
     },
     {
@@ -87,6 +107,7 @@
         {
           "id": "markers",
           "label": "Hold to the ridge markers",
+          "summary": "Disciplined approach. Lower danger.",
           "next": "prep_check",
           "ops": [
             { "op": "set_flag", "flag": "story_bent_pine_route_markers", "value": true },
@@ -96,6 +117,7 @@
         {
           "id": "cutthrough",
           "label": "Cut through Bent Pine early",
+          "summary": "Faster and louder. +1 danger.",
           "next": "prep_check",
           "ops": [
             { "op": "set_flag", "flag": "story_bent_pine_route_cutthrough", "value": true },
@@ -120,21 +142,23 @@
       "id": "prep_pass",
       "type": "dialogue",
       "speaker": "Bin",
-      "text": "If the route is alive, we walk it before it learns our names.",
+      "portrait": "bin",
+      "text": "If the route is alive, we walk it before it learns our names. Cover the shoulders, watch the snowpack, do not look surprised when the trees do something rude.",
       "next": "field_run"
     },
     {
       "id": "prep_fail",
       "type": "dialogue",
       "speaker": "Peri",
-      "text": "That sounded reckless enough to count as confidence. Move.",
+      "portrait": "peri",
+      "text": "That sounded reckless enough to count as confidence. Move. The system has reserved a back row seat in case you embarrass yourself.",
       "next": "field_run"
     },
     {
       "id": "field_run",
       "type": "scenario",
       "scenarioId": "haven_scn_frostwood_grid_patrol",
-      "text": "Patrol Bent Pine, react to traps and roaming contact, and push through to Watch Ridge.",
+      "text": "Patrol Bent Pine, react to traps and roaming contact, and push through to Watch Ridge. The grid map runs with moving monsters; objective reveals at sixty percent explored.",
       "onSuccess": "after_run",
       "onFail": "after_loss",
       "onAbort": "after_abort"
@@ -143,20 +167,22 @@
       "id": "after_run",
       "type": "dialogue",
       "speaker": "Peri",
-      "text": "Watch Ridge is still standing, which is more than I promised. Now we tell the gate this line stays dangerous until someone clears it properly.",
+      "portrait": "peri",
+      "text": "Watch Ridge is still standing, which is more than I promised. Now we tell the gate this line stays dangerous until someone clears it properly. That paperwork has your name on it whether you like it or not.",
       "next": "end"
     },
     {
       "id": "after_loss",
       "type": "dialogue",
       "speaker": "Bin",
-      "text": "We got pushed off the line. Next pass needs fresh supplies, less pride, and maybe fewer things that sprint straight into your face.",
+      "portrait": "bin",
+      "text": "We got pushed off the line. Next pass needs fresh supplies, less pride, and maybe fewer things that sprint straight into your face. Frostbitten is going to enjoy the report exactly zero amount.",
       "next": "end"
     },
     {
       "id": "after_abort",
       "type": "narration",
-      "text": "The patrol breaks off before the ridge call is settled. Frostbitten will have questions waiting.",
+      "text": "The patrol breaks off before the ridge call is settled. Frostbitten will have questions waiting and the answers will be the wrong shape.",
       "next": "end"
     },
     {

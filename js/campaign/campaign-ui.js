@@ -58,6 +58,7 @@ window.CJS.CampaignUI = (() => {
   let _activePanel = null;
   let _lastFocus = null;
   let _escBound = false;
+  let _lastPendingBattleKey = '';
   let _drawerEl = null;
   let _drawerBackdropEl = null;
 
@@ -206,7 +207,27 @@ window.CJS.CampaignUI = (() => {
     if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
     _bindRunPanel();
     _renderPanelLayer();
+    _flashOnNewEncounter(state);
     setTimeout(() => window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.(), 0);
+  }
+
+  function _flashOnNewEncounter(state = {}) {
+    const battle = state?.pendingBattle;
+    if (!battle) {
+      _lastPendingBattleKey = '';
+      return;
+    }
+    const key = `${battle.source || ''}:${battle.threatId || ''}:${battle.encounterId || ''}:${battle.battleSetId || ''}:${battle.label || ''}`;
+    if (key === _lastPendingBattleKey) return;
+    _lastPendingBattleKey = key;
+    if (battle.source !== 'moving_threat' && battle.source !== 'random' && battle.source !== 'random_monster_pool' && battle.source !== 'node' && battle.source !== 'progress_trigger') return;
+    const flash = document.createElement('div');
+    flash.className = 'campaign-encounter-flash';
+    flash.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(flash);
+    setTimeout(() => {
+      if (flash.parentNode) flash.parentNode.removeChild(flash);
+    }, 720);
   }
 
   function _bindRunPanel() {
@@ -998,10 +1019,11 @@ window.CJS.CampaignUI = (() => {
       <div class="campaign-dashboard campaign-mode-home campaign-story-home campaign-story-vn ${_escAttr(theme.className)}" ${_storyThemeStyle(theme)}>
         ${_renderStoryVnHero({ state, pack, stage, next, theme })}
         ${_renderActiveSequence(state, ['story'])}
+        ${_renderChapterTreePanel(state)}
         ${_renderSequenceShelf('story', {
           wide: true,
           title: 'Chapter Files',
-          note: 'Pick the chapter part to play. If you start ahead, previous content is considered revealed with default choices.'
+          note: 'Pick the chapter part to play. Branches are gated by the choice you made in the previous chapter, so unlocked branches will be marked. If you start ahead, prior parts are revealed with the default path.'
         })}
         <section class="campaign-panel campaign-wide-panel campaign-home-focus">
           <div class="campaign-panel-head">
@@ -1713,6 +1735,80 @@ window.CJS.CampaignUI = (() => {
       syncSummary: meta.syncSummary || [],
       syncTitle: meta.title || meta.partLabel || meta.sequenceId || ''
     };
+  }
+
+  function _renderChapterTreePanel(state = CS().getState() || {}) {
+    const Seq = window.CJS.CampaignSequences;
+    if (!Seq?.chapterTree) return '';
+    const tree = Seq.chapterTree(state.currentWorld, state);
+    if (!tree || !tree.roots?.length) return '';
+    const route = Seq.currentRouteChoices(state, state.currentWorld) || [];
+    const routeText = route.length
+      ? route.map((entry) => entry.partLabel || entry.title || entry.sequenceId).join(' → ')
+      : 'No story parts played yet.';
+    return `
+      <section class="campaign-panel campaign-wide-panel campaign-chapter-tree-panel">
+        <div class="campaign-panel-head">
+          <div>
+            <h3>Chapter Routes</h3>
+            <div class="campaign-muted">Branches unlock from the choices you made. Locked rows show what you still need before they can play.</div>
+          </div>
+          <span class="campaign-pill">${route.length} played</span>
+        </div>
+        <div class="campaign-route-trail" aria-label="Current route">
+          <strong>Route taken:</strong>
+          <span>${_esc(routeText)}</span>
+        </div>
+        <div class="campaign-chapter-tree" role="tree" aria-label="Chapter tree">
+          ${tree.roots.map((node) => _renderChapterTreeNode(node, 0)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderChapterTreeNode(node = {}, depth = 0) {
+    const status = node.status || {};
+    const eligibility = node.eligibility || { eligible: true, reasons: [] };
+    const blocked = status.deliveryBlocked;
+    const completed = status.completed;
+    const defaulted = status.defaulted;
+    const replayOnly = status.replayOnly;
+    const locked = !eligibility.eligible && !replayOnly;
+    let stateLabel = 'Ready';
+    let stateClass = 'is-ready';
+    if (blocked) { stateLabel = 'In Update'; stateClass = 'is-update'; }
+    else if (completed) { stateLabel = 'Played'; stateClass = 'is-played'; }
+    else if (defaulted) { stateLabel = 'Defaulted'; stateClass = 'is-defaulted'; }
+    else if (locked) { stateLabel = 'Locked'; stateClass = 'is-locked'; }
+    const reasons = locked ? eligibility.reasons.join(' | ') : '';
+    const routeChip = node.routeLabel
+      ? `<span class="campaign-chip is-route">${_esc(node.routeLabel)}</span>`
+      : (node.routeKey ? `<span class="campaign-chip is-route">${_esc(_label(node.routeKey))}</span>` : '');
+    const action = blocked
+      ? `<span class="campaign-pill is-update">In Update</span>`
+      : (locked
+        ? `<button class="campaign-action" data-campaign-action="sequence-start" data-id="${_escAttr(node.id)}" disabled title="${_escAttr(reasons || 'Locked')}">Locked</button>`
+        : `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(node.id)}">${replayOnly ? 'Read' : 'Play'}</button>`);
+    return `
+      <div class="campaign-chapter-tree-node depth-${Math.min(depth, 4)} ${stateClass}" role="treeitem" aria-level="${depth + 1}">
+        <div class="campaign-chapter-tree-row">
+          <div class="campaign-chapter-tree-marker" aria-hidden="true"></div>
+          <div class="campaign-chapter-tree-body">
+            <div class="campaign-chapter-tree-head">
+              <strong>${_esc(node.partLabel || node.orderKey || node.id)}</strong>
+              <span>${_esc(node.title || '')}</span>
+              ${routeChip}
+              <span class="campaign-pill ${stateClass}">${_esc(stateLabel)}</span>
+            </div>
+            ${node.meta?.summary?.short ? `<div class="campaign-muted">${_esc(node.meta.summary.short)}</div>` : ''}
+            ${reasons ? `<div class="campaign-muted is-warning">Unlock requires: ${_esc(reasons)}</div>` : ''}
+            ${node.nextCandidates?.length ? `<div class="campaign-muted">Next: ${_esc(node.nextCandidates.join(' / '))}</div>` : ''}
+            <div class="campaign-chapter-tree-actions">${action}</div>
+          </div>
+        </div>
+        ${node.children?.length ? `<div class="campaign-chapter-tree-children">${node.children.map((child) => _renderChapterTreeNode(child, depth + 1)).join('')}</div>` : ''}
+      </div>
+    `;
   }
 
   function _renderStoryPipelinePanel(pipeline = {}) {
@@ -6407,6 +6503,36 @@ window.CJS.CampaignUI = (() => {
       const ops = (choice.ops || []).map((op) => `    - ${Ops().describe([op])[0] || op.op}`).join('\n') || '    - Story only';
       return `${index + 1}. ${choice.label || `Choice ${index + 1}`}\n${ops}`;
     }).join('\n') || 'No current branch choices.';
+    const Seq = window.CJS.CampaignSequences;
+    const route = Seq?.currentRouteChoices?.(state, state.currentWorld) || [];
+    const routePath = route.length
+      ? route.map((entry) => `${entry.partLabel || entry.title || entry.sequenceId}${entry.routeLabel ? ` (${entry.routeLabel})` : ''}`).join(' → ')
+      : 'No story parts played yet.';
+    const routeDetail = route.length
+      ? route.map((entry) => {
+        const choiceText = (entry.choices || [])
+          .map((choice) => `${choice.nodeId}=${choice.choiceId || choice.label || '?'}`)
+          .join(', ');
+        return `- ${entry.partLabel || entry.title || entry.sequenceId} [${entry.mode}]${choiceText ? `: ${choiceText}` : ''}`;
+      }).join('\n')
+      : '- None yet';
+    const tree = Seq?.chapterTree?.(state.currentWorld, state) || { nodes: [] };
+    const upcoming = (tree.nodes || []).filter((node) => {
+      const eligible = node.eligibility?.eligible;
+      const replayed = node.status?.replayOnly;
+      const blocked = node.status?.deliveryBlocked;
+      return eligible && !replayed && !blocked;
+    }).slice(0, 6);
+    const upcomingText = upcoming.length
+      ? upcoming.map((node) => `- ${node.partLabel || node.partId || node.id}${node.routeLabel ? ` (${node.routeLabel})` : ''}: ${node.title}`).join('\n')
+      : '- Nothing currently unlocked beyond the trunk.';
+    const lockedHints = (tree.nodes || []).filter((node) => {
+      const blocked = node.status?.deliveryBlocked;
+      return !node.eligibility?.eligible && !node.status?.replayOnly && !blocked && node.eligibility?.reasons?.length;
+    }).slice(0, 5);
+    const lockedText = lockedHints.length
+      ? lockedHints.map((node) => `- ${node.partLabel || node.partId || node.id}: ${(node.eligibility.reasons || []).join(' | ')}`).join('\n')
+      : '- No locked branches with clear unlock hints.';
     return [
       'CJS Story Mode GM Prompt',
       '',
@@ -6415,6 +6541,16 @@ window.CJS.CampaignUI = (() => {
       `Current stage: ${stage.name || stage.id || 'No stage'} - ${stage.summary || ''}`,
       `Party: ${party}`,
       `Chapter/phase: chapter ${_storyChapterText(state)}, phase ${state.phase?.number || 1} (${state.phase?.type || 'unknown'})`,
+      '',
+      'Route taken so far:',
+      `Path: ${routePath}`,
+      routeDetail,
+      '',
+      'Currently unlocked next chapter parts:',
+      upcomingText,
+      '',
+      'Locked branches (and what unlocks them):',
+      lockedText,
       '',
       'Current beat:',
       last.title ? `${last.title}\n${last.prompt || last.text || last.summary || ''}` : 'No current beat rolled.',
@@ -6432,7 +6568,7 @@ window.CJS.CampaignUI = (() => {
       facts,
       '',
       'Request:',
-      'Suggest the next playable scene for solo or GM-led tabletop play. Keep it clear, practical, funny when appropriate, and avoid locking protected canon unless explicitly chosen.'
+      'Continue the chapter that follows the route the player has taken. Respect the branch flags (e.g. gate vs tavern, hunt vs fortify vs compromise). When you write the next scene, begin with VN narration + dialogue + at least one stat/choice/QTE hook, then progress into either a map step or a battle that pops up directly in the player\'s face on contact. Resolve combat with consequences: losing should imply a penalty or retry, not a soft reset. Keep authored content concrete, no decorative filler, and end each scene with a clear next action or unlock signal.'
     ].join('\n');
   }
 

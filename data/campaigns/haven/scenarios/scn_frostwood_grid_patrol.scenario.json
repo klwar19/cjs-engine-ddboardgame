@@ -44,9 +44,10 @@
           "label": "Shadow Wolf Rusher",
           "cell": { "x": 4, "y": 3 },
           "battleSetId": "haven_bset_wolf_pack_bent_pine",
+          "monsterIds": ["haven_ice_wolf"],
           "moveMode": "random",
           "moveChance": 1,
-          "icon": "!",
+          "icon": "🐺",
           "notes": "The wolf line cuts across the party and forces an immediate fight on contact.",
           "tags": ["wolf", "moving_threat"],
           "defeatOps": [
@@ -91,13 +92,15 @@
           "id": "patrol_midpoint",
           "when": { "type": "explore_percent", "gte": 30 },
           "log": "Mid-beat: Bent Pine closes in and the patrol starts tracking a second set of movements.",
-          "setFlags": { "story_frostwood_patrol_midbeat": true }
+          "setFlags": { "story_frostwood_patrol_midbeat": true },
+          "storySceneId": "haven_story_patrol_midbeat_30"
         },
         {
           "id": "patrol_objective_reveal",
           "when": { "type": "explore_percent", "gte": 60 },
           "revealObjective": { "reason": "60_percent_explored" },
-          "log": "Final objective area revealed: Watch Ridge is finally in sight."
+          "log": "Final objective area revealed: Watch Ridge is finally in sight.",
+          "storySceneId": "haven_story_patrol_objective_60"
         }
       ],
       "entryOps": [

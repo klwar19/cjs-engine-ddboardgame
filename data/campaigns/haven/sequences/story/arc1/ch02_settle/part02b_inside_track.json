@@ -1,0 +1,183 @@
+{
+  "id": "story_haven_arc1_ch02_part02b_inside_track",
+  "version": 1,
+  "title": "Inside Track",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch02",
+  "chapterLabel": "1.2",
+  "orderKey": "1.2.b",
+  "partId": "ch02_part02b",
+  "partLabel": "1.2.b",
+  "branchOf": "ch01_part01b",
+  "branchKey": "tavern",
+  "routeKey": "tavern",
+  "routeLabel": "Tavern Route",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:settle", "tavern", "branch:tavern"],
+  "summary": {
+    "short": "Bin follows the cellar trail and turns gossip into a usable lead.",
+    "default": "The Mug cellar yields a name, a courier route, and a quiet alliance with the host."
+  },
+  "nextCandidates": [
+    "1.3.a Frostbitten Town Meeting (convergence point with the gate route)"
+  ],
+  "syncSummary": [
+    "Hub problem upgraded: outside buyer of inquiries has a delivery route now.",
+    "Rumor added: the courier moves on market days using the south gate.",
+    "Branch flag set: story_route_b_settled unlocks the converged 1.3.a chapter."
+  ],
+  "completionOps": [
+    {
+      "op": "add_rumor",
+      "hubId": "haven_hub_frostbitten",
+      "id": "rumor_courier_south_gate",
+      "text": "An outside courier moves through Frostbitten on market days, paying for questions about Garr's household.",
+      "tags": ["story", "courier", "south_gate"]
+    },
+    {
+      "op": "hub_problem_add",
+      "hubId": "haven_hub_frostbitten",
+      "problemId": "outside_buyer_active",
+      "label": "An outside buyer is active in Frostbitten",
+      "notes": "Tavern lead confirmed a courier route. Worth surfacing at the next town meeting (1.3.a)."
+    },
+    {
+      "op": "set_flag",
+      "flag": "story_route_b_settled",
+      "value": true
+    },
+    {
+      "op": "event_log_add",
+      "title": "Story Sync: Inside Track",
+      "summary": "Bin turns Frosted Mug gossip into a real lead: courier, route, and a usable schedule.",
+      "scope": "story",
+      "source": "story_sync",
+      "tags": ["story_part", "chapter_1_2b"]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "The Frosted Mug cellar runs cold. Two barrels. One trapdoor. A walking-around stain on the floor that is not from spilled ale, and a tally chalked on the back of a brick that nobody wants to claim drew it.",
+      "next": "host_open"
+    },
+    {
+      "id": "host_open",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "text": "If you are here for the ghosts, the ghosts left an hour ago. If you are here for the inquiries, sit down before I lose my nerve. I should have told someone weeks ago.",
+      "next": "peri_listen"
+    },
+    {
+      "id": "peri_listen",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Listen to her. She is the most honest cowardice in this entire town. That is a compliment. It is the kind of compliment the system files under 'useful.'",
+      "next": "stat_check"
+    },
+    {
+      "id": "stat_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "C",
+      "difficulty": 12,
+      "defaultResult": "pass",
+      "tags": ["interrogation", "kind"],
+      "pass": "stat_pass",
+      "fail": "stat_fail"
+    },
+    {
+      "id": "stat_pass",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "Tell me what happened in your own order, not mine. I am not the law and I am not in a hurry. The system can wait, the town can wait, you cannot.",
+      "next": "host_reveal"
+    },
+    {
+      "id": "stat_fail",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "Sorry. I almost said something stupid. Take your time. The cellar is not on fire. Please tell me before the cellar is on fire.",
+      "next": "host_reveal"
+    },
+    {
+      "id": "host_reveal",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "text": "A courier comes on market days. Comes in on the south gate, asks two questions about Garr's hut, leaves three silver, leaves. Never twice in a row. Never says a name. Pays in coin nobody recognizes. Last visit was six days ago.",
+      "next": "evidence_check"
+    },
+    {
+      "id": "evidence_check",
+      "type": "choice",
+      "prompt": "How does Bin handle the courier lead?",
+      "defaultChoiceId": "share",
+      "choices": [
+        {
+          "id": "share",
+          "label": "Plan to bring this to the town meeting",
+          "summary": "Share with Frostbitten openly. Lower danger.",
+          "next": "share_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_courier_public", "value": true },
+            { "op": "log", "text": "Bin agreed to surface the courier at the town meeting." }
+          ]
+        },
+        {
+          "id": "private",
+          "label": "Keep it inside the family first",
+          "summary": "Quiet. Costs trust with the gate later if discovered.",
+          "next": "private_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_courier_private", "value": true },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Bin chose to keep the courier lead inside Garr's circle for now." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "share_route",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "text": "Thank you. I will not stop you, but I will warn you. The courier has Frostbitten friends. People will not be glad to hear their names said out loud at a town meeting.",
+      "next": "peri_close"
+    },
+    {
+      "id": "private_route",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "text": "Family it is. I owe you the names, and I owe Garr two of them. Take them home, decide what stays inside the walls.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Good. Now we walk you home before this turns into a domestic emergency. The town meeting is the next chapter no matter which fork you took. Try to arrive with both hands free.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Route B is filed and points at the same town meeting as Route A.",
+      "ops": [
+        { "op": "tag_add", "tag": "frostbitten_courier_lead", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Frosted Mug cellar yielded a usable courier lead. The town meeting in 1.3.a will hear it." }
+      ],
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "result": "complete"
+    }
+  ]
+}

@@ -121,10 +121,14 @@ window.CJS.CampaignMap = (() => {
         const objectiveTitle = objective
           ? `${objectiveDone ? '✓ ' : '★ '}${objective.label}`
           : '';
+        const threatAdjacent = threat ? _isAdjacent(current, threat) : false;
+        const glyph = _glyphForCell(cell, { isCurrent, objective, passable });
+        const threatMarkup = threat ? _threatMarkup(threat, threatAdjacent) : '';
         cells.push(`
-          <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}"
-            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(objectiveTitle ? `${objectiveTitle} — ${cell.title || key}` : cell.title || key)}">
-            <span>${isRevealed ? `${objective ? _objectiveIcon(objective) : _gridIcon(cell, passable)}${threat ? ` ${_esc(threat.icon || '!')}` : ''}` : ''}</span>
+          <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''} ${threat ? 'has-threat' : ''}"
+            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(_cellTitleText(cell, key, objective, objectiveTitle, threat))}">
+            ${threatMarkup}
+            <span>${isRevealed ? glyph : ''}</span>
             <small>${isRevealed ? _esc(_shortLabel(cell.title || key)) : ''}</small>
           </button>
         `);
@@ -147,6 +151,97 @@ window.CJS.CampaignMap = (() => {
         </div>
       </div>
     `;
+  }
+
+  function _isAdjacent(current = {}, threat = {}) {
+    if (!current || !threat) return false;
+    const dx = Math.abs(Number(current.x) - Number(threat.x));
+    const dy = Math.abs(Number(current.y) - Number(threat.y));
+    return (dx + dy) <= 1;
+  }
+
+  function _threatMarkup(threat = {}, adjacent = false) {
+    const sprite = _threatSprite(threat);
+    const icon = _threatIcon(threat);
+    const title = _escAttr(`${threat.label || threat.id || 'Threat'} — close to engage`);
+    const cls = `campaign-grid-threat ${adjacent ? 'is-adjacent' : ''}`;
+    if (sprite) {
+      return `<span class="${cls}" title="${title}" style="background-image:url('${_escAttr(sprite)}');background-size:cover;background-position:center;"></span>`;
+    }
+    return `<span class="${cls}" title="${title}">${_esc(icon)}</span>`;
+  }
+
+  function _threatSprite(threat = {}) {
+    if (threat.sprite) return threat.sprite;
+    if (threat.portrait) return threat.portrait;
+    const monsterIds = _threatMonsterIds(threat);
+    for (const id of monsterIds) {
+      const record = window.CJS.DataStore?.get?.('monsters', id);
+      if (record?.portrait) return record.portrait;
+      if (record?.sprite) return record.sprite;
+    }
+    return '';
+  }
+
+  function _threatIcon(threat = {}) {
+    if (threat.icon && threat.icon !== '!' && threat.icon !== '?') return threat.icon;
+    const monsterIds = _threatMonsterIds(threat);
+    for (const id of monsterIds) {
+      const record = window.CJS.DataStore?.get?.('monsters', id);
+      if (record?.icon) return record.icon;
+    }
+    return threat.icon || '👹';
+  }
+
+  function _threatMonsterIds(threat = {}) {
+    const ids = [];
+    if (Array.isArray(threat.monsterIds)) ids.push(...threat.monsterIds);
+    if (threat.encounterId) {
+      const encounter = window.CJS.DataStore?.get?.('encounters', threat.encounterId);
+      if (encounter?.units) {
+        for (const unit of encounter.units) {
+          const id = unit?.id || unit?.monsterId || unit?.baseId;
+          if (id) ids.push(id);
+        }
+      }
+    }
+    if (threat.battleSetId) {
+      const card = window.CJS.CampaignBattleSetForge?.getCard?.(threat.battleSetId)
+        || window.CJS.CampaignDataLoader?.getBattleSetCard?.(threat.battleSetId);
+      if (Array.isArray(card?.monsterIds)) ids.push(...card.monsterIds);
+      if (card?.encounterId) {
+        const encounter = window.CJS.DataStore?.get?.('encounters', card.encounterId);
+        if (encounter?.units) {
+          for (const unit of encounter.units) {
+            const id = unit?.id || unit?.monsterId || unit?.baseId;
+            if (id) ids.push(id);
+          }
+        }
+      }
+    }
+    return ids.filter(Boolean);
+  }
+
+  function _glyphForCell(cell = {}, opts = {}) {
+    if (!opts.passable) {
+      return `<span class="campaign-grid-glyph is-blocked">#</span>`;
+    }
+    if (opts.isCurrent) {
+      return `<span class="campaign-grid-glyph is-current">◆</span>`;
+    }
+    if (opts.objective) {
+      return `<span class="campaign-grid-glyph is-objective">${_objectiveIcon(opts.objective)}</span>`;
+    }
+    return `<span class="campaign-grid-glyph">${_gridIcon(cell, true)}</span>`;
+  }
+
+  function _cellTitleText(cell = {}, key = '', objective = null, objectiveTitle = '', threat = null) {
+    const base = cell.title || key;
+    const parts = [];
+    if (objective) parts.push(objectiveTitle);
+    parts.push(base);
+    if (threat) parts.push(`Threat present: ${threat.label || threat.id || 'roaming enemy'}`);
+    return parts.join(' — ');
   }
 
   function renderGridCellDetail(cell, mapState = {}) {
