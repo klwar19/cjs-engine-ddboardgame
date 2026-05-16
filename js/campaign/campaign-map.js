@@ -56,17 +56,21 @@ window.CJS.CampaignMap = (() => {
       const kind = String(node.kind || 'node').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
       const objective = node.questObjective || Runner().objectiveForNode?.(node.id, state, map);
       const objectiveDone = objective && _isObjectiveDone(state, objective);
+      const radius = active ? 22 : 18;
+      const iconRadius = active ? 13 : 11;
+      const iconId = _nodeIconSymbolId(node);
       return `
         <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
-          <circle cx="${node.x}" cy="${node.y}" r="${active ? 20 : 16}"></circle>
-          ${objective ? `<circle class="campaign-map-objective-ring" cx="${node.x}" cy="${node.y}" r="${active ? 24 : 20}" />` : ''}
-          <text class="campaign-map-icon" x="${node.x}" y="${node.y + 4}" text-anchor="middle">${_nodeIcon(node)}</text>
-          <text class="campaign-map-label" x="${node.x}" y="${node.y + 34}" text-anchor="middle">${_esc(_shortLabel(node.title || node.id))}</text>
-          ${objective ? `<text class="campaign-map-objective-label" x="${node.x}" y="${node.y - 22}" text-anchor="middle">${_esc(_objectiveTag(objective))}</text>` : ''}
+          <circle cx="${node.x}" cy="${node.y}" r="${radius}"></circle>
+          ${objective ? `<circle class="campaign-map-objective-ring" cx="${node.x}" cy="${node.y}" r="${radius + 6}" />` : ''}
+          <use href="#${iconId}" x="${node.x - iconRadius}" y="${node.y - iconRadius}" width="${iconRadius * 2}" height="${iconRadius * 2}" class="campaign-map-node-art"/>
+          <text class="campaign-map-label" x="${node.x}" y="${node.y + 36}" text-anchor="middle">${_esc(_shortLabel(node.title || node.id))}</text>
+          ${objective ? `<text class="campaign-map-objective-label" x="${node.x}" y="${node.y - 26}" text-anchor="middle">${_esc(_objectiveTag(objective))}</text>` : ''}
         </g>
       `;
     }).join('');
 
+    const theme = _mapTheme(map);
     container.innerHTML = `
       <div class="campaign-map-shell">
         <div class="campaign-map-head">
@@ -76,7 +80,8 @@ window.CJS.CampaignMap = (() => {
           </div>
           ${_renderLayerTabs(layers, activeLayer)}
         </div>
-        <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}">
+        <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}" data-theme="${_escAttr(theme)}">
+          <defs>${_nodeIconDefs()}</defs>
           <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-map-bg"></rect>
           ${lines.join('')}
           ${nodeMarkup}
@@ -135,6 +140,7 @@ window.CJS.CampaignMap = (() => {
       }
     }
     const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y, run.mapLayer);
+    const theme = _mapTheme(map);
     container.innerHTML = `
       <div class="campaign-map-shell">
         <div class="campaign-map-head">
@@ -143,7 +149,7 @@ window.CJS.CampaignMap = (() => {
             <span class="campaign-muted">${_esc(_gridMeta(map, run, width, height))}</span>
           </div>
         </div>
-        <div class="campaign-grid-map" style="--grid-cols:${width}">
+        <div class="campaign-grid-map" style="--grid-cols:${width}" data-theme="${_escAttr(theme)}">
           ${cells.join('')}
         </div>
         <div class="campaign-node-detail">
@@ -447,6 +453,109 @@ window.CJS.CampaignMap = (() => {
       boss: '!'
     };
     return map[node.kind] || '.';
+  }
+
+  function _nodeIconSymbolId(node = {}) {
+    if (node.capture) return 'cjs-node-icon-resource';
+    if (node.campfire) return 'cjs-node-icon-campfire';
+    const kind = String(node.kind || 'event').toLowerCase();
+    const map = {
+      entrance: 'cjs-node-icon-entrance',
+      exit: 'cjs-node-icon-exit',
+      battle: 'cjs-node-icon-battle',
+      event_battle: 'cjs-node-icon-battle',
+      boss: 'cjs-node-icon-boss',
+      event: 'cjs-node-icon-event',
+      trap: 'cjs-node-icon-trap',
+      rest: 'cjs-node-icon-campfire',
+      campfire: 'cjs-node-icon-campfire',
+      resource: 'cjs-node-icon-resource',
+      reward: 'cjs-node-icon-reward',
+      shop: 'cjs-node-icon-shop'
+    };
+    return map[kind] || 'cjs-node-icon-event';
+  }
+
+  // Inline SVG symbol library — drawn from simple geometric shapes so we
+  // don't depend on outside art for the map. Each symbol uses a 24x24 box.
+  function _nodeIconDefs() {
+    return `
+      <symbol id="cjs-node-icon-battle" viewBox="0 0 24 24">
+        <g fill="none" stroke="#ff8a5a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 5 L19 19 M19 5 L5 19"/>
+          <circle cx="12" cy="12" r="2.2" fill="#ff8a5a" stroke="none"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-boss" viewBox="0 0 24 24">
+        <g fill="#ff5050" stroke="#ffcfa0" stroke-width="1.4">
+          <circle cx="12" cy="11" r="6.4"/>
+          <circle cx="9.5" cy="10.5" r="1.4" fill="#0a0204"/>
+          <circle cx="14.5" cy="10.5" r="1.4" fill="#0a0204"/>
+          <path d="M5 6 L8 3 L8 6 M19 6 L16 3 L16 6 M9 16 L9 19 M11.5 16 L11.5 20 M14.5 16 L14.5 19" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-campfire" viewBox="0 0 24 24">
+        <g>
+          <path d="M12 17 Q7 13 9 7 Q10 10 12 8 Q14 10 15 7 Q17 13 12 17 Z" fill="#ffb454" stroke="#ff7a3a" stroke-width="0.8"/>
+          <path d="M6 20 L18 20" stroke="#a37044" stroke-width="2" stroke-linecap="round"/>
+          <path d="M7 20 L11 17 M17 20 L13 17" stroke="#a37044" stroke-width="1.6" stroke-linecap="round"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-shop" viewBox="0 0 24 24">
+        <g fill="#ffd36f" stroke="#7a5616" stroke-width="1.2">
+          <circle cx="9" cy="13" r="4.2"/>
+          <circle cx="14" cy="15" r="4.2"/>
+          <circle cx="11.5" cy="9" r="4.2"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-reward" viewBox="0 0 24 24">
+        <g stroke="#a07026" stroke-width="1.2">
+          <rect x="4" y="9" width="16" height="11" rx="1.5" fill="#c98a3a"/>
+          <rect x="4" y="9" width="16" height="3.2" fill="#7a5618"/>
+          <rect x="10.5" y="7" width="3" height="4" rx="1" fill="#ffd36f"/>
+          <circle cx="12" cy="14.5" r="1.2" fill="#ffe9a8"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-trap" viewBox="0 0 24 24">
+        <g fill="none" stroke="#c97aff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 18 L12 5 L19 18 Z"/>
+          <path d="M12 11 L12 14"/>
+          <circle cx="12" cy="16.4" r="0.9" fill="#c97aff"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-resource" viewBox="0 0 24 24">
+        <g fill="#76e4d1" stroke="#1b6b5e" stroke-width="1.2">
+          <polygon points="12,4 18,10 15.5,19 8.5,19 6,10"/>
+          <path d="M8.5 19 L12 10 L15.5 19 M6 10 L18 10" stroke="#0e3b35" stroke-width="0.8" fill="none"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-event" viewBox="0 0 24 24">
+        <g fill="none" stroke="#9dd8ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 9 Q12 4 16 9 Q16 13 12 14 L12 17"/>
+          <circle cx="12" cy="19.6" r="1" fill="#9dd8ff" stroke="none"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-exit" viewBox="0 0 24 24">
+        <g fill="none" stroke="#ffe9a8" stroke-width="1.8" stroke-linejoin="round">
+          <path d="M6 20 L6 9 Q6 5 12 5 Q18 5 18 9 L18 20 Z" fill="#1a1208"/>
+          <path d="M6 20 L18 20" stroke-width="2"/>
+          <circle cx="15" cy="13.5" r="0.9" fill="#ffe9a8" stroke="none"/>
+        </g>
+      </symbol>
+      <symbol id="cjs-node-icon-entrance" viewBox="0 0 24 24">
+        <g fill="none" stroke="#ffe9a8" stroke-width="1.8" stroke-linejoin="round">
+          <path d="M5 20 L5 11 L10 6 L14 6 L19 11 L19 20 Z" fill="#1a1208"/>
+          <path d="M10 20 L10 14 L14 14 L14 20" fill="#0c0805"/>
+        </g>
+      </symbol>
+    `;
+  }
+
+  function _mapTheme(map = {}) {
+    const w = String(map.theme || map.world || CS().getState()?.currentWorld || '').toLowerCase();
+    if (w.includes('haven')) return 'haven';
+    if (w.includes('zombie') || w.includes('rot')) return 'zombie';
+    return '';
   }
 
   function _objectiveIcon(objective = {}) {

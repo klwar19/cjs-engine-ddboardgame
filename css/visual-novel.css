@@ -1,0 +1,1102 @@
+/* visual-novel.css
+   Fullscreen visual-novel window. Replaces the older inline overlay look.
+   Loaded after campaign.css so it can override `.campaign-vn-*` rules. */
+
+/* Fullscreen lockdown — once a VN is open, everything else is muted. */
+body.vn-window-open {
+  overflow: hidden;
+}
+
+body.vn-window-open .campaign-shell,
+body.vn-window-open .campaign-root > :not(.campaign-vn-overlay) {
+  filter: blur(2px) saturate(0.85);
+  pointer-events: none;
+  user-select: none;
+}
+
+.campaign-vn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: block;
+  background: #04070b;
+  color: #f7fbff;
+  font-family: "Cormorant Garamond", "Inter", system-ui, sans-serif;
+  animation: vn-window-open 360ms cubic-bezier(0.2, 0.7, 0.2, 1.05);
+  --vn-accent: #ffe9a8;
+  --vn-accent-2: #9dd8ff;
+}
+
+@keyframes vn-window-open {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.campaign-vn-overlay.is-closing {
+  animation: vn-window-close 220ms ease forwards;
+}
+
+@keyframes vn-window-close {
+  to { opacity: 0; transform: scale(0.97); }
+}
+
+/* Stage layers ─────────────────────────────────────────────────── */
+.campaign-vn-stage {
+  position: relative;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.campaign-vn-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: #0a141f;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(1.08);
+  animation: vn-bg-pan 38s ease-in-out infinite alternate;
+}
+
+@keyframes vn-bg-pan {
+  from { transform: scale(1.08) translate3d(-1.4%, -1%, 0); }
+  to   { transform: scale(1.12) translate3d(1.4%, 1%, 0); }
+}
+
+/* Vignette + atmospheric grading layer */
+.campaign-vn-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(120% 80% at 50% 35%, transparent 0%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.92) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.7) 100%);
+  pointer-events: none;
+}
+
+/* Letterbox top + bottom bars */
+.campaign-vn-stage::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 0;
+  height: 56px;
+  z-index: 5;
+  background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0));
+  pointer-events: none;
+}
+
+/* Top-line — title plate + auto/skip controls */
+.campaign-vn-topline {
+  position: absolute;
+  top: 14px; left: 18px; right: 18px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.campaign-vn-topline > * { pointer-events: auto; }
+
+.campaign-vn-topline span,
+.campaign-vn-topline button,
+.campaign-vn-close {
+  min-height: 34px;
+  border: 1px solid rgba(255, 233, 168, 0.4);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(8, 14, 22, 0.78), rgba(2, 6, 10, 0.85));
+  color: #f7fbff;
+  font-family: "Cinzel", "Cormorant Garamond", serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.campaign-vn-topline span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--vn-accent);
+  box-shadow: 0 2px 14px rgba(0,0,0,0.5);
+}
+
+.campaign-vn-topline button {
+  cursor: pointer;
+  padding: 6px 12px;
+  font-weight: 700;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.campaign-vn-topline button:hover,
+.campaign-vn-topline button[aria-pressed="true"] {
+  border-color: var(--vn-accent);
+  color: var(--vn-accent);
+  background: linear-gradient(180deg, rgba(20, 28, 40, 0.92), rgba(8, 12, 18, 0.95));
+}
+
+.campaign-vn-close {
+  position: absolute;
+  top: 14px; right: 18px;
+  z-index: 13;
+  width: 36px; height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: grid; place-items: center;
+}
+
+/* Center stage portrait area ────────────────────────────────── */
+.campaign-vn-portraits {
+  position: absolute;
+  left: 0; right: 0;
+  top: 56px;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: end;
+  pointer-events: none;
+  padding: 0 4vw 220px;
+}
+
+.campaign-vn-portrait {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  height: 100%;
+  opacity: 0;
+  transform: translateY(40px) scale(0.96);
+  transition: opacity 320ms ease, transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1.05);
+  filter: brightness(0.55) saturate(0.85);
+}
+
+.campaign-vn-portrait.is-left  { grid-column: 1; }
+.campaign-vn-portrait.is-right { grid-column: 3; }
+
+.campaign-vn-portrait.is-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: brightness(1) saturate(1);
+  z-index: 2;
+}
+
+/* When only one side is speaking, push portrait toward center */
+.campaign-vn-portrait.is-active.is-left  { grid-column: 1 / span 2; justify-items: end; padding-right: 2vw; }
+.campaign-vn-portrait.is-active.is-right { grid-column: 2 / span 2; justify-items: start; padding-left: 2vw; }
+
+.campaign-vn-portrait img {
+  max-height: calc(100vh - 320px);
+  max-width: min(560px, 38vw);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 22px 38px rgba(0, 0, 0, 0.7))
+    drop-shadow(0 -2px 0 rgba(255, 233, 168, 0.08));
+  animation: vn-portrait-breathe 6s ease-in-out infinite alternate;
+}
+
+@keyframes vn-portrait-breathe {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-6px); }
+}
+
+.campaign-vn-portrait.is-system img,
+.campaign-vn-portrait.is-system .campaign-vn-avatar-fallback {
+  filter: hue-rotate(120deg) brightness(1.1);
+}
+
+.campaign-vn-avatar-fallback,
+.campaign-vn-terminal-mark {
+  display: grid;
+  place-items: center;
+  width: min(360px, 36vw);
+  aspect-ratio: 3 / 4;
+  border: 2px solid rgba(255, 233, 168, 0.42);
+  border-radius: 6px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255,233,168,0.16), transparent 60%),
+    linear-gradient(180deg, rgba(20, 28, 40, 0.88), rgba(5, 10, 15, 0.95));
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.6);
+  font-size: 5rem;
+  color: var(--vn-accent);
+  font-family: "Cinzel", serif;
+}
+
+.campaign-vn-terminal-mark {
+  color: #8fffc1;
+  font-family: Consolas, "JetBrains Mono", monospace;
+  font-size: 3.4rem;
+  letter-spacing: 0.16em;
+  border-color: rgba(143, 255, 193, 0.5);
+  background:
+    repeating-linear-gradient(0deg, rgba(143,255,193,0.04) 0 2px, transparent 2px 4px),
+    linear-gradient(180deg, rgba(0, 28, 18, 0.92), rgba(0, 8, 6, 0.96));
+}
+
+.campaign-vn-portrait > span {
+  display: none; /* speaker label moved to the dialogue plaque */
+}
+
+/* Dialogue ribbon ───────────────────────────────────────────── */
+.campaign-vn-dialogue {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 8;
+  width: min(1180px, calc(100vw - 48px));
+  min-height: 180px;
+  transform: translateX(-50%);
+  padding: 26px 32px 22px;
+  border: 1px solid rgba(255, 233, 168, 0.42);
+  border-top: 2px solid rgba(255, 233, 168, 0.7);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(8, 12, 18, 0.94), rgba(4, 8, 14, 0.96)),
+    radial-gradient(140% 80% at 50% 0%, rgba(255, 233, 168, 0.08), transparent 60%);
+  box-shadow:
+    0 -6px 28px rgba(0, 0, 0, 0.6),
+    0 24px 56px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 233, 168, 0.12);
+}
+
+.campaign-vn-dialogue::before,
+.campaign-vn-dialogue::after {
+  content: "";
+  position: absolute;
+  top: 4px; bottom: 4px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(255,233,168,0.32), transparent);
+}
+.campaign-vn-dialogue::before { left: 8px; }
+.campaign-vn-dialogue::after  { right: 8px; }
+
+.campaign-vn-dialogue.is-terminal {
+  border-color: rgba(143, 255, 193, 0.55);
+  border-top-color: rgba(143, 255, 193, 0.8);
+  background:
+    repeating-linear-gradient(0deg, rgba(143,255,193,0.03) 0 2px, transparent 2px 4px),
+    linear-gradient(180deg, rgba(2, 22, 14, 0.95), rgba(0, 10, 6, 0.97));
+}
+
+/* Name plaque — overlapping top of dialogue ribbon */
+.campaign-vn-speaker {
+  position: absolute;
+  top: -22px;
+  left: 24px;
+  min-height: 38px;
+  padding: 6px 22px;
+  border: 1px solid rgba(255, 233, 168, 0.6);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(38, 28, 14, 0.96), rgba(18, 12, 6, 0.98));
+  color: var(--vn-accent);
+  font-family: "Cinzel", "Cormorant Garamond", serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.campaign-vn-speaker:empty {
+  display: none;
+}
+
+.campaign-vn-dialogue.is-terminal .campaign-vn-speaker {
+  border-color: rgba(143, 255, 193, 0.7);
+  background: linear-gradient(180deg, rgba(0, 30, 20, 0.97), rgba(0, 12, 8, 0.99));
+  color: #8fffc1;
+  font-family: Consolas, "JetBrains Mono", monospace;
+  letter-spacing: 0.18em;
+}
+
+.campaign-vn-dialogue p {
+  margin: 8px 0 0;
+  min-height: 90px;
+  font-family: "Cormorant Garamond", "Inter", serif;
+  font-size: 1.32rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #f9fbff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.campaign-vn-dialogue.is-terminal p {
+  font-family: Consolas, "JetBrains Mono", monospace;
+  color: #c4ffe1;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.campaign-vn-dialogue small {
+  position: absolute;
+  right: 22px;
+  bottom: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 233, 168, 0.55);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  animation: vn-hint-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes vn-hint-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.95; }
+}
+
+/* Choices — branching menu ──────────────────────────────────── */
+.campaign-vn-choices {
+  position: absolute;
+  left: 50%;
+  bottom: 230px;
+  z-index: 9;
+  width: min(880px, calc(100vw - 80px));
+  transform: translateX(-50%);
+  display: grid;
+  gap: 10px;
+}
+
+.campaign-vn-choice {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 12px 18px 12px 24px;
+  border: 1px solid rgba(255, 233, 168, 0.45);
+  border-left: 4px solid var(--vn-accent);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(14, 20, 30, 0.92), rgba(6, 10, 16, 0.95));
+  color: #f9fbff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 140ms ease, background 160ms ease;
+  font-family: "Cormorant Garamond", serif;
+}
+
+.campaign-vn-choice:hover:not(:disabled) {
+  transform: translateX(4px);
+  border-color: #fff;
+  background: linear-gradient(180deg, rgba(28, 38, 56, 0.95), rgba(14, 22, 32, 0.97));
+}
+
+.campaign-vn-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.campaign-vn-choice strong {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--vn-accent);
+}
+
+.campaign-vn-choice span {
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  color: #c8d4dc;
+  line-height: 1.35;
+}
+
+/* History panel (slide-in) ──────────────────────────────────── */
+.campaign-vn-history {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  background: rgba(2, 6, 10, 0.94);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 24px 48px 24px;
+  animation: vn-window-open 220ms ease;
+}
+
+.campaign-vn-history h3 {
+  margin: 0 0 12px;
+  font-family: "Cinzel", serif;
+  color: var(--vn-accent);
+  letter-spacing: 0.14em;
+}
+
+.campaign-vn-history-list {
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  padding-right: 8px;
+}
+
+.campaign-vn-history-line {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border-left: 3px solid rgba(255, 233, 168, 0.45);
+  background: rgba(10, 18, 26, 0.7);
+  border-radius: 0 3px 3px 0;
+}
+
+.campaign-vn-history-line strong {
+  color: var(--vn-accent);
+  font-family: "Cinzel", serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.campaign-vn-history-line span {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.04rem;
+  color: #f3f7fb;
+  line-height: 1.4;
+}
+
+.campaign-vn-history-close {
+  position: absolute;
+  top: 18px; right: 22px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 233, 168, 0.4);
+  background: rgba(8, 12, 18, 0.85);
+  color: var(--vn-accent);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+/* Mobile ─────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .campaign-vn-topline { left: 10px; right: 10px; }
+  .campaign-vn-portraits {
+    grid-template-columns: 1fr;
+    padding: 0 4vw 180px;
+  }
+  .campaign-vn-portrait.is-left,
+  .campaign-vn-portrait.is-right,
+  .campaign-vn-portrait.is-active.is-left,
+  .campaign-vn-portrait.is-active.is-right {
+    grid-column: 1;
+    justify-items: center;
+    padding: 0;
+  }
+  .campaign-vn-portrait img {
+    max-height: calc(100vh - 270px);
+    max-width: 86vw;
+  }
+  .campaign-vn-dialogue {
+    width: calc(100vw - 16px);
+    bottom: 12px;
+    min-height: 150px;
+    padding: 22px 18px 18px;
+  }
+  .campaign-vn-dialogue p {
+    font-size: 1.1rem;
+  }
+  .campaign-vn-choices {
+    width: calc(100vw - 24px);
+    bottom: 200px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campaign-vn-overlay,
+  .campaign-vn-backdrop,
+  .campaign-vn-portrait img,
+  .campaign-vn-history { animation: none !important; }
+  .campaign-vn-portrait { transition: opacity 120ms ease; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Combat-incoming popup with shake. Pauses the campaign behind it.
+   ────────────────────────────────────────────────────────────── */
+
+body.combat-popup-open {
+  overflow: hidden;
+}
+
+body.combat-popup-open .campaign-shell,
+body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
+  pointer-events: none;
+  user-select: none;
+}
+
+.combat-popup-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 4, 8, 0.78);
+  backdrop-filter: blur(3px);
+  animation: combat-popup-flash 320ms cubic-bezier(0.2, 0.7, 0.2, 1.05);
+}
+
+@keyframes combat-popup-flash {
+  0%   { opacity: 0; backdrop-filter: blur(0px); }
+  40%  { opacity: 1; background: rgba(180, 30, 30, 0.55); }
+  100% { opacity: 1; background: rgba(2, 4, 8, 0.78); }
+}
+
+.combat-popup-shake {
+  animation: combat-popup-shake-kf 520ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes combat-popup-shake-kf {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  10%, 90% { transform: translate3d(-4px, 0, 0); }
+  20%, 80% { transform: translate3d(8px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-12px, -4px, 0); }
+  40%, 60% { transform: translate3d(12px, 4px, 0); }
+}
+
+.combat-popup-card {
+  position: relative;
+  width: min(620px, calc(100vw - 40px));
+  padding: 28px 30px 24px;
+  border: 2px solid #ff8a5a;
+  border-radius: 6px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 138, 90, 0.22), transparent 60%),
+    linear-gradient(180deg, rgba(20, 8, 8, 0.96), rgba(6, 4, 8, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(255, 138, 90, 0.3),
+    0 24px 64px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(255, 80, 40, 0.35);
+  color: #fff5e8;
+  font-family: "Cinzel", "Cormorant Garamond", serif;
+}
+
+.combat-popup-card::before {
+  content: "";
+  position: absolute;
+  top: -16px; left: 50%;
+  width: 60px; height: 60px;
+  transform: translateX(-50%);
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><g fill="none" stroke="%23ff8a5a" stroke-width="3" stroke-linecap="round"><path d="M14 14 L46 46 M46 14 L14 46"/><circle cx="30" cy="30" r="22"/></g></svg>') center / contain no-repeat;
+  filter: drop-shadow(0 0 12px rgba(255, 138, 90, 0.7));
+}
+
+.combat-popup-eyebrow {
+  margin: 14px 0 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #ff8a5a;
+  text-align: center;
+}
+
+.combat-popup-title {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(255, 138, 90, 0.6);
+}
+
+.combat-popup-sub {
+  margin: 4px 0 14px;
+  text-align: center;
+  font-family: "Cormorant Garamond", serif;
+  color: #f6c7a8;
+  font-size: 1.05rem;
+  font-style: italic;
+}
+
+.combat-popup-monsters {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 8px 0 18px;
+  flex-wrap: wrap;
+}
+
+.combat-popup-monster {
+  width: 64px; height: 64px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(255, 138, 90, 0.5);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 1.8rem;
+  background-size: cover;
+  background-position: center;
+}
+
+.combat-popup-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 138, 90, 0.32);
+}
+
+.combat-popup-actions button {
+  min-width: 180px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 138, 90, 0.6);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(50, 22, 10, 0.95), rgba(20, 8, 4, 0.98));
+  color: #fff;
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 140ms ease;
+}
+
+.combat-popup-actions button:hover {
+  transform: translateY(-1px);
+  border-color: #fff;
+}
+
+.combat-popup-actions button.is-primary {
+  background: linear-gradient(180deg, #ff8a5a, #c2462c);
+  border-color: #ff8a5a;
+  color: #1a0a04;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Objective reveal banner — shown when a hidden objective first
+   becomes visible (e.g. at 60% map exploration).
+   ────────────────────────────────────────────────────────────── */
+
+.campaign-objective-banner {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  z-index: 9500;
+  transform: translateX(-50%) translateY(-200%);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  width: min(680px, calc(100vw - 32px));
+  padding: 14px 22px;
+  border: 1px solid rgba(255, 233, 168, 0.65);
+  border-left: 5px solid #ffe9a8;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(28, 22, 10, 0.96), rgba(14, 10, 4, 0.98));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 32px rgba(255, 233, 168, 0.25);
+  color: #fff8e0;
+  pointer-events: none;
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1.05), opacity 320ms ease;
+  opacity: 0;
+}
+
+.campaign-objective-banner.is-shown {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.campaign-objective-banner-icon {
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="none" stroke="%23ffe9a8" stroke-width="2.5" stroke-linejoin="round"><path d="M24 6 L29 18 L42 19 L32 28 L35 41 L24 34 L13 41 L16 28 L6 19 L19 18 Z"/></g></svg>') center / contain no-repeat;
+  filter: drop-shadow(0 0 8px rgba(255, 233, 168, 0.7));
+}
+
+.campaign-objective-banner-text strong {
+  display: block;
+  font-family: "Cinzel", serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #ffe9a8;
+  margin-bottom: 2px;
+}
+
+.campaign-objective-banner-text span {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.12rem;
+  color: #fff5d8;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Map grid (campaign grid_map) — RPG decoration & moving threats.
+   ────────────────────────────────────────────────────────────── */
+
+.campaign-grid-map {
+  position: relative;
+  background-color: #0d141c;
+  background-image:
+    radial-gradient(60% 60% at 50% 50%, rgba(255, 233, 168, 0.04), transparent 70%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 6px, transparent 6px 12px),
+    var(--grid-theme-bg, none);
+  background-size: auto, auto, cover;
+  background-position: center;
+  border: 1px solid rgba(255, 233, 168, 0.2);
+}
+
+.campaign-grid-cell {
+  position: relative;
+  overflow: hidden;
+  background-color: #1b2531;
+  transition: transform 140ms ease, filter 200ms ease, box-shadow 200ms ease;
+}
+
+.campaign-grid-cell::before {
+  /* Procedural terrain decoration — pattern depends on cell kind */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.campaign-grid-cell.kind-floor::before,
+.campaign-grid-cell.kind-corridor::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="p" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="%23232f3d"/><path d="M0 10 L20 10 M10 0 L10 20" stroke="%231b2531" stroke-width="1"/><circle cx="6" cy="6" r="0.8" fill="%2336485c"/></pattern></defs><rect width="60" height="60" fill="url(%23p)"/></svg>');
+}
+
+.campaign-grid-cell.kind-grass::before,
+.campaign-grid-cell.kind-forest::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231e2e1e"/><g stroke="%2367a55a" stroke-width="1.4" stroke-linecap="round" fill="none"><path d="M8 50 L8 38 M11 50 L13 38 M5 50 L4 40"/><path d="M48 52 L48 40 M51 52 L53 40 M45 52 L44 42"/><path d="M28 24 L28 12 M31 24 L33 12 M25 24 L24 14"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-water::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23172a3f"/><g stroke="%234aa3d8" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"><path d="M6 18 Q12 14 18 18 T30 18 T42 18 T54 18"/><path d="M6 32 Q12 28 18 32 T30 32 T42 32 T54 32"/><path d="M6 46 Q12 42 18 46 T30 46 T42 46 T54 46"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-stone::before,
+.campaign-grid-cell.kind-wall::before,
+.campaign-grid-cell.is-blocked::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23262a30"/><g stroke="%23131517" stroke-width="1.4" fill="%2331363d"><path d="M0 18 L24 18 L24 0 M24 18 L60 18 L60 0 M0 36 L18 36 L18 18 M18 36 L42 36 L42 18 M42 36 L60 36 M0 60 L30 60 L30 36 M30 60 L60 60 L60 36"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-battle::before,
+.campaign-grid-cell.kind-event_battle::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%232a1d18"/><g stroke="%23ff8a5a" stroke-width="2" fill="none" stroke-linecap="round"><path d="M14 14 L46 46 M46 14 L14 46"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-boss::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23311515"/><g fill="%23ff5050" stroke="%23ff8a5a" stroke-width="1.5"><circle cx="30" cy="26" r="14"/><rect x="20" y="34" width="6" height="8" rx="2"/><rect x="34" y="34" width="6" height="8" rx="2"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-rest::before,
+.campaign-grid-cell.kind-campfire::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231f2818"/><g><path d="M30 38 Q22 32 26 22 Q28 28 30 24 Q32 28 34 22 Q38 32 30 38 Z" fill="%23ffb454"/><path d="M18 46 L42 46" stroke="%237a5a3a" stroke-width="2" stroke-linecap="round"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-shop::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231a2238"/><g fill="%23ffd36f" stroke="%23a07026" stroke-width="1.5"><circle cx="22" cy="30" r="8"/><circle cx="34" cy="34" r="8"/><circle cx="28" cy="22" r="8"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-reward::before,
+.campaign-grid-cell.kind-resource::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231a1f2c"/><g fill="%2376e4d1" stroke="%23195e54" stroke-width="1.5"><polygon points="30,12 42,24 36,42 24,42 18,24"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-trap::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23241a24"/><g stroke="%23c97aff" stroke-width="2" fill="none" stroke-linecap="round"><path d="M30 12 L30 30 M22 18 L30 30 L38 18 M14 30 L30 30 L46 30"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-exit::before,
+.campaign-grid-cell.kind-entrance::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23241a14"/><g fill="none" stroke="%23ffe9a8" stroke-width="2"><path d="M18 48 L18 22 Q18 14 30 14 Q42 14 42 22 L42 48 Z"/><circle cx="34" cy="32" r="1.5" fill="%23ffe9a8"/></g></svg>');
+}
+
+.campaign-grid-cell.kind-event::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23161e2e"/><g fill="%239dd8ff"><path d="M22 18 Q30 10 38 18 Q38 26 30 28 L30 36 M30 44 L30 46" stroke="%239dd8ff" stroke-width="3" stroke-linecap="round" fill="none"/></g></svg>');
+}
+
+.campaign-grid-cell.is-active::after {
+  /* Player marker pulse */
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 2px solid #ffe9a8;
+  border-radius: 4px;
+  box-shadow: 0 0 18px rgba(255, 233, 168, 0.45) inset;
+  pointer-events: none;
+  animation: grid-active-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes grid-active-pulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(255, 233, 168, 0.45) inset; }
+  50%      { box-shadow: 0 0 26px rgba(255, 233, 168, 0.72) inset; }
+}
+
+.campaign-grid-cell.is-hidden {
+  background-color: #050810;
+}
+
+.campaign-grid-cell.is-hidden::before {
+  opacity: 0.05;
+  filter: blur(2px);
+}
+
+.campaign-grid-cell.is-hidden span,
+.campaign-grid-cell.is-hidden small {
+  visibility: hidden;
+}
+
+.campaign-grid-cell span {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.campaign-grid-cell small {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+/* Moving threat — Persona-4-style shadow blob */
+.campaign-grid-threat {
+  position: absolute;
+  inset: 6px;
+  z-index: 5;
+  background:
+    radial-gradient(circle at 50% 60%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.65) 30%, transparent 60%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><g><ellipse cx="30" cy="42" rx="22" ry="7" fill="%23000" opacity="0.6"/><path d="M14 38 Q12 24 22 18 Q30 12 38 18 Q48 24 46 38 Q44 46 30 46 Q16 46 14 38 Z" fill="%23120a1c" stroke="%23ff3a3a" stroke-width="1.6"/><circle cx="24" cy="26" r="3" fill="%23ffe04a"/><circle cx="36" cy="26" r="3" fill="%23ffe04a"/><circle cx="24" cy="26" r="1.2" fill="%23000"/><circle cx="36" cy="26" r="1.2" fill="%23000"/><path d="M24 34 Q30 38 36 34" stroke="%23ff3a3a" stroke-width="1.8" fill="none" stroke-linecap="round"/></g></svg>');
+  background-size: cover, contain;
+  background-position: center;
+  background-repeat: no-repeat, no-repeat;
+  filter: drop-shadow(0 4px 8px rgba(255, 58, 58, 0.5));
+  pointer-events: none;
+  animation: grid-threat-bob 1.4s ease-in-out infinite alternate, grid-threat-spawn 240ms ease;
+  transition: transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1.05), opacity 240ms ease;
+}
+
+@keyframes grid-threat-bob {
+  from { transform: translateY(0)   scale(1);    }
+  to   { transform: translateY(-3px) scale(1.04); }
+}
+
+@keyframes grid-threat-spawn {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.campaign-grid-threat.is-adjacent {
+  filter: drop-shadow(0 4px 14px rgba(255, 58, 58, 0.85));
+  animation:
+    grid-threat-bob 0.6s ease-in-out infinite alternate,
+    grid-threat-warn 0.9s ease-in-out infinite;
+}
+
+@keyframes grid-threat-warn {
+  0%, 100% { outline: 0 solid rgba(255, 58, 58, 0); }
+  50%      { outline: 3px solid rgba(255, 58, 58, 0.6); }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Campaign map — themed background + SVG node iconography
+   ────────────────────────────────────────────────────────────── */
+
+.campaign-map-canvas {
+  background-color: #0c141d;
+  background-image: var(--map-theme-bg, none);
+  background-size: cover;
+  background-position: center;
+}
+
+.campaign-map-bg {
+  fill: rgba(8, 14, 22, 0.45);
+  stroke: rgba(255, 233, 168, 0.18);
+}
+
+.campaign-map-link {
+  stroke: rgba(255, 233, 168, 0.5);
+  stroke-width: 3;
+  stroke-dasharray: 4 6;
+  stroke-linecap: round;
+  opacity: 0.78;
+  animation: map-link-flow 8s linear infinite;
+}
+
+@keyframes map-link-flow {
+  to { stroke-dashoffset: -40; }
+}
+
+.campaign-map-node circle {
+  fill: #131b26;
+  stroke: rgba(255, 233, 168, 0.6);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
+  transition: stroke-width 200ms ease, stroke 200ms ease;
+}
+
+.campaign-map-node:hover circle,
+.campaign-map-node:focus circle {
+  stroke: #fff;
+  stroke-width: 3.5;
+}
+
+.campaign-map-node.is-active circle {
+  fill: #2a1f0c;
+  stroke: #ffe9a8;
+  stroke-width: 4;
+  animation: map-node-active-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes map-node-active-pulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 233, 168, 0.45)); }
+  50%      { filter: drop-shadow(0 0 18px rgba(255, 233, 168, 0.85)); }
+}
+
+.campaign-map-node.is-cleared circle {
+  fill: #14231a;
+  stroke: #8be3a0;
+}
+
+.campaign-map-node.is-locked circle {
+  fill: #1a1218;
+  stroke: #c97aff;
+  opacity: 0.6;
+}
+
+.campaign-map-node.kind-battle circle,
+.campaign-map-node.kind-event_battle circle {
+  fill: #2a1a1a; stroke: #ff8a5a;
+}
+
+.campaign-map-node.kind-boss circle {
+  fill: #341a1a; stroke: #ff5050;
+  stroke-width: 3.5;
+}
+
+.campaign-map-node.kind-rest circle,
+.campaign-map-node.kind-campfire circle {
+  fill: #1f2a14; stroke: #ffb454;
+}
+
+.campaign-map-node.kind-shop circle {
+  fill: #1a223a; stroke: #ffd36f;
+}
+
+.campaign-map-node.kind-reward circle,
+.campaign-map-node.kind-resource circle {
+  fill: #14222d; stroke: #76e4d1;
+}
+
+.campaign-map-node.kind-trap circle {
+  fill: #221428; stroke: #c97aff;
+}
+
+.campaign-map-node.kind-exit circle,
+.campaign-map-node.kind-entrance circle {
+  fill: #28210c; stroke: #ffe9a8;
+}
+
+.campaign-map-node.kind-event circle {
+  fill: #1a223a; stroke: #9dd8ff;
+}
+
+/* The icon glyph inside the node — drawn via <image> element */
+.campaign-map-node image.campaign-map-node-art {
+  pointer-events: none;
+}
+
+.campaign-map-node text.campaign-map-icon {
+  font-family: "Cinzel", serif;
+  font-size: 16px;
+  font-weight: 800;
+  fill: #ffe9a8;
+  pointer-events: none;
+}
+
+.campaign-map-node text.campaign-map-label {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 12px;
+  font-weight: 600;
+  fill: #f3f7fb;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+.campaign-map-objective-ring {
+  fill: none;
+  stroke: #ffe9a8;
+  stroke-width: 2.5;
+  stroke-dasharray: 4 4;
+  animation: map-ring-spin 12s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@keyframes map-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Map theme backdrops, applied via JS through inline style attribute */
+.campaign-map-canvas[data-theme="haven"]   { --map-theme-bg: url('images/story-mode/haven/frostwood-vn.png'); }
+.campaign-map-canvas[data-theme="zombie"]  { --map-theme-bg: url('images/story-mode/zombie/rot-city-vn.png'); }
+
+.campaign-grid-map[data-theme="haven"]   { --grid-theme-bg: linear-gradient(180deg, rgba(20, 30, 22, 0.85), rgba(8, 14, 10, 0.92)), url('images/story-mode/haven/frostwood-vn.png'); }
+.campaign-grid-map[data-theme="zombie"]  { --grid-theme-bg: linear-gradient(180deg, rgba(28, 18, 18, 0.85), rgba(10, 6, 6, 0.92)), url('images/story-mode/zombie/rot-city-vn.png'); }
+
+/* ──────────────────────────────────────────────────────────────
+   Branching chapter UI in Story Controls
+   ────────────────────────────────────────────────────────────── */
+
+.campaign-branch-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px dashed rgba(255, 233, 168, 0.4);
+  border-radius: 4px;
+  background: rgba(28, 22, 10, 0.4);
+  margin-top: 12px;
+}
+
+.campaign-branch-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.campaign-branch-row select,
+.campaign-branch-row input {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 233, 168, 0.4);
+  border-radius: 3px;
+  background: #0e1623;
+  color: #f7fbff;
+  font-family: "Inter", sans-serif;
+}
+
+.campaign-branch-row .campaign-branch-preview {
+  font-family: "Cinzel", serif;
+  color: #ffe9a8;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.campaign-chapter-branch-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  border-left: 2px dashed rgba(255, 233, 168, 0.32);
+}
+
+.campaign-chapter-branch-list li {
+  list-style: none;
+  font-size: 0.85rem;
+  color: #d4dae4;
+}
+
+.campaign-chapter-branch-list .branch-label {
+  color: #ffe9a8;
+  font-weight: 700;
+  margin-right: 6px;
+}
