@@ -272,6 +272,82 @@
           ]
         }
       ]
+    },
+    {
+      "id": "haven_story_patrol_midbeat_30",
+      "world": "haven",
+      "title": "Bent Pine Midbeat",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["frostwood", "patrol", "midbeat", "story_director"],
+      "lines": [
+        {
+          "speaker": "Peri",
+          "style": "terminal",
+          "text": "NOTICE: route at thirty percent mapped. The system politely informs us that something has begun watching back."
+        },
+        {
+          "speaker": "Peri",
+          "text": "Bin. The wolf you have been tracking is also tracking you. Cute. Hostile. The kind of equal opportunity that ends in bandages."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "If it can read maps, we negotiate. If it cannot, we use the second flask and we run between cover. Tell me which one it is in one sentence."
+        }
+      ],
+      "choices": [
+        {
+          "id": "press_on",
+          "label": "Press on, drop a route marker",
+          "ops": [
+            { "op": "log", "text": "Bin marked a midpoint cairn so the route resets cleanly if the wolf turns the line." },
+            { "op": "set_flag", "flag": "story_patrol_midpoint_marked", "value": true },
+            { "op": "give_jp", "amount": 1 }
+          ]
+        },
+        {
+          "id": "go_quiet",
+          "label": "Drop into stealth and reposition",
+          "ops": [
+            { "op": "danger", "amount": -1 },
+            { "op": "log", "text": "Bin and Peri eased the patrol off the obvious line for a quieter approach." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "haven_story_patrol_objective_60",
+      "world": "haven",
+      "title": "Watch Ridge In Sight",
+      "background": "images/story-mode/haven/frostwood-vn.png",
+      "tags": ["frostwood", "patrol", "objective_reveal", "story_director"],
+      "lines": [
+        {
+          "speaker": "Peri",
+          "style": "terminal",
+          "text": "NOTICE: route at sixty percent mapped. Final objective location is now marked. Press forward, ideally in fewer pieces than you started with."
+        },
+        {
+          "speaker": "Peri",
+          "text": "Watch Ridge is the marker on your right, the smoke plume on your left, and the cairn at the high turn. Walk one, see all three."
+        },
+        {
+          "speaker": "Bin",
+          "speakerId": "bin",
+          "portrait": "images/characters/bin.png",
+          "text": "If it gets loud at the ridge, I am going to be very rude about it. Please record the rudeness for posterity."
+        }
+      ],
+      "choices": [
+        {
+          "id": "advance",
+          "label": "Advance on the ridge",
+          "ops": [
+            { "op": "log", "text": "The party committed to a clean push for Watch Ridge." }
+          ]
+        }
+      ]
     }
   ]
 }

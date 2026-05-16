@@ -1,0 +1,188 @@
+{
+  "id": "story_haven_arc1_ch01_part01b_frosted_mug_whispers",
+  "version": 1,
+  "title": "Frosted Mug Whispers",
+  "scope": "story",
+  "arcId": "haven_arc1",
+  "chapterId": "arc1_ch01",
+  "chapterLabel": "1.1",
+  "orderKey": "1.1.b",
+  "partId": "ch01_part01b",
+  "partLabel": "1.1.b",
+  "branchOf": "ch01_part01",
+  "branchKey": "tavern",
+  "routeKey": "tavern",
+  "routeLabel": "Tavern Route",
+  "startNode": "open",
+  "background": "images/story-mode/haven/frostwood-vn.png",
+  "tags": ["world:haven", "arc:1", "chapter:return", "frostbitten", "tavern", "branch:tavern"],
+  "summary": {
+    "short": "Bin slips into the Frosted Mug and hears the town gossip about him before he can correct it.",
+    "default": "The tavern crowd is rattled, the cellar has been talking, and one regular knows more than they should."
+  },
+  "nextCandidates": [
+    "1.2.b Inside Track (continues the tavern route)"
+  ],
+  "syncSummary": [
+    "Rumor added: someone outside town has been buying questions about Bin's family.",
+    "Hub mood update: Frosted Mug carries a quiet but real fear.",
+    "Branch flag set: story_frosted_mug_walked unlocks 1.2.b."
+  ],
+  "completionOps": [
+    {
+      "op": "add_rumor",
+      "hubId": "haven_hub_frostbitten",
+      "id": "rumor_mug_inquiries",
+      "text": "Someone outside town has been buying questions about Garr's household and paying in coin nobody recognizes.",
+      "tags": ["story", "mug", "inquiries", "tavern"]
+    },
+    {
+      "op": "hub_problem_add",
+      "hubId": "haven_hub_frostbitten",
+      "problemId": "mug_quiet_fear",
+      "label": "Quiet fear in the Frosted Mug",
+      "notes": "Regulars are afraid to name the buyer of recent inquiries. Worth pressing in 1.2.b."
+    },
+    {
+      "op": "set_flag",
+      "flag": "story_frosted_mug_walked",
+      "value": true
+    },
+    {
+      "op": "event_log_add",
+      "title": "Story Sync: Frosted Mug Whispers",
+      "summary": "Bin gathers the town's version of his disappearance before the town gathers its version of him.",
+      "scope": "story",
+      "source": "story_sync",
+      "tags": ["story_part", "chapter_1_1b"]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "type": "narration",
+      "text": "The Frosted Mug runs warm even when the town does not. Bin slides in through the side door because the front door has a bell, and the bell does not lie. The room is half-full. Half-full at this hour is a town with something on its mind.",
+      "next": "host_open"
+    },
+    {
+      "id": "host_open",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "text": "We are full up on ghosts tonight. Take the corner if you must haunt anyone, and please pay for whatever ghosts drink. The coin pouch says you are slightly more alive than I expected.",
+      "next": "peri_appear"
+    },
+    {
+      "id": "peri_appear",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Three tables are about to use the words 'galaxy eyes' in a sentence. None of them have permission. The system rates this beat a soft seven. Listen first, panic second.",
+      "next": "rumor_check"
+    },
+    {
+      "id": "rumor_check",
+      "type": "stat_check",
+      "actor": "bin",
+      "stat": "I",
+      "difficulty": 11,
+      "defaultResult": "pass",
+      "tags": ["tavern", "listen", "rumor"],
+      "pass": "rumor_pass",
+      "fail": "rumor_fail"
+    },
+    {
+      "id": "rumor_pass",
+      "type": "narration",
+      "text": "Two regulars in the corner are unpacking the disappearance with the patience of people who already wrote out their version. A third is paying suspiciously close attention without contributing. That third one is wearing better boots than the snow asked for.",
+      "next": "rumor_pass_dialog"
+    },
+    {
+      "id": "rumor_pass_dialog",
+      "type": "dialogue",
+      "speaker": "Mug Regular",
+      "text": "Whoever has been asking after Garr's hut, they paid clean coin but the coin had no town stamp. Nobody saw the buyer twice. Two questions and gone.",
+      "next": "stranger_in_boots"
+    },
+    {
+      "id": "rumor_fail",
+      "type": "narration",
+      "text": "The room is louder than Bin can listen through. He catches the words 'two months,' 'crossbow on the wall,' and 'paid clean coin' across three different conversations and only one of them is being polite about it.",
+      "next": "stranger_in_boots"
+    },
+    {
+      "id": "stranger_in_boots",
+      "type": "dialogue",
+      "speaker": "Stranger",
+      "text": "If you are Bin Chen, I am not asking. I am leaving. If you are not Bin Chen, I am sorry I came in. Either way, tell whoever runs Garr's household to be careful which back door they leave unlocked.",
+      "next": "branch_choice"
+    },
+    {
+      "id": "branch_choice",
+      "type": "choice",
+      "prompt": "How does Bin handle the stranger?",
+      "defaultChoiceId": "listen",
+      "choices": [
+        {
+          "id": "listen",
+          "label": "Let them leave, mark their route",
+          "summary": "Patience. Bonus clue on the route 1.2.b will follow.",
+          "next": "listen_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_mug_let_stranger_leave", "value": true },
+            { "op": "log", "text": "Story route: Bin lets the stranger leave so he can follow the trail later." }
+          ]
+        },
+        {
+          "id": "press",
+          "label": "Block the door, ask one question",
+          "summary": "Aggressive. +1 danger, costs the soft route.",
+          "next": "press_route",
+          "ops": [
+            { "op": "set_flag", "flag": "story_mug_pressed_stranger", "value": true },
+            { "op": "danger", "amount": 1 },
+            { "op": "log", "text": "Story route: Bin pushes the stranger and earns a faster but louder lead." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listen_route",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "Walk slow on the way out. I want to remember the boots. We will use them later when nobody is in a hurry.",
+      "next": "peri_close"
+    },
+    {
+      "id": "press_route",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "text": "One question. Who paid you to ask, and where is the next drop? Either is fine, both is preferable, neither is a slow night.",
+      "next": "peri_close"
+    },
+    {
+      "id": "peri_close",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "text": "Good. Now we walk you home before the town sets a new record for emotional damage. The cellar has a noise problem and we both know it is not rats. That is the next chapter.",
+      "next": "finish_ops"
+    },
+    {
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Tag the Mug as the active lead and prep 1.2.b.",
+      "ops": [
+        { "op": "tag_add", "tag": "frosted_mug_lead_open", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Frosted Mug lead is now active. Cellar trail leads to chapter 1.2.b." }
+      ],
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "result": "complete"
+    }
+  ]
+}

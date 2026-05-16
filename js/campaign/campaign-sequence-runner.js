@@ -106,7 +106,12 @@ window.CJS.CampaignSequences = (() => {
       deliveryBlocked: _deliveryBlocked(sequence || indexEntry),
       deliveryNote: sequence?.deliveryNote || indexEntry?.deliveryNote || '',
       nextCandidates: _asArray(sequence?.nextCandidates ?? indexEntry?.nextCandidates),
-      syncSummary: _summaryLines(sequence?.syncSummary ?? indexEntry?.syncSummary)
+      syncSummary: _summaryLines(sequence?.syncSummary ?? indexEntry?.syncSummary),
+      branchOf: sequence?.branchOf || indexEntry?.branchOf || '',
+      alsoBranchOf: _asArray(sequence?.alsoBranchOf || indexEntry?.alsoBranchOf),
+      branchKey: sequence?.branchKey || indexEntry?.branchKey || '',
+      routeKey: sequence?.routeKey || indexEntry?.routeKey || '',
+      routeLabel: sequence?.routeLabel || indexEntry?.routeLabel || ''
     };
   }
 
@@ -374,7 +379,11 @@ window.CJS.CampaignSequences = (() => {
       completedAt: new Date().toISOString(),
       mode: current.startMode || (current.applyConsequences === false ? 'replay' : 'played'),
       syncSummary: _syncSummary(sequence, meta, current.applyConsequences === false ? 'replay' : 'played'),
-      deliveryStatus: meta.deliveryStatus || 'ready'
+      deliveryStatus: meta.deliveryStatus || 'ready',
+      routeKey: meta.routeKey || '',
+      routeLabel: meta.routeLabel || '',
+      branchKey: meta.branchKey || '',
+      branchOf: meta.branchOf || ''
     };
 
     if (current.applyConsequences !== false) {
@@ -510,7 +519,11 @@ window.CJS.CampaignSequences = (() => {
       chapterLabel: meta.chapterLabel || '',
       summaryText: _storySummaryText(sequence, log, 'defaulted'),
       syncSummary: _syncSummary(sequence, meta, 'defaulted'),
-      deliveryStatus: meta.deliveryStatus || 'ready'
+      deliveryStatus: meta.deliveryStatus || 'ready',
+      routeKey: meta.routeKey || '',
+      routeLabel: meta.routeLabel || '',
+      branchKey: meta.branchKey || '',
+      branchOf: meta.branchOf || ''
     };
 
     _commitStoryRecord(record, { pushHistory: true });
@@ -729,6 +742,8 @@ window.CJS.CampaignSequences = (() => {
     for (const flag of requiresFlags) {
       if (!state?.flags?.[flag]) return false;
     }
+    const requiresAnyFlags = _asArray(indexEntry.requiresAnyFlags || indexEntry.requiresFlagAny);
+    if (requiresAnyFlags.length && !requiresAnyFlags.some((flag) => !!state?.flags?.[flag])) return false;
     const blocksFlags = _asArray(indexEntry.blocksFlags || indexEntry.blockFlags || indexEntry.blockedByFlags);
     for (const flag of blocksFlags) {
       if (state?.flags?.[flag]) return false;
@@ -737,11 +752,122 @@ window.CJS.CampaignSequences = (() => {
     for (const partId of requiredParts) {
       if (!state?.storyMode?.partResults?.[partId]) return false;
     }
+    const requiresAnyParts = _asArray(indexEntry.requiresAnyStoryParts || indexEntry.requiresStoryPartsAny);
+    if (requiresAnyParts.length && !requiresAnyParts.some((partId) => !!state?.storyMode?.partResults?.[partId])) return false;
     const blockedParts = _asArray(indexEntry.blocksStoryParts);
     for (const partId of blockedParts) {
       if (state?.storyMode?.partResults?.[partId]) return false;
     }
     return true;
+  }
+
+  function _eligibilityReasons(indexEntry = {}, state = CS()?.getState?.() || {}) {
+    const reasons = [];
+    if (!indexEntry) return reasons;
+    const requiresFlags = _asArray(indexEntry.requiresFlags || indexEntry.flags);
+    for (const flag of requiresFlags) {
+      if (!state?.flags?.[flag]) reasons.push(`Needs flag ${flag}`);
+    }
+    const requiresAnyFlags = _asArray(indexEntry.requiresAnyFlags || indexEntry.requiresFlagAny);
+    if (requiresAnyFlags.length && !requiresAnyFlags.some((flag) => !!state?.flags?.[flag])) {
+      reasons.push(`Needs any flag: ${requiresAnyFlags.join(' / ')}`);
+    }
+    const blocksFlags = _asArray(indexEntry.blocksFlags || indexEntry.blockFlags || indexEntry.blockedByFlags);
+    for (const flag of blocksFlags) {
+      if (state?.flags?.[flag]) reasons.push(`Blocked by flag ${flag}`);
+    }
+    const requiredParts = _asArray(indexEntry.requiresStoryParts);
+    for (const partId of requiredParts) {
+      if (!state?.storyMode?.partResults?.[partId]) reasons.push(`Needs story part ${partId}`);
+    }
+    const requiresAnyParts = _asArray(indexEntry.requiresAnyStoryParts || indexEntry.requiresStoryPartsAny);
+    if (requiresAnyParts.length && !requiresAnyParts.some((partId) => !!state?.storyMode?.partResults?.[partId])) {
+      reasons.push(`Needs any story part: ${requiresAnyParts.join(' / ')}`);
+    }
+    const blockedParts = _asArray(indexEntry.blocksStoryParts);
+    for (const partId of blockedParts) {
+      if (state?.storyMode?.partResults?.[partId]) reasons.push(`Blocked by story part ${partId}`);
+    }
+    return reasons;
+  }
+
+  function entryEligible(sequenceId, state = CS()?.getState?.(), world = _activeWorld) {
+    const indexEntry = entry(sequenceId, world);
+    if (!indexEntry) return { eligible: false, reasons: ['Sequence not in index.'] };
+    const reasons = _eligibilityReasons(indexEntry, state || {});
+    return {
+      eligible: reasons.length === 0,
+      reasons
+    };
+  }
+
+  function chapterTree(world = _activeWorld, state = CS()?.getState?.() || {}) {
+    const entries = list('story', world);
+    const byPartId = {};
+    const nodes = entries.map((indexEntry) => {
+      const meta = storyMeta(indexEntry, world);
+      const status = storyStatus(indexEntry.id, state, world);
+      const eligibility = entryEligible(indexEntry.id, state, world);
+      const branchOf = indexEntry.branchOf || meta.branchOf || '';
+      const alsoBranchOf = _asArray(indexEntry.alsoBranchOf || meta.alsoBranchOf);
+      const node = {
+        id: indexEntry.id,
+        partId: meta.partId || indexEntry.partId || '',
+        partLabel: meta.partLabel || indexEntry.partLabel || '',
+        chapterLabel: meta.chapterLabel || indexEntry.chapterLabel || '',
+        orderKey: meta.orderKey || indexEntry.orderKey || '',
+        title: meta.title || indexEntry.title || indexEntry.id || '',
+        branchOf,
+        alsoBranchOf,
+        branchKey: indexEntry.branchKey || meta.branchKey || '',
+        routeKey: indexEntry.routeKey || meta.routeKey || '',
+        routeLabel: indexEntry.routeLabel || meta.routeLabel || '',
+        status,
+        eligibility,
+        meta,
+        children: [],
+        nextCandidates: meta.nextCandidates || []
+      };
+      if (node.partId) byPartId[node.partId] = node;
+      return node;
+    });
+    const roots = [];
+    for (const node of nodes) {
+      if (node.branchOf && byPartId[node.branchOf]) {
+        byPartId[node.branchOf].children.push(node);
+      } else {
+        roots.push(node);
+      }
+      for (const otherParent of node.alsoBranchOf || []) {
+        const parent = byPartId[otherParent];
+        if (parent && !parent.children.some((child) => child.id === node.id)) {
+          parent.children.push(node);
+        }
+      }
+    }
+    return { roots, byPartId, nodes };
+  }
+
+  function currentRouteChoices(state = CS()?.getState?.() || {}, world = _activeWorld) {
+    const records = Object.values(state?.storyMode?.partResults || {});
+    return records
+      .filter((record) => record.scope === 'story')
+      .sort((a, b) => _compareOrderValues(a.storyOrderKey || '', b.storyOrderKey || ''))
+      .map((record) => {
+        const meta = storyMeta(record.sequenceId, world);
+        return {
+          sequenceId: record.sequenceId,
+          partId: meta.partId || record.sequenceId,
+          partLabel: meta.partLabel || record.sequenceId,
+          chapterLabel: meta.chapterLabel || '',
+          orderKey: meta.orderKey || '',
+          title: meta.title || record.title || record.sequenceId,
+          routeKey: meta.routeKey || record.routeKey || '',
+          routeLabel: meta.routeLabel || record.routeLabel || '',
+          mode: record.mode || 'played',
+          choices: record.routeChoices || []
+        };
+      });
   }
 
   function _compareStoryEntries(a = {}, b = {}) {
@@ -854,6 +980,9 @@ window.CJS.CampaignSequences = (() => {
     entry,
     storyMeta,
     storyStatus,
+    entryEligible,
+    chapterTree,
+    currentRouteChoices,
     compareOrderKeys: _compareOrderValues,
     cachedSequence,
     loadSequence,
