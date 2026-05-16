@@ -189,6 +189,13 @@ window.CJS.CampaignSequenceVN = (() => {
 
     _renderPortrait(portraitLine);
 
+    // Sync the speaker chip's avatar with the active character so the dialogue
+    // box has a tiny but recognizable identity marker, not just a name tag.
+    const character = _characterFor(portraitLine);
+    const avatar = _speakerAvatar(portraitLine, character);
+    if (avatar) speakerEl.style.setProperty('--seq-vn-speaker-avatar', `url('${_cssUrl(avatar)}')`);
+    else speakerEl.style.removeProperty('--seq-vn-speaker-avatar');
+
     speakerEl.textContent = speaker || (type === 'narration' ? 'Narrator' : (sequence.title || ''));
     speakerEl.classList.toggle('is-narrator', !speaker);
 
@@ -315,6 +322,17 @@ window.CJS.CampaignSequenceVN = (() => {
       return character.expressionPortraits[line.portrait];
     }
     return character?.portrait || '';
+  }
+
+  // Small image used in the speaker chip. Prefer the neutral portrait
+  // (full-body works fine when scaled into a 22px circle showing only the
+  // top), then any expression portrait, finally nothing.
+  function _speakerAvatar(line, character) {
+    if (character?.expressionPortraits?.neutral) return character.expressionPortraits.neutral;
+    if (character?.expressionPortraits?.default) return character.expressionPortraits.default;
+    if (character?.portrait) return character.portrait;
+    if (line?.portrait && line.portrait.includes('/')) return line.portrait;
+    return '';
   }
 
   function _characterFor(line) {

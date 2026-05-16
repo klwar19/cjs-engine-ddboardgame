@@ -70,6 +70,12 @@ window.CJS.CampaignMap = (() => {
       `;
     }).join('');
 
+    // Bin's party marker — placed over the current node so the player always
+    // sees where they are on the world map (matches the grid map identity).
+    const playerMarkupSvg = currentNode && nodes.some((n) => n.id === currentNode.id)
+      ? _nodeMapPlayerMarkup(currentNode, run)
+      : '';
+
     const theme = _mapTheme(map);
     container.innerHTML = `
       <div class="campaign-map-shell">
@@ -85,6 +91,7 @@ window.CJS.CampaignMap = (() => {
           <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-map-bg"></rect>
           ${lines.join('')}
           ${nodeMarkup}
+          ${playerMarkupSvg}
         </svg>
         <div class="campaign-node-detail">
           ${renderNodeDetailSafe(currentNode, mapState)}
@@ -114,7 +121,13 @@ window.CJS.CampaignMap = (() => {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const key = _cellKey(x, y, activeLevelId, map);
-        const cell = Runner().findCell?.(map, x, y, run.mapLayer) || { x, y, kind: _terrainAt(map, x, y), title: key };
+        const terrainKind = _terrainAt(map, x, y);
+        const baseCell = Runner().findCell?.(map, x, y, run.mapLayer);
+        // Always carry the terrain forward so the tile floor reads correctly
+        // even when a cell defines a purpose kind like "battle" or "shop".
+        const cell = baseCell
+          ? { ...baseCell, terrain: baseCell.terrain || terrainKind }
+          : { x, y, kind: terrainKind, terrain: terrainKind, title: key };
         const threat = _movingThreatAt(run, map, x, y, activeLevelId);
         const isCurrent = Number(current.x) === x && Number(current.y) === y;
         const isRevealed = revealed[key] || (run.revealedCells || []).includes(key) || cell.discoveredByDefault || isCurrent;
@@ -129,7 +142,7 @@ window.CJS.CampaignMap = (() => {
         const threatAdjacent = threat ? _isAdjacent(current, threat) : false;
         const kindClass = _gridKindClass(cell);
         const nodeBadgeClass = _gridNodeBadge(cell, objective);
-        const threatMarkup = threat ? _threatMarkupV2(threat, threatAdjacent) : '';
+        const threatMarkup = threat ? _threatMarkupV2(threat, threatAdjacent, current) : '';
         const playerMarkup = isCurrent ? _playerMarkupV2(run) : '';
         const labelMarkup = isRevealed && cell.title
           ? `<span class="campaign-grid-cell-label">${_esc(_shortLabel(cell.title))}</span>`
@@ -159,7 +172,8 @@ window.CJS.CampaignMap = (() => {
               <span style="--legend-color:#c2a981"><i></i>Path / Road</span>
               <span style="--legend-color:#f5fbff"><i></i>Snow</span>
               <span style="--legend-color:#5fa8d0"><i></i>Water</span>
-              <span style="--legend-color:#8d959a"><i></i>Stone / Wall</span>
+              <span style="--legend-color:#8d959a"><i></i>Stone Floor</span>
+              <span style="--legend-color:#3a3f44"><i></i>Wall (impassable)</span>
             </div>
           </div>
         </div>
@@ -173,8 +187,18 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
+  // Returns the CSS modifier class used to pick the tile background.
+  // Purpose kinds (battle, shop, rest, etc.) get the underlying terrain
+  // class so the tile floor still reads correctly under the node badge.
   function _gridKindClass(cell = {}) {
-    const raw = String(cell.kind || cell.terrain || 'floor').toLowerCase();
+    const PURPOSE_KINDS = new Set([
+      'battle', 'event_battle', 'boss', 'rest', 'camp', 'campfire',
+      'shop', 'story', 'event', 'special_event', 'treasure', 'reward',
+      'loot', 'resource', 'trap', 'entrance', 'exit', 'objective'
+    ]);
+    const rawKind = String(cell.kind || '').toLowerCase();
+    const rawTerrain = String(cell.terrain || '').toLowerCase();
+    const raw = (PURPOSE_KINDS.has(rawKind) ? rawTerrain : rawKind) || rawTerrain || 'floor';
     if (raw === 'grass' || raw === 'meadow' || raw === 'field') return 'grass';
     if (raw === 'forest' || raw === 'tree' || raw === 'woods') return 'forest';
     if (raw === 'dirt' || raw === 'mud') return 'dirt';
@@ -209,16 +233,59 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
-  function _threatMarkupV2(threat = {}, adjacent = false) {
+  // Bin's marker drawn over the current node on the node-map SVG. Uses
+  // foreignObject so we can reuse the same CSS-driven sprite sheet as the
+  // grid map, keeping the player's identity consistent across views.
+  function _nodeMapPlayerMarkup(node = {}, run = {}) {
+    const cx = Number(node.x) || 0;
+    const cy = Number(node.y) || 0;
+    const size = 56;
+    const half = size / 2;
+    const facing = _normalizeFacing(run?.facing || 'down');
+    return `
+      <g class="campaign-map-player-art" data-node-id="${_escAttr(node.id)}">
+        <ellipse cx="${cx}" cy="${cy + 26}" rx="${size * 0.36}" ry="6" class="campaign-map-player-shadow"/>
+        <foreignObject x="${cx - half}" y="${cy - half - 18}" width="${size}" height="${size}">
+          <span xmlns="http://www.w3.org/1999/xhtml"
+                class="campaign-map-player-sprite"
+                data-facing="${_escAttr(facing)}"
+                role="img"
+                aria-label="Bin"></span>
+        </foreignObject>
+        <rect class="campaign-map-player-tag-bg" x="${cx - 22}" y="${cy + 34}" width="44" height="14" rx="7"/>
+        <text class="campaign-map-player-tag" x="${cx}" y="${cy + 44}" text-anchor="middle">Bin</text>
+      </g>
+    `;
+  }
+
+  function _threatMarkupV2(threat = {}, adjacent = false, current = null) {
     const title = _escAttr(`${threat.label || threat.id || 'Threat'} — ${adjacent ? 'one step away!' : 'roaming nearby'}`);
     const sprite = _threatSprite(threat);
+    const facing = _threatFacing(threat, current);
+    // When the scenario author specified an explicit sprite (e.g. a wolf
+    // portrait), we honour it via --threat-sprite. Without one, the CSS
+    // animates the default shadow_stalker.png sprite sheet using
+    // data-facing for the row.
     const inlineSprite = sprite ? `style="--threat-sprite:url('${_escAttr(sprite)}');"` : '';
     const cls = `campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''} ${sprite ? 'has-sprite' : ''}`;
     return `
       <span class="campaign-grid-threat-shadow" aria-hidden="true"></span>
-      <span class="${cls}" title="${title}" aria-hidden="true" ${inlineSprite}></span>
+      <span class="${cls}" data-facing="${_escAttr(facing)}" title="${title}" aria-hidden="true" ${inlineSprite}></span>
       <span class="campaign-grid-threat-tag ${adjacent ? 'is-adjacent' : ''}" aria-hidden="true">${_esc(_shortLabel(threat.label || threat.id || 'Roamer', 12))}</span>
     `;
+  }
+
+  function _threatFacing(threat = {}, current = null) {
+    const last = String(threat._lastDir || '').toLowerCase();
+    if (['up', 'down', 'left', 'right'].includes(last)) return last;
+    if (current && Number.isFinite(Number(current.x)) && Number.isFinite(Number(current.y))) {
+      const dx = Number(current.x) - Number(threat.x);
+      const dy = Number(current.y) - Number(threat.y);
+      if (dx === 0 && dy === 0) return 'down';
+      if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'right' : 'left';
+      return dy >= 0 ? 'down' : 'up';
+    }
+    return 'down';
   }
 
   function _normalizeFacing(value) {

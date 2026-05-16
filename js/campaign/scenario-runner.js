@@ -2480,6 +2480,12 @@ window.CJS.ScenarioRunner = (() => {
         x: Number(cell.x || 0),
         y: Number(cell.y || 0),
         icon: threat.icon || '!',
+        // Optional explicit sprite path. The renderer falls back to the
+        // shadow_stalker sheet (with directional animation) when this is
+        // empty — matching the user's expectation that roamers look like
+        // shadow creatures unless the scenario authored otherwise.
+        sprite: threat.sprite || threat.portrait || '',
+        portrait: threat.portrait || threat.sprite || '',
         moveMode: threat.moveMode || threat.move || 'random',
         moveChance: Number(threat.moveChance ?? 1),
         encounterId: threat.encounterId || null,
