@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch01_part01a_bent_pine_patrol",
-  "version": 2,
+  "version": 3,
   "title": "Bent Pine Patrol",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -16,9 +16,10 @@
   "startNode": "briefing",
   "background": "images/story-mode/haven/frostwood-vn.png",
   "tags": ["world:haven", "arc:1", "chapter:return", "frostwood", "map_run", "branch:gate"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "captain lysa", "gate guard"] },
   "summary": {
     "short": "Bin and Peri test the Bent Pine line before Haven can settle.",
-    "default": "The patrol reaches Watch Ridge and confirms the route is not safe yet."
+    "default": "Two months of nightmare prep and one hour of warm welcome. Then Peri drags Bin straight back into the trees because the patrol board is the wrong color and the wrong number, and someone has to walk Bent Pine before the next civilian patrol does it on faith."
   },
   "nextCandidates": [
     "1.2.a Watch Ridge Cleanup (continues the gate route)"
@@ -30,72 +31,77 @@
     "Branch flag set: story_bent_pine_walked unlocks 1.2.a."
   ],
   "completionOps": [
-    {
-      "op": "add_quest",
-      "quest": {
-        "id": "quest_watch_ridge_cleanup",
-        "title": "Watch Ridge Cleanup",
-        "summary": "Report the Bent Pine patrol result and decide whether the route can stay open.",
-        "tags": ["story", "watch_ridge", "patrol"],
-        "objectives": [
-          {
-            "id": "report_patrol",
-            "label": "Report the patrol result at Frostbitten Gate",
-            "required": 1,
-            "current": 0
-          }
-        ]
-      }
-    },
-    {
-      "op": "hub_problem_add",
-      "hubId": "haven_hub_frostbitten",
-      "problemId": "shadow_on_patrol_line",
-      "label": "Something is stalking the patrol line",
-      "notes": "Bent Pine confirmed a roaming contact that forces close fights."
-    },
-    {
-      "op": "add_rumor",
-      "hubId": "haven_hub_frostbitten",
-      "id": "rumor_patrol_line_shadow",
-      "text": "Something keeps crossing the Bent Pine patrol line and forcing bad fights up close.",
-      "tags": ["story", "patrol", "moving_threat"]
-    },
-    {
-      "op": "set_flag",
-      "flag": "story_bent_pine_walked",
-      "value": true
-    },
-    {
-      "op": "event_log_add",
-      "title": "Story Sync: Bent Pine Patrol",
-      "summary": "The Bent Pine route stays unstable after a live patrol check.",
-      "scope": "story",
-      "source": "story_sync",
-      "tags": ["story_part", "chapter_1_1a"]
-    }
+    { "op": "add_quest", "quest": { "id": "quest_watch_ridge_cleanup", "title": "Watch Ridge Cleanup", "summary": "Report the Bent Pine patrol result and decide whether the route can stay open.", "tags": ["story", "watch_ridge", "patrol"], "objectives": [{ "id": "report_patrol", "label": "Report the patrol result at Frostbitten Gate", "required": 1, "current": 0 }] } },
+    { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "shadow_on_patrol_line", "label": "Something is stalking the patrol line", "notes": "Bent Pine confirmed a roaming contact that forces close fights." },
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_patrol_line_shadow", "text": "Something keeps crossing the Bent Pine patrol line and forcing bad fights up close.", "tags": ["story", "patrol", "moving_threat"] },
+    { "op": "set_flag", "flag": "story_bent_pine_walked", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Bent Pine Patrol", "summary": "The Bent Pine route stays unstable after a live patrol check.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_1a"] }
   ],
   "nodes": [
     {
       "id": "briefing",
       "type": "narration",
-      "text": "The gate still smells like wet wool and nerves when Peri drags Bin straight to the patrol board. Bent Pine is the shortest line to Watch Ridge, which is exactly why everyone stopped trusting it. The pins on the board are the wrong color and the wrong number.",
-      "next": "peri_brief"
+      "text": "The gate office still smells like wet wool and brick coffee. Captain Lysa has spread her notes across three columns: rumor, witness, paperwork. Bin's name appears in every column. Twice in two of them. The map of Bent Pine is laid out on the table like an autopsy nobody has the stomach to start.",
+      "next": "lysa_intro"
     },
     {
-      "id": "peri_brief",
+      "id": "lysa_intro",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Glad you walked in alive. I have three pins missing from this board and two patrols who came back chewed. The civilians want answers. The smart ones know I do not have any yet. Walk Bent Pine with me, and walk it loud — I want to know what flinches first when it hears us coming.",
+      "next": "peri_arrive"
+    },
+    {
+      "id": "peri_arrive",
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "We sweep the line, check the ridge, and if something rushes us face-first we solve it immediately. No heroic paperwork, just movement and results. The system promises a small amount of structured suffering.",
-      "next": "bin_question"
+      "side": "right",
+      "expression": "smirk",
+      "text": "The system has annotated three of the missing pins with the word ROAMING in helpful red. The fourth pin is missing because the captain knocked it off her desk yesterday and chose not to find it. I admire the discipline.",
+      "next": "bin_quip"
     },
     {
-      "id": "bin_question",
+      "id": "bin_quip",
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Define structured. Define small. Also define suffering, because the last three uses of those words ended with me bleeding on someone else's roof.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "smirk",
+      "text": "Define structured. Define small. Also define suffering, because the last three uses of those words ended with me bleeding on someone else's roof. I have not slept on a real bed in two months, Captain. Promise me bad jokes on the way home and I will walk this for you.",
+      "next": "lysa_brief"
+    },
+    {
+      "id": "lysa_brief",
+      "type": "dialogue",
+      "speaker": "Captain Lysa",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Bad jokes guaranteed. Cover the ridge markers, sweep south through Bent Pine, return by sundown or earlier. If something rushes you face-first, do not be brave — be loud. I want signal flares, not silent heroics. The pins on this board are already too dramatic.",
+      "next": "peri_directive"
+    },
+    {
+      "id": "peri_directive",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Translation: walk the route, react to traps, push to Watch Ridge. Objective reveals at sixty percent explored. The system has reserved a back-row seat with popcorn and a clipboard.",
+      "next": "bin_check_plan"
+    },
+    {
+      "id": "bin_check_plan",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Then we choose the opening. We can hug the ridge markers and play disciplined — slower, cleaner, easier to call for help. Or we can cut through Bent Pine early and try to surprise whatever has been treating this line like a buffet.",
       "next": "route_choice"
     },
     {
@@ -107,7 +113,7 @@
         {
           "id": "markers",
           "label": "Hold to the ridge markers",
-          "summary": "Disciplined approach. Lower danger.",
+          "summary": "Disciplined approach. Visible, audible, lower danger but slower.",
           "next": "prep_check",
           "ops": [
             { "op": "set_flag", "flag": "story_bent_pine_route_markers", "value": true },
@@ -117,7 +123,7 @@
         {
           "id": "cutthrough",
           "label": "Cut through Bent Pine early",
-          "summary": "Faster and louder. +1 danger.",
+          "summary": "Faster and louder. +1 danger, but you might force the contact onto your terms.",
           "next": "prep_check",
           "ops": [
             { "op": "set_flag", "flag": "story_bent_pine_route_cutthrough", "value": true },
@@ -143,7 +149,20 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "If the route is alive, we walk it before it learns our names. Cover the shoulders, watch the snowpack, do not look surprised when the trees do something rude.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "If the route is alive, we walk it before it learns our names. Cover the shoulders, watch the snowpack, do not look surprised when the trees do something rude. Peri — if I duck, you duck. If you duck, I am already on the ground.",
+      "next": "peri_pass_reply"
+    },
+    {
+      "id": "peri_pass_reply",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "happy",
+      "text": "Acknowledged. The system is logging the duck protocol. It rates your shoulder check a friendly nine. Move.",
       "next": "field_run"
     },
     {
@@ -151,7 +170,20 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "That sounded reckless enough to count as confidence. Move. The system has reserved a back row seat in case you embarrass yourself.",
+      "side": "right",
+      "expression": "annoyed",
+      "text": "That sounded reckless enough to count as confidence. Move. The system has reserved a back row seat in case you embarrass yourself, and also a small bandage budget.",
+      "next": "bin_fail_reply"
+    },
+    {
+      "id": "bin_fail_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Bandage budget. Cool. New favorite phrase. Walking now, regretting later.",
       "next": "field_run"
     },
     {
@@ -168,27 +200,59 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "Watch Ridge is still standing, which is more than I promised. Now we tell the gate this line stays dangerous until someone clears it properly. That paperwork has your name on it whether you like it or not.",
-      "next": "end"
+      "side": "right",
+      "expression": "soft",
+      "text": "Watch Ridge is still standing, which is more than I promised. The thing crossing the line did not catch us, but it caught the bark off two pines and somebody's hat. Now we tell the gate this line stays dangerous until someone clears it properly. That paperwork has your name on it whether you like it or not.",
+      "next": "bin_after"
+    },
+    {
+      "id": "bin_after",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "determined",
+      "text": "Good. I will write it cleanly. Bent Pine stays closed unless escorted. Whatever that was, it hunts on a loop — patient about the wrong things, fast about the right ones. We do not solve that with one patrol.",
+      "next": "finish_ops"
     },
     {
       "id": "after_loss",
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "We got pushed off the line. Next pass needs fresh supplies, less pride, and maybe fewer things that sprint straight into your face. Frostbitten is going to enjoy the report exactly zero amount.",
-      "next": "end"
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "sad",
+      "text": "We got pushed off the line. Next pass needs fresh supplies, less pride, and maybe fewer things that sprint straight into your face. Frostbitten is going to enjoy the report exactly zero amount. So will I.",
+      "next": "peri_loss_reply"
+    },
+    {
+      "id": "peri_loss_reply",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Listed in the ledger as: tactical retreat, no fatalities, hat lost. We will dress it up at the gate. The town does not need heroics — it needs a working sentence about the threat. We can give them that.",
+      "next": "finish_ops"
     },
     {
       "id": "after_abort",
       "type": "narration",
-      "text": "The patrol breaks off before the ridge call is settled. Frostbitten will have questions waiting and the answers will be the wrong shape.",
-      "next": "end"
+      "text": "The patrol breaks off before the ridge call is settled. Frostbitten will have questions waiting and the answers will be the wrong shape. The kind of shape a small town fills in for you, badly.",
+      "next": "finish_ops"
     },
     {
-      "id": "end",
-      "type": "end",
-      "result": "complete"
-    }
+      "id": "finish_ops",
+      "type": "ops",
+      "summary": "Patrol report queued for the gate; Bent Pine confirmed unstable.",
+      "ops": [
+        { "op": "tag_add", "tag": "bent_pine_patrol_done", "scope": "story", "source": "sequence" },
+        { "op": "log", "text": "Bent Pine patrol filed. Next chapter: report at the gate." }
+      ],
+      "next": "end"
+    },
+    { "id": "end", "type": "end", "result": "complete" }
   ]
 }

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#c9a8ff"/>
+      <stop offset="1" stop-color="#3a2470"/>
+    </radialGradient>
+    <radialGradient id="sh" cx="0.5" cy="0.95" r="0.55">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="32" cy="58" rx="20" ry="4" fill="url(#sh)"/>
+  <circle cx="32" cy="28" r="22" fill="url(#bg)" stroke="#1a0e3a" stroke-width="2.2"/>
+  <g transform="translate(32 28)" fill="#fff8e1" stroke="#1a0e3a" stroke-width="1.2">
+    <path d="M-9 -12 L9 -12 L9 12 L-9 12 Z"/>
+    <path d="M-7 -9 L7 -9" stroke-width="1"/>
+    <path d="M-7 -5 L7 -5" stroke-width="1"/>
+    <path d="M-7 -1 L7 -1" stroke-width="1"/>
+    <path d="M-7 3 L7 3" stroke-width="1"/>
+    <path d="M-7 7 L4 7" stroke-width="1"/>
+  </g>
+  <g transform="translate(44 14)" fill="#fff066" stroke="#1a0e3a" stroke-width="1">
+    <path d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5 Z"/>
+  </g>
+</svg>

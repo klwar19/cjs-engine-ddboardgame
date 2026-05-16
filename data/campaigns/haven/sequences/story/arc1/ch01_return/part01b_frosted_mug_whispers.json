@@ -1,6 +1,6 @@
 {
   "id": "story_haven_arc1_ch01_part01b_frosted_mug_whispers",
-  "version": 1,
+  "version": 2,
   "title": "Frosted Mug Whispers",
   "scope": "story",
   "arcId": "haven_arc1",
@@ -16,9 +16,10 @@
   "startNode": "open",
   "background": "images/story-mode/haven/frostwood-vn.png",
   "tags": ["world:haven", "arc:1", "chapter:return", "frostbitten", "tavern", "branch:tavern"],
+  "_vnLayout": { "left": ["bin"], "right": ["peri", "tavern host", "mug regular", "stranger"] },
   "summary": {
     "short": "Bin slips into the Frosted Mug and hears the town gossip about him before he can correct it.",
-    "default": "The tavern crowd is rattled, the cellar has been talking, and one regular knows more than they should."
+    "default": "The tavern crowd is rattled, the cellar has been talking, and one regular knows more than they should. Bin learns the shape of the rumor about himself, and a stranger in good boots leaves a warning at the door."
   },
   "nextCandidates": [
     "1.2.b Inside Track (continues the tavern route)"
@@ -29,46 +30,36 @@
     "Branch flag set: story_frosted_mug_walked unlocks 1.2.b."
   ],
   "completionOps": [
-    {
-      "op": "add_rumor",
-      "hubId": "haven_hub_frostbitten",
-      "id": "rumor_mug_inquiries",
-      "text": "Someone outside town has been buying questions about Garr's household and paying in coin nobody recognizes.",
-      "tags": ["story", "mug", "inquiries", "tavern"]
-    },
-    {
-      "op": "hub_problem_add",
-      "hubId": "haven_hub_frostbitten",
-      "problemId": "mug_quiet_fear",
-      "label": "Quiet fear in the Frosted Mug",
-      "notes": "Regulars are afraid to name the buyer of recent inquiries. Worth pressing in 1.2.b."
-    },
-    {
-      "op": "set_flag",
-      "flag": "story_frosted_mug_walked",
-      "value": true
-    },
-    {
-      "op": "event_log_add",
-      "title": "Story Sync: Frosted Mug Whispers",
-      "summary": "Bin gathers the town's version of his disappearance before the town gathers its version of him.",
-      "scope": "story",
-      "source": "story_sync",
-      "tags": ["story_part", "chapter_1_1b"]
-    }
+    { "op": "add_rumor", "hubId": "haven_hub_frostbitten", "id": "rumor_mug_inquiries", "text": "Someone outside town has been buying questions about Garr's household and paying in coin nobody recognizes.", "tags": ["story", "mug", "inquiries", "tavern"] },
+    { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "mug_quiet_fear", "label": "Quiet fear in the Frosted Mug", "notes": "Regulars are afraid to name the buyer of recent inquiries. Worth pressing in 1.2.b." },
+    { "op": "set_flag", "flag": "story_frosted_mug_walked", "value": true },
+    { "op": "event_log_add", "title": "Story Sync: Frosted Mug Whispers", "summary": "Bin gathers the town's version of his disappearance before the town gathers its version of him.", "scope": "story", "source": "story_sync", "tags": ["story_part", "chapter_1_1b"] }
   ],
   "nodes": [
     {
       "id": "open",
       "type": "narration",
-      "text": "The Frosted Mug runs warm even when the town does not. Bin slides in through the side door because the front door has a bell, and the bell does not lie. The room is half-full. Half-full at this hour is a town with something on its mind.",
+      "text": "The Frosted Mug runs warm even when the town does not. Bin slides in through the side door because the front door has a bell, and the bell does not lie. The room is half-full. Half-full at this hour is a town with something on its mind. The fire is dying like it has been told to.",
       "next": "host_open"
     },
     {
       "id": "host_open",
       "type": "dialogue",
       "speaker": "Tavern Host",
-      "text": "We are full up on ghosts tonight. Take the corner if you must haunt anyone, and please pay for whatever ghosts drink. The coin pouch says you are slightly more alive than I expected.",
+      "side": "right",
+      "expression": "worried",
+      "text": "We are full up on ghosts tonight. Take the corner if you must haunt anyone, and please pay for whatever ghosts drink. The coin pouch says you are slightly more alive than I expected. The mug on the wall says hello.",
+      "next": "bin_host_reply"
+    },
+    {
+      "id": "bin_host_reply",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "tired",
+      "text": "Two mugs and a chair I cannot fall out of. I owe you a longer story than you have time for. Tonight I will start with the short one. The short one is: do not bring my sister here yet. I am not done being a person again.",
       "next": "peri_appear"
     },
     {
@@ -76,7 +67,9 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "Three tables are about to use the words 'galaxy eyes' in a sentence. None of them have permission. The system rates this beat a soft seven. Listen first, panic second.",
+      "side": "right",
+      "expression": "smirk",
+      "text": "Three tables are about to use the words 'galaxy eyes' in a sentence. None of them have permission. The system rates this beat a soft seven. Listen first, panic second. Try not to bleed on the bar — the host already had to scrub a metaphor off that stool.",
       "next": "rumor_check"
     },
     {
@@ -93,27 +86,52 @@
     {
       "id": "rumor_pass",
       "type": "narration",
-      "text": "Two regulars in the corner are unpacking the disappearance with the patience of people who already wrote out their version. A third is paying suspiciously close attention without contributing. That third one is wearing better boots than the snow asked for.",
+      "text": "Two regulars in the corner are unpacking the disappearance with the patience of people who already wrote out their version. A third is paying suspiciously close attention without contributing. That third one is wearing better boots than the snow asked for. The kind of boots that travel for a living and lie about it.",
       "next": "rumor_pass_dialog"
     },
     {
       "id": "rumor_pass_dialog",
       "type": "dialogue",
       "speaker": "Mug Regular",
-      "text": "Whoever has been asking after Garr's hut, they paid clean coin but the coin had no town stamp. Nobody saw the buyer twice. Two questions and gone.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Whoever has been asking after Garr's hut, they paid clean coin but the coin had no town stamp. Nobody saw the buyer twice. Two questions and gone. The questions were never the same questions, and that is what made my neck itch.",
+      "next": "bin_listen_reaction"
+    },
+    {
+      "id": "bin_listen_reaction",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "angry",
+      "text": "Asking after Lily. Asking after the kitchen door. Two months in a portal and somebody decided that was permission. I want a name. I would like the name before the second drink, please.",
       "next": "stranger_in_boots"
     },
     {
       "id": "rumor_fail",
       "type": "narration",
-      "text": "The room is louder than Bin can listen through. He catches the words 'two months,' 'crossbow on the wall,' and 'paid clean coin' across three different conversations and only one of them is being polite about it.",
+      "text": "The room is louder than Bin can listen through. He catches the words 'two months,' 'crossbow on the wall,' and 'paid clean coin' across three different conversations and only one of them is being polite about it. Somewhere behind the bar, a kettle gives up.",
       "next": "stranger_in_boots"
     },
     {
       "id": "stranger_in_boots",
       "type": "dialogue",
       "speaker": "Stranger",
-      "text": "If you are Bin Chen, I am not asking. I am leaving. If you are not Bin Chen, I am sorry I came in. Either way, tell whoever runs Garr's household to be careful which back door they leave unlocked.",
+      "side": "right",
+      "expression": "neutral",
+      "text": "If you are Bin Chen, I am not asking. I am leaving. If you are not Bin Chen, I am sorry I came in. Either way, tell whoever runs Garr's household to be careful which back door they leave unlocked. The buyer pays well and listens too long.",
+      "next": "peri_observe"
+    },
+    {
+      "id": "peri_observe",
+      "type": "dialogue",
+      "speaker": "Peri",
+      "portrait": "peri",
+      "side": "right",
+      "expression": "neutral",
+      "text": "Stranger's boots are road-stained on the outside and polished on the inside. That is a courier's discipline. Whoever pays them does not want them seen leaving the same place twice. The system has logged the boots. We have a description without a name. That is enough.",
       "next": "branch_choice"
     },
     {
@@ -125,7 +143,7 @@
         {
           "id": "listen",
           "label": "Let them leave, mark their route",
-          "summary": "Patience. Bonus clue on the route 1.2.b will follow.",
+          "summary": "Patience. Bonus clue on the route 1.2.b will follow. Quiet lead, more time to think.",
           "next": "listen_route",
           "ops": [
             { "op": "set_flag", "flag": "story_mug_let_stranger_leave", "value": true },
@@ -135,7 +153,7 @@
         {
           "id": "press",
           "label": "Block the door, ask one question",
-          "summary": "Aggressive. +1 danger, costs the soft route.",
+          "summary": "Aggressive. +1 danger, costs the soft route. Faster lead, louder consequences.",
           "next": "press_route",
           "ops": [
             { "op": "set_flag", "flag": "story_mug_pressed_stranger", "value": true },
@@ -150,15 +168,41 @@
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "Walk slow on the way out. I want to remember the boots. We will use them later when nobody is in a hurry.",
-      "next": "peri_close"
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "neutral",
+      "text": "Walk slow on the way out. I want to remember the boots. We will use them later when nobody is in a hurry. Host — that mug is on me. Sit them by the window next time, where the light is honest.",
+      "next": "host_react"
     },
     {
       "id": "press_route",
       "type": "dialogue",
       "speaker": "Bin",
       "portrait": "bin",
-      "text": "One question. Who paid you to ask, and where is the next drop? Either is fine, both is preferable, neither is a slow night.",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "angry",
+      "text": "One question. Who paid you to ask, and where is the next drop? Either is fine, both is preferable, neither is a slow night. The door is closer to me than to you. Let us not test that.",
+      "next": "host_react"
+    },
+    {
+      "id": "host_react",
+      "type": "dialogue",
+      "speaker": "Tavern Host",
+      "side": "right",
+      "expression": "worried",
+      "text": "Take it out of the bar tab. Take it out of my afternoon. I should have told someone weeks ago. The cellar has been talking and I have been refusing to listen. Come back tomorrow. I will be ready with the rest of it.",
+      "next": "bin_host_thanks"
+    },
+    {
+      "id": "bin_host_thanks",
+      "type": "dialogue",
+      "speaker": "Bin",
+      "portrait": "bin",
+      "speakerId": "bin",
+      "side": "left",
+      "expression": "soft",
+      "text": "Thank you. I mean that with the bones of the sentence. You have kept this place breathing for my family more than once. We will repay it by closing whatever this is, quietly.",
       "next": "peri_close"
     },
     {
@@ -166,7 +210,9 @@
       "type": "dialogue",
       "speaker": "Peri",
       "portrait": "peri",
-      "text": "Good. Now we walk you home before the town sets a new record for emotional damage. The cellar has a noise problem and we both know it is not rats. That is the next chapter.",
+      "side": "right",
+      "expression": "soft",
+      "text": "Good. Now we walk you home before the town sets a new record for emotional damage. The cellar has a noise problem and we both know it is not rats. That is the next chapter. Try to arrive with both hands free.",
       "next": "finish_ops"
     },
     {
@@ -179,10 +225,6 @@
       ],
       "next": "end"
     },
-    {
-      "id": "end",
-      "type": "end",
-      "result": "complete"
-    }
+    { "id": "end", "type": "end", "result": "complete" }
   ]
 }

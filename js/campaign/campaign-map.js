@@ -127,14 +127,20 @@ window.CJS.CampaignMap = (() => {
           ? `${objectiveDone ? '✓ ' : '★ '}${objective.label}`
           : '';
         const threatAdjacent = threat ? _isAdjacent(current, threat) : false;
-        const glyph = _glyphForCell(cell, { isCurrent, objective, passable });
-        const threatMarkup = threat ? _threatMarkup(threat, threatAdjacent) : '';
+        const kindClass = _gridKindClass(cell);
+        const nodeBadgeClass = _gridNodeBadge(cell, objective);
+        const threatMarkup = threat ? _threatMarkupV2(threat, threatAdjacent) : '';
+        const playerMarkup = isCurrent ? _playerMarkupV2() : '';
+        const labelMarkup = isRevealed && cell.title
+          ? `<span class="campaign-grid-cell-label">${_esc(_shortLabel(cell.title))}</span>`
+          : '';
         cells.push(`
-          <button class="campaign-grid-cell kind-${_escAttr(String(cell.kind || 'floor').replace(/[^a-z0-9_-]/gi, '_').toLowerCase())} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''} ${threat ? 'has-threat' : ''}"
+          <button class="campaign-grid-cell v2 kind-${kindClass} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''} ${threat ? 'has-threat' : ''}"
             data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(_cellTitleText(cell, key, objective, objectiveTitle, threat))}">
+            ${nodeBadgeClass && isRevealed ? `<span class="campaign-grid-cell-node ${nodeBadgeClass}" aria-hidden="true"></span>` : ''}
             ${threatMarkup}
-            <span>${isRevealed ? glyph : ''}</span>
-            <small>${isRevealed ? _esc(_shortLabel(cell.title || key)) : ''}</small>
+            ${playerMarkup}
+            ${labelMarkup}
           </button>
         `);
       }
@@ -142,14 +148,22 @@ window.CJS.CampaignMap = (() => {
     const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y, run.mapLayer);
     const theme = _mapTheme(map);
     container.innerHTML = `
-      <div class="campaign-map-shell">
-        <div class="campaign-map-head">
+      <div class="campaign-map-shell v2">
+        <div class="campaign-map-head v2">
           <div>
             <h2>${_esc(map.name || 'Scenario Grid')}</h2>
             <span class="campaign-muted">${_esc(_gridMeta(map, run, width, height))}</span>
+            <div class="campaign-map-legend">
+              <span style="--legend-color:#86c060"><i></i>Grass / Forest</span>
+              <span style="--legend-color:#a07a52"><i></i>Dirt / Mud</span>
+              <span style="--legend-color:#c2a981"><i></i>Path / Road</span>
+              <span style="--legend-color:#f5fbff"><i></i>Snow</span>
+              <span style="--legend-color:#5fa8d0"><i></i>Water</span>
+              <span style="--legend-color:#8d959a"><i></i>Stone / Wall</span>
+            </div>
           </div>
         </div>
-        <div class="campaign-grid-map" style="--grid-cols:${width}" data-theme="${_escAttr(theme)}">
+        <div class="campaign-grid-map v2" style="--grid-cols:${width}" data-theme="${_escAttr(theme)}">
           ${cells.join('')}
         </div>
         <div class="campaign-node-detail">
@@ -157,6 +171,45 @@ window.CJS.CampaignMap = (() => {
         </div>
       </div>
     `;
+  }
+
+  function _gridKindClass(cell = {}) {
+    const raw = String(cell.kind || cell.terrain || 'floor').toLowerCase();
+    if (raw === 'grass' || raw === 'meadow' || raw === 'field') return 'grass';
+    if (raw === 'forest' || raw === 'tree' || raw === 'woods') return 'forest';
+    if (raw === 'dirt' || raw === 'mud') return 'dirt';
+    if (raw === 'stone' || raw === 'rubble' || raw === 'tile' || raw === 'floor') return 'stone';
+    if (raw === 'wall' || raw === 'obstacle' || raw === 'rock' || raw === 'pillar') return 'wall';
+    if (raw === 'water' || raw === 'river' || raw === 'pond' || raw === 'lake') return 'water';
+    if (raw === 'path' || raw === 'road' || raw === 'lane' || raw === 'patrol') return 'path';
+    if (raw === 'snow' || raw === 'ice' || raw === 'frost' || raw === 'frostwood') return 'snow';
+    return raw.replace(/[^a-z0-9_-]/g, '_');
+  }
+
+  function _gridNodeBadge(cell = {}, objective = null) {
+    const kind = String(cell.kind || '').toLowerCase();
+    const tags = (cell.tags || []).map((t) => String(t).toLowerCase());
+    if (kind === 'boss' || tags.includes('boss')) return 'is-boss';
+    if (kind === 'battle' || kind === 'event_battle' || tags.includes('battle')) return 'is-battle';
+    if (kind === 'rest' || kind === 'camp' || kind === 'campfire' || tags.includes('rest')) return 'is-rest';
+    if (kind === 'shop' || tags.includes('shop')) return 'is-shop';
+    if (kind === 'story' || kind === 'event' || tags.includes('story')) return 'is-story';
+    if (kind === 'treasure' || kind === 'reward' || kind === 'loot' || tags.includes('treasure')) return 'is-treasure';
+    if (kind === 'special_event' || tags.includes('special_event')) return 'is-event';
+    if (objective) return 'is-story';
+    return '';
+  }
+
+  function _playerMarkupV2() {
+    return `
+      <span class="campaign-grid-player-shadow" aria-hidden="true"></span>
+      <span class="campaign-grid-player" aria-label="You are here"></span>
+    `;
+  }
+
+  function _threatMarkupV2(threat = {}, adjacent = false) {
+    const title = _escAttr(`${threat.label || threat.id || 'Threat'} — close to engage`);
+    return `<span class="campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''}" title="${title}" aria-hidden="true"></span>`;
   }
 
   function _isAdjacent(current = {}, threat = {}) {

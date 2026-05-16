@@ -62,35 +62,73 @@ window.CJS.MinigameSprites = (() => {
     if (gameApi.has(gameId)) return gameApi.get(gameId);
     const map = await loadMap();
     const gameMap = map?.[gameId];
-    const sheetMeta = gameMap && map.sheets?.[gameMap.sheet];
-    const sheetImg = sheetMeta ? await loadSheet(sheetMeta.src) : null;
+    const defaultSheetName = gameMap?.sheet || '';
+    const defaultMeta = defaultSheetName ? map.sheets?.[defaultSheetName] : null;
+    const defaultImg = defaultMeta ? await loadSheet(defaultMeta.src) : null;
     const sprites = (gameMap && gameMap.sprites) || {};
+
+    // Pre-load any per-sprite override sheets the spritesheet.json references.
+    const overrideSheets = {};
+    for (const name of Object.keys(sprites)) {
+      const def = sprites[name] || {};
+      if (def.sheet && def.sheet !== defaultSheetName && map.sheets?.[def.sheet]) {
+        const meta = map.sheets[def.sheet];
+        overrideSheets[def.sheet] = {
+          meta,
+          imgPromise: loadSheet(meta.src)
+        };
+      }
+    }
+    for (const key of Object.keys(overrideSheets)) {
+      overrideSheets[key].img = await overrideSheets[key].imgPromise;
+    }
+
+    function lookupSheet(def) {
+      if (def && def.sheet && def.sheet !== defaultSheetName && overrideSheets[def.sheet]) {
+        return { meta: overrideSheets[def.sheet].meta, img: overrideSheets[def.sheet].img };
+      }
+      return { meta: defaultMeta, img: defaultImg };
+    }
 
     function resolveRect(name) {
       const def = sprites[name];
       if (!def) return null;
-      if (def.tile != null && sheetMeta?.tileSize) {
-        const t = sheetMeta.tileSize;
-        const cols = sheetMeta.cols || Math.floor(sheetImg ? sheetImg.naturalWidth / t : 0);
+      const { meta, img } = lookupSheet(def);
+      if (def.tile != null && meta?.tileSize) {
+        const t = meta.tileSize;
+        const cols = meta.cols || Math.floor(img ? img.naturalWidth / t : 0);
         const col = def.tile % cols;
         const row = Math.floor(def.tile / cols);
-        return { x: col * t, y: row * t, w: t, h: t };
+        return { x: col * t, y: row * t, w: t, h: t, img };
       }
-      return { x: def.x | 0, y: def.y | 0, w: def.w | 0, h: def.h | 0 };
+      // A "frame" reference uses cols/rows from the sheet meta to compute a
+      // tile-sized rect. Used for the Bin walk sprite sheet (4x4) and the
+      // shadow stalker sheet so games can target frame 0 without computing
+      // pixel math.
+      if (def.frame != null && img && meta?.cols && meta?.rows) {
+        const fw = Math.floor(img.naturalWidth / meta.cols);
+        const fh = Math.floor(img.naturalHeight / meta.rows);
+        const col = def.frame % meta.cols;
+        const row = Math.floor(def.frame / meta.cols);
+        return { x: col * fw, y: row * fh, w: fw, h: fh, img };
+      }
+      return { x: def.x | 0, y: def.y | 0, w: def.w | 0, h: def.h | 0, img };
     }
 
     const api = {
-      ready: !!sheetImg,
-      sheet: sheetImg,
-      tileSize: sheetMeta?.tileSize || null,
+      ready: !!defaultImg,
+      sheet: defaultImg,
+      tileSize: defaultMeta?.tileSize || null,
       has(name) {
-        return !!(sheetImg && sprites[name]);
+        const def = sprites[name];
+        if (!def) return false;
+        const { img } = lookupSheet(def);
+        return !!img;
       },
       rect(name) { return resolveRect(name); },
       draw(ctx, name, dx, dy, dw, dh) {
-        if (!sheetImg) return false;
         const r = resolveRect(name);
-        if (!r) return false;
+        if (!r || !r.img) return false;
         const aspect = r.w / r.h;
         let drawW = dw, drawH = dh;
         let offsetX = 0, offsetY = 0;
@@ -103,7 +141,7 @@ window.CJS.MinigameSprites = (() => {
             offsetX = (dw - drawW) / 2;
           }
         }
-        ctx.drawImage(sheetImg, r.x, r.y, r.w, r.h, dx + offsetX, dy + offsetY, drawW, drawH);
+        ctx.drawImage(r.img, r.x, r.y, r.w, r.h, dx + offsetX, dy + offsetY, drawW, drawH);
         return true;
       }
     };

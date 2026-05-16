@@ -61,6 +61,7 @@ window.CJS.CampaignUI = (() => {
   let _lastPendingBattleKey = '';
   let _drawerEl = null;
   let _drawerBackdropEl = null;
+  let _bootIncompatibleNotice = null;
 
   const MODES = [
     ['town', 'Town', '🏠'],
@@ -158,7 +159,16 @@ window.CJS.CampaignUI = (() => {
       await CM().loadDefaultData();
       await Chat()?.load?.();
       CS().loadContentFromDataStore();
-      if (!Save().loadActive()) {
+      const loadResult = Save().loadActive();
+      if (!loadResult) {
+        CS().createNewSave(Object.values(CS().getContent().campaigns)[0]?.id);
+        Save().saveCurrent();
+      } else if (loadResult && loadResult.incompatible) {
+        _bootIncompatibleNotice = {
+          slotName: loadResult.save?.slotName || loadResult.save?.saveId || 'Previous Save',
+          reason: loadResult.reason || 'This save was made by an older build.',
+          slotId: loadResult.save?.saveId || ''
+        };
         CS().createNewSave(Object.values(CS().getContent().campaigns)[0]?.id);
         Save().saveCurrent();
       }
@@ -1526,6 +1536,27 @@ window.CJS.CampaignUI = (() => {
     const sequence = Seq.cachedSequence?.(active.sequenceId, state.currentWorld) || null;
     const meta = Seq?.storyMeta?.(sequence || active.sequenceId, state.currentWorld) || {};
     const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
+
+    // When the fullscreen sequence-VN is enabled (default), the overlay
+    // handles the active node. Render a slim "playing" card so the
+    // story-home tab still acknowledges the active run without
+    // duplicating the dialogue UI.
+    const vnActive = !!(window.CJS.CampaignSequenceVN?.isEnabled?.() && active);
+    if (vnActive) {
+      return `
+        <section class="campaign-panel campaign-wide-panel campaign-sequence-active is-vn-active">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Now playing — ${_esc(active.title || active.sequenceId)}</h2>
+              <div class="campaign-muted">${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} · ` : ''}${_esc(_label(active.scope || 'sequence'))}${active.applyConsequences === false ? ' · Replay mode' : ''}</div>
+            </div>
+            <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
+          </div>
+          <div class="campaign-muted">The visual novel overlay is open. Click anywhere in it to continue, or use Panel to switch back to the inline view.</div>
+        </section>
+      `;
+    }
+
     return `
       <section class="campaign-panel campaign-wide-panel campaign-sequence-active">
         <div class="campaign-panel-head">
@@ -1534,6 +1565,7 @@ window.CJS.CampaignUI = (() => {
             <div class="campaign-muted">${_esc(_label(active.scope || 'sequence'))} | ${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} | ` : ''}${_esc(active.nodeId || '')}${active.applyConsequences === false ? ' | Replay mode' : ''}</div>
           </div>
           ${active.applyConsequences === false ? '<span class="campaign-pill">Replay</span>' : ''}
+          <button class="campaign-action" data-campaign-action="sequence-open-vn">Open VN</button>
           <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
         </div>
         ${node ? _renderSequenceNode(node, active) : '<div class="campaign-empty">Loading sequence node...</div>'}
@@ -4641,24 +4673,76 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderSettings(state) {
-    const slots = Object.values(Save().getSlots()).sort((a, b) => String(b.lastUpdated || '').localeCompare(String(a.lastUpdated || '')));
+    return _renderSaveManager(state);
+  }
+
+  function _renderSaveManager(state) {
+    const Sv = Save();
+    const slots = Object.values(Sv.getSlots()).sort((a, b) => String(b.lastUpdated || '').localeCompare(String(a.lastUpdated || '')));
+    const activeId = Sv.getActiveSlotId();
+    const buildVersion = Sv.currentSaveVersion ? Sv.currentSaveVersion() : 1;
+    const minVersion = Sv.minCompatibleVersion ? Sv.minCompatibleVersion() : 1;
+
+    const notice = _bootIncompatibleNotice
+      ? `
+        <div class="campaign-save-warning">
+          <strong>Heads up:</strong> Your previous save <em>${_esc(_bootIncompatibleNotice.slotName)}</em> was made by an older build and could not be loaded. ${_esc(_bootIncompatibleNotice.reason)} A fresh save has been started — you can delete or export the old slot below.
+        </div>
+      `
+      : '';
+
+    const rows = slots.length ? slots.map((slot) => {
+      const compatible = Sv.isCompatible ? Sv.isCompatible(slot) : true;
+      const reason = !compatible && Sv.describeIncompatibility ? Sv.describeIncompatibility(slot) : '';
+      const isActive = slot.saveId === activeId;
+      return `
+        <div class="campaign-save-slot ${isActive ? 'is-active' : ''} ${compatible ? '' : 'is-incompatible'}">
+          <div>
+            <h4>${_esc(slot.slotName || slot.saveId)}</h4>
+            <div class="campaign-save-meta">
+              <span>World: ${_esc(slot.currentWorld || '?')}</span>
+              <span>Chapter ${_esc(slot.storyMode?.currentChapterLabel || slot.currentChapter || '1.1')}</span>
+              <span>Saved ${_esc(_formatLogTime(slot.lastUpdated))}</span>
+              <span>v${_esc(slot.saveVersion || 0)}</span>
+              ${isActive ? '<span>● Active</span>' : ''}
+              ${!compatible ? `<span class="is-warn">Incompatible</span>` : ''}
+            </div>
+            ${!compatible ? `<div class="campaign-muted" style="margin-top:6px">${_esc(reason)}</div>` : ''}
+          </div>
+          <div class="campaign-save-row-actions">
+            ${compatible
+              ? `<button class="campaign-action primary" data-campaign-action="load-slot" data-id="${_escAttr(slot.saveId)}" ${isActive ? 'disabled' : ''}>${isActive ? 'Loaded' : 'Load'}</button>`
+              : `<button class="campaign-action" data-campaign-action="export-slot" data-id="${_escAttr(slot.saveId)}" title="Export the old save before deleting">Export</button>`
+            }
+            <button class="campaign-action danger" data-campaign-action="delete-slot" data-id="${_escAttr(slot.saveId)}">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('') : '<div class="campaign-save-empty">No saved campaigns yet. Use <strong>New Campaign Save</strong> below to start one.</div>';
+
     return `
       <section class="campaign-panel">
-        <div class="campaign-panel-head"><h2>Save Slots</h2></div>
-        ${slots.map((slot) => `
-          <div class="campaign-row">
-            <div>
-              <strong>${_esc(slot.slotName || slot.saveId)}</strong>
-              <div class="campaign-muted">${_esc(slot.currentWorld)} | ${_esc(slot.lastUpdated || '')}</div>
-            </div>
-            <div class="campaign-row-actions">
-              <button class="campaign-action" data-campaign-action="load-slot" data-id="${_escAttr(slot.saveId)}">Load</button>
-              <button class="campaign-action danger" data-campaign-action="delete-slot" data-id="${_escAttr(slot.saveId)}">Delete</button>
-            </div>
+        <div class="campaign-panel-head">
+          <div>
+            <h2>Campaign Saves</h2>
+            <div class="campaign-muted">Build save version <strong>${buildVersion}</strong> · Min compatible <strong>${minVersion}</strong></div>
           </div>
-        `).join('') || '<div class="campaign-empty">No slots.</div>'}
+        </div>
+        ${notice}
+        <div class="campaign-save-manager">
+          <div class="campaign-save-actions">
+            <button class="campaign-action primary" data-campaign-action="new-save">+ New Campaign Save</button>
+            <button class="campaign-action" data-campaign-action="save-slot">Save Now</button>
+            <button class="campaign-action" data-campaign-action="fork-save">Fork Current</button>
+            <button class="campaign-action" data-campaign-action="export-save">Export Current</button>
+            <button class="campaign-action" data-campaign-action="import-save">Import…</button>
+            <button class="campaign-action danger" data-campaign-action="delete-all-saves">Delete All Saves</button>
+          </div>
+          ${rows}
+        </div>
       </section>
     `;
+    void state;
   }
 
   function _bindEvents() {
@@ -4788,6 +4872,7 @@ window.CJS.CampaignUI = (() => {
       case 'sequence-lose': return _advanceSequenceFromUi('lose');
       case 'sequence-abort': return _advanceSequenceFromUi('abort');
       case 'sequence-complete': return _completeSequenceFromUi();
+      case 'sequence-open-vn': window.CJS.CampaignSequenceVN?.setEnabled?.(true); return render();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
       case 'oracle-note': return _saveOracleNote();
@@ -4939,8 +5024,10 @@ window.CJS.CampaignUI = (() => {
       case 'party-availability': return _partyAvailabilityModal(data.id);
       case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
-      case 'load-slot': Save().loadSlot(data.id); return render();
-      case 'delete-slot': Save().deleteSlot(data.id); return render();
+      case 'load-slot': return _loadSlot(data.id);
+      case 'delete-slot': return _deleteSlot(data.id);
+      case 'delete-all-saves': return _deleteAllSaves();
+      case 'export-slot': return _exportSlot(data.id);
       case 'export-log': return _exportLog();
       case 'clear-log': return _clearLog();
       case 'export-event-log': return _exportEventLog();
@@ -4950,11 +5037,63 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _newSave() {
-    UI().confirm('Create a fresh campaign save?', () => {
+    const message = 'Create a fresh campaign save? Your current campaign will keep its own slot — the new save starts empty in a different slot.';
+    UI().confirm(message, () => {
       const campaign = Object.values(CS().getContent().campaigns)[0];
       CS().createNewSave(campaign?.id);
       Save().saveCurrent();
+      _bootIncompatibleNotice = null;
+      UI().toast('New campaign save started', 'success');
+      render();
     });
+  }
+
+  function _loadSlot(slotId) {
+    if (!slotId) return;
+    const result = Save().loadSlot(slotId);
+    if (result && result.incompatible) {
+      UI().toast(result.reason || 'That save is from an older build and cannot be loaded.', 'error', 5500);
+      return;
+    }
+    if (!result) {
+      UI().toast('Save slot not found', 'error');
+      return;
+    }
+    _bootIncompatibleNotice = null;
+    UI().toast(`Loaded ${result.slotName || result.saveId || 'save'}`, 'success');
+    render();
+  }
+
+  function _deleteSlot(slotId) {
+    if (!slotId) return;
+    UI().confirm('Delete this save slot? This cannot be undone.', () => {
+      Save().deleteSlot(slotId);
+      UI().toast('Save slot deleted', 'info');
+      render();
+    });
+  }
+
+  function _deleteAllSaves() {
+    UI().confirm('Delete ALL local campaign saves? This cannot be undone.', () => {
+      Save().deleteAllSlots();
+      // Start a fresh save immediately so the UI does not crash on an empty slot list.
+      const campaign = Object.values(CS().getContent().campaigns)[0];
+      CS().createNewSave(campaign?.id);
+      Save().saveCurrent();
+      _bootIncompatibleNotice = null;
+      UI().toast('All save slots cleared. Started a fresh campaign.', 'success');
+      render();
+    });
+  }
+
+  function _exportSlot(slotId) {
+    const slot = Save().getSlots()[slotId];
+    if (!slot) { UI().toast('Save slot not found', 'error'); return; }
+    const SaveMgr = window.CJS.SaveManager;
+    if (!SaveMgr?.downloadTextFile) { UI().toast('Save export unavailable', 'error'); return; }
+    const file = `${(slot.slotName || slot.saveId || 'campaign_save').replace(/[^a-z0-9._-]+/gi, '_').toLowerCase()}.save.json`;
+    SaveMgr.downloadTextFile(file, `${JSON.stringify(slot, null, 2)}\n`, 'application/json');
+    UI().toast(`Exported ${file}`, 'success');
   }
 
   function _pushGitHub() {
@@ -10568,6 +10707,7 @@ window.CJS.CampaignUI = (() => {
   return Object.freeze({
     init,
     render,
-    isBooted: () => _booted
+    isBooted: () => _booted,
+    playSequenceMinigame: _playSequenceMiniGame
   });
 })();

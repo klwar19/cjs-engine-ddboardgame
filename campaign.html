@@ -96,6 +96,7 @@
   <script src="js/campaign/campaign-objective-banner.js?v=vn-redesign-20260516"></script>
   <script src="js/campaign/campaign-story-scenes.js?v=vn-redesign-20260516"></script>
   <script src="js/campaign/campaign-sequence-runner.js"></script>
+  <script src="js/campaign/campaign-sequence-vn.js?v=vn-redesign-20260516"></script>
   <script src="js/campaign/campaign-oracle.js"></script>
   <script src="js/campaign/campaign-combat-bridge.js"></script>
   <script src="js/campaign/campaign-party-chat.js"></script>
@@ -125,6 +126,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await window.CJS.CampaignUI.init(document.getElementById('campaign-root'));
       window.CJS.ScenePlayer?.wireCampaign?.();
+      window.CJS.CampaignSequenceVN?.init?.();
       if (window.CJS.L2DCompanion) {
         window.CJS.L2DCompanion.init({ mode: 'campaign' }).catch(err => console.warn('L2D init:', err));
       }
