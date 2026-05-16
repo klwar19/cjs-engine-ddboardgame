@@ -232,7 +232,21 @@ window.CJS.CampaignUI = (() => {
     const key = `${battle.source || ''}:${battle.threatId || ''}:${battle.encounterId || ''}:${battle.battleSetId || ''}:${battle.label || ''}`;
     if (key === _lastPendingBattleKey) return;
     _lastPendingBattleKey = key;
-    if (battle.source !== 'moving_threat' && battle.source !== 'random' && battle.source !== 'random_monster_pool' && battle.source !== 'node' && battle.source !== 'progress_trigger') return;
+    // Any source that represents an automatic in-game trigger gets the flash
+    // + popup treatment. Manual "Run Battle" clicks (source 'manual') are
+    // intentionally excluded — the user already pressed a button. Sequence
+    // combat nodes set source = 'sequence:<nodeId>', so we match the prefix.
+    const source = String(battle.source || '');
+    const autoTriggered =
+      source === 'moving_threat' ||
+      source === 'random' ||
+      source === 'random_monster_pool' ||
+      source === 'node' ||
+      source === 'progress_trigger' ||
+      source === 'beat' ||
+      source.startsWith('sequence:') ||
+      source.startsWith('quest:');
+    if (!autoTriggered) return;
     const flash = document.createElement('div');
     flash.className = 'campaign-encounter-flash';
     flash.setAttribute('aria-hidden', 'true');
@@ -1674,14 +1688,19 @@ window.CJS.CampaignUI = (() => {
     if (vnActive) {
       return `
         <section class="campaign-panel campaign-wide-panel campaign-sequence-active is-vn-active">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Now playing — ${_esc(active.title || active.sequenceId)}</h2>
-              <div class="campaign-muted">${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} · ` : ''}${_esc(_label(active.scope || 'sequence'))}${active.applyConsequences === false ? ' · Replay mode' : ''}</div>
-            </div>
-            <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
+          <div class="campaign-sequence-active-avatar" aria-hidden="true">
+            <span class="campaign-grid-player" data-facing="down"></span>
           </div>
-          <div class="campaign-muted">The visual novel overlay is open. Click anywhere in it to continue, or use Panel to switch back to the inline view.</div>
+          <div class="campaign-sequence-active-body">
+            <div class="campaign-panel-head">
+              <div>
+                <h2>Now playing — ${_esc(active.title || active.sequenceId)}</h2>
+                <div class="campaign-muted">${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} · ` : ''}${_esc(_label(active.scope || 'sequence'))}${active.applyConsequences === false ? ' · Replay mode' : ''}</div>
+              </div>
+              <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
+            </div>
+            <div class="campaign-muted">The visual novel overlay is open. Click anywhere in it to continue, or use Panel to switch back to the inline view.</div>
+          </div>
         </section>
       `;
     }

@@ -2012,6 +2012,61 @@ body.campaign-page {
   50%      { opacity: 0.45; }
 }
 
+/* Bin's marker on the node-map (non-grid view). Uses the same
+   bin_sprite.png sheet as the grid map so the character identity is
+   consistent across travel modes. */
+.campaign-map-player-art {
+  pointer-events: none;
+}
+
+.campaign-map-player-shadow {
+  fill: rgba(0, 0, 0, 0.55);
+  filter: blur(1.2px);
+  animation: campaign-map-player-shadow-pulse 1.6s ease-in-out infinite;
+}
+@keyframes campaign-map-player-shadow-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 0.95; }
+}
+
+.campaign-map-player-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url('../images/characters/bin_sprite.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: 0% 0%;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.7))
+          drop-shadow(0 0 6px rgba(255, 224, 137, 0.45));
+  animation: campaign-grid-player-walk-down 0.9s steps(4, jump-none) infinite,
+             campaign-grid-player-bob 1.6s ease-in-out infinite;
+}
+
+.campaign-map-player-sprite[data-facing="down"]  { animation: campaign-grid-player-walk-down 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+.campaign-map-player-sprite[data-facing="up"]    { animation: campaign-grid-player-walk-up 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+.campaign-map-player-sprite[data-facing="right"] { animation: campaign-grid-player-walk-right 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+.campaign-map-player-sprite[data-facing="left"]  { animation: campaign-grid-player-walk-left 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+
+.campaign-map-player-tag-bg {
+  fill: #ffe9a8;
+  stroke: #6a4818;
+  stroke-width: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+
+.campaign-map-player-tag {
+  fill: #1c1a0a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  pointer-events: none;
+}
+
 .campaign-pill.is-objective {
   background: rgba(243, 220, 146, 0.18);
   border: 1px solid rgba(243, 220, 146, 0.55);
@@ -6379,6 +6434,50 @@ body.campaign-page {
   min-height: 150px;
 }
 
+/* Inline "Now playing" card when the fullscreen VN is active. Polished
+   layout with a small animated Bin marker so it never looks like a
+   placeholder log line. */
+.campaign-sequence-active.is-vn-active {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 20px;
+  background:
+    linear-gradient(180deg, rgba(8, 16, 28, 0.62), rgba(6, 14, 24, 0.62)),
+    url("../images/story-mode/haven/frostwood-vn.png") center / cover no-repeat;
+  background-blend-mode: normal;
+}
+
+.campaign-sequence-active-avatar {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 224, 137, 0.18), rgba(0, 0, 0, 0) 60%),
+              rgba(8, 16, 28, 0.65);
+  border: 1px solid rgba(255, 224, 137, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.campaign-sequence-active-avatar .campaign-grid-player {
+  inset: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.65));
+}
+
+.campaign-sequence-active-body {
+  display: grid;
+  gap: 6px;
+}
+
+.campaign-sequence-active.is-vn-active .campaign-panel-head {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
 .campaign-gacha-hero.is-event {
   border-color: rgba(243, 220, 146, 0.48);
   background:
@@ -7288,10 +7387,19 @@ body.campaign-page {
 .campaign-seq-vn-stage {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr) minmax(140px, 1fr);
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 2.2fr) minmax(160px, 1fr);
   align-items: end;
   padding: 12px clamp(16px, 5vw, 56px) 0;
   pointer-events: none;
+}
+
+/* Subtle parallax breathing on backdrop so a static image feels alive. */
+.campaign-seq-vn-backdrop {
+  animation: campaign-seq-vn-backdrop-breathe 14s ease-in-out infinite;
+}
+@keyframes campaign-seq-vn-backdrop-breathe {
+  0%, 100% { transform: scale(1.04); }
+  50%      { transform: scale(1.085); }
 }
 
 .campaign-seq-vn-portrait {
@@ -7315,10 +7423,27 @@ body.campaign-page {
 }
 
 .campaign-seq-vn-portrait img {
-  max-width: min(360px, 30vw);
-  max-height: 64vh;
+  max-width: min(380px, 32vw);
+  max-height: 70vh;
   object-fit: contain;
-  filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.72));
+  filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.72))
+          drop-shadow(0 0 24px rgba(157, 216, 255, 0.18));
+  transition: filter 240ms ease, transform 320ms ease;
+}
+
+.campaign-seq-vn-portrait.is-active img {
+  filter: drop-shadow(0 22px 36px rgba(0, 0, 0, 0.78))
+          drop-shadow(0 0 32px rgba(255, 224, 137, 0.28));
+}
+
+.campaign-seq-vn-portrait.is-left.is-active img,
+.campaign-seq-vn-portrait.is-right.is-active img {
+  animation: campaign-seq-vn-portrait-sway 5s ease-in-out infinite;
+}
+
+@keyframes campaign-seq-vn-portrait-sway {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
 }
 
 .campaign-seq-vn-portrait-placeholder {
@@ -7351,16 +7476,27 @@ body.campaign-page {
 .campaign-seq-vn-dialogue {
   position: relative;
   z-index: 4;
-  width: min(1100px, calc(100vw - 28px));
-  margin: 0 auto 22px;
-  padding: 18px 22px 16px;
-  border: 1px solid rgba(157, 216, 255, 0.44);
+  width: min(1140px, calc(100vw - 28px));
+  margin: 0 auto 24px;
+  padding: 20px 26px 18px;
+  border: 1px solid rgba(157, 216, 255, 0.48);
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(8, 16, 28, 0.94), rgba(2, 8, 16, 0.96));
   box-shadow: 0 26px 52px rgba(0, 0, 0, 0.6), 0 0 32px rgba(96, 178, 230, 0.18);
   pointer-events: auto;
   animation: campaign-seq-vn-line-pop 320ms ease-out;
+  backdrop-filter: blur(2px);
+}
+
+.campaign-seq-vn-dialogue::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto -1px;
+  height: 3px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  background: linear-gradient(90deg, rgba(255, 224, 137, 0), rgba(255, 224, 137, 0.6) 50%, rgba(255, 224, 137, 0));
 }
 
 @keyframes campaign-seq-vn-line-pop {
@@ -7376,31 +7512,62 @@ body.campaign-page {
 .campaign-seq-vn-speaker {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  margin-bottom: 8px;
-  padding: 4px 14px;
+  gap: 8px;
+  min-height: 32px;
+  margin-bottom: 10px;
+  padding: 5px 18px 5px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(157, 216, 255, 0.5);
+  border: 1px solid rgba(255, 224, 137, 0.42);
   background: linear-gradient(180deg, rgba(96, 178, 230, 0.92), rgba(46, 124, 178, 0.88));
   color: #fff;
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(157, 216, 255, 0.18);
+}
+
+.campaign-seq-vn-speaker::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background-image: var(--seq-vn-speaker-avatar, url('../assets/sprites/bin_marker.svg'));
+  background-position: center 18%;
+  background-size: 180% auto;
+  background-repeat: no-repeat;
+  background-color: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .campaign-seq-vn-speaker.is-narrator {
-  background: rgba(36, 56, 72, 0.7);
-  color: #c8dbe6;
-  font-style: italic;
+  background: rgba(36, 48, 60, 0.78);
   border-color: rgba(157, 216, 255, 0.28);
+  color: #cfe1f0;
+  font-style: italic;
+}
+
+.campaign-seq-vn-speaker.is-narrator::before {
+  background-image: none;
+  background-color: rgba(8, 16, 24, 0.65);
+  color: #cfe1f0;
+  text-align: center;
+  line-height: 24px;
+  font-size: 11px;
+  font-style: normal;
+  content: "✦";
 }
 
 .campaign-seq-vn-text {
   margin: 0;
-  min-height: 64px;
-  font-size: 1.08rem;
-  line-height: 1.62;
+  min-height: 72px;
+  font-family: "Cormorant Garamond", "Inter", system-ui, serif;
+  font-size: 1.18rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
   color: #f4f8ff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
@@ -7590,14 +7757,34 @@ body.campaign-page {
 .campaign-grid-cell.v2.kind-dirt,
 .campaign-grid-cell.v2.kind-mud      { --tile-bg: url('../assets/grid/tile_dirt.svg'); }
 .campaign-grid-cell.v2.kind-stone,
-.campaign-grid-cell.v2.kind-floor,
-.campaign-grid-cell.v2.kind-wall     { --tile-bg: url('../assets/grid/tile_stone.svg'); }
+.campaign-grid-cell.v2.kind-floor    { --tile-bg: url('../assets/grid/tile_stone.svg'); }
+.campaign-grid-cell.v2.kind-wall,
+.campaign-grid-cell.v2.kind-obstacle,
+.campaign-grid-cell.v2.kind-rock,
+.campaign-grid-cell.v2.kind-pillar   { --tile-bg: url('../assets/grid/tile_wall.svg'); }
 .campaign-grid-cell.v2.kind-water    { --tile-bg: url('../assets/grid/tile_water.svg'); }
 .campaign-grid-cell.v2.kind-path,
 .campaign-grid-cell.v2.kind-road     { --tile-bg: url('../assets/grid/tile_path.svg'); }
 
 .campaign-grid-cell.v2.is-hidden     { filter: brightness(0.32) saturate(0.4); }
-.campaign-grid-cell.v2.is-blocked    { filter: brightness(0.7) saturate(0.6); }
+.campaign-grid-cell.v2.is-blocked    {
+  filter: brightness(0.85) saturate(0.7) contrast(1.05);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
+}
+.campaign-grid-cell.v2.is-blocked::after {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  pointer-events: none;
+  border: 2px dashed rgba(255, 200, 90, 0.18);
+  border-radius: 4px;
+}
+.campaign-grid-cell.v2.is-blocked.kind-wall::after,
+.campaign-grid-cell.v2.is-blocked.kind-obstacle::after,
+.campaign-grid-cell.v2.is-blocked.kind-rock::after,
+.campaign-grid-cell.v2.is-blocked.kind-pillar::after {
+  border-color: transparent;
+}
 
 .campaign-grid-cell.v2:hover:not(:disabled) {
   z-index: 5;
@@ -7676,35 +7863,71 @@ body.campaign-page {
 .campaign-grid-cell-node.is-treasure{ background-image: url('../assets/nodes/node_treasure.svg'); }
 .campaign-grid-cell-node.is-event   { background-image: url('../assets/nodes/node_event.svg'); }
 
-/* Player marker — large readable SVG portrait with facing direction */
+/* Player marker — uses bin_sprite.png 4x4 sprite sheet.
+   Row layout (per data/universal/characters.json):
+     rowDown=0, rowUp=1, rowRight=2, rowLeft=3
+   Each frame is 25% of the sheet (4 cols), and walking animation
+   cycles through cols 0→1→2→3 by stepping background-position-x. */
 .campaign-grid-player {
   position: absolute;
-  inset: 6% 4% 12% 4%;
+  inset: 0;
   pointer-events: none;
   z-index: 7;
-  background-image: url('../assets/sprites/bin_marker.svg');
-  background-position: center 38%;
+  background-image: url('../images/characters/bin_sprite.png');
   background-repeat: no-repeat;
-  background-size: 92% auto;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.7))
-          drop-shadow(0 0 10px rgba(255, 224, 137, 0.35));
-  animation: campaign-grid-player-bob 1.6s ease-in-out infinite;
-  transition: transform 160ms ease;
+  background-size: 400% 400%;
+  /* Default: facing down, col 0 (idle) */
+  background-position: 0% 0%;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.75))
+          drop-shadow(0 0 8px rgba(255, 224, 137, 0.32));
+  animation: campaign-grid-player-walk-down 0.9s steps(4, jump-none) infinite,
+             campaign-grid-player-bob 1.6s ease-in-out infinite;
+  will-change: background-position, transform;
 }
 
-.campaign-grid-player[data-facing="left"]  { transform: scaleX(-1); }
-.campaign-grid-player[data-facing="right"] { transform: scaleX(1); }
-.campaign-grid-player[data-facing="up"]    { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 10px rgba(157, 216, 255, 0.45)); }
-.campaign-grid-player[data-facing="down"]  { filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 10px rgba(255, 224, 137, 0.45)); }
+.campaign-grid-player[data-facing="down"]  { animation: campaign-grid-player-walk-down 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+.campaign-grid-player[data-facing="up"]    { animation: campaign-grid-player-walk-up 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+.campaign-grid-player[data-facing="right"] { animation: campaign-grid-player-walk-right 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+.campaign-grid-player[data-facing="left"]  { animation: campaign-grid-player-walk-left 0.9s steps(4, jump-none) infinite, campaign-grid-player-bob 1.6s ease-in-out infinite; }
+
+/* Each walk cycle slides background-position-x from 0% to 100% in 4 steps.
+   background-position-y picks the row: 0%=down, 33.33%=up, 66.67%=right, 100%=left. */
+@keyframes campaign-grid-player-walk-down {
+  from { background-position: 0%   0%; }
+  to   { background-position: 100% 0%; }
+}
+@keyframes campaign-grid-player-walk-up {
+  from { background-position: 0%   33.333%; }
+  to   { background-position: 100% 33.333%; }
+}
+@keyframes campaign-grid-player-walk-right {
+  from { background-position: 0%   66.667%; }
+  to   { background-position: 100% 66.667%; }
+}
+@keyframes campaign-grid-player-walk-left {
+  from { background-position: 0%   100%; }
+  to   { background-position: 100% 100%; }
+}
 
 @keyframes campaign-grid-player-bob {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-4px); }
+  50%      { transform: translateY(-3px); }
 }
-.campaign-grid-player[data-facing="left"]  { animation-name: campaign-grid-player-bob-left; }
-@keyframes campaign-grid-player-bob-left {
+
+/* Fallback when the PNG can't load (renderer adds .no-sprite). */
+.campaign-grid-player.no-sprite {
+  background-image: url('../assets/sprites/bin_marker.svg');
+  background-size: 92% auto;
+  background-position: center 38%;
+  animation: campaign-grid-player-bob 1.6s ease-in-out infinite;
+}
+.campaign-grid-player.no-sprite[data-facing="left"]  { transform: scaleX(-1); animation-name: campaign-grid-player-bob-flip; }
+.campaign-grid-player.no-sprite[data-facing="right"] { transform: scaleX(1); }
+@keyframes campaign-grid-player-bob-flip {
   0%, 100% { transform: translateY(0) scaleX(-1); }
-  50%      { transform: translateY(-4px) scaleX(-1); }
+  50%      { transform: translateY(-3px) scaleX(-1); }
 }
 
 /* Glowing name tag under Bin so the player can see where they are at a glance */
@@ -7746,27 +7969,68 @@ body.campaign-page {
   50%      { transform: scaleX(0.86); opacity: 0.95; }
 }
 
-/* Shadow stalker (chasing threat) — uses the new shadow_marker SVG */
+/* Shadow stalker (chasing threat) — uses shadow_stalker.png 4x4 sprite sheet.
+   Same layout as the player sheet: 4 cols × 4 rows of 320px frames. */
 .campaign-grid-threat.v2 {
   position: absolute;
-  inset: 8% 6% 14% 6%;
+  inset: 0;
   width: auto;
   height: auto;
-  background: url('../assets/sprites/shadow_marker.svg') center 40% / 92% auto no-repeat;
+  background-image: url('../images/monsters/shadow_stalker.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: 0% 0%;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
   border-radius: 0;
   box-shadow: none;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.85))
-          drop-shadow(0 0 8px rgba(180, 70, 200, 0.5));
-  animation: campaign-grid-threat-bob 1.4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.85))
+          drop-shadow(0 0 8px rgba(180, 70, 200, 0.55));
+  animation: campaign-grid-threat-walk-down 1.1s steps(4, jump-none) infinite,
+             campaign-grid-threat-bob 1.4s ease-in-out infinite;
   z-index: 7;
   font-size: 0;
+  will-change: background-position, transform;
 }
 
+.campaign-grid-threat.v2[data-facing="down"]  { animation: campaign-grid-threat-walk-down 1.1s steps(4, jump-none) infinite, campaign-grid-threat-bob 1.4s ease-in-out infinite; }
+.campaign-grid-threat.v2[data-facing="up"]    { animation: campaign-grid-threat-walk-up 1.1s steps(4, jump-none) infinite, campaign-grid-threat-bob 1.4s ease-in-out infinite; }
+.campaign-grid-threat.v2[data-facing="right"] { animation: campaign-grid-threat-walk-right 1.1s steps(4, jump-none) infinite, campaign-grid-threat-bob 1.4s ease-in-out infinite; }
+.campaign-grid-threat.v2[data-facing="left"]  { animation: campaign-grid-threat-walk-left 1.1s steps(4, jump-none) infinite, campaign-grid-threat-bob 1.4s ease-in-out infinite; }
+
+@keyframes campaign-grid-threat-walk-down {
+  from { background-position: 0%   0%; }
+  to   { background-position: 100% 0%; }
+}
+@keyframes campaign-grid-threat-walk-up {
+  from { background-position: 0%   33.333%; }
+  to   { background-position: 100% 33.333%; }
+}
+@keyframes campaign-grid-threat-walk-right {
+  from { background-position: 0%   66.667%; }
+  to   { background-position: 100% 66.667%; }
+}
+@keyframes campaign-grid-threat-walk-left {
+  from { background-position: 0%   100%; }
+  to   { background-position: 100% 100%; }
+}
+
+/* If the scenario authored a custom threat portrait (--threat-sprite), it
+   overrides the default sheet but loses directional frames (single image).*/
 .campaign-grid-threat.v2.has-sprite {
-  background-image: var(--threat-sprite, url('../assets/sprites/shadow_marker.svg'));
+  background-image: var(--threat-sprite, url('../images/monsters/shadow_stalker.png'));
   background-size: 92% auto;
   background-position: center 40%;
   background-repeat: no-repeat;
+  animation: campaign-grid-threat-bob 1.4s ease-in-out infinite;
+}
+
+/* Fallback if the PNG fails: renderer adds .no-sprite. */
+.campaign-grid-threat.v2.no-sprite {
+  background-image: url('../assets/sprites/shadow_marker.svg');
+  background-size: 92% auto;
+  background-position: center 40%;
+  animation: campaign-grid-threat-bob 1.4s ease-in-out infinite;
 }
 
 /* Pulsing threat tag (red when adjacent, dim purple otherwise) */
