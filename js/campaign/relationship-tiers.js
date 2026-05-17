@@ -1,6 +1,6 @@
 // relationship-tiers.js
 // Reads existing state.bonds entries and maps them to display tiers.
-// The bond store (state.bonds[npcId][field]) is owned by campaign-ops;
+// The bond store (state.bonds[characterId][field]) is owned by campaign-ops;
 // this is a pure read-only helper for UI and condition checks.
 //
 // Tier mapping (default):
@@ -65,7 +65,7 @@ window.CJS.RelationshipTiers = (() => {
     return havePos >= wantPos;
   }
 
-  function getKnownNpcs(state) {
+  function getKnownCharacters(state) {
     const bonds = state?.bonds || {};
     return Object.keys(bonds);
   }
@@ -77,7 +77,10 @@ window.CJS.RelationshipTiers = (() => {
   return {
     computeTier,
     meetsTier,
-    getKnownNpcs,
+    getKnownCharacters,
+    // Backwards-compat alias for older tests / call sites that used the
+    // legacy NPC-flavored name.
+    getKnownNpcs: getKnownCharacters,
     listTiers,
     POSITIVE_FIELDS,
     NEGATIVE_FIELDS

@@ -727,7 +727,7 @@
           ],
           "promote": [
             { "id": "lightning_prep", "title": "Lightning Prep", "reason": "Chimera weakness setup." },
-            { "id": "kael_scouting", "title": "Kael Scouting", "reason": "Useful underdog NPC setup." },
+            { "id": "kael_scouting", "title": "Kael Scouting", "reason": "Useful underdog character setup." },
             { "id": "haven_qchain_thunder_needs_a_voice", "title": "Thunder Needs A Voice", "reason": "Promote if Bowy needs a practical emotional beat before the boss." }
           ],
           "retire": [

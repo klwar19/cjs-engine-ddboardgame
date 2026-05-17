@@ -23,10 +23,10 @@
           "tags": ["plot_seed", "new_char"],
           "gmIdea": "new_char",
           "prompt": "A courier with a half-finished tattoo waits exactly where the party will pass. They have read the room before sitting down.",
-          "gmHook": "Pin as a recurring NPC. GM picks gender, tone, and which faction the tattoo points to.",
+          "gmHook": "Pin as a recurring character. GM picks gender, tone, and which faction the tattoo points to.",
           "oracleTableId": "oracle_frostbitten",
           "suggested": [
-            { "op": "log", "text": "Plot seed: new courier NPC. GM names them and gives them one secret." }
+            { "op": "log", "text": "Plot seed: new courier character. GM names them and gives them one secret." }
           ]
         },
         {
@@ -37,7 +37,7 @@
           "tags": ["plot_seed", "new_char", "weapon"],
           "gmIdea": "new_char",
           "prompt": "Hilda introduces a smith who lost their forge and is sleeping behind the alley. They ask for a small job.",
-          "gmHook": "Free recurring craft NPC. Could unlock a custom weapon line.",
+          "gmHook": "Free recurring craft character. Could unlock a custom weapon line.",
           "suggested": [
             { "op": "log", "text": "Plot seed: itinerant smith. GM picks one weapon they uniquely make." }
           ]

@@ -2162,7 +2162,7 @@ window.CJS.CampaignUI = (() => {
       label: 'Rumor',
       role: 'Stored lead bank',
       use: 'Use when an idea is interesting but should not become canon or a quest yet.',
-      flow: 'Hear lead -> Hold in hub -> Promote later to quest, event, NPC scene, map seed, oracle, or problem.',
+      flow: 'Hear lead -> Hold in hub -> Promote later to quest, event, character scene, map seed, oracle, or problem.',
       commit: 'Saved as a lead until promoted.'
     },
     problem: {
@@ -2960,7 +2960,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <div class="campaign-rumor-purpose">
         <span class="campaign-impact-badge is-plot">Rumor purpose</span>
-        <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, NPC beat, oracle prompt, or hub problem when the party is ready.</span>
+        <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, character beat, oracle prompt, or hub problem when the party is ready.</span>
       </div>
     `;
   }
@@ -3089,7 +3089,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         <div class="campaign-side-story-meta">
           <span><b>Plot</b> ${_esc(template.type || 'side story')}</span>
-          <span><b>NPCs</b> ${_esc(npcs.join(', ') || 'GM choice')}</span>
+          <span><b>Characters</b> ${_esc(npcs.join(', ') || 'GM choice')}</span>
           <span><b>Control</b> Start map, battle manually, complete step, resolve, or fail.</span>
         </div>
         <div class="campaign-side-story-steps">
@@ -3766,7 +3766,7 @@ window.CJS.CampaignUI = (() => {
     const suggested = event.suggested || [];
     const summary = _consequenceSummary(suggested, { hasText: !!(event.prompt || event.gmHook) });
     const ideaLabels = {
-      new_char: '👤 New NPC',
+      new_char: '👤 New Character',
       new_item: '🎁 Item idea',
       weapon: '⚔ Weapon idea',
       back_story: '📖 Backstory beat',
@@ -4465,7 +4465,7 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-control-stack">
           ${_controlGroup('Roll Random', `
             ${_actionBtn({ action: 'run-roll-battle',     label: 'Random Battle',    hint: 'Roll from this scenario’s battle pool', kind: 'primary' })}
-            ${_actionBtn({ action: 'roll-travel-surprise', label: 'Movement Surprise', hint: 'Random encounter from movement (loot, danger, NPC)' })}
+            ${_actionBtn({ action: 'roll-travel-surprise', label: 'Movement Surprise', hint: 'Random encounter from movement (loot, danger, character)' })}
           `, 'Random output appears below the panel as a card you accept, edit, or ignore.')}
           ${_controlGroup('Pick / Manual', `
             ${_actionBtn({ action: 'run-pick-battle',  label: 'Pick Battle',  hint: 'Pick a specific battle from the catalog' })}
@@ -4997,6 +4997,7 @@ window.CJS.CampaignUI = (() => {
 
   function _handleAction(data) {
     switch (data.campaignAction) {
+      case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
       case 'new-save': return _newSave();
       case 'save-slot': Save().saveCurrent(); return UI().toast('Campaign saved', 'success');
       case 'fork-save': Save().forkCurrent(); return UI().toast('Campaign forked', 'success');
@@ -5361,6 +5362,25 @@ window.CJS.CampaignUI = (() => {
     _openManualEventBuilder();
   }
 
+  function _doRelActivity(characterId, activityId) {
+    if (!characterId) return UI().toast('Pick a character first', 'info');
+    const acts = CS().getState()?.relationshipActs;
+    if (acts && Number(acts.remaining || 0) <= 0) {
+      return UI().toast('No activity acts left. Pass a phase to refresh.', 'info');
+    }
+    Ops().apply({
+      op: 'relationship_activity',
+      characterId,
+      activityId: activityId || 'hang_out'
+    }, { source: 'relationships_ui' });
+    const def = (window.CJS.RelationshipsTab?.ACTIVITIES || []).find((a) => a.id === activityId);
+    if (def) {
+      const charBase = window.CJS.DataStore?.get?.('characters', characterId);
+      const name = charBase?.name || characterId;
+      UI().toast(`${def.label}: ${name} (${def.hint})`, 'success');
+    }
+  }
+
   function _legacyCustomEventUnused() {
     const body = document.createElement('div');
     body.appendChild(_formLabel('Title'));
@@ -5580,7 +5600,7 @@ window.CJS.CampaignUI = (() => {
           <textarea id="manual-map-text" placeholder="${_escAttr(runLine)}"></textarea>
         </label>
         <label class="form-label">Character Beat
-          <textarea id="manual-character-note" placeholder="What changed with this character, NPC, rival, or party member?"></textarea>
+          <textarea id="manual-character-note" placeholder="What changed with this character, companion, rival, or party member?"></textarea>
         </label>
       </section>
 
@@ -7447,8 +7467,8 @@ window.CJS.CampaignUI = (() => {
         mapType: 'urban'
       },
       {
-        label: 'NPC request',
-        summary: 'A nearby NPC asks for a small extra favor while the party is already out.',
+        label: 'Character request',
+        summary: 'A nearby character asks for a small extra favor while the party is already out.',
         objective: 'Answer the extra request',
         kind: 'talk',
         required: 1,
@@ -7484,9 +7504,9 @@ window.CJS.CampaignUI = (() => {
     { kind: 'defeat',      label: 'Defeat targets',      template: 'Defeat the {what}',         icon: '⚔', required: 1 },
     { kind: 'recover',     label: 'Recover item',        template: 'Recover the {what}',        icon: '📦', required: 1 },
     { kind: 'reach',       label: 'Reach location',      template: 'Reach the {what}',          icon: '📍', required: 1 },
-    { kind: 'escort',      label: 'Escort NPC',          template: 'Escort {what} safely',      icon: '🛡', required: 1 },
+    { kind: 'escort',      label: 'Escort someone',      template: 'Escort {what} safely',      icon: '🛡', required: 1 },
     { kind: 'investigate', label: 'Investigate / clue',  template: 'Investigate the {what}',    icon: '🔍', required: 1 },
-    { kind: 'talk',        label: 'Talk to NPC',         template: 'Speak with {what}',         icon: '💬', required: 1 },
+    { kind: 'talk',        label: 'Talk to a character', template: 'Speak with {what}',         icon: '💬', required: 1 },
     { kind: 'survive',     label: 'Survive waves',       template: 'Hold the {what} for 3 turns', icon: '⏳', required: 3 },
     { kind: 'gather',      label: 'Gather materials',    template: 'Gather {what}',             icon: '🌿', required: 3 },
     { kind: 'craft',       label: 'Craft / deliver',     template: 'Craft and deliver {what}',  icon: '🛠', required: 1 },
@@ -7540,7 +7560,7 @@ window.CJS.CampaignUI = (() => {
       <label class="form-label">Summary <small class="campaign-muted">— shown to players in Quest Tracker</small></label>
       <textarea id="campaign-quest-summary" placeholder="One-paragraph hook describing what the party is asked to do."></textarea>
       <div class="campaign-quest-builder-grid">
-        <label class="form-label">Giver <small class="campaign-muted">— optional NPC name</small>
+        <label class="form-label">Giver <small class="campaign-muted">— optional character name</small>
           <input id="campaign-quest-giver" type="text" placeholder="e.g. Captain Reed">
         </label>
         <label class="form-label">Tags <small class="campaign-muted">— comma separated</small>
@@ -9893,7 +9913,7 @@ window.CJS.CampaignUI = (() => {
     const worldName = DS().get('worlds', targetWorld)?.displayName || targetWorld;
     const body = document.createElement('div');
     body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
-      Heading to <b>${_esc(worldName)}</b>. Pick a persona for each member who has one — out-of-world personas keep their loadout but pay penalties in combat and with NPCs. Unset members will auto-switch on arrival.
+      Heading to <b>${_esc(worldName)}</b>. Pick a persona for each member who has one — out-of-world personas keep their loadout but pay penalties in combat and with the locals. Unset members will auto-switch on arrival.
     </div>`;
     const choicesArea = document.createElement('div');
     choicesArea.style.display = 'grid';

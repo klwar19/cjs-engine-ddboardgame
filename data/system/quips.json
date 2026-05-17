@@ -2062,6 +2062,203 @@
         "overkill"
       ],
       "weight": 10
+    },
+    {
+      "id": "e_weather_change_rain_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Sky cracks open. Peri adjusts her cosmic umbrella and rates the staging 'authored'.",
+      "required_tags": ["weather"],
+      "excluded_tags": ["peri_bored"],
+      "weight": 9,
+      "expression": "playful"
+    },
+    {
+      "id": "e_weather_change_storm_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Weather changed. Peri loves a storm: better lighting, better drama, fewer dull turns.",
+      "required_tags": ["weather"],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
+      "id": "e_weather_rain_hit_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Water in the rain. Peri files it under 'thematically inevitable'.",
+      "required_tags": ["hit", "element_water"],
+      "weight": 7
+    },
+    {
+      "id": "e_weather_fire_in_rain_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Fire against the rain. Bold. Peri respects stubborn elementalists.",
+      "required_tags": ["hit", "element_fire"],
+      "weight": 6
+    },
+    {
+      "id": "e_weather_blizzard_tick_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Blizzard ticking through the lot. Peri's commentary fogs up. So does her glasses.",
+      "required_tags": ["status_applied", "status_freeze"],
+      "weight": 8,
+      "expression": "playful"
+    },
+    {
+      "id": "e_weather_storm_surge_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Storm Surge applied! Peri tags this turn as 'pre-amped' and bumps the rating.",
+      "required_tags": ["status_applied", "status_storm_surge"],
+      "weight": 10,
+      "expression": "happy"
+    },
+    {
+      "id": "e_ultimate_charge_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Ultimate meter climbing. Peri starts the slow clap early.",
+      "required_tags": ["hit", "ultimate_charging"],
+      "weight": 7
+    },
+    {
+      "id": "e_ultimate_ready_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Meter at 100. Peri leans forward — the signature move had better be worth this build-up.",
+      "required_tags": ["ultimate_ready"],
+      "weight": 9,
+      "expression": "happy"
+    },
+    {
+      "id": "e_ultimate_used_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] ULTIMATE! {actor.name} spends the bar. Peri pays full price for that animation.",
+      "required_tags": ["skill_used", "ultimate_used"],
+      "weight": 12,
+      "expression": "happy"
+    },
+    {
+      "id": "e_ultimate_negate_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Aegis Burst pops. Damage erased. Peri awards points for timing.",
+      "required_tags": ["skill_used", "ultimate_used", "ultimate_negate"],
+      "weight": 12
+    },
+    {
+      "id": "e_ultimate_reroll_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Lucky Reroll spent. Peri's gambling addiction nods approvingly.",
+      "required_tags": ["skill_used", "ultimate_used", "ultimate_reroll"],
+      "weight": 11,
+      "expression": "playful"
+    },
+    {
+      "id": "e_ultimate_revive_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Phoenix Surge. Someone gets a second life. Peri loves a comeback arc.",
+      "required_tags": ["skill_used", "ultimate_used", "ultimate_revive"],
+      "weight": 13,
+      "expression": "love"
+    },
+    {
+      "id": "e_relationship_friend_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Relationship tier ticks up to Friend. Peri files it under 'wholesome subplot'.",
+      "required_tags": ["bond_change", "tier_friend"],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_relationship_close_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Close tier reached. Peri taps the chart approvingly — character beats are paying off.",
+      "required_tags": ["bond_change", "tier_close"],
+      "weight": 9,
+      "expression": "love"
+    },
+    {
+      "id": "e_relationship_bonded_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Bonded! Peri considers writing tie-in fanfic. Considers it for one full second.",
+      "required_tags": ["bond_change", "tier_bonded"],
+      "weight": 11,
+      "expression": "happy"
+    },
+    {
+      "id": "e_relationship_rival_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] A Rival is born. Peri loves a recurring antagonist with personal stakes.",
+      "required_tags": ["bond_change", "tier_rival"],
+      "weight": 10,
+      "expression": "playful"
+    },
+    {
+      "id": "e_activity_hangout_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Hang-out beat used. Peri checks the budget — 'low-pressure scenes are still scenes'.",
+      "required_tags": ["campaign_activity", "activity_hang_out"],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_activity_train_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Training montage requested. Peri queues the synth track.",
+      "required_tags": ["campaign_activity", "activity_train"],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
+      "id": "e_activity_listen_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] One ear lent. Peri marks this as 'character development without dice'.",
+      "required_tags": ["campaign_activity", "activity_listen"],
+      "weight": 8,
+      "expression": "love"
+    },
+    {
+      "id": "e_activity_help_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Chore solidarity. Peri rates utility above flash, sometimes.",
+      "required_tags": ["campaign_activity", "activity_help_task"],
+      "weight": 7,
+      "expression": "neutral"
+    },
+    {
+      "id": "e_activity_compete_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Friendly contest. Peri scores it — 'sparks of rivalry are tasty'.",
+      "required_tags": ["campaign_activity", "activity_compete"],
+      "weight": 9,
+      "expression": "playful"
+    },
+    {
+      "id": "e_activity_out_of_acts_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Out of acts. Peri taps the phase counter — 'rest, recharge, reroll'.",
+      "required_tags": ["campaign_activity", "activity_blocked"],
+      "weight": 7,
+      "expression": "sad"
+    },
+    {
+      "id": "e_phase_pass_acts_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Phase rolls. Social budget refilled. Peri reopens the relationship board.",
+      "required_tags": ["campaign_phase_pass"],
+      "weight": 8,
+      "expression": "happy"
+    },
+    {
+      "id": "e_quest_board_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Notice Board updated. Peri reads everything — she's contractually obligated.",
+      "required_tags": ["campaign_quest"],
+      "weight": 6,
+      "expression": "neutral"
+    },
+    {
+      "id": "e_quest_resolve_01",
+      "layer": "cjs_editorial",
+      "text": "[CJS] Quest resolved. Peri files the loot under 'earned' and the lore under 'canonical'.",
+      "required_tags": ["campaign_quest", "quest_resolved"],
+      "weight": 9,
+      "expression": "happy"
     }
   ]
 }

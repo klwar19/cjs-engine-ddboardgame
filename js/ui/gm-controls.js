@@ -123,9 +123,23 @@ window.CJS.GMControls = (() => {
       .join('');
 
     const weathers = DS().getAllAsArray('weathers') || [];
-    const weatherOptions = weathers.length
-      ? weathers.map(w => `<option value="${_esc(w.id)}">${_esc(w.icon ? w.icon + ' ' : '')}${_esc(w.name || w.id)}</option>`).join('')
-      : '<option value="normal">☀️ Clear</option>';
+    // Sort so Clear/normal is always first, then alpha. Guarantees a usable
+    // dropdown even if the data file is missing/short.
+    const weatherSorted = weathers.slice().sort((a, b) => {
+      if (a.id === 'normal') return -1;
+      if (b.id === 'normal') return 1;
+      return String(a.name || a.id).localeCompare(String(b.name || b.id));
+    });
+    const weatherOptions = weatherSorted.length
+      ? weatherSorted.map(w => `<option value="${_esc(w.id)}">${_esc(w.icon ? w.icon + ' ' : '')}${_esc(w.name || w.id)}</option>`).join('')
+      : `
+        <option value="normal">☀️ Clear</option>
+        <option value="rain">🌧️ Rain</option>
+        <option value="blizzard">❄️ Blizzard</option>
+        <option value="sandstorm">🌪️ Sandstorm</option>
+        <option value="acid_rain">☢️ Acid Rain</option>
+        <option value="sunny">🔆 Harsh Sunlight</option>
+      `;
 
     const sizeOptions = Object.entries(C().UNIT_SIZES || { '1x1': { label: '1×1' } })
       .map(([k, v]) => `<option value="${_esc(k)}">${_esc(v.label || k)}</option>`)
@@ -321,27 +335,45 @@ window.CJS.GMControls = (() => {
     _root.querySelector('#gm-weather-apply')?.addEventListener('click', () => {
       const WX = window.CJS.Weather;
       const cm = CM();
-      if (!WX || !cm?.getState) return;
+      if (!WX || !cm?.getState) {
+        _hintFn?.('Weather module not available.');
+        return;
+      }
       const state = cm.getState();
-      if (!state) return;
+      if (!state) {
+        _hintFn?.('Start a battle before setting weather.');
+        return;
+      }
       const id = _root.querySelector('#gm-weather-id').value || 'normal';
-      const dur = Number(_root.querySelector('#gm-weather-duration').value || 4);
-      WX.setEnvironment(state, id, dur, null);
+      const dur = Math.max(1, Number(_root.querySelector('#gm-weather-duration').value || 4));
+      const def = WX.setEnvironment(state, id, dur, null);
+      if (!def) {
+        _hintFn?.(`Unknown weather "${id}".`);
+        return;
+      }
       for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
       cm.notify?.();
       _refreshFn?.();
+      _hintFn?.(`Weather set: ${def.name || def.id} (${dur} turns).`);
     });
 
     _root.querySelector('#gm-weather-clear')?.addEventListener('click', () => {
       const WX = window.CJS.Weather;
       const cm = CM();
-      if (!WX || !cm?.getState) return;
+      if (!WX || !cm?.getState) {
+        _hintFn?.('Weather module not available.');
+        return;
+      }
       const state = cm.getState();
-      if (!state) return;
+      if (!state) {
+        _hintFn?.('Start a battle before clearing weather.');
+        return;
+      }
       WX.clearEnvironment(state);
       for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
       cm.notify?.();
       _refreshFn?.();
+      _hintFn?.('Weather cleared.');
     });
 
     _root.querySelector('#gm-skip-turn')?.addEventListener('click', () => {

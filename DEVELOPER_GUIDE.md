@@ -812,7 +812,7 @@ the base character record. A persona pins:
 - `crossWorldPenalty` — `statFlat`, `damageDealtMultiplier`,
   `damageTakenMultiplier`, `relationshipModifier`, `tags` (used outside the
   home world)
-- `relationshipPerWorld` for NPC / quip systems
+- `relationshipPerWorld` for character / quip systems
 
 Per-party-member state lives on the campaign save:
 

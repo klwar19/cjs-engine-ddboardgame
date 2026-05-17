@@ -1,0 +1,121 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "skills",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "stormcaller",
+      "name": "Stormcaller",
+      "icon": "🌧️",
+      "power": 12,
+      "ap": 2,
+      "mp": 8,
+      "cooldown": 4,
+      "damageType": "Magic",
+      "element": "Water",
+      "scalingStat": "I",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "rhythm",
+      "effects": [
+        { "effectId": "summon_rain", "overrides": { "duration": 4 } }
+      ],
+      "tags": ["weather", "water", "control"],
+      "description": "Calls down a downpour for 4 turns. Boosts Water, weakens Fire, applies a wet sheen to the field. Deals minor Water damage on cast.",
+      "spCost": 0
+    },
+    {
+      "id": "sunbreak",
+      "name": "Sunbreak",
+      "icon": "🔆",
+      "power": 0,
+      "ap": 2,
+      "mp": 10,
+      "cooldown": 5,
+      "damageType": "True",
+      "element": "Light",
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": null,
+      "effects": [
+        { "effectId": "summon_sunny", "overrides": { "duration": 4 } }
+      ],
+      "tags": ["weather", "fire", "light", "support"],
+      "description": "Burns away the clouds and bathes the field in harsh sunlight for 4 turns. Boosts Fire, weakens Water, gently heals plant-type units.",
+      "spCost": 0
+    },
+    {
+      "id": "eye_of_the_storm",
+      "name": "Eye of the Storm",
+      "icon": "🌀",
+      "power": 25,
+      "ap": 2,
+      "mp": 14,
+      "cooldown": 5,
+      "damageType": "Magic",
+      "element": "Ice",
+      "scalingStat": "I",
+      "range": 5,
+      "aoe": "circle",
+      "aoeSize": 2,
+      "qte": "rhythm",
+      "effects": [
+        { "effectId": "summon_blizzard", "overrides": { "duration": 3 } }
+      ],
+      "tags": ["weather", "ice", "aoe", "control"],
+      "description": "Centers a blizzard on the target cell. Deals AoE Ice damage and locks the weather to Blizzard for 3 turns.",
+      "spCost": 0
+    },
+    {
+      "id": "calm_winds",
+      "name": "Calm the Winds",
+      "icon": "🌤️",
+      "power": 0,
+      "ap": 1,
+      "mp": 4,
+      "cooldown": 2,
+      "damageType": "True",
+      "element": "Wind",
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": null,
+      "effects": [
+        { "effectId": "clear_weather" }
+      ],
+      "tags": ["weather", "support", "wind"],
+      "description": "Disperses the active weather and returns the field to Clear. Useful against enemy-summoned storms.",
+      "spCost": 0
+    },
+    {
+      "id": "storm_surge_self",
+      "name": "Storm Surge",
+      "icon": "⚡",
+      "power": 0,
+      "ap": 1,
+      "mp": 6,
+      "cooldown": 3,
+      "damageType": "True",
+      "element": "Lightning",
+      "scalingStat": "A",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        { "effectId": "storm_surge_apply", "overrides": { "duration": 3 } }
+      ],
+      "tags": ["weather", "buff", "lightning"],
+      "description": "Channel the storm. Self-buff: +20% damage for 3 turns. Strongest when the field is already raining or blizzarding.",
+      "spCost": 0
+    }
+  ]
+}

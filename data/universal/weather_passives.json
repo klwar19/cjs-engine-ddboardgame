@@ -1,0 +1,45 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "passives",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "weatherwise",
+      "name": "Weatherwise",
+      "icon": "🌦️",
+      "tags": ["weather", "support", "passive"],
+      "effects": [
+        {
+          "effectId": "accuracy_mod",
+          "overrides": { "value": 5 }
+        },
+        {
+          "effectId": "crit_rate_mod",
+          "overrides": { "value": 3 }
+        }
+      ],
+      "description": "Reads the sky like a book. +5 accuracy and +3 crit chance whenever any weather is active. (The bonuses are folded in at compile time; the WeatherManager re-stamps stat mods on weather change.)"
+    },
+    {
+      "id": "stormborn",
+      "name": "Stormborn",
+      "icon": "🌪️",
+      "tags": ["weather", "lightning", "passive"],
+      "effects": [
+        {
+          "effectId": "damage_mod_lightning",
+          "overrides": { "value": 15 }
+        },
+        {
+          "effectId": "dr_mod_all",
+          "overrides": { "value": 2 }
+        }
+      ],
+      "description": "Born under a storm. +15% Lightning damage and +2 to all damage resistance. Synergizes with Storm Surge and Blizzard weather."
+    }
+  ]
+}

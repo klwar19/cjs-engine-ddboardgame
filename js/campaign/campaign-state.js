@@ -237,6 +237,17 @@ window.CJS.CampaignState = (() => {
       clocks: {},
       memoryShards: {},
       bonds: {},
+      // Relationship "Activity" budget — small per-phase pool that lets
+      // the player spend a turn doing something casual with a companion
+      // (hang out, train, listen, help, compete). Resets on phase pass.
+      // Future: extend with theme-specific activities, scene unlocks,
+      // and persona-gated options.
+      relationshipActs: {
+        remaining: 3,
+        max: 3,
+        lastResetPhase: 1,
+        history: []
+      },
       storyDirector: {
         mode: 'solo_gm',
         activeStageId: null,
@@ -693,6 +704,15 @@ window.CJS.CampaignState = (() => {
     next.clocks = next.clocks || {};
     next.memoryShards = next.memoryShards || {};
     next.bonds = next.bonds || {};
+    next.relationshipActs = next.relationshipActs || {};
+    next.relationshipActs.remaining = Number.isFinite(next.relationshipActs.remaining)
+      ? next.relationshipActs.remaining : 3;
+    next.relationshipActs.max = Number.isFinite(next.relationshipActs.max)
+      ? next.relationshipActs.max : 3;
+    next.relationshipActs.lastResetPhase = Number.isFinite(next.relationshipActs.lastResetPhase)
+      ? next.relationshipActs.lastResetPhase : (next.phase?.number || 1);
+    next.relationshipActs.history = Array.isArray(next.relationshipActs.history)
+      ? next.relationshipActs.history : [];
     next.storyDirector = next.storyDirector || {};
     next.storyDirector.mode = next.storyDirector.mode || 'solo_gm';
     next.storyDirector.activeStageId = next.storyDirector.activeStageId || null;

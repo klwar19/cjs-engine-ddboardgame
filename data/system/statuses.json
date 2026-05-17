@@ -372,6 +372,28 @@
       "preventsMovement": true,
       "breaksOnElement": "Fire",
       "id": "web"
+    },
+    {
+      "name": "Storm Surge",
+      "icon": "⚡",
+      "category": "buff",
+      "desc": "Charged with storm energy. +20% damage while Rain or Blizzard is active.",
+      "damageMod": 20,
+      "id": "storm_surge"
+    },
+    {
+      "name": "Wet",
+      "icon": "💧",
+      "category": "statdown",
+      "desc": "Soaked through. +25% damage taken from Lightning. Rain extends this.",
+      "id": "wet"
+    },
+    {
+      "name": "Negate Next Damage",
+      "icon": "🛡️",
+      "category": "buff",
+      "desc": "Next incoming damage instance is fully negated.",
+      "id": "negate_next_damage"
     }
   ]
 }

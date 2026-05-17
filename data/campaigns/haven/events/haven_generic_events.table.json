@@ -90,7 +90,7 @@
           "tags": ["town", "social"],
           "settings": ["town", "outdoor"],
           "prompt": "Two merchant guards block the road over a weighing dispute. They want a third party to call it.",
-          "gmHook": "The losing side becomes a low-hostility recurring NPC the next time the party returns.",
+          "gmHook": "The losing side becomes a low-hostility recurring character the next time the party returns.",
           "gmIdea": "faction",
           "suggested": [
             { "op": "log", "text": "GM: pick the side. Other side becomes hostile-light." },
