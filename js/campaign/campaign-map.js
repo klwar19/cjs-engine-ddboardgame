@@ -34,8 +34,9 @@ window.CJS.CampaignMap = (() => {
     const nodes = layers.length > 1
       ? revealedNodes.filter((node) => _nodeLayer(node) === activeLayer)
       : revealedNodes;
-    const width = 680;
-    const height = 420;
+    // Canvas size adapts to the map. Generated maps now carry canvasWidth/canvasHeight;
+    // hand-authored maps default to 680x420 unless their node bounds need more room.
+    const { width, height } = _nodeCanvasSize(map);
     const nodeById = Object.fromEntries((map.nodes || []).map((node) => [node.id, node]));
 
     const lines = [];
@@ -88,7 +89,7 @@ window.CJS.CampaignMap = (() => {
           </div>
           ${_renderLayerTabs(layers, activeLayer)}
         </div>
-        <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}" data-theme="${_escAttr(theme)}" data-setting="${_escAttr(setting)}" preserveAspectRatio="xMidYMid slice">
+        <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}" data-theme="${_escAttr(theme)}" data-setting="${_escAttr(setting)}" preserveAspectRatio="xMidYMid meet">
           <defs>${_nodeIconDefs()}${_nodeMapBackgroundDefs(setting)}</defs>
           <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-map-bg"></rect>
           ${settingBg ? `<image href="${_escAttr(settingBg)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" class="campaign-map-setting-art" />` : ''}
@@ -1040,6 +1041,27 @@ window.CJS.CampaignMap = (() => {
     }
     const ids = Array.from(new Set((map.nodes || []).map((node) => _nodeLayer(node))));
     return ids.map((id, index) => ({ id, name: ids.length > 1 ? `Layer ${index + 1}` : 'Map' }));
+  }
+
+  // Compute the SVG viewBox dimensions for a node map. Prefers explicit
+  // canvasWidth/Height (set by the generator). Otherwise falls back to the
+  // smallest box that fits every node's x/y, with a minimum of 680x420.
+  function _nodeCanvasSize(map = {}) {
+    const w = Number(map.canvasWidth || 0);
+    const h = Number(map.canvasHeight || 0);
+    if (w >= 200 && h >= 200) return { width: w, height: h };
+    let maxX = 0;
+    let maxY = 0;
+    for (const node of map.nodes || []) {
+      const nx = Number(node.x);
+      const ny = Number(node.y);
+      if (Number.isFinite(nx) && nx > maxX) maxX = nx;
+      if (Number.isFinite(ny) && ny > maxY) maxY = ny;
+    }
+    return {
+      width: Math.max(680, Math.round(maxX + 80)),
+      height: Math.max(420, Math.round(maxY + 80))
+    };
   }
 
   function _renderLayerTabs(layers, activeLayer) {

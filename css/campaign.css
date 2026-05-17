@@ -9114,3 +9114,23 @@ body.campaign-page {
 .campaign-map-shell.v2 {
   position: relative;
 }
+
+/* Lightweight begin/end narrative box used by generated and user-built quests.
+   Replaces the heavyweight visual novel overlay for those runs. */
+.campaign-quest-narrative {
+  padding: 18px 22px;
+  line-height: 1.55;
+  font-size: 15px;
+  color: var(--ink, #e2e8f3);
+  background: linear-gradient(180deg, rgba(20, 30, 45, 0.55), rgba(8, 14, 24, 0.85));
+  border-left: 3px solid rgba(120, 180, 255, 0.55);
+}
+.campaign-quest-narrative.is-end {
+  border-left-color: rgba(255, 200, 120, 0.6);
+}
+.campaign-quest-narrative p {
+  margin: 0 0 10px 0;
+}
+.campaign-quest-narrative p:last-child {
+  margin-bottom: 0;
+}

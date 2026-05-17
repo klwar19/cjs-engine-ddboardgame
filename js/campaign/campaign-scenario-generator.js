@@ -14,12 +14,17 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const MAP_SETTINGS = ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena', 'snowfield', 'desert', 'swamp', 'volcano'];
   const MAP_TYPES = MAP_SETTINGS; // Backward-compatible option name for older saves/UI.
   const MAP_FORMS = ['node_map', 'grid_map'];
-  const SIZES = ['tiny', 'small', 'medium', 'large'];
-  const SIZE_COUNTS = { tiny: 5, small: 7, medium: 9, large: 12 };
-  const GRID_SIZES = { tiny: [5, 5], small: [6, 6], medium: [8, 6], large: [10, 8] };
-  const BATTLE_TARGETS = { tiny: 2, small: 3, medium: 4, large: 5 };
-  const BATTLE_LIMITS = { tiny: 2, small: 3, medium: 4, large: 5 };
-  const EVENT_LIMITS = { tiny: 2, small: 3, medium: 4, large: 5 };
+  const SIZES = ['tiny', 'small', 'medium', 'large', 'huge', 'massive'];
+  const SIZE_COUNTS = { tiny: 5, small: 7, medium: 9, large: 12, huge: 16, massive: 22 };
+  const GRID_SIZES = { tiny: [5, 5], small: [6, 6], medium: [8, 6], large: [10, 8], huge: [14, 11], massive: [20, 15] };
+  const BATTLE_TARGETS = { tiny: 2, small: 3, medium: 4, large: 5, huge: 7, massive: 9 };
+  const BATTLE_LIMITS = { tiny: 2, small: 3, medium: 4, large: 5, huge: 7, massive: 10 };
+  const EVENT_LIMITS = { tiny: 2, small: 3, medium: 4, large: 5, huge: 6, massive: 8 };
+  // Number of chasing moving threats seeded on quest grid maps. The grid map
+  // contract is that the party always faces at least one chaser, so the
+  // movement system is exercised on every grid run (this prevents the regression
+  // where "no moving monster" appeared after seed/scenario regen).
+  const GRID_CHASE_COUNTS = { tiny: 1, small: 1, medium: 1, large: 2, huge: 2, massive: 3 };
   const BATTLE_KINDS = new Set(['battle', 'boss', 'event_battle']);
   const LOW_BATTLE_KINDS = new Set(['entrance', 'exit', 'rest', 'shop']);
   const AREA_PROFILES = {
@@ -248,6 +253,15 @@ window.CJS.CampaignScenarioGenerator = (() => {
     const battlePool = setBattles.length ? setBattles : fallbackPool;
     const exitPoint = [...points].reverse().find((point) => point.kind === 'exit') || points[points.length - 1];
     const id = `gen_scn_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    // Grid maps always ship with at least one chasing monster so the runtime
+    // movement loop has something to do. Node maps don't take moving threats —
+    // they're a different ruleset.
+    const movingThreats = map.type === 'grid_map'
+      ? _seedGridMovingThreats(map, opts, context, world, battlePool, setBattles)
+      : [];
+    const sizeTier = opts.size || 'small';
+    const isBig = sizeTier === 'large' || sizeTier === 'huge' || sizeTier === 'massive';
+    const isMega = sizeTier === 'huge' || sizeTier === 'massive';
     return {
       id,
       name: _scenarioName(context, map, seed),
@@ -263,6 +277,10 @@ window.CJS.CampaignScenarioGenerator = (() => {
       size: opts.size,
       canonRisk: seed.canonRisk || 'green',
       generated: true,
+      // Generated and user-built quests use a lightweight begin/end narrative box
+      // instead of the fullscreen visual novel. Only authored special quests opt
+      // out of this (by setting quickNarrative: false on the scenario or quest).
+      quickNarrative: true,
       tags: _scenarioTags(seed, context),
       source: {
         kind: context.source,
@@ -272,8 +290,12 @@ window.CJS.CampaignScenarioGenerator = (() => {
         mapSeedId: seed.id || null
       },
       notes: context.summary || seed.notes || 'Generated scenario.',
-      limits: { campRests: opts.size === 'large' ? 2 : 1, randomBattles: BATTLE_LIMITS[opts.size] || 3, events: EVENT_LIMITS[opts.size] || 3 },
-      danger: { start: 0, max: opts.size === 'large' ? 12 : 10 },
+      limits: {
+        campRests: isMega ? 3 : (isBig ? 2 : 1),
+        randomBattles: BATTLE_LIMITS[sizeTier] || 3,
+        events: EVENT_LIMITS[sizeTier] || 3
+      },
+      danger: { start: 0, max: isMega ? 16 : (isBig ? 12 : 10) },
       setBattles,
       randomBattleTables: battlePool.length ? [{
         id: `${id}_random_battles`,
@@ -281,6 +303,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
         entries: battlePool.map((entry) => ({ ...entry, weight: entry.weight || 1 }))
       }] : [],
       eventTables: _campaignEventTables(world),
+      movingThreats,
       successConditions: exitPoint
         ? (map.type === 'grid_map'
           ? [{ type: 'reach_cell', x: exitPoint.x, y: exitPoint.y }]
@@ -289,6 +312,117 @@ window.CJS.CampaignScenarioGenerator = (() => {
       entryOps: [{ op: 'log', text: `Generated from ${context.source}: ${context.title || seed.name || 'random pools'}.` }],
       exitOps: []
     };
+  }
+
+  // For grid scenarios, seed at least one chasing roamer and (for bigger maps)
+  // a few random-patrol shadows. Threats spawn on passable cells well away
+  // from the start so the player isn't ambushed in the first step. Each threat
+  // pulls a monster identity from the scenario's battle pool so the sprite
+  // matches the encounter the chase resolves into.
+  function _seedGridMovingThreats(map = {}, opts = {}, context = {}, world = '', battlePool = [], setBattles = []) {
+    if (!map || map.type !== 'grid_map') return [];
+    const size = opts.size || 'small';
+    const baseChasers = Math.max(1, GRID_CHASE_COUNTS[size] || 1);
+    const extraRoamers = size === 'huge' ? 1 : (size === 'massive' ? 2 : 0);
+    const total = baseChasers + extraRoamers;
+    const cells = Array.isArray(map.cells) ? map.cells : [];
+    const width = Number(map.width || 0);
+    const height = Number(map.height || 0);
+    const start = _gridStart(map);
+    const blocked = new Set();
+    if (start) blocked.add(_cellKeyXY(start.x, start.y));
+    for (const c of cells) if (Number.isFinite(c?.x) && Number.isFinite(c?.y)) blocked.add(_cellKeyXY(c.x, c.y));
+    const candidates = [];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (!_gridCellPassable(map, x, y)) continue;
+        const dist = start ? Math.abs(x - Number(start.x)) + Math.abs(y - Number(start.y)) : 0;
+        if (dist < 2) continue;
+        const key = _cellKeyXY(x, y);
+        if (blocked.has(key)) continue;
+        candidates.push({ x, y, dist });
+      }
+    }
+    if (!candidates.length) return [];
+    // Sort by distance descending so chasers spawn further away, roamers fill in nearer.
+    candidates.sort((a, b) => b.dist - a.dist);
+    const picks = [];
+    for (let i = 0; i < total && candidates.length; i++) {
+      const index = i === 0
+        ? 0
+        : Math.floor((i / total) * (candidates.length - 1));
+      picks.push(candidates.splice(index, 1)[0]);
+    }
+    const pool = (setBattles && setBattles.length ? setBattles : battlePool) || [];
+    const threats = picks.map((pos, index) => {
+      const battleEntry = pool[index % Math.max(1, pool.length)] || null;
+      const monsterIds = _threatMonsterIdsFromBattle(battleEntry);
+      const mode = index === 0 ? 'chase' : (index === 1 ? 'patrol' : 'random');
+      const icon = mode === 'chase' ? '🐺' : (mode === 'patrol' ? '👤' : '👁');
+      return {
+        id: `gen_threat_${index + 1}`,
+        label: mode === 'chase' ? 'Hunting Chaser' : (mode === 'patrol' ? 'Patrol Shadow' : 'Drifting Stalker'),
+        cell: { x: pos.x, y: pos.y },
+        moveMode: mode,
+        moveChance: 1,
+        icon,
+        notes: mode === 'chase'
+          ? 'A roaming chaser. Forces a battle on contact.'
+          : 'A drifting threat. May intercept the party.',
+        encounterId: battleEntry?.encounterId || null,
+        battleSetId: battleEntry?.battleSetId || null,
+        monsterIds,
+        tags: ['moving_threat', mode],
+        defeatOps: [
+          { op: 'danger', amount: mode === 'chase' ? 2 : 1 },
+          { op: 'log', text: `Roaming threat cleared: ${mode === 'chase' ? 'the hunter' : 'the drifting shadow'} is gone.` }
+        ]
+      };
+    });
+    return threats;
+  }
+
+  function _threatMonsterIdsFromBattle(entry) {
+    if (!entry) return [];
+    if (Array.isArray(entry.monsterIds) && entry.monsterIds.length) return entry.monsterIds.slice(0, 2);
+    const ids = [];
+    if (Array.isArray(entry.enemyMix)) {
+      for (const item of entry.enemyMix) {
+        const id = item?.id || item?.monsterId || item?.baseId;
+        if (id) ids.push(id);
+      }
+    }
+    if (entry.encounterId) {
+      const encounter = DS().get?.('encounters', entry.encounterId);
+      if (encounter?.units) {
+        for (const unit of encounter.units) {
+          const id = unit?.id || unit?.monsterId || unit?.baseId;
+          if (id) ids.push(id);
+        }
+      }
+    }
+    return ids.slice(0, 2);
+  }
+
+  function _gridStart(map = {}) {
+    if (Array.isArray(map.defaultStartCell) && map.defaultStartCell.length >= 2) {
+      return { x: Number(map.defaultStartCell[0]), y: Number(map.defaultStartCell[1]) };
+    }
+    const first = (map.cells || [])[0];
+    if (first && Number.isFinite(first.x) && Number.isFinite(first.y)) return { x: Number(first.x), y: Number(first.y) };
+    return { x: 0, y: 0 };
+  }
+
+  function _gridCellPassable(map, x, y) {
+    const row = map?.terrain?.[Number(y)];
+    if (!row) return false;
+    const cell = row[Number(x)];
+    const kind = String(cell || '').toLowerCase();
+    return !['wall', 'obstacle', 'blocked', 'void', 'rock', 'pillar', 'lava'].includes(kind);
+  }
+
+  function _cellKeyXY(x, y) {
+    return `${Number(x)},${Number(y)}`;
   }
 
   function _scenarioName(context, map, seed) {
@@ -497,12 +631,22 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }
 
     const rng = _seededRng(`${seed.id || id}:${Date.now()}`);
+    // For larger node maps, wrap nodes into multiple rows so they don't
+    // squash into an unreadable horizontal strip. Per-layer rows so multi-layer
+    // maps still group their nodes visually.
+    const canvas = _nodeCanvas(opts.size, seedNodes.length, layers.length);
+    const rowsByLayer = new Map();
+    for (const [layerId, list] of nodesByLayer) {
+      const cols = Math.max(2, Math.min(canvas.maxCols, Math.ceil(Math.sqrt(list.length))));
+      rowsByLayer.set(layerId, { cols, count: list.length });
+    }
     const nodes = seedNodes.map((node, index) => {
       const layer = _nodeLayer(node, layers, index);
       const layerNodes = nodesByLayer.get(layer) || seedNodes;
       const layerIndex = Math.max(0, layerNodes.findIndex((entry) => entry.id === node.id));
-      const x = _layoutX(layerIndex, layerNodes.length, rng);
-      const y = _layoutY(index, layerIndex, layerNodes.length, rng);
+      const rowInfo = rowsByLayer.get(layer) || { cols: canvas.maxCols, count: layerNodes.length };
+      const x = _layoutX(layerIndex, rowInfo.cols, rng, canvas);
+      const y = _layoutY(layerIndex, rowInfo.cols, layers, layer, rng, canvas);
       const kind = _roleToKind(node.role);
       const battleRef = node.battleSetIds?.[0] || node.encounterIds?.[0] || node.encounterId || null;
       return {
@@ -535,6 +679,8 @@ window.CJS.CampaignScenarioGenerator = (() => {
       mapSetting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
       setting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
       size: opts.size,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
       layers,
       defaultStartNode: nodes[0]?.id || null,
       nodes,
@@ -882,15 +1028,25 @@ window.CJS.CampaignScenarioGenerator = (() => {
       swamp: ['Bog Edge', 'Sunken Log', 'Reed Path', 'Stagnant Pool', 'Marsh Hut', 'Hidden Cache', 'Dry Crossing'],
       volcano: ['Ash Gate', 'Cracked Steps', 'Sulfur Pool', 'Lava Bridge', 'Glowing Vein', 'Cinder Cache', 'Cooling Vent']
     };
-    const roles = ['entrance', 'clue', 'trap', 'battle', 'rest', 'reward', 'battle', 'boss', 'exit', 'clue', 'battle', 'exit'];
+    const roles = ['entrance', 'clue', 'trap', 'battle', 'rest', 'reward', 'battle', 'boss', 'exit', 'clue', 'battle', 'event_battle', 'reward', 'trap', 'rest', 'battle'];
     const count = SIZE_COUNTS[opts.size] || 7;
     const list = names[type] || names.outdoor;
-    return Array.from({ length: count }, (_, index) => ({
-      id: `node_${index + 1}`,
-      name: list[index % list.length],
-      role: index === count - 1 ? 'exit' : roles[index % roles.length],
-      notes: index === 0 ? 'Entry point.' : ''
-    }));
+    // When a name repeats (huge/massive overflow), suffix the second pass with " II", third with " III"
+    // so the player sees Bent Pine, Bent Pine II, Bent Pine III instead of three identical labels.
+    return Array.from({ length: count }, (_, index) => {
+      const base = list[index % list.length];
+      const cycle = Math.floor(index / list.length);
+      const suffix = cycle === 0 ? '' : (cycle === 1 ? ' II' : (cycle === 2 ? ' III' : ` ${cycle + 1}`));
+      const role = index === count - 1
+        ? 'exit'
+        : (index === 0 ? 'entrance' : roles[index % roles.length]);
+      return {
+        id: `node_${index + 1}`,
+        name: `${base}${suffix}`,
+        role,
+        notes: index === 0 ? 'Entry point.' : ''
+      };
+    });
   }
 
   function _chainLinks(nodes) {
@@ -1111,19 +1267,50 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return `${prefix}${target?.name || target?.title || to}`;
   }
 
-  function _layoutX(index, count, rng) {
-    const pad = 70;
-    const width = 680;
-    const cols = Math.max(count, 2);
-    const t = cols === 1 ? 0.5 : index / (cols - 1);
-    return Math.round(pad + t * (width - 2 * pad) + (rng() - 0.5) * 24);
+  // Build a canvas that grows with map size so huge/massive maps don't get
+  // squashed. Width/height scale with the number of nodes; the renderer reads
+  // map.canvasWidth/canvasHeight and adapts its viewBox accordingly.
+  function _nodeCanvas(size, nodeCount, layerCount) {
+    const count = Math.max(1, Number(nodeCount) || 1);
+    const layers = Math.max(1, Number(layerCount) || 1);
+    const maxColsBySize = { tiny: 5, small: 5, medium: 6, large: 6, huge: 7, massive: 8 };
+    const maxCols = maxColsBySize[size] || 6;
+    const cols = Math.min(maxCols, Math.max(2, Math.ceil(Math.sqrt(Math.ceil(count / layers)))));
+    const rows = Math.max(1, Math.ceil(Math.ceil(count / layers) / cols));
+    const colSpacing = 130;
+    const rowSpacing = 110;
+    const padX = 80;
+    const padY = 80;
+    const width = Math.max(680, padX * 2 + (cols - 1) * colSpacing);
+    const height = Math.max(420, padY * 2 + (rows * layers - 1) * rowSpacing + (layers > 1 ? 60 : 0));
+    return { width, height, cols, rows, maxCols, colSpacing, rowSpacing, padX, padY };
   }
 
-  function _layoutY(globalIndex, layerIndex, layerCount, rng) {
-    const height = 420;
-    const mid = height / 2;
-    const wave = Math.sin((layerIndex / Math.max(1, layerCount - 1)) * Math.PI * 2) * 58;
-    return Math.round(mid + wave + (rng() - 0.5) * 44 + (globalIndex % 2 ? 14 : -14));
+  function _layoutX(layerIndex, cols, rng, canvas) {
+    const c = Math.max(2, Number(cols) || 2);
+    const col = layerIndex % c;
+    const span = canvas.width - canvas.padX * 2;
+    const t = c === 1 ? 0.5 : col / (c - 1);
+    // Stagger every other row by half a column so connecting lines bend naturally.
+    const row = Math.floor(layerIndex / c);
+    const stagger = row % 2 === 1 ? (canvas.colSpacing * 0.18) : 0;
+    return Math.round(canvas.padX + t * span + stagger + (rng() - 0.5) * 18);
+  }
+
+  function _layoutY(layerIndex, cols, layers, layerId, rng, canvas) {
+    const c = Math.max(2, Number(cols) || 2);
+    const row = Math.floor(layerIndex / c);
+    const layerCount = Math.max(1, layers.length);
+    const layerOrder = Math.max(0, layers.findIndex((entry) => entry.id === layerId));
+    // Each layer gets its own vertical band so multi-layer maps stay separable.
+    const layerBandHeight = (canvas.height - canvas.padY * 2) / layerCount;
+    const layerTop = canvas.padY + layerOrder * layerBandHeight;
+    const usable = Math.max(60, layerBandHeight - 20);
+    const rowsInLayer = Math.max(1, Math.ceil((canvas.rows || 1)));
+    const step = rowsInLayer > 1 ? usable / Math.max(1, rowsInLayer - 1) : 0;
+    const baseY = layerTop + row * (canvas.rowSpacing || step || 90);
+    const wiggle = (rng() - 0.5) * 22 + (layerIndex % 2 ? 8 : -8);
+    return Math.round(Math.min(canvas.height - 30, Math.max(30, baseY + wiggle)));
   }
 
   function _sideContentState(state) {

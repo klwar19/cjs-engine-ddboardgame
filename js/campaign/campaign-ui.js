@@ -4270,7 +4270,7 @@ window.CJS.CampaignUI = (() => {
             </label>
             <label>Size
               <select id="campaign-gen-size">
-                ${['tiny', 'small', 'medium', 'large'].map((size) => `<option value="${size}" ${size === 'small' ? 'selected' : ''}>${_esc(_label(size))}</option>`).join('')}
+                ${['tiny', 'small', 'medium', 'large', 'huge', 'massive'].map((size) => `<option value="${size}" ${size === 'small' ? 'selected' : ''}>${_esc(_label(size))}</option>`).join('')}
               </select>
             </label>
             <label>Layers
@@ -7560,12 +7560,14 @@ window.CJS.CampaignUI = (() => {
             ${mapTypeOptions.map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
           </select>
         </label>
-        <label class="form-label">Map size <small class="campaign-muted">scenario length</small>
+        <label class="form-label">Map size <small class="campaign-muted">scenario length — grid sizes shown after slash</small>
           <select id="campaign-quest-map-size">
-            <option value="tiny">Tiny (~5 nodes)</option>
-            <option value="small" selected>Small (~7 nodes)</option>
-            <option value="medium">Medium (~9 nodes)</option>
-            <option value="large">Large (~12 nodes)</option>
+            <option value="tiny">Tiny (~5 nodes / 5×5 grid)</option>
+            <option value="small" selected>Small (~7 nodes / 6×6 grid)</option>
+            <option value="medium">Medium (~9 nodes / 8×6 grid)</option>
+            <option value="large">Large (~12 nodes / 10×8 grid)</option>
+            <option value="huge">Huge (~16 nodes / 14×11 grid)</option>
+            <option value="massive">Massive (~22 nodes / 20×15 grid)</option>
           </select>
         </label>
       </div>
@@ -7796,6 +7798,25 @@ window.CJS.CampaignUI = (() => {
       if (mapForm) base.mapForm = mapForm;
       const mapSize = $('#campaign-quest-map-size').value;
       if (mapSize) base.mapSize = mapSize;
+      // If the user picked a map movement that disagrees with the template's
+      // linked scenario, drop the linked scenario fields so the quest runs a
+      // freshly generated map of the chosen kind. Without this, picking
+      // "Grid Map" on a node-mapped template still ran the linked node scenario.
+      const templateMapForm = String(template?.mapForm || template?.travelMode || '').toLowerCase();
+      const chosenMapForm = String(mapForm || '').toLowerCase();
+      if (template && chosenMapForm && templateMapForm && chosenMapForm !== templateMapForm) {
+        delete base.linkedScenario;
+        delete base.linkedMapNodes;
+        delete base.linkedMapCells;
+        delete base.scenarioId;
+        delete base.scenario;
+        base.forceGeneratedMap = true;
+      }
+      // Quests built from the manual quest builder default to the lightweight
+      // narrative flow: a single begin and end narrative box instead of a
+      // fullscreen visual novel at every node. Authored templates can opt
+      // back into the full VN by setting `quickNarrative: false` explicitly.
+      if (base.quickNarrative !== false) base.quickNarrative = true;
       return base;
     }
 
@@ -7895,7 +7916,13 @@ window.CJS.CampaignUI = (() => {
       Ops().apply({ op: 'add_quest', quest }, { source: 'ui' });
       UI().closeModal(overlay);
       UI().toast(`Quest added: ${quest.title}. Starting run…`, 'success');
-      _startQuestScenario(quest.id, { quest, mapType: quest.mapType, size: quest.mapSize || 'small' });
+      _startQuestScenario(quest.id, {
+        quest,
+        mapForm: _questMapForm(quest),
+        mapType: quest.mapType || _questMapType(quest),
+        size: quest.mapSize || 'small',
+        forceGenerated: !!quest.forceGeneratedMap
+      });
     };
 
     if (prefill && prefill.template) {
@@ -8871,16 +8898,21 @@ window.CJS.CampaignUI = (() => {
   function _startQuestScenario(questId, overrides = {}) {
     const quest = overrides.quest || _activeQuestById(questId);
     if (!quest) return null;
-    if (!overrides.forceGenerated) {
+    const requestedMapForm = String(overrides.mapForm || _questMapForm(quest) || '').toLowerCase();
+    // Only run the linked scenario if its movement style agrees with what the
+    // quest (or caller) asked for. Otherwise we'd hand a grid-map quest a
+    // node-map scenario — which is exactly the "I picked Grid Map but got Node
+    // Map" bug.
+    if (!overrides.forceGenerated && _linkedScenarioMatches(quest, requestedMapForm)) {
       const existing = _startExistingQuestScenario(quest);
       if (existing) return existing;
     }
     const result = _generateScenario({
       source: 'active_quest',
       questId,
-      mapForm: _questMapForm(quest),
+      mapForm: requestedMapForm || _questMapForm(quest),
       mapType: _questMapType(quest),
-      size: 'small',
+      size: quest.mapSize || 'small',
       ...overrides
     });
     if (result && !result.error) {
@@ -8888,6 +8920,20 @@ window.CJS.CampaignUI = (() => {
       render();
     }
     return result;
+  }
+
+  // Returns true when the quest's linked scenario uses the same map movement
+  // as the requested form. If the quest has no linked scenario, returns true
+  // (so _startExistingQuestScenario's own null-check handles the fallthrough).
+  function _linkedScenarioMatches(quest = {}, requestedMapForm = '') {
+    const scenarioId = quest?.linkedScenario || quest?.scenarioId || quest?.scenario;
+    if (!scenarioId) return true;
+    if (!requestedMapForm) return true;
+    const scenario = CS().getScenarioById?.(scenarioId);
+    if (!scenario) return true;
+    const scenarioForm = String(scenario.mapForm || scenario.travelMode || '').toLowerCase();
+    if (!scenarioForm) return true;
+    return scenarioForm === requestedMapForm;
   }
 
   function _startExistingQuestScenario(quest) {
@@ -8917,6 +8963,15 @@ window.CJS.CampaignUI = (() => {
       if (!run) return;
       run.questId = quest.id;
       run.questTitle = quest.title || quest.id;
+      // Carry the quest's narrative style into the run. Scenario-level
+      // quickNarrative wins if it's been set; otherwise the quest's value
+      // controls. Defaults to fullscreen VN if neither is set (so authored
+      // story scenarios keep their original feel).
+      if (scenario?.quickNarrative === true || quest.quickNarrative === true) {
+        run.quickNarrative = scenario?.quickNarrative !== false && quest.quickNarrative !== false;
+      } else if (scenario?.quickNarrative === false || quest.quickNarrative === false) {
+        run.quickNarrative = false;
+      }
       run.questChainId = quest.chainTemplateId || scenario?.source?.questChainId || run.questChainId || null;
       run.questObjectiveId = task.objectiveId || null;
       run.questTask = task;
@@ -10891,10 +10946,42 @@ window.CJS.CampaignUI = (() => {
     return _esc(value);
   }
 
+  // Lightweight begin/end narrative modal used by generated and user-built
+  // quests. Replaces the heavyweight fullscreen visual novel for those runs;
+  // authored "special" scenarios keep the full VN flow.
+  function showQuestNarrative(payload = {}) {
+    if (typeof document === 'undefined' || !document.body) return null;
+    const phase = String(payload.phase || 'begin').toLowerCase();
+    const title = payload.title || (phase === 'end' ? 'Quest complete' : 'Quest begins');
+    const rawText = String(payload.text || '').trim() || (phase === 'end' ? 'The quest is over.' : 'The quest begins.');
+    const body = document.createElement('div');
+    body.className = 'campaign-quest-narrative ' + (phase === 'end' ? 'is-end' : 'is-begin');
+    const paragraphs = rawText.split(/\n{2,}/).map((para) => {
+      const p = document.createElement('p');
+      p.textContent = para.trim();
+      return p;
+    });
+    paragraphs.forEach((p) => body.appendChild(p));
+    const footer = document.createElement('div');
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'btn btn-primary';
+    continueBtn.textContent = phase === 'end' ? 'Wrap up' : 'Begin';
+    footer.appendChild(continueBtn);
+    const overlay = UI().openModal({
+      title: '📜 ' + title,
+      content: body,
+      footer,
+      width: '460px'
+    });
+    continueBtn.onclick = () => UI().closeModal(overlay);
+    return overlay;
+  }
+
   return Object.freeze({
     init,
     render,
     isBooted: () => _booted,
-    playSequenceMinigame: _playSequenceMiniGame
+    playSequenceMinigame: _playSequenceMiniGame,
+    showQuestNarrative
   });
 })();
