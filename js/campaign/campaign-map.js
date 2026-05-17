@@ -662,7 +662,6 @@ window.CJS.CampaignMap = (() => {
       ${node.campfire && isCurrent ? `
         <div class="campaign-node-actions">
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-          <button class="campaign-action" data-campaign-action="roll-party-chat">Camp Chat</button>
           <button class="campaign-action" data-campaign-tab="cook">Cook</button>
           <button class="campaign-action" data-campaign-tab="craft">Craft</button>
           <button class="campaign-action" data-campaign-tab="inventory">Inventory</button>
@@ -781,7 +780,6 @@ window.CJS.CampaignMap = (() => {
       ${node.campfire && isCurrent ? `
         <div class="campaign-node-actions">
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-          <button class="campaign-action" data-campaign-action="roll-party-chat">Camp Chat</button>
           <button class="campaign-action" data-campaign-tab="cook">Cook</button>
           <button class="campaign-action" data-campaign-tab="craft">Craft</button>
           <button class="campaign-action" data-campaign-tab="inventory">Inventory</button>

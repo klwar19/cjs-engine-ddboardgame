@@ -22,7 +22,7 @@
           "overrides": { "value": 3 }
         }
       ],
-      "description": "Reads the sky like a book. +5 accuracy and +3 crit chance whenever any weather is active. (The bonuses are folded in at compile time; the WeatherManager re-stamps stat mods on weather change.)"
+      "description": "Reads the sky like a book. Passive +5 accuracy and +3 crit chance; pairs well with weather-control skills."
     },
     {
       "id": "stormborn",

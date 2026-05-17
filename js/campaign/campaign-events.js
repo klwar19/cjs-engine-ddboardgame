@@ -75,6 +75,10 @@ window.CJS.CampaignEvents = (() => {
         world: state?.currentWorld,
         situation: state?.activeScenarioRun ? 'scenario' : 'town',
         scenarioId: state?.activeScenarioRun?.scenarioId || '',
+        mapId: state?.activeScenarioRun?.mapId || '',
+        questId: state?.activeScenarioRun?.questId || '',
+        tableId,
+        eventId: result.id || '',
         locationKind: 'event',
         tags: [...(result.tags || []), 'event']
       }, { chance: 0.4 });

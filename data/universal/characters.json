@@ -57,6 +57,8 @@
         "taunt_mock",
         "jester_gambit"
       ],
+      "ultimateSkillId": "ult_reroll",
+      "ultimateMax": 100,
       "equipment": [
         "haven_rusty_sword",
         "haven_leather_armor",

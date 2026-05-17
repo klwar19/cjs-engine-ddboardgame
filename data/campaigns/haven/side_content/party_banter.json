@@ -1,0 +1,488 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-party-banter",
+    "scope": "world",
+    "world": "haven",
+    "category": "partyBanter",
+    "status": "active"
+  },
+  "defaults": {
+    "world": "haven"
+  },
+  "sets": {
+    "normal": [
+      {
+        "id": "hav_banter_normal_bin_rule",
+        "speaker": "bin",
+        "target": "party",
+        "line": "New party rule: if a ruin glows, we vote before touching it.",
+        "reply": "Seconded with enthusiasm.",
+        "tags": ["travel", "ruin"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_normal_mitia_snow",
+        "speaker": "haven_mitia",
+        "target": "bin",
+        "line": "The snow feels different here. Like it is listening.",
+        "reply": "Great. Even the weather has audience participation.",
+        "tags": ["snow", "mystery"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_normal_garr_warning",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "Check straps, check blades, and do not chase lights that whisper your name.",
+        "reply": "I hate that this needed saying.",
+        "tags": ["warning", "travel"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_normal_bowy_line",
+        "speaker": "haven_bowy",
+        "target": "bin",
+        "line": "Stay behind the line until I say otherwise.",
+        "reply": "I adore being treated like expensive luggage.",
+        "tags": ["tactics", "battle"],
+        "weight": 2
+      }
+    ],
+    "situation:town": [
+      {
+        "id": "hav_banter_town_shop_bowy",
+        "speaker": "haven_bowy",
+        "target": "bin",
+        "line": "Do not spend all the gold on weird trinkets.",
+        "reply": "Define weird in a legally binding way.",
+        "tags": ["shop", "gold"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_town_garr_supplies",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "Tents first, medicine second, toys last.",
+        "reply": "The toys heard you and are devastated.",
+        "tags": ["shop", "rest"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_town_mitia_morale",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "We need salt, two new bandages, and one indulgent purchase. Morale matters.",
+        "reply": "Indulgent purchase noted with enthusiasm.",
+        "tags": ["shop", "morale"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_town_bin_time",
+        "speaker": "bin",
+        "target": "party",
+        "line": "Time moves whether we ask it to or not. Rude, honestly.",
+        "reply": "Take it up with Peri.",
+        "tags": ["time", "jester"],
+        "weight": 2
+      }
+    ],
+    "situation:scenario_start": [
+      {
+        "id": "hav_banter_start_bin_bowy",
+        "speaker": "bin",
+        "target": "haven_bowy",
+        "line": "If this becomes a heroic speech, shoot me before the second paragraph.",
+        "reply": "Only if you start rhyming.",
+        "tags": ["starter", "banter"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_start_full_party",
+        "speaker": "bin",
+        "target": "party",
+        "line": "Full party. The universe is going to overcompensate; brace yourselves.",
+        "reply": "Already braced.",
+        "requiresPresent": ["bin", "haven_bowy", "haven_mitia", "haven_garr"],
+        "tags": ["starter", "full_party"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_start_short_party",
+        "speaker": "bin",
+        "target": "party",
+        "line": "Half a party means twice the consequences. New math.",
+        "reply": "Old math, actually.",
+        "excludesPresent": ["haven_garr"],
+        "tags": ["starter", "short_party"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_start_unavailable_garr",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "If someone stays behind, it is a job, not a punishment.",
+        "reply": "We will make the job sound heroic.",
+        "tags": ["availability", "split"],
+        "weight": 2
+      }
+    ],
+    "situation:battle_ready": [
+      {
+        "id": "hav_banter_battle_ready_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "If we win, I am calling it strategy. If we lose, experimental theater.",
+        "reply": "Focus.",
+        "tags": ["battle", "jester"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_battle_ready_bowy",
+        "speaker": "haven_bowy",
+        "target": "haven_mitia",
+        "line": "If they rush you, step left. I will make the right side regret itself.",
+        "reply": "I trust you.",
+        "tags": ["battle", "protect"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_battle_ready_garr",
+        "speaker": "haven_garr",
+        "target": "bin",
+        "line": "You joke when you are scared. That is fine. Keep your feet moving too.",
+        "reply": "Yes, father. Emotionally and geographically.",
+        "tags": ["battle", "mentor"],
+        "weight": 2
+      }
+    ],
+    "location:event": [
+      {
+        "id": "hav_banter_event_bin",
+        "speaker": "bin",
+        "target": "haven_mitia",
+        "line": "That has the energy of a story we will retell badly for years.",
+        "reply": "Years. Possibly louder each time.",
+        "tags": ["event", "memory"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_event_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "This place wants to be remembered. Let us not lie to it.",
+        "reply": "Honest and quick. Got it.",
+        "tags": ["event", "magic"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_event_bowy",
+        "speaker": "haven_bowy",
+        "target": "party",
+        "line": "I do not like clever puzzles in places where teeth happen.",
+        "reply": "Solve fast. Bite faster.",
+        "tags": ["event", "tactics"],
+        "weight": 2
+      }
+    ],
+    "location:battle": [
+      {
+        "id": "hav_banter_battle_post_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "That fight was so long it accidentally became a relationship.",
+        "reply": "An emotionally significant relationship.",
+        "tags": ["battle", "aftermath"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_battle_post_bowy",
+        "speaker": "haven_bowy",
+        "target": "party",
+        "line": "Wounds checked. Quiver counted. Lies later.",
+        "reply": "Lies acknowledged in advance.",
+        "tags": ["battle", "tactics"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_battle_post_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "Sit. Drink. Stop being heroic for ten breaths.",
+        "reply": "Counting now.",
+        "tags": ["battle", "heal"],
+        "weight": 2
+      }
+    ],
+    "location:rest": [
+      {
+        "id": "hav_banter_rest_bowy",
+        "speaker": "haven_bowy",
+        "target": "party",
+        "line": "First watch is mine. Second watch is whoever owes me an apology.",
+        "reply": "Long list.",
+        "tags": ["rest", "watch"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_rest_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "Tea, then sleep. Sleep, then strategy. Strategy can wait until tea.",
+        "reply": "I love this order.",
+        "tags": ["rest", "care"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_rest_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "Camp rule: if you start a story with 'I will be quick', you owe extra firewood.",
+        "reply": "Sentencing accepted.",
+        "tags": ["rest", "comedy"],
+        "weight": 2
+      }
+    ],
+    "location:reward": [
+      {
+        "id": "hav_banter_reward_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "A treasure cache. Finally, the universe remembers we are poor.",
+        "reply": "Do not thank it yet.",
+        "tags": ["reward", "gold"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_reward_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "Some of this is still warm. That is either comforting or deeply bad.",
+        "reply": "Both can be true.",
+        "tags": ["reward", "magic"],
+        "weight": 2
+      }
+    ],
+    "location:entrance": [
+      {
+        "id": "hav_banter_entrance_garr",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "This is a clean way in. Mark the line for the way out.",
+        "reply": "Marking it twice in case I forget the first one.",
+        "tags": ["entrance", "prep"],
+        "weight": 2
+      }
+    ],
+    "location:exit": [
+      {
+        "id": "hav_banter_exit_garr",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "Exit in sight. Do not relax until the door is behind us.",
+        "reply": "I will relax aggressively afterward.",
+        "tags": ["exit", "travel"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_exit_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "The exit is where stories like to add one last surprise. Watch the corners.",
+        "reply": "Watching the corners with both eyes.",
+        "tags": ["exit", "prep"],
+        "weight": 2
+      }
+    ],
+    "location:boss": [
+      {
+        "id": "hav_banter_boss_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "That is either the boss or a public monument to bad decisions.",
+        "reply": "Aim at the decision part.",
+        "tags": ["boss", "battle"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_boss_garr",
+        "speaker": "haven_garr",
+        "target": "bin",
+        "line": "Whatever you say next, do not say it heroically. Say it carefully.",
+        "reply": "Carefully it is.",
+        "tags": ["boss", "warning"],
+        "weight": 2
+      }
+    ],
+    "map:haven_map_frostwood_short_route": [
+      {
+        "id": "hav_banter_frostwood_short_bin",
+        "speaker": "bin",
+        "target": "haven_garr",
+        "line": "This place feels familiar in a way my memory refuses to sign for.",
+        "reply": "Then we walk carefully.",
+        "tags": ["memory", "frostwood"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_frostwood_short_tracks",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "Tracks stop here. That usually means a trap or wings.",
+        "reply": "Please be wings. Wings are funnier.",
+        "tags": ["trap", "tracks"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_frostwood_short_wolf_bowy",
+        "speaker": "haven_bowy",
+        "target": "party",
+        "line": "Wolves listen. Walk soft. Talk softer.",
+        "reply": "Talking at a guilty volume.",
+        "tags": ["wolf", "tactics"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_frostwood_short_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "I can feel safer paths under the frost. Not safe. Safer.",
+        "reply": "We take those.",
+        "tags": ["frostwood", "magic"],
+        "weight": 2
+      }
+    ],
+    "map:haven_map_frostwood_grid_patrol": [
+      {
+        "id": "hav_banter_grid_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "Squares. Finally, a battlefield honest enough to admit life is a board game.",
+        "reply": "Keep moving.",
+        "tags": ["grid", "movement"],
+        "weight": 3
+      },
+      {
+        "id": "hav_banter_grid_bowy",
+        "speaker": "haven_bowy",
+        "target": "party",
+        "line": "Corners matter. If you cannot see around one, assume teeth.",
+        "reply": "Very poetic. Horrible, but poetic.",
+        "tags": ["grid", "tactics"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_grid_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "I can feel safer paths under the frost. Not safe. Safer.",
+        "reply": "We take those.",
+        "tags": ["grid", "magic"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_grid_sled",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "The sled route makes noise. Use that before it uses us.",
+        "reply": "Weaponized sled confidence.",
+        "tags": ["grid", "sled"],
+        "weight": 2
+      }
+    ],
+    "scenario:haven_scn_sewer_crawl": [
+      {
+        "id": "hav_banter_sewer_bowy",
+        "speaker": "haven_bowy",
+        "target": "bin",
+        "line": "If you make one smell joke, I am leaving you here.",
+        "reply": "I have matured beyond the obvious joke. Mostly.",
+        "tags": ["sewer", "comedy"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_sewer_bin",
+        "speaker": "bin",
+        "target": "party",
+        "line": "Bowy will say something dignified about smell soon. Witness it.",
+        "reply": "I am dignifiedly betrayed.",
+        "requiresPresent": ["bin", "haven_bowy"],
+        "tags": ["sewer", "comedy"],
+        "weight": 2
+      }
+    ],
+    "scenario:haven_scn_wolf_hunt_freeform": [
+      {
+        "id": "hav_banter_wolf_garr",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "Wolves test the edge first. Do not give them one.",
+        "reply": "No edges. Only premium center.",
+        "tags": ["wolf", "hunt"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_wolf_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "Pups are not enemies. Mothers are. Let us be careful which we meet.",
+        "reply": "Careful in pup-recognition mode.",
+        "tags": ["wolf", "care"],
+        "weight": 2
+      }
+    ],
+    "scenario:haven_scn_lost_temple_procedural": [
+      {
+        "id": "hav_banter_temple_mitia",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "Old magic here is folded, like a letter someone never sent.",
+        "reply": "That is beautiful and worrying.",
+        "tags": ["temple", "mystery"],
+        "weight": 2
+      },
+      {
+        "id": "hav_banter_temple_garr",
+        "speaker": "haven_garr",
+        "target": "party",
+        "line": "Temples remember names. Use yours less in here.",
+        "reply": "Down to a whisper.",
+        "tags": ["temple", "warning"],
+        "weight": 2
+      }
+    ],
+    "story:haven_story_guild_dain_route_choice": [
+      {
+        "id": "hav_banter_story_dain_route",
+        "speaker": "bin",
+        "target": "party",
+        "line": "That sounded like the beginning of a very official bad idea.",
+        "reply": "Then we make it unofficial.",
+        "tags": ["story", "route"],
+        "weight": 2
+      }
+    ],
+    "event:haven_frostwood_events": [
+      {
+        "id": "hav_banter_event_frostwood_table",
+        "speaker": "haven_garr",
+        "target": "bin",
+        "line": "You are about to volunteer for something. Breathe first.",
+        "reply": "I was going to say something witty.",
+        "tags": ["event", "warning"],
+        "weight": 2
+      }
+    ],
+    "quest:quest_firemoss_cache_run": [
+      {
+        "id": "hav_banter_quest_firemoss",
+        "speaker": "haven_mitia",
+        "target": "party",
+        "line": "Firemoss survives by staying small until the right moment.",
+        "reply": "Inspiring and slightly threatening.",
+        "tags": ["quest", "firemoss"],
+        "weight": 2
+      }
+    ]
+  }
+}

@@ -187,6 +187,7 @@ window.CJS.DataStore = (() => {
       monsters:   _normalizeCollection('monsters', _data.monsters),
       encounters: _stripMeta({ ..._data.encounters }),
       statuses:   _stripMeta({ ..._data.statuses }),
+      weathers:   _stripMeta({ ..._data.weathers }),
       quips:      _stripMeta([..._data.quips]),
       quizBank:   _stripMeta([..._data.quizBank])
     };
@@ -239,7 +240,8 @@ window.CJS.DataStore = (() => {
       chr: _data.characters,
       mon: _data.monsters,
       enc: _data.encounters,
-      sts: _data.statuses
+      sts: _data.statuses,
+      wth: _data.weathers
     };
     return map[prefix] || null;
   }
@@ -657,7 +659,7 @@ window.CJS.DataStore = (() => {
       'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
       'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
       'mapSeeds', 'oracleTables', 'storyDirectorPacks',
-      'characters', 'monsters', 'encounters', 'statuses'
+      'characters', 'monsters', 'encounters', 'statuses', 'weathers'
     ];
     for (const col of collections) {
       if (obj[col]) {
@@ -717,7 +719,8 @@ window.CJS.DataStore = (() => {
       chr: _data.characters,
       mon: _data.monsters,
       enc: _data.encounters,
-      sts: _data.statuses
+      sts: _data.statuses,
+      wth: _data.weathers
     };
 
     for (const [prefix, col] of Object.entries(collections)) {
@@ -788,6 +791,7 @@ window.CJS.DataStore = (() => {
       monsters:   Object.keys(_data.monsters).length,
       encounters: Object.keys(_data.encounters).length,
       statuses:   Object.keys(_data.statuses).length,
+      weathers:   Object.keys(_data.weathers).length,
       quips:      _data.quips.length,
       quizBank:   _data.quizBank.length
     };

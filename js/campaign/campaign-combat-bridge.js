@@ -250,6 +250,7 @@ window.CJS.CampaignCombatBridge = (() => {
       ? persona.skills
       : (base.skills || []);
     const fullSkills = _mergeSkillEntries(poolBaseSkills, member.learnedSkills || []);
+    const ultimateSkillId = member.ultimateSkillId || persona?.ultimateSkillId || base.ultimateSkillId || null;
     const F = window.CJS.Formulas;
 
     // Job-granted skills can be equipped if the player picked them; they get
@@ -270,6 +271,9 @@ window.CJS.CampaignCombatBridge = (() => {
       const sid = typeof entry === 'string' ? entry : entry?.skillId;
       return equippedSkillIds.has(sid);
     });
+    if (ultimateSkillId && !skills.some((entry) => (typeof entry === 'string' ? entry : entry?.skillId) === ultimateSkillId)) {
+      skills.push({ skillId: ultimateSkillId, overrides: {}, level: 1, source: 'ultimate' });
+    }
 
     // Equipped passives — same idea. Innate passives count against slots
     // but auto-fill pre-selects them, so existing characters keep their
@@ -323,7 +327,10 @@ window.CJS.CampaignCombatBridge = (() => {
       personaWorld: persona?.world || '',
       personaOutOfWorld: !!(persona && persona.world && persona.world !== currentWorld),
       damageDealtMultiplier: Number(damageMods.dealt || 1),
-      damageTakenMultiplier: Number(damageMods.taken || 1)
+      damageTakenMultiplier: Number(damageMods.taken || 1),
+      ultimateMeter: Number(member.ultimateMeter || 0),
+      ultimateMax: Number(member.ultimateMax || base.ultimateMax || 100),
+      ultimateSkillId
     };
   }
 
@@ -489,7 +496,10 @@ window.CJS.CampaignCombatBridge = (() => {
           duration: 'battle',
           stacks: status.stacks || 1
         })),
-        skillUseLog: _cloneSkillUseLog(unit.skillUseLog)
+        skillUseLog: _cloneSkillUseLog(unit.skillUseLog),
+        ultimateMeter: unit.ultimateMeter,
+        ultimateMax: unit.ultimateMax,
+        ultimateSkillId: unit.ultimateSkillId || null
       };
     }
 
@@ -768,6 +778,15 @@ window.CJS.CampaignCombatBridge = (() => {
       }
       const mpDelta = importedMp - (current.currentMp || 0);
       if (mpDelta) ops.push({ op: mpDelta >= 0 ? 'restore_mp' : 'spend_mp', target: id, amount: Math.abs(mpDelta) });
+      if (member.ultimateMeter !== undefined) {
+        ops.push({
+          op: 'set_ultimate_meter',
+          target: id,
+          amount: member.ultimateMeter,
+          max: member.ultimateMax,
+          skillId: member.ultimateSkillId
+        });
+      }
       for (const status of member.statuses || []) ops.push({ op: 'add_status', target: id, status: status.id, duration: status.duration || 'battle', stacks: status.stacks || 1 });
 
       // Per-skill AP gains based on actual usage in this battle. Job XP is

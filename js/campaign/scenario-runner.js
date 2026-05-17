@@ -291,7 +291,14 @@ window.CJS.ScenarioRunner = (() => {
       levelId: startLevelId,
       explorationPercent: _explorationPercent(CS().getState()?.activeScenarioRun || {}, map)
     });
-    window.CJS.CampaignPartyChat?.auto?.({ world: scenario.world || CS().getState()?.currentWorld, situation: 'scenario_start', scenarioId, tags: scenario.tags || [] }, { chance: 0.65 });
+    window.CJS.CampaignPartyChat?.auto?.({
+      world: scenario.world || CS().getState()?.currentWorld,
+      situation: 'scenario_start',
+      scenarioId,
+      mapId,
+      questId: scenario.source?.questId || '',
+      tags: scenario.tags || []
+    }, { chance: 0.65 });
     const runState = CS().getState()?.activeScenarioRun;
     if (runState?.quickNarrative) {
       // Quick narrative quests show a single dialogue/narrative box at start
@@ -469,6 +476,7 @@ window.CJS.ScenarioRunner = (() => {
       situation: 'scenario',
       scenarioId: run.scenarioId,
       mapId: run.mapId,
+      questId: run.questId || scenarioForChat?.source?.questId || '',
       locationKind: node.kind || '',
       tags: [...(node.tags || []), ...(scenarioForChat?.tags || [])]
     }, { chance: 0.3 });
@@ -542,6 +550,7 @@ window.CJS.ScenarioRunner = (() => {
       situation: 'scenario',
       scenarioId: run.scenarioId,
       mapId: run.mapId,
+      questId: run.questId || scenario?.source?.questId || '',
       locationKind: target.kind || _terrainAt(map, target.x, target.y),
       tags: target.tags || []
     }, { chance: 0.28 });
@@ -2163,7 +2172,10 @@ window.CJS.ScenarioRunner = (() => {
       world: CS().getState()?.currentWorld,
       situation: 'battle_ready',
       scenarioId: CS().getState()?.activeScenarioRun?.scenarioId || '',
-      locationKind: pending.source === 'random' ? 'battle' : ''
+      mapId: pending.mapId || CS().getState()?.activeScenarioRun?.mapId || '',
+      questId: pending.questId || CS().getState()?.activeScenarioRun?.questId || '',
+      locationKind: pending.source === 'random' ? 'battle' : '',
+      tags: [...(pending.tags || []), ...(pending.contextTags || []), ...(pending.monsterTags || [])]
     }, { chance: 0.5 });
     return pending;
   }

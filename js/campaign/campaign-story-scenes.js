@@ -644,6 +644,8 @@ window.CJS.CampaignStoryScenes = (() => {
       situation: node.campfire ? 'campfire' : 'scenario',
       scenarioId: CS().getState()?.activeScenarioRun?.scenarioId || '',
       mapId: pending.mapId,
+      questId: CS().getState()?.activeScenarioRun?.questId || '',
+      storyId: pending.storySceneId || '',
       locationKind: node.kind || '',
       tags: [...(node.tags || []), ...(scenario?.tags || [])]
     }, { chance: node.campfire ? 0.85 : 0.35 });

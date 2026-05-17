@@ -1153,7 +1153,7 @@ window.CJS.CombatUI = (() => {
     const ultCur = Number(unit.ultimateMeter || 0);
     const ultPct = Math.max(0, Math.min(100, Math.round((ultCur / (ultMax || 1)) * 100)));
     const ultReady = ultCur >= ultMax;
-    const ultRowHtml = (typeof unit.ultimateMeter === 'number')
+    const ultRowHtml = (typeof unit.ultimateMeter === 'number' && unit.ultimateSkillId)
       ? `<div class="bar-row">
            <span class="bar-label">ULT</span>
            <div class="bar-track ultimate ${ultReady ? 'ultimate-ready' : ''}"><div class="bar-fill" style="width:${ultPct}%"></div></div>

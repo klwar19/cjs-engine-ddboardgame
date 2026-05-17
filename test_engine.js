@@ -1590,6 +1590,14 @@ const compiledHero = SC.compileUnit(heroBase, 'ulthero_1', {});
 assertEq('Compiled unit has ultimateMeter', compiledHero.ultimateMeter, 0);
 assertEq('Compiled unit has ultimateMax', compiledHero.ultimateMax, 100);
 assertEq('Compiled unit has ultimateSkillId', compiledHero.ultimateSkillId, 'ult_negate_damage');
+assert('Compiled unit includes ultimate skill in action pool',
+  compiledHero.skills.some((entry) => (typeof entry === 'string' ? entry : entry.skillId) === 'ult_negate_damage'));
+const compiledNoUlt = SC.compileUnit({
+  id: 'plain_unit', name: 'Plain Unit', type: 'humanoid', rank: 'F',
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  skills: []
+}, 'plain_unit_1', {});
+assertEq('Unit without ultimate skill has no ultimate meter', compiledNoUlt.ultimateMeter, null);
 
 // grantUltimate / consumeUltimate
 DC.grantUltimate(compiledHero, 30);
@@ -1605,11 +1613,13 @@ assertEq('consumeUltimate returns false when not enough', drainFail, false);
 // applyDamage credits both sides
 const attacker = SC.compileUnit({
   id: 'a', name: 'Atk', type: 'humanoid', rank: 'F',
-  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 }
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  ultimateSkillId: 'ult_reroll'
 }, 'a', {});
 const defender = SC.compileUnit({
   id: 'd', name: 'Def', type: 'humanoid', rank: 'F',
-  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 }
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  ultimateSkillId: 'ult_negate_damage'
 }, 'd', {});
 const before = { atk: attacker.ultimateMeter, def: defender.ultimateMeter };
 DC.applyDamage({ attacker, target: defender, amount: 20, element: 'Physical', damageType: 'Physical' });
@@ -1876,6 +1886,14 @@ for (const [skillId, weatherId] of skillWeatherTargets) {
   assertEq(`${skillId} targets ${weatherId}`, targetWeather, weatherId);
   assert(`${weatherId} weather is registered`, weatherIds.has(weatherId));
 }
+
+DS.reset();
+DS.replace('weathers', 'wth_test_weather', { id: 'wth_test_weather', name: 'Test Weather' });
+assertEq('DataStore counts weathers', DS.getCounts().weathers, 1);
+assert('DataStore export includes weathers', !!JSON.parse(DS.exportJSON()).weathers.wth_test_weather);
+DS.reset();
+DS.loadData({ weathers: { wth_loaded_weather: { id: 'wth_loaded_weather', name: 'Loaded Weather' } } });
+assert('DataStore loadData imports weathers', !!DS.get('weathers', 'wth_loaded_weather'));
 
 // ────────────────────────────────────────────────────────────────────
 // TEST 31: ContentManager TYPE_TO_CATEGORY includes weathers

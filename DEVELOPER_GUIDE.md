@@ -591,16 +591,13 @@ Party availability:
   - `{ "op": "clear_party_availability", "target": "haven_garr" }`
 
 Party chatter:
-- CSV source: `data/campaigns/haven/side_content/party_chatter.csv`
+- JSON source: `data/campaigns/haven/side_content/party_banter.json`
 - loader: `js/campaign/campaign-party-chat.js`
-- add future dialogue as rows, not prompt text
-- core columns:
-  - `id`, `world`, `situation`, `scenarioId`, `locationKind`
-  - `speaker`, `target`, `line`, `reply`
-  - `tags`, `requiresPresent`, `excludesPresent`, `weight`
-- list columns use `|`, for example `bin|haven_bowy`
-- `situation` values currently used: `town`, `scenario_start`, `scenario`, `battle_ready`
-- `locationKind` can match node/cell kinds such as `battle`, `trap`, `reward`, `grid`, `exit`
+- add future dialogue under `sets`, not prompt text
+- set lookup order is map, scenario, quest, story, event, location, situation, then `normal`
+- common entry fields: `id`, `speaker`, `target`, `line`, `reply`, `tags`, `requiredTags`, `requiresPresent`, `excludesPresent`, `weight`
+- specific set names use prefixes such as `map:haven_map_frostwood_short_route`, `story:haven_story_guild_dain_route_choice`, `event:haven_frostwood_events`, or `quest:quest_firemoss_cache_run`
+- `location` sets can match node/cell kinds such as `battle`, `trap`, `reward`, `grid`, `exit`
 - the roller filters out unavailable party members automatically
 
 Campaign battle app bridge:

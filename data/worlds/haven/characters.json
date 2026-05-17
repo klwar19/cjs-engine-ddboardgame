@@ -30,6 +30,8 @@
         "haven_piercing_bolt",
         "haven_suppressive_fire"
       ],
+      "ultimateSkillId": "ult_reroll",
+      "ultimateMax": 100,
       "equipment": [
         "haven_thunder_crossbow",
         "haven_leather_armor",
@@ -98,6 +100,8 @@
         "haven_trap_set",
         "haven_rally_cry"
       ],
+      "ultimateSkillId": "ult_negate_damage",
+      "ultimateMax": 100,
       "equipment": [
         "haven_hunters_blade",
         "haven_leather_armor",
@@ -145,6 +149,8 @@
         "haven_ice_shield",
         "haven_healing_light"
       ],
+      "ultimateSkillId": "ult_revive",
+      "ultimateMax": 100,
       "equipment": [
         "haven_frost_staff",
         "haven_adventurers_cloak",

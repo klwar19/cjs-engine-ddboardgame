@@ -49,6 +49,7 @@ window.CJS.CampaignOps = (() => {
         case 'take_material': return `Take ${op.qty || 1} ${op.id}`;
         case 'damage_character': return `Damage ${op.target || op.characterId} for ${op.amount || 0}`;
         case 'heal_character': return `Heal ${op.target || op.characterId} for ${op.amount || 0}`;
+        case 'set_ultimate_meter': return `Set ${op.target || op.characterId || 'member'} ultimate to ${op.amount || 0}`;
         case 'recruit_character': return `Recruit ${op.characterId || op.id}`;
         case 'bench_character': return `Bench ${op.target || op.characterId}`;
         case 'activate_character': return `Activate ${op.target || op.characterId}`;
@@ -161,6 +162,7 @@ window.CJS.CampaignOps = (() => {
       case 'heal_character': return _hp(state, op.target || op.characterId, op.amount || 0);
       case 'restore_mp': return _mp(state, op.target || op.characterId, op.amount || 0);
       case 'spend_mp': return _mp(state, op.target || op.characterId, -(op.amount || 0));
+      case 'set_ultimate_meter': return _ultimateMeter(state, op);
       case 'recruit_character': return _recruitCharacter(state, op);
       case 'remove_character': return _removeCharacter(state, op);
       case 'bench_character': return _setRosterRole(state, op.target || op.characterId || op.id, 'bench');
@@ -545,6 +547,19 @@ window.CJS.CampaignOps = (() => {
       const member = state.party[id];
       member.currentMp = Math.max(0, Math.min(member.maxMp || 0, (member.currentMp || 0) + delta));
       if (log) _log(state, `${member.name || id} ${delta >= 0 ? 'restored' : 'spent'} ${Math.abs(delta)} MP.`);
+    }
+  }
+
+  function _ultimateMeter(state, op) {
+    for (const id of _resolveTargets(state, op.target || op.characterId || op.id)) {
+      const member = state.party[id];
+      const base = DS().get('characters', member.baseCharacterId || id) || {};
+      const skillId = op.skillId || member.ultimateSkillId || base.ultimateSkillId || null;
+      if (!skillId) continue;
+      const max = Math.max(1, Number(op.max || member.ultimateMax || base.ultimateMax || 100) || 100);
+      member.ultimateSkillId = skillId;
+      member.ultimateMax = max;
+      member.ultimateMeter = Math.max(0, Math.min(max, Number(op.amount ?? op.value ?? 0) || 0));
     }
   }
 

@@ -88,6 +88,18 @@ window.CJS.StatCompiler = (() => {
     const weak   = _mergeUnique(baseUnit.weak   || [], mods.element.weak);
     const resist = _mergeUnique(baseUnit.resist || [], mods.element.resist);
     const immune = _mergeUnique(baseUnit.immune || [], mods.element.immune);
+    const ultimateSkillId = baseUnit.ultimateSkillId || null;
+    const hasUltimate = !!ultimateSkillId;
+    const ultimateMax = hasUltimate ? Math.max(1, Number(baseUnit.ultimateMax ?? 100) || 100) : null;
+    const ultimateMeter = hasUltimate
+      ? (opts.ultimateMeter !== undefined
+        ? Math.max(0, Math.min(ultimateMax, Number(opts.ultimateMeter) || 0))
+        : Math.max(0, Math.min(ultimateMax, Number(baseUnit.ultimateMeter ?? 0))))
+      : null;
+    const compiledSkills = _withUltimateSkill(
+      _mergeSkills(baseUnit.skills || [], baseUnit.equipment || []),
+      ultimateSkillId
+    );
 
     // ── 8. Build compiled unit ──────────────────────────────────────
     const compiled = {
@@ -117,11 +129,9 @@ window.CJS.StatCompiler = (() => {
       // Ultimate meter (per-character resource that fills from dealing/taking
       // damage and KOs; spent on signature "hack" skills like negate / reroll /
       // revive). Carried across battles via campaign-state party member.
-      ultimateMeter: opts.ultimateMeter !== undefined
-        ? Math.max(0, Math.min(Number(baseUnit.ultimateMax ?? 100), Number(opts.ultimateMeter) || 0))
-        : Number(baseUnit.ultimateMeter ?? 0),
-      ultimateMax:   Number(baseUnit.ultimateMax ?? 100),
-      ultimateSkillId: baseUnit.ultimateSkillId || null,
+      ultimateMeter,
+      ultimateMax,
+      ultimateSkillId,
 
       // Defense
       dr: { physical: drPhysical, magic: drMagic, chaos: drChaos },
@@ -154,7 +164,7 @@ window.CJS.StatCompiler = (() => {
 
       // References (for use by action-handler, etc.)
       // Merge base skills + item-granted skills, PRESERVING overrides/level
-      skills:        _mergeSkills(baseUnit.skills || [], baseUnit.equipment || []),
+      skills:        compiledSkills,
       equipment:     baseUnit.equipment || [],
       innatePassives:baseUnit.innatePassives || [],
       passiveRanks:  baseUnit.passiveRanks || {},
@@ -583,6 +593,15 @@ window.CJS.StatCompiler = (() => {
       }
     }
     return Array.from(all);
+  }
+
+  function _withUltimateSkill(skills, ultimateSkillId) {
+    if (!ultimateSkillId) return skills;
+    const list = Array.isArray(skills) ? skills.slice() : [];
+    const hasSkill = list.some((entry) => (typeof entry === 'string' ? entry : entry?.skillId) === ultimateSkillId);
+    if (hasSkill) return list;
+    list.push({ skillId: ultimateSkillId, overrides: {}, level: 1, source: 'ultimate' });
+    return list;
   }
 
   // ── RECOMPILE (for mid-combat buff/debuff changes) ────────────────

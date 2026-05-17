@@ -797,6 +797,7 @@ window.CJS.CampaignState = (() => {
       member.availability = normalizeAvailability(member.availability, member);
       _normalizeProgression(member, base);
       _normalizePersona(member, base, next);
+      _normalizeUltimate(member, base);
       _syncPartyMaxHp(id, member);
     }
     next.lastUpdated = next.lastUpdated || nowIso();
@@ -813,6 +814,16 @@ window.CJS.CampaignState = (() => {
       expires: raw.expires || null,
       updatedAt: raw.updatedAt || null
     };
+  }
+
+  function _normalizeUltimate(member, base = {}) {
+    const skillId = member.ultimateSkillId || base.ultimateSkillId || null;
+    const max = Math.max(1, Number(member.ultimateMax || base.ultimateMax || 100) || 100);
+    member.ultimateSkillId = skillId;
+    member.ultimateMax = max;
+    member.ultimateMeter = skillId
+      ? Math.max(0, Math.min(max, Number(member.ultimateMeter || 0)))
+      : 0;
   }
 
   // Backfill skillProgress / job fields onto a party member loaded from

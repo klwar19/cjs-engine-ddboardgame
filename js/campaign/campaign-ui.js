@@ -2518,8 +2518,7 @@ window.CJS.CampaignUI = (() => {
       title: 'Ready for the next scene',
       text: 'The last beat is handled. Roll again, write a scene, or just let the table breathe for a moment.',
       actions: [
-        _actionBtn({ action: 'story-roll-scene', label: 'Next Scene', hint: 'Continue the story flow', kind: 'primary story' }),
-        _actionBtn({ action: 'roll-party-chat', label: 'Party Banter', hint: 'Let the cast talk before more trouble arrives', kind: 'random' })
+        _actionBtn({ action: 'story-roll-scene', label: 'Next Scene', hint: 'Continue the story flow', kind: 'primary story' })
       ]
     };
   }
@@ -3549,7 +3548,6 @@ window.CJS.CampaignUI = (() => {
           ${_controlGroup('Run Tools', `
             <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
             <button class="campaign-action primary" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
-            <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
             <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
           `)}
           ${_controlGroup('Manual Control', `
@@ -3561,7 +3559,6 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-action-grid" hidden>
           <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
           <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
-          <button class="campaign-action" data-campaign-action="roll-party-chat">Party Banter</button>
           <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
           <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
           <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
@@ -3887,7 +3884,6 @@ window.CJS.CampaignUI = (() => {
     return `
       ${_renderWallet(state)}
       ${_renderInventorySnapshot(state)}
-      ${_renderPartyChatCard(state)}
       <section class="campaign-side-section">
         <div class="campaign-panel-head"><h2>Quests</h2></div>
         ${activeQuests.length ? activeQuests.slice(0, 5).map(_renderQuestMini).join('') : '<div class="campaign-empty">No active quests.</div>'}
@@ -3942,97 +3938,6 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderPartyChatCard(state, opts = {}) {
-    const chat = state.lastPartyChat;
-    if (opts.full) {
-      const past = (state.log || [])
-        .filter((line) => line.op === 'party_chat')
-        .slice(0, 12)
-        .map(_chatFromLogLine)
-        .filter(Boolean);
-      const seen = new Set();
-      const list = [];
-      if (chat) { list.push(chat); seen.add(`${chat.speaker}|${chat.line}`); }
-      for (const c of past) {
-        const key = `${c.speaker}|${c.line}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        list.push(c);
-      }
-      return `
-        <section class="campaign-side-section">
-          <div class="campaign-panel-head">
-            <h2>Party Banter</h2>
-            <div class="campaign-panel-actions">
-              <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
-              ${list.length ? '<button class="campaign-icon-btn danger" data-campaign-action="clear-banter">Clear</button>' : ''}
-            </div>
-          </div>
-          ${list.length
-            ? `<div class="campaign-banter-history">${list.map(_renderBanterBox).join('')}</div>`
-            : '<div class="campaign-banter-box is-empty">No banter rolled yet.</div>'}
-        </section>
-      `;
-    }
-    return `
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head">
-          <h2>Party Banter</h2>
-          <div class="campaign-panel-actions">
-            <button class="campaign-icon-btn" data-campaign-action="roll-party-chat">Roll</button>
-            ${chat ? '<button class="campaign-icon-btn danger" data-campaign-action="clear-banter">Clear</button>' : ''}
-          </div>
-        </div>
-        ${chat ? _renderBanterBox(chat) : '<div class="campaign-banter-box is-empty">No banter rolled yet.</div>'}
-      </section>
-    `;
-  }
-
-  function _chatFromLogLine(line) {
-    const text = String(line.text || '');
-    const idx = text.indexOf(':');
-    if (idx < 1) return null;
-    const speakerName = text.slice(0, idx).trim();
-    const body = text.slice(idx + 1).trim();
-    if (!body) return null;
-    const partyEntry = Object.entries(CS().getState()?.party || {})
-      .find(([, m]) => (m.name || '').trim() === speakerName);
-    return {
-      speaker: partyEntry?.[0] || null,
-      speakerName,
-      line: body
-    };
-  }
-
-  function _renderBanterBox(chat) {
-    if (!chat) return '';
-    const speaker = chat.speakerName || chat.speaker || 'Party';
-    const portrait = _speakerPortrait(chat.speaker);
-    const focus = _speakerPortraitFocus(chat.speaker);
-    return `
-      <div class="campaign-banter-box">
-        <span class="campaign-banter-name">${_esc(speaker)}</span>
-        <span class="campaign-banter-text">${_esc(chat.line || '')}</span>
-        ${chat.reply ? `<span class="campaign-banter-reply">${_esc(chat.reply)}</span>` : ''}
-        ${portrait
-          ? `<div class="campaign-banter-portrait"><img src="${_escAttr(portrait)}" alt="" style="${_escAttr(_focusAttrStyle(focus))}"></div>`
-          : ''}
-        <span class="campaign-banter-arrow">▼</span>
-      </div>
-    `;
-  }
-
-  function _speakerPortrait(speakerId) {
-    if (!speakerId) return null;
-    const member = CS().getState()?.party?.[speakerId];
-    return _memberPortrait(member, speakerId) || null;
-  }
-  function _speakerPortraitFocus(speakerId) {
-    if (!speakerId) return null;
-    const member = CS().getState()?.party?.[speakerId];
-    return _memberPortraitFocus(member, speakerId);
-  }
-
   function _renderNotesPanel(state) {
     const notes = state.pinnedNotes || [];
     return `
@@ -4056,9 +3961,8 @@ window.CJS.CampaignUI = (() => {
     quests:    { icon: '📜', label: 'Quests', title: 'Quest Log' },
     log:       { icon: '🪶', label: 'Log',    title: 'Campaign Log' },
     notes:     { icon: '📝', label: 'Notes',  title: 'Pinned Notes' },
-    banter:    { icon: '💬', label: 'Banter', title: 'Party Banter' },
   };
-  const RAIL_ORDER = ['party', 'inventory', 'quests', 'log', 'notes', 'banter'];
+  const RAIL_ORDER = ['party', 'inventory', 'quests', 'log', 'notes'];
 
   function _renderCommandRail(state) {
     const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
@@ -4066,15 +3970,13 @@ window.CJS.CampaignUI = (() => {
     const notesCount = (state.pinnedNotes || []).length;
     const inventoryCount = ['items', 'materials', 'food', 'questItems']
       .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
-    const hasBanter = !!state.lastPartyChat;
     const partyCount = Object.keys(state.party || {}).length;
     const counts = {
       party: partyCount,
       inventory: inventoryCount,
       quests: activeQuests,
       log: logCount,
-      notes: notesCount,
-      banter: hasBanter ? 1 : 0
+      notes: notesCount
     };
     const currency = _currencyAmounts(state);
     const buttons = RAIL_ORDER.map((id) => {
@@ -4232,8 +4134,6 @@ window.CJS.CampaignUI = (() => {
         return typeof _renderLogPanel === 'function' ? _renderLogPanel(state) : _renderLogFallback(state);
       case 'notes':
         return _renderNotesPanel(state);
-      case 'banter':
-        return _renderPartyChatCard(state, { full: true });
       default:
         return '<div class="campaign-empty">Panel not implemented.</div>';
     }
@@ -5112,8 +5012,6 @@ window.CJS.CampaignUI = (() => {
       case 'open-sideforge-tab': return _goto('activities', 'sideForge');
       case 'open-event-stories-tab': return _goto('event', 'eventSide');
       case 'open-event-battles-tab': return _goto('event', 'battleSets');
-      case 'roll-party-chat': return _rollPartyChat();
-      case 'clear-banter': return _clearBanter();
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
       case 'run-roll-event': return UI().toast('Random event rolls are disabled. Use authored Event files or Quest tools.', 'info');
@@ -8234,44 +8132,6 @@ window.CJS.CampaignUI = (() => {
   function _moveCell(x, y) {
     const moved = Runner().moveToCell?.(Number(x), Number(y));
     if (!moved) UI().toast('That cell is blocked or out of reach', 'info');
-  }
-
-  function _rollPartyChat() {
-    const state = CS().getState();
-    const run = state.activeScenarioRun;
-    const currentNode = Runner().findCurrentNode?.();
-    const currentCell = Runner().findCurrentCell?.();
-    const chat = Chat()?.roll?.({
-      world: state.currentWorld,
-      situation: run ? 'scenario' : 'town',
-      scenarioId: run?.scenarioId || '',
-      mapId: run?.mapId || '',
-      locationKind: currentNode?.kind || currentCell?.kind || '',
-      tags: [...(currentNode?.tags || []), ...(currentCell?.tags || [])]
-    });
-    if (!chat) return UI().toast('No party banter available', 'info');
-    CS().mutate((next) => {
-      next.lastPartyChat = chat;
-      next.log.unshift({
-        id: `log_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-        at: new Date().toISOString(),
-        phase: next.phase?.number || 1,
-        world: next.currentWorld,
-        text: `${chat.speakerName || chat.speaker}: ${chat.line}`,
-        op: 'party_chat'
-      });
-      next.log = next.log.slice(0, 500);
-    }, { source: 'party_chat' });
-  }
-
-  function _clearBanter() {
-    UI().confirm('Clear party banter history?', () => {
-      CS().mutate((state) => {
-        state.lastPartyChat = null;
-        state.log = (state.log || []).filter((line) => line.op !== 'party_chat');
-      }, { source: 'clear_banter' });
-      UI().toast('Banter cleared', 'info');
-    });
   }
 
   function _clearNode(nodeId) {
