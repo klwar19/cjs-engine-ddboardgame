@@ -55,6 +55,7 @@ window.CJS.DataStore = (() => {
     monsters:   {},   // id → monster object
     encounters: {},   // id → encounter object
     statuses:   {},   // id → status definition
+    weathers:   {},   // id → weather definition (global battlefield environment)
     quips:      [],   // array of quip fragments
     quizBank:   []    // array of quiz questions
   };
@@ -741,7 +742,7 @@ window.CJS.DataStore = (() => {
       campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
       sideContentPacks: {}, campaignHubs: {}, questChains: {},
       battleSets: {}, mapSeeds: {}, oracleTables: {}, storyDirectorPacks: {},
-      characters: {}, monsters: {}, encounters: {}, statuses: {},
+      characters: {}, monsters: {}, encounters: {}, statuses: {}, weathers: {},
       quips: [], quizBank: []
     };
     _counters = {};

@@ -297,6 +297,12 @@ window.CJS.CampaignState = (() => {
       maxMp,
       currentHp: maxHp,
       currentMp: maxMp,
+      // Ultimate meter persists across battles via campaign state.
+      // Combat startup hydrates compiled unit ultimateMeter from this; battle
+      // end writes back into state.party[id].ultimateMeter.
+      ultimateMeter: 0,
+      ultimateMax: Number(base.ultimateMax || 100),
+      ultimateSkillId: base.ultimateSkillId || null,
       statOverrides: {},
       learnedSkills: [],
       learnedPassives: [],

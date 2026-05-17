@@ -63,6 +63,7 @@ const loadOrder = [
   'effects/effect-registry.js',
   'effects/effect-resolver.js',
   'combat/combat-log.js',
+  'combat/weather-manager.js',
   'combat/stat-compiler.js',
   'combat/status-manager.js',
   'combat/damage-calc.js',
@@ -74,7 +75,9 @@ const loadOrder = [
   'ai/ai-controller.js',
   'combat/combat-manager.js',
   'qte/qte-manager.js',
+  'campaign/relationship-tiers.js',
   'campaign/campaign-state.js',
+  'campaign/campaign-conditions.js',
   'campaign/campaign-ops.js',
   'campaign/campaign-events.js',
   'campaign/campaign-story-scenes.js'
@@ -1480,6 +1483,259 @@ if (CJS.CampaignState && CJS.CampaignOps && CJS.PersonaService) {
 } else {
   console.log('  (skipping — PersonaService not loaded in this test sandbox)');
 }
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 24: Weather system (environment events)
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 24: Weather / environment events ──');
+
+DS.reset();
+
+// Seed a couple of weather defs in the data store
+DS.replace('weathers', 'normal', {
+  id: 'normal', name: 'Clear', icon: '☀️',
+  damageMods: {}, statMods: {}, tick: null, statusInteractions: [], immuneTags: []
+});
+DS.replace('weathers', 'rain', {
+  id: 'rain', name: 'Rain', icon: '🌧',
+  damageMods: { Water: 1.5, Fire: 0.5 },
+  statMods: { accuracyBonus: -3 },
+  tick: null,
+  statusInteractions: [{ statusId: 'burn', extendDuration: -1 }],
+  immuneTags: ['water_native']
+});
+DS.replace('weathers', 'blizzard', {
+  id: 'blizzard', name: 'Blizzard', icon: '❄',
+  damageMods: { Ice: 1.5 },
+  statMods: {},
+  tick: { phase: 'turn_end', damageType: 'Magic', element: 'Ice', amount: 3, targetTeams: ['all'] },
+  statusInteractions: [{ statusId: 'freeze', extendDuration: 1 }],
+  immuneTags: []
+});
+
+const WX = CJS.Weather;
+assert('Weather module loaded', !!WX);
+
+// Damage multiplier lookups
+const state = { environment: { id: 'rain', remaining: 3 } };
+assertEq('Rain boosts Water', WX.applyDamageMods('Water', state), 1.5);
+assertEq('Rain weakens Fire', WX.applyDamageMods('Fire', state), 0.5);
+assertEq('Rain neutral on Ice', WX.applyDamageMods('Ice', state), 1);
+
+// Stat mods stamp + restamp idempotence
+const fakeUnit = { accuracyBonus: 10 };
+WX.applyStatModsToUnit(fakeUnit, state);
+assertEq('Rain applies accuracyBonus -3', fakeUnit.accuracyBonus, 7);
+WX.applyStatModsToUnit(fakeUnit, state);
+assertEq('Re-stamp is idempotent', fakeUnit.accuracyBonus, 7);
+WX.applyStatModsToUnit(fakeUnit, { environment: { id: 'normal' } });
+assertEq('Switching to normal removes weather mod', fakeUnit.accuracyBonus, 10);
+
+// Status interaction (rain shortens burn)
+const adjusted = WX.modifyStatusDuration('burn', 3, state);
+assertEq('Rain shortens burn duration by 1', adjusted, 2);
+const noChange = WX.modifyStatusDuration('poison', 3, state);
+assertEq('Non-listed status not adjusted', noChange, 3);
+
+// setEnvironment / clearEnvironment
+const battleState = { environment: { id: 'normal', remaining: 0 }, roundNumber: 1, units: {} };
+const setResult = WX.setEnvironment(battleState, 'blizzard', 4, 'caster_1');
+assert('setEnvironment returns def', !!setResult);
+assertEq('setEnvironment writes id', battleState.environment.id, 'blizzard');
+assertEq('setEnvironment writes duration', battleState.environment.remaining, 4);
+WX.clearEnvironment(battleState);
+assertEq('clearEnvironment reverts to normal', battleState.environment.id, 'normal');
+assertEq('clearEnvironment zeros duration', battleState.environment.remaining, 0);
+
+// tickEnvironment with periodic tick
+const ticker = {
+  environment: { id: 'blizzard', remaining: 2 },
+  roundNumber: 1,
+  units: {
+    u1: { instanceId: 'u1', team: 'player', currentHP: 50, maxHP: 50 },
+    u2: { instanceId: 'u2', team: 'enemy',  currentHP: 50, maxHP: 50 }
+  }
+};
+WX.tickEnvironment(ticker);
+assert('Blizzard tick reduces player HP', ticker.units.u1.currentHP < 50);
+assert('Blizzard tick reduces enemy HP',  ticker.units.u2.currentHP < 50);
+assertEq('Duration decrements after tick', ticker.environment.remaining, 1);
+WX.tickEnvironment(ticker);
+assertEq('Weather reverts to normal at 0', ticker.environment.id, 'normal');
+
+// Immune tag: water_native units skip rain immunity tagging
+const stateRain = { environment: { id: 'rain' }, units: {
+  immune: { type: 'water_native', accuracyBonus: 0 },
+  normalU: { type: 'humanoid', accuracyBonus: 0 }
+}};
+WX.applyStatModsToUnit(stateRain.units.immune, stateRain);
+WX.applyStatModsToUnit(stateRain.units.normalU, stateRain);
+assertEq('Immune unit unchanged', stateRain.units.immune.accuracyBonus, 0);
+assertEq('Non-immune unit modified', stateRain.units.normalU.accuracyBonus, -3);
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 25: Ultimate meter
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 25: Ultimate meter ──');
+
+// stat-compiler integration
+DS.replace('characters', 'ulthero', {
+  id: 'ulthero', name: 'Ult Hero', type: 'humanoid', rank: 'A',
+  stats: { S: 8, P: 6, E: 7, C: 6, I: 5, A: 6, L: 5 },
+  skills: ['basic_attack'],
+  ultimateMax: 100, ultimateSkillId: 'ult_negate_damage'
+});
+const heroBase = DS.get('characters', 'ulthero');
+const compiledHero = SC.compileUnit(heroBase, 'ulthero_1', {});
+assertEq('Compiled unit has ultimateMeter', compiledHero.ultimateMeter, 0);
+assertEq('Compiled unit has ultimateMax', compiledHero.ultimateMax, 100);
+assertEq('Compiled unit has ultimateSkillId', compiledHero.ultimateSkillId, 'ult_negate_damage');
+
+// grantUltimate / consumeUltimate
+DC.grantUltimate(compiledHero, 30);
+assertEq('grantUltimate adds to meter', compiledHero.ultimateMeter, 30);
+DC.grantUltimate(compiledHero, 150);  // overfill clamps
+assertEq('grantUltimate clamps to max', compiledHero.ultimateMeter, 100);
+const drained = DC.consumeUltimate(compiledHero, 100);
+assertEq('consumeUltimate drains meter', compiledHero.ultimateMeter, 0);
+assertEq('consumeUltimate returns true on success', drained, true);
+const drainFail = DC.consumeUltimate(compiledHero, 50);
+assertEq('consumeUltimate returns false when not enough', drainFail, false);
+
+// applyDamage credits both sides
+const attacker = SC.compileUnit({
+  id: 'a', name: 'Atk', type: 'humanoid', rank: 'F',
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 }
+}, 'a', {});
+const defender = SC.compileUnit({
+  id: 'd', name: 'Def', type: 'humanoid', rank: 'F',
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 }
+}, 'd', {});
+const before = { atk: attacker.ultimateMeter, def: defender.ultimateMeter };
+DC.applyDamage({ attacker, target: defender, amount: 20, element: 'Physical', damageType: 'Physical' });
+assert('Attacker meter grew', attacker.ultimateMeter > before.atk);
+assert('Defender meter grew', defender.ultimateMeter > before.def);
+const expectedAtk = 20 * 0.10; // 10% of dmg dealt
+const expectedDef = 20 * 0.05; // 5% of dmg taken
+assertNear('Attacker gains ~10% of damage', attacker.ultimateMeter, expectedAtk, 0.01);
+assertNear('Defender gains ~5% of damage', defender.ultimateMeter, expectedDef, 0.01);
+
+// KO bonus
+defender.currentHP = 1;
+attacker.ultimateMeter = 0;
+DC.applyDamage({ attacker, target: defender, amount: 100, element: 'Physical', damageType: 'Physical' });
+assert('Attacker gets ~25 KO bonus', attacker.ultimateMeter >= 25);
+
+// negate_next_damage hack: flag zeroes incoming damage and is consumed
+const aegis = SC.compileUnit({
+  id: 'ag', name: 'Aegis', type: 'humanoid', rank: 'F',
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 }
+}, 'ag', {});
+aegis.currentHP = 50;
+aegis.nextDamageNegated = true;
+const negResult = DC.applyDamage({ attacker: null, target: aegis, amount: 99, element: 'Physical', damageType: 'Physical' });
+assertEq('Negate ultimate zeroes damage applied', negResult.applied, 0);
+assertEq('Negate ultimate keeps HP intact', aegis.currentHP, 50);
+assertEq('Flag cleared after consumption', aegis.nextDamageNegated, false);
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 26: Relationship tiers and condition gating
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 26: Relationship tiers ──');
+
+const RT = CJS.RelationshipTiers;
+assert('RelationshipTiers loaded', !!RT);
+
+// Tier computation
+assertEq('Empty bond is stranger', RT.computeTier({}).id, 'stranger');
+assertEq('Score 12 → acquaintance', RT.computeTier({ trust: 12 }).id, 'acquaintance');
+assertEq('Score 30 → friend', RT.computeTier({ trust: 20, friendship: 10 }).id, 'friend');
+assertEq('Score 60 → close', RT.computeTier({ trust: 30, friendship: 30 }).id, 'close');
+assertEq('Score 80 → bonded', RT.computeTier({ trust: 50, friendship: 30 }).id, 'bonded');
+assertEq('High rivalry → rival', RT.computeTier({ rivalry: 40, trust: 5 }).id, 'rival');
+// score = 30 - 10 = 20 → acquaintance tier (rivalry too low to flip to rival)
+assertEq('Low rivalry with high trust → not rival', RT.computeTier({ rivalry: 10, trust: 30 }).id, 'acquaintance');
+
+// meetsTier
+assert('Friend meets stranger',     RT.meetsTier({ trust: 30 }, 'stranger'));
+assert('Friend meets friend',       RT.meetsTier({ trust: 30 }, 'friend'));
+assert('Friend does not meet bonded', !RT.meetsTier({ trust: 30 }, 'bonded'));
+assert('Bonded meets close',        RT.meetsTier({ trust: 80 }, 'close'));
+assert('Rival meets rival',         RT.meetsTier({ rivalry: 50 }, 'rival'));
+assert('Friend does NOT meet rival', !RT.meetsTier({ trust: 30 }, 'rival'));
+
+// Condition evaluator (bondMin with tier + op)
+const Cond = CJS.CampaignConditions;
+assert('CampaignConditions loaded', !!Cond);
+const bondState = { bonds: { tessa: { trust: 30, friendship: 5 } } };
+
+// Numeric op
+const ok1 = Cond.evaluate({ bondMin: [{ npcId: 'tessa', field: 'trust', value: 20 }] }, bondState);
+assert('bondMin numeric ≥ passes', ok1.ok);
+const ok2 = Cond.evaluate({ bondMin: [{ npcId: 'tessa', field: 'trust', value: 50 }] }, bondState);
+assert('bondMin numeric ≥ fails when below', !ok2.ok);
+const ok3 = Cond.evaluate({ bondMin: [{ npcId: 'tessa', field: 'trust', value: 20, op: '<' }] }, bondState);
+assert('bondMin op="<" works', !ok3.ok);
+const ok4 = Cond.evaluate({ bondMin: [{ npcId: 'tessa', field: 'trust', value: 30, op: '==' }] }, bondState);
+assert('bondMin op="==" works', ok4.ok);
+
+// Tier shortcut
+const tierOk = Cond.evaluate({ bondMin: [{ npcId: 'tessa', tierMin: 'friend' }] }, bondState);
+assert('tierMin friend passes (score 35)', tierOk.ok);
+const tierFail = Cond.evaluate({ bondMin: [{ npcId: 'tessa', tierMin: 'bonded' }] }, bondState);
+assert('tierMin bonded fails', !tierFail.ok);
+
+// relationship_set op
+const csState = { bonds: { ria: { trust: 5 } }, log: [] };
+const opsResult = CJS.CampaignOps;
+if (opsResult && opsResult.apply) {
+  // Hack: feed _applyOne via apply by stubbing the state retrieval
+  // Easier: just call the function directly through the registered op switch
+  // by going via a state-mutation that exposes it.
+  // Since campaign-ops.apply consumes the state singleton, mutate the state and route.
+  CJS.CampaignState.mutate((s) => { s.bonds = { ria: { trust: 5 } }; });
+  CJS.CampaignOps.apply({ op: 'relationship_set', npcId: 'ria', field: 'trust', value: 42 }, { source: 'test' });
+  const ria = CJS.CampaignState.getState().bonds?.ria;
+  assertEq('relationship_set writes absolute value', ria.trust, 42);
+}
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 27: Weather damage multiplier flows through computeAttack
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 27: Weather × damage pipeline ──');
+
+DS.reset();
+DS.replace('weathers', 'normal', { id: 'normal', damageMods: {} });
+DS.replace('weathers', 'rain', { id: 'rain', damageMods: { Water: 2.0, Fire: 0.5 } });
+
+const A = SC.compileUnit({
+  id: 'A', name: 'A', type: 'humanoid', rank: 'F',
+  stats: { S: 10, P: 5, E: 5, C: 5, I: 5, A: 0, L: 0 },
+  skills: ['basic_attack']
+}, 'A', {});
+const B = SC.compileUnit({
+  id: 'B', name: 'B', type: 'humanoid', rank: 'F',
+  stats: { S: 5, P: 5, E: 10, C: 5, I: 5, A: 0, L: 0 }
+}, 'B', {});
+const waterSkill = { id: 'w', power: 20, element: 'Water', damageType: 'Magic', scalingStat: 'I', unavoidable: true, dice: '1d1' };
+
+// No weather: capture a reference damage
+const refResult = DC.computeAttack({ attacker: A, target: B, skill: waterSkill, qteMultiplier: 1.0 });
+const refDmg = refResult.damage;
+assert('Reference damage > 0', refDmg > 0);
+
+// With rain (CombatManager exposes the env to damage-calc)
+CJS.CombatManager._testSetEnvironment = function(env) {
+  // No-op stub — combat manager doesn't have a real test seam.
+};
+// Direct injection via patching getEnvironment for the test
+const realGetEnv = CJS.CombatManager.getEnvironment;
+CJS.CombatManager.getEnvironment = () => ({ id: 'rain', remaining: 3 });
+const wetResult = DC.computeAttack({ attacker: A, target: B, skill: waterSkill, qteMultiplier: 1.0 });
+CJS.CombatManager.getEnvironment = realGetEnv;
+assert('Rain boosts water damage in pipeline', wetResult.damage > refDmg);
+assertEq('Weather mult surfaced in breakdown', wetResult.breakdown.weatherMultiplier, 2.0);
+
 
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════

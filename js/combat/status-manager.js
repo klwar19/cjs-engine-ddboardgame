@@ -151,7 +151,26 @@ window.CJS.StatusManager = (() => {
     target.activeStatuses = target.activeStatuses || [];
     const existing = target.activeStatuses.find(s => s.statusId === statusId);
 
-    const newDuration = overrides?.duration ?? def.duration ?? 3;
+    let newDuration = overrides?.duration ?? def.duration ?? 3;
+    // Apply weather-aware duration adjustment (e.g. blizzard extends freeze,
+    // rain shortens burn). Pass the live combat state via combat-manager.
+    const WX = window.CJS.Weather;
+    const CM = window.CJS.CombatManager;
+    if (WX && CM) {
+      const env = CM.getEnvironment ? CM.getEnvironment() : null;
+      if (env && env.id !== 'normal') {
+        newDuration = WX.modifyStatusDuration(statusId, newDuration, { environment: env });
+      }
+    }
+    if (newDuration <= 0) {
+      // Weather completely nullified the status application
+      Log().record({
+        type: 'status_resisted', actor: sourceUnit, target,
+        tags: ['status_resisted', `status_${statusId}`, 'weather_nullified'],
+        data: { statusId, reason: 'weather_nullified' }
+      });
+      return { applied: false, reason: 'weather_nullified' };
+    }
     const turn = combatContext?.turnNumber || Log().getTurn();
 
     if (existing) {
@@ -198,6 +217,10 @@ window.CJS.StatusManager = (() => {
     }
 
     target.activeStatuses.push(instance);
+
+    // Ultimate hack: arm one-shot damage negation when the dedicated status
+    // lands. damage-calc consumes the flag on the next incoming hit.
+    if (statusId === 'negate_next_damage') target.nextDamageNegated = true;
 
     Log().logStatusApplied({
       actor: sourceUnit, target, statusId,

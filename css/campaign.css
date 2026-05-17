@@ -9134,3 +9134,91 @@ body.campaign-page {
 .campaign-quest-narrative p:last-child {
   margin-bottom: 0;
 }
+
+/* ── Relationships tab ───────────────────────────────────────────── */
+.campaign-relationships-panel .rel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.campaign-relationships-panel .rel-card {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  padding: 12px;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+.campaign-relationships-panel .rel-card:hover { border-color: rgba(148, 163, 184, 0.55); transform: translateY(-1px); }
+.campaign-relationships-panel .rel-card-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.campaign-relationships-panel .rel-portrait {
+  width: 48px; height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+.campaign-relationships-panel .rel-portrait-fallback { border: 1px dashed rgba(148, 163, 184, 0.35); }
+.campaign-relationships-panel .rel-card-id { flex: 1; min-width: 0; }
+.campaign-relationships-panel .rel-card-name {
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.campaign-relationships-panel .rel-card-tier {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+}
+.campaign-relationships-panel .rel-card-score { color: #94a3b8; font-family: monospace; }
+.campaign-relationships-panel .rel-bar-track {
+  height: 6px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.campaign-relationships-panel .rel-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #64748b, #22c55e);
+  transition: width 0.3s ease;
+}
+.campaign-relationships-panel .rel-card.rel-tier-rival .rel-bar-fill {
+  background: linear-gradient(90deg, #7f1d1d, #ef4444);
+}
+.campaign-relationships-panel .rel-card.rel-tier-bonded .rel-bar-fill {
+  background: linear-gradient(90deg, #db2777, #f472b6);
+}
+.campaign-relationships-panel .rel-card.rel-tier-close .rel-bar-fill {
+  background: linear-gradient(90deg, #a855f7, #c084fc);
+}
+.campaign-relationships-panel .rel-card-detail { font-size: 0.84rem; color: #cbd5e1; }
+.campaign-relationships-panel .rel-card-detail summary { cursor: pointer; }
+.campaign-relationships-panel .rel-fields {
+  list-style: none;
+  padding: 6px 0 0 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+}
+.campaign-relationships-panel .rel-fields li {
+  display: contents;
+}
+.campaign-relationships-panel .rel-field-name { color: #94a3b8; text-transform: capitalize; }
+.campaign-relationships-panel .rel-field-val { font-family: monospace; color: #fde047; text-align: right; }
+.campaign-relationships-panel .rel-fields-empty { color: #94a3b8; padding: 6px 0; }
+.campaign-relationships-panel .rel-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #94a3b8;
+}
+.campaign-relationships-panel .rel-empty-icon {
+  font-size: 2.4rem;
+  margin-bottom: 8px;
+}

@@ -240,6 +240,11 @@ window.CJS.EffectRegistry = (() => {
       case 'damage_block': return `Block ${val} damage`;
       case 'cooldown_reset':return `Reset cooldowns`;
       case 'ap_grant':     return `Grant ${val} AP`;
+      case 'environment_set':   return `Set weather: ${effect.weatherId || effect.environmentId || 'weather'} for ${effect.duration || effect.value || '?'} turns`;
+      case 'environment_clear': return `Clear weather`;
+      case 'ultimate_grant':    return `Grant ${val} ultimate`;
+      case 'ultimate_consume':  return `Consume ${val} ultimate`;
+      case 'ultimate_reroll':   return `Reroll last dice`;
       default:
         // Passive stat mods
         if (effect.action === 'stat_mod' || effect.trigger === 'stat_mod') {
@@ -324,7 +329,11 @@ window.CJS.EffectRegistry = (() => {
       // Some actions don't need a value
       const noValueActions = ['extra_action', 'cooldown_reset', 'teleport',
                               'steal_buff', 'dispel_buffs', 'dispel_debuffs',
-                              'purge_all', 'clone'];
+                              'purge_all', 'clone',
+                              // Weather + ultimate hacks: their data lives in
+                              // other fields (weatherId, duration) or they
+                              // self-resolve (ultimate_reroll, environment_clear).
+                              'environment_set', 'environment_clear', 'ultimate_reroll'];
       if (!noValueActions.includes(effect.action)) {
         errors.push('Value is required');
       }
@@ -334,6 +343,9 @@ window.CJS.EffectRegistry = (() => {
     }
     if (effect.action === 'terrain_create' && !effect.terrainType) {
       errors.push('Terrain Create requires a terrainType');
+    }
+    if (effect.action === 'environment_set' && !effect.weatherId && !effect.environmentId) {
+      errors.push('Environment Set requires a weatherId');
     }
     if ((effect.trigger === 'stat_mod' || effect.action === 'stat_mod') && !effect.stat) {
       errors.push('Stat Mod requires a stat (S, P, E, C, I, A, L)');

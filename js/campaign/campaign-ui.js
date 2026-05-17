@@ -175,6 +175,7 @@ window.CJS.CampaignUI = (() => {
   const APP_UTILITY_TABS = [
     ['maps', 'Current Run'],
     ['roster', 'Party'],
+    ['relationships', 'Relationships'],
     ['logs', 'Logs'],
     ['settings', 'Settings']
   ];
@@ -1039,6 +1040,9 @@ window.CJS.CampaignUI = (() => {
       case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'eventLog': return _renderEventLog(state);
       case 'roster': return _renderRoster(state);
+      case 'relationships': return window.CJS.RelationshipsTab
+        ? window.CJS.RelationshipsTab.render(state)
+        : '<div class="campaign-panel">Relationships UI not loaded.</div>';
       case 'storyDirector': return _renderStoryDirector(state);
       case 'sideForge': return _renderSideForge(state);
       case 'questChains': return _renderQuestChains(state);
