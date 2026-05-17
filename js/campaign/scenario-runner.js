@@ -267,6 +267,10 @@ window.CJS.ScenarioRunner = (() => {
         objectiveState: objective,
         movingThreats,
         progressTriggerState: {},
+        // Generated and user-built quests run in "quick narrative" mode:
+        // a single begin/end narrative box instead of per-node VN scenes.
+        // Authored special scenarios leave this falsy and keep the full VN.
+        quickNarrative: scenario.quickNarrative === true,
         sequenceLink: options.sequenceLink || null
       };
       if (mapId) {
@@ -288,7 +292,16 @@ window.CJS.ScenarioRunner = (() => {
       explorationPercent: _explorationPercent(CS().getState()?.activeScenarioRun || {}, map)
     });
     window.CJS.CampaignPartyChat?.auto?.({ world: scenario.world || CS().getState()?.currentWorld, situation: 'scenario_start', scenarioId, tags: scenario.tags || [] }, { chance: 0.65 });
-    if (startNode && (travelMode === 'node_map' || travelMode === 'procedural')) {
+    const runState = CS().getState()?.activeScenarioRun;
+    if (runState?.quickNarrative) {
+      // Quick narrative quests show a single dialogue/narrative box at start
+      // and at end instead of fullscreen VN scenes per node.
+      _showQuestNarrative({
+        phase: 'begin',
+        title: scenario.name || scenario.id || 'Quest',
+        text: _composeBeginNarrative(scenario, runState)
+      });
+    } else if (startNode && (travelMode === 'node_map' || travelMode === 'procedural')) {
       const activeMap = CS().getActiveMap() || map;
       const node = findNode(activeMap, startNode);
       if (node) {
@@ -310,6 +323,8 @@ window.CJS.ScenarioRunner = (() => {
     const sequenceOutcome = outcome === 'manual'
       ? (run.objectiveState?.completed ? 'success' : 'abort')
       : outcome;
+    const wasQuickNarrative = !!run.quickNarrative;
+    const runSnapshot = { questTitle: run.questTitle, scenarioName: scenario?.name || run.scenarioId };
 
     CS().mutate((next) => {
       next.scenarioHistory.unshift(report);
@@ -322,6 +337,13 @@ window.CJS.ScenarioRunner = (() => {
 
     Ops().apply(scenario?.exitOps || [], { source: 'scenario_exit' });
     Ops().apply({ op: 'log', text: `Scenario ended (${outcome}): ${scenario?.name || run.scenarioId}.` }, { source: 'scenario' });
+    if (wasQuickNarrative) {
+      _showQuestNarrative({
+        phase: 'end',
+        title: runSnapshot.questTitle || runSnapshot.scenarioName || 'Quest',
+        text: _composeEndNarrative(outcome, scenario, report, runSnapshot)
+      });
+    }
     if (run.sequenceLink?.sequenceId) {
       void window.CJS.CampaignSequences?.resumeFromScenario?.(sequenceOutcome, {
         report,
@@ -330,6 +352,43 @@ window.CJS.ScenarioRunner = (() => {
       });
     }
     return report;
+  }
+
+  // Quick narrative helpers. Generated/user-built quests use a single
+  // begin and end narrative box rather than a fullscreen VN at every node.
+  // The runner just composes the text; CampaignUI.showQuestNarrative owns
+  // the actual DOM/modal (so this module stays headless and testable).
+  function _showQuestNarrative(payload = {}) {
+    try {
+      window.CJS.CampaignUI?.showQuestNarrative?.(payload);
+    } catch (err) {
+      // Narrative is decorative — never let it break the run loop.
+    }
+  }
+
+  function _composeBeginNarrative(scenario = {}, run = {}) {
+    const parts = [];
+    if (run.questTitle) parts.push(`Quest: ${run.questTitle}`);
+    const summary = scenario?.notes || scenario?.summary || '';
+    if (summary) parts.push(summary);
+    if (scenario?.mapSetting && !summary) parts.push(`Setting: ${scenario.mapSetting}.`);
+    const objectiveLabel = run.objectiveState?.label;
+    if (objectiveLabel) parts.push(`Objective: ${objectiveLabel}.`);
+    return parts.join('\n\n') || 'The quest begins.';
+  }
+
+  function _composeEndNarrative(outcome = 'success', scenario = {}, report = {}, snapshot = {}) {
+    const verdict = String(outcome || 'success').toLowerCase();
+    const heading = (verdict === 'success' || verdict === 'win' || verdict === 'victory')
+      ? 'The quest is wrapped up.'
+      : (verdict === 'manual' ? 'The run is over.' : 'The quest ends here.');
+    const parts = [heading];
+    if (snapshot?.questTitle) parts.push(`Quest: ${snapshot.questTitle}.`);
+    const battles = report?.completedBattles?.length;
+    if (battles) parts.push(`Battles fought: ${battles}.`);
+    const visited = (report?.visitedNodes?.length || report?.visitedCells?.length || 0);
+    if (visited) parts.push(`Places visited: ${visited}.`);
+    return parts.join('\n\n');
   }
 
   function moveToNode(nodeId, link = null) {
@@ -373,7 +432,13 @@ window.CJS.ScenarioRunner = (() => {
     }
     _revealNodeNeighborhood(map, nodeId);
 
-    if (window.CJS.CampaignStoryScenes?.prepareNodeEntry?.(node, map, { source: 'node_enter' })) {
+    // In quick-narrative runs (generated + user-built quests), skip the
+    // fullscreen VN flow at every node — the begin/end narrative boxes are
+    // the whole story surface for these quests. Node onEnter ops, traps,
+    // and random battles still run via the normal path below.
+    const activeRun = CS().getState()?.activeScenarioRun;
+    if (!activeRun?.quickNarrative
+        && window.CJS.CampaignStoryScenes?.prepareNodeEntry?.(node, map, { source: 'node_enter' })) {
       return node;
     }
 
@@ -669,7 +734,7 @@ window.CJS.ScenarioRunner = (() => {
     const totalExplorable = _totalExplorableCount(map);
     const sizeText = String(source.size || scenario.size || map?.size || '').toLowerCase();
     const layered = levelCount > 1;
-    const bigGrid = layered || totalExplorable >= 24 || sizeText === 'big' || sizeText === 'large';
+    const bigGrid = layered || totalExplorable >= 24 || sizeText === 'big' || sizeText === 'large' || sizeText === 'huge' || sizeText === 'massive';
     const revealAtPercent = Number(source.revealAtPercent ?? source.revealPercent ?? (options.travelMode === 'grid_map' || map?.type === 'grid_map' ? 60 : 0)) || 0;
     const explicitLevelId = source.revealAtLevelId || source.revealLevelId || source.revealLayerId || source.revealLayer || null;
     const explicitLayerIndex = Number(source.revealAtLayerIndex || source.revealLayerIndex || 0) || 0;
@@ -964,6 +1029,11 @@ window.CJS.ScenarioRunner = (() => {
       return next();
     }
     if (type === 'story_scene') {
+      // Skip the fullscreen VN for quick-narrative quests (generated + user-built).
+      // The trigger's text/log still applies via _runProgressTriggers' other actions.
+      if (context?.run?.quickNarrative || CS().getState()?.activeScenarioRun?.quickNarrative) {
+        return next();
+      }
       const opened = window.CJS.CampaignStoryScenes?.playSceneById?.(action.sceneId, {
         source: 'scenario_progress',
         onComplete: next
@@ -1184,7 +1254,7 @@ window.CJS.ScenarioRunner = (() => {
       type: 'node_map',
       world: scenario.world || seedRef.world || null,
       setting: scenario.setting || seedRef.tags?.find((tag) => ['urban', 'outdoor', 'dungeon', 'house', 'castle', 'mountain'].includes(tag)) || null,
-      size: scenario.size || seedRef.tags?.find((tag) => ['tiny', 'small', 'medium', 'large'].includes(tag)) || null,
+      size: scenario.size || seedRef.tags?.find((tag) => ['tiny', 'small', 'medium', 'large', 'huge', 'massive'].includes(tag)) || null,
       layers: _layerDefs(seedRef, nodes),
       defaultStartNode: nodes[0]?.id || null,
       nodes,
