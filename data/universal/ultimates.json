@@ -1,0 +1,115 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "skills",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "ult_negate_damage",
+      "name": "Aegis Burst",
+      "icon": "🛡️",
+      "power": 0,
+      "ap": 1,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "True",
+      "element": "Light",
+      "scalingStat": "C",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": null,
+      "isUltimate": true,
+      "ultimateCost": 100,
+      "effects": [
+        {
+          "effectId": "_inline_negate_next",
+          "inline": {
+            "id": "_inline_negate_next",
+            "name": "Arm damage negation",
+            "trigger": "on_skill_use",
+            "target": "self",
+            "action": "status_apply",
+            "statusId": "negate_next_damage",
+            "duration": 1,
+            "value": 1,
+            "source": "flat"
+          }
+        }
+      ],
+      "description": "Arm a one-shot shield that fully negates the next damage you take this turn.",
+      "tags": ["ultimate", "defense", "hack"]
+    },
+    {
+      "id": "ult_reroll",
+      "name": "Lucky Reroll",
+      "icon": "🎲",
+      "power": 0,
+      "ap": 1,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "True",
+      "element": "Chaos",
+      "scalingStat": "L",
+      "range": 0,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": null,
+      "isUltimate": true,
+      "ultimateCost": 100,
+      "effects": [
+        {
+          "effectId": "_inline_reroll",
+          "inline": {
+            "id": "_inline_reroll",
+            "name": "Reroll last die",
+            "trigger": "on_skill_use",
+            "target": "self",
+            "action": "ultimate_reroll",
+            "value": 1,
+            "source": "flat"
+          }
+        }
+      ],
+      "description": "Reroll the last dice result. Useful after a missed attack or a poor damage roll.",
+      "tags": ["ultimate", "utility", "hack"]
+    },
+    {
+      "id": "ult_revive",
+      "name": "Phoenix Surge",
+      "icon": "🪽",
+      "power": 0,
+      "ap": 2,
+      "mp": 0,
+      "cooldown": 0,
+      "damageType": "True",
+      "element": "Light",
+      "scalingStat": "C",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": null,
+      "isUltimate": true,
+      "ultimateCost": 100,
+      "effects": [
+        {
+          "effectId": "_inline_revive",
+          "inline": {
+            "id": "_inline_revive",
+            "name": "Revive ally",
+            "trigger": "on_skill_use",
+            "target": "lowest_hp_ally",
+            "action": "revive",
+            "value": 50,
+            "source": "flat"
+          }
+        }
+      ],
+      "description": "Revive a fallen ally at 50% HP.",
+      "tags": ["ultimate", "support", "hack"]
+    }
+  ]
+}

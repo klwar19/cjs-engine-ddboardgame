@@ -165,6 +165,11 @@ window.CJS.EffectResolver = (() => {
       case 'silence_apply': data = _actStatusApplySpecific(effect, caster, targets, 'silence', context); break;
       case 'fear_apply':    data = _actStatusApplySpecific(effect, caster, targets, 'fear', context); break;
       case 'charm_apply':   data = _actStatusApplySpecific(effect, caster, targets, 'charm', context); break;
+      case 'environment_set':   data = _actEnvironmentSet(effect, caster, context); break;
+      case 'environment_clear': data = _actEnvironmentClear(effect, caster, context); break;
+      case 'ultimate_grant':    data = _actUltimateGrant(effect, caster, targets, value); break;
+      case 'ultimate_consume':  data = _actUltimateConsume(effect, caster, targets, value); break;
+      case 'ultimate_reroll':   data = _actUltimateReroll(effect, caster, context); break;
       default:
         // Passive-trigger actions (stat_mod, dr_mod etc.) are handled at
         // compile time, not here — quietly no-op.
@@ -453,6 +458,86 @@ window.CJS.EffectResolver = (() => {
       results.push({ target: t, hp: t.currentHP });
     }
     return { action: 'revive', results };
+  }
+
+  // ── ENVIRONMENT (weather) ─────────────────────────────────────────
+  function _actEnvironmentSet(effect, caster, ctx) {
+    const WX = window.CJS.Weather;
+    const CM = window.CJS.CombatManager;
+    if (!WX || !CM) return { action: 'environment_set', skipped: 'no_combat' };
+    const state = CM.getState ? CM.getState() : null;
+    if (!state) return { action: 'environment_set', skipped: 'no_state' };
+    const weatherId = effect.weatherId || effect.environmentId || 'normal';
+    const duration = Number(effect.duration ?? effect.value ?? 4);
+    const def = WX.setEnvironment(state, weatherId, duration, caster?.instanceId || null);
+    if (!def) return { action: 'environment_set', skipped: 'unknown_weather', weatherId };
+    // Re-stamp weather stat mods onto all units
+    for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
+    if (CM.notify) CM.notify();
+    return { action: 'environment_set', weatherId: def.id, duration };
+  }
+
+  function _actEnvironmentClear(effect, caster, ctx) {
+    const WX = window.CJS.Weather;
+    const CM = window.CJS.CombatManager;
+    if (!WX || !CM) return { action: 'environment_clear', skipped: 'no_combat' };
+    const state = CM.getState ? CM.getState() : null;
+    if (!state) return { action: 'environment_clear', skipped: 'no_state' };
+    WX.clearEnvironment(state);
+    for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
+    if (CM.notify) CM.notify();
+    return { action: 'environment_clear' };
+  }
+
+  // ── ULTIMATE METER ────────────────────────────────────────────────
+  function _actUltimateGrant(effect, caster, targets, value) {
+    const DC = window.CJS.DamageCalc;
+    const amount = Number(value || 0);
+    const results = [];
+    for (const t of targets) {
+      if (DC?.grantUltimate) DC.grantUltimate(t, amount);
+      else if (typeof t.ultimateMeter === 'number') {
+        const max = Number.isFinite(t.ultimateMax) ? t.ultimateMax : 100;
+        t.ultimateMeter = Math.max(0, Math.min(max, t.ultimateMeter + amount));
+      }
+      results.push({ target: t, ultimateMeter: t.ultimateMeter || 0 });
+    }
+    return { action: 'ultimate_grant', amount, results };
+  }
+
+  function _actUltimateConsume(effect, caster, targets, value) {
+    const DC = window.CJS.DamageCalc;
+    const amount = Number(value || 0);
+    const results = [];
+    for (const t of targets) {
+      let drained = false;
+      if (DC?.consumeUltimate) drained = DC.consumeUltimate(t, amount);
+      else if (typeof t.ultimateMeter === 'number' && t.ultimateMeter >= amount) {
+        t.ultimateMeter -= amount; drained = true;
+      }
+      results.push({ target: t, drained, ultimateMeter: t.ultimateMeter || 0 });
+    }
+    return { action: 'ultimate_consume', amount, results };
+  }
+
+  function _actUltimateReroll(effect, caster, ctx) {
+    const DS = window.CJS.DiceService;
+    if (!DS?.rerollLast) {
+      // Soft fallback: just log the intent if no DiceService reroll hook.
+      Log().record({
+        type: 'ultimate_reroll', actor: caster,
+        tags: ['ultimate', 'reroll', 'no_dice_service'],
+        data: { note: 'DiceService.rerollLast not available; no-op' }
+      });
+      return { action: 'ultimate_reroll', skipped: 'no_dice_service' };
+    }
+    const result = DS.rerollLast();
+    Log().record({
+      type: 'ultimate_reroll', actor: caster,
+      tags: ['ultimate', 'reroll'],
+      data: { rerolled: result }
+    });
+    return { action: 'ultimate_reroll', result };
   }
 
   function _actKnockback(effect, caster, targets, value, ctx) {

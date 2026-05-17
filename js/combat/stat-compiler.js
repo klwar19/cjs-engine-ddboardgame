@@ -114,6 +114,15 @@ window.CJS.StatCompiler = (() => {
       maxMP,
       currentMP:     opts.currentMP !== undefined ? Math.min(opts.currentMP, maxMP) : maxMP,
 
+      // Ultimate meter (per-character resource that fills from dealing/taking
+      // damage and KOs; spent on signature "hack" skills like negate / reroll /
+      // revive). Carried across battles via campaign-state party member.
+      ultimateMeter: opts.ultimateMeter !== undefined
+        ? Math.max(0, Math.min(Number(baseUnit.ultimateMax ?? 100), Number(opts.ultimateMeter) || 0))
+        : Number(baseUnit.ultimateMeter ?? 0),
+      ultimateMax:   Number(baseUnit.ultimateMax ?? 100),
+      ultimateSkillId: baseUnit.ultimateSkillId || null,
+
       // Defense
       dr: { physical: drPhysical, magic: drMagic, chaos: drChaos },
 

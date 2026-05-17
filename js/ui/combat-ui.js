@@ -48,6 +48,9 @@ window.CJS.CombatUI = (() => {
   let $actions = null;
   let $initiative = null;
   let $unitInfo = null;
+  let $weather = null;
+  let $weatherFX = null;
+  let _weatherFxId = null;  // last-rendered weather id, to skip rebuilds
   let $narrator = null;
   let $qteOverlay = null;
   let $diceModal = null;
@@ -656,11 +659,13 @@ window.CJS.CombatUI = (() => {
     _container.innerHTML = `
       <div class="combat-screen">
         <div class="combat-top">
+          <div id="cbt-weather" class="weather-banner" hidden></div>
           <div id="cbt-initiative" class="initiative-bar"></div>
         </div>
         <div class="combat-middle">
           <div class="combat-grid-wrap">
             <canvas id="cbt-canvas"></canvas>
+            <div id="cbt-weather-fx" class="cjs-weather-fx" aria-hidden="true"></div>
             <div id="cbt-fx-layer" class="cjs-fx-layer"></div>
             <div class="combat-zoom-controls" role="group" aria-label="Board zoom">
               <button id="btn-zoom-out" type="button" class="combat-zoom-btn" title="Zoom out" aria-label="Zoom out">&minus;</button>
@@ -751,6 +756,8 @@ window.CJS.CombatUI = (() => {
     $actions = _container.querySelector('#cbt-actions');
     $initiative = _container.querySelector('#cbt-initiative');
     $unitInfo = _container.querySelector('#cbt-unit-info');
+    $weather = _container.querySelector('#cbt-weather');
+    $weatherFX = _container.querySelector('#cbt-weather-fx');
     $narrator = _container.querySelector('#cbt-narrator');
     $qteOverlay = _container.querySelector('#cbt-qte-overlay');
     $diceModal = _container.querySelector('#cbt-dice-modal');
@@ -968,6 +975,7 @@ window.CJS.CombatUI = (() => {
     const state = CM().getState();
     if (!state) return;
 
+    _renderWeather(state);
     _renderInitiative(state);
     _renderUnitInfo(state);
     _renderActions(state);
@@ -978,6 +986,130 @@ window.CJS.CombatUI = (() => {
 
     if (state.phase === 'battle_end') {
       _showBattleEnd(state);
+    }
+  }
+
+  function _renderWeather(state) {
+    const env = state?.environment;
+    const WX = window.CJS.Weather;
+    const isActive = !!(env && env.id !== 'normal' && env.remaining > 0 && WX);
+    const def = isActive ? (WX.getDef(env.id) || { id: env.id, name: env.id, icon: '🌫', description: '' }) : null;
+
+    // Banner above initiative bar
+    if ($weather) {
+      if (!isActive) {
+        $weather.hidden = true;
+        $weather.innerHTML = '';
+        $weather.className = 'weather-banner';
+      } else {
+        $weather.hidden = false;
+        $weather.className = `weather-banner weather-${_escAttr(env.id)}`;
+        $weather.innerHTML = `
+          <span class="weather-icon" aria-hidden="true">${_escHtml(def.icon || '🌫')}</span>
+          <span class="weather-name">${_escHtml(def.name || env.id)}</span>
+          <span class="weather-remaining">${env.remaining} turn${env.remaining === 1 ? '' : 's'} left</span>
+          <span class="weather-desc">${_escHtml(def.description || '')}</span>
+        `;
+      }
+    }
+
+    // Particle overlay above the canvas
+    _renderWeatherFX(isActive ? env.id : null);
+  }
+
+  // Build the particle layer once per weather change; idempotent so each
+  // refresh() doesn't churn the DOM. Caller passes the active weather id
+  // (or null to clear).
+  function _renderWeatherFX(weatherId) {
+    if (!$weatherFX) return;
+    if (_weatherFxId === weatherId) return;
+    _weatherFxId = weatherId;
+
+    if (!weatherId) {
+      $weatherFX.classList.remove('is-active');
+      $weatherFX.innerHTML = '';
+      $weatherFX.removeAttribute('data-weather');
+      return;
+    }
+
+    $weatherFX.setAttribute('data-weather', weatherId);
+    $weatherFX.classList.add('is-active');
+    $weatherFX.innerHTML = `
+      <div class="cjs-weather-wash"></div>
+      <div class="cjs-weather-particles">${_buildWeatherParticles(weatherId)}</div>
+    `;
+  }
+
+  // Particle markup per weather. Counts and stagger tuned to look dense
+  // without dropping frames on weaker devices.
+  function _buildWeatherParticles(weatherId) {
+    const rand = (min, max) => (Math.random() * (max - min) + min).toFixed(2);
+    switch (weatherId) {
+      case 'rain': {
+        const drops = [];
+        for (let i = 0; i < 60; i++) {
+          const left = rand(0, 100);
+          const delay = rand(0, 0.7);
+          const dur = rand(0.55, 0.95);
+          const op = rand(0.55, 1);
+          drops.push(`<span class="cjs-rain-drop" style="left:${left}%;animation-delay:-${delay}s;animation-duration:${dur}s;opacity:${op}"></span>`);
+        }
+        return drops.join('');
+      }
+      case 'blizzard': {
+        const flakes = [];
+        const glyphs = ['❄', '❅', '❆', '*'];
+        for (let i = 0; i < 40; i++) {
+          const left = rand(0, 100);
+          const delay = rand(0, 5);
+          const dur = rand(4, 7);
+          const size = rand(8, 18);
+          const op = rand(0.6, 1);
+          const g = glyphs[i % glyphs.length];
+          flakes.push(`<span class="cjs-snow-flake" style="left:${left}%;font-size:${size}px;animation-delay:-${delay}s;animation-duration:${dur}s;opacity:${op}">${g}</span>`);
+        }
+        return flakes.join('');
+      }
+      case 'sandstorm': {
+        const streaks = [];
+        for (let i = 0; i < 30; i++) {
+          const top = rand(0, 100);
+          const delay = rand(0, 1.4);
+          const dur = rand(1.0, 1.8);
+          const w = rand(60, 160);
+          const op = rand(0.5, 0.95);
+          streaks.push(`<span class="cjs-sand-streak" style="top:${top}%;width:${w}px;animation-delay:-${delay}s;animation-duration:${dur}s;opacity:${op}"></span>`);
+        }
+        return streaks.join('');
+      }
+      case 'acid_rain': {
+        const drops = [];
+        for (let i = 0; i < 35; i++) {
+          const left = rand(0, 100);
+          const delay = rand(0, 1.1);
+          const dur = rand(0.9, 1.4);
+          drops.push(`
+            <span class="cjs-acid-drop" style="left:${left}%;animation-delay:-${delay}s;animation-duration:${dur}s"></span>
+            <span class="cjs-acid-splash" style="left:${left}%;animation-delay:-${delay}s;animation-duration:${dur}s"></span>
+          `);
+        }
+        return drops.join('');
+      }
+      case 'sunny': {
+        const rays = [];
+        for (let i = 0; i < 16; i++) {
+          const left = rand(0, 100);
+          const rot = rand(-8, 8);
+          const delay = rand(0, 3);
+          const dur = rand(2.4, 4.2);
+          const op = rand(0.3, 0.7);
+          rays.push(`<span class="cjs-sun-ray" style="left:${left}%;transform:rotate(${rot}deg);animation-delay:-${delay}s;animation-duration:${dur}s;opacity:${op}"></span>`);
+        }
+        rays.push(`<span class="cjs-sun-shimmer"></span>`);
+        return rays.join('');
+      }
+      default:
+        return '';
     }
   }
 
@@ -1017,6 +1149,17 @@ window.CJS.CombatUI = (() => {
     const turnState = unit.turnState || {};
     const hpPct = Math.round((unit.currentHP / (unit.maxHP || 1)) * 100);
     const mpPct = unit.maxMP ? Math.round(((unit.currentMP || 0) / unit.maxMP) * 100) : 0;
+    const ultMax = Number(unit.ultimateMax || 100);
+    const ultCur = Number(unit.ultimateMeter || 0);
+    const ultPct = Math.max(0, Math.min(100, Math.round((ultCur / (ultMax || 1)) * 100)));
+    const ultReady = ultCur >= ultMax;
+    const ultRowHtml = (typeof unit.ultimateMeter === 'number')
+      ? `<div class="bar-row">
+           <span class="bar-label">ULT</span>
+           <div class="bar-track ultimate ${ultReady ? 'ultimate-ready' : ''}"><div class="bar-fill" style="width:${ultPct}%"></div></div>
+           <span class="bar-num">${ultCur|0}/${ultMax|0}</span>
+         </div>`
+      : '';
 
     const statusHtml = unit.activeStatuses?.length
       ? `<div class="unit-statuses">${unit.activeStatuses.map((status) => (
@@ -1064,6 +1207,7 @@ window.CJS.CombatUI = (() => {
             <div class="bar-track mp"><div class="bar-fill" style="width:${mpPct}%"></div></div>
             <span class="bar-num">${unit.currentMP || 0}/${unit.maxMP || 0}</span>
           </div>
+          ${ultRowHtml}
         </div>
         <div class="turn-state">
           <span class="${turnState.hasMoved ? 'used' : 'available'}">Move: ${turnState.hasMoved ? 'Used' : 'Ready'}</span>

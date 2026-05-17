@@ -30,6 +30,7 @@ window.CJS.CombatManager = (() => {
   const D   = () => window.CJS.DiceService || window.CJS.Dice;
   const AM  = () => window.CJS.AudioManager;
   const AB  = () => window.CJS.AnimationBus;
+  const WX  = () => window.CJS.Weather;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
   let _state = null;
@@ -109,8 +110,18 @@ window.CJS.CombatManager = (() => {
       phase: 'idle',
       currentUnitId: null,
       winner: null,
-      subscribers: []
+      subscribers: [],
+      // Global battlefield environment (weather). Defaults to "normal".
+      // Weather skills mutate this via Weather.setEnvironment().
+      environment: { id: 'normal', remaining: 0, sourceUnitId: null, appliedRound: 1 }
     };
+    // Seed default environment via Weather manager so its log/notify hooks fire.
+    try { if (WX()) WX().initEnvironment(_state, 1); } catch (e) {}
+    // Stamp weather stat mods onto units in case startEncounter is called with
+    // a non-normal environment override later. Idempotent.
+    try {
+      if (WX()) for (const u of Object.values(unitObjects)) WX().applyStatModsToUnit(u, _state);
+    } catch (e) {}
 
     // Fire on_battle_start for every unit
     for (const id of initiative) {
@@ -425,9 +436,21 @@ window.CJS.CombatManager = (() => {
       turnNumber: _state.roundNumber
     });
 
-    // Death check after turn-end ticks
-    if (unit.currentHP <= 0) {
-      _handleDeath(unit);
+    // Tick global weather once per round (when the last initiative slot ends).
+    // This applies periodic weather damage/heals and decrements duration.
+    const lastInRound = _state.turnIndex === (_state.initiative.length - 1);
+    if (lastInRound && WX()) {
+      const prevId = _state.environment?.id;
+      WX().tickEnvironment(_state);
+      if (prevId !== _state.environment?.id) {
+        // Weather changed: restamp stat mods on all units
+        for (const u of Object.values(_state.units)) WX().applyStatModsToUnit(u, _state);
+      }
+    }
+
+    // Death check after turn-end ticks (also catches weather-tick kills)
+    for (const u of Object.values(_state.units)) {
+      if ((u.currentHP || 0) <= 0 && !u._deathProcessed) _handleDeath(u);
     }
 
     Log().logTurnEnd(unit);
@@ -796,8 +819,16 @@ window.CJS.CombatManager = (() => {
     return { success: true };
   }
 
+  function getEnvironment() {
+    return _state?.environment || { id: 'normal', remaining: 0 };
+  }
+
+  function notify() { _notify(); }
+
   // ── PUBLIC API ─────────────────────────────────────────────────────
-  return Object.freeze({
+  // Not frozen: lets tests stub specific functions (e.g. getEnvironment)
+  // to exercise damage-calc weather paths without standing up a full battle.
+  return {
     startEncounter, step, runUntilInput, submitAction,
     getCurrentUnit, getAvailableActionsForCurrent,
     isAwaitingInput, isManualTurn,
@@ -805,10 +836,13 @@ window.CJS.CombatManager = (() => {
     autoOneTurn, autoOneRound, autoUntilStop, stopAuto,
     getState, getUnits, getInitiativeOrder,
     subscribe, reset,
+    // Environment / weather
+    getEnvironment,
+    notify,
     // GM controls
     gmAddUnit, gmRemoveUnit, gmMoveUnit,
     gmAdjustResource, gmApplyStatus, gmCleanseUnit, gmSetTerrain,
     gmBulkAdjust, gmBulkStatus, gmBulkCleanse, gmBulkTerrain,
     gmEndBattle, gmSkipTurn
-  });
+  };
 })();

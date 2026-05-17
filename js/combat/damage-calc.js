@@ -19,6 +19,8 @@ window.CJS.DamageCalc = (() => {
   const Log  = () => window.CJS.CombatLog;
   const AB   = () => window.CJS.AnimationBus;
   const AM   = () => window.CJS.AudioManager;
+  const CM   = () => window.CJS.CombatManager;
+  const WX   = () => window.CJS.Weather;
 
   function _rollDice(expr, source) {
     // Prefer DiceService so manual/queued dice override works.
@@ -118,6 +120,16 @@ window.CJS.DamageCalc = (() => {
     const element = skill?.element || weaponData?.element || 'Physical';
     const elementMult = F().getElementMultiplier(element, target);
 
+    // Weather multiplier: active battlefield weather can boost or
+    // dampen specific elements (e.g. rain boosts Water, weakens Fire).
+    let weatherMult = 1;
+    try {
+      const env = CM()?.getEnvironment?.();
+      if (env && env.id !== 'normal' && WX()) {
+        weatherMult = WX().applyDamageMods(element, { environment: env });
+      }
+    } catch (e) {}
+
     // Crit multiplier
     const critMult = isCritical ? F().calcCritMultiplier(attacker.critDmgBonus || 0) : 1.0;
 
@@ -145,7 +157,7 @@ window.CJS.DamageCalc = (() => {
       diceRoll,
       luckValue: luck,
       qteMultiplier: qMult * critMult,  // fold crit into the same multiplier step
-      elementMultiplier: elementMult,
+      elementMultiplier: elementMult * weatherMult,
       dr,
       bonusDamageFlat:    bonusFlat,
       bonusDamagePercent: bonusPercent
@@ -177,6 +189,7 @@ window.CJS.DamageCalc = (() => {
         qteMultiplier: qMult,
         critMultiplier: critMult,
         elementMultiplier: elementMult,
+        weatherMultiplier: weatherMult,
         dr,
         damageType,
         element,
@@ -224,6 +237,21 @@ window.CJS.DamageCalc = (() => {
     let remaining = amount;
     let absorbed = 0;
 
+    // ── One-shot damage negation (Aegis Burst ultimate) ──
+    // If target has been armed with negate_next_damage, consume it and zero
+    // the incoming damage. Also surfaces in the log so players see why.
+    if (target.nextDamageNegated) {
+      target.nextDamageNegated = false;
+      // Also remove the status flag so the icon disappears.
+      const _SMneg = window.CJS.StatusManager;
+      if (_SMneg?.removeStatus) {
+        try { _SMneg.removeStatus(target, 'negate_next_damage'); } catch (e) {}
+      }
+      try { Log().record({ type: 'damage_negated', actor: attacker, target, tags: ['ultimate', 'negate'], data: { amount } }); } catch (e) {}
+      try { AB()?.emit('damage_negated', { target }); } catch (e) {}
+      return { applied: 0, absorbed: amount, overkill: 0, killed: false, newHP: target.currentHP || 0, negated: true };
+    }
+
     // ── Absorb shield check ──
     // Shield/Barrier statuses absorb damage before HP is reduced.
     const _SM = window.CJS.StatusManager;
@@ -240,6 +268,13 @@ window.CJS.DamageCalc = (() => {
     const overkill = Math.max(0, remaining - prevHP);
     const killed   = newHP === 0 && prevHP > 0;
     const applied  = prevHP - newHP;
+
+    // ── Ultimate meter accrual ──
+    // Attacker gains 10% of damage dealt; target gains 5% of damage taken.
+    // On KO, attacker gets an extra +25 bonus.
+    _grantUltimate(attacker, applied * 0.10);
+    _grantUltimate(target,   applied * 0.05);
+    if (killed) _grantUltimate(attacker, 25);
 
     // Log the hit
     Log().logHit({
@@ -364,16 +399,44 @@ window.CJS.DamageCalc = (() => {
     const newHP  = Math.max(0, prevHP - amount);
     target.currentHP = newHP;
     const killed = newHP === 0 && prevHP > 0;
+    const applied = Math.min(amount, prevHP);
+
+    // Out-of-band damage also feeds ultimate meters (smaller credit since
+    // there's no skill cost involved). Weather ticks, reflect, thorns, etc.
+    _grantUltimate(source, applied * 0.05);
+    _grantUltimate(target, applied * 0.05);
+    if (killed) _grantUltimate(source, 25);
 
     Log().record({
       type: 'damage',
       actor: source, target,
       tags: ['damage', reason ? `damage_${reason}` : 'damage_raw'],
-      data: { amount: Math.min(amount, prevHP), reason, damageType }
+      data: { amount: applied, reason, damageType }
     });
     if (killed) Log().logKill({ actor: source, target, overkill: amount - prevHP });
 
-    return { applied: Math.min(amount, prevHP), killed };
+    return { applied, killed };
+  }
+
+  // ── ULTIMATE METER HELPER ─────────────────────────────────────────
+  // Add to a unit's ultimate meter, clamped to [0, max]. No-op if the unit
+  // doesn't track an ultimate meter (e.g. base monsters without it set up).
+  function _grantUltimate(unit, amount) {
+    if (!unit || !Number.isFinite(amount) || amount === 0) return;
+    if (typeof unit.ultimateMeter !== 'number') return;
+    const max = Number.isFinite(unit.ultimateMax) ? unit.ultimateMax : 100;
+    unit.ultimateMeter = Math.max(0, Math.min(max, unit.ultimateMeter + amount));
+  }
+
+  // Public wrapper so other modules (effects, action-handler items) can
+  // adjust the meter without poking the field directly.
+  function grantUltimate(unit, amount) { _grantUltimate(unit, amount); }
+  function consumeUltimate(unit, amount) {
+    if (!unit || typeof unit.ultimateMeter !== 'number') return false;
+    const cost = Math.max(0, Number(amount) || 0);
+    if (unit.ultimateMeter < cost) return false;
+    unit.ultimateMeter -= cost;
+    return true;
   }
 
   // ── PUBLIC API ─────────────────────────────────────────────────────
@@ -383,6 +446,8 @@ window.CJS.DamageCalc = (() => {
     applyHeal,
     applyMP,
     applyTickDamage,
-    applyRawDamage
+    applyRawDamage,
+    grantUltimate,
+    consumeUltimate
   });
 })();

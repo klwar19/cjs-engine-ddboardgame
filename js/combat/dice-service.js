@@ -113,7 +113,12 @@ window.CJS.DiceService = (() => {
     };
   }
 
+  // Last roll cache — used by the Lucky Reroll ultimate to redo the
+  // most recent dice without changing call sites. Updated on every _record.
+  let _lastRoll = null;
+
   function _record(result) {
+    _lastRoll = result;
     if (!CS()) return;
     CS().recordDiceRoll({
       expr: result.expression,
@@ -123,6 +128,19 @@ window.CJS.DiceService = (() => {
       manual: !!result.manual,
       via: result.via || 'auto'
     });
+  }
+
+  // Re-roll the most recent dice expression. Returns the new result, or null
+  // if no previous roll exists. The history is updated as if it were a fresh
+  // roll, so subsequent reroll calls reroll the freshest dice (not the original).
+  function rerollLast() {
+    if (!_lastRoll || !_lastRoll.expression) return null;
+    const previous = _lastRoll;
+    const result = Dice().roll(previous.expression);
+    result.source = `reroll(${previous.source || ''})`;
+    result.rerolled = true;
+    _record(result);
+    return result;
   }
 
   // ── CONVENIENCE WRAPPERS ──────────────────────────────────────────
@@ -147,6 +165,7 @@ window.CJS.DiceService = (() => {
   return Object.freeze({
     roll, rollAsync,
     d20, d12, d10, d8, d6, d4, percentile,
-    preview
+    preview,
+    rerollLast
   });
 })();

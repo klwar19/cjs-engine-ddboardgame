@@ -83,6 +83,16 @@
       "category": "food"
     },
     {
+      "path": "data/universal/weathers.json",
+      "scope": "universal",
+      "category": "weathers"
+    },
+    {
+      "path": "data/universal/ultimates.json",
+      "scope": "universal",
+      "category": "skills"
+    },
+    {
       "path": "data/campaigns/universal/campaign_carryover_profiles.json",
       "scope": "universal",
       "category": "campaignProfiles"

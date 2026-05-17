@@ -72,8 +72,32 @@ window.CJS.CampaignConditions = (() => {
     }
 
     for (const check of asArray(cond.bondMin)) {
-      const value = Number(state.bonds?.[check.npcId || check.id]?.[check.field || 'trust'] || 0);
-      if (value < Number(check.value ?? check.min ?? 0)) blockers.push(`Needs bond ${check.npcId || check.id}.`);
+      const npcId = check.npcId || check.id;
+      const bondEntry = state.bonds?.[npcId] || {};
+
+      // Tier check (e.g. tierMin: 'friend') — uses RelationshipTiers helper.
+      const tierMin = check.tierMin || check.tier;
+      if (tierMin) {
+        const RT = window.CJS.RelationshipTiers;
+        if (RT && !RT.meetsTier(bondEntry, tierMin)) {
+          blockers.push(`Needs ${npcId} at ${tierMin} tier.`);
+        }
+        continue;
+      }
+
+      const value = Number(bondEntry[check.field || 'trust'] || 0);
+      const target = Number(check.value ?? check.min ?? 0);
+      const op = check.op || '>=';
+      let ok;
+      switch (op) {
+        case '<':  ok = value <  target; break;
+        case '<=': ok = value <= target; break;
+        case '==': ok = value === target; break;
+        case '!=': ok = value !== target; break;
+        case '>':  ok = value >  target; break;
+        case '>=': default: ok = value >= target; break;
+      }
+      if (!ok) blockers.push(`Needs bond ${npcId} ${op} ${target}.`);
     }
 
     for (const [metric, min] of Object.entries(cond.metricMin || {})) {

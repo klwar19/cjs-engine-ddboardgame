@@ -169,6 +169,11 @@ window.CJS.ActionHandler = (() => {
         if ((unit.currentMP || 0) < mpCost) return { valid: false, reason: 'not_enough_mp' };
         const apCost = skill.ap || 1;
         if ((ts.apRemaining || 0) < apCost) return { valid: false, reason: 'not_enough_ap' };
+        // Ultimate cost gate: ultimate-flagged skills require a charged meter.
+        if (skill.isUltimate) {
+          const cost = Number(skill.ultimateCost || 100);
+          if ((unit.ultimateMeter || 0) < cost) return { valid: false, reason: 'ultimate_not_ready' };
+        }
 
         // Stealth check: can't target invisible units
         if (action.targetId && SM() && SM().isInvisible) {
@@ -402,6 +407,10 @@ window.CJS.ActionHandler = (() => {
     unit.turnState.mainActionUsed = true;
     unit.turnState.apRemaining = Math.max(0, (unit.turnState.apRemaining || 0) - apCost);
     unit.currentMP = Math.max(0, (unit.currentMP || 0) - mpCost);
+    if (skill.isUltimate) {
+      const ultCost = Number(skill.ultimateCost || 100);
+      unit.ultimateMeter = Math.max(0, (unit.ultimateMeter || 0) - ultCost);
+    }
     if (cd > 0) {
       unit.turnState.cooldowns = unit.turnState.cooldowns || {};
       unit.turnState.cooldowns[action.skillId] = cd;
@@ -768,6 +777,8 @@ window.CJS.ActionHandler = (() => {
         const mpCost = Math.max(0, (skill.mp || 0) + (unit.costMod || 0));
         const apCost = skill.ap || 1;
         const weaponReady = _meetsWeaponRequirement(unit, skill);
+        const ultCost = skill.isUltimate ? Number(skill.ultimateCost || 100) : 0;
+        const ultReady = !skill.isUltimate || (unit.ultimateMeter || 0) >= ultCost;
         available.skills.push({
           id: skillId,
           skill,
@@ -775,12 +786,16 @@ window.CJS.ActionHandler = (() => {
                   weaponReady &&
                   cdRemaining === 0 &&
                   (unit.currentMP || 0) >= mpCost &&
-                  (ts.apRemaining || 0) >= apCost,
+                  (ts.apRemaining || 0) >= apCost &&
+                  ultReady,
           silenced: !canSkill,
           weaponReady,
           requiredWeaponTypes: _requiredWeaponTypes(skill),
           cooldown: cdRemaining,
-          apCost, mpCost
+          apCost, mpCost,
+          isUltimate: !!skill.isUltimate,
+          ultimateCost: ultCost,
+          ultimateReady: ultReady
         });
       }
 

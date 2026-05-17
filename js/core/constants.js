@@ -250,7 +250,14 @@ window.CJS.CONST = (() => {
     'extra_action',      // grant another main action this turn
     'delay_damage',      // damage applies X turns later (doom-style)
     'store_damage',      // absorb damage, release later
-    'aura_toggle'        // toggle an aura on/off
+    'aura_toggle',       // toggle an aura on/off
+    // Environment / weather
+    'environment_set',   // set battlefield weather: { weatherId, duration }
+    'environment_clear', // clear weather back to normal
+    // Ultimate meter
+    'ultimate_grant',    // add to a unit's ultimate meter
+    'ultimate_consume',  // drain a unit's ultimate meter
+    'ultimate_reroll'    // re-roll the last dice result (used by ult_reroll)
   ];
 
   const EFFECT_TARGETS = [
@@ -362,7 +369,11 @@ window.CJS.CONST = (() => {
     transform: { name:'Transform', icon:'🔄', category:'exotic',   desc:'Changed into another form. Stats replaced temporarily.' },
     mark:      { name:'Mark',      icon:'🎯', category:'exotic',   desc:'Marked target takes bonus damage from the marker.' },
     adapt:     { name:'Adapt',     icon:'🧬', category:'exotic',   desc:'Gains resistance to the last element that hit this unit.' },
-    link:      { name:'Link',      icon:'🔗', category:'exotic',   desc:'Damage taken is split between linked units.' }
+    link:      { name:'Link',      icon:'🔗', category:'exotic',   desc:'Damage taken is split between linked units.' },
+
+    // ── Weather-aware / ultimate flags ──
+    wet:       { name:'Wet',       icon:'💧', category:'exotic',   desc:'Soaked — Water damage taken increases.' },
+    negate_next_damage: { name:'Aegis Burst', icon:'🛡️', category:'buff', desc:'Fully negates the next incoming damage instance, then expires.' }
   };
 
   // ── CONDITION DEFINITIONS (for dropdown builders) ──────────────────
@@ -550,7 +561,8 @@ window.CJS.CONST = (() => {
     status:    'sts',
     quip:      'qip',
     job:       'job',
-    persona:   'prs'
+    persona:   'prs',
+    weather:   'wth'
   };
 
   // ── PROGRESSION (skill AP + character/job XP) ─────────────────────

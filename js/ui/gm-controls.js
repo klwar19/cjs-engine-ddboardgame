@@ -122,6 +122,11 @@ window.CJS.GMControls = (() => {
       })
       .join('');
 
+    const weathers = DS().getAllAsArray('weathers') || [];
+    const weatherOptions = weathers.length
+      ? weathers.map(w => `<option value="${_esc(w.id)}">${_esc(w.icon ? w.icon + ' ' : '')}${_esc(w.name || w.id)}</option>`).join('')
+      : '<option value="normal">☀️ Clear</option>';
+
     const sizeOptions = Object.entries(C().UNIT_SIZES || { '1x1': { label: '1×1' } })
       .map(([k, v]) => `<option value="${_esc(k)}">${_esc(v.label || k)}</option>`)
       .join('');
@@ -179,6 +184,18 @@ window.CJS.GMControls = (() => {
           </div>
           <div class="gm-row">
             <button class="btn btn-sm gm-tool-btn" data-tool="terrain">Paint Cell</button>
+          </div>
+        </div>
+
+        <div class="gm-section">
+          <div class="gm-section-head">Weather</div>
+          <div class="gm-row">
+            <select id="gm-weather-id" class="gm-input">${weatherOptions}</select>
+            <input type="number" id="gm-weather-duration" class="gm-input gm-input-sm" value="4" min="1" max="99" title="Duration (turns)">
+          </div>
+          <div class="gm-row">
+            <button class="btn btn-sm" id="gm-weather-apply">Set Weather</button>
+            <button class="btn btn-sm" id="gm-weather-clear">Clear</button>
           </div>
         </div>
 
@@ -298,6 +315,32 @@ window.CJS.GMControls = (() => {
       const t = _root.querySelector('#gm-bulk-terrain-id').value;
       const mode = _root.querySelector('#gm-bulk-terrain-mode').value;
       CM().gmBulkTerrain(t, mode);
+      _refreshFn?.();
+    });
+
+    _root.querySelector('#gm-weather-apply')?.addEventListener('click', () => {
+      const WX = window.CJS.Weather;
+      const cm = CM();
+      if (!WX || !cm?.getState) return;
+      const state = cm.getState();
+      if (!state) return;
+      const id = _root.querySelector('#gm-weather-id').value || 'normal';
+      const dur = Number(_root.querySelector('#gm-weather-duration').value || 4);
+      WX.setEnvironment(state, id, dur, null);
+      for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
+      cm.notify?.();
+      _refreshFn?.();
+    });
+
+    _root.querySelector('#gm-weather-clear')?.addEventListener('click', () => {
+      const WX = window.CJS.Weather;
+      const cm = CM();
+      if (!WX || !cm?.getState) return;
+      const state = cm.getState();
+      if (!state) return;
+      WX.clearEnvironment(state);
+      for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
+      cm.notify?.();
       _refreshFn?.();
     });
 

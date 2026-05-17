@@ -1,0 +1,112 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "universal",
+    "category": "weathers",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "normal",
+      "name": "Clear",
+      "icon": "☀️",
+      "description": "No environmental effects.",
+      "damageMods": {},
+      "statMods": {},
+      "tick": null,
+      "statusInteractions": [],
+      "immuneTags": []
+    },
+    {
+      "id": "rain",
+      "name": "Rain",
+      "icon": "🌧️",
+      "description": "Boosts Water damage; weakens Fire. Extends Wet, shortens Burn.",
+      "damageMods": { "Water": 1.5, "Fire": 0.5 },
+      "statMods": { "accuracyBonus": -3 },
+      "tick": null,
+      "statusInteractions": [
+        { "statusId": "wet", "extendDuration": 1 },
+        { "statusId": "burn", "extendDuration": -1 }
+      ],
+      "immuneTags": ["water_native"]
+    },
+    {
+      "id": "blizzard",
+      "name": "Blizzard",
+      "icon": "❄️",
+      "description": "Boosts Ice damage; -10 accuracy for all. Extends Freeze. Light tick to non-immune.",
+      "damageMods": { "Ice": 1.5, "Fire": 0.7 },
+      "statMods": { "accuracyBonus": -10, "evasionBonus": -3 },
+      "tick": {
+        "phase": "turn_end",
+        "damageType": "Magic",
+        "element": "Ice",
+        "amount": 3,
+        "targetTeams": ["all"]
+      },
+      "statusInteractions": [
+        { "statusId": "freeze", "extendDuration": 1 },
+        { "statusId": "burn", "extendDuration": -1 }
+      ],
+      "immuneTags": ["ice_native", "cold_blooded"]
+    },
+    {
+      "id": "sandstorm",
+      "name": "Sandstorm",
+      "icon": "🌪️",
+      "description": "Boosts Earth damage; -15 evasion for all. Light Physical tick to non-immune.",
+      "damageMods": { "Earth": 1.4, "Air": 0.7 },
+      "statMods": { "accuracyBonus": -5, "evasionBonus": -15 },
+      "tick": {
+        "phase": "turn_end",
+        "damageType": "Physical",
+        "element": "Earth",
+        "amount": 2,
+        "targetTeams": ["all"]
+      },
+      "statusInteractions": [],
+      "immuneTags": ["earth_native", "sand_native"]
+    },
+    {
+      "id": "acid_rain",
+      "name": "Acid Rain",
+      "icon": "☢️",
+      "description": "Boosts Chaos damage; significant tick to all non-immune units.",
+      "damageMods": { "Chaos": 1.4, "Nature": 0.5 },
+      "statMods": {},
+      "tick": {
+        "phase": "turn_end",
+        "damageType": "Chaos",
+        "element": "Chaos",
+        "amount": 5,
+        "targetTeams": ["all"]
+      },
+      "statusInteractions": [
+        { "statusId": "poison", "extendDuration": 1 }
+      ],
+      "immuneTags": ["acid_immune", "construct"]
+    },
+    {
+      "id": "sunny",
+      "name": "Harsh Sunlight",
+      "icon": "🔆",
+      "description": "Boosts Fire damage; weakens Water. Heals Plant types per turn.",
+      "damageMods": { "Fire": 1.5, "Water": 0.5 },
+      "statMods": { "accuracyBonus": 3 },
+      "tick": {
+        "phase": "turn_end",
+        "damageType": "True",
+        "element": "Nature",
+        "amount": -4,
+        "targetTeams": ["all"],
+        "tagsOnly": ["plant", "phototroph"]
+      },
+      "statusInteractions": [
+        { "statusId": "burn", "extendDuration": 1 }
+      ],
+      "immuneTags": []
+    }
+  ]
+}

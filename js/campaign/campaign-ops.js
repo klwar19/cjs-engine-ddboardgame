@@ -89,6 +89,7 @@ window.CJS.CampaignOps = (() => {
         case 'tag_remove': return `Remove tag ${op.tag || op.id}`;
         case 'tag_strength_change': return `Tag ${op.tag || op.id} ${Number(op.amount || op.delta || 0) >= 0 ? '+' : ''}${op.amount || op.delta || 0}`;
         case 'bond_change': return `Bond ${op.npcId || op.target || op.id || 'character'} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'relationship_set': return `Set relationship ${op.npcId || op.target || op.id || 'character'}.${op.field || 'value'} = ${op.value || 0}`;
         case 'gain_skill_ap': return `Gain ${op.amount || 0} AP for skill ${op.skillId || op.id}`;
         case 'set_skill_level': return `Set skill ${op.skillId || op.id} to Lv ${op.level || 1}`;
         case 'set_job': return `Set ${op.target || op.characterId || 'member'} job → ${op.jobId || op.id || 'none'}`;
@@ -262,6 +263,7 @@ window.CJS.CampaignOps = (() => {
       case 'tag_strength_change': return _tagStrengthChange(state, op);
       case 'memory_shard_add': return _memoryShardAdd(state, op);
       case 'bond_change': return _bondChange(state, op);
+      case 'relationship_set': return _relationshipSet(state, op);
       default:
         return _log(state, `Unknown operation ignored: ${op.op}`, op);
     }
@@ -2344,6 +2346,18 @@ window.CJS.CampaignOps = (() => {
     state.bonds[npcId] = state.bonds[npcId] || {};
     state.bonds[npcId][field] = (state.bonds[npcId][field] || 0) + Number(op.amount || 0);
     _log(state, `Bond ${npcId}.${field} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}.`);
+  }
+
+  // Absolute write to a relationship field, in contrast to bond_change which
+  // is relative. Useful for canon-fixing story beats ("you are now an enemy").
+  function _relationshipSet(state, op) {
+    const npcId = op.npcId || op.target || op.id;
+    const field = op.field || 'value';
+    if (!npcId) return;
+    state.bonds = state.bonds || {};
+    state.bonds[npcId] = state.bonds[npcId] || {};
+    state.bonds[npcId][field] = Number(op.value || 0);
+    _log(state, `Relationship ${npcId}.${field} set to ${op.value || 0}.`);
   }
 
   function _rollCheck(state, op) {
