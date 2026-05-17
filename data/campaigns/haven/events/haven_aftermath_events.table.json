@@ -168,7 +168,7 @@
           "title": "Half-Burnt Letter",
           "tags": ["aftermath", "clue"],
           "prompt": "A blackened scrap of letter survives in a glove. A name is half-readable.",
-          "gmHook": "GM picks the name. New NPC seed.",
+          "gmHook": "GM picks the name. New character seed.",
           "gmIdea": "new_char",
           "oracleTableId": "oracle_frostbitten",
           "suggested": [

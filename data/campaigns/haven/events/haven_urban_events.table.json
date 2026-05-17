@@ -106,7 +106,7 @@
           "tags": ["town", "social"],
           "settings": ["town", "urban"],
           "prompt": "Two stalls are screaming about a stolen scale. Both want the party to weigh in.",
-          "gmHook": "Whichever side loses gets pinned as a recurring complaint NPC.",
+          "gmHook": "Whichever side loses gets pinned as a recurring complaint character.",
           "gmIdea": "new_char",
           "suggested": [
             { "op": "log", "text": "GM: pick a side. Other side becomes hostile-light." },

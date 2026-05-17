@@ -263,7 +263,7 @@ window.CJS.PersonaEditor = (() => {
         <div class="form-group">
           <label class="form-label">Cross-world tags (comma-separated)</label>
           <input type="text" id="persona-pen-tags" value="${_esc((pen.tags || []).join(', '))}" placeholder="out_of_place, rot_smell">
-          <div class="dim" style="font-size:0.78rem;margin-top:4px">NPC dialogue / quips can gate by these tags.</div>
+          <div class="dim" style="font-size:0.78rem;margin-top:4px">Character dialogue / quips can gate by these tags.</div>
         </div>
 
         <div class="form-group">

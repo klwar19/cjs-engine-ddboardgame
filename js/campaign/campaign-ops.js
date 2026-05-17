@@ -264,6 +264,8 @@ window.CJS.CampaignOps = (() => {
       case 'memory_shard_add': return _memoryShardAdd(state, op);
       case 'bond_change': return _bondChange(state, op);
       case 'relationship_set': return _relationshipSet(state, op);
+      case 'relationship_activity': return _relationshipActivity(state, op);
+      case 'relationship_acts_reset': return _relationshipActsReset(state, op);
       default:
         return _log(state, `Unknown operation ignored: ${op.op}`, op);
     }
@@ -289,10 +291,18 @@ window.CJS.CampaignOps = (() => {
     if (expiredTags.length) _log(state, `Expired ${expiredTags.length} temporary tag${expiredTags.length === 1 ? '' : 's'}.`);
     const repeatedQuests = QuestPulse()?.resetRepeatableQuests?.(state) || [];
     for (const line of repeatedQuests) _log(state, `Repeat quest refreshed: ${line}.`);
+
+    // Refresh the relationship activity budget at every phase pass so
+    // social actions stay paced with the larger campaign rhythm.
+    state.relationshipActs = state.relationshipActs || { remaining: 3, max: 3, lastResetPhase: state.phase.number, history: [] };
+    const actMax = Number(state.relationshipActs.max || 3);
+    state.relationshipActs.remaining = actMax;
+    state.relationshipActs.lastResetPhase = state.phase.number;
+
     state.eventCharges = { ...(activeRule?.eventCharges || {}) };
     // Re-evaluate persona unlocks: phase-locked personas come online here.
     _evaluatePersonaUnlocks(state, { target: 'party' });
-    _log(state, `Phase ${state.phase.number}: ${state.phase.name || state.phase.type}.`);
+    _log(state, `Phase ${state.phase.number}: ${state.phase.name || state.phase.type}. Relationship acts refreshed (${actMax}).`);
   }
 
   function _signedQty(op) {
@@ -1878,7 +1888,7 @@ window.CJS.CampaignOps = (() => {
     if (!npcId) return;
     hub.npcMoods = hub.npcMoods || {};
     hub.npcMoods[npcId] = op.mood || 'neutral';
-    _log(state, `NPC mood set: ${npcId} -> ${hub.npcMoods[npcId]}.`);
+    _log(state, `Character mood set: ${npcId} -> ${hub.npcMoods[npcId]}.`);
   }
 
   function _addRumor(state, op) {
@@ -2358,6 +2368,79 @@ window.CJS.CampaignOps = (() => {
     state.bonds[npcId] = state.bonds[npcId] || {};
     state.bonds[npcId][field] = Number(op.value || 0);
     _log(state, `Relationship ${npcId}.${field} set to ${op.value || 0}.`);
+  }
+
+  // ── RELATIONSHIP ACTIVITIES ─────────────────────────────────────────
+  // Activity types (extensible — UI can add more without changing this op):
+  //   hang_out     → +1 trust          ("Hung out")
+  //   train        → +1 confidence     ("Trained together")
+  //   listen       → +1 empathy        ("Listened to")
+  //   help_task    → +1 value          ("Helped with a chore")
+  //   compete      → +1 rivalry        ("Sparred / competed")
+  // Each activity consumes 1 act from relationshipActs.remaining unless
+  // op.free is true (e.g. story-driven activities). Returns silently with a
+  // log line when out of acts so quest flows that try a free activity still
+  // work.
+  const ACTIVITY_DEFS = {
+    hang_out:   { field: 'trust',      amount: 1, label: 'Hung out with',        verb: 'hung out' },
+    train:      { field: 'confidence', amount: 1, label: 'Trained with',         verb: 'trained' },
+    listen:     { field: 'empathy',    amount: 1, label: 'Listened to',          verb: 'listened to' },
+    help_task:  { field: 'value',      amount: 1, label: 'Helped',               verb: 'helped' },
+    compete:    { field: 'rivalry',    amount: 1, label: 'Competed against',     verb: 'competed with' }
+  };
+
+  function _relationshipActivity(state, op = {}) {
+    const charId = op.characterId || op.npcId || op.target || op.id;
+    const activityId = op.activityId || op.kind || 'hang_out';
+    const def = ACTIVITY_DEFS[activityId];
+    if (!charId) return _log(state, `Activity skipped: no character.`, op);
+    if (!def) return _log(state, `Activity skipped: unknown kind ${activityId}.`, op);
+
+    state.relationshipActs = state.relationshipActs || { remaining: 3, max: 3, lastResetPhase: state.phase?.number || 1, history: [] };
+    state.relationshipActs.history = state.relationshipActs.history || [];
+
+    if (!op.free) {
+      const remaining = Number(state.relationshipActs.remaining || 0);
+      if (remaining <= 0) {
+        _log(state, `No activity acts remaining. Pass a phase to refresh.`, op);
+        return;
+      }
+      state.relationshipActs.remaining = remaining - 1;
+    }
+
+    state.bonds = state.bonds || {};
+    state.bonds[charId] = state.bonds[charId] || {};
+    const before = Number(state.bonds[charId][def.field] || 0);
+    state.bonds[charId][def.field] = before + def.amount;
+
+    state.relationshipActs.history.unshift({
+      at: new Date().toISOString(),
+      phase: state.phase?.number || 1,
+      characterId: charId,
+      activityId,
+      field: def.field,
+      amount: def.amount,
+      free: !!op.free
+    });
+    state.relationshipActs.history = state.relationshipActs.history.slice(0, 80);
+
+    const charLabel = _characterDisplayName(charId);
+    _log(state, `${def.label} ${charLabel} (+${def.amount} ${def.field}).`, op);
+  }
+
+  function _relationshipActsReset(state, op = {}) {
+    state.relationshipActs = state.relationshipActs || { remaining: 3, max: 3, lastResetPhase: 1, history: [] };
+    const target = Number(op.value ?? op.max ?? state.relationshipActs.max ?? 3);
+    state.relationshipActs.max = target;
+    state.relationshipActs.remaining = target;
+    state.relationshipActs.lastResetPhase = state.phase?.number || 1;
+    _log(state, `Relationship acts refreshed to ${target}.`, op);
+  }
+
+  function _characterDisplayName(charId) {
+    const DSx = window.CJS?.DataStore;
+    const base = DSx?.get?.('characters', charId);
+    return base?.name || charId;
   }
 
   function _rollCheck(state, op) {

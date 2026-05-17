@@ -28,6 +28,7 @@ window.CJS.ContentManager = (() => {
     personas: 'personas',
     items: 'items',
     food: 'food',
+    weathers: 'weathers',
     characters: 'characters',
     monsters: 'monsters',
     encounters: 'encounters',
@@ -61,7 +62,7 @@ window.CJS.ContentManager = (() => {
   );
 
   const TYPE_ORDER = [
-    'effects', 'statuses', 'passives', 'skills', 'jobs', 'personas', 'items', 'food',
+    'effects', 'statuses', 'passives', 'skills', 'jobs', 'personas', 'items', 'food', 'weathers',
     'characters', 'monsters', 'encounters', 'materials', 'crafting',
     'crops', 'shops', 'zones', 'stories',
     'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',

@@ -1737,6 +1737,154 @@ assert('Rain boosts water damage in pipeline', wetResult.damage > refDmg);
 assertEq('Weather mult surfaced in breakdown', wetResult.breakdown.weatherMultiplier, 2.0);
 
 
+// ────────────────────────────────────────────────────────────────────
+// TEST 28: Relationship activities + per-phase act budget
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 28: Relationship activities ──');
+
+DS.reset();
+DS.replace('characters', 'tessa', { id: 'tessa', name: 'Tessa', stats: { S:5,P:5,E:5,C:5,I:5,A:5,L:5 } });
+DS.replace('characters', 'ria',   { id: 'ria',   name: 'Ria',   stats: { S:5,P:5,E:5,C:5,I:5,A:5,L:5 } });
+
+const CSt = CJS.CampaignState;
+const Ops = CJS.CampaignOps;
+assert('CampaignState loaded', !!CSt);
+assert('CampaignOps loaded',   !!Ops);
+
+CSt.mutate((s) => {
+  s.bonds = { tessa: {}, ria: { rivalry: 5 } };
+  s.relationshipActs = { remaining: 3, max: 3, lastResetPhase: 1, history: [] };
+  s.phase = { number: 1, type: 'town_phase', name: 'Town Phase' };
+});
+
+// Hang out: +1 trust to Tessa, consumes one act
+Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'hang_out' }, { source: 'test' });
+let after = CSt.getState();
+assertEq('Hang out adds +1 trust', after.bonds.tessa.trust, 1);
+assertEq('Hang out consumes one act', after.relationshipActs.remaining, 2);
+assertEq('Hang out records history', after.relationshipActs.history.length, 1);
+assertEq('History records correct activity', after.relationshipActs.history[0].activityId, 'hang_out');
+
+// Train: +1 confidence
+Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'train' }, { source: 'test' });
+after = CSt.getState();
+assertEq('Train adds +1 confidence', after.bonds.tessa.confidence, 1);
+
+// Listen: +1 empathy
+Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'listen' }, { source: 'test' });
+after = CSt.getState();
+assertEq('Listen adds +1 empathy', after.bonds.tessa.empathy, 1);
+assertEq('Acts drained to 0', after.relationshipActs.remaining, 0);
+
+// Compete with someone else — should be blocked (no acts left)
+Ops.apply({ op: 'relationship_activity', characterId: 'ria', activityId: 'compete' }, { source: 'test' });
+after = CSt.getState();
+assertEq('Compete blocked when no acts', after.bonds.ria.rivalry, 5);
+
+// Free activity bypasses the act budget (story-driven flows)
+Ops.apply({ op: 'relationship_activity', characterId: 'ria', activityId: 'compete', free: true }, { source: 'test' });
+after = CSt.getState();
+assertEq('Free compete still goes through', after.bonds.ria.rivalry, 6);
+assertEq('Free compete does not consume acts', after.relationshipActs.remaining, 0);
+
+// Pass phase — should reset the acts and bump phase
+Ops.apply({ op: 'pass_phase' }, { source: 'test' });
+after = CSt.getState();
+assertEq('passPhase refreshes acts to max', after.relationshipActs.remaining, 3);
+assert('passPhase advances phase number', after.phase.number >= 2);
+assertEq('passPhase records lastResetPhase', after.relationshipActs.lastResetPhase, after.phase.number);
+
+// Explicit reset op
+Ops.apply({ op: 'relationship_acts_reset', value: 5 }, { source: 'test' });
+after = CSt.getState();
+assertEq('relationship_acts_reset sets max', after.relationshipActs.max, 5);
+assertEq('relationship_acts_reset refills', after.relationshipActs.remaining, 5);
+
+// Unknown activity is silently logged
+const beforeLogLen = CSt.getState().log.length;
+Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'meditate_with' }, { source: 'test' });
+after = CSt.getState();
+assertEq('Unknown activity does not change bond', after.bonds.tessa.trust, 1);
+assert('Unknown activity is logged', after.log.length > beforeLogLen);
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 29: RelationshipTiers alias + getKnownCharacters
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 29: getKnownCharacters / alias ──');
+const RT2 = CJS.RelationshipTiers;
+assert('getKnownCharacters exists', typeof RT2.getKnownCharacters === 'function');
+assert('getKnownNpcs alias still works', typeof RT2.getKnownNpcs === 'function');
+const known = RT2.getKnownCharacters({ bonds: { a: {}, b: {} } });
+assertEq('getKnownCharacters returns ids', known.length, 2);
+const knownAlias = RT2.getKnownNpcs({ bonds: { a: {}, b: {} } });
+assertEq('getKnownNpcs returns ids (alias)', knownAlias.length, 2);
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 30: Weather skills & content load
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 30: Weather content sanity ──');
+
+// Use direct registration via the data-store since file-load needs a real fetch.
+// What matters is that our skill/effect ids parse and reference real effects.
+const fs2 = require('fs');
+const path2 = require('path');
+function _readEntries(rel) {
+  const raw = JSON.parse(fs2.readFileSync(path2.join(__dirname, rel), 'utf8'));
+  return raw.entries || raw.effects || raw;
+}
+const masterEffects = JSON.parse(fs2.readFileSync(path2.join(__dirname, 'data/system/master-effects.json'), 'utf8')).effects;
+const weatherSkills = _readEntries('data/universal/weather_skills.json');
+const weatherPassives = _readEntries('data/universal/weather_passives.json');
+const weathersFile = _readEntries('data/universal/weathers.json');
+
+assert('weather_skills.json has Stormcaller', weatherSkills.some(s => s.id === 'stormcaller'));
+assert('weather_skills.json has Sunbreak',     weatherSkills.some(s => s.id === 'sunbreak'));
+assert('weather_skills.json has Eye of the Storm', weatherSkills.some(s => s.id === 'eye_of_the_storm'));
+assert('weather_skills.json has Calm the Winds',   weatherSkills.some(s => s.id === 'calm_winds'));
+assert('weather_skills.json has Storm Surge self', weatherSkills.some(s => s.id === 'storm_surge_self'));
+assert('weather_passives.json has Weatherwise',    weatherPassives.some(p => p.id === 'weatherwise'));
+assert('weather_passives.json has Stormborn',      weatherPassives.some(p => p.id === 'stormborn'));
+
+// Each skill's effect refs must resolve in master-effects.json
+for (const skill of weatherSkills) {
+  for (const ref of (skill.effects || [])) {
+    assert(`Skill ${skill.id}: effect ${ref.effectId} exists in master-effects`,
+      !!masterEffects[ref.effectId]);
+  }
+}
+
+// Master effects we added
+assert('summon_rain master effect exists',    !!masterEffects.summon_rain);
+assert('summon_sunny master effect exists',   !!masterEffects.summon_sunny);
+assert('summon_blizzard master effect exists',!!masterEffects.summon_blizzard);
+assert('clear_weather master effect exists',  !!masterEffects.clear_weather);
+assert('storm_surge_apply master effect exists', !!masterEffects.storm_surge_apply);
+assertEq('summon_rain action is environment_set', masterEffects.summon_rain.action, 'environment_set');
+assertEq('summon_rain weatherId is rain',         masterEffects.summon_rain.weatherId, 'rain');
+
+// Weather refs from skills point at real weather defs
+const weatherIds = new Set(weathersFile.map(w => w.id));
+const skillWeatherTargets = [
+  ['stormcaller', 'rain'],
+  ['sunbreak', 'sunny'],
+  ['eye_of_the_storm', 'blizzard']
+];
+for (const [skillId, weatherId] of skillWeatherTargets) {
+  const skill = weatherSkills.find(s => s.id === skillId);
+  const ref = skill.effects.find(e => masterEffects[e.effectId]?.action === 'environment_set');
+  const targetWeather = ref?.overrides?.weatherId || masterEffects[ref?.effectId]?.weatherId;
+  assertEq(`${skillId} targets ${weatherId}`, targetWeather, weatherId);
+  assert(`${weatherId} weather is registered`, weatherIds.has(weatherId));
+}
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 31: ContentManager TYPE_TO_CATEGORY includes weathers
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 31: ContentManager category mapping ──');
+const cmCode = fs2.readFileSync(path2.join(__dirname, 'js/core/content-manager.js'), 'utf8');
+assert('TYPE_TO_CATEGORY includes weathers', /weathers:\s*['"]weathers['"]/.test(cmCode));
+assert('TYPE_ORDER lists weathers', /'weathers'/.test(cmCode));
+
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════
 console.log('\n══════════════════════════════════════════');
