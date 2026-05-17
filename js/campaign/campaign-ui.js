@@ -62,6 +62,7 @@ window.CJS.CampaignUI = (() => {
   let _drawerEl = null;
   let _drawerBackdropEl = null;
   let _bootIncompatibleNotice = null;
+  let _mgTestLevels = {};
 
   const MODES = [
     ['town', 'Town', '🏠'],
@@ -1167,18 +1168,16 @@ window.CJS.CampaignUI = (() => {
 
   // ── Mini-Game Test (Activities → Mini-Game Test) ──────────────────
   // Lists every registered mini-game and lets the GM pick a level to play
-  // directly. No quest binding, no objective updates — pure test mode.
   function _renderMiniGameTest(state) {
     const MG = window.CJS.Minigames;
     const games = MG?.listGames?.() || [];
     const selected = _root?.dataset?.mgTestGame || (games[0]?.id || '');
-    const levelCache = (window.CJS.CampaignUI._mgTestLevels = window.CJS.CampaignUI._mgTestLevels || {});
+    const levelCache = _mgTestLevels;
 
     const ensureLevels = async () => {
-      if (!selected) return;
-      if (levelCache[selected]) return;
+      if (!selected || levelCache[selected]) return;
       try {
-        const res = await fetch(`data/minigames/${selected}_levels.json`);
+        const res = await fetch(`data/minigames/${selected}_levels.json?v=grid-regression-20260517c`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         levelCache[selected] = Array.isArray(data.levels) ? data.levels : [];
@@ -1189,12 +1188,9 @@ window.CJS.CampaignUI = (() => {
         render();
       }
     };
-    if (selected && !levelCache[selected]) {
-      ensureLevels();
-    }
+    if (selected && !levelCache[selected]) void ensureLevels();
 
     const levels = levelCache[selected] || [];
-
     const gameTabs = games.map((g) => `
       <button class="campaign-action ${g.id === selected ? 'primary' : ''}" data-campaign-action="mg-test-pick" data-game="${_escAttr(g.id)}">
         ${_esc(g.title || g.id)}
@@ -1207,16 +1203,16 @@ window.CJS.CampaignUI = (() => {
           <strong>${_esc(lvl.title || lvl.id)}</strong>
           <span class="campaign-pill">D${_esc(lvl.difficulty || 1)}</span>
         </header>
-        <div class="campaign-muted">${_esc(lvl.theme || '')} · ${_esc(lvl.width || '?')}×${_esc(lvl.height || '?')} · optimal ${_esc(lvl.optimalTurns || lvl.optimalMoves || '?')}</div>
+        <div class="campaign-muted">${_esc(lvl.theme || 'any')} | ${_esc(lvl.width || '?')}x${_esc(lvl.height || '?')} | optimal ${_esc(lvl.optimalTurns || lvl.optimalMoves || '?')}</div>
         <p>${_esc(lvl.hint || lvl.description || '')}</p>
         <div class="campaign-chip-row">${(lvl.tags || []).map((t) => `<span class="campaign-chip">${_esc(t)}</span>`).join('')}</div>
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="mg-test-play" data-game="${_escAttr(selected)}" data-level="${_escAttr(lvl.id)}">Play ${_esc(lvl.id)}</button>
-          <button class="campaign-action" data-campaign-action="mg-test-random" data-game="${_escAttr(selected)}" data-difficulty="${_esc(lvl.difficulty || 1)}">Random at D${_esc(lvl.difficulty || 1)}</button>
+          <button class="campaign-action" data-campaign-action="mg-test-random" data-game="${_escAttr(selected)}" data-difficulty="${_esc(lvl.difficulty || 1)}">Random D${_esc(lvl.difficulty || 1)}</button>
         </div>
       </article>
     `).join('') : (selected
-      ? '<div class="campaign-empty">Loading levels…</div>'
+      ? '<div class="campaign-empty">Loading levels...</div>'
       : '<div class="campaign-empty">No mini-games registered.</div>');
 
     return `
@@ -1225,9 +1221,9 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-panel-head">
             <div>
               <h2>Mini-Game Test Lab</h2>
-              <div class="campaign-muted">Launch any registered mini-game level with no quest context. Results are logged but don't push quest progress, so this is safe to mash.</div>
+              <div class="campaign-muted">Launch any registered mini-game level without quest context. Results are logged here only.</div>
             </div>
-            <span class="campaign-pill">${games.length} games · ${levels.length} levels</span>
+            <span class="campaign-pill">${games.length} games | ${levels.length} levels</span>
           </div>
           <div class="campaign-action-grid">${gameTabs}</div>
         </section>
@@ -1235,7 +1231,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-panel-head">
             <h3>Levels</h3>
             <div class="campaign-action-grid">
-              <button class="campaign-action" data-campaign-action="mg-test-random-any" data-game="${_escAttr(selected)}">Surprise Me (random level)</button>
+              <button class="campaign-action" data-campaign-action="mg-test-random-any" data-game="${_escAttr(selected)}">Surprise Me</button>
             </div>
           </div>
           <div class="campaign-minigame-grid">${levelCards}</div>
@@ -1243,7 +1239,7 @@ window.CJS.CampaignUI = (() => {
         <section class="campaign-panel">
           <div class="campaign-panel-head">
             <h3>Last Result</h3>
-            <span class="campaign-pill">${state.lastMiniGameTestResult ? _esc(state.lastMiniGameTestResult.status || '—') : 'none yet'}</span>
+            <span class="campaign-pill">${state.lastMiniGameTestResult ? _esc(state.lastMiniGameTestResult.status || '-') : 'none yet'}</span>
           </div>
           <pre class="campaign-minigame-result">${_esc(state.lastMiniGameTestResult ? JSON.stringify(state.lastMiniGameTestResult, null, 2) : 'Run a level to see the result payload that Campaign Mode would receive.')}</pre>
         </section>
@@ -1262,7 +1258,7 @@ window.CJS.CampaignUI = (() => {
     if (!MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
     if (!gameId) return UI().toast('No mini-game selected', 'info');
     try {
-      await MG.openMiniGame({
+      const session = await MG.openMiniGame({
         gameId,
         levelId: levelId || undefined,
         difficulty: options.difficulty || undefined,
@@ -1276,7 +1272,7 @@ window.CJS.CampaignUI = (() => {
               at: new Date().toISOString(),
               phase: state.phase?.number || 1,
               world: state.currentWorld,
-              text: `Mini-game test: ${result?.gameId} ${result?.levelId || ''} → ${result?.status} (score ${result?.score ?? 0})`,
+              text: `Mini-game test: ${result?.gameId || gameId} ${result?.levelId || ''} -> ${result?.status || 'done'} (score ${result?.score ?? 0})`,
               op: 'minigame_test'
             });
             state.log = state.log.slice(0, 500);
@@ -1286,6 +1282,7 @@ window.CJS.CampaignUI = (() => {
           else if (result?.status === 'giveup') UI().toast('Mini-game test abandoned', 'info');
         }
       });
+      if (!session) UI().toast('Mini-game could not open. Check the selected level data.', 'error');
     } catch (err) {
       console.error('mg-test-play failed', err);
       UI().toast(err?.message || 'Could not open mini-game', 'error');
@@ -3109,7 +3106,7 @@ window.CJS.CampaignUI = (() => {
       quest,
       source: 'quest_chain',
       questChainId: templateId,
-      mapForm: chain.mapForm || 'node_map',
+      mapForm: _questMapForm(chain),
       mapType: chain.mapType || _questMapType(chain),
       size: chain.size || 'small',
       forceGenerated: !chain.linkedScenario
@@ -4260,15 +4257,15 @@ window.CJS.CampaignUI = (() => {
                 <option value="quest_chain">Side Story</option>
               </select>
             </label>
-            <label>Form
+            <label>Movement
               <select id="campaign-gen-form">
                 <option value="node_map">Node Map</option>
                 <option value="grid_map">Grid Map</option>
               </select>
             </label>
-            <label>Map Type
+            <label>Setting / Context
               <select id="campaign-gen-map-type">
-                ${(Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena']).map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
+                ${(Gen()?.options?.().mapSettings || Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena']).map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
               </select>
             </label>
             <label>Size
@@ -4294,7 +4291,7 @@ window.CJS.CampaignUI = (() => {
           <section class="campaign-panel">
             <div class="campaign-panel-head">
               <h3>${_esc(scenario.name || scenario.id)}</h3>
-              <span class="campaign-pill">${_esc(scenario.generated ? `generated · ${scenario.source?.kind || 'random'}` : (scenario.type || 'scenario'))}</span>
+              <span class="campaign-pill">${_esc(scenario.generated ? `generated | ${scenario.source?.kind || 'random'}` : (scenario.type || 'scenario'))}</span>
               ${_scenarioQuestPill(scenario, state)}
             </div>
             ${_renderShapePills(scenario)}
@@ -4338,30 +4335,39 @@ window.CJS.CampaignUI = (() => {
     return '';
   }
 
-  function _renderShapePills(scenario) {
-    const mode = scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform');
+  function _renderShapePills(scenario = {}) {
+    const mode = scenario.travelMode || scenario.mapForm || (scenario.mapId ? 'node_map' : 'freeform');
     const modeLabels = {
-      node_map: '🗺 Map',
-      grid_map: 'Grid',
-      procedural: '🎲 Procedural',
-      linear: '📜 Linear',
-      freeform: '🎯 Freeform'
+      node_map: 'Movement: Node Map',
+      grid_map: 'Movement: Grid Map',
+      procedural: 'Movement: Procedural',
+      linear: 'Movement: Linear',
+      freeform: 'Movement: Freeform'
     };
     const settingLabels = {
-      outdoor: '🌲 Outdoor',
-      dungeon: '🏚 Dungeon',
-      urban: '🏙 Urban',
-      arena: '⚔ Arena',
-      abstract: '✨ Abstract'
+      outdoor: 'Setting: Outdoor',
+      dungeon: 'Setting: Dungeon',
+      urban: 'Setting: Urban',
+      forest: 'Setting: Forest',
+      cave: 'Setting: Cave',
+      sewer: 'Setting: Sewer',
+      ruins: 'Setting: Ruins',
+      temple: 'Setting: Temple',
+      house: 'Setting: House',
+      tavern: 'Setting: Tavern',
+      castle: 'Setting: Castle',
+      mountain: 'Setting: Mountain',
+      arena: 'Setting: Arena',
+      abstract: 'Setting: Abstract'
     };
     const sizeLabels = { tiny: 'XS', small: 'S', medium: 'M', large: 'L' };
     const pills = [];
-    pills.push(`<span class="campaign-chip">${modeLabels[mode] || mode}</span>`);
-    if (scenario.setting) pills.push(`<span class="campaign-chip">${settingLabels[scenario.setting] || scenario.setting}</span>`);
-    if (scenario.size) pills.push(`<span class="campaign-chip">${sizeLabels[scenario.size] || scenario.size}</span>`);
+    pills.push(`<span class="campaign-chip">${modeLabels[mode] || `Movement: ${mode}`}</span>`);
+    const setting = scenario.mapSetting || scenario.setting;
+    if (setting) pills.push(`<span class="campaign-chip">${settingLabels[setting] || `Setting: ${setting}`}</span>`);
+    if (scenario.size) pills.push(`<span class="campaign-chip">Size: ${sizeLabels[scenario.size] || scenario.size}</span>`);
     return `<div class="campaign-chip-row">${pills.join('')}</div>`;
   }
-
   function _renderRun(state) {
     const run = state.activeScenarioRun;
     if (!run) {
@@ -5073,9 +5079,9 @@ window.CJS.CampaignUI = (() => {
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
       case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
       case 'generate-bounty-run': return _generateScenario({ source: 'random', mapType: 'outdoor', size: 'tiny', mapForm: 'node_map' });
-      case 'generate-dungeon-run': return _generateScenario({ source: 'random', mapType: 'dungeon', size: 'medium', mapForm: 'node_map' });
+      case 'generate-dungeon-run': return _generateScenario({ source: 'random', mapType: 'dungeon', size: 'medium', mapForm: 'grid_map' });
       case 'generate-urban-run': return _generateScenario({ source: 'random', mapType: 'urban', size: 'small', mapForm: 'node_map' });
-      case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'node_map' });
+      case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'grid_map' });
       case 'start-scenario': return _startScenarioFromUi(data.id);
       case 'inspect-scenario': return _inspectScenario(data.id);
       case 'end-scenario': return Runner().endScenario('manual');
@@ -6232,7 +6238,7 @@ window.CJS.CampaignUI = (() => {
     _clearPendingSoloHook();
     const result = _startQuestScenario(quest.id, {
       quest,
-      mapForm: quest.mapForm || 'node_map',
+      mapForm: _questMapForm(quest),
       mapType: quest.mapType || _questMapType(quest)
     });
     if (result?.error) {
@@ -6253,6 +6259,8 @@ window.CJS.CampaignUI = (() => {
       tags: card.tags || []
     };
     base.templateId = base.templateId || base.id;
+    base.mapForm = base.mapForm || card.mapForm || card.travelMode || _questMapForm(base);
+    base.mapType = base.mapType || card.mapType || card.setting || _questMapType(base);
     base.status = 'active';
     return base;
   }
@@ -7380,6 +7388,7 @@ window.CJS.CampaignUI = (() => {
         kind: 'minigame',
         required: 1,
         tag: 'minigame',
+        mapForm: 'grid_map',
         mapType: 'dungeon',
         minigame: { gameId: 'push_box', difficulty: 1, theme: 'ruins' }
       },
@@ -7421,6 +7430,7 @@ window.CJS.CampaignUI = (() => {
       variantObjective
     ];
     if (!template.mapType || template.mapType === 'any') next.mapType = variant.mapType;
+    if (!template.mapForm && variant.mapForm) next.mapForm = variant.mapForm;
     return next;
   }
 
@@ -7463,7 +7473,7 @@ window.CJS.CampaignUI = (() => {
     const templates = Object.values(CS().getContent().campaignQuests).flatMap((record) => record.templates || []);
     const body = document.createElement('div');
     body.className = 'campaign-quest-builder';
-    const mapTypeOptions = Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'ruins', 'temple'];
+    const mapTypeOptions = Gen()?.options?.().mapSettings || Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'ruins', 'temple'];
     body.innerHTML = `
       <div class="campaign-control-help">
         Build a quest from scratch, fill from a template, or roll a random one. Edit any field before
@@ -7539,12 +7549,18 @@ window.CJS.CampaignUI = (() => {
       </div>
 
       <div class="campaign-quest-builder-grid">
-        <label class="form-label">Map type <small class="campaign-muted">— used if you start the run</small>
+        <label class="form-label">Map movement <small class="campaign-muted">node or square grid</small>
+          <select id="campaign-quest-map-form">
+            <option value="node_map">Node Map</option>
+            <option value="grid_map">Grid Map</option>
+          </select>
+        </label>
+        <label class="form-label">Setting / context <small class="campaign-muted">visual theme and encounter pool</small>
           <select id="campaign-quest-map-type">
             ${mapTypeOptions.map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
           </select>
         </label>
-        <label class="form-label">Map size <small class="campaign-muted">— scenario length</small>
+        <label class="form-label">Map size <small class="campaign-muted">scenario length</small>
           <select id="campaign-quest-map-size">
             <option value="tiny">Tiny (~5 nodes)</option>
             <option value="small" selected>Small (~7 nodes)</option>
@@ -7553,7 +7569,6 @@ window.CJS.CampaignUI = (() => {
           </select>
         </label>
       </div>
-
       <div class="campaign-preview" id="campaign-quest-preview" hidden></div>
     `;
     const footer = document.createElement('div');
@@ -7729,6 +7744,9 @@ window.CJS.CampaignUI = (() => {
       const mapType = template?.mapType || _questMapType(template || {});
       const sel = $('#campaign-quest-map-type');
       if (sel && Array.from(sel.options).some((opt) => opt.value === mapType)) sel.value = mapType;
+      const formSel = $('#campaign-quest-map-form');
+      const mapForm = template?.mapForm || _questMapForm(template || {});
+      if (formSel && Array.from(formSel.options).some((opt) => opt.value === mapForm)) formSel.value = mapForm;
       const sizeSel = $('#campaign-quest-map-size');
       if (sizeSel && template?.mapSize && Array.from(sizeSel.options).some((opt) => opt.value === template.mapSize)) {
         sizeSel.value = template.mapSize;
@@ -7774,6 +7792,8 @@ window.CJS.CampaignUI = (() => {
       else delete base.failureConsequences;
       const mapType = $('#campaign-quest-map-type').value;
       if (mapType) base.mapType = mapType;
+      const mapForm = $('#campaign-quest-map-form').value;
+      if (mapForm) base.mapForm = mapForm;
       const mapSize = $('#campaign-quest-map-size').value;
       if (mapSize) base.mapSize = mapSize;
       return base;
@@ -7793,6 +7813,8 @@ window.CJS.CampaignUI = (() => {
       if (quest.failureConsequences?.length) {
         lines.push(`<b>On fail:</b> ${quest.failureConsequences.map((r) => `${_label(r.op)} ${r.amount || r.text || ''}`).join(' · ')}`);
       }
+      lines.push(`<b>Map movement:</b> ${quest.mapForm === 'grid_map' ? 'Grid Map' : 'Node Map'}`);
+      lines.push(`<b>Setting/context:</b> ${_esc(_label(quest.mapType || 'any'))}`);
       if (quest.giver) lines.push(`<b>Giver:</b> ${_esc(quest.giver)}`);
       if (quest.tags?.length) lines.push(`<b>Tags:</b> ${quest.tags.map(_esc).join(', ')}`);
       if (quest.randomVariant) lines.push(`<b>Variant:</b> ${_esc(quest.randomVariant)}`);
@@ -7956,6 +7978,7 @@ window.CJS.CampaignUI = (() => {
       source: _root.querySelector('#campaign-gen-source')?.value || 'random',
       mapForm: _root.querySelector('#campaign-gen-form')?.value || 'node_map',
       mapType: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
+      mapSetting: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
       size: _root.querySelector('#campaign-gen-size')?.value || 'small',
       layers: Number(_root.querySelector('#campaign-gen-layers')?.value || 1),
       ...overrides
@@ -8855,7 +8878,7 @@ window.CJS.CampaignUI = (() => {
     const result = _generateScenario({
       source: 'active_quest',
       questId,
-      mapForm: 'node_map',
+      mapForm: _questMapForm(quest),
       mapType: _questMapType(quest),
       size: 'small',
       ...overrides
@@ -8969,7 +8992,19 @@ window.CJS.CampaignUI = (() => {
     return null;
   }
 
+  function _questMapForm(quest = {}) {
+    const explicit = String(quest.mapForm || quest.travelMode || '').toLowerCase();
+    if (explicit === 'grid_map' || explicit === 'grid') return 'grid_map';
+    if (explicit === 'node_map' || explicit === 'node') return 'node_map';
+    const text = [quest.movement, quest.mapMode, quest.title, quest.summary, ...(quest.tags || []), ...(quest.contextTags || [])]
+      .filter(Boolean).join(' ').toLowerCase();
+    if (/grid|tile|square|board|tactical|crawl|maze/.test(text)) return 'grid_map';
+    return 'node_map';
+  }
+
   function _questMapType(quest = {}) {
+    const explicit = String(quest.mapSetting || '').toLowerCase();
+    if (explicit && explicit !== 'any') return explicit;
     const text = [quest.mapType, quest.setting, quest.location, quest.title, quest.summary, ...(quest.tags || [])]
       .filter(Boolean).join(' ').toLowerCase();
     if (/town|city|street|market|guild|urban/.test(text)) return 'urban';

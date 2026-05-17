@@ -4195,6 +4195,30 @@ button {
   color: var(--ku-blue-deep) !important;
 }
 
+/* Campaign grid cells are map tiles, not generic action buttons. */
+.campaign-grid-map.v2 > .campaign-grid-cell.v2,
+.campaign-grid-map.v2 > .campaign-grid-cell.v2:hover,
+.campaign-grid-map.v2 > .campaign-grid-cell.v2:active,
+.campaign-grid-map.v2 > .campaign-grid-cell.v2:focus {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--tile-bg, url("../assets/grid/tile_snow.svg")) center / cover no-repeat !important;
+  color: inherit !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.campaign-grid-map.v2 > .campaign-grid-cell.v2:disabled {
+  opacity: 1 !important;
+}
+
+.campaign-grid-map.v2 > .campaign-grid-cell.v2.is-blocked {
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55) !important;
+}
+
 /* Subtab tabs use the kuusou tab asset which is decorative; give them
    the same flat panel treatment so all action buttons share a coherent
    look. */

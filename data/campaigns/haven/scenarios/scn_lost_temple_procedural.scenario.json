@@ -15,6 +15,7 @@
       "type": "adventure",
       "phaseCost": 2,
       "travelMode": "procedural",
+      "mapSetting": "dungeon",
       "setting": "dungeon",
       "size": "large",
       "mapSeedTags": ["shrine"],

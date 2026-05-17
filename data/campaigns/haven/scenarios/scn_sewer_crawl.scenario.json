@@ -15,6 +15,7 @@
       "type": "adventure",
       "phaseCost": 1,
       "travelMode": "linear",
+      "mapSetting": "urban",
       "setting": "urban",
       "size": "tiny",
       "danger": { "start": 0, "max": 6 },

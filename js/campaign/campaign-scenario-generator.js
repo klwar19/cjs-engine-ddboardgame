@@ -11,7 +11,8 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const Loader = () => window.CJS.CampaignDataLoader;
   const Runner = () => window.CJS.ScenarioRunner;
 
-  const MAP_TYPES = ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
+  const MAP_SETTINGS = ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
+  const MAP_TYPES = MAP_SETTINGS; // Backward-compatible option name for older saves/UI.
   const MAP_FORMS = ['node_map', 'grid_map'];
   const SIZES = ['tiny', 'small', 'medium', 'large'];
   const SIZE_COUNTS = { tiny: 5, small: 7, medium: 9, large: 12 };
@@ -119,7 +120,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
         phase: next.phase?.number || 1,
         type: 'generated_scenario',
         title: scenario.name,
-        result: `${opts.source}:${opts.mapType}:${opts.size}`,
+        result: `${opts.source}:${opts.mapForm}:${opts.mapSetting}:${opts.size}`,
         at: new Date().toISOString()
       });
       sc.contentHistory = sc.contentHistory.slice(0, 250);
@@ -135,18 +136,20 @@ window.CJS.CampaignScenarioGenerator = (() => {
       sources: ['random', 'active_quest', 'quest_chain'],
       mapForms: [...MAP_FORMS],
       mapTypes: [...MAP_TYPES],
+      mapSettings: [...MAP_SETTINGS],
       sizes: [...SIZES],
       layers: [1, 2, 3]
     };
   }
 
   function _normalizeOptions(options) {
-    const mapType = MAP_TYPES.includes(options.mapType) ? options.mapType : 'any';
+    const rawSetting = options.mapSetting || options.mapType;
+    const mapSetting = MAP_SETTINGS.includes(rawSetting) ? rawSetting : 'any';
     const mapForm = MAP_FORMS.includes(options.mapForm) ? options.mapForm : 'node_map';
     const size = SIZES.includes(options.size) ? options.size : 'small';
     const layers = Math.max(1, Math.min(3, Number(options.layers || 1)));
     const source = ['random', 'active_quest', 'quest_chain'].includes(options.source) ? options.source : 'random';
-    return { source, mapType, mapForm, size, layers, questId: options.questId || null, questChainId: options.questChainId || null };
+    return { source, mapType: mapSetting, mapSetting, mapForm, size, layers, questId: options.questId || null, questChainId: options.questChainId || null };
   }
 
   function _sourceContext(source, world, opts = {}) {
@@ -229,7 +232,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
 
   function _buildScenario(map, seed, opts, context, world) {
     const points = map.nodes || map.cells || [];
-    const setting = opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType;
+    const setting = (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType);
     const autoBattlePool = _worldBattlePool(world, { setting, size: opts.size, tags: _scenarioTags(seed, context) }, context, seed);
     _ensurePointBattles(points, autoBattlePool, { setting, size: opts.size });
     _ensureBattleDensity(points, autoBattlePool, { setting, size: opts.size, tags: _scenarioTags(seed, context) });
@@ -251,6 +254,8 @@ window.CJS.CampaignScenarioGenerator = (() => {
       type: 'generated',
       world,
       travelMode: map.type === 'grid_map' ? 'grid_map' : 'node_map',
+      mapForm: map.type === 'grid_map' ? 'grid_map' : 'node_map',
+      mapSetting: setting,
       mapId: map.id,
       startNode: map.defaultStartNode,
       startCell: map.defaultStartCell,
@@ -526,7 +531,9 @@ window.CJS.CampaignScenarioGenerator = (() => {
       name: seed.name || `${_titleCase(opts.mapType)} Route`,
       type: 'node_map',
       world,
-      setting: opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType,
+      mapForm: 'node_map',
+      mapSetting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
+      setting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
       size: opts.size,
       layers,
       defaultStartNode: nodes[0]?.id || null,
@@ -579,7 +586,9 @@ window.CJS.CampaignScenarioGenerator = (() => {
       name: `${seed.name || _titleCase(opts.mapType)} Grid`,
       type: 'grid_map',
       world,
-      setting: opts.mapType === 'any' ? _firstMapType(seed) : opts.mapType,
+      mapForm: 'grid_map',
+      mapSetting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
+      setting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
       size: opts.size,
       width,
       height,

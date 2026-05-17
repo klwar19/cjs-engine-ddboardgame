@@ -263,7 +263,7 @@ window.CJS.Minigames = (() => {
     }
 
     root.addEventListener('click', (ev) => {
-      const t = ev.target;
+      const t = ev.target instanceof HTMLElement ? ev.target.closest('[data-act]') : null;
       if (!(t instanceof HTMLElement)) return;
       const act = t.dataset.act;
       if (!act) return;

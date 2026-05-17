@@ -724,7 +724,7 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
    Map grid (campaign grid_map) — RPG decoration & moving threats.
    ────────────────────────────────────────────────────────────── */
 
-.campaign-grid-map {
+.campaign-grid-map:not(.v2) {
   position: relative;
   background-color: #0d141c;
   background-image:
@@ -736,14 +736,14 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   border: 1px solid rgba(255, 233, 168, 0.2);
 }
 
-.campaign-grid-cell {
+.campaign-grid-cell:not(.v2) {
   position: relative;
   overflow: hidden;
   background-color: #1b2531;
   transition: transform 140ms ease, filter 200ms ease, box-shadow 200ms ease;
 }
 
-.campaign-grid-cell::before {
+.campaign-grid-cell:not(.v2)::before {
   /* Procedural terrain decoration — pattern depends on cell kind */
   content: "";
   position: absolute;
@@ -755,63 +755,63 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   pointer-events: none;
 }
 
-.campaign-grid-cell.kind-floor::before,
-.campaign-grid-cell.kind-corridor::before {
+.campaign-grid-cell:not(.v2).kind-floor::before,
+.campaign-grid-cell:not(.v2).kind-corridor::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><defs><pattern id="p" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="%23232f3d"/><path d="M0 10 L20 10 M10 0 L10 20" stroke="%231b2531" stroke-width="1"/><circle cx="6" cy="6" r="0.8" fill="%2336485c"/></pattern></defs><rect width="60" height="60" fill="url(%23p)"/></svg>');
 }
 
-.campaign-grid-cell.kind-grass::before,
-.campaign-grid-cell.kind-forest::before {
+.campaign-grid-cell:not(.v2).kind-grass::before,
+.campaign-grid-cell:not(.v2).kind-forest::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231e2e1e"/><g stroke="%2367a55a" stroke-width="1.4" stroke-linecap="round" fill="none"><path d="M8 50 L8 38 M11 50 L13 38 M5 50 L4 40"/><path d="M48 52 L48 40 M51 52 L53 40 M45 52 L44 42"/><path d="M28 24 L28 12 M31 24 L33 12 M25 24 L24 14"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-water::before {
+.campaign-grid-cell:not(.v2).kind-water::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23172a3f"/><g stroke="%234aa3d8" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"><path d="M6 18 Q12 14 18 18 T30 18 T42 18 T54 18"/><path d="M6 32 Q12 28 18 32 T30 32 T42 32 T54 32"/><path d="M6 46 Q12 42 18 46 T30 46 T42 46 T54 46"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-stone::before,
-.campaign-grid-cell.kind-wall::before,
-.campaign-grid-cell.is-blocked::before {
+.campaign-grid-cell:not(.v2).kind-stone::before,
+.campaign-grid-cell:not(.v2).kind-wall::before,
+.campaign-grid-cell:not(.v2).is-blocked::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23262a30"/><g stroke="%23131517" stroke-width="1.4" fill="%2331363d"><path d="M0 18 L24 18 L24 0 M24 18 L60 18 L60 0 M0 36 L18 36 L18 18 M18 36 L42 36 L42 18 M42 36 L60 36 M0 60 L30 60 L30 36 M30 60 L60 60 L60 36"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-battle::before,
-.campaign-grid-cell.kind-event_battle::before {
+.campaign-grid-cell:not(.v2).kind-battle::before,
+.campaign-grid-cell:not(.v2).kind-event_battle::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%232a1d18"/><g stroke="%23ff8a5a" stroke-width="2" fill="none" stroke-linecap="round"><path d="M14 14 L46 46 M46 14 L14 46"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-boss::before {
+.campaign-grid-cell:not(.v2).kind-boss::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23311515"/><g fill="%23ff5050" stroke="%23ff8a5a" stroke-width="1.5"><circle cx="30" cy="26" r="14"/><rect x="20" y="34" width="6" height="8" rx="2"/><rect x="34" y="34" width="6" height="8" rx="2"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-rest::before,
-.campaign-grid-cell.kind-campfire::before {
+.campaign-grid-cell:not(.v2).kind-rest::before,
+.campaign-grid-cell:not(.v2).kind-campfire::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231f2818"/><g><path d="M30 38 Q22 32 26 22 Q28 28 30 24 Q32 28 34 22 Q38 32 30 38 Z" fill="%23ffb454"/><path d="M18 46 L42 46" stroke="%237a5a3a" stroke-width="2" stroke-linecap="round"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-shop::before {
+.campaign-grid-cell:not(.v2).kind-shop::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231a2238"/><g fill="%23ffd36f" stroke="%23a07026" stroke-width="1.5"><circle cx="22" cy="30" r="8"/><circle cx="34" cy="34" r="8"/><circle cx="28" cy="22" r="8"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-reward::before,
-.campaign-grid-cell.kind-resource::before {
+.campaign-grid-cell:not(.v2).kind-reward::before,
+.campaign-grid-cell:not(.v2).kind-resource::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%231a1f2c"/><g fill="%2376e4d1" stroke="%23195e54" stroke-width="1.5"><polygon points="30,12 42,24 36,42 24,42 18,24"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-trap::before {
+.campaign-grid-cell:not(.v2).kind-trap::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23241a24"/><g stroke="%23c97aff" stroke-width="2" fill="none" stroke-linecap="round"><path d="M30 12 L30 30 M22 18 L30 30 L38 18 M14 30 L30 30 L46 30"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-exit::before,
-.campaign-grid-cell.kind-entrance::before {
+.campaign-grid-cell:not(.v2).kind-exit::before,
+.campaign-grid-cell:not(.v2).kind-entrance::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23241a14"/><g fill="none" stroke="%23ffe9a8" stroke-width="2"><path d="M18 48 L18 22 Q18 14 30 14 Q42 14 42 22 L42 48 Z"/><circle cx="34" cy="32" r="1.5" fill="%23ffe9a8"/></g></svg>');
 }
 
-.campaign-grid-cell.kind-event::before {
+.campaign-grid-cell:not(.v2).kind-event::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect width="60" height="60" fill="%23161e2e"/><g fill="%239dd8ff"><path d="M22 18 Q30 10 38 18 Q38 26 30 28 L30 36 M30 44 L30 46" stroke="%239dd8ff" stroke-width="3" stroke-linecap="round" fill="none"/></g></svg>');
 }
 
-.campaign-grid-cell.is-active::after {
+.campaign-grid-cell:not(.v2).is-active::after {
   /* Player marker pulse */
   content: "";
   position: absolute;
@@ -828,34 +828,34 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   50%      { box-shadow: 0 0 26px rgba(255, 233, 168, 0.72) inset; }
 }
 
-.campaign-grid-cell.is-hidden {
+.campaign-grid-cell:not(.v2).is-hidden {
   background-color: #050810;
 }
 
-.campaign-grid-cell.is-hidden::before {
+.campaign-grid-cell:not(.v2).is-hidden::before {
   opacity: 0.05;
   filter: blur(2px);
 }
 
-.campaign-grid-cell.is-hidden span,
-.campaign-grid-cell.is-hidden small {
+.campaign-grid-cell:not(.v2).is-hidden span,
+.campaign-grid-cell:not(.v2).is-hidden small {
   visibility: hidden;
 }
 
-.campaign-grid-cell span {
+.campaign-grid-cell:not(.v2) span {
   position: relative;
   z-index: 2;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
-.campaign-grid-cell small {
+.campaign-grid-cell:not(.v2) small {
   position: relative;
   z-index: 2;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
 /* Moving threat — Persona-4-style shadow blob */
-.campaign-grid-threat {
+.campaign-grid-threat:not(.v2) {
   position: absolute;
   inset: 6px;
   z-index: 5;
@@ -881,7 +881,7 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   to   { opacity: 1; transform: scale(1); }
 }
 
-.campaign-grid-threat.is-adjacent {
+.campaign-grid-threat:not(.v2).is-adjacent {
   filter: drop-shadow(0 4px 14px rgba(255, 58, 58, 0.85));
   animation:
     grid-threat-bob 0.6s ease-in-out infinite alternate,
@@ -1036,8 +1036,8 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
 .campaign-map-canvas[data-theme="haven"]   { --map-theme-bg: url('images/story-mode/haven/frostwood-vn.png'); }
 .campaign-map-canvas[data-theme="zombie"]  { --map-theme-bg: url('images/story-mode/zombie/rot-city-vn.png'); }
 
-.campaign-grid-map[data-theme="haven"]   { --grid-theme-bg: linear-gradient(180deg, rgba(20, 30, 22, 0.85), rgba(8, 14, 10, 0.92)), url('images/story-mode/haven/frostwood-vn.png'); }
-.campaign-grid-map[data-theme="zombie"]  { --grid-theme-bg: linear-gradient(180deg, rgba(28, 18, 18, 0.85), rgba(10, 6, 6, 0.92)), url('images/story-mode/zombie/rot-city-vn.png'); }
+.campaign-grid-map:not(.v2)[data-theme="haven"]   { --grid-theme-bg: linear-gradient(180deg, rgba(20, 30, 22, 0.85), rgba(8, 14, 10, 0.92)), url('images/story-mode/haven/frostwood-vn.png'); }
+.campaign-grid-map:not(.v2)[data-theme="zombie"]  { --grid-theme-bg: linear-gradient(180deg, rgba(28, 18, 18, 0.85), rgba(10, 6, 6, 0.92)), url('images/story-mode/zombie/rot-city-vn.png'); }
 
 /* ──────────────────────────────────────────────────────────────
    Branching chapter UI in Story Controls
@@ -1099,101 +1099,4 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   color: #ffe9a8;
   font-weight: 700;
   margin-right: 6px;
-}
-
-/* V2 grid repair.
-   This file is loaded after campaign.css and still carries legacy grid styles
-   for older panels. Keep those rules away from the newer square-grid renderer
-   so sprite spans keep their absolute layout and real tile art stays visible. */
-.campaign-grid-cell.v2::before {
-  content: none;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player,
-.campaign-grid-cell.v2 > .campaign-grid-player-shadow,
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2,
-.campaign-grid-cell.v2 > .campaign-grid-threat-shadow,
-.campaign-grid-cell.v2 > .campaign-grid-cell-node,
-.campaign-grid-cell.v2 > .campaign-grid-player-tag,
-.campaign-grid-cell.v2 > .campaign-grid-threat-tag,
-.campaign-grid-cell.v2 > .campaign-grid-cell-label {
-  text-shadow: none;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player,
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2 {
-  position: absolute;
-  inset: 0;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player-shadow,
-.campaign-grid-cell.v2 > .campaign-grid-threat-shadow {
-  position: absolute;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-cell-node,
-.campaign-grid-cell.v2 > .campaign-grid-player-tag,
-.campaign-grid-cell.v2 > .campaign-grid-threat-tag,
-.campaign-grid-cell.v2 > .campaign-grid-cell-label {
-  position: absolute;
-}
-
-.campaign-grid-cell.v2.is-hidden .campaign-grid-threat.v2,
-.campaign-grid-cell.v2.is-hidden .campaign-grid-threat-shadow {
-  visibility: visible;
-  display: block;
-}
-
-.campaign-grid-cell.v2.is-active .campaign-grid-player,
-.campaign-grid-cell.v2.is-active .campaign-grid-player-shadow,
-.campaign-grid-cell.v2.is-active .campaign-grid-player-tag {
-  visibility: visible;
-  display: block;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player,
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2,
-.campaign-grid-cell.v2 > .campaign-grid-player-shadow,
-.campaign-grid-cell.v2 > .campaign-grid-threat-shadow {
-  animation: none;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="down"] {
-  animation: campaign-grid-player-walk-down 0.48s steps(4) 1 both,
-             campaign-grid-player-bob 0.48s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="up"] {
-  animation: campaign-grid-player-walk-up 0.48s steps(4) 1 both,
-             campaign-grid-player-bob 0.48s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="right"] {
-  animation: campaign-grid-player-walk-right 0.48s steps(4) 1 both,
-             campaign-grid-player-bob 0.48s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="left"] {
-  animation: campaign-grid-player-walk-left 0.48s steps(4) 1 both,
-             campaign-grid-player-bob 0.48s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="down"]:not(.has-sprite):not(.no-sprite) {
-  animation: campaign-grid-threat-walk-down 0.52s steps(4) 1 both,
-             campaign-grid-threat-bob 0.52s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="up"]:not(.has-sprite):not(.no-sprite) {
-  animation: campaign-grid-threat-walk-up 0.52s steps(4) 1 both,
-             campaign-grid-threat-bob 0.52s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="right"]:not(.has-sprite):not(.no-sprite) {
-  animation: campaign-grid-threat-walk-right 0.52s steps(4) 1 both,
-             campaign-grid-threat-bob 0.52s ease-out 1;
-}
-
-.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="left"]:not(.has-sprite):not(.no-sprite) {
-  animation: campaign-grid-threat-walk-left 0.52s steps(4) 1 both,
-             campaign-grid-threat-bob 0.52s ease-out 1;
 }

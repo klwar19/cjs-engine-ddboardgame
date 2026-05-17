@@ -2540,7 +2540,7 @@ window.CJS.ScenarioRunner = (() => {
       if (_defaultGridLevelId(map, threat.levelId) !== currentLevelId) continue;
       const mode = String(threat.moveMode || 'random').toLowerCase();
       if (mode === 'static') continue;
-      if (Math.random() > Math.max(0, Math.min(1, Number(threat.moveChance || 1)))) continue;
+      if (Math.random() > Math.max(0, Math.min(1, Number(threat.moveChance ?? 1)))) continue;
       const fromKey = _cellKey(threat.x, threat.y, threat.levelId, map);
       occupied.delete(fromKey);
       let neighbors = _adjacentCells(map, threat.x, threat.y, threat.levelId)
