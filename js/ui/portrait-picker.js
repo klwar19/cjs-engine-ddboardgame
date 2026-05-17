@@ -45,6 +45,108 @@ window.CJS.PortraitPicker = (() => {
     { label: 'XL', px: 256 },
     { label: 'XXL', px: 320 }
   ];
+
+  // Default focus: centered, no extra zoom. A portrait with this focus
+  // renders identically to the pre-focus behavior (object-fit: cover, centered).
+  const FOCUS_DEFAULT = Object.freeze({ x: 50, y: 50, zoom: 100 });
+  const FOCUS_ZOOM_MIN = 100;
+  const FOCUS_ZOOM_MAX = 400;
+
+  function normalizeFocus(focus) {
+    if (!focus || typeof focus !== 'object') return { ...FOCUS_DEFAULT };
+    const clamp = (v, lo, hi, fb) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return fb;
+      return Math.max(lo, Math.min(hi, n));
+    };
+    return {
+      x: clamp(focus.x, 0, 100, FOCUS_DEFAULT.x),
+      y: clamp(focus.y, 0, 100, FOCUS_DEFAULT.y),
+      zoom: clamp(focus.zoom, FOCUS_ZOOM_MIN, FOCUS_ZOOM_MAX, FOCUS_DEFAULT.zoom)
+    };
+  }
+
+  function isDefaultFocus(focus) {
+    const f = normalizeFocus(focus);
+    return f.x === FOCUS_DEFAULT.x && f.y === FOCUS_DEFAULT.y && f.zoom === FOCUS_DEFAULT.zoom;
+  }
+
+  // Inline-style string that places the focus point at the container center
+  // and applies the zoom. Pair with an <img class="..." style="object-fit:cover; ...">
+  // inside a clipping wrapper.
+  function focusStyle(focus) {
+    const f = normalizeFocus(focus);
+    const parts = [
+      `object-fit:cover`,
+      `object-position:${f.x}% ${f.y}%`,
+      `transform-origin:${f.x}% ${f.y}%`
+    ];
+    if (f.zoom !== 100) parts.push(`transform:scale(${(f.zoom / 100).toFixed(3)})`);
+    return parts.join(';');
+  }
+
+  function applyFocusStyle(imgEl, focus) {
+    if (!imgEl) return;
+    const f = normalizeFocus(focus);
+    imgEl.style.objectFit = 'cover';
+    imgEl.style.objectPosition = `${f.x}% ${f.y}%`;
+    imgEl.style.transformOrigin = `${f.x}% ${f.y}%`;
+    imgEl.style.transform = f.zoom !== 100 ? `scale(${(f.zoom / 100).toFixed(3)})` : '';
+  }
+
+  // Returns HTML markup that renders a portrait with focus applied. Falls
+  // back to an inline icon span when there is no path. Caller controls
+  // sizing via the wrapping element's CSS.
+  function renderPortraitHTML(path, opts = {}) {
+    const focus = normalizeFocus(opts.focus);
+    const imageClass = opts.imageClass || 'cjs-portrait';
+    const fallbackClass = opts.fallbackClass || 'cjs-portrait-fallback';
+    const icon = opts.fallbackIcon || '?';
+    const alt = opts.alt || '';
+    if (!path) {
+      return `<span class="${fallbackClass}">${_escAttr(icon)}</span>`;
+    }
+    const src = _bustedSrc(path);
+    const style = focusStyle(focus);
+    return `<img src="${_escAttr(src)}" class="${imageClass}" alt="${_escAttr(alt)}" style="${_escAttr(style)}" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='')"><span class="${fallbackClass}" style="display:none">${_escAttr(icon)}</span>`;
+  }
+
+  // Source-rect crop math for canvas drawing. Mirrors what CSS does with
+  // object-fit:cover + object-position + scale, but in source pixels so
+  // ctx.drawImage paints the correct region.
+  function computeSourceRect(naturalW, naturalH, dw, dh, focus) {
+    const f = normalizeFocus(focus);
+    if (!(naturalW > 0) || !(naturalH > 0) || !(dw > 0) || !(dh > 0)) {
+      return { sx: 0, sy: 0, sw: naturalW || 0, sh: naturalH || 0 };
+    }
+    const baseScale = Math.max(dw / naturalW, dh / naturalH);
+    const effScale = baseScale * (f.zoom / 100);
+    let sw = dw / effScale;
+    let sh = dh / effScale;
+    // Source rect can't exceed the natural image. Clamp and re-center if it does.
+    if (sw > naturalW) sw = naturalW;
+    if (sh > naturalH) sh = naturalH;
+    const cx = (f.x / 100) * naturalW;
+    const cy = (f.y / 100) * naturalH;
+    let sx = cx - sw / 2;
+    let sy = cy - sh / 2;
+    sx = Math.max(0, Math.min(naturalW - sw, sx));
+    sy = Math.max(0, Math.min(naturalH - sh, sy));
+    return { sx, sy, sw, sh };
+  }
+
+  function drawPortraitToCanvas(ctx, img, dx, dy, dw, dh, focus) {
+    if (!ctx || !img) return false;
+    if (!img.complete || !(img.naturalWidth > 0)) return false;
+    const rect = computeSourceRect(img.naturalWidth, img.naturalHeight, dw, dh, focus);
+    try {
+      ctx.drawImage(img, rect.sx, rect.sy, rect.sw, rect.sh, dx, dy, dw, dh);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   const SIZE_KEY_W = 'cjs.editor.portraitPreviewW';
   const SIZE_KEY_H = 'cjs.editor.portraitPreviewH';
   const DEFAULT_PX = 192;
@@ -128,6 +230,7 @@ window.CJS.PortraitPicker = (() => {
     root.className = 'portrait-widget';
 
     let currentPath = String(opts.currentPath || '').trim();
+    let currentFocus = normalizeFocus(opts.currentFocus);
     const category = opts.category || 'characters';
     let fallbackIcon = opts.fallbackIcon || '?';
 
@@ -223,6 +326,179 @@ window.CJS.PortraitPicker = (() => {
     sizeWrap.appendChild(hLabel);
     sizeWrap.appendChild(hSelect);
 
+    const focusBtn = document.createElement('button');
+    focusBtn.type = 'button';
+    focusBtn.className = 'btn btn-ghost btn-sm portrait-focus-btn';
+    focusBtn.textContent = 'Focus';
+    focusBtn.title = 'Choose which part of the picture is shown';
+
+    const focusEditor = document.createElement('div');
+    focusEditor.className = 'portrait-focus-editor';
+    focusEditor.hidden = true;
+
+    const focusStage = document.createElement('div');
+    focusStage.className = 'portrait-focus-stage';
+    focusStage.title = 'Click or drag to set the focus point';
+
+    const focusFullImg = document.createElement('img');
+    focusFullImg.className = 'portrait-focus-full';
+    focusFullImg.alt = '';
+    focusFullImg.draggable = false;
+
+    const focusFrame = document.createElement('div');
+    focusFrame.className = 'portrait-focus-frame';
+
+    const focusDot = document.createElement('span');
+    focusDot.className = 'portrait-focus-dot';
+
+    focusStage.appendChild(focusFullImg);
+    focusStage.appendChild(focusFrame);
+    focusStage.appendChild(focusDot);
+
+    const focusControls = document.createElement('div');
+    focusControls.className = 'portrait-focus-controls';
+
+    const zoomRow = document.createElement('label');
+    zoomRow.className = 'portrait-focus-zoom-row';
+    const zoomLabelEl = document.createElement('span');
+    zoomLabelEl.textContent = 'Zoom';
+    const zoomSlider = document.createElement('input');
+    zoomSlider.type = 'range';
+    zoomSlider.min = String(FOCUS_ZOOM_MIN);
+    zoomSlider.max = String(FOCUS_ZOOM_MAX);
+    zoomSlider.step = '5';
+    zoomSlider.value = String(currentFocus.zoom);
+    const zoomReadout = document.createElement('span');
+    zoomReadout.className = 'portrait-focus-zoom-readout';
+    zoomReadout.textContent = `${currentFocus.zoom}%`;
+    zoomRow.appendChild(zoomLabelEl);
+    zoomRow.appendChild(zoomSlider);
+    zoomRow.appendChild(zoomReadout);
+
+    const focusResetBtn = document.createElement('button');
+    focusResetBtn.type = 'button';
+    focusResetBtn.className = 'btn btn-ghost btn-sm';
+    focusResetBtn.textContent = 'Center';
+    focusResetBtn.title = 'Reset focus to centered, no zoom';
+
+    const focusHint = document.createElement('div');
+    focusHint.className = 'portrait-focus-hint dim';
+    focusHint.textContent = 'Click on the image or drag the box to pick the visible region.';
+
+    focusControls.appendChild(zoomRow);
+    focusControls.appendChild(focusResetBtn);
+
+    focusEditor.appendChild(focusStage);
+    focusEditor.appendChild(focusControls);
+    focusEditor.appendChild(focusHint);
+
+    function _updateFocusFrame() {
+      // The frame represents the cropped area expressed as a percentage of
+      // the stage. With object-fit:contain in the editor, the image fills
+      // the stage exactly (we set stage aspect to match the image), so frame
+      // % maps directly onto image %.
+      const size = 100 / (currentFocus.zoom / 100);
+      const halfSize = size / 2;
+      let left = currentFocus.x - halfSize;
+      let top  = currentFocus.y - halfSize;
+      // Clamp so the frame stays inside the stage
+      left = Math.max(0, Math.min(100 - size, left));
+      top  = Math.max(0, Math.min(100 - size, top));
+      focusFrame.style.left   = `${left}%`;
+      focusFrame.style.top    = `${top}%`;
+      focusFrame.style.width  = `${size}%`;
+      focusFrame.style.height = `${size}%`;
+      focusDot.style.left = `${currentFocus.x}%`;
+      focusDot.style.top  = `${currentFocus.y}%`;
+      zoomReadout.textContent = `${Math.round(currentFocus.zoom)}%`;
+      if (Number(zoomSlider.value) !== currentFocus.zoom) {
+        zoomSlider.value = String(currentFocus.zoom);
+      }
+    }
+
+    function _renderFocusEditor() {
+      if (focusEditor.hidden) return;
+      if (!currentPath) {
+        focusFullImg.removeAttribute('src');
+        focusEditor.dataset.empty = '1';
+        return;
+      }
+      focusEditor.dataset.empty = '0';
+      const desired = _bustedSrc(currentPath);
+      if (focusFullImg.getAttribute('src') !== desired) {
+        focusFullImg.src = desired;
+      }
+      _updateFocusFrame();
+    }
+
+    function _setFocus(next, source) {
+      const norm = normalizeFocus(next);
+      if (norm.x === currentFocus.x && norm.y === currentFocus.y && norm.zoom === currentFocus.zoom) {
+        return;
+      }
+      currentFocus = norm;
+      _updateFocusFrame();
+      // Live-update the main preview so the user sees the cropped result.
+      const mainImg = previewWrap.querySelector('.portrait-preview');
+      if (mainImg) applyFocusStyle(mainImg, currentFocus);
+      notifyFocusChange();
+      if (source !== 'silent') focusBtn.classList.toggle('is-active', !isDefaultFocus(currentFocus));
+    }
+
+    function _focusPointFromEvent(ev) {
+      const rect = focusStage.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return null;
+      const x = ((ev.clientX - rect.left) / rect.width) * 100;
+      const y = ((ev.clientY - rect.top)  / rect.height) * 100;
+      return {
+        x: Math.max(0, Math.min(100, x)),
+        y: Math.max(0, Math.min(100, y))
+      };
+    }
+
+    let _dragging = false;
+    focusStage.addEventListener('pointerdown', (ev) => {
+      if (!currentPath) return;
+      _dragging = true;
+      try { focusStage.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+      const p = _focusPointFromEvent(ev);
+      if (p) _setFocus({ ...currentFocus, ...p });
+    });
+    focusStage.addEventListener('pointermove', (ev) => {
+      if (!_dragging) return;
+      const p = _focusPointFromEvent(ev);
+      if (p) _setFocus({ ...currentFocus, ...p });
+    });
+    const _endDrag = (ev) => {
+      _dragging = false;
+      try { focusStage.releasePointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+    };
+    focusStage.addEventListener('pointerup', _endDrag);
+    focusStage.addEventListener('pointercancel', _endDrag);
+
+    focusStage.addEventListener('wheel', (ev) => {
+      if (focusEditor.hidden || !currentPath) return;
+      ev.preventDefault();
+      const step = ev.deltaY > 0 ? -10 : 10;
+      _setFocus({ ...currentFocus, zoom: currentFocus.zoom + step });
+    }, { passive: false });
+
+    zoomSlider.addEventListener('input', () => {
+      _setFocus({ ...currentFocus, zoom: Number(zoomSlider.value) });
+    });
+
+    focusResetBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      _setFocus({ ...FOCUS_DEFAULT });
+    });
+
+    focusBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      focusEditor.hidden = !focusEditor.hidden;
+      focusBtn.classList.toggle('is-open', !focusEditor.hidden);
+      if (!focusEditor.hidden) _renderFocusEditor();
+    });
+
     const statusEl = document.createElement('div');
     statusEl.className = 'portrait-status dim';
     statusEl.style.fontSize = '0.78rem';
@@ -316,6 +592,7 @@ window.CJS.PortraitPicker = (() => {
         img.className = 'portrait-preview';
         img.alt = 'portrait';
         img.src = _bustedSrc(currentPath);
+        applyFocusStyle(img, currentFocus);
 
         const fallback = document.createElement('span');
         fallback.className = 'portrait-fallback';
@@ -335,10 +612,14 @@ window.CJS.PortraitPicker = (() => {
         fallback.textContent = fallbackIcon;
         previewWrap.appendChild(fallback);
       }
+      _renderFocusEditor();
     }
 
     function notifyChange() {
       if (typeof opts.onChange === 'function') opts.onChange(currentPath);
+    }
+    function notifyFocusChange() {
+      if (typeof opts.onFocusChange === 'function') opts.onFocusChange({ ...currentFocus });
     }
 
     function render() {
@@ -375,15 +656,18 @@ window.CJS.PortraitPicker = (() => {
     row.appendChild(input);
     row.appendChild(uploadBtn);
     row.appendChild(browseBtn);
+    row.appendChild(focusBtn);
     row.appendChild(clearBtn);
     row.appendChild(sizeWrap);
     controls.appendChild(label);
     controls.appendChild(row);
+    controls.appendChild(focusEditor);
     controls.appendChild(statusEl);
     controls.appendChild(fileInput);
     root.appendChild(previewWrap);
     root.appendChild(controls);
 
+    focusBtn.classList.toggle('is-active', !isDefaultFocus(currentFocus));
     render();
 
     return {
@@ -398,6 +682,14 @@ window.CJS.PortraitPicker = (() => {
       },
       setFallbackIcon(icon) {
         fallbackIcon = icon || '?';
+        renderPreview();
+      },
+      getFocus() {
+        return { ...currentFocus };
+      },
+      setFocus(focus) {
+        _setFocus(focus, 'silent');
+        focusBtn.classList.toggle('is-active', !isDefaultFocus(currentFocus));
         renderPreview();
       }
     };
@@ -555,6 +847,14 @@ window.CJS.PortraitPicker = (() => {
     clearCache,
     getPreviewSize,
     setPreviewSize,
-    bustedSrc: _bustedSrc
+    bustedSrc: _bustedSrc,
+    normalizeFocus,
+    isDefaultFocus,
+    focusStyle,
+    applyFocusStyle,
+    renderPortraitHTML,
+    computeSourceRect,
+    drawPortraitToCanvas,
+    FOCUS_DEFAULT
   });
 })();

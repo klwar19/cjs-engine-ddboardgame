@@ -625,8 +625,16 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.5);
   font-size: 1.8rem;
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
+}
+.combat-popup-monster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.combat-popup-monster-fallback {
+  font-size: 1.8rem;
 }
 
 .combat-popup-actions {

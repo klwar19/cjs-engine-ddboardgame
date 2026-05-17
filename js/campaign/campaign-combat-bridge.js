@@ -281,7 +281,16 @@ window.CJS.CampaignCombatBridge = (() => {
     }
     const damageMods = PS()?.crossWorldDamageMods?.(member, currentWorld) || { dealt: 1, taken: 1 };
     const personaPortrait = persona?.portrait || member.personaPortrait || '';
+    const personaPortraitFocus = persona?.portrait
+      ? (persona.portraitFocus || null)
+      : (member.personaPortrait ? (member.personaPortraitFocus || null) : null);
     const personaIcon = persona?.icon || member.personaIcon || '';
+    // Pick the focus that travels with whichever portrait source we end up
+    // using below, so the crop tracks the picture.
+    let chosenPortraitFocus = null;
+    if (personaPortrait) chosenPortraitFocus = personaPortraitFocus;
+    else if (member.portrait) chosenPortraitFocus = member.portraitFocus || null;
+    else chosenPortraitFocus = base.portraitFocus || null;
     return {
       ..._clone(base),
       id,
@@ -292,6 +301,7 @@ window.CJS.CampaignCombatBridge = (() => {
       // world-skin avatar without the editor needing to fork the base record.
       icon: personaIcon || member.icon || base.icon || '',
       portrait: personaPortrait || member.portrait || base.portrait || '',
+      portraitFocus: chosenPortraitFocus,
       team: 'player',
       level: Number(member.level || base.level || 1),
       rank: persona?.rank || member.rank || base.rank || 'F',

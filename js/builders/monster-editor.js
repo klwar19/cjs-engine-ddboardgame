@@ -158,6 +158,7 @@ window.CJS.MonsterEditor = (() => {
     if (portraitArea && PP()) {
       portraitWidget = PP().createWidget({
         currentPath: m.portrait || '',
+        currentFocus: m.portraitFocus,
         category: 'monsters',
         id: m.id,
         name: m.name,
@@ -231,6 +232,7 @@ window.CJS.MonsterEditor = (() => {
         name: _formEl.querySelector('#mon-name').value,
         icon: _formEl.querySelector('#mon-icon').value,
         portrait: portraitWidget ? portraitWidget.getValue() : (m.portrait || ''),
+        portraitFocus: portraitWidget ? portraitWidget.getFocus() : (m.portraitFocus || undefined),
         team: 'enemy',
         rank: _formEl.querySelector('#mon-rank').value,
         type: _formEl.querySelector('#mon-type').value,

@@ -236,6 +236,7 @@ window.CJS.CharEditor = (() => {
     if (portraitArea && PP()) {
       portraitWidget = PP().createWidget({
         currentPath: c.portrait || '',
+        currentFocus: c.portraitFocus,
         category: 'characters',
         id: c.id,
         name: c.name,
@@ -376,6 +377,7 @@ window.CJS.CharEditor = (() => {
         name: _formEl.querySelector('#chr-name').value,
         icon: _formEl.querySelector('#chr-icon').value,
         portrait: portraitWidget ? portraitWidget.getValue() : (c.portrait || ''),
+        portraitFocus: portraitWidget ? portraitWidget.getFocus() : (c.portraitFocus || undefined),
         team: _formEl.querySelector('#chr-team').value,
         rank: _formEl.querySelector('#chr-rank').value,
         type: _formEl.querySelector('#chr-type').value,

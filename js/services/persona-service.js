@@ -201,6 +201,7 @@ window.CJS.PersonaService = (() => {
       member.activePersona = persona.id;
       if (persona.icon) member.personaIcon = persona.icon;
       if (persona.portrait) member.personaPortrait = persona.portrait;
+      if (persona.portraitFocus) member.personaPortraitFocus = persona.portraitFocus;
       // We deliberately DO NOT overwrite base portrait/icon — the persona's
       // visuals are a layer the UI can render alongside the universal ones.
     }

@@ -48,6 +48,40 @@ window.CJS.CampaignUI = (() => {
     return base?.portrait || '';
   }
 
+  // Resolve the focus crop that matches `_memberPortrait` above. Whichever
+  // source we ended up using for the path, we want the focus stored next to
+  // that same source so the crop tracks the picture.
+  function _memberPortraitFocus(member, memberId) {
+    if (!member) return null;
+    const DS = window.CJS.DataStore;
+    if (member.activePersona) {
+      const persona = DS?.get?.('personas', member.activePersona);
+      if (persona?.portrait) return persona.portraitFocus || null;
+    }
+    if (member.personaPortrait) return member.personaPortraitFocus || null;
+    if (member.portrait) return member.portraitFocus || null;
+    const baseId = member.baseCharacterId || memberId;
+    const base = DS?.get?.('characters', baseId);
+    return base?.portraitFocus || null;
+  }
+
+  // Inline-style attribute for an <img> so the chosen focus point lands at
+  // the container's center. Safe to inject — escapes nothing because the
+  // values are clamped numbers from normalizeFocus.
+  function _focusAttrStyle(focus) {
+    const PP = window.CJS.PortraitPicker;
+    if (PP && PP.focusStyle) return PP.focusStyle(focus);
+    // Tiny inline fallback so the campaign page still works if the portrait
+    // picker happens not to be loaded on a given route.
+    if (!focus) return 'object-fit:cover';
+    const x = Math.max(0, Math.min(100, Number(focus.x) || 50));
+    const y = Math.max(0, Math.min(100, Number(focus.y) || 50));
+    const z = Math.max(100, Math.min(400, Number(focus.zoom) || 100));
+    const parts = [`object-fit:cover`, `object-position:${x}% ${y}%`, `transform-origin:${x}% ${y}%`];
+    if (z !== 100) parts.push(`transform:scale(${(z / 100).toFixed(3)})`);
+    return parts.join(';');
+  }
+
   let _root = null;
   let _activeMode = 'story';
   let _activeTab = 'storyHome';
@@ -475,7 +509,7 @@ window.CJS.CampaignUI = (() => {
     return `
       <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
         <div class="campaign-character-head">
-          <div class="campaign-avatar">${(() => { const p = _memberPortrait(member, id); return p ? `<img src="${_escAttr(p)}" alt="">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id }); })()}</div>
+          <div class="campaign-avatar">${(() => { const p = _memberPortrait(member, id); const f = _memberPortraitFocus(member, id); return p ? `<img src="${_escAttr(p)}" alt="" style="${_escAttr(_focusAttrStyle(f))}">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id }); })()}</div>
           <div>
             <strong>${_esc(member.name || id)}</strong>
             <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(member.rank || 'F')}</div>
@@ -535,8 +569,9 @@ window.CJS.CampaignUI = (() => {
     const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
     const availLabel = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
     const resolvedPortrait = _memberPortrait(member, id);
+    const resolvedFocus = _memberPortraitFocus(member, id);
     const portraitContent = resolvedPortrait
-      ? `<img src="${_escAttr(resolvedPortrait)}" alt="">`
+      ? `<img src="${_escAttr(resolvedPortrait)}" alt="" style="${_escAttr(_focusAttrStyle(resolvedFocus))}">`
       : `<span class="campaign-roster-portrait-fallback">${_esc(member.icon || member.name?.[0] || '?')}</span>`;
     return `
       <article class="campaign-roster-member ${isBench ? 'is-bench' : 'is-active'} ${battleReady ? '' : 'is-unavailable'}">
@@ -3969,13 +4004,14 @@ window.CJS.CampaignUI = (() => {
     if (!chat) return '';
     const speaker = chat.speakerName || chat.speaker || 'Party';
     const portrait = _speakerPortrait(chat.speaker);
+    const focus = _speakerPortraitFocus(chat.speaker);
     return `
       <div class="campaign-banter-box">
         <span class="campaign-banter-name">${_esc(speaker)}</span>
         <span class="campaign-banter-text">${_esc(chat.line || '')}</span>
         ${chat.reply ? `<span class="campaign-banter-reply">${_esc(chat.reply)}</span>` : ''}
         ${portrait
-          ? `<div class="campaign-banter-portrait"><img src="${_escAttr(portrait)}" alt=""></div>`
+          ? `<div class="campaign-banter-portrait"><img src="${_escAttr(portrait)}" alt="" style="${_escAttr(_focusAttrStyle(focus))}"></div>`
           : ''}
         <span class="campaign-banter-arrow">▼</span>
       </div>
@@ -3986,6 +4022,11 @@ window.CJS.CampaignUI = (() => {
     if (!speakerId) return null;
     const member = CS().getState()?.party?.[speakerId];
     return _memberPortrait(member, speakerId) || null;
+  }
+  function _speakerPortraitFocus(speakerId) {
+    if (!speakerId) return null;
+    const member = CS().getState()?.party?.[speakerId];
+    return _memberPortraitFocus(member, speakerId);
   }
 
   function _renderNotesPanel(state) {
@@ -9197,8 +9238,9 @@ window.CJS.CampaignUI = (() => {
   function _renderPortraitHero(id, member) {
     const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
     const portraitSrc = _memberPortrait(member, id);
+    const portraitFocus = _memberPortraitFocus(member, id);
     const portrait = portraitSrc
-      ? `<img src="${_escAttr(portraitSrc)}" alt="${_escAttr(member.name || id)}">`
+      ? `<img src="${_escAttr(portraitSrc)}" alt="${_escAttr(member.name || id)}" style="${_escAttr(_focusAttrStyle(portraitFocus))}">`
       : `<div class="fallback">${_esc(initial)}</div>`;
     const lvl = member.level || 1;
     const rank = member.rank || 'F';

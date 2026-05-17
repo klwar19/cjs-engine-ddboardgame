@@ -31,7 +31,7 @@ window.CJS.CampaignCombatPopup = (() => {
         <p class="combat-popup-sub">${_esc(pendingBattle?.subtitle || _defaultSubtitle(pendingBattle))}</p>
         ${monsters.length ? `
           <div class="combat-popup-monsters" aria-hidden="true">
-            ${monsters.map((m) => `<div class="combat-popup-monster" ${m.portrait ? `style="background-image:url('${_escAttr(m.portrait)}')"` : ''}>${m.portrait ? '' : _esc(m.icon || '👹')}</div>`).join('')}
+            ${monsters.map((m) => `<div class="combat-popup-monster">${_popupMonsterContent(m)}</div>`).join('')}
           </div>` : ''}
         <div class="combat-popup-actions">
           <button type="button" data-combat-popup-cancel>Hold</button>
@@ -117,7 +117,8 @@ window.CJS.CampaignCombatPopup = (() => {
       out.push({
         id,
         icon: rec?.icon || '👹',
-        portrait: rec?.portrait || rec?.sprite || ''
+        portrait: rec?.portrait || rec?.sprite || '',
+        portraitFocus: rec?.portraitFocus || null
       });
       if (out.length >= 6) break;
     }
@@ -129,6 +130,24 @@ window.CJS.CampaignCombatPopup = (() => {
   }
 
   function _escAttr(value) { return _esc(value); }
+
+  // Monster thumbnail content. Uses an inner <img> so we get the same
+  // object-fit / object-position / scale story as the rest of the app.
+  function _popupMonsterContent(m) {
+    if (!m?.portrait) return _esc(m?.icon || '👹');
+    const PP = window.CJS.PortraitPicker;
+    if (PP && PP.renderPortraitHTML) {
+      return PP.renderPortraitHTML(m.portrait, {
+        focus: m.portraitFocus,
+        imageClass: 'combat-popup-monster-img',
+        fallbackClass: 'combat-popup-monster-fallback',
+        fallbackIcon: m.icon || '👹',
+        alt: ''
+      });
+    }
+    const src = PP && PP.bustedSrc ? PP.bustedSrc(m.portrait) : m.portrait;
+    return `<img class="combat-popup-monster-img" src="${_escAttr(src)}" alt="" style="object-fit:cover">`;
+  }
 
   return Object.freeze({ show, engage, close });
 })();
