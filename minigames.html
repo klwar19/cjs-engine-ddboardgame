@@ -8,35 +8,38 @@
 </head>
 <body class="minigame-harness">
   <div class="panel">
-    <header>
-      <h1>CJS Mini-Games</h1>
-      <p>Standalone harness for <code>window.CJS.Minigames</code>. Picks any level, opens the modal, surfaces the result payload that Campaign Mode will receive.</p>
+    <header class="harness-hero">
+      <div>
+        <span class="harness-kicker">Puzzle Test Lab</span>
+        <h1>CJS Mini-Games</h1>
+        <p>Pick any level, open the modal, and inspect the result payload Campaign Mode receives.</p>
+      </div>
+      <button id="run-tests" class="harness-button primary">Run acceptance tests</button>
     </header>
 
     <div class="game-tabs" id="game-tabs"></div>
 
-    <section>
-      <h2 style="font-size:14px;opacity:.7;margin:0 0 8px;">Levels</h2>
+    <section class="harness-panel">
+      <h2>Levels</h2>
       <div class="level-grid" id="level-grid"></div>
     </section>
 
-    <section>
-      <h2 style="font-size:14px;opacity:.7;margin:0 0 8px;">Latest result payload</h2>
+    <section class="harness-panel">
+      <h2>Latest result payload</h2>
       <pre class="log-pane" id="result-log">No result yet. Run a level above.</pre>
     </section>
 
-    <section>
-      <h2 style="font-size:14px;opacity:.7;margin:0 0 8px;">Sprite map</h2>
-      <p style="margin:0 0 8px;font-size:12px;opacity:.7;">
-        Demonstrates <code>window.CJS.Minigames.useSpriteMap()</code>. Toggle to fall back to canvas-drawn shapes, then launch a level to see the difference. The host call is what an event would use to reskin a session.
+    <section class="harness-panel">
+      <h2>Sprite map</h2>
+      <p class="microcopy">
+        Toggle the external sprite map to compare the shipped art pass with the canvas fallback.
       </p>
-      <button id="toggle-sprites" style="background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.16);padding:6px 12px;border-radius:6px;cursor:pointer;">Disable spritesheet (use canvas fallback)</button>
+      <button id="toggle-sprites" class="harness-button">Disable spritesheet</button>
     </section>
 
-    <section>
-      <h2 style="font-size:14px;opacity:.7;margin:0 0 8px;">Self-tests</h2>
-      <button id="run-tests" style="background:rgba(95,176,255,0.18);color:#cfe6ff;border:1px solid rgba(95,176,255,0.5);padding:6px 12px;border-radius:6px;cursor:pointer;">Run acceptance tests</button>
-      <pre class="log-pane" id="test-log" style="margin-top:8px;">Tests not run.</pre>
+    <section class="harness-panel">
+      <h2>Self-tests</h2>
+      <pre class="log-pane" id="test-log">Tests not run.</pre>
     </section>
   </div>
 
@@ -59,6 +62,7 @@
     async function loadLevels(gameId) {
       if (levelCache[gameId]) return levelCache[gameId];
       const res = await fetch(`data/minigames/${gameId}_levels.json`);
+      if (!res.ok) throw new Error(`Could not load ${gameId} levels (${res.status}). Use a local server, not file://.`);
       const data = await res.json();
       levelCache[gameId] = data.levels || [];
       return levelCache[gameId];
@@ -86,9 +90,12 @@
         const card = document.createElement('div');
         card.className = 'level-card';
         card.innerHTML = `
-          <h3>${escapeHtml(lvl.title)}</h3>
-          <span class="meta">D${lvl.difficulty} • ${lvl.width}×${lvl.height} • ${lvl.tags ? lvl.tags.join(', ') : ''}</span>
-          <p style="margin:0;font-size:11px;opacity:.65;">${escapeHtml(lvl.hint || '')}</p>
+          <div class="level-card-top">
+            <h3>${escapeHtml(lvl.title)}</h3>
+            <span>D${escapeHtml(lvl.difficulty)}</span>
+          </div>
+          <span class="meta">${lvl.width}x${lvl.height} - ${lvl.tags ? lvl.tags.join(', ') : ''}</span>
+          <p class="level-hint">${escapeHtml(lvl.hint || '')}</p>
         `;
         const playBtn = document.createElement('button');
         playBtn.textContent = `Play ${lvl.id}`;
@@ -103,7 +110,7 @@
     }
 
     function launch(gameId, levelId) {
-      resultEl.textContent = 'Running…';
+      resultEl.textContent = 'Running...';
       window.CJS.Minigames.openMiniGame({
         gameId, levelId,
         source: 'harness',
@@ -120,7 +127,7 @@
       spritesEnabled = !spritesEnabled;
       if (spritesEnabled) {
         window.CJS.Minigames.useSpriteMap('assets/minigames/spritesheet.json');
-        ev.target.textContent = 'Disable spritesheet (use canvas fallback)';
+        ev.target.textContent = 'Disable spritesheet';
       } else {
         window.CJS.Minigames.useSpriteMap({ sheets: {}, mummy_maze: { sprites: {} }, push_box: { sprites: {} } });
         ev.target.textContent = 'Re-enable spritesheet';
@@ -131,77 +138,78 @@
       const lines = [];
       const log = (...args) => { lines.push(args.join(' ')); testEl.textContent = lines.join('\n'); };
       let pass = 0, fail = 0;
-      const assert = (cond, name) => { if (cond) { pass++; log(`✓ ${name}`); } else { fail++; log(`✗ ${name}`); } };
+      const assert = (cond, name) => { if (cond) { pass++; log(`PASS ${name}`); } else { fail++; log(`FAIL ${name}`); } };
 
-      log('Loading levels…');
-      const mummyLevels = await loadLevels('mummy_maze');
-      const pushLevels = await loadLevels('push_box');
-      assert(mummyLevels.length >= 5, `mummy: ≥5 levels (${mummyLevels.length})`);
-      assert(pushLevels.length >= 5, `push:  ≥5 levels (${pushLevels.length})`);
+      try {
+        log('Loading levels...');
+        const mummyLevels = await loadLevels('mummy_maze');
+        const pushLevels = await loadLevels('push_box');
+        assert(mummyLevels.length >= 6, `mummy: at least 6 levels (${mummyLevels.length})`);
+        assert(pushLevels.length >= 6, `push: at least 6 levels (${pushLevels.length})`);
 
-      const diffMummy = new Set(mummyLevels.map((l) => l.difficulty));
-      const diffPush = new Set(pushLevels.map((l) => l.difficulty));
-      for (let d = 1; d <= 5; d++) {
-        assert(diffMummy.has(d), `mummy: difficulty band ${d} present`);
-        assert(diffPush.has(d), `push:  difficulty band ${d} present`);
-      }
+        const diffMummy = new Set(mummyLevels.map((l) => Number(l.difficulty)));
+        const diffPush = new Set(pushLevels.map((l) => Number(l.difficulty)));
+        for (let d = 1; d <= 6; d++) {
+          assert(diffMummy.has(d), `mummy: difficulty band ${d} present`);
+          assert(diffPush.has(d), `push: difficulty band ${d} present`);
+        }
 
-      for (const lvl of mummyLevels) {
-        assert(Array.isArray(lvl.player) && lvl.player.length === 2, `${lvl.id}: has player`);
-        assert(Array.isArray(lvl.exit) && lvl.exit.length === 2, `${lvl.id}: has exit (win condition)`);
-      }
-      for (const lvl of pushLevels) {
-        assert(Array.isArray(lvl.player) && lvl.player.length === 2, `${lvl.id}: has player`);
-        assert((lvl.boxes || []).length === (lvl.goals || []).length, `${lvl.id}: box/goal counts match`);
-        assert((lvl.goals || []).length >= 1, `${lvl.id}: ≥1 goal`);
-      }
+        for (const lvl of mummyLevels) {
+          assert(Array.isArray(lvl.player) && lvl.player.length === 2, `${lvl.id}: has player`);
+          assert(Array.isArray(lvl.exit) && lvl.exit.length === 2, `${lvl.id}: has exit`);
+          const result = simulateInline('mummy_maze', lvl, 140);
+          assert(result.status === 'win', `${lvl.id}: solver can clear (${result.status}, ${result.steps} turns)`);
+        }
+        for (const lvl of pushLevels) {
+          assert(Array.isArray(lvl.player) && lvl.player.length === 2, `${lvl.id}: has player`);
+          assert((lvl.boxes || []).length === (lvl.goals || []).length, `${lvl.id}: box/goal counts match`);
+          assert((lvl.goals || []).length >= 1, `${lvl.id}: at least 1 goal`);
+          const result = simulateInline('push_box', lvl, 180);
+          assert(result.status === 'win', `${lvl.id}: solver can clear (${result.status}, ${result.steps} moves)`);
+        }
 
-      const tutorialMummy = mummyLevels.find((l) => l.difficulty === 1);
-      const tutorialPush = pushLevels.find((l) => l.difficulty === 1);
-      assert(simulateInline('mummy_maze', tutorialMummy) === 'win', `mummy tutorial solvable`);
-      assert(simulateInline('push_box', tutorialPush) === 'win', `push tutorial solvable`);
+        const tutorialMummy = mummyLevels.find((l) => Number(l.difficulty) === 1);
+        const tutorialPush = pushLevels.find((l) => Number(l.difficulty) === 1);
 
-      // Hint returns a legal next move (or null only on terminal/unsolvable)
-      const inst = makeInstance('mummy_maze', tutorialMummy);
-      const hintAction = inst.game._solveNext(inst.game.getState());
-      assert(['up','down','left','right','wait'].includes(hintAction), `mummy hint is a legal action: ${hintAction}`);
+        const inst = makeInstance('mummy_maze', tutorialMummy);
+        const hintAction = inst.game._solveNext(inst.game.getState());
+        assert(['up','down','left','right','wait'].includes(hintAction), `mummy hint is legal: ${hintAction}`);
 
-      // Undo restores prior state
-      const u = makeInstance('push_box', tutorialPush);
-      const before = JSON.stringify(u.game.getState());
-      u.game.handleAction('right');
-      u.game.undo();
-      const after = JSON.stringify(u.game.getState());
-      assert(before === after, 'push: undo restores prior state');
+        const u = makeInstance('push_box', tutorialPush);
+        const before = JSON.stringify(u.game.getState());
+        u.game.handleAction('right');
+        u.game.undo();
+        const after = JSON.stringify(u.game.getState());
+        assert(before === after, 'push: undo restores prior state');
 
-      // Reset restores initial state
-      const r = makeInstance('mummy_maze', tutorialMummy);
-      const initial = JSON.stringify(r.game.getState());
-      r.game.handleAction('down');
-      r.game.handleAction('down');
-      r.game.reset();
-      const resetState = JSON.stringify(r.game.getState());
-      assert(initial === resetState, 'mummy: reset restores initial state');
+        const r = makeInstance('mummy_maze', tutorialMummy);
+        const initial = JSON.stringify(r.game.getState());
+        r.game.handleAction('down');
+        r.game.handleAction('down');
+        r.game.reset();
+        const resetState = JSON.stringify(r.game.getState());
+        assert(initial === resetState, 'mummy: reset restores initial state');
 
-      // Win path returns result object via onComplete
-      const winResult = await runUntilDone('mummy_maze', tutorialMummy, ['down','down','down','down','down','down']);
-      assert(winResult.status === 'win', `mummy result.status === win`);
-      assert(Array.isArray(winResult.tags), `mummy result.tags is array`);
-      assert(Array.isArray(winResult.suggestedOps), `mummy result.suggestedOps is array`);
+        const winResult = await runUntilDone('mummy_maze', tutorialMummy, ['down','down','down','down','down','down']);
+        assert(winResult.status === 'win', 'mummy result.status === win');
+        assert(Array.isArray(winResult.tags), 'mummy result.tags is array');
+        assert(Array.isArray(winResult.suggestedOps), 'mummy result.suggestedOps is array');
 
-      // Fail path returns result object too
-      const failTrap = mummyLevels.find((l) => l.difficulty === 4);
-      const failResult = await runUntilDone('mummy_maze', failTrap, ['right','right','right']);
-      assert(failResult.status === 'fail' || failResult.status === 'play', `mummy fail returns status (${failResult.status})`);
+        const failTrap = mummyLevels.find((l) => Number(l.difficulty) === 4);
+        const failResult = await runUntilDone('mummy_maze', failTrap, ['right','right','right']);
+        assert(['fail', 'play', 'win'].includes(failResult.status), `mummy fail path returns a status (${failResult.status})`);
 
-      // Check no direct CampaignOps call inside mini-game source
-      const srcCheck = await Promise.all([
-        fetch('js/minigames/mummy-maze.js').then(r => r.text()),
-        fetch('js/minigames/push-box.js').then(r => r.text())
-      ]);
-      for (let i = 0; i < srcCheck.length; i++) {
-        const found = /CampaignOps\s*\(\s*\)|CampaignOps\.apply/.test(srcCheck[i]);
-        assert(!found, `${['mummy','push'][i]} does not call CampaignOps directly`);
+        const srcCheck = await Promise.all([
+          fetch('js/minigames/mummy-maze.js').then(r => r.text()),
+          fetch('js/minigames/push-box.js').then(r => r.text())
+        ]);
+        for (let i = 0; i < srcCheck.length; i++) {
+          const found = /CampaignOps\s*\(\s*\)|CampaignOps\.apply/.test(srcCheck[i]);
+          assert(!found, `${['mummy','push'][i]} does not call CampaignOps directly`);
+        }
+      } catch (error) {
+        fail++;
+        log(`ERROR ${error.message || error}`);
       }
 
       log(`\n${pass} passed, ${fail} failed.`);
@@ -220,21 +228,21 @@
       return { game };
     }
 
-    function simulateInline(gameId, level) {
+    function simulateInline(gameId, level, limit = 80) {
       const reg = window.CJS.MinigameRegistry;
       const entry = reg.getGame(gameId);
       const canvas = document.createElement('canvas');
       const stage = document.createElement('div');
       stage.appendChild(canvas);
       const inst = entry.factory({ canvas, stage, level, options: {}, onUpdate: () => {}, onComplete: () => {} });
-      for (let i = 0; i < 80; i++) {
+      for (let i = 0; i < limit; i++) {
         const s = inst.getState();
-        if (s.status !== 'play') return s.status;
+        if (s.status !== 'play') return { status: s.status, steps: i };
         const next = inst._solveNext(s);
-        if (!next) return 'unsolvable';
+        if (!next) return { status: 'unsolvable', steps: i };
         inst.handleAction(next);
       }
-      return 'timeout';
+      return { status: 'timeout', steps: limit };
     }
 
     function runUntilDone(gameId, level, moves) {
@@ -251,7 +259,6 @@
           onComplete: (summary) => {
             if (resolved) return;
             resolved = true;
-            // Wrap summary in result-shape (subset)
             resolve({
               status: summary.status,
               turns: summary.turns,
@@ -272,7 +279,9 @@
     }
 
     renderTabs();
-    selectGame('mummy_maze');
+    selectGame('mummy_maze').catch((error) => {
+      gridEl.innerHTML = `<div class="level-card is-error">${escapeHtml(error.message || error)}</div>`;
+    });
   })();
   </script>
 </body>

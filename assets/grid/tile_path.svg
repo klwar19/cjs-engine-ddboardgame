@@ -1,24 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#c2a981"/>
-      <stop offset="1" stop-color="#8a7250"/>
+    <linearGradient id="path" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d4bb8a"/>
+      <stop offset="0.52" stop-color="#aa8759"/>
+      <stop offset="1" stop-color="#705237"/>
     </linearGradient>
+    <radialGradient id="light" cx="0.4" cy="0.18" r="0.9">
+      <stop offset="0" stop-color="#fff0bd" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="64" height="64" fill="url(#g)"/>
-  <g fill="#9d8460" opacity="0.55">
-    <circle cx="16" cy="20" r="2.4"/>
-    <circle cx="44" cy="14" r="2.0"/>
-    <circle cx="30" cy="36" r="2.6"/>
-    <circle cx="50" cy="44" r="2.2"/>
-    <circle cx="12" cy="48" r="1.9"/>
-    <circle cx="56" cy="28" r="1.8"/>
+  <rect width="64" height="64" fill="url(#path)"/>
+  <rect width="64" height="64" fill="url(#light)"/>
+  <g fill="#8e6c44" opacity="0.62">
+    <ellipse cx="15" cy="18" rx="3.2" ry="2.2" transform="rotate(-18 15 18)"/>
+    <ellipse cx="43" cy="13" rx="2.7" ry="1.9" transform="rotate(13 43 13)"/>
+    <ellipse cx="30" cy="36" rx="3.4" ry="2.3" transform="rotate(-8 30 36)"/>
+    <ellipse cx="51" cy="45" rx="2.8" ry="2.0" transform="rotate(20 51 45)"/>
+    <ellipse cx="13" cy="49" rx="2.4" ry="1.7" transform="rotate(12 13 49)"/>
+    <ellipse cx="56" cy="28" rx="2.1" ry="1.5" transform="rotate(-22 56 28)"/>
   </g>
-  <g fill="#5e4a30" opacity="0.55">
-    <circle cx="16" cy="20" r="0.8"/>
-    <circle cx="44" cy="14" r="0.7"/>
-    <circle cx="30" cy="36" r="0.9"/>
-    <circle cx="50" cy="44" r="0.8"/>
+  <g fill="#4f3922" opacity="0.46">
+    <circle cx="15" cy="18" r="0.8"/>
+    <circle cx="43" cy="13" r="0.7"/>
+    <circle cx="30" cy="36" r="0.85"/>
+    <circle cx="51" cy="45" r="0.75"/>
+    <circle cx="57" cy="28" r="0.65"/>
   </g>
-  <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#5b4628" stroke-width="1" opacity="0.55"/>
+  <g fill="none" stroke="#ead09a" stroke-width="0.8" stroke-linecap="round" opacity="0.34">
+    <path d="M4 8 C14 13 22 9 32 14 S51 17 60 10"/>
+    <path d="M3 58 C12 52 22 57 31 52 S48 49 61 55"/>
+  </g>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#4e3720" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#f5dba6" stroke-opacity="0.18"/>
 </svg>

@@ -1,29 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#a07a52"/>
-      <stop offset="1" stop-color="#6a4d2c"/>
+    <linearGradient id="earth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a67b4f"/>
+      <stop offset="0.55" stop-color="#765233"/>
+      <stop offset="1" stop-color="#4b311d"/>
     </linearGradient>
-    <radialGradient id="lt" cx="0.35" cy="0.25" r="0.9">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    <radialGradient id="dust" cx="0.33" cy="0.18" r="0.9">
+      <stop offset="0" stop-color="#f0c88a" stop-opacity="0.23"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="64" height="64" fill="url(#g)"/>
-  <rect width="64" height="64" fill="url(#lt)"/>
-  <g fill="#553a1f" opacity="0.5">
-    <circle cx="14" cy="20" r="1.5"/>
-    <circle cx="44" cy="14" r="1.1"/>
-    <circle cx="28" cy="40" r="1.8"/>
-    <circle cx="52" cy="46" r="1.3"/>
-    <circle cx="10" cy="52" r="1.0"/>
-    <circle cx="36" cy="56" r="0.9"/>
+  <rect width="64" height="64" fill="url(#earth)"/>
+  <rect width="64" height="64" fill="url(#dust)"/>
+  <g opacity="0.36" fill="none" stroke="#3a2414" stroke-linecap="round">
+    <path d="M4 19 C12 17 17 22 25 20 S38 15 47 18 S58 20 63 17" stroke-width="1.1"/>
+    <path d="M2 43 C11 38 17 45 27 41 S44 38 52 44" stroke-width="1"/>
+    <path d="M19 5 C23 10 23 13 28 17" stroke-width="0.8"/>
+    <path d="M45 52 C49 55 53 56 59 55" stroke-width="0.8"/>
+  </g>
+  <g fill="#3d2818" opacity="0.56">
+    <circle cx="13" cy="21" r="1.5"/>
+    <circle cx="45" cy="13" r="1.1"/>
+    <circle cx="29" cy="39" r="1.8"/>
+    <circle cx="53" cy="47" r="1.4"/>
+    <circle cx="9" cy="52" r="1.0"/>
+    <circle cx="37" cy="56" r="0.9"/>
     <circle cx="58" cy="28" r="0.8"/>
   </g>
-  <g fill="#c4a17a" opacity="0.5">
-    <circle cx="20" cy="32" r="0.7"/>
-    <circle cx="40" cy="24" r="0.6"/>
-    <circle cx="48" cy="52" r="0.7"/>
+  <g fill="#c89a62" opacity="0.62">
+    <ellipse cx="21" cy="32" rx="1.4" ry="0.7"/>
+    <ellipse cx="41" cy="25" rx="1.1" ry="0.55"/>
+    <ellipse cx="49" cy="53" rx="1.2" ry="0.6"/>
+    <ellipse cx="8" cy="10" rx="1" ry="0.5"/>
   </g>
-  <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#3d2812" stroke-width="1" opacity="0.55"/>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#2a180d" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#e6b071" stroke-opacity="0.16"/>
 </svg>

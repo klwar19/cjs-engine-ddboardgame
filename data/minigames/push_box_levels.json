@@ -61,7 +61,7 @@
       ],
       "optimalPushes": 4,
       "optimalMoves": 8,
-      "hint": "Order matters. Park the leftmost crate first, then the right one — otherwise you'll block your own approach.",
+      "hint": "Order matters. Park the leftmost crate first, then move the right one so you do not block your own approach.",
       "tags": ["crate", "guild", "order"]
     },
     {
@@ -103,7 +103,7 @@
       ],
       "optimalPushes": 8,
       "optimalMoves": 18,
-      "hint": "Three crates, three runes, one wrong push and a crate is welded to a wall. The deadlock warnings (red boxes) flag the dead state — undo and try a different order.",
+      "hint": "Three crates, three runes, one wrong push and a crate is welded to a wall. Red deadlock warnings mean undo and try a different order.",
       "tags": ["crate", "guild", "hard", "deadlock"]
     },
     {
@@ -135,17 +135,17 @@
       "width": 7,
       "height": 7,
       "player": [1, 1],
-      "boxes": [[3, 1]],
-      "goals": [[3, 5]],
+      "boxes": [[3, 2]],
+      "goals": [[4, 5]],
       "walls": [
         [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
         [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
         [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
         [4,2],[4,3],[2,4],[2,3]
       ],
-      "optimalPushes": 4,
+      "optimalPushes": 5,
       "optimalMoves": 14,
-      "hint": "Push south, but mind the switchback — you'll have to swing the player around the wall to keep pushing.",
+      "hint": "Push south through the switchback, loop around the divider, then finish by nudging the crate east.",
       "tags": ["crate", "guild", "switchback"]
     },
     {
@@ -155,7 +155,7 @@
       "theme": "guild_storehouse",
       "width": 9,
       "height": 6,
-      "player": [4, 4],
+      "player": [4, 1],
       "boxes": [[2, 2], [4, 2], [6, 2]],
       "goals": [[2, 4], [4, 4], [6, 4]],
       "walls": [
@@ -187,7 +187,7 @@
       ],
       "optimalPushes": 8,
       "optimalMoves": 22,
-      "hint": "Split the crates left and right around the central column. Push each diagonally — north then west / east.",
+      "hint": "Split the crates left and right around the central column. Push north first, then fan them west and east.",
       "tags": ["crate", "guild", "diagonal", "hard"]
     },
     {
@@ -197,18 +197,18 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 7,
-      "player": [3, 5],
-      "boxes": [[3, 3]],
+      "player": [5, 4],
+      "boxes": [[4, 4]],
       "goals": [[1, 1]],
       "walls": [
         [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
         [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
         [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
-        [2,2],[2,3],[2,4],[4,2],[4,3],[3,2]
+        [3,2],[4,2],[5,2],[3,3],[5,3],[3,5]
       ],
-      "optimalPushes": 4,
+      "optimalPushes": 6,
       "optimalMoves": 16,
-      "hint": "The spiral forces you around the outside. Push the crate west, then north, hugging the inner wall.",
+      "hint": "Push the crate west into the left lane, then loop underneath and drive it north to the rune.",
       "tags": ["crate", "guild", "spiral", "hardest"]
     },
     {

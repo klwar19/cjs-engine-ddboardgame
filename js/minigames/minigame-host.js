@@ -82,13 +82,13 @@ window.CJS.Minigames = (() => {
       <main class="minigame-stage" data-mg="stage" tabindex="0">
         <canvas data-mg="canvas" width="320" height="320" aria-label="Mini-game board"></canvas>
         <div class="minigame-touchpad" data-mg="touchpad">
-          <button data-act="up" aria-label="Move up">▲</button>
+          <button data-act="up" aria-label="Move up">&uarr;</button>
           <div class="minigame-touchrow">
-            <button data-act="left" aria-label="Move left">◀</button>
-            <button data-act="wait" aria-label="Wait">●</button>
-            <button data-act="right" aria-label="Move right">▶</button>
+            <button data-act="left" aria-label="Move left">&larr;</button>
+            <button data-act="wait" aria-label="Wait">&bull;</button>
+            <button data-act="right" aria-label="Move right">&rarr;</button>
           </div>
-          <button data-act="down" aria-label="Move down">▼</button>
+          <button data-act="down" aria-label="Move down">&darr;</button>
         </div>
       </main>
       <footer class="minigame-controls">
@@ -99,7 +99,7 @@ window.CJS.Minigames = (() => {
         <button data-act="exit" class="minigame-ghost">Exit</button>
       </footer>
       <div class="minigame-result" data-mg="result" hidden>
-        <h3 data-mg="result-title">—</h3>
+        <h3 data-mg="result-title">Result</h3>
         <pre data-mg="result-json"></pre>
         <div class="minigame-result-actions">
           <button data-act="result-retry">Retry</button>

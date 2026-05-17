@@ -226,9 +226,10 @@ window.CJS.CampaignMap = (() => {
 
   function _playerMarkupV2(run = {}) {
     const facing = _normalizeFacing(run?.facing || 'down');
+    const moving = _recentMotionClass(run?.playerMotionAt);
     return `
       <span class="campaign-grid-player-shadow" aria-hidden="true"></span>
-      <span class="campaign-grid-player" data-facing="${_escAttr(facing)}" aria-label="Bin's party stands here"></span>
+      <span class="campaign-grid-player ${moving}" data-facing="${_escAttr(facing)}" aria-label="Bin's party stands here"></span>
       <span class="campaign-grid-player-tag" aria-hidden="true">Bin</span>
     `;
   }
@@ -242,15 +243,17 @@ window.CJS.CampaignMap = (() => {
     const size = 56;
     const half = size / 2;
     const facing = _normalizeFacing(run?.facing || 'down');
+    const moving = _recentMotionClass(run?.playerMotionAt);
     return `
       <g class="campaign-map-player-art" data-node-id="${_escAttr(node.id)}">
         <ellipse cx="${cx}" cy="${cy + 26}" rx="${size * 0.36}" ry="6" class="campaign-map-player-shadow"/>
         <foreignObject x="${cx - half}" y="${cy - half - 18}" width="${size}" height="${size}">
-          <span xmlns="http://www.w3.org/1999/xhtml"
-                class="campaign-map-player-sprite"
-                data-facing="${_escAttr(facing)}"
-                role="img"
-                aria-label="Bin"></span>
+          <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-map-player-frame">
+            <span class="campaign-map-player-sprite ${moving}"
+                  data-facing="${_escAttr(facing)}"
+                  role="img"
+                  aria-label="Bin"></span>
+          </div>
         </foreignObject>
         <rect class="campaign-map-player-tag-bg" x="${cx - 22}" y="${cy + 34}" width="44" height="14" rx="7"/>
         <text class="campaign-map-player-tag" x="${cx}" y="${cy + 44}" text-anchor="middle">Bin</text>
@@ -267,7 +270,9 @@ window.CJS.CampaignMap = (() => {
     // animates the default shadow_stalker.png sprite sheet using
     // data-facing for the row.
     const inlineSprite = sprite ? `style="--threat-sprite:url('${_escAttr(sprite)}');"` : '';
-    const cls = `campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''} ${sprite ? 'has-sprite' : ''}`;
+    const moving = _recentMotionClass(threat._motionAt);
+    const spriteMode = sprite ? (_isThreatSheet(sprite) ? 'has-sheet' : 'has-sprite') : '';
+    const cls = `campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''} ${spriteMode} ${moving}`;
     return `
       <span class="campaign-grid-threat-shadow" aria-hidden="true"></span>
       <span class="${cls}" data-facing="${_escAttr(facing)}" title="${title}" aria-hidden="true" ${inlineSprite}></span>
@@ -294,6 +299,13 @@ window.CJS.CampaignMap = (() => {
     if (v === 'left' || v === 'west') return 'left';
     if (v === 'right' || v === 'east') return 'right';
     return 'down';
+  }
+
+  function _recentMotionClass(value, windowMs = 850) {
+    const timestamp = Number(value || 0);
+    return Number.isFinite(timestamp) && timestamp > 0 && Date.now() - timestamp <= windowMs
+      ? 'is-moving'
+      : '';
   }
 
   function _isAdjacent(current = {}, threat = {}) {
@@ -324,6 +336,11 @@ window.CJS.CampaignMap = (() => {
       if (record?.sprite) return record.sprite;
     }
     return '';
+  }
+
+  function _isThreatSheet(path = '') {
+    const value = String(path || '').toLowerCase();
+    return value.includes('sheet') || value.includes('shadow_stalker') || value.includes('move_');
   }
 
   function _threatIcon(threat = {}) {

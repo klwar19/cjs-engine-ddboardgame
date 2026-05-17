@@ -1,29 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#86c060"/>
-      <stop offset="1" stop-color="#4f8c38"/>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fcf6a"/>
+      <stop offset="0.48" stop-color="#65aa46"/>
+      <stop offset="1" stop-color="#3f782c"/>
     </linearGradient>
-    <radialGradient id="lt" cx="0.3" cy="0.2" r="0.9">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    <radialGradient id="sun" cx="0.25" cy="0.12" r="0.95">
+      <stop offset="0" stop-color="#fff6bc" stop-opacity="0.34"/>
+      <stop offset="0.58" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#15340f" stop-opacity="0"/>
     </radialGradient>
+    <pattern id="grain" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M3 14 C6 8 5 5 7 1 M11 15 C13 10 13 6 15 2" fill="none" stroke="#2e6122" stroke-width="0.8" stroke-linecap="round" opacity="0.42"/>
+    </pattern>
   </defs>
-  <rect width="64" height="64" fill="url(#g)"/>
-  <rect width="64" height="64" fill="url(#lt)"/>
-  <g stroke="#3a6a26" stroke-width="0.8" stroke-linecap="round" opacity="0.7">
-    <path d="M10 50 L8 44"/><path d="M12 50 L13 43"/><path d="M14 51 L15 44"/>
-    <path d="M30 28 L29 22"/><path d="M32 28 L33 21"/><path d="M34 29 L35 22"/>
-    <path d="M48 46 L47 40"/><path d="M50 47 L51 40"/><path d="M52 47 L53 41"/>
-    <path d="M20 14 L19 9"/><path d="M22 14 L23 9"/>
-    <path d="M44 18 L43 13"/><path d="M46 19 L47 13"/>
-    <path d="M5 30 L4 25"/>
-    <path d="M58 34 L59 28"/>
+  <rect width="64" height="64" fill="url(#base)"/>
+  <rect width="64" height="64" fill="url(#grain)" opacity="0.72"/>
+  <rect width="64" height="64" fill="url(#sun)"/>
+  <g stroke-linecap="round" fill="none">
+    <g stroke="#caeaa3" stroke-width="1.2" opacity="0.72">
+      <path d="M9 52 L7 43"/><path d="M12 53 L14 42"/><path d="M17 50 L19 43"/>
+      <path d="M31 28 L29 19"/><path d="M34 29 L37 20"/>
+      <path d="M49 47 L47 38"/><path d="M53 48 L56 39"/>
+      <path d="M22 15 L20 7"/><path d="M45 18 L48 10"/>
+    </g>
+    <g stroke="#2b5b20" stroke-width="1.4" opacity="0.65">
+      <path d="M10 53 L13 46"/><path d="M33 30 L35 22"/><path d="M51 49 L52 41"/>
+      <path d="M5 34 L8 27"/><path d="M58 31 L56 25"/>
+    </g>
   </g>
-  <g fill="#a8d68a" opacity="0.6">
-    <circle cx="11" cy="50" r="0.7"/>
-    <circle cx="31" cy="28" r="0.7"/>
-    <circle cx="49" cy="46" r="0.7"/>
+  <g fill="#f2ffd5" opacity="0.78">
+    <circle cx="14" cy="49" r="0.9"/>
+    <circle cx="33" cy="27" r="0.8"/>
+    <circle cx="50" cy="45" r="0.8"/>
+    <circle cx="46" cy="17" r="0.7"/>
   </g>
-  <rect x="0.5" y="0.5" width="63" height="63" fill="none" stroke="#2b5018" stroke-width="1" opacity="0.5"/>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#233d17" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#c9f3a7" stroke-opacity="0.18"/>
 </svg>

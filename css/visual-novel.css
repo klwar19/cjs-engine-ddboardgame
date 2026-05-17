@@ -1100,3 +1100,100 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
   font-weight: 700;
   margin-right: 6px;
 }
+
+/* V2 grid repair.
+   This file is loaded after campaign.css and still carries legacy grid styles
+   for older panels. Keep those rules away from the newer square-grid renderer
+   so sprite spans keep their absolute layout and real tile art stays visible. */
+.campaign-grid-cell.v2::before {
+  content: none;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player,
+.campaign-grid-cell.v2 > .campaign-grid-player-shadow,
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2,
+.campaign-grid-cell.v2 > .campaign-grid-threat-shadow,
+.campaign-grid-cell.v2 > .campaign-grid-cell-node,
+.campaign-grid-cell.v2 > .campaign-grid-player-tag,
+.campaign-grid-cell.v2 > .campaign-grid-threat-tag,
+.campaign-grid-cell.v2 > .campaign-grid-cell-label {
+  text-shadow: none;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player,
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2 {
+  position: absolute;
+  inset: 0;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player-shadow,
+.campaign-grid-cell.v2 > .campaign-grid-threat-shadow {
+  position: absolute;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-cell-node,
+.campaign-grid-cell.v2 > .campaign-grid-player-tag,
+.campaign-grid-cell.v2 > .campaign-grid-threat-tag,
+.campaign-grid-cell.v2 > .campaign-grid-cell-label {
+  position: absolute;
+}
+
+.campaign-grid-cell.v2.is-hidden .campaign-grid-threat.v2,
+.campaign-grid-cell.v2.is-hidden .campaign-grid-threat-shadow {
+  visibility: visible;
+  display: block;
+}
+
+.campaign-grid-cell.v2.is-active .campaign-grid-player,
+.campaign-grid-cell.v2.is-active .campaign-grid-player-shadow,
+.campaign-grid-cell.v2.is-active .campaign-grid-player-tag {
+  visibility: visible;
+  display: block;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player,
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2,
+.campaign-grid-cell.v2 > .campaign-grid-player-shadow,
+.campaign-grid-cell.v2 > .campaign-grid-threat-shadow {
+  animation: none;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="down"] {
+  animation: campaign-grid-player-walk-down 0.48s steps(4) 1 both,
+             campaign-grid-player-bob 0.48s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="up"] {
+  animation: campaign-grid-player-walk-up 0.48s steps(4) 1 both,
+             campaign-grid-player-bob 0.48s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="right"] {
+  animation: campaign-grid-player-walk-right 0.48s steps(4) 1 both,
+             campaign-grid-player-bob 0.48s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-player.is-moving[data-facing="left"] {
+  animation: campaign-grid-player-walk-left 0.48s steps(4) 1 both,
+             campaign-grid-player-bob 0.48s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="down"]:not(.has-sprite):not(.no-sprite) {
+  animation: campaign-grid-threat-walk-down 0.52s steps(4) 1 both,
+             campaign-grid-threat-bob 0.52s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="up"]:not(.has-sprite):not(.no-sprite) {
+  animation: campaign-grid-threat-walk-up 0.52s steps(4) 1 both,
+             campaign-grid-threat-bob 0.52s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="right"]:not(.has-sprite):not(.no-sprite) {
+  animation: campaign-grid-threat-walk-right 0.52s steps(4) 1 both,
+             campaign-grid-threat-bob 0.52s ease-out 1;
+}
+
+.campaign-grid-cell.v2 > .campaign-grid-threat.v2.is-moving[data-facing="left"]:not(.has-sprite):not(.no-sprite) {
+  animation: campaign-grid-threat-walk-left 0.52s steps(4) 1 both,
+             campaign-grid-threat-bob 0.52s ease-out 1;
+}

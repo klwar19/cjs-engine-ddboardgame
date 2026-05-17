@@ -356,7 +356,21 @@ window.CJS.ScenarioRunner = (() => {
     }
     if (travelOps.length) Ops().apply(travelOps, { source: 'map_travel' });
 
+    const dxMove = Number(node.x) - Number(current?.x);
+    const dyMove = Number(node.y) - Number(current?.y);
+    const facing = Math.abs(dxMove) >= Math.abs(dyMove)
+      ? (dxMove >= 0 ? 'right' : 'left')
+      : (dyMove >= 0 ? 'down' : 'up');
+    const moved = nodeId !== run.currentNode;
     Ops().apply({ op: 'goto_node', nodeId }, { source: 'map_move' });
+    if (moved) {
+      CS().mutate((next) => {
+        const active = next.activeScenarioRun;
+        if (!active) return;
+        active.facing = (Number.isFinite(dxMove) || Number.isFinite(dyMove)) ? facing : (active.facing || 'down');
+        active.playerMotionAt = Date.now();
+      }, { source: 'map_move_motion' });
+    }
     _revealNodeNeighborhood(map, nodeId);
 
     if (window.CJS.CampaignStoryScenes?.prepareNodeEntry?.(node, map, { source: 'node_enter' })) {
@@ -427,6 +441,7 @@ window.CJS.ScenarioRunner = (() => {
       if (!active) return;
       active.currentCell = { x: Number(target.x), y: Number(target.y) };
       active.facing = (dxMove === 0 && dyMove === 0) ? (active.facing || 'down') : facing;
+      if (dxMove !== 0 || dyMove !== 0) active.playerMotionAt = Date.now();
       active.visitedCells = active.visitedCells || [];
       active.revealedCells = active.revealedCells || [];
       if (!active.visitedCells.includes(targetKey)) active.visitedCells.push(targetKey);
@@ -439,20 +454,23 @@ window.CJS.ScenarioRunner = (() => {
     }, { source: 'grid_move' });
 
     _revealCellNeighborhood(map, target.x, target.y, activeLevelId);
+    const threatPending = _stepMovingThreats(map, target, targetKey);
 
     if (Array.isArray(target.onEnter) && target.onEnter.length) {
       Ops().apply(target.onEnter, { source: 'grid_cell_enter' });
     }
-    if (target.randomBattle) {
+    if (!threatPending && target.randomBattle) {
       maybeTriggerRandomBattle(target.randomBattle);
     }
-    _maybeTravelSurprise({
-      mode: 'grid_map',
-      map,
-      location: target,
-      locationKey: targetKey,
-      repeated: alreadyVisited
-    });
+    if (!threatPending) {
+      _maybeTravelSurprise({
+        mode: 'grid_map',
+        map,
+        location: target,
+        locationKey: targetKey,
+        repeated: alreadyVisited
+      });
+    }
     const scenario = CS().getActiveScenario();
     window.CJS.CampaignPartyChat?.auto?.({
       world: scenario?.world || state.currentWorld,
@@ -495,9 +513,6 @@ window.CJS.ScenarioRunner = (() => {
         previousLevelId,
         explorationPercent
       });
-    }
-    if (!CS().getState()?.pendingBattle) {
-      _stepMovingThreats(map, target, targetKey);
     }
     handleLocationEntry('cell', target, { map, run: CS().getState()?.activeScenarioRun || run, cellKey: targetKey });
     return target;
@@ -2562,6 +2577,8 @@ window.CJS.ScenarioRunner = (() => {
         }
       }
       if (pick) {
+        const oldX = Number(threat.x);
+        const oldY = Number(threat.y);
         const dx = Number(pick.x) - Number(threat.x);
         const dy = Number(pick.y) - Number(threat.y);
         threat._lastDir = Math.abs(dx) >= Math.abs(dy)
@@ -2570,6 +2587,7 @@ window.CJS.ScenarioRunner = (() => {
         threat.x = Number(pick.x);
         threat.y = Number(pick.y);
         threat.levelId = _defaultGridLevelId(map, pick.levelId || threat.levelId);
+        if (Number(threat.x) !== oldX || Number(threat.y) !== oldY) threat._motionAt = Date.now();
       }
       const movedKey = _cellKey(threat.x, threat.y, threat.levelId, map);
       occupied.add(movedKey);

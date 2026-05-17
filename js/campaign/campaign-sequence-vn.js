@@ -364,10 +364,19 @@ window.CJS.CampaignSequenceVN = (() => {
       const id = choice.id || `choice_${index + 1}`;
       const label = choice.label || choice.text || id;
       const summary = choice.summary || choice.hint || '';
+      const tone = choice.kind || choice.tone || (index === 0 ? 'primary' : '');
+      const className = [
+        'campaign-seq-vn-choice',
+        tone === 'primary' ? 'is-primary' : '',
+        tone === 'danger' || tone === 'risk' ? 'is-danger' : ''
+      ].filter(Boolean).join(' ');
       return `
-        <button type="button" class="campaign-seq-vn-choice" data-vn-choice="${_escAttr(id)}">
-          <strong>${_esc(label)}</strong>
-          ${summary ? `<span>${_esc(summary)}</span>` : ''}
+        <button type="button" class="${className}" data-vn-choice="${_escAttr(id)}" aria-label="${_escAttr(label)}">
+          <span class="campaign-seq-vn-choice-index">${index + 1}</span>
+          <span class="campaign-seq-vn-choice-copy">
+            <strong>${_esc(label)}</strong>
+            ${summary ? `<small>${_esc(summary)}</small>` : ''}
+          </span>
         </button>
       `;
     }).join('');
@@ -391,7 +400,8 @@ window.CJS.CampaignSequenceVN = (() => {
     el.hidden = false;
     el.innerHTML = buttons.map((b) => `
       <button type="button" class="campaign-seq-vn-choice ${b.kind === 'danger' ? 'is-danger' : (b.kind === 'primary' ? 'is-primary' : '')}" data-vn-action="${_escAttr(b.action)}">
-        <strong>${_esc(b.label)}</strong>
+        <span class="campaign-seq-vn-choice-index">›</span>
+        <span class="campaign-seq-vn-choice-copy"><strong>${_esc(b.label)}</strong></span>
       </button>
     `).join('');
     el.querySelectorAll('[data-vn-action]').forEach((btn) => {
