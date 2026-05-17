@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="cave-bg" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#1f1a14"/>
+      <stop offset="0.55" stop-color="#0b0904"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="cave-spot" cx="0.32" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#c39c69" stop-opacity="0.18"/>
+      <stop offset="0.55" stop-color="#7a5a30" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="680" height="420" fill="url(#cave-bg)"/>
+  <rect width="680" height="420" fill="url(#cave-spot)"/>
+
+  <!-- stalactites top -->
+  <g fill="#221912">
+    <path d="M0 0 L40 0 L20 70 Z"/>
+    <path d="M50 0 L110 0 L80 110 Z"/>
+    <path d="M120 0 L180 0 L150 65 Z"/>
+    <path d="M180 0 L230 0 L205 90 Z"/>
+    <path d="M230 0 L280 0 L255 55 Z"/>
+    <path d="M280 0 L350 0 L315 85 Z"/>
+    <path d="M350 0 L400 0 L375 50 Z"/>
+    <path d="M400 0 L460 0 L430 95 Z"/>
+    <path d="M460 0 L500 0 L480 60 Z"/>
+    <path d="M510 0 L560 0 L535 70 Z"/>
+    <path d="M560 0 L610 0 L585 50 Z"/>
+    <path d="M610 0 L680 0 L645 80 Z"/>
+  </g>
+  <g fill="#3a2b1c" opacity="0.85">
+    <path d="M6 0 L34 0 L20 56 Z"/>
+    <path d="M62 0 L100 0 L80 92 Z"/>
+    <path d="M194 0 L222 0 L205 72 Z"/>
+    <path d="M294 0 L344 0 L315 68 Z"/>
+    <path d="M408 0 L452 0 L430 75 Z"/>
+    <path d="M620 0 L668 0 L645 64 Z"/>
+  </g>
+
+  <!-- stalagmites bottom -->
+  <g fill="#221912">
+    <path d="M0 420 L60 420 L30 340 Z"/>
+    <path d="M70 420 L130 420 L100 320 Z"/>
+    <path d="M150 420 L200 420 L175 360 Z"/>
+    <path d="M210 420 L270 420 L240 325 Z"/>
+    <path d="M280 420 L340 420 L310 355 Z"/>
+    <path d="M340 420 L390 420 L365 365 Z"/>
+    <path d="M400 420 L460 420 L430 320 Z"/>
+    <path d="M470 420 L520 420 L495 365 Z"/>
+    <path d="M530 420 L600 420 L565 320 Z"/>
+    <path d="M610 420 L680 420 L645 360 Z"/>
+  </g>
+  <g fill="#3a2b1c" opacity="0.85">
+    <path d="M12 420 L48 420 L30 360 Z"/>
+    <path d="M84 420 L116 420 L100 340 Z"/>
+    <path d="M222 420 L258 420 L240 350 Z"/>
+    <path d="M298 420 L324 420 L310 372 Z"/>
+    <path d="M414 420 L446 420 L430 350 Z"/>
+    <path d="M544 420 L586 420 L565 348 Z"/>
+  </g>
+
+  <!-- glow flecks (crystals) -->
+  <g fill="#7ce4d2" opacity="0.6">
+    <circle cx="90" cy="208" r="2"/>
+    <circle cx="240" cy="174" r="2.4"/>
+    <circle cx="390" cy="190" r="1.8"/>
+    <circle cx="540" cy="208" r="2.2"/>
+    <circle cx="120" cy="296" r="1.7"/>
+    <circle cx="450" cy="280" r="1.9"/>
+    <circle cx="615" cy="270" r="1.8"/>
+  </g>
+  <g fill="#7ce4d2" opacity="0.18">
+    <circle cx="90" cy="208" r="9"/>
+    <circle cx="240" cy="174" r="11"/>
+    <circle cx="390" cy="190" r="9"/>
+    <circle cx="540" cy="208" r="10"/>
+    <circle cx="120" cy="296" r="8"/>
+    <circle cx="450" cy="280" r="9"/>
+    <circle cx="615" cy="270" r="9"/>
+  </g>
+</svg>

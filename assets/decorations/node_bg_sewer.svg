@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sew-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22321b"/>
+      <stop offset="0.55" stop-color="#0e160a"/>
+      <stop offset="1" stop-color="#05080a"/>
+    </linearGradient>
+    <linearGradient id="sew-pipe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2e1f"/>
+      <stop offset="0.55" stop-color="#1f180e"/>
+      <stop offset="1" stop-color="#0a0703"/>
+    </linearGradient>
+    <radialGradient id="sew-puddle" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#88c060" stop-opacity="0.32"/>
+      <stop offset="0.55" stop-color="#536b30" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="680" height="420" fill="url(#sew-bg)"/>
+
+  <!-- giant pipe back -->
+  <g>
+    <rect x="0" y="60" width="680" height="160" fill="url(#sew-pipe)" opacity="0.95"/>
+    <rect x="0" y="58" width="680" height="14" fill="#5b4a2b" opacity="0.6"/>
+    <rect x="0" y="206" width="680" height="14" fill="#5b4a2b" opacity="0.6"/>
+    <!-- rivets -->
+    <g fill="#8f7637">
+      <circle cx="40" cy="78" r="3"/><circle cx="140" cy="78" r="3"/><circle cx="240" cy="78" r="3"/>
+      <circle cx="340" cy="78" r="3"/><circle cx="440" cy="78" r="3"/><circle cx="540" cy="78" r="3"/>
+      <circle cx="640" cy="78" r="3"/>
+      <circle cx="40" cy="212" r="3"/><circle cx="140" cy="212" r="3"/><circle cx="240" cy="212" r="3"/>
+      <circle cx="340" cy="212" r="3"/><circle cx="440" cy="212" r="3"/><circle cx="540" cy="212" r="3"/>
+      <circle cx="640" cy="212" r="3"/>
+    </g>
+    <!-- pipe shading -->
+    <rect x="0" y="100" width="680" height="3" fill="#0a0704" opacity="0.6"/>
+    <rect x="0" y="180" width="680" height="3" fill="#0a0704" opacity="0.6"/>
+  </g>
+
+  <!-- side pipes -->
+  <g fill="#2a2010" stroke="#0a0703" stroke-width="1.4">
+    <rect x="40" y="240" width="20" height="100"/>
+    <rect x="55" y="335" width="36" height="14"/>
+    <rect x="200" y="240" width="20" height="100"/>
+    <rect x="215" y="335" width="36" height="14"/>
+    <rect x="440" y="240" width="20" height="100"/>
+    <rect x="455" y="335" width="36" height="14"/>
+    <rect x="608" y="240" width="20" height="100"/>
+    <rect x="623" y="335" width="36" height="14"/>
+  </g>
+
+  <!-- floor canal -->
+  <rect x="0" y="350" width="680" height="70" fill="#10180b"/>
+  <rect x="0" y="350" width="680" height="6" fill="#1d3413" opacity="0.7"/>
+  <g fill="url(#sew-puddle)" opacity="0.7">
+    <ellipse cx="160" cy="400" rx="60" ry="14"/>
+    <ellipse cx="370" cy="402" rx="80" ry="16"/>
+    <ellipse cx="560" cy="400" rx="62" ry="14"/>
+  </g>
+  <g fill="#aae46e" opacity="0.42">
+    <ellipse cx="180" cy="402" rx="32" ry="6"/>
+    <ellipse cx="390" cy="402" rx="46" ry="6"/>
+    <ellipse cx="580" cy="402" rx="32" ry="6"/>
+  </g>
+
+  <!-- distant glow -->
+  <g fill="#83e056" opacity="0.4">
+    <circle cx="70" cy="345" r="5"/>
+    <circle cx="232" cy="345" r="5"/>
+    <circle cx="472" cy="345" r="5"/>
+    <circle cx="640" cy="345" r="5"/>
+  </g>
+</svg>

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="dun-stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22262d"/>
+      <stop offset="0.55" stop-color="#11151b"/>
+      <stop offset="1" stop-color="#080a0e"/>
+    </linearGradient>
+    <radialGradient id="dun-torch" cx="0.5" cy="0.4" r="0.65">
+      <stop offset="0" stop-color="#ffa959" stop-opacity="0.22"/>
+      <stop offset="0.55" stop-color="#ff7a25" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dun-blocks" x="0" y="0" width="80" height="40" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="80" height="40" fill="none" stroke="#0a0c11" stroke-width="1.5"/>
+      <line x1="40" y1="0" x2="40" y2="40" stroke="#0a0c11" stroke-width="1.5"/>
+      <line x1="-40" y1="20" x2="40" y2="20" stroke="#0a0c11" stroke-width="1.5"/>
+      <line x1="40" y1="20" x2="120" y2="20" stroke="#0a0c11" stroke-width="1.5"/>
+      <rect x="0" y="0" width="40" height="20" fill="#1a1f26" opacity="0.4"/>
+      <rect x="40" y="20" width="40" height="20" fill="#1a1f26" opacity="0.4"/>
+    </pattern>
+  </defs>
+  <rect width="680" height="420" fill="url(#dun-stone)"/>
+  <rect width="680" height="420" fill="url(#dun-blocks)" opacity="0.6"/>
+  <rect width="680" height="420" fill="url(#dun-torch)"/>
+
+  <!-- chains hanging from top -->
+  <g stroke="#1f1410" stroke-width="2" opacity="0.8">
+    <path d="M70 0 L70 70" fill="none"/>
+    <path d="M200 0 L200 50" fill="none"/>
+    <path d="M450 0 L450 60" fill="none"/>
+    <path d="M580 0 L580 45" fill="none"/>
+  </g>
+  <g fill="#5a3d1b" stroke="#1a0e08" stroke-width="0.8">
+    <circle cx="70" cy="70" r="4"/>
+    <circle cx="200" cy="50" r="4"/>
+    <circle cx="450" cy="60" r="4"/>
+    <circle cx="580" cy="45" r="4"/>
+  </g>
+
+  <!-- torches -->
+  <g>
+    <g transform="translate(110 110)">
+      <rect x="-1.5" y="0" width="3" height="14" fill="#1a0c06"/>
+      <path d="M-6 -8 Q-2 -20 0 -22 Q3 -16 6 -8 Q3 -4 0 -2 Q-3 -4 -6 -8 Z" fill="#ffae50"/>
+      <path d="M-3 -6 Q-1 -14 0 -16 Q2 -12 3 -6 Q1 -3 0 -2 Q-2 -3 -3 -6 Z" fill="#ffe2a3"/>
+    </g>
+    <g transform="translate(330 90)">
+      <rect x="-1.5" y="0" width="3" height="14" fill="#1a0c06"/>
+      <path d="M-6 -8 Q-2 -20 0 -22 Q3 -16 6 -8 Q3 -4 0 -2 Q-3 -4 -6 -8 Z" fill="#ffae50"/>
+      <path d="M-3 -6 Q-1 -14 0 -16 Q2 -12 3 -6 Q1 -3 0 -2 Q-2 -3 -3 -6 Z" fill="#ffe2a3"/>
+    </g>
+    <g transform="translate(560 110)">
+      <rect x="-1.5" y="0" width="3" height="14" fill="#1a0c06"/>
+      <path d="M-6 -8 Q-2 -20 0 -22 Q3 -16 6 -8 Q3 -4 0 -2 Q-3 -4 -6 -8 Z" fill="#ffae50"/>
+      <path d="M-3 -6 Q-1 -14 0 -16 Q2 -12 3 -6 Q1 -3 0 -2 Q-2 -3 -3 -6 Z" fill="#ffe2a3"/>
+    </g>
+  </g>
+
+  <!-- floor cracks -->
+  <g stroke="#000000" opacity="0.45" fill="none">
+    <path d="M40 380 C80 360 120 380 180 365"/>
+    <path d="M260 392 C320 380 380 388 440 376"/>
+    <path d="M460 396 C520 384 580 392 660 380"/>
+  </g>
+
+  <!-- moss/grime puddles -->
+  <g fill="#2d3a2e" opacity="0.55">
+    <ellipse cx="160" cy="392" rx="36" ry="6"/>
+    <ellipse cx="380" cy="402" rx="46" ry="6"/>
+    <ellipse cx="540" cy="398" rx="32" ry="5"/>
+  </g>
+
+  <!-- distant arches -->
+  <g fill="#0a0c11" stroke="#1c2128" stroke-width="1" opacity="0.85">
+    <path d="M40 240 L40 320 L100 320 L100 240 Q70 220 40 240 Z"/>
+    <path d="M580 240 L580 320 L640 320 L640 240 Q610 220 580 240 Z"/>
+  </g>
+</svg>

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="house-wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2c20"/>
+      <stop offset="0.55" stop-color="#241a13"/>
+      <stop offset="1" stop-color="#100a06"/>
+    </linearGradient>
+    <linearGradient id="house-floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b4123"/>
+      <stop offset="1" stop-color="#1f1308"/>
+    </linearGradient>
+    <radialGradient id="house-glow" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0" stop-color="#ffd380" stop-opacity="0.18"/>
+      <stop offset="0.55" stop-color="#ffd380" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="680" height="420" fill="url(#house-wall)"/>
+  <rect width="680" height="420" fill="url(#house-glow)"/>
+
+  <!-- wood floor -->
+  <rect x="0" y="320" width="680" height="100" fill="url(#house-floor)"/>
+  <g stroke="#0a0603" stroke-width="1.2" opacity="0.7">
+    <path d="M0 332 L680 332"/>
+    <path d="M0 350 L680 350"/>
+    <path d="M0 370 L680 370"/>
+    <path d="M0 390 L680 390"/>
+    <path d="M0 410 L680 410"/>
+    <path d="M80 320 L80 420"/>
+    <path d="M200 320 L200 420"/>
+    <path d="M340 320 L340 420"/>
+    <path d="M480 320 L480 420"/>
+    <path d="M600 320 L600 420"/>
+  </g>
+
+  <!-- wall planks -->
+  <g stroke="#0a0603" stroke-width="1.4" opacity="0.85">
+    <path d="M0 80 L680 80"/>
+    <path d="M0 140 L680 140"/>
+    <path d="M0 200 L680 200"/>
+    <path d="M0 260 L680 260"/>
+    <path d="M120 0 L120 320"/>
+    <path d="M260 0 L260 320"/>
+    <path d="M400 0 L400 320"/>
+    <path d="M540 0 L540 320"/>
+  </g>
+
+  <!-- window with fire glow -->
+  <g transform="translate(540 130)">
+    <rect x="-50" y="-50" width="100" height="100" fill="#0c0a08" stroke="#1a0e07" stroke-width="3"/>
+    <rect x="-46" y="-46" width="92" height="92" fill="#7a4a18"/>
+    <rect x="-46" y="-46" width="92" height="92" fill="#ffb45a" opacity="0.65"/>
+    <path d="M-50 0 L50 0 M0 -50 L0 50" stroke="#1a0e07" stroke-width="3"/>
+  </g>
+  <g fill="#ffd380" opacity="0.42">
+    <circle cx="540" cy="130" r="80"/>
+  </g>
+
+  <!-- shelf -->
+  <g transform="translate(160 220)">
+    <rect x="-60" y="0" width="120" height="4" fill="#1a0e07"/>
+    <rect x="-60" y="-4" width="120" height="4" fill="#3c2715"/>
+    <!-- pots -->
+    <rect x="-55" y="-26" width="14" height="22" fill="#5d2818" stroke="#1a0e07" stroke-width="1"/>
+    <rect x="-30" y="-32" width="18" height="28" fill="#3a1d10" stroke="#1a0e07" stroke-width="1"/>
+    <rect x="0" y="-24" width="12" height="20" fill="#7a4d22" stroke="#1a0e07" stroke-width="1"/>
+    <rect x="22" y="-30" width="16" height="26" fill="#412418" stroke="#1a0e07" stroke-width="1"/>
+    <rect x="42" y="-22" width="10" height="18" fill="#7a4d22" stroke="#1a0e07" stroke-width="1"/>
+  </g>
+
+  <!-- hanging herbs -->
+  <g stroke="#1a0e07" stroke-width="1.5">
+    <path d="M340 0 L340 30" fill="none"/>
+    <path d="M340 30 L330 60 L340 80 L350 60 Z" fill="#3a5a26"/>
+    <path d="M335 35 L335 70 M345 35 L345 70" stroke="#5e8b3d" stroke-width="0.7"/>
+  </g>
+  <g stroke="#1a0e07" stroke-width="1.5">
+    <path d="M260 0 L260 20" fill="none"/>
+    <path d="M260 20 L250 50 L260 70 L270 50 Z" fill="#3a5a26"/>
+    <path d="M255 25 L255 60 M265 25 L265 60" stroke="#5e8b3d" stroke-width="0.7"/>
+  </g>
+
+  <!-- candle on floor -->
+  <g transform="translate(120 296)">
+    <rect x="-4" y="0" width="8" height="14" fill="#aa9460" stroke="#1a0e07" stroke-width="1"/>
+    <path d="M-2 -8 Q0 -16 1 -18 Q3 -12 3 -8 Q1 -3 0 -2 Q-2 -3 -2 -8 Z" fill="#ffb14a"/>
+    <circle cx="0" cy="0" r="14" fill="#ffd380" opacity="0.36"/>
+  </g>
+  <g transform="translate(400 304)">
+    <rect x="-4" y="0" width="8" height="12" fill="#aa9460" stroke="#1a0e07" stroke-width="1"/>
+    <path d="M-2 -6 Q0 -14 1 -16 Q3 -10 3 -6 Q1 -2 0 -1 Q-2 -2 -2 -6 Z" fill="#ffb14a"/>
+    <circle cx="0" cy="0" r="12" fill="#ffd380" opacity="0.3"/>
+  </g>
+</svg>

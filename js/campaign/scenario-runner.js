@@ -2404,7 +2404,7 @@ window.CJS.ScenarioRunner = (() => {
 
   function _cellPassable(map, x, y, levelId = null) {
     const terrain = _terrainAt(map, x, y, levelId);
-    return !['wall', 'obstacle', 'blocked', 'void'].includes(String(terrain || '').toLowerCase());
+    return !['wall', 'obstacle', 'blocked', 'void', 'rock', 'pillar'].includes(String(terrain || '').toLowerCase());
   }
 
   function _terrainAt(map, x, y, levelId = null) {
@@ -2488,12 +2488,21 @@ window.CJS.ScenarioRunner = (() => {
     return raw.map((threat, index) => {
       const cell = _normalizeCell(threat.cell || [threat.x, threat.y]);
       const levelId = _defaultGridLevelId(map, threat.levelId || threat.layerId || threat.layer || options.startLevelId);
+      let x = Number(cell.x || 0);
+      let y = Number(cell.y || 0);
+      // Defensive: if the authored spawn lands on an impassable cell, slide
+      // the threat to the nearest passable neighbour so it can move and the
+      // renderer doesn't paint the threat on top of a wall.
+      if (map && !_cellPassable(map, x, y, levelId)) {
+        const alt = _findPassableNeighbour(map, x, y, levelId);
+        if (alt) { x = alt.x; y = alt.y; }
+      }
       return {
         id: threat.id || `moving_threat_${index + 1}`,
         label: threat.label || threat.title || `Roaming Threat ${index + 1}`,
         levelId,
-        x: Number(cell.x || 0),
-        y: Number(cell.y || 0),
+        x,
+        y,
         icon: threat.icon || '!',
         // Optional explicit sprite path. The renderer falls back to the
         // shadow_stalker sheet (with directional animation) when this is
@@ -2517,6 +2526,27 @@ window.CJS.ScenarioRunner = (() => {
         tags: Array.isArray(threat.tags) ? threat.tags.slice() : []
       };
     }).filter((threat) => Number.isFinite(threat.x) && Number.isFinite(threat.y));
+  }
+
+  // Breadth-first search for the closest passable cell. Limits its search
+  // radius so a fully sealed level can't loop forever.
+  function _findPassableNeighbour(map, x, y, levelId, maxRadius = 4) {
+    const queue = [{ x: Number(x), y: Number(y), d: 0 }];
+    const seen = new Set([`${Number(x)},${Number(y)}`]);
+    while (queue.length) {
+      const cur = queue.shift();
+      if (cur.d > 0 && _cellPassable(map, cur.x, cur.y, levelId)) return { x: cur.x, y: cur.y };
+      if (cur.d >= maxRadius) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cur.x + dx;
+        const ny = cur.y + dy;
+        const key = `${nx},${ny}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        queue.push({ x: nx, y: ny, d: cur.d + 1 });
+      }
+    }
+    return null;
   }
 
   function _stepMovingThreats(map, target = {}, targetKey = '') {

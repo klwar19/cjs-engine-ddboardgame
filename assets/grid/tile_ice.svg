@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="ice-base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d4ecff"/>
+      <stop offset="0.5" stop-color="#9ec8e6"/>
+      <stop offset="1" stop-color="#5d8fae"/>
+    </linearGradient>
+    <radialGradient id="ice-shine" cx="0.28" cy="0.14" r="0.95">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="0.55" stop-color="#e0f6ff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#ice-base)"/>
+  <rect width="64" height="64" fill="url(#ice-shine)"/>
+  <g fill="none" stroke="#ffffff" opacity="0.7" stroke-linecap="round">
+    <path d="M3 12 L21 22 M21 22 L10 35 M21 22 L34 16" stroke-width="0.9"/>
+    <path d="M40 6 L48 18 M48 18 L62 10 M48 18 L42 30" stroke-width="0.8"/>
+    <path d="M5 40 L20 47 M20 47 L7 56 M20 47 L33 42" stroke-width="0.9"/>
+    <path d="M44 38 L56 46 M56 46 L60 56 M56 46 L44 56" stroke-width="0.8"/>
+  </g>
+  <g fill="none" stroke="#3f6a8c" opacity="0.55" stroke-width="0.6">
+    <path d="M0 18 C12 14 22 21 33 17"/>
+    <path d="M28 32 C34 31 39 35 47 31"/>
+    <path d="M3 50 C12 47 21 52 31 49"/>
+    <path d="M38 52 C46 50 53 54 60 51"/>
+  </g>
+  <g fill="#ffffff" opacity="0.6">
+    <ellipse cx="14" cy="34" rx="3" ry="0.8" transform="rotate(-12 14 34)"/>
+    <ellipse cx="46" cy="22" rx="3" ry="0.7" transform="rotate(10 46 22)"/>
+    <ellipse cx="30" cy="56" rx="3" ry="0.7" transform="rotate(-6 30 56)"/>
+  </g>
+  <g fill="#ffffff" opacity="0.85">
+    <circle cx="22" cy="22" r="0.9"/>
+    <circle cx="38" cy="42" r="0.8"/>
+    <circle cx="54" cy="13" r="0.7"/>
+    <circle cx="9" cy="48" r="0.7"/>
+  </g>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#3d6786" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#ffffff" stroke-opacity="0.65"/>
+</svg>

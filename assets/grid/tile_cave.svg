@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="cave-base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#544737"/>
+      <stop offset="0.55" stop-color="#372c20"/>
+      <stop offset="1" stop-color="#1d150d"/>
+    </linearGradient>
+    <radialGradient id="cave-light" cx="0.3" cy="0.18" r="0.95">
+      <stop offset="0" stop-color="#c39e6b" stop-opacity="0.32"/>
+      <stop offset="0.55" stop-color="#624b34" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#cave-base)"/>
+  <rect width="64" height="64" fill="url(#cave-light)"/>
+  <g opacity="0.46" fill="none" stroke="#1c130b" stroke-linecap="round" stroke-width="1.1">
+    <path d="M2 17 C12 13 19 19 28 16 S46 11 56 16 S62 18 64 16"/>
+    <path d="M3 41 C12 38 18 44 28 41 S43 38 53 43 S60 45 64 42"/>
+    <path d="M19 4 C24 9 21 13 28 17"/>
+    <path d="M44 50 C49 53 51 56 56 56"/>
+  </g>
+  <g fill="#1f160d" opacity="0.75">
+    <polygon points="6,28 14,26 18,34 12,40 4,36"/>
+    <polygon points="40,8 50,10 54,20 46,24 38,18"/>
+    <polygon points="46,38 56,40 56,50 48,54 42,46"/>
+    <polygon points="22,46 30,48 32,58 24,60 18,52"/>
+  </g>
+  <g fill="#5a402a" opacity="0.85">
+    <polygon points="7,29 13,27 17,33 11,38 5,35"/>
+    <polygon points="41,9 49,11 52,19 45,23 39,17"/>
+    <polygon points="47,39 55,41 55,49 48,53 43,46"/>
+    <polygon points="23,47 29,49 31,57 25,59 19,52"/>
+  </g>
+  <g fill="#7a5c40" opacity="0.5">
+    <circle cx="12" cy="32" r="1.1"/>
+    <circle cx="44" cy="15" r="0.95"/>
+    <circle cx="50" cy="44" r="0.95"/>
+    <circle cx="26" cy="52" r="0.9"/>
+    <circle cx="32" cy="22" r="0.8"/>
+    <circle cx="55" cy="28" r="0.8"/>
+  </g>
+  <g fill="#bf945b" opacity="0.7">
+    <ellipse cx="35" cy="36" rx="1.2" ry="0.5"/>
+    <ellipse cx="55" cy="58" rx="1.4" ry="0.5"/>
+    <ellipse cx="10" cy="56" rx="1.1" ry="0.4"/>
+  </g>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#0d0904" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#c89b62" stroke-opacity="0.16"/>
+</svg>

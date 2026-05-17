@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="tav-wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f2a17"/>
+      <stop offset="0.55" stop-color="#231609"/>
+      <stop offset="1" stop-color="#0d0703"/>
+    </linearGradient>
+    <radialGradient id="tav-light" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#ffd277" stop-opacity="0.32"/>
+      <stop offset="0.55" stop-color="#ffaf4a" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="680" height="420" fill="url(#tav-wall)"/>
+  <rect width="680" height="420" fill="url(#tav-light)"/>
+
+  <!-- wooden floor planks -->
+  <rect x="0" y="310" width="680" height="110" fill="#2a1909"/>
+  <g stroke="#0a0501" stroke-width="1.3" opacity="0.8">
+    <path d="M0 322 L680 322"/>
+    <path d="M0 342 L680 342"/>
+    <path d="M0 365 L680 365"/>
+    <path d="M0 388 L680 388"/>
+    <path d="M120 310 L120 420"/>
+    <path d="M250 310 L250 420"/>
+    <path d="M390 310 L390 420"/>
+    <path d="M520 310 L520 420"/>
+    <path d="M620 310 L620 420"/>
+  </g>
+
+  <!-- ceiling beams -->
+  <g fill="#1a1106" stroke="#0a0501" stroke-width="1.4">
+    <rect x="0" y="0" width="680" height="36"/>
+    <rect x="60" y="36" width="20" height="80"/>
+    <rect x="240" y="36" width="20" height="80"/>
+    <rect x="420" y="36" width="20" height="80"/>
+    <rect x="600" y="36" width="20" height="80"/>
+  </g>
+
+  <!-- hanging lanterns -->
+  <g>
+    <g transform="translate(170 100)">
+      <path d="M0 -64 L0 -34" stroke="#1a0e07" stroke-width="1.4"/>
+      <rect x="-12" y="-34" width="24" height="30" fill="#5d3818" stroke="#1a0e07" stroke-width="1.4"/>
+      <rect x="-9" y="-30" width="18" height="22" fill="#ffd380" opacity="0.85"/>
+      <circle cx="0" cy="-20" r="22" fill="#ffd380" opacity="0.4"/>
+    </g>
+    <g transform="translate(350 80)">
+      <path d="M0 -44 L0 -24" stroke="#1a0e07" stroke-width="1.4"/>
+      <rect x="-12" y="-24" width="24" height="30" fill="#5d3818" stroke="#1a0e07" stroke-width="1.4"/>
+      <rect x="-9" y="-20" width="18" height="22" fill="#ffd380" opacity="0.85"/>
+      <circle cx="0" cy="-10" r="24" fill="#ffd380" opacity="0.42"/>
+    </g>
+    <g transform="translate(530 100)">
+      <path d="M0 -64 L0 -34" stroke="#1a0e07" stroke-width="1.4"/>
+      <rect x="-12" y="-34" width="24" height="30" fill="#5d3818" stroke="#1a0e07" stroke-width="1.4"/>
+      <rect x="-9" y="-30" width="18" height="22" fill="#ffd380" opacity="0.85"/>
+      <circle cx="0" cy="-20" r="22" fill="#ffd380" opacity="0.4"/>
+    </g>
+  </g>
+
+  <!-- bar counter -->
+  <g>
+    <rect x="0" y="260" width="680" height="56" fill="#3a1f0e" stroke="#0a0501" stroke-width="2"/>
+    <rect x="0" y="258" width="680" height="6" fill="#5b3618"/>
+    <!-- mugs -->
+    <g transform="translate(90 246)">
+      <rect x="-10" y="0" width="20" height="14" fill="#7a4818" stroke="#0a0501" stroke-width="1"/>
+      <path d="M10 2 L16 2 L16 12 L10 12" fill="#7a4818" stroke="#0a0501" stroke-width="1"/>
+      <rect x="-8" y="-2" width="16" height="2" fill="#fff2a8" opacity="0.85"/>
+    </g>
+    <g transform="translate(240 246)">
+      <rect x="-10" y="0" width="20" height="14" fill="#7a4818" stroke="#0a0501" stroke-width="1"/>
+      <path d="M10 2 L16 2 L16 12 L10 12" fill="#7a4818" stroke="#0a0501" stroke-width="1"/>
+      <rect x="-8" y="-2" width="16" height="2" fill="#fff2a8" opacity="0.85"/>
+    </g>
+    <g transform="translate(440 246)">
+      <rect x="-10" y="0" width="20" height="14" fill="#7a4818" stroke="#0a0501" stroke-width="1"/>
+      <path d="M10 2 L16 2 L16 12 L10 12" fill="#7a4818" stroke="#0a0501" stroke-width="1"/>
+      <rect x="-8" y="-2" width="16" height="2" fill="#fff2a8" opacity="0.85"/>
+    </g>
+    <!-- bottles -->
+    <g fill="#1c3a2c" stroke="#0a0501" stroke-width="1">
+      <rect x="320" y="232" width="6" height="22"/>
+      <rect x="320" y="226" width="6" height="6"/>
+      <rect x="340" y="234" width="6" height="20"/>
+      <rect x="340" y="228" width="6" height="6"/>
+      <rect x="360" y="232" width="6" height="22"/>
+      <rect x="360" y="226" width="6" height="6"/>
+    </g>
+  </g>
+</svg>

@@ -11,7 +11,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
   const Loader = () => window.CJS.CampaignDataLoader;
   const Runner = () => window.CJS.ScenarioRunner;
 
-  const MAP_SETTINGS = ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
+  const MAP_SETTINGS = ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena', 'snowfield', 'desert', 'swamp', 'volcano'];
   const MAP_TYPES = MAP_SETTINGS; // Backward-compatible option name for older saves/UI.
   const MAP_FORMS = ['node_map', 'grid_map'];
   const SIZES = ['tiny', 'small', 'medium', 'large'];
@@ -574,21 +574,34 @@ window.CJS.CampaignScenarioGenerator = (() => {
         onEnter: _onEnterOps(node, kind, world)
       };
     });
+    const settingKey = (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType);
+    const palette = _terrainPalette(settingKey, world);
+    const pathCells = new Set(path.map((p) => `${p.x},${p.y}`));
     const terrain = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_, x) => {
       const key = `${x},${y}`;
-      if (occupied.has(key)) return 'floor';
-      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) return rng() < 0.35 ? 'wall' : 'floor';
-      return rng() < 0.12 ? 'obstacle' : 'floor';
+      const onPath = pathCells.has(key);
+      if (occupied.has(key)) return palette.floor; // node sits on its preferred floor
+      if (onPath) return _pickWeighted(palette.path, rng);
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+        return rng() < 0.62 ? _pickWeighted(palette.wall, rng) : _pickWeighted(palette.field, rng);
+      }
+      const roll = rng();
+      if (roll < 0.07) return _pickWeighted(palette.hazard, rng);
+      if (roll < 0.19) return _pickWeighted(palette.wall, rng);
+      return _pickWeighted(palette.field, rng);
     }));
-    for (const pos of path) terrain[pos.y][pos.x] = 'floor';
+    // Always keep the walking path passable so the player can reach all nodes.
+    for (const pos of path) terrain[pos.y][pos.x] = _pickWeighted(palette.path, rng);
+    // Ensure node cells stay on a passable floor type.
+    for (const cell of cells) terrain[cell.y][cell.x] = palette.floor;
     return {
       id,
       name: `${seed.name || _titleCase(opts.mapType)} Grid`,
       type: 'grid_map',
       world,
       mapForm: 'grid_map',
-      mapSetting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
-      setting: (opts.mapSetting || opts.mapType) === 'any' ? _firstMapType(seed) : (opts.mapSetting || opts.mapType),
+      mapSetting: settingKey,
+      setting: settingKey,
       size: opts.size,
       width,
       height,
@@ -599,6 +612,213 @@ window.CJS.CampaignScenarioGenerator = (() => {
       _seedId: seed.id || null,
       _source: context.source
     };
+  }
+
+  // Per-setting terrain palettes. `floor` is the canonical passable tile for
+  // node cells, `path` is what we lay along the snake route between nodes,
+  // `field` is the dominant ambient terrain, `wall` is the impassable border
+  // accent, and `hazard` is a setting-flavoured rare obstacle (lava, swamp,
+  // ice, water, etc.). Each entry is a [{ kind, weight }] table consumed by
+  // _pickWeighted so we get organic variety instead of a uniform grid.
+  function _terrainPalette(setting, world) {
+    const key = String(setting || '').toLowerCase();
+    const W = (entries) => entries.map(([kind, weight]) => ({ kind, weight: Math.max(1, Number(weight) || 1) }));
+    const HAVEN_PATH = W([['snow', 5], ['path', 2]]);
+    const ZOMBIE_HINT = String(world || '').toLowerCase().includes('zombie');
+    switch (key) {
+      case 'forest':
+      case 'woods':
+        return {
+          floor: 'dirt',
+          path: W([['dirt', 4], ['grass', 2], ['path', 1]]),
+          field: W([['grass', 5], ['forest', 3], ['dirt', 2]]),
+          wall: W([['forest', 5], ['wall', 2], ['rock', 1]]),
+          hazard: W([['water', 3], ['swamp', 1]])
+        };
+      case 'outdoor':
+      case 'field':
+      case 'plain':
+        return {
+          floor: 'grass',
+          path: String(world || '').toLowerCase().includes('haven') ? HAVEN_PATH : W([['path', 4], ['grass', 2], ['dirt', 1]]),
+          field: String(world || '').toLowerCase().includes('haven')
+            ? W([['snow', 5], ['frost', 1], ['grass', 1]])
+            : W([['grass', 5], ['dirt', 2], ['forest', 1]]),
+          wall: W([['forest', 4], ['wall', 2], ['rock', 2]]),
+          hazard: W([['water', 3], ['ice', 1]])
+        };
+      case 'snowfield':
+      case 'tundra':
+      case 'frostwood':
+      case 'arctic':
+        return {
+          floor: 'snow',
+          path: W([['snow', 5], ['path', 2], ['dirt', 1]]),
+          field: W([['snow', 6], ['frost', 2], ['ice', 1]]),
+          wall: W([['forest', 3], ['wall', 3], ['rock', 1]]),
+          hazard: W([['ice', 4], ['water', 2]])
+        };
+      case 'mountain':
+      case 'ridge':
+      case 'alpine':
+        return {
+          floor: 'stone',
+          path: W([['path', 4], ['stone', 3], ['dirt', 1]]),
+          field: W([['stone', 4], ['snow', 3], ['rock', 2]]),
+          wall: W([['rock', 5], ['wall', 3], ['stone', 1]]),
+          hazard: W([['ice', 3], ['water', 1]])
+        };
+      case 'urban':
+      case 'town':
+      case 'city':
+      case 'street':
+        return {
+          floor: 'stone',
+          path: W([['path', 4], ['brick', 3], ['stone', 2]]),
+          field: W([['stone', 4], ['brick', 3], ['path', 2]]),
+          wall: W([['brick', 4], ['wall', 4], ['rock', 1]]),
+          hazard: W([['water', 2]])
+        };
+      case 'dungeon':
+      case 'keep':
+      case 'lair':
+        return {
+          floor: 'stone',
+          path: W([['stone', 6], ['path', 2]]),
+          field: W([['stone', 5], ['floor', 2], ['rubble', 1]]),
+          wall: W([['wall', 6], ['rock', 2]]),
+          hazard: W([['lava', 1], ['water', 2], ['rubble', 2]])
+        };
+      case 'castle':
+      case 'fortress':
+        return {
+          floor: 'stone',
+          path: W([['stone', 5], ['brick', 2]]),
+          field: W([['stone', 5], ['brick', 2], ['floor', 2]]),
+          wall: W([['wall', 6], ['brick', 3]]),
+          hazard: W([['water', 2]])
+        };
+      case 'arena':
+      case 'pit':
+        return {
+          floor: 'sand',
+          path: W([['sand', 5], ['stone', 1]]),
+          field: W([['sand', 6], ['stone', 2], ['dirt', 1]]),
+          wall: W([['wall', 5], ['rock', 2], ['stone', 1]]),
+          hazard: W([['lava', 1], ['rubble', 1]])
+        };
+      case 'cave':
+      case 'cavern':
+      case 'tunnel':
+        return {
+          floor: 'cave',
+          path: W([['cave', 5], ['dirt', 2], ['stone', 1]]),
+          field: W([['cave', 5], ['dirt', 3], ['rock', 2]]),
+          wall: W([['rock', 5], ['wall', 3], ['stone', 1]]),
+          hazard: W([['water', 3], ['lava', 1]])
+        };
+      case 'volcano':
+      case 'magma':
+      case 'firelands':
+        return {
+          floor: 'stone',
+          path: W([['stone', 5], ['cave', 2]]),
+          field: W([['cave', 4], ['stone', 3], ['dirt', 2]]),
+          wall: W([['rock', 5], ['wall', 3]]),
+          hazard: W([['lava', 6], ['rubble', 2]])
+        };
+      case 'sewer':
+      case 'drain':
+        return {
+          floor: 'sewer',
+          path: W([['sewer', 5], ['stone', 2]]),
+          field: W([['sewer', 5], ['stone', 2], ['brick', 1]]),
+          wall: W([['wall', 5], ['brick', 3]]),
+          hazard: W([['water', 5], ['swamp', 2]])
+        };
+      case 'ruins':
+      case 'ruin':
+      case 'relic':
+        return {
+          floor: 'rubble',
+          path: W([['rubble', 4], ['stone', 3], ['dirt', 2]]),
+          field: W([['rubble', 5], ['stone', 3], ['dirt', 2]]),
+          wall: W([['wall', 5], ['rock', 3]]),
+          hazard: W([['swamp', 1], ['water', 1]])
+        };
+      case 'temple':
+      case 'shrine':
+      case 'chapel':
+        return {
+          floor: 'stone',
+          path: W([['stone', 5], ['brick', 2]]),
+          field: W([['stone', 5], ['rubble', 2], ['floor', 2]]),
+          wall: W([['wall', 5], ['brick', 2], ['pillar', 1]]),
+          hazard: W([['water', 1], ['rubble', 1]])
+        };
+      case 'house':
+      case 'manor':
+      case 'hut':
+        return {
+          floor: 'floor',
+          path: W([['floor', 5], ['stone', 2]]),
+          field: W([['floor', 6], ['stone', 2], ['brick', 1]]),
+          wall: W([['wall', 5], ['brick', 3]]),
+          hazard: W([['water', 1]])
+        };
+      case 'tavern':
+      case 'inn':
+      case 'bar':
+        return {
+          floor: 'floor',
+          path: W([['floor', 4], ['stone', 2]]),
+          field: W([['floor', 6], ['stone', 2]]),
+          wall: W([['wall', 5], ['brick', 3]]),
+          hazard: W([['water', 1]])
+        };
+      case 'swamp':
+      case 'bog':
+      case 'marsh':
+        return {
+          floor: 'dirt',
+          path: W([['dirt', 4], ['path', 1]]),
+          field: W([['swamp', 4], ['dirt', 3], ['grass', 2]]),
+          wall: W([['forest', 4], ['wall', 2], ['rock', 1]]),
+          hazard: W([['swamp', 5], ['water', 3]])
+        };
+      case 'desert':
+      case 'wasteland':
+      case 'sand':
+        return {
+          floor: 'sand',
+          path: W([['sand', 5], ['dirt', 2]]),
+          field: W([['sand', 6], ['dirt', 2], ['rock', 1]]),
+          wall: W([['rock', 5], ['wall', 2]]),
+          hazard: W([['water', 1], ['rubble', 2]])
+        };
+      default:
+        return {
+          floor: ZOMBIE_HINT ? 'stone' : 'grass',
+          path: W([['path', 4], ['dirt', 2], ['stone', 1]]),
+          field: ZOMBIE_HINT
+            ? W([['rubble', 3], ['stone', 3], ['dirt', 2]])
+            : W([['grass', 5], ['dirt', 2], ['forest', 1]]),
+          wall: W([['wall', 5], ['rock', 2]]),
+          hazard: W([['water', 2]])
+        };
+    }
+  }
+
+  function _pickWeighted(entries, rng) {
+    if (!entries || !entries.length) return 'floor';
+    const total = entries.reduce((sum, item) => sum + (item.weight || 0), 0);
+    if (total <= 0) return entries[0].kind;
+    let roll = rng() * total;
+    for (const item of entries) {
+      roll -= item.weight || 0;
+      if (roll <= 0) return item.kind;
+    }
+    return entries[entries.length - 1].kind;
   }
 
   function _gridPath(width, height) {
@@ -656,7 +876,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
       tavern: ['Common Room', 'Kitchen Door', 'Pantry Shelves', 'Cellar Steps', 'Ale Casks', 'Warm Hearth', 'Back Alley'],
       castle: ['Outer Gate', 'Bailey', 'Armory', 'Servant Hall', 'Tower Stair', 'Keep Chamber', 'Postern Exit'],
       mountain: ['Base Camp', 'Switchback', 'Ice Shelf', 'Wind Gap', 'Goat Path', 'Summit Cache', 'Downslope'],
-      arena: ['Entry Sand', 'Left Cover', 'Center Line', 'Hazard Mark', 'High Rail', 'Prize Corner', 'Exit Gate']
+      arena: ['Entry Sand', 'Left Cover', 'Center Line', 'Hazard Mark', 'High Rail', 'Prize Corner', 'Exit Gate'],
+      snowfield: ['Drift Edge', 'Frost Marker', 'Wind Hollow', 'Cold Stream', 'Lone Pine', 'Buried Cache', 'White Pass'],
+      desert: ['Dune Edge', 'Sun Marker', 'Dry Wash', 'Old Caravan', 'Cracked Pool', 'Buried Cache', 'Pass Mouth'],
+      swamp: ['Bog Edge', 'Sunken Log', 'Reed Path', 'Stagnant Pool', 'Marsh Hut', 'Hidden Cache', 'Dry Crossing'],
+      volcano: ['Ash Gate', 'Cracked Steps', 'Sulfur Pool', 'Lava Bridge', 'Glowing Vein', 'Cinder Cache', 'Cooling Vent']
     };
     const roles = ['entrance', 'clue', 'trap', 'battle', 'rest', 'reward', 'battle', 'boss', 'exit', 'clue', 'battle', 'exit'];
     const count = SIZE_COUNTS[opts.size] || 7;

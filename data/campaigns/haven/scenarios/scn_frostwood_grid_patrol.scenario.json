@@ -44,7 +44,7 @@
         {
           "id": "bent_pine_shadow_wolf",
           "label": "Shadow Wolf Rusher",
-          "cell": { "x": 4, "y": 3 },
+          "cell": { "x": 4, "y": 2 },
           "battleSetId": "haven_bset_wolf_pack_bent_pine",
           "monsterIds": ["haven_ice_wolf"],
           "moveMode": "chase",

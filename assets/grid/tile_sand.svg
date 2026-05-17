@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="sand-base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0d8a1"/>
+      <stop offset="0.55" stop-color="#d6b272"/>
+      <stop offset="1" stop-color="#9d7a3e"/>
+    </linearGradient>
+    <radialGradient id="sand-shine" cx="0.28" cy="0.14" r="0.9">
+      <stop offset="0" stop-color="#fff6d4" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#fff3c4" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#sand-base)"/>
+  <rect width="64" height="64" fill="url(#sand-shine)"/>
+  <g fill="none" stroke="#a07a36" stroke-linecap="round" opacity="0.55">
+    <path d="M2 18 C12 13 22 19 32 14 S52 11 63 16" stroke-width="1"/>
+    <path d="M0 33 C12 27 22 35 33 30 S52 27 64 32" stroke-width="0.9"/>
+    <path d="M0 48 C12 43 22 50 33 45 S54 43 64 47" stroke-width="0.9"/>
+    <path d="M0 60 C14 56 26 60 36 58 S54 56 64 60" stroke-width="0.7"/>
+  </g>
+  <g fill="#9c772f" opacity="0.46">
+    <circle cx="9" cy="22" r="0.85"/>
+    <circle cx="20" cy="14" r="0.65"/>
+    <circle cx="32" cy="20" r="0.8"/>
+    <circle cx="44" cy="11" r="0.7"/>
+    <circle cx="54" cy="22" r="0.75"/>
+    <circle cx="14" cy="40" r="0.7"/>
+    <circle cx="28" cy="38" r="0.95"/>
+    <circle cx="46" cy="40" r="0.7"/>
+    <circle cx="56" cy="42" r="0.8"/>
+    <circle cx="10" cy="55" r="0.7"/>
+    <circle cx="36" cy="52" r="0.75"/>
+    <circle cx="50" cy="58" r="0.65"/>
+  </g>
+  <g fill="#fff1c2" opacity="0.7">
+    <ellipse cx="18" cy="30" rx="3" ry="0.5"/>
+    <ellipse cx="42" cy="46" rx="3" ry="0.45"/>
+    <ellipse cx="30" cy="58" rx="2.5" ry="0.4"/>
+  </g>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#74541e" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#fff0c3" stroke-opacity="0.4"/>
+</svg>
