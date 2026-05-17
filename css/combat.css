@@ -543,12 +543,15 @@
 
 /* ── DICE CONTROLS ────────────────────────────────────────────────── */
 /* Portraits in combat */
+/* clip-path:inset(0) so portraitFocus's transform:scale doesn't leak
+   outside the portrait box when the user zooms in. */
 .init-portrait {
   width: 24px;
   height: 24px;
   border-radius: 4px;
   object-fit: cover;
   flex-shrink: 0;
+  clip-path: inset(0);
 }
 .unit-portrait {
   width: 48px;
@@ -557,6 +560,7 @@
   object-fit: cover;
   border: 2px solid rgba(255,255,255,0.15);
   flex-shrink: 0;
+  clip-path: inset(0);
 }
 
 .dice-controls {

@@ -581,6 +581,21 @@ window.CJS.CombatUI = (() => {
     const to = payload?.to;
     const cell = GR()?.getCellSize ? GR().getCellSize() : 0;
     if (!from || !to || !cell) return;
+
+    // Slide the unit smoothly between cells. The grid renderer
+    // interpolates the unit position until the animation ends; the
+    // unit's logical pos is already at `to`, so this is purely visual.
+    if (_animEnabled() && GR()?.animateUnitMove) {
+      const dr = to[0] - from[0];
+      const dc = to[1] - from[1];
+      const steps = Math.max(Math.abs(dr), Math.abs(dc), 1);
+      // ~120ms per cell of travel, with a floor so a 1-cell hop doesn't
+      // feel snappy and a 6-cell dash doesn't feel sluggish.
+      const dur = Math.max(220, Math.min(900, 120 * steps + 80));
+      const unitId = payload?.unit?.instanceId;
+      if (unitId) GR().animateUnitMove(unitId, from, to, dur);
+    }
+
     const dx = (to[1] - from[1]) * cell;
     const dy = (to[0] - from[0]) * cell;
     _spawnFx('cjs-fx-move-trail', from, 340, {
@@ -911,6 +926,7 @@ window.CJS.CombatUI = (() => {
     CM().startEncounter(encounterId);
     _unsubCM = CM().subscribe(_onStateChange);
     GR().resize();
+    GR().clearMoveAnimations?.();
     _updateZoomLabel();
 
     const portraitPicker = window.CJS.PortraitPicker;
@@ -977,7 +993,7 @@ window.CJS.CombatUI = (() => {
       const teamClass = unit.team === 'player' ? 'init-player' : 'init-enemy';
       const classes = `init-unit ${teamClass}${active ? ' init-active' : ''}${dead ? ' init-dead' : ''}`;
       const hpPct = Math.round((unit.currentHP / (unit.maxHP || 1)) * 100);
-      const portraitHtml = _renderPortraitMarkup(unit.portrait, 'init-portrait', 'init-icon', unit.icon || '?');
+      const portraitHtml = _renderPortraitMarkup(unit.portrait, 'init-portrait', 'init-icon', unit.icon || '?', unit.portraitFocus);
 
       html += `
         <div class="${classes}" title="${_escAttr(unit.name || unit.baseId || '?')} (${unit.currentHP}/${unit.maxHP} HP)">
@@ -1008,7 +1024,7 @@ window.CJS.CombatUI = (() => {
         )).join('')}</div>`
       : '';
 
-    const portraitHtml = _renderPortraitMarkup(unit.portrait, 'unit-portrait', 'unit-icon-lg', unit.icon || '?');
+    const portraitHtml = _renderPortraitMarkup(unit.portrait, 'unit-portrait', 'unit-icon-lg', unit.icon || '?', unit.portraitFocus);
 
     // Persona chip: shown when this unit was snapshotted from a campaign party
     // member with an active persona. Out-of-world personas display the dealt /
@@ -1626,13 +1642,14 @@ window.CJS.CombatUI = (() => {
     return `<span class="cjs-icon cjs-icon-${size}">${_escHtml(fb)}</span>`;
   }
 
-  function _renderPortraitMarkup(path, imageClass, fallbackClass, icon) {
+  function _renderPortraitMarkup(path, imageClass, fallbackClass, icon, focus) {
     if (!path) return `<span class="${fallbackClass}">${_escHtml(icon || '?')}</span>`;
 
     const PP = window.CJS && window.CJS.PortraitPicker;
     const src = PP && PP.bustedSrc ? PP.bustedSrc(path) : path;
+    const style = PP && PP.focusStyle ? PP.focusStyle(focus) : '';
     return `
-      <img src="${_escAttr(src)}" class="${imageClass}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt="">
+      <img src="${_escAttr(src)}" class="${imageClass}" style="${_escAttr(style)}" onerror="this.style.display='none';this.nextElementSibling.style.display=''" alt="">
       <span class="${fallbackClass}" style="display:none">${_escHtml(icon || '?')}</span>
     `;
   }

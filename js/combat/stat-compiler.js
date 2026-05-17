@@ -98,6 +98,7 @@ window.CJS.StatCompiler = (() => {
       name:          baseUnit.name,
       icon:          baseUnit.icon,
       portrait:      baseUnit.portrait || '',
+      portraitFocus: baseUnit.portraitFocus || null,
       team:          baseUnit.team || 'enemy',
       rank,
       type:          baseUnit.type || 'humanoid',

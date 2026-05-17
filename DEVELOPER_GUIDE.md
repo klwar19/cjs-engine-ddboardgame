@@ -295,9 +295,24 @@ Important portrait rule:
 - monsters use `images/monsters/...`
 - items use `images/items/...`
 
+Portrait focus (crop):
+- entities may carry an optional `portraitFocus: { x, y, zoom }` field
+  - `x`, `y` in [0, 100] pick the focus point as a % of the source image
+  - `zoom` in [100, 400] (%) optionally zooms in around the focus point
+  - missing/null = defaults to centered, no zoom
+- the editor portrait widget exposes `getFocus()` / `setFocus()` and a
+  drag-to-focus + zoom-slider UI behind a "Focus" toggle
+- `PortraitPicker.focusStyle(focus)` returns an inline style string
+  (object-fit, object-position, transform-origin, transform:scale) for
+  `<img>` tags, and `PortraitPicker.drawPortraitToCanvas(...)` does the
+  equivalent source-crop for canvas drawing in the grid
+
 Rendering locations:
-- `js/grid/grid-renderer.js` - portrait in grid cells
+- `js/grid/grid-renderer.js` - portrait in grid cells (uses canvas crop)
 - `js/ui/combat-ui.js` - portrait in initiative bar and unit info card
+- `js/campaign/campaign-ui.js` - roster card, party avatar, hero portrait,
+  banter portrait (all use focus style)
+- `js/campaign/campaign-combat-popup.js` - monster thumbnails
 - editor builder files - portrait picker in forms
 
 ## 10. AI, QTE, and Narrator

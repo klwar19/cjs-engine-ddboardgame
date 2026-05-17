@@ -607,3 +607,102 @@ input::placeholder { color: var(--text-mute); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Portrait focus editor (Focus button toggles visibility) */
+.portrait-focus-btn.is-active {
+  border-color: var(--accent, #4da3ff);
+  color: var(--accent, #4da3ff);
+}
+.portrait-focus-btn.is-open {
+  background: rgba(77, 163, 255, 0.18);
+}
+.portrait-focus-editor {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.portrait-focus-editor[hidden] { display: none; }
+.portrait-focus-stage {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1 / 1;
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.04) 75%) 0 0/16px 16px,
+    linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.04) 75%) 8px 8px/16px 16px,
+    #111;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+.portrait-focus-full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.portrait-focus-frame {
+  position: absolute;
+  border: 2px solid var(--accent, #4da3ff);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 0 0 9999px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transition: left 0.05s linear, top 0.05s linear, width 0.05s linear, height 0.05s linear;
+}
+.portrait-focus-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--accent, #4da3ff);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+}
+.portrait-focus-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.portrait-focus-zoom-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  flex: 1;
+  min-width: 160px;
+}
+.portrait-focus-zoom-row input[type=range] {
+  flex: 1;
+}
+.portrait-focus-zoom-readout {
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+  text-align: right;
+}
+.portrait-focus-hint {
+  font-size: 0.74rem;
+  opacity: 0.7;
+}
+.portrait-focus-editor[data-empty="1"] .portrait-focus-stage::after {
+  content: 'Pick a portrait first';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-mute, #888);
+  font-size: 0.85rem;
+  pointer-events: none;
+}

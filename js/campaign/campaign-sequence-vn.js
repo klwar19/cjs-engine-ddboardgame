@@ -295,6 +295,8 @@ window.CJS.CampaignSequenceVN = (() => {
     const character = _characterFor(line);
     const portrait = _portraitFor(line, character);
     active.classList.add('is-active');
+    // The VN portrait shows the full character sprite (object-fit: contain),
+    // not a cropped headshot — portraitFocus is intentionally not applied here.
     if (portrait) {
       active.innerHTML = `
         <img src="${_escAttr(portrait)}" alt="" onerror="this.style.display='none'">

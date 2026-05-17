@@ -164,6 +164,7 @@ window.CJS.ItemEditor = (() => {
     if (portraitArea && PP()) {
       portraitWidget = PP().createWidget({
         currentPath: item.portrait || '',
+        currentFocus: item.portraitFocus,
         category: 'items',
         id: item.id,
         name: item.name,
@@ -251,6 +252,7 @@ window.CJS.ItemEditor = (() => {
     const obj = {
       id, name: f.querySelector('#itm-name').value, icon: f.querySelector('#itm-icon').value,
       portrait: portraitWidget ? portraitWidget.getValue() : currentPortrait,
+      portraitFocus: portraitWidget ? portraitWidget.getFocus() : undefined,
       slot, rarity: f.querySelector('#itm-rarity').value,
       equipmentCategory,
       weaponType: equipmentCategory === 'weapon' ? (weaponType || 'sword') : '',

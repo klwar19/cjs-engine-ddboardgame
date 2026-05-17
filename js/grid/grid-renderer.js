@@ -37,6 +37,13 @@ window.CJS.GridRenderer = (() => {
   let _themeImg = null;        // optional themed backdrop image
   let _decorSeed = 0x9E3779B1; // PRNG seed for stable per-cell decorations
 
+  // Movement animations. Keyed by instanceId. When set, the unit is drawn
+  // at an interpolated position between `from` and `to` until `endTs`.
+  // After that the entry is removed and the unit is drawn at its real
+  // logical position again. We never write back to the unit — this is
+  // purely visual.
+  const _moveAnims = new Map(); // instanceId → { from:[r,c], to:[r,c], startTs, endTs }
+
   const ZOOM_MIN = 0.5;
   const ZOOM_MAX = 2.5;
   const ZOOM_STEP = 0.15;
@@ -114,6 +121,7 @@ window.CJS.GridRenderer = (() => {
     }
     _canvas = null;
     _ctx = null;
+    _moveAnims.clear();
   }
 
   // ── HIGHLIGHT API ─────────────────────────────────────────────────
@@ -138,6 +146,45 @@ window.CJS.GridRenderer = (() => {
 
   function setSelectedUnit(unitId) {
     _selectedUnit = unitId;
+  }
+
+  // ── MOVEMENT ANIMATION ─────────────────────────────────────────────
+  // Tell the renderer that a unit is sliding from `from` to `to` over
+  // `durationMs`. Until the animation ends the unit is drawn at the
+  // interpolated position regardless of its logical pos. Idempotent: a
+  // second call replaces any in-flight animation for the same unit.
+  function animateUnitMove(unitId, from, to, durationMs) {
+    if (!unitId || !Array.isArray(from) || !Array.isArray(to)) return;
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const dur = Math.max(40, Number(durationMs) || 320);
+    _moveAnims.set(unitId, {
+      from: [Number(from[0]), Number(from[1])],
+      to:   [Number(to[0]),   Number(to[1])],
+      startTs: now,
+      endTs: now + dur
+    });
+  }
+
+  function _activeMovePos(unitId, ts) {
+    const anim = _moveAnims.get(unitId);
+    if (!anim) return null;
+    if (ts >= anim.endTs) {
+      _moveAnims.delete(unitId);
+      return null;
+    }
+    const raw = (ts - anim.startTs) / (anim.endTs - anim.startTs);
+    const t = Math.max(0, Math.min(1, raw));
+    // ease-in-out (smoothstep) so the step doesn't look mechanical
+    const e = t * t * (3 - 2 * t);
+    return [
+      anim.from[0] + (anim.to[0] - anim.from[0]) * e,
+      anim.from[1] + (anim.to[1] - anim.from[1]) * e,
+      e
+    ];
+  }
+
+  function clearMoveAnimations() {
+    _moveAnims.clear();
   }
 
   // ── DAMAGE FLOATS ─────────────────────────────────────────────────
@@ -271,17 +318,36 @@ window.CJS.GridRenderer = (() => {
   function _drawUnit(ctx, unit, ts) {
     const cs = _cellSize;
     const fp = C().UNIT_SIZES[unit.size || '1x1'] || { w: 1, h: 1 };
-    const px = unit.pos[1] * cs;
-    const py = unit.pos[0] * cs;
+
+    // Pull the drawn position from the active move animation when present
+    // so the unit slides between cells. The unit's logical pos already
+    // reflects the destination — we only override the screen position.
+    let drawR = unit.pos[0];
+    let drawC = unit.pos[1];
+    let moveT = 0;
+    const animPos = _activeMovePos(unit.instanceId, ts);
+    if (animPos) {
+      drawR = animPos[0];
+      drawC = animPos[1];
+      moveT = animPos[2];
+    }
+
+    const px = drawC * cs;
+    const py = drawR * cs;
     const pw = fp.w * cs;
     const ph = fp.h * cs;
 
-    // Selection ring
+    // Subtle vertical bob during the slide so it feels like a step, not a glide.
+    const bob = moveT > 0 ? -Math.sin(moveT * Math.PI) * cs * 0.06 : 0;
+    const py2 = py + bob;
+
+    // Selection ring (drawn at the logical pos when animating to avoid jitter
+    // following the bob).
     const isSelected = unit.instanceId === _selectedUnit;
     if (isSelected) {
       ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = 3;
-      ctx.strokeRect(px + 2, py + 2, pw - 4, ph - 4);
+      ctx.strokeRect(px + 2, py2 + 2, pw - 4, ph - 4);
     }
 
     // Team color background
@@ -289,7 +355,7 @@ window.CJS.GridRenderer = (() => {
       ? 'rgba(59, 130, 246, 0.3)'
       : 'rgba(239, 68, 68, 0.3)';
     ctx.fillStyle = teamColor;
-    ctx.fillRect(px + 3, py + 3, pw - 6, ph - 6);
+    ctx.fillRect(px + 3, py2 + 3, pw - 6, ph - 6);
 
     const PP = window.CJS.PortraitPicker;
     let drewPortrait = false;
@@ -299,9 +365,14 @@ window.CJS.GridRenderer = (() => {
         const pad = 4;
         ctx.save();
         ctx.beginPath();
-        ctx.rect(px + pad, py + pad, pw - (pad * 2), ph - (pad * 2));
+        ctx.rect(px + pad, py2 + pad, pw - (pad * 2), ph - (pad * 2));
         ctx.clip();
-        ctx.drawImage(img, px + pad, py + pad, pw - (pad * 2), ph - (pad * 2));
+        const drew = PP.drawPortraitToCanvas
+          ? PP.drawPortraitToCanvas(ctx, img, px + pad, py2 + pad, pw - (pad * 2), ph - (pad * 2), unit.portraitFocus)
+          : false;
+        if (!drew) {
+          ctx.drawImage(img, px + pad, py2 + pad, pw - (pad * 2), ph - (pad * 2));
+        }
         ctx.restore();
         drewPortrait = true;
       }
@@ -313,7 +384,7 @@ window.CJS.GridRenderer = (() => {
       ctx.font = `${fontSize}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(icon, px + pw / 2, py + ph / 2);
+      ctx.fillText(icon, px + pw / 2, py2 + ph / 2);
     }
 
     // Name label
@@ -322,14 +393,14 @@ window.CJS.GridRenderer = (() => {
     ctx.fillStyle = '#fff';
     ctx.fillText(
       (unit.name || unit.baseId || '?').substring(0, 8),
-      px + pw / 2, py + ph - cs * 0.1
+      px + pw / 2, py2 + ph - cs * 0.1
     );
 
     // HP bar
     const barW = pw - 8;
     const barH = Math.max(4, cs * 0.06);
     const barX = px + 4;
-    const barY = py + 3;
+    const barY = py2 + 3;
     const hpRatio = Math.max(0, Math.min(1, unit.currentHP / (unit.maxHP || 1)));
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -358,7 +429,7 @@ window.CJS.GridRenderer = (() => {
       for (let i = 0; i < Math.min(unit.activeStatuses.length, maxShow); i++) {
         const st = unit.activeStatuses[i];
         const sIcon = _statusIcon(st.statusId);
-        ctx.fillText(sIcon, px + 2 + i * (statusSize + 1), py + ph - cs * 0.22);
+        ctx.fillText(sIcon, px + 2 + i * (statusSize + 1), py2 + ph - cs * 0.22);
       }
     }
   }
@@ -402,13 +473,10 @@ window.CJS.GridRenderer = (() => {
         }
         break;
       }
-      case 'obstacle':
-      case 'wall':
-      case 'rubble':
-      case 'pillar': {
-        // Brick pattern
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      case 'wall': {
+        // Stacked-brick wall — clearly a constructed barrier.
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
         ctx.lineWidth = 1;
         const rows = 3;
         for (let i = 0; i < rows; i++) {
@@ -426,15 +494,148 @@ window.CJS.GridRenderer = (() => {
             ctx.stroke();
           }
         }
+        // Top edge highlight so the wall reads as solid stone.
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillRect(x, y, cs, Math.max(2, cs * 0.06));
+        break;
+      }
+      case 'obstacle': {
+        // Lumpy boulder — softer outline than a wall, more "thing in the way".
+        const cx = x + cs / 2;
+        const cy = y + cs * 0.58;
+        ctx.fillStyle = 'rgba(120, 120, 130, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, cs * 0.36, cs * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(70, 70, 80, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(cx - cs * 0.1, cy + cs * 0.08, cs * 0.18, cs * 0.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Highlight glint
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.beginPath();
+        ctx.ellipse(cx - cs * 0.12, cy - cs * 0.16, cs * 0.1, cs * 0.04, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      case 'rubble': {
+        // Scatter of broken stones — passable but expensive.
+        ctx.fillStyle = 'rgba(140, 130, 115, 0.55)';
+        for (let i = 0; i < 5; i++) {
+          const rx = x + cs * (0.15 + ((seed * 11 + i * 13) % 70) / 100);
+          const ry = y + cs * (0.35 + ((seed * 17 + i * 7) % 50) / 100);
+          const rs = cs * (0.08 + ((seed * 5 + i * 3) % 8) / 100);
+          ctx.beginPath();
+          ctx.ellipse(rx, ry, rs, rs * 0.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        for (let i = 0; i < 5; i++) {
+          const rx = x + cs * (0.15 + ((seed * 11 + i * 13) % 70) / 100);
+          const ry = y + cs * (0.35 + ((seed * 17 + i * 7) % 50) / 100) + cs * 0.04;
+          ctx.fillRect(rx - cs * 0.04, ry, cs * 0.08, 1);
+        }
+        break;
+      }
+      case 'pillar': {
+        // Round column with capital — vertical structure, distinct from wall.
+        const cx = x + cs / 2;
+        ctx.fillStyle = 'rgba(190, 180, 160, 0.55)';
+        ctx.fillRect(cx - cs * 0.16, y + cs * 0.18, cs * 0.32, cs * 0.6);
+        // Capital and base flair
+        ctx.fillStyle = 'rgba(220, 210, 180, 0.6)';
+        ctx.fillRect(cx - cs * 0.22, y + cs * 0.14, cs * 0.44, cs * 0.06);
+        ctx.fillRect(cx - cs * 0.22, y + cs * 0.78, cs * 0.44, cs * 0.06);
+        // Fluting (vertical lines)
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1;
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(cx + i * cs * 0.08, y + cs * 0.2);
+          ctx.lineTo(cx + i * cs * 0.08, y + cs * 0.78);
+          ctx.stroke();
+        }
         break;
       }
       case 'tree': {
-        ctx.fillStyle = 'rgba(70, 130, 70, 0.7)';
+        // Trunk first, foliage clusters on top — a touch more dimensional.
+        ctx.fillStyle = 'rgba(75, 50, 30, 0.85)';
+        ctx.fillRect(x + cs * 0.46, y + cs * 0.52, cs * 0.08, cs * 0.36);
+        ctx.fillStyle = 'rgba(40, 80, 40, 0.7)';
         ctx.beginPath();
-        ctx.arc(x + cs / 2, y + cs * 0.42, cs * 0.32, 0, Math.PI * 2);
+        ctx.arc(x + cs * 0.5, y + cs * 0.4, cs * 0.32, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = 'rgba(110, 70, 40, 0.85)';
-        ctx.fillRect(x + cs / 2 - cs * 0.05, y + cs * 0.55, cs * 0.1, cs * 0.35);
+        ctx.fillStyle = 'rgba(60, 110, 60, 0.7)';
+        ctx.beginPath();
+        ctx.arc(x + cs * 0.36, y + cs * 0.34, cs * 0.18, 0, Math.PI * 2);
+        ctx.arc(x + cs * 0.64, y + cs * 0.34, cs * 0.18, 0, Math.PI * 2);
+        ctx.arc(x + cs * 0.5, y + cs * 0.22, cs * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+        // Shadow under the tree so it reads as standing on the floor.
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(x + cs * 0.5, y + cs * 0.92, cs * 0.22, cs * 0.05, 0, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+      case 'high_ground': {
+        // Stepped plateau — short shadow at the foot, lighter cap on top.
+        ctx.fillStyle = 'rgba(255, 235, 180, 0.14)';
+        ctx.fillRect(x + cs * 0.08, y + cs * 0.18, cs * 0.84, cs * 0.42);
+        ctx.fillStyle = 'rgba(0,0,0,0.32)';
+        ctx.fillRect(x + cs * 0.08, y + cs * 0.6, cs * 0.84, cs * 0.06);
+        // Up arrow
+        ctx.strokeStyle = 'rgba(255, 220, 150, 0.85)';
+        ctx.lineWidth = Math.max(1, cs * 0.04);
+        const cxh = x + cs / 2;
+        ctx.beginPath();
+        ctx.moveTo(cxh, y + cs * 0.3);
+        ctx.lineTo(cxh, y + cs * 0.52);
+        ctx.moveTo(cxh - cs * 0.1, y + cs * 0.38);
+        ctx.lineTo(cxh, y + cs * 0.28);
+        ctx.lineTo(cxh + cs * 0.1, y + cs * 0.38);
+        ctx.stroke();
+        break;
+      }
+      case 'electric': {
+        // Animated lightning glyph that pulses with `flicker`.
+        const cxe = x + cs / 2;
+        const cye = y + cs / 2;
+        ctx.strokeStyle = `rgba(255, 236, 124, ${0.55 + flicker * 0.4})`;
+        ctx.lineWidth = Math.max(1.5, cs * 0.05);
+        ctx.lineJoin = 'miter';
+        ctx.beginPath();
+        ctx.moveTo(cxe - cs * 0.12, cye - cs * 0.28);
+        ctx.lineTo(cxe + cs * 0.04, cye - cs * 0.04);
+        ctx.lineTo(cxe - cs * 0.06, cye + cs * 0.02);
+        ctx.lineTo(cxe + cs * 0.14, cye + cs * 0.28);
+        ctx.stroke();
+        // Tiny sparks
+        ctx.fillStyle = `rgba(255, 248, 196, ${0.4 + flicker * 0.5})`;
+        for (let i = 0; i < 3; i++) {
+          const px = x + cs * (0.2 + i * 0.3);
+          const py = y + cs * (0.78 + Math.sin((ts || 0) / 180 + i + seed) * 0.04);
+          ctx.fillRect(px, py, Math.max(1, cs * 0.04), Math.max(1, cs * 0.04));
+        }
+        break;
+      }
+      case 'wind': {
+        // Curling gust lines that drift across the cell.
+        const phase = ((ts || 0) / 700 + seed) % 1;
+        ctx.strokeStyle = 'rgba(220, 245, 240, 0.55)';
+        ctx.lineWidth = Math.max(1, cs * 0.035);
+        for (let i = 0; i < 3; i++) {
+          const py = y + cs * (0.3 + i * 0.2);
+          const off = (phase + i * 0.33) * cs * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(x + cs * 0.1 - off * 0.3, py);
+          ctx.bezierCurveTo(
+            x + cs * 0.35 - off * 0.2, py - cs * 0.05,
+            x + cs * 0.6 - off * 0.1, py + cs * 0.05,
+            x + cs * 0.9, py
+          );
+          ctx.stroke();
+        }
         break;
       }
       case 'fire_zone':
@@ -591,6 +792,7 @@ window.CJS.GridRenderer = (() => {
     addDamageFloat,
     getCellSize,
     setTheme,
-    setZoom, zoomIn, zoomOut, resetZoom, getZoom, getZoomBounds
+    setZoom, zoomIn, zoomOut, resetZoom, getZoom, getZoomBounds,
+    animateUnitMove, clearMoveAnimations
   });
 })();
