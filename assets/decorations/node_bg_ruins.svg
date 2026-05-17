@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="ruin-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c2820"/>
+      <stop offset="0.55" stop-color="#1a1610"/>
+      <stop offset="1" stop-color="#0d0a06"/>
+    </linearGradient>
+    <radialGradient id="ruin-haze" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#e2c889" stop-opacity="0.16"/>
+      <stop offset="0.55" stop-color="#a08854" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="680" height="420" fill="url(#ruin-sky)"/>
+  <rect width="680" height="420" fill="url(#ruin-haze)"/>
+
+  <!-- distant fallen wall silhouettes -->
+  <g fill="#1f1a13" opacity="0.85">
+    <path d="M0 320 L40 280 L80 290 L80 240 L120 250 L120 320 Z"/>
+    <path d="M180 320 L220 270 L260 290 L260 230 L320 250 L320 320 Z"/>
+    <path d="M380 320 L440 260 L480 280 L500 240 L560 250 L560 320 Z"/>
+    <path d="M600 320 L640 280 L680 290 L680 420 L600 420 Z"/>
+  </g>
+
+  <!-- broken pillars -->
+  <g>
+    <g transform="translate(100 200)">
+      <rect x="-12" y="0" width="24" height="170" fill="#5d4d32" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-16" y="-6" width="32" height="10" fill="#766039" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-12" y="42" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+      <rect x="-12" y="92" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+      <rect x="-12" y="148" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+    </g>
+    <g transform="translate(290 250) rotate(-12 0 0)">
+      <rect x="-12" y="0" width="24" height="120" fill="#5d4d32" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-16" y="-6" width="32" height="10" fill="#766039" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-12" y="42" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+      <rect x="-12" y="80" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+    </g>
+    <g transform="translate(470 210)">
+      <rect x="-12" y="0" width="24" height="160" fill="#5d4d32" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-16" y="-6" width="32" height="10" fill="#766039" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-12" y="42" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+      <rect x="-12" y="90" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+      <rect x="-12" y="140" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+    </g>
+    <g transform="translate(620 240) rotate(6 0 0)">
+      <rect x="-12" y="0" width="24" height="130" fill="#5d4d32" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-16" y="-6" width="32" height="10" fill="#766039" stroke="#1a1308" stroke-width="1.5"/>
+      <rect x="-12" y="42" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+      <rect x="-12" y="92" width="24" height="3" fill="#2c2317" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- rubble piles -->
+  <g fill="#36281a">
+    <polygon points="40,400 70,375 110,395 90,420 40,420"/>
+    <polygon points="200,402 230,378 270,398 260,420 200,420"/>
+    <polygon points="370,400 410,370 460,395 450,420 370,420"/>
+    <polygon points="540,402 580,380 620,400 615,420 540,420"/>
+  </g>
+  <g fill="#594128" opacity="0.85">
+    <polygon points="44,400 72,378 106,394 88,418 46,418"/>
+    <polygon points="204,402 232,380 268,398 258,418 204,418"/>
+    <polygon points="372,400 410,374 458,395 448,418 372,418"/>
+    <polygon points="544,402 580,382 618,400 612,418 542,418"/>
+  </g>
+
+  <!-- vines/cracks -->
+  <g stroke="#3a5a26" stroke-width="1.2" opacity="0.55" fill="none" stroke-linecap="round">
+    <path d="M100 200 C108 240 92 280 100 320"/>
+    <path d="M470 210 C476 250 462 290 470 330"/>
+    <path d="M620 240 C628 280 614 320 622 360"/>
+  </g>
+  <g fill="#5e8b3d" opacity="0.7">
+    <circle cx="100" cy="226" r="2.4"/>
+    <circle cx="98" cy="264" r="2"/>
+    <circle cx="102" cy="296" r="2.2"/>
+    <circle cx="470" cy="232" r="2.2"/>
+    <circle cx="468" cy="270" r="2"/>
+    <circle cx="620" cy="262" r="2"/>
+    <circle cx="622" cy="298" r="2"/>
+  </g>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="mtn-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f2e44"/>
+      <stop offset="0.55" stop-color="#0d1626"/>
+      <stop offset="1" stop-color="#06070a"/>
+    </linearGradient>
+    <radialGradient id="mtn-moon" cx="0.78" cy="0.18" r="0.32">
+      <stop offset="0" stop-color="#fff6cd" stop-opacity="0.85"/>
+      <stop offset="0.5" stop-color="#fff6cd" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="680" height="420" fill="url(#mtn-sky)"/>
+  <rect width="680" height="420" fill="url(#mtn-moon)"/>
+
+  <!-- distant peaks -->
+  <g fill="#1d2638" opacity="0.85">
+    <path d="M-20 280 L80 180 L160 240 L260 160 L340 220 L420 140 L520 200 L620 150 L700 220 L700 420 L-20 420 Z"/>
+  </g>
+  <g fill="#2a3550" opacity="0.85">
+    <path d="M-20 340 L60 250 L160 320 L240 240 L320 300 L400 220 L500 290 L580 240 L700 320 L700 420 L-20 420 Z"/>
+  </g>
+
+  <!-- snow caps -->
+  <g fill="#dfeaff" opacity="0.6">
+    <path d="M80 180 L65 200 L100 198 Z"/>
+    <path d="M260 160 L245 184 L285 184 Z"/>
+    <path d="M420 140 L405 166 L450 165 Z"/>
+    <path d="M620 150 L605 175 L645 175 Z"/>
+    <path d="M60 250 L48 268 L84 268 Z"/>
+    <path d="M240 240 L228 258 L264 258 Z"/>
+    <path d="M400 220 L388 240 L424 240 Z"/>
+    <path d="M580 240 L568 258 L604 258 Z"/>
+  </g>
+
+  <!-- foreground ridge -->
+  <g fill="#0d1626">
+    <path d="M-20 420 L60 340 L160 400 L240 350 L320 400 L400 340 L500 400 L580 350 L700 400 L700 420 Z"/>
+  </g>
+  <g fill="#5a728e" opacity="0.5">
+    <path d="M60 340 L75 360 L48 360 Z"/>
+    <path d="M240 350 L258 372 L226 372 Z"/>
+    <path d="M400 340 L420 360 L386 360 Z"/>
+    <path d="M580 350 L598 370 L566 370 Z"/>
+  </g>
+
+  <!-- stars + snowflakes -->
+  <g fill="#ffffff" opacity="0.85">
+    <circle cx="80" cy="40" r="1.2"/>
+    <circle cx="160" cy="80" r="0.8"/>
+    <circle cx="250" cy="40" r="1"/>
+    <circle cx="320" cy="100" r="0.9"/>
+    <circle cx="400" cy="50" r="1.2"/>
+    <circle cx="500" cy="100" r="0.8"/>
+    <circle cx="560" cy="40" r="0.9"/>
+    <circle cx="640" cy="70" r="1"/>
+  </g>
+  <g fill="#ffffff" opacity="0.45">
+    <circle cx="120" cy="120" r="1"/>
+    <circle cx="200" cy="180" r="1"/>
+    <circle cx="340" cy="200" r="1"/>
+    <circle cx="480" cy="160" r="1"/>
+    <circle cx="600" cy="130" r="1"/>
+    <circle cx="60" cy="200" r="1"/>
+    <circle cx="380" cy="280" r="1"/>
+    <circle cx="540" cy="270" r="1"/>
+  </g>
+</svg>

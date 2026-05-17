@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="swamp-base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a5a30"/>
+      <stop offset="0.5" stop-color="#2e3c20"/>
+      <stop offset="1" stop-color="#16210f"/>
+    </linearGradient>
+    <radialGradient id="swamp-mist" cx="0.3" cy="0.15" r="0.95">
+      <stop offset="0" stop-color="#9cc66a" stop-opacity="0.18"/>
+      <stop offset="0.5" stop-color="#bedf95" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#swamp-base)"/>
+  <rect width="64" height="64" fill="url(#swamp-mist)"/>
+  <g fill="#1e2a13" opacity="0.6">
+    <ellipse cx="20" cy="22" rx="8" ry="4"/>
+    <ellipse cx="44" cy="38" rx="9" ry="4.5"/>
+    <ellipse cx="14" cy="50" rx="6" ry="3"/>
+    <ellipse cx="50" cy="14" rx="6" ry="3"/>
+  </g>
+  <g fill="#3a5a26" opacity="0.65">
+    <ellipse cx="20" cy="22" rx="6.4" ry="2.8"/>
+    <ellipse cx="44" cy="38" rx="7" ry="3.3"/>
+    <ellipse cx="14" cy="50" rx="4.6" ry="2.1"/>
+    <ellipse cx="50" cy="14" rx="4.6" ry="2.1"/>
+  </g>
+  <g fill="#7fc05a" opacity="0.78">
+    <circle cx="18" cy="22" r="1.6"/>
+    <circle cx="46" cy="38" r="2.1"/>
+    <circle cx="14" cy="50" r="1.4"/>
+    <circle cx="50" cy="14" r="1.4"/>
+    <circle cx="30" cy="34" r="1.2"/>
+    <circle cx="36" cy="56" r="1.1"/>
+    <circle cx="58" cy="52" r="1.0"/>
+    <circle cx="6" cy="32" r="1.0"/>
+  </g>
+  <g stroke="#5a8b3b" stroke-width="0.7" opacity="0.55" fill="none" stroke-linecap="round">
+    <path d="M9 12 C12 8 13 5 16 4"/>
+    <path d="M30 6 C33 10 33 14 36 16"/>
+    <path d="M60 26 C56 28 53 28 52 32"/>
+    <path d="M5 60 C8 56 11 56 14 58"/>
+    <path d="M55 56 C58 54 60 51 60 48"/>
+  </g>
+  <g fill="#dde7b6" opacity="0.55">
+    <ellipse cx="22" cy="20" rx="1.7" ry="0.45"/>
+    <ellipse cx="45" cy="37" rx="2" ry="0.5"/>
+    <ellipse cx="50" cy="14" rx="1.4" ry="0.4"/>
+  </g>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#0c1408" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#92be62" stroke-opacity="0.15"/>
+</svg>

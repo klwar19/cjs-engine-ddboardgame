@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="ruin-base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a89884"/>
+      <stop offset="0.5" stop-color="#7b6c58"/>
+      <stop offset="1" stop-color="#473b2b"/>
+    </linearGradient>
+    <linearGradient id="ruin-shard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c2b39f"/>
+      <stop offset="0.5" stop-color="#8c7c66"/>
+      <stop offset="1" stop-color="#5b4a37"/>
+    </linearGradient>
+    <radialGradient id="ruin-dust" cx="0.32" cy="0.18" r="0.9">
+      <stop offset="0" stop-color="#f3dfb2" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#ruin-base)"/>
+  <rect width="64" height="64" fill="url(#ruin-dust)"/>
+  <g opacity="0.42" fill="none" stroke="#2f2418" stroke-linecap="round" stroke-width="0.8">
+    <path d="M3 18 C12 16 18 22 26 19 S40 14 49 18 S58 21 63 18"/>
+    <path d="M2 46 C12 41 18 48 27 44 S44 41 53 46"/>
+    <path d="M19 5 C24 11 22 15 28 19"/>
+  </g>
+  <g stroke="#2a1f12" stroke-width="0.9">
+    <polygon points="9,40 19,38 22,46 16,52 6,49" fill="url(#ruin-shard)"/>
+    <polygon points="38,9 50,11 53,21 44,24 36,18" fill="url(#ruin-shard)"/>
+    <polygon points="28,32 38,33 41,40 34,45 27,42" fill="url(#ruin-shard)"/>
+    <polygon points="48,42 60,45 60,55 50,58 45,50" fill="url(#ruin-shard)"/>
+  </g>
+  <g fill="#3a2c1d" opacity="0.55">
+    <circle cx="14" cy="22" r="1.3"/>
+    <circle cx="44" cy="14" r="1.0"/>
+    <circle cx="22" cy="36" r="1.1"/>
+    <circle cx="56" cy="34" r="0.9"/>
+    <circle cx="8" cy="56" r="0.9"/>
+    <circle cx="34" cy="52" r="0.8"/>
+  </g>
+  <g fill="#d6c4a3" opacity="0.55">
+    <ellipse cx="13" cy="44" rx="2.1" ry="0.6"/>
+    <ellipse cx="40" cy="20" rx="1.8" ry="0.55"/>
+    <ellipse cx="48" cy="51" rx="2.0" ry="0.6"/>
+    <ellipse cx="30" cy="38" rx="1.4" ry="0.5"/>
+  </g>
+  <g stroke="#1d1308" stroke-width="0.6" opacity="0.4">
+    <path d="M3 28 L11 26"/>
+    <path d="M22 13 L29 8"/>
+    <path d="M55 28 L60 30"/>
+    <path d="M18 58 L26 55"/>
+  </g>
+  <path d="M0.5 0.5 H63.5 V63.5 H0.5 Z" fill="none" stroke="#1a1208" stroke-width="1"/>
+  <path d="M1.5 1.5 H62.5 V62.5 H1.5 Z" fill="none" stroke="#e6cea4" stroke-opacity="0.16"/>
+</svg>

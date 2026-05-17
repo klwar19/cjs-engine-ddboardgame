@@ -77,8 +77,10 @@ window.CJS.CampaignMap = (() => {
       : '';
 
     const theme = _mapTheme(map);
+    const setting = _mapSetting(map);
+    const settingBg = _settingBackgroundHref(setting);
     container.innerHTML = `
-      <div class="campaign-map-shell">
+      <div class="campaign-map-shell" data-setting="${_escAttr(setting)}" data-theme="${_escAttr(theme)}">
         <div class="campaign-map-head">
           <div>
             <h2>${_esc(map.name || 'Scenario Map')}</h2>
@@ -86,9 +88,11 @@ window.CJS.CampaignMap = (() => {
           </div>
           ${_renderLayerTabs(layers, activeLayer)}
         </div>
-        <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}" data-theme="${_escAttr(theme)}">
-          <defs>${_nodeIconDefs()}</defs>
+        <svg class="campaign-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}" data-theme="${_escAttr(theme)}" data-setting="${_escAttr(setting)}" preserveAspectRatio="xMidYMid slice">
+          <defs>${_nodeIconDefs()}${_nodeMapBackgroundDefs(setting)}</defs>
           <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-map-bg"></rect>
+          ${settingBg ? `<image href="${_escAttr(settingBg)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" class="campaign-map-setting-art" />` : ''}
+          <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-map-bg-overlay" />
           ${lines.join('')}
           ${nodeMarkup}
           ${playerMarkupSvg}
@@ -117,14 +121,15 @@ window.CJS.CampaignMap = (() => {
     const revealed = mapState.revealedCells || {};
     const visited = mapState.visitedCells || {};
     const current = run.currentCell || { x: 0, y: 0 };
+    const setting = _mapSetting(map);
     const cells = [];
+    const terrainSeen = new Set();
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const key = _cellKey(x, y, activeLevelId, map);
-        const terrainKind = _terrainAt(map, x, y);
-        const baseCell = Runner().findCell?.(map, x, y, run.mapLayer);
-        // Always carry the terrain forward so the tile floor reads correctly
-        // even when a cell defines a purpose kind like "battle" or "shop".
+        const key = _cellKey(x, y, activeLevelId);
+        const terrainKind = _terrainAt(map, x, y, activeLevelId);
+        terrainSeen.add(String(terrainKind || '').toLowerCase());
+        const baseCell = Runner().findCell?.(map, x, y, activeLevelId);
         const cell = baseCell
           ? { ...baseCell, terrain: baseCell.terrain || terrainKind }
           : { x, y, kind: terrainKind, terrain: terrainKind, title: key };
@@ -132,7 +137,7 @@ window.CJS.CampaignMap = (() => {
         const isCurrent = Number(current.x) === x && Number(current.y) === y;
         const isRevealed = revealed[key] || (run.revealedCells || []).includes(key) || cell.discoveredByDefault || isCurrent;
         const isVisited = visited[key] || (run.visitedCells || []).includes(key);
-        const passable = _cellPassable(map, x, y);
+        const passable = _cellPassable(map, x, y, activeLevelId);
         const canMove = isRevealed && passable && _canMoveCell(run, x, y);
         const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
         const objectiveDone = objective && _isObjectiveDone(state, objective);
@@ -158,26 +163,25 @@ window.CJS.CampaignMap = (() => {
         `);
       }
     }
-    const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y, run.mapLayer);
+    const currentCell = Runner().findCurrentCell?.() || Runner().findCell?.(map, current.x, current.y, activeLevelId);
     const theme = _mapTheme(map);
+    const gridLayers = _gridLevelTabs(map);
+    const layerTabs = _renderGridLayerTabs(gridLayers, activeLevelId);
+    const activeThreats = _activeLevelThreats(run, map, activeLevelId);
+    const threatStrip = _renderThreatStrip(activeThreats, current);
+    const legend = _renderTerrainLegend(terrainSeen);
     container.innerHTML = `
-      <div class="campaign-map-shell v2">
+      <div class="campaign-map-shell v2" data-setting="${_escAttr(setting)}" data-theme="${_escAttr(theme)}">
         <div class="campaign-map-head v2">
           <div>
             <h2>${_esc(map.name || 'Scenario Grid')}</h2>
             <span class="campaign-muted">${_esc(_gridMeta(map, run, width, height))}</span>
-            <div class="campaign-map-legend">
-              <span style="--legend-color:#86c060"><i></i>Grass / Forest</span>
-              <span style="--legend-color:#a07a52"><i></i>Dirt / Mud</span>
-              <span style="--legend-color:#c2a981"><i></i>Path / Road</span>
-              <span style="--legend-color:#f5fbff"><i></i>Snow</span>
-              <span style="--legend-color:#5fa8d0"><i></i>Water</span>
-              <span style="--legend-color:#8d959a"><i></i>Stone Floor</span>
-              <span style="--legend-color:#3a3f44"><i></i>Wall (impassable)</span>
-            </div>
+            <div class="campaign-map-legend">${legend}</div>
           </div>
+          ${layerTabs}
         </div>
-        <div class="campaign-grid-map v2" style="--grid-cols:${width}" data-theme="${_escAttr(theme)}">
+        ${threatStrip}
+        <div class="campaign-grid-map v2" style="--grid-cols:${width}" data-theme="${_escAttr(theme)}" data-setting="${_escAttr(setting)}">
           ${cells.join('')}
         </div>
         <div class="campaign-node-detail">
@@ -185,6 +189,113 @@ window.CJS.CampaignMap = (() => {
         </div>
       </div>
     `;
+  }
+
+  function _renderTerrainLegend(terrainSeen) {
+    const LEGEND_DEFS = [
+      { kinds: ['grass', 'meadow', 'field'],       label: 'Grass',      color: '#86c060' },
+      { kinds: ['forest', 'tree', 'woods'],        label: 'Forest',     color: '#3a6b34' },
+      { kinds: ['dirt', 'mud'],                    label: 'Dirt / Mud', color: '#a07a52' },
+      { kinds: ['path', 'road', 'patrol', 'lane'], label: 'Path',       color: '#c2a981' },
+      { kinds: ['stone', 'tile', 'floor'],         label: 'Stone',      color: '#8d959a' },
+      { kinds: ['wall', 'obstacle', 'rock', 'pillar', 'blocked'], label: 'Wall', color: '#3a3f44' },
+      { kinds: ['water', 'river', 'pond', 'lake'], label: 'Water',      color: '#5fa8d0' },
+      { kinds: ['snow', 'frost', 'frostwood'],     label: 'Snow',       color: '#f5fbff' },
+      { kinds: ['ice'],                            label: 'Ice',        color: '#cae6f7' },
+      { kinds: ['rubble', 'broken'],               label: 'Rubble',     color: '#7c684b' },
+      { kinds: ['sand', 'dune', 'desert'],         label: 'Sand',       color: '#d6b272' },
+      { kinds: ['swamp', 'bog', 'marsh'],          label: 'Swamp',      color: '#5a7036' },
+      { kinds: ['lava', 'magma'],                  label: 'Lava',       color: '#ff7a26' },
+      { kinds: ['sewer'],                          label: 'Sewer',      color: '#536b30' },
+      { kinds: ['cave'],                           label: 'Cave',       color: '#5a402a' },
+      { kinds: ['brick'],                          label: 'Brick',      color: '#a4593c' }
+    ];
+    const seen = new Set(Array.from(terrainSeen || []).map((kind) => String(kind || '').toLowerCase()));
+    const present = LEGEND_DEFS.filter((entry) => entry.kinds.some((kind) => seen.has(kind)));
+    const shortlist = present.length ? present : LEGEND_DEFS.slice(0, 6);
+    return shortlist.map((entry) =>
+      `<span style="--legend-color:${entry.color}"><i></i>${_esc(entry.label)}</span>`
+    ).join('');
+  }
+
+  function _renderThreatStrip(threats = [], current = {}) {
+    if (!threats.length) return '';
+    const items = threats.map((threat) => {
+      const mode = _threatModeKey(threat);
+      const distance = _manhattan(current, threat);
+      const distanceText = distance === null
+        ? ''
+        : (distance === 0 ? ' · contact' : ` · ${distance} step${distance === 1 ? '' : 's'}`);
+      const label = _shortLabel(threat.label || threat.id || 'Roamer', 18);
+      return `<span class="campaign-grid-threat-strip-item mode-${_escAttr(mode)}">
+        <i class="campaign-grid-threat-strip-dot mode-${_escAttr(mode)}"></i>
+        <b>${_esc(label)}</b>
+        <em>${_esc(_threatModeText(mode))}${distanceText}</em>
+      </span>`;
+    }).join('');
+    return `<div class="campaign-grid-threat-strip" role="status" aria-live="polite">${items}</div>`;
+  }
+
+  function _gridLevelTabs(map = {}) {
+    const levels = Array.isArray(map?.levels) ? map.levels : [];
+    if (!levels.length) return [];
+    return levels.map((level, index) => ({
+      id: _normalizeLayerId(level.id || level.layerId || `level_${index + 1}`),
+      name: level.name || level.label || `Level ${index + 1}`
+    }));
+  }
+
+  function _renderGridLayerTabs(layers, activeLayerId) {
+    if (!layers || layers.length <= 1) return '';
+    const active = _normalizeLayerId(activeLayerId || layers[0]?.id);
+    return `
+      <div class="campaign-map-layers" role="tablist" aria-label="Grid levels">
+        ${layers.map((layer) => `
+          <button class="campaign-map-layer ${layer.id === active ? 'is-active' : ''}" data-campaign-action="map-layer" data-layer="${_escAttr(layer.id)}" role="tab" aria-selected="${layer.id === active ? 'true' : 'false'}">
+            ${_esc(layer.name)}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function _activeLevelThreats(run, map, activeLevelId) {
+    if (!run || !Array.isArray(run.movingThreats)) return [];
+    const target = _normalizeLayerId(activeLevelId || map?.defaultLevelId || 'level_1');
+    return run.movingThreats.filter((threat) =>
+      _normalizeLayerId(threat.levelId || target) === target);
+  }
+
+  function _mapSetting(map = {}) {
+    const scenario = CS().getActiveScenario?.();
+    const raw = String(
+      map.setting
+      || map.mapSetting
+      || map.mapType
+      || scenario?.mapSetting
+      || scenario?.setting
+      || scenario?.mapType
+      || ''
+    ).toLowerCase();
+    if (!raw || raw === 'any') return 'outdoor';
+    if (['woods', 'forest', 'trees'].includes(raw)) return 'forest';
+    if (['outdoor', 'field', 'plain', 'wilderness'].includes(raw)) return 'outdoor';
+    if (['urban', 'town', 'city', 'street'].includes(raw)) return 'urban';
+    if (['dungeon', 'keep', 'lair'].includes(raw)) return 'dungeon';
+    if (['cave', 'cavern', 'tunnel'].includes(raw)) return 'cave';
+    if (['sewer', 'drain'].includes(raw)) return 'sewer';
+    if (['ruins', 'ruin', 'relic'].includes(raw)) return 'ruins';
+    if (['mountain', 'ridge', 'summit', 'alpine'].includes(raw)) return 'mountain';
+    if (['snowfield', 'tundra', 'frostwood', 'arctic'].includes(raw)) return 'snowfield';
+    if (['desert', 'wasteland', 'sand'].includes(raw)) return 'desert';
+    if (['marsh', 'swamp', 'bog'].includes(raw)) return 'swamp';
+    if (['volcano', 'magma', 'firelands', 'lava'].includes(raw)) return 'volcano';
+    if (['temple', 'shrine', 'chapel'].includes(raw)) return 'temple';
+    if (['house', 'manor', 'hut'].includes(raw)) return 'house';
+    if (['tavern', 'inn', 'bar'].includes(raw)) return 'tavern';
+    if (['castle', 'fortress'].includes(raw)) return 'castle';
+    if (['arena', 'pit'].includes(raw)) return 'arena';
+    return 'outdoor';
   }
 
   // Returns the CSS modifier class used to pick the tile background.
@@ -202,11 +313,22 @@ window.CJS.CampaignMap = (() => {
     if (raw === 'grass' || raw === 'meadow' || raw === 'field') return 'grass';
     if (raw === 'forest' || raw === 'tree' || raw === 'woods') return 'forest';
     if (raw === 'dirt' || raw === 'mud') return 'dirt';
-    if (raw === 'stone' || raw === 'rubble' || raw === 'tile' || raw === 'floor') return 'stone';
+    if (raw === 'stone' || raw === 'tile') return 'stone';
+    // Keep 'floor' as its own class so each map setting can re-skin
+    // a generic floor cell (e.g. outdoor=snow, dungeon=stone, cave=cave).
+    if (raw === 'floor') return 'floor';
     if (raw === 'wall' || raw === 'obstacle' || raw === 'rock' || raw === 'pillar') return 'wall';
     if (raw === 'water' || raw === 'river' || raw === 'pond' || raw === 'lake') return 'water';
-    if (raw === 'path' || raw === 'road' || raw === 'lane' || raw === 'patrol') return 'path';
-    if (raw === 'snow' || raw === 'ice' || raw === 'frost' || raw === 'frostwood') return 'snow';
+    if (raw === 'path' || raw === 'road' || raw === 'lane' || raw === 'patrol' || raw === 'cobble') return 'path';
+    if (raw === 'snow' || raw === 'frost' || raw === 'frostwood') return 'snow';
+    if (raw === 'ice') return 'ice';
+    if (raw === 'rubble' || raw === 'broken') return 'rubble';
+    if (raw === 'sand' || raw === 'dune' || raw === 'desert') return 'sand';
+    if (raw === 'swamp' || raw === 'bog' || raw === 'marsh') return 'swamp';
+    if (raw === 'lava' || raw === 'magma') return 'lava';
+    if (raw === 'sewer' || raw === 'drain') return 'sewer';
+    if (raw === 'cave' || raw === 'cavern') return 'cave';
+    if (raw === 'brick') return 'brick';
     return raw.replace(/[^a-z0-9_-]/g, '_');
   }
 
@@ -262,22 +384,79 @@ window.CJS.CampaignMap = (() => {
   }
 
   function _threatMarkupV2(threat = {}, adjacent = false, current = null) {
-    const title = _escAttr(`${threat.label || threat.id || 'Threat'} — ${adjacent ? 'one step away!' : 'roaming nearby'}`);
+    const mode = _threatModeKey(threat);
+    const modeText = _threatModeText(mode);
+    const distance = current ? _manhattan(current, threat) : null;
+    const titleParts = [threat.label || threat.id || 'Threat'];
+    titleParts.push(modeText);
+    if (distance !== null) {
+      titleParts.push(`${distance} step${distance === 1 ? '' : 's'} away`);
+    }
+    if (adjacent) titleParts.push('CONTACT IMMINENT');
+    const title = _escAttr(titleParts.join(' — '));
     const sprite = _threatSprite(threat);
     const facing = _threatFacing(threat, current);
-    // When the scenario author specified an explicit sprite (e.g. a wolf
-    // portrait), we honour it via --threat-sprite. Without one, the CSS
-    // animates the default shadow_stalker.png sprite sheet using
-    // data-facing for the row.
     const inlineSprite = sprite ? `style="--threat-sprite:url('${_escAttr(sprite)}');"` : '';
     const moving = _recentMotionClass(threat._motionAt);
     const spriteMode = sprite ? (_isThreatSheet(sprite) ? 'has-sheet' : 'has-sprite') : '';
-    const cls = `campaign-grid-threat v2 ${adjacent ? 'is-adjacent' : ''} ${spriteMode} ${moving}`;
+    const isChasing = mode === 'chase' || mode === 'pursue';
+    const closeIn = distance !== null && distance <= 2;
+    const cls = [
+      'campaign-grid-threat v2',
+      adjacent ? 'is-adjacent' : '',
+      isChasing ? 'is-chasing' : '',
+      closeIn && isChasing ? 'is-close-in' : '',
+      `mode-${mode}`,
+      spriteMode,
+      moving
+    ].filter(Boolean).join(' ');
+    const tagText = isChasing
+      ? (adjacent ? 'ATTACK!' : (closeIn ? 'CHASE!' : 'Chasing'))
+      : (mode === 'patrol' ? 'Patrol' : (adjacent ? 'Roamer!' : 'Roamer'));
+    const tagCls = [
+      'campaign-grid-threat-tag',
+      adjacent ? 'is-adjacent' : '',
+      isChasing ? 'is-chasing' : '',
+      `mode-${mode}`
+    ].filter(Boolean).join(' ');
+    const sigil = isChasing
+      ? `<span class="campaign-grid-threat-sigil is-chasing" aria-hidden="true"></span>`
+      : (mode === 'patrol'
+        ? `<span class="campaign-grid-threat-sigil is-patrol" data-facing="${_escAttr(facing)}" aria-hidden="true"></span>`
+        : '');
+    const alertRing = isChasing
+      ? '<span class="campaign-grid-threat-alert" aria-hidden="true"></span>'
+      : '';
     return `
       <span class="campaign-grid-threat-shadow" aria-hidden="true"></span>
-      <span class="${cls}" data-facing="${_escAttr(facing)}" title="${title}" aria-hidden="true" ${inlineSprite}></span>
-      <span class="campaign-grid-threat-tag ${adjacent ? 'is-adjacent' : ''}" aria-hidden="true">${_esc(_shortLabel(threat.label || threat.id || 'Roamer', 12))}</span>
+      ${alertRing}
+      <span class="${cls}" data-facing="${_escAttr(facing)}" data-mode="${_escAttr(mode)}" title="${title}" aria-hidden="true" ${inlineSprite}></span>
+      ${sigil}
+      <span class="${tagCls}" aria-hidden="true">${_esc(tagText)}</span>
     `;
+  }
+
+  function _threatModeKey(threat = {}) {
+    const raw = String(threat.moveMode || threat.move || 'random').toLowerCase();
+    if (raw === 'chase' || raw === 'pursue' || raw === 'hunt') return 'chase';
+    if (raw === 'patrol' || raw === 'route') return 'patrol';
+    if (raw === 'static' || raw === 'hold' || raw === 'still') return 'static';
+    return 'random';
+  }
+
+  function _threatModeText(mode) {
+    if (mode === 'chase') return 'CHASING the party';
+    if (mode === 'patrol') return 'patrolling a beat';
+    if (mode === 'static') return 'holding position';
+    return 'roaming the area';
+  }
+
+  function _manhattan(a = {}, b = {}) {
+    if (!a || !b) return null;
+    const ax = Number(a.x); const ay = Number(a.y);
+    const bx = Number(b.x); const by = Number(b.y);
+    if (!Number.isFinite(ax) || !Number.isFinite(ay) || !Number.isFinite(bx) || !Number.isFinite(by)) return null;
+    return Math.abs(ax - bx) + Math.abs(ay - by);
   }
 
   function _threatFacing(threat = {}, current = null) {
@@ -400,16 +579,21 @@ window.CJS.CampaignMap = (() => {
     const parts = [];
     if (objective) parts.push(objectiveTitle);
     parts.push(base);
-    if (threat) parts.push(`Threat present: ${threat.label || threat.id || 'roaming enemy'}`);
+    if (threat) {
+      const mode = _threatModeKey(threat);
+      const modeText = _threatModeText(mode);
+      parts.push(`${threat.label || threat.id || 'Roaming enemy'} (${modeText})`);
+    }
     return parts.join(' — ');
   }
 
   function renderGridCellDetail(cell, mapState = {}) {
     if (!cell) return '<div class="campaign-empty">No current cell.</div>';
-    const key = _cellKey(cell.x, cell.y, cell.levelId, CS().getActiveMap());
-    const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
-    const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, CS().getActiveMap());
     const state = CS().getState();
+    const map = CS().getActiveMap();
+    const key = _cellKey(cell.x, cell.y, cell.levelId, map);
+    const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
+    const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
     const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
     return `
       <div class="campaign-detail-title">
@@ -438,7 +622,8 @@ window.CJS.CampaignMap = (() => {
 
   function renderNodeDetail(node, mapState = {}) {
     if (!node) return '<div class="campaign-empty">Select a node.</div>';
-    const run = CS().getState()?.activeScenarioRun;
+    const state = CS().getState();
+    const run = state?.activeScenarioRun;
     const map = CS().getActiveMap();
     const isCurrent = run?.currentNode === node.id;
     const canMove = _canMoveTo(node.id, run, map);
@@ -457,7 +642,6 @@ window.CJS.CampaignMap = (() => {
 
     const tags = (node.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
     const objective = node.questObjective || Runner().objectiveForNode?.(node.id, state, map);
-    const state = CS().getState();
     const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
     return `
       <div class="campaign-detail-title">
@@ -503,20 +687,50 @@ window.CJS.CampaignMap = (() => {
     if (!cell) return '<div class="campaign-empty">No current cell.</div>';
     const state = CS().getState();
     const map = CS().getActiveMap();
-    const key = _cellKey(cell.x, cell.y, cell.levelId, map);
+    const run = state?.activeScenarioRun;
+    const activeLevelId = run?.mapLayer || cell.levelId || null;
+    const key = _cellKey(cell.x, cell.y, activeLevelId);
     const tags = (cell.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('');
     const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
-    const threat = _movingThreatAt(state?.activeScenarioRun, map, cell.x, cell.y, cell.levelId);
+    const threat = _movingThreatAt(run, map, cell.x, cell.y, activeLevelId);
     const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
+    const nearbyThreats = _activeLevelThreats(run, map, activeLevelId)
+      .filter((t) => t !== threat)
+      .map((t) => ({ threat: t, distance: _manhattan(cell, t) }))
+      .filter((entry) => entry.distance !== null && entry.distance <= 4)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 4);
+    const threatReadout = threat
+      ? `<div class="campaign-threat-readout is-on-cell mode-${_escAttr(_threatModeKey(threat))}">
+          <strong>${_esc(threat.label || threat.id || 'Roamer')}</strong>
+          <span>shares this cell — combat triggers on contact (${_esc(_threatModeText(_threatModeKey(threat)))})</span>
+        </div>`
+      : '';
+    const nearbyReadout = nearbyThreats.length
+      ? `<div class="campaign-threat-nearby">
+          <div class="campaign-section-label">Roamers Nearby</div>
+          ${nearbyThreats.map((entry) => {
+            const mode = _threatModeKey(entry.threat);
+            return `<div class="campaign-threat-nearby-item mode-${_escAttr(mode)}">
+              <span class="campaign-threat-nearby-dot mode-${_escAttr(mode)}"></span>
+              <b>${_esc(_shortLabel(entry.threat.label || entry.threat.id || 'Roamer', 16))}</b>
+              <em>${_esc(_threatModeText(mode))}</em>
+              <span class="campaign-threat-nearby-dist">${entry.distance} step${entry.distance === 1 ? '' : 's'}</span>
+            </div>`;
+          }).join('')}
+        </div>`
+      : '';
     return `
       <div class="campaign-detail-title">
         <span>${_esc(cell.title || key)}</span>
         <span class="campaign-pill">${_esc(cell.kind || 'floor')}</span>
         ${objective ? `<span class="campaign-pill ${objectiveDone ? 'is-current' : 'is-objective'}" title="${_escAttr(objective.questTitle || '')}">${_objectiveIcon(objective)} ${objectiveDone ? '✓ ' : ''}${_esc(objective.label)}</span>` : ''}
-        ${threat ? `<span class="campaign-pill is-objective">${_esc(threat.icon || '!')} ${_esc(threat.label || threat.id)}</span>` : ''}
+        ${threat ? `<span class="campaign-pill is-objective" title="${_escAttr(_threatModeText(_threatModeKey(threat)))}">${_esc(threat.icon || '!')} ${_esc(threat.label || threat.id)}</span>` : ''}
       </div>
       <div class="campaign-muted">${_esc(cell.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
+      ${threatReadout}
+      ${nearbyReadout}
       <div class="campaign-node-actions">
         <span class="campaign-pill is-current">Current ${_esc(key)}</span>
         ${cell.levelName ? `<span class="campaign-pill">${_esc(cell.levelName)}</span>` : ''}
@@ -712,6 +926,80 @@ window.CJS.CampaignMap = (() => {
     return '';
   }
 
+  // Returns the path to a per-setting background SVG used in the node-map
+  // canvas <image>. Returns an empty string if no art is available for the
+  // setting, in which case the renderer falls back to gradient backgrounds.
+  function _settingBackgroundHref(setting) {
+    const key = String(setting || '').toLowerCase();
+    const MAP = {
+      forest: 'assets/decorations/node_bg_forest.svg',
+      outdoor: 'assets/decorations/node_bg_forest.svg',
+      snowfield: 'assets/decorations/node_bg_mountain.svg',
+      mountain: 'assets/decorations/node_bg_mountain.svg',
+      urban: 'assets/decorations/node_bg_urban.svg',
+      dungeon: 'assets/decorations/node_bg_dungeon.svg',
+      castle: 'assets/decorations/node_bg_dungeon.svg',
+      arena: 'assets/decorations/node_bg_dungeon.svg',
+      cave: 'assets/decorations/node_bg_cave.svg',
+      volcano: 'assets/decorations/node_bg_cave.svg',
+      sewer: 'assets/decorations/node_bg_sewer.svg',
+      ruins: 'assets/decorations/node_bg_ruins.svg',
+      temple: 'assets/decorations/node_bg_ruins.svg',
+      house: 'assets/decorations/node_bg_house.svg',
+      tavern: 'assets/decorations/node_bg_tavern.svg',
+      desert: 'assets/decorations/node_bg_ruins.svg',
+      swamp: 'assets/decorations/node_bg_forest.svg'
+    };
+    return MAP[key] || '';
+  }
+
+  // Per-setting SVG defs that get injected into the node-map <defs>. Used to
+  // hold gradients/patterns referenced by the per-setting overlay rect.
+  function _nodeMapBackgroundDefs(setting) {
+    const stops = _settingOverlayStops(setting);
+    return `
+      <linearGradient id="cjs-map-bg-overlay" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${stops.top}" stop-opacity="${stops.topAlpha}"/>
+        <stop offset="0.55" stop-color="${stops.mid}" stop-opacity="${stops.midAlpha}"/>
+        <stop offset="1" stop-color="${stops.bot}" stop-opacity="${stops.botAlpha}"/>
+      </linearGradient>
+    `;
+  }
+
+  function _settingOverlayStops(setting) {
+    const key = String(setting || '').toLowerCase();
+    switch (key) {
+      case 'forest':
+      case 'outdoor':
+        return { top: '#0c1b12', topAlpha: 0.18, mid: '#0c1b12', midAlpha: 0.08, bot: '#040806', botAlpha: 0.35 };
+      case 'snowfield':
+      case 'mountain':
+        return { top: '#082236', topAlpha: 0.22, mid: '#0a1626', midAlpha: 0.08, bot: '#03060a', botAlpha: 0.42 };
+      case 'urban':
+        return { top: '#170f24', topAlpha: 0.28, mid: '#170f24', midAlpha: 0.1, bot: '#06030d', botAlpha: 0.45 };
+      case 'dungeon':
+      case 'castle':
+      case 'arena':
+        return { top: '#110e15', topAlpha: 0.32, mid: '#0a0a0e', midAlpha: 0.12, bot: '#020203', botAlpha: 0.55 };
+      case 'cave':
+      case 'volcano':
+        return { top: '#1a1108', topAlpha: 0.28, mid: '#0c0703', midAlpha: 0.1, bot: '#000000', botAlpha: 0.5 };
+      case 'sewer':
+        return { top: '#12200c', topAlpha: 0.28, mid: '#091308', midAlpha: 0.1, bot: '#020401', botAlpha: 0.5 };
+      case 'ruins':
+      case 'temple':
+      case 'desert':
+        return { top: '#1d1808', topAlpha: 0.22, mid: '#100c05', midAlpha: 0.1, bot: '#050402', botAlpha: 0.4 };
+      case 'house':
+      case 'tavern':
+        return { top: '#1d130a', topAlpha: 0.24, mid: '#0d0805', midAlpha: 0.1, bot: '#050201', botAlpha: 0.45 };
+      case 'swamp':
+        return { top: '#0b1908', topAlpha: 0.28, mid: '#070d04', midAlpha: 0.12, bot: '#010301', botAlpha: 0.5 };
+      default:
+        return { top: '#0a1219', topAlpha: 0.2, mid: '#06090e', midAlpha: 0.1, bot: '#020306', botAlpha: 0.4 };
+    }
+  }
+
   function _objectiveIcon(objective = {}) {
     const icons = {
       defeat: '⚔',
@@ -769,22 +1057,34 @@ window.CJS.CampaignMap = (() => {
 
   function _mapMeta(map, visible, revealed) {
     const parts = [];
-    if (map._procedural) parts.push('Procedural');
-    if (map.setting) parts.push(map.setting);
-    if (map.size) parts.push(map.size);
+    if (map._procedural || map._generated) parts.push('Procedural');
+    if (map.setting) parts.push(_titleSetting(map.setting));
+    if (map.size) parts.push(_titleCaseWord(map.size));
     parts.push(`${visible}/${revealed} shown`);
     return parts.join(' | ');
   }
 
   function _gridMeta(map, run, width, height) {
     const parts = [];
-    if (map.setting) parts.push(map.setting);
-    if (map.size) parts.push(map.size);
+    if (map.setting) parts.push(_titleSetting(map.setting));
+    if (map.size) parts.push(_titleCaseWord(map.size));
     const levelName = Runner().findCurrentCell?.()?.levelName;
     if (levelName) parts.push(levelName);
     parts.push(`${width}x${height}`);
     parts.push(`${(run.visitedCells || []).length} visited`);
+    const threats = Array.isArray(run.movingThreats) ? run.movingThreats.length : 0;
+    if (threats) parts.push(`${threats} threat${threats === 1 ? '' : 's'}`);
     return parts.join(' | ');
+  }
+
+  function _titleSetting(value) {
+    const text = String(value || '').replace(/_/g, ' ');
+    return text.replace(/\b\w/g, (ch) => ch.toUpperCase());
+  }
+  function _titleCaseWord(value) {
+    const text = String(value || '');
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   function _nodeLayer(node) {
@@ -832,16 +1132,16 @@ window.CJS.CampaignMap = (() => {
     return map[cell.kind] || '.';
   }
 
-  function _terrainAt(map, x, y) {
-    const levelId = CS().getState()?.activeScenarioRun?.mapLayer || null;
+  function _terrainAt(map, x, y, levelId = null) {
+    const effectiveLevelId = levelId || CS().getState()?.activeScenarioRun?.mapLayer || null;
     const levels = Array.isArray(map?.levels) ? map.levels : [];
-    const level = levels.find((entry) => _normalizeLayerId(entry.id || entry.layerId || 'level_1') === _normalizeLayerId(levelId || map.defaultLevelId || 'level_1')) || levels[0] || null;
+    const level = levels.find((entry) => _normalizeLayerId(entry.id || entry.layerId || 'level_1') === _normalizeLayerId(effectiveLevelId || map.defaultLevelId || 'level_1')) || levels[0] || null;
     const row = level?.terrain?.[Number(y)] || level?.grid?.[Number(y)] || map.terrain?.[Number(y)] || map.grid?.[Number(y)];
     return row?.[Number(x)] || 'floor';
   }
 
-  function _cellPassable(map, x, y) {
-    return !['wall', 'obstacle', 'blocked', 'void'].includes(String(_terrainAt(map, x, y)).toLowerCase());
+  function _cellPassable(map, x, y, levelId = null) {
+    return !['wall', 'obstacle', 'blocked', 'void', 'rock', 'pillar'].includes(String(_terrainAt(map, x, y, levelId)).toLowerCase());
   }
 
   function _movingThreatAt(run, map, x, y, levelId = null) {
@@ -850,7 +1150,9 @@ window.CJS.CampaignMap = (() => {
     return run.movingThreats.find((threat) => _cellKey(threat.x, threat.y, threat.levelId || levelId) === key) || null;
   }
 
-  function _cellKey(x, y, levelId = null) {
+  // levelId arg accepted but only used when it differs from the default level
+  // (kept compatible with prior callers that pass map as the 4th arg — we ignore it).
+  function _cellKey(x, y, levelId = null /*, map */) {
     const base = `${Number(x)},${Number(y)}`;
     const level = levelId ? _normalizeLayerId(levelId) : '';
     return level && level !== 'level_1' ? `${level}:${base}` : base;

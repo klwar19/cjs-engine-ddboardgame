@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 420" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="for-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d3026"/>
+      <stop offset="0.55" stop-color="#0d1d15"/>
+      <stop offset="1" stop-color="#06120a"/>
+    </linearGradient>
+    <radialGradient id="for-mist" cx="0.55" cy="0.32" r="0.62">
+      <stop offset="0" stop-color="#a8d796" stop-opacity="0.18"/>
+      <stop offset="0.5" stop-color="#5d9b6e" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="for-stipple" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="8" r="1.2" fill="#a3d18b" opacity="0.25"/>
+      <circle cx="22" cy="22" r="0.9" fill="#7ab373" opacity="0.32"/>
+      <circle cx="32" cy="6" r="0.8" fill="#cbe7b1" opacity="0.18"/>
+    </pattern>
+  </defs>
+  <rect width="680" height="420" fill="url(#for-sky)"/>
+  <rect width="680" height="420" fill="url(#for-mist)"/>
+  <rect width="680" height="420" fill="url(#for-stipple)"/>
+  <!-- distant tree silhouettes -->
+  <g fill="#162619" opacity="0.85">
+    <path d="M-10 380 L25 245 L60 380 Z"/>
+    <path d="M40 380 L80 220 L120 380 Z"/>
+    <path d="M100 380 L150 250 L200 380 Z"/>
+    <path d="M180 380 L220 230 L260 380 Z"/>
+    <path d="M250 380 L300 210 L350 380 Z"/>
+    <path d="M330 380 L375 230 L420 380 Z"/>
+    <path d="M400 380 L460 215 L520 380 Z"/>
+    <path d="M500 380 L545 240 L590 380 Z"/>
+    <path d="M570 380 L625 220 L680 380 Z"/>
+  </g>
+  <g fill="#22392a" opacity="0.7">
+    <path d="M-20 420 L20 320 L60 420 Z"/>
+    <path d="M50 420 L100 295 L150 420 Z"/>
+    <path d="M140 420 L195 290 L250 420 Z"/>
+    <path d="M240 420 L290 280 L340 420 Z"/>
+    <path d="M340 420 L390 275 L440 420 Z"/>
+    <path d="M430 420 L495 285 L560 420 Z"/>
+    <path d="M540 420 L600 290 L680 420 Z"/>
+  </g>
+  <g fill="#2f4f3a" opacity="0.85">
+    <ellipse cx="80" cy="395" rx="42" ry="14"/>
+    <ellipse cx="280" cy="402" rx="56" ry="16"/>
+    <ellipse cx="500" cy="398" rx="48" ry="14"/>
+    <ellipse cx="630" cy="404" rx="42" ry="12"/>
+  </g>
+  <!-- subtle floating dust -->
+  <g fill="#ffffff" opacity="0.16">
+    <circle cx="120" cy="92" r="1.3"/>
+    <circle cx="300" cy="64" r="0.9"/>
+    <circle cx="460" cy="80" r="1.1"/>
+    <circle cx="568" cy="98" r="0.8"/>
+    <circle cx="220" cy="120" r="0.7"/>
+  </g>
+</svg>
