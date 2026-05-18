@@ -9,6 +9,8 @@
     "id": "zombie",
     "displayName": "Last Light",
     "ceiling": "B",
+    "requiredRank": null,
+    "recommendedRank": "D",
     "order": 2,
     "tone": "horror_grim",
     "color": "#ef4444",

@@ -643,7 +643,71 @@ window.CJS.CONST = (() => {
     rankSkillSlotBonus:       { F: 0, E: 0, D: 0, C: 1, B: 1, A: 1, S: 2, SR: 2, SSR: 3 },
     rankPassiveSlotBonus:     { F: 0, E: 0, D: 0, C: 0, B: 1, A: 1, S: 1, SR: 2, SSR: 2 },
     rankSkillPointBonus:      { F: 0, E: 2, D: 4, C: 6, B: 9, A: 12, S: 15, SR: 19, SSR: 24 },
-    rankPassivePointBonus:    { F: 0, E: 2, D: 3, C: 5, B: 7, A: 10, S: 13, SR: 17, SSR: 22 }
+    rankPassivePointBonus:    { F: 0, E: 2, D: 3, C: 5, B: 7, A: 10, S: 13, SR: 17, SSR: 22 },
+
+    // ── ADVENTURER RANK PROGRESSION ─────────────────────────────────
+    // Each character accumulates Rank Points (RP) toward the NEXT rank
+    // from combat, quests, story beats, and out-of-combat checks. Once
+    // RP meets the threshold for the next rank AND all gates are met,
+    // a rank-up trial unlocks; completing it promotes the member.
+    //
+    // Thresholds[targetRank] = RP needed to reach that rank from below.
+    // F is the starting rank so it has no threshold.
+    rpThresholds: {
+      E: 60, D: 160, C: 360, B: 720, A: 1300, S: 2200, SR: 3500, SSR: 5500
+    },
+    // Minimum character level required to attempt rank-up to target.
+    minLevelByRank: {
+      E: 3, D: 6, C: 9, B: 12, A: 14, S: 16, SR: 18, SSR: 20
+    },
+    // For C and above, at least one job must be at this level.
+    minJobLevelByRank: {
+      C: 3, B: 3, A: 4, S: 4, SR: 5, SSR: 5
+    },
+    // For A and above, at least this chapter must be reached.
+    minChapterByRank: {
+      A: 3, S: 3, SR: 4, SSR: 5
+    },
+    // RP awarded per defeated enemy of the given rank. Scales with the
+    // enemy's effective level via MONSTER_LEVEL_SCALING.perLevel.
+    rpPerEnemyRank: {
+      F:  4, E:  7, D: 12, C: 20,
+      B: 32, A: 50, S: 75, SR: 110, SSR: 160
+    },
+    // Flat RP awarded on quest completion. Quests may override with
+    // quest.rankPoints; this is the per-rank default.
+    rpPerQuestRank: {
+      F:  12, E:  24, D:  44, C:  72,
+      B: 120, A: 180, S: 280, SR: 420, SSR: 620
+    },
+    // RP awarded on story-part / chapter advance (one-shot per part).
+    rpPerStoryPart: 40,
+    // One-time RP grant when a job reaches its tier milestones.
+    rpPerJobTier: { 3: 20, 5: 60 }
+  };
+
+  // ── MONSTER LEVEL SCALING ──────────────────────────────────────────
+  // When a monster spawns at level N (where N >= 1), its compiled stats
+  // and HP/MP are multiplied by 1 + (N-1) * perLevel. XP/RP rewards from
+  // defeating it scale by the same multiplier. Levels above the world's
+  // ceiling rank's max are clamped — a low-ceiling world stays low-stakes
+  // for even high-rank parties.
+  const MONSTER_LEVEL_SCALING = {
+    perLevel: 0.06,
+    maxLevel: 30,
+    // Max monster level per rank tier (used by Formulas.maxLevelForRank).
+    // Roughly mirrors the character level curve but slightly above.
+    levelBandByRank: {
+      F:  { min: 1,  max: 4  },
+      E:  { min: 2,  max: 7  },
+      D:  { min: 4,  max: 10 },
+      C:  { min: 6,  max: 13 },
+      B:  { min: 8,  max: 16 },
+      A:  { min: 11, max: 19 },
+      S:  { min: 14, max: 22 },
+      SR: { min: 17, max: 26 },
+      SSR:{ min: 20, max: 30 }
+    }
   };
 
   // ── PUBLIC API ─────────────────────────────────────────────────────
@@ -660,6 +724,7 @@ window.CJS.CONST = (() => {
     QTE_TYPES, QTE_DIFFICULTIES, QTE_MULTIPLIERS,
     GRID_DEFAULTS, ACTION_ECONOMY,
     ID_PREFIXES,
-    PROGRESSION
+    PROGRESSION,
+    MONSTER_LEVEL_SCALING
   });
 })();

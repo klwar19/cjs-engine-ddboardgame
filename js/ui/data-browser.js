@@ -193,12 +193,13 @@ window.CJS.DataBrowser = (() => {
   function _renderMonsters(area, status, q) {
     let items = CM()?.getVisibleItems?.('monsters', q) || DS().getAllAsArray('monsters');
     if (q) items = items.filter(e => _match(e, q));
-    const cols = ['ID','Icon','Name','Rank','Type','S','P','E','C','I','A','L','Skills#','AI Rules#','Loot#','Move'];
+    const cols = ['ID','Icon','Name','Rank','Lv Band','Type','S','P','E','C','I','A','L','Skills#','Tiers#','AI Rules#','Loot#','Move'];
     let rows = items.map(m => {
       const s = m.stats||{};
-      return [m.id, m.icon||'', m.name||'', m.rank||'', m.type||'',
+      const band = m.levelBand ? `${m.levelBand.min ?? 1}–${m.levelBand.max ?? '?'}` : '';
+      return [m.id, m.icon||'', m.name||'', m.rank||'', band, m.type||'',
         s.S||0,s.P||0,s.E||0,s.C||0,s.I||0,s.A||0,s.L||0,
-        (m.skills||[]).length, (m.aiRules||[]).length, (m.loot||[]).length, m.movement||3];
+        (m.skills||[]).length, (m.levelTiers||[]).length, (m.aiRules||[]).length, (m.loot||[]).length, m.movement||3];
     });
     area.innerHTML = _table(cols, rows);
     status.textContent = `${items.length} monsters`;
@@ -243,11 +244,13 @@ window.CJS.DataBrowser = (() => {
   function _renderWorlds(area, status, q) {
     let items = DS().getAllAsArray('worlds');
     if (q) items = items.filter(e => _match(e, q));
-    const cols = ['ID','Display Name','Ceiling','Order','Tone','Color','Status'];
+    const cols = ['ID','Display Name','Ceiling','Required','Recommended','Order','Tone','Color','Status'];
     const rows = items.map((world) => [
       world.id || '',
       world.displayName || '',
       world.ceiling || '',
+      world.requiredRank || '',
+      world.recommendedRank || '',
       world.order || '',
       world.tone || '',
       world.color || '',

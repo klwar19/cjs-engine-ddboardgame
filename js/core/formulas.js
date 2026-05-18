@@ -261,6 +261,167 @@ window.CJS.Formulas = (() => {
     return capped;
   }
 
+  // ── ADVENTURER RANK HELPERS ────────────────────────────────────────
+  // Ranks form an ordered ladder (F < E < D < C < B < A < S < SR < SSR).
+  // rankIndex returns the 0-based position in that ladder; unknown ranks
+  // fall back to 0 (F). Mirrors the pattern in RelationshipTiers.
+  function rankIndex(rank) {
+    const ranks = C().RANKS || ['F','E','D','C','B','A','S','SR','SSR'];
+    const idx = ranks.indexOf(String(rank || 'F').toUpperCase());
+    return idx < 0 ? 0 : idx;
+  }
+
+  function rankAtIndex(idx) {
+    const ranks = C().RANKS || ['F','E','D','C','B','A','S','SR','SSR'];
+    const clamped = Math.max(0, Math.min(ranks.length - 1, Number(idx) || 0));
+    return ranks[clamped];
+  }
+
+  // Next rank up. Returns null at the cap (SSR).
+  function nextRank(rank) {
+    const ranks = C().RANKS || ['F','E','D','C','B','A','S','SR','SSR'];
+    const idx = rankIndex(rank);
+    return idx >= ranks.length - 1 ? null : ranks[idx + 1];
+  }
+
+  // True if `rank` is at least `minRank` on the ladder. Treats null/empty
+  // minRank as unrestricted. Used by conditions and travel gates.
+  function meetsRank(rank, minRank) {
+    if (!minRank) return true;
+    return rankIndex(rank) >= rankIndex(minRank);
+  }
+
+  // Lower of two ranks. Used to apply a world ceiling.
+  function minRankOf(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    return rankIndex(a) <= rankIndex(b) ? a : b;
+  }
+
+  // A member's effective rank inside a world is capped by the world's
+  // ceiling. If the world has no ceiling (or it's higher than the
+  // member's rank), the member's own rank passes through unchanged.
+  function effectiveRank(memberRank, worldCeiling) {
+    return worldCeiling ? minRankOf(memberRank, worldCeiling) : (memberRank || 'F');
+  }
+
+  // ── MONSTER LEVEL SCALING ──────────────────────────────────────────
+  // Returns the multiplier to apply to stats/HP/MP/XP/RP for a monster
+  // spawned at `level`. Level 1 = baseline (×1.0).
+  function calcMonsterLevelScale(level) {
+    const lvl = Math.max(1, Math.min(_monsterCap(), Number(level || 1)));
+    const perLevel = Number(C().MONSTER_LEVEL_SCALING?.perLevel || 0.06);
+    return 1 + perLevel * (lvl - 1);
+  }
+
+  function _monsterCap() {
+    return Math.max(1, Number(C().MONSTER_LEVEL_SCALING?.maxLevel || 30));
+  }
+
+  // Resolve the level band [min, max] for a given world's ceiling rank.
+  // Used so monsters in a low-ceiling world stay genuinely low-level.
+  function levelBandForRank(rank) {
+    const bands = C().MONSTER_LEVEL_SCALING?.levelBandByRank || {};
+    const fallback = { min: 1, max: _monsterCap() };
+    return bands[String(rank || 'F').toUpperCase()] || fallback;
+  }
+
+  // Pick the level at which to spawn a given monster, given party context
+  // and the current world's ceiling rank. The monster's own levelBand
+  // (if authored) intersected with the world ceiling's band defines the
+  // spawn window; we then pick a level near the party's level scaled by
+  // the scenario danger and any soft-recommendedRank penalty.
+  function pickMonsterLevel(monster, opts = {}) {
+    const partyAvgLevel = Math.max(1, Number(opts.partyAvgLevel || 1));
+    const danger        = Math.max(0, Number(opts.danger || 0));
+    const recPenalty    = Math.max(0, Number(opts.recommendedPenalty || 0));
+    const worldCeiling  = opts.worldCeiling || null;
+
+    const monsterBand = monster?.levelBand || {};
+    const ceilingBand = worldCeiling ? levelBandForRank(worldCeiling) : { min: 1, max: _monsterCap() };
+    // World ceiling caps the MAX only — it must never push spawn level up
+    // past a monster's authored band. Otherwise low-band monsters in a
+    // high-ceiling world would spawn way above their authored range.
+    const lo = Math.max(1, Number(monsterBand.min || 1));
+    const hi = Math.min(_monsterCap(),
+      Number(monsterBand.max || _monsterCap()),
+      Number(ceilingBand.max || _monsterCap()));
+    if (hi <= lo) return Math.max(1, lo);
+
+    const target = Math.round(partyAvgLevel * 0.85 + danger * 1.5 + recPenalty);
+    return Math.max(lo, Math.min(hi, target));
+  }
+
+  // ── RANK POINTS (RP) ───────────────────────────────────────────────
+  // RP gain from a single source (monster kill / quest completion /
+  // stat check / etc). The world ceiling acts as a soft cap: at
+  // memberRank == ceiling, awards are halved; above ceiling they taper
+  // linearly to zero. This stops grinding a low-ceiling world past
+  // its rank without removing the world's content.
+  function calcRpGain({ sourceRank = 'F', memberRank = 'F', worldCeiling = null,
+                        base = 0, levelScale = 1 } = {}) {
+    const award = Math.max(0, Number(base || 0)) * Math.max(0, Number(levelScale || 1));
+    if (!award) return 0;
+    if (!worldCeiling) return Math.round(award);
+    const gap = rankIndex(worldCeiling) - rankIndex(memberRank);
+    // gap >= 2 → full award, gap == 1 → 75%, gap == 0 (at ceiling) → 50%,
+    // gap == -1 → 25%, gap <= -2 → 0%.
+    let mult;
+    if (gap >= 2) mult = 1.0;
+    else if (gap === 1) mult = 0.75;
+    else if (gap === 0) mult = 0.5;
+    else if (gap === -1) mult = 0.25;
+    else mult = 0;
+    return Math.round(award * mult);
+  }
+
+  // RP needed to reach the given target rank (e.g. "E" → 60).
+  // Returns 0 for F (no threshold) or unknown ranks.
+  function rpThresholdFor(targetRank) {
+    return Math.max(0, Number((C().PROGRESSION?.rpThresholds || {})[String(targetRank || '').toUpperCase()] || 0));
+  }
+
+  // Convenience: list the gates a member must clear to attempt rank-up
+  // to `targetRank`. Returns an object with each gate's status. The
+  // caller decides whether the member is eligible (all gates pass).
+  // `state` is optional and used only for chapter / story checks.
+  function rankUpGates(member = {}, targetRank, state = null) {
+    const adv = member.adventurer || { rank: member.rank || 'F', rankPoints: 0 };
+    const PROG = C().PROGRESSION || {};
+    const tgt = String(targetRank || nextRank(adv.rank) || '').toUpperCase();
+    if (!tgt) return { ok: false, reasons: ['At max rank.'], target: null };
+
+    const reasons = [];
+
+    const needRp = rpThresholdFor(tgt);
+    const haveRp = Math.max(0, Number(adv.rankPoints || 0));
+    if (haveRp < needRp) reasons.push(`Need ${needRp} RP (have ${haveRp}).`);
+
+    const needLevel = Number((PROG.minLevelByRank || {})[tgt] || 0);
+    if (needLevel && Number(member.level || 1) < needLevel) {
+      reasons.push(`Need character level ${needLevel}.`);
+    }
+
+    const needJobLevel = Number((PROG.minJobLevelByRank || {})[tgt] || 0);
+    if (needJobLevel) {
+      const progs = member.jobProgress || {};
+      const top = Object.values(progs).reduce((m, p) => Math.max(m, Number(p?.level || 0)), 0);
+      if (top < needJobLevel) reasons.push(`Need a job at level ${needJobLevel}.`);
+    }
+
+    const needChapter = Number((PROG.minChapterByRank || {})[tgt] || 0);
+    if (needChapter && Number(state?.currentChapter || 1) < needChapter) {
+      reasons.push(`Need story chapter ${needChapter}.`);
+    }
+
+    return {
+      ok: reasons.length === 0,
+      reasons,
+      target: tgt,
+      needRp, haveRp, needLevel, needJobLevel, needChapter
+    };
+  }
+
   // ── SKILL LEVEL SCALING ────────────────────────────────────────────
   function calcSkillPowerAtLevel(basePower, level, powerPerLevel) {
     const rate = powerPerLevel || 0.15;
@@ -865,6 +1026,12 @@ window.CJS.Formulas = (() => {
     doesKnockbackChain, cellBlocksLoS, getTerrainMoveCost,
     calcDropChance,
     applyWorldCeiling, applyWorldCeilingToStats,
+    // Rank ladder + world ceiling
+    rankIndex, rankAtIndex, nextRank, meetsRank, minRank: minRankOf, effectiveRank,
+    // Monster level scaling
+    calcMonsterLevelScale, levelBandForRank, pickMonsterLevel,
+    // Adventurer rank progression
+    calcRpGain, rpThresholdFor, rankUpGates,
     calcSkillPowerAtLevel,
     // Progression
     getSkillMaxLevel, calcSkillLevelForAp, calcSkillApToNextLevel, calcSkillApGainPerUse,

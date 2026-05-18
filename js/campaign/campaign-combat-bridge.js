@@ -463,7 +463,8 @@ window.CJS.CampaignCombatBridge = (() => {
           activeStatuses: patch.statuses || []
         };
       });
-    const enemyPlacements = window.CJS.MapGenerator.placeUnitsInZone(enemyIds, generated.spawnZones.enemy, unitData, generated.grid);
+    const enemyPlacements = window.CJS.MapGenerator.placeUnitsInZone(enemyIds, generated.spawnZones.enemy, unitData, generated.grid)
+      .map((placement) => _attachMonsterLevel(placement, unitData[placement.id], request));
     const runtimeId = `campaign_runtime_${request.battleSetId || request.requestedAt || Date.now()}`;
 
     DS().replace('encounters', runtimeId, {
@@ -509,7 +510,9 @@ window.CJS.CampaignCombatBridge = (() => {
       .map((unit) => ({
         id: unit.baseId || unit.id || unit.instanceId,
         name: unit.name || '',
-        rank: unit.rank || 'F'
+        rank: unit.rank || 'F',
+        level: Math.max(1, Number(unit.level || 1)),
+        levelScale: Number(unit.levelScale || 1)
       }));
     const loot = [];
     if (window.CJS.LootRoller && combatState?.winner === 'player') {
@@ -607,6 +610,47 @@ window.CJS.CampaignCombatBridge = (() => {
   function _enemyIdsForRequest(card, request = {}) {
     const explicit = (request.monsterIds || []).filter((id) => DS().exists('monsters', id));
     return explicit.length ? explicit : _enemyIdsFromBattleCard(card, request);
+  }
+
+  // Pick a monster's spawn level using party state + the destination
+  // world's ceiling rank. Honoured by stat-compiler at compile time so
+  // HP/stats/skills/RP all scale together. Called once per enemy
+  // placement; deterministic given the same inputs except for the
+  // built-in danger jitter.
+  function _attachMonsterLevel(placement, monster, request = {}) {
+    if (!placement) return placement;
+    // If a placement already carries a level (e.g. authored encounter),
+    // respect it — story battles often hand-tune monster levels.
+    if (Number(placement.level || 0) > 0) return placement;
+    const F = window.CJS.Formulas;
+    if (!F?.pickMonsterLevel) return placement;
+    const state = CS()?.getState?.() || {};
+    const world = DS().get('worlds', request.world || state.currentWorld) || {};
+    const partyLevels = Object.values(state.party || {})
+      .filter((m) => (m.rosterRole || 'active') !== 'bench')
+      .map((m) => Number(m.level || 1));
+    const partyAvg = partyLevels.length
+      ? partyLevels.reduce((s, l) => s + l, 0) / partyLevels.length
+      : 1;
+    const danger = Number(state.activeScenarioRun?.danger || 0);
+    // Soft-recommendedRank penalty: party hasn't met the recommendation,
+    // monsters skew toward the top of the band.
+    let recPenalty = 0;
+    const recRank = world.recommendedRank;
+    if (recRank) {
+      const partyTop = Object.values(state.party || {}).reduce((best, m) => {
+        const r = m.adventurer?.rank || m.rank || 'F';
+        return (F.rankIndex(r) > F.rankIndex(best)) ? r : best;
+      }, 'F');
+      if (!F.meetsRank(partyTop, recRank)) recPenalty = 2;
+    }
+    const level = F.pickMonsterLevel(monster || {}, {
+      partyAvgLevel: partyAvg,
+      danger,
+      recommendedPenalty: recPenalty,
+      worldCeiling: world.ceiling || null
+    });
+    return { ...placement, level };
   }
 
   function _enemyIdsFromBattleCard(card, request = {}) {
@@ -830,6 +874,27 @@ window.CJS.CampaignCombatBridge = (() => {
       for (const id of eligibleIds) {
         if (xpPer > 0) ops.push({ op: 'add_xp', target: id, amount: xpPer });
         if (jobXpPer > 0) ops.push({ op: 'gain_job_xp', target: id, amount: jobXpPer });
+      }
+    }
+    // RP per defeated enemy, awarded to each surviving member. We dispatch
+    // one op per (member, enemy) so the world-ceiling taper applied inside
+    // add_rank_points sees each member's effective rank separately. Solo
+    // and small parties still benefit since taper, not split, gates RP.
+    const rpTable = PROG.rpPerEnemyRank || {};
+    if (eligibleIds.length) {
+      for (const enemy of defeatedList) {
+        const base = Number(rpTable[enemy.rank || 'F'] || 0);
+        if (base <= 0) continue;
+        for (const id of eligibleIds) {
+          ops.push({
+            op: 'add_rank_points',
+            target: id,
+            amount: base,
+            sourceRank: enemy.rank || 'F',
+            levelScale: Number(enemy.levelScale || 1),
+            source: 'combat'
+          });
+        }
       }
     }
     // Small flat victory bonus (kept as a participation reward, on top of

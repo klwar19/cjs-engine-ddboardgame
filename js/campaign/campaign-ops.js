@@ -101,6 +101,9 @@ window.CJS.CampaignOps = (() => {
         case 'unlock_persona': return `Unlock persona ${op.personaId || op.id}`;
         case 'evaluate_persona_unlocks': return `Evaluate persona unlocks${op.target ? ` for ${op.target}` : ''}`;
         case 'add_quest': return `Add quest ${op.quest?.title || op.title || op.questId || op.id || ''}`;
+        case 'add_rank_points': return `Add ${op.amount || 0} RP${op.target ? ` to ${op.target}` : ''}`;
+        case 'rank_up_member': return `Rank up ${op.target || op.characterId || 'member'}${op.toRank ? ` → ${op.toRank}` : ''}`;
+        case 'start_rank_trial': return `Start rank trial for ${op.target || op.characterId || 'member'}`;
         case 'rank_up_passive': return `Rank up passive ${op.passiveId || op.id}`;
         case 'set_passive_rank': return `Set passive ${op.passiveId || op.id} rank to ${op.rank || 1}`;
         case 'equip_skill': return `Equip skill ${op.skillId || op.id}`;
@@ -185,6 +188,9 @@ window.CJS.CampaignOps = (() => {
       case 'set_stat_override': return _setStatOverride(state, op);
       case 'add_xp': return _addXp(state, op);
       case 'add_level': return _addLevel(state, op);
+      case 'add_rank_points': return _addRankPoints(state, op);
+      case 'rank_up_member': return _rankUpMember(state, op);
+      case 'start_rank_trial': return _startRankTrial(state, op);
       // ── Progression: skill AP + jobs ──
       case 'gain_skill_ap': return _gainSkillAp(state, op);
       case 'set_skill_level': return _setSkillLevel(state, op);
@@ -1065,6 +1071,117 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
+  // ── ADVENTURER RANK PROGRESSION ──────────────────────────────────
+  // RP is awarded by combat (per defeated enemy), quest completion,
+  // story-part advances, and stat-check passes. We funnel everything
+  // through this op so the world-ceiling taper and trial-pending check
+  // live in one place. `target` defaults to 'party' so combat-bridge
+  // can fan-out an award across surviving members in one call.
+  function _addRankPoints(state, op) {
+    const baseAmount = Number(op.amount || 0);
+    if (baseAmount <= 0) return;
+    const F = window.CJS.Formulas;
+    const worldRec = DS().get('worlds', state.currentWorld) || {};
+    const ceiling = worldRec.ceiling || null;
+    const sourceRank = op.sourceRank || op.rank || 'F';
+    const levelScale = Number(op.levelScale || 1);
+    for (const id of _resolveTargets(state, op.target || op.characterId || 'party')) {
+      const member = state.party[id];
+      if (!member) continue;
+      member.adventurer = member.adventurer || { rank: member.rank || 'F', rankPoints: 0, trialPending: false, history: [] };
+      const award = F?.calcRpGain
+        ? F.calcRpGain({ sourceRank, memberRank: member.adventurer.rank, worldCeiling: ceiling, base: baseAmount, levelScale })
+        : Math.max(0, Math.round(baseAmount * levelScale));
+      if (award <= 0) continue;
+      member.adventurer.rankPoints = Math.max(0, Number(member.adventurer.rankPoints || 0) + award);
+      // Crossed the threshold for the next rank? Flag a pending trial,
+      // but only if all OTHER gates (level / job level / chapter / world
+      // ceiling) are also met. Below-ceiling promotions are blocked here.
+      _checkRankTrial(state, id, member);
+    }
+  }
+
+  // After RP changes, check whether the member is eligible for a trial.
+  // Eligibility = all rankUpGates pass AND the world ceiling allows the
+  // target rank AND no trial is already pending.
+  function _checkRankTrial(state, id, member) {
+    if (!member || member.adventurer?.trialPending) return;
+    const F = window.CJS.Formulas;
+    if (!F?.rankUpGates) return;
+    const gates = F.rankUpGates(member, null, state);
+    if (!gates.ok || !gates.target) return;
+    const worldRec = DS().get('worlds', state.currentWorld) || {};
+    if (worldRec.ceiling && F.rankIndex(gates.target) > F.rankIndex(worldRec.ceiling)) {
+      // Player is at the world's ceiling — RP cap shows them they need to
+      // travel to a higher-ceiling world for the next trial. No log every
+      // tick (would spam combat); only log on direct trial-start attempts.
+      return;
+    }
+    member.adventurer.trialPending = true;
+    _log(state, `${member.name || id} is ready to rank up to ${gates.target}! Apply at the Adventurer Guild.`);
+  }
+
+  // Apply a rank-up. Idempotent if member is already at toRank or higher.
+  // op: { target?, characterId?, toRank?, force?, source? }
+  // If toRank is omitted, promote one step from current rank.
+  function _rankUpMember(state, op) {
+    const F = window.CJS.Formulas;
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      if (!member) continue;
+      member.adventurer = member.adventurer || { rank: member.rank || 'F', rankPoints: 0, trialPending: false, history: [] };
+      const currentRank = member.adventurer.rank || member.rank || 'F';
+      const targetRank = String(op.toRank || F?.nextRank?.(currentRank) || '').toUpperCase();
+      if (!targetRank) {
+        _log(state, `${member.name || id} is already at max rank.`);
+        continue;
+      }
+      if (F?.rankIndex(targetRank) <= F?.rankIndex(currentRank)) {
+        // Already at or above target — nothing to do.
+        continue;
+      }
+      // Gates (unless force=true). World ceiling is enforced too.
+      if (!op.force) {
+        const gates = F?.rankUpGates(member, targetRank, state) || { ok: false, reasons: ['Formulas unavailable.'] };
+        if (!gates.ok) {
+          _log(state, `${member.name || id} cannot reach ${targetRank}: ${gates.reasons.join(' ')}`);
+          continue;
+        }
+        const worldRec = DS().get('worlds', state.currentWorld) || {};
+        if (worldRec.ceiling && F.rankIndex(targetRank) > F.rankIndex(worldRec.ceiling)) {
+          _log(state, `${member.name || id} cannot rank up past the ${worldRec.displayName || state.currentWorld} ceiling (${worldRec.ceiling}). Travel to a higher-ceiling world.`);
+          continue;
+        }
+      }
+      // Deduct the RP cost (carry over any surplus toward the next rank).
+      const threshold = F?.rpThresholdFor?.(targetRank) || 0;
+      member.adventurer.rankPoints = Math.max(0, Number(member.adventurer.rankPoints || 0) - threshold);
+      member.adventurer.rank = targetRank;
+      member.adventurer.trialPending = false;
+      member.adventurer.trialQuestId = null;
+      member.adventurer.history.push({ rank: targetRank, at: CS().nowIso(), source: op.source || 'rank_up' });
+      // Mirror to member.rank so existing systems (HP/MP curves, scoring,
+      // UI, scenario-runner) keep working without per-call lookups.
+      member.rank = targetRank;
+      _log(state, `${member.name || id} promoted to Rank ${targetRank}.`);
+      // Resync HP/MP off the new rank.
+      if (CS().syncPartyMember) CS().syncPartyMember(id, member);
+    }
+  }
+
+  // Author-triggered trial start. Marks the member as in-trial and (if
+  // a `questId` is supplied) attaches it for downstream pulse triggers.
+  function _startRankTrial(state, op) {
+    for (const id of _resolveTargets(state, op.target || op.characterId)) {
+      const member = state.party[id];
+      if (!member) continue;
+      member.adventurer = member.adventurer || { rank: member.rank || 'F', rankPoints: 0, trialPending: true, history: [] };
+      member.adventurer.trialPending = true;
+      member.adventurer.trialQuestId = op.questId || op.id || member.adventurer.trialQuestId || null;
+      _log(state, `${member.name || id} begins their rank-up trial.`);
+    }
+  }
+
   function _gainSkillAp(state, op) {
     const skillId = op.skillId || op.id;
     const amount = Number(op.amount || 0);
@@ -1438,6 +1555,24 @@ window.CJS.CampaignOps = (() => {
     }
     for (const tag of quest.resolveTags || []) Tags()?.resolveTag?.(state, { tag, scope: 'quest', targetType: 'quest', targetId: quest.id });
     for (const tag of quest.completeTags || []) Tags()?.addTag?.(state, { tag, scope: 'quest', targetType: 'quest', targetId: quest.id, source: 'quest_complete' });
+    // Rank-point reward. Quests can author `rankPoints` directly; otherwise
+    // we fall back to the per-quest-rank default. Granted to active members
+    // so out-of-party characters don't accrue RP they didn't earn.
+    const PROG = (window.CJS.CONST?.PROGRESSION) || {};
+    const authoredRp = quest.rankPoints;
+    const fallbackRp = (PROG.rpPerQuestRank || {})[quest.rank || 'F'] || 0;
+    const baseRp = Number(authoredRp != null ? authoredRp : fallbackRp);
+    if (baseRp > 0) {
+      for (const [id, member] of Object.entries(state.party || {})) {
+        if ((member.rosterRole || 'active') === 'bench') continue;
+        _addRankPoints(state, {
+          target: id,
+          amount: baseRp,
+          sourceRank: quest.rank || 'F',
+          source: 'quest_complete'
+        });
+      }
+    }
   }
 
   function _setQuestStatus(state, questId, status) {
@@ -1706,6 +1841,28 @@ window.CJS.CampaignOps = (() => {
     const fromWorld = state.currentWorld;
     const toWorld = op.toWorld;
     if (!toWorld || toWorld === fromWorld) return;
+
+    // Hard rank gate: if the destination world declares `requiredRank`,
+    // at least one active member must meet it. Soft `recommendedRank` is
+    // honoured by scenario-runner spawn scaling, not by blocking here.
+    if (!op.bypassRankGate) {
+      const dest = DS().get('worlds', toWorld) || {};
+      const need = dest.requiredRank;
+      if (need) {
+        const F = window.CJS.Formulas;
+        const active = Object.values(state.party || {})
+          .filter((m) => (m.rosterRole || 'active') !== 'bench');
+        const topRank = active.reduce((best, m) => {
+          const r = m.adventurer?.rank || m.rank || 'F';
+          if (!best) return r;
+          return F?.rankIndex?.(r) > F?.rankIndex?.(best) ? r : best;
+        }, null);
+        if (!F?.meetsRank?.(topRank, need)) {
+          _log(state, `World transition denied: ${dest.displayName || toWorld} requires rank ${need} (party top: ${topRank || 'F'}).`);
+          return;
+        }
+      }
+    }
 
     state.worldArchive[fromWorld] = {
       currencies: { ...state.currencies },

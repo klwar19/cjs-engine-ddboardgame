@@ -40,13 +40,27 @@ window.CJS.StatCompiler = (() => {
   // baseUnit: the character/monster record (plain object from DataStore)
   // instanceId: unique ID for this unit instance in combat (same as baseUnit.id
   //             for singletons; suffixed for summons/duplicates)
-  // opts: { currentHP?, currentMP?, activeStatuses?[] } — for mid-combat recompile
+  // opts: { currentHP?, currentMP?, activeStatuses?[], level? } — for mid-combat recompile
+  //   level: monster spawn level (default 1). Scales stats/HP/MP and unlocks
+  //          authored levelTiers grants (skills/passives at level thresholds).
   function compileUnit(baseUnit, instanceId, opts = {}) {
     if (!baseUnit) return null;
     const id = instanceId || baseUnit.id;
 
+    // ── Resolve level scaling (defaults to baseUnit.level if authored,
+    //    else 1). Stats and HP/MP scale via the same multiplier; level
+    //    tiers contribute extra skills/passives at thresholds.
+    const level = Math.max(1, Number(opts.level ?? baseUnit.level ?? 1));
+    const levelScale = (F().calcMonsterLevelScale ? F().calcMonsterLevelScale(level) : 1);
+    const tierGrants = _collectLevelTierGrants(baseUnit, level);
+
     // ── 1. Gather all effect references ────────────────────────────
-    const effectRefs = _gatherEffectRefs(baseUnit, opts.activeStatuses || []);
+    //    Tier-granted innate passives participate in effect collection
+    //    too, so a level-5 "Thick Hide" passive is real DR at runtime.
+    const augmentedBaseUnit = tierGrants.passives.length
+      ? { ...baseUnit, innatePassives: _mergeUnique(baseUnit.innatePassives || [], tierGrants.passives) }
+      : baseUnit;
+    const effectRefs = _gatherEffectRefs(augmentedBaseUnit, opts.activeStatuses || []);
 
     // ── 2. Resolve effects (merge master + overrides) ──────────────
     const effects = _resolveRefs(effectRefs);
@@ -61,6 +75,15 @@ window.CJS.StatCompiler = (() => {
     const compiledStats = { ...baseStats };
     for (const stat of C().STATS) {
       compiledStats[stat] = Math.max(0, (compiledStats[stat] || 0) + (mods.stat[stat] || 0));
+    }
+
+    // Apply monster-level scaling to compiledStats so derived HP/MP/DR
+    // all scale consistently. Skip at level 1 to keep the original
+    // values untouched for player characters and default monsters.
+    if (levelScale > 1) {
+      for (const stat of C().STATS) {
+        compiledStats[stat] = Math.max(0, Math.round((compiledStats[stat] || 0) * levelScale));
+      }
     }
 
     // ── 6. Calculate derived values ────────────────────────────────
@@ -96,8 +119,11 @@ window.CJS.StatCompiler = (() => {
         ? Math.max(0, Math.min(ultimateMax, Number(opts.ultimateMeter) || 0))
         : Math.max(0, Math.min(ultimateMax, Number(baseUnit.ultimateMeter ?? 0))))
       : null;
+    const baseSkillRefs = tierGrants.skills.length
+      ? [...(baseUnit.skills || []), ...tierGrants.skills]
+      : (baseUnit.skills || []);
     const compiledSkills = _withUltimateSkill(
-      _mergeSkills(baseUnit.skills || [], baseUnit.equipment || []),
+      _mergeSkills(baseSkillRefs, baseUnit.equipment || []),
       ultimateSkillId
     );
 
@@ -113,6 +139,8 @@ window.CJS.StatCompiler = (() => {
       portraitFocus: baseUnit.portraitFocus || null,
       team:          baseUnit.team || 'enemy',
       rank,
+      level,
+      levelScale,
       type:          baseUnit.type || 'humanoid',
       size:          baseUnit.size || '1x1',
 
@@ -166,7 +194,7 @@ window.CJS.StatCompiler = (() => {
       // Merge base skills + item-granted skills, PRESERVING overrides/level
       skills:        compiledSkills,
       equipment:     baseUnit.equipment || [],
-      innatePassives:baseUnit.innatePassives || [],
+      innatePassives:augmentedBaseUnit.innatePassives || [],
       passiveRanks:  baseUnit.passiveRanks || {},
 
       // ── Authored runtime fields (must survive compile for combat systems) ──
@@ -572,6 +600,28 @@ window.CJS.StatCompiler = (() => {
   function _mergeUnique(a, b) {
     const set = new Set([...(a || []), ...(b || [])]);
     return Array.from(set);
+  }
+
+  // Collect skill / passive IDs granted by levelTiers entries whose
+  // `level` threshold is at or below the unit's spawn level. Used to
+  // unlock authored abilities as monsters scale up — e.g. a frost wolf
+  // gains "frost lash" at level 5, "thick hide" passive at level 10.
+  function _collectLevelTierGrants(baseUnit, level) {
+    const out = { skills: [], passives: [] };
+    const tiers = Array.isArray(baseUnit?.levelTiers) ? baseUnit.levelTiers : [];
+    if (!tiers.length) return out;
+    const cap = Math.max(1, Number(level || 1));
+    for (const tier of tiers) {
+      const threshold = Number(tier?.level || 0);
+      if (!threshold || threshold > cap) continue;
+      for (const sid of (tier.grantsSkills || [])) {
+        if (sid && !out.skills.includes(sid)) out.skills.push(sid);
+      }
+      for (const pid of (tier.grantsPassives || [])) {
+        if (pid && !out.passives.includes(pid)) out.passives.push(pid);
+      }
+    }
+    return out;
   }
 
   // Merge base skills with any skills granted by equipped items.

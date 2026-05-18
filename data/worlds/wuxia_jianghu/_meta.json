@@ -9,6 +9,8 @@
     "id": "wuxia_jianghu",
     "displayName": "Jianghu",
     "ceiling": "A",
+    "requiredRank": null,
+    "recommendedRank": "C",
     "order": 5,
     "tone": "wuxia_classical",
     "color": "#84cc16",
