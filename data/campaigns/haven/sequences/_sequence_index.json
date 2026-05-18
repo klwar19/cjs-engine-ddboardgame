@@ -233,6 +233,13 @@
       "kind": "character",
       "title": "Peri Tests Bin's Luck",
       "file": "events/character/bin_peri_luck_check.json",
+      "relationship": {
+        "characterId": "peri",
+        "field": "trust",
+        "threshold": 1,
+        "bonus": "+1 trust and Peri's luck-test flag",
+        "summary": "A character event with dialogue, a luck check, and a combat recovery branch."
+      },
       "tags": ["peri", "luck", "comedy", "character_event"]
     },
     {

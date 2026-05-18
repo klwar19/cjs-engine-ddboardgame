@@ -1311,12 +1311,14 @@ window.CJS.CampaignOps = (() => {
       member.unlockedJobs = member.unlockedJobs || [];
       // Already unlocked → just switch.
       if (!member.unlockedJobs.includes(jobId)) {
-        const F = window.CJS.Formulas;
-        const allJobs = DS().getAll('jobs') || {};
-        const check = F?.canUnlockJob ? F.canUnlockJob(job, member, allJobs) : { ok: true };
-        if (!check.ok) {
-          _log(state, `${member.name || id} cannot take ${job.name || jobId}: ${check.reason}.`);
-          continue;
+        if (!op.force) {
+          const F = window.CJS.Formulas;
+          const allJobs = DS().getAll('jobs') || {};
+          const check = F?.canUnlockJob ? F.canUnlockJob(job, member, allJobs) : { ok: true };
+          if (!check.ok) {
+            _log(state, `${member.name || id} cannot take ${job.name || jobId}: ${check.reason}.`);
+            continue;
+          }
         }
         member.unlockedJobs.push(jobId);
       }
@@ -1342,12 +1344,14 @@ window.CJS.CampaignOps = (() => {
       if (member.unlockedJobs.includes(jobId)) continue;
       const job = DS().get('jobs', jobId);
       if (!job) continue;
-      const F = window.CJS.Formulas;
-      const allJobs = DS().getAll('jobs') || {};
-      const check = F?.canUnlockJob ? F.canUnlockJob(job, member, allJobs) : { ok: true };
-      if (!check.ok) {
-        _log(state, `${member.name || id} cannot unlock ${job.name || jobId}: ${check.reason}.`);
-        continue;
+      if (!op.force) {
+        const F = window.CJS.Formulas;
+        const allJobs = DS().getAll('jobs') || {};
+        const check = F?.canUnlockJob ? F.canUnlockJob(job, member, allJobs) : { ok: true };
+        if (!check.ok) {
+          _log(state, `${member.name || id} cannot unlock ${job.name || jobId}: ${check.reason}.`);
+          continue;
+        }
       }
       member.unlockedJobs.push(jobId);
       member.jobProgress[jobId] = member.jobProgress[jobId] || { xp: 0, level: 1 };
@@ -2522,7 +2526,7 @@ window.CJS.CampaignOps = (() => {
 
   function _bondChange(state, op) {
     const npcId = op.npcId || op.target || op.id;
-    const field = op.field || 'value';
+    const field = op.field || 'trust';
     if (!npcId) return;
     state.bonds = state.bonds || {};
     state.bonds[npcId] = state.bonds[npcId] || {};
@@ -2554,11 +2558,12 @@ window.CJS.CampaignOps = (() => {
   // log line when out of acts so quest flows that try a free activity still
   // work.
   const ACTIVITY_DEFS = {
-    hang_out:   { field: 'trust',      amount: 1, label: 'Hung out with',        verb: 'hung out' },
-    train:      { field: 'confidence', amount: 1, label: 'Trained with',         verb: 'trained' },
-    listen:     { field: 'empathy',    amount: 1, label: 'Listened to',          verb: 'listened to' },
-    help_task:  { field: 'value',      amount: 1, label: 'Helped',               verb: 'helped' },
-    compete:    { field: 'rivalry',    amount: 1, label: 'Competed against',     verb: 'competed with' }
+    hang_out:   { field: 'trust',      amount: 1, label: 'Checked in with',      verb: 'checked in with', tone: 'trust' },
+    train:      { field: 'respect',    amount: 1, label: 'Worked with',          verb: 'worked with', tone: 'respect' },
+    romance:    { field: 'romance',    amount: 1, label: 'Shared a quiet moment with', verb: 'shared a quiet moment with', tone: 'romance', requiresRomance: true },
+    listen:     { field: 'trust',      amount: 1, label: 'Listened to',          verb: 'listened to', legacy: true, tone: 'trust' },
+    help_task:  { field: 'respect',    amount: 1, label: 'Helped',               verb: 'helped', legacy: true, tone: 'respect' },
+    compete:    { field: 'rivalry',    amount: 1, label: 'Competed against',     verb: 'competed with', legacy: true, tone: 'rivalry' }
   };
 
   function _relationshipActivity(state, op = {}) {
@@ -2567,6 +2572,18 @@ window.CJS.CampaignOps = (() => {
     const def = ACTIVITY_DEFS[activityId];
     if (!charId) return _log(state, `Activity skipped: no character.`, op);
     if (!def) return _log(state, `Activity skipped: unknown kind ${activityId}.`, op);
+    if (def.requiresRomance && !_romanceEligible(charId)) {
+      const charLabel = _characterDisplayName(charId);
+      state.lastRelationshipNarrative = {
+        at: new Date().toISOString(),
+        characterId: charId,
+        activityId,
+        blocked: true,
+        title: `${charLabel}: Romance unavailable`,
+        text: `${charLabel} keeps the moment friendly.`
+      };
+      return _log(state, `Romance activity skipped: ${charLabel} is not eligible.`, op);
+    }
 
     state.relationshipActs = state.relationshipActs || { remaining: 3, max: 3, lastResetPhase: state.phase?.number || 1, history: [] };
     state.relationshipActs.history = state.relationshipActs.history || [];
@@ -2592,11 +2609,21 @@ window.CJS.CampaignOps = (() => {
       activityId,
       field: def.field,
       amount: def.amount,
-      free: !!op.free
+      free: !!op.free,
+      narrative: _relationshipNarrative(charId, def)
     });
     state.relationshipActs.history = state.relationshipActs.history.slice(0, 80);
 
     const charLabel = _characterDisplayName(charId);
+    state.lastRelationshipNarrative = {
+      at: new Date().toISOString(),
+      characterId: charId,
+      activityId,
+      field: def.field,
+      amount: def.amount,
+      title: `${def.label} ${charLabel}`,
+      text: _relationshipNarrative(charId, def)
+    };
     _log(state, `${def.label} ${charLabel} (+${def.amount} ${def.field}).`, op);
   }
 
@@ -2613,6 +2640,26 @@ window.CJS.CampaignOps = (() => {
     const DSx = window.CJS?.DataStore;
     const base = DSx?.get?.('characters', charId);
     return base?.name || charId;
+  }
+
+  function _romanceEligible(charId) {
+    const DSx = window.CJS?.DataStore;
+    const base = DSx?.get?.('characters', charId) || {};
+    const tags = (base.tags || []).map((tag) => String(tag || '').toLowerCase());
+    return !!(
+      base.romanceEligible
+      || base.relationship?.romanceEligible
+      || tags.includes('romanceable')
+      || tags.includes('romance')
+    );
+  }
+
+  function _relationshipNarrative(charId, def = {}) {
+    const name = _characterDisplayName(charId);
+    if (def.tone === 'romance') return `${name} lets the pause linger, and the conversation turns softer than usual.`;
+    if (def.tone === 'respect') return `${name} watches your follow-through and gives a small, approving nod.`;
+    if (def.tone === 'rivalry') return `${name} meets the challenge head-on, grinning through the sparks.`;
+    return `${name} talks a little longer than planned, and the trust between you steadies.`;
   }
 
   function _rollCheck(state, op) {

@@ -50,7 +50,7 @@
       "summary": "Bin passed Peri's luck test.",
       "ops": [
         { "op": "set_flag", "flag": "peri_luck_test_passed", "value": true },
-        { "op": "bond_change", "target": "peri", "amount": 1, "reason": "Luck test" }
+        { "op": "bond_change", "target": "peri", "field": "trust", "amount": 1, "reason": "Luck test" }
       ],
       "next": "end_success"
     },

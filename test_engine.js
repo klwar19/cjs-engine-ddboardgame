@@ -1775,15 +1775,15 @@ assertEq('Hang out consumes one act', after.relationshipActs.remaining, 2);
 assertEq('Hang out records history', after.relationshipActs.history.length, 1);
 assertEq('History records correct activity', after.relationshipActs.history[0].activityId, 'hang_out');
 
-// Train: +1 confidence
+// Train: +1 respect
 Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'train' }, { source: 'test' });
 after = CSt.getState();
-assertEq('Train adds +1 confidence', after.bonds.tessa.confidence, 1);
+assertEq('Train adds +1 respect', after.bonds.tessa.respect, 1);
 
-// Listen: +1 empathy
+// Legacy Listen still works, mapped into trust by the simplified model
 Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'listen' }, { source: 'test' });
 after = CSt.getState();
-assertEq('Listen adds +1 empathy', after.bonds.tessa.empathy, 1);
+assertEq('Listen adds +1 trust', after.bonds.tessa.trust, 2);
 assertEq('Acts drained to 0', after.relationshipActs.remaining, 0);
 
 // Compete with someone else — should be blocked (no acts left)
@@ -1814,7 +1814,7 @@ assertEq('relationship_acts_reset refills', after.relationshipActs.remaining, 5)
 const beforeLogLen = CSt.getState().log.length;
 Ops.apply({ op: 'relationship_activity', characterId: 'tessa', activityId: 'meditate_with' }, { source: 'test' });
 after = CSt.getState();
-assertEq('Unknown activity does not change bond', after.bonds.tessa.trust, 1);
+assertEq('Unknown activity does not change bond', after.bonds.tessa.trust, 2);
 assert('Unknown activity is logged', after.log.length > beforeLogLen);
 
 // ────────────────────────────────────────────────────────────────────

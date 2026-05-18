@@ -576,6 +576,27 @@ window.CJS.CampaignUI = (() => {
     const portraitContent = resolvedPortrait
       ? `<img src="${_escAttr(resolvedPortrait)}" alt="" style="${_escAttr(_focusAttrStyle(resolvedFocus))}">`
       : `<span class="campaign-roster-portrait-fallback">${_esc(member.icon || member.name?.[0] || '?')}</span>`;
+    const rosterToggle = `<button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>`;
+    const gameplayActions = `
+      ${rosterToggle}
+      <button class="campaign-action" data-campaign-action="party-sheet" data-id="${_escAttr(id)}">Sheet</button>
+      <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job Change</button>
+      <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Job Tree</button>
+      <button class="campaign-action" data-campaign-action="change-persona" data-id="${_escAttr(id)}" title="Switch world persona">Persona</button>
+      <button class="campaign-action" data-campaign-action="rank-up-apply" title="Apply for a rank-up trial at the Adventurer Guild.">Rank Trial</button>
+      <button class="campaign-action" data-campaign-action="party-availability" data-id="${_escAttr(id)}">Availability</button>
+    `;
+    const gmActions = `
+      <button class="campaign-action" data-campaign-action="gm-member-override" data-id="${_escAttr(id)}">GM Edit</button>
+      <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
+      <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
+      <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+Job XP</button>
+      <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
+      <button class="campaign-action" data-campaign-action="learn-skill" data-id="${_escAttr(id)}">Learn Skill</button>
+      <button class="campaign-action" data-campaign-action="learn-passive" data-id="${_escAttr(id)}">Learn Passive</button>
+      <button class="campaign-action" data-campaign-action="status-char" data-id="${_escAttr(id)}">Status</button>
+      <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
+    `;
     return `
       <article class="campaign-roster-member ${isBench ? 'is-bench' : 'is-active'} ${battleReady ? '' : 'is-unavailable'}">
         <header class="campaign-roster-hero">
@@ -594,16 +615,15 @@ window.CJS.CampaignUI = (() => {
               <span title="${_escAttr(charXpMeta)}"><b>XP</b> ${charXp}${xpToNext != null ? ` <small>(${xpToNext} to next)</small>` : ' <small>(max)</small>'}</span>
               <span class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</span>
             </div>
-            <div class="campaign-roster-hero-actions campaign-row-actions">
-              <button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
-              <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
-              <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
-              <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job</button>
-              <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Tree</button>
-              <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+JobXP</button>
-              <button class="campaign-action" data-campaign-action="change-persona" data-id="${_escAttr(id)}" title="Switch world persona">Persona</button>
-              <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
-              <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
+            <div class="campaign-roster-action-groups">
+              <div class="campaign-roster-action-block">
+                <span class="campaign-roster-actions-title">Gameplay</span>
+                <div class="campaign-roster-hero-actions campaign-row-actions">${gameplayActions}</div>
+              </div>
+              <details class="campaign-roster-action-block is-gm">
+                <summary class="campaign-roster-actions-title">GM Edit</summary>
+                <div class="campaign-roster-hero-actions campaign-row-actions">${gmActions}</div>
+              </details>
             </div>
           </div>
         </header>
@@ -633,7 +653,6 @@ window.CJS.CampaignUI = (() => {
             <div class="campaign-roster-card-title">
               <span>Skills</span>
               <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'skill')}</small>
-              <button class="campaign-icon-btn" data-campaign-action="learn-skill" data-id="${_escAttr(id)}" title="Add to pool">+</button>
             </div>
             ${_renderSkillSlotView(id, member)}
             <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberSkillPoolCount(id, member)} in pool)</summary>${_renderSkillPoolList(id, member, skills)}</details>
@@ -642,7 +661,6 @@ window.CJS.CampaignUI = (() => {
             <div class="campaign-roster-card-title">
               <span>Passives</span>
               <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'passive')}</small>
-              <button class="campaign-icon-btn" data-campaign-action="learn-passive" data-id="${_escAttr(id)}" title="Add to pool">+</button>
             </div>
             ${_renderPassiveSlotView(id, member)}
             <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberPassivePoolCount(id, member)} in pool)</summary>${_renderPassivePoolList(id, member, passives)}</details>
@@ -5130,6 +5148,7 @@ window.CJS.CampaignUI = (() => {
       case 'party-availability': return _partyAvailabilityModal(data.id);
       case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
+      case 'gm-member-override': return _gmOverride(data.id);
       case 'load-slot': return _loadSlot(data.id);
       case 'delete-slot': return _deleteSlot(data.id);
       case 'delete-all-saves': return _deleteAllSaves();
@@ -5275,12 +5294,40 @@ window.CJS.CampaignUI = (() => {
       characterId,
       activityId: activityId || 'hang_out'
     }, { source: 'relationships_ui' });
+    const narrative = CS().getState()?.lastRelationshipNarrative;
+    if (narrative?.characterId === characterId && narrative?.activityId === (activityId || 'hang_out')) {
+      _relationshipNarrativeModal(narrative);
+      return;
+    }
     const def = (window.CJS.RelationshipsTab?.ACTIVITIES || []).find((a) => a.id === activityId);
     if (def) {
       const charBase = window.CJS.DataStore?.get?.('characters', characterId);
       const name = charBase?.name || characterId;
       UI().toast(`${def.label}: ${name} (${def.hint})`, 'success');
     }
+  }
+
+  function _relationshipNarrativeModal(narrative = {}) {
+    const body = document.createElement('div');
+    body.className = 'campaign-relationship-narrative';
+    body.innerHTML = `
+      <div class="campaign-quest-narrative">
+        <p>${_esc(narrative.text || 'A small moment passes between you.')}</p>
+        ${narrative.blocked ? '' : `<p class="campaign-muted">+${_esc(narrative.amount || 0)} ${_esc(narrative.field || 'bond')}</p>`}
+      </div>
+    `;
+    const footer = document.createElement('div');
+    const close = document.createElement('button');
+    close.className = 'btn btn-primary';
+    close.textContent = 'Continue';
+    footer.appendChild(close);
+    const overlay = UI().openModal({
+      title: narrative.title || 'Relationship Moment',
+      content: body,
+      footer,
+      width: '420px'
+    });
+    close.onclick = () => UI().closeModal(overlay);
   }
 
   function _legacyCustomEventUnused() {
@@ -10005,7 +10052,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _gmOverride() {
+  function _gmOverride(defaultTarget = '') {
     const GM_OPS = [
       { value: 'give_money', label: 'Give Money', kind: 'money' },
       { value: 'take_money', label: 'Take Money', kind: 'money' },
@@ -10019,8 +10066,14 @@ window.CJS.CampaignUI = (() => {
       { value: 'take_food', label: 'Take Food', kind: 'inv', bucket: 'food' },
       { value: 'damage_character', label: 'Damage Character', kind: 'char' },
       { value: 'heal_character', label: 'Heal Character', kind: 'char' },
+      { value: 'add_xp', label: 'Add Character XP', kind: 'charxp' },
       { value: 'add_level', label: 'Add Level', kind: 'level' },
+      { value: 'add_rank_points', label: 'Add Rank Points', kind: 'rank_points' },
+      { value: 'rank_up_member', label: 'Force Rank Up', kind: 'rank' },
       { value: 'change_stat', label: 'Change Stat', kind: 'stat' },
+      { value: 'unlock_job', label: 'Unlock Job', kind: 'job' },
+      { value: 'set_job', label: 'Set Job', kind: 'job' },
+      { value: 'gain_job_xp', label: 'Add Job XP', kind: 'jobxp' },
       { value: 'recruit_character', label: 'Recruit Character', kind: 'recruit' },
       { value: 'learn_skill', label: 'Learn Skill', kind: 'skill' },
       { value: 'learn_passive', label: 'Learn Passive', kind: 'passive' },
@@ -10036,7 +10089,7 @@ window.CJS.CampaignUI = (() => {
     body.appendChild(_formLabel('Operation'));
     const opSelect = UI().createSelect({
       options: GM_OPS.map((o) => ({ value: o.value, label: o.label })),
-      value: 'give_money',
+      value: defaultTarget ? 'add_xp' : 'give_money',
       onChange: () => renderFields()
     });
     body.appendChild(opSelect);
@@ -10046,6 +10099,14 @@ window.CJS.CampaignUI = (() => {
 
     const partyOptions = () => Object.entries(CS().getState()?.party || {})
       .map(([id, m]) => ({ value: id, label: m.name || id }));
+    const defaultPartyTarget = () => {
+      const opts = partyOptions();
+      return opts.some((entry) => entry.value === defaultTarget) ? defaultTarget : (opts[0]?.value || '');
+    };
+    const jobOptions = () => (DS().getAllAsArray('jobs') || [])
+      .filter((entry) => entry?.id)
+      .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry.rank ? `Rank ${entry.rank}` : 'Job' }))
+      .sort(_sortOptionLabel);
 
     let active = {};
 
@@ -10080,21 +10141,45 @@ window.CJS.CampaignUI = (() => {
         fields.appendChild(active.qty);
       } else if (def.kind === 'char') {
         fields.appendChild(_formLabel('Character'));
-        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
         fields.appendChild(active.target);
         fields.appendChild(_formLabel('Amount'));
         active.amount = UI().createNumberSlider({ value: 5, min: 1, max: 999, step: 1 });
         fields.appendChild(active.amount);
+      } else if (def.kind === 'charxp') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('XP'));
+        active.amount = UI().createNumberSlider({ value: 25, min: 1, max: 9999, step: 1 });
+        fields.appendChild(active.amount);
       } else if (def.kind === 'level') {
         fields.appendChild(_formLabel('Character'));
-        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
         fields.appendChild(active.target);
         fields.appendChild(_formLabel('Levels'));
         active.amount = UI().createNumberSlider({ value: 1, min: 1, max: 20, step: 1 });
         fields.appendChild(active.amount);
+      } else if (def.kind === 'rank_points') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Rank Points'));
+        active.amount = UI().createNumberSlider({ value: 5, min: 1, max: 999, step: 1 });
+        fields.appendChild(active.amount);
+      } else if (def.kind === 'rank') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Target Rank'));
+        active.rank = UI().createSelect({
+          options: (C()?.RANKS || ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SR', 'SSR']).map((rank) => ({ value: rank, label: rank })),
+          value: 'E'
+        });
+        fields.appendChild(active.rank);
       } else if (def.kind === 'stat') {
         fields.appendChild(_formLabel('Character'));
-        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
         fields.appendChild(active.target);
         fields.appendChild(_formLabel('Stat'));
         active.stat = UI().createSelect({
@@ -10108,23 +10193,35 @@ window.CJS.CampaignUI = (() => {
       } else if (def.kind === 'recruit') {
         active.character = UI().createSearchableSelect({ options: _characterOptions(), placeholder: 'Search characters...', renderItem: _pickerItem });
         fields.appendChild(active.character);
+      } else if (def.kind === 'job' || def.kind === 'jobxp') {
+        fields.appendChild(_formLabel('Character'));
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
+        fields.appendChild(active.target);
+        fields.appendChild(_formLabel('Job'));
+        active.job = UI().createSearchableSelect({ options: jobOptions(), placeholder: 'Search jobs...', renderItem: _pickerItem });
+        fields.appendChild(active.job);
+        if (def.kind === 'jobxp') {
+          fields.appendChild(_formLabel('Job XP'));
+          active.amount = UI().createNumberSlider({ value: 25, min: 1, max: 9999, step: 1 });
+          fields.appendChild(active.amount);
+        }
       } else if (def.kind === 'skill') {
         fields.appendChild(_formLabel('Character'));
-        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
         fields.appendChild(active.target);
         fields.appendChild(_formLabel('Skill'));
         active.skill = UI().createSearchableSelect({ options: _skillOptions(active.target.value), placeholder: 'Search skills...', renderItem: _pickerItem });
         fields.appendChild(active.skill);
       } else if (def.kind === 'passive') {
         fields.appendChild(_formLabel('Character'));
-        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
         fields.appendChild(active.target);
         fields.appendChild(_formLabel('Passive'));
         active.passive = UI().createSearchableSelect({ options: _passiveOptions(active.target.value), placeholder: 'Search passives...', renderItem: _pickerItem });
         fields.appendChild(active.passive);
       } else if (def.kind === 'status') {
         fields.appendChild(_formLabel('Character'));
-        active.target = UI().createSelect({ options: partyOptions(), value: partyOptions()[0]?.value || '' });
+        active.target = UI().createSelect({ options: partyOptions(), value: defaultPartyTarget() });
         fields.appendChild(active.target);
         fields.appendChild(_formLabel('Status'));
         active.status = UI().createSearchableSelect({ options: _statusOptions(), placeholder: 'Search statuses…' });
@@ -10195,14 +10292,25 @@ window.CJS.CampaignUI = (() => {
             op = { op: def.value, id, qty: active.qty._getValue() || 1 };
           } else if (def.kind === 'char') {
             op = { op: def.value, target: active.target.value, amount: active.amount._getValue() };
+          } else if (def.kind === 'charxp') {
+            op = { op: def.value, target: active.target.value, amount: active.amount._getValue() || 0 };
           } else if (def.kind === 'level') {
             op = { op: def.value, target: active.target.value, amount: active.amount._getValue() || 1 };
+          } else if (def.kind === 'rank_points') {
+            op = { op: def.value, target: active.target.value, amount: active.amount._getValue() || 0 };
+          } else if (def.kind === 'rank') {
+            op = { op: def.value, target: active.target.value, toRank: active.rank.value, force: true, source: 'gm_override' };
           } else if (def.kind === 'stat') {
             op = { op: def.value, target: active.target.value, stat: active.stat.value, amount: active.amount._getValue() || 0 };
           } else if (def.kind === 'recruit') {
             const characterId = active.character._getValue();
             if (!characterId) { UI().toast('Pick a character', 'error'); return false; }
             op = { op: def.value, characterId };
+          } else if (def.kind === 'job' || def.kind === 'jobxp') {
+            const jobId = active.job._getValue();
+            if (!jobId) { UI().toast('Pick a job', 'error'); return false; }
+            op = { op: def.value, target: active.target.value, jobId, force: true };
+            if (def.kind === 'jobxp') op.amount = active.amount._getValue() || 0;
           } else if (def.kind === 'skill') {
             const skillId = active.skill._getValue();
             if (!skillId) { UI().toast('Pick a skill', 'error'); return false; }

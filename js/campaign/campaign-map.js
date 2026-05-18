@@ -29,8 +29,7 @@ window.CJS.CampaignMap = (() => {
     const layers = _layers(map);
     const currentNode = Runner().findCurrentNode();
     const activeLayer = run.mapLayer || _nodeLayer(currentNode) || layers[0]?.id || 'layer_1';
-    const revealedNodes = (map.nodes || []).filter((node) =>
-      node.discoveredByDefault || mapState.revealed?.[node.id] || run.revealedNodes?.includes(node.id));
+    const revealedNodes = (map.nodes || []).filter((node) => _nodeFogState(node, mapState, run).visible);
     const nodes = layers.length > 1
       ? revealedNodes.filter((node) => _nodeLayer(node) === activeLayer)
       : revealedNodes;
@@ -50,22 +49,24 @@ window.CJS.CampaignMap = (() => {
     }
 
     const nodeMarkup = nodes.map((node) => {
-      const active = run.currentNode === node.id;
-      const visited = mapState.visited?.[node.id] || run.visitedNodes?.includes(node.id);
+      const fog = _nodeFogState(node, mapState, run);
+      const active = fog.current;
+      const visited = fog.visited;
       const locked = mapState.locked?.[node.id];
       const cleared = mapState.cleared?.[node.id];
-      const kind = String(node.kind || 'node').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
-      const objective = node.questObjective || Runner().objectiveForNode?.(node.id, state, map);
+      const kind = String(fog.known ? (node.kind || 'node') : 'unknown').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+      const objective = fog.known ? (node.questObjective || Runner().objectiveForNode?.(node.id, state, map)) : null;
       const objectiveDone = objective && _isObjectiveDone(state, objective);
       const radius = active ? 22 : 18;
       const iconRadius = active ? 13 : 11;
-      const iconId = _nodeIconSymbolId(node);
+      const iconId = fog.known ? _nodeIconSymbolId(node) : 'cjs-node-icon-event';
+      const label = fog.known ? _shortLabel(node.title || node.id) : 'Unmapped';
       return `
-        <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
+        <g class="campaign-map-node kind-${_escAttr(kind)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''} ${fog.scouted ? 'is-scouted' : ''} ${locked ? 'is-locked' : ''} ${cleared ? 'is-cleared' : ''} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''}" data-node-id="${_escAttr(node.id)}" tabindex="0">
           <circle cx="${node.x}" cy="${node.y}" r="${radius}"></circle>
           ${objective ? `<circle class="campaign-map-objective-ring" cx="${node.x}" cy="${node.y}" r="${radius + 6}" />` : ''}
           <use href="#${iconId}" x="${node.x - iconRadius}" y="${node.y - iconRadius}" width="${iconRadius * 2}" height="${iconRadius * 2}" class="campaign-map-node-art"/>
-          <text class="campaign-map-label" x="${node.x}" y="${node.y + 36}" text-anchor="middle">${_esc(_shortLabel(node.title || node.id))}</text>
+          <text class="campaign-map-label" x="${node.x}" y="${node.y + 36}" text-anchor="middle">${_esc(label)}</text>
           ${objective ? `<text class="campaign-map-objective-label" x="${node.x}" y="${node.y - 26}" text-anchor="middle">${_esc(_objectiveTag(objective))}</text>` : ''}
         </g>
       `;
@@ -119,8 +120,6 @@ window.CJS.CampaignMap = (() => {
     const width = Number(activeLevel?.width || map.width || map.cols || map.columns || 8);
     const height = Number(activeLevel?.height || map.height || map.rows || 8);
     const mapState = state.mapState[map.id] || {};
-    const revealed = mapState.revealedCells || {};
-    const visited = mapState.visitedCells || {};
     const current = run.currentCell || { x: 0, y: 0 };
     const setting = _mapSetting(map);
     const cells = [];
@@ -129,33 +128,34 @@ window.CJS.CampaignMap = (() => {
       for (let x = 0; x < width; x++) {
         const key = _cellKey(x, y, activeLevelId);
         const terrainKind = _terrainAt(map, x, y, activeLevelId);
-        terrainSeen.add(String(terrainKind || '').toLowerCase());
         const baseCell = Runner().findCell?.(map, x, y, activeLevelId);
         const cell = baseCell
           ? { ...baseCell, terrain: baseCell.terrain || terrainKind }
           : { x, y, kind: terrainKind, terrain: terrainKind, title: key };
-        const threat = _movingThreatAt(run, map, x, y, activeLevelId);
         const isCurrent = Number(current.x) === x && Number(current.y) === y;
-        const isRevealed = revealed[key] || (run.revealedCells || []).includes(key) || cell.discoveredByDefault || isCurrent;
-        const isVisited = visited[key] || (run.visitedCells || []).includes(key);
+        const fog = _cellFogState(cell, key, mapState, run, current);
+        if (fog.known) terrainSeen.add(String(terrainKind || '').toLowerCase());
+        const threat = fog.known ? _movingThreatAt(run, map, x, y, activeLevelId) : null;
+        const isRevealed = fog.visible;
+        const isVisited = fog.visited;
         const passable = _cellPassable(map, x, y, activeLevelId);
         const canMove = isRevealed && passable && _canMoveCell(run, x, y);
-        const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
+        const objective = fog.known ? (cell.questObjective || Runner().objectiveForCell?.(cell, state, map)) : null;
         const objectiveDone = objective && _isObjectiveDone(state, objective);
         const objectiveTitle = objective
           ? `${objectiveDone ? '✓ ' : '★ '}${objective.label}`
           : '';
         const threatAdjacent = threat ? _isAdjacent(current, threat) : false;
-        const kindClass = _gridKindClass(cell);
-        const nodeBadgeClass = _gridNodeBadge(cell, objective);
+        const kindClass = fog.known ? _gridKindClass(cell) : 'unknown';
+        const nodeBadgeClass = fog.known ? _gridNodeBadge(cell, objective) : '';
         const threatMarkup = threat ? _threatMarkupV2(threat, threatAdjacent, current) : '';
         const playerMarkup = isCurrent ? _playerMarkupV2(run) : '';
-        const labelMarkup = isRevealed && cell.title
+        const labelMarkup = fog.known && cell.title
           ? `<span class="campaign-grid-cell-label">${_esc(_shortLabel(cell.title))}</span>`
-          : '';
+          : (fog.scouted ? '<span class="campaign-grid-cell-label campaign-grid-cell-fog">?</span>' : '');
         cells.push(`
-          <button class="campaign-grid-cell v2 kind-${kindClass} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''} ${threat ? 'has-threat' : ''}"
-            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(_cellTitleText(cell, key, objective, objectiveTitle, threat))}">
+          <button class="campaign-grid-cell v2 kind-${kindClass} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${fog.scouted ? 'is-scouted' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''} ${threat ? 'has-threat' : ''}"
+            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(_cellTitleText(cell, key, objective, objectiveTitle, threat, fog.known))}">
             ${nodeBadgeClass && isRevealed ? `<span class="campaign-grid-cell-node ${nodeBadgeClass}" aria-hidden="true"></span>` : ''}
             ${threatMarkup}
             ${playerMarkup}
@@ -168,7 +168,7 @@ window.CJS.CampaignMap = (() => {
     const theme = _mapTheme(map);
     const gridLayers = _gridLevelTabs(map);
     const layerTabs = _renderGridLayerTabs(gridLayers, activeLevelId);
-    const activeThreats = _activeLevelThreats(run, map, activeLevelId);
+    const activeThreats = _visibleLevelThreats(run, map, activeLevelId, mapState, current);
     const threatStrip = _renderThreatStrip(activeThreats, current);
     const legend = _renderTerrainLegend(terrainSeen);
     container.innerHTML = `
@@ -265,6 +265,58 @@ window.CJS.CampaignMap = (() => {
     const target = _normalizeLayerId(activeLevelId || map?.defaultLevelId || 'level_1');
     return run.movingThreats.filter((threat) =>
       _normalizeLayerId(threat.levelId || target) === target);
+  }
+
+  function _nodeFogState(node = {}, mapState = {}, run = {}) {
+    const id = node?.id;
+    const current = !!(id && run?.currentNode === id);
+    const visited = !!(id && (mapState.visited?.[id] || (run?.visitedNodes || []).includes(id)));
+    const visible = !!(
+      current
+      || visited
+      || node?.discoveredByDefault
+      || (id && mapState.revealed?.[id])
+      || (id && (run?.revealedNodes || []).includes(id))
+    );
+    const known = !!(
+      current
+      || visited
+      || node?.discoveredByDefault
+      || (id && mapState.cleared?.[id])
+      || (id && mapState.captured?.[id])
+      || (id && mapState.entryResolved?.[id])
+    );
+    return { current, visited, visible, known, scouted: visible && !known };
+  }
+
+  function _cellFogState(cell = {}, key = '', mapState = {}, run = {}, current = {}) {
+    const cellKey = key || _cellKey(cell.x, cell.y, cell.levelId || run?.mapLayer || null);
+    const currentKey = current ? _cellKey(current.x, current.y, run?.mapLayer || cell.levelId || null) : '';
+    const isCurrent = !!(cellKey && currentKey && cellKey === currentKey);
+    const visited = !!(cellKey && (mapState.visitedCells?.[cellKey] || (run?.visitedCells || []).includes(cellKey)));
+    const visible = !!(
+      isCurrent
+      || visited
+      || cell?.discoveredByDefault
+      || (cellKey && mapState.revealedCells?.[cellKey])
+      || (cellKey && (run?.revealedCells || []).includes(cellKey))
+    );
+    const known = !!(
+      isCurrent
+      || visited
+      || cell?.discoveredByDefault
+      || (cellKey && mapState.clearedCells?.[cellKey])
+    );
+    return { current: isCurrent, visited, visible, known, scouted: visible && !known };
+  }
+
+  function _visibleLevelThreats(run, map, activeLevelId, mapState = {}, current = {}) {
+    return _activeLevelThreats(run, map, activeLevelId).filter((threat) => {
+      const key = _cellKey(threat.x, threat.y, threat.levelId || activeLevelId || null);
+      const cell = Runner().findCell?.(map, threat.x, threat.y, threat.levelId || activeLevelId)
+        || { x: threat.x, y: threat.y, levelId: threat.levelId || activeLevelId };
+      return _cellFogState(cell, key, mapState, run, current).known;
+    });
   }
 
   function _mapSetting(map = {}) {
@@ -575,7 +627,8 @@ window.CJS.CampaignMap = (() => {
     return `<span class="campaign-grid-glyph">${_gridIcon(cell, true)}</span>`;
   }
 
-  function _cellTitleText(cell = {}, key = '', objective = null, objectiveTitle = '', threat = null) {
+  function _cellTitleText(cell = {}, key = '', objective = null, objectiveTitle = '', threat = null, known = true) {
+    if (!known) return 'Scouted nearby ground - details hidden by fog';
     const base = cell.title || key;
     const parts = [];
     if (objective) parts.push(objectiveTitle);
@@ -628,15 +681,30 @@ window.CJS.CampaignMap = (() => {
     const map = CS().getActiveMap();
     const isCurrent = run?.currentNode === node.id;
     const canMove = _canMoveTo(node.id, run, map);
+    const fog = _nodeFogState(node, mapState, run);
+    if (fog.scouted) {
+      return `
+        <div class="campaign-detail-title">
+          <span>Unmapped Location</span>
+          <span class="campaign-pill">Scouted</span>
+        </div>
+        <div class="campaign-muted">Your party can travel this way, but the exact terrain, encounter, and objective details are still under fog.</div>
+        <div class="campaign-node-actions">
+          <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>
+        </div>
+      `;
+    }
     const captured = mapState.captured?.[node.id];
     const entryResolved = mapState.entryResolved?.[node.id];
     const notes = mapState.notes?.[node.id] || [];
     const exits = (node.exits || []).map((exit) => {
       const target = Runner().findNode(map, exit.to);
       const locked = mapState.locked?.[exit.to] || exit.locked;
+      const targetFog = target ? _nodeFogState(target, mapState, run) : { known: false };
+      const exitLabel = targetFog.known ? (exit.label || target?.title || exit.to) : (exit.scoutedLabel || 'Unmapped route');
       return `
         <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
-          ${_esc(exit.label || target?.title || exit.to)}
+          ${_esc(exitLabel)}
         </button>
       `;
     }).join('');
@@ -694,12 +762,18 @@ window.CJS.CampaignMap = (() => {
     const objective = cell.questObjective || Runner().objectiveForCell?.(cell, state, map);
     const threat = _movingThreatAt(run, map, cell.x, cell.y, activeLevelId);
     const objectiveDone = objective ? _isObjectiveDone(state, objective) : false;
-    const nearbyThreats = _activeLevelThreats(run, map, activeLevelId)
+    const visibleThreats = _visibleLevelThreats(run, map, activeLevelId, mapState, cell);
+    const nearbyThreats = visibleThreats
       .filter((t) => t !== threat)
       .map((t) => ({ threat: t, distance: _manhattan(cell, t) }))
       .filter((entry) => entry.distance !== null && entry.distance <= 4)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 4);
+    const hiddenNearbyCount = _activeLevelThreats(run, map, activeLevelId)
+      .filter((t) => t !== threat && !visibleThreats.includes(t))
+      .map((t) => _manhattan(cell, t))
+      .filter((distance) => distance !== null && distance <= 3)
+      .length;
     const threatReadout = threat
       ? `<div class="campaign-threat-readout is-on-cell mode-${_escAttr(_threatModeKey(threat))}">
           <strong>${_esc(threat.label || threat.id || 'Roamer')}</strong>
@@ -720,6 +794,16 @@ window.CJS.CampaignMap = (() => {
           }).join('')}
         </div>`
       : '';
+    const fogReadout = hiddenNearbyCount
+      ? `<div class="campaign-threat-nearby is-fogged">
+          <div class="campaign-section-label">Fog Signs</div>
+          <div class="campaign-threat-nearby-item mode-static">
+            <span class="campaign-threat-nearby-dot mode-static"></span>
+            <b>Movement signs</b>
+            <em>nearby, exact source hidden</em>
+          </div>
+        </div>`
+      : '';
     return `
       <div class="campaign-detail-title">
         <span>${_esc(cell.title || key)}</span>
@@ -731,6 +815,7 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-chip-row">${tags}</div>
       ${threatReadout}
       ${nearbyReadout}
+      ${fogReadout}
       <div class="campaign-node-actions">
         <span class="campaign-pill is-current">Current ${_esc(key)}</span>
         ${cell.levelName ? `<span class="campaign-pill">${_esc(cell.levelName)}</span>` : ''}

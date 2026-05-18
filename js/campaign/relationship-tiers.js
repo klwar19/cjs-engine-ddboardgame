@@ -22,7 +22,9 @@ window.CJS = window.CJS || {};
 window.CJS.RelationshipTiers = (() => {
   'use strict';
 
-  const POSITIVE_FIELDS = ['trust', 'friendship', 'empathy', 'confidence', 'morale', 'value'];
+  const SIMPLE_FIELDS = ['trust', 'respect', 'romance'];
+  const LEGACY_POSITIVE_FIELDS = ['friendship', 'empathy', 'confidence', 'morale', 'value'];
+  const POSITIVE_FIELDS = [...SIMPLE_FIELDS, ...LEGACY_POSITIVE_FIELDS];
   const NEGATIVE_FIELDS = ['rivalry'];
 
   const TIERS = [
@@ -82,6 +84,8 @@ window.CJS.RelationshipTiers = (() => {
     // legacy NPC-flavored name.
     getKnownNpcs: getKnownCharacters,
     listTiers,
+    SIMPLE_FIELDS,
+    LEGACY_POSITIVE_FIELDS,
     POSITIVE_FIELDS,
     NEGATIVE_FIELDS
   };
