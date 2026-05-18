@@ -304,6 +304,16 @@ window.CJS.CampaignState = (() => {
       portrait: base.portrait || '',
       level: 1,
       rank,
+      // Adventurer rank ledger — tracks RP toward the next rank and any
+      // pending trial. `rank` here mirrors member.rank on promotion so
+      // legacy code keeps reading from `member.rank`.
+      adventurer: {
+        rank,
+        rankPoints: 0,
+        trialPending: false,
+        trialQuestId: null,
+        history: []
+      },
       maxHp,
       maxMp,
       currentHp: maxHp,
@@ -798,6 +808,7 @@ window.CJS.CampaignState = (() => {
       _normalizeProgression(member, base);
       _normalizePersona(member, base, next);
       _normalizeUltimate(member, base);
+      _normalizeAdventurer(member, base);
       _syncPartyMaxHp(id, member);
     }
     next.lastUpdated = next.lastUpdated || nowIso();
@@ -814,6 +825,23 @@ window.CJS.CampaignState = (() => {
       expires: raw.expires || null,
       updatedAt: raw.updatedAt || null
     };
+  }
+
+  // Backfill the adventurer ledger on legacy saves. `rank` mirrors
+  // member.rank so old code paths that read member.rank keep working;
+  // rankPoints / trialPending start fresh if absent.
+  function _normalizeAdventurer(member, base = {}) {
+    const memberRank = member.rank || base.rank || 'F';
+    member.adventurer = member.adventurer && typeof member.adventurer === 'object'
+      ? member.adventurer
+      : {};
+    member.adventurer.rank = member.adventurer.rank || memberRank;
+    member.adventurer.rankPoints = Math.max(0, Number(member.adventurer.rankPoints || 0));
+    member.adventurer.trialPending = !!member.adventurer.trialPending;
+    member.adventurer.trialQuestId = member.adventurer.trialQuestId || null;
+    member.adventurer.history = Array.isArray(member.adventurer.history) ? member.adventurer.history : [];
+    // Keep the two ranks in sync if a legacy save shifted member.rank.
+    if (member.rank !== member.adventurer.rank) member.rank = member.adventurer.rank;
   }
 
   function _normalizeUltimate(member, base = {}) {

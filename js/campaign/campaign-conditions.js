@@ -55,6 +55,21 @@ window.CJS.CampaignConditions = (() => {
 
     if (cond.world && state.currentWorld !== cond.world) blockers.push(`Needs world ${cond.world}.`);
     if (cond.phaseTypes?.length && !cond.phaseTypes.includes(state.phase?.type)) blockers.push(`Needs phase ${cond.phaseTypes.join(', ')}.`);
+    if (cond.worldMinRank) {
+      const F = window.CJS.Formulas;
+      const DS = window.CJS.DataStore;
+      const worldRec = DS?.get?.('worlds', state.currentWorld) || {};
+      const ceiling = worldRec.ceiling || 'F';
+      if (F && !F.meetsRank(ceiling, cond.worldMinRank)) {
+        blockers.push(`Needs a world ranked ${cond.worldMinRank} or higher (here: ${ceiling}).`);
+      }
+    }
+    if (cond.memberRankMin) {
+      const F = window.CJS.Formulas;
+      const party = Object.values(state.party || {});
+      const anyMeets = party.some((member) => F?.meetsRank?.(member.adventurer?.rank || member.rank, cond.memberRankMin));
+      if (!anyMeets) blockers.push(`Needs a party member at rank ${cond.memberRankMin} or higher.`);
+    }
     if (cond.chapterMin != null && Number(state.currentChapter || 1) < Number(cond.chapterMin)) blockers.push(`Needs chapter ${cond.chapterMin}.`);
     if (cond.chapterMax != null && Number(state.currentChapter || 1) > Number(cond.chapterMax)) blockers.push(`Past chapter ${cond.chapterMax}.`);
     requireStoryOrder(state, cond.storyOrderMin || cond.chapterOrderMin, blockers, 'min');

@@ -9,6 +9,8 @@
     "id": "wuxia_immortal",
     "displayName": "Immortal Realms",
     "ceiling": "SSR",
+    "requiredRank": "SR",
+    "recommendedRank": "SR",
     "order": 6,
     "tone": "xianxia_grand",
     "color": "#f59e0b",

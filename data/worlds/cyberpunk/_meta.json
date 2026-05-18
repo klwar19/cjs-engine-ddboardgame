@@ -9,6 +9,8 @@
     "id": "cyberpunk",
     "displayName": "Neo-Kowloon",
     "ceiling": "A",
+    "requiredRank": null,
+    "recommendedRank": "B",
     "order": 3,
     "tone": "cyberpunk_neon",
     "color": "#ec4899",

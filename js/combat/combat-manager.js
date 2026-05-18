@@ -80,7 +80,8 @@ window.CJS.CombatManager = (() => {
       const compiled = SC().compileUnit(base, instanceId, {
         currentHP: placement.currentHP,
         currentMP: placement.currentMP,
-        activeStatuses: placement.activeStatuses || []
+        activeStatuses: placement.activeStatuses || [],
+        level: placement.level
       });
       if (placement.size) compiled.size = placement.size;
       unitObjects[instanceId] = compiled;

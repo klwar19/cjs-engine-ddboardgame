@@ -80,7 +80,11 @@
       ],
       "description": "Towering corpse swollen by glacial rot. Two damage per hit and ignores light armor. The signature heavy zombie of the frozen wastes.",
       "movement": 2,
-      "size": "1x1"
+      "size": "1x1",
+      "levelBand": { "min": 2, "max": 12 },
+      "levelTiers": [
+        { "level": 6, "grantsPassives": ["haven_iron_hide"] }
+      ]
     },
     {
       "id": "haven_frost_climber",
@@ -295,7 +299,8 @@
       ],
       "description": "Sprinting corpse, unnaturally fast. Activates twice on Necromancer turns. Targets the wounded first.",
       "movement": 5,
-      "size": "1x1"
+      "size": "1x1",
+      "levelBand": { "min": 1, "max": 6 }
     },
     {
       "id": "haven_frost_sprite",
@@ -570,7 +575,11 @@
       ],
       "description": "Common predator of the Frostwood. Hunts in packs. Weak to fire.",
       "movement": 4,
-      "size": "1x1"
+      "size": "1x1",
+      "levelBand": { "min": 1, "max": 8 },
+      "levelTiers": [
+        { "level": 4, "grantsSkills": ["haven_chill_wind"] }
+      ]
     },
     {
       "id": "haven_kumiho",

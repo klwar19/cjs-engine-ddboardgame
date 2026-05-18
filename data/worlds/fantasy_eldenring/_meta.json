@@ -9,6 +9,8 @@
     "id": "fantasy_eldenring",
     "displayName": "Sundered Lands",
     "ceiling": "S",
+    "requiredRank": "A",
+    "recommendedRank": "S",
     "order": 7,
     "tone": "fantasy_dark",
     "color": "#8b5cf6",

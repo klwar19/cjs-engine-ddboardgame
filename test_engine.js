@@ -1903,6 +1903,176 @@ const cmCode = fs2.readFileSync(path2.join(__dirname, 'js/core/content-manager.j
 assert('TYPE_TO_CATEGORY includes weathers', /weathers:\s*['"]weathers['"]/.test(cmCode));
 assert('TYPE_ORDER lists weathers', /'weathers'/.test(cmCode));
 
+// ────────────────────────────────────────────────────────────────────
+// TEST 32: Adventurer rank ladder helpers (Formulas)
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 32: Rank ladder helpers ──');
+assertEq('rankIndex F is 0', F.rankIndex('F'), 0);
+assertEq('rankIndex SSR is 8', F.rankIndex('SSR'), 8);
+assertEq('nextRank F → E', F.nextRank('F'), 'E');
+assertEq('nextRank SSR → null (max)', F.nextRank('SSR'), null);
+assert('meetsRank: A meets B', F.meetsRank('A', 'B'));
+assert('meetsRank: C meets C', F.meetsRank('C', 'C'));
+assert('meetsRank: D does not meet B', !F.meetsRank('D', 'B'));
+assert('meetsRank: empty target is unrestricted', F.meetsRank('F', null));
+assertEq('minRank(A, S) is A', F.minRank('A', 'S'), 'A');
+assertEq('effectiveRank caps SSR to S ceiling', F.effectiveRank('SSR', 'S'), 'S');
+assertEq('effectiveRank passes through under ceiling', F.effectiveRank('E', 'S'), 'E');
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 33: RP gain tapers with world ceiling
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 33: RP gain world-ceiling taper ──');
+// No ceiling → full award.
+assertEq('RP base 100 no ceiling', F.calcRpGain({ sourceRank: 'C', memberRank: 'C', base: 100 }), 100);
+// Far below ceiling (gap >= 2) → full award.
+assertEq('RP gap >= 2 full', F.calcRpGain({ sourceRank: 'C', memberRank: 'C', worldCeiling: 'S', base: 100 }), 100);
+// gap === 1 → 75%
+assertEq('RP gap == 1 → 75%', F.calcRpGain({ sourceRank: 'C', memberRank: 'B', worldCeiling: 'A', base: 100 }), 75);
+// gap === 0 → 50%
+assertEq('RP at ceiling → 50%', F.calcRpGain({ sourceRank: 'C', memberRank: 'A', worldCeiling: 'A', base: 100 }), 50);
+// gap === -1 → 25%
+assertEq('RP one above ceiling → 25%', F.calcRpGain({ sourceRank: 'C', memberRank: 'S', worldCeiling: 'A', base: 100 }), 25);
+// gap <= -2 → 0
+assertEq('RP two above ceiling → 0', F.calcRpGain({ sourceRank: 'C', memberRank: 'SR', worldCeiling: 'A', base: 100 }), 0);
+// levelScale applies before the taper.
+assertEq('RP scales with levelScale at full mult', F.calcRpGain({ sourceRank: 'C', memberRank: 'F', worldCeiling: 'S', base: 10, levelScale: 2 }), 20);
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 34: Monster level scaling and band clamp
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 34: Monster level scaling ──');
+assertEq('calcMonsterLevelScale(1) = 1.0', F.calcMonsterLevelScale(1), 1);
+assertNear('calcMonsterLevelScale(10) ~= 1.54', F.calcMonsterLevelScale(10), 1.54, 0.001);
+const monster = { rank: 'E', levelBand: { min: 1, max: 8 } };
+const lowLevel = F.pickMonsterLevel(monster, { partyAvgLevel: 1, danger: 0, worldCeiling: 'S' });
+assert('pickMonsterLevel respects band min for new party', lowLevel >= 1 && lowLevel <= 8);
+const cappedByWorld = F.pickMonsterLevel({ rank: 'E', levelBand: { min: 1, max: 30 } }, { partyAvgLevel: 30, danger: 10, worldCeiling: 'F' });
+const fBand = (CJS.CONST.MONSTER_LEVEL_SCALING.levelBandByRank.F || {});
+assert('pickMonsterLevel clamps to world ceiling rank band',
+  cappedByWorld <= (fBand.max || 4));
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 35: compileUnit level scaling + tier grants
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 35: compileUnit honours opts.level ──');
+DS.reset();
+DS.replace('skills', 'tier_skill_a', { id: 'tier_skill_a', name: 'Tier Skill A' });
+DS.replace('skills', 'base_skill', { id: 'base_skill', name: 'Base Skill' });
+DS.replace('monsters', 'lvl_wolf', {
+  id: 'lvl_wolf', name: 'Test Wolf', rank: 'F', team: 'enemy',
+  stats: { S: 8, P: 5, E: 8, C: 2, I: 2, A: 6, L: 3 },
+  skills: ['base_skill'],
+  levelBand: { min: 1, max: 10 },
+  levelTiers: [{ level: 5, grantsSkills: ['tier_skill_a'] }]
+});
+const wolfBase = DS.get('monsters', 'lvl_wolf');
+const compiled1 = CJS.StatCompiler.compileUnit(wolfBase, 'inst1', { level: 1 });
+const compiled10 = CJS.StatCompiler.compileUnit(wolfBase, 'inst10', { level: 10 });
+assertEq('compileUnit level 1 has level=1', compiled1.level, 1);
+assertEq('compileUnit level 10 has level=10', compiled10.level, 10);
+assert('compileUnit level 10 has more HP than level 1', compiled10.maxHP > compiled1.maxHP);
+assertNear('HP scales ~1.54× at level 10',
+  compiled10.maxHP / compiled1.maxHP, 1.54, 0.25);
+// Tier skill not present at level 1, present at level 10.
+function hasSkill(c, sid) {
+  return (c.skills || []).some((s) => (typeof s === 'string' ? s : s?.skillId) === sid);
+}
+assert('Level 1: no tier skill', !hasSkill(compiled1, 'tier_skill_a'));
+assert('Level 10: tier skill granted', hasSkill(compiled10, 'tier_skill_a'));
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 36: Rank-up ops + world-ceiling gate
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 36: Rank ops ──');
+DS.reset();
+DS.replace('worlds', 'haven', { id: 'haven', displayName: 'Haven', ceiling: 'S' });
+DS.replace('worlds', 'low_world', { id: 'low_world', displayName: 'Low World', ceiling: 'D' });
+DS.replace('worlds', 'sr_world', { id: 'sr_world', displayName: 'SR World', ceiling: 'SR', requiredRank: 'SR' });
+DS.replace('characters', 'tester', {
+  id: 'tester', name: 'Tester', rank: 'F', team: 'player',
+  stats: { S: 8, P: 5, E: 8, C: 5, I: 5, A: 6, L: 3 }
+});
+
+const CST = CJS.CampaignState;
+const OpsT = CJS.CampaignOps;
+
+// Build a minimal state with a single party member.
+CST.setState({
+  campaignId: 'test', saveId: 'save_test', saveVersion: 1,
+  currentWorld: 'haven', currentChapter: 1,
+  phase: { number: 1, type: 'town_phase', name: 'Town' },
+  currencies: {}, inventory: { items: {}, materials: {}, food: {}, questItems: {}, equipment: {} },
+  party: {}, quests: {}, flags: {}, log: [], worldArchive: {}, sideContent: {},
+  storyDirector: {}, storyMode: {}, relationshipActs: { remaining: 3, max: 3 }, mapState: {},
+  hubState: {}, eventCharges: {}, scenarioHistory: [], legacy: { traits: {}, majorChoices: [], unlockedEchoes: [] },
+  tagLedger: { entries: {} }, questPulse: { recent: [], settings: { autoApplyCombat: true } },
+  clocks: {}, memoryShards: {}, bonds: {}, pinnedNotes: [], settings: {},
+  activeScenarioRun: null
+}, { source: 'test', type: 'replace' });
+
+OpsT.apply({ op: 'recruit_character', characterId: 'tester' }, { source: 'test' });
+let rankTestState = CST.getState();
+const memberId = 'tester';
+let rankTestMember = rankTestState.party[memberId];
+assert('Member has adventurer ledger', !!rankTestMember?.adventurer);
+assertEq('Initial adventurer rank is F', rankTestMember.adventurer.rank, 'F');
+assertEq('Initial RP is 0', rankTestMember.adventurer.rankPoints, 0);
+
+// Add RP — should accumulate.
+OpsT.apply({ op: 'add_rank_points', target: memberId, amount: 30, sourceRank: 'F' }, { source: 'test' });
+rankTestState = CST.getState();
+rankTestMember = rankTestState.party[memberId];
+assert('RP accumulated after add_rank_points', rankTestMember.adventurer.rankPoints > 0);
+
+// Force rank up to E (force bypasses gates).
+OpsT.apply({ op: 'rank_up_member', target: memberId, toRank: 'E', force: true }, { source: 'test' });
+rankTestState = CST.getState();
+rankTestMember = rankTestState.party[memberId];
+assertEq('Member rank promoted to E', rankTestMember.adventurer.rank, 'E');
+assertEq('Member.rank mirror updated', rankTestMember.rank, 'E');
+
+// World transition: hard gate denies travel to SR-required world from F/E party.
+const beforeWorld = CST.getState().currentWorld;
+OpsT.apply({ op: 'world_transition', toWorld: 'sr_world' }, { source: 'test' });
+assertEq('World transition denied without required rank', CST.getState().currentWorld, beforeWorld);
+
+// Promote to SR and try again.
+OpsT.apply({ op: 'rank_up_member', target: memberId, toRank: 'SR', force: true }, { source: 'test' });
+OpsT.apply({ op: 'world_transition', toWorld: 'sr_world' }, { source: 'test' });
+assertEq('World transition allowed with required rank', CST.getState().currentWorld, 'sr_world');
+
+// Capture state before low_world push (member is at SR with however much RP).
+const rpBeforeLowWorld = CST.getState().party[memberId].adventurer.rankPoints;
+
+// In low_world (ceiling D), promotion past D is blocked (member is SR).
+OpsT.apply({ op: 'world_transition', toWorld: 'low_world', bypassRankGate: true }, { source: 'test' });
+OpsT.apply({ op: 'rank_up_member', target: memberId, toRank: 'SSR' }, { source: 'test' });
+rankTestState = CST.getState();
+// Without force, SSR promotion in D-ceiling world should be blocked.
+assertEq('Promotion past world ceiling blocked', rankTestState.party[memberId].adventurer.rank, 'SR');
+
+// RP in a low-ceiling world should taper to 0 for an SR member.
+OpsT.apply({ op: 'add_rank_points', target: memberId, amount: 1000, sourceRank: 'C' }, { source: 'test' });
+rankTestState = CST.getState();
+const rpAfterTaper = rankTestState.party[memberId].adventurer.rankPoints;
+assertEq('RP awards taper to 0 above world ceiling', rpAfterTaper, rpBeforeLowWorld);
+
+// ────────────────────────────────────────────────────────────────────
+// TEST 37: Conditions worldMinRank / memberRankMin
+// ────────────────────────────────────────────────────────────────────
+console.log('\n── TEST 37: Rank conditions ──');
+const RankConditions = CJS.CampaignConditions;
+const stateForCond = CST.getState();
+const passingWorld = RankConditions.evaluate({ worldMinRank: 'F' }, stateForCond);
+assert('worldMinRank F passes in any world', passingWorld.ok);
+const failingWorld = RankConditions.evaluate({ worldMinRank: 'SSR' }, stateForCond);
+assert('worldMinRank SSR fails in D-ceiling world', !failingWorld.ok);
+const passingMember = RankConditions.evaluate({ memberRankMin: 'E' }, stateForCond);
+assert('memberRankMin E passes with SR member', passingMember.ok);
+const failingMember = RankConditions.evaluate({ memberRankMin: 'SSR' }, stateForCond);
+assert('memberRankMin SSR fails without SSR member', !failingMember.ok);
+
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════
 console.log('\n══════════════════════════════════════════');

@@ -9,6 +9,8 @@
     "id": "neo_starcraft",
     "displayName": "Sectors",
     "ceiling": "SR",
+    "requiredRank": "A",
+    "recommendedRank": "A",
     "order": 4,
     "tone": "techno_sterile",
     "color": "#06b6d4",

@@ -189,11 +189,12 @@ window.CJS.BattleSetup = (() => {
 
   function _renderMonsterCard(monster) {
     const count = _selectedMonsters.filter((id) => id === monster.id).length;
+    const band = monster.levelBand ? `Lv ${monster.levelBand.min ?? 1}-${monster.levelBand.max ?? '?'}` : '';
     return `
       <div class="setup-unit-card monster-card ${count > 0 ? 'selected' : ''}" data-id="${_escAttr(monster.id)}">
         <span class="setup-unit-icon">${_escHtml(monster.icon || 'M')}</span>
         <span class="setup-unit-name">${_escHtml(monster.name || monster.id)}</span>
-        <span class="setup-unit-rank">${_escHtml(monster.rank || 'F')}</span>
+        <span class="setup-unit-rank">${_escHtml(monster.rank || 'F')}${band ? ` · ${_escHtml(band)}` : ''}</span>
         ${count > 0 ? `<span class="setup-unit-count">x${count}</span>` : ''}
         <div class="monster-controls">
           <button class="mon-btn mon-add" data-mon="${_escAttr(monster.id)}" title="Add">+</button>

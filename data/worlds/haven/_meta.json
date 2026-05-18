@@ -9,6 +9,8 @@
     "id": "haven",
     "displayName": "Haven",
     "ceiling": "S",
+    "requiredRank": null,
+    "recommendedRank": null,
     "order": 1,
     "tone": "fantasy_warm",
     "color": "#3b82f6",

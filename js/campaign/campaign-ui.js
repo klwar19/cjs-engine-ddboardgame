@@ -507,13 +507,15 @@ window.CJS.CampaignUI = (() => {
     const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
     const availability = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
     const isBench = (member.rosterRole || 'active') === 'bench';
+    const rankInfo = _memberRankInfo(member);
     return `
       <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
         <div class="campaign-character-head">
           <div class="campaign-avatar">${(() => { const p = _memberPortrait(member, id); const f = _memberPortraitFocus(member, id); return p ? `<img src="${_escAttr(p)}" alt="" style="${_escAttr(_focusAttrStyle(f))}">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id }); })()}</div>
           <div>
             <strong>${_esc(member.name || id)}</strong>
-            <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(member.rank || 'F')}</div>
+            <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(rankInfo.label)}${rankInfo.trialPending ? ' <span class="campaign-chip" title="Ready to rank up — visit the Adventurer Guild">Trial!</span>' : ''}</div>
+            ${_renderRankBar(rankInfo)}
           </div>
           <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${_esc(availability)}</span>
         </div>
@@ -587,7 +589,7 @@ window.CJS.CampaignUI = (() => {
             </div>
             <div class="campaign-roster-hero-meta">
               <span><b>Lv</b> ${charLevel}</span>
-              <span><b>Rank</b> ${_esc(member.rank || base?.rank || 'F')}</span>
+              <span title="${_escAttr(_memberRankInfo(member).atMax ? 'Max rank' : `RP ${_memberRankInfo(member).rp}/${_memberRankInfo(member).threshold} → ${_memberRankInfo(member).next || '—'}`)}"><b>Rank</b> ${_esc(_memberRankInfo(member).label)}${_memberRankInfo(member).trialPending ? ' <span class="campaign-chip">Trial!</span>' : ''}</span>
               <span class="campaign-roster-hero-job">${_renderJobChip(id, member)}</span>
               <span title="${_escAttr(charXpMeta)}"><b>XP</b> ${charXp}${xpToNext != null ? ` <small>(${xpToNext} to next)</small>` : ' <small>(max)</small>'}</span>
               <span class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</span>
@@ -2778,6 +2780,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-action-grid">
             <button class="campaign-action primary" data-campaign-action="roll-hub-pulse" data-table="town" title="Roll the general hub pulse table - gossip, mood, mundane problems.">Hub Pulse</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="guild" title="Roll the adventurer guild table — contracts, recruits, factions.">Guild</button>
+            <button class="campaign-action" data-campaign-action="rank-up-apply" title="Apply for a rank-up trial at the Adventurer Guild.">Rank Up</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern" title="Roll the tavern table — gossip, suppliers, drinking-spot drama.">Tavern</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge" title="Roll the forge / craft table — weapons, materials, smith requests.">Forge</button>
             <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="weird" title="Roll the weirdness table — ominous omens, supernatural beats.">Weird</button>
@@ -5114,6 +5117,7 @@ window.CJS.CampaignUI = (() => {
       case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
       case 'rank-up-passive': return _rankUpPassiveConfirm(data.id, data.passiveId);
+      case 'rank-up-apply': return _rankUpApplyModal();
       case 'equip-skill':    return Ops().apply({ op: 'equip_skill',    target: data.id, skillId:   data.skillId   }, { source: 'ui' });
       case 'unequip-skill':  return Ops().apply({ op: 'unequip_skill',  target: data.id, skillId:   data.skillId   }, { source: 'ui' });
       case 'equip-passive':  return Ops().apply({ op: 'equip_passive',  target: data.id, passiveId: data.passiveId }, { source: 'ui' });
@@ -9447,6 +9451,84 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
+  // Adventurer Guild rank-up modal. Lists each active member with their
+  // RP progress and gate status, and a "Start Trial" button when ready.
+  // The world ceiling explicitly blocks promotions past it, with a hint
+  // to travel to a higher-ceiling world for the next trial.
+  function _rankUpApplyModal() {
+    const state = CS().getState() || {};
+    const F = window.CJS.Formulas;
+    const world = DS().get('worlds', state.currentWorld) || {};
+    const body = document.createElement('div');
+    body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
+      <b>Adventurer Guild — ${_esc(world.displayName || state.currentWorld || '')}</b><br>
+      Ceiling here is <b>${_esc(world.ceiling || '—')}</b>. Members past the ceiling must travel to a higher-ceiling world for further trials.
+    </div>`;
+    const list = document.createElement('div');
+    list.style.display = 'grid';
+    list.style.gap = '8px';
+    body.appendChild(list);
+
+    for (const [id, member] of Object.entries(state.party || {})) {
+      if ((member.rosterRole || 'active') === 'bench') continue;
+      const info = _memberRankInfo(member);
+      const gates = F?.rankUpGates ? F.rankUpGates(member, null, state) : null;
+      const blockedByCeiling = !!(world.ceiling && gates?.target
+        && F?.rankIndex(gates.target) > F.rankIndex(world.ceiling));
+      const row = document.createElement('div');
+      row.style.padding = '10px';
+      row.style.border = '1px solid rgba(255,255,255,0.1)';
+      row.style.borderRadius = '8px';
+      const reasons = blockedByCeiling
+        ? [`Above ${world.ceiling} ceiling — travel to a higher-ceiling world.`]
+        : (gates?.reasons || []);
+      row.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <b>${_esc(member.name || id)}</b>
+          <span class="campaign-muted">Rank ${_esc(info.label)}${info.atMax ? '' : ` · target ${_esc(info.next || '—')}`}</span>
+        </div>
+        ${info.atMax ? '<div class="campaign-muted">At max rank.</div>' : `
+          <div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold}</b></div>
+          ${reasons.length ? `<div class="campaign-muted" style="margin-top:6px;font-size:0.8rem">${reasons.map(_esc).join(' ')}</div>` : '<div style="margin-top:6px;color:#9dd8ff;font-size:0.8rem">All gates met — ready for trial.</div>'}
+        `}
+      `;
+      if (!info.atMax && gates?.ok && !blockedByCeiling) {
+        const btn = document.createElement('button');
+        btn.className = 'campaign-action primary';
+        btn.style.marginTop = '8px';
+        btn.textContent = `Start Trial → ${gates.target}`;
+        btn.dataset.startTrialFor = id;
+        btn.dataset.startTrialRank = gates.target;
+        row.appendChild(btn);
+      }
+      list.appendChild(row);
+    }
+    if (!list.children.length) {
+      const empty = document.createElement('div');
+      empty.className = 'campaign-empty';
+      empty.textContent = 'No active party members.';
+      body.appendChild(empty);
+    }
+    const footer = document.createElement('div');
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'btn btn-primary';
+    doneBtn.textContent = 'Done';
+    footer.appendChild(doneBtn);
+    const overlay = UI().openModal({ title: 'Apply for Rank-Up', content: body, footer, width: '520px' });
+    doneBtn.onclick = () => UI().closeModal(overlay);
+    body.addEventListener('click', (event) => {
+      const btn = event.target?.closest?.('[data-start-trial-for]');
+      if (!btn) return;
+      const memberId = btn.dataset.startTrialFor;
+      const toRank = btn.dataset.startTrialRank;
+      Ops().apply([
+        { op: 'start_rank_trial', target: memberId },
+        { op: 'rank_up_member', target: memberId, toRank, source: 'guild_apply' }
+      ], { source: 'ui' });
+      UI().closeModal(overlay);
+    });
+  }
+
   function _rankUpPassiveConfirm(memberId, passiveId) {
     const member = CS().getState()?.party?.[memberId];
     const passive = DS().get('passives', passiveId);
@@ -9735,17 +9817,63 @@ window.CJS.CampaignUI = (() => {
       placeholder: 'Search worlds…',
       primaryLabel: 'Travel',
       onSubmit: ({ value }) => {
-        // Show a persona-choice modal first when meaningful — i.e. at least one
-        // party member has multiple persona options for the destination world.
-        // If no member has a real choice, skip straight to the transition.
-        const meaningful = _hasMeaningfulPersonaChoice(value);
-        if (meaningful) {
-          _openPreTravelPersonaPicker(value);
-        } else {
-          Ops().apply({ op: 'world_transition', toWorld: value, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+        // Hard rank gate: refuse outright if requiredRank is unmet. Soft gate:
+        // warn before continuing. Ceiling: inform if it caps the party.
+        const gate = _evaluateTravelRankGate(value);
+        if (!gate.allowed) {
+          UI().toast(gate.message, 'warn');
+          return;
         }
+        const proceed = () => {
+          const meaningful = _hasMeaningfulPersonaChoice(value);
+          if (meaningful) {
+            _openPreTravelPersonaPicker(value);
+          } else {
+            Ops().apply({ op: 'world_transition', toWorld: value, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+          }
+        };
+        if (gate.softWarning) {
+          const ok = window.confirm(gate.softWarning + '\n\nTravel anyway?');
+          if (!ok) return;
+        }
+        proceed();
       }
     });
+  }
+
+  // Build a travel decision for a destination world by looking up its
+  // requiredRank (hard), recommendedRank (soft), and ceiling. Hard gate
+  // returns allowed=false with a toast message; soft gate sets
+  // softWarning so we can confirm before proceeding.
+  function _evaluateTravelRankGate(toWorld) {
+    const F = window.CJS.Formulas;
+    const dest = DS().get('worlds', toWorld) || {};
+    const state = CS().getState() || {};
+    const active = Object.values(state.party || {})
+      .filter((m) => (m.rosterRole || 'active') !== 'bench');
+    const topRank = active.reduce((best, m) => {
+      const r = m.adventurer?.rank || m.rank || 'F';
+      if (!best) return r;
+      return F?.rankIndex?.(r) > F?.rankIndex?.(best) ? r : best;
+    }, null);
+
+    if (dest.requiredRank && !F?.meetsRank?.(topRank, dest.requiredRank)) {
+      return {
+        allowed: false,
+        message: `${dest.displayName || toWorld} requires rank ${dest.requiredRank}. Party top: ${topRank || 'F'}.`
+      };
+    }
+    const warnings = [];
+    if (dest.recommendedRank && !F?.meetsRank?.(topRank, dest.recommendedRank)) {
+      warnings.push(`Underranked: ${dest.displayName || toWorld} recommends ${dest.recommendedRank} (party top: ${topRank || 'F'}). Monsters will spawn tougher.`);
+    }
+    if (dest.ceiling && F?.rankIndex?.(topRank) > F?.rankIndex?.(dest.ceiling)) {
+      warnings.push(`This world caps ranks at ${dest.ceiling}. Higher-rank members are treated as ${dest.ceiling} here; RP rewards taper out.`);
+    }
+    return {
+      allowed: true,
+      softWarning: warnings.length ? warnings.join('\n\n') : null
+    };
   }
 
   function _hasMeaningfulPersonaChoice(targetWorld) {
@@ -10169,6 +10297,44 @@ window.CJS.CampaignUI = (() => {
 
   function _memberBase(id, member = {}) {
     return DS().get('characters', member.baseCharacterId || id) || {};
+  }
+
+  // Adventurer rank summary for a member. Effective rank reflects the
+  // current world's ceiling cap so the player sees the cap at a glance.
+  // RP progress shows the gap to the next-rank threshold.
+  function _memberRankInfo(member = {}) {
+    const F = window.CJS.Formulas;
+    const adv = member.adventurer || { rank: member.rank || 'F', rankPoints: 0, trialPending: false };
+    const rank = adv.rank || 'F';
+    const world = DS().get('worlds', CS().getState()?.currentWorld) || {};
+    const ceiling = world.ceiling || null;
+    const effective = F?.effectiveRank ? F.effectiveRank(rank, ceiling) : rank;
+    const capped = ceiling && effective !== rank;
+    const next = F?.nextRank ? F.nextRank(rank) : null;
+    const threshold = next && F?.rpThresholdFor ? F.rpThresholdFor(next) : 0;
+    const rp = Math.max(0, Number(adv.rankPoints || 0));
+    const pct = threshold > 0 ? Math.max(0, Math.min(100, Math.round((rp / threshold) * 100))) : 0;
+    return {
+      rank,
+      effective,
+      capped,
+      ceiling,
+      label: capped ? `${rank} (eff ${effective})` : rank,
+      next,
+      threshold,
+      rp,
+      pct,
+      atMax: !next,
+      trialPending: !!adv.trialPending
+    };
+  }
+
+  function _renderRankBar(info) {
+    if (!info || info.atMax) {
+      return '<div class="campaign-muted" style="font-size:0.72rem">Rank maxed (SSR)</div>';
+    }
+    if (info.threshold <= 0) return '';
+    return `<div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold} → ${_esc(info.next)}</b></div>`;
   }
 
   function _memberStats(id, member = {}) {

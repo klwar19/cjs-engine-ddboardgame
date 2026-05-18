@@ -31,7 +31,11 @@ window.CJS.CampaignCombatPopup = (() => {
         <p class="combat-popup-sub">${_esc(pendingBattle?.subtitle || _defaultSubtitle(pendingBattle))}</p>
         ${monsters.length ? `
           <div class="combat-popup-monsters" aria-hidden="true">
-            ${monsters.map((m) => `<div class="combat-popup-monster">${_popupMonsterContent(m)}</div>`).join('')}
+            ${monsters.map((m) => `
+              <div class="combat-popup-monster" title="${_escAttr(`${m.name} · Rank ${m.rank}${m.band ? ' · ' + m.band : ''}`)}">
+                ${_popupMonsterContent(m)}
+                <span class="combat-popup-monster-rank">${_esc(m.rank)}${m.band ? ` · ${_esc(m.band)}` : ''}</span>
+              </div>`).join('')}
           </div>` : ''}
         <div class="combat-popup-actions">
           <button type="button" data-combat-popup-cancel>Hold</button>
@@ -114,11 +118,17 @@ window.CJS.CampaignCombatPopup = (() => {
     const out = [];
     for (const id of ids) {
       const rec = DS()?.get?.('monsters', id);
+      const band = rec?.levelBand
+        ? `Lv ${rec.levelBand.min ?? 1}-${rec.levelBand.max ?? '?'}`
+        : '';
       out.push({
         id,
         icon: rec?.icon || '👹',
         portrait: rec?.portrait || rec?.sprite || '',
-        portraitFocus: rec?.portraitFocus || null
+        portraitFocus: rec?.portraitFocus || null,
+        name: rec?.name || id,
+        rank: rec?.rank || 'F',
+        band
       });
       if (out.length >= 6) break;
     }

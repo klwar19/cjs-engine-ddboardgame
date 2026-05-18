@@ -12,7 +12,7 @@ window.CJS.ScenarioRunner = (() => {
   const SURPRISE_REVISIT_CHANCE = 0.1;
   const SURPRISE_REVISIT_DECAY = 0.72;
   const SURPRISE_HISTORY_LIMIT = 40;
-  const RANK_ORDER = { F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7, SS: 8 };
+  const RANK_ORDER = { F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7, SR: 8, SSR: 9, SS: 8 };
   const DEFAULT_SURPRISE_PROFILE = {
     name: 'Wild Route',
     weights: { battle: 2, event: 3, item: 2, stat: 1, rumor: 1, interaction: 2, branch: 1 },
