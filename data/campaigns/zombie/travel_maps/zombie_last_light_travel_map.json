@@ -1,0 +1,129 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "zombie",
+    "category": "travelMaps",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "zombie_tmap_last_light_v1",
+      "name": "Last Light City Slice",
+      "world": "zombie",
+      "zone": "zombie_zon_last_light",
+      "defaultLocationId": "zombie_loc_safehouse",
+      "canvas": { "width": 760, "height": 430 },
+      "visualMode": "vn_travel",
+      "visualTheme": { "id": "zombie", "mood": "ruined_city_green_dusk" },
+      "areaButtons": [
+        {
+          "id": "zombie_area_last_light",
+          "label": "Last Light",
+          "mapId": "zombie_tmap_last_light_v1",
+          "active": true,
+          "summary": "Current zombie slice: rooftop base, mall scavenging, clinic runs, subway routes, and broadcast objective."
+        },
+        {
+          "id": "zombie_area_harbor",
+          "label": "Harbor Quarantine",
+          "status": "placeholder",
+          "summary": "Future high-risk scavenge zone with docks, flooded warehouses, and boat escape rumors."
+        },
+        {
+          "id": "zombie_area_farm_belt",
+          "label": "Farm Belt",
+          "status": "placeholder",
+          "summary": "Future food/building loop with field camps, water pumps, and survivor disputes."
+        },
+        {
+          "id": "zombie_area_military_shelter",
+          "label": "Military Shelter",
+          "status": "placeholder",
+          "summary": "Future late-zone pressure area with locked armory doors, faction choices, and heavy infection risk."
+        }
+      ],
+      "legend": [
+        { "id": "zombie_legend_base", "kind": "base", "label": "Safehouse / build" },
+        { "id": "zombie_legend_scavenge", "kind": "scavenge", "label": "Scavenge route" },
+        { "id": "zombie_legend_risk", "kind": "risk", "label": "High-risk road" }
+      ],
+      "visualLayers": [
+        { "type": "rect", "kind": "ruin-block", "x": 74, "y": 86, "width": 138, "height": 114, "rx": 16 },
+        { "type": "rect", "kind": "ruin-block", "x": 272, "y": 64, "width": 150, "height": 104, "rx": 12 },
+        { "type": "rect", "kind": "ruin-block", "x": 498, "y": 104, "width": 144, "height": 116, "rx": 12 },
+        { "type": "rect", "kind": "ruin-block", "x": 385, "y": 282, "width": 122, "height": 96, "rx": 12 },
+        { "type": "rect", "kind": "ruin-block", "x": 616, "y": 250, "width": 88, "height": 94, "rx": 10 },
+        { "type": "path", "kind": "road", "d": "M 108 158 C 202 112, 264 102, 340 115 C 440 132, 503 158, 560 165" },
+        { "type": "path", "kind": "road", "d": "M 336 122 C 362 194, 392 262, 435 330 C 512 316, 592 304, 665 300" },
+        { "type": "path", "kind": "road-thin", "d": "M 560 165 C 612 202, 650 248, 665 300" },
+        { "type": "path", "kind": "subway", "d": "M 88 382 C 214 350, 330 340, 435 330 C 530 320, 606 302, 730 276" },
+        { "type": "text", "kind": "label", "x": 44, "y": 44, "text": "LAST LIGHT" }
+      ],
+      "nodes": [
+        {
+          "id": "zombie_loc_safehouse",
+          "name": "Rooftop Safehouse",
+          "type": "base",
+          "x": 135,
+          "y": 145,
+          "zone": "zombie_zon_last_light",
+          "description": "Tarps, water barrels, bad sleep, and the first place that can become more than survival.",
+          "actions": [
+            {
+              "id": "zombie_safehouse_status",
+              "label": "Check safehouse board",
+              "ops": [
+                { "op": "journal_entry_add", "id": "zombie_journal_safehouse_board", "title": "Safehouse Board", "text": "The board has three columns: food, medicine, and things nobody wants to say out loud.", "world": "zombie", "scope": "zombie", "tags": ["safehouse"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "zombie_loc_mall_district",
+          "name": "Mall District",
+          "type": "scavenge",
+          "x": 340,
+          "y": 115,
+          "zone": "zombie_zon_last_light",
+          "description": "Useful shelves, broken glass, and too many places for noise to become a problem."
+        },
+        {
+          "id": "zombie_loc_clinic_block",
+          "name": "Clinic Block",
+          "type": "medical",
+          "x": 560,
+          "y": 165,
+          "zone": "zombie_zon_last_light",
+          "description": "A small clinic surrounded by abandoned cars. The medicine is real. So is the risk."
+        },
+        {
+          "id": "zombie_loc_subway_line",
+          "name": "Subway Line",
+          "type": "route",
+          "x": 435,
+          "y": 330,
+          "zone": "zombie_zon_last_light",
+          "description": "Dark tunnels, blocked stairs, and fast routes that charge interest in fear."
+        },
+        {
+          "id": "zombie_loc_broadcast_tower",
+          "name": "Broadcast Tower",
+          "type": "objective",
+          "x": 665,
+          "y": 300,
+          "zone": "zombie_zon_last_light",
+          "description": "A tower high enough to make the city listen, if the city has anything left that can answer."
+        }
+      ],
+      "links": [
+        { "from": "zombie_loc_safehouse", "to": "zombie_loc_mall_district", "route": "street", "time": 1, "risk": "medium" },
+        { "from": "zombie_loc_mall_district", "to": "zombie_loc_clinic_block", "route": "back_lot", "time": 1, "risk": "high" },
+        { "from": "zombie_loc_mall_district", "to": "zombie_loc_subway_line", "route": "service_tunnel", "time": 1, "risk": "medium" },
+        { "from": "zombie_loc_subway_line", "to": "zombie_loc_broadcast_tower", "route": "underground", "time": 2, "risk": "high" },
+        { "from": "zombie_loc_clinic_block", "to": "zombie_loc_broadcast_tower", "route": "avenue", "time": 2, "risk": "high" }
+      ]
+    }
+  ]
+}

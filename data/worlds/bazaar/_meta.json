@@ -1,0 +1,29 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "bazaar"
+  },
+  "world": {
+    "id": "bazaar",
+    "displayName": "Bazaar of Broken Chains",
+    "ceiling": "A",
+    "requiredRank": null,
+    "recommendedRank": "E",
+    "order": 3,
+    "tone": "cosmic_market",
+    "color": "#f59e0b",
+    "status": "starter",
+    "storyModeTheme": {
+      "id": "bazaar",
+      "className": "story-theme-bazaar",
+      "backdrop": "images/story-mode/bazaar/bazaar-theme.png",
+      "bannerImage": "images/story-mode/bazaar/bazaar-theme.png",
+      "homeBackdrop": "images/story-mode/bazaar/bazaar-theme.png",
+      "accent": "#fbbf24",
+      "danger": "#ef4444",
+      "motif": "chains"
+    }
+  }
+}

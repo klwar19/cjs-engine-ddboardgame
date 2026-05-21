@@ -54,6 +54,10 @@ window.CJS.CampaignConditions = (() => {
     blockStoryParts(state, cond.blocksStoryParts, blockers);
 
     if (cond.world && state.currentWorld !== cond.world) blockers.push(`Needs world ${cond.world}.`);
+    if (cond.locationIds?.length) {
+      const progress = state.worldProgress?.[state.currentWorld] || {};
+      if (!cond.locationIds.includes(progress.currentLocation)) blockers.push('Needs a different location.');
+    }
     if (cond.phaseTypes?.length && !cond.phaseTypes.includes(state.phase?.type)) blockers.push(`Needs phase ${cond.phaseTypes.join(', ')}.`);
     if (cond.worldMinRank) {
       const F = window.CJS.Formulas;
@@ -117,6 +121,29 @@ window.CJS.CampaignConditions = (() => {
 
     for (const [metric, min] of Object.entries(cond.metricMin || {})) {
       if (Number(state.storyDirector?.metrics?.[metric] || 0) < Number(min)) blockers.push(`Needs metric ${metric} ${min}.`);
+    }
+
+    for (const id of asArray(cond.requiresMilestones || cond.requiresCrossMilestones)) {
+      if (!state.crossWorld?.milestones?.[id]?.value) blockers.push(`Needs milestone ${id}.`);
+    }
+    for (const id of asArray(cond.blocksMilestones || cond.blocksCrossMilestones)) {
+      if (state.crossWorld?.milestones?.[id]?.value) blockers.push(`Blocked by milestone ${id}.`);
+    }
+    for (const [pressureId, min] of Object.entries(cond.pressureMin || cond.crossPressureMin || {})) {
+      const value = Number(state.crossWorld?.pressures?.[pressureId]?.value || 0);
+      if (value < Number(min)) blockers.push(`Needs pressure ${pressureId} ${min}.`);
+    }
+    for (const [pressureId, max] of Object.entries(cond.pressureMax || cond.crossPressureMax || {})) {
+      const value = Number(state.crossWorld?.pressures?.[pressureId]?.value || 0);
+      if (value > Number(max)) blockers.push(`Pressure ${pressureId} above ${max}.`);
+    }
+    for (const [worldId, chapter] of Object.entries(cond.worldChapterMin || {})) {
+      const value = Number(state.worldProgress?.[worldId]?.currentChapter || 1);
+      if (value < Number(chapter)) blockers.push(`Needs ${worldId} chapter ${chapter}.`);
+    }
+    for (const [worldId, arcId] of Object.entries(cond.worldCompletedArc || {})) {
+      const arcs = state.worldProgress?.[worldId]?.completedArcs || [];
+      if (!arcs.includes(arcId)) blockers.push(`Needs ${worldId} arc ${arcId}.`);
     }
 
     const statResults = evaluateStatChecks(cond.statChecks || cond.statMin, state, context);

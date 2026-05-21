@@ -17,7 +17,7 @@
       "startPhase": "town_phase",
       "startScenario": null,
       "defaultMode": "soft_limit",
-      "allowedWorlds": ["haven", "zombie"],
+      "allowedWorlds": ["earth", "haven", "zombie", "bazaar"],
       "phaseRules": [
         {
           "id": "town_phase",

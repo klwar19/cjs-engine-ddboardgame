@@ -1,0 +1,100 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "earth",
+    "category": "worldActivityPacks",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "earth_wap_return_v1",
+      "name": "Earth Return Activity Pack",
+      "version": 1,
+      "world": "earth",
+      "zone": "earth_zon_zhonghai",
+      "activities": [
+        {
+          "id": "earth_act_hospital_visit_lily",
+          "type": "hospital",
+          "title": "Quiet Ward Visit",
+          "locationIds": ["earth_loc_hospital"],
+          "summary": "Spend time with Lily. No cure, no grand speech, just showing up.",
+          "buttonLabel": "Visit",
+          "rewardText": "Lily trust +1, journal recap",
+          "ops": [
+            { "op": "bond_change", "npcId": "lily", "field": "trust", "amount": 1 },
+            { "op": "cross_pressure_change", "id": "earth_heat", "title": "Earth Heat", "amount": -1, "min": 0, "max": 12 },
+            { "op": "journal_entry_add", "id": "earth_journal_quiet_ward_visit", "title": "Quiet Ward Visit", "text": "Lily did most of the talking. Bin did most of the pretending he was fine. Both of them knew the rules.", "world": "earth", "scope": "earth", "tags": ["hospital", "lily"] }
+          ]
+        },
+        {
+          "id": "earth_act_hospital_crystal_support",
+          "type": "hospital",
+          "title": "Crystal Stabilizer Test",
+          "locationIds": ["earth_loc_hospital"],
+          "summary": "Spend a Haven memory shard or similar crystal material on a careful support treatment.",
+          "buttonLabel": "Pump Item",
+          "cost": { "imports": { "materials": { "haven_memory_shard": 1 } } },
+          "rewardText": "Lily stability +1, Earth Heat +1",
+          "ops": [
+            { "op": "bond_change", "npcId": "lily", "field": "stability", "amount": 1 },
+            { "op": "cross_milestone_set", "id": "milestone.earth.crystal_support_tested", "title": "Crystal Support Tested", "summary": "A cross-world material helped Lily stabilize, but did not solve the illness." },
+            { "op": "cross_pressure_change", "id": "earth_heat", "title": "Earth Heat", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "earth_journal_crystal_support", "title": "Crystal Stabilizer Test", "text": "The monitor line steadied for three seconds longer than it should have. Hope is rude like that.", "world": "earth", "scope": "global", "tags": ["hospital", "lily", "cross_world"] }
+          ]
+        },
+        {
+          "id": "earth_act_hospital_zombie_medgel",
+          "type": "hospital",
+          "title": "Med-Gel Analysis",
+          "locationIds": ["earth_loc_hospital"],
+          "summary": "Use scavenged medical gel from Last Light to unlock a safer hospital support path.",
+          "buttonLabel": "Analyze",
+          "cost": { "imports": { "materials": { "zombie_med_gel": 1 } } },
+          "conditions": { "requiresMilestones": ["milestone.zombie.first_scavenge"] },
+          "rewardText": "Ward trust +1, Lily stability +1",
+          "ops": [
+            { "op": "bond_change", "npcId": "ward7", "field": "trust", "amount": 1 },
+            { "op": "bond_change", "npcId": "lily", "field": "stability", "amount": 1 },
+            { "op": "cross_milestone_set", "id": "milestone.earth.medgel_path_open", "title": "Med-Gel Path Open", "summary": "Zombie-world salvage can support Lily's treatment under careful rules." }
+          ]
+        },
+        {
+          "id": "earth_act_delivery_shift",
+          "type": "work",
+          "title": "Delivery Shift",
+          "locationIds": ["earth_loc_delivery_route"],
+          "summary": "Earn Earth money, risk attention, and collect ordinary-life texture.",
+          "buttonLabel": "Work",
+          "rewardText": "earth_yuan +35, Earth Heat +1",
+          "ops": [
+            { "op": "give_money", "currency": "earth_yuan", "amount": 35 },
+            { "op": "cross_pressure_change", "id": "earth_heat", "title": "Earth Heat", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "earth_journal_delivery_shift", "title": "Delivery Shift", "text": "Three orders, one broken elevator, and a tip paid entirely in coins. The universe remains committed to bit work.", "world": "earth", "scope": "earth", "tags": ["work"] }
+          ]
+        }
+      ],
+      "journalEntries": [
+        {
+          "id": "earth_journal_recap_after_haven_arc1",
+          "title": "After Haven Arc 1",
+          "text": "Haven proved the impossible can hurt, help, and follow him home. Earth did not pause while Bin was learning how to survive somewhere else.",
+          "conditions": { "requiresMilestones": ["milestone.haven.arc1_complete"] },
+          "world": "earth",
+          "scope": "recap",
+          "tags": ["recap", "haven"]
+        },
+        {
+          "id": "earth_journal_default_return",
+          "title": "Earth Return Notes",
+          "text": "Earth is for school, bills, hospital visits, old scars, and the small daily scenes that make every other world matter.",
+          "world": "earth",
+          "scope": "recap",
+          "tags": ["recap"]
+        }
+      ]
+    }
+  ]
+}

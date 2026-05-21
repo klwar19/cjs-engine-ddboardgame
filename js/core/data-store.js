@@ -37,6 +37,7 @@ window.CJS.DataStore = (() => {
     campaigns:  {},   // id -> authored campaign definition
     scenarios:  {},   // id -> authored campaign scenario
     scenarioMaps: {}, // id -> authored campaign map
+    travelMaps: {}, // id -> authored world/zone navigation map
     campaignEvents: {}, // id -> campaign event table
     campaignQuests: {}, // id -> campaign quest template collection
     campaignProfiles: {}, // id -> world/chapter carryover profile
@@ -48,6 +49,7 @@ window.CJS.DataStore = (() => {
     mapSeeds: {}, // id -> node map seed collection
     oracleTables: {}, // id -> oracle keyword/prompt table
     storyDirectorPacks: {}, // id -> story director arc/beat/clue pack
+    worldActivityPacks: {}, // id -> world-specific activity loops
     worlds:     {},   // id -> world meta object
     passives:   {},   // id → passive object
     jobs:       {},   // id → job (class) object
@@ -168,6 +170,7 @@ window.CJS.DataStore = (() => {
       campaigns:  _stripMeta({ ..._data.campaigns }),
       scenarios:  _stripMeta({ ..._data.scenarios }),
       scenarioMaps: _stripMeta({ ..._data.scenarioMaps }),
+      travelMaps: _stripMeta({ ..._data.travelMaps }),
       campaignEvents: _stripMeta({ ..._data.campaignEvents }),
       campaignQuests: _stripMeta({ ..._data.campaignQuests }),
       campaignProfiles: _stripMeta({ ..._data.campaignProfiles }),
@@ -179,6 +182,7 @@ window.CJS.DataStore = (() => {
       mapSeeds: _stripMeta({ ..._data.mapSeeds }),
       oracleTables: _stripMeta({ ..._data.oracleTables }),
       storyDirectorPacks: _stripMeta({ ..._data.storyDirectorPacks }),
+      worldActivityPacks: _stripMeta({ ..._data.worldActivityPacks }),
       worlds:     _stripMeta({ ..._data.worlds }),
       passives:   _stripMeta({ ..._data.passives }),
       jobs:       _stripMeta({ ..._data.jobs }),
@@ -223,6 +227,7 @@ window.CJS.DataStore = (() => {
       cmp: _data.campaigns,
       scn: _data.scenarios,
       map: _data.scenarioMaps,
+      tmap: _data.travelMaps,
       evt: _data.campaignEvents,
       qst: _data.campaignQuests,
       cpf: _data.campaignProfiles,
@@ -234,6 +239,7 @@ window.CJS.DataStore = (() => {
       msd: _data.mapSeeds,
       orc: _data.oracleTables,
       sdp: _data.storyDirectorPacks,
+      wap: _data.worldActivityPacks,
       wld: _data.worlds,
       pas: _data.passives,
       prs: _data.personas,
@@ -655,10 +661,10 @@ window.CJS.DataStore = (() => {
     const collections = [
       'effects', 'skills', 'items', 'food', 'materials', 'crafting',
       'crops', 'shops', 'zones', 'stories', 'worlds', 'passives', 'jobs', 'personas',
-      'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
+      'campaigns', 'scenarios', 'scenarioMaps', 'travelMaps', 'campaignEvents',
       'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
       'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
-      'mapSeeds', 'oracleTables', 'storyDirectorPacks',
+      'mapSeeds', 'oracleTables', 'storyDirectorPacks', 'worldActivityPacks',
       'characters', 'monsters', 'encounters', 'statuses', 'weathers'
     ];
     for (const col of collections) {
@@ -701,6 +707,7 @@ window.CJS.DataStore = (() => {
       cmp: _data.campaigns,
       scn: _data.scenarios,
       map: _data.scenarioMaps,
+      tmap: _data.travelMaps,
       evt: _data.campaignEvents,
       qst: _data.campaignQuests,
       cpf: _data.campaignProfiles,
@@ -712,6 +719,7 @@ window.CJS.DataStore = (() => {
       msd: _data.mapSeeds,
       orc: _data.oracleTables,
       sdp: _data.storyDirectorPacks,
+      wap: _data.worldActivityPacks,
       wld: _data.worlds,
       pas: _data.passives,
       job: _data.jobs,
@@ -742,9 +750,11 @@ window.CJS.DataStore = (() => {
       effects: {}, skills: {}, items: {}, food: {}, materials: {}, crafting: {},
       crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {}, jobs: {}, personas: {},
       campaigns: {}, scenarios: {}, scenarioMaps: {}, campaignEvents: {},
+      travelMaps: {},
       campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
       sideContentPacks: {}, campaignHubs: {}, questChains: {},
       battleSets: {}, mapSeeds: {}, oracleTables: {}, storyDirectorPacks: {},
+      worldActivityPacks: {},
       characters: {}, monsters: {}, encounters: {}, statuses: {}, weathers: {},
       quips: [], quizBank: []
     };
@@ -772,6 +782,7 @@ window.CJS.DataStore = (() => {
       campaigns:  Object.keys(_data.campaigns).length,
       scenarios:  Object.keys(_data.scenarios).length,
       scenarioMaps: Object.keys(_data.scenarioMaps).length,
+      travelMaps: Object.keys(_data.travelMaps).length,
       campaignEvents: Object.keys(_data.campaignEvents).length,
       campaignQuests: Object.keys(_data.campaignQuests).length,
       campaignProfiles: Object.keys(_data.campaignProfiles).length,
@@ -783,6 +794,7 @@ window.CJS.DataStore = (() => {
       mapSeeds: Object.keys(_data.mapSeeds).length,
       oracleTables: Object.keys(_data.oracleTables).length,
       storyDirectorPacks: Object.keys(_data.storyDirectorPacks).length,
+      worldActivityPacks: Object.keys(_data.worldActivityPacks).length,
       worlds:     Object.keys(_data.worlds).length,
       passives:   Object.keys(_data.passives).length,
       jobs:       Object.keys(_data.jobs).length,

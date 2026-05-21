@@ -41,6 +41,7 @@ window.CJS.ContentManager = (() => {
     campaigns: 'campaigns',
     scenarios: 'scenarios',
     scenarioMaps: 'scenarioMaps',
+    travelMaps: 'travelMaps',
     campaignEvents: 'campaignEvents',
     campaignQuests: 'campaignQuests',
     campaignProfiles: 'campaignProfiles',
@@ -51,7 +52,8 @@ window.CJS.ContentManager = (() => {
     battleSets: 'battleSets',
     mapSeeds: 'mapSeeds',
     oracleTables: 'oracleTables',
-    storyDirectorPacks: 'storyDirectorPacks'
+    storyDirectorPacks: 'storyDirectorPacks',
+    worldActivityPacks: 'worldActivityPacks'
   };
 
   const CATEGORY_TO_TYPE = Object.freeze(
@@ -65,10 +67,10 @@ window.CJS.ContentManager = (() => {
     'effects', 'statuses', 'passives', 'skills', 'jobs', 'personas', 'items', 'food', 'weathers',
     'characters', 'monsters', 'encounters', 'materials', 'crafting',
     'crops', 'shops', 'zones', 'stories',
-    'campaigns', 'scenarios', 'scenarioMaps', 'campaignEvents',
+    'campaigns', 'scenarios', 'scenarioMaps', 'travelMaps', 'campaignEvents',
     'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
     'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
-    'mapSeeds', 'oracleTables', 'storyDirectorPacks'
+    'mapSeeds', 'oracleTables', 'storyDirectorPacks', 'worldActivityPacks'
   ];
 
   const SCOPE_LABELS = {
@@ -206,6 +208,7 @@ window.CJS.ContentManager = (() => {
       case 'campaigns':
       case 'scenarios':
       case 'scenarioMaps':
+      case 'travelMaps':
       case 'campaignEvents':
       case 'campaignQuests':
       case 'sideContentPacks':
@@ -215,6 +218,7 @@ window.CJS.ContentManager = (() => {
       case 'mapSeeds':
       case 'oracleTables':
       case 'storyDirectorPacks':
+      case 'worldActivityPacks':
         return ['world'];
       case 'campaignProfiles':
       case 'pocketHavenRules':

@@ -139,6 +139,7 @@ window.CJS.CampaignUI = (() => {
   })();
 
   const APP_MODES = [
+    ['world', 'World', 'WD'],
     ['story', 'Story', 'ST'],
     ['quest', 'Quest', 'QT'],
     ['event', 'Event', 'EV'],
@@ -146,6 +147,9 @@ window.CJS.CampaignUI = (() => {
   ];
 
   const APP_MODE_TABS = {
+    world: [
+      ['worldGate', 'World Gate']
+    ],
     story: [
       ['storyHome', 'Story'],
       ['storySummary', 'Story Log']
@@ -161,6 +165,8 @@ window.CJS.CampaignUI = (() => {
       ['eventLog', 'Event Log']
     ],
     activities: [
+      ['worldMap', 'World Map'],
+      ['worldActivities', 'World Activities'],
       ['sideForge', 'Hub'],
       ['oracleForge', 'Oracle / Manual'],
       ['farm', 'Farm'],
@@ -187,6 +193,71 @@ window.CJS.CampaignUI = (() => {
     }
     return out;
   })();
+
+  function _worldUiProfile(worldId = CS().getState()?.currentWorld) {
+    const id = worldId || 'haven';
+    const profiles = {
+      earth: {
+        hiddenModes: ['quest'],
+        hiddenPanels: ['quests'],
+        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
+        defaultMode: 'activities',
+        defaultTab: 'worldMap'
+      },
+      bazaar: {
+        hiddenModes: ['quest'],
+        hiddenPanels: ['quests'],
+        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
+        defaultMode: 'activities',
+        defaultTab: 'worldMap'
+      },
+      zombie: {
+        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
+        modeLabels: {
+          quest: ['quest', 'Scavenge', 'SC']
+        },
+        tabLabels: {
+          questHome: 'Scavenge Board',
+          quests: 'Run Log'
+        },
+        panelLabels: {
+          quests: { icon: 'SC', label: 'Scavenge', title: 'Scavenge Log' }
+        }
+      }
+    };
+    return profiles[id] || {};
+  }
+
+  function _appModesForState(state = CS().getState()) {
+    const profile = _worldUiProfile(state?.currentWorld);
+    const hidden = new Set(profile.hiddenModes || []);
+    return APP_MODES
+      .filter(([id]) => !hidden.has(id))
+      .map((entry) => profile.modeLabels?.[entry[0]] || entry);
+  }
+
+  function _tabsForMode(mode, state = CS().getState()) {
+    const profile = _worldUiProfile(state?.currentWorld);
+    const hiddenTabs = new Set(profile.hiddenTabs || []);
+    return (APP_MODE_TABS[mode] || [])
+      .filter(([id]) => !hiddenTabs.has(id))
+      .map(([id, label]) => [id, profile.tabLabels?.[id] || label]);
+  }
+
+  function _normalizeActiveWorldUi(state = CS().getState()) {
+    const profile = _worldUiProfile(state?.currentWorld);
+    const hiddenModes = new Set(profile.hiddenModes || []);
+    const hiddenTabs = new Set(profile.hiddenTabs || []);
+    const hiddenPanels = new Set(profile.hiddenPanels || []);
+    const activeOwner = APP_TAB_TO_MODE[_activeTab];
+    if (hiddenModes.has(_activeMode) || hiddenModes.has(activeOwner) || hiddenTabs.has(_activeTab)) {
+      _activeMode = profile.defaultMode || 'activities';
+      _activeTab = profile.defaultTab || _tabsForMode(_activeMode, state)[0]?.[0] || 'worldGate';
+    }
+    if (hiddenPanels.has(_activePanel)) {
+      _activePanel = null;
+    }
+  }
 
   async function init(root) {
     _root = root;
@@ -232,9 +303,10 @@ window.CJS.CampaignUI = (() => {
     if (!_root || !CS().getState()) return;
     const state = CS().getState();
     const campaign = CS().getCurrentCampaign();
+    _normalizeActiveWorldUi(state);
 
     const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
-    const subTabs = isUtility ? APP_UTILITY_TABS : (APP_MODE_TABS[_activeMode] || []);
+    const subTabs = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
 
     _root.innerHTML = `
       <div class="campaign-shell ${_activePanel ? 'has-drawer-open' : ''}">
@@ -378,6 +450,7 @@ window.CJS.CampaignUI = (() => {
         </div>
         ${_renderCompactCurrencies(state)}
         <div class="campaign-header-actions">
+          <button class="campaign-action primary campaign-world-gate-quick" data-campaign-action="open-world-gate">World Gate</button>
           ${_actionMenu('Save', `
             <button class="campaign-action" data-campaign-action="save-slot">Quick Save</button>
             <button class="campaign-action" data-campaign-action="new-save">New Save</button>
@@ -435,7 +508,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderModeBar(state) {
-    const modeButtons = APP_MODES.map(([id, label, icon]) => {
+    const modeButtons = _appModesForState(state).map(([id, label, icon]) => {
       const active = id === _activeMode && !APP_UTILITY_TABS.some(([u]) => u === _activeTab);
       return `<button class="campaign-mode-btn ${active ? 'active' : ''}" data-campaign-mode="${id}">
         <span class="campaign-mode-icon">${icon}</span><span>${label}</span>
@@ -461,6 +534,138 @@ window.CJS.CampaignUI = (() => {
         ${tabs.map(([id, label]) => `<button class="campaign-tab ${id === _activeTab ? 'active' : ''}" data-campaign-tab="${id}">${_esc(label)}</button>`).join('')}
       </nav>
     `;
+  }
+
+  function _renderWorldGate(state) {
+    const worlds = CS().getContent().worlds || {};
+    const options = _worldOptions();
+    const current = state.currentWorld || 'haven';
+    const cards = options.map((option) => _renderWorldGateCard(option.value, worlds[option.value] || {}, state)).join('');
+    return `
+      <section class="campaign-panel campaign-world-gate">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>World Gate</h2>
+            <span class="campaign-muted">Choose which world content to load. Current world: ${_esc(worlds[current]?.displayName || current)}</span>
+          </div>
+          ${_renderPressureStripMini(state)}
+        </div>
+        <div class="campaign-world-gate-grid">
+          ${cards || '<div class="campaign-empty">No campaign worlds are available.</div>'}
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderWorldGateCard(worldId, world, state) {
+    const def = _worldMenuDef(worldId);
+    const isCurrent = worldId === state.currentWorld;
+    const bannerImage = def.bannerImage || world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || '';
+    const bannerStyle = bannerImage ? ` style="--world-card-image:url('${_escAttr(_cssVarAssetUrl(bannerImage))}')"` : '';
+    const mapCount = DS().getAllAsArray('travelMaps').filter((map) => map.world === worldId).length;
+    const activityPacks = DS().getAllAsArray('worldActivityPacks').filter((pack) => pack.world === worldId);
+    const activities = activityPacks.flatMap((pack) => pack.activities || []);
+    const activityTypes = Array.from(new Set(activities.map((activity) => activity.type || 'activity'))).slice(0, 4);
+    const status = isCurrent ? 'Loaded' : (def.status || 'Available');
+    const targetTab = def.defaultTab || (mapCount ? 'worldMap' : 'storyHome');
+    const action = isCurrent
+      ? _actionBtn({ action: 'open-world-content', label: def.openLabel || 'Open Content', hint: def.openHint || 'Open this world content', kind: 'primary', data: { tab: targetTab, mode: def.defaultMode || _modeForTab(targetTab) } })
+      : _actionBtn({ action: 'travel-world-card', label: def.enterLabel || `Enter ${world.displayName || worldId}`, hint: def.enterHint || 'Switch world and load its content menu', kind: 'primary', data: { 'world-id': worldId, 'target-tab': targetTab } });
+    const secondary = isCurrent
+      ? `${mapCount ? _actionBtn({ action: 'open-world-content', label: 'Map Movement', hint: 'Open this world travel map', data: { tab: 'worldMap', mode: 'activities' } }) : ''}
+         ${activities.length ? _actionBtn({ action: 'open-world-content', label: 'Activities', hint: 'Open this world activities', data: { tab: 'worldActivities', mode: 'activities' } }) : ''}
+         ${worldId === 'bazaar' ? _actionBtn({ action: 'open-world-content', label: 'Arena / Auction', hint: 'Open Bazaar activities', data: { tab: 'worldActivities', mode: 'activities' } }) : ''}`
+      : '';
+    return `
+      <article class="campaign-world-gate-card theme-${_escAttr(worldId)} ${isCurrent ? 'is-current' : ''} ${bannerImage ? 'has-banner' : ''}"${bannerStyle}>
+        ${bannerImage ? '<div class="campaign-world-gate-banner" aria-hidden="true"></div>' : ''}
+        <div class="campaign-world-gate-card-head">
+          <div>
+            <h3>${_esc(def.title || world.displayName || worldId)}</h3>
+            <span>${_esc(def.kicker || world.tone || worldId)}</span>
+          </div>
+          <b>${_esc(status)}</b>
+        </div>
+        <p>${_esc(def.summary || 'World content placeholder.')}</p>
+        <div class="campaign-world-gate-tags">
+          ${(def.features || []).map((feature) => `<span>${_esc(feature)}</span>`).join('')}
+          ${mapCount ? `<span>${mapCount} map${mapCount === 1 ? '' : 's'}</span>` : ''}
+          ${activities.length ? `<span>${activities.length} activities</span>` : ''}
+        </div>
+        ${activityTypes.length ? `<div class="campaign-muted">Loops: ${_esc(activityTypes.map(_label).join(', '))}</div>` : ''}
+        ${def.devNote ? `<div class="campaign-world-gate-note">${_esc(def.devNote)}</div>` : ''}
+        <div class="campaign-panel-actions">${action}${secondary}</div>
+      </article>
+    `;
+  }
+
+  function _renderPressureStripMini(state) {
+    const pressures = Object.values(state.crossWorld?.pressures || {});
+    if (!pressures.length) return '';
+    return `<div class="campaign-panel-actions">${pressures.slice(0, 3).map((p) => `<span class="campaign-pill">${_esc(p.title || p.id)} ${Number(p.value || 0)}</span>`).join('')}</div>`;
+  }
+
+  function _worldMenuDef(worldId) {
+    const defs = {
+      earth: {
+        title: 'Earth',
+        kicker: 'Daily life / emotional anchor',
+        summary: 'Earth loads ordinary-life story scenes, the Zhonghai visual city map, hospital support item pumping, diary/recap memories, and social scenes.',
+        features: ['Story', 'VN city map', 'Hospital', 'Diaries'],
+        bannerImage: 'images/story-mode/earth/earth-theme.webp',
+        defaultMode: 'activities',
+        defaultTab: 'worldMap',
+        openLabel: 'Open Earth Map',
+        enterLabel: 'Enter Earth',
+        devNote: 'Future buttons can add Riverside, Research Block, and Old Town without changing the renderer.'
+      },
+      haven: {
+        title: 'Haven',
+        kicker: 'Main fantasy campaign',
+        summary: 'Haven keeps the existing story, quests, Pocket Haven, and scenario/node-map flow. This does not use the new Earth/Zombie visual map style.',
+        features: ['Main story', 'Quests', 'Pocket Haven', 'Scenario maps'],
+        defaultMode: 'story',
+        defaultTab: 'storyHome',
+        openLabel: 'Open Haven Story',
+        enterLabel: 'Return to Haven'
+      },
+      zombie: {
+        title: 'Zombie World',
+        kicker: 'Scavenge / build pressure loop',
+        summary: 'Zombie world loads the Last Light visual ruined-city map, scavenging tasks, safehouse building, medical salvage, and future survival pressure events.',
+        features: ['Story', 'Ruined city map', 'Scavenge', 'Build'],
+        bannerImage: 'images/story-mode/zombie/zombie-bin-burnice-horizontal.png',
+        defaultMode: 'activities',
+        defaultTab: 'worldMap',
+        openLabel: 'Open Zombie Map',
+        enterLabel: 'Enter Zombie World',
+        devNote: 'Future areas are already stubbed: Harbor Quarantine, Farm Belt, and Military Shelter.'
+      },
+      bazaar: {
+        title: 'Bazaar',
+        kicker: 'Arena / auction testbed',
+        summary: 'Bazaar loads optional activity systems first: arena matches, auction lots, prize boards, and future economy experiments.',
+        features: ['Arena', 'Auction House', 'Prize Board', 'Rewards'],
+        bannerImage: 'images/story-mode/bazaar/bazaar-theme.png',
+        defaultMode: 'activities',
+        defaultTab: 'worldMap',
+        openLabel: 'Open Bazaar',
+        enterLabel: 'Enter Bazaar',
+        devNote: 'Use Lantern Arena and Glass Gavel House as the first test locations.'
+      }
+    };
+    return defs[worldId] || {
+      title: DS().get('worlds', worldId)?.displayName || worldId,
+      kicker: 'World content',
+      summary: 'Custom world content. Add a travel map, activity pack, or story sequence to expand this card.',
+      features: ['Custom'],
+      defaultMode: 'story',
+      defaultTab: 'storyHome'
+    };
+  }
+
+  function _modeForTab(tabId) {
+    return APP_TAB_TO_MODE[tabId] || 'story';
   }
 
   function _renderScenarioHud(state) {
@@ -1051,6 +1256,7 @@ window.CJS.CampaignUI = (() => {
 
   function _renderMain(state) {
     switch (_activeTab) {
+      case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storySummary': return _renderStorySummary(state);
       case 'questHome': return _renderQuestHome(state);
@@ -1071,6 +1277,8 @@ window.CJS.CampaignUI = (() => {
       case 'oracleForge': return _renderOracleForge(state);
       case 'inventory': return window.CJS.CampaignInventory.render();
       case 'shops': return `${window.CJS.CampaignEconomy.renderRest()}${window.CJS.CampaignEconomy.renderShops()}`;
+      case 'worldMap': return window.CJS.CampaignWorldMap?.renderTravelMap?.(state) || '<div class="campaign-panel">World map UI not loaded.</div>';
+      case 'worldActivities': return window.CJS.CampaignWorldMap?.renderActivities?.(state) || '<div class="campaign-panel">World activities UI not loaded.</div>';
       case 'craft': return window.CJS.PocketHaven.renderCraft();
       case 'cook': return window.CJS.PocketHaven.renderCook();
       case 'farm': return window.CJS.PocketHaven.renderFarm();
@@ -1222,7 +1430,83 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderQuestHome(state) {
+    if (state?.currentWorld === 'zombie') return _renderZombieScavengeHome(state);
     return _renderQuestHomeClean(state);
+  }
+
+  function _renderZombieScavengeHome(state) {
+    const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
+    const scavenge = activities.filter((activity) => activity.type === 'scavenge');
+    const build = activities.filter((activity) => activity.type === 'build');
+    const pressures = Object.values(state.crossWorld?.pressures || {})
+      .filter((pressure) => String(pressure.id || '').startsWith('zombie_'));
+    const run = state.activeScenarioRun;
+    return `
+      <div class="campaign-dashboard campaign-mode-home campaign-quest-home campaign-scavenge-home">
+        ${_renderGachaHomeHero({
+          tone: 'quest',
+          kicker: 'Scavenge',
+          title: 'Last Light Scavenge Board',
+          text: 'Zombie world does not use normal quests by default. It is built around supply routes, medical runs, safehouse projects, and pressure clocks that react to noise and infection.',
+          meta: [`${scavenge.length} supply runs`, `${build.length} build projects`, `${pressures.length} pressures`],
+          actions: [
+            _actionBtn({ action: 'open-world-content', label: 'Open Last Light Map', hint: 'Move between safehouse, mall, clinic, subway, and tower.', kind: 'primary', data: { tab: 'worldMap', mode: 'activities' } }),
+            _actionBtn({ action: 'open-world-content', label: 'Supply Activities', hint: 'Run scavenging and safehouse actions from the current location.', data: { tab: 'worldActivities', mode: 'activities' } }),
+            _actionBtn({ action: 'open-maps-tab', label: run ? 'Current Run' : 'No Combat Run', hint: run ? 'Continue the active scenario run.' : 'Zombie scavenge currently uses map activities unless a combat run is started.' })
+          ]
+        })}
+        <section class="campaign-panel campaign-wide-panel campaign-scavenge-route-panel">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Supply Routes</h2>
+              <div class="campaign-muted">These replace Earth/Bazaar-style quests: choose a location on the zombie map, then run the activity there.</div>
+            </div>
+            <span class="campaign-pill">${scavenge.length} routes</span>
+          </div>
+          <div class="campaign-tab-grid">
+            ${scavenge.map((activity) => _renderWorldActivityPreviewCard(activity, 'Scavenge route')).join('') || '<div class="campaign-empty">No scavenge routes authored yet.</div>'}
+          </div>
+        </section>
+        <section class="campaign-panel campaign-wide-panel campaign-scavenge-build-panel">
+          <div class="campaign-panel-head">
+            <div>
+              <h2>Safehouse Projects</h2>
+              <div class="campaign-muted">Build actions convert salvage into security, medicine storage, and later survivor facilities.</div>
+            </div>
+            <span class="campaign-pill">${build.length} projects</span>
+          </div>
+          <div class="campaign-tab-grid">
+            ${build.map((activity) => _renderWorldActivityPreviewCard(activity, 'Build project')).join('') || '<div class="campaign-empty">No build projects authored yet.</div>'}
+          </div>
+        </section>
+        <section class="campaign-panel">
+          <div class="campaign-panel-head">
+            <h3>Pressure Clocks</h3>
+            <span class="campaign-muted">Zombie progress should feel like survival weather.</span>
+          </div>
+          <div class="campaign-stat-grid">
+            ${pressures.length ? pressures.map((pressure) => `<span>${_esc(pressure.title || pressure.id)} <b>${Number(pressure.value || 0)}</b></span>`).join('') : '<span>No zombie pressures yet <b>0</b></span>'}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function _worldActivitiesFor(worldId) {
+    return DS().getAllAsArray('worldActivityPacks')
+      .filter((pack) => pack.world === worldId)
+      .flatMap((pack) => pack.activities || []);
+  }
+
+  function _renderWorldActivityPreviewCard(activity = {}, kicker = 'Activity') {
+    return `
+      <article class="campaign-sequence-card is-quest">
+        <div class="campaign-sequence-kind">${_esc(kicker)}</div>
+        <strong>${_esc(activity.title || activity.name || activity.id)}</strong>
+        <p>${_esc(activity.summary || activity.description || '')}</p>
+        <div class="campaign-muted">${_esc(activity.rewardText || 'No reward text yet.')}</div>
+      </article>
+    `;
   }
 
   // ── Mini-Game Test (Activities → Mini-Game Test) ──────────────────
@@ -2142,7 +2426,7 @@ window.CJS.CampaignUI = (() => {
 
   function _renderGachaHomeHero({ tone = 'story', kicker = '', title = '', text = '', meta = [], actions = [] } = {}) {
     return `
-      <section class="campaign-gacha-hero campaign-wide-panel is-${_escAttr(tone)}">
+      <section class="campaign-gacha-hero campaign-wide-panel is-${_escAttr(tone)}" ${_worldHomeHeroStyle()}>
         <div class="campaign-gacha-hero-copy">
           <div class="campaign-gacha-kicker">${_esc(kicker)}</div>
           <h2>${_esc(title)}</h2>
@@ -2363,10 +2647,13 @@ window.CJS.CampaignUI = (() => {
   function _storyTheme(state = {}) {
     const world = CS().getCurrentWorld?.() || {};
     const cfg = world.storyModeTheme || {};
+    const currentWorld = state.currentWorld || world.id || '';
     return {
       id: cfg.id || 'default',
       className: cfg.className || '',
       backdrop: cfg.backdrop || '',
+      bannerImage: cfg.bannerImage || cfg.backdrop || '',
+      bannerVideo: cfg.bannerVideo || (currentWorld === 'haven' ? 'assets/videos/story-mode/banners/3%20f%C3%ACght%20chimera_reduced.mp4' : ''),
       accent: cfg.accent || world.color || '#76d3b1',
       danger: cfg.danger || '#ef6666',
       motif: cfg.motif || world.tone || 'story',
@@ -2376,7 +2663,7 @@ window.CJS.CampaignUI = (() => {
 
   function _storyThemeStyle(theme = {}) {
     const parts = [];
-    if (theme.backdrop) parts.push(`--story-backdrop: url('${_escAttr(theme.backdrop)}')`);
+    if (theme.backdrop) parts.push(`--story-backdrop: url('${_escAttr(_cssVarAssetUrl(theme.backdrop))}')`);
     if (theme.accent) parts.push(`--story-accent: ${_escAttr(theme.accent)}`);
     if (theme.danger) parts.push(`--story-danger: ${_escAttr(theme.danger)}`);
     return parts.length ? `style="${parts.join('; ')}"` : '';
@@ -2387,11 +2674,15 @@ window.CJS.CampaignUI = (() => {
     const title = pack?.name || `${theme.worldName || 'World'} Story Mode`;
     const summary = pack?.summary || 'Story Mode is ready for this world theme, but no authored story pack is loaded yet.';
     const actions = next.actions?.length ? `<div class="campaign-story-next-actions">${next.actions.join('')}</div>` : '';
+    const video = theme.bannerVideo || '';
+    const videoMarkup = video
+      ? `<video class="campaign-story-vn-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
+          <source src="${_escAttr(video)}" type="${_escAttr(_videoTypeFromPath(video))}">
+        </video>`
+      : '';
     return `
-      <section class="campaign-story-vn-hero campaign-wide-panel has-video">
-        <video class="campaign-story-vn-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
-          <source src="assets/videos/story-mode/banners/3%20f%C3%ACght%20chimera_reduced.mp4" type="video/mp4">
-        </video>
+      <section class="campaign-story-vn-hero campaign-wide-panel ${video ? 'has-video' : ''}">
+        ${videoMarkup}
         <div class="campaign-story-vn-shade" aria-hidden="true"></div>
         <div class="campaign-story-vn-content">
           <div class="campaign-story-vn-kicker">
@@ -2413,6 +2704,13 @@ window.CJS.CampaignUI = (() => {
         </div>
       </section>
     `;
+  }
+
+  function _videoTypeFromPath(path = '') {
+    const lower = String(path).toLowerCase();
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.ogg') || lower.endsWith('.ogv')) return 'video/ogg';
+    return 'video/mp4';
   }
 
   function _renderStoryDirectorEmptyCard() {
@@ -3985,7 +4283,19 @@ window.CJS.CampaignUI = (() => {
   };
   const RAIL_ORDER = ['party', 'inventory', 'quests', 'log', 'notes'];
 
+  function _panelDefsForState(state = CS().getState()) {
+    const profile = _worldUiProfile(state?.currentWorld);
+    const hidden = new Set(profile.hiddenPanels || []);
+    const out = {};
+    for (const [id, def] of Object.entries(PANEL_DEFS)) {
+      if (hidden.has(id)) continue;
+      out[id] = { ...def, ...(profile.panelLabels?.[id] || {}) };
+    }
+    return out;
+  }
+
   function _renderCommandRail(state) {
+    const panelDefs = _panelDefsForState(state);
     const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
     const logCount = (state.log || []).length;
     const notesCount = (state.pinnedNotes || []).length;
@@ -4000,8 +4310,8 @@ window.CJS.CampaignUI = (() => {
       notes: notesCount
     };
     const currency = _currencyAmounts(state);
-    const buttons = RAIL_ORDER.map((id) => {
-      const def = PANEL_DEFS[id];
+    const buttons = RAIL_ORDER.filter((id) => panelDefs[id]).map((id) => {
+      const def = panelDefs[id];
       const active = _activePanel === id;
       const dot = counts[id] > 0 ? '<span class="campaign-rail-dot" aria-hidden="true"></span>' : '';
       return `
@@ -4033,7 +4343,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _openPanel(panelId) {
-    if (!PANEL_DEFS[panelId]) return;
+    if (!_panelDefsForState()[panelId]) return;
     if (_activePanel === panelId) {
       _closePanel();
       return;
@@ -4080,7 +4390,7 @@ window.CJS.CampaignUI = (() => {
       _tearDownDrawer();
       return;
     }
-    const def = PANEL_DEFS[_activePanel];
+    const def = _panelDefsForState(state)[_activePanel];
     if (!def) return;
 
     const activeEl = document.activeElement;
@@ -4478,6 +4788,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _renderQuestPanel(state) {
+    if (state?.currentWorld === 'zombie') return _renderZombieScavengeTracker(state);
     const quests = Object.values(state.quests || {});
     const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
     const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
@@ -4503,6 +4814,55 @@ window.CJS.CampaignUI = (() => {
         ${finished.length ? `
           <details class="campaign-resolved-quests">
             <summary>Resolved (${finished.length})</summary>
+            <div class="campaign-quest-list">${finished.map((quest) => _renderQuestRow(quest, { resolved: true })).join('')}</div>
+          </details>
+        ` : ''}
+      </section>
+    `;
+  }
+
+  function _worldHomeHeroStyle() {
+    const world = CS().getCurrentWorld?.() || {};
+    const theme = world.storyModeTheme || {};
+    const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
+    return backdrop ? `style="--campaign-home-backdrop: url('${_escAttr(_cssVarAssetUrl(backdrop))}')"` : '';
+  }
+
+  function _cssVarAssetUrl(path = '') {
+    const value = String(path || '').trim();
+    if (!value) return '';
+    if (/^(data:|https?:|\/|\.\/|\.\.)/i.test(value)) return value;
+    return `../${value}`;
+  }
+
+  function _renderZombieScavengeTracker(state) {
+    const quests = Object.values(state.quests || {});
+    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
+    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
+    const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
+    return `
+      <section class="campaign-panel campaign-scavenge-tracker">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>Scavenge Run Log</h2>
+            <div class="campaign-muted">This is the zombie-world survival tracker. Normal quest creation is hidden behind the map/activity loop.</div>
+          </div>
+          <div class="campaign-panel-actions">
+            <span class="campaign-pill">${active.length} active runs | ${finished.length} resolved</span>
+            <button class="campaign-action primary" data-campaign-action="open-world-content" data-tab="worldActivities" data-mode="activities">Open Activities</button>
+            <button class="campaign-action" data-campaign-action="open-world-content" data-tab="worldMap" data-mode="activities">Open Map</button>
+          </div>
+        </div>
+        <div class="campaign-tab-grid">
+          ${activities.map((activity) => _renderWorldActivityPreviewCard(activity, activity.type === 'build' ? 'Build project' : 'Scavenge route')).join('') || '<div class="campaign-empty">No zombie activities authored yet.</div>'}
+        </div>
+        ${active.length ? `
+          <div class="campaign-section-title">Active Legacy Runs</div>
+          <div class="campaign-quest-list">${active.map((quest) => _renderQuestRow(quest)).join('')}</div>
+        ` : ''}
+        ${finished.length ? `
+          <details class="campaign-resolved-quests">
+            <summary>Resolved legacy runs (${finished.length})</summary>
             <div class="campaign-quest-list">${finished.map((quest) => _renderQuestRow(quest, { resolved: true })).join('')}</div>
           </details>
         ` : ''}
@@ -4878,7 +5238,7 @@ window.CJS.CampaignUI = (() => {
       if (mode) {
         const id = mode.dataset.campaignMode;
         _activeMode = id;
-        const firstTab = (APP_MODE_TABS[id] || [])[0];
+        const firstTab = _tabsForMode(id, CS().getState())[0];
         if (firstTab) _activeTab = firstTab[0];
         render();
         return;
@@ -4918,7 +5278,16 @@ window.CJS.CampaignUI = (() => {
 
   function _handleAction(data) {
     switch (data.campaignAction) {
+      case 'open-world-gate': return _goto('world', 'worldGate');
+      case 'open-world-content': return _goto(data.mode || _modeForTab(data.tab), data.tab || 'worldGate');
+      case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
       case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
+      case 'world-map-travel':
+      case 'world-map-switch-map':
+      case 'world-map-interaction':
+      case 'world-map-node-action':
+      case 'world-activity-use':
+        return window.CJS.CampaignWorldMap?.handleAction?.(data);
       case 'new-save': return _newSave();
       case 'save-slot': Save().saveCurrent(); return UI().toast('Campaign saved', 'success');
       case 'fork-save': Save().forkCurrent(); return UI().toast('Campaign forked', 'success');
@@ -9853,6 +10222,8 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _travelWorld() {
+    _goto('world', 'worldGate');
+    return;
     const options = _worldOptions().filter((opt) => opt.value !== CS().getState().currentWorld);
     if (!options.length) {
       UI().toast('No other worlds available', 'info');
@@ -9886,6 +10257,72 @@ window.CJS.CampaignUI = (() => {
         proceed();
       }
     });
+  }
+
+  function _travelWorldCard(worldId, targetTab = null) {
+    if (!worldId) return;
+    if (worldId === CS().getState()?.currentWorld) {
+      const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'worldGate';
+      return _goto(_modeForTab(tab), tab);
+    }
+    const gate = _evaluateTravelRankGate(worldId);
+    if (!gate.allowed) {
+      UI().toast(gate.message, 'warn');
+      return;
+    }
+    const proceed = () => {
+      const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'storyHome';
+      if (_hasMeaningfulPersonaChoice(worldId)) {
+        _openPreTravelPersonaPicker(worldId, tab);
+      } else {
+        _completeWorldTravel(worldId, tab);
+      }
+    };
+    if (gate.softWarning) {
+      const ok = window.confirm(gate.softWarning + '\n\nTravel anyway?');
+      if (!ok) return;
+    }
+    proceed();
+  }
+
+  function _completeWorldTravel(worldId, targetTab = null, preOps = []) {
+    const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'storyHome';
+    const ops = [
+      ...preOps,
+      { op: 'world_transition', toWorld: worldId, carryoverProfile: 'carryover_new_world_default' }
+    ];
+    const landing = _defaultTravelLanding(worldId);
+    if (landing) ops.push(landing);
+    Ops().apply(ops, { source: 'world_gate' });
+    const finish = () => {
+      _activeMode = _modeForTab(tab);
+      _activeTab = tab;
+      UI()?.toast?.(`Loaded ${DS().get('worlds', worldId)?.displayName || worldId}.`, 'success');
+      render();
+    };
+    const load = window.CJS.CampaignSequences?.loadWorld?.(worldId);
+    if (load && typeof load.then === 'function') load.then(finish).catch((error) => {
+      console.warn('World story load failed:', error);
+      finish();
+    });
+    else finish();
+  }
+
+  function _defaultTravelLanding(worldId) {
+    const existing = CS().getState()?.worldProgress?.[worldId];
+    if (existing?.currentLocation && existing?.currentTravelMap) return null;
+    const map = DS().getAllAsArray('travelMaps').find((entry) => entry.world === worldId);
+    if (!map?.defaultLocationId) return null;
+    const node = (map.nodes || []).find((entry) => entry.id === map.defaultLocationId) || {};
+    return {
+      op: 'travel_location',
+      world: worldId,
+      mapId: map.id,
+      locationId: map.defaultLocationId,
+      title: node.name || map.defaultLocationId,
+      zone: node.zone || map.zone,
+      hubId: node.hubId || map.hubId
+    };
   }
 
   // Build a travel decision for a destination world by looking up its
@@ -9942,7 +10379,7 @@ window.CJS.CampaignUI = (() => {
     return false;
   }
 
-  function _openPreTravelPersonaPicker(targetWorld) {
+  function _openPreTravelPersonaPicker(targetWorld, targetTab = null) {
     const PS = window.CJS.PersonaService;
     const state = CS().getState();
     const worldName = DS().get('worlds', targetWorld)?.displayName || targetWorld;
@@ -10002,7 +10439,7 @@ window.CJS.CampaignUI = (() => {
 
     if (!memberChoices.size) {
       // Nothing meaningful after all — skip the modal.
-      Ops().apply({ op: 'world_transition', toWorld: targetWorld, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
+      _completeWorldTravel(targetWorld, targetTab || _worldMenuDef(targetWorld).defaultTab);
       return;
     }
 
@@ -10020,8 +10457,7 @@ window.CJS.CampaignUI = (() => {
           ops.push({ op: 'unlock_persona', target: id, personaId: value });
           ops.push({ op: 'set_persona', target: id, personaId: value });
         }
-        ops.push({ op: 'world_transition', toWorld: targetWorld, carryoverProfile: 'carryover_new_world_default' });
-        Ops().apply(ops, { source: 'ui' });
+        _completeWorldTravel(targetWorld, targetTab || _worldMenuDef(targetWorld).defaultTab, ops);
       }
     });
   }

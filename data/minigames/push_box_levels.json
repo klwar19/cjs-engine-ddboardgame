@@ -231,6 +231,70 @@
       "optimalMoves": 14,
       "hint": "Push each crate east. The central pillar keeps you from cutting across, so commit to one row at a time.",
       "tags": ["crate", "pantry", "multi-goal"]
+    },
+    {
+      "id": "push_12",
+      "title": "Four-Crate Loading Bay",
+      "difficulty": 4,
+      "theme": "guild_storehouse",
+      "layout": [
+        "##########",
+        "#@       #",
+        "# $ $ .. #",
+        "#        #",
+        "# $ $ .. #",
+        "#        #",
+        "#        #",
+        "##########"
+      ],
+      "solution": ["right","right","down","right","right","right","up","left","left","left","left","left","down","right","right","right","right","down","left","left","down","right","right","right","up","left","left","left","left","left","down","right","right","right","right"],
+      "optimalPushes": 14,
+      "optimalMoves": 34,
+      "hint": "Each row is a paired loading lane. Send the right crate to the far rune first, then bring the left crate behind it.",
+      "tags": ["crate", "guild", "large", "four-box", "ordering"]
+    },
+    {
+      "id": "push_13",
+      "title": "Pantry Split Routes",
+      "difficulty": 5,
+      "theme": "frostbitten_pantry",
+      "layout": [
+        "###########",
+        "#@        #",
+        "# $ $  .. #",
+        "#         #",
+        "# $ $  .. #",
+        "#         #",
+        "#         #",
+        "#         #",
+        "###########"
+      ],
+      "solution": ["right","right","down","right","right","right","right","up","left","left","left","left","left","left","down","right","right","right","right","right","down","left","left","left","down","right","right","right","right","up","left","left","left","left","left","left","down","right","right","right","right","right"],
+      "optimalPushes": 18,
+      "optimalMoves": 42,
+      "hint": "The split shelves punish crowding. Finish the upper pair before dropping to the lower aisle.",
+      "tags": ["crate", "pantry", "large", "four-box", "shelves"]
+    },
+    {
+      "id": "push_14",
+      "title": "Five-Crate Guild Vault",
+      "difficulty": 6,
+      "theme": "guild_storehouse",
+      "layout": [
+        "############",
+        "#@         #",
+        "# $ $ $ ...#",
+        "#          #",
+        "# $ $   .. #",
+        "#          #",
+        "#          #",
+        "############"
+      ],
+      "solution": ["right","right","right","right","down","right","right","right","right","up","left","left","left","left","left","left","down","right","right","right","right","right","up","left","left","left","left","left","left","left","down","right","right","right","right","right","right","down","left","left","left","left","down","right","right","right","right","right","up","left","left","left","left","left","left","left","down","right","right","right","right","right","right"],
+      "optimalPushes": 26,
+      "optimalMoves": 63,
+      "hint": "Work from right to left in each lane. The vault is wide, but blocked goals can still turn one box into a wall.",
+      "tags": ["crate", "guild", "large", "five-box", "hardest"]
     }
   ]
 }

@@ -1,0 +1,193 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "earth",
+    "category": "travelMaps",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "earth_tmap_zhonghai_v1",
+      "name": "Zhonghai District",
+      "world": "earth",
+      "zone": "earth_zon_zhonghai",
+      "defaultLocationId": "earth_loc_apartment",
+      "canvas": { "width": 760, "height": 380 },
+      "visualMode": "vn_travel",
+      "visualTheme": { "id": "earth", "mood": "warm_city_evening" },
+      "visualBackdrop": "images/story-mode/earth/earth-map.png",
+      "visualBackdropFit": "none",
+      "areaButtons": [
+        {
+          "id": "earth_area_zhonghai",
+          "label": "Zhonghai",
+          "mapId": "earth_tmap_zhonghai_v1",
+          "active": true,
+          "summary": "Current Earth slice: school, hospital, work route, apartment, and memory bookstore."
+        },
+        {
+          "id": "earth_area_riverside",
+          "label": "Riverside",
+          "status": "placeholder",
+          "summary": "Future date/social area: night market, bridge scenes, quiet confessions, and low-stakes activities."
+        },
+        {
+          "id": "earth_area_research_block",
+          "label": "Research Block",
+          "status": "placeholder",
+          "summary": "Future medical/research route for Lily, cross-world samples, and suspicious doctors."
+        },
+        {
+          "id": "earth_area_old_town",
+          "label": "Old Town",
+          "status": "placeholder",
+          "summary": "Future memory route with diaries, old classmates, and places Bin thought he outgrew."
+        }
+      ],
+      "legend": [
+        { "id": "earth_legend_home", "kind": "home", "label": "Home / daily life" },
+        { "id": "earth_legend_story", "kind": "story", "label": "Story or social scene" },
+        { "id": "earth_legend_activity", "kind": "activity", "label": "Activity source" }
+      ],
+      "visualLayers": [],
+      "nodes": [
+        {
+          "id": "earth_loc_apartment",
+          "name": "Bin's Apartment",
+          "type": "home",
+          "x": 418,
+          "y": 305,
+          "visual": { "labelWidth": 146, "labelDx": -2, "labelDy": 34 },
+          "zone": "earth_zon_zhonghai",
+          "description": "A cheap room, a tired desk, too many bills, and the place where impossible things keep becoming normal.",
+          "people": [
+            {
+              "id": "earth_meet_leo_snacks",
+              "label": "Call Leo",
+              "summary": "Leo answers with snack noise and dangerous loyalty.",
+              "ops": [
+                { "op": "bond_change", "npcId": "leo", "field": "trust", "amount": 1 },
+                { "op": "journal_entry_add", "id": "earth_journal_leo_checkin", "title": "Leo Check-in", "text": "Leo still thinks food solves most impossible problems. He is not entirely wrong.", "world": "earth", "scope": "earth" }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "id": "earth_note_private_recap",
+              "label": "Write private recap",
+              "summary": "Add a short global journal note about keeping two lives straight.",
+              "ops": [
+                { "op": "journal_entry_add", "id": "earth_journal_two_lives", "title": "Two Lives, One Calendar", "text": "Bin is trying to keep classes, delivery shifts, Lily, Haven, and cosmic nonsense from colliding in public.", "world": "earth", "scope": "global", "tags": ["recap", "earth"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "earth_loc_zhonghai_campus",
+          "name": "Zhonghai University",
+          "type": "campus",
+          "x": 178,
+          "y": 186,
+          "visual": { "labelWidth": 164, "labelDx": 0, "labelDy": 35 },
+          "zone": "earth_zon_zhonghai",
+          "description": "Campus paths, cafeteria noise, and the special kind of pressure caused by seeing someone you like near vending machines.",
+          "people": [
+            {
+              "id": "earth_meet_luna_rooftop_hint",
+              "label": "Find Luna",
+              "summary": "Luna notices Bin is different and refuses to make it easy for either of them.",
+              "ops": [
+                { "op": "bond_change", "npcId": "luna", "field": "curiosity", "amount": 1 },
+                { "op": "cross_pressure_change", "id": "earth_heat", "title": "Earth Heat", "amount": 1, "max": 12 },
+                { "op": "journal_entry_add", "id": "earth_journal_luna_notice", "title": "Luna Noticed", "text": "Luna did not ask where Bin went. She asked why his answers got quieter.", "world": "earth", "scope": "earth", "tags": ["luna"] }
+              ]
+            },
+            {
+              "id": "earth_meet_meilin_book_warning",
+              "label": "Talk with Meilin",
+              "summary": "Meilin sees through the joke before Bin finishes building it.",
+              "ops": [
+                { "op": "bond_change", "npcId": "meilin", "field": "trust", "amount": 1 },
+                { "op": "journal_entry_add", "id": "earth_journal_meilin_warning", "title": "Meilin's Look", "text": "Meilin did not say he was lying. That was worse. She just looked like she was waiting for the truth to get tired.", "world": "earth", "scope": "earth", "tags": ["meilin"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "earth_loc_hospital",
+          "name": "Municipal Hospital",
+          "type": "hospital",
+          "x": 292,
+          "y": 174,
+          "visual": { "labelWidth": 154, "labelDx": 0, "labelDy": -60 },
+          "zone": "earth_zon_zhonghai",
+          "description": "Ward lights, plastic chairs, quiet courage, and Lily pretending not to count every visit.",
+          "people": [
+            {
+              "id": "earth_meet_lily_visit",
+              "label": "Visit Lily",
+              "summary": "A normal visit that matters more than a boss fight.",
+              "ops": [
+                { "op": "bond_change", "npcId": "lily", "field": "trust", "amount": 1 },
+                { "op": "cross_milestone_set", "id": "milestone.earth.lily_visit_logged", "title": "Lily Visit Logged", "summary": "Bin made time for Lily after returning from another world." },
+                { "op": "journal_entry_add", "id": "earth_journal_lily_visit", "title": "Lily Visit", "text": "Lily asked if he was eating. Bin lied. Lily noticed. The room still felt warmer afterward.", "world": "earth", "scope": "earth", "tags": ["lily", "hospital"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "earth_loc_old_zhou_books",
+          "name": "Old Zhou's Bookstore",
+          "type": "bookstore",
+          "x": 548,
+          "y": 228,
+          "visual": { "labelWidth": 168, "labelDx": -18, "labelDy": 35 },
+          "zone": "earth_zon_zhonghai",
+          "description": "Old paper, wuxia shelves, and the uncomfortable feeling that some childhood notebooks were not imagination.",
+          "actions": [
+            {
+              "id": "earth_search_old_notebook",
+              "label": "Read old notebook",
+              "summary": "Memory recap and Haven leakage.",
+              "ops": [
+                { "op": "cross_milestone_set", "id": "milestone.earth.old_notebook_seen", "title": "Old Notebook Seen", "summary": "Bin reread drawings that may be Haven memories." },
+                { "op": "journal_entry_add", "id": "earth_journal_old_notebook", "title": "Old Notebook", "text": "Frozen trees, a guild stamp, a half-orc archer, an armored girl on an ice cliff. The notebook is starting to look less like fiction.", "world": "earth", "scope": "global", "tags": ["memory", "haven"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "earth_loc_delivery_route",
+          "name": "Evening Delivery Route",
+          "type": "street",
+          "x": 398,
+          "y": 188,
+          "visual": { "labelWidth": 176, "labelDx": 0, "labelDy": 32 },
+          "zone": "earth_zon_zhonghai",
+          "description": "Scooter lights, bad elevators, worse tips, and the fastest way for normal life to ambush Bin.",
+          "actions": [
+            {
+              "id": "earth_run_delivery_shift",
+              "label": "Run delivery shift",
+              "summary": "Earn money and risk Earth Heat.",
+              "ops": [
+                { "op": "give_money", "currency": "earth_yuan", "amount": 30 },
+                { "op": "cross_pressure_change", "id": "earth_heat", "title": "Earth Heat", "amount": 1, "max": 12 },
+                { "op": "log", "text": "Bin survived one more delivery shift and one elevator that smelled like regret." }
+              ]
+            }
+          ]
+        }
+      ],
+      "links": [
+        { "from": "earth_loc_apartment", "to": "earth_loc_zhonghai_campus", "route": "public", "time": 1 },
+        { "from": "earth_loc_zhonghai_campus", "to": "earth_loc_hospital", "route": "bus", "time": 1 },
+        { "from": "earth_loc_apartment", "to": "earth_loc_delivery_route", "route": "scooter", "time": 1 },
+        { "from": "earth_loc_delivery_route", "to": "earth_loc_old_zhou_books", "route": "street", "time": 1 },
+        { "from": "earth_loc_old_zhou_books", "to": "earth_loc_hospital", "route": "taxi", "time": 1 }
+      ]
+    }
+  ]
+}

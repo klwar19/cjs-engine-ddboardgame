@@ -14,6 +14,7 @@ window.CJS.CampaignEditor = (() => {
     ['campaigns', 'Campaigns'],
     ['scenarios', 'Scenarios'],
     ['scenarioMaps', 'Scenario Maps'],
+    ['travelMaps', 'Travel Maps'],
     ['campaignEvents', 'Event Tables'],
     ['campaignQuests', 'Quest Templates'],
     ['campaignHubs', 'Living Hubs'],
@@ -23,6 +24,7 @@ window.CJS.CampaignEditor = (() => {
     ['mapSeeds', 'Map Seeds'],
     ['oracleTables', 'Oracles'],
     ['storyDirectorPacks', 'Story Director'],
+    ['worldActivityPacks', 'World Activities'],
     ['campaignProfiles', 'Carryover'],
     ['pocketHavenRules', 'Pocket Haven']
   ];
@@ -185,6 +187,8 @@ window.CJS.CampaignEditor = (() => {
         return { id: '', name: 'New Scenario', world, mapId: '', startNode: '', randomBattleTable: [], setBattles: [], notes: '' };
       case 'scenarioMaps':
         return { id: '', name: 'New Map', world, nodes: [], links: [], notes: '' };
+      case 'travelMaps':
+        return { id: '', name: 'New Travel Map', world, defaultLocationId: '', canvas: { width: 720, height: 420 }, nodes: [], links: [], notes: '' };
       case 'campaignEvents':
         return { id: '', name: 'New Event Table', world, events: [] };
       case 'campaignQuests':
@@ -203,6 +207,8 @@ window.CJS.CampaignEditor = (() => {
         return { id: '', name: 'New Oracle Table', world, zone: '', hubId: '', defaultCanonRisk: 'green', tables: {}, prompts: [] };
       case 'storyDirectorPacks':
         return { id: '', name: 'New Story Director Pack', version: 1, world, zone: '', hubId: '', stages: [], sceneBeats: [], periInterruptions: [], memoryShards: [], pressureTicks: [], sideQuestFlow: [] };
+      case 'worldActivityPacks':
+        return { id: '', name: 'New World Activity Pack', version: 1, world, zone: '', activities: [], journalEntries: [] };
       case 'campaignProfiles':
         return { id: '', name: 'New Carryover Profile', rules: [] };
       case 'pocketHavenRules':

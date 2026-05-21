@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CJS Mini-Games</title>
-  <link rel="stylesheet" href="css/minigames.css?v=grid-regression-20260517c">
+  <link rel="stylesheet" href="css/minigames.css?v=minigame-upgrade-20260518">
 </head>
 <body class="minigame-harness">
   <div class="panel">
@@ -43,11 +43,11 @@
     </section>
   </div>
 
-  <script src="js/minigames/minigame-registry.js?v=grid-regression-20260517c"></script>
-  <script src="js/minigames/minigame-sprites.js?v=grid-regression-20260517c"></script>
-  <script src="js/minigames/mummy-maze.js?v=grid-regression-20260517c"></script>
-  <script src="js/minigames/push-box.js?v=grid-regression-20260517c"></script>
-  <script src="js/minigames/minigame-host.js?v=grid-regression-20260517c"></script>
+  <script src="js/minigames/minigame-registry.js?v=minigame-upgrade-20260518"></script>
+  <script src="js/minigames/minigame-sprites.js?v=minigame-upgrade-20260518"></script>
+  <script src="js/minigames/mummy-maze.js?v=minigame-upgrade-20260518"></script>
+  <script src="js/minigames/push-box.js?v=minigame-upgrade-20260518"></script>
+  <script src="js/minigames/minigame-host.js?v=minigame-upgrade-20260518"></script>
 
   <script>
   (() => {
@@ -87,6 +87,7 @@
       const levels = await loadLevels(gameId);
       gridEl.innerHTML = '';
       for (const lvl of levels) {
+        const size = levelSize(lvl);
         const card = document.createElement('div');
         card.className = 'level-card';
         card.innerHTML = `
@@ -94,7 +95,7 @@
             <h3>${escapeHtml(lvl.title)}</h3>
             <span>D${escapeHtml(lvl.difficulty)}</span>
           </div>
-          <span class="meta">${lvl.width}x${lvl.height} - ${lvl.tags ? lvl.tags.join(', ') : ''}</span>
+          <span class="meta">${size.width}x${size.height} - ${lvl.tags ? lvl.tags.join(', ') : ''}</span>
           <p class="level-hint">${escapeHtml(lvl.hint || '')}</p>
         `;
         const playBtn = document.createElement('button');
@@ -107,6 +108,36 @@
 
     function escapeHtml(s) {
       return String(s || '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    function levelSize(level) {
+      if (Array.isArray(level.layout)) {
+        return {
+          width: level.width || Math.max(...level.layout.map((row) => String(row).length)),
+          height: level.height || level.layout.length
+        };
+      }
+      return { width: level.width || 0, height: level.height || 0 };
+    }
+
+    function layoutHas(level, chars) {
+      if (!Array.isArray(level.layout)) return false;
+      return level.layout.some((row) => chars.some((ch) => String(row).includes(ch)));
+    }
+
+    function pushCounts(level) {
+      if (!Array.isArray(level.layout)) {
+        return { boxes: (level.boxes || []).length, goals: (level.goals || []).length };
+      }
+      let boxes = 0;
+      let goals = 0;
+      for (const row of level.layout) {
+        for (const ch of String(row)) {
+          if (ch === '$' || ch === '*') boxes += 1;
+          if (ch === '.' || ch === '*' || ch === '+') goals += 1;
+        }
+      }
+      return { boxes, goals };
     }
 
     async function launch(gameId, levelId) {
@@ -163,16 +194,17 @@
         }
 
         for (const lvl of mummyLevels) {
-          assert(Array.isArray(lvl.player) && lvl.player.length === 2, `${lvl.id}: has player`);
-          assert(Array.isArray(lvl.exit) && lvl.exit.length === 2, `${lvl.id}: has exit`);
-          const result = simulateInline('mummy_maze', lvl, 140);
+          assert((Array.isArray(lvl.player) && lvl.player.length === 2) || layoutHas(lvl, ['@']), `${lvl.id}: has player`);
+          assert((Array.isArray(lvl.exit) && lvl.exit.length === 2) || layoutHas(lvl, ['E']), `${lvl.id}: has exit`);
+          const result = simulateInline('mummy_maze', lvl, 260);
           assert(result.status === 'win', `${lvl.id}: solver can clear (${result.status}, ${result.steps} turns)`);
         }
         for (const lvl of pushLevels) {
-          assert(Array.isArray(lvl.player) && lvl.player.length === 2, `${lvl.id}: has player`);
-          assert((lvl.boxes || []).length === (lvl.goals || []).length, `${lvl.id}: box/goal counts match`);
-          assert((lvl.goals || []).length >= 1, `${lvl.id}: at least 1 goal`);
-          const result = simulateInline('push_box', lvl, 180);
+          const counts = pushCounts(lvl);
+          assert((Array.isArray(lvl.player) && lvl.player.length === 2) || layoutHas(lvl, ['@', '+']), `${lvl.id}: has player`);
+          assert(counts.boxes === counts.goals, `${lvl.id}: box/goal counts match`);
+          assert(counts.goals >= 1, `${lvl.id}: at least 1 goal`);
+          const result = simulateInline('push_box', lvl, 380);
           assert(result.status === 'win', `${lvl.id}: solver can clear (${result.status}, ${result.steps} moves)`);
         }
 

@@ -251,6 +251,68 @@
       "optimalTurns": 20,
       "hint": "A horizontal speedster and a vertical bouncer flank the middle aisle. The trap covers the obvious midline — go around at row 5 or row 1.",
       "tags": ["tomb", "twin", "trap", "hardest"]
+    },
+    {
+      "id": "mummy_12",
+      "title": "Obelisk Loop",
+      "difficulty": 4,
+      "theme": "tomb",
+      "layout": [
+        "#########",
+        "#@    #E#",
+        "# ### # #",
+        "#   #   #",
+        "### # ###",
+        "#   #   #",
+        "# # ### #",
+        "#m#   V #",
+        "#########"
+      ],
+      "optimalTurns": 10,
+      "hint": "The slow mummy crawls up the left shaft while the red-priority one cuts vertically. Let the center walls split their routes before taking the top exit.",
+      "tags": ["tomb", "large", "twin", "priority"]
+    },
+    {
+      "id": "mummy_13",
+      "title": "Scarab Gatehouse",
+      "difficulty": 5,
+      "theme": "tomb",
+      "layout": [
+        "##########",
+        "#@   #  E#",
+        "# ## # # #",
+        "# K#   # #",
+        "# ## ### #",
+        "#    G   #",
+        "# ## ### #",
+        "# m    M #",
+        "##########"
+      ],
+      "optimalTurns": 16,
+      "hint": "Collect the scarab key before you cross the gatehouse. The lower mummy can also trigger the key if you lure too slowly.",
+      "tags": ["tomb", "large", "key", "gate", "two-speed"]
+    },
+    {
+      "id": "mummy_14",
+      "title": "Collision Hall",
+      "difficulty": 6,
+      "theme": "tomb",
+      "layout": [
+        "###########",
+        "#@      GE#",
+        "# ### ### #",
+        "# #       #",
+        "# # ### # #",
+        "#   K # # #",
+        "### # # # #",
+        "# m #   v #",
+        "#   T     #",
+        "###########"
+      ],
+      "maxSolverDepth": 72,
+      "optimalTurns": 8,
+      "hint": "The exit gate is shut, but guardians can trip scarab switches too. Sprint the top hall while the lower mummy opens the way.",
+      "tags": ["tomb", "large", "key", "gate", "switch-bait", "hardest"]
     }
   ]
 }

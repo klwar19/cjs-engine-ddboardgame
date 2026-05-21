@@ -19,17 +19,66 @@
     up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0]
   };
 
+  const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+  function normalizePushLevel(raw) {
+    if (!raw?.layout) return raw;
+    const layout = raw.layout.map((row) => String(row));
+    const width = raw.width || layout.reduce((max, row) => Math.max(max, row.length), 0);
+    const height = raw.height || layout.length;
+    const parsed = { walls: [], boxes: [], goals: [], player: null };
+    for (let y = 0; y < height; y++) {
+      const row = layout[y] || '';
+      for (let x = 0; x < width; x++) {
+        const ch = row[x] || ' ';
+        if (ch === '#') parsed.walls.push([x, y]);
+        if (ch === '@' || ch === '+') parsed.player = [x, y];
+        if (ch === '$' || ch === '*') parsed.boxes.push([x, y]);
+        if (ch === '.' || ch === '*' || ch === '+') parsed.goals.push([x, y]);
+      }
+    }
+    return {
+      ...raw,
+      width,
+      height,
+      player: raw.player || parsed.player || [1, 1],
+      boxes: mergeCells(parsed.boxes, raw.boxes),
+      goals: mergeCells(parsed.goals, raw.goals),
+      walls: mergeCells(parsed.walls, raw.walls)
+    };
+  }
+
+  function mergeCells(a = [], b = []) {
+    const seen = new Set();
+    const out = [];
+    for (const cell of [...a, ...b]) {
+      if (!Array.isArray(cell) || cell.length < 2) continue;
+      const key = `${cell[0]},${cell[1]}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push([cell[0], cell[1]]);
+    }
+    return out;
+  }
+
   function createPushBox({ canvas, stage, level, options, onUpdate, onComplete }) {
+    level = normalizePushLevel(level);
     const ctx = canvas.getContext('2d');
     const state = freshState(level);
     const history = [];
+    let mounted = false;
     let resizeObserver = null;
     let solveCache = null;
+    let motion = null;
+    let animationFrame = null;
+    const moveAnimMs = 150;
 
     function freshState(lvl) {
       return {
         player: [lvl.player[0], lvl.player[1]],
         boxes: (lvl.boxes || []).map((b) => [b[0], b[1]]),
+        playerDir: 'down',
+        animTick: 0,
         moves: 0,
         pushes: 0,
         hintsUsed: 0,
@@ -51,12 +100,23 @@
     }
 
     function snapshot(s) {
-      return { player: [s.player[0], s.player[1]], boxes: s.boxes.map((b) => [b[0], b[1]]), moves: s.moves, pushes: s.pushes, hintsUsed: s.hintsUsed, status: s.status };
+      return {
+        player: [s.player[0], s.player[1]],
+        boxes: s.boxes.map((b) => [b[0], b[1]]),
+        playerDir: s.playerDir || 'down',
+        animTick: s.animTick || 0,
+        moves: s.moves,
+        pushes: s.pushes,
+        hintsUsed: s.hintsUsed,
+        status: s.status
+      };
     }
 
     function restore(s, snap) {
       s.player = [snap.player[0], snap.player[1]];
       s.boxes = snap.boxes.map((b) => [b[0], b[1]]);
+      s.playerDir = snap.playerDir || 'down';
+      s.animTick = snap.animTick || 0;
       s.moves = snap.moves;
       s.pushes = snap.pushes;
       s.hintsUsed = snap.hintsUsed;
@@ -76,6 +136,7 @@
       const nx = s.player[0] + dx;
       const ny = s.player[1] + dy;
       if (isWallTile(nx, ny)) return false;
+      s.playerDir = dir;
       const bIdx = boxAt(s, nx, ny);
       if (bIdx >= 0) {
         const bx = nx + dx;
@@ -87,6 +148,7 @@
       }
       s.player = [nx, ny];
       s.moves += 1;
+      s.animTick = (s.animTick || 0) + 1;
       if (isWin(s)) s.status = 'win';
       return true;
     }
@@ -145,10 +207,14 @@
       if (state.status !== 'play') return;
       if (!DIRS[action]) return;
       const snap = snapshot(state);
+      const beforePlayer = [state.player[0], state.player[1]];
+      const beforeBoxes = state.boxes.map((b) => [b[0], b[1]]);
       if (!step(state, action)) return;
+      beginMotion(action, beforePlayer, beforeBoxes);
       history.push(snap);
       solveCache = null;
       render();
+      requestAnimation();
       onUpdate?.({ turns: state.moves, hintsUsed: state.hintsUsed, statusLabel: statusLabel() });
       if (state.status !== 'play') finalize();
     }
@@ -173,6 +239,7 @@
       const snap = history.pop();
       restore(state, snap);
       solveCache = null;
+      motion = null;
       render();
       onUpdate?.({ turns: state.moves, hintsUsed: state.hintsUsed, statusLabel: statusLabel() });
     }
@@ -181,6 +248,7 @@
       Object.assign(state, freshState(level));
       history.length = 0;
       solveCache = null;
+      motion = null;
       render();
       onUpdate?.({ turns: 0, hintsUsed: 0, statusLabel: 'In play' });
     }
@@ -216,6 +284,11 @@
     }
 
     function solveNext(fromState) {
+      const scripted = level.solution?.[fromState.moves || 0];
+      if (scripted && DIRS[scripted]) {
+        const check = snapshot(fromState);
+        if (step(check, scripted)) return scripted;
+      }
       if (solveCache?.fromKey === pushBoxKey(fromState)) return solveCache.action;
       const start = snapshot(fromState);
       const startKey = pushBoxKey(start);
@@ -247,48 +320,101 @@
       return null;
     }
 
+    function beginMotion(action, beforePlayer, beforeBoxes) {
+      const movedBoxIndex = state.boxes.findIndex((box, idx) => {
+        const prev = beforeBoxes[idx];
+        return prev && (prev[0] !== box[0] || prev[1] !== box[1]);
+      });
+      motion = {
+        dir: action,
+        started: performance.now(),
+        playerFrom: beforePlayer,
+        playerTo: [state.player[0], state.player[1]],
+        boxIndex: movedBoxIndex,
+        boxFrom: movedBoxIndex >= 0 ? beforeBoxes[movedBoxIndex] : null,
+        boxTo: movedBoxIndex >= 0 ? [state.boxes[movedBoxIndex][0], state.boxes[movedBoxIndex][1]] : null
+      };
+    }
+
+    function motionProgress() {
+      if (!motion) return 1;
+      const t = Math.min(1, (performance.now() - motion.started) / moveAnimMs);
+      if (t >= 1) motion = null;
+      return easeOut(t);
+    }
+
+    function isMotionActive() {
+      return !!motion && performance.now() - motion.started < moveAnimMs;
+    }
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function lerpCell(from, to, t) {
+      if (!from || !to) return to || from || [0, 0];
+      return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+    }
+
+    function requestAnimation() {
+      if (!mounted || animationFrame) return;
+      animationFrame = requestAnimationFrame(function tick() {
+        animationFrame = null;
+        render();
+        if (isMotionActive()) requestAnimation();
+      });
+    }
+
     let tilePx = 48;
     function computeTileSize() {
       const rect = stage.getBoundingClientRect();
       const usableW = Math.max(160, (rect.width || 320) - 16);
       const usableH = Math.max(160, (rect.height || 320) - 16);
       const px = Math.floor(Math.min(usableW / level.width, usableH / level.height));
-      tilePx = Math.max(24, Math.min(64, px));
-      canvas.width = tilePx * level.width;
-      canvas.height = tilePx * level.height;
+      tilePx = Math.max(22, Math.min(64, px));
+      const nextW = tilePx * level.width;
+      const nextH = tilePx * level.height;
+      if (canvas.width !== nextW) canvas.width = nextW;
+      if (canvas.height !== nextH) canvas.height = nextH;
     }
 
     const COLORS = {
-      floor: '#1f1b16',
-      floorAlt: '#2a241c',
-      wall: '#4a3c28',
-      wallTop: '#6e573a',
-      goal: '#7c5cff',
+      floor: '#1b211c',
+      floorAlt: '#20281f',
+      wall: '#4c4131',
+      wallTop: '#7b694d',
+      goal: '#8fe3ff',
       box: '#a5763d',
-      boxOnGoal: '#7cc77a',
+      boxOnGoal: '#86d88d',
       player: '#5fb0ff',
       deadlock: '#c14848'
     };
 
     let sprites = null;
     (window.CJS?.MinigameSprites?.get?.('push_box') || Promise.resolve(null))
-      .then((api) => { sprites = api; render(); })
+      .then((api) => { sprites = api; render(); requestAnimation(); })
       .catch(() => { sprites = null; });
 
     function render() {
       computeTileSize();
       const w = level.width, h = level.height;
+      const progress = motionProgress();
+      drawBoardBackplate();
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) drawTile(x, y);
       }
       for (const g of (level.goals || [])) drawGoal(g[0], g[1]);
       const dead = deadlockBoxes(state);
-      for (const b of state.boxes) {
+      for (let i = 0; i < state.boxes.length; i++) {
+        const b = state.boxes[i];
+        const drawPos = motion?.boxIndex === i ? lerpCell(motion.boxFrom, motion.boxTo, progress) : b;
         const onGoal = isGoal(b[0], b[1]);
         const isDead = dead.some((d) => d[0] === b[0] && d[1] === b[1]);
-        drawBox(b[0], b[1], onGoal, isDead);
+        drawBox(drawPos[0], drawPos[1], onGoal, isDead);
       }
-      drawPlayer(state.player[0], state.player[1]);
+      const playerPos = motion ? lerpCell(motion.playerFrom, motion.playerTo, progress) : state.player;
+      drawPlayer(playerPos[0], playerPos[1], progress);
+      drawBoardVignette();
     }
 
     function drawSpriteOrFallback(name, x, y, fallback) {
@@ -298,9 +424,28 @@
       return false;
     }
 
+    function drawBoardBackplate() {
+      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, '#121713');
+      grad.addColorStop(0.5, '#1d2119');
+      grad.addColorStop(1, '#0d1311');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawBoardVignette() {
+      const cx = canvas.width * 0.5;
+      const cy = canvas.height * 0.48;
+      const grad = ctx.createRadialGradient(cx, cy, tilePx * 1.2, cx, cy, Math.max(canvas.width, canvas.height) * 0.7);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.38)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
     function drawTile(x, y) {
       if (isWallTile(x, y)) {
-        drawSpriteOrFallback('wall', x, y, (px, py) => {
+        const used = drawSpriteOrFallback('wall', x, y, (px, py) => {
           ctx.fillStyle = COLORS.wall;
           ctx.fillRect(px, py, tilePx, tilePx);
           ctx.fillStyle = COLORS.wallTop;
@@ -308,41 +453,84 @@
           ctx.strokeStyle = '#1a160d';
           ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
         });
+        const px = x * tilePx, py = y * tilePx;
+        if (used) {
+          ctx.fillStyle = 'rgba(255,246,196,0.08)';
+          ctx.fillRect(px + 2, py + 2, tilePx - 4, Math.max(2, tilePx * 0.16));
+        }
+        ctx.strokeStyle = 'rgba(10,12,10,0.62)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
       } else {
-        drawSpriteOrFallback('floor', x, y, (px, py) => {
+        const used = drawSpriteOrFallback('floor', x, y, (px, py) => {
           ctx.fillStyle = (x + y) % 2 === 0 ? COLORS.floor : COLORS.floorAlt;
           ctx.fillRect(px, py, tilePx, tilePx);
           ctx.strokeStyle = 'rgba(255,255,255,0.04)';
           ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
         });
+        const px = x * tilePx, py = y * tilePx;
+        if (used) {
+          ctx.fillStyle = (x + y) % 2 === 0 ? 'rgba(38,58,48,0.22)' : 'rgba(91,72,43,0.12)';
+          ctx.fillRect(px, py, tilePx, tilePx);
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+        ctx.strokeRect(px + 0.5, py + 0.5, tilePx - 1, tilePx - 1);
+        if ((x * 17 + y * 11) % 5 === 0) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+          ctx.beginPath();
+          ctx.moveTo(px + tilePx * 0.24, py + tilePx * 0.68);
+          ctx.lineTo(px + tilePx * 0.44, py + tilePx * 0.58);
+          ctx.lineTo(px + tilePx * 0.66, py + tilePx * 0.65);
+          ctx.stroke();
+        }
       }
     }
 
     function drawGoal(x, y) {
       const px = x * tilePx, py = y * tilePx;
+      const cx = px + tilePx / 2, cy = py + tilePx / 2;
+      const glow = ctx.createRadialGradient(cx, cy, tilePx * 0.08, cx, cy, tilePx * 0.48);
+      glow.addColorStop(0, 'rgba(143,227,255,0.34)');
+      glow.addColorStop(0.72, 'rgba(143,227,255,0.08)');
+      glow.addColorStop(1, 'rgba(143,227,255,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(px, py, tilePx, tilePx);
       if (sprites?.has?.('goal')) {
         const inset = Math.floor(tilePx * 0.25);
         sprites.draw(ctx, 'goal', px + inset, py + inset, tilePx - inset * 2, tilePx - inset * 2);
-        return;
+      } else {
+        ctx.strokeStyle = COLORS.goal;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, tilePx * 0.28, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - tilePx * 0.18, cy);
+        ctx.lineTo(cx + tilePx * 0.18, cy);
+        ctx.moveTo(cx, cy - tilePx * 0.18);
+        ctx.lineTo(cx, cy + tilePx * 0.18);
+        ctx.stroke();
       }
-      const cx = px + tilePx / 2, cy = py + tilePx / 2;
-      ctx.strokeStyle = COLORS.goal;
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(143,227,255,0.55)';
+      ctx.lineWidth = Math.max(1, tilePx * 0.035);
       ctx.beginPath();
-      ctx.arc(cx, cy, tilePx * 0.28, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx - tilePx * 0.18, cy);
-      ctx.lineTo(cx + tilePx * 0.18, cy);
-      ctx.moveTo(cx, cy - tilePx * 0.18);
-      ctx.lineTo(cx, cy + tilePx * 0.18);
+      ctx.arc(cx, cy, tilePx * 0.35, 0, Math.PI * 2);
       ctx.stroke();
     }
 
     function drawBox(x, y, onGoal, isDead) {
       const px = x * tilePx, py = y * tilePx;
       const spriteName = onGoal ? 'crate_on_goal' : 'crate';
+      ctx.fillStyle = 'rgba(0,0,0,0.34)';
+      ctx.beginPath();
+      ctx.ellipse(px + tilePx * 0.52, py + tilePx * 0.8, tilePx * 0.36, tilePx * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
       if (sprites?.has?.(spriteName) && sprites.draw(ctx, spriteName, px, py, tilePx, tilePx)) {
+        if (onGoal) {
+          ctx.strokeStyle = 'rgba(134,216,141,0.95)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px + 3, py + 3, tilePx - 6, tilePx - 6);
+        }
         if (isDead && !onGoal) {
           ctx.strokeStyle = COLORS.deadlock;
           ctx.lineWidth = 2;
@@ -364,8 +552,16 @@
       ctx.stroke();
     }
 
-    function drawPlayer(x, y) {
-      drawSpriteOrFallback('player', x, y, (px, py) => {
+    function drawPlayer(x, y, progress) {
+      const dir = state.playerDir || 'down';
+      const frame = motion ? Math.min(3, Math.floor(progress * 4)) : 0;
+      const spriteName = `player_${dir}_${frame}`;
+      const px = x * tilePx, py = y * tilePx;
+      ctx.fillStyle = 'rgba(0,0,0,0.36)';
+      ctx.beginPath();
+      ctx.ellipse(px + tilePx * 0.5, py + tilePx * 0.84, tilePx * 0.26, tilePx * 0.09, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const drawn = drawSpriteOrFallback(spriteName, x, y, (fx, fy) => {
         const cx = px + tilePx / 2, cy = py + tilePx / 2;
         ctx.fillStyle = COLORS.player;
         ctx.beginPath();
@@ -376,9 +572,16 @@
         ctx.fillRect(px + tilePx * 0.32, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
         ctx.fillRect(px + tilePx * 0.56, py + tilePx * 0.62, tilePx * 0.12, tilePx * 0.18);
       });
+      if (!drawn) return;
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(px + tilePx * 0.5, py + tilePx * 0.54, tilePx * 0.34, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     function mount() {
+      mounted = true;
       stage.classList.add('minigame-stage--push');
       computeTileSize();
       render();
@@ -389,6 +592,11 @@
     }
 
     function unmount() {
+      mounted = false;
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
       try { resizeObserver?.disconnect(); } catch (_) {}
       stage.classList.remove('minigame-stage--push');
     }

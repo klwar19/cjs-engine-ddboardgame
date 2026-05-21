@@ -1,0 +1,89 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "zombie",
+    "category": "worldActivityPacks",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "zombie_wap_safehouse_v1",
+      "name": "Last Light Safehouse Activity Pack",
+      "version": 1,
+      "world": "zombie",
+      "zone": "zombie_zon_last_light",
+      "activities": [
+        {
+          "id": "zombie_act_mall_scavenge",
+          "type": "scavenge",
+          "title": "Mall Shelf Sweep",
+          "locationIds": ["zombie_loc_mall_district"],
+          "summary": "Search the safer shops for food, batteries, and trouble that has not stood up yet.",
+          "buttonLabel": "Scavenge",
+          "rewardText": "materials + food, noise +1",
+          "ops": [
+            { "op": "give_material", "id": "zombie_scrap", "qty": 2 },
+            { "op": "give_food", "id": "zombie_canned_food", "qty": 1 },
+            { "op": "cross_pressure_change", "id": "zombie_noise", "title": "Zombie Noise", "amount": 1, "max": 12 },
+            { "op": "cross_milestone_set", "id": "milestone.zombie.first_scavenge", "title": "First Scavenge", "summary": "Bin completed a practical supply run in Last Light." }
+          ]
+        },
+        {
+          "id": "zombie_act_clinic_medical_run",
+          "type": "scavenge",
+          "title": "Clinic Medicine Run",
+          "locationIds": ["zombie_loc_clinic_block"],
+          "summary": "Search the clinic for sterile supplies and strange treatment gel.",
+          "buttonLabel": "Search Clinic",
+          "rewardText": "zombie_med_gel +1, infection pressure +1",
+          "ops": [
+            { "op": "cross_import_add", "bucket": "materials", "id": "zombie_med_gel", "qty": 1 },
+            { "op": "give_material", "id": "zombie_sterile_wrap", "qty": 1 },
+            { "op": "cross_pressure_change", "id": "zombie_infection", "title": "Infection Pressure", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "zombie_journal_clinic_run", "title": "Clinic Medicine Run", "text": "The clinic shelves were half-empty. The useful half still felt like stealing from a world that could not object.", "world": "zombie", "scope": "zombie", "tags": ["medical"] }
+          ]
+        },
+        {
+          "id": "zombie_act_build_barricade",
+          "type": "build",
+          "title": "Build Barricade",
+          "locationIds": ["zombie_loc_safehouse"],
+          "summary": "Turn scrap into a stronger safehouse door.",
+          "buttonLabel": "Build",
+          "cost": { "materials": { "zombie_scrap": 3 } },
+          "rewardText": "Safehouse security +1, noise -1",
+          "ops": [
+            { "op": "cross_pressure_change", "id": "zombie_noise", "title": "Zombie Noise", "amount": -1, "min": 0, "max": 12 },
+            { "op": "cross_milestone_set", "id": "milestone.zombie.barricade_built", "title": "Barricade Built", "summary": "The Last Light safehouse has its first real defensive upgrade." }
+          ]
+        },
+        {
+          "id": "zombie_act_build_infirmary",
+          "type": "build",
+          "title": "Build Infirmary Corner",
+          "locationIds": ["zombie_loc_safehouse"],
+          "summary": "Use sterile wraps and scrap to make a small medical station.",
+          "buttonLabel": "Build",
+          "cost": { "materials": { "zombie_scrap": 2, "zombie_sterile_wrap": 1 } },
+          "rewardText": "Unlocks Earth med-gel analysis path",
+          "ops": [
+            { "op": "cross_milestone_set", "id": "milestone.zombie.infirmary_corner_built", "title": "Infirmary Corner Built", "summary": "The safehouse can now preserve medical salvage safely." },
+            { "op": "journal_entry_add", "id": "zombie_journal_infirmary_corner", "title": "Infirmary Corner", "text": "It is not much. A cot, a clean box, and the shared agreement to call it a medical station until reality catches up.", "world": "zombie", "scope": "zombie", "tags": ["build"] }
+          ]
+        }
+      ],
+      "journalEntries": [
+        {
+          "id": "zombie_journal_first_city_slice",
+          "title": "Last Light Notes",
+          "text": "Zombie world is an expedition loop: travel, scavenge, build, and decide who gets carried by limited resources.",
+          "world": "zombie",
+          "scope": "recap",
+          "tags": ["recap"]
+        }
+      ]
+    }
+  ]
+}

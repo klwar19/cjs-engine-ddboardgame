@@ -1,0 +1,111 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "bazaar",
+    "category": "worldActivityPacks",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "bazaar_wap_arena_auction_v1",
+      "name": "Bazaar Arena and Auction Test Pack",
+      "version": 1,
+      "world": "bazaar",
+      "zone": "bazaar_zon_central_ring",
+      "activities": [
+        {
+          "id": "bazaar_act_arena_seed_match",
+          "type": "arena",
+          "title": "Seeded Exhibition Match",
+          "locationIds": ["bazaar_loc_arena_ring"],
+          "summary": "A safe arena test: short fight, loud crowd, small payout, and a reputation hook for later systems.",
+          "buttonLabel": "Enter Match",
+          "rewardText": "bazaar_gold +25, Bazaar Renown +1",
+          "conditions": { "requiresMilestones": ["milestone.bazaar.arena_registered"] },
+          "ops": [
+            { "op": "give_money", "currency": "bazaar_gold", "amount": 25 },
+            { "op": "cross_pressure_change", "id": "bazaar_renown", "title": "Bazaar Renown", "amount": 1, "max": 12 },
+            { "op": "cross_milestone_set", "id": "milestone.bazaar.first_arena_match", "title": "First Bazaar Match", "summary": "Bin completed a controlled arena exhibition." },
+            { "op": "journal_entry_add", "id": "bazaar_journal_seed_match", "title": "Seeded Exhibition Match", "text": "The crowd booed politely when Bin blocked too much. Apparently survival is less fashionable than spinning.", "world": "bazaar", "scope": "bazaar", "tags": ["arena"] }
+          ]
+        },
+        {
+          "id": "bazaar_act_arena_haven_style_showcase",
+          "type": "arena",
+          "title": "Haven-Style Showcase",
+          "locationIds": ["bazaar_loc_arena_ring"],
+          "summary": "An exhibition that only appears after Haven proves Bin has a story worth advertising.",
+          "buttonLabel": "Showcase",
+          "rewardText": "bazaar_gold +40, Bazaar Renown +2, Bazaar Debt +1",
+          "conditions": { "requiresMilestones": ["milestone.haven.arc1_complete"] },
+          "ops": [
+            { "op": "give_money", "currency": "bazaar_gold", "amount": 40 },
+            { "op": "cross_pressure_change", "id": "bazaar_renown", "title": "Bazaar Renown", "amount": 2, "max": 12 },
+            { "op": "cross_pressure_change", "id": "bazaar_debt", "title": "Bazaar Debt", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "bazaar_journal_haven_showcase", "title": "Haven-Style Showcase", "text": "The announcer called Haven a brand. Bin made a note to never let the announcer meet anyone from Haven.", "world": "bazaar", "scope": "global", "tags": ["arena", "haven"] }
+          ]
+        },
+        {
+          "id": "bazaar_act_auction_small_lot",
+          "type": "auction",
+          "title": "Small Mystery Lot",
+          "locationIds": ["bazaar_loc_auction_house"],
+          "summary": "Spend arena winnings on a cheap sealed lot. Mostly safe. Mostly.",
+          "buttonLabel": "Bid",
+          "cost": { "currencies": { "bazaar_gold": 15 } },
+          "rewardText": "mystery item +1, Bazaar Debt +1",
+          "ops": [
+            { "op": "give_item", "id": "bazaar_mystery_lot", "qty": 1 },
+            { "op": "cross_pressure_change", "id": "bazaar_debt", "title": "Bazaar Debt", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "bazaar_journal_small_lot", "title": "Small Mystery Lot", "text": "The lot rattled once after purchase. Everyone pretended that was normal. Bin hated how quickly he believed them.", "world": "bazaar", "scope": "bazaar", "tags": ["auction"] }
+          ]
+        },
+        {
+          "id": "bazaar_act_auction_zombie_med_lot",
+          "type": "auction",
+          "title": "Pre-Collapse Medical Lot",
+          "locationIds": ["bazaar_loc_auction_house"],
+          "summary": "A special auction lot unlocked by Zombie world scavenging. It can feed Earth hospital routes later.",
+          "buttonLabel": "Bid",
+          "cost": { "currencies": { "bazaar_gold": 25 } },
+          "conditions": { "requiresMilestones": ["milestone.zombie.first_scavenge"] },
+          "rewardText": "zombie_med_gel +1, global medical route note",
+          "ops": [
+            { "op": "cross_import_add", "bucket": "materials", "id": "zombie_med_gel", "qty": 1 },
+            { "op": "cross_milestone_set", "id": "milestone.bazaar.medical_lot_bought", "title": "Medical Lot Bought", "summary": "The Bazaar can trade in Zombie-world medical salvage." },
+            { "op": "journal_entry_add", "id": "bazaar_journal_medical_lot", "title": "Pre-Collapse Medical Lot", "text": "The label was in three languages and one of them was panic. Useful panic, at least.", "world": "bazaar", "scope": "global", "tags": ["auction", "zombie", "earth"] }
+          ]
+        },
+        {
+          "id": "bazaar_act_contract_recap_board",
+          "type": "journal",
+          "title": "Prize Board Recap",
+          "locationIds": ["bazaar_loc_contract_annex"],
+          "summary": "Read Bazaar's compact recap of what other worlds have made possible for arena, auctions, and trade.",
+          "conditions": {
+            "any": [
+              { "requiresMilestones": ["milestone.haven.arc1_complete"] },
+              { "requiresMilestones": ["milestone.zombie.first_scavenge"] },
+              { "requiresMilestones": ["milestone.earth.old_notebook_seen"] }
+            ]
+          },
+          "ops": [
+            { "op": "journal_entry_add", "id": "bazaar_journal_contract_recap", "title": "Prize Board Recap", "text": "The Bazaar does not care which world a consequence came from. It only cares whether the consequence can become a match, a lot, or a trade.", "world": "bazaar", "scope": "global", "tags": ["recap", "cross_world"] }
+          ]
+        }
+      ],
+      "journalEntries": [
+        {
+          "id": "bazaar_journal_first_visit",
+          "title": "First Bazaar Visit",
+          "text": "Bazaar is the testbed for optional loops: arena for repeatable risk/reward, auction for cross-world item sinks, and prize boards for future activities.",
+          "world": "bazaar",
+          "scope": "recap",
+          "tags": ["recap", "bazaar"]
+        }
+      ]
+    }
+  ]
+}

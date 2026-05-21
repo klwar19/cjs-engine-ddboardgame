@@ -1,17 +1,17 @@
 {
-  "version": 1,
-  "note": "Logical-name → sprite-rect map for CJS mini-games. Edit this file (or call window.CJS.Minigames.useSpriteMap with a new map) to reskin the games without touching JS. Sprites listed under 'procedural' are drawn by the game's canvas fallback.",
+  "version": 2,
+  "note": "Logical-name to sprite-rect map for CJS mini-games. Edit this file or call window.CJS.Minigames.useSpriteMap with a new map to reskin the games without touching JS. Sprites listed under procedural are drawn by each game's canvas fallback.",
   "sheets": {
     "dungeon": {
       "src": "assets/minigames/dungeon_sheet.png",
       "tileSize": 16,
       "cols": 12,
       "rows": 11,
-      "credit": "Tiny Dungeon by Kenney (kenney.nl) — CC0"
+      "credit": "Tiny Dungeon by Kenney (kenney.nl) - CC0"
     },
     "sokoban": {
       "src": "assets/minigames/sokoban_sheet.png",
-      "credit": "Sokoban Pack by Kenney (kenney.nl) — CC0"
+      "credit": "Sokoban Pack by Kenney (kenney.nl) - CC0"
     },
     "bin_sprite": {
       "src": "images/characters/bin_sprite.png",
@@ -29,26 +29,74 @@
   "mummy_maze": {
     "sheet": "dungeon",
     "sprites": {
-      "floor":     { "tile": 48 },
+      "floor": { "tile": 48 },
       "floor_alt": { "tile": 49 },
-      "wall":      { "tile": 14 },
-      "exit":      { "tile":  7 },
-      "gate":      { "tile": 45 },
-      "player":    { "sheet": "bin_sprite", "frame": 0 },
-      "mummy":     { "sheet": "shadow_stalker", "frame": 0 }
+      "wall": { "tile": 14 },
+      "exit": { "tile": 7 },
+      "gate": { "tile": 45 },
+      "player": { "sheet": "bin_sprite", "frame": 0 },
+      "player_down_0": { "sheet": "bin_sprite", "frame": 0 },
+      "player_down_1": { "sheet": "bin_sprite", "frame": 1 },
+      "player_down_2": { "sheet": "bin_sprite", "frame": 2 },
+      "player_down_3": { "sheet": "bin_sprite", "frame": 3 },
+      "player_up_0": { "sheet": "bin_sprite", "frame": 4 },
+      "player_up_1": { "sheet": "bin_sprite", "frame": 5 },
+      "player_up_2": { "sheet": "bin_sprite", "frame": 6 },
+      "player_up_3": { "sheet": "bin_sprite", "frame": 7 },
+      "player_right_0": { "sheet": "bin_sprite", "frame": 8 },
+      "player_right_1": { "sheet": "bin_sprite", "frame": 9 },
+      "player_right_2": { "sheet": "bin_sprite", "frame": 10 },
+      "player_right_3": { "sheet": "bin_sprite", "frame": 11 },
+      "player_left_0": { "sheet": "bin_sprite", "frame": 12 },
+      "player_left_1": { "sheet": "bin_sprite", "frame": 13 },
+      "player_left_2": { "sheet": "bin_sprite", "frame": 14 },
+      "player_left_3": { "sheet": "bin_sprite", "frame": 15 },
+      "mummy": { "sheet": "shadow_stalker", "frame": 0 },
+      "mummy_down_0": { "sheet": "shadow_stalker", "frame": 0 },
+      "mummy_down_1": { "sheet": "shadow_stalker", "frame": 1 },
+      "mummy_down_2": { "sheet": "shadow_stalker", "frame": 2 },
+      "mummy_down_3": { "sheet": "shadow_stalker", "frame": 3 },
+      "mummy_up_0": { "sheet": "shadow_stalker", "frame": 4 },
+      "mummy_up_1": { "sheet": "shadow_stalker", "frame": 5 },
+      "mummy_up_2": { "sheet": "shadow_stalker", "frame": 6 },
+      "mummy_up_3": { "sheet": "shadow_stalker", "frame": 7 },
+      "mummy_right_0": { "sheet": "shadow_stalker", "frame": 8 },
+      "mummy_right_1": { "sheet": "shadow_stalker", "frame": 9 },
+      "mummy_right_2": { "sheet": "shadow_stalker", "frame": 10 },
+      "mummy_right_3": { "sheet": "shadow_stalker", "frame": 11 },
+      "mummy_left_0": { "sheet": "shadow_stalker", "frame": 12 },
+      "mummy_left_1": { "sheet": "shadow_stalker", "frame": 13 },
+      "mummy_left_2": { "sheet": "shadow_stalker", "frame": 14 },
+      "mummy_left_3": { "sheet": "shadow_stalker", "frame": 15 }
     },
-    "procedural": ["key", "trap"]
+    "procedural": ["key", "trap", "mummy_priority_badge"]
   },
   "push_box": {
     "sheet": "sokoban",
     "sprites": {
-      "floor":         { "x": 320, "y": 192, "w": 64, "h": 64 },
-      "wall":          { "x": 384, "y": 384, "w": 64, "h": 64 },
-      "crate":         { "x":   0, "y": 256, "w": 64, "h": 64 },
-      "crate_on_goal": { "x":   0, "y": 512, "w": 64, "h": 64 },
-      "goal":          { "x":   0, "y": 576, "w": 20, "h": 20 },
-      "player":        { "x": 512, "y":  54, "w": 46, "h": 54 }
+      "floor": { "x": 320, "y": 192, "w": 64, "h": 64 },
+      "wall": { "x": 384, "y": 384, "w": 64, "h": 64 },
+      "crate": { "x": 0, "y": 256, "w": 64, "h": 64 },
+      "crate_on_goal": { "x": 0, "y": 512, "w": 64, "h": 64 },
+      "goal": { "x": 0, "y": 576, "w": 20, "h": 20 },
+      "player": { "sheet": "bin_sprite", "frame": 0 },
+      "player_down_0": { "sheet": "bin_sprite", "frame": 0 },
+      "player_down_1": { "sheet": "bin_sprite", "frame": 1 },
+      "player_down_2": { "sheet": "bin_sprite", "frame": 2 },
+      "player_down_3": { "sheet": "bin_sprite", "frame": 3 },
+      "player_up_0": { "sheet": "bin_sprite", "frame": 4 },
+      "player_up_1": { "sheet": "bin_sprite", "frame": 5 },
+      "player_up_2": { "sheet": "bin_sprite", "frame": 6 },
+      "player_up_3": { "sheet": "bin_sprite", "frame": 7 },
+      "player_right_0": { "sheet": "bin_sprite", "frame": 8 },
+      "player_right_1": { "sheet": "bin_sprite", "frame": 9 },
+      "player_right_2": { "sheet": "bin_sprite", "frame": 10 },
+      "player_right_3": { "sheet": "bin_sprite", "frame": 11 },
+      "player_left_0": { "sheet": "bin_sprite", "frame": 12 },
+      "player_left_1": { "sheet": "bin_sprite", "frame": 13 },
+      "player_left_2": { "sheet": "bin_sprite", "frame": 14 },
+      "player_left_3": { "sheet": "bin_sprite", "frame": 15 }
     },
-    "procedural": ["deadlock_outline"]
+    "procedural": ["deadlock_outline", "goal_glow", "tile_shadow"]
   }
 }

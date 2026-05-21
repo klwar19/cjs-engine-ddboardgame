@@ -1,0 +1,165 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "world",
+    "world": "bazaar",
+    "category": "travelMaps",
+    "status": "active"
+  },
+  "entries": [
+    {
+      "id": "bazaar_tmap_central_ring_v1",
+      "name": "Central Bazaar Ring",
+      "world": "bazaar",
+      "zone": "bazaar_zon_central_ring",
+      "defaultLocationId": "bazaar_loc_gate_of_scales",
+      "canvas": { "width": 760, "height": 430 },
+      "visualMode": "vn_travel",
+      "visualTheme": { "id": "bazaar", "mood": "cosmic_truce_market" },
+      "areaButtons": [
+        {
+          "id": "bazaar_area_central_ring",
+          "label": "Central Ring",
+          "mapId": "bazaar_tmap_central_ring_v1",
+          "active": true,
+          "summary": "Current Bazaar slice: arrival gate, arena, auction house, food row, and prize board."
+        },
+        {
+          "id": "bazaar_area_sky_docks",
+          "label": "Sky Docks",
+          "status": "placeholder",
+          "summary": "Future inter-world cargo, smuggler contracts, and rare material exchange."
+        },
+        {
+          "id": "bazaar_area_grand_arena",
+          "label": "Grand Arena",
+          "status": "placeholder",
+          "summary": "Future tournament brackets, sponsor drama, and world-reactive combat showcases."
+        }
+      ],
+      "legend": [
+        { "id": "bazaar_legend_arrival", "kind": "arrival", "label": "Arrival / rules" },
+        { "id": "bazaar_legend_arena", "kind": "arena", "label": "Arena activity" },
+        { "id": "bazaar_legend_market", "kind": "market", "label": "Auction / market" }
+      ],
+      "visualLayers": [
+        { "type": "ellipse", "kind": "portal", "cx": 108, "cy": 92, "rx": 58, "ry": 44 },
+        { "type": "ellipse", "kind": "arena-dome", "cx": 338, "cy": 132, "rx": 128, "ry": 78 },
+        { "type": "rect", "kind": "market-stall", "x": 492, "y": 72, "width": 154, "height": 108, "rx": 18 },
+        { "type": "rect", "kind": "market-stall", "x": 184, "y": 284, "width": 164, "height": 74, "rx": 18 },
+        { "type": "rect", "kind": "contract-board", "x": 546, "y": 268, "width": 118, "height": 86, "rx": 14 },
+        { "type": "path", "kind": "neon-lane", "d": "M 118 238 C 190 184, 246 148, 334 128 C 420 108, 508 120, 582 150" },
+        { "type": "path", "kind": "neon-lane-thin", "d": "M 126 244 C 186 306, 258 334, 330 322 C 430 304, 535 320, 622 312" },
+        { "type": "text", "kind": "label", "x": 38, "y": 42, "text": "PAX MULTIVERSALIS" }
+      ],
+      "nodes": [
+        {
+          "id": "bazaar_loc_gate_of_scales",
+          "name": "Gate of Scales",
+          "type": "arrival",
+          "x": 120,
+          "y": 235,
+          "zone": "bazaar_zon_central_ring",
+          "description": "A customs gate where coins, memories, and monster trophies are all weighed by the same smiling clerks.",
+          "people": [
+            {
+              "id": "bazaar_meet_scale_broker",
+              "label": "Ask the scale broker",
+              "summary": "Learn the Bazaar rule: nothing is free, but some prices are friendly until they are not.",
+              "ops": [
+                { "op": "cross_milestone_set", "id": "milestone.bazaar.rules_heard", "title": "Bazaar Rules Heard", "summary": "Bin learned that Bazaar prices can include favors, memories, and future trouble." },
+                { "op": "journal_entry_add", "id": "bazaar_journal_scale_broker", "title": "Scale Broker", "text": "The broker smiled like a tutorial NPC with a lawyer. Bin decided to read every sign twice.", "world": "bazaar", "scope": "bazaar", "tags": ["bazaar", "rules"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bazaar_loc_arena_ring",
+          "name": "Lantern Arena",
+          "type": "arena",
+          "x": 335,
+          "y": 125,
+          "zone": "bazaar_zon_central_ring",
+          "description": "A circular stage for test fights, exhibition matches, and audience betting. The crowd loves style almost as much as victory.",
+          "people": [
+            {
+              "id": "bazaar_meet_arena_clerk",
+              "label": "Talk to arena clerk",
+              "summary": "Register for safe exhibitions before louder arena brackets unlock.",
+              "ops": [
+                { "op": "cross_milestone_set", "id": "milestone.bazaar.arena_registered", "title": "Arena Registered", "summary": "Bin can take test matches in the Lantern Arena." },
+                { "op": "journal_entry_add", "id": "bazaar_journal_arena_clerk", "title": "Arena Clerk", "text": "The clerk called it a safe match, then handed Bin a waiver thick enough to stop an arrow.", "world": "bazaar", "scope": "bazaar", "tags": ["arena"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bazaar_loc_auction_house",
+          "name": "Glass Gavel House",
+          "type": "auction",
+          "x": 580,
+          "y": 145,
+          "zone": "bazaar_zon_central_ring",
+          "description": "A bright auction hall where relics, rumors, and cursed convenience items pass from hand to hand.",
+          "actions": [
+            {
+              "id": "bazaar_read_auction_board",
+              "label": "Read auction board",
+              "summary": "Preview lots that react to other-world progress.",
+              "ops": [
+                { "op": "journal_entry_add", "id": "bazaar_journal_auction_board", "title": "Auction Board", "text": "One lot wants monster teeth. One wants pre-collapse medicine. One wants a buyer brave enough not to ask questions.", "world": "bazaar", "scope": "bazaar", "tags": ["auction"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bazaar_loc_lantern_food_row",
+          "name": "Lantern Food Row",
+          "type": "rest",
+          "x": 275,
+          "y": 325,
+          "zone": "bazaar_zon_central_ring",
+          "description": "A street of impossible snacks. Some dishes boost morale. Some remember who ate them.",
+          "actions": [
+            {
+              "id": "bazaar_buy_safe_snack",
+              "label": "Buy safe snack",
+              "summary": "A small mood beat and a little Bazaar texture.",
+              "ops": [
+                { "op": "give_food", "id": "bazaar_lantern_skewer", "qty": 1 },
+                { "op": "journal_entry_add", "id": "bazaar_journal_safe_snack", "title": "Safe Snack", "text": "It tasted like grilled chicken, honey, and a very tiny NDA.", "world": "bazaar", "scope": "bazaar", "tags": ["food"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bazaar_loc_contract_annex",
+          "name": "Prize Board Annex",
+          "type": "market",
+          "x": 625,
+          "y": 315,
+          "zone": "bazaar_zon_central_ring",
+          "description": "Arena prize notes, auction previews, sponsor rumors, and cross-world trade hooks pinned with red string.",
+          "actions": [
+            {
+              "id": "bazaar_check_cross_world_board",
+              "label": "Check prize board",
+              "summary": "Find arena, auction, and trade notes that only appear after progress in Earth, Haven, or Zombie world.",
+              "ops": [
+                { "op": "journal_entry_add", "id": "bazaar_journal_cross_world_board", "title": "Prize Board", "text": "The board has sections labeled Earth, Haven, Last Light, and Debts Nobody Admits Are Theirs.", "world": "bazaar", "scope": "global", "tags": ["bazaar", "cross_world"] }
+              ]
+            }
+          ]
+        }
+      ],
+      "links": [
+        { "from": "bazaar_loc_gate_of_scales", "to": "bazaar_loc_arena_ring", "route": "main_lane", "time": 1 },
+        { "from": "bazaar_loc_arena_ring", "to": "bazaar_loc_auction_house", "route": "upper_ring", "time": 1 },
+        { "from": "bazaar_loc_gate_of_scales", "to": "bazaar_loc_lantern_food_row", "route": "food_lane", "time": 1 },
+        { "from": "bazaar_loc_lantern_food_row", "to": "bazaar_loc_contract_annex", "route": "lower_ring", "time": 1 },
+        { "from": "bazaar_loc_contract_annex", "to": "bazaar_loc_auction_house", "route": "broker_stairs", "time": 1 }
+      ]
+    }
+  ]
+}

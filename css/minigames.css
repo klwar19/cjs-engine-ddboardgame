@@ -28,7 +28,7 @@
 }
 
 .minigame-shell {
-  width: min(840px, 100%);
+  width: min(1040px, 100%);
   max-height: 96vh;
   display: flex;
   flex-direction: column;
@@ -124,7 +124,7 @@
 .minigame-stage {
   position: relative;
   flex: 1 1 auto;
-  min-height: 360px;
+  min-height: 440px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +133,7 @@
   outline: none;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.025), transparent 22%, transparent 78%, rgba(255, 255, 255, 0.025)),
-    radial-gradient(circle at 50% 42%, rgba(232, 198, 111, 0.09), transparent 46%);
+    linear-gradient(180deg, rgba(232, 198, 111, 0.06), rgba(117, 215, 208, 0.035));
 }
 
 .minigame-stage:focus-visible {
@@ -143,11 +143,12 @@
 .minigame-stage canvas {
   display: block;
   max-width: 100%;
-  max-height: 62vh;
+  max-height: 72vh;
   border: 1px solid rgba(232, 198, 111, 0.32);
   border-radius: 6px;
   background: #080a0d;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
   box-shadow:
     0 16px 28px rgba(0, 0, 0, 0.46),
     0 0 0 1px rgba(0, 0, 0, 0.65),
@@ -155,7 +156,7 @@
 }
 
 .minigame-touchpad {
-  width: 216px;
+  width: 204px;
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -167,8 +168,8 @@
 }
 
 .minigame-touchpad button {
-  min-width: 60px;
-  height: 60px;
+  min-width: 56px;
+  height: 56px;
   border: 1px solid rgba(232, 198, 111, 0.25);
   border-radius: 6px;
   color: #fff7df;
@@ -345,8 +346,8 @@
   color: var(--mg-ink);
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
   background:
-    radial-gradient(circle at 18% 8%, rgba(117, 215, 208, 0.18), transparent 26%),
-    radial-gradient(circle at 88% 12%, rgba(232, 198, 111, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(117, 215, 208, 0.12), transparent 32%),
+    linear-gradient(225deg, rgba(232, 198, 111, 0.11), transparent 34%),
     linear-gradient(180deg, #17150f 0%, #0a0d0d 100%);
 }
 

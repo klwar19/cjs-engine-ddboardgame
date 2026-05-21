@@ -18,7 +18,9 @@
     "storyModeTheme": {
       "id": "rot",
       "className": "story-theme-rot",
-      "backdrop": "images/story-mode/zombie/rot-city-vn.png",
+      "backdrop": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png",
+      "bannerImage": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png",
+      "homeBackdrop": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png",
       "accent": "#95d16f",
       "danger": "#c83b38",
       "motif": "plague"

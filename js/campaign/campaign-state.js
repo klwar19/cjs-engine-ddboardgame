@@ -19,6 +19,7 @@ window.CJS.CampaignState = (() => {
       campaigns: {},
       scenarios: {},
       scenarioMaps: {},
+      travelMaps: {},
       campaignEvents: {},
       campaignQuests: {},
       campaignProfiles: {},
@@ -30,6 +31,7 @@ window.CJS.CampaignState = (() => {
       mapSeeds: {},
       oracleTables: {},
       storyDirectorPacks: {},
+      worldActivityPacks: {},
       stories: {},
       worlds: {}
     };
@@ -48,6 +50,7 @@ window.CJS.CampaignState = (() => {
       campaigns: DS().getAll('campaigns'),
       scenarios: DS().getAll('scenarios'),
       scenarioMaps: DS().getAll('scenarioMaps'),
+      travelMaps: DS().getAll('travelMaps'),
       campaignEvents: DS().getAll('campaignEvents'),
       campaignQuests: DS().getAll('campaignQuests'),
       campaignProfiles: DS().getAll('campaignProfiles'),
@@ -59,6 +62,7 @@ window.CJS.CampaignState = (() => {
       mapSeeds: DS().getAll('mapSeeds'),
       oracleTables: DS().getAll('oracleTables'),
       storyDirectorPacks: DS().getAll('storyDirectorPacks'),
+      worldActivityPacks: DS().getAll('worldActivityPacks'),
       stories: DS().getAll('stories'),
       worlds: DS().getAll('worlds')
     };
@@ -206,6 +210,8 @@ window.CJS.CampaignState = (() => {
       activeScenarioRun: null,
       scenarioHistory: [],
       mapState: {},
+      worldProgress: buildInitialWorldProgress(campaign),
+      crossWorld: buildInitialCrossWorldState(),
       worldArchive: {},
       pocketHaven: {
         enabled: true,
@@ -643,6 +649,43 @@ window.CJS.CampaignState = (() => {
     return result;
   }
 
+  function buildInitialWorldProgress(campaign = {}) {
+    const worldId = campaign.world || 'haven';
+    return {
+      [worldId]: {
+        world: worldId,
+        activeArcId: campaign.startArcId || null,
+        currentChapter: campaign.startChapter || 1,
+        currentZone: campaign.startZone || null,
+        currentHub: campaign.hubs?.[0] || null,
+        currentLocation: campaign.startLocation || null,
+        currentTravelMap: campaign.startTravelMap || null,
+        unlockedZones: campaign.startZone ? [campaign.startZone] : [],
+        visitedLocations: [],
+        completedArcs: [],
+        completedChapters: [],
+        activities: {},
+        notes: []
+      }
+    };
+  }
+
+  function buildInitialCrossWorldState() {
+    return {
+      milestones: {},
+      pressures: {},
+      imports: {
+        items: {},
+        materials: {},
+        food: {},
+        questItems: {},
+        currencies: {}
+      },
+      reactionQueue: [],
+      journal: []
+    };
+  }
+
   function normalizeSave(save) {
     const next = clone(save || {});
     next.saveVersion = next.saveVersion || 1;
@@ -684,6 +727,8 @@ window.CJS.CampaignState = (() => {
       map.captured = map.captured || {};
       map.campfires = map.campfires || {};
     }
+    next.worldProgress = normalizeWorldProgress(next.worldProgress, next.currentWorld, _content.worlds);
+    next.crossWorld = normalizeCrossWorld(next.crossWorld);
     next.worldArchive = next.worldArchive || {};
     next.hubState = next.hubState || {};
     const campaign = _content.campaigns[next.campaignId];
@@ -812,6 +857,43 @@ window.CJS.CampaignState = (() => {
       _syncPartyMaxHp(id, member);
     }
     next.lastUpdated = next.lastUpdated || nowIso();
+    return next;
+  }
+
+  function normalizeWorldProgress(progress, currentWorld = 'haven', worlds = {}) {
+    const next = progress && typeof progress === 'object' ? progress : {};
+    const ids = new Set([currentWorld || 'haven', ...Object.keys(worlds || {}), ...Object.keys(next || {})].filter(Boolean));
+    for (const worldId of ids) {
+      const entry = next[worldId] = next[worldId] || {};
+      entry.world = entry.world || worldId;
+      entry.activeArcId = entry.activeArcId || null;
+      entry.currentChapter = entry.currentChapter || 1;
+      entry.currentZone = entry.currentZone || null;
+      entry.currentHub = entry.currentHub || null;
+      entry.currentLocation = entry.currentLocation || null;
+      entry.currentTravelMap = entry.currentTravelMap || null;
+      entry.unlockedZones = Array.isArray(entry.unlockedZones) ? entry.unlockedZones : [];
+      entry.visitedLocations = Array.isArray(entry.visitedLocations) ? entry.visitedLocations : [];
+      entry.completedArcs = Array.isArray(entry.completedArcs) ? entry.completedArcs : [];
+      entry.completedChapters = Array.isArray(entry.completedChapters) ? entry.completedChapters : [];
+      entry.activities = entry.activities && typeof entry.activities === 'object' ? entry.activities : {};
+      entry.notes = Array.isArray(entry.notes) ? entry.notes : [];
+    }
+    return next;
+  }
+
+  function normalizeCrossWorld(crossWorld) {
+    const next = crossWorld && typeof crossWorld === 'object' ? crossWorld : {};
+    next.milestones = next.milestones && typeof next.milestones === 'object' ? next.milestones : {};
+    next.pressures = next.pressures && typeof next.pressures === 'object' ? next.pressures : {};
+    next.imports = next.imports && typeof next.imports === 'object' ? next.imports : {};
+    next.imports.items = next.imports.items && typeof next.imports.items === 'object' ? next.imports.items : {};
+    next.imports.materials = next.imports.materials && typeof next.imports.materials === 'object' ? next.imports.materials : {};
+    next.imports.food = next.imports.food && typeof next.imports.food === 'object' ? next.imports.food : {};
+    next.imports.questItems = next.imports.questItems && typeof next.imports.questItems === 'object' ? next.imports.questItems : {};
+    next.imports.currencies = next.imports.currencies && typeof next.imports.currencies === 'object' ? next.imports.currencies : {};
+    next.reactionQueue = Array.isArray(next.reactionQueue) ? next.reactionQueue : [];
+    next.journal = Array.isArray(next.journal) ? next.journal : [];
     return next;
   }
 

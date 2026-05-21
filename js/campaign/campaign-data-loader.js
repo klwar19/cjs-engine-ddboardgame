@@ -123,6 +123,37 @@ window.CJS.CampaignDataLoader = (() => {
     return getStoryDirectorPacks(worldId, zoneId, hubId)[0] || null;
   }
 
+  function getTravelMaps(worldId, zoneId, hubId) {
+    return DS().getAllAsArray('travelMaps')
+      .filter((map) => _matchesWorld(map, worldId) && _matchesZone(map, zoneId) && _matchesHub(map, hubId));
+  }
+
+  function getTravelMap(mapId, worldId, zoneId, hubId) {
+    if (mapId) return _byIdOrAlias('travelMaps', mapId);
+    return getTravelMaps(worldId, zoneId, hubId)[0] || null;
+  }
+
+  function getWorldActivityPacks(worldId, zoneId, hubId) {
+    return DS().getAllAsArray('worldActivityPacks')
+      .filter((pack) => _matchesWorld(pack, worldId) && _matchesZone(pack, zoneId) && _matchesHub(pack, hubId));
+  }
+
+  function getWorldActivities(worldId, zoneId, hubId) {
+    return getWorldActivityPacks(worldId, zoneId, hubId).flatMap((pack) =>
+      (pack.activities || []).map((activity) => ({
+        ...activity,
+        sourcePackId: pack.id,
+        world: activity.world || pack.world,
+        zone: activity.zone || pack.zone,
+        hubId: activity.hubId || pack.hubId
+      }))
+    );
+  }
+
+  function getWorldActivity(activityId) {
+    return getWorldActivities().find((activity) => activity.id === activityId) || null;
+  }
+
   return Object.freeze({
     getSideContentPacks,
     getSideContentPack,
@@ -137,6 +168,11 @@ window.CJS.CampaignDataLoader = (() => {
     getOracleTables,
     getOracleTable,
     getStoryDirectorPacks,
-    getStoryDirectorPack
+    getStoryDirectorPack,
+    getTravelMaps,
+    getTravelMap,
+    getWorldActivityPacks,
+    getWorldActivities,
+    getWorldActivity
   });
 })();

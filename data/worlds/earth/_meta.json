@@ -1,0 +1,30 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-meta",
+    "scope": "world",
+    "world": "earth"
+  },
+  "world": {
+    "id": "earth",
+    "displayName": "Earth",
+    "ceiling": "C",
+    "requiredRank": null,
+    "recommendedRank": null,
+    "order": 0,
+    "tone": "daily_life_pressure",
+    "color": "#38bdf8",
+    "status": "starter",
+    "storyModeTheme": {
+      "id": "earth",
+      "className": "story-theme-earth",
+      "backdrop": "images/story-mode/earth/earth-theme.webp",
+      "bannerImage": "images/story-mode/earth/earth-theme.webp",
+      "bannerVideo": "assets/videos/story-mode/banners/earth-return-banner.mp4",
+      "homeBackdrop": "images/story-mode/earth/earth-theme.webp",
+      "accent": "#7dd3fc",
+      "danger": "#fb7185",
+      "motif": "city"
+    }
+  }
+}

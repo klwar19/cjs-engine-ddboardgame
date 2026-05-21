@@ -83,6 +83,14 @@ window.CJS.CampaignOps = (() => {
         case 'story_fact_reveal': return `Reveal story fact ${op.title || op.factId || op.id || ''}`;
         case 'story_thread_status': return `Story thread ${op.threadId || op.id} -> ${op.status || 'active'}`;
         case 'story_metric_change': return `Story ${op.metric || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'world_progress_set': return `World progress ${op.world || 'current'} ${op.key || op.field || ''}`;
+        case 'travel_location': return `Travel to ${op.title || op.locationId || op.nodeId || 'location'}`;
+        case 'cross_milestone_set': return `Milestone ${op.id || op.milestoneId || ''}`;
+        case 'cross_pressure_change': return `Cross pressure ${op.id || op.pressureId || ''} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'cross_import_add': return `Import ${op.id || op.currency || ''} +${op.qty || op.amount || 1}`;
+        case 'cross_import_take': return `Import ${op.id || op.currency || ''} -${op.qty || op.amount || 1}`;
+        case 'journal_entry_add': return `Journal: ${op.title || op.id || 'entry'}`;
+        case 'world_activity_record': return `World activity ${op.activityId || op.id || ''}`;
         case 'event_log_add': return `Event log: ${op.entry?.title || op.title || op.id || 'entry'}`;
         case 'tag_add': return `Add tag ${op.tag || op.id}`;
         case 'tag_resolve': return `Resolve tag ${op.tag || op.id}`;
@@ -263,6 +271,14 @@ window.CJS.CampaignOps = (() => {
       case 'story_fact_reveal': return _storyFactReveal(state, op);
       case 'story_thread_status': return _storyThreadStatus(state, op);
       case 'story_metric_change': return _storyMetricChange(state, op);
+      case 'world_progress_set': return _worldProgressSet(state, op);
+      case 'travel_location': return _travelLocation(state, op);
+      case 'cross_milestone_set': return _crossMilestoneSet(state, op);
+      case 'cross_pressure_change': return _crossPressureChange(state, op);
+      case 'cross_import_add': return _crossImportChange(state, op, 1);
+      case 'cross_import_take': return _crossImportChange(state, op, -1);
+      case 'journal_entry_add': return _journalEntryAdd(state, op);
+      case 'world_activity_record': return _worldActivityRecord(state, op);
       case 'event_log_add': return _eventLogAdd(state, op);
       case 'tag_add': return _tagAdd(state, op);
       case 'tag_resolve': return _tagResolve(state, op);
@@ -316,6 +332,11 @@ window.CJS.CampaignOps = (() => {
   function _signedQty(op) {
     const qty = Number(op.qty ?? op.amount ?? 1) || 0;
     return op.op.startsWith('take_') ? -qty : qty;
+  }
+
+  function _asArray(value) {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
   }
 
   function _worldCurrency(state) {
@@ -1845,6 +1866,8 @@ window.CJS.CampaignOps = (() => {
     const fromWorld = state.currentWorld;
     const toWorld = op.toWorld;
     if (!toWorld || toWorld === fromWorld) return;
+    const fromProgress = _worldProgress(state, fromWorld);
+    fromProgress.currentChapter = state.currentChapter || fromProgress.currentChapter || 1;
 
     // Hard rank gate: if the destination world declares `requiredRank`,
     // at least one active member must meet it. Soft `recommendedRank` is
@@ -1892,7 +1915,11 @@ window.CJS.CampaignOps = (() => {
     }
 
     state.currentWorld = toWorld;
-    state.currentChapter = op.toChapter || 1;
+    const toProgress = _worldProgress(state, toWorld);
+    state.currentChapter = op.toChapter || toProgress.currentChapter || 1;
+    if (op.toZone) toProgress.currentZone = op.toZone;
+    if (op.toLocation) toProgress.currentLocation = op.toLocation;
+    if (op.toTravelMap) toProgress.currentTravelMap = op.toTravelMap;
     state.storyMode = state.storyMode || {};
     state.storyMode.currentChapterLabel = op.toChapterLabel || null;
     state.storyMode.currentChapterOrderKey = op.toChapterOrderKey || op.toChapterLabel || null;
@@ -2506,6 +2533,156 @@ window.CJS.CampaignOps = (() => {
     if (op.min != null) sd.metrics[metric] = Math.max(Number(op.min), sd.metrics[metric]);
     if (op.max != null) sd.metrics[metric] = Math.min(Number(op.max), sd.metrics[metric]);
     _log(state, `Story metric ${metric} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}.`);
+  }
+
+  function _worldProgress(state, worldId = state.currentWorld) {
+    const id = worldId || state.currentWorld || 'haven';
+    state.worldProgress = state.worldProgress || {};
+    const entry = state.worldProgress[id] = state.worldProgress[id] || {};
+    entry.world = entry.world || id;
+    entry.currentChapter = entry.currentChapter || 1;
+    entry.currentZone = entry.currentZone || null;
+    entry.currentHub = entry.currentHub || null;
+    entry.currentLocation = entry.currentLocation || null;
+    entry.currentTravelMap = entry.currentTravelMap || null;
+    entry.unlockedZones = Array.isArray(entry.unlockedZones) ? entry.unlockedZones : [];
+    entry.visitedLocations = Array.isArray(entry.visitedLocations) ? entry.visitedLocations : [];
+    entry.completedArcs = Array.isArray(entry.completedArcs) ? entry.completedArcs : [];
+    entry.completedChapters = Array.isArray(entry.completedChapters) ? entry.completedChapters : [];
+    entry.activities = entry.activities && typeof entry.activities === 'object' ? entry.activities : {};
+    entry.notes = Array.isArray(entry.notes) ? entry.notes : [];
+    return entry;
+  }
+
+  function _crossWorld(state) {
+    state.crossWorld = state.crossWorld || {};
+    state.crossWorld.milestones = state.crossWorld.milestones || {};
+    state.crossWorld.pressures = state.crossWorld.pressures || {};
+    state.crossWorld.imports = state.crossWorld.imports || {};
+    state.crossWorld.imports.items = state.crossWorld.imports.items || {};
+    state.crossWorld.imports.materials = state.crossWorld.imports.materials || {};
+    state.crossWorld.imports.food = state.crossWorld.imports.food || {};
+    state.crossWorld.imports.questItems = state.crossWorld.imports.questItems || {};
+    state.crossWorld.imports.currencies = state.crossWorld.imports.currencies || {};
+    state.crossWorld.reactionQueue = Array.isArray(state.crossWorld.reactionQueue) ? state.crossWorld.reactionQueue : [];
+    state.crossWorld.journal = Array.isArray(state.crossWorld.journal) ? state.crossWorld.journal : [];
+    return state.crossWorld;
+  }
+
+  function _worldProgressSet(state, op = {}) {
+    const progress = _worldProgress(state, op.world || state.currentWorld);
+    const key = op.key || op.field;
+    if (key) progress[key] = op.value;
+    if (op.currentZone) progress.currentZone = op.currentZone;
+    if (op.currentHub) progress.currentHub = op.currentHub;
+    if (op.currentLocation) progress.currentLocation = op.currentLocation;
+    if (op.currentTravelMap) progress.currentTravelMap = op.currentTravelMap;
+    for (const zoneId of _asArray(op.unlockZones || op.unlockedZones)) {
+      if (zoneId && !progress.unlockedZones.includes(zoneId)) progress.unlockedZones.push(zoneId);
+    }
+    for (const arcId of _asArray(op.completeArcs || op.completedArcs)) {
+      if (arcId && !progress.completedArcs.includes(arcId)) progress.completedArcs.push(arcId);
+    }
+    _log(state, `World progress updated: ${progress.world}.`);
+  }
+
+  function _travelLocation(state, op = {}) {
+    const worldId = op.world || state.currentWorld || 'haven';
+    const progress = _worldProgress(state, worldId);
+    const locationId = op.locationId || op.nodeId || op.id;
+    if (!locationId) return;
+    progress.currentTravelMap = op.mapId || progress.currentTravelMap || null;
+    progress.currentLocation = locationId;
+    if (op.zone) progress.currentZone = op.zone;
+    if (op.hubId) progress.currentHub = op.hubId;
+    if (!progress.visitedLocations.includes(locationId)) progress.visitedLocations.push(locationId);
+    if (progress.currentZone && !progress.unlockedZones.includes(progress.currentZone)) progress.unlockedZones.push(progress.currentZone);
+    _log(state, `Travel: ${op.title || locationId}.`, op);
+  }
+
+  function _crossMilestoneSet(state, op = {}) {
+    const id = op.milestoneId || op.id;
+    if (!id) return;
+    const cross = _crossWorld(state);
+    cross.milestones[id] = {
+      ...(cross.milestones[id] || {}),
+      id,
+      value: op.value === undefined ? true : op.value,
+      title: op.title || cross.milestones[id]?.title || id,
+      summary: op.summary || op.text || cross.milestones[id]?.summary || '',
+      world: op.world || state.currentWorld,
+      tags: op.tags || cross.milestones[id]?.tags || [],
+      updatedAt: new Date().toISOString(),
+      phase: state.phase?.number || 1
+    };
+    if (op.flag) _setFlag(state, op.flag, true, op.value === undefined ? true : op.value);
+    _log(state, `Milestone set: ${cross.milestones[id].title}.`, op);
+  }
+
+  function _crossPressureChange(state, op = {}) {
+    const id = op.pressureId || op.id;
+    if (!id) return;
+    const cross = _crossWorld(state);
+    const entry = cross.pressures[id] = cross.pressures[id] || { id, value: 0 };
+    entry.title = op.title || entry.title || id;
+    entry.value = Number(entry.value || 0) + Number(op.amount || 0);
+    if (op.min != null) entry.value = Math.max(Number(op.min), entry.value);
+    if (op.max != null) entry.value = Math.min(Number(op.max), entry.value);
+    entry.world = op.world || entry.world || state.currentWorld;
+    entry.updatedAt = new Date().toISOString();
+    _log(state, `Cross-world pressure ${id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}.`, op);
+  }
+
+  function _crossImportChange(state, op = {}, sign = 1) {
+    const cross = _crossWorld(state);
+    const bucket = op.bucket || op.type || (op.currency ? 'currencies' : 'materials');
+    if (!cross.imports[bucket]) cross.imports[bucket] = {};
+    const id = op.currency || op.itemId || op.materialId || op.foodId || op.questItemId || op.id;
+    const raw = Number(op.qty ?? op.amount ?? 1) || 0;
+    if (!id || !raw) return;
+    const delta = raw * sign;
+    cross.imports[bucket][id] = Math.max(0, Number(cross.imports[bucket][id] || 0) + delta);
+    if (cross.imports[bucket][id] <= 0) delete cross.imports[bucket][id];
+    _log(state, `${delta >= 0 ? 'Imported' : 'Spent imported'} ${Math.abs(delta)} ${id} (${bucket}).`, op);
+  }
+
+  function _journalEntryAdd(state, op = {}) {
+    const id = op.entryId || op.id || `journal_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const cross = _crossWorld(state);
+    cross.journal.unshift({
+      id,
+      title: op.title || 'Journal Entry',
+      text: op.text || op.summary || '',
+      world: op.world || state.currentWorld,
+      scope: op.scope || 'global',
+      tags: op.tags || [],
+      at: op.at || new Date().toISOString(),
+      phase: state.phase?.number || 1
+    });
+    cross.journal = cross.journal.slice(0, 200);
+    _log(state, `Journal updated: ${op.title || id}.`, op);
+  }
+
+  function _worldActivityRecord(state, op = {}) {
+    const activityId = op.activityId || op.id;
+    if (!activityId) return;
+    const progress = _worldProgress(state, op.world || state.currentWorld);
+    const entry = progress.activities[activityId] = progress.activities[activityId] || {
+      id: activityId,
+      count: 0,
+      history: []
+    };
+    entry.count += Number(op.amount || 1);
+    entry.lastResult = op.result || op.status || 'used';
+    entry.lastAt = new Date().toISOString();
+    entry.history.unshift({
+      at: entry.lastAt,
+      phase: state.phase?.number || 1,
+      result: entry.lastResult,
+      note: op.note || op.summary || ''
+    });
+    entry.history = entry.history.slice(0, 20);
+    _log(state, `World activity recorded: ${op.title || activityId}.`, op);
   }
 
   function _memoryShardAdd(state, op) {

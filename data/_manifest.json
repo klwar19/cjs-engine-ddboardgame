@@ -113,6 +113,18 @@
       "category": "pocketHavenRules"
     },
     {
+      "path": "data/worlds/earth/_meta.json",
+      "scope": "world",
+      "world": "earth",
+      "category": "_meta"
+    },
+    {
+      "path": "data/worlds/bazaar/_meta.json",
+      "scope": "world",
+      "world": "bazaar",
+      "category": "_meta"
+    },
+    {
       "path": "data/worlds/haven/_meta.json",
       "scope": "world",
       "world": "haven",
@@ -329,6 +341,30 @@
       "category": "storyDirectorPacks"
     },
     {
+      "path": "data/campaigns/earth/travel_maps/earth_zhonghai_travel_map.json",
+      "scope": "world",
+      "world": "earth",
+      "category": "travelMaps"
+    },
+    {
+      "path": "data/campaigns/earth/activity_packs/earth_return_activity_pack.json",
+      "scope": "world",
+      "world": "earth",
+      "category": "worldActivityPacks"
+    },
+    {
+      "path": "data/campaigns/bazaar/travel_maps/bazaar_central_ring_travel_map.json",
+      "scope": "world",
+      "world": "bazaar",
+      "category": "travelMaps"
+    },
+    {
+      "path": "data/campaigns/bazaar/activity_packs/bazaar_arena_auction_activity_pack.json",
+      "scope": "world",
+      "world": "bazaar",
+      "category": "worldActivityPacks"
+    },
+    {
       "path": "data/worlds/zombie/_meta.json",
       "scope": "world",
       "world": "zombie",
@@ -411,6 +447,18 @@
       "scope": "world",
       "world": "zombie",
       "category": "quips"
+    },
+    {
+      "path": "data/campaigns/zombie/travel_maps/zombie_last_light_travel_map.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "travelMaps"
+    },
+    {
+      "path": "data/campaigns/zombie/activity_packs/zombie_safehouse_activity_pack.json",
+      "scope": "world",
+      "world": "zombie",
+      "category": "worldActivityPacks"
     },
     {
       "path": "data/worlds/cyberpunk/_meta.json",
