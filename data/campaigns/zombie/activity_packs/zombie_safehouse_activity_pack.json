@@ -72,6 +72,54 @@
             { "op": "cross_milestone_set", "id": "milestone.zombie.infirmary_corner_built", "title": "Infirmary Corner Built", "summary": "The safehouse can now preserve medical salvage safely." },
             { "op": "journal_entry_add", "id": "zombie_journal_infirmary_corner", "title": "Infirmary Corner", "text": "It is not much. A cot, a clean box, and the shared agreement to call it a medical station until reality catches up.", "world": "zombie", "scope": "zombie", "tags": ["build"] }
           ]
+        },
+        {
+          "id": "zombie_act_burnice_flare_route",
+          "type": "scavenge",
+          "title": "Burnice's Flare Route",
+          "locationIds": ["zombie_loc_mall_district"],
+          "summary": "Run a rooftop scout with Burnice, mark clean ladders, and sweep the shelves before the noise doubles back on you.",
+          "buttonLabel": "Scout Route",
+          "conditions": { "requiresMilestones": ["milestone.zombie.met_burnice"] },
+          "rewardText": "scrap +1, canned food +1, noise +1",
+          "ops": [
+            { "op": "give_material", "id": "zombie_scrap", "qty": 1 },
+            { "op": "give_food", "id": "zombie_canned_food", "qty": 1 },
+            { "op": "cross_pressure_change", "id": "zombie_noise", "title": "Zombie Noise", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "zombie_journal_burnice_flare_route", "title": "Burnice's Flare Route", "text": "Burnice marks exits before loot. That is why she keeps finding both.", "world": "zombie", "scope": "zombie", "tags": ["burnice", "scavenge"] }
+          ]
+        },
+        {
+          "id": "zombie_act_burnice_clinic_cover_burn",
+          "type": "scavenge",
+          "title": "Clinic Cover Burn",
+          "locationIds": ["zombie_loc_clinic_block"],
+          "summary": "Burnice burns a narrow path through the ambulance line while you pull meds and wraps out of the clinic.",
+          "buttonLabel": "Cover Burn",
+          "conditions": { "requiresMilestones": ["milestone.zombie.met_burnice"] },
+          "rewardText": "zombie_med_gel +1, sterile wrap +1, infection pressure +1",
+          "ops": [
+            { "op": "cross_import_add", "bucket": "materials", "id": "zombie_med_gel", "qty": 1 },
+            { "op": "give_material", "id": "zombie_sterile_wrap", "qty": 1 },
+            { "op": "cross_pressure_change", "id": "zombie_infection", "title": "Infection Pressure", "amount": 1, "max": 12 },
+            { "op": "journal_entry_add", "id": "zombie_journal_burnice_clinic_cover_burn", "title": "Clinic Cover Burn", "text": "The hallway smelled like antiseptic and cooked metal. Better than most clinic runs.", "world": "zombie", "scope": "zombie", "tags": ["burnice", "medical"] }
+          ]
+        },
+        {
+          "id": "zombie_act_burnice_stairs_firebreak",
+          "type": "build",
+          "title": "Mark Stair Firebreak",
+          "locationIds": ["zombie_loc_safehouse"],
+          "summary": "Help Burnice turn the roof access stair into a controlled choke point with fallback marks and burn zones.",
+          "buttonLabel": "Lay Firebreak",
+          "conditions": { "requiresMilestones": ["milestone.zombie.met_burnice"] },
+          "cost": { "materials": { "zombie_scrap": 2 } },
+          "rewardText": "Safehouse noise -1, Burnice firebreak milestone",
+          "ops": [
+            { "op": "cross_pressure_change", "id": "zombie_noise", "title": "Zombie Noise", "amount": -1, "min": 0, "max": 12 },
+            { "op": "cross_milestone_set", "id": "milestone.zombie.burnice_firebreak_marked", "title": "Burnice Firebreak Marked", "summary": "Burnice and Bin mapped a controlled burn lane into the safehouse approach." },
+            { "op": "journal_entry_add", "id": "zombie_journal_burnice_firebreak", "title": "Stair Firebreak", "text": "Chalk marks, scrap rails, and one very specific promise not to light the stair early.", "world": "zombie", "scope": "zombie", "tags": ["burnice", "build"] }
+          ]
         }
       ],
       "journalEntries": [

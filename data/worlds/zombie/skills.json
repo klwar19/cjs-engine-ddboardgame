@@ -374,5 +374,108 @@
       },
       "description": "Rotting teeth tear into flesh. Causes bleeding."
     }
+    ,
+    {
+      "id": "zombie_burnice_flare_shot",
+      "name": "Flare Shot",
+      "icon": "flare",
+      "power": 13,
+      "ap": 2,
+      "mp": 3,
+      "cooldown": 0,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "P",
+      "range": 4,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 3,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.12,
+        "maxLevel": 10
+      },
+      "description": "Burnice snaps a burning flare into the target. Reliable ranged pressure that starts a small burn."
+    },
+    {
+      "id": "zombie_burnice_burn_lane",
+      "name": "Burn Lane",
+      "icon": "lane",
+      "power": 11,
+      "ap": 3,
+      "mp": 6,
+      "cooldown": 2,
+      "damageType": "Magic",
+      "element": "Fire",
+      "scalingStat": "I",
+      "range": 3,
+      "aoe": "cone",
+      "aoeSize": 2,
+      "qte": "none",
+      "effects": [
+        {
+          "effectId": "burn_on_hit",
+          "overrides": {
+            "value": 4,
+            "duration": 3
+          }
+        },
+        {
+          "effectId": "terrain_create_fire",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.13,
+        "maxLevel": 10
+      },
+      "description": "A controlled sweep of ignited accelerant across a choke point. Lower burst, better crowd control."
+    },
+    {
+      "id": "zombie_burnice_flash_step",
+      "name": "Flash Step",
+      "icon": "step",
+      "power": 9,
+      "ap": 2,
+      "mp": 5,
+      "cooldown": 3,
+      "damageType": "Physical",
+      "element": "Fire",
+      "scalingStat": "A",
+      "range": 3,
+      "aoe": null,
+      "aoeSize": 0,
+      "qte": "quickpress",
+      "effects": [
+        {
+          "effectId": "knockback_hit",
+          "overrides": {
+            "value": 1
+          }
+        },
+        {
+          "effectId": "mark_on_hit",
+          "overrides": {
+            "value": 10,
+            "duration": 2
+          }
+        }
+      ],
+      "levelScaling": {
+        "powerPerLevel": 0.11,
+        "maxLevel": 10
+      },
+      "description": "A short jet-assisted sidestep into a snap shot. Leaves the target exposed for the next follow-up."
+    }
   ]
 }

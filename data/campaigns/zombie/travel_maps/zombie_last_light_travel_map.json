@@ -70,6 +70,16 @@
           "y": 145,
           "zone": "zombie_zon_last_light",
           "description": "Tarps, water barrels, bad sleep, and the first place that can become more than survival.",
+          "people": [
+            {
+              "id": "zombie_meet_burnice",
+              "label": "Talk to Burnice",
+              "summary": "Burnice sketches exit lanes and flare points across the safehouse board like she is already halfway through tomorrow.",
+              "ops": [
+                { "op": "cross_milestone_set", "id": "milestone.zombie.met_burnice", "title": "Met Burnice", "summary": "Bin met the safehouse's flare-happy route planner." }
+              ]
+            }
+          ],
           "actions": [
             {
               "id": "zombie_safehouse_status",

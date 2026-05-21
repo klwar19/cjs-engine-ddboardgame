@@ -5,7 +5,74 @@
     "scope": "world",
     "world": "zombie",
     "category": "characters",
-    "status": "stub"
+    "status": "active"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "zombie_burnice",
+      "name": "Burnice",
+      "portrait": "images/characters/zombie_burnice.png",
+      "icon": "R",
+      "team": "player",
+      "rank": "E",
+      "type": "humanoid",
+      "stats": {
+        "S": 4,
+        "P": 8,
+        "E": 5,
+        "C": 6,
+        "I": 6,
+        "A": 7,
+        "L": 5
+      },
+      "skills": [
+        "zombie_burnice_flare_shot",
+        "zombie_burnice_burn_lane",
+        "zombie_burnice_flash_step"
+      ],
+      "ultimateSkillId": "ult_negate_damage",
+      "ultimateMax": 100,
+      "equipment": [
+        "zombie_burnice_flare_carbine",
+        "zombie_burnice_scavenger_jacket",
+        "zombie_burnice_route_badge"
+      ],
+      "innatePassives": [
+        "zombie_burnice_runner"
+      ],
+      "allowedWeaponTypes": [
+        "crossbow",
+        "dagger"
+      ],
+      "allowedArmorTypes": [
+        "light",
+        "leather"
+      ],
+      "availableBranches": [
+        "archer",
+        "thief"
+      ],
+      "availableJobs": [
+        "job_archer",
+        "job_thief"
+      ],
+      "defaultJob": "job_archer",
+      "maxJobs": 3,
+      "weaponSlots": 2,
+      "weak": [
+        "Water"
+      ],
+      "resist": [
+        "Fire"
+      ],
+      "immune": [],
+      "description": "Rooftop scout and burn-lane specialist. Burnice uses flare bolts, scavenged accelerant, and practiced route discipline to keep the horde away from the safehouse stairs. Trains as Archer (crossbow) or Thief (dagger).",
+      "movement": 3,
+      "size": "1x1",
+      "skillSlots": 4,
+      "passiveSlots": 3,
+      "skillPoints": 10,
+      "passivePoints": 10
+    }
+  ]
 }

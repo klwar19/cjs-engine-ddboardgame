@@ -157,5 +157,37 @@
       ],
       "description": "It's already dead. Doesn't bleed, doesn't fear, doesn't tire. But it burns."
     }
+    ,
+    {
+      "id": "zombie_burnice_runner",
+      "name": "Burnice Runner",
+      "icon": "runner",
+      "tags": [
+        "burnice",
+        "fire",
+        "mobility"
+      ],
+      "effects": [
+        {
+          "effectId": "damage_mod_fire",
+          "overrides": {
+            "value": 6
+          }
+        },
+        {
+          "effectId": "movement_mod",
+          "overrides": {
+            "value": 1
+          }
+        },
+        {
+          "effectId": "accuracy_mod",
+          "overrides": {
+            "value": 3
+          }
+        }
+      ],
+      "description": "Burnice fights by reading routes before the horde closes. Better fire damage, movement, and snap-shot accuracy."
+    }
   ]
 }

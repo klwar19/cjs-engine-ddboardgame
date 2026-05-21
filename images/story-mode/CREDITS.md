@@ -21,6 +21,7 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 - Source: user-provided project asset
 - Intended use: Earth/Zhonghai clickable travel-map backdrop
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\map_earth.png`
+- Current file is a lightly cleaned derivative of the same source with reduced watermark/text clutter for UI readability.
 
 - `earth/apartment-evening-vn.png`
 - Source: "Mouse-Drawn Backdrops" by XCVG on OpenGameArt

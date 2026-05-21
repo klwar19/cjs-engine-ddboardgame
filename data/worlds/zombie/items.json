@@ -5,7 +5,67 @@
     "scope": "world",
     "world": "zombie",
     "category": "items",
-    "status": "stub"
+    "status": "active"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "zombie_burnice_flare_carbine",
+      "name": "Burnice's Flare Carbine",
+      "icon": "Flare",
+      "slot": "weapon",
+      "rarity": "Uncommon",
+      "effects": [
+        {
+          "effectId": "accuracy_mod",
+          "overrides": {
+            "value": 1
+          }
+        }
+      ],
+      "weaponData": {
+        "baseDamage": 6,
+        "damageType": "Physical",
+        "element": "Fire",
+        "range": 3
+      },
+      "description": "A scavenged launcher tuned for flare bolts and short burn bursts. Light enough for rooftop fights.",
+      "grantedSkills": []
+    },
+    {
+      "id": "zombie_burnice_scavenger_jacket",
+      "name": "Burnice's Scavenger Jacket",
+      "icon": "Jacket",
+      "slot": "body",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "dr_mod_physical",
+          "overrides": {
+            "value": 2
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A reinforced jacket stitched with route tape, patch plates, and just enough padding to matter.",
+      "grantedSkills": []
+    },
+    {
+      "id": "zombie_burnice_route_badge",
+      "name": "Burnice's Route Badge",
+      "icon": "Badge",
+      "slot": "accessory1",
+      "rarity": "Common",
+      "effects": [
+        {
+          "effectId": "mp_mod_flat",
+          "overrides": {
+            "value": 6
+          }
+        }
+      ],
+      "weaponData": null,
+      "description": "A clipped route badge marked with fallback arrows and fuel notes. Helps Burnice pace longer runs.",
+      "grantedSkills": []
+    }
+  ]
 }
