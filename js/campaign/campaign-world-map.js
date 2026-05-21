@@ -688,7 +688,7 @@ window.CJS.CampaignWorldMap = (() => {
     const text = String(path || '').trim();
     if (!text) return '';
     if (/^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(text)) return text;
-    return `/${text.replace(/^\.?\//, '')}`;
+    return text.replace(/^\.?\//, '');
   }
 
   function _title(value) {
