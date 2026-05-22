@@ -54,6 +54,7 @@ const loadOrder = [
   'core/formulas.js',
   'core/dice.js',
   'core/undo-manager.js',
+  'core/state-tools.js',
   'core/data-store.js',
   'core/content-manager.js',
   'core/skill-resolver.js',
@@ -104,6 +105,8 @@ const DC  = CJS.DamageCalc;
 const AI  = CJS.AIController;
 const CM  = CJS.CombatManager;
 const Log = CJS.CombatLog;
+const RealAIConditions = CJS.AIConditions;
+const RealAITargeting = CJS.AITargeting;
 
 // ── MOCK COMBAT SYSTEMS ──────────────────────────────────────────────
 CJS.GridEngine = {
@@ -215,6 +218,26 @@ assert('unscoped draft duplicate garr is hidden when haven_garr exists',
   !visibleCharacterIds.includes('garr') && visibleCharacterIds.includes('haven_garr'));
 assert('explicit universal mitia remains visible beside haven_mitia',
   visibleCharacterIds.includes('mitia') && visibleCharacterIds.includes('haven_mitia'));
+
+console.log('\n-- TEST 0c: StateTools + DataStore snapshots --');
+
+DS.replace('skills', 'snapshot_skill', {
+  id: 'snapshot_skill',
+  name: 'Snapshot Skill',
+  effects: [{ effectId: 'burn', overrides: { value: 5 } }]
+});
+const sourceState = { nested: { value: 1 } };
+const producedState = CJS.StateTools.produce(sourceState, draft => {
+  draft.nested.value = 2;
+});
+assertEq('StateTools.produce returns edited clone', producedState.nested.value, 2);
+assertEq('StateTools.produce leaves source untouched', sourceState.nested.value, 1);
+const skillSnapshot = DS.snapshot('skills', 'snapshot_skill');
+skillSnapshot.effects[0].overrides.value = 99;
+assertEq('DataStore.snapshot(type,id) is read-only by copy', DS.get('skills', 'snapshot_skill').effects[0].overrides.value, 5);
+const collectionSnapshot = DS.snapshot('skills');
+collectionSnapshot.snapshot_skill.name = 'Mutated';
+assertEq('DataStore.snapshot(type) clones collections', DS.get('skills', 'snapshot_skill').name, 'Snapshot Skill');
 
 DS.reset();
 
@@ -661,6 +684,162 @@ const valResult3 = DS.validate();
 const badMon2Errors = valResult3.errors.filter(e => e.includes('bad_ai_mon2'));
 assert('validator errors on AI rule using non-existent skill',
   badMon2Errors.some(e => e.includes('nonexistent_skill')));
+
+// TEST 10b: AI compatibility aliases + personality fallbacks
+console.log('\n-- TEST 10b: AI compatibility + personalities --');
+
+DS.replace('skills', 'test_shock', {
+  id: 'test_shock', name: 'Test Shock', power: 10, ap: 1, mp: 0,
+  range: 3, element: 'Lightning', damageType: 'Magic', scalingStat: 'I',
+  cooldown: 0, qte: 'none', effects: []
+});
+DS.replace('skills', 'test_raise', {
+  id: 'test_raise', name: 'Test Raise', power: 0, ap: 1, mp: 0,
+  range: 1, element: 'Dark', damageType: 'Magic', scalingStat: 'I',
+  cooldown: 0, qte: 'none', effects: []
+});
+
+const savedAIConditions = CJS.AIConditions;
+const savedAITargeting = CJS.AITargeting;
+const savedGridForAI = CJS.GridEngine;
+const savedPathfindingForAI = CJS.Pathfinding;
+CJS.AIConditions = RealAIConditions;
+CJS.AITargeting = RealAITargeting;
+
+const aiActor = {
+  instanceId: 'ai_alias',
+  name: 'Alias Caster',
+  team: 'enemy',
+  behaviorAI: 'aggressive',
+  skills: ['test_shock'],
+  pos: [0, 0],
+  currentHP: 40,
+  maxHP: 40,
+  currentMP: 20,
+  rangeBonus: 0,
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: { test_shock: 2 } },
+  aiRules: [{ priority: 1, condition: 'skill_off_cooldown:shock', action: 'use_skill:shock', target: 'nearest_enemy' }]
+};
+const aiTargetWeak = {
+  instanceId: 'ai_target_weak',
+  name: 'Weak Target',
+  team: 'player',
+  type: 'healer',
+  skills: ['heal_light'],
+  pos: [0, 2],
+  currentHP: 20,
+  maxHP: 20,
+  compiledStats: { S: 2, I: 4 }
+};
+const aiTargetStrong = {
+  instanceId: 'ai_target_strong',
+  name: 'Strong Target',
+  team: 'player',
+  pos: [0, 3],
+  currentHP: 60,
+  maxHP: 60,
+  compiledStats: { S: 15, I: 8 }
+};
+const aiAlly = {
+  instanceId: 'ai_ally',
+  name: 'Ally',
+  team: 'enemy',
+  pos: [1, 0],
+  currentHP: 20,
+  maxHP: 20
+};
+let aiUnits = [aiActor, aiTargetWeak, aiTargetStrong, aiAlly];
+CJS.GridEngine = {
+  getAllUnits: () => aiUnits,
+  getUnit: (id) => aiUnits.find(u => u.instanceId === id) || null,
+  footprintDistance: (a, b) => Math.max(Math.abs(a.pos[0] - b.pos[0]), Math.abs(a.pos[1] - b.pos[1])),
+  getValidMoves: () => [[0, 4], [3, 3], [1, 1]],
+  getDims: () => ({ width: 8, height: 8 }),
+  getCell: () => ({ terrain: 'empty', unitId: null }),
+  distance: (r1, c1, r2, c2) => Math.max(Math.abs(r1 - r2), Math.abs(c1 - c2)),
+  hasLineOfSight: () => true,
+  isValidMove: () => ({ valid: true })
+};
+CJS.Pathfinding = {
+  findPath: () => null,
+  stepToward: ({ to }) => ({ to })
+};
+
+let aliasDecision = AI.decide(aiActor);
+assert('skill_off_cooldown short alias blocks a cooling skill',
+  !aliasDecision || aliasDecision.type !== 'skill' || aliasDecision.skillId !== 'test_shock');
+
+aiActor.turnState.cooldowns.test_shock = 0;
+aliasDecision = AI.decide(aiActor);
+assertEq('use_skill short alias resolves to owned full skill id', aliasDecision.skillId, 'test_shock');
+
+assert('allies_alive_lt_N evaluates against live allies',
+  RealAIConditions.evaluate('allies_alive_lt_3', { unit: aiActor, allUnits: aiUnits }));
+assert('allies_alive_gt_N evaluates against live allies',
+  RealAIConditions.evaluate('allies_alive_gt_1', { unit: aiActor, allUnits: aiUnits }));
+
+const selfCaster = {
+  ...aiActor,
+  instanceId: 'self_caster',
+  skills: ['test_raise'],
+  currentMP: 20,
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} },
+  aiRules: [{ priority: 1, condition: 'default', action: 'use_skill:test_raise', target: 'self' }]
+};
+aiUnits = [selfCaster, aiTargetWeak, aiTargetStrong];
+const selfDecision = AI.decide(selfCaster);
+assertEq('target self returns the acting unit', selfDecision.targetId, 'self_caster');
+
+const threatPick = RealAITargeting.pickTarget('highest_threat_enemy', selfCaster, aiUnits);
+assertEq('highest_threat_enemy picks the strongest threat', threatPick.unit.instanceId, 'ai_target_strong');
+
+const healerPick = RealAITargeting.pickTarget('healer_enemy', selfCaster, aiUnits);
+assertEq('healer_enemy detects support/healer targets', healerPick.unit.instanceId, 'ai_target_weak');
+
+const tankActor = {
+  ...aiActor,
+  instanceId: 'tank_actor',
+  behaviorAI: 'tank',
+  skills: [],
+  pos: [0, 0],
+  basicAttackRange: 3,
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} },
+  aiRules: []
+};
+aiUnits = [tankActor, aiTargetWeak, aiTargetStrong];
+const tankDecision = AI.decide(tankActor);
+assertEq('tank fallback attacks the highest-threat enemy in range', tankDecision.targetId, 'ai_target_strong');
+
+const cowardActor = {
+  ...tankActor,
+  instanceId: 'coward_actor',
+  behaviorAI: 'coward',
+  pos: [0, 0],
+  basicAttackRange: 1,
+  turnState: { hasMoved: false, mainActionUsed: true, apRemaining: 1, cooldowns: {} }
+};
+aiUnits = [cowardActor, aiTargetStrong];
+const cowardDecision = AI.decide(cowardActor);
+assert('coward fallback moves away from the nearest enemy',
+  cowardDecision.type === 'move' && cowardDecision.targetPos[0] === 3 && cowardDecision.targetPos[1] === 3);
+
+const summonerActor = {
+  ...selfCaster,
+  instanceId: 'summoner_actor',
+  behaviorAI: 'summoner',
+  aiRules: [],
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} }
+};
+aiUnits = [summonerActor, aiTargetStrong];
+const summonerDecision = AI.decide(summonerActor);
+assertEq('summoner fallback prefers a self-targeted support skill', summonerDecision.targetId, 'summoner_actor');
+
+CJS.AIConditions = savedAIConditions;
+CJS.AITargeting = savedAITargeting;
+CJS.GridEngine = savedGridForAI;
+CJS.Pathfinding = savedPathfindingForAI;
+DS.remove('skills', 'test_shock');
+DS.remove('skills', 'test_raise');
 
 // ══════════════════════════════════════════════════════════════════════
 // TEST 11: Weapon basic attack range

@@ -215,6 +215,7 @@ vm.createContext(sandbox);
 const loadOrder = [
   'core/constants.js',
   'core/formulas.js',
+  'core/state-tools.js',
   'core/data-store.js',
   'campaign/campaign-tags.js',
   'campaign/campaign-state.js',

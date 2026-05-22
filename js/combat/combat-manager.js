@@ -31,6 +31,7 @@ window.CJS.CombatManager = (() => {
   const AM  = () => window.CJS.AudioManager;
   const AB  = () => window.CJS.AnimationBus;
   const WX  = () => window.CJS.Weather;
+  const ST  = () => window.CJS.StateTools;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
   let _state = null;
@@ -573,6 +574,12 @@ window.CJS.CombatManager = (() => {
 
   function getState() { return _state; }
 
+  function getStateSnapshot() {
+    if (!_state) return null;
+    const { subscribers, ...snapshot } = _state;
+    return ST()?.clone ? ST().clone(snapshot) : JSON.parse(JSON.stringify(snapshot));
+  }
+
   function getUnits() {
     return _state ? Object.values(_state.units) : [];
   }
@@ -835,7 +842,7 @@ window.CJS.CombatManager = (() => {
     isAwaitingInput, isManualTurn,
     // One-shot auto control (manual-first UX)
     autoOneTurn, autoOneRound, autoUntilStop, stopAuto,
-    getState, getUnits, getInitiativeOrder,
+    getState, getStateSnapshot, getUnits, getInitiativeOrder,
     subscribe, reset,
     // Environment / weather
     getEnvironment,

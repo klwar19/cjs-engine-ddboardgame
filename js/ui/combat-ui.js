@@ -29,6 +29,8 @@ window.CJS.CombatUI = (() => {
   let _callbacks = {};
   let _mode = 'idle';
   let _pendingAction = null;
+  let _actionTab = 'attack';
+  let _skillFilter = '';
   let _lastEncounterId = null;
 
   let _unsubCM = null;
@@ -42,6 +44,13 @@ window.CJS.CombatUI = (() => {
   let _bannerTimer = 0;
 
   const MAX_ACTIVE_FX = 24;
+  const ACTION_TABS = [
+    { id: 'move', label: 'Move' },
+    { id: 'attack', label: 'Attack' },
+    { id: 'skills', label: 'Skills' },
+    { id: 'items', label: 'Items' },
+    { id: 'guard', label: 'Guard' }
+  ];
 
   let $grid = null;
   let $log = null;
@@ -61,6 +70,8 @@ window.CJS.CombatUI = (() => {
     _callbacks = { ...options };
     _mode = 'idle';
     _pendingAction = null;
+    _actionTab = 'attack';
+    _skillFilter = '';
 
     _buildLayout();
     _bindEvents();
@@ -1246,69 +1257,248 @@ window.CJS.CombatUI = (() => {
       return;
     }
 
-    let html = '<div class="action-buttons">';
-    html += '<div class="combat-action-core">';
+    const tabs = _getActionTabs(available);
+    _actionTab = _resolveActionTab(available, tabs);
 
-    if (available.move) {
-      html += '<button class="btn btn-action btn-move" data-action="move">Move</button>';
+    let html = '<div class="action-buttons combat-action-panel-v2">';
+    html += '<div class="combat-action-tabs" role="tablist" aria-label="Combat actions">';
+    for (const tab of tabs) {
+      const active = tab.id === _actionTab;
+      const disabled = !tab.enabled ? 'disabled aria-disabled="true"' : '';
+      html += `
+        <button type="button" class="combat-action-tab ${active ? 'is-active' : ''}" role="tab" aria-selected="${active ? 'true' : 'false'}" data-action-tab="${_escAttr(tab.id)}" ${disabled}>
+          <span class="combat-action-tab-label">${_escHtml(tab.label)}</span>
+          <span class="combat-action-tab-count">${tab.count}</span>
+        </button>
+      `;
     }
-
-    if (available.attack) {
-      html += '<button class="btn btn-action btn-attack" data-action="attack">Attack</button>';
-    }
-
-    if (available.defend) {
-      html += '<button class="btn btn-action btn-defend" data-action="defend">Defend</button>';
-    }
-
-    html += '<button class="btn btn-action btn-end-turn" data-action="end_turn">End Turn</button>';
     html += '</div>';
+    html += `<div class="combat-action-tab-panel" role="tabpanel" data-action-tab-panel="${_escAttr(_actionTab)}">`;
+    html += _renderActionTabPanel(_actionTab, available, unit);
+    html += '</div></div>';
 
-    if (available.skills?.length > 0) {
-      html += `<div class="combat-action-section combat-action-skills"><div class="combat-action-section-head">Skills <span class="combat-action-count">${available.skills.length}</span></div><div class="skill-list">`;
-      for (const skillEntry of available.skills) {
-        const skillName = skillEntry.skill?.name || skillEntry.id;
-        const disabled = !skillEntry.usable ? 'disabled' : '';
-        const costParts = [`AP ${skillEntry.apCost || 0}`];
-        if (skillEntry.mpCost) costParts.push(`MP ${skillEntry.mpCost}`);
-        const weaponReason = !skillEntry.weaponReady && skillEntry.requiredWeaponTypes?.length
-          ? `Requires ${skillEntry.requiredWeaponTypes.map((type) => String(type).replace(/_/g, ' ')).join(' or ')}`
-          : '';
-        const reasonText = weaponReason || (skillEntry.cooldown > 0 ? `Cooldown: ${skillEntry.cooldown} turns` : '');
-        const reason = reasonText ? `title="${_escAttr(reasonText)}"` : '';
-        const iconHtml = _renderEntityIcon(skillEntry.skill, 'skill', 'sm');
-        html += `
-          <button class="btn btn-action btn-skill" data-action="skill" data-skill="${_escAttr(skillEntry.id)}" ${disabled} ${reason}>
-            ${iconHtml}
-            <span class="btn-action-name">${_escHtml(skillName)}</span>
-            <span class="skill-cost">${_escHtml(costParts.join(' | '))}</span>
-          </button>
-        `;
-      }
-      html += '</div></div>';
-    }
-
-    if (available.items?.length > 0) {
-      html += `<div class="combat-action-section combat-action-items"><div class="combat-action-section-head">Items <span class="combat-action-count">${available.items.length}</span></div><div class="item-list">`;
-      for (const itemEntry of available.items) {
-        const itemName = itemEntry.item?.name || itemEntry.id;
-        const iconHtml = _renderEntityIcon(itemEntry.item, 'item', 'sm');
-        html += `
-          <button class="btn btn-action btn-item" data-action="item" data-item="${_escAttr(itemEntry.id)}">
-            ${iconHtml}
-            <span class="btn-action-name">${_escHtml(itemName)}</span>
-          </button>
-        `;
-      }
-      html += '</div></div>';
-    }
-
-    html += '</div>';
     $actions.innerHTML = html;
+
+    $actions.querySelectorAll('[data-action-tab]').forEach((button) => {
+      button.addEventListener('click', () => _onActionTabClick(button));
+    });
+
+    $actions.querySelector('[data-action-skill-search]')?.addEventListener('input', (event) => {
+      _onSkillSearchInput(event.target);
+    });
 
     $actions.querySelectorAll('[data-action]').forEach((button) => {
       button.addEventListener('click', () => _onActionClick(button));
     });
+  }
+
+  function _getActionTabs(available) {
+    const skills = available.skills || [];
+    const items = available.items || [];
+    return ACTION_TABS.map((tab) => {
+      if (tab.id === 'move') return { ...tab, count: available.move ? 1 : 0, enabled: !!available.move };
+      if (tab.id === 'attack') return { ...tab, count: available.attack ? 1 : 0, enabled: !!available.attack };
+      if (tab.id === 'skills') return { ...tab, count: skills.length, enabled: skills.length > 0 };
+      if (tab.id === 'items') return { ...tab, count: items.length, enabled: items.length > 0 };
+      return { ...tab, count: (available.defend ? 1 : 0) + 1, enabled: true };
+    });
+  }
+
+  function _resolveActionTab(available, tabs) {
+    const current = tabs.find((tab) => tab.id === _actionTab && tab.enabled);
+    if (current) return current.id;
+    for (const id of ['attack', 'skills', 'items', 'move', 'guard']) {
+      const tab = tabs.find((entry) => entry.id === id && entry.enabled);
+      if (tab) return tab.id;
+    }
+    return 'guard';
+  }
+
+  function _renderActionTabPanel(tabId, available, unit) {
+    switch (tabId) {
+      case 'move':
+        return available.move
+          ? _renderCoreActionButton('move', 'Move', 'btn-move', 'Pick a reachable blue cell')
+          : '<div class="combat-action-empty">Move is already used.</div>';
+      case 'attack':
+        return available.attack
+          ? _renderCoreActionButton('attack', 'Attack', 'btn-attack', 'Choose an enemy in weapon range')
+          : '<div class="combat-action-empty">Attack is unavailable.</div>';
+      case 'skills':
+        return _renderSkillsPanel(available.skills || [], unit);
+      case 'items':
+        return _renderItemsPanel(available.items || []);
+      case 'guard':
+      default:
+        return _renderGuardPanel(available);
+    }
+  }
+
+  function _renderCoreActionButton(action, label, className, meta) {
+    return `
+      <div class="combat-action-list">
+        <button class="btn btn-action ${className}" data-action="${_escAttr(action)}">
+          <span class="btn-action-copy">
+            <span class="btn-action-name">${_escHtml(label)}</span>
+            <span class="btn-action-meta">${_escHtml(meta || '')}</span>
+          </span>
+        </button>
+      </div>
+    `;
+  }
+
+  function _renderGuardPanel(available) {
+    let html = '<div class="combat-action-list">';
+    if (available.defend) {
+      html += `
+        <button class="btn btn-action btn-defend" data-action="defend">
+          <span class="btn-action-copy">
+            <span class="btn-action-name">Defend</span>
+            <span class="btn-action-meta">Guard and end your main action</span>
+          </span>
+        </button>
+      `;
+    }
+    html += `
+      <button class="btn btn-action btn-end-turn" data-action="end_turn">
+        <span class="btn-action-copy">
+          <span class="btn-action-name">End Turn</span>
+          <span class="btn-action-meta">Pass remaining actions</span>
+        </span>
+      </button>
+    `;
+    html += '</div>';
+    return html;
+  }
+
+  function _renderSkillsPanel(skills, unit) {
+    if (!skills.length) return '<div class="combat-action-empty">No skills available.</div>';
+    const filter = _skillFilter.trim().toLowerCase();
+    let visible = 0;
+    let html = '';
+    if (skills.length > 8) {
+      html += `
+        <label class="combat-action-search">
+          <span>Search</span>
+          <input type="search" data-action-skill-search value="${_escAttr(_skillFilter)}" placeholder="Filter skills">
+        </label>
+      `;
+    }
+    html += '<div class="combat-action-list combat-skill-list">';
+    for (const skillEntry of skills) {
+      const matches = _skillMatchesFilter(skillEntry, filter);
+      if (matches) visible++;
+      html += _renderSkillButton(skillEntry, unit, !matches);
+    }
+    html += '</div>';
+    html += `<div class="combat-action-empty" data-skill-search-empty ${visible > 0 ? 'hidden' : ''}>No skills match that search.</div>`;
+    return html;
+  }
+
+  function _renderSkillButton(skillEntry, unit, hidden) {
+    const skill = skillEntry.skill || {};
+    const skillName = skill.name || skillEntry.id;
+    const disabled = !skillEntry.usable ? 'disabled aria-disabled="true"' : '';
+    const reasonText = _skillDisabledReason(skillEntry, unit);
+    const reason = reasonText ? `title="${_escAttr(reasonText)}"` : '';
+    const iconHtml = _renderEntityIcon(skill, 'skill', 'sm');
+    const meta = _skillMetaChips(skillEntry, unit);
+    const qte = skill.qte && skill.qte !== 'none' ? `<span class="action-chip qte">QTE ${_escHtml(skill.qte)}</span>` : '';
+    const searchText = _skillSearchText(skillEntry);
+    return `
+      <button class="btn btn-action btn-skill" data-action="skill" data-skill="${_escAttr(skillEntry.id)}" data-skill-search-text="${_escAttr(searchText)}" ${disabled} ${reason} ${hidden ? 'hidden' : ''}>
+        ${iconHtml}
+        <span class="btn-action-copy">
+          <span class="btn-action-name">${_escHtml(skillName)}</span>
+          <span class="btn-action-meta">${meta}${qte}</span>
+          ${reasonText && !skillEntry.usable ? `<span class="btn-action-reason">${_escHtml(reasonText)}</span>` : ''}
+        </span>
+      </button>
+    `;
+  }
+
+  function _renderItemsPanel(items) {
+    if (!items.length) return '<div class="combat-action-empty">No consumable items available.</div>';
+    let html = '<div class="combat-action-list combat-item-list">';
+    for (const itemEntry of items) {
+      const itemName = itemEntry.item?.name || itemEntry.id;
+      const iconHtml = _renderEntityIcon(itemEntry.item, 'item', 'sm');
+      html += `
+        <button class="btn btn-action btn-item" data-action="item" data-item="${_escAttr(itemEntry.id)}">
+          ${iconHtml}
+          <span class="btn-action-copy">
+            <span class="btn-action-name">${_escHtml(itemName)}</span>
+            <span class="btn-action-meta">Consumable</span>
+          </span>
+        </button>
+      `;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function _skillMetaChips(skillEntry, unit) {
+    const chips = [
+      `<span class="action-chip">AP ${skillEntry.apCost || 0}</span>`
+    ];
+    if (skillEntry.mpCost) chips.push(`<span class="action-chip">MP ${skillEntry.mpCost}</span>`);
+    if (skillEntry.cooldown > 0) chips.push(`<span class="action-chip cooldown">CD ${skillEntry.cooldown}</span>`);
+    if (skillEntry.isUltimate) {
+      const meter = Number(unit?.ultimateMeter || 0);
+      const cost = Number(skillEntry.ultimateCost || 100);
+      chips.push(`<span class="action-chip ultimate ${skillEntry.ultimateReady ? 'ready' : 'locked'}">ULT ${Math.min(meter, cost)}/${cost}</span>`);
+    }
+    return chips.join('');
+  }
+
+  function _skillDisabledReason(skillEntry, unit) {
+    if (skillEntry.usable) return '';
+    if (skillEntry.silenced) return 'Skills are blocked';
+    if (!skillEntry.weaponReady && skillEntry.requiredWeaponTypes?.length) {
+      return `Requires ${skillEntry.requiredWeaponTypes.map((type) => String(type).replace(/_/g, ' ')).join(' or ')}`;
+    }
+    if (skillEntry.cooldown > 0) return `Cooldown: ${skillEntry.cooldown} turns`;
+    if ((unit?.currentMP || 0) < (skillEntry.mpCost || 0)) return `Needs ${skillEntry.mpCost || 0} MP`;
+    if ((unit?.turnState?.apRemaining || 0) < (skillEntry.apCost || 0)) return `Needs ${skillEntry.apCost || 0} AP`;
+    if (skillEntry.isUltimate && !skillEntry.ultimateReady) return `Ultimate not ready`;
+    return 'Unavailable';
+  }
+
+  function _skillSearchText(skillEntry) {
+    const skill = skillEntry.skill || {};
+    return [
+      skillEntry.id,
+      skill.name,
+      skill.description,
+      skill.element,
+      skill.damageType,
+      skill.qte,
+      ...(skill.tags || [])
+    ].filter(Boolean).join(' ').toLowerCase();
+  }
+
+  function _skillMatchesFilter(skillEntry, filter) {
+    return !filter || _skillSearchText(skillEntry).includes(filter);
+  }
+
+  function _onActionTabClick(button) {
+    if (button.disabled) return;
+    _actionTab = button.dataset.actionTab || 'attack';
+    const state = CM().getState ? CM().getState() : { phase: 'action' };
+    _renderActions(state);
+  }
+
+  function _onSkillSearchInput(input) {
+    _skillFilter = input?.value || '';
+    const filter = _skillFilter.trim().toLowerCase();
+    let visible = 0;
+    $actions.querySelectorAll('[data-skill-search-text]').forEach((button) => {
+      const matches = !filter || String(button.dataset.skillSearchText || '').includes(filter);
+      button.hidden = !matches;
+      if (matches) visible++;
+    });
+    const empty = $actions.querySelector('[data-skill-search-empty]');
+    if (empty) empty.hidden = visible > 0;
   }
 
   function _onActionClick(button) {

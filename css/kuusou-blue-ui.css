@@ -2737,12 +2737,12 @@ body.combat-page {
 
 /* --- L2D companion: small breathing room when adjacent to combat sidebar --- */
 body.combat-page.has-l2d-companion #combat-app {
-  padding-right: calc(var(--l2d-combat-w) + 28px);
+  padding-right: calc(var(--l2d-combat-w) + 120px);
 }
 
 @media (max-width: 1280px) {
   body.combat-page.has-l2d-companion #combat-app {
-    padding-right: calc(var(--l2d-combat-w) * 0.86 + 18px);
+    padding-right: calc(var(--l2d-combat-w) * 0.86 + 90px);
   }
 }
 
@@ -3943,7 +3943,7 @@ button {
 .campaign-result-card,
 .campaign-side-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.74)) !important,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(237, 250, 255, 0.74)),
     var(--ku-panel) !important;
   background-size: 100% 100% !important;
   color: var(--ku-ink) !important;
@@ -3997,7 +3997,7 @@ button {
 .modal,
 .modal .modal-body {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 250, 255, 0.82)) !important,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 250, 255, 0.82)),
     var(--ku-panel) !important;
   background-size: 100% 100% !important;
   color: var(--ku-ink) !important;

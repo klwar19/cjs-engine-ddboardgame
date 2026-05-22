@@ -82,12 +82,15 @@ window.CJS.AIConditions = (() => {
     }
 
     // ── SKILL READINESS ──────────────────────────────────────────
-    if (pred.startsWith('skill_ready:')) {
-      const skillId = pred.substring('skill_ready:'.length);
-      return _isSkillReady(unit, skillId);
+    if (pred.startsWith('skill_ready:') || pred.startsWith('skill_off_cooldown:')) {
+      return _isSkillReady(unit, pred.split(':')[1]);
     }
     if (pred.startsWith('skill_on_cooldown:')) {
       const skillId = pred.substring('skill_on_cooldown:'.length);
+      return !_isSkillReady(unit, skillId);
+    }
+    if (pred.startsWith('skill_cooling_down:')) {
+      const skillId = pred.substring('skill_cooling_down:'.length);
       return !_isSkillReady(unit, skillId);
     }
 
@@ -117,6 +120,18 @@ window.CJS.AIConditions = (() => {
       const allies  = _alliesAlive(unit, ctx).length;
       const enemies = _enemiesAlive(unit, ctx).length;
       return allies > enemies;
+    }
+    if (pred.startsWith('allies_alive_')) {
+      const m = pred.match(/^allies_alive_(lt|lte|eq|gte|gt)_(\d+)$/);
+      if (!m) return false;
+      const count = _alliesAlive(unit, ctx).length;
+      return _compareWord(count, m[1], parseInt(m[2], 10));
+    }
+    if (pred.startsWith('enemies_alive_')) {
+      const m = pred.match(/^enemies_alive_(lt|lte|eq|gte|gt)_(\d+)$/);
+      if (!m) return false;
+      const count = _enemiesAlive(unit, ctx).length;
+      return _compareWord(count, m[1], parseInt(m[2], 10));
     }
 
     // ── ALLY STATUS ──────────────────────────────────────────────
@@ -157,10 +172,25 @@ window.CJS.AIConditions = (() => {
 
   // ── HELPERS ────────────────────────────────────────────────────────
   function _isSkillReady(unit, skillId) {
-    const cd = unit.turnState?.cooldowns?.[skillId];
-    if (cd && cd > 0) return false;
+    const keys = _matchingSkillKeys(unit, skillId);
+    const cds = unit.turnState?.cooldowns || {};
+    for (const key of keys) {
+      const cd = cds[key];
+      if (cd && cd > 0) return false;
+    }
     // TODO: MP check could be here too, but skill_ready is usually cooldown-only.
     return true;
+  }
+
+  function _matchingSkillKeys(unit, rawSkillId) {
+    const raw = String(rawSkillId || '').trim();
+    if (!raw) return [];
+    const SR = window.CJS.SkillResolver;
+    const owned = SR
+      ? SR.getSkillIds(unit.skills || [])
+      : (unit.skills || []).map((entry) => typeof entry === 'string' ? entry : entry?.skillId).filter(Boolean);
+    const matches = owned.filter((id) => id === raw || String(id).endsWith(`_${raw}`));
+    return matches.length ? matches : [raw];
   }
 
   function _enemiesAlive(unit, ctx) {
@@ -187,6 +217,17 @@ window.CJS.AIConditions = (() => {
       case '<':  return a < b;
       case '=':  return a === b;
       default:   return false;
+    }
+  }
+
+  function _compareWord(a, op, b) {
+    switch (op) {
+      case 'gte': return a >= b;
+      case 'lte': return a <= b;
+      case 'gt':  return a > b;
+      case 'lt':  return a < b;
+      case 'eq':  return a === b;
+      default:    return false;
     }
   }
 

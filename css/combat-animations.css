@@ -550,7 +550,14 @@ body.no-anim .cjs-turn-banner {
 }
 
 /* Animation-off respect for reduced motion / no-anim mode */
-body.no-anim .cjs-weather-fx,
+body.no-anim .cjs-rain-drop,
+body.no-anim .cjs-snow-flake,
+body.no-anim .cjs-sand-streak,
+body.no-anim .cjs-acid-drop,
+body.no-anim .cjs-acid-splash,
+body.no-anim .cjs-sun-ray {
+  animation: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   .cjs-rain-drop, .cjs-snow-flake, .cjs-sand-streak,
   .cjs-acid-drop, .cjs-acid-splash, .cjs-sun-ray { animation: none !important; }

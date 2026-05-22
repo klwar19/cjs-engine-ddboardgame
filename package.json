@@ -1,0 +1,15 @@
+{
+  "name": "cjs-engine-ddboardgame",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node test_engine.js && node test_map_type_separation.js && node test_campaign_story_mode.js && node test_campaign_story_branching.js && node test_campaign_sequence_scenario_flow.js",
+    "typecheck": "tsc --noEmit",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14"
+  }
+}

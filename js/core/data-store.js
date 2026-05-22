@@ -13,6 +13,7 @@ window.CJS.DataStore = (() => {
 
   const C  = () => window.CJS.CONST;
   const UM = () => window.CJS.UndoManager;
+  const ST = () => window.CJS.StateTools;
 
   // Push to undo stack if manager is loaded and enabled.
   // Skips array types (quips, quizBank) — those aren't undoable entities.
@@ -83,6 +84,10 @@ window.CJS.DataStore = (() => {
       try { listener(change); }
       catch (error) { console.error('DataStore listener error:', error); }
     }
+  }
+
+  function _clone(value) {
+    return ST()?.clone ? ST().clone(value) : JSON.parse(JSON.stringify(value));
   }
 
   function _applyManifestDefaults(type, record) {
@@ -272,6 +277,16 @@ window.CJS.DataStore = (() => {
   function get(type, id) {
     if (!_data[type]) return null;
     return _data[type][id] || null;
+  }
+
+  function snapshot(type, id) {
+    if (!type) return _clone(_exportSnapshot());
+    if (!_data[type]) return null;
+    if (arguments.length === 1) return _clone(_data[type]);
+    const value = Array.isArray(_data[type])
+      ? (_data[type][id] ?? null)
+      : (_data[type][id] || null);
+    return _clone(value);
   }
 
   function exists(type, id) {
@@ -821,7 +836,7 @@ window.CJS.DataStore = (() => {
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     // CRUD
-    getAll, getAllAsArray, get, exists,
+    getAll, getAllAsArray, get, snapshot, exists,
     create, update, replace, remove, duplicate,
     // Search
     search, filterByTags, filterByCategory,

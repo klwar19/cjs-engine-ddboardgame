@@ -463,14 +463,18 @@ window.CJS.CONST = (() => {
   // ── AI BEHAVIOR ARCHETYPES ─────────────────────────────────────────
   const AI_ARCHETYPES = [
     'aggressive', 'defensive', 'sniper', 'berserker',
-    'support', 'tactical', 'coward', 'boss'
+    'support', 'tactical', 'tactician', 'coward', 'boss',
+    'summoner', 'tank', 'swarmer'
   ];
 
   const AI_TARGET_TYPES = [
     'nearest_enemy', 'lowest_hp_enemy', 'highest_hp_enemy',
     'lowest_hp_adjacent', 'most_clustered', 'random_enemy',
     'lowest_hp_ally', 'squishiest', 'most_threatening',
-    'furthest_enemy', 'lowest_dr_enemy', 'highest_damage_enemy'
+    'furthest_enemy', 'lowest_dr_enemy', 'highest_damage_enemy',
+    'highest_threat_enemy', 'healer_enemy', 'support_enemy',
+    'nearest_ally', 'adjacent_ally', 'pack_anchor_ally',
+    'pack_target_enemy', 'self'
   ];
 
   // ── QTE TYPES ──────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ window.CJS.CampaignState = (() => {
   const DS = () => window.CJS.DataStore;
   const F = () => window.CJS.Formulas;
   const PS = () => window.CJS.PersonaService;
+  const ST = () => window.CJS.StateTools;
 
   let _state = null;
   let _content = _emptyContent();
@@ -38,7 +39,7 @@ window.CJS.CampaignState = (() => {
   }
 
   function clone(value) {
-    return JSON.parse(JSON.stringify(value));
+    return ST()?.clone ? ST().clone(value) : JSON.parse(JSON.stringify(value));
   }
 
   function nowIso() {
@@ -79,15 +80,21 @@ window.CJS.CampaignState = (() => {
 
   function setState(nextState, meta = {}) {
     _state = normalizeSave(nextState);
+    ST()?.freezeDev?.(_state);
     _emit({ type: meta.type || 'replace', source: meta.source || 'state' });
     return _state;
   }
 
   function mutate(mutator, meta = {}) {
     if (!_state) return null;
-    mutator(_state);
-    _state = normalizeSave(_state);
+    const next = ST()?.produce ? ST().produce(_state, mutator) : (() => {
+      const draft = clone(_state);
+      mutator(draft);
+      return draft;
+    })();
+    _state = normalizeSave(next);
     _state.lastUpdated = nowIso();
+    ST()?.freezeDev?.(_state);
     _emit({ type: meta.type || 'mutate', source: meta.source || 'unknown', detail: meta.detail || null });
     return _state;
   }

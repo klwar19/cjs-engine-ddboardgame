@@ -52,7 +52,7 @@ window.CJS.AIController = (() => {
 
     // "use_skill:skillId"
     if (action.startsWith('use_skill:')) {
-      const skillId = action.substring('use_skill:'.length);
+      const skillId = _resolveUnitSkillId(unit, action.substring('use_skill:'.length));
       return _tryUseSkill(unit, skillId, targetSpec, ctx);
     }
 
@@ -91,6 +91,9 @@ window.CJS.AIController = (() => {
 
   // ── TRY USE SKILL ──────────────────────────────────────────────────
   function _tryUseSkill(unit, skillId, targetSpec, ctx) {
+    skillId = _resolveUnitSkillId(unit, skillId);
+    if (!skillId) return null;
+
     // Ownership check: does this unit actually have this skill?
     const SR = window.CJS.SkillResolver;
     if (SR && !SR.hasSkill(unit, skillId)) return null;
@@ -113,6 +116,12 @@ window.CJS.AIController = (() => {
     const range = Math.max(1, Number(skill.range || 1) + Number(unit.rangeBonus || 0));
 
     if (skill.aoe && skill.aoe !== 'none') {
+      if (targetSpec === 'self' && unit.pos) {
+        return {
+          type: 'skill', skillId, aoeCenter: [...unit.pos],
+          apCost: skill.ap || 1, mpCost: skill.mp || 0
+        };
+      }
       // AoE skill — pick best cell
       const cell = AIT().bestAoECell(unit, `aoe_${skill.aoe}`, skill.aoeSize || 2, range);
       if (!cell) return null;
@@ -274,12 +283,14 @@ window.CJS.AIController = (() => {
   // When no rule matches (or unit has no rules), fall back to an archetype-
   // based default behavior.
   function _archetypeDefault(unit, ctx) {
-    const archetype = unit.behaviorAI || 'aggressive';
+    const archetype = _normalizeArchetype(unit.behaviorAI || 'aggressive');
 
     // Try to attack an enemy in weapon range
     const AH = window.CJS.ActionHandler;
     const atkRange = (AH && AH.getAttackRange) ? AH.getAttackRange(unit) : 1;
-    const adjacent = AIT().pickTarget('nearest_enemy', unit, ctx.allUnits, { range: atkRange });
+    const attackTarget = _attackTargetForArchetype(archetype);
+    const adjacent = AIT().pickTarget(attackTarget, unit, ctx.allUnits, { range: atkRange })
+      || (attackTarget !== 'nearest_enemy' ? AIT().pickTarget('nearest_enemy', unit, ctx.allUnits, { range: atkRange }) : null);
     if (adjacent && (unit.turnState?.apRemaining || 0) >= 1) {
       return { type: 'attack', targetId: adjacent.unit.instanceId, apCost: 1, mpCost: 0 };
     }
@@ -292,13 +303,9 @@ window.CJS.AIController = (() => {
         return SR ? SR.resolveUnitSkill(unit, sid) : DS().get('skills', sid);
       })
       .filter(s => s && _canUseSkill(unit, s));
-    if (readySkills.length) {
-      readySkills.sort((a, b) => (b.power || 0) - (a.power || 0));
-      const skill = readySkills[0];
-      const strategy = archetype === 'support' ? 'lowest_hp_ally'
-                     : archetype === 'sniper'  ? 'squishiest'
-                     : 'nearest_enemy';
-      const decision = _tryUseSkill(unit, skill.id, strategy, ctx);
+    const skillTargetPrefs = _skillTargetPrefs(archetype, unit);
+    for (const skill of _rankSkillsForArchetype(readySkills, archetype)) {
+      const decision = _firstSkillDecision(unit, skill, _targetPrefsForSkill(skill, skillTargetPrefs), ctx);
       if (decision) return decision;
     }
 
@@ -308,7 +315,13 @@ window.CJS.AIController = (() => {
         const mv = _tryMoveAway(unit, 'nearest_enemy', ctx);
         if (mv) return mv;
       }
-      const mv = _tryMoveToward(unit, 'nearest_enemy', ctx);
+      if (archetype === 'swarmer') {
+        const allyMove = _tryMoveToward(unit, 'pack_anchor_ally', ctx);
+        if (allyMove) return allyMove;
+      }
+      const moveTarget = _moveTargetForArchetype(archetype);
+      const mv = _tryMoveToward(unit, moveTarget, ctx)
+        || (moveTarget !== 'nearest_enemy' ? _tryMoveToward(unit, 'nearest_enemy', ctx) : null);
       if (mv) return mv;
     }
 
@@ -326,6 +339,114 @@ window.CJS.AIController = (() => {
     if ((unit.currentMP || 0) < (skill.mp || 0)) return false;
     if ((unit.turnState?.apRemaining || 0) < (skill.ap || 1)) return false;
     return true;
+  }
+
+  function _resolveUnitSkillId(unit, rawSkillId) {
+    const raw = String(rawSkillId || '').trim();
+    if (!raw) return '';
+    const SR = window.CJS.SkillResolver;
+    const ids = SR
+      ? SR.getSkillIds(unit.skills || [])
+      : (unit.skills || []).map((entry) => typeof entry === 'string' ? entry : entry?.skillId).filter(Boolean);
+    if (ids.includes(raw)) return raw;
+    return ids.find((id) => String(id).endsWith(`_${raw}`)) || raw;
+  }
+
+  function _normalizeArchetype(value) {
+    const key = String(value || 'aggressive').toLowerCase().replace(/\s+/g, '_');
+    return key === 'tactician' ? 'tactical' : key;
+  }
+
+  function _attackTargetForArchetype(archetype) {
+    if (archetype === 'tactical') return 'healer_enemy';
+    if (archetype === 'sniper') return 'squishiest';
+    if (archetype === 'tank' || archetype === 'boss') return 'highest_threat_enemy';
+    if (archetype === 'swarmer') return 'pack_target_enemy';
+    return 'nearest_enemy';
+  }
+
+  function _moveTargetForArchetype(archetype) {
+    if (archetype === 'tactical') return 'healer_enemy';
+    if (archetype === 'tank' || archetype === 'boss') return 'highest_threat_enemy';
+    if (archetype === 'swarmer') return 'pack_target_enemy';
+    return 'nearest_enemy';
+  }
+
+  function _skillTargetPrefs(archetype, unit) {
+    switch (archetype) {
+      case 'support':
+      case 'summoner':
+        return ['self', 'lowest_hp_ally', 'support_enemy', 'nearest_enemy'];
+      case 'sniper':
+        return ['squishiest', 'lowest_hp_enemy', 'furthest_enemy', 'nearest_enemy'];
+      case 'tactical':
+        return ['healer_enemy', 'support_enemy', 'lowest_hp_enemy', 'most_clustered', 'nearest_enemy'];
+      case 'coward':
+        return ['nearest_enemy', 'squishiest', 'lowest_hp_enemy'];
+      case 'tank':
+        return ['highest_threat_enemy', 'nearest_enemy', 'lowest_hp_adjacent'];
+      case 'boss':
+        return _hpPct(unit) < 0.5
+          ? ['most_clustered', 'highest_threat_enemy', 'lowest_hp_enemy', 'nearest_enemy']
+          : ['highest_threat_enemy', 'most_clustered', 'nearest_enemy'];
+      case 'swarmer':
+        return ['pack_target_enemy', 'lowest_hp_enemy', 'nearest_enemy'];
+      case 'berserker':
+        return ['nearest_enemy', 'lowest_hp_enemy'];
+      default:
+        return ['nearest_enemy'];
+    }
+  }
+
+  function _rankSkillsForArchetype(skills, archetype) {
+    return [...skills].sort((a, b) => {
+      if (archetype === 'support' || archetype === 'summoner') {
+        return _supportSkillScore(b) - _supportSkillScore(a);
+      }
+      if (archetype === 'tank') {
+        return _controlSkillScore(b) - _controlSkillScore(a);
+      }
+      return (b.power || 0) - (a.power || 0);
+    });
+  }
+
+  function _targetPrefsForSkill(skill, fallbackPrefs) {
+    const text = [skill.id, skill.name, skill.description, ...(skill.tags || [])].join(' ').toLowerCase();
+    if (/(heal|regen|restore|mend|cure)/.test(text)) {
+      return ['lowest_hp_ally', 'self', ...fallbackPrefs];
+    }
+    if (/(heal|regen|restore|shield|guard|buff|chant|roar|summon|raise)/.test(text) || !skill.power) {
+      return ['self', 'lowest_hp_ally', ...fallbackPrefs];
+    }
+    if (skill.aoe && skill.aoe !== 'none') {
+      return ['most_clustered', ...fallbackPrefs];
+    }
+    return fallbackPrefs;
+  }
+
+  function _firstSkillDecision(unit, skill, targetPrefs, ctx) {
+    const seen = new Set();
+    for (const pref of targetPrefs) {
+      if (!pref || seen.has(pref)) continue;
+      seen.add(pref);
+      const decision = _tryUseSkill(unit, skill.id, pref, ctx);
+      if (decision) return decision;
+    }
+    return null;
+  }
+
+  function _supportSkillScore(skill) {
+    const text = [skill.id, skill.name, skill.description, ...(skill.tags || [])].join(' ').toLowerCase();
+    return (/(heal|regen|restore|shield|buff|summon|raise|chant)/.test(text) ? 100 : 0) + (skill.power || 0);
+  }
+
+  function _controlSkillScore(skill) {
+    const text = [skill.id, skill.name, skill.description, ...(skill.tags || [])].join(' ').toLowerCase();
+    return (/(taunt|stun|slow|root|knock|mark|shield|guard)/.test(text) ? 100 : 0) + (skill.power || 0);
+  }
+
+  function _hpPct(unit) {
+    return unit?.maxHP ? (unit.currentHP || 0) / unit.maxHP : 1;
   }
 
   // ── CONTEXT BUILDING ───────────────────────────────────────────────

@@ -3,7 +3,10 @@
 //   'nearest_enemy', 'lowest_hp_enemy', 'highest_hp_enemy',
 //   'lowest_hp_adjacent', 'most_clustered', 'random_enemy',
 //   'lowest_hp_ally', 'squishiest', 'most_threatening',
-//   'furthest_enemy', 'lowest_dr_enemy', 'highest_damage_enemy'
+//   'furthest_enemy', 'lowest_dr_enemy', 'highest_damage_enemy',
+//   'highest_threat_enemy', 'healer_enemy', 'support_enemy',
+//   'nearest_ally', 'adjacent_ally', 'pack_anchor_ally',
+//   'pack_target_enemy', 'self'
 //
 // Each strategy takes (attacker, candidates, grid) and returns a single
 // chosen unit (or null if no valid target).
@@ -28,6 +31,8 @@ window.CJS.AITargeting = (() => {
   // Returns: { unit, score } or null
   function pickTarget(strategy, attacker, allUnits, opts = {}) {
     if (!attacker) return null;
+    if (strategy === 'self') return { unit: attacker, score: 0 };
+
     const units = allUnits || (GE() ? GE().getAllUnits() : []);
 
     const candidates = _filterCandidates(attacker, units, strategy, opts);
@@ -35,12 +40,15 @@ window.CJS.AITargeting = (() => {
 
     switch (strategy) {
       case 'nearest_enemy':        return _best(candidates, u => -_dist(attacker, u));
+      case 'nearest_ally':         return _best(candidates, u => -_dist(attacker, u));
       case 'furthest_enemy':       return _best(candidates, u =>  _dist(attacker, u));
       case 'lowest_hp_enemy':      return _best(candidates, u => -u.currentHP);
       case 'highest_hp_enemy':     return _best(candidates, u =>  u.currentHP);
       case 'lowest_hp_ally':       return _best(candidates, u => -u.currentHP);
       case 'highest_hp_ally':      return _best(candidates, u =>  u.currentHP);
       case 'lowest_hp_adjacent':   return _best(candidates, u => -u.currentHP,
+                                       u => _dist(attacker, u) <= 1);
+      case 'adjacent_ally':        return _best(candidates, u => -_dist(attacker, u),
                                        u => _dist(attacker, u) <= 1);
       case 'random_enemy':
       case 'random_ally':          return { unit: candidates[Math.floor(Math.random() * candidates.length)], score: 0 };
@@ -54,10 +62,23 @@ window.CJS.AITargeting = (() => {
         return _best(candidates, u => -(u.currentHP + (u.dr?.physical || 0) * 3 + (u.dr?.magic || 0) * 3));
 
       case 'most_threatening':
+      case 'highest_threat_enemy':
         // High S and/or I with low range = close-range threat; +high current HP
         return _best(candidates, u =>
           (u.compiledStats?.S || 0) + (u.compiledStats?.I || 0) * 0.8 + (u.currentHP / 10)
         );
+
+      case 'healer_enemy':
+        return _best(candidates, u => _healerScore(u), u => _healerScore(u) > 0);
+
+      case 'support_enemy':
+        return _best(candidates, u => _supportScore(u), u => _supportScore(u) > 0);
+
+      case 'pack_anchor_ally':
+        return _best(candidates, u => _nearbyAllyScore(u, units) - _dist(attacker, u) * 0.1);
+
+      case 'pack_target_enemy':
+        return _best(candidates, u => _nearbyEnemyOfTargetScore(attacker, u, units) - _dist(attacker, u) * 0.1);
 
       case 'lowest_dr_enemy':
         return _best(candidates, u => -((u.dr?.physical || 0) + (u.dr?.magic || 0) + (u.dr?.chaos || 0)));
@@ -76,7 +97,7 @@ window.CJS.AITargeting = (() => {
 
   // ── CANDIDATE FILTERING ────────────────────────────────────────────
   function _filterCandidates(attacker, units, strategy, opts) {
-    const wantAlly = strategy.includes('ally') || strategy === 'random_ally';
+    const wantAlly = strategy.includes('ally') || strategy === 'random_ally' || strategy === 'pack_anchor_ally';
     const team = opts.team || (wantAlly ? attacker.team : _oppositeTeam(attacker.team));
 
     let c = units.filter(u =>
@@ -129,6 +150,53 @@ window.CJS.AITargeting = (() => {
       if (GE().footprintDistance(u, target) <= 2) count++;
     }
     return count;
+  }
+
+  function _healerScore(unit) {
+    const text = _unitText(unit);
+    let score = /(heal|regen|medic|cleric|priest|support|restore)/.test(text) ? 20 : 0;
+    for (const entry of (unit.skills || [])) {
+      const id = typeof entry === 'string' ? entry : entry?.skillId;
+      if (/(heal|regen|restore|mend|cure)/.test(String(id || '').toLowerCase())) score += 10;
+    }
+    return score + _supportScore(unit) * 0.25;
+  }
+
+  function _supportScore(unit) {
+    const text = _unitText(unit);
+    let score = /(support|buffer|summoner|controller|necromancer|bard|tactician|healer)/.test(text) ? 12 : 0;
+    for (const entry of (unit.skills || [])) {
+      const id = typeof entry === 'string' ? entry : entry?.skillId;
+      if (/(buff|chant|roar|summon|raise|shield|mark|slow|stun|charm|taunt)/.test(String(id || '').toLowerCase())) score += 6;
+    }
+    return score;
+  }
+
+  function _unitText(unit) {
+    return [
+      unit?.id, unit?.baseId, unit?.instanceId, unit?.name,
+      unit?.type, unit?.role, unit?.behaviorAI,
+      ...(unit?.tags || [])
+    ].join(' ').toLowerCase();
+  }
+
+  function _nearbyAllyScore(unit, allUnits) {
+    if (!GE()) return 0;
+    return allUnits.filter((other) =>
+      other !== unit &&
+      other.team === unit.team &&
+      (other.currentHP || 0) > 0 &&
+      GE().footprintDistance(unit, other) <= 2
+    ).length;
+  }
+
+  function _nearbyEnemyOfTargetScore(attacker, target, allUnits) {
+    if (!GE()) return 0;
+    return allUnits.filter((other) =>
+      other.team === attacker.team &&
+      (other.currentHP || 0) > 0 &&
+      GE().footprintDistance(other, target) <= 2
+    ).length;
   }
 
   // ── CELL TARGETING (for AoE skills that target cells, not units) ──
