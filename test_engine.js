@@ -699,6 +699,26 @@ DS.replace('skills', 'test_raise', {
   cooldown: 0, qte: 'none', effects: []
 });
 
+assert('AI archetype editor metadata includes swarmer', !!CJS.CONST.AI_ARCHETYPE_INFO?.swarmer?.desc);
+assert('AI target editor metadata includes self', !!CJS.CONST.AI_TARGET_INFO?.self?.label);
+
+DS.replace('monsters', 'ai_alias_validator', {
+  id: 'ai_alias_validator', name: 'AI Alias Validator',
+  stats: { S: 5, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+  skills: ['test_shock'],
+  equipment: [], innatePassives: [],
+  aiRules: [
+    { priority: 1, condition: 'skill_off_cooldown:shock', action: 'use_skill:shock', target: 'nearest_enemy' }
+  ]
+});
+const aliasValidation = DS.validate();
+assert('DataStore validator accepts owned short AI skill aliases',
+  !aliasValidation.errors.concat(aliasValidation.warnings).some(msg => msg.includes('ai_alias_validator')));
+const aliasDetailedValidation = CJS.ContentManager.validateReferencesDetailed();
+assert('ContentManager validator accepts owned short AI skill aliases',
+  !aliasDetailedValidation.issues.some(issue => issue.id === 'ai_alias_validator'));
+DS.remove('monsters', 'ai_alias_validator');
+
 const savedAIConditions = CJS.AIConditions;
 const savedAITargeting = CJS.AITargeting;
 const savedGridForAI = CJS.GridEngine;

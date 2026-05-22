@@ -374,6 +374,13 @@ window.CJS.ContentManager = (() => {
     _validationIndex = {};
 
     const skillIdOf = (entry) => typeof entry === 'string' ? entry : entry?.skillId;
+    const resolveOwnedSkillAlias = (rawSkillId, ownedSkillIds) => {
+      const raw = String(rawSkillId || '').trim();
+      if (!raw) return '';
+      const ids = (ownedSkillIds || []).filter(Boolean);
+      if (ids.includes(raw)) return raw;
+      return ids.find((id) => String(id).endsWith(`_${raw}`)) || raw;
+    };
 
     for (const skill of DS().getAllAsArray('skills')) {
       for (let i = 0; i < (skill.effects || []).length; i++) {
@@ -450,9 +457,10 @@ window.CJS.ContentManager = (() => {
         const action = mon.aiRules[i]?.action || '';
         if (!action.startsWith('use_skill:')) continue;
         const skillId = action.split(':')[1];
-        if (!DS().exists('skills', skillId)) {
+        const resolvedSkillId = resolveOwnedSkillAlias(skillId, ownedSkillIds);
+        if (!DS().exists('skills', resolvedSkillId)) {
           _addValidationIssue(issues, 'error', mon._origin, 'monsters', mon.id, `aiRules[${i}]`, `AI references missing skill "${skillId}"`);
-        } else if (!ownedSkillIds.includes(skillId)) {
+        } else if (!ownedSkillIds.includes(resolvedSkillId)) {
           _addValidationIssue(issues, 'warning', mon._origin, 'monsters', mon.id, `aiRules[${i}]`, `AI references unowned skill "${skillId}"`);
         }
       }

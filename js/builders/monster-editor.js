@@ -100,7 +100,8 @@ window.CJS.MonsterEditor = (() => {
             <select id="mon-type">${C().UNIT_TYPES.map(t=>`<option value="${t}" ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
           </div>
           <div class="form-group"><label class="form-label">AI Archetype</label>
-            <select id="mon-ai">${C().AI_ARCHETYPES.map(a=>`<option value="${a}" ${m.behaviorAI===a?'selected':''}>${a}</option>`).join('')}</select>
+            <select id="mon-ai">${_aiArchetypeOptions(m.behaviorAI).map(a=>`<option value="${_esc(a)}" ${(m.behaviorAI||'aggressive')===a?'selected':''}>${_esc(_aiArchetypeLabel(a))}</option>`).join('')}</select>
+            <div class="dim" id="mon-ai-help" style="font-size:0.78rem;margin-top:4px">${_esc(_aiArchetypeDescription(m.behaviorAI))}</div>
           </div>
         </div>
 
@@ -138,7 +139,7 @@ window.CJS.MonsterEditor = (() => {
         </div>
 
         <h3>AI Behavior Rules</h3>
-        <p class="dim" style="font-size:0.82rem;margin-bottom:8px">Priority order — first matching rule fires. Drag to reorder.</p>
+        <p class="dim" style="font-size:0.82rem;margin-bottom:8px">Top to bottom: first matching rule fires. If none match, the AI archetype fallback decides.</p>
         <div id="mon-ai-rules"></div>
         <button class="btn btn-ghost btn-sm mt-sm" id="mon-add-rule">+ Add Rule</button>
 
@@ -187,8 +188,21 @@ window.CJS.MonsterEditor = (() => {
     // Movement input → update derived
     _formEl.querySelector('#mon-movement').onchange = () => _updateDerived(sliders, _formEl.querySelector('#mon-rank')?.value || 'F');
 
+    const aiSelect = _formEl.querySelector('#mon-ai');
+    const aiHelp = _formEl.querySelector('#mon-ai-help');
+    const syncAIHelp = () => {
+      if (aiSelect && aiHelp) aiHelp.textContent = _aiArchetypeDescription(aiSelect.value);
+    };
+    aiSelect?.addEventListener('change', syncAIHelp);
+    syncAIHelp();
+
     // ── Skill picker (with override support) ──
-    const skillPicker = _createSkillRefPicker(m.skills||[]);
+    let skillPicker = null;
+    const refreshAIRuleSuggestions = () => {
+      const rulesArea = _formEl.querySelector('#mon-ai-rules');
+      if (rulesArea && skillPicker) _renderAIRules(rulesArea, aiRules, skillPicker);
+    };
+    skillPicker = _createSkillRefPicker(m.skills||[], refreshAIRuleSuggestions);
     _formEl.querySelector('#mon-skills-area').appendChild(skillPicker.el);
 
     const passivePicker = _createRefPicker('passives', m.innatePassives||[], 'passive');
@@ -283,8 +297,61 @@ window.CJS.MonsterEditor = (() => {
   }
 
   // ── AI Rules Renderer ──
+  function _aiArchetypeOptions(currentValue) {
+    const options = [...(C().AI_ARCHETYPES || [])];
+    const current = String(currentValue || 'aggressive').trim();
+    if (current && !options.includes(current)) options.push(current);
+    return options;
+  }
+
+  function _aiArchetypeLabel(id) {
+    return C().AI_ARCHETYPE_INFO?.[id]?.label || _labelize(id);
+  }
+
+  function _aiArchetypeDescription(id) {
+    const key = String(id || 'aggressive').trim() || 'aggressive';
+    return C().AI_ARCHETYPE_INFO?.[key]?.desc || 'Custom AI archetype. Authored rules still run before the fallback behavior.';
+  }
+
+  function _aiTargetOptions(currentValue) {
+    const options = [...(C().AI_TARGET_TYPES || [])];
+    const current = String(currentValue || 'nearest_enemy').trim();
+    if (current && !options.includes(current)) options.push(current);
+    return options;
+  }
+
+  function _aiTargetLabel(id) {
+    return C().AI_TARGET_INFO?.[id]?.label || _labelize(id);
+  }
+
+  function _aiRuleDatalistHtml(skillPicker) {
+    const skillIds = [...new Set((skillPicker?.getIds?.() || []).filter(Boolean))];
+    const conditionValues = [
+      'default', 'hp_below_30', 'hp_below_50', 'hp_above_50', 'hp_full',
+      'ap_at_least_1', 'ap_at_least_2', 'mp_at_least_10', 'mp_below_25',
+      'any_adjacent_enemy', 'no_adjacent_enemy', 'outnumbered', 'winning_numbers',
+      'allies_alive_lt_3', 'allies_alive_gt_1', 'enemies_alive_lt_2',
+      'ally_wounded', 'any_ally_dying', 'first_turn', 'turn_above_3',
+      'enemies_in_range:3 >= 2',
+      ...skillIds.flatMap(id => [
+        `skill_ready:${id}`,
+        `skill_off_cooldown:${id}`,
+        `skill_on_cooldown:${id}`
+      ])
+    ];
+    const actionValues = [
+      'attack', 'move_toward', 'move_away', 'defend', 'wait', 'flee',
+      ...skillIds.map(id => `use_skill:${id}`)
+    ];
+    const optionHtml = (values) => values.map(v => `<option value="${_esc(v)}"></option>`).join('');
+    return `
+      <datalist id="mon-ai-condition-options">${optionHtml(conditionValues)}</datalist>
+      <datalist id="mon-ai-action-options">${optionHtml(actionValues)}</datalist>
+    `;
+  }
+
   function _renderAIRules(container, rules, skillPicker) {
-    container.innerHTML = '';
+    container.innerHTML = _aiRuleDatalistHtml(skillPicker);
     for (let i = 0; i < rules.length; i++) {
       const r = rules[i];
       const row = document.createElement('div');
@@ -292,10 +359,10 @@ window.CJS.MonsterEditor = (() => {
       row.style.marginBottom = '6px';
       row.innerHTML = `
         <span class="dim" style="width:24px;text-align:center;font-weight:600">${i+1}</span>
-        <div class="form-group" style="flex:2"><input type="text" data-field="condition" value="${_esc(r.condition||'default')}" placeholder="condition string"></div>
-        <div class="form-group" style="flex:1.5"><input type="text" data-field="action" value="${_esc(r.action||'move_toward')}" placeholder="action e.g. use_skill:fire_swipe"></div>
+        <div class="form-group" style="flex:2"><input type="text" data-field="condition" list="mon-ai-condition-options" value="${_esc(r.condition||'default')}" placeholder="condition string"></div>
+        <div class="form-group" style="flex:1.5"><input type="text" data-field="action" list="mon-ai-action-options" value="${_esc(r.action||'move_toward')}" placeholder="action e.g. use_skill:fire_swipe"></div>
         <div class="form-group" style="flex:1">
-          <select data-field="target">${C().AI_TARGET_TYPES.map(t=>`<option value="${t}" ${r.target===t?'selected':''}>${t}</option>`).join('')}</select>
+          <select data-field="target">${_aiTargetOptions(r.target).map(t=>`<option value="${_esc(t)}" ${(r.target||'nearest_enemy')===t?'selected':''}>${_esc(_aiTargetLabel(t))}</option>`).join('')}</select>
         </div>
         <button class="btn-icon" data-remove="${i}" title="Remove">❌</button>
       `;
@@ -402,7 +469,7 @@ window.CJS.MonsterEditor = (() => {
   }
 
   // ── Skill Override Picker (skills with optional overrides) ────────
-  function _createSkillRefPicker(currentEntries) {
+  function _createSkillRefPicker(currentEntries, onChange) {
     const el = document.createElement('div');
     let entries = (currentEntries || []).map(e =>
       typeof e === 'string' ? { skillId: e, overrides: {} } : { ...e }
@@ -432,7 +499,7 @@ window.CJS.MonsterEditor = (() => {
         }
         const rb = document.createElement('button');
         rb.className = 'btn-icon'; rb.textContent = '❌';
-        rb.onclick = () => { entries.splice(i,1); render(); };
+        rb.onclick = () => { entries.splice(i,1); render(); onChange?.(); };
         acts.appendChild(rb);
         chip.appendChild(acts);
         el.appendChild(chip);
@@ -455,7 +522,7 @@ window.CJS.MonsterEditor = (() => {
             const row = document.createElement('div');
             row.className = 'data-list-item';
             row.innerHTML = `<span class="item-icon">${it.icon||'⚔️'}</span><div><div class="item-name">${it.name||it.id}</div></div>`;
-            row.onclick = () => { UI().closeModal(ov); if(!entries.some(e=>e.skillId===it.id)){entries.push({skillId:it.id,overrides:{}});render();} };
+            row.onclick = () => { UI().closeModal(ov); if(!entries.some(e=>e.skillId===it.id)){entries.push({skillId:it.id,overrides:{}});render(); onChange?.();} };
             list.appendChild(row);
           }
         }
@@ -512,6 +579,10 @@ window.CJS.MonsterEditor = (() => {
 
     render();
     return { el, getEntries:()=>JSON.parse(JSON.stringify(entries)), getIds:()=>entries.map(e=>e.skillId) };
+  }
+
+  function _labelize(s) {
+    return String(s || '').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
   }
 
   function _esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }

@@ -20,7 +20,9 @@ declare global {
 
   interface CJSConstants {
     AI_ARCHETYPES: string[];
+    AI_ARCHETYPE_INFO?: Record<string, { label?: string; desc?: string }>;
     AI_TARGET_TYPES: string[];
+    AI_TARGET_INFO?: Record<string, { label?: string; desc?: string }>;
     ID_PREFIXES?: Record<string, string>;
     [key: string]: unknown;
   }

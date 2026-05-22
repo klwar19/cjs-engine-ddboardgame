@@ -293,6 +293,14 @@ window.CJS.DataStore = (() => {
     return _data[type] && !!_data[type][id];
   }
 
+  function _resolveOwnedSkillAlias(rawSkillId, ownedSkillIds) {
+    const raw = String(rawSkillId || '').trim();
+    if (!raw) return '';
+    const ids = (ownedSkillIds || []).filter(Boolean);
+    if (ids.includes(raw)) return raw;
+    return ids.find((id) => String(id).endsWith(`_${raw}`)) || raw;
+  }
+
   // Create: auto-generates ID if not provided. Returns the new ID.
   function create(type, obj) {
     if (!_data[type]) {
@@ -506,10 +514,11 @@ window.CJS.DataStore = (() => {
       (mon.aiRules || []).forEach((rule, i) => {
         if (rule.action && rule.action.startsWith('use_skill:')) {
           const skillId = rule.action.split(':')[1];
-          const monSkillIds = (mon.skills || []).map(_sid);
-          if (!exists('skills', skillId)) {
+          const monSkillIds = (mon.skills || []).map(_sid).filter(Boolean);
+          const resolvedSkillId = _resolveOwnedSkillAlias(skillId, monSkillIds);
+          if (!exists('skills', resolvedSkillId)) {
             errors.push(`Monster "${id}" AI rule ${i} references non-existent skill "${skillId}"`);
-          } else if (!monSkillIds.includes(skillId)) {
+          } else if (!monSkillIds.includes(resolvedSkillId)) {
             warnings.push(`Monster "${id}" AI rule ${i} references skill "${skillId}" not in its skill list`);
           }
         }

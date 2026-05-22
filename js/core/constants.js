@@ -467,6 +467,21 @@ window.CJS.CONST = (() => {
     'summoner', 'tank', 'swarmer'
   ];
 
+  const AI_ARCHETYPE_INFO = {
+    aggressive: { label: 'Aggressive', desc: 'Presses the nearest enemy and uses damage skills when available.' },
+    defensive: { label: 'Defensive', desc: 'Stays alive longer, favors safer targets, and guards when pressured.' },
+    sniper: { label: 'Sniper', desc: 'Keeps distance, prefers ranged pressure, and avoids being pinned down.' },
+    berserker: { label: 'Berserker', desc: 'Charges into the strongest fight and prioritizes direct damage.' },
+    support: { label: 'Support', desc: 'Looks for wounded allies and useful support skills before attacking.' },
+    tactical: { label: 'Tactical', desc: 'Chooses high-value targets such as healers, support units, and major threats.' },
+    tactician: { label: 'Tactician', desc: 'Alias for tactical; kept for authored content compatibility.' },
+    coward: { label: 'Coward', desc: 'Avoids danger, moves away from enemies, and attacks only when safe.' },
+    boss: { label: 'Boss', desc: 'Uses broad target priorities and keeps pressure up when authored rules do not fire.' },
+    summoner: { label: 'Summoner', desc: 'Prefers self or support skills, then falls back to safe pressure.' },
+    tank: { label: 'Tank', desc: 'Draws attention toward the highest-threat enemy and holds the front.' },
+    swarmer: { label: 'Swarmer', desc: 'Groups with allies and focuses pack-friendly targets.' }
+  };
+
   const AI_TARGET_TYPES = [
     'nearest_enemy', 'lowest_hp_enemy', 'highest_hp_enemy',
     'lowest_hp_adjacent', 'most_clustered', 'random_enemy',
@@ -476,6 +491,29 @@ window.CJS.CONST = (() => {
     'nearest_ally', 'adjacent_ally', 'pack_anchor_ally',
     'pack_target_enemy', 'self'
   ];
+
+  const AI_TARGET_INFO = {
+    nearest_enemy: { label: 'Nearest enemy', desc: 'Closest enemy by grid distance.' },
+    lowest_hp_enemy: { label: 'Lowest HP enemy', desc: 'Enemy with the least current HP.' },
+    highest_hp_enemy: { label: 'Highest HP enemy', desc: 'Enemy with the most current HP.' },
+    lowest_hp_adjacent: { label: 'Lowest HP adjacent', desc: 'Adjacent enemy with the least current HP.' },
+    most_clustered: { label: 'Most clustered', desc: 'Enemy with the most allies nearby; useful for AoE.' },
+    random_enemy: { label: 'Random enemy', desc: 'Random living enemy.' },
+    lowest_hp_ally: { label: 'Lowest HP ally', desc: 'Ally with the least current HP.' },
+    squishiest: { label: 'Squishiest enemy', desc: 'Enemy with low HP and low defenses.' },
+    most_threatening: { label: 'Most threatening enemy', desc: 'Enemy with strong offensive stats and HP.' },
+    furthest_enemy: { label: 'Furthest enemy', desc: 'Enemy farthest from this unit.' },
+    lowest_dr_enemy: { label: 'Lowest DR enemy', desc: 'Enemy with the weakest combined damage reduction.' },
+    highest_damage_enemy: { label: 'Highest damage enemy', desc: 'Enemy with the strongest rough damage score.' },
+    highest_threat_enemy: { label: 'Highest threat enemy', desc: 'Alias-style threat scorer used by tactical and tank AI.' },
+    healer_enemy: { label: 'Healer enemy', desc: 'Enemy that appears to carry healing behavior or skills.' },
+    support_enemy: { label: 'Support enemy', desc: 'Enemy that appears to carry support behavior or skills.' },
+    nearest_ally: { label: 'Nearest ally', desc: 'Closest living ally.' },
+    adjacent_ally: { label: 'Adjacent ally', desc: 'Living ally already next to this unit.' },
+    pack_anchor_ally: { label: 'Pack anchor ally', desc: 'Ally that helps swarmer units group up.' },
+    pack_target_enemy: { label: 'Pack target enemy', desc: 'Enemy already pressured by nearby allies.' },
+    self: { label: 'Self', desc: 'The acting unit.' }
+  };
 
   // ── QTE TYPES ──────────────────────────────────────────────────────
   const QTE_TYPES = ['fishing', 'rhythm', 'quickpress', 'mash', 'quiz', 'none'];
@@ -726,7 +764,7 @@ window.CJS.CONST = (() => {
     TERRAIN_TYPES, UNIT_SIZES, MOVEMENT_DEFAULTS, COLLISION, LINE_OF_SIGHT,
     EFFECT_TRIGGERS, EFFECT_ACTIONS, EFFECT_TARGETS, VALUE_SOURCES,
     STATUS_CATEGORIES, STATUS_DEFINITIONS, CONDITION_DEFS, CLEANSE_LABELS,
-    AI_ARCHETYPES, AI_TARGET_TYPES,
+    AI_ARCHETYPES, AI_ARCHETYPE_INFO, AI_TARGET_TYPES, AI_TARGET_INFO,
     QTE_TYPES, QTE_DIFFICULTIES, QTE_MULTIPLIERS,
     GRID_DEFAULTS, ACTION_ECONOMY,
     ID_PREFIXES,
