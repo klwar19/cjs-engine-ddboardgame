@@ -14,9 +14,13 @@ window.CJS.UndoManager = (() => {
 
   const MAX_HISTORY = 50;
 
-  let _stack = [];     // array of UndoEntry
-  let _pointer = -1;   // current position (points to last applied action)
-  let _enabled = true; // false during bulk loads / imports
+  /** @type {CJSUndoEntry[]} */
+  let _stack = [];
+  /** Pointer to last applied action; -1 means stack is empty. */
+  let _pointer = -1;
+  /** When false (bulk import/seed), push() is a no-op. */
+  let _enabled = true;
+  /** @type {Array<(state: CJSUndoState) => void>} */
   let _subscribers = [];
 
   // ── UNDO ENTRY ──────────────────────────────────────────────────
@@ -32,6 +36,14 @@ window.CJS.UndoManager = (() => {
 
   // ── PUSH ────────────────────────────────────────────────────────
   // Called by DataStore on every mutation.
+  /**
+   * @param {CJSUndoEntry["action"]} action
+   * @param {string} entityType
+   * @param {string | number} entityId
+   * @param {CJSRecord | null} before
+   * @param {CJSRecord | null} after
+   * @param {string} [label]
+   */
   function push(action, entityType, entityId, before, after, label) {
     if (!_enabled) return;
 
@@ -60,6 +72,7 @@ window.CJS.UndoManager = (() => {
   }
 
   // ── UNDO ────────────────────────────────────────────────────────
+  /** @returns {CJSUndoEntry | null} */
   function undo() {
     if (_pointer < 0) return null;
     const entry = _stack[_pointer];
@@ -78,6 +91,7 @@ window.CJS.UndoManager = (() => {
   }
 
   // ── REDO ────────────────────────────────────────────────────────
+  /** @returns {CJSUndoEntry | null} */
   function redo() {
     if (_pointer >= _stack.length - 1) return null;
     _pointer++;
@@ -95,6 +109,7 @@ window.CJS.UndoManager = (() => {
   }
 
   // ── APPLY (internal — writes directly to DataStore) ─────────────
+  /** @param {CJSUndoEntry} entry */
   function _applyReverse(entry) {
     var DS = window.CJS.DataStore;
     switch (entry.action) {
@@ -118,6 +133,7 @@ window.CJS.UndoManager = (() => {
     }
   }
 
+  /** @param {CJSUndoEntry} entry */
   function _applyForward(entry) {
     var DS = window.CJS.DataStore;
     switch (entry.action) {
@@ -167,6 +183,10 @@ window.CJS.UndoManager = (() => {
 
   // ── SUBSCRIBE ─────────────────────────────────────────────────
   // Callback receives { canUndo, canRedo, undoLabel, redoLabel }
+  /**
+   * @param {(state: CJSUndoState) => void} fn
+   * @returns {() => void} unsubscribe
+   */
   function subscribe(fn) {
     _subscribers.push(fn);
     return function() {

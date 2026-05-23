@@ -652,6 +652,11 @@ window.CJS.ContentManager = (() => {
     };
   }
 
+  /**
+   * Fetch the multi-file manifest and load every entry into DataStore.
+   * @param {string} [manifestPath]
+   * @returns {Promise<{ success: boolean, mode: string, manifest: Record<string, unknown>, counts: Record<string, number> }>}
+   */
   async function loadManifest(manifestPath = LEGACY_PATHS.manifest) {
     const manifest = await _fetchJson(manifestPath);
     _validateManifest(manifest);
@@ -664,6 +669,10 @@ window.CJS.ContentManager = (() => {
     return _loadManifestDocuments(manifest, docs);
   }
 
+  /**
+   * Load the pre-manifest (legacy) single-bundle game data into DataStore.
+   * @returns {Promise<{ success: boolean, mode: string, counts: Record<string, number> }>}
+   */
   async function loadLegacyData() {
     _bindStore();
 
@@ -738,6 +747,11 @@ window.CJS.ContentManager = (() => {
     return { success: true, mode: 'legacy', counts: DS().getCounts() };
   }
 
+  /**
+   * Try the manifest loader first; fall back to legacy single-bundle on failure.
+   * Used by all entry-*.js bootstraps so every page boots through the same path.
+   * @returns {Promise<{ success: boolean, mode: string, counts: Record<string, number>, manifest?: Record<string, unknown> }>}
+   */
   async function loadDefaultData() {
     try {
       return await loadManifest();

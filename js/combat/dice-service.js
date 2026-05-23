@@ -25,8 +25,11 @@ window.CJS.DiceService = (() => {
   // ── CORE: ROLL (sync) ──────────────────────────────────────────────
   // expression: "2d6+3" or "1d20" or number, same as Dice.roll
   // source: label for the history log ("attack_roll", "burn_dice", etc.)
-  //
-  // Returns: { total, rolls[], modifier, expression, source, manual? }
+  /**
+   * @param {CJSDiceInput} expression
+   * @param {string} [source]
+   * @returns {CJSDiceResult}
+   */
   function roll(expression, source) {
     const mode = CS() ? CS().getDiceMode() : 'auto';
 
@@ -70,6 +73,11 @@ window.CJS.DiceService = (() => {
   // ── ROLL (async) ──────────────────────────────────────────────────
   // For UIs that need the user to input dice via a dialog. Returns a Promise
   // resolving to the result object.
+  /**
+   * @param {CJSDiceInput} expression
+   * @param {string} [source]
+   * @returns {Promise<CJSDiceResult>}
+   */
   async function rollAsync(expression, source) {
     const mode = CS() ? CS().getDiceMode() : 'auto';
 
@@ -105,6 +113,13 @@ window.CJS.DiceService = (() => {
   }
 
   // ── HELPERS ────────────────────────────────────────────────────────
+  /**
+   * @param {CJSDiceInput} expression
+   * @param {number} value
+   * @param {string | undefined} source
+   * @param {"queued" | "prompt"} via
+   * @returns {CJSDiceResult}
+   */
   function _manualResult(expression, value, source, via) {
     return {
       total: value, rolls: [], modifier: 0,
@@ -115,6 +130,7 @@ window.CJS.DiceService = (() => {
 
   // Last roll cache — used by the Lucky Reroll ultimate to redo the
   // most recent dice without changing call sites. Updated on every _record.
+  /** @type {CJSDiceResult | null} */
   let _lastRoll = null;
 
   function _record(result) {
@@ -133,6 +149,7 @@ window.CJS.DiceService = (() => {
   // Re-roll the most recent dice expression. Returns the new result, or null
   // if no previous roll exists. The history is updated as if it were a fresh
   // roll, so subsequent reroll calls reroll the freshest dice (not the original).
+  /** @returns {CJSDiceResult | null} */
   function rerollLast() {
     if (!_lastRoll || !_lastRoll.expression) return null;
     const previous = _lastRoll;

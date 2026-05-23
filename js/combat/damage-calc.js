@@ -44,17 +44,10 @@ window.CJS.DamageCalc = (() => {
   // ── FULL ATTACK PIPELINE ──────────────────────────────────────────
   // Computes a hit (including hit check, crit, damage) but does NOT apply
   // it. action-handler / effect-resolver calls `applyDamage` after this.
-  //
-  // args: {
-  //   attacker, target, skill (or attackData),
-  //   qteMultiplier,  // from qte-manager
-  //   qteGrade,       // 'perfect'|'good'|'ok'|'fail'
-  // }
-  //
-  // Returns: {
-  //   hit: bool, miss: bool, dodged: bool, isCritical: bool,
-  //   damage: number, breakdown: {...}, attackScore, defendScore
-  // }
+  /**
+   * @param {CJSComputeAttackArgs} args
+   * @returns {CJSAttackResult}
+   */
   function computeAttack(args) {
     const { attacker, target, skill, qteMultiplier, qteGrade, weaponData } = args;
     if (!attacker || !target) return { hit: false, miss: true, damage: 0 };
@@ -227,8 +220,10 @@ window.CJS.DamageCalc = (() => {
   //
   // Absorb shields are checked FIRST — damage is subtracted from shields
   // before HP is reduced.
-  //
-  // Returns: { applied, absorbed, overkill, killed, newHP }
+  /**
+   * @param {CJSApplyDamageArgs} args
+   * @returns {CJSApplyDamageResult}
+   */
   function applyDamage({ attacker, target, amount, element, damageType, skill, isCritical, qteGrade, breakdown }) {
     if (!target || amount <= 0) {
       return { applied: 0, absorbed: 0, overkill: 0, killed: false, newHP: target?.currentHP || 0 };
@@ -306,6 +301,10 @@ window.CJS.DamageCalc = (() => {
 
   // ── APPLY HEALING ─────────────────────────────────────────────────
   // Checks preventsHealing (curse status) before applying.
+  /**
+   * @param {{ actor?: CJSCombatUnit | null, target: CJSCombatUnit, amount: number, source?: unknown }} args
+   * @returns {{ applied: number, newHP: number, blocked: boolean }}
+   */
   function applyHeal({ actor, target, amount, source }) {
     if (!target || amount <= 0) return { applied: 0, newHP: target?.currentHP || 0, blocked: false };
 
@@ -334,6 +333,10 @@ window.CJS.DamageCalc = (() => {
   }
 
   // ── APPLY MP CHANGE ───────────────────────────────────────────────
+  /**
+   * @param {{ target: CJSCombatUnit, delta: number }} args
+   * @returns {number} actual change applied (clamped to [0, maxMP])
+   */
   function applyMP({ target, delta }) {
     if (!target) return 0;
     const prev = target.currentMP || 0;
@@ -346,6 +349,17 @@ window.CJS.DamageCalc = (() => {
   // ── TICK DAMAGE (for DoTs — burn, poison, bleed, etc.) ───────────
   // Simpler than full attack: no hit check, no crit, no QTE. Just
   // base → element → DR → apply.
+  /**
+   * @param {{
+   *   source?: CJSCombatUnit | null,
+   *   target: CJSCombatUnit,
+   *   amount: number,
+   *   element?: string,
+   *   damageType?: string,
+   *   statusId?: string
+   * }} args
+   * @returns {{ applied: number, absorbed?: number, killed: boolean }}
+   */
   function applyTickDamage({ source, target, amount, element, damageType, statusId }) {
     if (!target || amount <= 0) return { applied: 0, killed: false };
 
@@ -393,6 +407,16 @@ window.CJS.DamageCalc = (() => {
 
   // ── OUT-OF-BAND DAMAGE (reflect, thorns, collision) ──────────────
   // Skips the full pipeline but still respects min-1 and logs.
+  /**
+   * @param {{
+   *   source?: CJSCombatUnit | null,
+   *   target: CJSCombatUnit,
+   *   amount: number,
+   *   reason?: string,
+   *   damageType?: string
+   * }} args
+   * @returns {{ applied: number, killed: boolean }}
+   */
   function applyRawDamage({ source, target, amount, reason, damageType }) {
     if (!target || amount <= 0) return { applied: 0, killed: false };
     const prevHP = target.currentHP || 0;
@@ -421,6 +445,10 @@ window.CJS.DamageCalc = (() => {
   // ── ULTIMATE METER HELPER ─────────────────────────────────────────
   // Add to a unit's ultimate meter, clamped to [0, max]. No-op if the unit
   // doesn't track an ultimate meter (e.g. base monsters without it set up).
+  /**
+   * @param {CJSCombatUnit | null | undefined} unit
+   * @param {number} amount
+   */
   function _grantUltimate(unit, amount) {
     if (!unit || !Number.isFinite(amount) || amount === 0) return;
     if (typeof unit.ultimateMeter !== 'number') return;
@@ -430,7 +458,16 @@ window.CJS.DamageCalc = (() => {
 
   // Public wrapper so other modules (effects, action-handler items) can
   // adjust the meter without poking the field directly.
+  /**
+   * @param {CJSCombatUnit | null | undefined} unit
+   * @param {number} amount
+   */
   function grantUltimate(unit, amount) { _grantUltimate(unit, amount); }
+  /**
+   * @param {CJSCombatUnit | null | undefined} unit
+   * @param {number} amount
+   * @returns {boolean} true if the meter had enough and was decremented
+   */
   function consumeUltimate(unit, amount) {
     if (!unit || typeof unit.ultimateMeter !== 'number') return false;
     const cost = Math.max(0, Number(amount) || 0);

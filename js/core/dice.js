@@ -11,10 +11,18 @@ window.CJS.Dice = (() => {
 
   // ── PARSE DICE STRING ──────────────────────────────────────────────
   // Supports: "2d6", "2d6+3", "2d6-1", "1d20", "3d4+2", "5" (flat)
-  // Returns: { count, sides, modifier } or null if invalid
+  /**
+   * Parse a dice expression into its component parts.
+   * @param {CJSDiceInput} diceStr
+   * @returns {CJSDiceParsed | null}
+   */
   function parse(diceStr) {
     if (typeof diceStr === 'number') {
       return { count: 0, sides: 0, modifier: diceStr };
+    }
+    if (typeof diceStr === 'object' && diceStr !== null) {
+      // Already parsed
+      return diceStr;
     }
     const str = String(diceStr).trim().toLowerCase();
 
@@ -35,8 +43,11 @@ window.CJS.Dice = (() => {
   }
 
   // ── ROLL ───────────────────────────────────────────────────────────
-  // Roll a parsed dice or a dice string.
-  // Returns: { total, rolls[], modifier, expression }
+  /**
+   * Roll a dice expression. Returns a zero-result if the expression is invalid.
+   * @param {CJSDiceInput} diceInput
+   * @returns {CJSDiceResult}
+   */
   function roll(diceInput) {
     const d = typeof diceInput === 'string' || typeof diceInput === 'number'
       ? parse(diceInput)
@@ -60,8 +71,12 @@ window.CJS.Dice = (() => {
     };
   }
 
-  // ── ROLL MULTIPLE ──────────────────────────────────────────────────
-  // Roll N times, return array of results
+  /**
+   * Roll the same expression multiple times.
+   * @param {CJSDiceInput} diceInput
+   * @param {number} times
+   * @returns {CJSDiceResult[]}
+   */
   function rollMultiple(diceInput, times) {
     const results = [];
     for (let i = 0; i < times; i++) {
@@ -71,25 +86,32 @@ window.CJS.Dice = (() => {
   }
 
   // ── STATISTICS ─────────────────────────────────────────────────────
+  /** @param {CJSDiceInput} diceInput @returns {number} */
   function min(diceInput) {
     const d = typeof diceInput === 'string' ? parse(diceInput) : diceInput;
     if (!d) return 0;
     return d.count * 1 + d.modifier; // each die rolls 1
   }
 
+  /** @param {CJSDiceInput} diceInput @returns {number} */
   function max(diceInput) {
     const d = typeof diceInput === 'string' ? parse(diceInput) : diceInput;
     if (!d) return 0;
     return d.count * d.sides + d.modifier;
   }
 
+  /** @param {CJSDiceInput} diceInput @returns {number} */
   function average(diceInput) {
     const d = typeof diceInput === 'string' ? parse(diceInput) : diceInput;
     if (!d) return 0;
     return d.count * ((d.sides + 1) / 2) + d.modifier;
   }
 
-  // ── TO STRING ──────────────────────────────────────────────────────
+  /**
+   * Canonicalise a dice expression to its "XdY+Z" string form.
+   * @param {CJSDiceInput} diceInput
+   * @returns {string}
+   */
   function toString(diceInput) {
     const d = typeof diceInput === 'string' ? parse(diceInput) : diceInput;
     if (!d) return '?';
@@ -102,32 +124,42 @@ window.CJS.Dice = (() => {
   }
 
   // ── QUICK ROLLS (convenience) ──────────────────────────────────────
-  function d20()  { return Math.floor(Math.random() * 20) + 1; }
-  function d12()  { return Math.floor(Math.random() * 12) + 1; }
-  function d10()  { return Math.floor(Math.random() * 10) + 1; }
-  function d8()   { return Math.floor(Math.random() * 8) + 1; }
-  function d6()   { return Math.floor(Math.random() * 6) + 1; }
-  function d4()   { return Math.floor(Math.random() * 4) + 1; }
-  function d100() { return Math.floor(Math.random() * 100) + 1; }
+  /** @returns {number} */ function d20()  { return Math.floor(Math.random() * 20) + 1; }
+  /** @returns {number} */ function d12()  { return Math.floor(Math.random() * 12) + 1; }
+  /** @returns {number} */ function d10()  { return Math.floor(Math.random() * 10) + 1; }
+  /** @returns {number} */ function d8()   { return Math.floor(Math.random() * 8) + 1; }
+  /** @returns {number} */ function d6()   { return Math.floor(Math.random() * 6) + 1; }
+  /** @returns {number} */ function d4()   { return Math.floor(Math.random() * 4) + 1; }
+  /** @returns {number} */ function d100() { return Math.floor(Math.random() * 100) + 1; }
 
-  // Roll within range [min, max] inclusive
+  /**
+   * Inclusive integer range roll.
+   * @param {number} minVal
+   * @param {number} maxVal
+   * @returns {number}
+   */
   function range(minVal, maxVal) {
     return Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
   }
 
-  // Weighted random pick from { option: weight } map
-  // e.g., { EASY: 0.7, MEDIUM: 0.3 } → picks EASY 70% of the time
+  /**
+   * Weighted random pick from { key: weight } map.
+   * e.g. { EASY: 0.7, MEDIUM: 0.3 } picks EASY 70% of the time.
+   * @template {string} K
+   * @param {Record<K, number>} weightMap
+   * @returns {K | null}
+   */
   function weightedPick(weightMap) {
     const entries = Object.entries(weightMap).filter(([, w]) => w > 0);
     const total = entries.reduce((sum, [, w]) => sum + w, 0);
-    if (total === 0) return entries[0]?.[0] || null;
+    if (total === 0) return /** @type {K | null} */ (entries[0]?.[0] || null);
 
     let r = Math.random() * total;
     for (const [key, weight] of entries) {
       r -= weight;
-      if (r <= 0) return key;
+      if (r <= 0) return /** @type {K} */ (key);
     }
-    return entries[entries.length - 1][0];
+    return /** @type {K} */ (entries[entries.length - 1][0]);
   }
 
   // ── PUBLIC API ─────────────────────────────────────────────────────

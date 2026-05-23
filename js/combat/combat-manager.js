@@ -34,22 +34,16 @@ window.CJS.CombatManager = (() => {
   const ST  = () => window.CJS.StateTools;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
+  /** @type {CJSCombatState | null} */
   let _state = null;
 
-  // _state shape:
-  // {
-  //   encounter: original encounter record
-  //   units: { instanceId → compiled unit }
-  //   initiative: [instanceId, ...]       // order for this round
-  //   turnIndex: number                   // index into initiative
-  //   roundNumber: number
-  //   phase: 'idle'|'turn_start'|'action'|'awaiting_input'|'turn_end'|'battle_end'
-  //   currentUnitId: string | null
-  //   winner: 'player'|'enemy'|'draw'|null
-  //   subscribers: [fn, ...]              // notified on state changes
-  // }
+  // _state shape: see CJSCombatState in types/cjs-globals.d.ts
 
   // ── LIFECYCLE ─────────────────────────────────────────────────────
+  /**
+   * @param {string | CJSRecord} encounterId
+   * @returns {CJSCombatState}
+   */
   function startEncounter(encounterId) {
     const enc = typeof encounterId === 'string' ? DS().get('encounters', encounterId) : encounterId;
     if (!enc) throw new Error(`Encounter not found: ${encounterId}`);
@@ -142,6 +136,7 @@ window.CJS.CombatManager = (() => {
   // Run one step of the turn loop. Returns the new phase.
   // For player/manual turns, step pauses at 'awaiting_input'; call
   // submitAction() then step() again.
+  /** @returns {CJSCombatPhase | undefined} */
   function step() {
     if (!_state || _state.phase === 'battle_end') return _state?.phase;
 
@@ -172,6 +167,10 @@ window.CJS.CombatManager = (() => {
   // 'awaiting_input' or 'battle_end'. If it hits a rare unchanging state
   // (same phase + same unit + same turn-state across 3 iterations), breaks
   // to avoid infinite loops.
+  /**
+   * @param {number} [maxSteps]
+   * @returns {CJSCombatPhase | undefined}
+   */
   function runUntilInput(maxSteps) {
     const limit = maxSteps || 500;
     let sig = _stateSignature();
@@ -368,6 +367,10 @@ window.CJS.CombatManager = (() => {
   // ── MANUAL INPUT ENTRY POINT ──────────────────────────────────────
   // UI calls this when the player (or manual-controlled monster) picks
   // an action. Returns the action result.
+  /**
+   * @param {CJSCombatAction} action
+   * @returns {CJSActionResult}
+   */
   function submitAction(action) {
     if (!_state) return { success: false, reason: 'no_combat' };
     if (_state.phase !== 'awaiting_input' && _state.phase !== 'action') {
@@ -522,19 +525,23 @@ window.CJS.CombatManager = (() => {
   }
 
   // ── CURRENT UNIT QUERIES (for UI) ──────────────────────────────────
+  /** @returns {CJSCombatUnit | null} */
   function getCurrentUnit() {
     return _state ? _state.units[_state.currentUnitId] : null;
   }
 
+  /** @returns {CJSAvailableActions | null} */
   function getAvailableActionsForCurrent() {
     const u = getCurrentUnit();
     return u ? AH().getAvailableActions(u) : null;
   }
 
+  /** @returns {boolean} */
   function isAwaitingInput() {
     return _state?.phase === 'awaiting_input';
   }
 
+  /** @returns {boolean} */
   function isManualTurn() {
     const u = getCurrentUnit();
     if (!u || !CS()) return false;
@@ -572,23 +579,31 @@ window.CJS.CombatManager = (() => {
     if (CS()) CS().stopAuto();
   }
 
+  /** @returns {CJSCombatState | null} */
   function getState() { return _state; }
 
+  /** @returns {Omit<CJSCombatState, "subscribers"> | null} */
   function getStateSnapshot() {
     if (!_state) return null;
     const { subscribers, ...snapshot } = _state;
     return ST()?.clone ? ST().clone(snapshot) : JSON.parse(JSON.stringify(snapshot));
   }
 
+  /** @returns {CJSCombatUnit[]} */
   function getUnits() {
     return _state ? Object.values(_state.units) : [];
   }
 
+  /** @returns {CJSCombatUnit[]} */
   function getInitiativeOrder() {
     return _state ? _state.initiative.map(id => _state.units[id]) : [];
   }
 
   // ── SUBSCRIPTIONS (UI bindings) ────────────────────────────────────
+  /**
+   * @param {(state: CJSCombatState) => void} fn
+   * @returns {() => void} unsubscribe
+   */
   function subscribe(fn) {
     if (!_state) return () => {};
     _state.subscribers.push(fn);
@@ -616,6 +631,13 @@ window.CJS.CombatManager = (() => {
   // All operations go through the same notify/log pipeline as normal
   // actions so the UI and log stay coherent.
 
+  /**
+   * @param {string} baseId
+   * @param {number} r
+   * @param {number} c
+   * @param {{ team?: string, size?: string }} [opts]
+   * @returns {CJSActionResult & { unit?: CJSCombatUnit }}
+   */
   function gmAddUnit(baseId, r, c, opts = {}) {
     if (!_state) return { success: false, reason: 'no_combat' };
     const base = DS().get('monsters', baseId) || DS().get('characters', baseId);
@@ -680,7 +702,13 @@ window.CJS.CombatManager = (() => {
     return { success: true };
   }
 
-  // mode: 'set' | 'delta' | 'full' | 'pct' (pct = % of max)
+  /**
+   * @param {CJSCombatUnit | null | undefined} unit
+   * @param {"HP" | "MP" | "AP"} resource
+   * @param {number} amount
+   * @param {"set" | "delta" | "full" | "pct"} [mode] pct = % of max
+   * @returns {CJSActionResult & { value?: number, ended?: boolean }}
+   */
   function gmAdjustResource(unit, resource, amount, mode = 'set') {
     if (!unit) return { success: false, reason: 'unit_not_found' };
 

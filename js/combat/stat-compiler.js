@@ -43,6 +43,18 @@ window.CJS.StatCompiler = (() => {
   // opts: { currentHP?, currentMP?, activeStatuses?[], level? } — for mid-combat recompile
   //   level: monster spawn level (default 1). Scales stats/HP/MP and unlocks
   //          authored levelTiers grants (skills/passives at level thresholds).
+  /**
+   * @param {CJSRecord} baseUnit
+   * @param {string} [instanceId]
+   * @param {{
+   *   currentHP?: number,
+   *   currentMP?: number,
+   *   activeStatuses?: CJSStatusInstance[],
+   *   level?: number,
+   *   ultimateMeter?: number
+   * }} [opts]
+   * @returns {CJSCombatUnit | null}
+   */
   function compileUnit(baseUnit, instanceId, opts = {}) {
     if (!baseUnit) return null;
     const id = instanceId || baseUnit.id;
@@ -657,6 +669,11 @@ window.CJS.StatCompiler = (() => {
   // ── RECOMPILE (for mid-combat buff/debuff changes) ────────────────
   // Only recomputes derived stat fields. PRESERVES all live combat state:
   // turnState (cooldowns, AP, action flags), position, death flags, etc.
+  /**
+   * @param {CJSCombatUnit} compiledUnit
+   * @param {CJSRecord} baseUnit
+   * @returns {CJSCombatUnit | null}
+   */
   function recompile(compiledUnit, baseUnit) {
     const statuses = compiledUnit.activeStatuses || [];
     const fresh = compileUnit(baseUnit, compiledUnit.instanceId, {
@@ -678,6 +695,10 @@ window.CJS.StatCompiler = (() => {
   }
 
   // ── PREVIEW (for editors — what would this unit look like?) ───────
+  /**
+   * @param {CJSRecord} baseUnit
+   * @returns {Record<string, unknown> | null}
+   */
   function previewUnit(baseUnit) {
     const c = compileUnit(baseUnit, baseUnit.id);
     if (!c) return null;

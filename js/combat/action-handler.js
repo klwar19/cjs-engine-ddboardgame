@@ -109,7 +109,12 @@ window.CJS.ActionHandler = (() => {
   }
 
   // ── VALIDATE ──────────────────────────────────────────────────────
-  // Returns: { valid: bool, reason?: string }
+  /**
+   * Check whether `action` may be executed by `unit` right now.
+   * @param {CJSCombatUnit} unit
+   * @param {CJSCombatAction} action
+   * @returns {{ valid: boolean, reason?: string }}
+   */
   function validate(unit, action) {
     if (!unit || !action) return { valid: false, reason: 'bad_args' };
     if ((unit.currentHP || 0) <= 0) return { valid: false, reason: 'unit_dead' };
@@ -228,7 +233,14 @@ window.CJS.ActionHandler = (() => {
   }
 
   // ── EXECUTE ───────────────────────────────────────────────────────
-  // Performs validate then applies. Returns { success, ...details }.
+  /**
+   * Validate, then perform the action. Decrements AP/MP/cooldowns and routes
+   * to the per-action handlers (_doMove/_doAttack/_doSkill/_doItem/_doDefend).
+   * @param {CJSCombatUnit} unit
+   * @param {CJSCombatAction} action
+   * @param {{ turnNumber?: number }} [combatContext]
+   * @returns {CJSActionResult}
+   */
   function execute(unit, action, combatContext) {
     const check = validate(unit, action);
     if (!check.valid) {
@@ -627,6 +639,11 @@ window.CJS.ActionHandler = (() => {
   // Simulate a QTE grade for AI units. Based on a simple roll: higher-rank
   // monsters land better grades more often. Returns the same shape a real
   // QTE would produce.
+  /**
+   * @param {CJSCombatUnit} unit
+   * @param {CJSSkill} skill
+   * @returns {{ grade: string, multiplier: number }}
+   */
   function simulateAIQTE(unit, skill) {
     if (!skill || !skill.qte || skill.qte === 'none') {
       return _defaultQTEResult(skill);
@@ -734,6 +751,10 @@ window.CJS.ActionHandler = (() => {
 
   // Get the effective attack range for basic attacks.
   // Basic attack range comes from the equipped weapon, or the authored unit range.
+  /**
+   * @param {CJSCombatUnit} unit
+   * @returns {number}
+   */
   function getAttackRange(unit) {
     const wd = _getWeaponData(unit);
     const baseRange = wd?.range ?? unit.basicAttackRange ?? unit.attackRange ?? 1;
@@ -751,6 +772,10 @@ window.CJS.ActionHandler = (() => {
 
   // ── QUERIES ────────────────────────────────────────────────────────
   // What actions can this unit take right now? Used by the UI to grey out buttons.
+  /**
+   * @param {CJSCombatUnit} unit
+   * @returns {CJSAvailableActions}
+   */
   function getAvailableActions(unit) {
     const ts = unit.turnState || {};
     const canAct = !SM() || SM().canAct(unit);
