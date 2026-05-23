@@ -158,8 +158,89 @@ window.CJS.PocketHaven = (() => {
           ${(haven.notes || []).map((note) => `<div class="campaign-log-line">${_esc(note.text || note)}</div>`).join('') || '<div class="campaign-empty">No Pocket Haven notes.</div>'}
         </section>
         ${renderFarm()}
+        ${renderFishing()}
       </div>
     `;
+  }
+
+  // ── Fishing ────────────────────────────────────────────────────────
+  // Surfaces the fishing minigame via Pocket Haven. The actual minigame
+  // overlay is owned by js/minigames/fishing-minigame.js — this just
+  // describes the player's collection progress and exposes a launch button.
+  function renderFishing() {
+    const FM = window.CJS.FishingMinigame;
+    if (!FM) return '';
+    const collection = FM.getCollection?.() || { caught: {}, legendary: {}, totalCatches: 0, bestPerSpecies: {} };
+    const state = CS().getState();
+    const biomeText = _detectBiome(state);
+    const rod = _detectRod(state);
+    const total = Object.keys(collection.caught || {}).length;
+    const catalogTotal = (DS().getAllAsArray('fishCatalog') || []).length;
+    const legendaryCount = Object.keys(collection.legendary || {}).length;
+    const buttonDisabled = !rod ? 'disabled title="You need a fishing rod (buy from a shop)"' : '';
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head">
+          <h3>🎣 Fishing</h3>
+          <button class="campaign-action" data-campaign-action="open-fishing" ${buttonDisabled}>Cast Line</button>
+        </div>
+        <div class="campaign-row">
+          <div>
+            <div><strong>Biome:</strong> ${_esc(biomeText)}</div>
+            <div class="campaign-muted">${rod ? `Equipped: ${_esc(rod.name)} (tier ${rod.tier})` : 'No fishing rod equipped.'}</div>
+            <div class="campaign-muted">Collection: ${total} / ${catalogTotal} species · ${legendaryCount} legendary</div>
+            ${total ? `<details class="campaign-muted"><summary>Catch log</summary>${_renderCollectionLog(collection)}</details>` : ''}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function _renderCollectionLog(collection) {
+    const lines = [];
+    for (const id of Object.keys(collection.caught || {})) {
+      const def = DS().get('fishCatalog', id);
+      const count = collection.caught[id];
+      const best = collection.bestPerSpecies?.[id]?.grade || 'good';
+      const weight = collection.bestPerSpecies?.[id]?.weightKg || 0;
+      lines.push(`<div class="campaign-log-line">${_esc(def?.icon || '🐟')} ${_esc(def?.name || id)} x${count} · best ${best}${weight ? `, ${weight}kg` : ''}${def?.legendary ? ' ⭐' : ''}</div>`);
+    }
+    return lines.join('') || '<div class="campaign-empty">No catches yet.</div>';
+  }
+
+  function _detectBiome(state) {
+    const world = state?.currentWorld || '';
+    const def = DS().get('worlds', world);
+    return def?.fishingBiome || def?.biome || world || 'lake';
+  }
+
+  function _detectRod(state) {
+    const FM = window.CJS.FishingMinigame;
+    if (!FM?.ROD_TIERS) return null;
+    const inv = state?.inventory?.items || {};
+    let best = null;
+    for (const id of Object.keys(inv)) {
+      if (!inv[id]) continue;
+      const def = DS().get('items', id);
+      const tags = (def?.tags || []).map((t) => String(t).toLowerCase());
+      for (const rodTag of Object.keys(FM.ROD_TIERS)) {
+        if (tags.includes(rodTag)) {
+          const tier = FM.ROD_TIERS[rodTag];
+          if (!best || tier.tier > best.tier) best = { ...tier, itemId: id, tag: rodTag };
+        }
+      }
+    }
+    return best;
+  }
+
+  async function openFishing() {
+    const FM = window.CJS.FishingMinigame;
+    if (!FM?.open) return;
+    const biome = _detectBiome(CS().getState());
+    const result = await FM.open({ biome });
+    // Re-render the campaign UI to reflect collection changes.
+    window.CJS.CampaignUI?.render?.();
+    return result;
   }
 
   function plantSeed(plotId, seedId) {
@@ -205,8 +286,10 @@ window.CJS.PocketHaven = (() => {
     renderFarm,
     renderCraft,
     renderCook,
+    renderFishing,
     renderPocket,
     plantSeed,
-    harvestPlot
+    harvestPlot,
+    openFishing
   });
 })();

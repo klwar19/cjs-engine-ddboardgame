@@ -4,7 +4,44 @@
     "format": "cjs-collection",
     "scope": "universal",
     "category": "items",
-    "status": "stub"
+    "status": "active"
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "itm_basic_fishing_rod",
+      "name": "Basic Fishing Rod",
+      "icon": "🎣",
+      "rarity": "Common",
+      "tags": ["fishing_rod", "tool"],
+      "description": "A simple wooden rod. Can land easy and medium-difficulty fish.",
+      "buyValue": 80,
+      "sellValue": 24,
+      "stackable": true,
+      "unique": false
+    },
+    {
+      "id": "itm_silver_fishing_rod",
+      "name": "Silver Fishing Rod",
+      "icon": "🎣",
+      "rarity": "Uncommon",
+      "tags": ["fishing_rod_silver", "tool"],
+      "description": "Sturdy alloy rod. Can pull in hard-difficulty fish.",
+      "buyValue": 280,
+      "sellValue": 110,
+      "stackable": true,
+      "unique": false
+    },
+    {
+      "id": "itm_gold_fishing_rod",
+      "name": "Gold Fishing Rod",
+      "icon": "🎣",
+      "rarity": "Rare",
+      "tags": ["fishing_rod_gold", "tool"],
+      "description": "Master-crafted rod. Can battle legendary catches.",
+      "buyValue": 900,
+      "sellValue": 360,
+      "stackable": true,
+      "unique": false
+    }
+  ]
 }

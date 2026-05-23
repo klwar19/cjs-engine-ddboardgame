@@ -1,0 +1,173 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "system",
+    "category": "fishCatalog",
+    "status": "active",
+    "notes": [
+      "Fish entries used by js/minigames/fishing-minigame.js.",
+      "Each fish lists biomes it can spawn in, the QTE difficulty needed to land it, the food/material it produces, and (optional) cooked-buff fragments for the cooking station."
+    ]
+  },
+  "entries": [
+    {
+      "id": "fsh_river_carp",
+      "name": "River Carp",
+      "icon": "🐟",
+      "biomes": ["river", "lake", "haven"],
+      "difficulty": "EASY",
+      "rarity": "common",
+      "weightKg": [0.6, 1.8],
+      "buyValue": 12,
+      "produces": { "food": "food_fresh_fish", "qty": 1 },
+      "cookedBuff": { "statusId": "stamina_boost", "duration": 3, "summary": "+2 Stamina for 3 turns" },
+      "summary": "Hardy lake fish. Common in calm waters."
+    },
+    {
+      "id": "fsh_silver_trout",
+      "name": "Silver Trout",
+      "icon": "🐠",
+      "biomes": ["river", "mountain"],
+      "difficulty": "MEDIUM",
+      "rarity": "uncommon",
+      "weightKg": [0.9, 2.4],
+      "buyValue": 28,
+      "produces": { "food": "food_silver_trout", "qty": 1 },
+      "cookedBuff": { "statusId": "agility_boost", "duration": 4, "summary": "+10% Agility for 4 turns" },
+      "summary": "Quick-darting fish from cold rivers."
+    },
+    {
+      "id": "fsh_coral_snapper",
+      "name": "Coral Snapper",
+      "icon": "🐡",
+      "biomes": ["reef", "ocean", "bazaar"],
+      "difficulty": "MEDIUM",
+      "rarity": "uncommon",
+      "weightKg": [1.2, 3.0],
+      "buyValue": 36,
+      "produces": { "food": "food_coral_snapper", "qty": 1 },
+      "cookedBuff": { "statusId": "regen_minor", "duration": 4, "summary": "Heal +6 HP/turn for 4 turns" },
+      "summary": "Vivid reef fish prized by Bazaar chefs."
+    },
+    {
+      "id": "fsh_void_eel",
+      "name": "Void Eel",
+      "icon": "🪱",
+      "biomes": ["void", "abyss", "zombie"],
+      "difficulty": "HARD",
+      "rarity": "rare",
+      "weightKg": [2.0, 4.0],
+      "buyValue": 90,
+      "produces": { "food": "food_void_eel", "qty": 1 },
+      "cookedBuff": { "statusId": "magic_boost", "duration": 4, "summary": "+15% Magic for 4 turns" },
+      "summary": "Wriggling deep-water predator."
+    },
+    {
+      "id": "fsh_mire_catfish",
+      "name": "Mire Catfish",
+      "icon": "🐟",
+      "biomes": ["swamp", "sewer", "zombie"],
+      "difficulty": "MEDIUM",
+      "rarity": "uncommon",
+      "weightKg": [1.5, 3.5],
+      "buyValue": 22,
+      "produces": { "food": "food_mire_catfish", "qty": 1 },
+      "cookedBuff": { "statusId": "resist_poison", "duration": 5, "summary": "Poison resist for 5 turns" },
+      "summary": "Tough survivor — survives even in toxic mires."
+    },
+    {
+      "id": "fsh_emberfin_pike",
+      "name": "Emberfin Pike",
+      "icon": "🔥",
+      "biomes": ["volcano", "lava"],
+      "difficulty": "HARD",
+      "rarity": "rare",
+      "weightKg": [1.8, 4.2],
+      "buyValue": 110,
+      "produces": { "food": "food_emberfin_pike", "qty": 1 },
+      "cookedBuff": { "statusId": "fire_boost", "duration": 4, "summary": "+25% Fire damage for 4 turns" },
+      "summary": "Fiery predator that hunts in molten currents."
+    },
+    {
+      "id": "fsh_lantern_jelly",
+      "name": "Lantern Jelly",
+      "icon": "🪼",
+      "biomes": ["deep", "abyss", "ocean"],
+      "difficulty": "HARD",
+      "rarity": "rare",
+      "weightKg": [0.4, 1.0],
+      "buyValue": 80,
+      "produces": { "food": "food_lantern_jelly", "qty": 1 },
+      "cookedBuff": { "statusId": "vision", "duration": 6, "summary": "See further for 6 turns" },
+      "summary": "Glowing jelly drifting in deep dark waters."
+    },
+    {
+      "id": "fsh_thunder_carp",
+      "name": "Thunder Carp",
+      "icon": "⚡",
+      "biomes": ["storm", "lake"],
+      "difficulty": "HARD",
+      "rarity": "rare",
+      "weightKg": [2.4, 5.0],
+      "buyValue": 95,
+      "produces": { "food": "food_thunder_carp", "qty": 1 },
+      "cookedBuff": { "statusId": "lightning_boost", "duration": 4, "summary": "+25% Lightning damage for 4 turns" },
+      "summary": "Surges with static — leaps from stormy waters."
+    },
+    {
+      "id": "fsh_moonlit_koi",
+      "name": "Moonlit Koi",
+      "icon": "✨",
+      "biomes": ["lake", "shrine"],
+      "difficulty": "INSANE",
+      "rarity": "legendary",
+      "weightKg": [3.0, 7.0],
+      "buyValue": 380,
+      "produces": { "food": "food_moonlit_koi", "qty": 1 },
+      "cookedBuff": { "statusId": "blessing", "duration": 6, "summary": "+1 to all stats for 6 turns" },
+      "legendary": true,
+      "summary": "Legendary. Only the moonlight reveals its scales."
+    },
+    {
+      "id": "fsh_dragon_tuna",
+      "name": "Dragon Tuna",
+      "icon": "🐉",
+      "biomes": ["ocean", "abyss"],
+      "difficulty": "INSANE",
+      "rarity": "legendary",
+      "weightKg": [40, 120],
+      "buyValue": 750,
+      "produces": { "food": "food_dragon_tuna", "qty": 1, "material": "mat_dragonscale_shard", "materialQty": 1 },
+      "cookedBuff": { "statusId": "ultimate_charge", "duration": 5, "summary": "Ultimate meter +50%, 5 turns" },
+      "legendary": true,
+      "summary": "Legendary. Said to harbor dragon blood in its veins."
+    },
+    {
+      "id": "fsh_horde_scrapfish",
+      "name": "Horde Scrapfish",
+      "icon": "🦴",
+      "biomes": ["zombie", "sewer", "ruins"],
+      "difficulty": "EASY",
+      "rarity": "common",
+      "weightKg": [0.4, 1.2],
+      "buyValue": 8,
+      "produces": { "food": "food_scrap_stew", "qty": 1 },
+      "cookedBuff": { "statusId": "resist_disease", "duration": 4, "summary": "Disease resist for 4 turns" },
+      "summary": "Survives anywhere. Eat at your own risk."
+    },
+    {
+      "id": "fsh_starcruiser_squid",
+      "name": "Starcruiser Squid",
+      "icon": "🦑",
+      "biomes": ["void", "neon", "neo_starcraft"],
+      "difficulty": "HARD",
+      "rarity": "rare",
+      "weightKg": [2.0, 6.0],
+      "buyValue": 140,
+      "produces": { "food": "food_starcruiser_squid", "qty": 1 },
+      "cookedBuff": { "statusId": "tech_boost", "duration": 4, "summary": "+15% tech damage for 4 turns" },
+      "summary": "Bioluminescent squid from deep void currents."
+    }
+  ]
+}

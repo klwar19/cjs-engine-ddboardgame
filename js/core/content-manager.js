@@ -53,7 +53,9 @@ window.CJS.ContentManager = (() => {
     mapSeeds: 'mapSeeds',
     oracleTables: 'oracleTables',
     storyDirectorPacks: 'storyDirectorPacks',
-    worldActivityPacks: 'worldActivityPacks'
+    worldActivityPacks: 'worldActivityPacks',
+    worldEvents: 'worldEvents',
+    fishCatalog: 'fishCatalog'
   };
 
   const CATEGORY_TO_TYPE = Object.freeze(
@@ -70,7 +72,8 @@ window.CJS.ContentManager = (() => {
     'campaigns', 'scenarios', 'scenarioMaps', 'travelMaps', 'campaignEvents',
     'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
     'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
-    'mapSeeds', 'oracleTables', 'storyDirectorPacks', 'worldActivityPacks'
+    'mapSeeds', 'oracleTables', 'storyDirectorPacks', 'worldActivityPacks',
+    'worldEvents', 'fishCatalog'
   ];
 
   const SCOPE_LABELS = {
@@ -222,7 +225,9 @@ window.CJS.ContentManager = (() => {
         return ['world'];
       case 'campaignProfiles':
       case 'pocketHavenRules':
-        return ['universal'];
+      case 'worldEvents':
+      case 'fishCatalog':
+        return ['system', 'universal', 'world'];
       case 'characters':
       case 'passives':
       case 'skills':

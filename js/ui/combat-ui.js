@@ -60,6 +60,7 @@ window.CJS.CombatUI = (() => {
   let $weather = null;
   let $weatherFX = null;
   let _weatherFxId = null;  // last-rendered weather id, to skip rebuilds
+  let $objective = null;
   let $narrator = null;
   let $qteOverlay = null;
   let $diceModal = null;
@@ -671,6 +672,7 @@ window.CJS.CombatUI = (() => {
       <div class="combat-screen">
         <div class="combat-top">
           <div id="cbt-weather" class="weather-banner" hidden></div>
+          <div id="cbt-objective" class="combat-objective-banner" hidden></div>
           <div id="cbt-initiative" class="initiative-bar"></div>
         </div>
         <div class="combat-middle">
@@ -769,6 +771,7 @@ window.CJS.CombatUI = (() => {
     $unitInfo = _container.querySelector('#cbt-unit-info');
     $weather = _container.querySelector('#cbt-weather');
     $weatherFX = _container.querySelector('#cbt-weather-fx');
+    $objective = _container.querySelector('#cbt-objective');
     $narrator = _container.querySelector('#cbt-narrator');
     $qteOverlay = _container.querySelector('#cbt-qte-overlay');
     $diceModal = _container.querySelector('#cbt-dice-modal');
@@ -987,6 +990,7 @@ window.CJS.CombatUI = (() => {
     if (!state) return;
 
     _renderWeather(state);
+    _renderObjective(state);
     _renderInitiative(state);
     _renderUnitInfo(state);
     _renderActions(state);
@@ -998,6 +1002,32 @@ window.CJS.CombatUI = (() => {
     if (state.phase === 'battle_end') {
       _showBattleEnd(state);
     }
+  }
+
+  function _renderObjective(state) {
+    if (!$objective) return;
+    const tracker = state?.objective;
+    const OBJ = window.CJS.CombatObjectives;
+    if (!tracker || !OBJ) {
+      $objective.hidden = true;
+      $objective.innerHTML = '';
+      return;
+    }
+    const info = OBJ.describe(tracker, state);
+    const cls = info.broken ? ' is-contested' : '';
+    $objective.hidden = false;
+    $objective.className = `combat-objective-banner objective-${info.kind}${cls}`;
+    const pct = Math.max(0, Math.min(100, Number(info.progressPct || 0)));
+    $objective.innerHTML = `
+      <span class="objective-icon" aria-hidden="true">${_escHtml(info.icon || '⚔')}</span>
+      <div class="objective-body">
+        <div class="objective-title">${_escHtml(info.title || '')}</div>
+        ${info.detail ? `<div class="objective-detail">${_escHtml(info.detail)}</div>` : ''}
+      </div>
+      <div class="objective-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
+        <div class="objective-meter-fill" style="width:${pct}%"></div>
+      </div>
+    `;
   }
 
   function _renderWeather(state) {
@@ -2112,6 +2142,9 @@ window.CJS.CombatUI = (() => {
     $actions = null;
     $initiative = null;
     $unitInfo = null;
+    $weather = null;
+    $weatherFX = null;
+    $objective = null;
     $narrator = null;
     $qteOverlay = null;
     $diceModal = null;
@@ -2119,9 +2152,14 @@ window.CJS.CombatUI = (() => {
     $fxLayer = null;
   }
 
+  // Public refresh hook for hot-reload + dev console. Safe to call when no
+  // combat is active — _refresh() short-circuits if state is null.
+  function refresh() { _refresh(); }
+
   return Object.freeze({
     init,
     startCombat,
+    refresh,
     destroy
   });
 })();

@@ -36,6 +36,8 @@ window.CJS.GridRenderer = (() => {
   let _ready = false;          // true after resize() — safe to render
   let _themeImg = null;        // optional themed backdrop image
   let _decorSeed = 0x9E3779B1; // PRNG seed for stable per-cell decorations
+  let _detachGestures = null;  // touch-gestures detach handle
+  let _pinchUpHandler = null;  // pointerup listener that resets pinch state
 
   // Movement animations. Keyed by instanceId. When set, the unit is drawn
   // at an interpolated position between `from` and `to` until `endTs`.
@@ -63,6 +65,35 @@ window.CJS.GridRenderer = (() => {
     _canvas.addEventListener('mousemove', _handleHover);
     _canvas.addEventListener('mouseleave', () => { _hoverCell = null; });
     _canvas.addEventListener('touchstart', _handleTouch, { passive: false });
+
+    // Touch gestures: pinch-zoom on iPad / phone. We only opt in if the
+    // helper module is present; otherwise we still support the legacy
+    // tap-to-click path. Tap is handled by 'click' fallback through the
+    // browser's synthetic click event.
+    _detachGestures = null;
+    _pinchUpHandler = null;
+    const TG = window.CJS.TouchGestures;
+    if (TG?.attach) {
+      _canvas.classList.add('cjs-touch-grid');
+      let pinchAccumulator = 1.0;
+      let pinchActive = false;
+      _detachGestures = TG.attach(_canvas, {
+        onPinch: ({ scale }) => {
+          if (!pinchActive) {
+            pinchAccumulator = _zoom;
+            pinchActive = true;
+          }
+          pinchAccumulator *= scale;
+          setZoom(pinchAccumulator);
+        },
+        onDoubleTap: () => {
+          // Quick reset zoom on double-tap (common iPad expectation).
+          resetZoom();
+        }
+      });
+      _pinchUpHandler = () => { pinchActive = false; };
+      _canvas.addEventListener('pointerup', _pinchUpHandler);
+    }
 
     _startLoop();
   }
@@ -118,6 +149,14 @@ window.CJS.GridRenderer = (() => {
       _canvas.removeEventListener('click', _handleClick);
       _canvas.removeEventListener('mousemove', _handleHover);
       _canvas.removeEventListener('touchstart', _handleTouch);
+    }
+    if (_detachGestures) {
+      try { _detachGestures(); } catch (e) {}
+      _detachGestures = null;
+    }
+    if (_pinchUpHandler && _canvas) {
+      _canvas.removeEventListener('pointerup', _pinchUpHandler);
+      _pinchUpHandler = null;
     }
     _canvas = null;
     _ctx = null;

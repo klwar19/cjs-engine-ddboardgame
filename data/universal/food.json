@@ -4,7 +4,7 @@
     "format": "cjs-collection",
     "scope": "universal",
     "category": "food",
-    "status": "stub"
+    "status": "active"
   },
   "entries": [
     {
@@ -60,6 +60,115 @@
         }
       },
       "description": "A bracing brew. Strength +2 next battle. Trophy-grade ingredients only."
+    },
+    {
+      "id": "food_fresh_fish",
+      "name": "Fresh Fish",
+      "icon": "🐟",
+      "rarity": "Common",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Raw fish. Cook at a station for a stamina buff."
+    },
+    {
+      "id": "food_silver_trout",
+      "name": "Silver Trout",
+      "icon": "🐠",
+      "rarity": "Uncommon",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "buff": { "stat": "A", "amount": 1 },
+      "description": "A glittering trout. Eat raw for +1 Agility next battle, or cook for a longer agility surge."
+    },
+    {
+      "id": "food_coral_snapper",
+      "name": "Coral Snapper",
+      "icon": "🐡",
+      "rarity": "Uncommon",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Reef-fresh fish. Cook for sustained HP regen."
+    },
+    {
+      "id": "food_void_eel",
+      "name": "Void Eel",
+      "icon": "🪱",
+      "rarity": "Rare",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Wriggling deep-water predator. Cooking unlocks a magic-power surge."
+    },
+    {
+      "id": "food_mire_catfish",
+      "name": "Mire Catfish",
+      "icon": "🐟",
+      "rarity": "Uncommon",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Surprisingly tasty once cooked. Grants poison resistance."
+    },
+    {
+      "id": "food_emberfin_pike",
+      "name": "Emberfin Pike",
+      "icon": "🔥",
+      "rarity": "Rare",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Hunts in molten currents. Spicy. Cook to boost fire damage."
+    },
+    {
+      "id": "food_lantern_jelly",
+      "name": "Lantern Jelly",
+      "icon": "🪼",
+      "rarity": "Rare",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Glowing jelly. Cook to enhance vision range."
+    },
+    {
+      "id": "food_thunder_carp",
+      "name": "Thunder Carp",
+      "icon": "⚡",
+      "rarity": "Rare",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Static-charged carp. Cook for a lightning-damage boost."
+    },
+    {
+      "id": "food_moonlit_koi",
+      "name": "Moonlit Koi",
+      "icon": "✨",
+      "rarity": "Legendary",
+      "duration": "next_battle",
+      "tags": ["fish", "raw", "legendary"],
+      "description": "Legendary. Cooked, grants +1 to all stats."
+    },
+    {
+      "id": "food_dragon_tuna",
+      "name": "Dragon Tuna",
+      "icon": "🐉",
+      "rarity": "Legendary",
+      "duration": "next_battle",
+      "tags": ["fish", "raw", "legendary"],
+      "description": "Legendary. Cooked, fills 50% of the ultimate meter."
+    },
+    {
+      "id": "food_scrap_stew",
+      "name": "Scrap Stew",
+      "icon": "🥘",
+      "rarity": "Common",
+      "duration": "next_battle",
+      "tags": ["fish", "cooked"],
+      "description": "Whatever was left. Confers disease resistance."
+    },
+    {
+      "id": "food_starcruiser_squid",
+      "name": "Starcruiser Squid",
+      "icon": "🦑",
+      "rarity": "Rare",
+      "duration": "next_battle",
+      "tags": ["fish", "raw"],
+      "description": "Cyber-bio squid. Cook to enhance tech damage."
     }
   ]
 }

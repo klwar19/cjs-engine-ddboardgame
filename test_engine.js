@@ -70,6 +70,7 @@ const loadOrder = [
   'combat/damage-calc.js',
   'combat/dice-service.js',
   'combat/combat-settings.js',
+  'combat/combat-objectives.js',
   'combat/action-handler.js',
   'ai/ai-conditions.js',
   'ai/ai-targeting.js',
