@@ -34,6 +34,77 @@ window.CJS.ActionHandler = (() => {
   function _sfx(key, opts) { try { AM()?.playSfx(key, opts); } catch (e) {} }
   function _anim(name, payload) { try { AB()?.emit(name, payload); } catch (e) {} }
 
+  // ── COMBO SYSTEM ───────────────────────────────────────────────────
+  // Chaining QTE successes within a single unit's turn (or across
+  // consecutive turns without a fail) builds a combo multiplier on the
+  // NEXT attack/skill. Combo decays the moment the unit fails a QTE
+  // or chooses an action that bypasses QTE (defend / end turn / item).
+  //
+  // Combo math (additive to qteMultiplier on the next swing):
+  //   chain 1 → +0%        (just the QTE grade)
+  //   chain 2 → +10%
+  //   chain 3 → +20%
+  //   chain 4 → +30%
+  //   chain 5+→ +40% (caps here so it stays balanced vs. boss HP)
+  //
+  // Different sequences feel different: rhythm→quickpress = combo, but
+  // fail→anything resets to 1 and re-starts the chain on the next
+  // success.
+  const COMBO_BONUS_BY_CHAIN = [0, 0, 0.10, 0.20, 0.30, 0.40];
+  const COMBO_CAP = 5;
+  const COMBO_DECAY_GRADES = new Set(['fail']);
+
+  function _comboState(unit) {
+    if (!unit) return null;
+    unit.comboState = unit.comboState || { chain: 0, lastGrade: null, lastQteType: null, banner: 0 };
+    return unit.comboState;
+  }
+
+  function _comboBonusFor(unit) {
+    const c = _comboState(unit);
+    if (!c || c.chain <= 1) return 0;
+    const idx = Math.min(COMBO_CAP, c.chain);
+    return COMBO_BONUS_BY_CHAIN[idx] || 0;
+  }
+
+  function _comboNote(unit, qteGrade, qteType) {
+    const c = _comboState(unit);
+    if (!c) return;
+    if (COMBO_DECAY_GRADES.has(qteGrade) || qteGrade === 'ok') {
+      // 'ok' (used when skill has no QTE, or skipped) doesn't grow the
+      // chain but also doesn't break it. 'fail' breaks it.
+      if (qteGrade === 'fail') {
+        if (c.chain > 1) Log()?.record?.({ type: 'combo_break', actor: unit, tags: ['combo', 'qte', `qte_grade:fail`], data: { chain: c.chain } });
+        c.chain = 0;
+      }
+      c.lastGrade = qteGrade;
+      c.lastQteType = qteType || c.lastQteType;
+      return;
+    }
+    // Successful QTE (perfect / good)
+    c.chain = Math.min(COMBO_CAP, (c.chain || 0) + 1);
+    c.lastGrade = qteGrade;
+    c.lastQteType = qteType || c.lastQteType;
+    c.banner = c.chain;
+    Log()?.record?.({
+      type: 'combo_advance', actor: unit,
+      tags: ['combo', 'qte', `qte_grade:${qteGrade}`],
+      data: { chain: c.chain, bonus: COMBO_BONUS_BY_CHAIN[c.chain] || 0 }
+    });
+  }
+
+  function _comboBreakOnNonQTE(unit) {
+    const c = _comboState(unit);
+    if (!c) return;
+    // Defend/item/end-turn are explicit resets so combos can't be
+    // farmed by parking on safe actions.
+    if (c.chain > 0) {
+      Log()?.record?.({ type: 'combo_break', actor: unit, tags: ['combo', 'no_qte'], data: { chain: c.chain } });
+    }
+    c.chain = 0;
+    c.lastGrade = null;
+  }
+
   // Map a weapon's damageType ("Slashing", "Piercing", "Bludgeoning",
   // anything else) to our SFX key family. Falls back to weapon_hit_physical
   // if the synth/manifest doesn't have a more specific match.
@@ -345,9 +416,12 @@ window.CJS.ActionHandler = (() => {
       ],
       data: { action: 'attack', weaponId: weaponData?.itemId || weaponData?.id || null }
     });
+    // Basic attacks inherit the combo bonus too. Authors who want a
+    // weapon to bypass combos can flag it via weaponData.noCombo.
+    const basicComboBonus = (weaponData?.noCombo ? 0 : _comboBonusFor(unit));
     const attack = DC().computeAttack({
       attacker: unit, target, skill: null,
-      qteMultiplier: ctx.qteMultiplier || 1.0,
+      qteMultiplier: (ctx.qteMultiplier || 1.0) * (1 + basicComboBonus),
       weaponData  // passed to damage-calc for baseDamage/element/damageType
     });
 
@@ -472,6 +546,11 @@ window.CJS.ActionHandler = (() => {
     const qteMultiplier = qteResult.multiplier || 1.0;
     const qteGrade = qteResult.grade || 'ok';
 
+    // Combo bonus reads the chain BUILT BY PRIOR SUCCESSES, then the
+    // current grade advances/breaks the chain for the NEXT swing.
+    const comboBonus = _comboBonusFor(unit);
+    const effectiveQteMultiplier = qteMultiplier * (1 + comboBonus);
+
     const target = action.targetId ? GE().getUnit(action.targetId) : null;
     Log().logSkillUse({ actor: unit, target, skill, apCost, mpCost });
 
@@ -496,7 +575,8 @@ window.CJS.ActionHandler = (() => {
       let missVoicePlayed = false;
       for (const t of targets) {
         const attack = DC().computeAttack({
-          attacker: unit, target: t, skill, qteMultiplier, qteGrade
+          attacker: unit, target: t, skill,
+          qteMultiplier: effectiveQteMultiplier, qteGrade
         });
         if (attack.miss) {
           Log().logMiss({ actor: unit, target: t, skill });
@@ -600,7 +680,16 @@ window.CJS.ActionHandler = (() => {
       logEntry.qteCounts[qteGrade] += 1;
     }
 
-    return { success: true, action: 'skill', skillId: action.skillId, hits };
+    // Combo update — advances or breaks the chain based on this swing's
+    // QTE grade. Only counts when the skill actually rolled a QTE.
+    if (skill.qte && skill.qte !== 'none') {
+      _comboNote(unit, qteGrade, skill.qte);
+    }
+
+    return {
+      success: true, action: 'skill', skillId: action.skillId, hits,
+      combo: { chain: unit.comboState?.chain || 0, bonus: comboBonus }
+    };
   }
 
   // ── ITEM ──────────────────────────────────────────────────────────
@@ -639,6 +728,9 @@ window.CJS.ActionHandler = (() => {
 
     _sfx('item_use');
 
+    // Items skip QTE so they break the combo chain.
+    _comboBreakOnNonQTE(unit);
+
     return { success: true, action: 'item' };
   }
 
@@ -655,6 +747,7 @@ window.CJS.ActionHandler = (() => {
     });
     _sfx('defend_guard', { volume: 0.62 });
     _battleSfx(unit, 'expression', { volume: 0.42 });
+    _comboBreakOnNonQTE(unit);
     return { success: true, action: 'defend' };
   }
 
@@ -730,6 +823,18 @@ window.CJS.ActionHandler = (() => {
   function _doEndTurn(unit, action, ctx) {
     unit.turnState.bonusAP = (unit.turnState.bonusAP || 0) + (C().ACTION_ECONOMY.endTurnAPBonus || 0);
     return { success: true, action: 'end_turn' };
+  }
+
+  // ── COMBO INSPECTION (combat-ui, AI tuning) ───────────────────────
+  function getComboState(unit) {
+    return unit ? _comboState(unit) : null;
+  }
+  function getComboBonus(unit) {
+    return unit ? _comboBonusFor(unit) : 0;
+  }
+  function resetCombo(unit) {
+    const c = _comboState(unit);
+    if (c) { c.chain = 0; c.lastGrade = null; c.banner = 0; }
   }
 
   // ── DEFAULT QTE RESULT ─────────────────────────────────────────────
@@ -979,7 +1084,9 @@ window.CJS.ActionHandler = (() => {
   // ── PUBLIC API ─────────────────────────────────────────────────────
   return Object.freeze({
     validate, execute, getAvailableActions,
-    simulateAIQTE, getAttackRange
+    simulateAIQTE, getAttackRange,
+    // Combo system
+    getComboState, getComboBonus, resetCombo
   });
 })();
 

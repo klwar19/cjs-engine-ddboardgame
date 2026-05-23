@@ -660,6 +660,94 @@ window.CJS.CampaignAlignment = (() => {
     return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
   }
 
+  // ── DEFERRED CONSEQUENCES ────────────────────────────────────────
+  // The futureHooks queue records "spare the bandit → he comes back
+  // later to help" style promises made during dialogue. Each hook
+  // carries optional fire conditions (flag, chapter, world, phase,
+  // story-part). The runtime checks all hooks each time state changes
+  // and triggers eligible ones.
+  //
+  // A hook fires by setting flags and / or applying authored ops. To
+  // make it idempotent we mark fired hooks with `firedAt` and refuse
+  // to re-fire them unless explicitly reset.
+  //
+  // Op shape that produces a deferred hook:
+  //   { op: 'record_consequence', choiceId, world?, actor?,
+  //     label, summary, fireWhen: { chapterMin, partResolved, flag,
+  //       worldOnly, phase }, fireOps: [ ... ], flagsToSet: [ ... ],
+  //     tags: [ ... ] }
+  function recordConsequenceHook(state = {}, op = {}) {
+    const ledger = normalizeState(state);
+    const id = op.id || op.hookId || `consequence_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const hook = {
+      id,
+      kind: 'consequence',
+      actor: _cleanId(op.actor || op.characterId) || DEFAULT_ACTOR,
+      world: _cleanId(op.world || state.currentWorld) || 'global',
+      label: op.label || op.title || 'Future consequence',
+      summary: op.summary || op.text || op.note || '',
+      choiceId: op.choiceId || '',
+      sequenceId: op.sequenceId || '',
+      nodeId: op.nodeId || '',
+      fireWhen: _normalizeFireWhen(op.fireWhen),
+      fireOps: Array.isArray(op.fireOps) ? op.fireOps.slice(0, 20) : [],
+      flagsToSet: Array.isArray(op.flagsToSet) ? op.flagsToSet.slice(0, 10) : [],
+      tags: _asArray(op.tags),
+      firedAt: null,
+      at: new Date().toISOString()
+    };
+    ledger.futureHooks.unshift(hook);
+    ledger.futureHooks = ledger.futureHooks.slice(0, HISTORY_LIMIT);
+    return hook;
+  }
+
+  // Returns the list of hook ids that became eligible THIS check. The
+  // caller (campaign-ops) is responsible for actually firing the ops.
+  function dueConsequenceHooks(state = {}) {
+    const ledger = normalizeState(state);
+    const due = [];
+    for (const hook of ledger.futureHooks || []) {
+      if (!hook || hook.kind !== 'consequence') continue;
+      if (hook.firedAt) continue;
+      if (_isFireWhenMet(hook.fireWhen, state, hook)) due.push(hook);
+    }
+    return due;
+  }
+
+  // Mark a hook as fired so it won't repeat. Returns the updated hook.
+  function markHookFired(state = {}, hookId, firedAt) {
+    const ledger = normalizeState(state);
+    const hook = (ledger.futureHooks || []).find((h) => h.id === hookId);
+    if (!hook) return null;
+    hook.firedAt = firedAt || new Date().toISOString();
+    return hook;
+  }
+
+  function _normalizeFireWhen(input = {}) {
+    if (!input || typeof input !== 'object') return {};
+    return {
+      chapterMin: Number(input.chapterMin || 0) || 0,
+      partResolved: input.partResolved || input.partId || '',
+      flag: input.flag || '',
+      excludesFlag: input.excludesFlag || '',
+      worldOnly: input.worldOnly || '',
+      phaseType: input.phaseType || '',
+      phaseMin: Number(input.phaseMin || 0) || 0
+    };
+  }
+
+  function _isFireWhenMet(when, state = {}, hook = {}) {
+    if (!when) return false;
+    if (when.chapterMin && (Number(state.currentChapter || 1) < when.chapterMin)) return false;
+    if (when.partResolved && !state.storyMode?.partResults?.[when.partResolved]) return false;
+    if (when.flag && !state.flags?.[when.flag]) return false;
+    if (when.excludesFlag && state.flags?.[when.excludesFlag]) return false;
+    if (when.worldOnly && state.currentWorld !== when.worldOnly && hook.world !== state.currentWorld) return false;
+    if (when.phaseType && state.phase?.type !== when.phaseType) return false;
+    if (when.phaseMin && (Number(state.phase?.number || 1) < when.phaseMin)) return false;
+    return true;
+  }
+
   return Object.freeze({
     AXES,
     axisLimit: AXIS_LIMIT,
@@ -675,6 +763,10 @@ window.CJS.CampaignAlignment = (() => {
     formatForPrompt,
     evaluateConditions,
     tagsForState,
-    choiceEligibility
+    choiceEligibility,
+    // Deferred consequence hooks
+    recordConsequenceHook,
+    dueConsequenceHooks,
+    markHookFired
   });
 })();

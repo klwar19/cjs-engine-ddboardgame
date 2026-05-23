@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "node test_engine.js && node test_map_type_separation.js && node test_campaign_story_mode.js && node test_campaign_story_branching.js && node test_campaign_choice_consequences.js && node test_campaign_sequence_scenario_flow.js && node test_objectives_and_events.js",
+    "test": "node test_engine.js && node test_map_type_separation.js && node test_campaign_story_mode.js && node test_campaign_story_branching.js && node test_campaign_choice_consequences.js && node test_campaign_sequence_scenario_flow.js && node test_objectives_and_events.js && node test_phase_expansion.js",
     "typecheck": "tsc --noEmit",
     "dev": "vite --host 127.0.0.1",
     "build": "vite build"

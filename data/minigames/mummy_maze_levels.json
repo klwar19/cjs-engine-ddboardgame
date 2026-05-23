@@ -9,10 +9,24 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [0, 0],
-      "exit": [0, 6],
+      "player": [
+        0,
+        0
+      ],
+      "exit": [
+        0,
+        6
+      ],
       "mummies": [
-        { "id": "m1", "pos": [6, 3], "speed": 1, "priority": "horizontal" }
+        {
+          "id": "m1",
+          "pos": [
+            6,
+            3
+          ],
+          "speed": 1,
+          "priority": "horizontal"
+        }
       ],
       "walls": [],
       "keys": [],
@@ -20,7 +34,31 @@
       "traps": [],
       "optimalTurns": 6,
       "hint": "The mummy here is slow. Walk straight down to the exit stairs.",
-      "tags": ["tutorial", "tomb", "chase"]
+      "tags": [
+        "tutorial",
+        "tomb",
+        "chase"
+      ],
+      "narrative": {
+        "context": "Pocket Haven training puzzle. Bin chalked a tomb on the courtyard floor and dared the party to solve it before dinner.",
+        "winLine": "You wove past the slow guardian like it owed you money. Bin claps.",
+        "loseLine": "Stiff legs. Stiffer pride. Bin shakes their head.",
+        "buffName": "Sharp Footing"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_easy",
+          "label": "Sharp Footing",
+          "stat": "A",
+          "amount": 1,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 2
+        }
+      ]
     },
     {
       "id": "mummy_02",
@@ -29,18 +67,77 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [0, 6],
-      "exit": [6, 0],
-      "mummies": [
-        { "id": "m1", "pos": [6, 6], "speed": 2, "priority": "horizontal" }
+      "player": [
+        0,
+        6
       ],
-      "walls": [[1, 5], [2, 5], [3, 5], [4, 5], [5, 5]],
+      "exit": [
+        6,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            6,
+            6
+          ],
+          "speed": 2,
+          "priority": "horizontal"
+        }
+      ],
+      "walls": [
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ]
+      ],
       "keys": [],
       "gates": [],
       "traps": [],
       "optimalTurns": 12,
       "hint": "The corridor wall traps a horizontal mummy. Step up once to let it commit, then climb past.",
-      "tags": ["tomb", "lure", "chase"]
+      "tags": [
+        "tomb",
+        "lure",
+        "chase"
+      ],
+      "narrative": {
+        "context": "A wandering scout said a tomb-thing chases anyone it sees but can't think around corners. The party prepares a lure exercise.",
+        "winLine": "You taught the guardian to chase walls. The lesson sticks.",
+        "loseLine": "It cornered you anyway. Tomorrow you'll spot the angle.",
+        "buffName": "Tactical Lure"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_lure",
+          "label": "Tactical Lure",
+          "stat": "P",
+          "amount": 1,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 3
+        }
+      ]
     },
     {
       "id": "mummy_03",
@@ -49,22 +146,89 @@
       "theme": "tomb",
       "width": 5,
       "height": 5,
-      "player": [0, 4],
-      "exit": [4, 0],
-      "mummies": [
-        { "id": "m1", "pos": [4, 4], "speed": 1, "priority": "horizontal" }
+      "player": [
+        0,
+        4
       ],
-      "walls": [[1, 3], [2, 3], [3, 3], [3, 0]],
+      "exit": [
+        4,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            4,
+            4
+          ],
+          "speed": 1,
+          "priority": "horizontal"
+        }
+      ],
+      "walls": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          0
+        ]
+      ],
       "keys": [
-        { "id": "k1", "pos": [0, 0] }
+        {
+          "id": "k1",
+          "pos": [
+            0,
+            0
+          ]
+        }
       ],
       "gates": [
-        { "requires": "k1", "pos": [4, 1] }
+        {
+          "requires": "k1",
+          "pos": [
+            4,
+            1
+          ]
+        }
       ],
       "traps": [],
       "optimalTurns": 10,
       "hint": "Grab the bone key in the upper-left, then loop south of the corridor to the sealed gate.",
-      "tags": ["tomb", "key", "gate"]
+      "tags": [
+        "tomb",
+        "key",
+        "gate"
+      ],
+      "narrative": {
+        "context": "A scout's tale: a sealed vault in the foothills holds a key behind a single guardian. The party rehearses the run.",
+        "winLine": "Key, gate, exit. Clean.",
+        "loseLine": "You came back empty-handed and a little stiff.",
+        "buffName": "Tomb Reader"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_03",
+          "label": "Tomb Reader",
+          "stat": "P",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 4
+        }
+      ]
     },
     {
       "id": "mummy_04",
@@ -73,20 +237,84 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [0, 6],
-      "exit": [6, 0],
-      "mummies": [
-        { "id": "m1", "pos": [6, 6], "speed": 1, "priority": "vertical" }
+      "player": [
+        0,
+        6
       ],
-      "walls": [[1, 5], [2, 5], [3, 5], [4, 5], [5, 5]],
+      "exit": [
+        6,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            6,
+            6
+          ],
+          "speed": 1,
+          "priority": "vertical"
+        }
+      ],
+      "walls": [
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ]
+      ],
       "keys": [],
       "gates": [],
       "traps": [
-        { "pos": [3, 0] }
+        {
+          "pos": [
+            3,
+            0
+          ]
+        }
       ],
       "optimalTurns": 13,
       "hint": "This mummy tries to step toward you vertically first. Open with a Wait, then climb. Detour around the floor spike on the top row.",
-      "tags": ["tomb", "trap", "vertical-mummy"]
+      "tags": [
+        "tomb",
+        "trap",
+        "vertical-mummy"
+      ],
+      "narrative": {
+        "context": "Local kids dared each other to navigate a pit-riddled crypt. Bin overheard and turned it into a drill.",
+        "winLine": "Light feet, lighter purse if you keep this up.",
+        "loseLine": "You missed the trap. Try again.",
+        "buffName": "Trap Sense"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_04",
+          "label": "Trap Sense",
+          "stat": "P",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "mummy_05",
@@ -95,20 +323,77 @@
       "theme": "tomb",
       "width": 5,
       "height": 5,
-      "player": [0, 4],
-      "exit": [4, 0],
-      "mummies": [
-        { "id": "m1", "pos": [4, 4], "speed": 2, "priority": "horizontal" }
+      "player": [
+        0,
+        4
       ],
-      "walls": [[1, 3], [2, 3], [3, 3]],
+      "exit": [
+        4,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            4,
+            4
+          ],
+          "speed": 2,
+          "priority": "horizontal"
+        }
+      ],
+      "walls": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ],
       "keys": [],
       "gates": [],
       "traps": [
-        { "pos": [3, 1] }
+        {
+          "pos": [
+            3,
+            1
+          ]
+        }
       ],
       "optimalTurns": 8,
       "hint": "Tight quarters. Use the corridor wall to pin the mummy; route around the trap.",
-      "tags": ["tomb", "hard", "compact", "trap"]
+      "tags": [
+        "tomb",
+        "hard",
+        "compact",
+        "trap"
+      ],
+      "narrative": {
+        "context": "A wizard in the tavern bragged about clearing the Eye of Ra in three turns. The party doubts that.",
+        "winLine": "Three turns is impossible. Five is honest work.",
+        "loseLine": "The Eye blinks. So do you. Reset.",
+        "buffName": "Focused Sight"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_05",
+          "label": "Focused Sight",
+          "stat": "I",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "mummy_06",
@@ -117,19 +402,75 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [3, 6],
-      "exit": [3, 0],
-      "mummies": [
-        { "id": "m1", "pos": [0, 0], "speed": 1, "priority": "vertical" },
-        { "id": "m2", "pos": [6, 0], "speed": 1, "priority": "vertical" }
+      "player": [
+        3,
+        6
       ],
-      "walls": [[3, 3], [3, 4]],
+      "exit": [
+        3,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            0,
+            0
+          ],
+          "speed": 1,
+          "priority": "vertical"
+        },
+        {
+          "id": "m2",
+          "pos": [
+            6,
+            0
+          ],
+          "speed": 1,
+          "priority": "vertical"
+        }
+      ],
+      "walls": [
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          4
+        ]
+      ],
       "keys": [],
       "gates": [],
       "traps": [],
       "optimalTurns": 14,
       "hint": "Two slow vertical mummies converge from the corners. Hug the central column to split them, then sprint up the middle.",
-      "tags": ["tomb", "twin", "vertical-mummy", "lure"]
+      "tags": [
+        "tomb",
+        "twin",
+        "vertical-mummy",
+        "lure"
+      ],
+      "narrative": {
+        "context": "Two crumbling sentinels still slowly patrol an old shrine. A perfect target for paired-mob practice.",
+        "winLine": "You split the sentinels like cutting bread.",
+        "loseLine": "Both at once is harder than it looks.",
+        "buffName": "Split Step"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_06",
+          "label": "Split Step",
+          "stat": "P",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "mummy_07",
@@ -138,24 +479,102 @@
       "theme": "tomb",
       "width": 6,
       "height": 6,
-      "player": [0, 5],
-      "exit": [5, 0],
-      "mummies": [
-        { "id": "m1", "pos": [5, 5], "speed": 1, "priority": "horizontal" }
+      "player": [
+        0,
+        5
       ],
-      "walls": [[2, 1], [2, 2], [3, 1], [3, 4], [3, 5]],
+      "exit": [
+        5,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            5,
+            5
+          ],
+          "speed": 1,
+          "priority": "horizontal"
+        }
+      ],
+      "walls": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ]
+      ],
       "keys": [
-        { "id": "k1", "pos": [0, 0] }
+        {
+          "id": "k1",
+          "pos": [
+            0,
+            0
+          ]
+        }
       ],
       "gates": [
-        { "requires": "k1", "pos": [5, 1] }
+        {
+          "requires": "k1",
+          "pos": [
+            5,
+            1
+          ]
+        }
       ],
       "traps": [
-        { "pos": [2, 3] }
+        {
+          "pos": [
+            2,
+            3
+          ]
+        }
       ],
       "optimalTurns": 16,
       "hint": "Grab the cistern key before approaching the gate. The fast mummy commits east first — bait it into the wall corridor.",
-      "tags": ["tomb", "key", "gate", "trap", "hard"]
+      "tags": [
+        "tomb",
+        "key",
+        "gate",
+        "trap",
+        "hard"
+      ],
+      "narrative": {
+        "context": "A cistern hides a key half-rusted to its stone. Locals avoid it. Bin schedules it for tomorrow.",
+        "winLine": "Cistern key claimed. Locals will be impressed.",
+        "loseLine": "The cistern keeps its prize. For now.",
+        "buffName": "Patient Hand"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_07",
+          "label": "Patient Hand",
+          "stat": "I",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "mummy_08",
@@ -164,25 +583,114 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [3, 3],
-      "exit": [0, 0],
+      "player": [
+        3,
+        3
+      ],
+      "exit": [
+        0,
+        0
+      ],
       "mummies": [
-        { "id": "m1", "pos": [6, 6], "speed": 1, "priority": "horizontal" },
-        { "id": "m2", "pos": [6, 0], "speed": 1, "priority": "vertical" }
+        {
+          "id": "m1",
+          "pos": [
+            6,
+            6
+          ],
+          "speed": 1,
+          "priority": "horizontal"
+        },
+        {
+          "id": "m2",
+          "pos": [
+            6,
+            0
+          ],
+          "speed": 1,
+          "priority": "vertical"
+        }
       ],
       "walls": [
-        [1, 1], [2, 1], [3, 1], [4, 1],
-        [5, 2], [5, 3], [5, 4],
-        [1, 5], [2, 5], [3, 5]
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ]
       ],
       "keys": [],
       "gates": [],
       "traps": [
-        { "pos": [4, 4] }
+        {
+          "pos": [
+            4,
+            4
+          ]
+        }
       ],
       "optimalTurns": 18,
       "hint": "The spiral wall forces you north then east. Two mummies converge — split their lines with the center walls.",
-      "tags": ["tomb", "twin", "spiral", "hard"]
+      "tags": [
+        "tomb",
+        "twin",
+        "spiral",
+        "hard"
+      ],
+      "narrative": {
+        "context": "A spiral catacomb under the library. Two guardians, one center, no patience for shortcuts.",
+        "winLine": "You read the spiral like a sentence.",
+        "loseLine": "The spiral read you first.",
+        "buffName": "Spatial Reading"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_08",
+          "label": "Spatial Reading",
+          "stat": "I",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "mummy_09",
@@ -191,18 +699,77 @@
       "theme": "tomb",
       "width": 9,
       "height": 5,
-      "player": [0, 2],
-      "exit": [8, 2],
-      "mummies": [
-        { "id": "m1", "pos": [8, 0], "speed": 1, "priority": "vertical" }
+      "player": [
+        0,
+        2
       ],
-      "walls": [[2, 1], [2, 3], [5, 1], [5, 3], [7, 2]],
+      "exit": [
+        8,
+        2
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            8,
+            0
+          ],
+          "speed": 1,
+          "priority": "vertical"
+        }
+      ],
+      "walls": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          7,
+          2
+        ]
+      ],
       "keys": [],
       "gates": [],
       "traps": [],
       "optimalTurns": 10,
       "hint": "Long hall with bottleneck pillars. The mummy comes from the top-right corner and prefers vertical moves — drop south once it commits north.",
-      "tags": ["tomb", "long", "bottleneck"]
+      "tags": [
+        "tomb",
+        "long",
+        "bottleneck"
+      ],
+      "narrative": {
+        "context": "A long-hall puzzle. A scout returned from a similar tomb with this exact problem and no solution.",
+        "winLine": "Bottleneck cleared. The scout will want to hear how.",
+        "loseLine": "You stumbled on the same problem the scout did.",
+        "buffName": "Long-Hall Wisdom"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_09",
+          "label": "Long-Hall Wisdom",
+          "stat": "P",
+          "amount": 1,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 3
+        }
+      ]
     },
     {
       "id": "mummy_10",
@@ -211,23 +778,105 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [3, 6],
-      "exit": [6, 0],
-      "mummies": [
-        { "id": "m1", "pos": [0, 0], "speed": 1, "priority": "horizontal" }
+      "player": [
+        3,
+        6
       ],
-      "walls": [[2, 2], [4, 2], [3, 1], [3, 3], [5, 4], [1, 4]],
+      "exit": [
+        6,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            0,
+            0
+          ],
+          "speed": 1,
+          "priority": "horizontal"
+        }
+      ],
+      "walls": [
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          1,
+          4
+        ]
+      ],
       "keys": [
-        { "id": "k1", "pos": [0, 5] }
+        {
+          "id": "k1",
+          "pos": [
+            0,
+            5
+          ]
+        }
       ],
       "gates": [
-        { "requires": "k1", "pos": [6, 2] },
-        { "requires": "k1", "pos": [3, 4] }
+        {
+          "requires": "k1",
+          "pos": [
+            6,
+            2
+          ]
+        },
+        {
+          "requires": "k1",
+          "pos": [
+            3,
+            4
+          ]
+        }
       ],
       "traps": [],
       "optimalTurns": 17,
       "hint": "One key opens both gates. Pick a route and stick to it — the mummy is slow but greedy west-to-east.",
-      "tags": ["tomb", "key", "gate", "branching"]
+      "tags": [
+        "tomb",
+        "key",
+        "gate",
+        "branching"
+      ],
+      "narrative": {
+        "context": "Two gates, one key — Bin's favorite kind of puzzle. The cookie at the end is a real cookie.",
+        "winLine": "Two gates, one key, one cookie. Earned.",
+        "loseLine": "You spent the key on the wrong gate. Bin keeps the cookie.",
+        "buffName": "Decisive Routing"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_10",
+          "label": "Decisive Routing",
+          "stat": "P",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "mummy_11",
@@ -236,21 +885,98 @@
       "theme": "tomb",
       "width": 7,
       "height": 7,
-      "player": [0, 6],
-      "exit": [6, 0],
-      "mummies": [
-        { "id": "m1", "pos": [6, 6], "speed": 1, "priority": "horizontal" },
-        { "id": "m2", "pos": [6, 0], "speed": 1, "priority": "vertical" }
+      "player": [
+        0,
+        6
       ],
-      "walls": [[2, 2], [3, 2], [4, 2], [2, 4], [3, 4], [4, 4]],
+      "exit": [
+        6,
+        0
+      ],
+      "mummies": [
+        {
+          "id": "m1",
+          "pos": [
+            6,
+            6
+          ],
+          "speed": 1,
+          "priority": "horizontal"
+        },
+        {
+          "id": "m2",
+          "pos": [
+            6,
+            0
+          ],
+          "speed": 1,
+          "priority": "vertical"
+        }
+      ],
+      "walls": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ],
       "keys": [],
       "gates": [],
       "traps": [
-        { "pos": [3, 3] }
+        {
+          "pos": [
+            3,
+            3
+          ]
+        }
       ],
       "optimalTurns": 20,
       "hint": "A horizontal speedster and a vertical bouncer flank the middle aisle. The trap covers the obvious midline — go around at row 5 or row 1.",
-      "tags": ["tomb", "twin", "trap", "hardest"]
+      "tags": [
+        "tomb",
+        "twin",
+        "trap",
+        "hardest"
+      ],
+      "narrative": {
+        "context": "Veteran adventurers call this puzzle the Forced March. It eats the unprepared. Bin grins.",
+        "winLine": "Survived the Forced March. The veterans will buy you a drink.",
+        "loseLine": "The Forced March took another step. You did not.",
+        "buffName": "Iron Step"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_11",
+          "label": "Iron Step",
+          "stat": "I",
+          "amount": 3,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 10
+        }
+      ]
     },
     {
       "id": "mummy_12",
@@ -270,7 +996,32 @@
       ],
       "optimalTurns": 10,
       "hint": "The slow mummy crawls up the left shaft while the red-priority one cuts vertically. Let the center walls split their routes before taking the top exit.",
-      "tags": ["tomb", "large", "twin", "priority"]
+      "tags": [
+        "tomb",
+        "large",
+        "twin",
+        "priority"
+      ],
+      "narrative": {
+        "context": "An obelisk loop traced from rubbings of the Sandstone Library. Two priorities, one path.",
+        "winLine": "You out-prioritized the priorities. Brutal precision.",
+        "loseLine": "Priorities won. Practice again at dawn.",
+        "buffName": "Priority Read"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_12",
+          "label": "Priority Read",
+          "stat": "P",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "mummy_13",
@@ -290,7 +1041,33 @@
       ],
       "optimalTurns": 16,
       "hint": "Collect the scarab key before you cross the gatehouse. The lower mummy can also trigger the key if you lure too slowly.",
-      "tags": ["tomb", "large", "key", "gate", "two-speed"]
+      "tags": [
+        "tomb",
+        "large",
+        "key",
+        "gate",
+        "two-speed"
+      ],
+      "narrative": {
+        "context": "A noble paid in advance for a gatehouse blueprint. The party studies it on company time.",
+        "winLine": "Gatehouse blueprint memorized. The noble will pay extra.",
+        "loseLine": "The gatehouse keeps its secret. So does the noble.",
+        "buffName": "Gatehouse Map"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_13",
+          "label": "Gatehouse Map",
+          "stat": "I",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "mummy_14",
@@ -312,7 +1089,34 @@
       "maxSolverDepth": 72,
       "optimalTurns": 8,
       "hint": "The exit gate is shut, but guardians can trip scarab switches too. Sprint the top hall while the lower mummy opens the way.",
-      "tags": ["tomb", "large", "key", "gate", "switch-bait", "hardest"]
+      "tags": [
+        "tomb",
+        "large",
+        "key",
+        "gate",
+        "switch-bait",
+        "hardest"
+      ],
+      "narrative": {
+        "context": "The deepest hall in Bin's training set: collisions, keys, switches, time pressure. Survivors get bragging rights.",
+        "winLine": "Collision Hall survived. Bragging rights granted.",
+        "loseLine": "Collision Hall held. Brag privileges revoked.",
+        "buffName": "Tomb Master"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_mummy_14",
+          "label": "Tomb Master",
+          "stat": "I",
+          "amount": 3,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 10
+        }
+      ]
     }
   ]
 }

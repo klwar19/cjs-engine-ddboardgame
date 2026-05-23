@@ -62,7 +62,8 @@ window.CJS.DataStore = (() => {
     worldEvents: {},  // id → rotating world event (drives shop / farming / drop modifiers)
     fishCatalog: {},  // id → fish definition (biome-tagged catchable item)
     quips:      [],   // array of quip fragments
-    quizBank:   []    // array of quiz questions
+    quizBank:   [],   // array of quiz questions
+    triviaBank: []    // array of lore / world history / character trivia questions
   };
 
   let _dirty = false;
@@ -200,7 +201,8 @@ window.CJS.DataStore = (() => {
       statuses:   _stripMeta({ ..._data.statuses }),
       weathers:   _stripMeta({ ..._data.weathers }),
       quips:      _stripMeta([..._data.quips]),
-      quizBank:   _stripMeta([..._data.quizBank])
+      quizBank:   _stripMeta([..._data.quizBank]),
+      triviaBank: _stripMeta([..._data.triviaBank])
     };
   }
 
@@ -705,6 +707,7 @@ window.CJS.DataStore = (() => {
     // Arrays: replace entirely
     if (obj.quips) _data.quips = obj.quips;
     if (obj.quizBank) _data.quizBank = obj.quizBank;
+    if (obj.triviaBank) _data.triviaBank = obj.triviaBank;
 
     // Rebuild ID counters
     _rebuildCounters();
@@ -785,7 +788,7 @@ window.CJS.DataStore = (() => {
       worldActivityPacks: {},
       characters: {}, monsters: {}, encounters: {}, statuses: {}, weathers: {},
       worldEvents: {}, fishCatalog: {},
-      quips: [], quizBank: []
+      quips: [], quizBank: [], triviaBank: []
     };
     _counters = {};
     _dirty = false;

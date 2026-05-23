@@ -56,6 +56,74 @@
         }
       ],
       "description": "The universe finds Bin entertaining. Slightly better luck and crits."
+    },
+    {
+      "id": "enemy_mod_frozen_aura",
+      "name": "Frozen Aura",
+      "icon": "❄️",
+      "tags": ["procedural", "ice", "enemy_modifier"],
+      "effects": [
+        { "effectId": "dr_mod_all",       "overrides": { "value": 1 } },
+        { "effectId": "stat_mod_end",     "overrides": { "value": 1 } }
+      ],
+      "description": "Procedural enemy modifier. A chilling aura toughens the bearer slightly."
+    },
+    {
+      "id": "enemy_mod_rabid_doublestrike",
+      "name": "Rabid Frenzy",
+      "icon": "🦷",
+      "tags": ["procedural", "frenzy", "enemy_modifier"],
+      "effects": [
+        { "effectId": "stat_mod_str", "overrides": { "value": 1 } },
+        { "effectId": "stat_mod_agi", "overrides": { "value": 2 } },
+        { "effectId": "accuracy_mod", "overrides": { "value": -3 } }
+      ],
+      "description": "Procedural enemy modifier. Faster but reckless — strikes hard but accepts more incoming damage."
+    },
+    {
+      "id": "enemy_mod_alpha_aura",
+      "name": "Alpha Aura",
+      "icon": "👑",
+      "tags": ["procedural", "leader", "enemy_modifier"],
+      "effects": [
+        { "effectId": "stat_mod_str", "overrides": { "value": 2 } },
+        { "effectId": "stat_mod_end", "overrides": { "value": 2 } },
+        { "effectId": "dr_mod_all",   "overrides": { "value": 1 } }
+      ],
+      "description": "Procedural enemy modifier. Pack leader. Nearby allies share its resolve."
+    },
+    {
+      "id": "enemy_mod_swift_evasion",
+      "name": "Swift Step",
+      "icon": "💨",
+      "tags": ["procedural", "evasion", "enemy_modifier"],
+      "effects": [
+        { "effectId": "evasion_mod", "overrides": { "value": 8 } },
+        { "effectId": "stat_mod_agi", "overrides": { "value": 1 } }
+      ],
+      "description": "Procedural enemy modifier. Quick on its feet — dodges more often."
+    },
+    {
+      "id": "enemy_mod_tough_hide",
+      "name": "Tough Hide",
+      "icon": "🛡️",
+      "tags": ["procedural", "defense", "enemy_modifier"],
+      "effects": [
+        { "effectId": "dr_mod_all",   "overrides": { "value": 2 } },
+        { "effectId": "stat_mod_end", "overrides": { "value": 2 } }
+      ],
+      "description": "Procedural enemy modifier. Hardened skin grants +DR and bulk."
+    },
+    {
+      "id": "enemy_mod_hungry_drain",
+      "name": "Hungry Bite",
+      "icon": "🍖",
+      "tags": ["procedural", "drain", "enemy_modifier"],
+      "effects": [
+        { "effectId": "stat_mod_str", "overrides": { "value": 1 } },
+        { "effectId": "stat_mod_end", "overrides": { "value": 1 } }
+      ],
+      "description": "Procedural enemy modifier. Each bite restores a sliver of its own HP."
     }
   ]
 }

@@ -66,12 +66,14 @@ window.CJS.Minigames = (() => {
     const shell = document.createElement('div');
     shell.className = `minigame-shell minigame-theme-${opts.theme || level?.theme || gameMeta.theme || 'tomb'}`;
 
+    const contextText = level?.narrative?.context || '';
     shell.innerHTML = `
       <header class="minigame-header">
         <div class="minigame-title">
           <span class="minigame-badge">Mini-Game</span>
           <h2>${escapeHtml(gameMeta.title || gameMeta.id)}</h2>
           <p class="minigame-sub" data-mg="level-title">${escapeHtml(level?.title || '')}</p>
+          ${contextText ? `<p class="minigame-narrative" style="font-style:italic;color:rgba(255,255,255,0.7);margin-top:4px;font-size:0.85rem;max-width:520px">${escapeHtml(contextText)}</p>` : ''}
         </div>
         <div class="minigame-stats">
           <span data-mg="turns">Turns: 0</span>
@@ -125,7 +127,11 @@ window.CJS.Minigames = (() => {
       `result:${status}`
     ];
     if (level?.difficulty != null) tags.push(`difficulty:${level.difficulty}`);
+    if (level?.tags && Array.isArray(level.tags)) {
+      for (const tag of level.tags) tags.push(String(tag));
+    }
     const suggestedOps = [];
+    const narrative = level?.narrative || {};
     if (status === 'win') {
       if (opts.questId || opts.objectiveId) {
         suggestedOps.push({
@@ -135,10 +141,16 @@ window.CJS.Minigames = (() => {
           amount: 1
         });
       }
-      suggestedOps.push({ op: 'log', text: `Mini-game cleared: ${gameMeta.title || gameMeta.id}.` });
+      const winText = narrative.winLine || `Mini-game cleared: ${gameMeta.title || gameMeta.id}.`;
+      suggestedOps.push({ op: 'log', text: winText });
+      // Level-authored on-win rewards (contextual buffs / JP / unlocks).
+      if (Array.isArray(level?.onWinOps)) suggestedOps.push(...level.onWinOps);
+      // Caller-provided on-win ops (quest, scenario, etc.) layered on top.
       if (Array.isArray(opts.onWinOps)) suggestedOps.push(...opts.onWinOps);
     } else if (status === 'fail' || status === 'giveup') {
-      suggestedOps.push({ op: 'log', text: `Mini-game ${status === 'giveup' ? 'abandoned' : 'failed'}: ${gameMeta.title || gameMeta.id}.` });
+      const loseText = narrative.loseLine || `Mini-game ${status === 'giveup' ? 'abandoned' : 'failed'}: ${gameMeta.title || gameMeta.id}.`;
+      suggestedOps.push({ op: 'log', text: loseText });
+      if (Array.isArray(level?.onLoseOps)) suggestedOps.push(...level.onLoseOps);
       if (Array.isArray(opts.onLoseOps)) suggestedOps.push(...opts.onLoseOps);
     }
     return {
@@ -150,6 +162,7 @@ window.CJS.Minigames = (() => {
       score: scoreOf(summary, level),
       tags,
       suggestedOps,
+      narrative,
       source: opts.source || null,
       questId: opts.questId || null,
       eventId: opts.eventId || null,

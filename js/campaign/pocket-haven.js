@@ -150,6 +150,8 @@ window.CJS.PocketHaven = (() => {
           <div class="campaign-panel-head"><h3>Stations</h3></div>
           ${(haven.stations || []).map((station) => `<div class="campaign-row"><strong>${_esc(station.name || station.id)}</strong><span class="campaign-pill">${_esc(station.kind || 'station')}</span></div>`).join('') || '<div class="campaign-empty">No stations yet.</div>'}
         </section>
+        ${renderFacilities()}
+        ${renderMiniGames()}
         <section class="campaign-panel">
           <div class="campaign-panel-head">
             <h3>Notes</h3>
@@ -161,6 +163,131 @@ window.CJS.PocketHaven = (() => {
         ${renderFishing()}
       </div>
     `;
+  }
+
+  // ── Mini-games & Tavern (trivia) ──────────────────────────────────
+  // Surfaces the puzzle games (Mummy Maze, Push Box) and the Guild
+  // Trivia Night event directly in Pocket Haven. Each tile launches
+  // through the existing host with `source: 'pocket_haven'` so the
+  // result payload is logged in the campaign event log and the
+  // contextual buffs the levels declare apply automatically.
+  function renderMiniGames() {
+    const MG = window.CJS.Minigames;
+    const state = CS().getState();
+    const games = MG?.listGames?.() || [];
+    const triviaAvailable = !!window.CJS.GuildTrivia;
+    if (!games.length && !triviaAvailable) return '';
+    const gameTiles = games.map((g) => `
+      <div class="campaign-row">
+        <div>
+          <strong>${_esc(g.title || g.id)}</strong>
+          <div class="campaign-muted">${_esc(g.description || 'Pocket Haven training drill.')}</div>
+        </div>
+        <button class="campaign-action primary" data-campaign-action="haven-play-minigame" data-game="${_escAttr(g.id)}">Play</button>
+      </div>
+    `).join('');
+    const triviaTile = triviaAvailable ? `
+      <div class="campaign-row">
+        <div>
+          <strong>🍺 Guild Trivia Night</strong>
+          <div class="campaign-muted">Tavern event. Answer lore and history questions for JP and relationship points.</div>
+        </div>
+        <button class="campaign-action primary" data-campaign-action="haven-open-trivia" data-world="${_escAttr(state.currentWorld || 'haven')}">Host Round</button>
+      </div>
+    ` : '';
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head"><h3>Mini-Games & Tavern</h3></div>
+        ${triviaTile}
+        ${gameTiles || '<div class="campaign-empty">No mini-games registered.</div>'}
+        <div class="campaign-muted" style="font-size:0.78em;margin-top:8px;padding:4px 8px">
+          Winning a Pocket Haven mini-game grants a contextual buff for your next battle. Higher difficulty = stronger buff.
+        </div>
+      </section>
+    `;
+  }
+
+  // ── Facilities: training ground, advanced craft, ranch ────────────
+  function renderFacilities() {
+    const PHF = window.CJS.PocketHavenFacilities;
+    if (!PHF) return '';
+    const state = CS().getState();
+    const catalog = PHF.listFacilities();
+    if (!catalog.length) return '';
+
+    const rows = catalog.map((def) => {
+      const inst = PHF.getInstance(state, def.id);
+      const built = !!inst;
+      const level = inst?.level || 0;
+      const uses = inst?.usesRemaining ?? 0;
+      const cap = inst?.capacity ?? def.capacity ?? 0;
+      const buildCost = PHF.describeCost(def.buildCost || {});
+      const upgradeCosts = Array.isArray(def.upgradeCost) ? def.upgradeCost : [def.upgradeCost];
+      const nextUpgradeIdx = Math.max(0, (level || 1) - 1);
+      const upgradeCost = upgradeCosts[nextUpgradeIdx] ? PHF.describeCost(upgradeCosts[nextUpgradeIdx]) : 'maxed';
+      const maxedOut = level >= (def.maxLevel || 1);
+      const action = built
+        ? (maxedOut
+            ? '<span class="campaign-pill">Maxed</span>'
+            : `<button class="campaign-action" data-campaign-action="haven-upgrade-facility" data-facility="${_escAttr(def.id)}" title="Cost: ${_escAttr(upgradeCost)}">Upgrade (${_esc(upgradeCost)})</button>`)
+        : `<button class="campaign-action primary" data-campaign-action="haven-build-facility" data-facility="${_escAttr(def.id)}" title="Cost: ${_escAttr(buildCost)}">Build (${_esc(buildCost)})</button>`;
+      const useBtn = _facilityActionButtons(def, inst);
+      const usageLine = built
+        ? `<div class="campaign-muted" style="font-size:0.82em">Lv ${level} · Uses left this phase: ${uses}${cap ? ` · Capacity: ${cap}` : ''}</div>`
+        : '';
+      const description = _esc(def.description || def.summary || '');
+      return `
+        <div class="campaign-row">
+          <div>
+            <strong>${_esc(def.icon || '')} ${_esc(def.name)}</strong>
+            <div class="campaign-muted">${description}</div>
+            ${usageLine}
+            ${_renderRanchAssignments(state, def, inst)}
+          </div>
+          <div class="campaign-row-actions" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            ${action}
+            ${useBtn}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <section class="campaign-panel">
+        <div class="campaign-panel-head"><h3>Facilities</h3></div>
+        ${rows}
+      </section>
+    `;
+  }
+
+  function _facilityActionButtons(def, inst) {
+    if (!inst) return '';
+    if (def.kind === 'training') {
+      const disabled = (inst.usesRemaining || 0) <= 0 ? 'disabled' : '';
+      return `<button class="campaign-action" data-campaign-action="haven-train-skill" data-facility="${_escAttr(def.id)}" ${disabled}>Train Skill</button>`;
+    }
+    if (def.kind === 'ranch') {
+      const collectDisabled = (inst.usesRemaining || 0) <= 0 ? 'disabled' : '';
+      return `
+        <button class="campaign-action" data-campaign-action="haven-ranch-assign" data-facility="${_escAttr(def.id)}">Assign</button>
+        <button class="campaign-action" data-campaign-action="haven-ranch-collect" data-facility="${_escAttr(def.id)}" ${collectDisabled}>Collect</button>
+      `;
+    }
+    if (def.kind === 'craft') {
+      return `<span class="campaign-pill">+Recipes ×L${inst.level || 1}</span>`;
+    }
+    return '';
+  }
+
+  function _renderRanchAssignments(state, def, inst) {
+    if (def.kind !== 'ranch' || !inst) return '';
+    const assigned = inst.assigned || [];
+    if (!assigned.length) return '<div class="campaign-muted" style="font-size:0.82em">No beasts assigned.</div>';
+    const lines = assigned.map((beastId) => {
+      const beast = DS().get('monsters', beastId);
+      return `<span class="campaign-pill">${_esc(beast?.icon || '🐾')} ${_esc(beast?.name || beastId)}</span>`;
+    });
+    return `<div class="campaign-chip-row" style="margin-top:4px">${lines.join(' ')}</div>`;
   }
 
   // ── Fishing ────────────────────────────────────────────────────────
@@ -287,6 +414,8 @@ window.CJS.PocketHaven = (() => {
     renderCraft,
     renderCook,
     renderFishing,
+    renderFacilities,
+    renderMiniGames,
     renderPocket,
     plantSeed,
     harvestPlot,

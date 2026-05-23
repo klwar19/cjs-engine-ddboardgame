@@ -169,6 +169,58 @@
       "duration": "next_battle",
       "tags": ["fish", "raw"],
       "description": "Cyber-bio squid. Cook to enhance tech damage."
+    },
+    {
+      "id": "food_frostcap_stew",
+      "name": "Frostcap Stew",
+      "icon": "🍜",
+      "rarity": "Uncommon",
+      "duration": "next_battle",
+      "discoverable": true,
+      "buff": { "stat": "E", "amount": 3 },
+      "inputs": {
+        "materials": {
+          "haven_ice_crystal": 1,
+          "haven_sprite_dust": 1,
+          "haven_bear_hide": 1
+        }
+      },
+      "tags": ["cooked", "discoverable"],
+      "description": "A discoverable recipe. Combine ice crystal + sprite dust + bear hide and cook to discover Frostcap Stew. Endurance +3 next battle."
+    },
+    {
+      "id": "food_hunters_pie",
+      "name": "Hunter's Pie",
+      "icon": "🥧",
+      "rarity": "Rare",
+      "duration": "next_battle",
+      "discoverable": true,
+      "buff": { "stat": "S", "amount": 3 },
+      "inputs": {
+        "materials": {
+          "haven_bear_claw": 2,
+          "haven_wolf_pelt": 1
+        }
+      },
+      "tags": ["cooked", "discoverable", "savory"],
+      "description": "A discoverable recipe. Combine two bear claws and a wolf pelt to discover Hunter's Pie. Strength +3 next battle."
+    },
+    {
+      "id": "food_jesters_souffle",
+      "name": "Jester's Soufflé",
+      "icon": "🥮",
+      "rarity": "Legendary",
+      "duration": "next_battle",
+      "discoverable": true,
+      "buff": { "stat": "L", "amount": 4 },
+      "inputs": {
+        "materials": {
+          "haven_memory_shard": 1,
+          "haven_sprite_dust": 3
+        }
+      },
+      "tags": ["cooked", "discoverable", "legendary"],
+      "description": "A discoverable recipe. Combine a memory shard and three sprite dust to discover Jester's Soufflé. Luck +4 next battle. Perfect cook adds +1."
     }
   ]
 }

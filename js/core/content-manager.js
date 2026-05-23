@@ -564,6 +564,7 @@ window.CJS.ContentManager = (() => {
     }
     if (entry.category === 'statuses') return doc.entries || doc.statuses || [];
     if (entry.category === 'quizBank') return doc.questions || doc.entries || [];
+    if (entry.category === 'triviaBank') return doc.questions || doc.entries || [];
     if (entry.category === 'quips') return doc.fragments || doc.entries || [];
     return doc.entries || [];
   }
@@ -577,6 +578,7 @@ window.CJS.ContentManager = (() => {
 
     const quips = [];
     const quizBank = [];
+    const triviaBank = [];
 
     _suspendDirtyTracking = true;
     DS().reset();
@@ -622,6 +624,18 @@ window.CJS.ContentManager = (() => {
         continue;
       }
 
+      if (entry.category === 'triviaBank') {
+        for (const question of entries) {
+          triviaBank.push({
+            ...question,
+            _scope: entry.scope,
+            _world: entry.world || null,
+            _origin: entry.path
+          });
+        }
+        continue;
+      }
+
       const type = CATEGORY_TO_TYPE[entry.category];
       if (!type) continue;
 
@@ -636,7 +650,7 @@ window.CJS.ContentManager = (() => {
       }
     }
 
-    DS().loadData({ quips, quizBank });
+    DS().loadData({ quips, quizBank, triviaBank });
     DS().markClean();
     _suspendDirtyTracking = false;
 
@@ -973,6 +987,13 @@ window.CJS.ContentManager = (() => {
         doc = {
           _file: header,
           questions: DS().getAllAsArray('quizBank')
+            .filter((question) => (question._origin || entry.path) === entry.path)
+            .map((question) => _stripMeta(question))
+        };
+      } else if (entry.category === 'triviaBank') {
+        doc = {
+          _file: header,
+          questions: DS().getAllAsArray('triviaBank')
             .filter((question) => (question._origin || entry.path) === entry.path)
             .map((question) => _stripMeta(question))
         };

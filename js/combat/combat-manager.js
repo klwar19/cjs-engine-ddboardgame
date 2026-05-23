@@ -33,6 +33,7 @@ window.CJS.CombatManager = (() => {
   const WX  = () => window.CJS.Weather;
   const ST  = () => window.CJS.StateTools;
   const OBJ = () => window.CJS.CombatObjectives;
+  const EM  = () => window.CJS.EnemyModifiers;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
   /** @type {CJSCombatState | null} */
@@ -59,6 +60,14 @@ window.CJS.CombatManager = (() => {
     const initiative = [];
     const idCounts = {};  // track duplicates: { 'ice_wolf': 2, ... }
 
+    // Pre-count same-base monster instances so the Alpha modifier
+    // can read accurate pack sizes during the modifier roll.
+    const packCounts = {};
+    for (const placement of (enc.units || [])) {
+      if (!placement || !placement.id) continue;
+      packCounts[placement.id] = (packCounts[placement.id] || 0) + 1;
+    }
+
     // Build patched placements with unique instance IDs
     const patchedUnits = [];
     for (const placement of (enc.units || [])) {
@@ -73,13 +82,44 @@ window.CJS.CombatManager = (() => {
         ? `${placement.id}_${idCounts[placement.id]}`
         : placement.id;
 
-      const compiled = SC().compileUnit(base, instanceId, {
+      // ── Procedural enemy modifiers ────────────────────────────────
+      // Normal monsters (not boss / mid-boss / authored unique) may
+      // spawn with a Diablo-style prefix. Encounter-level opts can
+      // override the chance or pin a specific modifier; placements
+      // can disable it entirely with `noProceduralModifier: true`.
+      let effectiveBase = base;
+      const isMonster = !DS().get('characters', placement.id);
+      if (isMonster && EM() && !placement.noProceduralModifier) {
+        if (placement.procModifier && EM().applyModifier) {
+          effectiveBase = EM().applyModifier(base, placement.procModifier);
+        } else if (EM().rollAndApply) {
+          effectiveBase = EM().rollAndApply(base, {
+            biome: enc.biome || enc.theme || '',
+            element: base.element || '',
+            type: base.type || '',
+            tags: [...(enc.tags || []), ...(base.tags || [])],
+            packSize: packCounts[placement.id] || 1,
+            chance: Number(enc.procModifierChance ?? placement.procModifierChance ?? 0.22)
+          });
+        }
+      }
+
+      const compiled = SC().compileUnit(effectiveBase, instanceId, {
         currentHP: placement.currentHP,
         currentMP: placement.currentMP,
         activeStatuses: placement.activeStatuses || [],
         level: placement.level
       });
       if (placement.size) compiled.size = placement.size;
+      // Surface modifier metadata on the compiled unit so combat UI
+      // and post-combat loot can read it without re-rolling.
+      if (effectiveBase._procModifier) {
+        compiled.procModifier = effectiveBase._procModifier;
+        compiled.procModifierLabel = effectiveBase._procModifierLabel || '';
+        compiled.procModifierIcon = effectiveBase._procModifierIcon || '';
+        compiled.modifierLootBoost = Number(effectiveBase._modifierLootBoost || 1);
+        compiled.name = effectiveBase.name || compiled.name;
+      }
       unitObjects[instanceId] = compiled;
       initiative.push(instanceId);
       // Patched placement for grid-engine (needs unique IDs too)

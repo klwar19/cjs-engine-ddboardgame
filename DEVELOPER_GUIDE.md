@@ -942,3 +942,95 @@ Three optional services that load on every page:
   override base styles.
 - Pinch-zoom on the combat grid is wired through grid-renderer; double-tap
   resets zoom to 100%.
+
+## 17. Phase Expansion (2026-05)
+
+This pass added several connected systems. Each lives in a small, focused
+module so the existing combat/economy code stays unchanged.
+
+### 17.1 Progression Curve Rebalance
+- `js/core/constants.js` — `PROGRESSION.skillApThresholds`,
+  `charXpThresholds`, `jobXpThresholds`, and `apGainQteMultipliers`.
+- Early levels now ramp faster (Lv2 skill is 4 AP, not 6); late game
+  takes more total XP, so the curve crosses near level 10. `fail`
+  multiplier raised from 0.5→0.6 so new players still progress.
+
+### 17.2 Procedural Enemy Modifiers
+- `js/combat/enemy-modifiers.js` — Diablo-style prefix system. 6
+  prefixes: Frozen, Rabid, Alpha, Swift, Tough, Hungry.
+- `js/combat/combat-manager.js` calls `EnemyModifiers.rollAndApply()`
+  for non-boss monsters before `StatCompiler.compileUnit`.
+- Each prefix references a passive in `data/universal/passives.json`
+  (`enemy_mod_*`) for the actual stat / DR effects. Bosses
+  (`isBoss`/`isMidBoss`/`isUnique`) are skipped automatically.
+- Spawn chance: `encounter.procModifierChance` or 22% default.
+- Combat UI shows the prefix as a chip on the unit info card.
+
+### 17.3 QTE Combo System
+- `js/combat/action-handler.js` — Chains successful QTE grades into a
+  multiplier on the next swing. Caps at 5 chain steps (+40% bonus).
+- `fail` grades break the chain. Defend / item / end_turn also reset
+  it so combos can't be farmed by parking on safe actions.
+- Exposed via `ActionHandler.getComboState/getComboBonus/resetCombo`.
+- Combat UI shows a fire chip with chain + bonus when ≥ 2.
+
+### 17.4 Pocket Haven Facilities
+- `js/campaign/pocket-haven-facilities.js` — Training Ground, Advanced
+  Crafting Bench, Ranch. Each has a build cost, upgrade costs per
+  level, and per-phase usage budgets.
+- Ops added: `build_facility`, `upgrade_facility`, `train_skill`,
+  `ranch_assign`, `ranch_release`, `ranch_collect`. Routed through
+  `js/campaign/campaign-ops.js`.
+- `passPhase` refreshes daily usage via
+  `PocketHavenFacilities.refreshDailyUses()`.
+- UI: `PocketHaven.renderFacilities()` in the Haven tab.
+- Save shape: `state.pocketHaven.facilities[id]` (level, usesRemaining,
+  capacity, assigned[]). Normalized on every save load.
+
+### 17.5 Consequence Tracking
+- `js/campaign/campaign-alignment.js` — `recordConsequenceHook`,
+  `dueConsequenceHooks`, `markHookFired`. Hooks declare `fireWhen`
+  gates: `chapterMin`, `partResolved`, `flag`, `excludesFlag`,
+  `worldOnly`, `phaseType`, `phaseMin`.
+- Ops added: `record_consequence`, `fire_due_consequences`.
+- `passPhase` and `chapter_transition` automatically call
+  `fire_due_consequences` so hooks trigger at natural beats.
+- Fired hooks also write an Event Log entry tagged `consequence`.
+
+### 17.6 Guild Trivia Nights
+- `js/campaign/guild-trivia.js` — Tavern event that runs N questions
+  drawn from `triviaBank` and (as fallback) the regular `quizBank`.
+- Rewards: per-correct JP + relationship; full-clear and flawless
+  bonuses on top.
+- Data: `data/system/trivia_bank.json` — new collection category
+  `triviaBank`, wired through `content-manager`, `data-store`, and
+  the manifest. Authors can add per-world trivia files.
+- Surfaced on the Pocket Haven tab via `PocketHaven.renderMiniGames()`.
+
+### 17.7 Cooking Minigame
+- `js/minigames/cooking-minigame.js` — Timing minigame. A sweeping
+  heat marker is stopped by the player; landing on the green band
+  yields a "perfect" cook, yellow = good/ok, red = burnt (no buff).
+- Buff potency is scaled by `gradeMultiplier` (perfect = 1.6, ok = 1.0,
+  burnt = 0.4). Perfect adds +1 to the buffed stat.
+- Recipe discovery: cooking inputs that match a `discoverable: true`
+  food record adds it to `state.unlockedRecipes`. See
+  `food_frostcap_stew`, `food_hunters_pie`, `food_jesters_souffle`.
+- Wired into the Cook tab; falls back to immediate cook if the
+  minigame module isn't loaded.
+
+### 17.8 Mummy Maze / Push Box Narrative + Buffs
+- Each level in `data/minigames/{mummy_maze,push_box}_levels.json` now
+  carries a `narrative` object (`context`, `winLine`, `loseLine`,
+  `buffName`) and an `onWinOps` array.
+- `js/minigames/minigame-host.js` displays the context in the modal
+  header and merges `level.onWinOps` into the result's `suggestedOps`
+  on win, so the campaign automatically applies the contextual buff.
+- Win rewards scale with difficulty: D1 = +1 stat / 2 JP, D6 = +3 stat / 10 JP.
+- New Pocket Haven tile "Mini-Games & Tavern" launches them with
+  `source: 'pocket_haven'`.
+
+### 17.9 Regression Coverage
+- `test_phase_expansion.js` — Standalone integration test covering
+  the rebalanced curves, EnemyModifiers, PocketHavenFacilities, and
+  consequence hooks. Added to `npm test`.

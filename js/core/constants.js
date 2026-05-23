@@ -692,14 +692,24 @@ window.CJS.CONST = (() => {
   // Successfully using a skill in combat awards skill.apGain (default 1)
   // points; once enough points are banked, the skill levels up.
   // Different skills can author their own thresholds per level.
+  //
+  // Curve design (rebalanced 2026-05): early levels ramp faster so new
+  // players see frequent rewards; mid/late levels stretch so endgame
+  // milestones still feel earned. Net total ≈ same as previous curve.
   const PROGRESSION = {
     // Default AP needed to reach the indexed level (level 1 needs 0).
-    skillApThresholds: [0, 6, 16, 32, 56, 90],
+    // Old: [0, 6, 16, 32, 56, 90]  — first level took 6 uses.
+    // New: faster first two levels, larger gap into mastery (5→max).
+    skillApThresholds: [0, 4, 12, 26, 50, 88],
     // Default per-level XP needed for character level-up.
-    charXpThresholds: [0, 50, 120, 220, 360, 540, 760, 1020, 1320, 1660, 2040, 2460, 2920, 3420, 3960, 4540, 5160, 5820, 6520, 7260, 8040],
-    // Default per-level XP needed for job level-up. Steeper than char XP
-    // so jobs require dedicated training, not just battle exposure.
-    jobXpThresholds:  [0, 80, 220, 440, 760, 1200, 1780, 2520, 3440, 4560, 5900, 7480, 9320, 11440, 13860, 16600, 19680, 23120, 26940, 31160, 35800],
+    // Old: 50→120→220→360… too slow in early game.
+    // New: 30→80→160 early ramp, then quadratic so 20→20 still feels
+    // big. Curve crosses old curve around level 10.
+    charXpThresholds: [0, 30, 80, 160, 280, 440, 650, 920, 1260, 1680, 2180, 2780, 3480, 4280, 5180, 6180, 7280, 8480, 9780, 11180, 12680],
+    // Default per-level XP needed for job level-up. Steeper than char
+    // XP so jobs require dedicated training. Same shape as char XP but
+    // ~1.7x the magnitude.
+    jobXpThresholds:  [0, 50, 140, 280, 480, 760, 1120, 1580, 2160, 2880, 3760, 4800, 6000, 7380, 8940, 10680, 12600, 14720, 17040, 19560, 22300],
     // Default skill cap when authors don't supply levelScaling.maxLevel.
     skillMaxLevelDefault: 5,
     // Hard ceiling: even if a skill authors a higher maxLevel it is clamped
@@ -716,7 +726,10 @@ window.CJS.CONST = (() => {
     // Default job cap when authors don't supply maxLevel.
     jobMaxLevelDefault: 5,
     // QTE grade multipliers applied to apGain on a single skill use.
-    apGainQteMultipliers: { perfect: 1.5, good: 1.25, ok: 1.0, fail: 0.5 },
+    // 'fail' bumped from 0.5 → 0.6 so first-time learners still make
+    // measurable progress; 'perfect' lifted from 1.5 → 1.6 to reward
+    // mastery and offset the steeper late-game curve.
+    apGainQteMultipliers: { perfect: 1.6, good: 1.3, ok: 1.0, fail: 0.6 },
     // Default jobs slot cap per character (Bin / Bowy use this).
     maxJobsDefault: 3,
     // How many distinct weapon types a player character may know by default
