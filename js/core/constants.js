@@ -680,7 +680,11 @@ window.CJS.CONST = (() => {
     job:       'job',
     persona:   'prs',
     weather:   'wth',
-    weathers:  'wth'
+    weathers:  'wth',
+    worldEvent: 'wev',
+    worldEvents: 'wev',
+    fish:      'fsh',
+    fishCatalog: 'fsh'
   };
 
   // ── PROGRESSION (skill AP + character/job XP) ─────────────────────

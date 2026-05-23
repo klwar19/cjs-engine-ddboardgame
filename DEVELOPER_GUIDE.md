@@ -217,6 +217,7 @@ Data browser:
 Main combat files:
 - `js/combat/battle-setup.js` - quick/random battle setup screen
 - `js/combat/combat-manager.js`
+- `js/combat/combat-objectives.js` - pluggable kill-all/escort/capture/survival/assassination objectives
 - `js/combat/action-handler.js`
 - `js/combat/stat-compiler.js`
 - `js/combat/status-manager.js`
@@ -224,6 +225,14 @@ Main combat files:
 - `js/combat/dice-service.js` - wraps Dice to honor CombatSettings.diceMode
 - `js/combat/combat-log.js`
 - `js/combat/combat-settings.js`
+
+Adding a new combat objective:
+1. Pick a kind name and add it to `CombatObjectives.KINDS`.
+2. Implement `_evalKind(tracker, state)` returning `null | { winner, reason }`.
+3. Add `_describeKind(tracker, state)` for the UI banner label/progress.
+4. Author encounters with `objective: { kind: "your_kind", ...config }`.
+5. The combat-manager calls `evaluate` first; only falls back to legacy
+   kill-all when no objective is configured.
 
 Combat flow:
 1. encounter selected in `combat.html`
@@ -869,3 +878,67 @@ skill or wins a battle.
 
 - damage flash / KO fade / cast / move / banner visuals - `js/ui/combat-ui.js` (`_animXxx`) + `css/combat-animations.css`
 - BGM resolution at battle start - `js/ui/combat-ui.js` (`_startEncounterBgm`)
+
+## 13. Rotating World Events
+
+Located in `js/campaign/campaign-world-events.js`. Phase pass ticks active
+events; each event ticks its `remainingPhases` and a weighted spawn roll
+may add a new one (capped by `MAX_ACTIVE`).
+
+State shape on the save: `state.worldEvents.{ active, history, cooldowns }`.
+
+Modifier getters (consumed by other systems at resolve time):
+- `getDropMultiplier(bucket)` → `give_item/material/food` ops boost
+- `getFarmGrowthMultiplier()` → `_farmTick` consumes
+- `getShopDiscount()` → `_shopBuy` floor-discounts price
+- `getDangerBonus()` → scenario danger ratings (consumer optional)
+- `getFishingBonus()` → fishing rare/legendary weight bias
+- `getXpMultiplier()` → combat reward XP (consumer optional)
+- `getEncounterBias()` → encounter weight bias for tagged encounters
+
+Authoring: edit `data/system/world_events.json`. Each entry needs
+`durationPhases`, `modifiers`, and `spawn: { weight, cooldownPhases }`.
+
+## 14. Fishing Minigame
+
+`js/minigames/fishing-minigame.js` runs a three-step cycle: cast (quickpress
+QTE) → wait (animated bobber) → reel (fishing-bar QTE at fish-specific
+difficulty). On success, the player's inventory gets a fish food entry; the
+collection ledger tracks legendaries and best grade per species.
+
+Rod tiers are tagged items (`fishing_rod`, `fishing_rod_silver`,
+`fishing_rod_gold`) that gate which difficulty tiers are catchable. The
+basic rod ships in `data/universal/items.json`.
+
+Fish catalog: `data/system/fish_catalog.json`. Each entry lists biomes, a
+QTE difficulty, the food produced, and an optional `cookedBuff` payload.
+
+Pocket Haven exposes a "🎣 Cast Line" tile via `PocketHaven.renderFishing`.
+
+## 15. Developer Tools
+
+Three optional services that load on every page:
+
+- `js/services/dev-console.js` — In-app debug REPL. Press backtick (\`) to
+  toggle. Tabs: Eval (run any JS against `window.CJS`), State (live JSON
+  dump of CampaignState + CombatManager), Data (DataStore content counts),
+  Events (start/stop world events), Validate (run ContentValidator).
+- `js/services/content-validator.js` — Static cross-reference check. Flags
+  broken skill effect refs, unknown QTE types, malformed combat objectives,
+  fish missing biomes, etc. Add rules with `ContentValidator.addRule(cat,
+  ruleFn)`.
+- `js/services/data-hot-reload.js` — Subscribes to `DataStore.subscribe`
+  and debounces UI re-renders. Reads `CombatUI.refresh`, `CampaignUI.render`,
+  `DataBrowser.refresh`, `GMControls.refresh` if present.
+
+## 16. iPad / Touch Support
+
+- `js/ui/touch-gestures.js` — Pointer-Events-based recognizer for tap,
+  long-press, swipe, double-tap, and pinch. `TouchGestures.attach(el,
+  handlers)` returns a detach function.
+- `css/responsive.css` — Tablet/phone media queries, 44 px touch targets
+  on `pointer: coarse`, safe-area-inset padding, debug-console layout,
+  world-event ticker chips. Loaded after every other CSS so it can
+  override base styles.
+- Pinch-zoom on the combat grid is wired through grid-renderer; double-tap
+  resets zoom to 100%.

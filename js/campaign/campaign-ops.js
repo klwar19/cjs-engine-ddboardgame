@@ -176,8 +176,26 @@ window.CJS.CampaignOps = (() => {
       case 'give_food':
       case 'take_food':
       case 'give_quest_item':
-      case 'take_quest_item':
-        return _inventory(state, INVENTORY_BUCKETS[op.op], op.id, _signedQty(op));
+      case 'take_quest_item': {
+        const bucket = INVENTORY_BUCKETS[op.op];
+        let qty = _signedQty(op);
+        // World events can boost drops. Only apply to positive (give) deltas
+        // and only when the op did not explicitly ask to bypass via op.noBoost.
+        if (qty > 0 && !op.noBoost) {
+          const WE = window.CJS.CampaignWorldEvents;
+          if (WE?.getDropMultiplier) {
+            const mult = WE.getDropMultiplier(bucket);
+            if (mult > 1.0) {
+              const boosted = Math.max(qty, Math.round(qty * mult));
+              if (boosted > qty) {
+                _log(state, `World event boost: +${boosted - qty} ${op.id} (${bucket}) from active event.`);
+              }
+              qty = boosted;
+            }
+          }
+        }
+        return _inventory(state, bucket, op.id, qty);
+      }
       case 'damage_character': return _hp(state, op.target || op.characterId, -(op.amount || 0));
       case 'heal_character': return _hp(state, op.target || op.characterId, op.amount || 0);
       case 'restore_mp': return _mp(state, op.target || op.characterId, op.amount || 0);
@@ -257,6 +275,8 @@ window.CJS.CampaignOps = (() => {
       case 'npc_mood_set': return _npcMoodSet(state, op);
       case 'add_rumor': return _addRumor(state, op);
       case 'resolve_rumor': return _resolveRumor(state, op);
+      case 'world_event_start': return _worldEventStart(state, op);
+      case 'world_event_end': return _worldEventEnd(state, op);
       case 'side_idea_save': return _sideIdeaSave(state, op);
       case 'side_idea_reject': return _sideIdeaStatus(state, op, 'rejected');
       case 'side_idea_archive': return _sideIdeaStatus(state, op, 'archived');
@@ -317,7 +337,14 @@ window.CJS.CampaignOps = (() => {
 
     const activeRule = CS().getPhaseRule(state.phase.type);
     if (activeRule?.questTimersAdvance !== false) _tickQuestTimers(state);
-    if (activeRule?.farmGrowth) _farmTick(state, activeRule.farmGrowth, false);
+    if (activeRule?.farmGrowth) {
+      // World event bonus: bumper-harvest events multiply farm growth.
+      const WE = window.CJS.CampaignWorldEvents;
+      const growthMult = WE?.getFarmGrowthMultiplier ? WE.getFarmGrowthMultiplier() : 1.0;
+      const finalGrowth = Math.max(1, Math.round(Number(activeRule.farmGrowth || 1) * growthMult));
+      _farmTick(state, finalGrowth, false);
+      if (growthMult > 1.0) _log(state, `Bumper season: farm grew ${finalGrowth} ticks (×${growthMult}).`);
+    }
     _applyIncomeNodes(state);
     _clearDuration(state, 'phase');
     const expiredTags = Tags()?.expirePhaseTags?.(state) || [];
@@ -335,6 +362,16 @@ window.CJS.CampaignOps = (() => {
     state.eventCharges = { ...(activeRule?.eventCharges || {}) };
     // Re-evaluate persona unlocks: phase-locked personas come online here.
     _evaluatePersonaUnlocks(state, { target: 'party' });
+
+    // Tick rotating world events. Done last so any events expiring/starting
+    // log AFTER the phase header.
+    const WE = window.CJS.CampaignWorldEvents;
+    if (WE?.onPhasePass) {
+      const expired = WE.onPhasePass(state);
+      for (const ev of expired || []) {
+        _log(state, `World event ends: ${ev.name || ev.id}.`);
+      }
+    }
     _log(state, `Phase ${state.phase.number}: ${state.phase.name || state.phase.type}. Relationship acts refreshed (${actMax}).`);
   }
 
@@ -1706,7 +1743,11 @@ window.CJS.CampaignOps = (() => {
     }
     const currency = op.currency || _worldCurrency(state);
     const qty = Number(op.qty || 1);
-    const price = Number(op.price || 0) * qty;
+    const basePrice = Number(op.price || 0) * qty;
+    // Bazaar Sale / other discount events. Floor at 1 to avoid free items.
+    const WE = window.CJS.CampaignWorldEvents;
+    const discount = (!op.ignoreDiscount && WE?.getShopDiscount) ? WE.getShopDiscount() : 0;
+    const price = discount > 0 ? Math.max(1, Math.round(basePrice * (1 - discount))) : basePrice;
     const requires = _scaleBundle(op.requires || {}, qty);
     const costs = _scaleBundle(op.costs || op.costBundle || {}, qty);
     if (!_hasBundle(state, requires)) {
@@ -1722,6 +1763,9 @@ window.CJS.CampaignOps = (() => {
       return;
     }
     _money(state, currency, -price);
+    if (discount > 0) {
+      _log(state, `Bazaar Sale: paid ${price} ${currency} (was ${basePrice}, ${Math.round(discount * 100)}% off).`);
+    }
     if (op.consumeRequires) _consumeBundle(state, requires);
     _consumeBundle(state, costs);
     if (op.type === 'seed' || op.bucket === 'seeds') {
@@ -2155,6 +2199,33 @@ window.CJS.CampaignOps = (() => {
     if (normalized.includes('red')) return 'red';
     if (normalized.includes('yellow')) return 'yellow';
     return 'green';
+  }
+
+  function _worldEventStart(state, op = {}) {
+    const eventId = op.eventId || op.id;
+    if (!eventId) {
+      _log(state, 'world_event_start ignored: no eventId provided.');
+      return;
+    }
+    const WE = window.CJS.CampaignWorldEvents;
+    if (!WE?.start) {
+      _log(state, 'world_event_start ignored: WorldEvents module unavailable.');
+      return;
+    }
+    // CampaignWorldEvents.start does its own mutate; pre-emit a log entry.
+    // It will guard against duplicates and cap.
+    setTimeout(() => WE.start(eventId, { durationPhases: op.durationPhases }), 0);
+  }
+
+  function _worldEventEnd(state, op = {}) {
+    const eventId = op.eventId || op.id;
+    if (!eventId) {
+      _log(state, 'world_event_end ignored: no eventId provided.');
+      return;
+    }
+    const WE = window.CJS.CampaignWorldEvents;
+    if (!WE?.end) return;
+    setTimeout(() => WE.end(eventId, op.reason || 'manual'), 0);
   }
 
   function _sideContentState(state) {

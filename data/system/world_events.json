@@ -1,0 +1,121 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "system",
+    "category": "worldEvents",
+    "status": "active",
+    "notes": [
+      "Rotating world events. The CampaignWorldEvents runtime ticks these on phase pass.",
+      "modifiers: see js/campaign/campaign-world-events.js — keys consumed by ops/inventory/farming/shop."
+    ]
+  },
+  "entries": [
+    {
+      "id": "wev_double_materials",
+      "name": "Rich Veins",
+      "icon": "⛏",
+      "summary": "Material drops are doubled. Mines and gathering nodes are buzzing.",
+      "category": "boon",
+      "durationPhases": 3,
+      "modifiers": {
+        "dropMultiplier": { "materials": 2.0 }
+      },
+      "spawn": { "weight": 5, "cooldownPhases": 6 },
+      "tags": ["boon", "economy", "gathering"]
+    },
+    {
+      "id": "wev_bumper_crops",
+      "name": "Bumper Harvest",
+      "icon": "🌾",
+      "summary": "Crops grow twice as fast. A blessed season for any farmer.",
+      "category": "boon",
+      "durationPhases": 3,
+      "modifiers": {
+        "farmGrowthMultiplier": 2.0
+      },
+      "spawn": { "weight": 4, "cooldownPhases": 8 },
+      "tags": ["boon", "farming", "season"]
+    },
+    {
+      "id": "wev_double_drops",
+      "name": "Lucky Tides",
+      "icon": "🍀",
+      "summary": "Item drops are doubled. Hunters report unprecedented finds.",
+      "category": "boon",
+      "durationPhases": 2,
+      "modifiers": {
+        "dropMultiplier": { "items": 2.0, "food": 1.5 }
+      },
+      "spawn": { "weight": 3, "cooldownPhases": 8 },
+      "tags": ["boon", "loot"]
+    },
+    {
+      "id": "wev_bazaar_sale",
+      "name": "Bazaar Sale",
+      "icon": "💰",
+      "summary": "Merchants slash prices across the realm — 50% off all shop items.",
+      "category": "boon",
+      "durationPhases": 2,
+      "modifiers": {
+        "shopDiscount": 0.50
+      },
+      "spawn": { "weight": 4, "cooldownPhases": 10 },
+      "tags": ["boon", "shop", "economy"]
+    },
+    {
+      "id": "wev_zombie_horde",
+      "name": "Zombie Horde",
+      "icon": "🧟",
+      "summary": "A horde sweeps the region. Random encounters skew toward zombie packs.",
+      "category": "threat",
+      "durationPhases": 3,
+      "modifiers": {
+        "encounterBias": { "tags": ["zombie", "horde"], "weight": 3 },
+        "dangerBonus": 1
+      },
+      "spawn": { "weight": 2, "cooldownPhases": 12 },
+      "tags": ["threat", "combat", "horde"]
+    },
+    {
+      "id": "wev_double_xp",
+      "name": "Hero's Tide",
+      "icon": "⭐",
+      "summary": "Combat experience is amplified. Heroes feel the wind at their backs.",
+      "category": "boon",
+      "durationPhases": 3,
+      "modifiers": {
+        "xpMultiplier": 2.0
+      },
+      "spawn": { "weight": 3, "cooldownPhases": 10 },
+      "tags": ["boon", "xp"]
+    },
+    {
+      "id": "wev_fish_run",
+      "name": "Fish Run",
+      "icon": "🐟",
+      "summary": "Rivers and lakes teem with fish. Fishing rates climb dramatically.",
+      "category": "boon",
+      "durationPhases": 3,
+      "modifiers": {
+        "fishingBonus": 1.5
+      },
+      "spawn": { "weight": 3, "cooldownPhases": 8 },
+      "tags": ["boon", "fishing"]
+    },
+    {
+      "id": "wev_blood_moon",
+      "name": "Blood Moon",
+      "icon": "🌑",
+      "summary": "Monsters grow restless under the red moon. Encounters are tougher, but loot improves.",
+      "category": "mixed",
+      "durationPhases": 2,
+      "modifiers": {
+        "dangerBonus": 2,
+        "dropMultiplier": { "materials": 1.5, "items": 1.25 }
+      },
+      "spawn": { "weight": 2, "cooldownPhases": 14 },
+      "tags": ["threat", "mixed", "season"]
+    }
+  ]
+}

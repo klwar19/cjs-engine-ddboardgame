@@ -156,12 +156,16 @@ window.CJS.BattleSetup = (() => {
         <div class="setup-panel setup-map-select" style="flex:2">
           <h3>Select Encounter Map</h3>
           <div class="setup-encounter-list" id="encounter-list">
-            ${encounters.map((entry) => `
+            ${encounters.map((entry) => {
+              const objKind = entry.objective?.kind || entry.objective?.type || '';
+              const objLabel = _objectiveBadge(objKind);
+              return `
               <div class="setup-enc-card ${_selectedEncounterId === entry.id ? 'selected' : ''}" data-enc="${_escAttr(entry.id)}">
                 <div class="enc-card-name">${_escHtml(entry.name || entry.id)}</div>
-                <div class="enc-card-meta">${entry.width || 8}x${entry.height || 8} | ${(entry.units || []).length} units</div>
+                <div class="enc-card-meta">${entry.width || 8}x${entry.height || 8} | ${(entry.units || []).length} units${objLabel ? ' · ' + objLabel : ''}</div>
               </div>
-            `).join('') || '<div class="setup-empty">No premade encounters found.</div>'}
+              `;
+            }).join('') || '<div class="setup-empty">No premade encounters found.</div>'}
           </div>
 
           ${encounter && context ? _renderPlacementEditor(encounter, context, placedCount, missingCount) : '<div class="setup-empty">Select an encounter to preview monster placement and party spawns.</div>'}
@@ -802,6 +806,17 @@ window.CJS.BattleSetup = (() => {
     }
 
     return { record: null, team: 'enemy' };
+  }
+
+  function _objectiveBadge(kind) {
+    if (!kind || kind === 'kill_all') return '';
+    const badges = {
+      escort: '🛡 Escort',
+      capture_point: '🚩 Capture',
+      survival: '⏳ Survive',
+      assassination: '🎯 Assassinate'
+    };
+    return badges[String(kind).toLowerCase()] || `[${kind}]`;
   }
 
   function _escHtml(value) {

@@ -655,6 +655,133 @@
           "size": "1x1"
         }
       ]
+    },
+    {
+      "id": "haven_enc_escort_caravan",
+      "name": "Caravan Escort",
+      "width": 10,
+      "height": 8,
+      "grid": [
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","obstacle","empty","empty","empty","empty","empty","empty"],
+        ["empty","obstacle","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","obstacle","empty","empty","empty"],
+        ["empty","empty","empty","obstacle","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"]
+      ],
+      "units": [
+        { "id": "bin", "pos": [6, 1], "size": "1x1" },
+        { "id": "haven_bowy", "pos": [7, 0], "size": "1x1" },
+        { "id": "haven_mitia", "pos": [7, 2], "size": "1x1", "team": "player" },
+        { "id": "haven_ice_wolf", "pos": [1, 4], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [2, 8], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [3, 5], "size": "1x1" }
+      ],
+      "objective": {
+        "kind": "escort",
+        "vipId": "haven_mitia",
+        "goalCell": [0, 9],
+        "protectRounds": 6
+      },
+      "description": "Get Mitia to the bridge at the northeast corner within 6 rounds. The wolves will not give up easily."
+    },
+    {
+      "id": "haven_enc_hold_the_camp",
+      "name": "Hold the Camp",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","obstacle","empty","empty","obstacle","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","obstacle","empty","empty","obstacle","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"]
+      ],
+      "units": [
+        { "id": "bin", "pos": [3, 3], "size": "1x1" },
+        { "id": "haven_bowy", "pos": [4, 4], "size": "1x1" },
+        { "id": "haven_garr", "pos": [3, 4], "size": "1x1" },
+        { "id": "haven_mitia", "pos": [4, 3], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [0, 0], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [7, 7], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [0, 7], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [7, 0], "size": "1x1" }
+      ],
+      "objective": {
+        "kind": "capture_point",
+        "captureCells": [[3, 3], [3, 4], [4, 3], [4, 4]],
+        "holdRounds": 3
+      },
+      "description": "Stay on the camp tiles for 3 consecutive rounds. Enemies entering the zone reset progress."
+    },
+    {
+      "id": "haven_enc_survive_blizzard",
+      "name": "Survive the Blizzard",
+      "width": 8,
+      "height": 8,
+      "grid": [
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","obstacle","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","obstacle","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty"]
+      ],
+      "units": [
+        { "id": "bin", "pos": [4, 4], "size": "1x1" },
+        { "id": "haven_bowy", "pos": [4, 5], "size": "1x1" },
+        { "id": "haven_garr", "pos": [5, 4], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [0, 0], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [0, 7], "size": "1x1" }
+      ],
+      "objective": {
+        "kind": "survival",
+        "surviveRounds": 5,
+        "reinforcementRound": 3,
+        "reinforcements": [
+          { "id": "haven_mitia", "team": "player", "pos": [7, 4] }
+        ]
+      },
+      "description": "Endure 5 rounds. Mitia rejoins on round 3 with reinforcement."
+    },
+    {
+      "id": "haven_enc_assassinate_alpha",
+      "name": "Assassinate the Pack Alpha",
+      "width": 10,
+      "height": 10,
+      "grid": [
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"],
+        ["empty","empty","empty","empty","empty","empty","empty","empty","empty","empty"]
+      ],
+      "units": [
+        { "id": "bin", "pos": [9, 0], "size": "1x1" },
+        { "id": "haven_bowy", "pos": [9, 1], "size": "1x1" },
+        { "id": "haven_garr", "pos": [8, 0], "size": "1x1" },
+        { "id": "haven_snow_bear", "pos": [1, 5], "size": "2x2" },
+        { "id": "haven_ice_wolf", "pos": [3, 2], "size": "1x1" },
+        { "id": "haven_ice_wolf", "pos": [3, 7], "size": "1x1" }
+      ],
+      "objective": {
+        "kind": "assassination",
+        "targetId": "haven_snow_bear",
+        "escapeCells": [[9, 0], [9, 1], [9, 2]]
+      },
+      "description": "Kill the alpha snow bear, then reach the extraction tiles at the south edge."
     }
   ]
 }

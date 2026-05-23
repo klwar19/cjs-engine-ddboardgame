@@ -537,3 +537,127 @@
   .minigame-touchpad { width: min(216px, 100%); }
   .minigame-stats { justify-content: flex-start; }
 }
+
+/* ── Fishing Minigame ─────────────────────────────────────── */
+.cjs-fishing-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 28, 0.92);
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: cjsFishingFadeIn 0.25s ease;
+}
+@keyframes cjsFishingFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.cjs-fishing-scene {
+  position: relative;
+  width: min(96vw, 920px);
+  height: min(92vh, 640px);
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2563eb 0%, #1e40af 35%, #0c2461 65%, #060b25 100%);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.5);
+}
+.cjs-fishing-scene[data-biome="ocean"],
+.cjs-fishing-scene[data-biome="reef"]    { background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 35%, #0c4a6e 65%, #0b1731 100%); }
+.cjs-fishing-scene[data-biome="swamp"],
+.cjs-fishing-scene[data-biome="sewer"]   { background: linear-gradient(180deg, #4d7c0f 0%, #365314 35%, #1c2e10 65%, #0a1006 100%); }
+.cjs-fishing-scene[data-biome="lava"],
+.cjs-fishing-scene[data-biome="volcano"] { background: linear-gradient(180deg, #f97316 0%, #b91c1c 35%, #6b1a1a 65%, #200707 100%); }
+.cjs-fishing-scene[data-biome="void"],
+.cjs-fishing-scene[data-biome="abyss"],
+.cjs-fishing-scene[data-biome="neon"]    { background: linear-gradient(180deg, #4c1d95 0%, #312e81 35%, #1e1b4b 65%, #0b0a30 100%); }
+.cjs-fishing-scene[data-biome="zombie"],
+.cjs-fishing-scene[data-biome="ruins"]   { background: linear-gradient(180deg, #57534e 0%, #44403c 35%, #292524 65%, #0c0a09 100%); }
+
+.cjs-fishing-sky {
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 60%;
+  background: radial-gradient(120% 80% at 30% 0%, rgba(253, 224, 71, 0.18), transparent 60%);
+}
+
+.cjs-fishing-water {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 45%;
+  background: linear-gradient(180deg, rgba(8, 30, 60, 0.85), rgba(2, 8, 18, 0.95));
+  overflow: hidden;
+}
+.cjs-fishing-ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(186, 230, 253, 0.45);
+  bottom: 18%;
+  left: 55%;
+  width: 60px; height: 24px;
+  animation: cjsFishingRipple 2.8s ease-out infinite;
+}
+.cjs-fishing-ripple-2 { animation-delay: 1.2s; left: 65%; bottom: 22%; }
+@keyframes cjsFishingRipple {
+  0%   { transform: scale(0.4); opacity: 0.0; }
+  35%  { opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0.0; }
+}
+
+.cjs-fishing-figure {
+  position: absolute;
+  left: 24%;
+  bottom: 40%;
+  font-size: 4.4rem;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.55));
+  transform: rotate(8deg);
+}
+.cjs-fishing-line {
+  position: absolute;
+  left: 32%;
+  bottom: 38%;
+  width: 2px;
+  height: 24%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.05));
+  transform: rotate(28deg);
+  transform-origin: top;
+}
+.cjs-fishing-bobber {
+  position: absolute;
+  font-size: 1.6rem;
+  transition: opacity 0.35s ease;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.6));
+}
+
+.cjs-fishing-panel {
+  position: absolute;
+  left: 16px; right: 16px; bottom: 16px;
+  background: rgba(15, 23, 42, 0.86);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #e9d5ff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(6px);
+}
+.cjs-fishing-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fde68a;
+}
+.cjs-fishing-rod { color: #93c5fd; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.78rem; }
+.cjs-fishing-phase-label { font-size: 1.05rem; font-weight: 700; color: #fff; }
+.cjs-fishing-message { font-size: 0.92rem; color: #fde68a; min-height: 1.4em; }
+.cjs-fishing-qte-host { position: relative; min-height: 0; }
+.cjs-fishing-qte-host .qte-overlay { position: relative; inset: auto; background: transparent; }
+.cjs-fishing-bail {
+  align-self: flex-end;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .cjs-fishing-scene { height: 100vh; width: 100vw; border-radius: 0; }
+  .cjs-fishing-panel { left: 8px; right: 8px; bottom: 8px; padding: 10px; }
+  .cjs-fishing-figure { font-size: 3rem; }
+}

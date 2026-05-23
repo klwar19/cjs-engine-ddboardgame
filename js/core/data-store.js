@@ -59,6 +59,8 @@ window.CJS.DataStore = (() => {
     encounters: {},   // id → encounter object
     statuses:   {},   // id → status definition
     weathers:   {},   // id → weather definition (global battlefield environment)
+    worldEvents: {},  // id → rotating world event (drives shop / farming / drop modifiers)
+    fishCatalog: {},  // id → fish definition (biome-tagged catchable item)
     quips:      [],   // array of quip fragments
     quizBank:   []    // array of quiz questions
   };
@@ -252,7 +254,9 @@ window.CJS.DataStore = (() => {
       mon: _data.monsters,
       enc: _data.encounters,
       sts: _data.statuses,
-      wth: _data.weathers
+      wth: _data.weathers,
+      wev: _data.worldEvents,
+      fsh: _data.fishCatalog
     };
     return map[prefix] || null;
   }
@@ -780,6 +784,7 @@ window.CJS.DataStore = (() => {
       battleSets: {}, mapSeeds: {}, oracleTables: {}, storyDirectorPacks: {},
       worldActivityPacks: {},
       characters: {}, monsters: {}, encounters: {}, statuses: {}, weathers: {},
+      worldEvents: {}, fishCatalog: {},
       quips: [], quizBank: []
     };
     _counters = {};
@@ -828,6 +833,8 @@ window.CJS.DataStore = (() => {
       encounters: Object.keys(_data.encounters).length,
       statuses:   Object.keys(_data.statuses).length,
       weathers:   Object.keys(_data.weathers).length,
+      worldEvents: Object.keys(_data.worldEvents || {}).length,
+      fishCatalog: Object.keys(_data.fishCatalog || {}).length,
       quips:      _data.quips.length,
       quizBank:   _data.quizBank.length
     };

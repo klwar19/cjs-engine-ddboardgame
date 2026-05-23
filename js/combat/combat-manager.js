@@ -32,6 +32,7 @@ window.CJS.CombatManager = (() => {
   const AB  = () => window.CJS.AnimationBus;
   const WX  = () => window.CJS.Weather;
   const ST  = () => window.CJS.StateTools;
+  const OBJ = () => window.CJS.CombatObjectives;
 
   // ── COMBAT STATE ───────────────────────────────────────────────────
   /** @type {CJSCombatState | null} */
@@ -109,7 +110,10 @@ window.CJS.CombatManager = (() => {
       subscribers: [],
       // Global battlefield environment (weather). Defaults to "normal".
       // Weather skills mutate this via Weather.setEnvironment().
-      environment: { id: 'normal', remaining: 0, sourceUnitId: null, appliedRound: 1 }
+      environment: { id: 'normal', remaining: 0, sourceUnitId: null, appliedRound: 1 },
+      // Pluggable battle objective. null = legacy kill-all behavior.
+      // See js/combat/combat-objectives.js for supported kinds.
+      objective: OBJ() ? OBJ().build(enc) : null
     };
     // Seed default environment via Weather manager so its log/notify hooks fire.
     try { if (WX()) WX().initEnvironment(_state, 1); } catch (e) {}
@@ -496,6 +500,24 @@ window.CJS.CombatManager = (() => {
   // ── BATTLE END CHECK ───────────────────────────────────────────────
   function _checkBattleEnd() {
     if (!_state) return false;
+
+    // Reinforcements (survival objective) can fire before the eval — they
+    // affect alive counts.
+    if (_state.objective && OBJ()?.maybeFireReinforcements) {
+      OBJ().maybeFireReinforcements(_state.objective, _state);
+    }
+
+    // Special objective (escort, capture, survival, assassination) gets
+    // first refusal. It returns its own winner/reason; the fallback below
+    // handles the legacy kill-all flow when no objective is configured.
+    if (_state.objective && OBJ()?.evaluate) {
+      const verdict = OBJ().evaluate(_state.objective, _state);
+      if (verdict) {
+        _endBattle(verdict.winner, verdict.reason);
+        return true;
+      }
+    }
+
     const all = Object.values(_state.units);
     const playersAlive = all.some(u => u.team === 'player' && u.currentHP > 0);
     const enemiesAlive = all.some(u => u.team === 'enemy'  && u.currentHP > 0);
@@ -505,7 +527,10 @@ window.CJS.CombatManager = (() => {
       return true;
     }
     if (!playersAlive) { _endBattle('enemy',  'all_players_defeated'); return true; }
-    if (!enemiesAlive) { _endBattle('player', 'all_enemies_defeated'); return true; }
+    // Suppress legacy auto-win on enemy wipe if a non-kill objective is set —
+    // those objectives may require additional steps (e.g. assassination
+    // requires an escape). evaluate() above already declared its terms.
+    if (!enemiesAlive && !_state.objective) { _endBattle('player', 'all_enemies_defeated'); return true; }
     return false;
   }
 
@@ -859,6 +884,11 @@ window.CJS.CombatManager = (() => {
     return _state?.environment || { id: 'normal', remaining: 0 };
   }
 
+  /** @returns {object | null} */
+  function getObjective() {
+    return _state?.objective || null;
+  }
+
   function notify() { _notify(); }
 
   // ── PUBLIC API ─────────────────────────────────────────────────────
@@ -874,6 +904,8 @@ window.CJS.CombatManager = (() => {
     subscribe, reset,
     // Environment / weather
     getEnvironment,
+    // Battle objective (escort/capture/survival/assassination/kill_all)
+    getObjective,
     notify,
     // GM controls
     gmAddUnit, gmRemoveUnit, gmMoveUnit,

@@ -456,6 +456,7 @@ window.CJS.CampaignUI = (() => {
         <div class="campaign-title">
           <h1>${_esc(campaign?.name || 'Campaign')}</h1>
           <span>${_esc(world?.displayName || state.currentWorld)} | Chapter ${_storyChapterText(state)} | Phase ${state.phase.number}: ${_esc(state.phase.name || state.phase.type)}</span>
+          ${_renderWorldEventsTicker(state)}
         </div>
         ${_renderCompactCurrencies(state)}
         <div class="campaign-header-actions">
@@ -476,6 +477,24 @@ window.CJS.CampaignUI = (() => {
           `)}
         </div>
       </header>
+    `;
+  }
+
+  function _renderWorldEventsTicker(state) {
+    const WE = window.CJS.CampaignWorldEvents;
+    if (!WE?.getActive) return '';
+    const active = WE.getActive();
+    if (!active.length) return '';
+    return `
+      <div class="cjs-world-event-ticker" aria-label="Active world events">
+        ${active.map((ev) => `
+          <span class="cjs-world-event-chip category-${_esc(ev.category || 'boon')}" title="${_esc(ev.summary || '')}">
+            <span class="we-icon">${_esc(ev.icon || '✨')}</span>
+            <span class="we-name">${_esc(ev.name || ev.id)}</span>
+            <span class="we-remaining">${ev.remainingPhases}p</span>
+          </span>
+        `).join('')}
+      </div>
     `;
   }
 
@@ -5579,6 +5598,7 @@ window.CJS.CampaignUI = (() => {
       case 'farm-qte-close': return window.CJS.FarmingMode?.closeQte?.();
       case 'plant-seed': return _plantSeed(data.plotId);
       case 'harvest-plot': return window.CJS.PocketHaven.harvestPlot(data.plotId);
+      case 'open-fishing': return window.CJS.PocketHaven?.openFishing?.();
       case 'craft-recipe': return _craftRecipe(data.recipeId);
       case 'cook-food': {
         const food = DS().get('food', data.foodId);

@@ -38,6 +38,16 @@
       "category": "quips"
     },
     {
+      "path": "data/system/world_events.json",
+      "scope": "system",
+      "category": "worldEvents"
+    },
+    {
+      "path": "data/system/fish_catalog.json",
+      "scope": "system",
+      "category": "fishCatalog"
+    },
+    {
       "path": "data/universal/characters.json",
       "scope": "universal",
       "category": "characters"
