@@ -210,7 +210,7 @@ window.CJS.CampaignSequenceVN = (() => {
     if (type === 'choice') {
       hintEl.textContent = 'Choose how this moment resolves.';
       const choices = Array.isArray(node.choices) ? node.choices : [];
-      _renderChoices(choices);
+      _renderChoices(choices, node);
       return;
     }
     if (type === 'stat_check') {
@@ -358,22 +358,31 @@ window.CJS.CampaignSequenceVN = (() => {
     ) || null;
   }
 
-  function _renderChoices(choices = []) {
+  function _renderChoices(choices = [], node = {}) {
     const el = _overlay?.querySelector('[data-vn-choices]');
     if (!el) return;
     el.hidden = false;
+    const state = CS()?.getState?.() || {};
     el.innerHTML = choices.map((choice, index) => {
+      const eligibility = Seq()?.choiceEligibility?.(choice, node, state) || { ok: true, blockers: [], hidden: false };
+      if (eligibility.hidden) return '';
       const id = choice.id || `choice_${index + 1}`;
       const label = choice.label || choice.text || id;
-      const summary = choice.summary || choice.hint || '';
+      const alignmentHint = window.CJS.CampaignAlignment?.describeDeltas?.(
+        choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta
+      );
+      const summary = eligibility.ok
+        ? (choice.summary || choice.hint || alignmentHint || '')
+        : (eligibility.blockers || []).join(' | ');
       const tone = choice.kind || choice.tone || (index === 0 ? 'primary' : '');
       const className = [
         'campaign-seq-vn-choice',
         tone === 'primary' ? 'is-primary' : '',
-        tone === 'danger' || tone === 'risk' ? 'is-danger' : ''
+        tone === 'danger' || tone === 'risk' ? 'is-danger' : '',
+        eligibility.ok ? '' : 'is-locked'
       ].filter(Boolean).join(' ');
       return `
-        <button type="button" class="${className}" data-vn-choice="${_escAttr(id)}" aria-label="${_escAttr(label)}">
+        <button type="button" class="${className}" data-vn-choice="${_escAttr(id)}" aria-label="${_escAttr(label)}" ${eligibility.ok ? '' : 'disabled'}>
           <span class="campaign-seq-vn-choice-index">${index + 1}</span>
           <span class="campaign-seq-vn-choice-copy">
             <strong>${_esc(label)}</strong>
@@ -385,6 +394,7 @@ window.CJS.CampaignSequenceVN = (() => {
     el.querySelectorAll('[data-vn-choice]').forEach((btn) => {
       btn.addEventListener('click', async (event) => {
         event.stopPropagation();
+        if (btn.disabled) return;
         if (_busy) return;
         _busy = true;
         try {

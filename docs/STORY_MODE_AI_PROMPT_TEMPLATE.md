@@ -16,7 +16,8 @@ The AI must output:
 2. One sequence JSON file
 3. Optional scenario JSON file
 4. Optional map JSON file
-5. One `notes_for_integrator` JSON block
+5. One `story_context_update` JSON block
+6. One `notes_for_integrator` JSON block
 
 Do not ask the AI to invent loader behavior. It should stay on the schema below and put unsupported wishes in `notes_for_integrator.deferredMechanics`.
 
@@ -32,7 +33,8 @@ Output strict JSON only, in fenced code blocks, with these sections in this orde
 2. sequence_file
 3. scenario_file (only if this story part or event includes exploration)
 4. map_file (only if the scenario uses a fixed map)
-5. notes_for_integrator
+5. story_context_update
+6. notes_for_integrator
 
 Do not output prose outside those blocks.
 Do not invent engine behavior.
@@ -61,6 +63,25 @@ CAMPAIGN / WORLD
 - worldId: <world_id>
 - campaignId: <campaign_id>
 - arcId: <arc_id>
+
+STORY CONTEXT READ / WRITE RULES
+- Before drafting, read:
+  - `data/worlds/_ai_story_context_index.json`
+  - `data/worlds/_all_world_story_flow_summary.md`
+  - `data/worlds/<world_id>/story_context/index.json`
+  - `data/worlds/<world_id>/story_summary.md` only if the compact context is not enough
+  - exact target files only after choosing the arc/chapter/event/quest bucket
+- Treat live GM notes, save-state manual branches, and table decisions as newer than static files.
+- Use the world `story_context/index.json` to choose:
+  - current arc
+  - event suitability bucket
+  - quest suitability bucket
+  - previous arc carryover
+  - possible consequence points and future branch gates
+- Do not read whole old arcs just to draft a small future beat. Use the compact previousArcCarryover first.
+- After drafting any story, event, quest, hub update, or branch, output `story_context_update` so the integrator can update the right world file without rereading everything.
+- The update must be short: one to three sentences for the new content, one line for future branch meaning, and compact event/quest suitability deltas.
+- Include both current and potential consequences: alignment, world alignment, relationship thresholds, flags, stats, reputation, heat, debt, noise, infection, and route identity where relevant.
 
 STORY IDENTITY
 - sequenceId: <stable_sequence_id>
@@ -133,11 +154,20 @@ BRANCHING RULES
   - choice id
   - label
   - flags set
+  - small alignment deltas, if the choice should matter later
   - immediate result
   - downstream route meaning
 - every choice node must include defaultChoiceId
 - if a later merge exists, preserve branch identity through flags
 - if a branch is not ready yet, do not fake it; mark the follow-up as "in_update" in notes_for_integrator
+- Use the soft choice-consequence tracker for future branches:
+  - choice fields may include `alignment`, `karma`, or `consequencePoints`
+  - supported axes are `mercy`, `resolve`, `wit`, and `duty`
+  - keep deltas small, usually `-1`, `0`, or `+1`; only use `+2` / `-2` for a major visible choice
+  - branches and dialogue choices may gate with `conditions.alignmentMin`, `conditions.alignmentMax`, `conditions.worldAlignmentMin`, or `conditions.potentialAlignmentMin`
+  - use `potentialAlignment` on an index entry or future choice when you want the GM prompt to know what points can still be reached on that path
+  - optional `npcReactions` and `futureHooks` explain who should react later and what kind of branch/quest this choice can open
+  - avoid good/evil framing; these are light story leanings, not a morality system
 
 BATTLE / MINIGAME / QTE RULES
 - if combat appears in the sequence:
@@ -225,6 +255,7 @@ OUTPUT REQUIREMENTS
 - Keep filenames as stable slugs; ordering must rely on chapterLabel/orderKey metadata, not filename parsing.
 - Sequence files should stay small and readable.
 - Current target output is early content only, but it should feel full enough to test implementation flow.
+- `story_context_update` must be compact and must not repeat full scenes. It is for future AI continuity and branch planning.
 ```
 
 ---
@@ -695,6 +726,59 @@ Have the AI fill this block every time, even if the arrays are empty:
       "chapterLabel": "1.1a",
       "reason": "This is the smallest clean follow-up after the return route resolves."
     }
+  ]
+}
+```
+
+## Story Context Update Template
+
+Have the AI fill this block every time. The integrator should apply it to `data/worlds/<world_id>/story_context/index.json`, then mirror only the most important prose in `story_summary.md` when useful.
+
+```json
+{
+  "worldId": "haven",
+  "targetContextFile": "data/worlds/haven/story_context/index.json",
+  "arcId": "haven_arc1",
+  "contentType": "story",
+  "contentId": "story_haven_arc1_1_1_frostwood_return",
+  "summaryDelta": {
+    "newContentShort": "Bin returns through the Frostwood, reaches the road under pressure, and chooses whether to enter Frostbitten openly or through the tavern route.",
+    "previousArcCarryoverIfArcClosed": "",
+    "arcSummaryPatch": "Add this part as the opening return beat for Haven Arc 1. Preserve route identity for later gate/tavern reactions.",
+    "branchMeaning": "Gate route leans duty and public trust. Tavern route leans wit and local warmth."
+  },
+  "eventSuitabilityDelta": [
+    {
+      "bucket": "return_reactions",
+      "fitsAfter": ["1.1"],
+      "summary": "Town reaction, Peri luck check, gate gossip, tavern rumor, or friendly rival comedy can now trigger.",
+      "goodTrackers": ["wit", "duty", "frostbitten.reputation"]
+    }
+  ],
+  "questSuitabilityDelta": [
+    {
+      "bucket": "public_return",
+      "fitsChapters": ["1.1", "1.1.a", "1.1.b"],
+      "questIds": ["haven_qchain_ledger_of_the_ghost", "haven_qchain_three_silver_discount"],
+      "summary": "Use paperwork and tavern comedy to prove Bin is back without adding heavy plot pressure."
+    }
+  ],
+  "consequencePotential": [
+    {
+      "id": "return_entry_style",
+      "currentIfChosen": ["story_return_route_gate", "story_return_route_tavern"],
+      "potentialAxes": { "duty": 1, "wit": 1, "resolve": 1 },
+      "relationshipOrWorldPressure": ["frostbitten.reputation", "lily.trust"],
+      "futureBranchUse": "NPCs can react to whether Bin returned openly, socially, or under visible pressure."
+    }
+  ],
+  "readNextForFutureAI": [
+    "data/worlds/haven/story_context/index.json",
+    "data/campaigns/haven/sequences/_sequence_index.json",
+    "Exact next sequence file only after choosing Gate or Tavern route."
+  ],
+  "protectedTruthNotes": [
+    "Do not reveal Lily's cure path, Garr's protected history, or the coin buyer's name in this update."
   ]
 }
 ```

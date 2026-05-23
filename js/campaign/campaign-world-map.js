@@ -358,13 +358,31 @@ window.CJS.CampaignWorldMap = (() => {
     const y = Number(node.y || 0);
     const previewX = Math.min(Math.max(x + 18, 12), Math.max(12, width - 226));
     const previewY = Math.min(Math.max(y - 112, 12), Math.max(12, height - 108));
-    const label = _nodeLabelPosition(node, x, y, width);
+    const visual = node.visual || {};
+    const label = _nodeLabelPosition(node, x, y, width, map);
+    const markerScale = _scaleValue(active
+      ? (visual.activeMarkerScale ?? map.visualActiveMarkerScale ?? visual.markerScale ?? map.visualMarkerScale)
+      : (visual.markerScale ?? map.visualMarkerScale), 1);
+    const markerOpacity = _opacityAttr(active
+      ? (visual.activeMarkerOpacity ?? map.visualActiveMarkerOpacity ?? visual.markerOpacity ?? map.visualMarkerOpacity)
+      : (visual.markerOpacity ?? map.visualMarkerOpacity));
+    const labelScale = _scaleValue(active
+      ? (visual.activeLabelScale ?? map.visualActiveLabelScale ?? visual.labelScale ?? map.visualLabelScale)
+      : (visual.labelScale ?? map.visualLabelScale), 1);
+    const labelOpacity = _opacityAttr(active
+      ? (visual.activeLabelOpacity ?? map.visualActiveLabelOpacity ?? visual.labelOpacity ?? map.visualLabelOpacity)
+      : (visual.labelOpacity ?? map.visualLabelOpacity));
+    const labelHeight = _scaleValue(visual.labelHeight ?? map.visualLabelHeight, 34);
+    const markerTransform = _scaleTransform(x, y, markerScale);
+    const labelTransform = _scaleTransform(label.x + label.width / 2, label.y + labelHeight / 2, labelScale);
     const activityText = activities.length
       ? `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} here`
       : 'Story / future activity slot';
     return `<g class="campaign-world-node campaign-world-visual-node is-${_escAttr(shape)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''}" data-campaign-action="world-map-travel" data-map-id="${_escAttr(map.id)}" data-node-id="${_escAttr(node.id)}" data-world-node="${_escAttr(node.id)}">
-      ${_renderMarkerShape(shape, x, y, active)}
-      <foreignObject class="campaign-world-node-label-wrap" x="${label.x}" y="${label.y}" width="${label.width}" height="34">
+      <g class="campaign-world-node-marker"${markerTransform}${markerOpacity}>
+        ${_renderMarkerShape(shape, x, y, active)}
+      </g>
+      <foreignObject class="campaign-world-node-label-wrap" x="${label.x}" y="${label.y}" width="${label.width}" height="${labelHeight}"${labelTransform}${labelOpacity}>
         <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-label-box">${_esc(_short(node.name || node.id, 24))}</div>
       </foreignObject>
       <foreignObject class="campaign-world-node-preview-wrap" x="${previewX}" y="${previewY}" width="214" height="98">
@@ -377,9 +395,9 @@ window.CJS.CampaignWorldMap = (() => {
     </g>`;
   }
 
-  function _nodeLabelPosition(node = {}, x = 0, y = 0, width = 760) {
+  function _nodeLabelPosition(node = {}, x = 0, y = 0, width = 760, map = {}) {
     const visual = node.visual || {};
-    const labelWidth = Number(visual.labelWidth || node.labelWidth || 148);
+    const labelWidth = Number(visual.labelWidth || node.labelWidth || map.visualLabelWidth || 148);
     const dx = Number(visual.labelDx ?? node.labelDx ?? 0);
     const dy = Number(visual.labelDy ?? node.labelDy ?? 34);
     const rawX = visual.labelX ?? node.labelX;
@@ -391,6 +409,23 @@ window.CJS.CampaignWorldMap = (() => {
       y: Math.max(8, labelY),
       width: labelWidth
     };
+  }
+
+  function _scaleValue(value, fallback = 1) {
+    const num = Number(value);
+    return Number.isFinite(num) && num > 0 ? num : fallback;
+  }
+
+  function _opacityAttr(value) {
+    if (value == null) return '';
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '';
+    return ` opacity="${Math.min(1, Math.max(0, num))}"`;
+  }
+
+  function _scaleTransform(cx, cy, scale = 1) {
+    if (!Number.isFinite(scale) || Math.abs(scale - 1) < 0.001) return '';
+    return ` transform="translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})"`;
   }
 
   function _renderMarkerShape(shape, x, y, active) {

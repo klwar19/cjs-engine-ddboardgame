@@ -1,0 +1,64 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "cyberpunk",
+    "status": "planned"
+  },
+  "world": "cyberpunk",
+  "displayName": "Neo-Kowloon",
+  "purpose": "Compact future-planning map for surveillance, debt, black-market tech, and identity pressure. This world is not active canon yet.",
+  "readOrder": {
+    "skim": ["data/worlds/cyberpunk/story_context/index.json", "data/worlds/cyberpunk/story_summary.md", "data/worlds/cyberpunk/_meta.json"],
+    "openWhenWriting": ["Add travel map, activity pack, or director pack before writing playable content."]
+  },
+  "summaryTiers": {
+    "always": "Neo-Kowloon is reserved for later rank-B pressure where identity, surveillance, and debt complicate cross-world life.",
+    "previousArcCarryForward": "Enter only after Earth/Haven/Zombie/Bazaar stakes make visible identity trouble meaningful.",
+    "avoidReadingFullArcUnless": "No active arc files exist yet."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["wit", "resolve", "duty"],
+    "relationships": ["handler trust", "crew suspicion", "party identity stress"],
+    "stats": ["C for social cover and quick lies"],
+    "worldPressure": ["surveillance heat", "black-market debt", "identity exposure"]
+  },
+  "arcs": [
+    {
+      "id": "cyberpunk_arc0_intake",
+      "title": "Intake Under Neon",
+      "status": "planned",
+      "chapters": ["C-00"],
+      "previousArcCarryover": "Use cross-world visibility from Earth and Bazaar as the reason this world can notice Bin.",
+      "arcSummary": "Planned first contact with a surveillance-heavy city where convenience technology creates identity risk.",
+      "currentDevelopmentTarget": "Create a travel map and director pack before playable scenes.",
+      "potentialChoicePoints": [
+        {
+          "id": "cover_identity_style",
+          "where": "first intake",
+          "potentialAxes": { "wit": 1, "duty": 1 },
+          "futureUse": "Clean cover, fake persona, or honest alliance can open different crew/NPC reactions."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "surveillance_warning",
+          "fitsAfter": ["Earth Heat high", "Bazaar Debt visible"],
+          "summary": "Small warning events, not full invasion: camera recognition, odd invoice, black-market ping.",
+          "goodTrackers": ["surveillance heat", "wit"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "setup",
+          "fitsChapters": ["C-00"],
+          "questIds": ["travel_map_setup", "first_cover_job"],
+          "summary": "Only scaffold until active campaign files exist."
+        }
+      ],
+      "readFiles": ["data/worlds/cyberpunk/_meta.json"],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": ["Add active files before marking this world playable."]
+}

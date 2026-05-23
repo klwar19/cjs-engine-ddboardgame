@@ -17,6 +17,7 @@
       "canvas": { "width": 760, "height": 430 },
       "visualMode": "vn_travel",
       "visualTheme": { "id": "zombie", "mood": "ruined_city_green_dusk" },
+      "visualBackdropPrompt": "Create a 16:9 visual-novel travel map backdrop for a zombie apocalypse city called Last Light. Show a readable top-down/three-quarter city slice with a rooftop safehouse at left, ruined mall district near upper center, clinic block to the right, subway line across the lower half, and a broadcast tower at lower right. Mood: green dusk, rain-wet asphalt, broken signage, abandoned cars, barricades, overgrown cracks, distant smoke, practical survival horror. Keep the center areas clear enough for small UI markers and labels; no text, no logos, no characters, no gore, no heavy blur.",
       "areaButtons": [
         {
           "id": "zombie_area_last_light",

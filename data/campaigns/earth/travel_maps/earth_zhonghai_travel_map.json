@@ -19,6 +19,16 @@
       "visualTheme": { "id": "earth", "mood": "warm_city_evening" },
       "visualBackdrop": "images/story-mode/earth/earth-map.png?v=earth-map-v3-20260521",
       "visualBackdropFit": "none",
+      "visualMarkerScale": 0.42,
+      "visualActiveMarkerScale": 0.48,
+      "visualMarkerOpacity": 0.34,
+      "visualActiveMarkerOpacity": 0.44,
+      "visualLabelWidth": 120,
+      "visualLabelHeight": 22,
+      "visualLabelScale": 0.78,
+      "visualActiveLabelScale": 0.82,
+      "visualLabelOpacity": 0.36,
+      "visualActiveLabelOpacity": 0.48,
       "areaButtons": [
         {
           "id": "earth_area_zhonghai",
@@ -59,7 +69,7 @@
           "type": "home",
           "x": 418,
           "y": 305,
-          "visual": { "labelWidth": 146, "labelDx": -2, "labelDy": 34 },
+          "visual": { "labelWidth": 112, "labelDx": -2, "labelDy": 26 },
           "zone": "earth_zon_zhonghai",
           "description": "A cheap room, a tired desk, too many bills, and the place where impossible things keep becoming normal.",
           "people": [
@@ -90,7 +100,7 @@
           "type": "campus",
           "x": 178,
           "y": 186,
-          "visual": { "labelWidth": 164, "labelDx": 0, "labelDy": 35 },
+          "visual": { "labelWidth": 120, "labelDx": 0, "labelDy": 27 },
           "zone": "earth_zon_zhonghai",
           "description": "Campus paths, cafeteria noise, and the special kind of pressure caused by seeing someone you like near vending machines.",
           "people": [
@@ -121,7 +131,7 @@
           "type": "hospital",
           "x": 292,
           "y": 174,
-          "visual": { "labelWidth": 154, "labelDx": 0, "labelDy": -60 },
+          "visual": { "labelWidth": 116, "labelDx": 0, "labelDy": -46 },
           "zone": "earth_zon_zhonghai",
           "description": "Ward lights, plastic chairs, quiet courage, and Lily pretending not to count every visit.",
           "people": [
@@ -143,7 +153,7 @@
           "type": "bookstore",
           "x": 548,
           "y": 228,
-          "visual": { "labelWidth": 168, "labelDx": -18, "labelDy": 35 },
+          "visual": { "labelWidth": 124, "labelDx": -14, "labelDy": 27 },
           "zone": "earth_zon_zhonghai",
           "description": "Old paper, wuxia shelves, and the uncomfortable feeling that some childhood notebooks were not imagination.",
           "actions": [
@@ -164,7 +174,7 @@
           "type": "street",
           "x": 398,
           "y": 188,
-          "visual": { "labelWidth": 176, "labelDx": 0, "labelDy": 32 },
+          "visual": { "labelWidth": 128, "labelDx": 0, "labelDy": 25 },
           "zone": "earth_zon_zhonghai",
           "description": "Scooter lights, bad elevators, worse tips, and the fastest way for normal life to ambush Bin.",
           "actions": [

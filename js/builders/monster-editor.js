@@ -139,9 +139,16 @@ window.CJS.MonsterEditor = (() => {
         </div>
 
         <h3>AI Behavior Rules</h3>
-        <p class="dim" style="font-size:0.82rem;margin-bottom:8px">Top to bottom: first matching rule fires. If none match, the AI archetype fallback decides.</p>
-        <div id="mon-ai-rules"></div>
-        <button class="btn btn-ghost btn-sm mt-sm" id="mon-add-rule">+ Add Rule</button>
+        <div class="monster-ai-builder">
+          <div class="monster-ai-summary">
+            <b>Rule order matters.</b> The first matching rule runs; otherwise the archetype fallback takes over.
+            Use presets for common patterns, then tune the condition, action, skill, and target.
+          </div>
+          <div class="monster-ai-presets" id="mon-ai-rule-presets"></div>
+          <div id="mon-ai-rules"></div>
+          <div class="monster-ai-preview" id="mon-ai-rule-preview"></div>
+          <button class="btn btn-ghost btn-sm mt-sm" id="mon-add-rule">+ Add Custom Rule</button>
+        </div>
 
         <h3>Loot Table</h3>
         <div id="mon-loot-area"></div>
@@ -200,7 +207,9 @@ window.CJS.MonsterEditor = (() => {
     let skillPicker = null;
     const refreshAIRuleSuggestions = () => {
       const rulesArea = _formEl.querySelector('#mon-ai-rules');
+      const presetArea = _formEl.querySelector('#mon-ai-rule-presets');
       if (rulesArea && skillPicker) _renderAIRules(rulesArea, aiRules, skillPicker);
+      if (presetArea && skillPicker) _renderAIRulePresets(presetArea, aiRules, rulesArea, skillPicker);
     };
     skillPicker = _createSkillRefPicker(m.skills||[], refreshAIRuleSuggestions);
     _formEl.querySelector('#mon-skills-area').appendChild(skillPicker.el);
@@ -219,8 +228,11 @@ window.CJS.MonsterEditor = (() => {
     // ── AI Rules ──
     let aiRules = JSON.parse(JSON.stringify(m.aiRules||[]));
     const rulesArea = _formEl.querySelector('#mon-ai-rules');
+    const presetArea = _formEl.querySelector('#mon-ai-rule-presets');
+    _renderAIRulePresets(presetArea, aiRules, rulesArea, skillPicker);
     _renderAIRules(rulesArea, aiRules, skillPicker);
     _formEl.querySelector('#mon-add-rule').onclick = () => {
+      _readAIRules(rulesArea, aiRules);
       aiRules.push({ priority: aiRules.length+1, condition:'default', action:'move_toward', target:'lowest_hp_enemy' });
       _renderAIRules(rulesArea, aiRules, skillPicker);
     };
@@ -579,6 +591,243 @@ window.CJS.MonsterEditor = (() => {
 
     render();
     return { el, getEntries:()=>JSON.parse(JSON.stringify(entries)), getIds:()=>entries.map(e=>e.skillId) };
+  }
+
+  // Structured AI rule builder overrides the older raw text row renderer
+  // while preserving the same saved `{ priority, condition, action, target }`
+  // schema used by the combat AI.
+  function _aiConditionOptions(skillPicker) {
+    const skillIds = [...new Set((skillPicker?.getIds?.() || []).filter(Boolean))];
+    const base = [
+      ['default', 'Always', 'Runs when no earlier rule matched.'],
+      ['first_turn', 'First turn', 'Good for opening buffs or ambush shots.'],
+      ['hp_below_30', 'HP below 30%', 'Panic, flee, defend, or desperation skill.'],
+      ['hp_below_50', 'HP below 50%', 'A safer wounded threshold.'],
+      ['hp_above_50', 'HP above 50%', 'Keeps pressure while healthy.'],
+      ['hp_full', 'HP full', 'Opening confidence behavior.'],
+      ['ap_at_least_1', 'AP at least 1', 'Can afford cheap actions.'],
+      ['ap_at_least_2', 'AP at least 2', 'Can afford most skills.'],
+      ['mp_at_least_10', 'MP at least 10', 'Enough MP for special actions.'],
+      ['mp_below_25', 'MP below 25%', 'Conserve MP or reposition.'],
+      ['any_adjacent_enemy', 'Adjacent enemy', 'Someone is in melee range.'],
+      ['no_adjacent_enemy', 'No adjacent enemy', 'Good for kiting or ranged attacks.'],
+      ['enemies_in_range:3 >= 2', 'Two enemies within 3', 'Use AoE or control when clustered.'],
+      ['ally_wounded', 'Ally wounded', 'Protect, heal, or draw pressure.'],
+      ['any_ally_dying', 'Ally dying', 'Emergency support behavior.'],
+      ['outnumbered', 'Outnumbered', 'Defensive or retreat behavior.'],
+      ['winning_numbers', 'Winning numbers', 'Aggressive pressure while ahead.'],
+      ['allies_alive_lt_3', 'Allies alive below 3', 'Late-fight fallback.'],
+      ['allies_alive_gt_1', 'More than one ally alive', 'Team tactics available.'],
+      ['enemies_alive_lt_2', 'One enemy left', 'Finish-off behavior.'],
+      ['turn_above_3', 'After turn 3', 'Use once the fight has settled.']
+    ];
+    for (const id of skillIds) {
+      const skill = DS().get('skills', id) || {};
+      const label = skill.name || id;
+      base.push([`skill_ready:${id}`, `${label} ready`, 'Skill exists and can be used now.']);
+      base.push([`skill_off_cooldown:${id}`, `${label} off cooldown`, 'Cooldown is not blocking this skill.']);
+      base.push([`skill_on_cooldown:${id}`, `${label} on cooldown`, 'Fallback while waiting for this skill.']);
+    }
+    return base.map(([value, label, help]) => ({ value, label, help }));
+  }
+
+  function _aiActionOptions() {
+    return [
+      { value: 'attack', label: 'Basic attack' },
+      { value: 'use_skill', label: 'Use skill' },
+      { value: 'move_toward', label: 'Move toward' },
+      { value: 'move_away', label: 'Move away' },
+      { value: 'defend', label: 'Defend' },
+      { value: 'wait', label: 'Wait' },
+      { value: 'flee', label: 'Flee' }
+    ];
+  }
+
+  function _renderAIRulePresets(container, rules, rulesArea, skillPicker) {
+    if (!container) return;
+    const skillIds = skillPicker?.getIds?.() || [];
+    const firstSkill = skillIds[0] || '';
+    const secondSkill = skillIds[1] || firstSkill;
+    const presets = [
+      { label: 'Use opener skill', rule: { condition: firstSkill ? `skill_ready:${firstSkill}` : 'first_turn', action: firstSkill ? `use_skill:${firstSkill}` : 'attack', target: 'nearest_enemy' } },
+      { label: 'Kite ranged', rule: { condition: 'any_adjacent_enemy', action: 'move_away', target: 'nearest_enemy' } },
+      { label: 'Finish weak target', rule: { condition: 'enemies_alive_lt_2', action: secondSkill ? `use_skill:${secondSkill}` : 'attack', target: 'lowest_hp_enemy' } },
+      { label: 'Defend when hurt', rule: { condition: 'hp_below_30', action: 'defend', target: 'self' } },
+      { label: 'Protect wounded ally', rule: { condition: 'ally_wounded', action: 'move_toward', target: 'lowest_hp_ally' } }
+    ];
+    container.innerHTML = presets.map((preset, index) => `
+      <button type="button" class="filter-btn" data-ai-preset="${index}" title="${_esc(_aiRuleSentence(preset.rule))}">
+        ${_esc(preset.label)}
+      </button>
+    `).join('');
+    container.querySelectorAll('[data-ai-preset]').forEach((btn) => {
+      btn.onclick = () => {
+        _readAIRules(rulesArea, rules);
+        const preset = presets[Number(btn.dataset.aiPreset)];
+        if (!preset) return;
+        rules.push({ priority: rules.length + 1, ...preset.rule });
+        _renderAIRules(rulesArea, rules, skillPicker);
+      };
+    });
+  }
+
+  function _renderAIRules(container, rules, skillPicker) {
+    const conditionOptions = _aiConditionOptions(skillPicker);
+    const actionOptions = _aiActionOptions();
+    const skillIds = [...new Set((skillPicker?.getIds?.() || []).filter(Boolean))];
+    if (!container) return;
+    container.innerHTML = '';
+    if (!rules.length) {
+      const empty = document.createElement('div');
+      empty.className = 'monster-ai-empty';
+      empty.textContent = 'No custom rules yet. The archetype fallback handles behavior until you add one.';
+      container.appendChild(empty);
+    }
+    for (let i = 0; i < rules.length; i++) {
+      const r = rules[i] || {};
+      const row = document.createElement('div');
+      row.className = 'monster-ai-rule-card';
+      row.dataset.ruleIndex = String(i);
+      const currentCondition = r.condition || 'default';
+      const conditionKnown = conditionOptions.some((opt) => opt.value === currentCondition);
+      const conditionValue = conditionKnown ? currentCondition : '__custom__';
+      const action = _parseAIAction(r.action || 'move_toward');
+      const skillWrapClass = action.type === 'use_skill' ? '' : 'hidden';
+      const customWrapClass = conditionKnown ? 'hidden' : '';
+      row.innerHTML = `
+        <div class="monster-ai-rule-index">${i + 1}</div>
+        <div class="monster-ai-rule-main">
+          <div class="form-row monster-ai-rule-fields">
+            <div class="form-group">
+              <label class="form-label">When</label>
+              <select data-field="condition-select">
+                ${conditionOptions.map((opt) => `<option value="${_esc(opt.value)}" ${conditionValue === opt.value ? 'selected' : ''}>${_esc(opt.label)}</option>`).join('')}
+                <option value="__custom__" ${conditionValue === '__custom__' ? 'selected' : ''}>Custom condition...</option>
+              </select>
+            </div>
+            <div class="form-group ${customWrapClass}" data-custom-condition-wrap>
+              <label class="form-label">Custom</label>
+              <input type="text" data-field="condition-custom" value="${_esc(conditionKnown ? '' : currentCondition)}" placeholder="condition string">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Do</label>
+              <select data-field="action-type">
+                ${actionOptions.map((opt) => `<option value="${_esc(opt.value)}" ${action.type === opt.value ? 'selected' : ''}>${_esc(opt.label)}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group ${skillWrapClass}" data-skill-action-wrap>
+              <label class="form-label">Skill</label>
+              <select data-field="skill-id">
+                ${skillIds.length ? skillIds.map((id) => {
+                  const skill = DS().get('skills', id) || {};
+                  return `<option value="${_esc(id)}" ${action.skillId === id ? 'selected' : ''}>${_esc(skill.name || id)}</option>`;
+                }).join('') : '<option value="">No skills equipped</option>'}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target</label>
+              <select data-field="target">${_aiTargetOptions(r.target).map(t=>`<option value="${_esc(t)}" ${(r.target||'nearest_enemy')===t?'selected':''}>${_esc(_aiTargetLabel(t))}</option>`).join('')}</select>
+            </div>
+          </div>
+          <div class="monster-ai-rule-help" data-rule-help>${_esc(_aiRuleSentence(r))}</div>
+        </div>
+        <div class="monster-ai-rule-controls">
+          <button type="button" class="btn-icon" data-move-up title="Move up" ${i === 0 ? 'disabled' : ''}>Up</button>
+          <button type="button" class="btn-icon" data-move-down title="Move down" ${i === rules.length - 1 ? 'disabled' : ''}>Down</button>
+          <button type="button" class="btn-icon danger" data-remove title="Remove">Remove</button>
+        </div>
+      `;
+      _bindAIRuleRow(row, rules, container, skillPicker);
+      container.appendChild(row);
+    }
+    _updateAIRulePreview(container, rules);
+  }
+
+  function _bindAIRuleRow(row, rules, container, skillPicker) {
+    const index = Number(row.dataset.ruleIndex || 0);
+    const syncAndPreview = () => {
+      _syncAIRuleRow(row, rules[index], index);
+      const help = row.querySelector('[data-rule-help]');
+      if (help) help.textContent = _aiRuleSentence(rules[index]);
+      _updateAIRulePreview(container, rules);
+    };
+    row.querySelector('[data-field="condition-select"]')?.addEventListener('change', (event) => {
+      const custom = row.querySelector('[data-custom-condition-wrap]');
+      if (custom) custom.classList.toggle('hidden', event.target.value !== '__custom__');
+      syncAndPreview();
+    });
+    row.querySelector('[data-field="action-type"]')?.addEventListener('change', (event) => {
+      const skillWrap = row.querySelector('[data-skill-action-wrap]');
+      if (skillWrap) skillWrap.classList.toggle('hidden', event.target.value !== 'use_skill');
+      syncAndPreview();
+    });
+    row.querySelectorAll('input,select').forEach((input) => {
+      input.addEventListener('input', syncAndPreview);
+      input.addEventListener('change', syncAndPreview);
+    });
+    row.querySelector('[data-remove]')?.addEventListener('click', () => {
+      _readAIRules(container, rules);
+      rules.splice(index, 1);
+      _renderAIRules(container, rules, skillPicker);
+    });
+    row.querySelector('[data-move-up]')?.addEventListener('click', () => {
+      if (index <= 0) return;
+      _readAIRules(container, rules);
+      [rules[index - 1], rules[index]] = [rules[index], rules[index - 1]];
+      _renderAIRules(container, rules, skillPicker);
+    });
+    row.querySelector('[data-move-down]')?.addEventListener('click', () => {
+      if (index >= rules.length - 1) return;
+      _readAIRules(container, rules);
+      [rules[index + 1], rules[index]] = [rules[index], rules[index + 1]];
+      _renderAIRules(container, rules, skillPicker);
+    });
+    syncAndPreview();
+  }
+
+  function _readAIRules(container, rules) {
+    const rows = container?.querySelectorAll?.('.monster-ai-rule-card') || [];
+    rows.forEach((row, i) => {
+      if (!rules[i]) rules[i] = {};
+      _syncAIRuleRow(row, rules[i], i);
+    });
+    rules.length = rows.length;
+  }
+
+  function _syncAIRuleRow(row, rule, index) {
+    if (!row || !rule) return;
+    const selectedCondition = row.querySelector('[data-field="condition-select"]')?.value || 'default';
+    const customCondition = row.querySelector('[data-field="condition-custom"]')?.value || '';
+    const actionType = row.querySelector('[data-field="action-type"]')?.value || 'move_toward';
+    const skillId = row.querySelector('[data-field="skill-id"]')?.value || '';
+    rule.priority = index + 1;
+    rule.condition = selectedCondition === '__custom__' ? (customCondition || 'default') : selectedCondition;
+    rule.action = actionType === 'use_skill' ? (skillId ? `use_skill:${skillId}` : 'attack') : actionType;
+    rule.target = row.querySelector('[data-field="target"]')?.value || 'lowest_hp_enemy';
+  }
+
+  function _parseAIAction(action = '') {
+    const text = String(action || '').trim();
+    if (text.startsWith('use_skill:')) return { type: 'use_skill', skillId: text.split(':')[1] || '' };
+    return { type: text || 'move_toward', skillId: '' };
+  }
+
+  function _aiRuleSentence(rule = {}) {
+    const action = _parseAIAction(rule.action || 'move_toward');
+    const actionLabel = action.type === 'use_skill'
+      ? `use ${DS().get('skills', action.skillId)?.name || action.skillId || 'a skill'}`
+      : _labelize(action.type);
+    return `When ${_labelize(rule.condition || 'default')}, ${actionLabel} targeting ${_aiTargetLabel(rule.target || 'nearest_enemy')}.`;
+  }
+
+  function _updateAIRulePreview(container, rules) {
+    const preview = _formEl?.querySelector?.('#mon-ai-rule-preview');
+    if (!preview) return;
+    const rows = container?.querySelectorAll?.('.monster-ai-rule-card') || [];
+    rows.forEach((row, i) => _syncAIRuleRow(row, rules[i], i));
+    preview.innerHTML = rules.length
+      ? `<b>Runtime order:</b> ${rules.map((rule, index) => `<span>${index + 1}. ${_esc(_aiRuleSentence(rule))}</span>`).join('')}`
+      : '<b>Runtime order:</b> archetype fallback only.';
   }
 
   function _labelize(s) {

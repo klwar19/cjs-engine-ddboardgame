@@ -214,6 +214,12 @@ window.CJS.CampaignState = (() => {
         majorChoices: [],
         unlockedEchoes: []
       },
+      choiceConsequences: window.CJS.CampaignAlignment?.initialState?.() || {
+        version: 1,
+        actors: {},
+        reactionQueue: [],
+        futureHooks: []
+      },
       activeScenarioRun: null,
       scenarioHistory: [],
       mapState: {},
@@ -282,6 +288,7 @@ window.CJS.CampaignState = (() => {
         defaultedParts: {},
         revealedChapters: {},
         partResults: {},
+        manualBranches: [],
         manualSummaryEntries: []
       },
       sequenceRuntime: {
@@ -722,6 +729,14 @@ window.CJS.CampaignState = (() => {
     next.legacy.traits = next.legacy.traits || {};
     next.legacy.majorChoices = next.legacy.majorChoices || [];
     next.legacy.unlockedEchoes = next.legacy.unlockedEchoes || [];
+    if (window.CJS.CampaignAlignment?.normalizeState) {
+      window.CJS.CampaignAlignment.normalizeState(next);
+    } else {
+      next.choiceConsequences = next.choiceConsequences || { version: 1, actors: {}, reactionQueue: [], futureHooks: [] };
+      next.choiceConsequences.actors = next.choiceConsequences.actors || {};
+      next.choiceConsequences.reactionQueue = Array.isArray(next.choiceConsequences.reactionQueue) ? next.choiceConsequences.reactionQueue : [];
+      next.choiceConsequences.futureHooks = Array.isArray(next.choiceConsequences.futureHooks) ? next.choiceConsequences.futureHooks : [];
+    }
     next.scenarioHistory = next.scenarioHistory || [];
     next.mapState = next.mapState || {};
     for (const map of Object.values(next.mapState)) {
@@ -796,6 +811,7 @@ window.CJS.CampaignState = (() => {
     next.storyMode.revealedChapters = next.storyMode.revealedChapters || {};
     next.storyMode.partResults = next.storyMode.partResults || {};
     next.storyMode.manualSummaryEntries = Array.isArray(next.storyMode.manualSummaryEntries) ? next.storyMode.manualSummaryEntries : [];
+    next.storyMode.manualBranches = Array.isArray(next.storyMode.manualBranches) ? next.storyMode.manualBranches : [];
     next.sequenceRuntime = next.sequenceRuntime || {};
     next.sequenceRuntime.active = next.sequenceRuntime.active || null;
     next.sequenceRuntime.history = Array.isArray(next.sequenceRuntime.history) ? next.sequenceRuntime.history : [];

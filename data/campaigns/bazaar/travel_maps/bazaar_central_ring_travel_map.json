@@ -17,6 +17,7 @@
       "canvas": { "width": 760, "height": 430 },
       "visualMode": "vn_travel",
       "visualTheme": { "id": "bazaar", "mood": "cosmic_truce_market" },
+      "visualBackdropPrompt": "Create a 16:9 visual-novel travel map backdrop for the Bazaar of Broken Chains, a cosmic inter-world market built around a bright central ring. Show a readable top-down/three-quarter bazaar slice with the Gate of Scales at left, Lantern Arena near upper center, Glass Gavel auction house at right, Lantern Food Row at lower left, and Prize Board Annex at lower right. Mood: warm lanterns, turquoise portal light, brass scales, hanging banners, floating stalls, broken-chain motifs, crowded but not cluttered. Leave clear open lanes for UI map markers and labels; no readable text, no logos, no main characters, no heavy blur.",
       "areaButtons": [
         {
           "id": "bazaar_area_central_ring",

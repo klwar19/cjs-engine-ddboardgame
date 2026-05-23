@@ -1,0 +1,154 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "haven",
+    "status": "active"
+  },
+  "world": "haven",
+  "displayName": "Haven",
+  "purpose": "Compact AI planning map for Frostbitten story, side events, and quests. Use this before opening full sequence files.",
+  "readOrder": {
+    "skim": [
+      "data/worlds/haven/story_context/index.json",
+      "data/worlds/haven/story_summary.md"
+    ],
+    "openWhenWriting": [
+      "data/campaigns/haven/sequences/_sequence_index.json",
+      "target sequence file only",
+      "data/campaigns/haven/quest_chains/frostbitten_quest_chains.json for side quests",
+      "data/campaigns/haven/story_director/haven_story_director_v1.json for protected truths or pressure pacing"
+    ]
+  },
+  "summaryTiers": {
+    "always": "Haven is Bin's warm, funny, emotionally risky return to Frostbitten after two missing months.",
+    "previousArcCarryForward": "No prior Haven arc. Preserve the mystery coin trail, Lily's condition, Garr's guarded knowledge, and Frostbitten's slowly warming reaction.",
+    "avoidReadingFullArcUnless": "Open full node files only for exact dialogue, ops, battle hooks, or branch handoff."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["mercy", "resolve", "wit", "duty"],
+    "relationships": ["lily.trust", "garr.trust", "peri.trust", "haven_bowy.confidence", "tessa.trust", "frostbitten.reputation"],
+    "stats": ["C for nerve, social timing, and QTE-like beats", "combat rank for Frostwood pressure"],
+    "worldPressure": ["hub mood", "frostcap shortage", "coin mystery visibility"]
+  },
+  "arcs": [
+    {
+      "id": "haven_arc1",
+      "title": "Frostbitten Return",
+      "status": "active",
+      "chapters": ["1.1", "1.1.a", "1.1.b", "1.2.a", "1.2.b", "1.3", "1.4"],
+      "previousArcCarryover": "None. This is the first authored Haven arc.",
+      "arcSummary": "Bin returns through Frostwood, chooses gate or tavern entry, reunites with Lily through practical trouble, follows rude-candle coin clues, finds Mittens, and closes with family dinner and a sealed-envelope hook.",
+      "currentDevelopmentTarget": "Polish branch reactivity, side-event unlocks, and post-Arc-1 handoff. Do not rush the buyer reveal or Lily cure.",
+      "branchNotes": [
+        "Gate route favors duty and public trust through paperwork, records, and Lysa.",
+        "Tavern route favors wit and local warmth through the Frosted Mug, soup, brawl comedy, and the screaming log.",
+        "Both routes merge at the apothecary/cat job while preserving route flags for later NPC reactions."
+      ],
+      "potentialChoicePoints": [
+        {
+          "id": "return_entry_style",
+          "where": "1.1 route choice",
+          "potentialAxes": { "duty": 1, "wit": 1, "resolve": 1 },
+          "futureUse": "NPCs can react to whether Bin returned openly, slipped in socially, or pushed through danger."
+        },
+        {
+          "id": "lily_reunion_tone",
+          "where": "1.2 route merge",
+          "potentialAxes": { "mercy": 1, "wit": 1 },
+          "futureUse": "Lily trust and sibling banter can gate hospital/Earth support scenes."
+        },
+        {
+          "id": "coin_mystery_handling",
+          "where": "1.3 and 1.4",
+          "potentialAxes": { "resolve": 1, "duty": 1 },
+          "futureUse": "How hard Bin pushes the coin trail can unlock cautious, official, or risky Arc 2 leads."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "return_reactions",
+          "fitsAfter": ["1.1", "1.1.a", "1.1.b"],
+          "summary": "Town reaction events, Peri luck check, gate/tavern gossip, Dain or Brinna comedy.",
+          "goodTrackers": ["wit", "duty", "frostbitten.reputation"]
+        },
+        {
+          "bucket": "family_and_lily",
+          "fitsAfter": ["1.2.a", "1.2.b", "1.3"],
+          "summary": "Small sibling, apothecary, Garr, and Mitia scenes that deepen care without curing Lily.",
+          "goodTrackers": ["mercy", "lily.trust", "garr.trust"]
+        },
+        {
+          "bucket": "mystery_pressure",
+          "fitsAfter": ["1.3", "1.4"],
+          "summary": "Coin buyer clues, cough-question rumors, sealed-envelope tension, and soft Arc 2 lead-ins.",
+          "goodTrackers": ["resolve", "duty", "coin_mystery_visibility"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "public_return",
+          "fitsChapters": ["1.1", "1.1.a", "1.1.b"],
+          "questIds": ["haven_qchain_ledger_of_the_ghost", "haven_qchain_three_silver_discount"],
+          "summary": "Paperwork and tavern comedy prove Bin is back without making the main plot heavier."
+        },
+        {
+          "bucket": "first_field_work",
+          "fitsChapters": ["1.2", "1.3"],
+          "questIds": ["haven_qchain_frostcap_fever", "haven_qchain_warm_lights_cold_hands"],
+          "summary": "Frostwood routes, supplies, food, and firemoss build practical stakes."
+        },
+        {
+          "bucket": "character_routes",
+          "fitsChapters": ["1.3", "1.4", "post_arc1"],
+          "questIds": ["haven_qchain_ironhand_errand", "haven_qchain_thunder_needs_a_voice"],
+          "summary": "Forge prep and Bowy confidence should support Arc 2 without revealing protected truths."
+        }
+      ],
+      "readFiles": [
+        "data/campaigns/haven/sequences/_sequence_index.json",
+        "data/campaigns/haven/quest_chains/frostbitten_quest_chains.json",
+        "data/campaigns/haven/hubs/hub_frostbitten.json"
+      ],
+      "writeBackSummarySlots": ["arcSummary", "previousArcCarryover", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    },
+    {
+      "id": "haven_arc2",
+      "title": "Coin Buyer and Warmth Pressure",
+      "status": "planned",
+      "chapters": ["2.x"],
+      "previousArcCarryover": "Arc 1 ends with family warmth, Garr's journal, rude-candle coins, cough-syrup questions, and a sealed envelope. Bin has route identity from gate or tavern.",
+      "arcSummary": "Planned arc for naming the buyer, testing Frostbitten's trust in Bin, and turning side-chain supplies into real pressure.",
+      "currentDevelopmentTarget": "Write only small lead-ins until the GM promotes the buyer reveal.",
+      "eventSuitability": [
+        {
+          "bucket": "aftermath",
+          "fitsAfter": ["1.4"],
+          "summary": "Breakfast after dinner, town gossip settling, route-specific NPC reactions, sealed-envelope hesitation.",
+          "goodTrackers": ["duty", "mercy", "garr.trust"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "prep_and_pressure",
+          "fitsChapters": ["post_arc1", "2.x"],
+          "questIds": ["haven_qchain_warm_lights_cold_hands", "haven_qchain_ironhand_errand", "haven_qchain_thunder_needs_a_voice"],
+          "summary": "Use supply, forge, and Bowy route work to support later danger."
+        }
+      ],
+      "potentialChoicePoints": [
+        {
+          "id": "buyer_reveal_posture",
+          "where": "Arc 2 opening",
+          "potentialAxes": { "duty": 1, "resolve": 1, "mercy": 1 },
+          "futureUse": "Official report, private investigation, or protective delay can unlock different leads."
+        }
+      ]
+    }
+  ],
+  "futureEditSlots": [
+    "Add arc close summaries here after each authored arc.",
+    "Move GM manual branches into the matching arc's branchNotes once promoted.",
+    "Keep protected truths marked yellow or red until explicitly promoted."
+  ]
+}

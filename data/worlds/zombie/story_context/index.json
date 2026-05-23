@@ -1,0 +1,91 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "zombie",
+    "status": "active"
+  },
+  "world": "zombie",
+  "displayName": "Last Light",
+  "purpose": "Compact AI planning map for survival expeditions, Burnice routes, scavenging, infection pressure, and safehouse building.",
+  "readOrder": {
+    "skim": ["data/worlds/zombie/story_context/index.json", "data/worlds/zombie/story_summary.md"],
+    "openWhenWriting": [
+      "data/campaigns/zombie/travel_maps/zombie_last_light_travel_map.json",
+      "data/campaigns/zombie/activity_packs/zombie_safehouse_activity_pack.json"
+    ]
+  },
+  "summaryTiers": {
+    "always": "Zombie world is practical survival: plan the route, scavenge carefully, control noise, and convert danger into hard-earned support.",
+    "previousArcCarryForward": "Do not make Zombie rewards free. Food, med-gel, and scrap should raise noise, infection, debt, or exhaustion when too convenient.",
+    "avoidReadingFullArcUnless": "Open travel/activity files for exact activity ids, node names, or reward ops."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["mercy", "resolve", "duty"],
+    "relationships": ["burnice.trust", "safehouse morale"],
+    "stats": ["C for fast route calls and panic control", "combat readiness for forced encounters"],
+    "worldPressure": ["Zombie Noise", "Infection Pressure", "safehouse stability", "medical stock"]
+  },
+  "arcs": [
+    {
+      "id": "zombie_arc1_last_light",
+      "title": "Last Light Safehouse Loop",
+      "status": "active",
+      "chapters": ["Z-00", "Z-01", "Z-01.s", "Z-01.m", "Z-01.b", "Z-01.bu"],
+      "previousArcCarryover": "No prior Zombie arc. The first visit should establish scarcity, route discipline, and Burnice as a competent survival contact.",
+      "arcSummary": "Use Last Light map branches for mall scavenge, clinic medicine, safehouse upgrades, subway risk, and broadcast tower pressure.",
+      "currentDevelopmentTarget": "Add compact events that make every strong resource gain produce a readable survival cost.",
+      "potentialChoicePoints": [
+        {
+          "id": "scavenge_depth",
+          "where": "Mall and clinic runs",
+          "potentialAxes": { "resolve": 1, "duty": 1 },
+          "futureUse": "Deep scavenge can unlock better rewards while increasing noise and infection pressure."
+        },
+        {
+          "id": "burnice_route_trust",
+          "where": "Burnice route planning",
+          "potentialAxes": { "duty": 1, "mercy": 1 },
+          "futureUse": "Trust gates safer clinic cover, flare route support, and future defense scenes."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "resource_pressure",
+          "fitsAfter": ["mall sweep", "clinic medicine", "broadcast tower"],
+          "summary": "Small complications: noise drift, blocked stairwell, medicine triage, safehouse argument.",
+          "goodTrackers": ["Zombie Noise", "Infection Pressure", "resolve"]
+        },
+        {
+          "bucket": "burnice_character",
+          "fitsAfter": ["first route", "clinic cover"],
+          "summary": "Route-planner scenes where Burnice rewards careful listening and punishes reckless heroics.",
+          "goodTrackers": ["burnice.trust", "duty"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "safehouse_build",
+          "fitsChapters": ["Z-01.b"],
+          "questIds": ["barricade_upgrade", "infirmary_upgrade", "water_filter_patch"],
+          "summary": "Scrap and medicine become stability only after costs and route risk are paid."
+        },
+        {
+          "bucket": "cross_world_medical",
+          "fitsChapters": ["Z-01.m"],
+          "questIds": ["zombie_med_gel_for_earth", "sterile_wrap_delivery"],
+          "summary": "Medical salvage can help Earth hospital paths but should raise ethical and visibility questions."
+        }
+      ],
+      "readFiles": [
+        "data/campaigns/zombie/travel_maps/zombie_last_light_travel_map.json",
+        "data/campaigns/zombie/activity_packs/zombie_safehouse_activity_pack.json"
+      ],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": [
+    "Track safehouse upgrades and unresolved noise/infection debts after each generated expedition.",
+    "Record which Zombie materials have crossed into Earth or Bazaar."
+  ]
+}

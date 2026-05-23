@@ -1,6 +1,6 @@
 {
   "_file": {
-    "version": 1,
+    "version": 2,
     "format": "cjs-collection",
     "scope": "world",
     "world": "haven",
@@ -14,28 +14,111 @@
       "world": "haven",
       "zone": "haven_zon_frostbitten",
       "hubId": "haven_hub_frostbitten",
+      "chainDesignNote": "Every side-story chain is structured as a compact VN arc with phase labels, map movement, event pressure, character beats, combat hooks, and one small mini-game beat. The GM may skip systems that do not fit the current session, but the content is ready for all tabs.",
       "chains": [
         {
           "id": "haven_qchain_frostcap_fever",
           "title": "Frostcap Fever",
           "canonRisk": "green",
-          "type": "gathering -> mystery -> light combat -> town consequence",
-          "tags": ["food", "gathering", "cooking", "starter"],
-          "contextTags": ["frostcap", "grove", "mushroom", "warmth"],
+          "type": "side story: food shortage -> grove route -> puzzle forage -> light combat -> tavern consequence",
+          "flowSummary": "A cozy tavern shortage becomes the first clean Frostwood field run, then folds back into food, warmth, and the Pocket Haven garden later.",
+          "tags": ["food", "gathering", "cooking", "starter", "side_story"],
+          "contextTags": ["frostcap", "grove", "mushroom", "warmth", "tavern"],
           "mapType": "forest",
           "mapSetting": "forest",
           "mapForm": "grid_map",
+          "mapSize": "small",
+          "linkedScenario": "haven_scn_frostwood_grid_patrol",
+          "linkedMapCells": ["bent_pine", "frostcap_grove", "wolf_cutoff", "watch_ridge"],
           "monsterTags": ["sprite", "wolf"],
-          "mainNpcs": ["tessa", "frosted_mug_cook", "corvin"],
-          "summary": "A safe mushroom-gathering job becomes a useful first field run for Bin's returning party.",
+          "mainNpcs": ["tessa", "frosted_mug_cook", "corvin", "haven_bowy"],
+          "summary": "Tessa turns a missing mushroom basket into a low-risk field run that teaches Frostwood movement, gathering, and light combat without derailing Arc 1.",
+          "phasePlan": [
+            { "id": "fc_open", "chapterLabel": "FC-01", "phaseType": "town_phase", "title": "Empty Stew Pot", "summary": "VN/tavern opening, Tessa asks for help." },
+            { "id": "fc_route", "chapterLabel": "FC-02", "phaseType": "travel_phase", "title": "Bent Pine Route", "summary": "Move across the Frostwood grid toward the grove." },
+            { "id": "fc_puzzle", "chapterLabel": "FC-03", "phaseType": "scenario_phase", "title": "Basket Puzzle", "summary": "Mini-game sorting beat for safe caps." },
+            { "id": "fc_combat", "chapterLabel": "FC-04", "phaseType": "scenario_phase", "title": "Sprite Nest", "summary": "Light combat or manual battle." },
+            { "id": "fc_return", "chapterLabel": "FC-05", "phaseType": "town_phase", "title": "Stew Returns", "summary": "Tavern wrap and recipe/Pocket Haven seed." }
+          ],
           "steps": [
-            { "id": "guild_request", "label": "Guild Request", "text": "Collect Frostcap Mushrooms from the Frostwood edge." },
-            { "id": "map_seed", "label": "Map Seed", "text": "Use Frostcap Grove as the route." },
-            { "id": "warm_snow", "label": "Warm Snow", "text": "Mushrooms grow in a perfect circle around warm snow." },
             {
-              "id": "slime_nest",
-              "label": "Light Battle",
-              "text": "Use the Frost Slime Nest battle card or resolve manually.",
+              "id": "empty_pot_scene",
+              "kind": "visual_novel",
+              "chapterLabel": "FC-01",
+              "phaseType": "town_phase",
+              "label": "Empty Stew Pot",
+              "text": "At the Frosted Mug, the stew pot is so empty the cook has started apologizing to it. Tessa asks Bin to collect Frostcaps before the dinner rush turns political.",
+              "vn": {
+                "sceneTitle": "The Pot Makes A Threat",
+                "prompt": "Write a short tavern VN scene where Tessa, the cook, Bin, and Bowy turn a food shortage into a friendly first quest. Keep the jokes warm and practical.",
+                "beats": ["Tessa frames the job as safe", "Bin distrusts the word safe", "Bowy volunteers too quickly", "The cook offers a terrible bonus: one bowl of experimental stew"]
+              },
+              "character": { "npcId": "tessa", "beat": "Tessa shows she trusts Bin with a small public job after his return." },
+              "event": {
+                "id": "haven_evt_frostcap_empty_pot",
+                "prompt": "The tavern reacts to the missing stew with comic urgency.",
+                "ops": [
+                  { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "warm_stew_shortage", "label": "Warm Stew Shortage" }
+                ]
+              }
+            },
+            {
+              "id": "bent_pine_route",
+              "kind": "map_movement",
+              "chapterLabel": "FC-02",
+              "phaseType": "travel_phase",
+              "label": "Bent Pine Route",
+              "text": "Use the Frostwood Grid Patrol route. The party should move from the sled start through Bent Pine toward Frostcap Grove while learning grid movement.",
+              "map": {
+                "mapSeedId": "haven_mseed_frostcap_grove",
+                "scenarioId": "haven_scn_frostwood_grid_patrol",
+                "movement": "grid_map",
+                "objective": "Reach Frostcap Grove and mark at least one safe return lane."
+              },
+              "progressTriggers": [
+                {
+                  "id": "frostcap_route_found",
+                  "requiresAnyTags": ["cell:bent_pine", "map_node:bent_pine", "explore_percent:30"],
+                  "amount": 1,
+                  "log": "Quest pulse: the Frostcap route is found."
+                }
+              ]
+            },
+            {
+              "id": "basket_sorting_minigame",
+              "kind": "minigame",
+              "chapterLabel": "FC-03",
+              "phaseType": "scenario_phase",
+              "label": "Sort The Safe Caps",
+              "text": "The grove has edible caps, glow caps, and one cap that squeaks like it has opinions. Sort the basket before the sprites notice.",
+              "minigame": {
+                "gameId": "push_box",
+                "levelId": "frostcap_basket_sort",
+                "difficulty": 1,
+                "theme": "forest",
+                "objective": "Push the safe Frostcaps into the basket spaces and leave the blue squeaking cap alone."
+              },
+              "winOps": [
+                { "op": "give_quest_item", "id": "haven_frostcap_mushroom", "qty": 5 },
+                { "op": "log", "text": "Frostcap basket sorted without poisoning the stew." }
+              ],
+              "failOps": [
+                { "op": "danger", "amount": 1 },
+                { "op": "log", "text": "The basket sorting goes badly; the grove starts paying attention." }
+              ]
+            },
+            {
+              "id": "sprite_nest",
+              "kind": "combat",
+              "chapterLabel": "FC-04",
+              "phaseType": "scenario_phase",
+              "label": "Frost Sprite Nest",
+              "text": "Sprites defend the warm snow circle. Let gathering actions count as progress, or use the Frost Sprite Grove battle card.",
+              "combat": {
+                "battleSetId": "haven_bset_frost_sprite_grove",
+                "rank": "F",
+                "objective": "Gather enough Frostcaps or clear the sprite nest."
+              },
               "progressTriggers": [
                 {
                   "id": "grove_battle_success",
@@ -46,9 +129,25 @@
                 }
               ]
             },
-            { "id": "return_stew", "label": "Return", "text": "The Frosted Mug can make Warm Stew again." }
+            {
+              "id": "return_stew",
+              "kind": "event",
+              "chapterLabel": "FC-05",
+              "phaseType": "town_phase",
+              "label": "Return The Stew",
+              "text": "The Frosted Mug serves warm stew again. The suspicious blue cap is saved as a future recipe or Pocket Haven seed.",
+              "event": {
+                "id": "haven_evt_stew_returns",
+                "prompt": "A warm tavern wrap scene where the town relaxes and the cook insists the squeaking mushroom was artisanal.",
+                "ops": [
+                  { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "warm_stew_shortage" },
+                  { "op": "unlock_recipe", "recipeId": "warm_stew" }
+                ]
+              },
+              "character": { "npcId": "frosted_mug_cook", "beat": "The cook becomes a recurring food-loop contact." }
+            }
           ],
-          "battleSetIds": ["haven_bset_frost_sprite_grove"],
+          "battleSetIds": ["haven_bset_frost_sprite_grove", "haven_bset_wolf_pack_bent_pine"],
           "mapSeedIds": ["haven_mseed_frostcap_grove"],
           "rewardOps": [
             { "op": "give_money", "currency": "haven_gold", "amount": 20 },
@@ -59,42 +158,131 @@
           "failureOps": [
             { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "warm_stew_shortage", "label": "Warm Stew Shortage" }
           ],
-          "followUpHooks": ["One mushroom does not rot. It hums when Bin touches it. Promote only as yellow-risk content."]
+          "followUpHooks": ["One blue cap does not rot. It hums near Pocket Haven soil. Promote only as yellow-risk content."]
         },
         {
           "id": "haven_qchain_ledger_of_the_ghost",
           "title": "The Ledger of the Ghost",
           "canonRisk": "green",
-          "type": "town comedy -> social challenge -> optional duel",
-          "tags": ["paperwork", "guild", "comedy", "bin_return"],
-          "contextTags": ["guild", "paperwork", "rival", "comedy"],
+          "type": "side story: paperwork comedy -> signature route -> document puzzle -> sparring/social duel -> guild status restored",
+          "flowSummary": "A public comedy chain that turns Bin's return into guild bureaucracy, gives the town a reason to react, and restores his quest-board status.",
+          "tags": ["paperwork", "guild", "comedy", "bin_return", "side_story"],
+          "contextTags": ["guild", "paperwork", "rival", "comedy", "signature"],
           "mapType": "urban",
           "mapSetting": "urban",
           "mapForm": "node_map",
+          "mapSize": "tiny",
           "monsterTags": ["rival", "sparring"],
           "mainNpcs": ["corvin", "lysa", "dain", "brinna_twins"],
-          "summary": "Corvin needs proof that Bin is alive enough to sign guild forms.",
+          "summary": "Corvin needs proof that Bin is alive enough to sign guild forms, and the town treats that as group entertainment.",
+          "phasePlan": [
+            { "id": "lg_open", "chapterLabel": "LG-01", "phaseType": "town_phase", "title": "Living Person Waiver", "summary": "VN opening at the guild counter." },
+            { "id": "lg_route", "chapterLabel": "LG-02", "phaseType": "town_phase", "title": "Signature Route", "summary": "Move through guild, gate, tavern, and forge witnesses." },
+            { "id": "lg_puzzle", "chapterLabel": "LG-03", "phaseType": "town_phase", "title": "Sort The Forms", "summary": "Mini-game paperwork sorting." },
+            { "id": "lg_duel", "chapterLabel": "LG-04", "phaseType": "scenario_phase", "title": "Dain Objects", "summary": "Social duel or nonlethal spar." },
+            { "id": "lg_close", "chapterLabel": "LG-05", "phaseType": "town_phase", "title": "Stamp Restored", "summary": "Guild status restored." }
+          ],
           "steps": [
-            { "id": "paperwork_problem", "label": "Paperwork Problem", "text": "Gather signatures proving Bin is alive." },
-            { "id": "required_signatures", "label": "Required Signatures", "text": "Garr, Tessa, Lysa, and the Brinna Twins each sign for different reasons." },
-            { "id": "dain_loophole", "label": "Dain's Claim", "text": "Dain says Bin is exploiting a dramatic return loophole." },
             {
-              "id": "public_choice",
-              "label": "Public Choice",
-              "text": "Ignore Dain or roast him publicly.",
+              "id": "paperwork_problem",
+              "kind": "visual_novel",
+              "chapterLabel": "LG-01",
+              "phaseType": "town_phase",
+              "label": "Living Person Waiver",
+              "text": "Corvin presents a form confirming Bin is not a corpse, ghost, legal rumor, or taxable haunting.",
+              "vn": {
+                "sceneTitle": "Corvin's Counterattack",
+                "prompt": "Write a fast guild-counter VN comedy scene where Corvin explains why Bin must prove he is alive. Keep Corvin dry, Lysa too cheerful, and Bin offended by the tax section.",
+                "beats": ["Corvin produces too many forms", "Lysa loudly congratulates Bin on legal breathing", "Bin tries to sign once and finds three more initials required"]
+              },
+              "event": {
+                "id": "haven_evt_living_person_waiver",
+                "prompt": "The guild lobby notices the words legally alive and stops pretending not to listen.",
+                "ops": [
+                  { "op": "set_flag", "flag": "bin_paperwork_started", "value": true },
+                  { "op": "story_thread_status", "threadId": "haven_qchain_ledger_of_the_ghost", "status": "active", "note": "Guild paperwork chain started." }
+                ]
+              }
+            },
+            {
+              "id": "signature_route",
+              "kind": "map_movement",
+              "chapterLabel": "LG-02",
+              "phaseType": "town_phase",
+              "label": "Four Witnesses",
+              "text": "Move through Frostbitten witnesses: gate office, Frosted Mug, forge, and guild desk. Each signature gives a different joke and a small hub read.",
+              "map": {
+                "movement": "node_map",
+                "objective": "Collect Lysa, Tessa, Hilda, and Corvin signatures without letting Dain turn it into a speech.",
+                "nodes": ["loc_adventurers_guild", "loc_frosted_mug", "loc_ironhand_forge", "loc_south_gate"]
+              },
+              "character": { "npcId": "lysa", "beat": "Lysa signs immediately, then adds a smiley face Corvin refuses to accept." }
+            },
+            {
+              "id": "form_sort_minigame",
+              "kind": "minigame",
+              "chapterLabel": "LG-03",
+              "phaseType": "town_phase",
+              "label": "Sort The Forms",
+              "text": "The forms must be sorted into Alive, Missing, Probably Fine, and Please Stop Asking piles.",
+              "minigame": {
+                "gameId": "push_box",
+                "levelId": "guild_form_sort",
+                "difficulty": 1,
+                "theme": "guild",
+                "objective": "Push each form stack into the correct filing tray before Corvin starts using legal vocabulary as a weapon."
+              },
+              "winOps": [
+                { "op": "give_jp", "amount": 1 },
+                { "op": "log", "text": "Guild paperwork sorted well enough to count as alive." }
+              ],
+              "failOps": [
+                { "op": "story_metric_change", "metric": "guild_noise", "amount": 1, "max": 12 },
+                { "op": "log", "text": "Guild paperwork sorting creates another rumor." }
+              ]
+            },
+            {
+              "id": "dain_loophole",
+              "kind": "combat",
+              "chapterLabel": "LG-04",
+              "phaseType": "scenario_phase",
+              "label": "Dain's Objection",
+              "text": "Dain claims Bin is abusing a dramatic return loophole. Resolve as a public roast, social check, or nonlethal spar.",
+              "combat": {
+                "battleSetId": "haven_bset_guild_sparring_dain",
+                "rank": "F",
+                "objective": "Win the crowd without turning Dain into a real enemy."
+              },
               "progressTriggers": [
                 {
                   "id": "public_roast",
                   "outcome": "victory",
-                  "requiresAnyTags": ["behavior:trolling", "skill:taunt_mock", "skill_taunt_mock"],
+                  "requiresAnyTags": ["behavior:trolling", "skill:taunt_mock", "skill_taunt_mock", "battle_tag:sparring"],
                   "amount": 1,
                   "log": "Quest pulse: Bin turns the paperwork duel into a public laugh."
                 }
               ]
             },
-            { "id": "stamp_restored", "label": "Stamp Restored", "text": "The guild stamp finally accepts Bin's name." }
+            {
+              "id": "stamp_restored",
+              "kind": "event",
+              "chapterLabel": "LG-05",
+              "phaseType": "town_phase",
+              "label": "Stamp Restored",
+              "text": "The guild stamp accepts Bin's name. Corvin files the page like he personally defeated a dungeon.",
+              "event": {
+                "id": "haven_evt_stamp_restored",
+                "prompt": "Wrap with the guild stamp finally accepting Bin's name, the crowd pretending it was not invested, and Dain demanding a rematch later.",
+                "ops": [
+                  { "op": "set_flag", "flag": "bin_guild_status_restored", "value": true },
+                  { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "bin_death_paperwork" }
+                ]
+              },
+              "character": { "npcId": "corvin", "beat": "Corvin becomes warmer by acting exactly as annoyed as before." }
+            }
           ],
           "battleSetIds": ["haven_bset_guild_sparring_dain"],
+          "mapSeedIds": [],
           "rewardOps": [
             { "op": "set_flag", "flag": "bin_guild_status_restored" },
             { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "bin_death_paperwork" },
@@ -109,23 +297,104 @@
           "id": "haven_qchain_warm_lights_cold_hands",
           "title": "Warm Lights, Cold Hands",
           "canonRisk": "green",
-          "type": "supply problem -> escort -> ambush -> hub repair",
-          "tags": ["survival", "firemoss", "escort", "battle"],
-          "contextTags": ["supply", "sled", "ridge", "warmth"],
+          "type": "side story: supply problem -> sled route -> latch puzzle -> ambush -> hub repair",
+          "flowSummary": "A practical firemoss shortage chain that teaches map travel, resource stakes, and town warmth consequences.",
+          "tags": ["survival", "firemoss", "escort", "battle", "side_story"],
+          "contextTags": ["supply", "sled", "ridge", "warmth", "firemoss"],
           "mapType": "outdoor",
-          "mapSetting": "outdoor",
+          "mapSetting": "forest",
           "mapForm": "node_map",
+          "mapSize": "small",
+          "linkedScenario": "haven_scn_frostwood_short_run",
+          "linkedMapNodes": ["broken_sled", "hunter_cache", "watch_ridge", "old_shrine"],
           "monsterTags": ["bandit", "wolf"],
-          "mainNpcs": ["tessa", "hilda_ironhand", "kael"],
-          "summary": "The missing firemoss shipment needs a short supply-trail run before Frostbitten's burners dim.",
+          "mainNpcs": ["tessa", "hilda_ironhand", "kael", "haven_garr"],
+          "summary": "The missing firemoss shipment needs a supply-trail run before Frostbitten's burners dim.",
+          "phasePlan": [
+            { "id": "wl_open", "chapterLabel": "WL-01", "phaseType": "town_phase", "title": "Cold Lamps", "summary": "Town event and job post." },
+            { "id": "wl_route", "chapterLabel": "WL-02", "phaseType": "travel_phase", "title": "Broken Sled", "summary": "Node-map movement to the sled trail." },
+            { "id": "wl_latch", "chapterLabel": "WL-03", "phaseType": "scenario_phase", "title": "Frozen Latch", "summary": "Mini-game cache latch." },
+            { "id": "wl_ambush", "chapterLabel": "WL-04", "phaseType": "scenario_phase", "title": "Snowblind Ridge", "summary": "Bandit or wolf ambush." },
+            { "id": "wl_return", "chapterLabel": "WL-05", "phaseType": "town_phase", "title": "Warm Lights", "summary": "Return firemoss and repair hub warmth." }
+          ],
           "steps": [
-            { "id": "shortage_posted", "label": "Shortage Posted", "text": "Tessa posts the firemoss shortage as a local priority." },
-            { "id": "south_gate", "label": "South Gate", "text": "Choose who watches the sled and who scouts ahead." },
-            { "id": "broken_sled", "label": "Broken Sled", "text": "Repair, search, or abandon a damaged carrier sled." },
+            {
+              "id": "shortage_posted",
+              "kind": "visual_novel",
+              "chapterLabel": "WL-01",
+              "phaseType": "town_phase",
+              "label": "Cold Lamps",
+              "text": "Tessa posts the firemoss shortage while the guild lamps sputter. The joke lands because the room is actually getting colder.",
+              "vn": {
+                "sceneTitle": "The Lamps Go Thin",
+                "prompt": "Write a Frostbitten guild VN scene where a practical supply shortage shifts the room from comedy to responsibility without becoming grim.",
+                "beats": ["Tessa names the missing sled", "Kael pretends he is not nervous", "Garr quietly marks a safer route", "Bin takes the job before the lamps embarrass everyone"]
+              },
+              "event": {
+                "id": "haven_evt_firemoss_lamps_thin",
+                "prompt": "The town notices the firemoss lamps dimming.",
+                "ops": [
+                  { "op": "hub_problem_add", "hubId": "haven_hub_frostbitten", "problemId": "firemoss_shortage", "label": "Firemoss Shortage" }
+                ]
+              }
+            },
+            {
+              "id": "broken_sled_route",
+              "kind": "map_movement",
+              "chapterLabel": "WL-02",
+              "phaseType": "travel_phase",
+              "label": "Broken Sled Route",
+              "text": "Use the Frostwood Short Run. Start at the edge, inspect the broken sled, then follow cache marks toward the ridge.",
+              "map": {
+                "mapSeedId": "haven_mseed_frostwood_supply_trail",
+                "scenarioId": "haven_scn_frostwood_short_run",
+                "movement": "node_map",
+                "objective": "Reach Broken Sled and Hunter Cache before the cold clock worsens."
+              },
+              "progressTriggers": [
+                {
+                  "id": "sled_found",
+                  "requiresAnyTags": ["map_node:broken_sled", "node:broken_sled"],
+                  "amount": 1,
+                  "log": "Quest pulse: the missing sled route is found."
+                }
+              ]
+            },
+            {
+              "id": "frozen_latch_minigame",
+              "kind": "minigame",
+              "chapterLabel": "WL-03",
+              "phaseType": "scenario_phase",
+              "label": "Frozen Cache Latch",
+              "text": "The firemoss cache is intact, but the latch is frozen in a way that suggests a craftsman had a personal grudge against hands.",
+              "minigame": {
+                "gameId": "push_box",
+                "levelId": "return_cache_lock",
+                "difficulty": 2,
+                "theme": "ice",
+                "objective": "Move ice blocks away from the latch before the cache cracks."
+              },
+              "winOps": [
+                { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 },
+                { "op": "log", "text": "The firemoss cache opens cleanly." }
+              ],
+              "failOps": [
+                { "op": "clock_tick", "clockId": "cold_exposure", "label": "Cold Exposure", "max": 6, "amount": 1 },
+                { "op": "log", "text": "The firemoss cache opens late and the route gets colder." }
+              ]
+            },
             {
               "id": "snowblind_ridge",
+              "kind": "combat",
+              "chapterLabel": "WL-04",
+              "phaseType": "scenario_phase",
               "label": "Snowblind Ridge",
-              "text": "Use Bandit Taxmen or Wolf Pack at Bent Pine.",
+              "text": "Fake toll collectors or hungry wolves hit the return route. Pick the battle that fits current danger.",
+              "combat": {
+                "battleSetIds": ["haven_bset_bandit_taxmen_snowblind", "haven_bset_wolf_pack_bent_pine"],
+                "rank": "E",
+                "objective": "Get the firemoss sled past the ridge with supplies intact."
+              },
               "progressTriggers": [
                 {
                   "id": "ridge_cleared",
@@ -136,7 +405,23 @@
                 }
               ]
             },
-            { "id": "cache_return", "label": "Cache Return", "text": "Return the firemoss cache to town." }
+            {
+              "id": "cache_return",
+              "kind": "event",
+              "chapterLabel": "WL-05",
+              "phaseType": "town_phase",
+              "label": "Warm Lights",
+              "text": "The burners come back. The town does not cheer loudly; it just stops hunching its shoulders.",
+              "event": {
+                "id": "haven_evt_firemoss_return",
+                "prompt": "A quiet Frostbitten wrap scene where warmth returns to the guild and Kael realizes supply runs count as courage.",
+                "ops": [
+                  { "op": "hub_problem_remove", "hubId": "haven_hub_frostbitten", "problemId": "firemoss_shortage" },
+                  { "op": "hub_stat_change", "hubId": "haven_hub_frostbitten", "stat": "warmth", "amount": 2 }
+                ]
+              },
+              "character": { "npcId": "kael", "beat": "Kael learns that brave work can look boring until the lamps come back." }
+            }
           ],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bandit_taxmen_snowblind"],
           "mapSeedIds": ["haven_mseed_frostwood_supply_trail"],
@@ -155,23 +440,97 @@
           "id": "haven_qchain_ironhand_errand",
           "title": "Ironhand Errand",
           "canonRisk": "green",
-          "type": "forge repair -> material hunt -> recipe unlock",
-          "tags": ["forge", "crafting", "materials", "repair"],
-          "contextTags": ["forge", "pelt", "field_test"],
+          "type": "side story: forge repair -> route hunt -> bellows puzzle -> field test -> recipe unlock",
+          "flowSummary": "Hilda turns gear repair into a practical prep chain that supports future boss readiness without forcing main-plot reveals.",
+          "tags": ["forge", "crafting", "materials", "repair", "side_story"],
+          "contextTags": ["forge", "pelt", "field_test", "winter_gear"],
           "mapType": "forest",
           "mapSetting": "forest",
           "mapForm": "node_map",
+          "mapSize": "small",
+          "linkedScenario": "haven_scn_frostwood_short_run",
+          "linkedMapNodes": ["wolf_tracks", "wolf_den", "old_shrine"],
           "monsterTags": ["wolf", "bear", "beast"],
-          "mainNpcs": ["hilda_ironhand", "bowy"],
+          "mainNpcs": ["hilda_ironhand", "haven_bowy", "tessa"],
           "summary": "Hilda needs frost-resistant binding material before the forge can repair winter gear reliably.",
+          "phasePlan": [
+            { "id": "ih_open", "chapterLabel": "IH-01", "phaseType": "town_phase", "title": "Bad Iron", "summary": "Forge VN setup." },
+            { "id": "ih_route", "chapterLabel": "IH-02", "phaseType": "travel_phase", "title": "Pelt Marks", "summary": "Node-map hunt." },
+            { "id": "ih_puzzle", "chapterLabel": "IH-03", "phaseType": "town_phase", "title": "Bellows Timing", "summary": "Mini-game forge beat." },
+            { "id": "ih_test", "chapterLabel": "IH-04", "phaseType": "scenario_phase", "title": "Field Test", "summary": "Combat with repaired grip wraps." },
+            { "id": "ih_close", "chapterLabel": "IH-05", "phaseType": "town_phase", "title": "Recipe Card", "summary": "Recipe and service unlock." }
+          ],
           "steps": [
-            { "id": "bad_iron", "label": "Bad Iron", "text": "Hilda explains the repair queue and bad iron shipment." },
-            { "id": "pelt_wraps", "label": "Grip Wraps", "text": "Gather wolf pelts or bear hide for winter grip wraps." },
-            { "id": "forge_check", "label": "Forge Check", "text": "Run a crafting check or spend extra material." },
+            {
+              "id": "bad_iron",
+              "kind": "visual_novel",
+              "chapterLabel": "IH-01",
+              "phaseType": "town_phase",
+              "label": "Bad Iron",
+              "text": "Hilda explains the repair queue and the bad iron shipment while hammering a nail so flat it becomes a legal document.",
+              "vn": {
+                "sceneTitle": "Hilda Hates The Shipment",
+                "prompt": "Write a forge VN scene where Hilda explains bad winter gear with blunt affection and no patience for heroic posing.",
+                "beats": ["Hilda names the bad shipment", "Bowy asks one useful question", "Bin offers to help and regrets using forge vocabulary"]
+              },
+              "character": { "npcId": "hilda_ironhand", "beat": "Hilda accepts Bin as useful because he listens to materials instead of speeches." }
+            },
+            {
+              "id": "pelt_wraps",
+              "kind": "map_movement",
+              "chapterLabel": "IH-02",
+              "phaseType": "travel_phase",
+              "label": "Pelt Marks",
+              "text": "Follow wolf tracks toward usable winter pelts. The goal is not trophies; it is material that will hold under frost.",
+              "map": {
+                "mapSeedId": "haven_mseed_frozen_creek_trail",
+                "scenarioId": "haven_scn_frostwood_short_run",
+                "movement": "node_map",
+                "objective": "Reach Wolf Tracks, then choose Wolf Den or Bear Hollow based on danger."
+              },
+              "progressTriggers": [
+                {
+                  "id": "pelt_marks_found",
+                  "requiresAnyTags": ["map_node:wolf_tracks", "node:wolf_tracks"],
+                  "amount": 1,
+                  "log": "Quest pulse: usable pelt marks found."
+                }
+              ]
+            },
+            {
+              "id": "forge_bellows_minigame",
+              "kind": "minigame",
+              "chapterLabel": "IH-03",
+              "phaseType": "town_phase",
+              "label": "Bellows Timing",
+              "text": "Back at the forge, the wrap compound needs heat, cold, and timing. Hilda refuses to call it delicate. It is delicate.",
+              "minigame": {
+                "gameId": "push_box",
+                "levelId": "ironhand_bellows_timing",
+                "difficulty": 2,
+                "theme": "forge",
+                "objective": "Move coal and frost blocks into rhythm positions before the binding paste cracks."
+              },
+              "winOps": [
+                { "op": "log", "text": "Hilda's binding paste sets cleanly." }
+              ],
+              "failOps": [
+                { "op": "take_material", "id": "haven_wolf_pelt", "qty": 1 },
+                { "op": "log", "text": "The first binding paste batch tears and costs extra pelt." }
+              ]
+            },
             {
               "id": "field_test",
+              "kind": "combat",
+              "chapterLabel": "IH-04",
+              "phaseType": "scenario_phase",
               "label": "Field Test",
-              "text": "Use the repaired gear in one fight or travel segment.",
+              "text": "Use the repaired grip wraps in a wolf or bear fight. The test is complete if the party survives with the gear intact.",
+              "combat": {
+                "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+                "rank": "E",
+                "objective": "Win one practical field fight with the repaired gear."
+              },
               "progressTriggers": [
                 {
                   "id": "gear_field_tested",
@@ -182,9 +541,25 @@
                 }
               ]
             },
-            { "id": "recipe_card", "label": "Recipe Card", "text": "Hilda writes down a basic cloak recipe, badly." }
+            {
+              "id": "recipe_card",
+              "kind": "event",
+              "chapterLabel": "IH-05",
+              "phaseType": "town_phase",
+              "label": "Recipe Card",
+              "text": "Hilda writes a basic cloak recipe in handwriting that looks like it fought the paper.",
+              "event": {
+                "id": "haven_evt_ironhand_recipe_card",
+                "prompt": "A forge wrap scene where Hilda gives the party a recipe card, a discount, and one compliment disguised as criticism.",
+                "ops": [
+                  { "op": "unlock_recipe", "recipeId": "haven_recipe_wolf_fur_cloak" },
+                  { "op": "hub_service_unlock", "hubId": "haven_hub_frostbitten", "serviceId": "ironhand_pelt_wrap_discount" }
+                ]
+              }
+            }
           ],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine", "haven_bset_bear_hollow"],
+          "mapSeedIds": ["haven_mseed_frozen_creek_trail"],
           "rewardOps": [
             { "op": "unlock_recipe", "recipeId": "haven_recipe_wolf_fur_cloak" },
             { "op": "hub_service_unlock", "hubId": "haven_hub_frostbitten", "serviceId": "ironhand_pelt_wrap_discount" },
@@ -195,23 +570,95 @@
           "id": "haven_qchain_thunder_needs_a_voice",
           "title": "Thunder Needs a Voice",
           "canonRisk": "yellow",
-          "type": "Bowy side job -> trail clue -> battle -> character beat",
-          "tags": ["bowy", "side_character", "wolf", "yellow"],
-          "contextTags": ["frozen_creek", "hunter_marker", "wolf_den"],
+          "type": "side story: Bowy character beat -> creek trail -> target puzzle -> wolf den -> quiet choice",
+          "flowSummary": "A Bowy-focused side route that builds confidence and Thunder identity while keeping Garr clues soft.",
+          "tags": ["bowy", "side_character", "wolf", "yellow", "side_story"],
+          "contextTags": ["frozen_creek", "hunter_marker", "wolf_den", "confidence"],
           "mapType": "forest",
           "mapSetting": "forest",
           "mapForm": "node_map",
+          "mapSize": "small",
+          "linkedScenario": "haven_scn_frostwood_short_run",
+          "linkedMapNodes": ["frozen_creek", "wolf_tracks", "wolf_den", "old_shrine"],
           "monsterTags": ["wolf", "beast"],
-          "mainNpcs": ["bowy", "garr", "mara"],
+          "mainNpcs": ["haven_bowy", "haven_garr", "mara", "bin"],
           "summary": "Bowy follows a trail of old crossbow bolts toward a wolf den. Keep Garr clues soft unless GM promotes them.",
+          "phasePlan": [
+            { "id": "tn_open", "chapterLabel": "TN-01", "phaseType": "town_phase", "title": "Broken Bolt", "summary": "Character VN setup." },
+            { "id": "tn_route", "chapterLabel": "TN-02", "phaseType": "travel_phase", "title": "Frozen Creek", "summary": "Creek route movement." },
+            { "id": "tn_puzzle", "chapterLabel": "TN-03", "phaseType": "scenario_phase", "title": "Target Board", "summary": "Mini-game aim/route puzzle." },
+            { "id": "tn_den", "chapterLabel": "TN-04", "phaseType": "scenario_phase", "title": "Wolf Den", "summary": "Wolf combat." },
+            { "id": "tn_close", "chapterLabel": "TN-05", "phaseType": "town_phase", "title": "Quiet Return", "summary": "Bowy chooses what Thunder means." }
+          ],
           "steps": [
-            { "id": "broken_bolt", "label": "Broken Bolt", "text": "Bowy finds an old bolt that warms in his hand." },
-            { "id": "frozen_creek", "label": "Frozen Creek Trail", "text": "Use the Frozen Creek Trail map seed." },
-            { "id": "hunter_marker", "label": "Hunter's Marker", "text": "A marker suggests someone knew this route well." },
+            {
+              "id": "broken_bolt",
+              "kind": "visual_novel",
+              "chapterLabel": "TN-01",
+              "phaseType": "town_phase",
+              "label": "Broken Bolt",
+              "text": "Bowy finds an old bolt that warms in his hand. He jokes first because the silence would be too honest.",
+              "vn": {
+                "sceneTitle": "The Bolt Remembers The Hand",
+                "prompt": "Write a quiet Bowy/Bin VN scene around an old crossbow bolt. Keep Garr implications emotional but indirect.",
+                "beats": ["Bowy notices the bolt before Bin does", "Bin lets Bowy take point", "Garr is mentioned only as old route knowledge", "Thunder is treated as a name Bowy has to grow into"]
+              },
+              "character": { "npcId": "haven_bowy", "beat": "Bowy asks to lead one route instead of being assigned one." },
+              "gmNote": "Do not force Garr's hidden truth. This is a soft character beat."
+            },
+            {
+              "id": "frozen_creek",
+              "kind": "map_movement",
+              "chapterLabel": "TN-02",
+              "phaseType": "travel_phase",
+              "label": "Frozen Creek Trail",
+              "text": "Use the Frozen Creek route and let Bowy choose path calls. He can be right without becoming perfect.",
+              "map": {
+                "mapSeedId": "haven_mseed_frozen_creek_trail",
+                "scenarioId": "haven_scn_frostwood_short_run",
+                "movement": "node_map",
+                "objective": "Cross the creek, read the old hunter marker, and choose whether to press toward the den."
+              },
+              "event": {
+                "id": "haven_evt_hunter_marker_soft",
+                "prompt": "A hunter marker hints that someone older knew this route, but it does not name Garr or reveal the past."
+              }
+            },
+            {
+              "id": "target_board_minigame",
+              "kind": "minigame",
+              "chapterLabel": "TN-03",
+              "phaseType": "scenario_phase",
+              "label": "Thunder Finds A Line",
+              "text": "Bowy maps a clean shooting lane through snow and branches before the den fight.",
+              "minigame": {
+                "gameId": "mummy_maze",
+                "levelId": "bowy_thunder_line",
+                "difficulty": 2,
+                "theme": "forest",
+                "objective": "Thread Bowy's route through blockers without trapping Bin in the wolf lane."
+              },
+              "winOps": [
+                { "op": "tag_add", "tag": "bowy_clean_line" },
+                { "op": "log", "text": "Bowy finds a clean line for Thunder." }
+              ],
+              "failOps": [
+                { "op": "danger", "amount": 1 },
+                { "op": "log", "text": "Bowy's first line is messy, but he adjusts before panic can take it." }
+              ]
+            },
             {
               "id": "wolf_den",
+              "kind": "combat",
+              "chapterLabel": "TN-04",
+              "phaseType": "scenario_phase",
               "label": "Wolf Den",
-              "text": "Use a wolf battle set or resolve manually.",
+              "text": "Use a wolf battle set or resolve manually. Bowy's action should matter in the encounter description.",
+              "combat": {
+                "battleSetId": "haven_bset_wolf_pack_bent_pine",
+                "rank": "E",
+                "objective": "Clear the den and let Bowy make one decisive call."
+              },
               "progressTriggers": [
                 {
                   "id": "bowy_wolf_den",
@@ -223,7 +670,22 @@
                 }
               ]
             },
-            { "id": "quiet_return", "label": "Quiet Return", "text": "Bowy decides what kind of archer he wants to be." }
+            {
+              "id": "quiet_return",
+              "kind": "event",
+              "chapterLabel": "TN-05",
+              "phaseType": "town_phase",
+              "label": "Quiet Return",
+              "text": "Bowy decides Thunder is not about being loud. It is about being heard at the right time.",
+              "event": {
+                "id": "haven_evt_bowy_quiet_return",
+                "prompt": "A quiet return scene where Bowy receives confidence without a grand speech.",
+                "ops": [
+                  { "op": "bond_change", "npcId": "haven_bowy", "field": "confidence", "amount": 1 },
+                  { "op": "story_thread_status", "threadId": "bowy_thunder_identity", "status": "seeded", "note": "Bowy has started defining Thunder for himself." }
+                ]
+              }
+            }
           ],
           "battleSetIds": ["haven_bset_wolf_pack_bent_pine"],
           "mapSeedIds": ["haven_mseed_frozen_creek_trail"],
@@ -238,23 +700,97 @@
           "id": "haven_qchain_three_silver_discount",
           "title": "Three Silver and a Funeral Discount",
           "canonRisk": "green",
-          "type": "rival comedy -> small jobs -> social reward",
-          "tags": ["brinna_twins", "debt", "comedy", "town"],
-          "contextTags": ["town", "rival", "comedy", "arbitration"],
+          "type": "side story: rival comedy -> receipt route -> ledger puzzle -> public arbitration -> recurring friendly rivals",
+          "flowSummary": "A low-stakes Brinna Twins comedy chain that can recur between heavier chapters and keeps Frostbitten socially alive.",
+          "tags": ["brinna_twins", "debt", "comedy", "town", "side_story"],
+          "contextTags": ["town", "rival", "comedy", "arbitration", "receipt"],
           "mapType": "urban",
           "mapSetting": "urban",
           "mapForm": "node_map",
+          "mapSize": "tiny",
           "monsterTags": ["sparring", "rival"],
-          "mainNpcs": ["brinna_twins", "lysa", "corvin"],
+          "mainNpcs": ["brinna_twins", "lysa", "corvin", "frosted_mug_cook"],
           "summary": "The Brinna Twins claim Bin's old three-silver debt accrued emotional interest while he was missing.",
+          "phasePlan": [
+            { "id": "ts_open", "chapterLabel": "TS-01", "phaseType": "town_phase", "title": "Debt Claim", "summary": "VN comedy opening." },
+            { "id": "ts_route", "chapterLabel": "TS-02", "phaseType": "town_phase", "title": "Receipt Hunt", "summary": "Town node movement." },
+            { "id": "ts_puzzle", "chapterLabel": "TS-03", "phaseType": "town_phase", "title": "Ledger Math", "summary": "Mini-game sorting absurd interest." },
+            { "id": "ts_arbitration", "chapterLabel": "TS-04", "phaseType": "town_phase", "title": "Public Arbitration", "summary": "Event/social combat." },
+            { "id": "ts_close", "chapterLabel": "TS-05", "phaseType": "town_phase", "title": "Friendly Rivals", "summary": "Recurring comedy status." }
+          ],
           "steps": [
-            { "id": "debt_claim", "label": "Debt Claim", "text": "Hear the twins' itemized argument." },
-            { "id": "receipt_hunt", "label": "Receipt Hunt", "text": "Search town for proof of the original debt." },
-            { "id": "tiny_jobs", "label": "Tiny Jobs", "text": "Do one tiny helpful town task." },
+            {
+              "id": "debt_claim",
+              "kind": "visual_novel",
+              "chapterLabel": "TS-01",
+              "phaseType": "town_phase",
+              "label": "Debt Claim",
+              "text": "Ella and Nessa Brinna claim Bin owes three silver plus emotional interest, funeral-adjacent handling fees, and one apology with garnish.",
+              "vn": {
+                "sceneTitle": "The Invoice Has Feelings",
+                "prompt": "Write a quick Frosted Mug VN comedy scene where the Brinna Twins itemize an absurd three-silver debt and Bin negotiates badly.",
+                "beats": ["The twins produce an invoice", "Bin cannot remember the original debt", "The Mug takes sides based on snack access", "Lysa offers arbitration because she wants to watch"]
+              },
+              "character": { "npcId": "brinna_twins", "beat": "The twins become recurring friendly rivals instead of one-off gag NPCs." }
+            },
+            {
+              "id": "receipt_hunt",
+              "kind": "map_movement",
+              "chapterLabel": "TS-02",
+              "phaseType": "town_phase",
+              "label": "Receipt Hunt",
+              "text": "Move through town to search the Mug cellar, guild counter, and gate lost-and-found for the original receipt.",
+              "map": {
+                "movement": "node_map",
+                "objective": "Visit three town nodes and pick which witness gets to define the original debt.",
+                "nodes": ["loc_frosted_mug", "loc_adventurers_guild", "loc_south_gate"]
+              },
+              "event": {
+                "id": "haven_evt_receipt_witnesses",
+                "prompt": "Each witness remembers the debt differently and with suspicious confidence."
+              }
+            },
+            {
+              "id": "ledger_math_minigame",
+              "kind": "minigame",
+              "chapterLabel": "TS-03",
+              "phaseType": "town_phase",
+              "label": "Ledger Math",
+              "text": "Sort coin slips, apology slips, and fake emotional-interest notes before Corvin declares the math cursed.",
+              "minigame": {
+                "gameId": "push_box",
+                "levelId": "three_silver_ledger_math",
+                "difficulty": 1,
+                "theme": "tavern",
+                "objective": "Push real receipts into one pile and fake emotional-interest claims into another."
+              },
+              "winOps": [
+                { "op": "log", "text": "The three-silver ledger is sorted with only minor dignity loss." }
+              ],
+              "failOps": [
+                { "op": "story_metric_change", "metric": "guild_noise", "amount": 1, "max": 12 },
+                { "op": "log", "text": "The ledger math creates a stronger rumor than the debt deserved." }
+              ]
+            },
             {
               "id": "public_arbitration",
+              "kind": "event",
+              "chapterLabel": "TS-04",
+              "phaseType": "town_phase",
               "label": "Public Arbitration",
-              "text": "Let Lysa or Corvin arbitrate the absurd interest.",
+              "text": "Let Lysa or Corvin arbitrate the absurd interest. Resolve as social combat, roasting, or sincere payment.",
+              "event": {
+                "id": "haven_evt_three_silver_arbitration",
+                "prompt": "Public arbitration where the crowd reacts like this is a championship match.",
+                "ops": [
+                  { "op": "bond_change", "npcId": "brinna_twins", "field": "friendship", "amount": 1 }
+                ]
+              },
+              "combat": {
+                "battleSetId": "haven_bset_guild_sparring_dain",
+                "rank": "F",
+                "objective": "Optional nonlethal spar if Dain tries to sponsor the twins' argument."
+              },
               "progressTriggers": [
                 {
                   "id": "self_deprecating_arbitration",
@@ -264,7 +800,21 @@
                 }
               ]
             },
-            { "id": "friendly_rivals", "label": "Friendly Rivals", "text": "Turn the debt into a recurring friendly rivalry." }
+            {
+              "id": "friendly_rivals",
+              "kind": "event",
+              "chapterLabel": "TS-05",
+              "phaseType": "town_phase",
+              "label": "Friendly Rivals",
+              "text": "The debt becomes a recurring friendly rivalry: three silver, payable in coin, errands, snacks, or future embarrassment.",
+              "event": {
+                "id": "haven_evt_three_silver_resolved",
+                "prompt": "Wrap the chain by turning the Brinna debt into a running joke that can reappear between serious chapters.",
+                "ops": [
+                  { "op": "story_thread_status", "threadId": "haven_qchain_three_silver_discount", "status": "recurring_comedy", "note": "Use between heavy scenes as a pressure valve." }
+                ]
+              }
+            }
           ],
           "rewardOps": [
             { "op": "give_jp", "amount": 1 },

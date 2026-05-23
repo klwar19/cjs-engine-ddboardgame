@@ -1,0 +1,64 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "neo_starcraft",
+    "status": "planned"
+  },
+  "world": "neo_starcraft",
+  "displayName": "Sectors",
+  "purpose": "Compact future-planning map for tactical operations, squad logistics, alien pressure, and command decisions.",
+  "readOrder": {
+    "skim": ["data/worlds/neo_starcraft/story_context/index.json", "data/worlds/neo_starcraft/story_summary.md", "data/worlds/neo_starcraft/_meta.json"],
+    "openWhenWriting": ["Add travel map, battle/director pack, and squad consequence model before playable content."]
+  },
+  "summaryTiers": {
+    "always": "Sectors is reserved for later rank-A tactical pressure with faction-scale choices.",
+    "previousArcCarryForward": "Enter only when the party has enough history for command decisions to hurt and matter.",
+    "avoidReadingFullArcUnless": "No active arc files exist yet."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["duty", "resolve", "mercy"],
+    "relationships": ["squad trust", "command reputation", "civilian faith"],
+    "stats": ["C for command timing and pressure calls"],
+    "worldPressure": ["supply strain", "mission risk", "collateral risk"]
+  },
+  "arcs": [
+    {
+      "id": "neo_starcraft_arc0_deployment",
+      "title": "First Deployment",
+      "status": "planned",
+      "chapters": ["N-00"],
+      "previousArcCarryover": "Use earlier worlds' trust and resource habits to shape how Bin handles command pressure.",
+      "arcSummary": "Planned first tactical deployment where squad safety, mission success, and civilian cost cannot all be maximized.",
+      "currentDevelopmentTarget": "Build squad roster, mission map, and consequence gates before scenes.",
+      "potentialChoicePoints": [
+        {
+          "id": "mission_priority",
+          "where": "first deployment",
+          "potentialAxes": { "duty": 1, "resolve": 1, "mercy": 1 },
+          "futureUse": "Prioritize civilians, squad safety, or objective speed for different branch unlocks."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "briefing_pressure",
+          "fitsAfter": ["rank-A unlock"],
+          "summary": "Briefing, squad doubts, supply warnings, and command tension.",
+          "goodTrackers": ["duty", "squad trust"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "mission_setup",
+          "fitsChapters": ["N-00"],
+          "questIds": ["first_deployment_map", "squad_supply_check"],
+          "summary": "Setup tasks only until tactical files exist."
+        }
+      ],
+      "readFiles": ["data/worlds/neo_starcraft/_meta.json"],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": ["Add active tactical files before marking this world playable."]
+}

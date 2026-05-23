@@ -1,0 +1,81 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-ai-story-context-index",
+    "scope": "all_worlds",
+    "status": "active"
+  },
+  "purpose": "Low-token story planning index for AI-authored story, event, and quest work. Read this before world-specific context so future drafts know which summary files to open and what to update after delivery.",
+  "readOrder": [
+    "data/worlds/_ai_story_context_index.json",
+    "data/worlds/_all_world_story_flow_summary.md",
+    "data/worlds/<world>/story_context/index.json",
+    "data/worlds/<world>/story_summary.md only when a fuller prose recap is needed",
+    "Exact sequence, quest, event, travel map, or activity file only for the slice being authored"
+  ],
+  "tokenBudget": {
+    "fastDraft": "Use the global index, current world story_context/index.json, and live save overlay only.",
+    "branchDraft": "Also open the arc's listed sequence index or quest chain file.",
+    "implementationDraft": "Open exact target files after choosing the arc, chapter, event bucket, or quest bucket."
+  },
+  "authoringContract": {
+    "beforeDrafting": [
+      "Pick one world, one arc, and one content type: main story, event, quest, or hub update.",
+      "Check live GM notes and runtime branches first; they are newer than static files.",
+      "Check current and potential consequence points: alignment, world alignment, relationship, reputation, heat, debt, noise, infection, or route flags.",
+      "Do not spend tokens reading full old arcs unless the current arc explicitly depends on exact dialogue or node operations."
+    ],
+    "afterDrafting": [
+      "Return a story_context_update JSON block in notes_for_integrator.",
+      "Summarize the new story or event in one to three short sentences.",
+      "Add or update eventSuitability and questSuitability entries for the affected arc only.",
+      "Add previousArcCarryover only when an arc closes or a new arc opens.",
+      "List new consequence gates and potential points so future AI can see reachable branches without replaying the whole chapter."
+    ],
+    "conflictRules": [
+      "Live GM overlay from the current save overrides static markdown and JSON.",
+      "story_context/index.json is the compact planning truth; story_summary.md is prose support.",
+      "Never erase protected truths or late reveals because a draft needs momentum. Mark them parked, yellow-risk, or red-risk instead.",
+      "If a branch is not ready, mark deliveryStatus as in_update and explain the blocker."
+    ]
+  },
+  "sharedConsequenceModel": {
+    "choiceAxes": [
+      { "id": "mercy", "use": "care, restraint, recovery, sparing, comfort choices" },
+      { "id": "resolve", "use": "decisive action, danger acceptance, pressure handling" },
+      { "id": "wit", "use": "jokes, clever redirects, trick solutions, social improvisation" },
+      { "id": "duty", "use": "public responsibility, promises, family obligations, faction trust" }
+    ],
+    "branchGates": [
+      "conditions.alignmentMin",
+      "conditions.alignmentMax",
+      "conditions.worldAlignmentMin",
+      "conditions.potentialAlignmentMin",
+      "requiresFlags",
+      "requiresStoryParts",
+      "relationship threshold",
+      "world pressure threshold"
+    ],
+    "recommendedDeltaScale": "Use -1, 0, or +1 for most choices. Use +2 or -2 only for visible, memorable decisions.",
+    "additionalTrackers": [
+      "Earth Heat",
+      "Bazaar Renown",
+      "Bazaar Debt",
+      "Zombie Noise",
+      "Zombie Infection Pressure",
+      "Haven hub reputation",
+      "NPC relationship trust, bond, confidence, suspicion, and friendship"
+    ]
+  },
+  "worlds": [
+    { "id": "haven", "status": "active", "contextFile": "data/worlds/haven/story_context/index.json", "summaryFile": "data/worlds/haven/story_summary.md" },
+    { "id": "earth", "status": "active", "contextFile": "data/worlds/earth/story_context/index.json", "summaryFile": "data/worlds/earth/story_summary.md" },
+    { "id": "zombie", "status": "active", "contextFile": "data/worlds/zombie/story_context/index.json", "summaryFile": "data/worlds/zombie/story_summary.md" },
+    { "id": "bazaar", "status": "active", "contextFile": "data/worlds/bazaar/story_context/index.json", "summaryFile": "data/worlds/bazaar/story_summary.md" },
+    { "id": "cyberpunk", "status": "planned", "contextFile": "data/worlds/cyberpunk/story_context/index.json", "summaryFile": "data/worlds/cyberpunk/story_summary.md" },
+    { "id": "neo_starcraft", "status": "planned", "contextFile": "data/worlds/neo_starcraft/story_context/index.json", "summaryFile": "data/worlds/neo_starcraft/story_summary.md" },
+    { "id": "wuxia_jianghu", "status": "planned", "contextFile": "data/worlds/wuxia_jianghu/story_context/index.json", "summaryFile": "data/worlds/wuxia_jianghu/story_summary.md" },
+    { "id": "wuxia_immortal", "status": "planned", "contextFile": "data/worlds/wuxia_immortal/story_context/index.json", "summaryFile": "data/worlds/wuxia_immortal/story_summary.md" },
+    { "id": "fantasy_eldenring", "status": "planned", "contextFile": "data/worlds/fantasy_eldenring/story_context/index.json", "summaryFile": "data/worlds/fantasy_eldenring/story_summary.md" }
+  ]
+}

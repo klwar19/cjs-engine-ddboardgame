@@ -373,6 +373,93 @@ input::placeholder { color: var(--text-mute); }
 .effect-chip .chip-desc { font-size: 0.82rem; color: var(--text-dim); flex: 1; }
 .effect-chip .chip-actions { display: flex; gap: 4px; }
 
+/* Monster AI rule builder */
+.monster-ai-builder {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 10px;
+}
+.monster-ai-summary {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+.monster-ai-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.monster-ai-rule-card {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.monster-ai-rule-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(168, 85, 247, 0.16);
+  color: var(--accent);
+  font-weight: 700;
+}
+.monster-ai-rule-main { min-width: 0; }
+.monster-ai-rule-fields { gap: 8px; }
+.monster-ai-rule-fields .form-group { margin-bottom: 6px; }
+.monster-ai-rule-help,
+.monster-ai-preview,
+.monster-ai-empty {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+.monster-ai-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.monster-ai-preview span {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+.monster-ai-rule-controls {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.monster-ai-rule-controls .btn-icon {
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+.monster-ai-rule-controls .btn-icon.danger { color: var(--red); }
+.monster-ai-rule-controls .btn-icon[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+@media (max-width: 900px) {
+  .monster-ai-rule-card {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+  .monster-ai-rule-controls {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
 /* ── GRID (encounter editor) ──────────────────────────────── */
 .grid-container { display: inline-block; border: 1px solid var(--border); border-radius: var(--radius); }
 .grid-row { display: flex; }

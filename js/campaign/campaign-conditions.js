@@ -35,6 +35,7 @@ window.CJS.CampaignConditions = (() => {
     const activeTags = new Set([
       ...Array.from(Tags()?.tagSet?.(state) || []),
       ...personaTags(state),
+      ...(window.CJS.CampaignAlignment?.tagsForState?.(state) || []),
       ...asArray(context.tags),
       ...asArray(context.contextTags)
     ].map(cleanTag).filter(Boolean));
@@ -121,6 +122,13 @@ window.CJS.CampaignConditions = (() => {
 
     for (const [metric, min] of Object.entries(cond.metricMin || {})) {
       if (Number(state.storyDirector?.metrics?.[metric] || 0) < Number(min)) blockers.push(`Needs metric ${metric} ${min}.`);
+    }
+
+    const alignmentResult = window.CJS.CampaignAlignment?.evaluateConditions?.(cond, state, context);
+    if (alignmentResult) {
+      blockers.push(...(alignmentResult.blockers || []));
+      reasons.push(...(alignmentResult.reasons || []));
+      score += alignmentResult.score || 0;
     }
 
     for (const id of asArray(cond.requiresMilestones || cond.requiresCrossMilestones)) {

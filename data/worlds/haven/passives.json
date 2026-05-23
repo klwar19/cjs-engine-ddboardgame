@@ -317,7 +317,7 @@
     {
       "id": "haven_iron_hide",
       "name": "Iron Hide",
-      "icon": "🐗",
+      "icon": "assets/icons/bowy/haven_iron_hide.png",
       "tags": [
         "bowy",
         "defense",
@@ -393,7 +393,7 @@
     {
       "id": "haven_marksmans_eye",
       "name": "Marksman's Eye",
-      "icon": "🎯",
+      "icon": "assets/icons/bowy/haven_marksmans_eye.png",
       "tags": [
         "bowy",
         "accuracy",

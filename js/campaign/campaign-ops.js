@@ -11,6 +11,7 @@ window.CJS.CampaignOps = (() => {
   const DS = () => window.CJS.DataStore;
   const Tags = () => window.CJS.CampaignTags;
   const QuestPulse = () => window.CJS.CampaignQuestPulse;
+  const Align = () => window.CJS.CampaignAlignment;
 
   const INVENTORY_BUCKETS = {
     give_item: 'items',
@@ -83,6 +84,10 @@ window.CJS.CampaignOps = (() => {
         case 'story_fact_reveal': return `Reveal story fact ${op.title || op.factId || op.id || ''}`;
         case 'story_thread_status': return `Story thread ${op.threadId || op.id} -> ${op.status || 'active'}`;
         case 'story_metric_change': return `Story ${op.metric || op.id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}`;
+        case 'alignment_change':
+        case 'karma_change': return `Alignment ${Align()?.describeDeltas?.(op.alignment ?? op.karma ?? op.deltas ?? op.delta ?? { [op.axis || op.id]: op.amount ?? op.value ?? op.delta }) || ''}`;
+        case 'choice_consequence_record': return `Record choice consequence ${op.label || op.choiceLabel || op.choiceId || ''}`;
+        case 'alignment_potential_add': return `Potential alignment ${Align()?.describeDeltas?.(op.alignment ?? op.karma ?? op.potential ?? op.deltas ?? { [op.axis || op.id]: op.amount ?? op.value ?? op.delta }) || ''}`;
         case 'world_progress_set': return `World progress ${op.world || 'current'} ${op.key || op.field || ''}`;
         case 'travel_location': return `Travel to ${op.title || op.locationId || op.nodeId || 'location'}`;
         case 'cross_milestone_set': return `Milestone ${op.id || op.milestoneId || ''}`;
@@ -138,6 +143,10 @@ window.CJS.CampaignOps = (() => {
 
     switch (op.op) {
       case 'log': return _log(state, op.text || '', op);
+      case 'alignment_change':
+      case 'karma_change': return _alignmentChange(state, op);
+      case 'choice_consequence_record': return _choiceConsequenceRecord(state, op);
+      case 'alignment_potential_add': return _alignmentPotentialAdd(state, op);
       case 'set_flag': return _setFlag(state, op.flag || op.id, true, op.value);
       case 'clear_flag': return _setFlag(state, op.flag || op.id, false);
       case 'goto_node': return _gotoNode(state, op.nodeId || op.to);
@@ -354,6 +363,24 @@ window.CJS.CampaignOps = (() => {
       op: op.op || 'log'
     });
     state.log = state.log.slice(0, 500);
+  }
+
+  function _alignmentChange(state, op = {}) {
+    const entry = Align()?.applyChange?.(state, op);
+    if (entry) _log(state, `Alignment shifted: ${entry.label || Align()?.describeDeltas?.(entry.deltas) || 'choice consequence'}.`, op);
+  }
+
+  function _choiceConsequenceRecord(state, op = {}) {
+    const entry = Align()?.recordChoice?.(state, op);
+    if (entry) {
+      const details = Align()?.describeDeltas?.(entry.deltas);
+      _log(state, `Choice tracked: ${entry.label || entry.choiceId || 'choice'}${details ? ` (${details})` : ''}.`, op);
+    }
+  }
+
+  function _alignmentPotentialAdd(state, op = {}) {
+    const entry = Align()?.addPotential?.(state, op);
+    if (entry) _log(state, `Future alignment noted: ${entry.label || Align()?.describeDeltas?.(entry.deltas) || 'potential path'}.`, op);
   }
 
   function _eventLogAdd(state, op = {}) {

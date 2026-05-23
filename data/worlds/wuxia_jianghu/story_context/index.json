@@ -1,0 +1,64 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "wuxia_jianghu",
+    "status": "planned"
+  },
+  "world": "wuxia_jianghu",
+  "displayName": "Jianghu",
+  "purpose": "Compact future-planning map for grounded martial routes, sect reputation, duels, medicine, and face-saving comedy.",
+  "readOrder": {
+    "skim": ["data/worlds/wuxia_jianghu/story_context/index.json", "data/worlds/wuxia_jianghu/story_summary.md", "data/worlds/wuxia_jianghu/_meta.json"],
+    "openWhenWriting": ["Add travel map, sect contacts, and duel/medicine activities before playable content."]
+  },
+  "summaryTiers": {
+    "always": "Jianghu should be human-scale martial drama before Immortal Realms raises the ceiling.",
+    "previousArcCarryForward": "Use Haven warmth and Earth responsibility as contrast for reputation and face-saving choices.",
+    "avoidReadingFullArcUnless": "No active arc files exist yet."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["duty", "mercy", "wit", "resolve"],
+    "relationships": ["sect reputation", "master trust", "rival respect", "doctor trust"],
+    "stats": ["C for courtesy, timing, and duel composure"],
+    "worldPressure": ["face debt", "sect obligation", "medicine scarcity"]
+  },
+  "arcs": [
+    {
+      "id": "wuxia_jianghu_arc0_first_sect_road",
+      "title": "First Sect Road",
+      "status": "planned",
+      "chapters": ["J-00"],
+      "previousArcCarryover": "Bin's public habits from Haven and Earth should shape how sect NPCs read his courtesy and restraint.",
+      "arcSummary": "Planned grounded martial entry: road encounter, sect gate etiquette, first duel, medicine favor, and a small reputation debt.",
+      "currentDevelopmentTarget": "Build travel map and first sect contacts before playable scenes.",
+      "potentialChoicePoints": [
+        {
+          "id": "honor_or_practicality",
+          "where": "first sect gate",
+          "potentialAxes": { "duty": 1, "wit": 1, "mercy": 1 },
+          "futureUse": "Courtesy, clever humility, or blunt action can unlock different master/rival reactions."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "face_saving_comedy",
+          "fitsAfter": ["first sect contact"],
+          "summary": "Polite misunderstandings, tea etiquette, public apology that is also a duel setup.",
+          "goodTrackers": ["wit", "sect reputation"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "medicine_and_duel",
+          "fitsChapters": ["J-00"],
+          "questIds": ["roadside_medicine_favor", "first_duel_witnesses"],
+          "summary": "Small quests should establish reputation and care, not cosmic power."
+        }
+      ],
+      "readFiles": ["data/worlds/wuxia_jianghu/_meta.json"],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": ["Add sect files before marking this world playable."]
+}

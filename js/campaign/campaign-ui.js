@@ -97,6 +97,12 @@ window.CJS.CampaignUI = (() => {
   let _drawerBackdropEl = null;
   let _bootIncompatibleNotice = null;
   let _mgTestLevels = {};
+  const _storyContextCache = {
+    globalIndex: { status: 'idle', data: null, promise: null },
+    allWorld: { status: 'idle', text: '', promise: null },
+    worlds: {},
+    structuredWorlds: {}
+  };
 
   const MODES = [
     ['town', 'Town', '🏠'],
@@ -281,6 +287,7 @@ window.CJS.CampaignUI = (() => {
         Save().saveCurrent();
       }
       await window.CJS.CampaignSequences?.loadWorld?.(CS().getState()?.currentWorld || 'haven');
+      await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
       _bindEvents();
       _bindEscapeForPanels();
       _bindCombatResultListener();
@@ -288,6 +295,7 @@ window.CJS.CampaignUI = (() => {
       window.CJS.CampaignObjectiveBanner?.init?.();
       CS().subscribe(() => {
         Save().saveCurrent();
+        _ensureStoryContext(CS().getState()?.currentWorld || 'haven').catch(() => {});
         render();
       });
       _booted = true;
@@ -303,6 +311,7 @@ window.CJS.CampaignUI = (() => {
     if (!_root || !CS().getState()) return;
     const state = CS().getState();
     const campaign = CS().getCurrentCampaign();
+    _ensureStoryContext(state.currentWorld || 'haven').catch(() => {});
     _normalizeActiveWorldUi(state);
 
     const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
@@ -1317,7 +1326,8 @@ window.CJS.CampaignUI = (() => {
         : 'Start a story file when you are ready. Starting ahead should be treated as revealing earlier parts with the default path.',
       actions: [
         _actionBtn({ action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' }),
-        _actionBtn({ action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' })
+        _actionBtn({ action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' }),
+        _actionBtn({ action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' })
       ]
     };
 
@@ -1326,6 +1336,8 @@ window.CJS.CampaignUI = (() => {
         ${_renderStoryVnHero({ state, pack, stage, next, theme })}
         ${_renderActiveSequence(state, ['story'])}
         ${_renderChapterTreePanel(state)}
+        ${_renderChoiceConsequencePanel(state)}
+        ${_renderAiStoryContextPanel(state)}
         ${_renderSequenceShelf('story', {
           wide: true,
           title: 'Chapter Files',
@@ -1342,6 +1354,7 @@ window.CJS.CampaignUI = (() => {
           <div class="campaign-home-actions">
             ${_actionBtn({ action: 'story-manual-note', label: 'Add Manual Scene', hint: 'Add story text to the summary without a VN scene', kind: 'manual' })}
             ${_actionBtn({ action: 'open-story-summary', label: 'Open Summary', hint: 'Read completed parts, facts, and manual notes', kind: 'primary story' })}
+            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Includes static story summary files plus GM-added save notes and runtime branches', kind: 'manual' })}
             ${_actionBtn({ action: 'open-maps-tab', label: activeRun ? 'Continue Map' : 'Current Map', hint: activeRun ? 'Return to the active map' : 'No active map run yet' })}
           </div>
         </section>
@@ -1368,6 +1381,58 @@ window.CJS.CampaignUI = (() => {
         ${_renderPendingBattle(state)}
         ${_renderCombatResult(state)}
       </div>
+    `;
+  }
+
+  function _renderChoiceConsequencePanel(state) {
+    const Align = window.CJS.CampaignAlignment;
+    if (!Align?.snapshot) return '';
+    const snap = Align.snapshot(state, { actor: 'bin', world: state.currentWorld });
+    const axes = Object.entries(Align.AXES || {});
+    const axisCards = axes.map(([axis, meta]) => {
+      const current = Number(snap.axes?.[axis] || 0);
+      const world = Number(snap.worldAxes?.[axis] || 0);
+      const range = snap.range?.[axis] || { min: current, max: current };
+      return `
+        <div class="campaign-alignment-axis">
+          <span>${_esc(meta.label || axis)}</span>
+          <strong>${current >= 0 ? '+' : ''}${current}</strong>
+          <small>Here ${world >= 0 ? '+' : ''}${world} | possible ${range.min >= 0 ? '+' : ''}${range.min}..${range.max >= 0 ? '+' : ''}${range.max}</small>
+        </div>
+      `;
+    }).join('');
+    const recent = (snap.recent || []).slice(0, 3).map((entry) => `
+      <div class="campaign-alignment-line">
+        <strong>${_esc(entry.label || entry.choiceId || 'Choice')}</strong>
+        <span>${_esc(Align.describeDeltas?.(entry.deltas) || 'Tracked')}</span>
+      </div>
+    `).join('');
+    const potentials = (snap.potential || []).slice(0, 4).map((entry) => `
+      <span class="campaign-chip ${entry.reachable === false ? '' : 'is-route'}" title="${_escAttr(entry.summary || entry.sequenceId || '')}">
+        ${_esc(entry.label || entry.choiceId || 'Future')} ${_esc(Align.describeDeltas?.(entry.deltas) || '')}
+      </span>
+    `).join('');
+    return `
+      <section class="campaign-panel campaign-wide-panel campaign-alignment-panel">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>Choice Consequences</h2>
+            <div class="campaign-muted">Bin's soft leanings for dialogue gates, NPC reactions, quest unlocks, and future branches.</div>
+          </div>
+          <span class="campaign-pill">${(snap.potential || []).length} possible points</span>
+        </div>
+        <div class="campaign-alignment-grid">${axisCards}</div>
+        <div class="campaign-alignment-bottom">
+          <div>
+            <strong>Recent</strong>
+            ${recent || '<div class="campaign-muted">No consequence choices recorded yet.</div>'}
+          </div>
+          <div>
+            <strong>Future Checks</strong>
+            <div class="campaign-chip-row">${potentials || '<span class="campaign-muted">No authored potential points visible yet.</span>'}</div>
+          </div>
+        </div>
+      </section>
     `;
   }
 
@@ -2067,17 +2132,33 @@ window.CJS.CampaignUI = (() => {
     const speaker = node.speaker ? `<span class="campaign-story-speaker">${_esc(node.speaker)}</span>` : '';
     const text = node.text || node.prompt || node.summary || node.title || '';
     if (type === 'choice') {
+      const state = CS().getState() || {};
+      const Seq = window.CJS.CampaignSequences;
+      const choiceButtons = (node.choices || []).map((choice) => {
+        const eligibility = Seq?.choiceEligibility?.(choice, node, state, { active }) || { ok: true, blockers: [], hidden: false };
+        if (eligibility.hidden) return '';
+        const locked = !eligibility.ok;
+        const alignmentHint = window.CJS.CampaignAlignment?.describeDeltas?.(
+          choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta
+        );
+        const hint = locked
+          ? (eligibility.blockers || []).join(' | ')
+          : (choice.summary || alignmentHint || choice.next || '');
+        return _actionBtn({
+          action: 'sequence-choice',
+          label: choice.label || choice.id,
+          hint,
+          kind: locked ? 'is-locked' : '',
+          disabled: locked,
+          data: { choice: choice.id }
+        });
+      }).join('');
       return `
         <div class="campaign-story-dialogue-box">
           ${speaker}
           <p>${_esc(text || 'Choose a path.')}</p>
           <div class="campaign-action-grid">
-            ${(node.choices || []).map((choice) => _actionBtn({
-              action: 'sequence-choice',
-              label: choice.label || choice.id,
-              hint: choice.summary || choice.next || '',
-              data: { choice: choice.id }
-            })).join('')}
+            ${choiceButtons || '<div class="campaign-muted">No available choices right now.</div>'}
           </div>
         </div>
       `;
@@ -3330,7 +3411,7 @@ window.CJS.CampaignUI = (() => {
         <div>
           <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
           <div class="campaign-muted">${_esc(chain.status)} | Step ${currentIndex + 1}/${steps.length || 1}: ${_esc(step?.label || chain.currentStepId || '-')}</div>
-          <div class="campaign-muted">${_esc(step?.text || '')}</div>
+          ${_renderQuestChainStepDetail(step)}
           ${_renderContextTags([...(template.tags || []), ...(template.contextTags || []), ...(template.monsterTags || [])])}
           ${_renderObjectivePulseHint(step)}
           ${_renderQuestChainVnPanel(chain, { active: true })}
@@ -3370,7 +3451,7 @@ window.CJS.CampaignUI = (() => {
         ${_renderQuestChainVnPanel(chain)}
         <div class="campaign-chip-row">${(chain.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>
         ${_renderChainStakes(chain)}
-        ${(chain.steps || []).map((step) => `<div class="campaign-step"><b>${_esc(step.label || step.id)}</b><span>${_esc(step.text || '')}</span>${_renderObjectivePulseHint(step)}</div>`).join('')}
+        ${(chain.steps || []).map((step, index) => _renderQuestChainStepCard(step, index)).join('')}
         <div class="campaign-action-grid">
           <button class="campaign-action primary" data-campaign-action="start-chain" data-id="${_escAttr(chain.id)}">Start Quest Run</button>
           <button class="campaign-action" data-campaign-action="save-chain" data-id="${_escAttr(chain.id)}">Save Idea</button>
@@ -3382,13 +3463,60 @@ window.CJS.CampaignUI = (() => {
 
   function _renderSideStoryFlowGuide(chain = {}) {
     if (!chain) return '';
+    const phases = (chain.phasePlan || []).slice(0, 4).map((phase) => `${phase.chapterLabel || phase.id || ''} ${phase.title || phase.phaseType || ''}`.trim()).filter(Boolean);
     return `
       <div class="campaign-side-story-guide">
         <span class="campaign-impact-badge is-plot">Side Story VN</span>
         <strong>${_esc(chain.title || chain.name || 'Side Story')}</strong>
-        <span>${_esc(chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.')}</span>
+        <span>${_esc(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.')}</span>
+        ${phases.length ? `<span>${_esc(phases.join(' -> '))}</span>` : ''}
       </div>
     `;
+  }
+
+  function _renderQuestChainStepCard(step = {}, index = 0) {
+    return `
+      <div class="campaign-step">
+        <b>${index + 1}. ${_esc(step.label || step.id)}</b>
+        ${_renderQuestChainStepDetail(step)}
+        ${_renderObjectivePulseHint(step)}
+      </div>
+    `;
+  }
+
+  function _renderQuestChainStepDetail(step = {}) {
+    if (!step) return '';
+    const systems = _questChainStepSystems(step);
+    const meta = [
+      step.chapterLabel ? `Chapter ${step.chapterLabel}` : '',
+      step.phaseType ? _label(step.phaseType) : '',
+      step.kind ? _label(step.kind) : ''
+    ].filter(Boolean);
+    const detail = [
+      step.vn?.prompt || step.visualNovel?.prompt,
+      step.character?.beat,
+      step.event?.prompt,
+      step.map?.objective,
+      step.combat?.objective,
+      step.minigame?.objective
+    ].filter(Boolean);
+    return `
+      ${meta.length ? `<div class="campaign-muted">${_esc(meta.join(' | '))}</div>` : ''}
+      ${step.text ? `<span>${_esc(step.text)}</span>` : ''}
+      ${systems.length ? `<div class="campaign-chip-row">${systems.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>` : ''}
+      ${detail.length ? `<div class="campaign-muted">${_esc(detail.slice(0, 2).join(' | '))}</div>` : ''}
+    `;
+  }
+
+  function _questChainStepSystems(step = {}) {
+    const systems = [];
+    if (step.vn || step.visualNovel) systems.push('VN');
+    if (step.character) systems.push('Character');
+    if (step.event) systems.push('Event');
+    if (step.map) systems.push('Map');
+    if (step.combat) systems.push('Combat');
+    if (step.minigame) systems.push('Mini-Game');
+    return systems;
   }
 
   function _renderQuestChainVnPanel(chain = {}, options = {}) {
@@ -3398,15 +3526,17 @@ window.CJS.CampaignUI = (() => {
     const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === currentId));
     const current = steps[currentIndex] || steps[0] || {};
     const npcs = (template.mainNpcs || []).slice(0, 4);
+    const systems = _questChainStepSystems(current);
     return `
       <div class="campaign-side-story-vn">
         <div class="campaign-side-story-scene">
           <span class="campaign-impact-badge is-plot">${options.active ? 'Current Scene' : 'Opening Scene'}</span>
           <strong>${_esc(current.label || template.title || template.id || 'Side Story')}</strong>
           <p>${_esc(current.text || template.summary || 'Pick a scene, run it as VN/table narration, then decide whether it becomes a map, battle, quest progress, or a parked lead.')}</p>
+          ${systems.length ? `<div class="campaign-chip-row">${systems.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>` : ''}
         </div>
         <div class="campaign-side-story-meta">
-          <span><b>Plot</b> ${_esc(template.type || 'side story')}</span>
+          <span><b>Plot</b> ${_esc(template.flowSummary || template.type || 'side story')}</span>
           <span><b>Characters</b> ${_esc(npcs.join(', ') || 'GM choice')}</span>
           <span><b>Control</b> Start map, battle manually, complete step, resolve, or fail.</span>
         </div>
@@ -5676,6 +5806,146 @@ window.CJS.CampaignUI = (() => {
     }
   }
 
+  async function _ensureStoryContext(world = 'haven') {
+    const worldId = world || 'haven';
+    const jobs = [];
+    if (_storyContextCache.globalIndex.status === 'idle') {
+      _storyContextCache.globalIndex.status = 'loading';
+      _storyContextCache.globalIndex.promise = _loadStoryContextJson('data/worlds/_ai_story_context_index.json')
+        .then((data) => {
+          _storyContextCache.globalIndex.data = data;
+          _storyContextCache.globalIndex.status = data ? 'loaded' : 'missing';
+        })
+        .catch((error) => {
+          console.warn('AI story context index unavailable:', error);
+          _storyContextCache.globalIndex.status = 'missing';
+        });
+    }
+    if (_storyContextCache.globalIndex.promise) jobs.push(_storyContextCache.globalIndex.promise);
+
+    if (_storyContextCache.allWorld.status === 'idle') {
+      _storyContextCache.allWorld.status = 'loading';
+      _storyContextCache.allWorld.promise = _loadStoryContextFile('data/worlds/_all_world_story_flow_summary.md')
+        .then((text) => {
+          _storyContextCache.allWorld.text = text;
+          _storyContextCache.allWorld.status = text ? 'loaded' : 'missing';
+        })
+        .catch((error) => {
+          console.warn('All-world story summary unavailable:', error);
+          _storyContextCache.allWorld.status = 'missing';
+        });
+    }
+    if (_storyContextCache.allWorld.promise) jobs.push(_storyContextCache.allWorld.promise);
+
+    const entry = _storyContextCache.worlds[worldId] = _storyContextCache.worlds[worldId] || { status: 'idle', text: '', promise: null };
+    if (entry.status === 'idle') {
+      entry.status = 'loading';
+      entry.promise = _loadStoryContextFile(`data/worlds/${worldId}/story_summary.md`)
+        .then((text) => {
+          entry.text = text;
+          entry.status = text ? 'loaded' : 'missing';
+          if (_root && CS().getState()?.currentWorld === worldId) setTimeout(render, 0);
+        })
+        .catch((error) => {
+          console.warn('World story summary unavailable:', worldId, error);
+          entry.status = 'missing';
+        });
+    }
+    if (entry.promise) jobs.push(entry.promise);
+
+    const structured = _storyContextCache.structuredWorlds[worldId] = _storyContextCache.structuredWorlds[worldId] || { status: 'idle', data: null, promise: null };
+    if (structured.status === 'idle') {
+      structured.status = 'loading';
+      structured.promise = _loadStoryContextJson(`data/worlds/${worldId}/story_context/index.json`)
+        .then((data) => {
+          structured.data = data;
+          structured.status = data ? 'loaded' : 'missing';
+          if (_root && CS().getState()?.currentWorld === worldId) setTimeout(render, 0);
+        })
+        .catch((error) => {
+          console.warn('World AI story context unavailable:', worldId, error);
+          structured.status = 'missing';
+        });
+    }
+    if (structured.promise) jobs.push(structured.promise);
+    await Promise.allSettled(jobs);
+    return _storyContextFor(worldId);
+  }
+
+  async function _loadStoryContextFile(path) {
+    if (typeof fetch !== 'function') return '';
+    const response = await fetch(path, { cache: 'no-store' });
+    if (!response.ok) return '';
+    return (await response.text()).trim();
+  }
+
+  async function _loadStoryContextJson(path) {
+    if (typeof fetch !== 'function') return null;
+    const response = await fetch(path, { cache: 'no-store' });
+    if (!response.ok) return null;
+    const text = (await response.text()).trim();
+    if (!text) return null;
+    return JSON.parse(text);
+  }
+
+  function _storyContextFor(world = 'haven') {
+    const worldId = world || 'haven';
+    const worldEntry = _storyContextCache.worlds[worldId] || { status: 'idle', text: '' };
+    const structuredEntry = _storyContextCache.structuredWorlds[worldId] || { status: 'idle', data: null };
+    return {
+      world: worldId,
+      indexPath: 'data/worlds/_ai_story_context_index.json',
+      allWorldPath: 'data/worlds/_all_world_story_flow_summary.md',
+      worldPath: `data/worlds/${worldId}/story_summary.md`,
+      structuredWorldPath: `data/worlds/${worldId}/story_context/index.json`,
+      indexStatus: _storyContextCache.globalIndex.status,
+      allWorldStatus: _storyContextCache.allWorld.status,
+      worldStatus: worldEntry.status,
+      structuredWorldStatus: structuredEntry.status,
+      indexData: _storyContextCache.globalIndex.data || null,
+      allWorldText: _storyContextCache.allWorld.text || '',
+      worldText: worldEntry.text || '',
+      structuredWorldData: structuredEntry.data || null
+    };
+  }
+
+  function _renderAiStoryContextPanel(state) {
+    const ctx = _storyContextFor(state.currentWorld || 'haven');
+    const manual = state.storyMode?.manualSummaryEntries || [];
+    const branches = window.CJS.CampaignStoryBranch?.getBranches?.(state.currentWorld) || state.storyMode?.manualBranches || [];
+    const loaded = [ctx.indexData ? 1 : 0, ctx.allWorldText ? 1 : 0, ctx.worldText ? 1 : 0, ctx.structuredWorldData ? 1 : 0].reduce((a, b) => a + b, 0);
+    const arcs = Array.isArray(ctx.structuredWorldData?.arcs) ? ctx.structuredWorldData.arcs : [];
+    return `
+      <section class="campaign-panel campaign-wide-panel campaign-ai-context-panel">
+        <div class="campaign-panel-head">
+          <div>
+            <h2>AI Story Context</h2>
+            <div class="campaign-muted">Copy GM Prompt merges static summaries, low-token arc context, live GM notes, runtime branches, and consequence trackers.</div>
+          </div>
+          <span class="campaign-pill">${loaded}/4 files</span>
+        </div>
+        <div class="campaign-ai-context-grid">
+          <div>
+            <strong>Static summaries</strong>
+            <div class="campaign-muted">${_esc(ctx.allWorldPath)} - ${_esc(_label(ctx.allWorldStatus))}</div>
+            <div class="campaign-muted">${_esc(ctx.worldPath)} - ${_esc(_label(ctx.worldStatus))}</div>
+          </div>
+          <div>
+            <strong>Arc/event/quest index</strong>
+            <div class="campaign-muted">${_esc(ctx.indexPath)} - ${_esc(_label(ctx.indexStatus))}</div>
+            <div class="campaign-muted">${_esc(ctx.structuredWorldPath)} - ${_esc(_label(ctx.structuredWorldStatus))}</div>
+            <div class="campaign-muted">${arcs.length} arc${arcs.length === 1 ? '' : 's'} with compact event, quest, branch, and consequence slots.</div>
+          </div>
+          <div>
+            <strong>Live overlay</strong>
+            <div class="campaign-muted">${manual.length} GM note${manual.length === 1 ? '' : 's'} and ${branches.length} manual branch${branches.length === 1 ? '' : 'es'} will be included after the markdown summary.</div>
+            <div class="campaign-muted">If live GM notes disagree with a static summary, the prompt tells AI to treat the GM notes as newer table truth.</div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   function _relationshipNarrativeModal(narrative = {}) {
     const body = document.createElement('div');
     body.className = 'campaign-relationship-narrative';
@@ -6965,6 +7235,9 @@ window.CJS.CampaignUI = (() => {
       if (result?.scenarioStarted) return UI().toast('Exploration run started from sequence', 'success');
       if (result?.queued) return UI().toast('Battle queued from sequence', 'success');
       if (result?.complete) return UI().toast('Sequence complete', 'success');
+      if (!result?.ok && result?.reason === 'choice_locked') {
+        return UI().toast((result.blockers || []).join(' | ') || 'That choice is locked by earlier consequences.', 'info');
+      }
       if (!result?.ok) return UI().toast('No active sequence node', 'info');
     } catch (error) {
       console.error(error);
@@ -7306,7 +7579,8 @@ window.CJS.CampaignUI = (() => {
     }, { source: 'story_manual_summary' });
   }
 
-  function _copyStoryPrompt() {
+  async function _copyStoryPrompt() {
+    await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
     const text = _storyPromptText();
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text)
@@ -7315,6 +7589,151 @@ window.CJS.CampaignUI = (() => {
       return;
     }
     _openCopyTextModal('Story Prompt', text);
+  }
+
+  function _storyContextPromptText(state = {}) {
+    const ctx = _storyContextFor(state.currentWorld || 'haven');
+    const allWorld = _markdownPromptExcerpt(ctx.allWorldText, 2200);
+    const world = _markdownPromptExcerpt(ctx.worldText, 3200);
+    const globalIndex = _storyContextIndexPromptText(ctx.indexData);
+    const structuredWorld = _worldStoryContextPromptText(ctx.structuredWorldData);
+    return [
+      'AI-readable story context files:',
+      `- ${ctx.indexPath} (${ctx.indexStatus})`,
+      `- ${ctx.allWorldPath} (${ctx.allWorldStatus})`,
+      `- ${ctx.worldPath} (${ctx.worldStatus})`,
+      `- ${ctx.structuredWorldPath} (${ctx.structuredWorldStatus})`,
+      '',
+      'How to use the context:',
+      '- First read the structured arc/event/quest context for the chosen world.',
+      '- Use full markdown summaries only when the compact context does not answer a story continuity question.',
+      '- After drafting a story, event, or quest, return a story_context_update block so the matching world story_context/index.json can be updated for future AI runs.',
+      '- Check possible consequence points, not just current points: alignment, world alignment, relationships, flags, world pressure, reputation, heat, debt, noise, infection, and route identity.',
+      '',
+      'Global AI story context index:',
+      globalIndex,
+      '',
+      `${_label(state.currentWorld || 'world')} compact arc/event/quest context:`,
+      structuredWorld,
+      '',
+      'All-world story flow summary:',
+      allWorld || '- Summary file not loaded or not present.',
+      '',
+      `${_label(state.currentWorld || 'world')} story summary:`,
+      world || '- Summary file not loaded or not present.'
+    ].join('\n');
+  }
+
+  function _storyContextIndexPromptText(data) {
+    if (!data) return '- Global AI story context index not loaded.';
+    const lines = [];
+    if (data.purpose) lines.push(`Purpose: ${_compactPromptLine(data.purpose, 500)}`);
+    if (Array.isArray(data.readOrder) && data.readOrder.length) {
+      lines.push('Read order:');
+      data.readOrder.slice(0, 7).forEach((item) => lines.push(`- ${_compactPromptLine(item, 240)}`));
+    }
+    const contract = data.authoringContract || {};
+    if (Array.isArray(contract.afterDrafting) && contract.afterDrafting.length) {
+      lines.push('After each AI delivery:');
+      contract.afterDrafting.slice(0, 7).forEach((item) => lines.push(`- ${_compactPromptLine(item, 260)}`));
+    }
+    const consequence = data.sharedConsequenceModel || {};
+    if (Array.isArray(consequence.choiceAxes) && consequence.choiceAxes.length) {
+      lines.push('Shared choice axes:');
+      consequence.choiceAxes.forEach((axis) => lines.push(`- ${axis.id}: ${_compactPromptLine(axis.use || '', 220)}`));
+    }
+    if (Array.isArray(consequence.additionalTrackers) && consequence.additionalTrackers.length) {
+      lines.push(`Other trackers to consider: ${consequence.additionalTrackers.slice(0, 12).join(', ')}`);
+    }
+    return lines.join('\n') || '- Global AI story context index is empty.';
+  }
+
+  function _worldStoryContextPromptText(data) {
+    if (!data) return '- World structured story context not loaded.';
+    const lines = [];
+    const title = data.displayName || data.world || 'World';
+    lines.push(`World: ${title}`);
+    if (data.purpose) lines.push(`Purpose: ${_compactPromptLine(data.purpose, 420)}`);
+    const tiers = data.summaryTiers || {};
+    if (tiers.always) lines.push(`Always remember: ${_compactPromptLine(tiers.always, 420)}`);
+    if (tiers.previousArcCarryForward) lines.push(`Carryover: ${_compactPromptLine(tiers.previousArcCarryForward, 520)}`);
+    const readFiles = [
+      ...(Array.isArray(data.readOrder?.skim) ? data.readOrder.skim : []),
+      ...(Array.isArray(data.readOrder?.openWhenWriting) ? data.readOrder.openWhenWriting : [])
+    ];
+    if (readFiles.length) {
+      lines.push('Read/develop from:');
+      readFiles.slice(0, 8).forEach((file) => lines.push(`- ${_compactPromptLine(file, 260)}`));
+    }
+    const inputs = data.consequenceInputs || {};
+    const trackers = [
+      ...(Array.isArray(inputs.alignmentAxes) ? [`axes=${inputs.alignmentAxes.join('/')}`] : []),
+      ...(Array.isArray(inputs.relationships) ? [`relationships=${inputs.relationships.slice(0, 8).join(', ')}`] : []),
+      ...(Array.isArray(inputs.worldPressure) ? [`worldPressure=${inputs.worldPressure.slice(0, 8).join(', ')}`] : [])
+    ];
+    if (trackers.length) lines.push(`Consequence inputs: ${trackers.join('; ')}`);
+    const arcs = Array.isArray(data.arcs) ? data.arcs.slice(0, 5) : [];
+    if (arcs.length) {
+      lines.push('Arc plan:');
+      arcs.forEach((arc) => {
+        lines.push(`- ${arc.id || arc.title} [${arc.status || 'draft'}]: ${_compactPromptLine(arc.arcSummary || '', 520)}`);
+        if (arc.previousArcCarryover) lines.push(`  Previous carryover: ${_compactPromptLine(arc.previousArcCarryover, 360)}`);
+        if (arc.currentDevelopmentTarget) lines.push(`  Develop next: ${_compactPromptLine(arc.currentDevelopmentTarget, 360)}`);
+        if (Array.isArray(arc.potentialChoicePoints) && arc.potentialChoicePoints.length) {
+          const points = arc.potentialChoicePoints.slice(0, 3).map((point) => {
+            const axes = point.potentialAxes ? ` axes=${Object.entries(point.potentialAxes).map(([key, value]) => `${key}${value}`).join('/')}` : '';
+            return `${point.id || point.where}${axes}: ${_compactPromptLine(point.futureUse || '', 220)}`;
+          }).join(' | ');
+          lines.push(`  Potential points: ${points}`);
+        }
+        if (Array.isArray(arc.eventSuitability) && arc.eventSuitability.length) {
+          const events = arc.eventSuitability.slice(0, 3).map((entry) => `${entry.bucket}: ${_compactPromptLine(entry.summary || '', 220)}`).join(' | ');
+          lines.push(`  Event fit: ${events}`);
+        }
+        if (Array.isArray(arc.questSuitability) && arc.questSuitability.length) {
+          const quests = arc.questSuitability.slice(0, 3).map((entry) => `${entry.bucket}: ${_compactPromptLine(entry.summary || '', 220)}`).join(' | ');
+          lines.push(`  Quest fit: ${quests}`);
+        }
+      });
+    }
+    if (Array.isArray(data.futureEditSlots) && data.futureEditSlots.length) {
+      lines.push('Future edit slots:');
+      data.futureEditSlots.slice(0, 5).forEach((slot) => lines.push(`- ${_compactPromptLine(slot, 260)}`));
+    }
+    return lines.join('\n') || '- World structured story context is empty.';
+  }
+
+  function _liveGmStoryPromptText(state = {}) {
+    const manual = Array.isArray(state.storyMode?.manualSummaryEntries)
+      ? state.storyMode.manualSummaryEntries
+      : [];
+    const branches = window.CJS.CampaignStoryBranch?.getBranches?.(state.currentWorld) || state.storyMode?.manualBranches || [];
+    const manualText = manual.length
+      ? manual.slice(0, 8).map((entry) => {
+        const meta = [
+          entry.branchLabel ? `branch ${entry.branchLabel}` : '',
+          entry.stageId ? `stage ${entry.stageId}` : '',
+          entry.at || ''
+        ].filter(Boolean).join(', ');
+        return `- ${entry.title || 'GM note'}${meta ? ` (${meta})` : ''}: ${_compactPromptLine(entry.text || '', 700)}`;
+      }).join('\n')
+      : '- No GM-added manual notes yet.';
+    const branchText = branches.length
+      ? branches.slice(0, 8).map((branch) => {
+        const parent = branch.parentLabel || branch.parentTitle || branch.parentSequenceId || 'parent chapter';
+        return `- ${branch.chapterLabel || branch.partLabel || branch.id}: ${branch.title || 'Manual branch'} from ${parent}. ${_compactPromptLine(branch.summary || branch.scene?.lines?.map((line) => line.text).join(' ') || '', 500)}`;
+      }).join('\n')
+      : '- No runtime manual branch chapters yet.';
+    return [
+      'Live GM-added story overlay from the current save:',
+      'These notes and branches are newer than static markdown. If they conflict, treat this live overlay as table truth unless the GM says otherwise.',
+      '',
+      'GM manual notes:',
+      manualText,
+      '',
+      'Runtime manual branch chapters:',
+      branchText
+    ].join('\n');
   }
 
   function _storyPromptText() {
@@ -7364,6 +7783,12 @@ window.CJS.CampaignUI = (() => {
     const lockedText = lockedHints.length
       ? lockedHints.map((node) => `- ${node.partLabel || node.partId || node.id}: ${(node.eligibility.reasons || []).join(' | ')}`).join('\n')
       : '- No locked branches with clear unlock hints.';
+    const alignmentText = window.CJS.CampaignAlignment?.formatForPrompt?.(state, {
+      actor: 'bin',
+      world: state.currentWorld
+    }) || 'Choice consequence tracker unavailable.';
+    const staticStoryContext = _storyContextPromptText(state);
+    const liveGmContext = _liveGmStoryPromptText(state);
     return [
       'CJS Story Mode GM Prompt',
       '',
@@ -7372,6 +7797,10 @@ window.CJS.CampaignUI = (() => {
       `Current stage: ${stage.name || stage.id || 'No stage'} - ${stage.summary || ''}`,
       `Party: ${party}`,
       `Chapter/phase: chapter ${_storyChapterText(state)}, phase ${state.phase?.number || 1} (${state.phase?.type || 'unknown'})`,
+      '',
+      staticStoryContext,
+      '',
+      liveGmContext,
       '',
       'Route taken so far:',
       `Path: ${routePath}`,
@@ -7382,6 +7811,8 @@ window.CJS.CampaignUI = (() => {
       '',
       'Locked branches (and what unlocks them):',
       lockedText,
+      '',
+      alignmentText,
       '',
       'Current beat:',
       last.title ? `${last.title}\n${last.prompt || last.text || last.summary || ''}` : 'No current beat rolled.',
@@ -7401,6 +7832,21 @@ window.CJS.CampaignUI = (() => {
       'Request:',
       'Continue the chapter that follows the route the player has taken. Respect the branch flags (e.g. gate vs tavern, hunt vs fortify vs compromise). When you write the next scene, begin with VN narration + dialogue + at least one stat/choice/QTE hook, then progress into either a map step or a battle that pops up directly in the player\'s face on contact. Resolve combat with consequences: losing should imply a penalty or retry, not a soft reset. Keep authored content concrete, no decorative filler, and end each scene with a clear next action or unlock signal.'
     ].join('\n');
+  }
+
+  function _markdownPromptExcerpt(text = '', maxChars = 2800) {
+    const clean = String(text || '').replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
+    if (!clean) return '';
+    if (clean.length <= maxChars) return clean;
+    const slice = clean.slice(0, maxChars);
+    const cut = Math.max(slice.lastIndexOf('\n## '), slice.lastIndexOf('\n- '), slice.lastIndexOf('\n'));
+    return `${slice.slice(0, cut > 900 ? cut : maxChars).trim()}\n...`;
+  }
+
+  function _compactPromptLine(text = '', maxChars = 600) {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (clean.length <= maxChars) return clean;
+    return `${clean.slice(0, maxChars - 3).trim()}...`;
   }
 
   function _openCopyTextModal(title, text) {

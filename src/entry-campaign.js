@@ -17,6 +17,7 @@ import "../js/campaign/farming-mode.js";
 import "../js/campaign/campaign-data-loader.js";
 import "../js/campaign/campaign-tags.js";
 import "../js/campaign/relationship-tiers.js";
+import "../js/campaign/campaign-alignment.js";
 import "../js/campaign/campaign-conditions.js";
 import "../js/campaign/campaign-quest-pulse.js";
 import "../js/campaign/campaign-ops.js";

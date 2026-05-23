@@ -1,0 +1,64 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "fantasy_eldenring",
+    "status": "planned"
+  },
+  "world": "fantasy_eldenring",
+  "displayName": "Sundered Lands",
+  "purpose": "Compact future-planning map for late-game dark fantasy pressure, oath fragments, boss routes, and costly victories.",
+  "readOrder": {
+    "skim": ["data/worlds/fantasy_eldenring/story_context/index.json", "data/worlds/fantasy_eldenring/story_summary.md", "data/worlds/fantasy_eldenring/_meta.json"],
+    "openWhenWriting": ["Wait for late-game director pack, map pack, boss pressure rules, and oath consequence notes."]
+  },
+  "summaryTiers": {
+    "always": "Sundered Lands is late-game pressure. It should feel earned, not like early filler.",
+    "previousArcCarryForward": "Use the party's accumulated bonds and promises as the reason bleak choices matter.",
+    "avoidReadingFullArcUnless": "No active arc files exist yet."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["resolve", "mercy", "duty"],
+    "relationships": ["party trust", "oath bearer trust", "ruined kingdom reputation"],
+    "stats": ["C for fear, vow pressure, and last-second saves"],
+    "worldPressure": ["oath burden", "boss corruption", "lost grace"]
+  },
+  "arcs": [
+    {
+      "id": "fantasy_eldenring_arc0_ash_road",
+      "title": "Ash Road",
+      "status": "planned",
+      "chapters": ["S-00"],
+      "previousArcCarryover": "Only open when earlier arcs have created promises worth testing.",
+      "arcSummary": "Planned late-game road through ruined vows, hard bosses, and victories that preserve something specific rather than everything.",
+      "currentDevelopmentTarget": "Keep parked until late-game stakes are earned.",
+      "potentialChoicePoints": [
+        {
+          "id": "save_person_or_oath",
+          "where": "first ash road crisis",
+          "potentialAxes": { "mercy": 1, "duty": 1, "resolve": 1 },
+          "futureUse": "Defines whether Bin protects a person, a promise, or the mission under loss pressure."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "late_omen",
+          "fitsAfter": ["late campaign"],
+          "summary": "Short foreshadowing only; no boss or ruin reveal early.",
+          "goodTrackers": ["oath burden"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "parked",
+          "fitsChapters": ["S-00"],
+          "questIds": ["ash_road_setup"],
+          "summary": "Do not author playable quests until late-game director files exist."
+        }
+      ],
+      "readFiles": ["data/worlds/fantasy_eldenring/_meta.json"],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": ["Add late-game maps, boss pressure, and oath rules before marking this world playable."]
+}

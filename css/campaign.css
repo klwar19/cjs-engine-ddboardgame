@@ -1472,6 +1472,80 @@ summary.campaign-roster-actions-title {
   gap: 8px;
 }
 
+.campaign-alignment-panel {
+  border-left: 4px solid var(--campaign-info);
+}
+
+.campaign-alignment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.campaign-alignment-axis {
+  display: grid;
+  gap: 4px;
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: rgba(10, 18, 20, 0.42);
+}
+
+.campaign-alignment-axis span,
+.campaign-alignment-line span {
+  color: var(--campaign-muted);
+  font-size: 0.82rem;
+}
+
+.campaign-alignment-axis strong {
+  color: var(--campaign-text);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.campaign-alignment-axis small {
+  color: var(--campaign-flavor);
+  line-height: 1.3;
+}
+
+.campaign-alignment-bottom {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(260px, 1.1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.campaign-alignment-bottom > div,
+.campaign-alignment-line {
+  display: grid;
+  gap: 6px;
+}
+
+.campaign-action.is-locked {
+  border-style: dashed;
+}
+
+.campaign-ai-context-panel {
+  border-left: 4px solid var(--campaign-accent-2);
+}
+
+.campaign-ai-context-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.campaign-ai-context-grid > div {
+  display: grid;
+  gap: 5px;
+  min-height: 92px;
+  padding: 10px;
+  border: 1px solid var(--campaign-line);
+  border-radius: 8px;
+  background: rgba(10, 18, 20, 0.36);
+}
+
 .campaign-flavor-trail {
   background: #12161a;
 }
@@ -5384,6 +5458,14 @@ body.campaign-page::before {
 }
 
 @media (max-width: 980px) {
+  .campaign-alignment-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-ai-context-grid {
+    grid-template-columns: 1fr;
+  }
+
   .campaign-story-vn-content,
   .campaign-story-control-deck .campaign-story-command-grid,
   .campaign-story-support-grid {
@@ -7673,6 +7755,19 @@ body.campaign-page {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
 }
 
+.campaign-seq-vn-choice:disabled,
+.campaign-seq-vn-choice.is-locked {
+  opacity: 0.58;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.campaign-seq-vn-choice:disabled:hover {
+  background: linear-gradient(180deg, rgba(17, 30, 42, 0.94), rgba(7, 14, 21, 0.96));
+  border-left-color: #9dd8ff;
+  box-shadow: none;
+}
+
 .campaign-seq-vn-choice:active { transform: translateY(1px); }
 
 .campaign-seq-vn-choice-index {
@@ -9929,11 +10024,28 @@ body.campaign-page {
   opacity: 0.46;
   stroke-width: 4;
 }
+.theme-earth .campaign-world-map-image ~ .campaign-world-road {
+  opacity: 0.18;
+  stroke-width: 2.5;
+}
 .campaign-world-map-image ~ .campaign-world-node .node-building-main,
 .campaign-world-map-image ~ .campaign-world-node .node-route-ring,
 .campaign-world-map-image ~ .campaign-world-node .node-tower {
   fill: rgba(8, 13, 23, 0.62);
   stroke: rgba(255, 246, 204, 0.86);
+}
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-building-main,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-route-ring,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-tower {
+  fill: rgba(8, 13, 23, 0.28);
+  stroke: rgba(255, 246, 204, 0.34);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.14));
+}
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-building-roof,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-awning,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-tarp {
+  fill: rgba(240, 202, 112, 0.22);
+  stroke: rgba(255, 246, 204, 0.22);
 }
 .campaign-world-visual-node .node-building-roof,
 .campaign-world-visual-node .node-awning,
@@ -9957,12 +10069,23 @@ body.campaign-page {
 .campaign-world-visual-node .node-beacon {
   fill: rgba(240, 249, 255, 0.86);
 }
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-window,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-plus,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-route-dot,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-beacon {
+  fill: rgba(240, 249, 255, 0.26);
+}
 .campaign-world-visual-node .node-column,
 .campaign-world-visual-node .node-route-line {
   fill: none;
   stroke: rgba(240, 249, 255, 0.76);
   stroke-width: 3;
   stroke-linecap: round;
+}
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-column,
+.theme-earth .campaign-world-map-image ~ .campaign-world-node .node-route-line {
+  stroke: rgba(240, 249, 255, 0.24);
+  stroke-width: 2;
 }
 .campaign-world-visual-node.is-active .node-building-main,
 .campaign-world-visual-node.is-active .node-route-ring,
@@ -10006,6 +10129,19 @@ body.campaign-page {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 18px rgba(125, 211, 252, 0.12);
   -webkit-backdrop-filter: blur(8px) saturate(1.08);
   backdrop-filter: blur(8px) saturate(1.08);
+}
+.theme-earth .campaign-world-node-label-box {
+  min-height: 16px;
+  padding: 1px 5px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(3, 7, 18, 0.24);
+  color: rgba(248, 250, 252, 0.7);
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.52);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(2px) saturate(1.02);
+  backdrop-filter: blur(2px) saturate(1.02);
 }
 .campaign-world-node-preview-wrap {
   pointer-events: none;

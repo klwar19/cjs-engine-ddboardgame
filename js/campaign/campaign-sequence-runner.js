@@ -10,6 +10,7 @@ window.CJS.CampaignSequences = (() => {
   const Ops = () => window.CJS.CampaignOps;
   const Cond = () => window.CJS.CampaignConditions;
   const Runner = () => window.CJS.ScenarioRunner;
+  const Align = () => window.CJS.CampaignAlignment;
 
   const _indexes = {};
   const _sequenceCache = {};
@@ -235,6 +236,14 @@ window.CJS.CampaignSequences = (() => {
     if (!bundle?.node) return { ok: false, reason: 'no_active_node' };
     const { active: current, sequence, node } = bundle;
     const transition = _resolveTransition(node, action, value, state);
+    if (transition.blocked) {
+      return {
+        ok: false,
+        reason: transition.reason || 'choice_locked',
+        blockers: transition.blockers || [],
+        choice: transition.choice || null
+      };
+    }
     if (current.applyConsequences !== false && transition.ops?.length) {
       Ops()?.apply?.(transition.ops, { source: 'sequence_runtime' });
     }
@@ -486,6 +495,7 @@ window.CJS.CampaignSequences = (() => {
 
       const plan = _defaultPlan(node);
       const transition = _resolveTransition(node, plan.action, plan.value, state);
+      if (transition.blocked) break;
       if (transition.choice) {
         routeChoices.push({
           nodeId: node.id,
@@ -626,12 +636,29 @@ window.CJS.CampaignSequences = (() => {
   function _resolveTransition(node, action, value, state) {
     const type = String(node.type || '').toLowerCase();
     if (type === 'choice') {
-      const choice = (node.choices || []).find((item) => item.id === value)
-        || (node.choices || [])[Number(value || 0)]
+      const choices = node.choices || [];
+      const explicit = value != null && value !== '';
+      let choice = choices.find((item) => item.id === value)
+        || choices[Number(value || 0)]
         || _defaultChoice(node);
+      let eligibility = choiceEligibility(choice, node, state);
+      if (!eligibility.ok && !explicit) {
+        choice = choices.find((item) => choiceEligibility(item, node, state).ok) || choice;
+        eligibility = choiceEligibility(choice, node, state);
+      }
+      if (!eligibility.ok) {
+        return {
+          blocked: true,
+          reason: 'choice_locked',
+          blockers: eligibility.blockers || [],
+          result: 'blocked',
+          choice: choice ? { id: choice.id || '', label: choice.label || choice.id || '' } : null
+        };
+      }
+      const ops = _choiceOps(node, choice, state);
       return {
         next: choice?.next || node.next || null,
-        ops: choice?.ops || [],
+        ops,
         result: choice?.id || action,
         choice: choice ? { id: choice.id || '', label: choice.label || choice.id || '' } : null
       };
@@ -713,6 +740,47 @@ window.CJS.CampaignSequences = (() => {
     return { next: node.next || null, ops: node.ops || [], result: action };
   }
 
+  function choiceEligibility(choice = {}, node = {}, state = CS()?.getState?.(), context = {}) {
+    return Align()?.choiceEligibility?.(choice, node, state || {}, context) || {
+      ok: true,
+      blockers: [],
+      reasons: [],
+      hidden: false
+    };
+  }
+
+  function _choiceOps(node = {}, choice = {}, state = CS()?.getState?.()) {
+    const authoredOps = _asArray(choice.ops);
+    if (!choice) return authoredOps;
+    if (authoredOps.some((op) => op?.op === 'choice_consequence_record')) return authoredOps;
+
+    const explicitAlignment = authoredOps.some((op) =>
+      op?.op === 'alignment_change'
+      || op?.op === 'karma_change'
+      || op?.op === 'alignment_potential_add'
+    );
+    const alignment = explicitAlignment
+      ? {}
+      : (choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta ?? {});
+    const generated = {
+      op: 'choice_consequence_record',
+      actor: choice.actor || node.actor || 'bin',
+      world: choice.world || state?.currentWorld || _activeWorld || 'haven',
+      sequenceId: active(state)?.sequenceId || '',
+      nodeId: node.id || '',
+      choiceId: choice.id || '',
+      label: choice.label || choice.text || choice.id || 'Choice',
+      summary: choice.summary || node.prompt || node.text || '',
+      alignment,
+      potential: choice.potential || null,
+      potentialAlignment: choice.potentialAlignment || null,
+      npcReactions: choice.npcReactions || choice.reactions || [],
+      futureHooks: choice.futureHooks || choice.unlockHints || choice.hooks || [],
+      tags: [..._asArray(node.tags), ..._asArray(choice.tags)]
+    };
+    return [...authoredOps, generated];
+  }
+
   function _nodeLog(node, action, value, transition) {
     const type = String(node.type || '').toLowerCase();
     const defaultSummary = type === 'choice' && transition.choice
@@ -739,7 +807,8 @@ window.CJS.CampaignSequences = (() => {
 
   function _entryEligible(indexEntry = {}, state = CS()?.getState?.()) {
     if (!indexEntry || indexEntry.disabled) return false;
-    if (indexEntry.conditions && Cond()?.evaluate && !Cond().evaluate(indexEntry.conditions, state || {}, {
+    const entryConditions = _entryConditions(indexEntry);
+    if (Object.keys(entryConditions).length && Cond()?.evaluate && !Cond().evaluate(entryConditions, state || {}, {
       tags: indexEntry.tags || []
     }).ok) {
       return false;
@@ -770,6 +839,10 @@ window.CJS.CampaignSequences = (() => {
   function _eligibilityReasons(indexEntry = {}, state = CS()?.getState?.() || {}) {
     const reasons = [];
     if (!indexEntry) return reasons;
+    const entryConditions = _entryConditions(indexEntry);
+    if (Object.keys(entryConditions).length && Cond()?.evaluate) {
+      reasons.push(...(Cond().evaluate(entryConditions, state || {}, { tags: indexEntry.tags || [] }).blockers || []));
+    }
     const requiresFlags = _asArray(indexEntry.requiresFlags || indexEntry.flags);
     for (const flag of requiresFlags) {
       if (!state?.flags?.[flag]) reasons.push(`Needs flag ${flag}`);
@@ -795,6 +868,24 @@ window.CJS.CampaignSequences = (() => {
       if (state?.storyMode?.partResults?.[partId]) reasons.push(`Blocked by story part ${partId}`);
     }
     return reasons;
+  }
+
+  function _entryConditions(indexEntry = {}) {
+    const cond = { ...(indexEntry.conditions || {}) };
+    for (const key of [
+      'alignmentMin',
+      'alignmentMax',
+      'karmaMin',
+      'karmaMax',
+      'worldAlignmentMin',
+      'worldAlignmentMax',
+      'potentialAlignmentMin',
+      'potentialAlignmentMax',
+      'alignmentChecks'
+    ]) {
+      if (indexEntry[key] != null && cond[key] == null) cond[key] = indexEntry[key];
+    }
+    return cond;
   }
 
   function entryEligible(sequenceId, state = CS()?.getState?.(), world = _activeWorld) {
@@ -996,6 +1087,7 @@ window.CJS.CampaignSequences = (() => {
     active,
     activeBundle,
     findNode,
+    choiceEligibility,
     advance,
     resumeFromScenario,
     handleBattleOutcome,

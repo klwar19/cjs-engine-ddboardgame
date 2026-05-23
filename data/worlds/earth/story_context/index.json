@@ -1,0 +1,91 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "earth",
+    "status": "active"
+  },
+  "world": "earth",
+  "displayName": "Earth",
+  "purpose": "Compact AI planning map for ordinary-life chapters, hospital scenes, social suspicion, and cross-world fallout.",
+  "readOrder": {
+    "skim": ["data/worlds/earth/story_context/index.json", "data/worlds/earth/story_summary.md"],
+    "openWhenWriting": [
+      "data/campaigns/earth/travel_maps/earth_zhonghai_travel_map.json",
+      "data/campaigns/earth/activity_packs/earth_return_activity_pack.json"
+    ]
+  },
+  "summaryTiers": {
+    "always": "Earth is the emotional anchor: school, hospital, delivery work, Lily's care, and the danger of cross-world life becoming visible.",
+    "previousArcCarryForward": "Haven, Zombie, and Bazaar gains should matter on Earth only through believable support, suspicion, cost, or comfort.",
+    "avoidReadingFullArcUnless": "Open activity files for exact node actions or rewards."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["mercy", "resolve", "wit", "duty"],
+    "relationships": ["lily.trust", "luna.suspicion", "meilin.suspicion", "old_zhou.trust", "family_stability"],
+    "stats": ["C for composure, social cover, and delivery pressure"],
+    "worldPressure": ["Earth Heat", "hospital stability", "money stress", "Organization visibility"]
+  },
+  "arcs": [
+    {
+      "id": "earth_arc1_return_pressure",
+      "title": "Return to Ordinary Life",
+      "status": "active",
+      "chapters": ["E-00", "E-01", "E-01.h", "E-01.c", "E-01.w", "E-01.m"],
+      "previousArcCarryover": "Bin returns with impossible experiences while Earth kept moving. Lily still needs care; ordinary obligations still exist.",
+      "arcSummary": "Use Zhonghai map visits to balance hospital care, school suspicion, delivery work, and old memory clues.",
+      "currentDevelopmentTarget": "Author small daily-life beats that process cross-world consequences without turning Earth into a dungeon.",
+      "potentialChoicePoints": [
+        {
+          "id": "hide_or_share_changed_self",
+          "where": "campus and Luna/Meilin scenes",
+          "potentialAxes": { "wit": 1, "duty": 1, "mercy": 1 },
+          "futureUse": "Gates whether friends become allies, suspicious witnesses, or emotional anchors."
+        },
+        {
+          "id": "hospital_support_method",
+          "where": "Lily ward visits",
+          "potentialAxes": { "mercy": 1, "resolve": 1 },
+          "futureUse": "Crystal support, med-gel analysis, or mundane care can open different slow cure branches."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "hospital_quiet",
+          "fitsAfter": ["Haven family beats", "Zombie med-gel", "Bazaar medical lot"],
+          "summary": "Ward scenes, Lily trust, small symptom shifts, family comfort, and no instant cure.",
+          "goodTrackers": ["mercy", "lily.trust", "hospital_stability"]
+        },
+        {
+          "bucket": "campus_suspicion",
+          "fitsAfter": ["visible cross-world action", "missed class", "strange item use"],
+          "summary": "Luna and Meilin notice inconsistencies. Keep it social before it becomes Organization pressure.",
+          "goodTrackers": ["wit", "Earth Heat", "luna.suspicion"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "ordinary_work",
+          "fitsChapters": ["E-01.w"],
+          "questIds": ["delivery_shift", "hospital_errand", "bookstore_memory"],
+          "summary": "Low-stakes work keeps money and identity pressure alive."
+        },
+        {
+          "bucket": "medical_support",
+          "fitsChapters": ["E-01.h"],
+          "questIds": ["med_gel_analysis", "crystal_support_check", "old_notebook_cross_ref"],
+          "summary": "Slowly improve options for Lily without solving the core condition."
+        }
+      ],
+      "readFiles": [
+        "data/campaigns/earth/travel_maps/earth_zhonghai_travel_map.json",
+        "data/campaigns/earth/activity_packs/earth_return_activity_pack.json"
+      ],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": [
+    "Add Organization escalation only after Earth Heat has readable causes.",
+    "Track which cross-world resources have been used for Lily and what cost they created."
+  ]
+}

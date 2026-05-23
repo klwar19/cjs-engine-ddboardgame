@@ -1,0 +1,91 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "bazaar",
+    "status": "active"
+  },
+  "world": "bazaar",
+  "displayName": "Bazaar of Broken Chains",
+  "purpose": "Compact AI planning map for arena tests, auctions, prize-board contracts, food-row events, and cross-world economy pressure.",
+  "readOrder": {
+    "skim": ["data/worlds/bazaar/story_context/index.json", "data/worlds/bazaar/story_summary.md"],
+    "openWhenWriting": [
+      "data/campaigns/bazaar/travel_maps/bazaar_central_ring_travel_map.json",
+      "data/campaigns/bazaar/activity_packs/bazaar_arena_auction_activity_pack.json"
+    ]
+  },
+  "summaryTiers": {
+    "always": "Bazaar is an optional bright economy hub where rewards become renown, debt, rules, and future obligations.",
+    "previousArcCarryForward": "Do not let Bazaar solve core world plots outright. It converts progress into options and costs.",
+    "avoidReadingFullArcUnless": "Open activity files for exact arena, auction, food, or prize-board ops."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["wit", "duty", "resolve", "mercy"],
+    "relationships": ["merchant trust", "arena sponsor interest", "party comfort with trade pressure"],
+    "stats": ["C for bargain timing, public performance, and social checks"],
+    "worldPressure": ["Bazaar Renown", "Bazaar Debt", "contract obligations", "cross-world item visibility"]
+  },
+  "arcs": [
+    {
+      "id": "bazaar_arc1_central_ring",
+      "title": "Central Ring First Visit",
+      "status": "active",
+      "chapters": ["B-00", "B-01", "B-01.a", "B-01.h", "B-01.au", "B-01.z", "B-01.p"],
+      "previousArcCarryover": "Haven, Earth, and Zombie progress can become showcase lots, medical lots, and prize-board contracts, but every convenience creates a cost.",
+      "arcSummary": "Introduce Bazaar rules, arena registration, small auctions, food-row relief, and prize-board cross-world summaries.",
+      "currentDevelopmentTarget": "Make Bazaar events useful but never plot-solving. Use debt and renown as soft long-term consequence gates.",
+      "potentialChoicePoints": [
+        {
+          "id": "take_sponsor_or_stay_independent",
+          "where": "arena and prize-board beats",
+          "potentialAxes": { "duty": 1, "wit": 1 },
+          "futureUse": "Sponsor route opens discounts and obligations; independent route keeps freedom but costs more."
+        },
+        {
+          "id": "auction_risk_level",
+          "where": "auction lots",
+          "potentialAxes": { "resolve": 1, "wit": 1 },
+          "futureUse": "Riskier lots can help other worlds while increasing debt or unwanted attention."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "arena_public_test",
+          "fitsAfter": ["first registration", "Haven Arc 1 clear"],
+          "summary": "Safe exhibitions, sponsor comments, audience jokes, and performance-based renown.",
+          "goodTrackers": ["Bazaar Renown", "resolve", "wit"]
+        },
+        {
+          "bucket": "auction_cost",
+          "fitsAfter": ["Zombie scavenge", "Earth hospital need"],
+          "summary": "Medical lots, mystery lots, and debt notes with clear future obligations.",
+          "goodTrackers": ["Bazaar Debt", "duty", "mercy"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "contracts",
+          "fitsChapters": ["B-01.p"],
+          "questIds": ["prize_board_recap", "sponsor_errand", "food_row_delivery"],
+          "summary": "Contracts should point back to active world arcs instead of replacing them."
+        },
+        {
+          "bucket": "cross_world_trade",
+          "fitsChapters": ["B-01.au", "B-01.z"],
+          "questIds": ["small_mystery_lot", "pre_collapse_medical_lot"],
+          "summary": "Auction rewards can support Earth or Zombie while leaving a debt trail."
+        }
+      ],
+      "readFiles": [
+        "data/campaigns/bazaar/travel_maps/bazaar_central_ring_travel_map.json",
+        "data/campaigns/bazaar/activity_packs/bazaar_arena_auction_activity_pack.json"
+      ],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": [
+    "Record new debts, sponsors, and prize-board promises after each generated Bazaar event.",
+    "Add cross-world unlock notes only when the source world has earned them."
+  ]
+}

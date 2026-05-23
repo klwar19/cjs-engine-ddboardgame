@@ -1,0 +1,27 @@
+{
+  "id": "future_skill_passive_icon_pack_01",
+  "source": "imagegen",
+  "style": "painterly tactical RPG badge icons",
+  "icons": [
+    {
+      "id": "future_healing_pulse",
+      "path": "assets/icons/future/future_healing_pulse.png",
+      "suggestedUse": ["skill", "healing", "nature"]
+    },
+    {
+      "id": "future_icy_trap_rune",
+      "path": "assets/icons/future/future_icy_trap_rune.png",
+      "suggestedUse": ["skill", "trap", "ice", "control"]
+    },
+    {
+      "id": "future_teamwork_knot",
+      "path": "assets/icons/future/future_teamwork_knot.png",
+      "suggestedUse": ["passive", "teamwork", "guard", "bond"]
+    },
+    {
+      "id": "future_shadow_dodge",
+      "path": "assets/icons/future/future_shadow_dodge.png",
+      "suggestedUse": ["passive", "evasion", "shadow", "rogue"]
+    }
+  ]
+}

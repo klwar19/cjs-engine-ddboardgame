@@ -752,7 +752,7 @@
     {
       "id": "haven_piercing_bolt",
       "name": "Piercing Bolt",
-      "icon": "🔩",
+      "icon": "assets/icons/bowy/haven_piercing_bolt.png",
       "power": 18,
       "ap": 3,
       "mp": 5,
@@ -870,7 +870,7 @@
     {
       "id": "haven_suppressive_fire",
       "name": "Suppressive Fire",
-      "icon": "🏹💨",
+      "icon": "assets/icons/bowy/haven_suppressive_fire.png",
       "power": 8,
       "ap": 3,
       "mp": 7,
@@ -900,7 +900,7 @@
     {
       "id": "haven_thunder_shot",
       "name": "Thunder Shot",
-      "icon": "⚡🏹",
+      "icon": "assets/icons/bowy/haven_thunder_shot.png",
       "power": 14,
       "ap": 2,
       "mp": 3,

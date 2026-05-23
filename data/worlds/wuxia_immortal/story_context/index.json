@@ -1,0 +1,64 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-world-ai-story-context",
+    "world": "wuxia_immortal",
+    "status": "planned"
+  },
+  "world": "wuxia_immortal",
+  "displayName": "Immortal Realms",
+  "purpose": "Compact future-planning map for high-rank cultivation, tribulations, ancient contracts, and mythic-scale consequences.",
+  "readOrder": {
+    "skim": ["data/worlds/wuxia_immortal/story_context/index.json", "data/worlds/wuxia_immortal/story_summary.md", "data/worlds/wuxia_immortal/_meta.json"],
+    "openWhenWriting": ["Wait for high-rank director pack, cosmic faction notes, and tribulation mechanics."]
+  },
+  "summaryTiers": {
+    "always": "Immortal Realms should feel larger than Jianghu and must not arrive early enough to flatten Earth and Haven stakes.",
+    "previousArcCarryForward": "Use accumulated choices from lower-scale worlds as the moral weight behind cosmic offers.",
+    "avoidReadingFullArcUnless": "No active arc files exist yet."
+  },
+  "consequenceInputs": {
+    "alignmentAxes": ["mercy", "resolve", "duty"],
+    "relationships": ["sect heaven reputation", "ancient contract holders", "party trust under scale shock"],
+    "stats": ["C for resisting awe, bargains, and tribulation timing"],
+    "worldPressure": ["tribulation debt", "oath pressure", "cosmic attention"]
+  },
+  "arcs": [
+    {
+      "id": "wuxia_immortal_arc0_ascension_gate",
+      "title": "Ascension Gate",
+      "status": "planned",
+      "chapters": ["X-00"],
+      "previousArcCarryover": "Only open after Jianghu or other grounded arcs have earned mythic escalation.",
+      "arcSummary": "Planned first contact with cultivation-scale law, oath fragments, and tempting solutions that cost more than they promise.",
+      "currentDevelopmentTarget": "Keep parked until the campaign can support SR-rank consequences.",
+      "potentialChoicePoints": [
+        {
+          "id": "accept_cosmic_bargain",
+          "where": "first ascension offer",
+          "potentialAxes": { "resolve": 1, "duty": 1, "mercy": 1 },
+          "futureUse": "Reject, negotiate, or accept an oath with different long-term costs."
+        }
+      ],
+      "eventSuitability": [
+        {
+          "bucket": "distant_omen",
+          "fitsAfter": ["late Jianghu", "rank-SR unlock"],
+          "summary": "Short omen only; no active intervention until the world is promoted.",
+          "goodTrackers": ["cosmic attention"]
+        }
+      ],
+      "questSuitability": [
+        {
+          "bucket": "parked",
+          "fitsChapters": ["X-00"],
+          "questIds": ["ascension_gate_setup"],
+          "summary": "Do not author playable quests until high-rank systems exist."
+        }
+      ],
+      "readFiles": ["data/worlds/wuxia_immortal/_meta.json"],
+      "writeBackSummarySlots": ["arcSummary", "eventSuitability", "questSuitability", "potentialChoicePoints"]
+    }
+  ],
+  "futureEditSlots": ["Add high-rank mechanics and director rules before marking this world playable."]
+}
