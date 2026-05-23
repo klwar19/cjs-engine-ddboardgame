@@ -240,7 +240,8 @@ window.CJS.CampaignState = (() => {
             ready: false
           }))
         },
-        stations: clone(rule.stations || [])
+        stations: clone(rule.stations || []),
+        facilities: {}
       },
       hubState: buildInitialHubState(campaign),
       sideContent: {
@@ -836,6 +837,12 @@ window.CJS.CampaignState = (() => {
       });
     }
     next.pocketHaven.stations = next.pocketHaven.stations || [];
+    // Facilities (training ground, advanced craft, ranch). Each entry
+    // is created on demand by PocketHavenFacilities.build(); the map
+    // is normalized here so older saves continue to load.
+    next.pocketHaven.facilities = next.pocketHaven.facilities && typeof next.pocketHaven.facilities === 'object'
+      ? next.pocketHaven.facilities
+      : {};
     next.storyChoices = Array.isArray(next.storyChoices) ? next.storyChoices : [];
     if (next.activeScenarioRun) {
       next.activeScenarioRun.completedBeats = next.activeScenarioRun.completedBeats || [];

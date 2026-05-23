@@ -9,18 +9,140 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 6,
-      "player": [1, 3],
-      "boxes": [[3, 3]],
-      "goals": [[5, 3]],
+      "player": [
+        1,
+        3
+      ],
+      "boxes": [
+        [
+          3,
+          3
+        ]
+      ],
+      "goals": [
+        [
+          5,
+          3
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ]
       ],
       "optimalPushes": 2,
       "optimalMoves": 3,
       "hint": "Push the crate east twice. Stamp it on the rune.",
-      "tags": ["tutorial", "crate", "guild"]
+      "tags": [
+        "tutorial",
+        "crate",
+        "guild"
+      ],
+      "narrative": {
+        "context": "Pocket Haven storehouse drill. Bin set up crates as a warmup. 'Push, don't pull.' Wisdom for life.",
+        "winLine": "Crate stamped. Bin nods.",
+        "loseLine": "The crate disagreed.",
+        "buffName": "Storeroom Hand"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_01",
+          "label": "Storeroom Hand",
+          "stat": "S",
+          "amount": 1,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 2
+        }
+      ]
     },
     {
       "id": "push_02",
@@ -29,19 +151,164 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 7,
-      "player": [1, 1],
-      "boxes": [[3, 3]],
-      "goals": [[5, 1]],
+      "player": [
+        1,
+        1
+      ],
+      "boxes": [
+        [
+          3,
+          3
+        ]
+      ],
+      "goals": [
+        [
+          5,
+          1
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
-        [4,3],[4,4],[4,5],[3,5]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          3,
+          5
+        ]
       ],
       "optimalPushes": 4,
       "optimalMoves": 11,
       "hint": "Wrong way and the crate is stuck in the corner. Approach from below to push it north before tucking it east.",
-      "tags": ["crate", "guild", "corner-trap"]
+      "tags": [
+        "crate",
+        "guild",
+        "corner-trap"
+      ],
+      "narrative": {
+        "context": "A guild merchant complained about a crate stuck in an L-bend dock. The party agreed to demonstrate the correct path for the fee of dinner.",
+        "winLine": "Crate routed around the bend. Dinner secured.",
+        "loseLine": "The merchant eats alone tonight.",
+        "buffName": "Bend Sense"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_02",
+          "label": "Bend Sense",
+          "stat": "S",
+          "amount": 1,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 3
+        }
+      ]
     },
     {
       "id": "push_03",
@@ -50,19 +317,152 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 6,
-      "player": [1, 1],
-      "boxes": [[2, 2], [3, 2]],
-      "goals": [[2, 4], [3, 4]],
+      "player": [
+        1,
+        1
+      ],
+      "boxes": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "goals": [
+        [
+          2,
+          4
+        ],
+        [
+          3,
+          4
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],
-        [4,2]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          4,
+          2
+        ]
       ],
       "optimalPushes": 4,
       "optimalMoves": 8,
       "hint": "Order matters. Park the leftmost crate first, then move the right one so you do not block your own approach.",
-      "tags": ["crate", "guild", "order"]
+      "tags": [
+        "crate",
+        "guild",
+        "order"
+      ],
+      "narrative": {
+        "context": "Twin runes in the basement need crates set just so for an old ward to reactivate. Bin says, 'two for one.'",
+        "winLine": "Both runes lit. Ward humming.",
+        "loseLine": "One rune lit. The ward stays asleep.",
+        "buffName": "Dual Focus"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_03",
+          "label": "Dual Focus",
+          "stat": "E",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 4
+        }
+      ]
     },
     {
       "id": "push_04",
@@ -71,19 +471,181 @@
       "theme": "guild_storehouse",
       "width": 8,
       "height": 7,
-      "player": [1, 1],
-      "boxes": [[3, 1], [3, 5]],
-      "goals": [[6, 1], [6, 5]],
+      "player": [
+        1,
+        1
+      ],
+      "boxes": [
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      "goals": [
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          5
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
-        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[7,6],
-        [0,1],[7,1],[0,2],[7,2],[0,3],[7,3],[0,4],[7,4],[0,5],[7,5],
-        [2,3],[3,3],[4,3],[5,3]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          5,
+          3
+        ]
       ],
       "optimalPushes": 6,
       "optimalMoves": 16,
       "hint": "Two narrow aisles. Drive the top crate to the top rune, then walk all the way around to do the same below.",
-      "tags": ["crate", "guild", "corridor", "multi-goal"]
+      "tags": [
+        "crate",
+        "guild",
+        "corridor",
+        "multi-goal"
+      ],
+      "narrative": {
+        "context": "A practice puzzle copied from a vault rumor. Move it wrong and the crate gets pinned forever — like the vault.",
+        "winLine": "Pin avoided. The vault rumor checks out.",
+        "loseLine": "You pinned the crate. The vault thanks you.",
+        "buffName": "Pin Avoidance"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_04",
+          "label": "Pin Avoidance",
+          "stat": "E",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "push_05",
@@ -92,19 +654,153 @@
       "theme": "guild_storehouse",
       "width": 6,
       "height": 6,
-      "player": [1, 1],
-      "boxes": [[2, 2], [3, 2], [2, 3]],
-      "goals": [[1, 4], [4, 4], [3, 4]],
+      "player": [
+        1,
+        1
+      ],
+      "boxes": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "goals": [
+        [
+          1,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          3,
+          4
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],
-        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],
-        [0,1],[5,1],[0,2],[5,2],[0,3],[5,3],[0,4],[5,4],
-        [4,2]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          4,
+          2
+        ]
       ],
       "optimalPushes": 8,
       "optimalMoves": 18,
       "hint": "Three crates, three runes, one wrong push and a crate is welded to a wall. Red deadlock warnings mean undo and try a different order.",
-      "tags": ["crate", "guild", "hard", "deadlock"]
+      "tags": [
+        "crate",
+        "guild",
+        "hard",
+        "deadlock"
+      ],
+      "narrative": {
+        "context": "A tinker drew a puzzle for the party with three crates and a smile. The smile was a trap.",
+        "winLine": "All three landed. The tinker stops smiling.",
+        "loseLine": "The tinker smiles wider.",
+        "buffName": "Triple Threat"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_05",
+          "label": "Triple Threat",
+          "stat": "S",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "push_06",
@@ -113,19 +809,156 @@
       "theme": "frostbitten_pantry",
       "width": 7,
       "height": 7,
-      "player": [3, 5],
-      "boxes": [[3, 3]],
-      "goals": [[3, 1]],
+      "player": [
+        3,
+        5
+      ],
+      "boxes": [
+        [
+          3,
+          3
+        ]
+      ],
+      "goals": [
+        [
+          3,
+          1
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
-        [1,2],[5,2]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          5,
+          2
+        ]
       ],
       "optimalPushes": 2,
       "optimalMoves": 4,
       "hint": "Push the salt barrel due north. The shelves on either side make sure you can't miss.",
-      "tags": ["crate", "pantry", "easy"]
+      "tags": [
+        "crate",
+        "pantry",
+        "easy"
+      ],
+      "narrative": {
+        "context": "The hardest crate-drill in the haven: tight corners and a single mistake budget. Bin reserves it for veterans.",
+        "winLine": "Veteran drill complete. Earn your title.",
+        "loseLine": "Veteran in title only. Drill again.",
+        "buffName": "Veteran Mover"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_06",
+          "label": "Veteran Mover",
+          "stat": "S",
+          "amount": 1,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 3
+        }
+      ]
     },
     {
       "id": "push_07",
@@ -134,19 +967,164 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 7,
-      "player": [1, 1],
-      "boxes": [[3, 2]],
-      "goals": [[4, 5]],
+      "player": [
+        1,
+        1
+      ],
+      "boxes": [
+        [
+          3,
+          2
+        ]
+      ],
+      "goals": [
+        [
+          4,
+          5
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
-        [4,2],[4,3],[2,4],[2,3]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          3
+        ]
       ],
       "optimalPushes": 5,
       "optimalMoves": 14,
       "hint": "Push south through the switchback, loop around the divider, then finish by nudging the crate east.",
-      "tags": ["crate", "guild", "switchback"]
+      "tags": [
+        "crate",
+        "guild",
+        "switchback"
+      ],
+      "narrative": {
+        "context": "Lockstep puzzle salvaged from a haunted warehouse. Bin charges admission to spectators.",
+        "winLine": "Lockstep solved. Spectators applaud.",
+        "loseLine": "Spectators boo. Refunds issued.",
+        "buffName": "Lockstep"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_07",
+          "label": "Lockstep",
+          "stat": "E",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 4
+        }
+      ]
     },
     {
       "id": "push_08",
@@ -155,19 +1133,189 @@
       "theme": "guild_storehouse",
       "width": 9,
       "height": 6,
-      "player": [4, 1],
-      "boxes": [[2, 2], [4, 2], [6, 2]],
-      "goals": [[2, 4], [4, 4], [6, 4]],
+      "player": [
+        4,
+        1
+      ],
+      "boxes": [
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          6,
+          2
+        ]
+      ],
+      "goals": [
+        [
+          2,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          6,
+          4
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],
-        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],
-        [0,1],[8,1],[0,2],[8,2],[0,3],[8,3],[0,4],[8,4],
-        [1,3],[3,3],[5,3],[7,3]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          8,
+          0
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          5
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          7,
+          3
+        ]
       ],
       "optimalPushes": 6,
       "optimalMoves": 12,
       "hint": "Three crates, three runes, three gaps in the divider. Each goes straight down through its own gap.",
-      "tags": ["crate", "guild", "wide", "multi-goal"]
+      "tags": [
+        "crate",
+        "guild",
+        "wide",
+        "multi-goal"
+      ],
+      "narrative": {
+        "context": "A grumpy gnome demanded the party prove its worth before sharing a recipe. This is the proof.",
+        "winLine": "Gnome impressed. Recipe shared.",
+        "loseLine": "Gnome unimpressed. Recipe withheld.",
+        "buffName": "Recipe Hunter"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_08",
+          "label": "Recipe Hunter",
+          "stat": "E",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "push_09",
@@ -176,19 +1324,165 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 7,
-      "player": [3, 5],
-      "boxes": [[2, 3], [4, 3]],
-      "goals": [[1, 1], [5, 1]],
+      "player": [
+        3,
+        5
+      ],
+      "boxes": [
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      "goals": [
+        [
+          1,
+          1
+        ],
+        [
+          5,
+          1
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
-        [3,2],[3,1]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          1
+        ]
       ],
       "optimalPushes": 8,
       "optimalMoves": 22,
       "hint": "Split the crates left and right around the central column. Push north first, then fan them west and east.",
-      "tags": ["crate", "guild", "diagonal", "hard"]
+      "tags": [
+        "crate",
+        "guild",
+        "diagonal",
+        "hard"
+      ],
+      "narrative": {
+        "context": "A philosophy puzzle from the Sandstone Library — the boxes represent virtues. Bin laughs.",
+        "winLine": "Virtues placed. Bin laughs harder.",
+        "loseLine": "Virtues misplaced. Bin keeps laughing.",
+        "buffName": "Philosopher Push"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_09",
+          "label": "Philosopher Push",
+          "stat": "S",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "push_10",
@@ -197,19 +1491,173 @@
       "theme": "guild_storehouse",
       "width": 7,
       "height": 7,
-      "player": [5, 4],
-      "boxes": [[4, 4]],
-      "goals": [[1, 1]],
+      "player": [
+        5,
+        4
+      ],
+      "boxes": [
+        [
+          4,
+          4
+        ]
+      ],
+      "goals": [
+        [
+          1,
+          1
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
-        [0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-        [0,1],[6,1],[0,2],[6,2],[0,3],[6,3],[0,4],[6,4],[0,5],[6,5],
-        [3,2],[4,2],[5,2],[3,3],[5,3],[3,5]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          6,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          6,
+          4
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          3,
+          5
+        ]
       ],
       "optimalPushes": 6,
       "optimalMoves": 16,
       "hint": "Push the crate west into the left lane, then loop underneath and drive it north to the rune.",
-      "tags": ["crate", "guild", "spiral", "hardest"]
+      "tags": [
+        "crate",
+        "guild",
+        "spiral",
+        "hardest"
+      ],
+      "narrative": {
+        "context": "A traveling chef offered free meals to whoever could clear his crate puzzle by sundown.",
+        "winLine": "Chef pays in bowls of stew.",
+        "loseLine": "Chef shrugs. No stew today.",
+        "buffName": "Chefs Favor"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_10",
+          "label": "Chefs Favor",
+          "stat": "S",
+          "amount": 3,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 10
+        }
+      ]
     },
     {
       "id": "push_11",
@@ -218,19 +1666,160 @@
       "theme": "frostbitten_pantry",
       "width": 8,
       "height": 6,
-      "player": [1, 3],
-      "boxes": [[3, 2], [3, 4]],
-      "goals": [[6, 2], [6, 4]],
+      "player": [
+        1,
+        3
+      ],
+      "boxes": [
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      "goals": [
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          4
+        ]
+      ],
       "walls": [
-        [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],
-        [0,5],[1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],
-        [0,1],[7,1],[0,2],[7,2],[0,3],[7,3],[0,4],[7,4],
-        [5,3]
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          5,
+          3
+        ]
       ],
       "optimalPushes": 6,
       "optimalMoves": 14,
       "hint": "Push each crate east. The central pillar keeps you from cutting across, so commit to one row at a time.",
-      "tags": ["crate", "pantry", "multi-goal"]
+      "tags": [
+        "crate",
+        "pantry",
+        "multi-goal"
+      ],
+      "narrative": {
+        "context": "The deepest crate-vault under Pocket Haven. The party suspects it's actually just storage Bin doesn't want to clean.",
+        "winLine": "Vault cleared. Storage organized.",
+        "loseLine": "Bin still has to clean it. So do you.",
+        "buffName": "Deep Order"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_11",
+          "label": "Deep Order",
+          "stat": "E",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 4
+        }
+      ]
     },
     {
       "id": "push_12",
@@ -247,11 +1836,73 @@
         "#        #",
         "##########"
       ],
-      "solution": ["right","right","down","right","right","right","up","left","left","left","left","left","down","right","right","right","right","down","left","left","down","right","right","right","up","left","left","left","left","left","down","right","right","right","right"],
+      "solution": [
+        "right",
+        "right",
+        "down",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "down",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
       "optimalPushes": 14,
       "optimalMoves": 34,
       "hint": "Each row is a paired loading lane. Send the right crate to the far rune first, then bring the left crate behind it.",
-      "tags": ["crate", "guild", "large", "four-box", "ordering"]
+      "tags": [
+        "crate",
+        "guild",
+        "large",
+        "four-box",
+        "ordering"
+      ],
+      "narrative": {
+        "context": "A puzzle borrowed from an underground gambling den. Stakes: a small bag of gold.",
+        "winLine": "Bag of gold collected. Suspicion grows.",
+        "loseLine": "Bag of gold withheld. Suspicion confirmed.",
+        "buffName": "Gamblers Push"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_12",
+          "label": "Gamblers Push",
+          "stat": "E",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 5
+        }
+      ]
     },
     {
       "id": "push_13",
@@ -269,11 +1920,80 @@
         "#         #",
         "###########"
       ],
-      "solution": ["right","right","down","right","right","right","right","up","left","left","left","left","left","left","down","right","right","right","right","right","down","left","left","left","down","right","right","right","right","up","left","left","left","left","left","left","down","right","right","right","right","right"],
+      "solution": [
+        "right",
+        "right",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right",
+        "down",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
       "optimalPushes": 18,
       "optimalMoves": 42,
       "hint": "The split shelves punish crowding. Finish the upper pair before dropping to the lower aisle.",
-      "tags": ["crate", "pantry", "large", "four-box", "shelves"]
+      "tags": [
+        "crate",
+        "pantry",
+        "large",
+        "four-box",
+        "shelves"
+      ],
+      "narrative": {
+        "context": "A puzzle scribbled in chalk by a thief who couldn't solve it themselves. The party finishes the thief's homework.",
+        "winLine": "Thief homework done. They will be insufferable.",
+        "loseLine": "Thief still smug.",
+        "buffName": "Chalkline Push"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_13",
+          "label": "Chalkline Push",
+          "stat": "S",
+          "amount": 2,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 7
+        }
+      ]
     },
     {
       "id": "push_14",
@@ -290,11 +2010,101 @@
         "#          #",
         "############"
       ],
-      "solution": ["right","right","right","right","down","right","right","right","right","up","left","left","left","left","left","left","down","right","right","right","right","right","up","left","left","left","left","left","left","left","down","right","right","right","right","right","right","down","left","left","left","left","down","right","right","right","right","right","up","left","left","left","left","left","left","left","down","right","right","right","right","right","right"],
+      "solution": [
+        "right",
+        "right",
+        "right",
+        "right",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right",
+        "down",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right",
+        "up",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "left",
+        "down",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right",
+        "right"
+      ],
       "optimalPushes": 26,
       "optimalMoves": 63,
       "hint": "Work from right to left in each lane. The vault is wide, but blocked goals can still turn one box into a wall.",
-      "tags": ["crate", "guild", "large", "five-box", "hardest"]
+      "tags": [
+        "crate",
+        "guild",
+        "large",
+        "five-box",
+        "hardest"
+      ],
+      "narrative": {
+        "context": "A double-runed warehouse problem. Two crates, two runes, no margin. The hardest in the standard pack.",
+        "winLine": "Both runes lit at the limit. Master rank.",
+        "loseLine": "The runes mock you. Try again at noon.",
+        "buffName": "Master Pusher"
+      },
+      "onWinOps": [
+        {
+          "op": "add_buff",
+          "id": "minigame_push_14",
+          "label": "Master Pusher",
+          "stat": "S",
+          "amount": 3,
+          "duration": "next_battle"
+        },
+        {
+          "op": "give_jp",
+          "amount": 10
+        }
+      ]
     }
   ]
 }

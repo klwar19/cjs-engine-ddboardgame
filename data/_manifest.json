@@ -33,6 +33,11 @@
       "category": "quizBank"
     },
     {
+      "path": "data/system/trivia_bank.json",
+      "scope": "system",
+      "category": "triviaBank"
+    },
+    {
       "path": "data/system/quips.json",
       "scope": "system",
       "category": "quips"

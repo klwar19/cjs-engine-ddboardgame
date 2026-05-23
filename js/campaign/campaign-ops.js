@@ -87,6 +87,8 @@ window.CJS.CampaignOps = (() => {
         case 'alignment_change':
         case 'karma_change': return `Alignment ${Align()?.describeDeltas?.(op.alignment ?? op.karma ?? op.deltas ?? op.delta ?? { [op.axis || op.id]: op.amount ?? op.value ?? op.delta }) || ''}`;
         case 'choice_consequence_record': return `Record choice consequence ${op.label || op.choiceLabel || op.choiceId || ''}`;
+        case 'record_consequence': return `Record deferred consequence ${op.label || op.choiceId || op.id || ''}`;
+        case 'fire_due_consequences': return `Resolve due consequences`;
         case 'alignment_potential_add': return `Potential alignment ${Align()?.describeDeltas?.(op.alignment ?? op.karma ?? op.potential ?? op.deltas ?? { [op.axis || op.id]: op.amount ?? op.value ?? op.delta }) || ''}`;
         case 'world_progress_set': return `World progress ${op.world || 'current'} ${op.key || op.field || ''}`;
         case 'travel_location': return `Travel to ${op.title || op.locationId || op.nodeId || 'location'}`;
@@ -127,6 +129,12 @@ window.CJS.CampaignOps = (() => {
         case 'farm_add_fertilizer': return `Add ${op.qty || op.amount || 1} fertilizer ${op.fertilizerId || op.id || ''}`;
         case 'farm_unlock_slots': return `Unlock ${op.qty || op.amount || 1} farm slot`;
         case 'farm_upgrade_tool': return `Upgrade farm tool ${op.toolId || op.id}`;
+        case 'build_facility': return `Build facility ${op.facilityId || op.id}`;
+        case 'upgrade_facility': return `Upgrade facility ${op.facilityId || op.id}`;
+        case 'train_skill': return `Train ${op.target || op.memberId || 'member'} in skill ${op.skillId || op.id}`;
+        case 'ranch_assign': return `Assign ${op.beastId || op.id} to ranch`;
+        case 'ranch_release': return `Release ${op.beastId || op.id} from ranch`;
+        case 'ranch_collect': return `Collect ranch outputs`;
         case 'log': return op.text || 'Log entry';
         default: return op.op || 'operation';
       }
@@ -146,6 +154,8 @@ window.CJS.CampaignOps = (() => {
       case 'alignment_change':
       case 'karma_change': return _alignmentChange(state, op);
       case 'choice_consequence_record': return _choiceConsequenceRecord(state, op);
+      case 'record_consequence': return _recordConsequence(state, op);
+      case 'fire_due_consequences': return _fireDueConsequences(state, op, options);
       case 'alignment_potential_add': return _alignmentPotentialAdd(state, op);
       case 'set_flag': return _setFlag(state, op.flag || op.id, true, op.value);
       case 'clear_flag': return _setFlag(state, op.flag || op.id, false);
@@ -262,6 +272,13 @@ window.CJS.CampaignOps = (() => {
       case 'farm_add_fertilizer': return _farmAddFertilizer(state, op);
       case 'farm_unlock_slots': return _farmUnlockSlots(state, op);
       case 'farm_upgrade_tool': return _farmUpgradeTool(state, op);
+      // ── Pocket Haven facilities (training, advanced craft, ranch) ──
+      case 'build_facility': return _buildFacility(state, op);
+      case 'upgrade_facility': return _upgradeFacility(state, op);
+      case 'train_skill': return _trainSkill(state, op);
+      case 'ranch_assign': return _ranchAssign(state, op);
+      case 'ranch_release': return _ranchRelease(state, op);
+      case 'ranch_collect': return _ranchCollect(state, op);
       case 'world_transition': return _worldTransition(state, op);
       case 'chapter_transition': return _chapterTransition(state, op);
       case 'reset_campaign_state': return _resetCampaignState(state, op);
@@ -373,6 +390,12 @@ window.CJS.CampaignOps = (() => {
       }
     }
     _log(state, `Phase ${state.phase.number}: ${state.phase.name || state.phase.type}. Relationship acts refreshed (${actMax}).`);
+    // Pocket Haven facilities refresh their per-phase usage budget so
+    // training / ranch / craft slots come back online.
+    window.CJS.PocketHavenFacilities?.refreshDailyUses?.(state);
+    // Deferred consequence hooks may fire on phase pass when authors
+    // gate them by phaseMin / phaseType.
+    _fireDueConsequences(state, { op: 'fire_due_consequences' });
   }
 
   function _signedQty(op) {
@@ -418,6 +441,56 @@ window.CJS.CampaignOps = (() => {
   function _alignmentPotentialAdd(state, op = {}) {
     const entry = Align()?.addPotential?.(state, op);
     if (entry) _log(state, `Future alignment noted: ${entry.label || Align()?.describeDeltas?.(entry.deltas) || 'potential path'}.`, op);
+  }
+
+  // Stores a deferred consequence hook on the choiceConsequences ledger
+  // that may fire later when fireWhen conditions are met. Hooks accept
+  // chapterMin / partResolved / flag / phaseMin / worldOnly gates and
+  // run their fireOps (and optionally set flags) when due.
+  function _recordConsequence(state, op = {}) {
+    const hook = Align()?.recordConsequenceHook?.(state, op);
+    if (!hook) return;
+    _log(state, `Tracked future consequence: ${hook.label || hook.choiceId || hook.id}.`, op);
+  }
+
+  // Scans the consequence ledger, runs ops + flag changes for any
+  // hooks whose conditions are now satisfied, and marks them fired.
+  // Safe to call repeatedly — fired hooks won't re-trigger.
+  function _fireDueConsequences(state, op = {}, options = {}) {
+    const due = Align()?.dueConsequenceHooks?.(state) || [];
+    if (!due.length) return [];
+    const fired = [];
+    for (const hook of due) {
+      // Set declared flags first so fireOps can rely on them.
+      for (const flag of hook.flagsToSet || []) {
+        const flagId = typeof flag === 'string' ? flag : flag.flag || flag.id;
+        const value = typeof flag === 'string' ? true : (flag.value === undefined ? true : flag.value);
+        if (flagId) _setFlag(state, flagId, !!value, value);
+      }
+      // Run authored fireOps.
+      for (const subOp of (hook.fireOps || [])) {
+        try { _applyOne(state, subOp, { ...options, source: 'consequence_hook' }); } catch (e) { console.warn('consequence hook op failed', e); }
+      }
+      const now = new Date().toISOString();
+      Align()?.markHookFired?.(state, hook.id, now);
+      fired.push(hook.id);
+      _log(state, `Consequence triggered: ${hook.label || hook.id}.`, { op: 'fire_due_consequences', hookId: hook.id });
+      // Also push to the event log so the player can find it on the
+      // Event Log tab.
+      _eventLogAdd(state, {
+        op: 'event_log_add',
+        entry: {
+          id: `consequence_${hook.id}`,
+          title: hook.label || 'Consequence',
+          summary: hook.summary || '',
+          tags: ['consequence', ...(hook.tags || [])],
+          source: 'consequence_hook',
+          scope: 'consequence',
+          consequences: hook.fireOps || []
+        }
+      });
+    }
+    return fired;
   }
 
   function _eventLogAdd(state, op = {}) {
@@ -1933,6 +2006,92 @@ window.CJS.CampaignOps = (() => {
     window.CJS.FarmingMode?.upgradeTool?.(state, op.toolId || op.id || 'hand', op.levels || op.amount || 1);
   }
 
+  // ── POCKET HAVEN FACILITIES ──────────────────────────────────────
+  function _facMod() { return window.CJS.PocketHavenFacilities; }
+
+  function _buildFacility(state, op) {
+    const mod = _facMod();
+    if (!mod) return;
+    const def = mod.getFacilityDef(op.facilityId || op.id);
+    const result = mod.build(state, op);
+    if (!result.ok) {
+      _log(state, `Cannot build ${def?.name || op.facilityId || op.id}: ${result.reason || 'unknown'}.`);
+      return;
+    }
+    _log(state, `Built ${def?.name || op.facilityId} in Pocket Haven.`);
+  }
+
+  function _upgradeFacility(state, op) {
+    const mod = _facMod();
+    if (!mod) return;
+    const def = mod.getFacilityDef(op.facilityId || op.id);
+    const result = mod.upgrade(state, op);
+    if (!result.ok) {
+      _log(state, `Cannot upgrade ${def?.name || op.facilityId || op.id}: ${result.reason || 'unknown'}.`);
+      return;
+    }
+    _log(state, `Upgraded ${def?.name || op.facilityId} to L${result.level}.`);
+  }
+
+  function _trainSkill(state, op) {
+    const mod = _facMod();
+    if (!mod) return;
+    const result = mod.trainSkill(state, op);
+    if (!result.ok) {
+      _log(state, `Training failed: ${result.reason || 'unknown'}.`);
+      return;
+    }
+    // Emit a gain_skill_ap op so existing AP / level-up flow handles
+    // the granted points consistently.
+    _applyOne(state, {
+      op: 'gain_skill_ap',
+      target: result.memberId,
+      skillId: result.skillId,
+      amount: result.apGranted
+    }, { source: 'training_ground' });
+    _log(state, `Trained ${state.party?.[result.memberId]?.name || result.memberId} in ${result.skillId}: +${result.apGranted} AP.`);
+  }
+
+  function _ranchAssign(state, op) {
+    const mod = _facMod();
+    if (!mod) return;
+    const result = mod.ranchAssign(state, op);
+    if (!result.ok) {
+      _log(state, `Ranch assignment failed: ${result.reason || 'unknown'}.`);
+      return;
+    }
+    _log(state, `Assigned ${op.beastId} to the ranch. Slots remaining: ${result.slotsRemaining}.`);
+  }
+
+  function _ranchRelease(state, op) {
+    const mod = _facMod();
+    if (!mod) return;
+    const result = mod.ranchRelease(state, op);
+    if (!result.ok) {
+      _log(state, `Ranch release failed: ${result.reason || 'unknown'}.`);
+      return;
+    }
+    _log(state, `Released ${op.beastId} from the ranch.`);
+  }
+
+  function _ranchCollect(state, op) {
+    const mod = _facMod();
+    if (!mod) return;
+    const result = mod.ranchCollect(state);
+    if (!result.ok) {
+      _log(state, `Ranch collect failed: ${result.reason || 'unknown'}.`);
+      return;
+    }
+    const bundle = { items: {}, materials: {}, food: {} };
+    for (const out of result.outputs) {
+      bundle[out.bucket] = bundle[out.bucket] || {};
+      bundle[out.bucket][out.id] = (bundle[out.bucket][out.id] || 0) + out.qty;
+    }
+    _grantBundle(state, bundle);
+    const parts = result.outputs.map((o) => `${o.qty} ${o.id}`);
+    _log(state, `Collected from the ranch: ${parts.join(', ') || 'nothing'}.`);
+  }
+
   function _worldTransition(state, op) {
     const fromWorld = state.currentWorld;
     const toWorld = op.toWorld;
@@ -2037,6 +2196,9 @@ window.CJS.CampaignOps = (() => {
     if (op.entryPhase) state.phase = { number: 1, type: op.entryPhase, name: op.entryPhaseName || op.entryPhase };
     _evaluatePersonaUnlocks(state, { target: 'party' });
     _log(state, `Chapter transition: chapter ${op.toChapterLabel || state.currentChapter}.`);
+    // Chapter advance is a natural fire point for "spare the bandit"
+    // style deferred consequences.
+    _fireDueConsequences(state, { op: 'fire_due_consequences' });
   }
 
   function _resetCampaignState(state, op) {

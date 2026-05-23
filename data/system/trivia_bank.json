@@ -1,0 +1,172 @@
+{
+  "_file": {
+    "version": 1,
+    "format": "cjs-collection",
+    "scope": "system",
+    "category": "triviaBank",
+    "status": "active"
+  },
+  "questions": [
+    {
+      "id": "trivia_haven_001",
+      "category": "lore",
+      "difficulty": "B1",
+      "world": "haven",
+      "sentence": "Pocket Haven is best described as…",
+      "options": [
+        "A portable home base the party carries between worlds.",
+        "An underground city run by goblins.",
+        "A floating airship.",
+        "A small kingdom in the eastern peaks."
+      ],
+      "correct": 0,
+      "explanation": "Pocket Haven is the party's portable base — farms, kitchens, and workbenches travel between worlds with them."
+    },
+    {
+      "id": "trivia_haven_002",
+      "category": "world_history",
+      "difficulty": "B1",
+      "world": "haven",
+      "sentence": "What gives the Frostwood its name?",
+      "options": [
+        "Ice never thaws on the leaves of its silver pines.",
+        "Bandits once froze a king inside its largest tree.",
+        "It rains diamonds every winter.",
+        "It's the home of a god of cold."
+      ],
+      "correct": 0,
+      "explanation": "Frostwood's silver pines carry a permanent ice glaze — a leftover from an ancient frost spirit."
+    },
+    {
+      "id": "trivia_haven_003",
+      "category": "character_backstory",
+      "difficulty": "B1",
+      "world": "haven",
+      "sentence": "Before joining the guild, Bin was known for…",
+      "options": [
+        "Bad jokes and worse luck.",
+        "Solo dragon slaying.",
+        "Running an apple orchard.",
+        "Forging cursed swords."
+      ],
+      "correct": 0,
+      "explanation": "Bin's signature jester reputation predates the campaign."
+    },
+    {
+      "id": "trivia_haven_004",
+      "category": "lore",
+      "difficulty": "B2",
+      "world": "haven",
+      "sentence": "Jester Points (JP) are typically earned by…",
+      "options": [
+        "Entertaining people — performances, jokes, surprising choices.",
+        "Killing high-rank monsters.",
+        "Crafting rare gear.",
+        "Spending gold at the tavern."
+      ],
+      "correct": 0,
+      "explanation": "JP rewards style and entertainment, not pure power. Tavern trivia is a classic JP source."
+    },
+    {
+      "id": "trivia_lore_001",
+      "category": "lore",
+      "difficulty": "B1",
+      "sentence": "When a 'Frozen' wolf appears, you can expect…",
+      "options": [
+        "Ice resistance and a chilling aura.",
+        "It explodes when killed.",
+        "It steals your gold.",
+        "It moves twice per turn."
+      ],
+      "correct": 0,
+      "explanation": "Frozen is a procedural enemy modifier — adds ice resistance and a defensive aura."
+    },
+    {
+      "id": "trivia_lore_002",
+      "category": "lore",
+      "difficulty": "B2",
+      "sentence": "What is the danger of an 'Alpha' monster modifier?",
+      "options": [
+        "It buffs nearby allies of the same family.",
+        "It teleports.",
+        "It heals when low on HP.",
+        "It always crits."
+      ],
+      "correct": 0,
+      "explanation": "Alpha modifiers turn pack leaders into force multipliers — kill them first."
+    },
+    {
+      "id": "trivia_lore_003",
+      "category": "lore",
+      "difficulty": "B1",
+      "sentence": "Chaining successful QTEs in combat builds…",
+      "options": [
+        "A combo multiplier that boosts your next attack.",
+        "Extra MP.",
+        "Ultimate meter only.",
+        "Nothing — QTEs are independent."
+      ],
+      "correct": 0,
+      "explanation": "Combo system: each successful QTE in a row grows a damage bonus for the next swing."
+    },
+    {
+      "id": "trivia_haven_005",
+      "category": "world_history",
+      "difficulty": "B1",
+      "world": "haven",
+      "sentence": "The 'Memory Shards' you collect on adventures are used for…",
+      "options": [
+        "Ranking up passive abilities.",
+        "Crafting weapons only.",
+        "Cooking soup.",
+        "Bribing town guards."
+      ],
+      "correct": 0,
+      "explanation": "Memory Shards are the campaign's universal passive-rank-up currency."
+    },
+    {
+      "id": "trivia_haven_006",
+      "category": "lore",
+      "difficulty": "B1",
+      "sentence": "If you spare a bandit in conversation, the most likely later consequence is…",
+      "options": [
+        "He turns up later to help, or to betray, depending on your other choices.",
+        "Nothing — bandits don't return.",
+        "He immediately steals your money.",
+        "He becomes party leader."
+      ],
+      "correct": 0,
+      "explanation": "Spared characters are tracked by the consequence system; they can return as allies or villains."
+    },
+    {
+      "id": "trivia_haven_007",
+      "category": "character_backstory",
+      "difficulty": "B1",
+      "world": "haven",
+      "sentence": "Mummy Maze and Push Box puzzles in Pocket Haven are usually framed as…",
+      "options": [
+        "Training drills set up by Bin to keep the party sharp between adventures.",
+        "Punishment from the guild master.",
+        "A rival's challenge.",
+        "Random nightmares."
+      ],
+      "correct": 0,
+      "explanation": "The minigames are framed as training and mental-sharpening drills — they grant contextual buffs on win."
+    },
+    {
+      "id": "trivia_haven_008",
+      "category": "lore",
+      "difficulty": "B2",
+      "world": "haven",
+      "sentence": "Perfectly timing the cooking minigame yields…",
+      "options": [
+        "A bonus +1 to the dish's buffed stat plus full potency.",
+        "Double food output.",
+        "Less XP.",
+        "A new recipe automatically."
+      ],
+      "correct": 0,
+      "explanation": "A 'perfect' cook adds a +1 stat bonus on top of the full-potency buff."
+    }
+  ]
+}

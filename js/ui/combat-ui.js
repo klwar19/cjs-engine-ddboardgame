@@ -1227,6 +1227,30 @@ window.CJS.CombatUI = (() => {
       </div>`;
     }
 
+    // Combo chip — chained QTE successes grant bonus damage on the
+    // next swing. The chip shows the active multiplier when one is
+    // pending so the player can see what their last good QTE earned.
+    let comboChipHtml = '';
+    const comboChain = unit.comboState?.chain || 0;
+    if (comboChain >= 2) {
+      const bonusPct = Math.round((window.CJS.ActionHandler?.getComboBonus?.(unit) || 0) * 100);
+      comboChipHtml = `<div class="unit-combo-chip" title="Chain QTE successes for bonus damage. Breaks on QTE fail, defend, or item use." style="font-size:0.74rem;margin-top:2px;color:#f97316;font-weight:600">
+        🔥 Combo x${comboChain} · +${bonusPct}% next hit
+      </div>`;
+    }
+
+    // Procedural modifier chip — shows the random Diablo-style prefix
+    // (Frozen / Rabid / Alpha / Swift / Tough / Hungry) so the player
+    // immediately sees what makes this monster different.
+    let modifierChipHtml = '';
+    if (unit.procModifier && unit.team !== 'player' && unit.team !== 'ally') {
+      const label = _escHtml(unit.procModifierLabel || unit.procModifier);
+      const icon = _escHtml(unit.procModifierIcon || '✨');
+      modifierChipHtml = `<div class="unit-modifier-chip" title="Procedural enemy modifier — random prefix giving this normal monster a twist." style="font-size:0.74rem;margin-top:2px;color:#a855f7;font-weight:600">
+        ${icon} ${label}
+      </div>`;
+    }
+
     $unitInfo.innerHTML = `
       <div class="unit-card ${_escAttr(unit.team || 'player')}">
         <div class="unit-header">
@@ -1235,6 +1259,8 @@ window.CJS.CombatUI = (() => {
             <div class="unit-name">${_escHtml(unit.name || unit.baseId || '?')}</div>
             <div class="unit-rank">Rank ${_escHtml(unit.rank || '?')} ${_escHtml(unit.type || '')}</div>
             ${personaChipHtml}
+            ${modifierChipHtml}
+            ${comboChipHtml}
           </div>
         </div>
         <div class="resource-bars">
