@@ -114,6 +114,11 @@ window.CJS.CONST = (() => {
   // ── TERRAIN ────────────────────────────────────────────────────────
   // moveCost: how many movement points to enter (1 = normal, 2 = difficult, 999 = impassable)
   // blocksLoS: whether this terrain blocks line of sight for ranged attacks
+  // elevation: 0 = ground level (default), 1+ = raised (high_ground). Affects ranged accuracy/range.
+  // flammable: 'grass' — Fire damage ignites this cell.
+  // freezable: 'water' — Water/Ice damage freezes this cell.
+  // lethal: 'cliff' — units knocked into this cell are killed instantly.
+  // destructible: 'barrel' — explodes on attack/Fire/collision, dealing Fire AoE.
   const TERRAIN_TYPES = {
     empty:      { passable: true,  moveCost: 1, blocksLoS: false, effect: null,                     icon: '',  color: '#1a1a2e' },
     obstacle:   { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🪨', color: '#374151' },
@@ -121,8 +126,8 @@ window.CJS.CONST = (() => {
     ice_zone:   { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_slow',           icon: '🧊', color: '#1e3a5f' },
     poison_zone:{ passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_poison',         icon: '☠️', color: '#14532d' },
     heal_zone:  { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_heal',           icon: '💚', color: '#064e3b' },
-    high_ground:{ passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_high_ground',    icon: '⬆️', color: '#4a3728' },
-    water:      { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_water',          icon: '🌊', color: '#1e40af' },
+    high_ground:{ passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_high_ground',    icon: '⬆️', color: '#4a3728', elevation: 1 },
+    water:      { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_water',          icon: '🌊', color: '#1e40af', freezable: true },
     lava:       { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_lava',           icon: '🌋', color: '#9a3412' },
     mud:        { passable: true,  moveCost: 3, blocksLoS: false, effect: 'terrain_mud',            icon: '🟤', color: '#78350f' },
     thorns:     { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_thorns',         icon: '🌿', color: '#365314' },
@@ -133,7 +138,11 @@ window.CJS.CONST = (() => {
     wall:       { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🧱', color: '#44403c' },
     pillar:     { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🏛️', color: '#57534e' },
     tree:       { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🌲', color: '#14532d' },
-    rubble:     { passable: true,  moveCost: 3, blocksLoS: false, effect: null,                     icon: '🪨', color: '#57534e' }
+    rubble:     { passable: true,  moveCost: 3, blocksLoS: false, effect: null,                     icon: '🪨', color: '#57534e' },
+    // ── INTERACTIVE TERRAIN (env interactions) ──────────────────────
+    grass:      { passable: true,  moveCost: 1, blocksLoS: false, effect: null,                     icon: '🌱', color: '#1f3d1f', flammable: true },
+    cliff:      { passable: false, moveCost: 999, blocksLoS: false, effect: null,                    icon: '🕳️', color: '#0a0a0f', lethal: true },
+    barrel:     { passable: false, moveCost: 999, blocksLoS: false, effect: null,                    icon: '🛢️', color: '#5b3a1d', destructible: true, explodes: true }
   };
 
   // ── UNIT SIZES ──────────────────────────────────────────────────────
@@ -197,6 +206,70 @@ window.CJS.CONST = (() => {
     // (can be overridden per-unit: large/boss units may block LoS)
     largeUnitsBlock: true,      // 2x2+ units block LoS
     highGroundIgnoresBlock: true // attacker on high ground ignores LoS blockers 1 cell away
+  };
+
+  // ── FLANKING RULES ─────────────────────────────────────────────────
+  // Position relative to target's facing affects crit chance.
+  // Geometry: compute the unit vector from target→attacker, dot with the
+  // target's facing vector. Three arcs split 360°:
+  //
+  //   FRONT  cos ≥  0.5   → 120° arc, no bonus (target can see attacker)
+  //   SIDE   cos in (-0.5, 0.5)  → 60° wedge each side (peripheral)
+  //   REAR   cos ≤ -0.5   → 120° arc behind target, full crit bonus
+  //
+  // Bonuses are flat additions to the crit% roll BEFORE Luck etc. By
+  // default only the rear arc gives a bonus — exactly the +15% rule. The
+  // side wedge is detected (so UI can label it) but grants 0% so we don't
+  // sneak extra rules in. Set sideCritBonus > 0 to opt in.
+  const FLANKING = {
+    enabled: true,
+    rearCritBonus: 15,           // % crit chance from attacking the rear arc
+    sideCritBonus: 0,            // 0 by default — side hits are not bonused
+    rearArcCosThreshold:  -0.5,  // dot ≤ this  → rear
+    sideArcCosUpper:       0.5,  // dot in (-0.5, 0.5)  → side
+    // Crit damage stays the same — only chance is boosted.
+  };
+
+  // ── ELEVATION RULES ────────────────────────────────────────────────
+  // Standing on a tile with elevation > target's elevation grants:
+  //   - bonus accuracy
+  //   - bonus range for ranged attacks (skills/basic attacks where range > 1)
+  //   - high ground also helps LoS (already handled in LINE_OF_SIGHT)
+  const ELEVATION = {
+    enabled: true,
+    accuracyBonusPerStep: 15,    // accuracy bonus per elevation step above target
+    rangeBonusPerStep:    1,     // range bonus per elevation step (ranged only)
+    // Reverse: punished when attacking up at a higher target
+    accuracyPenaltyPerStep: 0    // intentionally 0; just a flat upside for now
+  };
+
+  // ── ENVIRONMENTAL INTERACTIONS ─────────────────────────────────────
+  // Fire damage landing on a flammable tile (grass) converts it to fire_zone.
+  // Water/Ice damage landing on a freezable tile (water) converts it to ice_zone.
+  // Knockback collision into a lethal tile (cliff) instantly kills the pushed unit.
+  // Destructible tiles (barrel) explode when attacked, hit by fire, or collided into.
+  const ENVIRONMENTAL_INTERACTIONS = {
+    enabled: true,
+    // Fire → grass = fire_zone. Spreads to adjacent grass cells too.
+    fireIgnitesGrass:        true,
+    fireGrassSpreadRadius:   1,  // adjacent grass cells also catch
+    fireGrassSpreadChance:   100,// % chance per neighbour
+    // Water/Ice → water = ice_zone.
+    coldFreezesWater:        true,
+    // Ice damage type counts; Water element does NOT freeze on its own (water
+    // boosts water — only "cold" or freezing elements should freeze).
+    freezeElements:          ['Water'],
+    freezeRequiresColdTag:   false, // set true to require skill.tags include 'cold'/'ice'
+    // Knockback collisions
+    cliffsInstantKill:       true,
+    // Barrels
+    barrelExplosionRadius:   1,
+    barrelExplosionDamage:   25,  // base, scales with the kicker's STR; see Formulas.calcBarrelExplosionDamage
+    barrelExplosionElement:  'Fire',
+    barrelKickAPCost:        1,
+    barrelKickRange:         1,
+    // Knockback into a barrel sets it off
+    barrelCollisionExplodes: true
   };
 
   // ── EFFECT SYSTEM ENUMS ────────────────────────────────────────────
@@ -762,6 +835,7 @@ window.CJS.CONST = (() => {
     DAMAGE_TYPES, UNIT_TYPES, EQUIPMENT_SLOTS, WEAPON_TYPES, ARMOR_TYPES, ACCESSORY_TYPES,
     RARITIES, RARITY_COLORS,
     TERRAIN_TYPES, UNIT_SIZES, MOVEMENT_DEFAULTS, COLLISION, LINE_OF_SIGHT,
+    FLANKING, ELEVATION, ENVIRONMENTAL_INTERACTIONS,
     EFFECT_TRIGGERS, EFFECT_ACTIONS, EFFECT_TARGETS, VALUE_SOURCES,
     STATUS_CATEGORIES, STATUS_DEFINITIONS, CONDITION_DEFS, CLEANSE_LABELS,
     AI_ARCHETYPES, AI_ARCHETYPE_INFO, AI_TARGET_TYPES, AI_TARGET_INFO,

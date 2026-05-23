@@ -2272,6 +2272,324 @@ assert('memberRankMin E passes with SR member', passingMember.ok);
 const failingMember = RankConditions.evaluate({ memberRankMin: 'SSR' }, stateForCond);
 assert('memberRankMin SSR fails without SSR member', !failingMember.ok);
 
+// ══════════════════════════════════════════════════════════════════════
+// TEST 38: Flanking math (formulas.getFlankPosition)
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 38: Flanking math ──');
+{
+  const F = CJS.Formulas;
+  // Target faces N → attacker at S of target = REAR (full crit bonus)
+  const rear = F.getFlankPosition([3, 1], [1, 1], 'N');
+  assertEq('attacker due south of N-facing target = rear', rear.position, 'rear');
+  assert('rear position grants crit bonus', rear.critBonus > 0);
+
+  // Same target, attacker due N → FRONT (no bonus)
+  const front = F.getFlankPosition([-1, 1], [1, 1], 'N');
+  assertEq('attacker due north of N-facing target = front', front.position, 'front');
+  assertEq('front position grants no crit bonus', front.critBonus, 0);
+
+  // Attacker to the side → SIDE arc (default = no bonus, only labelled)
+  const side = F.getFlankPosition([1, 4], [1, 1], 'N');
+  assertEq('attacker due east of N-facing target = side', side.position, 'side');
+  assertEq('side bonus is 0 by default (only rear is bonused)', side.critBonus, 0);
+  assert('rear bonus is strictly larger than side', rear.critBonus > side.critBonus);
+
+  // Diagonal facing — target faces NE, attacker is at SW = rear
+  const rearDiag = F.getFlankPosition([3, -1], [1, 1], 'NE');
+  assertEq('diagonal facing handles diagonal rear', rearDiag.position, 'rear');
+
+  // No facing → always front, no bonus
+  const noFacing = F.getFlankPosition([3, 1], [1, 1], null);
+  assertEq('null facing returns front', noFacing.position, 'front');
+  assertEq('null facing grants 0 bonus', noFacing.critBonus, 0);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 39: Elevation math (formulas.calcElevationBonuses)
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 39: Elevation math ──');
+{
+  const F = CJS.Formulas;
+
+  // Equal elevation → no bonus
+  const flat = F.calcElevationBonuses(0, 0, 1);
+  assertEq('equal elevation = no accuracy bonus', flat.accuracy, 0);
+  assertEq('equal elevation = no range bonus', flat.range, 0);
+
+  // High ground melee → accuracy bonus only
+  const hgMelee = F.calcElevationBonuses(1, 0, 1);
+  assert('high ground melee grants accuracy', hgMelee.accuracy > 0);
+  assertEq('high ground melee grants NO range bonus', hgMelee.range, 0);
+
+  // High ground ranged → both bonuses
+  const hgRanged = F.calcElevationBonuses(1, 0, 3);
+  assert('high ground ranged grants accuracy', hgRanged.accuracy > 0);
+  assert('high ground ranged grants range', hgRanged.range > 0);
+
+  // Target on higher ground → no bonus
+  const punchedUp = F.calcElevationBonuses(0, 1, 3);
+  assertEq('attacking up at higher target = no bonus', punchedUp.accuracy, 0);
+  assertEq('attacking up at higher target = no range bonus', punchedUp.range, 0);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 40: Facing-from-delta helper
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 40: facingFromDelta ──');
+{
+  const F = CJS.Formulas;
+  assertEq('move south → S facing', F.facingFromDelta(1, 0), 'S');
+  assertEq('move north → N facing', F.facingFromDelta(-1, 0), 'N');
+  assertEq('move east  → E facing', F.facingFromDelta(0, 1), 'E');
+  assertEq('move west  → W facing', F.facingFromDelta(0, -1), 'W');
+  assertEq('move SE diagonal',     F.facingFromDelta(2, 3), 'SE');
+  assertEq('zero delta → null',    F.facingFromDelta(0, 0), null);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 41: New terrain types are registered
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 41: New terrain registration ──');
+{
+  const T = CJS.CONST.TERRAIN_TYPES;
+  assert('grass terrain registered',   !!T.grass);
+  assert('cliff terrain registered',   !!T.cliff);
+  assert('barrel terrain registered',  !!T.barrel);
+  assertEq('grass flammable',          T.grass.flammable, true);
+  assertEq('water freezable',          T.water.freezable, true);
+  assertEq('cliff lethal',             T.cliff.lethal, true);
+  assertEq('cliff impassable',         T.cliff.passable, false);
+  assertEq('barrel destructible',      T.barrel.destructible, true);
+  assertEq('barrel impassable',        T.barrel.passable, false);
+  assertEq('high_ground elevation=1',  T.high_ground.elevation, 1);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 42: Barrel explosion damage scaling
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 42: Barrel explosion damage ──');
+{
+  const F = CJS.Formulas;
+  const baseDmg = F.calcBarrelExplosionDamage(0);
+  const strongDmg = F.calcBarrelExplosionDamage(50);
+  assert('barrel base damage > 0', baseDmg > 0);
+  assert('STR scales barrel damage up', strongDmg > baseDmg);
+  // Cap: damage should not exceed 2× base regardless of STR
+  const insaneDmg = F.calcBarrelExplosionDamage(999);
+  assert('barrel damage caps at 2× base', insaneDmg <= baseDmg * 2);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 43: Grid engine env interactions (real grid-engine, no stub)
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 43: GridEngine env interactions ──');
+{
+  // Load the REAL grid engine for this section
+  const gridEnginePath = path.join(__dirname, 'js', 'grid', 'grid-engine.js');
+  const pfPath = path.join(__dirname, 'js', 'grid', 'pathfinding.js');
+  const savedGE = CJS.GridEngine;
+  const savedPF = CJS.Pathfinding;
+  vm.runInContext(fs.readFileSync(pfPath, 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(gridEnginePath, 'utf8'), sandbox);
+  const GE = CJS.GridEngine;
+  assert('Real GridEngine loaded', typeof GE.igniteCell === 'function');
+
+  // Build a 5×5 grid with grass, water, cliff, barrel scattered
+  const grid = [
+    ['empty', 'grass', 'empty', 'water', 'empty'],
+    ['empty', 'grass', 'empty', 'water', 'empty'],
+    ['empty', 'empty', 'empty', 'empty', 'cliff'],
+    ['empty', 'empty', 'barrel','empty', 'empty'],
+    ['empty', 'empty', 'empty', 'empty', 'empty']
+  ];
+  const fighter = {
+    instanceId: 'fighter1', team: 'player', name: 'Fighter',
+    stats: { S: 10, P: 5, E: 5, C: 5, I: 5, A: 5, L: 5 },
+    compiledStats: { S: 10, P: 5, E: 0, C: 5, I: 5, A: 5, L: 5 },
+    currentHP: 50, maxHP: 50, size: '1x1'
+  };
+  const target = {
+    instanceId: 'target1', team: 'enemy', name: 'Target',
+    stats: { S: 5, P: 5, E: 0, C: 5, I: 5, A: 5, L: 5 },
+    compiledStats: { S: 5, P: 5, E: 0, C: 5, I: 5, A: 5, L: 5 },
+    currentHP: 30, maxHP: 30, size: '1x1'
+  };
+  GE.init({
+    width: 5, height: 5, grid,
+    units: [
+      { id: 'fighter1', pos: [2, 0] },
+      { id: 'target1',  pos: [2, 3] }
+    ]
+  }, { fighter1: fighter, target1: target });
+
+  // Igniting grass cell turns it to fire_zone
+  const igR = GE.igniteCell(0, 1);
+  assert('igniteCell converts grass to fire_zone', igR.changed.length > 0);
+  assertEq('grass→fire_zone cell now reads fire_zone', GE.getTerrain(0, 1), 'fire_zone');
+  // Spread to adjacent grass at (1,1)
+  assertEq('adjacent grass also catches', GE.getTerrain(1, 1), 'fire_zone');
+
+  // Freeze water at (0,3)
+  const fzR = GE.freezeCell(0, 3);
+  assert('freezeCell converts water to ice_zone', fzR.changed.length > 0);
+  assertEq('water→ice_zone cell now reads ice_zone', GE.getTerrain(0, 3), 'ice_zone');
+
+  // igniteCell on non-flammable terrain is a no-op
+  const noop = GE.igniteCell(2, 0); // empty cell
+  assertEq('non-flammable cell ignite = no-op', noop.changed.length, 0);
+
+  // detonateBarrel returns hits + destroys the barrel
+  const expl = GE.detonateBarrel(3, 2, 'fighter1');
+  assert('barrel explosion succeeded', expl.exploded);
+  assert('barrel turned to rubble',    GE.getTerrain(3, 2) === 'rubble');
+  // Barrel is too far to catch our units in this setup, but explosion result
+  // shape must be present.
+  assert('explosion damage > 0', expl.damage > 0);
+  assertEq('explosion element is Fire', expl.element, 'Fire');
+
+  // Facing: moving updates facing
+  GE.setFacing('fighter1', 'N');
+  assertEq('setFacing stores N',  GE.getFacing('fighter1'), 'N');
+  // Pass-through grass on the way south — should now read 'S' after a move
+  const mv = GE.moveUnit('fighter1', 3, 0);
+  assert('move succeeds', mv.success);
+  assertEq('facing updated to S after south move', GE.getFacing('fighter1'), 'S');
+
+  // Cliff knockback = instant kill
+  // Place attacker so a single-cell knockback shoves the target into the cliff at (2,4)
+  CJS.Formulas.calcKnockbackDistance = (d) => d; // bypass END resistance for this test
+  target.pos = [2, 3];
+  target.currentHP = 30;
+  // Re-place via grid engine internal placement: knockback uses position
+  const kbToCliff = GE.knockback('target1', 0, 1, 1);
+  assert('knockback landed on cliff', kbToCliff.landedOnCliff);
+  assert('collision marked as cliff', kbToCliff.collisions.some(c => c.type === 'cliff'));
+  // Resolve via damage-calc applyKnockbackCollisions to trigger the kill
+  CJS.DamageCalc.applyKnockbackCollisions({
+    source: fighter, pushedUnit: target, kb: kbToCliff
+  });
+  assertEq('target killed by cliff fall', target.currentHP, 0);
+
+  // Restore stubs so other tests keep working
+  CJS.GridEngine = savedGE;
+  CJS.Pathfinding = savedPF;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 44: Flanking applies positional info during computeAttack
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 44: Flanking in computeAttack ──');
+{
+  // Build a minimal real GridEngine with two units so computeAttack can
+  // resolve flanking via GE.getFlankPosition.
+  const savedGE = CJS.GridEngine;
+  const savedPF = CJS.Pathfinding;
+  const gridEnginePath = path.join(__dirname, 'js', 'grid', 'grid-engine.js');
+  const pfPath = path.join(__dirname, 'js', 'grid', 'pathfinding.js');
+  vm.runInContext(fs.readFileSync(pfPath, 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(gridEnginePath, 'utf8'), sandbox);
+  const GE = CJS.GridEngine;
+
+  const baseStats = { S: 10, P: 8, E: 5, C: 5, I: 5, A: 5, L: 0 };
+  const attacker = {
+    instanceId: 'atk', team: 'player', name: 'Atk',
+    stats: baseStats, compiledStats: baseStats, dr: { physical: 0, magic: 0, chaos: 0 },
+    currentHP: 100, maxHP: 100, size: '1x1', basicAttackPower: 10, basicAttackRange: 1
+  };
+  const target = {
+    instanceId: 'tgt', team: 'enemy', name: 'Tgt',
+    stats: baseStats, compiledStats: baseStats, dr: { physical: 0, magic: 0, chaos: 0 },
+    currentHP: 100, maxHP: 100, size: '1x1', facing: 'N'
+  };
+  GE.init({
+    width: 4, height: 4, grid: [
+      ['empty','empty','empty','empty'],
+      ['empty','empty','empty','empty'],
+      ['empty','empty','empty','empty'],
+      ['empty','empty','empty','empty']
+    ],
+    units: [
+      { id: 'atk', pos: [3, 1] }, // south of target — REAR
+      { id: 'tgt', pos: [1, 1] }
+    ]
+  }, { atk: attacker, tgt: target });
+  // After init: target faces 'N' (kept from authored), attacker is south = rear.
+  target.facing = 'N';
+
+  const flank = GE.getFlankPosition(attacker, target);
+  assertEq('GE recognises rear position', flank.position, 'rear');
+  assert('GE rear position grants crit bonus', flank.critBonus > 0);
+
+  // computeAttack returns a positional block with flank info
+  const res = CJS.DamageCalc.computeAttack({
+    attacker, target, skill: null, qteMultiplier: 1.0
+  });
+  assert('computeAttack returns positional block', !!res.positional);
+  assertEq('positional flank label matches GE', res.positional.flank, 'rear');
+  assert('positional crit bonus passed through',  res.positional.critBonus > 0);
+
+  CJS.GridEngine = savedGE;
+  CJS.Pathfinding = savedPF;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TEST 45: Elevation bonus surfaces through getAttackRange + breakdown
+// ══════════════════════════════════════════════════════════════════════
+console.log('\n── TEST 45: Elevation in computeAttack & getAttackRange ──');
+{
+  const savedGE = CJS.GridEngine;
+  const savedPF = CJS.Pathfinding;
+  const gridEnginePath = path.join(__dirname, 'js', 'grid', 'grid-engine.js');
+  const pfPath = path.join(__dirname, 'js', 'grid', 'pathfinding.js');
+  vm.runInContext(fs.readFileSync(pfPath, 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(gridEnginePath, 'utf8'), sandbox);
+  const GE = CJS.GridEngine;
+  const AH = CJS.ActionHandler;
+
+  const baseStats = { S: 10, P: 8, E: 5, C: 5, I: 5, A: 5, L: 0 };
+  const archer = {
+    instanceId: 'archer', team: 'player', name: 'Archer',
+    stats: baseStats, compiledStats: baseStats, dr: { physical: 0, magic: 0, chaos: 0 },
+    currentHP: 100, maxHP: 100, size: '1x1',
+    basicAttackPower: 10, basicAttackRange: 3   // ranged so elevation matters
+  };
+  const target = {
+    instanceId: 'tgt2', team: 'enemy', name: 'Tgt',
+    stats: baseStats, compiledStats: baseStats, dr: { physical: 0, magic: 0, chaos: 0 },
+    currentHP: 100, maxHP: 100, size: '1x1', facing: 'S'
+  };
+  GE.init({
+    width: 4, height: 4, grid: [
+      ['empty','empty','empty','empty'],
+      ['empty','high_ground','empty','empty'],
+      ['empty','empty','empty','empty'],
+      ['empty','empty','empty','empty']
+    ],
+    units: [
+      { id: 'archer', pos: [1, 1] }, // on high ground
+      { id: 'tgt2',   pos: [2, 1] }
+    ]
+  }, { archer: archer, tgt2: target });
+
+  const baseRange = AH.getAttackRange({ ...archer, equipment: [] });
+  // 3 (base) + 1 (elevation step × 1) = 4
+  assert('ranged attacker gets +range from high ground', baseRange >= 4);
+
+  // Melee attacker (range 1) on high ground gets NO range bonus
+  const melee = { ...archer, basicAttackRange: 1 };
+  const meleeRange = AH.getAttackRange({ ...melee, equipment: [] });
+  assertEq('melee gets no high-ground range bonus', meleeRange, 1);
+
+  const res = CJS.DamageCalc.computeAttack({
+    attacker: archer, target, skill: null, qteMultiplier: 1.0
+  });
+  assert('positional includes elevation step', res.positional.elevationStep >= 1);
+  assert('positional includes accuracy bonus', res.positional.accuracyBonus > 0);
+
+  CJS.GridEngine = savedGE;
+  CJS.Pathfinding = savedPF;
+}
+
 // RESULTS
 // ══════════════════════════════════════════════════════════════════════
 console.log('\n══════════════════════════════════════════');

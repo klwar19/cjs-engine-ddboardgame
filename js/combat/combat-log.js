@@ -127,6 +127,14 @@ window.CJS.CombatLog = (() => {
     if (qteGrade)   tags.push(`qte_${qteGrade}`);
     if (damage >= (target?.maxHP || 0) * 0.3) tags.push('big_hit');
     if (damage >= (target?.maxHP || 0) * 0.5) tags.push('massive_hit');
+    // Positional tags so the narrator/UI can flavour the strike.
+    if (breakdown?.flank && breakdown.flank !== 'front') {
+      tags.push(`flank_${breakdown.flank}`);
+      if (isCritical && breakdown.flankCritBonus > 0) tags.push('flank_crit');
+    }
+    if (Number(breakdown?.elevationStep || 0) > 0) {
+      tags.push('high_ground_strike');
+    }
     return record({
       type: 'hit', actor, target, tags,
       data: { damage, element, damageType, skill: skill?.id, isCritical, qteGrade, breakdown }
