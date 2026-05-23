@@ -300,7 +300,8 @@ window.CJS.EffectResolver = (() => {
       const result = DC().applyRawDamage({
         source: caster, target: t, amount: value,
         reason: `effect_${effect.id || effect.action}`,
-        damageType: effect.damageType
+        damageType: effect.damageType,
+        element: effect.element
       });
       hits.push({ target: t, applied: result.applied, killed: result.killed });
 
@@ -549,14 +550,24 @@ window.CJS.EffectResolver = (() => {
       const dc = Math.sign(t.pos[1] - caster.pos[1]);
       if (dr === 0 && dc === 0) continue;
       const kb = GE().knockback(t.instanceId, dr, dc, value);
-      const dmgHits = GE().resolveKnockbackCollisions(t.instanceId, kb.collisions, ctx.damageDealt || 0);
-      for (const h of dmgHits) {
-        const u = GE().getUnit(h.unitId);
-        if (u) DC().applyRawDamage({ source: null, target: u, amount: h.damage, reason: h.reason });
+      // applyKnockbackCollisions handles cliff_fall (instant kill), barrel_blast
+      // (AoE Fire), and the usual wall/unit collision damage. Falls back to
+      // legacy hit application if damage-calc isn't loaded.
+      let appliedSummary = null;
+      if (DC()?.applyKnockbackCollisions) {
+        appliedSummary = DC().applyKnockbackCollisions({
+          source: caster, pushedUnit: t, kb, sourceDamage: ctx.damageDealt || 0
+        });
+      } else {
+        const dmgHits = GE().resolveKnockbackCollisions(t.instanceId, kb.collisions, ctx.damageDealt || 0);
+        for (const h of dmgHits) {
+          const u = GE().getUnit(h.unitId);
+          if (u) DC().applyRawDamage({ source: null, target: u, amount: h.damage, reason: h.reason });
+        }
       }
       Log().logKnockback({ actor: caster, target: t,
         distance: kb.distanceMoved, collisions: kb.collisions });
-      results.push({ target: t, ...kb });
+      results.push({ target: t, ...kb, applied: appliedSummary });
     }
     return { action: 'knockback', results };
   }

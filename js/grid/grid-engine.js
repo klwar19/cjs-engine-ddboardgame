@@ -49,8 +49,36 @@ window.CJS.GridEngine = (() => {
       unit.instanceId = placement.id;
       unit.pos = [placement.pos[0], placement.pos[1]];
       unit.size = size;
+      // Initial facing: prefer authored placement.facing, then unit.facing,
+      // then a team-based default (player teams face south by default,
+      // enemy teams face north, so day-one encounters read like a face-off).
+      unit.facing = placement.facing || unit.facing
+        || (unit.team === 'player' ? 'S' : 'N');
       _units[placement.id] = unit;
     }
+  }
+
+  // ── FACING ────────────────────────────────────────────────────────
+  function setFacing(unitId, facing) {
+    const unit = _units[unitId];
+    if (!unit || !facing) return false;
+    unit.facing = String(facing).toUpperCase();
+    return true;
+  }
+
+  function faceToward(unitId, r, c) {
+    const unit = _units[unitId];
+    if (!unit) return false;
+    const dr = r - unit.pos[0];
+    const dc = c - unit.pos[1];
+    const f = F().facingFromDelta(dr, dc);
+    if (!f) return false;
+    unit.facing = f;
+    return true;
+  }
+
+  function getFacing(unitId) {
+    return _units[unitId]?.facing || null;
   }
 
   // ── INTERNAL: FOOTPRINT HELPERS ────────────────────────────────────
@@ -225,9 +253,16 @@ window.CJS.GridEngine = (() => {
     if (!check.valid) return { success: false, reason: check.reason };
 
     const unit = _units[unitId];
+    const fromR = unit.pos[0], fromC = unit.pos[1];
     _removeUnit(unitId);
     _placeUnit(unitId, targetR, targetC, unit.size);
     unit.pos = [targetR, targetC];
+
+    // Update facing based on net movement direction. Diagonal step uses
+    // the dominant axis if dr and dc both non-zero — keeps facing readable
+    // for 4-direction pathfinding.
+    const moveFacing = F().facingFromDelta(targetR - fromR, targetC - fromC);
+    if (moveFacing) unit.facing = moveFacing;
 
     // Collect terrain effects for every cell the unit passed through
     // (including destination, excluding origin)
@@ -355,7 +390,12 @@ window.CJS.GridEngine = (() => {
   // ── KNOCKBACK ─────────────────────────────────────────────────────
   // Knockback a unit in direction [dr, dc] up to `distance` cells.
   // Returns { finalPos, distanceMoved, collisions[] }
-  //   collisions: [{ type: 'wall'|'unit', withId?, r, c }]
+  //   collisions: [{ type: 'wall'|'unit'|'cliff'|'barrel', withId?, r, c }]
+  // Cliff: pushed unit lands on a lethal cell → instant kill (handled by
+  //        resolveKnockbackCollisions, which also removes the unit from the
+  //        board). The unit's final pos sits ON the cliff for the log.
+  // Barrel: blocks travel like a wall, but destroys the barrel and triggers
+  //        an explosion via resolveKnockbackCollisions.
   function knockback(unitId, dirR, dirC, dist) {
     const unit = _units[unitId];
     if (!unit) return null;
@@ -370,6 +410,7 @@ window.CJS.GridEngine = (() => {
     const collisions = [];
     let curR = unit.pos[0], curC = unit.pos[1];
     let moved = 0;
+    let landedOnCliff = false;
 
     // Step one cell at a time
     _removeUnit(unitId);
@@ -381,6 +422,9 @@ window.CJS.GridEngine = (() => {
       let blocked = false;
       let blockType = null;
       let blockerId = null;
+      let blockerCell = null;
+      let lethalCell = null;
+      let barrelCell = null;
 
       if (!_fitsInBounds(nextR, nextC, unit.size)) {
         blocked = true; blockType = 'wall';
@@ -389,20 +433,43 @@ window.CJS.GridEngine = (() => {
           for (let dc = 0; dc < sz.w && !blocked; dc++) {
             const tr = nextR + dr, tc = nextC + dc;
             const terr = C().TERRAIN_TYPES[_cells[tr][tc]];
+            if (terr && terr.lethal) {
+              // Cliff/pit — units fall in. Treat as a "successful step" that
+              // ends the slide and triggers instant kill.
+              lethalCell = [tr, tc];
+              blocked = true; blockType = 'cliff';
+              blockerCell = [tr, tc];
+              continue;
+            }
+            if (terr && terr.destructible) {
+              barrelCell = [tr, tc];
+              blocked = true; blockType = 'barrel';
+              blockerCell = [tr, tc];
+              continue;
+            }
             if (terr && !terr.passable) {
               blocked = true; blockType = 'wall';
+              blockerCell = [tr, tc];
             }
             const occ = _occupancy[tr][tc];
             if (occ && occ !== unitId) {
               blocked = true; blockType = 'unit'; blockerId = occ;
+              blockerCell = [tr, tc];
             }
           }
         }
       }
 
       if (blocked) {
-        if (blockType === 'wall') {
-          collisions.push({ type: 'wall', r: nextR, c: nextC });
+        if (blockType === 'cliff') {
+          // The unit actually steps onto the cliff cell (it falls in).
+          curR = nextR; curC = nextC; moved++;
+          landedOnCliff = true;
+          collisions.push({ type: 'cliff', r: lethalCell[0], c: lethalCell[1] });
+        } else if (blockType === 'barrel') {
+          collisions.push({ type: 'barrel', r: barrelCell[0], c: barrelCell[1] });
+        } else if (blockType === 'wall') {
+          collisions.push({ type: 'wall', r: blockerCell ? blockerCell[0] : nextR, c: blockerCell ? blockerCell[1] : nextC });
         } else {
           collisions.push({ type: 'unit', withId: blockerId, r: nextR, c: nextC });
         }
@@ -412,17 +479,49 @@ window.CJS.GridEngine = (() => {
       curR = nextR; curC = nextC; moved++;
     }
 
-    _placeUnit(unitId, curR, curC, unit.size);
-    unit.pos = [curR, curC];
-    return { finalPos: [curR, curC], distanceMoved: moved, collisions };
+    // If we landed on a cliff, the unit is gone from the board entirely.
+    // Caller (resolveKnockbackCollisions) will issue the kill.
+    if (landedOnCliff) {
+      // Don't put the unit back on the cliff cell — it has fallen.
+      unit.pos = [curR, curC];
+      unit._fellOffCliff = true;
+    } else {
+      _placeUnit(unitId, curR, curC, unit.size);
+      unit.pos = [curR, curC];
+    }
+    return { finalPos: [curR, curC], distanceMoved: moved, collisions, landedOnCliff };
   }
 
   // Apply knockback damage based on collision results.
-  // Returns array of { unitId, damage, reason } for damage-calc to apply.
-  function resolveKnockbackCollisions(pushedUnitId, collisions, sourceDamage) {
+  // Returns array of { unitId, damage, reason, ... } for damage-calc to apply.
+  //   reason 'cliff_fall'   → True damage = pushed unit's current HP (instant kill)
+  //   reason 'barrel_blast' → AoE Fire damage to units around the barrel cell.
+  //                          Includes destroyTerrain instruction for the caller.
+  function resolveKnockbackCollisions(pushedUnitId, collisions, sourceDamage, sourceUnitId) {
     const hits = [];
     for (const col of collisions) {
-      if (col.type === 'wall') {
+      if (col.type === 'cliff') {
+        const pushed = _units[pushedUnitId];
+        const hp = Math.max(1, pushed?.currentHP || 1);
+        hits.push({
+          unitId: pushedUnitId,
+          damage: hp + 9999,           // overkill ensures kill even with resistances
+          damageType: 'True',
+          reason: 'cliff_fall',
+          r: col.r, c: col.c
+        });
+      } else if (col.type === 'barrel') {
+        // Damage handled by detonateBarrel(); the caller invokes it
+        // when it sees a 'barrel' collision. We surface a marker so the
+        // caller can log + run the explosion.
+        hits.push({
+          unitId: pushedUnitId,
+          damage: 0,
+          reason: 'barrel_blast',
+          r: col.r, c: col.c,
+          sourceUnitId
+        });
+      } else if (col.type === 'wall') {
         hits.push({
           unitId: pushedUnitId,
           damage: F().calcWallCollisionDamage(sourceDamage || 0),
@@ -466,6 +565,169 @@ window.CJS.GridEngine = (() => {
     return true;
   }
 
+  // ── ENVIRONMENTAL TRANSFORMATIONS ─────────────────────────────────
+  // igniteCell: convert flammable terrain (grass) to fire_zone, then try
+  // to spread to adjacent flammable cells per ENVIRONMENTAL_INTERACTIONS.
+  // Returns { changed: [[r,c, fromType, toType], ...] } so callers can log.
+  function igniteCell(r, c, opts = {}) {
+    const ENV = C().ENVIRONMENTAL_INTERACTIONS || {};
+    if (!ENV.fireIgnitesGrass) return { changed: [] };
+    if (!_inBounds(r, c)) return { changed: [] };
+    const t = _cells[r][c];
+    const td = C().TERRAIN_TYPES[t];
+    if (!td || !td.flammable) return { changed: [] };
+
+    const changed = [];
+    _cells[r][c] = 'fire_zone';
+    changed.push([r, c, t, 'fire_zone']);
+
+    // Spread to adjacent flammable cells.
+    const radius = Math.max(0, Number(opts.spreadRadius ?? ENV.fireGrassSpreadRadius ?? 0));
+    const chance = Math.max(0, Math.min(100, Number(opts.spreadChance ?? ENV.fireGrassSpreadChance ?? 0)));
+    if (radius > 0 && chance > 0) {
+      for (let dr = -radius; dr <= radius; dr++) {
+        for (let dc = -radius; dc <= radius; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr, nc = c + dc;
+          if (!_inBounds(nr, nc)) continue;
+          const nt = _cells[nr][nc];
+          const ntd = C().TERRAIN_TYPES[nt];
+          if (!ntd || !ntd.flammable) continue;
+          if (chance < 100 && (Math.random() * 100) >= chance) continue;
+          _cells[nr][nc] = 'fire_zone';
+          changed.push([nr, nc, nt, 'fire_zone']);
+        }
+      }
+    }
+    return { changed };
+  }
+
+  // freezeCell: convert freezable terrain (water) to ice_zone.
+  // Returns { changed: [[r,c,fromType,toType]] }.
+  function freezeCell(r, c) {
+    const ENV = C().ENVIRONMENTAL_INTERACTIONS || {};
+    if (!ENV.coldFreezesWater) return { changed: [] };
+    if (!_inBounds(r, c)) return { changed: [] };
+    const t = _cells[r][c];
+    const td = C().TERRAIN_TYPES[t];
+    if (!td || !td.freezable) return { changed: [] };
+    _cells[r][c] = 'ice_zone';
+    return { changed: [[r, c, t, 'ice_zone']] };
+  }
+
+  // detonateBarrel: explode a barrel at (r, c). Returns the AoE result:
+  // { exploded: true, center: [r,c], hits: [{ unitId, damage }] } so the
+  // caller (action-handler/damage-calc) can apply the damage. The barrel
+  // tile is converted to rubble after detonation.
+  function detonateBarrel(r, c, sourceUnitId) {
+    const ENV = C().ENVIRONMENTAL_INTERACTIONS || {};
+    if (!_inBounds(r, c)) return { exploded: false };
+    const t = _cells[r][c];
+    const td = C().TERRAIN_TYPES[t];
+    if (!td || !td.destructible) return { exploded: false };
+
+    const radius = Math.max(0, Number(ENV.barrelExplosionRadius ?? 1));
+    const source = sourceUnitId ? _units[sourceUnitId] : null;
+    const srcStr = source?.compiledStats?.S ?? source?.stats?.S ?? 0;
+    const damage = F().calcBarrelExplosionDamage(srcStr);
+
+    const hits = [];
+    const seen = new Set();
+    for (let dr = -radius; dr <= radius; dr++) {
+      for (let dc = -radius; dc <= radius; dc++) {
+        const nr = r + dr, nc = c + dc;
+        if (!_inBounds(nr, nc)) continue;
+        const occ = _occupancy[nr][nc];
+        if (!occ || seen.has(occ)) continue;
+        seen.add(occ);
+        hits.push({
+          unitId: occ,
+          damage,
+          element: ENV.barrelExplosionElement || 'Fire',
+          damageType: 'Magic',
+          reason: 'barrel_blast'
+        });
+      }
+    }
+
+    // Convert the barrel cell to rubble — passable wreckage.
+    _cells[r][c] = 'rubble';
+    // Adjacent grass should catch fire from the blast — same hook as a
+    // direct Fire hit so behaviour stays consistent.
+    igniteCell(r, c, { spreadRadius: radius, spreadChance: 100 });
+
+    return {
+      exploded: true,
+      center: [r, c],
+      element: ENV.barrelExplosionElement || 'Fire',
+      damageType: 'Magic',
+      radius,
+      damage,
+      hits,
+      sourceUnitId: sourceUnitId || null
+    };
+  }
+
+  // Generic destructible-terrain check (for UI / AI targeting).
+  function isDestructibleTerrain(r, c) {
+    if (!_inBounds(r, c)) return false;
+    const td = C().TERRAIN_TYPES[_cells[r][c]];
+    return !!(td && td.destructible);
+  }
+
+  function isLethalTerrain(r, c) {
+    if (!_inBounds(r, c)) return false;
+    const td = C().TERRAIN_TYPES[_cells[r][c]];
+    return !!(td && td.lethal);
+  }
+
+  // ── ELEVATION / FLANKING QUERIES ──────────────────────────────────
+  // Elevation of a single cell (0 = ground). Multi-cell units use the
+  // MAX elevation across their footprint — standing partly on high
+  // ground still counts as elevated.
+  function getCellElevation(r, c) {
+    if (!_inBounds(r, c)) return 0;
+    const td = C().TERRAIN_TYPES[_cells[r][c]];
+    return Number(td?.elevation || 0);
+  }
+
+  function getUnitElevation(unit) {
+    if (!unit?.pos) return 0;
+    const sz = _footprint(unit.size);
+    let best = 0;
+    for (let dr = 0; dr < sz.h; dr++) {
+      for (let dc = 0; dc < sz.w; dc++) {
+        const e = getCellElevation(unit.pos[0] + dr, unit.pos[1] + dc);
+        if (e > best) best = e;
+      }
+    }
+    return best;
+  }
+
+  // Flank position of attacker relative to target (uses target.facing).
+  // Multi-cell targets: we use the CLOSEST cell of the target footprint to
+  // the attacker as the reference, so attacking the back of a dragon still
+  // counts as a flank even though the anchor is far away.
+  function getFlankPosition(attacker, target) {
+    if (!attacker || !target || !attacker.pos || !target.pos) {
+      return { position: 'front', critBonus: 0 };
+    }
+    const facing = target.facing;
+    if (!facing) return { position: 'front', critBonus: 0 };
+
+    // Pick the closest cell of the target footprint to the attacker.
+    const szT = _footprint(target.size);
+    let bestR = target.pos[0], bestC = target.pos[1], bestD = Infinity;
+    for (let dr = 0; dr < szT.h; dr++) {
+      for (let dc = 0; dc < szT.w; dc++) {
+        const tr = target.pos[0] + dr, tc = target.pos[1] + dc;
+        const d = distance(attacker.pos[0], attacker.pos[1], tr, tc);
+        if (d < bestD) { bestD = d; bestR = tr; bestC = tc; }
+      }
+    }
+    return F().getFlankPosition(attacker.pos, [bestR, bestC], facing);
+  }
+
   function getEmptyCells() {
     const cells = [];
     for (let r = 0; r < _height; r++) {
@@ -489,6 +751,8 @@ window.CJS.GridEngine = (() => {
     distance, distanceBetween, footprintDistance, isAdjacent,
     // Movement
     isValidMove, moveUnit, teleportUnit, getValidMoves,
+    // Facing
+    setFacing, faceToward, getFacing,
     // Line of sight
     hasLineOfSight, bresenham,
     // Range queries
@@ -498,6 +762,11 @@ window.CJS.GridEngine = (() => {
     // Lifecycle
     removeFromBoard, addUnit,
     // Terrain mutation
-    setTerrain
+    setTerrain,
+    // Environmental interactions
+    igniteCell, freezeCell, detonateBarrel,
+    isDestructibleTerrain, isLethalTerrain,
+    // Elevation / flanking
+    getCellElevation, getUnitElevation, getFlankPosition
   });
 })();

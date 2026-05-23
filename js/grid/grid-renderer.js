@@ -230,6 +230,9 @@ window.CJS.GridRenderer = (() => {
     }
 
     // ── TERRAIN ─────────────────────────────────────────────────────
+    // Two passes so elevation drop-shadows always paint UNDER the raised
+    // neighbour, never on top of it. First pass paints the terrain proper;
+    // second pass overlays edge bevels + elevation cast shadows + icons.
     for (let r = 0; r < _height; r++) {
       for (let c = 0; c < _width; c++) {
         const terrain = GE().getTerrain(r, c);
@@ -238,35 +241,40 @@ window.CJS.GridRenderer = (() => {
         const y = r * cs;
         const seed = _cellRand(r, c);
 
-        // Cell background with subtle per-cell variation
-        ctx.globalAlpha = 0.78;
-        ctx.fillStyle = tData.color || '#1a1a2e';
-        ctx.fillRect(x, y, cs, cs);
-        ctx.globalAlpha = 1;
+        // Cell background — vertical gradient gives subtle depth so cells
+        // feel like physical tiles rather than flat swatches.
+        const bg = tData.color || '#1a1a2e';
+        _paintCellBase(ctx, x, y, cs, bg, terrain);
 
         // Procedural decoration per terrain kind. This is what makes
         // the grid feel like an RPG floor instead of a chess board.
         _drawTerrainDecor(ctx, terrain, x, y, cs, seed, ts);
+      }
+    }
 
-        // Inner cell border — slight bevel so cells read as tiles
-        ctx.strokeStyle = 'rgba(0,0,0,0.32)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.beginPath();
-        ctx.moveTo(x + 0.5, y + cs - 0.5);
-        ctx.lineTo(x + 0.5, y + 0.5);
-        ctx.lineTo(x + cs - 0.5, y + 0.5);
-        ctx.stroke();
+    // Second pass: bevels + elevation cast shadows + glyph overlay.
+    for (let r = 0; r < _height; r++) {
+      for (let c = 0; c < _width; c++) {
+        const terrain = GE().getTerrain(r, c);
+        const tData = C().TERRAIN_TYPES[terrain] || C().TERRAIN_TYPES.empty;
+        const x = c * cs;
+        const y = r * cs;
+        _paintCellEdges(ctx, x, y, cs, tData);
+        _paintElevationShadow(ctx, r, c, x, y, cs);
 
-        // Terrain icon glyph (kept for clarity beside the decoration)
-        if (tData.icon) {
-          ctx.font = `${Math.floor(cs * 0.32)}px serif`;
+        // Terrain icon glyph (kept for clarity beside the decoration).
+        // Hidden for the brand-new "atmospheric" terrains where the
+        // drawn art already carries the read.
+        if (tData.icon && !_iconHiddenForTerrain(terrain)) {
+          ctx.font = `${Math.floor(cs * 0.3)}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.globalAlpha = 0.55;
+          ctx.globalAlpha = 0.5;
           ctx.fillStyle = '#fff';
-          ctx.fillText(tData.icon, x + cs / 2, y + cs / 2);
+          ctx.shadowColor = 'rgba(0,0,0,0.7)';
+          ctx.shadowBlur = 3;
+          ctx.fillText(tData.icon, x + cs / 2, y + cs * 0.5);
+          ctx.shadowBlur = 0;
           ctx.globalAlpha = 1;
         }
       }
@@ -387,6 +395,11 @@ window.CJS.GridRenderer = (() => {
       ctx.fillText(icon, px + pw / 2, py2 + ph / 2);
     }
 
+    // ── FACING CHEVRON ────────────────────────────────────────────
+    // Drawn AFTER the portrait so the indicator sits on top of the
+    // unit art. This is functional: players read flank arcs from it.
+    _drawFacingChevron(ctx, unit, px, py2, pw, ph, cs);
+
     // Name label
     ctx.font = `bold ${Math.floor(cs * 0.17)}px sans-serif`;
     ctx.textAlign = 'center';
@@ -444,18 +457,122 @@ window.CJS.GridRenderer = (() => {
     switch (terrain) {
       case 'grass':
       case 'forest': {
-        ctx.strokeStyle = 'rgba(140, 220, 130, 0.55)';
-        ctx.lineWidth = Math.max(1, cs * 0.04);
-        for (let i = 0; i < 4; i++) {
-          const px = x + cs * ((seed * 13 + i * 17) % 100) / 100;
-          const py = y + cs * 0.55 + cs * ((seed * 7 + i * 29) % 60) / 100;
+        // Denser tufts than other terrains so grass reads as a continuous
+        // flammable carpet — important because Fire damage on this tile
+        // converts it to fire_zone, so the player needs to recognize it.
+        ctx.strokeStyle = 'rgba(120, 200, 95, 0.7)';
+        ctx.lineWidth = Math.max(1, cs * 0.035);
+        const tuftCount = 7;
+        for (let i = 0; i < tuftCount; i++) {
+          // Stable per-cell jitter so tufts don't crawl between frames.
+          const sx = x + cs * (0.1 + ((seed * 13 + i * 23) % 80) / 100);
+          const sy = y + cs * (0.45 + ((seed * 7 + i * 31) % 50) / 100);
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(px - cs * 0.04, py - cs * 0.18);
-          ctx.moveTo(px, py);
-          ctx.lineTo(px + cs * 0.04, py - cs * 0.16);
+          ctx.moveTo(sx, sy + cs * 0.06);
+          ctx.lineTo(sx - cs * 0.04, sy - cs * 0.14);
+          ctx.moveTo(sx, sy + cs * 0.06);
+          ctx.lineTo(sx,             sy - cs * 0.18);
+          ctx.moveTo(sx, sy + cs * 0.06);
+          ctx.lineTo(sx + cs * 0.04, sy - cs * 0.14);
           ctx.stroke();
         }
+        // Tiny scatter of darker blades for depth.
+        ctx.strokeStyle = 'rgba(60, 110, 50, 0.55)';
+        for (let i = 0; i < 4; i++) {
+          const sx = x + cs * (0.2 + ((seed * 19 + i * 11) % 60) / 100);
+          const sy = y + cs * (0.6 + ((seed * 23 + i * 7) % 30) / 100);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy + cs * 0.05);
+          ctx.lineTo(sx + cs * 0.03, sy - cs * 0.1);
+          ctx.stroke();
+        }
+        break;
+      }
+      case 'cliff': {
+        // Pit / sheer drop: dark inside with a jagged crack pattern so it
+        // reads as bottomless, not just a dark tile. Players need to see
+        // immediately that this is a fall-to-your-death cell.
+        const cx = x + cs / 2;
+        const cy = y + cs / 2;
+        // Deep void in the middle.
+        const g = ctx.createRadialGradient(cx, cy, cs * 0.06, cx, cy, cs * 0.5);
+        g.addColorStop(0,  '#000000');
+        g.addColorStop(0.7,'#08080c');
+        g.addColorStop(1,  'rgba(8, 8, 12, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x + cs * 0.08, y + cs * 0.08, cs * 0.84, cs * 0.84);
+        // Cracked lip — pale edges so the pit's outline is clear.
+        ctx.strokeStyle = 'rgba(200, 200, 210, 0.45)';
+        ctx.lineWidth = Math.max(1, cs * 0.04);
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a0 = (i / 5) * Math.PI * 2 + (seed * 1.7);
+          const a1 = a0 + (Math.PI * 2) / 5;
+          const r0 = cs * (0.32 + ((seed * 11 + i * 5) % 8) / 100);
+          const r1 = cs * (0.32 + ((seed * 7  + i * 9) % 8) / 100);
+          ctx.moveTo(cx + Math.cos(a0) * r0, cy + Math.sin(a0) * r0);
+          ctx.lineTo(cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r1);
+        }
+        ctx.stroke();
+        // Skull tick in the centre — small, clear danger glyph.
+        ctx.fillStyle = 'rgba(220, 220, 220, 0.5)';
+        ctx.font = `${Math.floor(cs * 0.38)}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💀', cx, cy);
+        break;
+      }
+      case 'barrel': {
+        // Cylindrical wooden barrel with a metal band — distinct silhouette
+        // so the player recognises a kickable object at a glance.
+        const cx = x + cs / 2;
+        const baseTop = y + cs * 0.22;
+        const baseBot = y + cs * 0.86;
+        const halfW = cs * 0.28;
+        // Body
+        const body = ctx.createLinearGradient(x, 0, x + cs, 0);
+        body.addColorStop(0,    '#3a2410');
+        body.addColorStop(0.5,  '#7a4f29');
+        body.addColorStop(1,    '#3a2410');
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.moveTo(cx - halfW, baseTop);
+        ctx.quadraticCurveTo(cx - halfW * 1.18, (baseTop + baseBot) / 2, cx - halfW, baseBot);
+        ctx.lineTo(cx + halfW, baseBot);
+        ctx.quadraticCurveTo(cx + halfW * 1.18, (baseTop + baseBot) / 2, cx + halfW, baseTop);
+        ctx.closePath();
+        ctx.fill();
+        // Top oval (the open / lid)
+        ctx.fillStyle = '#2a190a';
+        ctx.beginPath();
+        ctx.ellipse(cx, baseTop, halfW, cs * 0.07, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1a0e05';
+        ctx.lineWidth = Math.max(1, cs * 0.02);
+        ctx.stroke();
+        // Metal bands
+        ctx.strokeStyle = 'rgba(40, 40, 40, 0.85)';
+        ctx.lineWidth = Math.max(1.5, cs * 0.045);
+        for (const yy of [baseTop + cs * 0.12, (baseTop + baseBot) / 2, baseBot - cs * 0.06]) {
+          ctx.beginPath();
+          ctx.moveTo(cx - halfW * 1.08, yy);
+          ctx.quadraticCurveTo(cx, yy + cs * 0.025, cx + halfW * 1.08, yy);
+          ctx.stroke();
+        }
+        // Stave seams
+        ctx.strokeStyle = 'rgba(20, 12, 4, 0.55)';
+        ctx.lineWidth = 1;
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(cx + i * halfW * 0.4, baseTop + cs * 0.02);
+          ctx.lineTo(cx + i * halfW * 0.4, baseBot - cs * 0.04);
+          ctx.stroke();
+        }
+        // Tiny "danger" warning so the player knows it's interactive.
+        ctx.fillStyle = 'rgba(255, 200, 0, 0.85)';
+        ctx.beginPath();
+        ctx.arc(cx + halfW * 0.55, baseTop + cs * 0.05, Math.max(1.5, cs * 0.05), 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
       case 'water':
@@ -711,13 +828,25 @@ window.CJS.GridRenderer = (() => {
         break;
       }
       default: {
-        // Stone floor — subtle speckle
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        // Stone floor — subtle speckle + faint hairline cracks. Kept low
+        // contrast so units and effects always dominate the read.
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
         for (let i = 0; i < 5; i++) {
           const sx = x + cs * ((seed * 11 + i * 7) % 100) / 100;
           const sy = y + cs * ((seed * 17 + i * 13) % 100) / 100;
           ctx.fillRect(sx, sy, Math.max(1, cs * 0.03), Math.max(1, cs * 0.03));
         }
+        // One short hairline crack per cell (different angle/position per seed).
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 1;
+        const cx0 = x + cs * (0.15 + ((seed * 19) % 70) / 100);
+        const cy0 = y + cs * (0.25 + ((seed * 23) % 50) / 100);
+        const ang = (seed * Math.PI) % (Math.PI * 2);
+        const len = cs * (0.12 + ((seed * 13) % 18) / 100);
+        ctx.beginPath();
+        ctx.moveTo(cx0, cy0);
+        ctx.lineTo(cx0 + Math.cos(ang) * len, cy0 + Math.sin(ang) * len);
+        ctx.stroke();
       }
     }
   }
@@ -726,6 +855,185 @@ window.CJS.GridRenderer = (() => {
     let h = _decorSeed ^ ((r * 374761393) | 0) ^ ((c * 668265263) | 0);
     h = (h ^ (h >>> 13)) * 1274126177;
     return ((h ^ (h >>> 16)) >>> 0) / 0xFFFFFFFF;
+  }
+
+  // ── CELL PAINTING HELPERS ─────────────────────────────────────────
+  // Paint the base of one cell with a vertical gradient so tiles read as
+  // physical surfaces (slight lift at the top, slight pool of shadow at
+  // the bottom). Different terrain families get tuned tones.
+  function _paintCellBase(ctx, x, y, cs, color, terrainKey) {
+    // Build a per-terrain top/bottom shade so the gradient direction
+    // matches the material (stone = light top, water = light middle, etc.)
+    const shade = _shadeForTerrain(terrainKey, color);
+    const grad = ctx.createLinearGradient(x, y, x, y + cs);
+    grad.addColorStop(0,    shade.top);
+    grad.addColorStop(0.55, shade.mid);
+    grad.addColorStop(1,    shade.bottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, cs, cs);
+  }
+
+  function _shadeForTerrain(terrain, baseColor) {
+    // Generic darker-bottom / lighter-top for every tile, with per-terrain
+    // overrides for ones whose materials read differently.
+    const overrides = {
+      water:      { top: '#2a64c4', mid: '#1d4cae', bottom: '#0e2f8a' },
+      ice_zone:   { top: '#a7d8ff', mid: '#5d9ed8', bottom: '#2e5f9c' },
+      lava:       { top: '#f59e0b', mid: '#b8480a', bottom: '#6b1a07' },
+      fire_zone:  { top: '#c2410c', mid: '#7f1d1d', bottom: '#3f0a0a' },
+      grass:      { top: '#3a6f37', mid: '#27502a', bottom: '#173317' },
+      high_ground:{ top: '#7c5b3a', mid: '#5b3f25', bottom: '#3a2515' },
+      cliff:      { top: '#16161e', mid: '#08080c', bottom: '#000000' },
+      barrel:     { top: '#7a4f29', mid: '#5b3a1d', bottom: '#3a2410' },
+      wall:       { top: '#605854', mid: '#44403c', bottom: '#23211f' },
+      heal_zone:  { top: '#107a52', mid: '#064e3b', bottom: '#04321f' },
+      holy:       { top: '#fff4c2', mid: '#fde68a', bottom: '#caa645' },
+      dark:       { top: '#1e1b4b', mid: '#0f0a2a', bottom: '#05030f' },
+      mud:        { top: '#8a572c', mid: '#5d3416', bottom: '#3a200c' },
+      poison_zone:{ top: '#1f6b3e', mid: '#14532d', bottom: '#072614' },
+      empty:      { top: '#1f2839', mid: '#171d2b', bottom: '#0c111c' }
+    };
+    if (overrides[terrain]) return overrides[terrain];
+    const rgb = _hexToRgb(baseColor) || { r: 30, g: 30, b: 46 };
+    return {
+      top:    `rgb(${Math.min(255, rgb.r + 18)}, ${Math.min(255, rgb.g + 18)}, ${Math.min(255, rgb.b + 18)})`,
+      mid:    `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+      bottom: `rgb(${Math.max(0, rgb.r - 22)}, ${Math.max(0, rgb.g - 22)}, ${Math.max(0, rgb.b - 22)})`
+    };
+  }
+
+  function _hexToRgb(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const m = hex.match(/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+    if (!m) return null;
+    return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+  }
+
+  // Outer + inner edge bevel. Two-tone so each cell reads as raised
+  // even at small zoom levels. The bevel is consistent across terrains
+  // (the gradient sells the material; the bevel sells the tile shape).
+  function _paintCellEdges(ctx, x, y, cs, tData) {
+    // Bottom + right outer line — darker, gives weight.
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + cs - 0.5, y + 0.5);
+    ctx.lineTo(x + cs - 0.5, y + cs - 0.5);
+    ctx.lineTo(x + 0.5,      y + cs - 0.5);
+    ctx.stroke();
+    // Top + left inner highlight — brighter, gives lift.
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, y + cs - 1.5);
+    ctx.lineTo(x + 0.5, y + 0.5);
+    ctx.lineTo(x + cs - 1.5, y + 0.5);
+    ctx.stroke();
+  }
+
+  // Cast a soft shadow into a neighbouring cell when this cell is raised
+  // (high_ground → +1) and the neighbour is lower. For pits (cliff), do
+  // the opposite — the cell itself sinks below the surrounding floor.
+  function _paintElevationShadow(ctx, r, c, x, y, cs) {
+    const here = GE().getTerrain(r, c);
+    const hereData = C().TERRAIN_TYPES[here] || {};
+    const elevHere = Number(hereData.elevation || 0);
+    const isPit = !!hereData.lethal && hereData.passable === false; // cliff
+
+    if (elevHere > 0) {
+      // Lighten the highlight on the top + left edges; this cell sits up.
+      ctx.strokeStyle = 'rgba(255, 235, 180, 0.35)';
+      ctx.lineWidth = Math.max(1, cs * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(x + 1, y + cs - 2);
+      ctx.lineTo(x + 1, y + 1);
+      ctx.lineTo(x + cs - 2, y + 1);
+      ctx.stroke();
+      // Bottom + right gets a heavier drop shadow into the neighbour
+      // cells, simulating a step down.
+      const grad = ctx.createLinearGradient(x, y + cs - cs * 0.25, x, y + cs);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.45)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y + cs - Math.max(2, cs * 0.18), cs, Math.max(2, cs * 0.18));
+    }
+
+    if (isPit) {
+      // Pit — inset shadow ring so the cell looks recessed.
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = Math.max(2, cs * 0.06);
+      ctx.strokeRect(x + cs * 0.08, y + cs * 0.08, cs * 0.84, cs * 0.84);
+      // Inner darker rim so you can SEE the drop.
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(x + cs * 0.08, y + cs * 0.08, cs * 0.84, Math.max(2, cs * 0.08));
+    }
+  }
+
+  // Terrains whose drawn art already carries the read — don't double up
+  // with the small emoji glyph.
+  function _iconHiddenForTerrain(terrain) {
+    return terrain === 'grass'
+        || terrain === 'cliff'
+        || terrain === 'barrel'
+        || terrain === 'wall'
+        || terrain === 'obstacle'
+        || terrain === 'tree'
+        || terrain === 'pillar'
+        || terrain === 'high_ground';
+  }
+
+  // ── FACING CHEVRON ────────────────────────────────────────────────
+  // Solid arrowhead drawn on the front edge of the unit's footprint.
+  // This is FUNCTIONAL — players need it to read which side of an enemy
+  // counts as "rear" for flanking. Sized so it sits right at the cell
+  // border, half on the portrait, half on the cell edge — readable at
+  // any zoom level without dominating the unit art.
+  function _drawFacingChevron(ctx, unit, px, py, pw, ph, cs) {
+    const facing = unit.facing;
+    if (!facing) return;
+    const cx = px + pw / 2;
+    const cy = py + ph / 2;
+    // Tip sits right at the cell edge of the unit footprint.
+    const half = Math.min(pw, ph) * 0.5;
+    const tipDist = half - Math.max(1, cs * 0.02);
+    const halfBase = Math.max(3, cs * 0.13);
+    const arrowLen = halfBase * 1.55;
+
+    // Direction vector (canvas: x=col,+right ; y=row,+down)
+    const vec = {
+      N:  [ 0, -1], NE: [ Math.SQRT1_2, -Math.SQRT1_2],
+      E:  [ 1,  0], SE: [ Math.SQRT1_2,  Math.SQRT1_2],
+      S:  [ 0,  1], SW: [-Math.SQRT1_2,  Math.SQRT1_2],
+      W:  [-1,  0], NW: [-Math.SQRT1_2, -Math.SQRT1_2]
+    }[String(facing).toUpperCase()];
+    if (!vec) return;
+    const [vx, vy] = vec;
+    // Perpendicular vector (rotated 90°) for the base of the triangle.
+    const perpX = -vy, perpY = vx;
+
+    const tipX = cx + vx * tipDist;
+    const tipY = cy + vy * tipDist;
+    // Base sits a notch behind the tip — gives the arrow head shape.
+    const baseDist = tipDist - arrowLen;
+    const baseCx = cx + vx * baseDist;
+    const baseCy = cy + vy * baseDist;
+    const blX = baseCx + perpX * halfBase;
+    const blY = baseCy + perpY * halfBase;
+    const brX = baseCx - perpX * halfBase;
+    const brY = baseCy - perpY * halfBase;
+
+    // Team-tinted, with a contrast outline so it reads on any cell colour.
+    const fill = unit.team === 'player' ? '#60a5fa' : '#fca5a5';
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+    ctx.lineWidth = Math.max(1.2, cs * 0.028);
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(blX, blY);
+    ctx.lineTo(brX, brY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
   }
 
   function setTheme(opts = {}) {

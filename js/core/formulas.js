@@ -193,6 +193,107 @@ window.CJS.Formulas = (() => {
     return Math.max(0, (baseMovement || 3) + (movementBonus || 0));
   }
 
+  // ── FLANKING ───────────────────────────────────────────────────────
+  // Returns a position label ('front' | 'side' | 'rear') and the crit bonus
+  // attackers in that arc get against `targetFacing`. Pure math: no grid lookups.
+  //
+  // attackerPos, targetPos:  [r, c] coordinates
+  // targetFacing:            one of N/S/E/W/NE/SE/SW/NW (string), or null
+  //
+  // The arc is determined by comparing the unit vector from target→attacker
+  // against the target's facing vector. Dot product:
+  //   ≥ sideArcCosUpper      → front
+  //   in (rearCos, sideUpper)→ side
+  //   ≤ rearArcCosThreshold  → rear
+  function getFlankPosition(attackerPos, targetPos, targetFacing) {
+    if (!attackerPos || !targetPos || !targetFacing) {
+      return { position: 'front', critBonus: 0 };
+    }
+    const FLANK = C().FLANKING || { enabled: false, rearCritBonus: 0, sideCritBonus: 0, rearArcCosThreshold: -0.5, sideArcCosUpper: 0.5 };
+    if (!FLANK.enabled) return { position: 'front', critBonus: 0 };
+
+    const facing = _facingToVector(targetFacing);
+    if (!facing) return { position: 'front', critBonus: 0 };
+
+    // Vector pointing from target TO attacker — this is the direction the
+    // attacker is coming from, in row/col space.
+    const dr = attackerPos[0] - targetPos[0];
+    const dc = attackerPos[1] - targetPos[1];
+    const len = Math.sqrt(dr * dr + dc * dc) || 1;
+    const ux = dr / len, uy = dc / len;
+
+    // Target faces (fr, fc). The REAR is the OPPOSITE direction of facing,
+    // so attacker in the rear arc means (ux,uy) points opposite to facing
+    // → dot(attackerFromTarget, facing) is NEGATIVE.
+    const dot = ux * facing[0] + uy * facing[1];
+
+    if (dot <= FLANK.rearArcCosThreshold) {
+      return { position: 'rear', critBonus: Number(FLANK.rearCritBonus || 0) };
+    }
+    if (dot < FLANK.sideArcCosUpper) {
+      return { position: 'side', critBonus: Number(FLANK.sideCritBonus || 0) };
+    }
+    return { position: 'front', critBonus: 0 };
+  }
+
+  // Compute facing string from a movement delta (or attacker→target vector).
+  // Returns one of N/NE/E/SE/S/SW/W/NW, or null when delta is zero.
+  function facingFromDelta(dr, dc) {
+    if (!dr && !dc) return null;
+    const sr = Math.sign(dr), sc = Math.sign(dc);
+    if (sr === -1 && sc ===  0) return 'N';
+    if (sr === -1 && sc ===  1) return 'NE';
+    if (sr ===  0 && sc ===  1) return 'E';
+    if (sr ===  1 && sc ===  1) return 'SE';
+    if (sr ===  1 && sc ===  0) return 'S';
+    if (sr ===  1 && sc === -1) return 'SW';
+    if (sr ===  0 && sc === -1) return 'W';
+    if (sr === -1 && sc === -1) return 'NW';
+    return null;
+  }
+
+  function _facingToVector(facing) {
+    switch (String(facing || '').toUpperCase()) {
+      case 'N':  return [-1,  0];
+      case 'NE': return [-1,  1];
+      case 'E':  return [ 0,  1];
+      case 'SE': return [ 1,  1];
+      case 'S':  return [ 1,  0];
+      case 'SW': return [ 1, -1];
+      case 'W':  return [ 0, -1];
+      case 'NW': return [-1, -1];
+      default:   return null;
+    }
+  }
+
+  // ── ELEVATION ─────────────────────────────────────────────────────
+  // Given attacker/target elevation numbers (0 = ground, 1+ = raised),
+  // returns bonus accuracy & range for the attacker. Range bonus only
+  // applies to ranged attacks (baseRange > 1) — high ground letting you
+  // see further makes sense for archers, not melee.
+  function calcElevationBonuses(attackerElevation, targetElevation, baseRange) {
+    const E = C().ELEVATION || { enabled: false, accuracyBonusPerStep: 0, rangeBonusPerStep: 0 };
+    if (!E.enabled) return { accuracy: 0, range: 0, advantage: 0 };
+    const step = Math.max(0, Number(attackerElevation || 0) - Number(targetElevation || 0));
+    if (step <= 0) return { accuracy: 0, range: 0, advantage: 0 };
+    const isRanged = Number(baseRange || 1) > 1;
+    return {
+      accuracy: step * Number(E.accuracyBonusPerStep || 0),
+      range:    isRanged ? step * Number(E.rangeBonusPerStep || 0) : 0,
+      advantage: step
+    };
+  }
+
+  // ── BARREL EXPLOSION DAMAGE ───────────────────────────────────────
+  // Base damage from constants, scaled lightly by the kicker's Strength.
+  // Caps at 2× base so a single barrel never one-shots high-level units.
+  function calcBarrelExplosionDamage(kickerStr) {
+    const E = C().ENVIRONMENTAL_INTERACTIONS || { barrelExplosionDamage: 25 };
+    const base = Math.max(1, Number(E.barrelExplosionDamage || 25));
+    const scaled = base + Math.floor((Number(kickerStr || 0) || 0) * 0.6);
+    return Math.min(base * 2, scaled);
+  }
+
   // ── KNOCKBACK & COLLISION ─────────────────────────────────────────
   // Effective knockback distance after END resistance
   function calcKnockbackDistance(baseDistance, targetEndurance) {
@@ -1024,6 +1125,9 @@ window.CJS.Formulas = (() => {
     calcInitiative, calcMovement,
     calcKnockbackDistance, calcWallCollisionDamage, calcUnitCollisionDamage,
     doesKnockbackChain, cellBlocksLoS, getTerrainMoveCost,
+    // Flanking / Elevation / Env interactions
+    getFlankPosition, facingFromDelta,
+    calcElevationBonuses, calcBarrelExplosionDamage,
     calcDropChance,
     applyWorldCeiling, applyWorldCeilingToStats,
     // Rank ladder + world ceiling

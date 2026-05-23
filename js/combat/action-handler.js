@@ -224,6 +224,28 @@ window.CJS.ActionHandler = (() => {
         if (ts.mainActionUsed) return { valid: false, reason: 'main_action_used' };
         return { valid: true };
 
+      case 'interact': {
+        // Environmental interaction: kick a barrel, smash a destructible
+        // tile, etc. Currently the only supported interaction is "kick
+        // barrel"; the validator checks that the target cell holds a
+        // destructible tile within reach.
+        const ENV = C().ENVIRONMENTAL_INTERACTIONS || {};
+        if (!ENV.enabled) return { valid: false, reason: 'interactions_disabled' };
+        if (ts.mainActionUsed) return { valid: false, reason: 'main_action_used' };
+        if (!action.targetPos) return { valid: false, reason: 'no_target_pos' };
+        const [ir, ic] = action.targetPos;
+        if (!GE()?.isDestructibleTerrain || !GE().isDestructibleTerrain(ir, ic)) {
+          return { valid: false, reason: 'not_destructible' };
+        }
+        const range = Math.max(1, Number(ENV.barrelKickRange || 1));
+        if (GE().distance(unit.pos[0], unit.pos[1], ir, ic) > range) {
+          return { valid: false, reason: 'target_out_of_range' };
+        }
+        const apCost = Math.max(0, Number(ENV.barrelKickAPCost || 1));
+        if ((ts.apRemaining || 0) < apCost) return { valid: false, reason: 'no_ap' };
+        return { valid: true };
+      }
+
       case 'end_turn':
         return { valid: true };
 
@@ -257,6 +279,7 @@ window.CJS.ActionHandler = (() => {
       case 'skill':   return _doSkill(unit, action, ctx);
       case 'item':    return _doItem(unit, action, ctx);
       case 'defend':  return _doDefend(unit, action, ctx);
+      case 'interact':return _doInteract(unit, action, ctx);
       case 'end_turn':return _doEndTurn(unit, action, ctx);
     }
   }
@@ -304,6 +327,10 @@ window.CJS.ActionHandler = (() => {
     const target = GE().getUnit(action.targetId);
     // Get weapon data for element/damageType (null = fists → Physical)
     const weaponData = _getWeaponData(unit);
+    // Face the target — attackers always turn to face their mark.
+    if (target?.pos && GE().faceToward) {
+      try { GE().faceToward(unit.instanceId, target.pos[0], target.pos[1]); } catch (e) {}
+    }
     _battleSfx(unit, 'attack', { weaponData, target, volume: 0.5 });
     _battleSfx(unit, 'archerAttack', { weaponData, target, volume: 0.62 });
     Log().record({
@@ -405,6 +432,15 @@ window.CJS.ActionHandler = (() => {
     const apCost = skill.ap || 1;
     const mpCost = Math.max(0, (skill.mp || 0) + (unit.costMod || 0));
     const cd     = Math.max(0, (skill.cooldown || 0) + (unit.cooldownMod || 0));
+
+    // Face the primary target (or aoe center) before casting.
+    if (GE().faceToward) {
+      const _faceR = action.aoeCenter?.[0] ?? GE().getUnit(action.targetId)?.pos?.[0];
+      const _faceC = action.aoeCenter?.[1] ?? GE().getUnit(action.targetId)?.pos?.[1];
+      if (_faceR != null && _faceC != null) {
+        try { GE().faceToward(unit.instanceId, _faceR, _faceC); } catch (e) {}
+      }
+    }
 
     _anim('skill_cast', { unit, skill });
     // Honor skill.castSfx if author set one; else default to magic_cast for
@@ -622,6 +658,74 @@ window.CJS.ActionHandler = (() => {
     return { success: true, action: 'defend' };
   }
 
+  // ── INTERACT (kick barrel / destroy destructible terrain) ─────────
+  // Costs 1 AP (configurable). Faces the target cell, detonates the
+  // barrel, applies AoE damage, and ends the unit's main action.
+  function _doInteract(unit, action, ctx) {
+    const ENV = C().ENVIRONMENTAL_INTERACTIONS || {};
+    const [ir, ic] = action.targetPos;
+    const apCost = Math.max(0, Number(ENV.barrelKickAPCost || 1));
+
+    // Face the target cell.
+    GE().faceToward(unit.instanceId, ir, ic);
+
+    // Pay costs.
+    unit.turnState.mainActionUsed = true;
+    unit.turnState.apRemaining = Math.max(0, (unit.turnState.apRemaining || 0) - apCost);
+
+    Log().record({
+      type: 'interact', actor: unit, target: null,
+      tags: ['interact', 'barrel_kick', 'environmental'],
+      data: { targetPos: [ir, ic] }
+    });
+    _sfx('barrel_kick', { volume: 0.6, fallbacks: ['weapon_blunt', 'weapon_hit_physical'] });
+    _anim('barrel_kick', { unit, target: [ir, ic] });
+
+    const expl = GE().detonateBarrel(ir, ic, unit.instanceId);
+    if (!expl?.exploded) {
+      return { success: true, action: 'interact', exploded: false, reason: 'no_barrel' };
+    }
+
+    // Apply explosion damage to caught units.
+    const hits = [];
+    for (const sub of expl.hits) {
+      const u = GE().getUnit(sub.unitId);
+      if (!u) continue;
+      const r = DC().applyRawDamage({
+        source: unit, target: u, amount: sub.damage,
+        reason: 'barrel_blast', damageType: sub.damageType || 'Magic'
+      });
+      hits.push({ unitId: u.instanceId, ...r });
+      if (r.killed) {
+        ER().fireTrigger('on_kill', {
+          unit, attacker: unit, target: u,
+          turnNumber: ctx.turnNumber, allUnits: GE().getAllUnits()
+        });
+        GE().removeFromBoard(u.instanceId);
+      } else if (r.applied > 0) {
+        ER().fireTrigger('on_hit', {
+          unit, attacker: unit, target: u,
+          damageDealt: r.applied,
+          damageType: 'Magic', element: expl.element || 'Fire',
+          turnNumber: ctx.turnNumber, allUnits: GE().getAllUnits()
+        });
+      }
+    }
+
+    Log().record({
+      type: 'barrel_explosion', actor: unit, target: null,
+      tags: ['environmental', 'barrel_blast', `element_${String(expl.element || 'fire').toLowerCase()}`],
+      data: {
+        center: expl.center, radius: expl.radius, damage: expl.damage,
+        element: expl.element, hits
+      }
+    });
+    _anim('barrel_explode', { center: expl.center, radius: expl.radius, element: expl.element, source: unit });
+    _sfx('barrel_explode', { volume: 0.78, fallbacks: ['weapon_hit_fire', 'magic_fire', 'weapon_hit_physical'] });
+
+    return { success: true, action: 'interact', explosion: expl, hits };
+  }
+
   // ── END TURN ──────────────────────────────────────────────────────
   function _doEndTurn(unit, action, ctx) {
     unit.turnState.bonusAP = (unit.turnState.bonusAP || 0) + (C().ACTION_ECONOMY.endTurnAPBonus || 0);
@@ -751,6 +855,9 @@ window.CJS.ActionHandler = (() => {
 
   // Get the effective attack range for basic attacks.
   // Basic attack range comes from the equipped weapon, or the authored unit range.
+  // Elevation: if the unit stands on higher ground, ranged attacks gain +1
+  //   range per elevation step. Melee (baseRange = 1) does NOT get the bonus —
+  //   you can't poke someone further with a sword by standing on a rock.
   /**
    * @param {CJSCombatUnit} unit
    * @returns {number}
@@ -759,7 +866,16 @@ window.CJS.ActionHandler = (() => {
     const wd = _getWeaponData(unit);
     const baseRange = wd?.range ?? unit.basicAttackRange ?? unit.attackRange ?? 1;
     const bonus = unit.basicAttackRangeBonus ?? unit.basicRangeBonus ?? 0;
-    return Math.max(1, Number(baseRange || 1) + Number(bonus || 0));
+    let elevBonus = 0;
+    const isRanged = Number(baseRange || 1) > 1;
+    if (isRanged && GE().getUnitElevation) {
+      try {
+        const atkE = GE().getUnitElevation(unit);
+        const E = C().ELEVATION || {};
+        if (E.enabled && atkE > 0) elevBonus = atkE * Number(E.rangeBonusPerStep || 0);
+      } catch (e) {}
+    }
+    return Math.max(1, Number(baseRange || 1) + Number(bonus || 0) + elevBonus);
   }
 
   function _skillRange(unit, skill) {
@@ -787,7 +903,10 @@ window.CJS.ActionHandler = (() => {
       defend:  !ts.mainActionUsed && canAct,
       endTurn: true,
       skills:  [],
-      items:   []
+      items:   [],
+      // Interact: list of adjacent destructible cells (barrels, etc.) the
+      // unit can target this turn. UI uses this to surface a "kick" prompt.
+      interactTargets: _findInteractTargets(unit, canAct, ts)
     };
 
     if (!ts.mainActionUsed && canAct) {
@@ -833,6 +952,28 @@ window.CJS.ActionHandler = (() => {
     }
 
     return available;
+  }
+
+  function _findInteractTargets(unit, canAct, ts) {
+    if (!canAct || ts.mainActionUsed) return [];
+    const ENV = C().ENVIRONMENTAL_INTERACTIONS || {};
+    if (!ENV.enabled) return [];
+    const apCost = Math.max(0, Number(ENV.barrelKickAPCost || 1));
+    if ((ts.apRemaining || 0) < apCost) return [];
+    const range = Math.max(1, Number(ENV.barrelKickRange || 1));
+    if (!unit?.pos) return [];
+    const ge = GE();
+    if (!ge?.getCellsInRange || !ge?.isDestructibleTerrain) return [];
+
+    const targets = [];
+    const cells = ge.getCellsInRange(unit.pos[0], unit.pos[1], range);
+    for (const [r, c] of cells) {
+      if (r === unit.pos[0] && c === unit.pos[1]) continue;
+      if (ge.isDestructibleTerrain(r, c)) {
+        targets.push({ r, c, kind: 'barrel', apCost });
+      }
+    }
+    return targets;
   }
 
   // ── PUBLIC API ─────────────────────────────────────────────────────

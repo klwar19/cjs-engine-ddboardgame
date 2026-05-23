@@ -1598,6 +1598,16 @@ window.CJS.CombatUI = (() => {
       }
     }
 
+    // Attack mode also surfaces destructible environment (barrels) as
+    // valid orange-tinted targets, so clicking one kicks it. Skills /
+    // items don't get this — they target units (or AoE centers) only.
+    if (action.type === 'attack') {
+      const interactTargets = (AH()?.getAvailableActions?.(unit)?.interactTargets) || [];
+      for (const t of interactTargets) {
+        cells.push({ r: t.r, c: t.c });
+      }
+    }
+
     GR().setHighlights(cells, 'rgba(239,68,68,0.4)', 'target');
     _setModeHint('Click a valid target, or click the same action again / press Esc to cancel.');
   }
@@ -1639,7 +1649,22 @@ window.CJS.CombatUI = (() => {
     const action = { ..._pendingAction };
 
     if (_mode === 'target_single') {
-      if (!unitAt) return;
+      // Attack mode can fall through to barrel-kick when the targeted
+      // cell holds a destructible tile instead of a unit.
+      if (!unitAt) {
+        if (action.type === 'attack' && GE().isDestructibleTerrain
+            && GE().isDestructibleTerrain(r, c)) {
+          GR().clearHighlights('target');
+          _mode = 'idle';
+          _pendingAction = null;
+          _clearModeHint();
+          const result = CM().submitAction({ type: 'interact', targetPos: [r, c] });
+          _handleActionResult(result);
+          CM().runUntilInput();
+          return;
+        }
+        return;
+      }
       action.targetId = unitAt.instanceId || unitAt;
     } else {
       action.aoeCenter = [r, c];
@@ -1666,8 +1691,58 @@ window.CJS.CombatUI = (() => {
     CM().runUntilInput();
   }
 
-  function _onCellHover() {
-    // Reserved for future hover previews.
+  function _onCellHover(r, c) {
+    // Show flank / elevation context when previewing a single-target attack
+    // or skill. We compute against the currently acting unit so the hint
+    // reflects the attacker the player is about to commit.
+    if (_mode !== 'target_single') return;
+    const attacker = CM().getCurrentUnit();
+    if (!attacker) return;
+    const target = GE().getUnitAt(r, c);
+    // Barrel-kick preview when attack mode is over a destructible cell.
+    if (!target && _pendingAction?.type === 'attack'
+        && GE().isDestructibleTerrain && GE().isDestructibleTerrain(r, c)) {
+      const ENV = (window.CJS.CONST?.ENVIRONMENTAL_INTERACTIONS) || {};
+      const radius = Number(ENV.barrelExplosionRadius || 1);
+      _setModeHint(`💥 Kick barrel — Fire AoE radius ${radius}, costs ${ENV.barrelKickAPCost || 1} AP.`);
+      return;
+    }
+    if (!target || target.team === attacker.team || (target.currentHP || 0) <= 0) {
+      _setModeHint('Click a valid target, or click the same action again / press Esc to cancel.');
+      return;
+    }
+    const parts = [`Target: ${target.name || target.baseId || '?'}`];
+
+    // Flank
+    try {
+      if (GE().getFlankPosition) {
+        const f = GE().getFlankPosition(attacker, target);
+        if (f.position === 'rear') {
+          parts.push(`🗡️ REAR (+${f.critBonus}% crit)`);
+        } else if (f.position === 'side') {
+          parts.push(f.critBonus > 0 ? `↙ SIDE (+${f.critBonus}% crit)` : '↙ Side');
+        } else {
+          parts.push('▲ Front');
+        }
+      }
+    } catch (e) {}
+
+    // Elevation
+    try {
+      if (GE().getUnitElevation) {
+        const ae = GE().getUnitElevation(attacker);
+        const te = GE().getUnitElevation(target);
+        if (ae > te) {
+          const E = (window.CJS.CONST?.ELEVATION) || {};
+          const acc = (ae - te) * Number(E.accuracyBonusPerStep || 0);
+          parts.push(`⬆ High ground (+${acc}% acc)`);
+        } else if (te > ae) {
+          parts.push('⬇ Target on higher ground');
+        }
+      }
+    } catch (e) {}
+
+    _setModeHint(parts.join('   ·   '));
   }
 
   async function _runQTE(skill, action) {
