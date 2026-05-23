@@ -21,11 +21,14 @@ window.CJS.CombatLog = (() => {
   'use strict';
 
   // ── STATE ──────────────────────────────────────────────────────────
+  /** @type {CJSLogEntry[]} */
   let _entries = [];
   let _nextId = 1;
+  /** @type {Array<(entry: CJSLogEntry) => void>} */
   let _subscribers = [];  // functions called on each new entry
   let _currentTurn = 1;
-  let _currentPhase = 'setup';  // 'setup' | 'turn_start' | 'action' | 'resolution' | 'turn_end'
+  /** 'setup' | 'turn_start' | 'action' | 'resolution' | 'turn_end' */
+  let _currentPhase = 'setup';
 
   // ── CORE: RECORD ────────────────────────────────────────────────────
   // Entry types (guide — not enforced):
@@ -36,6 +39,17 @@ window.CJS.CombatLog = (() => {
   //   terrain_effect, terrain_created,
   //   qte_result, turn_start, turn_end, battle_start, battle_end,
   //   effect_fired, note
+  /**
+   * @param {{
+   *   type?: string,
+   *   actor?: CJSCombatUnit | string | null,
+   *   target?: CJSCombatUnit | string | null,
+   *   tags?: string[],
+   *   data?: Record<string, unknown>,
+   *   message?: string
+   * }} entry
+   * @returns {CJSLogEntry}
+   */
   function record(entry) {
     const full = {
       id:        _nextId++,
@@ -92,9 +106,13 @@ window.CJS.CombatLog = (() => {
   }
 
   // ── PHASE / TURN TRACKING ──────────────────────────────────────────
+  /** @param {number} n */
   function setTurn(n) { _currentTurn = n; }
+  /** @param {string} p */
   function setPhase(p) { _currentPhase = p; }
+  /** @returns {number} */
   function getTurn() { return _currentTurn; }
+  /** @returns {string} */
   function getPhase() { return _currentPhase; }
 
   // ── CONVENIENCE RECORDERS ──────────────────────────────────────────
@@ -289,6 +307,10 @@ window.CJS.CombatLog = (() => {
   }
 
   // ── SUBSCRIPTIONS ──────────────────────────────────────────────────
+  /**
+   * @param {(entry: CJSLogEntry) => void} fn
+   * @returns {() => void} unsubscribe
+   */
   function subscribe(fn) {
     _subscribers.push(fn);
     return () => {

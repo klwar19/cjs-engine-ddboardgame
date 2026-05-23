@@ -24,6 +24,10 @@ window.CJS.SkillResolver = (() => {
   // Convert any skill reference format to the canonical object form.
   // Input: "firebolt" | { skillId: "firebolt", overrides?: {...}, level?: N }
   // Output: { skillId: "firebolt", overrides: {}, level: 1 }
+  /**
+   * @param {string | CJSSkillRef | null | undefined} entry
+   * @returns {CJSSkillRef | null}
+   */
   function normalize(entry) {
     if (!entry) return null;
     if (typeof entry === 'string') {
@@ -41,13 +45,21 @@ window.CJS.SkillResolver = (() => {
   }
 
   // ── NORMALIZE ARRAY ───────────────────────────────────────────────
+  /**
+   * @param {Array<string | CJSSkillRef> | null | undefined} skills
+   * @returns {CJSSkillRef[]}
+   */
   function normalizeArray(skills) {
     if (!Array.isArray(skills)) return [];
-    return skills.map(normalize).filter(Boolean);
+    return /** @type {CJSSkillRef[]} */ (skills.map(normalize).filter(Boolean));
   }
 
   // ── GET SKILL ID ──────────────────────────────────────────────────
-  // Extract the skillId from any format (string or object).
+  /**
+   * Extract the skillId from any format (string or object).
+   * @param {string | CJSSkillRef | null | undefined} entry
+   * @returns {string | null}
+   */
   function getSkillId(entry) {
     if (!entry) return null;
     if (typeof entry === 'string') return entry;
@@ -55,15 +67,24 @@ window.CJS.SkillResolver = (() => {
   }
 
   // ── GET SKILL IDS ─────────────────────────────────────────────────
+  /**
+   * @param {Array<string | CJSSkillRef> | null | undefined} skills
+   * @returns {string[]}
+   */
   function getSkillIds(skills) {
     if (!Array.isArray(skills)) return [];
-    return skills.map(getSkillId).filter(Boolean);
+    return /** @type {string[]} */ (skills.map(getSkillId).filter(Boolean));
   }
 
   // ── RESOLVE UNIT SKILL ────────────────────────────────────────────
   // Given a unit and a skillId, look up the base skill from DataStore,
   // merge per-unit overrides + level + cumulative levelPerks, return the
   // fully resolved skill object. Returns null if the skill doesn't exist.
+  /**
+   * @param {CJSCombatUnit} unit
+   * @param {string} skillId
+   * @returns {CJSSkill | null}
+   */
   function resolveUnitSkill(unit, skillId) {
     const base = DS().get('skills', skillId);
     if (!base) return null;
@@ -83,6 +104,10 @@ window.CJS.SkillResolver = (() => {
   }
 
   // ── RESOLVE ALL ───────────────────────────────────────────────────
+  /**
+   * @param {CJSCombatUnit} unit
+   * @returns {Array<{ skillId: string; entry: CJSSkillRef | null; resolved: CJSSkill }>}
+   */
   function resolveAllUnitSkills(unit) {
     const results = [];
     for (const raw of (unit.skills || [])) {
@@ -96,6 +121,11 @@ window.CJS.SkillResolver = (() => {
   }
 
   // ── FIND ENTRY ────────────────────────────────────────────────────
+  /**
+   * @param {CJSCombatUnit} unit
+   * @param {string} skillId
+   * @returns {CJSSkillRef | null}
+   */
   function _findEntry(unit, skillId) {
     for (const entry of (unit.skills || [])) {
       if (typeof entry === 'string' && entry === skillId) {
@@ -109,6 +139,11 @@ window.CJS.SkillResolver = (() => {
   }
 
   // ── HAS SKILL ─────────────────────────────────────────────────────
+  /**
+   * @param {CJSCombatUnit} unit
+   * @param {string} skillId
+   * @returns {boolean}
+   */
   function hasSkill(unit, skillId) {
     return !!_findEntry(unit, skillId);
   }
@@ -116,6 +151,11 @@ window.CJS.SkillResolver = (() => {
   // ── MERGE WITH GRANTED SKILLS ─────────────────────────────────────
   // Merge base unit skills + item-granted skills. Preserves overrides/level.
   // Returns normalized array (no duplicates by skillId).
+  /**
+   * @param {Array<string | CJSSkillRef> | null | undefined} baseSkills
+   * @param {string[] | null | undefined} equipmentIds
+   * @returns {CJSSkillRef[]}
+   */
   function mergeWithGrantedSkills(baseSkills, equipmentIds) {
     const seen = new Map(); // skillId → normalized entry
 

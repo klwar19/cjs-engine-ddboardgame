@@ -114,8 +114,10 @@ window.CJS.StatusManager = (() => {
   }
 
   // ── APPLY STATUS ──────────────────────────────────────────────────
-  // args: { target, statusId, sourceUnit, overrides?, combatContext }
-  // Returns: { applied: bool, reason?: string, instance?: {...} }
+  /**
+   * @param {CJSApplyStatusArgs} args
+   * @returns {{ applied: boolean, reason?: string, instance?: CJSStatusInstance, resisted?: boolean }}
+   */
   function applyStatus(args) {
     const { target, statusId, sourceUnit, overrides, combatContext } = args;
     if (!target) return { applied: false, reason: 'no_target' };
@@ -268,6 +270,10 @@ window.CJS.StatusManager = (() => {
   //
   // DoT STACKING RULE: For same-element DoTs, only the highest damage
   // ticks. Different-element DoTs all tick independently.
+  /**
+   * @param {CJSCombatUnit} unit
+   * @param {"turn_start" | "turn_end"} phase
+   */
   function tickStatuses(unit, phase) {
     if (!unit?.activeStatuses?.length) return;
 
@@ -400,6 +406,12 @@ window.CJS.StatusManager = (() => {
   }
 
   // ── REMOVE STATUS ─────────────────────────────────────────────────
+  /**
+   * @param {CJSCombatUnit} unit
+   * @param {string} statusId
+   * @param {string} [reason]
+   * @returns {boolean} true if a status was actually removed
+   */
   function removeStatus(unit, statusId, reason) {
     if (!unit?.activeStatuses) return false;
     const idx = unit.activeStatuses.findIndex(s => s.statusId === statusId);
@@ -434,6 +446,10 @@ window.CJS.StatusManager = (() => {
   // ── CLEANSE ───────────────────────────────────────────────────────
   // Remove statuses matching a category, element, or tag.
   // args: { unit, category?, element?, statusIds?, isBuffsOnly?, isDebuffsOnly? }
+  /**
+   * @param {{ unit: CJSCombatUnit, filter?: (s: CJSStatusInstance) => boolean }} args
+   * @returns {number} count of statuses removed
+   */
   function cleanse(args) {
     const { unit, category, element, statusIds, isBuffsOnly, isDebuffsOnly } = args;
     if (!unit?.activeStatuses) return 0;
@@ -530,6 +546,13 @@ window.CJS.StatusManager = (() => {
 
   // Reduce absorb shields by damage amount. Returns remaining damage after absorb.
   // Removes depleted shield statuses.
+  /**
+   * Consume damage from absorb shields. Returns remaining damage after shields.
+   * @param {CJSCombatUnit} unit
+   * @param {number} damage
+   * @param {string} [damageType]
+   * @returns {number}
+   */
   function absorbDamage(unit, damage, damageType) {
     if (!unit?.activeStatuses || damage <= 0) return damage;
     let remaining = damage;
@@ -559,14 +582,17 @@ window.CJS.StatusManager = (() => {
 
   // ── QUERIES ──────────────────────────────────────────────────────
 
+  /** @param {CJSCombatUnit} unit @param {string} statusId @returns {boolean} */
   function hasStatus(unit, statusId) {
     return !!(unit?.activeStatuses?.some(s => s.statusId === statusId));
   }
 
+  /** @param {CJSCombatUnit} unit @param {string} statusId @returns {CJSStatusInstance | null} */
   function getStatus(unit, statusId) {
     return unit?.activeStatuses?.find(s => s.statusId === statusId) || null;
   }
 
+  /** @param {CJSCombatUnit} unit @param {string} statusId @returns {number} */
   function getStatusStacks(unit, statusId) {
     const st = getStatus(unit, statusId);
     return st?.stacks || 0;
@@ -582,16 +608,19 @@ window.CJS.StatusManager = (() => {
   }
 
   // Is this unit action-disabled (stun, freeze, sleep, petrify)?
+  /** @param {CJSCombatUnit} unit @returns {boolean} */
   function canAct(unit) {
     return !hasAnyStatusWith(unit, (def) => _preventsActions(def));
   }
 
   // Can this unit move?
+  /** @param {CJSCombatUnit} unit @returns {boolean} */
   function canMove(unit) {
     return !hasAnyStatusWith(unit, (def) => _preventsActions(def) || _preventsMovement(def));
   }
 
   // Can this unit use skills? (blocked by silence)
+  /** @param {CJSCombatUnit} unit @returns {boolean} */
   function canUseSkills(unit) {
     if (!canAct(unit)) return false;
     return !hasAnyStatusWith(unit, (def) => _preventsSkills(def));
@@ -665,6 +694,11 @@ window.CJS.StatusManager = (() => {
 
   // Called by combat-manager at phase boundaries to process recompile requests.
   // baseUnitProvider: (baseId) => rawCharacter/monster record from data-store.
+  /**
+   * Trigger stat-compiler recompile for any unit flagged `_needsRecompile`.
+   * @param {CJSCombatUnit[]} units
+   * @param {(baseId: string) => CJSRecord | null} baseUnitProvider
+   */
   function processRecompileRequests(units, baseUnitProvider) {
     for (const unit of units) {
       if (!unit._needsRecompile) continue;

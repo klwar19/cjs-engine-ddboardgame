@@ -7,6 +7,12 @@ window.CJS = window.CJS || {};
 window.CJS.StateTools = (() => {
   'use strict';
 
+  /**
+   * Deep-clone a value (structuredClone when available, JSON fallback).
+   * @template T
+   * @param {T} value
+   * @returns {T}
+   */
   function clone(value) {
     if (value === undefined) return undefined;
     if (value === null || typeof value !== 'object') return value;
@@ -16,6 +22,15 @@ window.CJS.StateTools = (() => {
     return JSON.parse(JSON.stringify(value));
   }
 
+  /**
+   * Immer-style producer: returns a new value derived from `base` without
+   * mutating the original. `recipe` receives a deep clone; its return value
+   * (or the mutated draft, if it returns undefined) becomes the new value.
+   * @template T
+   * @param {T} base
+   * @param {(draft: T) => T | void} recipe
+   * @returns {T}
+   */
   function produce(base, recipe) {
     if (typeof recipe !== 'function') return clone(base);
     const draft = clone(base);
@@ -23,6 +38,13 @@ window.CJS.StateTools = (() => {
     return result === undefined ? draft : result;
   }
 
+  /**
+   * Recursively Object.freeze a value. No-op for primitives or already-seen objects.
+   * @template T
+   * @param {T} value
+   * @param {WeakSet<object>} [seen]
+   * @returns {T}
+   */
   function deepFreeze(value, seen = new WeakSet()) {
     if (!value || typeof value !== 'object' || seen.has(value)) return value;
     seen.add(value);
@@ -33,6 +55,7 @@ window.CJS.StateTools = (() => {
     return value;
   }
 
+  /** @returns {boolean} */
   function isDevFreezeEnabled() {
     try {
       if (window.CJS_DEV_FREEZE === true) return true;
@@ -42,6 +65,12 @@ window.CJS.StateTools = (() => {
     return false;
   }
 
+  /**
+   * Freeze only when the dev-freeze flag is on; pass-through otherwise.
+   * @template T
+   * @param {T} value
+   * @returns {T}
+   */
   function freezeDev(value) {
     return isDevFreezeEnabled() ? deepFreeze(value) : value;
   }
