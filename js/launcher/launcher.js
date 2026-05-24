@@ -1,6 +1,13 @@
 // launcher.js — Unified app shell controller
-// Mounts a sidebar/dock that switches the main iframe between modes.
-// State sync: URL hash (#campaign, #combat...), localStorage last-active, popstate.
+//
+// Mounts a sidebar/dock that switches between modes. Each mode runs in its
+// own iframe inside the frame wrap. Iframes are created lazily on first
+// visit and kept alive after that, so switching modes preserves audio,
+// in-memory campaign state, open modals, etc. We just toggle the `hidden`
+// attribute to show/hide instead of reloading.
+//
+// State sync: URL hash (#campaign, #combat...), localStorage last-active,
+// hashchange.
 
 (function () {
   'use strict';
@@ -19,16 +26,79 @@
 
   const shell = document.querySelector('.launcher-shell');
   const sidebar = document.getElementById('launcher-sidebar');
-  const frame = document.getElementById('launcher-frame');
   const welcome = document.getElementById('launcher-welcome');
   const titleEl = document.getElementById('launcher-current-title');
   const popOut = document.getElementById('launcher-pop-out');
   const collapseBtn = document.getElementById('launcher-collapse');
   const menuToggle = document.getElementById('launcher-menu-toggle');
-  const frameWrap = frame.parentElement;
+  const frameWrap = document.querySelector('.launcher-frame-wrap');
+
+  // Live iframes, keyed by mode id. Created on first navigate(); never
+  // destroyed for the lifetime of the page so state survives switches.
+  const iframes = new Map();
 
   let currentMode = null;
   let suppressHashChange = false;
+
+  function buildIframeUrl(mode) {
+    const file = MODES[mode].file;
+    return file + (file.includes('?') ? '&' : '?') + EMBED_FLAG;
+  }
+
+  function getOrCreateIframe(mode) {
+    if (iframes.has(mode)) return iframes.get(mode);
+    const iframe = document.createElement('iframe');
+    iframe.className = 'launcher-frame';
+    iframe.title = MODES[mode].title;
+    iframe.name = 'launcher-frame-' + mode;
+    iframe.dataset.mode = mode;
+    iframe.setAttribute('allow', 'autoplay; clipboard-read; clipboard-write');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.hidden = true;
+    iframe.src = buildIframeUrl(mode);
+
+    iframe.addEventListener('load', () => {
+      iframe.dataset.loaded = '1';
+      if (currentMode === mode) frameWrap.classList.remove('is-loading');
+      // If a child page navigates to a different mode's file by changing
+      // its own location, sync the sidebar/title for the user. Same-origin
+      // only — cross-origin reads throw and are ignored.
+      try {
+        const path = iframe.contentWindow.location.pathname;
+        const file = path.substring(path.lastIndexOf('/') + 1);
+        const detected = Object.keys(MODES).find((k) => MODES[k].file === file);
+        if (detected && detected !== mode) {
+          // Rebind this iframe to the mode the user navigated it to. Rare,
+          // but possible if a child does location.href = '../combat.html'.
+          iframes.delete(mode);
+          iframe.dataset.mode = detected;
+          iframes.set(detected, iframe);
+          if (currentMode === mode) {
+            currentMode = detected;
+            titleEl.textContent = MODES[detected].title;
+            popOut.href = MODES[detected].file;
+            updateActiveButton(detected);
+            suppressHashChange = true;
+            const newHash = '#' + detected;
+            if (location.hash !== newHash) {
+              history.replaceState({ mode: detected }, '', newHash);
+            }
+            setTimeout(() => { suppressHashChange = false; }, 0);
+          }
+        }
+      } catch (e) {
+        // Cross-origin or about:blank — ignore.
+      }
+    });
+
+    frameWrap.appendChild(iframe);
+    iframes.set(mode, iframe);
+    return iframe;
+  }
+
+  function hideAllIframes() {
+    iframes.forEach((iframe) => { iframe.hidden = true; });
+  }
 
   // ── Public navigation ──────────────────────────────────
   function navigate(mode, opts) {
@@ -41,12 +111,14 @@
       return;
     }
     currentMode = mode;
-    const url = MODES[mode].file + (MODES[mode].file.includes('?') ? '&' : '?') + EMBED_FLAG;
 
     welcome.hidden = true;
-    frame.hidden = false;
-    frameWrap.classList.add('is-loading');
-    frame.src = url;
+
+    const iframe = getOrCreateIframe(mode);
+    const isLoaded = iframe.dataset.loaded === '1';
+    hideAllIframes();
+    iframe.hidden = false;
+    frameWrap.classList.toggle('is-loading', !isLoaded);
 
     titleEl.textContent = MODES[mode].title;
     popOut.href = MODES[mode].file;
@@ -70,7 +142,8 @@
 
   function showWelcome() {
     currentMode = null;
-    frame.hidden = true;
+    hideAllIframes();
+    frameWrap.classList.remove('is-loading');
     welcome.hidden = false;
     titleEl.textContent = 'Welcome';
     popOut.href = '#';
@@ -89,32 +162,6 @@
       btn.classList.toggle('is-active', btn.dataset.mode === mode);
     });
   }
-
-  // ── Iframe nav tracking ────────────────────────────────
-  // If the child page navigates internally (e.g. campaign opens combat),
-  // sync our sidebar highlight + title.
-  frame.addEventListener('load', () => {
-    frameWrap.classList.remove('is-loading');
-    try {
-      const path = frame.contentWindow.location.pathname;
-      const file = path.substring(path.lastIndexOf('/') + 1);
-      const detected = Object.keys(MODES).find((k) => MODES[k].file === file);
-      if (detected && detected !== currentMode) {
-        currentMode = detected;
-        titleEl.textContent = MODES[detected].title;
-        popOut.href = MODES[detected].file;
-        updateActiveButton(detected);
-        suppressHashChange = true;
-        const newHash = '#' + detected;
-        if (location.hash !== newHash) {
-          history.replaceState({ mode: detected }, '', newHash);
-        }
-        setTimeout(() => { suppressHashChange = false; }, 0);
-      }
-    } catch (e) {
-      // Cross-origin or about:blank — ignore.
-    }
-  });
 
   // ── Event wiring ───────────────────────────────────────
   sidebar.addEventListener('click', (e) => {
