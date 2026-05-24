@@ -105,7 +105,13 @@
         "gameId": "push_box",
         "levelId": "push_03",
         "difficulty": 3,
-        "theme": "guild_storehouse"
+        "theme": "guild_storehouse",
+        "contextText": "This crate puzzle is the gate-office duty floor, not a standalone test. Clearing it lets the chapter continue and awards the story JP.",
+        "conversation": [
+          { "speaker": "Captain Lysa", "text": "Clear the floor before someone trips over two months of heroic neglect." },
+          { "speaker": "Bin", "text": "I was gone for the neglect. I accept the floor." }
+        ],
+        "bonusText": "Clear bonus: +1 JP and the gate-office floor-clear story flag."
       },
       "text": "Stage the unfiled supply crates onto the painted rune slots so the floor is walkable again.",
       "winOps": [

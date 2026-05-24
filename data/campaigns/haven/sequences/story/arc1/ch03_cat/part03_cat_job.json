@@ -261,7 +261,13 @@
         "gameId": "mummy_maze",
         "levelId": "mummy_02",
         "difficulty": 2,
-        "theme": "tomb"
+        "theme": "tomb",
+        "contextText": "The market-carry puzzle is part of Lily's cat job. Clearing it gets Mittens through the stalls cleanly and records the chapter flag.",
+        "conversation": [
+          { "speaker": "Lily", "text": "Basket steady, shoulders narrow, no heroic elbows near the cabbage stall." },
+          { "speaker": "Bin", "text": "The cat and I will negotiate a temporary peace." }
+        ],
+        "bonusText": "Clear bonus: clean cat-carry story flag and the mini-game room reward."
       },
       "text": "Walk the basket through the closing market without bumping anyone or any cat.",
       "winOps": [

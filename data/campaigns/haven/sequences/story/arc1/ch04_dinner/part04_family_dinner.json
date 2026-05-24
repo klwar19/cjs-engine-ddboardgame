@@ -110,7 +110,13 @@
         "gameId": "push_box",
         "levelId": "push_08",
         "difficulty": 4,
-        "theme": "guild_storehouse"
+        "theme": "guild_storehouse",
+        "contextText": "The dinner-table puzzle is part of the family-dinner chapter. Clearing it arranges the bread basket properly and awards the quiet story bonus.",
+        "conversation": [
+          { "speaker": "Lily", "text": "Rolls left, butter center, questionable pickles where Father cannot pretend not to see them." },
+          { "speaker": "Bin", "text": "A tactical dinner formation. I remember those." }
+        ],
+        "bonusText": "Clear bonus: +1 JP and the dinner-plate-clean story flag."
       },
       "text": "Arrange the bread basket and side dishes on the table in the order Lily would approve of.",
       "winOps": [

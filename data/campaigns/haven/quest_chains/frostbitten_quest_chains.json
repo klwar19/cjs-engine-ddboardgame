@@ -96,7 +96,13 @@
                 "levelId": "frostcap_basket_sort",
                 "difficulty": 1,
                 "theme": "forest",
-                "objective": "Push the safe Frostcaps into the basket spaces and leave the blue squeaking cap alone."
+                "objective": "Push the safe Frostcaps into the basket spaces and leave the blue squeaking cap alone.",
+                "contextText": "Frostcap Grove's basket sort is an active side-story step. Clearing it marks the safe-cap route and gives the room bonus.",
+                "conversation": [
+                  { "speaker": "Bowy", "text": "Safe caps in the basket, squeaking cap out. I would like my soup to have fewer opinions." },
+                  { "speaker": "Bin", "text": "Understood. Soup with boundaries." }
+                ],
+                "bonusText": "Clear bonus: Frostcap route progress plus the mini-game room buff and JP payout."
               },
               "winOps": [
                 { "op": "give_quest_item", "id": "haven_frostcap_mushroom", "qty": 5 },
@@ -230,7 +236,13 @@
                 "levelId": "guild_form_sort",
                 "difficulty": 1,
                 "theme": "guild",
-                "objective": "Push each form stack into the correct filing tray before Corvin starts using legal vocabulary as a weapon."
+                "objective": "Push each form stack into the correct filing tray before Corvin starts using legal vocabulary as a weapon.",
+                "contextText": "The guild form sort is filed as Lysa's side-story paperwork step. A clear result updates the witness chain and pays the training bonus.",
+                "conversation": [
+                  { "speaker": "Corvin", "text": "Alive, missing, probably fine, and please stop asking. These are official categories because I wrote them down." },
+                  { "speaker": "Bin", "text": "That is how law works when everyone is tired." }
+                ],
+                "bonusText": "Clear bonus: Lysa's witness chain advances plus the mini-game room buff and JP payout."
               },
               "winOps": [
                 { "op": "give_jp", "amount": 1 },
@@ -372,7 +384,13 @@
                 "levelId": "return_cache_lock",
                 "difficulty": 2,
                 "theme": "ice",
-                "objective": "Move ice blocks away from the latch before the cache cracks."
+                "objective": "Move ice blocks away from the latch before the cache cracks.",
+                "contextText": "The frozen cache latch is part of the winter-lane side story. Clearing it secures the firemoss cache and applies the room bonus.",
+                "conversation": [
+                  { "speaker": "Peri", "text": "The latch is frozen in three different directions. That feels personal." },
+                  { "speaker": "Bin", "text": "Then I will answer personally and push the ice." }
+                ],
+                "bonusText": "Clear bonus: cache progress plus the mini-game room buff and JP payout."
               },
               "winOps": [
                 { "op": "give_material", "id": "haven_sprite_dust", "qty": 1 },
@@ -509,7 +527,13 @@
                 "levelId": "ironhand_bellows_timing",
                 "difficulty": 2,
                 "theme": "forge",
-                "objective": "Move coal and frost blocks into rhythm positions before the binding paste cracks."
+                "objective": "Move coal and frost blocks into rhythm positions before the binding paste cracks.",
+                "contextText": "Hilda's forge timing puzzle is a town-phase side-story beat. Clearing it locks in the pelt-wrap preparation and grants the training bonus.",
+                "conversation": [
+                  { "speaker": "Hilda", "text": "Hot here, cold there, no heroic improvising in the middle." },
+                  { "speaker": "Bin", "text": "I will be extremely brave about following instructions." }
+                ],
+                "bonusText": "Clear bonus: forge preparation progress plus the mini-game room buff and JP payout."
               },
               "winOps": [
                 { "op": "log", "text": "Hilda's binding paste sets cleanly." }
@@ -636,7 +660,13 @@
                 "levelId": "bowy_thunder_line",
                 "difficulty": 2,
                 "theme": "forest",
-                "objective": "Thread Bowy's route through blockers without trapping Bin in the wolf lane."
+                "objective": "Thread Bowy's route through blockers without trapping Bin in the wolf lane.",
+                "contextText": "Bowy's target-board route is a side-story setup before the den fight. Clearing it opens a clean line and applies the room bonus.",
+                "conversation": [
+                  { "speaker": "Bowy", "text": "If the line bends here, the shot stays clean and Bin stays unbitten." },
+                  { "speaker": "Bin", "text": "I am strongly in favor of that second half." }
+                ],
+                "bonusText": "Clear bonus: thunder-line setup plus the mini-game room buff and JP payout."
               },
               "winOps": [
                 { "op": "tag_add", "tag": "bowy_clean_line" },
@@ -762,7 +792,13 @@
                 "levelId": "three_silver_ledger_math",
                 "difficulty": 1,
                 "theme": "tavern",
-                "objective": "Push real receipts into one pile and fake emotional-interest claims into another."
+                "objective": "Push real receipts into one pile and fake emotional-interest claims into another.",
+                "contextText": "The ledger puzzle is the town-phase proof step for the three-silver side story. Clearing it sorts real debt from theatrical debt and pays the room bonus.",
+                "conversation": [
+                  { "speaker": "Corvin", "text": "Real receipts left, fake emotional-interest claims right. Do not let the fake claims learn confidence." },
+                  { "speaker": "Bin", "text": "Too late. I can still file them." }
+                ],
+                "bonusText": "Clear bonus: ledger proof progress plus the mini-game room buff and JP payout."
               },
               "winOps": [
                 { "op": "log", "text": "The three-silver ledger is sorted with only minor dignity loss." }

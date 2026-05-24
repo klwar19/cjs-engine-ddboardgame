@@ -149,7 +149,13 @@
         "gameId": "push_box",
         "levelId": "push_11",
         "difficulty": 3,
-        "theme": "frostbitten_pantry"
+        "theme": "frostbitten_pantry",
+        "contextText": "The woodshed puzzle is part of the haunted-firewood chapter. Clearing it moves the complaining log without spilling the shed and awards the story JP.",
+        "conversation": [
+          { "speaker": "Frost Sprite", "text": "If you scrape my log on that ash bin, I will compose a complaint with footnotes." },
+          { "speaker": "Bin", "text": "Then I will move the ash bin with scholarly care." }
+        ],
+        "bonusText": "Clear bonus: +1 JP and the woodshed-clear story flag."
       },
       "text": "Clear the woodshed path so the screaming log can be removed without bumping it.",
       "winOps": [

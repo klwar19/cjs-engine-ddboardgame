@@ -138,4 +138,23 @@ Example:
 - Character records can provide reusable portrait maps such as `storySprites`, `dialogueSprites`, `expressionPortraits`, `portraits`, or `expressions`. The VN renderer will look there before falling back to the base `portrait`.
 - Sequence `combat` nodes now auto-resume after real battle results are applied.
 - Sequence `minigame` nodes still work, and scenario progress triggers can also launch a `minigame` block directly.
+- Campaign, quest, event, and scenario mini-game launches should keep story wrapper fields on the launch block, not in the standalone mini-game tab data:
+
+```json
+{
+  "type": "minigame",
+  "minigame": {
+    "gameId": "push_box",
+    "levelId": "push_03",
+    "contextText": "Why this room matters to the current story, quest, or event.",
+    "conversation": [
+      { "speaker": "Quest Giver", "text": "Clear it and I can mark the bonus." },
+      { "speaker": "Bin", "text": "Then it counts." }
+    ],
+    "bonusText": "Clear bonus: quest progress, room buff, and JP payout apply on success."
+  }
+}
+```
+
+- Keep `data/minigames/*_levels.json` reusable for standalone play unless a narrative note truly applies every time that level is launched.
 - If you want a simple authored check during dialogue, story-scene choices can still use `statCheck` with normal dice or `qte_or_dice`.

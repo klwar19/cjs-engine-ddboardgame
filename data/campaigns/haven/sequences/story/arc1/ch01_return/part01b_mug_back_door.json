@@ -187,7 +187,13 @@
         "gameId": "push_box",
         "levelId": "push_06",
         "difficulty": 2,
-        "theme": "frostbitten_pantry"
+        "theme": "frostbitten_pantry",
+        "contextText": "The pantry puzzle is part of the Mug back-door chapter. Clearing it keeps the cook unaware, opens the woodshed, and awards the story JP.",
+        "conversation": [
+          { "speaker": "Tavern Host", "text": "Roll the salt barrel quietly. The cook is kind, loud, and armed with gossip." },
+          { "speaker": "Bin", "text": "Quiet barrel. Quiet Bin. Questionable odds." }
+        ],
+        "bonusText": "Clear bonus: +1 JP and the pantry-quiet story flag."
       },
       "text": "Roll the salt barrel into the pantry slot before the cook hears.",
       "winOps": [

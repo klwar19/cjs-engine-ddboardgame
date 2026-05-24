@@ -7296,8 +7296,8 @@ window.CJS.CampaignUI = (() => {
       nodeId: node.id,
       sequence,
       node,
-      onComplete: (result) => {
-        _applyMiniGameResult(result, 'sequence_minigame');
+      onComplete: (result, storyContext) => {
+        _applyMiniGameResult(result, 'sequence_minigame', storyContext);
         if (result?.status === 'win') return _advanceSequenceFromUi('win');
         if (result?.status === 'fail' || result?.status === 'giveup') return _advanceSequenceFromUi('lose');
         return UI().toast('Mini-game could not resolve this sequence node', 'error');
@@ -7352,7 +7352,9 @@ window.CJS.CampaignUI = (() => {
           bonusText: storyContext.bonusText || undefined,
           onWinOps: storyContext.onWinOps || [],
           onLoseOps: storyContext.onLoseOps || [],
-          onComplete: context.onComplete || ((result) => _applyMiniGameResult(result, context.source || 'campaign_minigame', storyContext))
+          onComplete: (result) => context.onComplete
+            ? context.onComplete(result, storyContext)
+            : _applyMiniGameResult(result, context.source || 'campaign_minigame', storyContext)
         });
         if (!session) UI().toast('Mini-game could not open', 'error');
         return session;
@@ -7505,8 +7507,10 @@ window.CJS.CampaignUI = (() => {
     if (ops.length) Ops().apply(ops, { source });
     else render();
     if (result.status === 'win') {
-      const buff = result.narrative?.buffName || storyContext?.bonusText || '';
-      return UI().toast(buff ? `Mini-game cleared: ${buff} ready` : 'Mini-game cleared', 'success');
+      const buff = result.narrative?.buffName || '';
+      if (buff) return UI().toast(`Mini-game cleared: ${buff} ready`, 'success');
+      if (storyContext?.bonusText) return UI().toast(`Mini-game cleared: ${storyContext.bonusText}`, 'success');
+      return UI().toast('Mini-game cleared', 'success');
     }
     if (result.status === 'fail') return UI().toast('Mini-game failed', 'info');
     if (result.status === 'giveup') return UI().toast('Mini-game abandoned', 'info');
@@ -8362,6 +8366,38 @@ window.CJS.CampaignUI = (() => {
     _openCopyTextModal(title, text);
   }
 
+  const DEFAULT_QUEST_MINIGAME_CONTEXT = {
+    contextText: 'This mini-game room is attached to the current quest. Clearing it advances the tracker and applies the training bonus.',
+    conversation: [
+      { speaker: 'Quest Giver', text: 'This counts for the job. Clear the room and I can mark the bonus.' },
+      { speaker: 'Bin', text: 'Good. Then it is work, not a distraction.' }
+    ],
+    bonusText: 'Clear bonus: quest progress, room buff, and JP payout apply on success.'
+  };
+
+  function _questBuilderMiniGame(base = {}) {
+    const mini = base || {};
+    const conversation = Array.isArray(mini.conversation) && mini.conversation.length
+      ? mini.conversation
+      : DEFAULT_QUEST_MINIGAME_CONTEXT.conversation.map((line) => ({ ...line }));
+    return {
+      ...mini,
+      contextText: mini.contextText || mini.context || DEFAULT_QUEST_MINIGAME_CONTEXT.contextText,
+      conversation,
+      bonusText: mini.bonusText || DEFAULT_QUEST_MINIGAME_CONTEXT.bonusText
+    };
+  }
+
+  function _parseMiniGameConversation(value) {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
   function _randomizedQuestTemplate(template = {}) {
     const variants = [
       {
@@ -8403,7 +8439,7 @@ window.CJS.CampaignUI = (() => {
         tag: 'minigame',
         mapForm: 'grid_map',
         mapType: 'dungeon',
-        minigame: { gameId: 'push_box', difficulty: 1, theme: 'ruins' }
+        minigame: _questBuilderMiniGame({ gameId: 'push_box', difficulty: 1, theme: 'ruins' })
       },
       {
         label: 'hub errand',
@@ -8467,7 +8503,7 @@ window.CJS.CampaignUI = (() => {
   QUEST_OBJECTIVE_PRESETS.splice(QUEST_OBJECTIVE_PRESETS.findIndex((p) => p.kind === 'craft'), 0,
     { kind: 'harvest', label: 'Harvest', template: 'Harvest {what}', icon: 'H', required: 3 },
     { kind: 'hub_event', label: 'Run hub event', template: 'Run {what} hub event', icon: 'E', required: 1 },
-    { kind: 'minigame', label: 'Mini-game room', template: 'Clear {what} mini-game room', icon: 'M', required: 1, minigame: { gameId: 'push_box', difficulty: 1, theme: 'ruins' } }
+    { kind: 'minigame', label: 'Mini-game room', template: 'Clear {what} mini-game room', icon: 'M', required: 1, minigame: _questBuilderMiniGame({ gameId: 'push_box', difficulty: 1, theme: 'ruins' }) }
   );
 
   const QUEST_REWARD_PRESETS = [
@@ -8608,10 +8644,14 @@ window.CJS.CampaignUI = (() => {
       const row = document.createElement('div');
       row.className = 'campaign-objective-row';
       row.dataset.rowId = rowId;
-      if (minigame?.gameId) row.dataset.minigameGameId = minigame.gameId;
-      if (minigame?.levelId) row.dataset.minigameLevelId = minigame.levelId;
-      if (minigame?.difficulty) row.dataset.minigameDifficulty = minigame.difficulty;
-      if (minigame?.theme) row.dataset.minigameTheme = minigame.theme;
+      const mini = minigame ? _questBuilderMiniGame(minigame) : null;
+      if (mini?.gameId) row.dataset.minigameGameId = mini.gameId;
+      if (mini?.levelId) row.dataset.minigameLevelId = mini.levelId;
+      if (mini?.difficulty) row.dataset.minigameDifficulty = mini.difficulty;
+      if (mini?.theme) row.dataset.minigameTheme = mini.theme;
+      if (mini?.contextText) row.dataset.minigameContextText = mini.contextText;
+      if (Array.isArray(mini?.conversation) && mini.conversation.length) row.dataset.minigameConversation = JSON.stringify(mini.conversation);
+      if (mini?.bonusText) row.dataset.minigameBonusText = mini.bonusText;
       row.innerHTML = `
         <select class="campaign-objective-kind">
           ${QUEST_OBJECTIVE_PRESETS.map((p) => `<option value="${p.kind}" ${p.kind === kind ? 'selected' : ''}>${p.icon} ${_esc(p.label)}</option>`).join('')}
@@ -8680,12 +8720,16 @@ window.CJS.CampaignUI = (() => {
           required
         };
         if (kind === 'minigame') {
-          objective.minigame = {
+          objective.minigame = _questBuilderMiniGame({
             gameId: row.dataset.minigameGameId || 'push_box',
             difficulty: Number(row.dataset.minigameDifficulty || 1),
-            theme: row.dataset.minigameTheme || 'ruins'
-          };
-          if (row.dataset.minigameLevelId) objective.minigame.levelId = row.dataset.minigameLevelId;
+            theme: row.dataset.minigameTheme || 'ruins',
+            levelId: row.dataset.minigameLevelId || '',
+            contextText: row.dataset.minigameContextText || '',
+            conversation: _parseMiniGameConversation(row.dataset.minigameConversation),
+            bonusText: row.dataset.minigameBonusText || ''
+          });
+          if (!objective.minigame.levelId) delete objective.minigame.levelId;
         }
         return objective;
       });
