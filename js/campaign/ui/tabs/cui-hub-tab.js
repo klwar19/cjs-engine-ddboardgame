@@ -527,7 +527,7 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
         <span class="campaign-impact-badge is-plot">Side Story VN</span>
         <strong>${esc(chain.title || chain.name || 'Side Story')}</strong>
         <span>${esc(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.')}</span>
-        ${phases.length ? `<span>${esc(phases.join(' -> '))}</span>` : ''}
+        ${phases.length ? `<span>${esc(phases.join(' → '))}</span>` : ''}
       </div>
     `;
   }

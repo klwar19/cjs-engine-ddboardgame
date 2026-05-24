@@ -21,35 +21,35 @@ window.CJS.CampaignUIInternal.Controls = (function () {
       label: 'Oracle',
       role: 'GM prompt / keywords',
       use: 'Use when you need inspiration, a line of narration, or a sharper scene image.',
-      flow: 'Text only -> Save Note -> Make Rumor/Event if you want it to matter later.',
+      flow: 'Text only → Save Note → Make Rumor/Event if you want it to matter later.',
       commit: 'No mechanics by default.'
     },
     rumor: {
       label: 'Rumor',
       role: 'Stored lead bank',
       use: 'Use when an idea is interesting but should not become canon or a quest yet.',
-      flow: 'Hear lead -> Hold in hub -> Promote later to quest, event, character scene, map seed, oracle, or problem.',
+      flow: 'Hear lead → Hold in hub → Promote later to quest, event, character scene, map seed, oracle, or problem.',
       commit: 'Saved as a lead until promoted.'
     },
     problem: {
       label: 'Problem',
       role: 'Active hub pressure',
       use: 'Use when the hub is already affected and the party should see pressure building.',
-      flow: 'Add pressure -> Show in hub -> Resolve manually or through quest/event results.',
+      flow: 'Add pressure → Show in hub → Resolve manually or through quest/event results.',
       commit: 'Counts as active state until resolved.'
     },
     hubPulse: {
       label: 'Hub Pulse',
       role: 'Living hub moment',
       use: 'Use when you want town, guild, tavern, forge, or weird local activity.',
-      flow: 'Roll/pick pulse -> Review card -> Apply choice, save idea, make rumor, or reject.',
+      flow: 'Roll/pick pulse → Review card → Apply choice, save idea, make rumor, or reject.',
       commit: 'Only commits when you apply a choice.'
     },
     event: {
       label: 'Authored Event',
       role: 'Immediate happening',
       use: 'Use during story, quest, travel, aftermath, or event play when something happens now.',
-      flow: 'Roll/pick event -> Review rewards/risks/text -> Apply, edit, note only, pin, or ignore.',
+      flow: 'Roll/pick event → Review rewards/risks/text → Apply, edit, note only, pin, or ignore.',
       commit: 'May change rewards, danger, flags, rumors, quests, or notes.'
     }
   };

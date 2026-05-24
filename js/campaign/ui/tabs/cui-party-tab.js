@@ -601,7 +601,7 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     const earned = (passiveRecord && F?.getEarnedPassiveRankPerks) ? F.getEarnedPassiveRankPerks(passiveRecord, rankInfo.rank) : [];
     const next = (passiveRecord && F?.getNextPassiveRankPerk) ? F.getNextPassiveRankPerk(passiveRecord, rankInfo.rank) : null;
     const earnedLine = earned.length
-      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `R${passivePerkRank(p)} - ${esc(p.description || '...')}`).join(' | ')}</div>`
+      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `R${passivePerkRank(p)} — ${esc(p.description || '...')}`).join(' | ')}</div>`
       : '';
     const nextLine = next
       ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at R${passivePerkRank(next)}: ${esc(next.description || '...')}</div>`
