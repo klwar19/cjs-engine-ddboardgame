@@ -3,102 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a2540">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon.svg">
   <title>CJS Engine</title>
   <link rel="stylesheet" href="css/launcher.css">
 </head>
 <body class="launcher-body">
-  <div class="launcher-shell">
-    <aside class="launcher-sidebar" id="launcher-sidebar" aria-label="App navigation">
-      <header class="launcher-brand">
-        <button class="launcher-collapse" id="launcher-collapse" aria-label="Collapse sidebar" title="Collapse sidebar">
-          <span class="launcher-collapse-icon" aria-hidden="true">≡</span>
-        </button>
-        <div class="launcher-brand-text">
-          <div class="launcher-brand-name">CJS Engine</div>
-          <div class="launcher-brand-sub">Cosmic Jester System</div>
-        </div>
-      </header>
-
-      <nav class="launcher-nav" role="navigation">
-        <button class="launcher-nav-item" data-mode="campaign" type="button">
-          <span class="launcher-nav-icon" aria-hidden="true">🗺️</span>
-          <span class="launcher-nav-label">Campaign</span>
-        </button>
-        <button class="launcher-nav-item" data-mode="combat" type="button">
-          <span class="launcher-nav-icon" aria-hidden="true">⚔️</span>
-          <span class="launcher-nav-label">Combat</span>
-        </button>
-        <button class="launcher-nav-item" data-mode="editor" type="button">
-          <span class="launcher-nav-icon" aria-hidden="true">🛠️</span>
-          <span class="launcher-nav-label">Editor</span>
-        </button>
-        <button class="launcher-nav-item" data-mode="minigames" type="button">
-          <span class="launcher-nav-icon" aria-hidden="true">🎮</span>
-          <span class="launcher-nav-label">Minigames</span>
-        </button>
-        <button class="launcher-nav-item" data-mode="tests" type="button">
-          <span class="launcher-nav-icon" aria-hidden="true">🧪</span>
-          <span class="launcher-nav-label">Tests</span>
-        </button>
-      </nav>
-
-      <footer class="launcher-foot">
-        <a class="launcher-foot-link" href="https://github.com/klwar19/cjs-engine-ddboardgame" target="_blank" rel="noopener">GitHub ↗</a>
-      </footer>
-    </aside>
-
-    <main class="launcher-main">
-      <header class="launcher-topbar">
-        <button class="launcher-menu-toggle" id="launcher-menu-toggle" aria-label="Open menu" title="Open menu" type="button">
-          <span aria-hidden="true">☰</span>
-        </button>
-        <h1 class="launcher-current-title" id="launcher-current-title">Welcome</h1>
-        <div class="launcher-topbar-actions">
-          <a class="launcher-pop-out" id="launcher-pop-out" href="#" target="_blank" rel="noopener" title="Open current mode in a new tab">↗ Open in tab</a>
-        </div>
-      </header>
-
-      <div class="launcher-frame-wrap">
-        <div class="launcher-welcome" id="launcher-welcome">
-          <div class="launcher-welcome-inner">
-            <h2>Welcome to the CJS Engine</h2>
-            <p class="dim">Pick a mode from the sidebar to get started.</p>
-            <div class="launcher-cards">
-              <button class="launcher-card" data-mode="campaign" type="button">
-                <span class="launcher-card-icon" aria-hidden="true">🗺️</span>
-                <span class="launcher-card-title">Campaign</span>
-                <span class="launcher-card-desc">Story Director, world map, quests, party</span>
-              </button>
-              <button class="launcher-card" data-mode="combat" type="button">
-                <span class="launcher-card-icon" aria-hidden="true">⚔️</span>
-                <span class="launcher-card-title">Combat</span>
-                <span class="launcher-card-desc">Tactical battle simulator with AI &amp; QTEs</span>
-              </button>
-              <button class="launcher-card" data-mode="editor" type="button">
-                <span class="launcher-card-icon" aria-hidden="true">🛠️</span>
-                <span class="launcher-card-title">Editor</span>
-                <span class="launcher-card-desc">Author skills, monsters, items, scenes</span>
-              </button>
-              <button class="launcher-card" data-mode="minigames" type="button">
-                <span class="launcher-card-icon" aria-hidden="true">🎮</span>
-                <span class="launcher-card-title">Minigames</span>
-                <span class="launcher-card-desc">Puzzle, maze, push-box test harness</span>
-              </button>
-              <button class="launcher-card" data-mode="tests" type="button">
-                <span class="launcher-card-icon" aria-hidden="true">🧪</span>
-                <span class="launcher-card-title">Tests</span>
-                <span class="launcher-card-desc">Engine sanity tests &amp; effect library</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Per-mode iframes are created lazily by launcher.js and kept
-             alive after first visit so state survives switches. -->
-      </div>
-    </main>
-  </div>
-
-  <script type="module" src="./src/entry-launcher.js"></script>
+  <div id="launcher-root"></div>
+  <script type="module" src="./src/launcher/main.tsx"></script>
 </body>
 </html>
