@@ -111,7 +111,7 @@ window.CJS.FishingMinigame = (() => {
    * the player either lands a fish, fails the QTE, or exits.
    *
    * @param {{ biome?: string, container?: HTMLElement }} opts
-   * @returns {Promise<{ caught: boolean, fish?: object, reason?: string }>}
+   * @returns {Promise<{ caught: boolean, fish?: object, reason?: string, message?: string, qte?: object, error?: string }>}
    */
   async function open(opts = {}) {
     const state = CS()?.getState?.() || {};
@@ -324,11 +324,11 @@ window.CJS.FishingMinigame = (() => {
     `;
     host.appendChild(root);
 
-    const phaseLabel = root.querySelector('.cjs-fishing-phase-label');
-    const message = root.querySelector('.cjs-fishing-message');
-    const bobber = root.querySelector('.cjs-fishing-bobber');
-    const qteHost = root.querySelector('.cjs-fishing-qte-host');
-    const scene = root.querySelector('.cjs-fishing-scene');
+    const phaseLabel = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-phase-label'));
+    const message = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-message'));
+    const bobber = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-bobber'));
+    const qteHost = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-qte-host'));
+    const scene = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-scene'));
     let bobberAnim = null;
     let bailHandler = null;
 

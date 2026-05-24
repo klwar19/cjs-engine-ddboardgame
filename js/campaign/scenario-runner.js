@@ -942,6 +942,9 @@ window.CJS.ScenarioRunner = (() => {
           levelId: trigger.levelId || trigger.minigame?.levelId || '',
           difficulty: trigger.difficulty || trigger.minigame?.difficulty || 1,
           theme: trigger.theme || trigger.minigame?.theme || '',
+          contextText: trigger.contextText || trigger.context || trigger.minigame?.contextText || trigger.minigame?.context || '',
+          conversation: trigger.conversation || trigger.minigame?.conversation || [],
+          bonusText: trigger.bonusText || trigger.minigame?.bonusText || '',
           onWinOps: trigger.onWinOps || trigger.minigame?.onWinOps || [],
           onLoseOps: trigger.onLoseOps || trigger.minigame?.onLoseOps || []
         });
@@ -1138,7 +1141,15 @@ window.CJS.ScenarioRunner = (() => {
       source: 'scenario_progress',
       mapId: context.run?.mapId || null,
       nodeId: context.location?.id || context.pending?.nodeId || null,
-      onWinOps: action.onWinOps || [],
+      contextText: action.contextText || `Scenario obstacle: ${context.location?.title || context.location?.id || 'route beat'}.`,
+      conversation: (Array.isArray(action.conversation) && action.conversation.length) ? action.conversation : [
+        { speaker: 'Route Beat', text: 'Clear the mechanism and the run keeps momentum.' }
+      ],
+      bonusText: action.bonusText || undefined,
+      onWinOps: [
+        ...(action.onWinOps || []),
+        { op: 'log', text: `Scenario mini-game cleared at ${context.location?.title || context.location?.id || 'current route'}.` }
+      ],
       onLoseOps: action.onLoseOps || [],
       onComplete: (result) => {
         const ops = (result?.suggestedOps || []).filter(Boolean);

@@ -25,7 +25,7 @@ declare global {
     ActionHandler?: CJSActionHandler;
     UndoManager?: CJSUndoManager;
     Formulas?: CJSFormulas;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   interface CJSConstants {
@@ -34,7 +34,7 @@ declare global {
     AI_TARGET_TYPES: string[];
     AI_TARGET_INFO?: Record<string, { label?: string; desc?: string }>;
     ID_PREFIXES?: Record<string, string>;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   interface CJSStateTools {
@@ -60,7 +60,7 @@ declare global {
     exportJSON(): string;
     reset(): void;
     subscribe(listener: (change: CJSDataChange) => void): () => void;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   interface CJSDataChange {
@@ -76,7 +76,7 @@ declare global {
     name?: string;
     description?: string;
     tags?: string[];
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   interface CJSCombatUnit extends CJSRecord {
@@ -95,7 +95,7 @@ declare global {
     equipment?: string[];
     turnState?: CJSTurnState;
     compiledStats?: Record<string, number>;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   interface CJSTurnState {
@@ -103,7 +103,7 @@ declare global {
     mainActionUsed?: boolean;
     apRemaining?: number;
     cooldowns?: Record<string, number>;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   interface CJSSkillRef {
@@ -136,11 +136,19 @@ declare global {
   type CJSCombatAction =
     | { type: "move"; targetPos: [number, number] }
     | { type: "attack"; targetId: string; apCost?: number; mpCost?: number }
-    | { type: "skill"; skillId: string; targetId?: string; aoeCenter?: [number, number]; apCost?: number; mpCost?: number }
+    | { type: "skill"; skillId: string; targetId?: string; aoeCenter?: [number, number]; apCost?: number; mpCost?: number; qteResult?: CJSQTEResult }
     | { type: "item"; itemId: string; targetId?: string; apCost?: number; mpCost?: number }
     | { type: "defend"; apCost?: number; mpCost?: number }
+    | { type: "interact"; targetPos: [number, number]; apCost?: number; mpCost?: number }
     | { type: "end_turn" }
     | { type: "wait" };
+
+  interface CJSQTEResult {
+    grade?: string;
+    multiplier?: number;
+    qteType?: string;
+    [key: string]: any;
+  }
 
   interface CJSAIConditions {
     evaluate(condition: string, ctx: { unit?: CJSCombatUnit; allUnits?: CJSCombatUnit[]; [key: string]: unknown }): boolean;
@@ -244,6 +252,7 @@ declare global {
     withElement: number;
     final: number;
     overkill: number;
+    [key: string]: any;
   }
 
   interface CJSAttackResult {
@@ -252,10 +261,11 @@ declare global {
     dodged?: boolean;
     isCritical: boolean;
     damage: number;
-    breakdown?: Partial<CJSAttackBreakdown> & { final?: number; reason?: string };
+    breakdown?: (Partial<CJSAttackBreakdown> & { final?: number; reason?: string }) | Record<string, any>;
     attackScore?: number;
     defendScore?: number;
     qteGrade?: string;
+    [key: string]: any;
   }
 
   interface CJSComputeAttackArgs {
@@ -294,7 +304,7 @@ declare global {
     applyHeal(args: { actor?: CJSCombatUnit | null; target: CJSCombatUnit; amount: number; source?: unknown }): { applied: number; newHP: number; blocked: boolean };
     applyMP(args: { target: CJSCombatUnit; delta: number }): number;
     applyTickDamage(args: { source?: CJSCombatUnit | null; target: CJSCombatUnit; amount: number; element?: string; damageType?: string; statusId?: string }): { applied: number; absorbed?: number; killed: boolean };
-    applyRawDamage(args: { source?: CJSCombatUnit | null; target: CJSCombatUnit; amount: number; reason?: string; damageType?: string }): { applied: number; killed: boolean };
+    applyRawDamage(args: { source?: CJSCombatUnit | null; target: CJSCombatUnit; amount: number; reason?: string; damageType?: string; element?: string }): { applied: number; killed: boolean };
     grantUltimate(unit: CJSCombatUnit, amount: number): void;
     consumeUltimate(unit: CJSCombatUnit, amount: number): boolean;
   }
@@ -584,6 +594,10 @@ declare global {
     calcKnockbackDistance(baseDistance: number, targetEndurance: number): number;
     calcWallCollisionDamage(knockbackSourceDamage: number): number;
     calcUnitCollisionDamage(knockbackSourceDamage: number): number;
+    calcBarrelExplosionDamage(sourceStrength?: number): number;
+    facingFromDelta(dr: number, dc: number): string | null;
+    getFlankPosition(attackerPos: [number, number], targetPos: [number, number], targetFacing?: string | null): { position: string; critBonus: number };
+    calcElevationBonuses(attackerElevation: number, targetElevation: number, baseRange?: number): { accuracy: number; range: number; advantage: number };
     doesKnockbackChain(pushedSize: string, blockerSize: string): boolean;
     cellBlocksLoS(terrainType: string, unitOnCell?: CJSCombatUnit | null): boolean;
     getTerrainMoveCost(terrainType: string): number;
@@ -603,7 +617,7 @@ declare global {
     applySkillLevelPerks(skill: CJSSkill, level: number): CJSSkill;
     getNextSkillPerk(skill: CJSSkill, level: number): Record<string, unknown> | null;
     getEarnedSkillPerks(skill: CJSSkill, level: number): Array<Record<string, unknown>>;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
   // ── Environment / Weather (combat state) ─────────────────────────────

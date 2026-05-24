@@ -12,6 +12,23 @@
     "types": []
   },
   "include": [
-    "types/**/*.d.ts"
+    "types/**/*.d.ts",
+    "js/campaign/campaign-alignment.js",
+    "js/campaign/campaign-ops.js",
+    "js/campaign/campaign-world-events.js",
+    "js/campaign/guild-trivia.js",
+    "js/campaign/pocket-haven-facilities.js",
+    "js/combat/action-handler.js",
+    "js/combat/combat-objectives.js",
+    "js/combat/damage-calc.js",
+    "js/combat/enemy-modifiers.js",
+    "js/grid/grid-engine.js",
+    "js/grid/grid-renderer.js",
+    "js/minigames/cooking-minigame.js",
+    "js/minigames/fishing-minigame.js",
+    "js/services/content-validator.js",
+    "js/services/data-hot-reload.js",
+    "js/services/dev-console.js",
+    "js/ui/touch-gestures.js"
   ]
 }

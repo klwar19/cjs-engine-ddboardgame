@@ -42,6 +42,7 @@ const modules = [
   'js/core/formulas.js',
   'js/core/data-store.js',
   'js/combat/enemy-modifiers.js',
+  'js/combat/action-handler.js',
   'js/campaign/campaign-alignment.js',
   'js/campaign/pocket-haven-facilities.js'
 ];
@@ -144,6 +145,108 @@ ok('flag hook created', !!flagHook?.id);
 ok('not due without flag', !Align.dueConsequenceHooks(consState).some((h) => h.id === flagHook.id));
 consState.flags.town_visited = true;
 ok('due once flag set', Align.dueConsequenceHooks(consState).some((h) => h.id === flagHook.id));
+
+console.log('\n── TEST: Combo system lifecycle ──');
+const AH = window.CJS.ActionHandler;
+ok('action handler loaded', !!AH);
+let lastQteMultiplier = 0;
+const comboActor = {
+  instanceId: 'combo_actor',
+  name: 'Combo Actor',
+  team: 'player',
+  currentHP: 30,
+  currentMP: 20,
+  pos: [0, 0],
+  stats: { S: 8, P: 8, A: 8, L: 8 },
+  compiledStats: { S: 8, P: 8, A: 8, L: 8 },
+  skills: ['test_combo_strike'],
+  turnState: { apRemaining: 3, mainActionUsed: false, cooldowns: {} },
+  equipment: []
+};
+const comboTarget = {
+  instanceId: 'combo_target',
+  name: 'Target',
+  team: 'enemy',
+  currentHP: 50,
+  currentMP: 0,
+  maxHP: 50,
+  pos: [0, 1],
+  stats: { A: 1 },
+  compiledStats: { A: 1 }
+};
+const comboUnits = { combo_actor: comboActor, combo_target: comboTarget };
+window.CJS.DataStore.create('skills', {
+  id: 'test_combo_strike',
+  name: 'Combo Strike',
+  qte: 'quickpress',
+  power: 10,
+  ap: 1,
+  mp: 0,
+  range: 1,
+  damageType: 'Physical',
+  element: 'Physical'
+});
+window.CJS.GridEngine = {
+  getUnit: (id) => comboUnits[id],
+  getAllUnits: () => Object.values(comboUnits),
+  footprintDistance: () => 1,
+  distance: () => 1,
+  faceToward() {},
+  hasLineOfSight: () => true,
+  getUnitElevation: () => 0,
+  removeFromBoard() {}
+};
+window.CJS.DamageCalc = {
+  computeAttack(args) {
+    lastQteMultiplier = args.qteMultiplier;
+    return { miss: false, damage: 10, isCritical: false, breakdown: {} };
+  },
+  applyDamage() { return { applied: 10, killed: false }; }
+};
+window.CJS.EffectResolver = { fireTrigger() {}, executeEffect() {} };
+window.CJS.StatusManager = {
+  canAct: () => true,
+  canMove: () => true,
+  canUseSkills: () => true,
+  isInvisible: () => false
+};
+window.CJS.CombatLog = {
+  record() {},
+  logNote() {},
+  getTurn: () => 1,
+  logMove() {},
+  logMiss() {},
+  logSkillUse() {}
+};
+window.CJS.AudioManager = { playSfx() {} };
+window.CJS.AnimationBus = { emit() {} };
+
+AH.execute(comboActor, {
+  type: 'skill',
+  skillId: 'test_combo_strike',
+  targetId: 'combo_target',
+  qteResult: { grade: 'perfect', multiplier: 1.5, qteType: 'quickpress' }
+}, { turnNumber: 1 });
+comboActor.turnState.mainActionUsed = false;
+comboActor.turnState.apRemaining = 3;
+AH.execute(comboActor, {
+  type: 'skill',
+  skillId: 'test_combo_strike',
+  targetId: 'combo_target',
+  qteResult: { grade: 'good', multiplier: 1.25, qteType: 'rhythm' }
+}, { turnNumber: 1 });
+ok('two successful QTEs build chain 2', AH.getComboState(comboActor).chain === 2);
+ok('chain 2 grants +25% next attack bonus', AH.getComboBonus(comboActor) === 0.25);
+comboActor.turnState.mainActionUsed = false;
+comboActor.turnState.apRemaining = 3;
+lastQteMultiplier = 0;
+AH.execute(comboActor, { type: 'attack', targetId: 'combo_target' }, { turnNumber: 1 });
+ok('basic attack consumes +25% combo multiplier', Math.abs(lastQteMultiplier - 1.25) < 0.0001);
+ok('non-QTE attack consumes combo chain', AH.getComboState(comboActor).chain === 0);
+comboActor.comboState = { chain: 2, lastGrade: 'good', lastQteType: 'rhythm', banner: 2 };
+comboActor.turnState = { apRemaining: 3, mainActionUsed: false, cooldowns: {} };
+AH.execute(comboActor, { type: 'end_turn' }, { turnNumber: 1 });
+ok('end_turn breaks combo chain', AH.getComboState(comboActor).chain === 0);
 
 console.log('\n──────────────────────────────────────────');
 console.log(`RESULTS: ${pass} passed, ${fail} failed`);

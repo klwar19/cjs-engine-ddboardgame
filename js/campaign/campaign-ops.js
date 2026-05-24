@@ -1682,7 +1682,7 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
-  function _addQuest(state, quest) {
+  function _addQuest(state, quest, options = {}) {
     if (!quest.id) quest.id = `quest_${Date.now()}`;
     const prepared = QuestPulse()?.prepareQuest?.(quest, state) || CS().clone(quest);
     state.quests[prepared.id] = {
@@ -3100,7 +3100,8 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _rollCheck(state, op) {
-    const roll = D().d20 ? D().d20().total : Math.floor(Math.random() * 20) + 1;
+    const d20 = D().d20 ? /** @type {any} */ (D().d20()) : Math.floor(Math.random() * 20) + 1;
+    const roll = typeof d20 === 'number' ? d20 : d20.total;
     const stat = op.stat || 'L';
     const best = _bestPartyStat(state, stat);
     const total = roll + best.value;

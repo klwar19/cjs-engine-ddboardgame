@@ -170,6 +170,7 @@ window.CJS.CampaignWorldEvents = (() => {
   function start(eventId, options = {}) {
     const def = DS()?.get?.('worldEvents', eventId);
     if (!def) return null;
+    /** @type {any} */
     let started = null;
     CS().mutate((state) => {
       const bucket = _ensureBucket(state);
@@ -214,6 +215,7 @@ window.CJS.CampaignWorldEvents = (() => {
 
   /** End an event prematurely. */
   function end(eventId, reason = 'manual') {
+    /** @type {any} */
     let ended = null;
     CS().mutate((state) => {
       const bucket = _ensureBucket(state);

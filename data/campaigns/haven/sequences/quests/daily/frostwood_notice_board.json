@@ -144,7 +144,17 @@
                 "label": "Clear 1 mini-game room",
                 "current": 0,
                 "required": 1,
-                "minigame": { "gameId": "push_box", "difficulty": 1, "theme": "ruins" }
+                "minigame": {
+                  "gameId": "push_box",
+                  "difficulty": 1,
+                  "theme": "ruins",
+                  "contextText": "A guild clerk unlocks a practice door under the hall. This puzzle counts toward the notice-board job, not the standalone test lab.",
+                  "conversation": [
+                    { "speaker": "Guild Clerk", "text": "Clear the room cleanly and I can stamp the chit with a bonus training mark." },
+                    { "speaker": "Bin", "text": "A tiny dungeon with paperwork attached. Somehow worse than a large dungeon." }
+                  ],
+                  "bonusText": "Clear bonus: room buff and JP payout apply immediately."
+                }
               }
             ],
             "rewards": [
@@ -165,6 +175,12 @@
       "theme": "ruins",
       "seed": "frostwood_notice_board_daily",
       "text": "The guild's tiny training room clicks awake. Clear the mechanism, or mark the job as a setback.",
+      "contextText": "This is the notice-board puzzle room. The guild clerk is watching the result because the training mark changes the quest payout.",
+      "conversation": [
+        { "speaker": "Guild Clerk", "text": "Clear it while the runes are still lit. Clean clears get the training mark." },
+        { "speaker": "Bin", "text": "The room is judging me. Good. Mutual." }
+      ],
+      "bonusText": "Clear bonus: room buff and JP payout apply immediately.",
       "winOps": [
         { "op": "update_quest_progress", "questId": "daily_dungeon_minigame_chit", "objectiveId": "clear_minigame_1", "amount": 1 },
         { "op": "log", "text": "Daily mini-game room cleared for the guild ledger." }

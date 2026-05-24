@@ -354,7 +354,7 @@ window.CJS.CombatObjectives = (() => {
       const id = r.id || r.baseId;
       const pos = _normalizeCell(r.pos) || [0, 0];
       const team = r.team || 'player';
-      const result = CM.gmAddUnit(id, pos[0], pos[1], { team, size: r.size });
+      const result = /** @type {any} */ (CM.gmAddUnit(id, pos[0], pos[1], { team, size: r.size }));
       if (result?.success) fired.push(result.unit?.instanceId || id);
     }
     tracker.reinforcementsFired = true;

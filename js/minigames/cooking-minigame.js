@@ -57,10 +57,10 @@ window.CJS.CookingMinigame = (() => {
       document.body.appendChild(root);
       _sessionRoot = root;
 
-      const marker = root.querySelector('[data-cm="marker"]');
-      const result = root.querySelector('[data-cm="result"]');
-      const stopBtn = root.querySelector('[data-cm="stop"]');
-      const cancelBtn = root.querySelector('[data-cm="cancel"]');
+      const marker = /** @type {HTMLElement} */ (root.querySelector('[data-cm="marker"]'));
+      const result = /** @type {HTMLElement} */ (root.querySelector('[data-cm="result"]'));
+      const stopBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-cm="stop"]'));
+      const cancelBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-cm="cancel"]'));
 
       // Animation: marker sweeps left → right and back. Single full
       // pass takes ~2.4s; speed ramps up for higher difficulties.

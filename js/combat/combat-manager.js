@@ -41,6 +41,48 @@ window.CJS.CombatManager = (() => {
 
   // _state shape: see CJSCombatState in types/cjs-globals.d.ts
 
+  function _procModifierBudget(enc = {}, enemyCount = 0) {
+    if (enc.procModifierMax != null) {
+      return Math.max(0, Math.min(enemyCount, Number(enc.procModifierMax) || 0));
+    }
+    if (enc.procModifierChance === 0) return 0;
+    if (enemyCount <= 0) return 0;
+    const tags = _modifierTags(enc);
+    let budget = enemyCount <= 3 ? 1 : enemyCount <= 6 ? 2 : 3;
+    if (tags.has('story') || tags.has('scripted') || tags.has('setpiece')) budget = Math.min(budget, 1);
+    if (tags.has('elite') || tags.has('horde') || tags.has('blood_moon')) budget += 1;
+    return Math.max(1, Math.min(enemyCount, budget));
+  }
+
+  function _procModifierChance(enc = {}, placement = {}) {
+    const explicit = placement.procModifierChance ?? enc.procModifierChance;
+    if (explicit != null && explicit !== '') return Math.max(0, Math.min(0.45, Number(explicit) || 0));
+    const tags = _modifierTags(enc);
+    let chance = 0.18;
+    if (tags.has('story') || tags.has('scripted') || tags.has('setpiece')) chance -= 0.04;
+    if (tags.has('quest') || tags.has('rank:f') || tags.has('starter')) chance -= 0.02;
+    if (tags.has('random') || tags.has('roamer') || tags.has('moving_threat')) chance += 0.05;
+    if (tags.has('elite') || tags.has('horde') || tags.has('blood_moon')) chance += 0.07;
+    return Math.max(0, Math.min(0.45, chance));
+  }
+
+  function _modifierTags(enc = {}, base = null) {
+    const tags = new Set();
+    const add = (values) => {
+      for (const value of Array.isArray(values) ? values : [values]) {
+        if (!value) continue;
+        tags.add(String(value).toLowerCase());
+      }
+    };
+    add(enc.tags || []);
+    add(enc.contextTags || []);
+    add(enc.monsterTags || []);
+    add(enc._origin);
+    add(enc._battleTheme);
+    if (base) add(base.tags || []);
+    return tags;
+  }
+
   // ── LIFECYCLE ─────────────────────────────────────────────────────
   /**
    * @param {string | CJSRecord} encounterId
@@ -67,6 +109,13 @@ window.CJS.CombatManager = (() => {
       if (!placement || !placement.id) continue;
       packCounts[placement.id] = (packCounts[placement.id] || 0) + 1;
     }
+    const enemyPlacementCount = (enc.units || []).filter((placement) => {
+      if (!placement || !placement.id) return false;
+      return !!DS().get('monsters', placement.id) && !placement.noProceduralModifier;
+    }).length;
+    const procBudget = _procModifierBudget(enc, enemyPlacementCount);
+    let procUsed = 0;
+    const alphaUsedByFamily = {};
 
     // Build patched placements with unique instance IDs
     const patchedUnits = [];
@@ -93,14 +142,15 @@ window.CJS.CombatManager = (() => {
         if (placement.procModifier && EM().applyModifier) {
           effectiveBase = EM().applyModifier(base, placement.procModifier);
         } else if (EM().rollAndApply) {
-          effectiveBase = EM().rollAndApply(base, {
-            biome: enc.biome || enc.theme || '',
+          effectiveBase = procUsed < procBudget ? EM().rollAndApply(base, {
+            biome: enc.biome || enc.theme || enc.setting || enc._battleTheme || '',
             element: base.element || '',
             type: base.type || '',
-            tags: [...(enc.tags || []), ...(base.tags || [])],
+            tags: Array.from(_modifierTags(enc, base)),
             packSize: packCounts[placement.id] || 1,
-            chance: Number(enc.procModifierChance ?? placement.procModifierChance ?? 0.22)
-          });
+            chance: _procModifierChance(enc, placement),
+            alphaAlreadyInPack: !!alphaUsedByFamily[placement.id]
+          }) : base;
         }
       }
 
@@ -114,6 +164,8 @@ window.CJS.CombatManager = (() => {
       // Surface modifier metadata on the compiled unit so combat UI
       // and post-combat loot can read it without re-rolling.
       if (effectiveBase._procModifier) {
+        procUsed += 1;
+        if (effectiveBase._procModifier === 'alpha') alphaUsedByFamily[placement.id] = true;
         compiled.procModifier = effectiveBase._procModifier;
         compiled.procModifierLabel = effectiveBase._procModifierLabel || '';
         compiled.procModifierIcon = effectiveBase._procModifierIcon || '';

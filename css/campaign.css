@@ -9288,6 +9288,41 @@ body.campaign-page {
   margin-bottom: 0;
 }
 
+.campaign-minigame-briefing {
+  display: grid;
+  gap: 10px;
+}
+
+.campaign-minigame-briefing-context {
+  margin: 0;
+  color: var(--text, #1f2937);
+  line-height: 1.5;
+}
+
+.campaign-minigame-briefing-line {
+  display: grid;
+  grid-template-columns: minmax(86px, auto) 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(77, 163, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(77, 163, 255, 0.06);
+}
+
+.campaign-minigame-briefing-line strong {
+  color: var(--accent, #2563eb);
+}
+
+.campaign-minigame-briefing-bonus {
+  padding: 8px 10px;
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  border-radius: 6px;
+  color: #166534;
+  background: rgba(22, 163, 74, 0.08);
+  font-weight: 700;
+}
+
 /* ── Relationships tab ───────────────────────────────────────────── */
 .campaign-relationships-panel .rel-grid {
   display: grid;

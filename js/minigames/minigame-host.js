@@ -66,14 +66,25 @@ window.CJS.Minigames = (() => {
     const shell = document.createElement('div');
     shell.className = `minigame-shell minigame-theme-${opts.theme || level?.theme || gameMeta.theme || 'tomb'}`;
 
-    const contextText = level?.narrative?.context || '';
+    const contextText = opts.contextText || level?.narrative?.context || '';
+    const conversation = Array.isArray(opts.conversation) ? opts.conversation.filter(Boolean) : [];
+    const bonusText = opts.bonusText || _bonusTextForLevel(level);
+    const conversationHtml = conversation.length
+      ? `<div class="minigame-context-dialogue">${conversation.map((line) => {
+          const speaker = line.speaker || line.name || 'Someone';
+          const text = line.text || line.line || '';
+          return `<p><strong>${escapeHtml(speaker)}</strong><span>${escapeHtml(text)}</span></p>`;
+        }).join('')}</div>`
+      : '';
     shell.innerHTML = `
       <header class="minigame-header">
         <div class="minigame-title">
           <span class="minigame-badge">Mini-Game</span>
           <h2>${escapeHtml(gameMeta.title || gameMeta.id)}</h2>
           <p class="minigame-sub" data-mg="level-title">${escapeHtml(level?.title || '')}</p>
-          ${contextText ? `<p class="minigame-narrative" style="font-style:italic;color:rgba(255,255,255,0.7);margin-top:4px;font-size:0.85rem;max-width:520px">${escapeHtml(contextText)}</p>` : ''}
+          ${contextText ? `<p class="minigame-narrative">${escapeHtml(contextText)}</p>` : ''}
+          ${conversationHtml}
+          ${bonusText ? `<p class="minigame-bonus-line">${escapeHtml(bonusText)}</p>` : ''}
         </div>
         <div class="minigame-stats">
           <span data-mg="turns">Turns: 0</span>
@@ -117,6 +128,16 @@ window.CJS.Minigames = (() => {
     return String(str || '').replace(/[&<>"']/g, (ch) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[ch]));
+  }
+
+  function _bonusTextForLevel(level = {}) {
+    const narrative = level?.narrative || {};
+    const buff = narrative.buffName ? `Next-battle buff: ${narrative.buffName}` : '';
+    const jp = (level?.onWinOps || [])
+      .filter((op) => op?.op === 'give_jp')
+      .reduce((sum, op) => sum + Number(op.amount || 0), 0);
+    const parts = [buff, jp ? `+${jp} JP` : ''].filter(Boolean);
+    return parts.length ? `Clear bonus: ${parts.join(' and ')}.` : '';
   }
 
   function buildResult(gameMeta, level, summary, opts) {

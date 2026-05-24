@@ -256,7 +256,17 @@
                     "kind": "minigame",
                     "label": "Clear 1 mini-game room",
                     "required": 1,
-                    "minigame": { "gameId": "push_box", "difficulty": 1, "theme": "ruins" }
+                    "minigame": {
+                      "gameId": "push_box",
+                      "difficulty": 1,
+                      "theme": "ruins",
+                      "contextText": "The notice slip points to a real guild puzzle room. It advances the quest and pays its training bonus on clear.",
+                      "conversation": [
+                        { "speaker": "Guild Clerk", "text": "This room is small enough for a daily chit and mean enough to teach something." },
+                        { "speaker": "Bin", "text": "Daily humiliation with educational value. Understood." }
+                      ],
+                      "bonusText": "Clear bonus: room buff and JP payout apply immediately."
+                    }
                   }
                 ],
                 "contextTags": ["dungeon", "puzzle", "training"],
@@ -281,7 +291,17 @@
               "label": "Clear 1 mini-game room",
               "current": 0,
               "required": 1,
-              "minigame": { "gameId": "mummy_maze", "difficulty": 2, "theme": "tomb" }
+              "minigame": {
+                "gameId": "mummy_maze",
+                "difficulty": 2,
+                "theme": "tomb",
+                "contextText": "Corvin's mechanism test is filed as quest work. The maze result updates the chit and grants its training bonus.",
+                "conversation": [
+                  { "speaker": "Corvin", "text": "If the shadow catches you, write 'unsafe' on the form. If you win, write 'insultingly safe' and bring me the stamp." },
+                  { "speaker": "Bin", "text": "I love when paperwork has teeth." }
+                ],
+                "bonusText": "Clear bonus: room buff and JP payout apply immediately."
+              }
             }
           ],
           "rewards": [

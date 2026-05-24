@@ -387,10 +387,63 @@ window.CJS.CampaignCombatBridge = (() => {
     return JSON.parse(JSON.stringify(value || (Array.isArray(value) ? [] : {})));
   }
 
+  function _mergeTags(...groups) {
+    const seen = new Set();
+    const out = [];
+    for (const group of groups) {
+      for (const tag of Array.isArray(group) ? group : [group]) {
+        if (!tag) continue;
+        const value = String(tag);
+        const key = value.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(value);
+      }
+    }
+    return out;
+  }
+
+  function _requestCombatContext(request = {}, base = {}, card = null) {
+    const questContext = request.questContext || {};
+    const tags = _mergeTags(
+      base.tags || [],
+      card?.tags || [],
+      request.tags || [],
+      questContext.tags || [],
+      request.battleSetId ? 'battle_set' : '',
+      request.scenarioRunId ? 'scenario' : '',
+      questContext.questId ? 'quest' : '',
+      questContext.questId ? 'story' : ''
+    );
+    return {
+      tags,
+      contextTags: _mergeTags(base.contextTags || [], request.contextTags || [], questContext.contextTags || []),
+      monsterTags: _mergeTags(base.monsterTags || [], request.monsterTags || [], questContext.monsterTags || []),
+      procModifierChance: _procModifierChanceForRequest(request, tags),
+      procModifierMax: _procModifierMaxForRequest(request, tags)
+    };
+  }
+
+  function _procModifierChanceForRequest(request = {}, tags = []) {
+    if (request.procModifierChance != null) return Number(request.procModifierChance);
+    const set = new Set((tags || []).map((tag) => String(tag).toLowerCase()));
+    if (set.has('story') || set.has('quest')) return 0.16;
+    if (set.has('moving_threat') || set.has('random') || set.has('horde')) return 0.24;
+    return null;
+  }
+
+  function _procModifierMaxForRequest(request = {}, tags = []) {
+    if (request.procModifierMax != null) return Number(request.procModifierMax);
+    const set = new Set((tags || []).map((tag) => String(tag).toLowerCase()));
+    if (set.has('story') || set.has('quest')) return 1;
+    return null;
+  }
+
   function createRuntimeEncounterFromRequest(request) {
     _installCampaignPartyUnits(request);
     const base = request?.encounterId ? DS().get('encounters', request.encounterId) : null;
     if (!base) return _createProceduralEncounterFromRequest(request);
+    const runtimeContext = _requestCombatContext(request, base, request.battleSetCard || _battleSetCard(request.battleSetId));
     const runtimeId = `campaign_runtime_${request.encounterId}`;
     const overlay = request.partyOverlay || {};
     const excluded = new Set((request.excludedParty || []).map((entry) => entry.id));
@@ -399,6 +452,13 @@ window.CJS.CampaignCombatBridge = (() => {
     clone.name = `${base.name || request.encounterId} (Campaign)`;
     clone._runtime = true;
     clone._scope = 'runtime';
+    clone.tags = runtimeContext.tags;
+    clone.contextTags = runtimeContext.contextTags;
+    clone.monsterTags = runtimeContext.monsterTags;
+    clone.setting = request.setting || clone.setting || '';
+    clone.biome = clone.biome || request.setting || '';
+    if (runtimeContext.procModifierChance != null) clone.procModifierChance = runtimeContext.procModifierChance;
+    if (runtimeContext.procModifierMax != null) clone.procModifierMax = runtimeContext.procModifierMax;
     const sourceUnits = clone.units || [];
     const playerSlots = sourceUnits.filter((placement) => {
       const character = DS().get('characters', placement.id);
@@ -434,6 +494,7 @@ window.CJS.CampaignCombatBridge = (() => {
   function _createProceduralEncounterFromRequest(request = {}) {
     _installCampaignPartyUnits(request);
     const card = request.battleSetCard || _battleSetCard(request.battleSetId);
+    const runtimeContext = _requestCombatContext(request, {}, card);
     const overlay = request.partyOverlay || {};
     const partyIds = request.availablePartyIds || Object.keys(overlay);
     if (!partyIds.length) return null;
@@ -479,7 +540,14 @@ window.CJS.CampaignCombatBridge = (() => {
       _world: request.world || card?.world || null,
       _origin: request.monsterIds?.length ? 'runtime:campaign-monster-pool' : 'runtime:campaign-battle-set',
       _battleSetId: request.battleSetId || card?.id || null,
-      _battleTheme: generated.themeId
+      _battleTheme: generated.themeId,
+      setting: request.setting || generated.themeId || '',
+      biome: request.setting || generated.themeId || '',
+      tags: runtimeContext.tags,
+      contextTags: runtimeContext.contextTags,
+      monsterTags: runtimeContext.monsterTags,
+      procModifierChance: runtimeContext.procModifierChance,
+      procModifierMax: runtimeContext.procModifierMax
     });
     return runtimeId;
   }

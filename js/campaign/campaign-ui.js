@@ -7294,6 +7294,8 @@ window.CJS.CampaignUI = (() => {
       source: 'sequence_minigame',
       eventId: active.sequenceId,
       nodeId: node.id,
+      sequence,
+      node,
       onComplete: (result) => {
         _applyMiniGameResult(result, 'sequence_minigame');
         if (result?.status === 'win') return _advanceSequenceFromUi('win');
@@ -7313,6 +7315,12 @@ window.CJS.CampaignUI = (() => {
       difficulty: Number(nested.difficulty || source.difficulty || 1),
       seed: nested.seed || source.seed || '',
       theme: nested.theme || source.theme || '',
+      briefingTitle: nested.briefingTitle || source.briefingTitle || nested.title || source.title || '',
+      contextText: nested.contextText || nested.context || source.contextText || source.context || source.text || '',
+      conversation: nested.conversation || source.conversation || [],
+      bonusText: nested.bonusText || source.bonusText || '',
+      bonusOps: includeOps ? (nested.bonusOps || source.bonusOps || []) : [],
+      contextualBonus: nested.contextualBonus ?? source.contextualBonus,
       onWinOps: includeOps ? (nested.onWinOps || source.onWinOps || source.winOps || []) : [],
       onLoseOps: includeOps ? (nested.onLoseOps || source.onLoseOps || source.failOps || source.loseOps || []) : []
     };
@@ -7324,40 +7332,182 @@ window.CJS.CampaignUI = (() => {
     if (!config.gameId) return UI().toast('No mini-game is linked here', 'info');
     const questId = context.questId && context.objectiveId ? context.questId : null;
     const objectiveId = context.questId && context.objectiveId ? context.objectiveId : null;
-    try {
-      const session = await MG.openMiniGame({
-        gameId: config.gameId,
-        levelId: config.levelId || undefined,
-        difficulty: config.difficulty || undefined,
-        seed: config.seed || undefined,
-        theme: config.theme || undefined,
-        source: context.source || 'campaign_minigame',
-        questId,
-        objectiveId,
-        eventId: context.eventId || null,
-        mapId: context.mapId || null,
-        nodeId: context.nodeId || null,
-        onWinOps: config.onWinOps || [],
-        onLoseOps: config.onLoseOps || [],
-        onComplete: context.onComplete || ((result) => _applyMiniGameResult(result, context.source || 'campaign_minigame'))
-      });
-      if (!session) UI().toast('Mini-game could not open', 'error');
-      return session;
-    } catch (error) {
-      console.error(error);
-      UI().toast(error?.message || 'Mini-game failed to open', 'error');
+    const storyContext = _miniGameStoryContext(config, context);
+    const launch = async () => {
+      try {
+        const session = await MG.openMiniGame({
+          gameId: config.gameId,
+          levelId: config.levelId || undefined,
+          difficulty: config.difficulty || undefined,
+          seed: config.seed || undefined,
+          theme: config.theme || undefined,
+          source: context.source || 'campaign_minigame',
+          questId,
+          objectiveId,
+          eventId: context.eventId || null,
+          mapId: context.mapId || null,
+          nodeId: context.nodeId || null,
+          contextText: storyContext.contextText || undefined,
+          conversation: storyContext.conversation || [],
+          bonusText: storyContext.bonusText || undefined,
+          onWinOps: storyContext.onWinOps || [],
+          onLoseOps: storyContext.onLoseOps || [],
+          onComplete: context.onComplete || ((result) => _applyMiniGameResult(result, context.source || 'campaign_minigame', storyContext))
+        });
+        if (!session) UI().toast('Mini-game could not open', 'error');
+        return session;
+      } catch (error) {
+        console.error(error);
+        UI().toast(error?.message || 'Mini-game failed to open', 'error');
+        return null;
+      }
+    };
+    if (context.requireBriefing) {
+      _showMiniGameBriefing(storyContext, launch);
       return null;
     }
+    return launch();
   }
 
-  function _applyMiniGameResult(result, source = 'campaign_minigame') {
+  function _miniGameStoryContext(config = {}, context = {}) {
+    const source = String(context.source || 'campaign_minigame');
+    const quest = context.quest || (context.questId ? _activeQuestById(context.questId) : null);
+    const objective = context.objective || (quest ? _questMiniGameObjective(quest) : null);
+    const node = context.node || null;
+    const title = config.briefingTitle
+      || (quest ? `${quest.title || quest.id}: ${objective?.label || 'Puzzle room'}` : '')
+      || node?.title
+      || node?.label
+      || _label(config.gameId || 'Mini-game');
+    const contextText = config.contextText
+      || (quest ? _questMiniGameContextText(quest, objective) : '')
+      || node?.text
+      || (source === 'scenario_progress' ? 'A route obstacle resolves as a small puzzle beat before the run can continue.' : '');
+    const conversation = _normalizeMiniGameConversation(config.conversation);
+    const defaultConversation = conversation.length ? [] : _defaultMiniGameConversation(source, quest, objective, node);
+    const bonusOps = _asOps(config.bonusOps);
+    const contextOps = _miniGameContextWinOps(config, context, { quest, objective, title });
+    return {
+      title,
+      contextText,
+      conversation: conversation.length ? conversation : defaultConversation,
+      bonusText: config.bonusText || '',
+      briefingBonusText: config.bonusText || 'Clear bonus: the selected room applies its next-battle buff and JP reward on success.',
+      onWinOps: [..._asOps(config.onWinOps), ...bonusOps, ...contextOps],
+      onLoseOps: _asOps(config.onLoseOps)
+    };
+  }
+
+  function _normalizeMiniGameConversation(lines) {
+    return (Array.isArray(lines) ? lines : []).map((line) => {
+      if (typeof line === 'string') return { speaker: 'Scene', text: line };
+      return {
+        speaker: line?.speaker || line?.name || 'Scene',
+        text: line?.text || line?.line || ''
+      };
+    }).filter((line) => line.text);
+  }
+
+  function _asOps(value) {
+    if (!value) return [];
+    return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
+  }
+
+  function _defaultMiniGameConversation(source, quest, objective, node) {
+    if (source === 'quest_minigame' && quest) {
+      const giver = quest.giver || 'Guild Clerk';
+      const label = objective?.label || 'the puzzle room';
+      return [
+        { speaker: giver, text: `This is part of the job, not a side diversion. Clear ${label} and I can mark the bonus.` },
+        { speaker: 'Bin', text: 'Then it counts. Open the room.' }
+      ];
+    }
+    if (source === 'scenario_progress') {
+      return [
+        { speaker: 'Route Beat', text: 'The obstacle is small, but it decides whether the run keeps momentum.' }
+      ];
+    }
+    if (node?.speaker && node?.text) {
+      return [{ speaker: node.speaker, text: node.text }];
+    }
+    return [];
+  }
+
+  function _questMiniGameContextText(quest = {}, objective = {}) {
+    const pieces = [
+      quest.summary || '',
+      objective?.label ? `Objective: ${objective.label}.` : '',
+      quest.giver ? `Giver: ${quest.giver}.` : ''
+    ].filter(Boolean);
+    return pieces.join(' ');
+  }
+
+  function _miniGameContextWinOps(config = {}, context = {}, resolved = {}) {
+    if (config.contextualBonus === false) return [];
+    const source = String(context.source || '');
+    const quest = resolved.quest;
+    const objective = resolved.objective;
+    if (source === 'quest_minigame' && quest) {
+      return [{
+        op: 'log',
+        text: `Quest mini-game cleared in context: ${quest.title || quest.id}${objective?.label ? ` - ${objective.label}` : ''}.`
+      }];
+    }
+    if (source === 'sequence_minigame') {
+      return [{ op: 'log', text: `Story mini-game cleared: ${resolved.title || config.gameId || 'scene challenge'}.` }];
+    }
+    if (source === 'scenario_progress') {
+      return [{ op: 'log', text: 'Scenario mini-game cleared and the route keeps its momentum.' }];
+    }
+    return [];
+  }
+
+  function _showMiniGameBriefing(storyContext = {}, launch) {
+    const body = document.createElement('div');
+    body.className = 'campaign-minigame-briefing';
+    if (storyContext.contextText) {
+      const p = document.createElement('p');
+      p.className = 'campaign-minigame-briefing-context';
+      p.textContent = storyContext.contextText;
+      body.appendChild(p);
+    }
+    for (const line of storyContext.conversation || []) {
+      const row = document.createElement('p');
+      row.className = 'campaign-minigame-briefing-line';
+      const speaker = document.createElement('strong');
+      speaker.textContent = line.speaker || 'Scene';
+      const text = document.createElement('span');
+      text.textContent = line.text || '';
+      row.appendChild(speaker);
+      row.appendChild(text);
+      body.appendChild(row);
+    }
+    if (storyContext.briefingBonusText) {
+      const bonus = document.createElement('div');
+      bonus.className = 'campaign-minigame-briefing-bonus';
+      bonus.textContent = storyContext.briefingBonusText;
+      body.appendChild(bonus);
+    }
+    _formModal({
+      title: storyContext.title || 'Mini-Game Beat',
+      body,
+      width: '540px',
+      primaryLabel: 'Play Mini-Game',
+      onSubmit: () => { launch?.(); }
+    });
+  }
+
+  function _applyMiniGameResult(result, source = 'campaign_minigame', storyContext = null) {
     if (!result) return;
     const ops = (result.suggestedOps || []).filter((op) => {
       return !(op?.op === 'update_quest_progress' && (!op.questId || !op.objectiveId));
     });
     if (ops.length) Ops().apply(ops, { source });
     else render();
-    if (result.status === 'win') return UI().toast('Mini-game cleared', 'success');
+    if (result.status === 'win') {
+      const buff = result.narrative?.buffName || storyContext?.bonusText || '';
+      return UI().toast(buff ? `Mini-game cleared: ${buff} ready` : 'Mini-game cleared', 'success');
+    }
     if (result.status === 'fail') return UI().toast('Mini-game failed', 'info');
     if (result.status === 'giveup') return UI().toast('Mini-game abandoned', 'info');
     if (result.status === 'error') return UI().toast('Mini-game returned an error', 'error');
@@ -9721,7 +9871,10 @@ window.CJS.CampaignUI = (() => {
       return _openMiniGameSession(config, {
         source: 'quest_minigame',
         questId,
-        objectiveId: objective.id
+        objectiveId: objective.id,
+        quest,
+        objective,
+        requireBriefing: true
       });
     }
     const MG = window.CJS.Minigames;
@@ -9753,7 +9906,10 @@ window.CJS.CampaignUI = (() => {
         }, {
           source: 'quest_minigame',
           questId,
-          objectiveId: objective.id
+          objectiveId: objective.id,
+          quest,
+          objective,
+          requireBriefing: true
         });
       }
     });

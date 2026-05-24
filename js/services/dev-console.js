@@ -48,8 +48,9 @@ window.CJS.DevConsole = (() => {
     document.addEventListener('keydown', (ev) => {
       // Backtick (and ~) toggles. Ignore when typing in an input.
       if (ev.key !== '`' && ev.key !== '~') return;
-      const tag = (ev.target?.tagName || '').toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || ev.target?.isContentEditable) return;
+      const target = /** @type {HTMLElement | null} */ (ev.target);
+      const tag = (target?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
       ev.preventDefault();
       toggle();
     });
@@ -97,7 +98,8 @@ window.CJS.DevConsole = (() => {
     _inputEl = _root.querySelector('input');
 
     _tabsEl.addEventListener('click', (ev) => {
-      const btn = ev.target.closest('.cjs-debug-tab');
+      const target = /** @type {Element | null} */ (ev.target);
+      const btn = /** @type {HTMLElement | null} */ (target?.closest('.cjs-debug-tab'));
       if (!btn) return;
       const tab = btn.dataset.tab;
       if (tab) _switchTab(tab);

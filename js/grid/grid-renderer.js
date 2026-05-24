@@ -38,6 +38,27 @@ window.CJS.GridRenderer = (() => {
   let _decorSeed = 0x9E3779B1; // PRNG seed for stable per-cell decorations
   let _detachGestures = null;  // touch-gestures detach handle
   let _pinchUpHandler = null;  // pointerup listener that resets pinch state
+  let _tileAtlasImg = null;    // generated combat terrain atlas
+  let _tileAtlasReady = false;
+  let _tileAtlasFailed = false;
+
+  const TILE_ATLAS_SRC = 'assets/combat/combat_tile_atlas.png';
+  const TILE_ATLAS_MAP = {
+    empty: [0, 0], floor: [0, 0], stone: [0, 0], path: [0, 0],
+    grass: [1, 0], forest: [1, 0], tree: [1, 0],
+    water: [2, 0], river: [2, 0],
+    wall: [3, 0], obstacle: [3, 0], pillar: [3, 0],
+    high_ground: [0, 1], cliff: [1, 1], pit: [1, 1],
+    barrel: [2, 1], lava: [3, 1], fire_zone: [3, 1],
+    ice_zone: [0, 2], ice: [0, 2], snow: [0, 2],
+    poison_zone: [1, 2], swamp: [1, 2],
+    heal_zone: [2, 2], holy: [2, 2],
+    dark: [3, 2],
+    mud: [0, 3], dirt: [0, 3],
+    thorns: [1, 3],
+    electric: [2, 3], lightning: [2, 3],
+    wind: [3, 3]
+  };
 
   // Movement animations. Keyed by instanceId. When set, the unit is drawn
   // at an interpolated position between `from` and `to` until `endTs`.
@@ -59,6 +80,7 @@ window.CJS.GridRenderer = (() => {
     _zoom = 1.0;
     _onCellClick = opts?.onCellClick || null;
     _onCellHover = opts?.onCellHover || null;
+    _ensureTileAtlas();
 
     // Attach events
     _canvas.addEventListener('click', _handleClick);
@@ -897,6 +919,38 @@ window.CJS.GridRenderer = (() => {
   }
 
   // ── CELL PAINTING HELPERS ─────────────────────────────────────────
+  function _ensureTileAtlas() {
+    if (_tileAtlasImg || _tileAtlasFailed || typeof Image === 'undefined') return;
+    const img = new Image();
+    img.onload = () => { _tileAtlasReady = true; };
+    img.onerror = () => { _tileAtlasReady = false; _tileAtlasFailed = true; };
+    img.src = TILE_ATLAS_SRC;
+    _tileAtlasImg = img;
+  }
+
+  function _drawAtlasTile(ctx, x, y, cs, terrainKey) {
+    if (!_tileAtlasReady || !_tileAtlasImg || !_tileAtlasImg.naturalWidth) return false;
+    const coord = TILE_ATLAS_MAP[terrainKey] || TILE_ATLAS_MAP.empty;
+    if (!coord) return false;
+    const cols = 4;
+    const rows = 4;
+    const sw = Math.floor(_tileAtlasImg.naturalWidth / cols);
+    const sh = Math.floor(_tileAtlasImg.naturalHeight / rows);
+    const [col, row] = coord;
+    ctx.save();
+    ctx.globalAlpha = _atlasTileAlpha(terrainKey);
+    ctx.drawImage(_tileAtlasImg, col * sw, row * sh, sw, sh, x, y, cs, cs);
+    ctx.restore();
+    return true;
+  }
+
+  function _atlasTileAlpha(terrainKey) {
+    if (terrainKey === 'empty' || terrainKey === 'floor') return 0.72;
+    if (terrainKey === 'water' || terrainKey === 'lava' || terrainKey === 'fire_zone') return 0.86;
+    if (terrainKey === 'wall' || terrainKey === 'cliff' || terrainKey === 'high_ground') return 0.88;
+    return 0.8;
+  }
+
   // Paint the base of one cell with a vertical gradient so tiles read as
   // physical surfaces (slight lift at the top, slight pool of shadow at
   // the bottom). Different terrain families get tuned tones.
@@ -910,6 +964,14 @@ window.CJS.GridRenderer = (() => {
     grad.addColorStop(1,    shade.bottom);
     ctx.fillStyle = grad;
     ctx.fillRect(x, y, cs, cs);
+    if (_drawAtlasTile(ctx, x, y, cs, terrainKey)) {
+      const glaze = ctx.createLinearGradient(x, y, x, y + cs);
+      glaze.addColorStop(0, 'rgba(255,255,255,0.08)');
+      glaze.addColorStop(0.6, 'rgba(0,0,0,0)');
+      glaze.addColorStop(1, 'rgba(0,0,0,0.18)');
+      ctx.fillStyle = glaze;
+      ctx.fillRect(x, y, cs, cs);
+    }
   }
 
   function _shadeForTerrain(terrain, baseColor) {

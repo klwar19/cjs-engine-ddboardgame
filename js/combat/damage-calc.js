@@ -51,7 +51,7 @@ window.CJS.DamageCalc = (() => {
    */
   function computeAttack(args) {
     const { attacker, target, skill, qteMultiplier, qteGrade, weaponData } = args;
-    if (!attacker || !target) return { hit: false, miss: true, damage: 0 };
+    if (!attacker || !target) return { hit: false, miss: true, isCritical: false, damage: 0 };
 
     // ── 0. POSITIONAL BONUSES (elevation + flanking) ─────────────
     // High-ground attacker → bonus accuracy and (for ranged) +range.
@@ -83,6 +83,7 @@ window.CJS.DamageCalc = (() => {
       return {
         hit: false, miss: true, dodged: true, isCritical: false,
         damage: 0, breakdown: { final: 0, reason: 'miss', positional },
+        positional,
         attackScore, defendScore
       };
     }
@@ -479,7 +480,8 @@ window.CJS.DamageCalc = (() => {
    *   target: CJSCombatUnit,
    *   amount: number,
    *   reason?: string,
-   *   damageType?: string
+   *   damageType?: string,
+   *   element?: string
    * }} args
    * @returns {{ applied: number, killed: boolean }}
    */

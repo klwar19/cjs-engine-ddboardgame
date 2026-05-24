@@ -42,15 +42,15 @@ window.CJS.ActionHandler = (() => {
   //
   // Combo math (additive to qteMultiplier on the next swing):
   //   chain 1 → +0%        (just the QTE grade)
-  //   chain 2 → +10%
-  //   chain 3 → +20%
-  //   chain 4 → +30%
-  //   chain 5+→ +40% (caps here so it stays balanced vs. boss HP)
+  //   chain 2 → +25%
+  //   chain 3 → +35%
+  //   chain 4 → +45%
+  //   chain 5+→ +50% (caps here so it stays balanced vs. boss HP)
   //
   // Different sequences feel different: rhythm→quickpress = combo, but
   // fail→anything resets to 1 and re-starts the chain on the next
   // success.
-  const COMBO_BONUS_BY_CHAIN = [0, 0, 0.10, 0.20, 0.30, 0.40];
+  const COMBO_BONUS_BY_CHAIN = [0, 0, 0.25, 0.35, 0.45, 0.50];
   const COMBO_CAP = 5;
   const COMBO_DECAY_GRADES = new Set(['fail']);
 
@@ -358,7 +358,8 @@ window.CJS.ActionHandler = (() => {
   // ── MOVE ──────────────────────────────────────────────────────────
   function _doMove(unit, action, ctx) {
     const [tr, tc] = action.targetPos;
-    const fromPos = [...unit.pos];
+    /** @type {[number, number]} */
+    const fromPos = [Number(unit.pos?.[0] || 0), Number(unit.pos?.[1] || 0)];
     const result = GE().moveUnit(unit.instanceId, tr, tc);
     if (!result.success) return { success: false, reason: result.reason };
 
@@ -427,6 +428,7 @@ window.CJS.ActionHandler = (() => {
 
     unit.turnState.mainActionUsed = true;
     unit.turnState.apRemaining = Math.max(0, (unit.turnState.apRemaining || 0) - 1);
+    _comboBreakOnNonQTE(unit);
 
     if (attack.miss) {
       Log().logMiss({ actor: unit, target, skill: null });
@@ -652,9 +654,10 @@ window.CJS.ActionHandler = (() => {
 
     // Apply skill's additional effects (from skill.effects[])
     for (const ref of (skill.effects || [])) {
-      const master = DS().get('effects', ref.effectId);
+      const effectRef = /** @type {any} */ (ref);
+      const master = DS().get('effects', effectRef.effectId);
       if (!master) continue;
-      const merged = { ...master, ...(ref.overrides || {}) };
+      const merged = { ...master, ...(effectRef.overrides || {}) };
       ER().executeEffect(merged, {
         caster: unit, unit, target, skillUsed: skill,
         aoeOrigin, aoeDirection: target?.pos,
@@ -684,6 +687,8 @@ window.CJS.ActionHandler = (() => {
     // QTE grade. Only counts when the skill actually rolled a QTE.
     if (skill.qte && skill.qte !== 'none') {
       _comboNote(unit, qteGrade, skill.qte);
+    } else {
+      _comboBreakOnNonQTE(unit);
     }
 
     return {
@@ -822,6 +827,7 @@ window.CJS.ActionHandler = (() => {
   // ── END TURN ──────────────────────────────────────────────────────
   function _doEndTurn(unit, action, ctx) {
     unit.turnState.bonusAP = (unit.turnState.bonusAP || 0) + (C().ACTION_ECONOMY.endTurnAPBonus || 0);
+    _comboBreakOnNonQTE(unit);
     return { success: true, action: 'end_turn' };
   }
 
@@ -851,7 +857,7 @@ window.CJS.ActionHandler = (() => {
   /**
    * @param {CJSCombatUnit} unit
    * @param {CJSSkill} skill
-   * @returns {{ grade: string, multiplier: number }}
+   * @returns {{ grade: string, multiplier: number, qteType?: string, simulated?: boolean }}
    */
   function simulateAIQTE(unit, skill) {
     if (!skill || !skill.qte || skill.qte === 'none') {
@@ -905,7 +911,7 @@ window.CJS.ActionHandler = (() => {
   // Get the equipped weapon's data (range, element, damageType, baseDamage).
   // Returns null if no weapon equipped.
   function _getWeaponData(unit) {
-    const equipped = _getWeaponItem(unit);
+    const equipped = /** @type {any} */ (_getWeaponItem(unit));
     if (!equipped) return null;
     return {
       ...(equipped.weaponData || {}),
@@ -917,6 +923,7 @@ window.CJS.ActionHandler = (() => {
     };
   }
 
+  /** @returns {any} */
   function _getWeaponItem(unit) {
     if (!unit.equipment) return null;
     for (const iid of unit.equipment) {

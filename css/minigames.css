@@ -88,6 +88,47 @@
   font-size: 0.8rem;
 }
 
+.minigame-narrative {
+  max-width: 620px;
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.minigame-context-dialogue {
+  display: grid;
+  gap: 4px;
+  max-width: 660px;
+  margin-top: 8px;
+}
+
+.minigame-context-dialogue p {
+  display: grid;
+  grid-template-columns: minmax(76px, auto) 1fr;
+  gap: 8px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.78rem;
+}
+
+.minigame-context-dialogue strong {
+  color: var(--mg-gold);
+}
+
+.minigame-bonus-line {
+  width: max-content;
+  max-width: 100%;
+  margin: 7px 0 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(117, 215, 208, 0.32);
+  border-radius: 6px;
+  color: #dffbf7;
+  background: rgba(117, 215, 208, 0.08);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .minigame-badge {
   width: max-content;
   padding: 2px 7px;

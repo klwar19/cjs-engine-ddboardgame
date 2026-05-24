@@ -725,14 +725,15 @@ window.CJS.CampaignAlignment = (() => {
 
   function _normalizeFireWhen(input = {}) {
     if (!input || typeof input !== 'object') return {};
+    const source = /** @type {any} */ (input);
     return {
-      chapterMin: Number(input.chapterMin || 0) || 0,
-      partResolved: input.partResolved || input.partId || '',
-      flag: input.flag || '',
-      excludesFlag: input.excludesFlag || '',
-      worldOnly: input.worldOnly || '',
-      phaseType: input.phaseType || '',
-      phaseMin: Number(input.phaseMin || 0) || 0
+      chapterMin: Number(source.chapterMin || 0) || 0,
+      partResolved: source.partResolved || source.partId || '',
+      flag: source.flag || '',
+      excludesFlag: source.excludesFlag || '',
+      worldOnly: source.worldOnly || '',
+      phaseType: source.phaseType || '',
+      phaseMin: Number(source.phaseMin || 0) || 0
     };
   }
 
