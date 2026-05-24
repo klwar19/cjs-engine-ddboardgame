@@ -1,0 +1,354 @@
+/* launcher.css — Unified app shell sidebar + iframe stage
+   ────────────────────────────────────────────────────── */
+
+:root {
+  --launcher-bg: #0f0f1a;
+  --launcher-surface: #1a1a2e;
+  --launcher-surface-2: #222240;
+  --launcher-border: #333355;
+  --launcher-border-hi: #5555aa;
+  --launcher-text: #e0e0f0;
+  --launcher-text-dim: #8888aa;
+  --launcher-accent: #a855f7;
+  --launcher-accent-dim: #7c3aed;
+  --launcher-gold: #f59e0b;
+  --launcher-blue: #3b82f6;
+  --launcher-red: #ef4444;
+  --launcher-green: #22c55e;
+  --launcher-sidebar-w: 220px;
+  --launcher-sidebar-w-collapsed: 56px;
+  --launcher-topbar-h: 48px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; }
+
+.launcher-body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--launcher-bg);
+  color: var(--launcher-text);
+  overflow: hidden;
+}
+
+.launcher-shell {
+  display: grid;
+  grid-template-columns: var(--launcher-sidebar-w) 1fr;
+  height: 100vh;
+  width: 100vw;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.launcher-shell.is-collapsed {
+  grid-template-columns: var(--launcher-sidebar-w-collapsed) 1fr;
+}
+
+/* ── Sidebar ──────────────────────────────────────────── */
+.launcher-sidebar {
+  background: var(--launcher-surface);
+  border-right: 1px solid var(--launcher-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.launcher-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid var(--launcher-border);
+  min-height: var(--launcher-topbar-h);
+}
+
+.launcher-collapse {
+  background: transparent;
+  border: 1px solid var(--launcher-border);
+  color: var(--launcher-text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.launcher-collapse:hover {
+  background: var(--launcher-surface-2);
+  color: var(--launcher-accent);
+  border-color: var(--launcher-border-hi);
+}
+.launcher-collapse-icon { font-size: 1.1em; line-height: 1; }
+
+.launcher-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.launcher-brand-name {
+  font-weight: 700;
+  color: var(--launcher-accent);
+  font-size: 0.95rem;
+}
+.launcher-brand-sub {
+  color: var(--launcher-text-dim);
+  font-size: 0.7rem;
+}
+
+.launcher-shell.is-collapsed .launcher-brand-text { display: none; }
+
+/* ── Nav buttons ──────────────────────────────────────── */
+.launcher-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.launcher-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: transparent;
+  color: var(--launcher-text-dim);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+.launcher-nav-item:hover {
+  background: var(--launcher-surface-2);
+  color: var(--launcher-text);
+}
+.launcher-nav-item.is-active {
+  background: var(--launcher-surface-2);
+  color: var(--launcher-text);
+  border-color: var(--launcher-border-hi);
+  box-shadow: inset 3px 0 0 0 var(--launcher-accent);
+}
+.launcher-nav-icon {
+  font-size: 1.2em;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+.launcher-nav-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.launcher-shell.is-collapsed .launcher-nav-label { display: none; }
+.launcher-shell.is-collapsed .launcher-nav-item { justify-content: center; padding: 10px; }
+
+.launcher-foot {
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--launcher-border);
+  font-size: 0.78rem;
+}
+.launcher-foot-link {
+  color: var(--launcher-text-dim);
+  text-decoration: none;
+}
+.launcher-foot-link:hover { color: var(--launcher-accent); }
+.launcher-shell.is-collapsed .launcher-foot { text-align: center; padding: 8px 6px 10px; }
+
+/* ── Main area ────────────────────────────────────────── */
+.launcher-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+}
+
+.launcher-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  height: var(--launcher-topbar-h);
+  background: var(--launcher-surface);
+  border-bottom: 1px solid var(--launcher-border);
+  flex-shrink: 0;
+}
+
+.launcher-menu-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--launcher-border);
+  color: var(--launcher-text);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.launcher-current-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--launcher-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.launcher-topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.launcher-pop-out {
+  color: var(--launcher-text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border: 1px solid var(--launcher-border);
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.launcher-pop-out:hover {
+  color: var(--launcher-accent);
+  border-color: var(--launcher-border-hi);
+}
+.launcher-pop-out.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ── Frame ────────────────────────────────────────────── */
+.launcher-frame-wrap {
+  flex: 1;
+  position: relative;
+  background: var(--launcher-bg);
+  min-height: 0;
+}
+
+.launcher-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--launcher-bg);
+}
+
+.launcher-frame[hidden] { display: none; }
+
+/* ── Welcome screen ───────────────────────────────────── */
+.launcher-welcome {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+.launcher-welcome[hidden] { display: none; }
+
+.launcher-welcome-inner {
+  max-width: 880px;
+  width: 100%;
+  text-align: center;
+}
+.launcher-welcome-inner h2 {
+  color: var(--launcher-accent);
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}
+.launcher-welcome-inner p.dim {
+  color: var(--launcher-text-dim);
+  margin-bottom: 24px;
+}
+
+.launcher-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.launcher-card {
+  background: var(--launcher-surface);
+  border: 1px solid var(--launcher-border);
+  border-radius: 10px;
+  padding: 18px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  color: var(--launcher-text);
+  text-align: center;
+  transition: all 0.15s ease;
+}
+.launcher-card:hover {
+  border-color: var(--launcher-border-hi);
+  background: var(--launcher-surface-2);
+  transform: translateY(-2px);
+}
+.launcher-card-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 4px;
+}
+.launcher-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--launcher-accent);
+}
+.launcher-card-desc {
+  font-size: 0.8rem;
+  color: var(--launcher-text-dim);
+  line-height: 1.4;
+}
+
+/* ── Loading state ────────────────────────────────────── */
+.launcher-frame-wrap.is-loading::after {
+  content: 'Loading…';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--launcher-text-dim);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .launcher-shell {
+    grid-template-columns: 0 1fr;
+  }
+  .launcher-shell.is-mobile-open {
+    grid-template-columns: var(--launcher-sidebar-w) 1fr;
+  }
+  .launcher-sidebar {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: var(--launcher-sidebar-w);
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 24px rgba(0,0,0,0.6);
+  }
+  .launcher-shell.is-mobile-open .launcher-sidebar {
+    transform: translateX(0);
+  }
+  .launcher-menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .launcher-collapse { display: none; }
+  .launcher-cards { grid-template-columns: 1fr 1fr; }
+}

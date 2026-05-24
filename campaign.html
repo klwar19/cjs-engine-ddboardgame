@@ -71,81 +71,9 @@
     })();
   </script>
 
-  <script src="js/core/constants.js"></script>
-  <script src="js/core/formulas.js"></script>
-  <script src="js/core/dice.js"></script>
-  <script src="js/core/undo-manager.js"></script>
-  <script src="js/core/state-tools.js"></script>
-  <script src="js/core/data-store.js"></script>
-  <script src="js/core/save-manager.js"></script>
-  <script src="js/core/content-manager.js?v=campaign-mode-20260429"></script>
-  <script src="js/core/skill-resolver.js"></script>
-  <script src="js/services/persona-service.js"></script>
-  <script src="js/services/content-validator.js"></script>
-  <script src="js/services/data-hot-reload.js"></script>
-  <script src="js/services/dev-console.js"></script>
-  <script src="js/ui/touch-gestures.js"></script>
-  <script src="js/ui/ui-helpers.js"></script>
-  <script src="js/ui/ui-icons.js"></script>
-  <script src="js/ui/portrait-picker.js?v=portrait-focus-20260517"></script>
-  <script src="js/ui/scene-player.js"></script>
+  <script type="module" src="./src/entry-campaign.js"></script>
 
-  <script src="js/campaign/campaign-state.js?v=ai-context-20260523"></script>
-  <script src="js/campaign/farming-mode.js?v=farm-touch-20260508"></script>
-  <script src="js/campaign/campaign-data-loader.js"></script>
-  <script src="js/campaign/campaign-tags.js"></script>
-  <script src="js/campaign/relationship-tiers.js"></script>
-  <script src="js/campaign/campaign-alignment.js?v=ai-context-20260523"></script>
-  <script src="js/campaign/campaign-conditions.js?v=ai-context-20260523"></script>
-  <script src="js/campaign/campaign-quest-pulse.js"></script>
-  <script src="js/campaign/campaign-ops.js?v=ai-context-20260523"></script>
-  <script src="js/campaign/campaign-save.js"></script>
-  <script src="js/campaign/campaign-events.js"></script>
-  <script src="js/campaign/campaign-world-events.js"></script>
-  <script src="js/campaign/campaign-story-branch.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-combat-popup.js?v=portrait-focus-20260517"></script>
-  <script src="js/campaign/campaign-objective-banner.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-story-scenes.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-sequence-runner.js?v=ai-context-20260523"></script>
-  <script src="js/campaign/campaign-sequence-vn.js?v=ai-context-20260523"></script>
-  <script src="js/campaign/campaign-oracle.js"></script>
-  <script src="js/campaign/campaign-combat-bridge.js"></script>
-  <script src="js/campaign/campaign-party-chat.js"></script>
-  <script src="js/campaign/campaign-map.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-inventory.js"></script>
-  <script src="js/campaign/campaign-economy.js?v=farm-touch-20260508"></script>
-  <script src="js/campaign/pocket-haven-facilities.js?v=phase-expansion-20260523"></script>
-  <script src="js/campaign/pocket-haven.js?v=phase-expansion-20260523"></script>
-  <script src="js/campaign/guild-trivia.js?v=phase-expansion-20260523"></script>
-  <script src="js/campaign/scenario-runner.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-side-content.js"></script>
-  <script src="js/campaign/campaign-story-director.js"></script>
-  <script src="js/campaign/campaign-hub.js"></script>
-  <script src="js/campaign/campaign-quest-chains.js"></script>
-  <script src="js/campaign/campaign-battle-set-forge.js"></script>
-  <script src="js/campaign/campaign-map-seed-forge.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-scenario-generator.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-idea-forge.js?v=map-types-20260517f"></script>
-  <script src="js/campaign/campaign-world-map.js?v=github-map-fix-20260521"></script>
-  <script src="js/minigames/minigame-registry.js?v=map-types-20260517f"></script>
-  <script src="js/minigames/minigame-sprites.js?v=map-types-20260517f"></script>
-  <script src="js/minigames/mummy-maze.js?v=map-types-20260517f"></script>
-  <script src="js/minigames/push-box.js?v=map-types-20260517f"></script>
-  <script src="js/qte/qte-quickpress.js"></script>
-  <script src="js/qte/qte-mash.js"></script>
-  <script src="js/qte/qte-fishing.js"></script>
-  <script src="js/qte/qte-rhythm.js"></script>
-  <script src="js/qte/qte-quiz.js"></script>
-  <script src="js/qte/qte-manager.js"></script>
-  <script src="js/minigames/fishing-minigame.js"></script>
-  <script src="js/minigames/cooking-minigame.js?v=phase-expansion-20260523"></script>
-  <script src="js/minigames/minigame-host.js?v=phase-expansion-20260523"></script>
-  <script src="js/ui/relationships-tab.js?v=quest-weather-rel-20260517g"></script>
-  <script src="js/campaign/campaign-ui.js?v=ai-story-context-20260523"></script>
-  <script src="js/ui/audio-manager.js"></script>
-  <script src="js/ui/l2d-avatar.js?v=peri-v2-bgfix"></script>
-  <script src="js/ui/l2d-companion.js?v=peri-v2-expall"></script>
-  <script>
+  <script type="module">
     document.addEventListener('DOMContentLoaded', async () => {
       await window.CJS.CampaignUI.init(document.getElementById('campaign-root'));
       window.CJS.ScenePlayer?.wireCampaign?.();
