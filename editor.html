@@ -77,6 +77,7 @@
   </style>
 </head>
 <body>
+  <script>if (window.top !== window.self) { document.documentElement.classList.add('cjs-embedded'); var s = document.createElement('style'); s.textContent = '.cjs-embed-hide{display:none !important}'; document.head.appendChild(s); }</script>
   <div class="app-shell">
     <div class="app-header">
       <h1>CJS Editor</h1>
@@ -90,9 +91,9 @@
         <button class="btn btn-ghost btn-sm" id="btn-import" title="Import JSON">Import</button>
         <button class="btn btn-ghost btn-sm" id="btn-export" title="Extract split files or download a bundle backup">Export</button>
         <button class="btn btn-ghost btn-sm" id="btn-validate" title="Validate all references">Validate</button>
-        <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none">Tests</a>
-        <a href="campaign.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#bfdbfe">Campaign</a>
-        <a href="combat.html" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#fca5a5">Combat</a>
+        <a href="tests.html" class="btn btn-ghost btn-sm cjs-embed-hide" style="text-decoration:none">Tests</a>
+        <a href="campaign.html" class="btn btn-ghost btn-sm cjs-embed-hide" style="text-decoration:none;color:#bfdbfe">Campaign</a>
+        <a href="combat.html" class="btn btn-ghost btn-sm cjs-embed-hide" style="text-decoration:none;color:#fca5a5">Combat</a>
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
@@ -217,43 +218,9 @@
     </div>
   </div>
 
-  <script src="js/core/constants.js"></script>
-  <script src="js/core/formulas.js"></script>
-  <script src="js/core/dice.js"></script>
-  <script src="js/core/undo-manager.js"></script>
-  <script src="js/core/state-tools.js"></script>
-  <script src="js/core/data-store.js"></script>
-  <script src="js/core/save-manager.js"></script>
-  <script src="js/core/content-manager.js?v=portrait-cache-20260426"></script>
-  <script src="js/core/skill-resolver.js"></script>
-  <script src="js/services/content-validator.js"></script>
-  <script src="js/services/data-hot-reload.js"></script>
-  <script src="js/services/dev-console.js"></script>
-  <script src="js/effects/value-calc.js"></script>
-  <script src="js/effects/conditions.js"></script>
-  <script src="js/effects/effect-registry.js"></script>
+  <script type="module" src="./src/entry-editor.js"></script>
 
-  <script src="js/ui/ui-helpers.js"></script>
-  <script src="js/ui/ui-icons.js"></script>
-  <script src="js/ui/portrait-picker.js?v=portrait-focus-20260517"></script>
-  <script src="js/ui/audio-manager.js"></script>
-  <script src="js/builders/effect-editor.js"></script>
-  <script src="js/builders/status-editor.js"></script>
-  <script src="js/builders/passive-editor.js"></script>
-  <script src="js/builders/skill-editor.js"></script>
-  <script src="js/builders/job-editor.js"></script>
-  <script src="js/services/persona-service.js"></script>
-  <script src="js/builders/persona-editor.js"></script>
-  <script src="js/builders/item-editor.js?v=portrait-focus-20260517"></script>
-  <script src="js/builders/simple-collection-editor.js"></script>
-  <script src="js/builders/char-editor.js?v=portrait-focus-20260517"></script>
-  <script src="js/builders/monster-editor.js?v=portrait-focus-20260517"></script>
-  <script src="js/builders/encounter-editor.js"></script>
-  <script src="js/builders/campaign-editor.js"></script>
-  <script src="js/builders/audio-library.js"></script>
-  <script src="js/ui/data-browser.js"></script>
-
-  <script>
+  <script type="module">
     (function() {
       'use strict';
 

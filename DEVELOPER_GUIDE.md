@@ -10,10 +10,20 @@ Use it as:
 ## 1. Start Here
 
 Main entry points:
-- `index.html` - test page / launcher
+- `index.html` - unified app launcher (sidebar shell that loads the modes below in an iframe)
+- `tests.html` - lightweight engine sanity tests + master effect library browser
 - `editor.html` - content editor
 - `combat.html` - combat simulator
 - `campaign.html` - campaign GM dashboard, scenario runner, Story Director, and tabletop ledger
+- `minigames.html` - minigame test harness (mummy maze, push box)
+
+Each mode page still works standalone, but the launcher (`index.html`) is the recommended entry — it lets you flow between modes without a full page reload and persists your last-active mode.
+
+### Build / Dev
+
+- `npm run dev` - Vite dev server at http://127.0.0.1:5173 with HMR
+- `npm run build` - produces a bundled `dist/` directory (one HTML per mode, code-split JS chunks)
+- `npm test` - run the Node-based engine test suite (no browser needed)
 
 Core runtime files:
 - `js/core/constants.js` - enums, rank tables, terrain, status defs, shared rules
@@ -164,9 +174,9 @@ Combat bootstrap is intentionally simple:
 - `CombatUI.startCombat(encounterId)` starts the battle
 - `CombatManager` owns the live turn loop
 
-### 5.3 `index.html`
+### 5.3 `tests.html`
 
-This is the lightweight system test page / launcher.
+This is the lightweight system test page (formerly `index.html`). The new `index.html` is the unified launcher.
 
 Use it when:
 - checking modules are loaded

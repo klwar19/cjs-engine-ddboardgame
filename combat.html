@@ -14,9 +14,10 @@
   <link rel="stylesheet" href="css/responsive.css?v=responsive-20260523" />
 </head>
 <body class="combat-page">
+  <script>if (window.top !== window.self) { document.documentElement.classList.add('cjs-embedded'); var s = document.createElement('style'); s.textContent = '.cjs-embed-hide{display:none !important}'; document.head.appendChild(s); }</script>
   <div id="combat-app">
     <header class="combat-header">
-      <a href="index.html" class="back-link">Main Menu</a>
+      <a href="index.html" class="back-link cjs-embed-hide">Main Menu</a>
       <h1>CJS Combat Simulator</h1>
       <div class="header-controls">
         <button id="btn-battle-setup" class="btn btn-primary">Battle Setup</button>
@@ -130,76 +131,9 @@
     })();
   </script>
 
-  <script src="js/core/constants.js"></script>
-  <script src="js/core/formulas.js"></script>
-  <script src="js/core/dice.js"></script>
-  <script src="js/core/undo-manager.js"></script>
-  <script src="js/core/state-tools.js"></script>
-  <script src="js/core/data-store.js"></script>
-  <script src="js/core/content-manager.js?v=portrait-cache-20260426"></script>
-  <script src="js/core/skill-resolver.js"></script>
-  <script src="js/services/persona-service.js"></script>
-  <script src="js/services/content-validator.js"></script>
-  <script src="js/services/data-hot-reload.js"></script>
-  <script src="js/services/dev-console.js"></script>
+  <script type="module" src="./src/entry-combat.js"></script>
 
-  <script src="js/effects/value-calc.js"></script>
-  <script src="js/effects/conditions.js"></script>
-  <script src="js/effects/effect-registry.js"></script>
-  <script src="js/effects/effect-resolver.js"></script>
-
-  <script src="js/grid/grid-engine.js"></script>
-  <script src="js/grid/pathfinding.js"></script>
-  <script src="js/grid/aoe.js"></script>
-  <script src="js/grid/map-generator.js"></script>
-
-  <script src="js/combat/weather-manager.js"></script>
-  <script src="js/combat/enemy-modifiers.js"></script>
-  <script src="js/combat/stat-compiler.js"></script>
-  <script src="js/combat/damage-calc.js"></script>
-  <script src="js/combat/dice-service.js"></script>
-  <script src="js/combat/status-manager.js"></script>
-  <script src="js/combat/action-handler.js"></script>
-  <script src="js/combat/combat-log.js"></script>
-  <script src="js/combat/combat-settings.js"></script>
-  <script src="js/combat/combat-objectives.js"></script>
-  <script src="js/combat/combat-manager.js"></script>
-  <script src="js/combat/battle-setup.js"></script>
-
-  <script src="js/ai/ai-conditions.js"></script>
-  <script src="js/ai/ai-targeting.js"></script>
-  <script src="js/ai/ai-controller.js"></script>
-
-  <script src="js/qte/qte-quickpress.js"></script>
-  <script src="js/qte/qte-mash.js"></script>
-  <script src="js/qte/qte-fishing.js"></script>
-  <script src="js/qte/qte-rhythm.js"></script>
-  <script src="js/qte/qte-quiz.js"></script>
-  <script src="js/qte/qte-manager.js"></script>
-
-  <script src="js/narrator/narrator-state.js"></script>
-  <script src="js/narrator/narrator-data.js"></script>
-  <script src="js/narrator/narrator-engine.js"></script>
-
-  <script src="js/ui/touch-gestures.js"></script>
-  <script src="js/grid/grid-renderer.js?v=portrait-focus-20260517"></script>
-  <script src="js/ui/ui-helpers.js"></script>
-  <script src="js/ui/ui-icons.js"></script>
-  <script src="js/ui/portrait-picker.js?v=portrait-focus-20260517"></script>
-  <script src="js/ui/audio-manager.js"></script>
-  <script src="js/ui/animation-bus.js"></script>
-  <script src="js/ui/scene-player.js"></script>
-  <script src="js/ui/gm-controls.js"></script>
-  <script src="js/ui/combat-ui.js?v=portrait-focus-20260517"></script>
-  <script src="js/ui/loot-roller.js"></script>
-  <script src="js/ui/l2d-avatar.js?v=peri-v2-bgfix"></script>
-  <script src="js/ui/l2d-companion.js?v=peri-v2-expall"></script>
-  <script src="js/campaign/campaign-tags.js"></script>
-  <script src="js/campaign/campaign-conditions.js"></script>
-  <script src="js/campaign/campaign-quest-pulse.js"></script>
-  <script src="js/campaign/campaign-combat-bridge.js"></script>
-
-  <script>
+  <script type="module">
   (async function() {
     'use strict';
 
