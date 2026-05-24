@@ -250,9 +250,24 @@ window.CJS.CampaignUI = (() => {
         panelLabels: {
           quests: { icon: 'SC', label: 'Scavenge', title: 'Scavenge Log' }
         }
+      },
+      haven: {
+        // Haven has no travel map, so the global worldMap-first default
+        // for the activities mode shows a dead "No travel map for this
+        // world yet" panel. Land on the Hub Pulse instead — it's the
+        // Living Hub dashboard, which matches Pocket Haven's role.
+        modeDefaults: { activities: 'sideForge' }
       }
     };
     return profiles[id] || {};
+  }
+
+  function _defaultTabForMode(mode, state = CS().getState()) {
+    const profile = _worldUiProfile(state?.currentWorld);
+    const tabs = _tabsForMode(mode, state);
+    const preferred = profile.modeDefaults?.[mode];
+    if (preferred && tabs.some(([id]) => id === preferred)) return preferred;
+    return tabs[0]?.[0] || null;
   }
 
   function _appModesForState(state = CS().getState()) {
@@ -1031,7 +1046,7 @@ window.CJS.CampaignUI = (() => {
                 </div>
                 <div class="campaign-muted">${_esc(entry.result || 'complete')} | ${_esc(entry.completedAt || entry.startedAt || '')}</div>
                 <p>${_esc(entry.summaryText || _storySummaryTextFromRecord(entry))}</p>
-                ${entry.routeChoices?.length ? `<div class="campaign-muted">Route: ${_esc(entry.routeChoices.map((choice) => choice.label || choice.choiceId).filter(Boolean).join(' -> '))}</div>` : ''}
+                ${entry.routeChoices?.length ? `<div class="campaign-muted">Route: ${_esc(entry.routeChoices.map((choice) => choice.label || choice.choiceId).filter(Boolean).join(' → '))}</div>` : ''}
                 ${entry.syncSummary?.length ? `<div class="campaign-muted">State Sync: ${_esc(entry.syncSummary.join(' | '))}</div>` : ''}
               </div>
             </div>
@@ -4219,8 +4234,8 @@ window.CJS.CampaignUI = (() => {
       if (mode) {
         const id = mode.dataset.campaignMode;
         _activeMode = id;
-        const firstTab = _tabsForMode(id, CS().getState())[0];
-        if (firstTab) _activeTab = firstTab[0];
+        const tabId = _defaultTabForMode(id, CS().getState());
+        if (tabId) _activeTab = tabId;
         render();
         return;
       }
