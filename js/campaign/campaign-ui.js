@@ -22,65 +22,86 @@ window.CJS.CampaignUI = (() => {
   const C = () => window.CJS.CONST;
   const Icons = () => window.CJS.UIIcons;
 
-  // Render an entity icon using UIIcons; safe fallback if module is missing.
-  function _icon(entity, opts = {}) {
-    const I = Icons();
-    if (I) return I.renderIcon(entity, opts);
-    const fallback = entity?.icon || (opts.kind === 'passive' ? '🛡️' : '⚔️');
-    return `<span class="cjs-icon cjs-icon-${opts.size || 'md'}">${_esc(fallback)}</span>`;
-  }
+  // Leaf utilities live in `js/campaign/ui/cui-utils.js`; bind short
+  // aliases so the rest of this file reads the same as before.
+  const _CUIUtils = window.CJS.CampaignUIInternal.Utils;
+  const _esc = _CUIUtils.esc;
+  const _escAttr = _CUIUtils.escAttr;
+  const _label = _CUIUtils.label;
+  const _safe = _CUIUtils.safe;
+  const _truncate = _CUIUtils.truncate;
+  const _currencyLabel = _CUIUtils.currencyLabel;
+  const _recordName = _CUIUtils.recordName;
+  const _lootLine = _CUIUtils.lootLine;
+  const _formatBundleText = _CUIUtils.formatBundleText;
 
-  // Resolve a member's portrait, falling back to the base character record so
-  // legacy saves still show art if the character file has it.
-  function _memberPortrait(member, memberId) {
-    if (!member) return '';
-    // Persona portrait takes precedence so the world-skin's art shows in the
-    // roster card. Fallback: member-saved portrait, then base character art.
-    const DS = window.CJS.DataStore;
-    if (member.activePersona) {
-      const persona = DS?.get?.('personas', member.activePersona);
-      if (persona?.portrait) return persona.portrait;
-    }
-    if (member.personaPortrait) return member.personaPortrait;
-    if (member.portrait) return member.portrait;
-    const baseId = member.baseCharacterId || memberId;
-    const base = DS?.get?.('characters', baseId);
-    return base?.portrait || '';
-  }
+  // Portrait + icon helpers live in `js/campaign/ui/cui-portraits.js`.
+  const _CUIPortraits = window.CJS.CampaignUIInternal.Portraits;
+  const _icon = _CUIPortraits.icon;
+  const _memberPortrait = _CUIPortraits.memberPortrait;
+  const _memberPortraitFocus = _CUIPortraits.memberPortraitFocus;
+  const _focusAttrStyle = _CUIPortraits.focusAttrStyle;
 
-  // Resolve the focus crop that matches `_memberPortrait` above. Whichever
-  // source we ended up using for the path, we want the focus stored next to
-  // that same source so the crop tracks the picture.
-  function _memberPortraitFocus(member, memberId) {
-    if (!member) return null;
-    const DS = window.CJS.DataStore;
-    if (member.activePersona) {
-      const persona = DS?.get?.('personas', member.activePersona);
-      if (persona?.portrait) return persona.portraitFocus || null;
-    }
-    if (member.personaPortrait) return member.personaPortraitFocus || null;
-    if (member.portrait) return member.portraitFocus || null;
-    const baseId = member.baseCharacterId || memberId;
-    const base = DS?.get?.('characters', baseId);
-    return base?.portraitFocus || null;
-  }
+  // Modal + picker primitives live in `js/campaign/ui/cui-modals.js`.
+  const _CUIModals = window.CJS.CampaignUIInternal.Modals;
+  const _desc = _CUIModals.desc;
+  const _pickerItem = _CUIModals.pickerItem;
+  const _sortOptionLabel = _CUIModals.sortOptionLabel;
+  const _formLabel = _CUIModals.formLabel;
+  const _formModal = _CUIModals.formModal;
+  const _opPickerModal = _CUIModals.opPickerModal;
+  const _textareaModal = _CUIModals.textareaModal;
+  const _numberModal = _CUIModals.numberModal;
 
-  // Inline-style attribute for an <img> so the chosen focus point lands at
-  // the container's center. Safe to inject — escapes nothing because the
-  // values are clamped numbers from normalizeFocus.
-  function _focusAttrStyle(focus) {
-    const PP = window.CJS.PortraitPicker;
-    if (PP && PP.focusStyle) return PP.focusStyle(focus);
-    // Tiny inline fallback so the campaign page still works if the portrait
-    // picker happens not to be loaded on a given route.
-    if (!focus) return 'object-fit:cover';
-    const x = Math.max(0, Math.min(100, Number(focus.x) || 50));
-    const y = Math.max(0, Math.min(100, Number(focus.y) || 50));
-    const z = Math.max(100, Math.min(400, Number(focus.zoom) || 100));
-    const parts = [`object-fit:cover`, `object-position:${x}% ${y}%`, `transform-origin:${x}% ${y}%`];
-    if (z !== 100) parts.push(`transform:scale(${(z / 100).toFixed(3)})`);
-    return parts.join(';');
-  }
+  // Option builders live in `js/campaign/ui/cui-options.js`.
+  const _CUIOptions = window.CJS.CampaignUIInternal.Options;
+  const _bucketOptions = _CUIOptions.bucketOptions;
+  const _statusOptions = _CUIOptions.statusOptions;
+  const _seedOptions = _CUIOptions.seedOptions;
+  const _worldOptions = _CUIOptions.worldOptions;
+  const _tentOptions = _CUIOptions.tentOptions;
+
+  // HTML control builders live in `js/campaign/ui/cui-controls.js`.
+  const _CUIControls = window.CJS.CampaignUIInternal.Controls;
+  const _purposeTone = _CUIControls.purposeTone;
+  const _purposeKeyForCard = _CUIControls.purposeKeyForCard;
+  const _renderInlinePurpose = _CUIControls.renderInlinePurpose;
+  const _renderRumorPurpose = _CUIControls.renderRumorPurpose;
+  const _impactLegendItem = _CUIControls.impactLegendItem;
+  const _controlGroup = _CUIControls.controlGroup;
+  const _actionMenu = _CUIControls.actionMenu;
+  const _actionBtn = _CUIControls.actionBtn;
+  const _renderTownActionButton = _CUIControls.renderTownActionButton;
+
+  // Log rendering helpers live in `js/campaign/ui/cui-log.js`.
+  const _CUILog = window.CJS.CampaignUIInternal.Log;
+  const _logKind = _CUILog.logKind;
+  const _formatLogTime = _CUILog.formatLogTime;
+  const _logMeta = _CUILog.logMeta;
+  const _renderLogEntry = _CUILog.renderLogEntry;
+
+  // Equipment helpers live in `js/campaign/ui/cui-equipment.js`.
+  const _CUIEquipment = window.CJS.CampaignUIInternal.Equipment;
+  const _cleanType = _CUIEquipment.cleanType;
+  const _inferType = _CUIEquipment.inferType;
+  const _weaponType = _CUIEquipment.weaponType;
+  const _armorType = _CUIEquipment.armorType;
+  const _accessoryType = _CUIEquipment.accessoryType;
+  const _allowedTypes = _CUIEquipment.allowedTypes;
+  const _memberCanUseWeapon = _CUIEquipment.memberCanUseWeapon;
+  const _memberCanUseArmor = _CUIEquipment.memberCanUseArmor;
+  const _equipmentKind = _CUIEquipment.equipmentKind;
+  const _equipmentType = _CUIEquipment.equipmentType;
+  const _weaponSummary = _CUIEquipment.weaponSummary;
+  const _effectSummary = _CUIEquipment.effectSummary;
+  const _equipmentDesc = _CUIEquipment.equipmentDesc;
+  const _delta = _CUIEquipment.delta;
+  const _slotKind = _CUIEquipment.slotKind;
+  const _slotLabel = _CUIEquipment.slotLabel;
+  const _normalizeEquipmentSlots = _CUIEquipment.normalizeEquipmentSlots;
+  const _equipmentChangeDescription = _CUIEquipment.equipmentChangeDescription;
+  const _equipmentOptions = _CUIEquipment.equipmentOptions;
+  const _equipmentPickerItem = _CUIEquipment.equipmentPickerItem;
 
   let _root = null;
   let _activeMode = 'story';
@@ -2554,70 +2575,8 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  const TOOL_PURPOSES = {
-    oracle: {
-      label: 'Oracle',
-      role: 'GM prompt / keywords',
-      use: 'Use when you need inspiration, a line of narration, or a sharper scene image.',
-      flow: 'Text only -> Save Note -> Make Rumor/Event if you want it to matter later.',
-      commit: 'No mechanics by default.'
-    },
-    rumor: {
-      label: 'Rumor',
-      role: 'Stored lead bank',
-      use: 'Use when an idea is interesting but should not become canon or a quest yet.',
-      flow: 'Hear lead -> Hold in hub -> Promote later to quest, event, character scene, map seed, oracle, or problem.',
-      commit: 'Saved as a lead until promoted.'
-    },
-    problem: {
-      label: 'Problem',
-      role: 'Active hub pressure',
-      use: 'Use when the hub is already affected and the party should see pressure building.',
-      flow: 'Add pressure -> Show in hub -> Resolve manually or through quest/event results.',
-      commit: 'Counts as active state until resolved.'
-    },
-    hubPulse: {
-      label: 'Hub Pulse',
-      role: 'Living hub moment',
-      use: 'Use when you want town, guild, tavern, forge, or weird local activity.',
-      flow: 'Roll/pick pulse -> Review card -> Apply choice, save idea, make rumor, or reject.',
-      commit: 'Only commits when you apply a choice.'
-    },
-    event: {
-      label: 'Authored Event',
-      role: 'Immediate happening',
-      use: 'Use during story, quest, travel, aftermath, or event play when something happens now.',
-      flow: 'Roll/pick event -> Review rewards/risks/text -> Apply, edit, note only, pin, or ignore.',
-      commit: 'May change rewards, danger, flags, rumors, quests, or notes.'
-    }
-  };
-
-  function _renderInlinePurpose(key) {
-    const item = TOOL_PURPOSES[key] || TOOL_PURPOSES.oracle;
-    return `
-      <div class="campaign-purpose-inline">
-        <span class="campaign-impact-badge is-${_escAttr(_purposeTone(key))}">${_esc(item.label)}</span>
-        <span><b>${_esc(item.role)}.</b> ${_esc(item.flow)} ${_esc(item.commit)}</span>
-      </div>
-    `;
-  }
-
-  function _purposeTone(key) {
-    if (key === 'event') return 'mixed';
-    if (key === 'hubPulse' || key === 'problem') return 'quest';
-    if (key === 'rumor') return 'plot';
-    return 'flavor';
-  }
-
-  function _purposeKeyForCard(card = {}) {
-    const type = String(card.type || '').toLowerCase();
-    const source = String(card.source || '').toLowerCase();
-    if (type.includes('oracle') || source.includes('oracle')) return 'oracle';
-    if (type.includes('rumor')) return 'rumor';
-    if (source.includes('hub_pulse') || type.includes('hub_pulse')) return 'hubPulse';
-    if (type.includes('event')) return 'event';
-    return 'hubPulse';
-  }
+  // TOOL_PURPOSES, _renderInlinePurpose, _purposeTone, _purposeKeyForCard
+  // live in js/campaign/ui/cui-controls.js (bound as aliases at the top).
 
   function _renderOverview(state) {
     return `
@@ -3374,15 +3333,6 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderRumorPurpose() {
-    return `
-      <div class="campaign-rumor-purpose">
-        <span class="campaign-impact-badge is-plot">Rumor purpose</span>
-        <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, character beat, oracle prompt, or hub problem when the party is ready.</span>
-      </div>
-    `;
-  }
-
   function _isRumorOpen(rumor = {}) {
     return !['resolved', 'promoted', 'dismissed', 'archived'].includes(String(rumor.status || 'active').toLowerCase());
   }
@@ -3407,16 +3357,6 @@ window.CJS.CampaignUI = (() => {
           <button class="campaign-action danger" data-campaign-action="resolve-rumor" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Resolve</button>
         </div>
       </div>
-    `;
-  }
-
-  function _renderTownActionButton({ action, tone, title, meta, text }) {
-    return `
-      <button class="campaign-town-option is-${_escAttr(tone)}" data-campaign-action="${_escAttr(action)}">
-        <span class="campaign-impact-badge is-${_escAttr(tone)}">${_esc(meta)}</span>
-        <strong>${_esc(title)}</strong>
-        <span>${_esc(text)}</span>
-      </button>
     `;
   }
 
@@ -3879,53 +3819,8 @@ window.CJS.CampaignUI = (() => {
     return 'plot';
   }
 
-  function _impactLegendItem(tone, label) {
-    return `<span class="campaign-impact-badge is-${_escAttr(tone)}">${_esc(label)}</span>`;
-  }
-
-  function _controlGroup(title, buttons, description = '') {
-    return `
-      <div class="campaign-control-group">
-        <div class="campaign-control-title">${_esc(title)}</div>
-        ${description ? `<div class="campaign-control-help">${_esc(description)}</div>` : ''}
-        <div class="campaign-action-grid">${buttons}</div>
-      </div>
-    `;
-  }
-
-  function _actionMenu(label, buttons, options = {}) {
-    const cls = ['campaign-action-menu'];
-    if (options.align === 'end') cls.push('align-end');
-    if (options.compact) cls.push('is-compact');
-    return `
-      <details class="${cls.join(' ')}">
-        <summary class="campaign-action-menu-trigger">
-          <span>${_esc(label)}</span>
-        </summary>
-        <div class="campaign-action-menu-panel">
-          ${buttons}
-        </div>
-      </details>
-    `;
-  }
-
-  function _actionBtn({ action, label, hint, kind = '', data = {}, disabled = false }) {
-    const cls = ['campaign-action'];
-    if (kind) cls.push(kind);
-    if (hint) cls.push('has-hint');
-    const dataAttrs = Object.entries(data)
-      .filter(([, v]) => v !== undefined && v !== null && v !== '')
-      .map(([k, v]) => `data-${k}="${_escAttr(String(v))}"`)
-      .join(' ');
-    const disable = disabled ? 'disabled' : '';
-    const titleAttr = hint ? ` title="${_escAttr(hint)}"` : '';
-    return `
-      <button class="${cls.join(' ')}" data-campaign-action="${_escAttr(action)}" ${dataAttrs}${titleAttr} ${disable}>
-        <span class="campaign-action-label">${_esc(label)}</span>
-        ${hint ? `<small class="campaign-action-hint">${_esc(hint)}</small>` : ''}
-      </button>
-    `;
-  }
+  // _impactLegendItem, _controlGroup, _actionMenu, _actionBtn live in
+  // js/campaign/ui/cui-controls.js (bound as aliases at the top).
 
   function _renderSoloNotice(state) {
     const card = _pendingSoloHookCard(state);
@@ -5255,51 +5150,8 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderLogEntry(line, options = {}) {
-    const kind = _logKind(line);
-    return `
-      <div class="campaign-log-line campaign-log-${_escAttr(kind.key)}">
-        <div class="campaign-log-main">
-          <span class="campaign-log-type">${_esc(kind.label)}</span>
-          <span>${_esc(line.text || '')}</span>
-        </div>
-        <small>${_esc(_logMeta(line, options.compact))}</small>
-      </div>
-    `;
-  }
-
-  function _logKind(line = {}) {
-    const op = String(line.op || '').toLowerCase();
-    const text = String(line.text || '').toLowerCase();
-    const starts = (value) => text.startsWith(value);
-
-    if (op.includes('party') || / hp\b| mp\b|joined the roster|left the roster|availability|learned|forgot|gained status|active party|bench/.test(text)) return { key: 'party', label: 'Party' };
-    if (op.includes('battle') || text.includes('battle') || text.includes('combat')) return { key: 'battle', label: 'Battle' };
-    if (op.includes('event') || starts('event ') || starts('plot seed')) return { key: 'event', label: 'Event' };
-    if (op.includes('quest') || starts('quest ')) return { key: 'quest', label: 'Quest' };
-    if (op.includes('oracle') || text.includes('oracle')) return { key: 'oracle', label: 'Oracle' };
-    if (op.includes('scenario') || starts('scenario ') || starts('moved ') || starts('move blocked') || text.includes('danger')) return { key: 'run', label: 'Run' };
-    if (op.includes('shop') || op.includes('craft') || op.includes('farm') || starts('added ') || starts('removed ') || starts('gained ') || starts('spent ')) return { key: 'loot', label: 'Loot' };
-    if (op.includes('hub') || starts('rumor ') || starts('npc ') || starts('bond ') || starts('clock ') || starts('memory shard')) return { key: 'hub', label: 'Hub' };
-    if (starts('phase ')) return { key: 'phase', label: 'Phase' };
-    return { key: 'system', label: 'Log' };
-  }
-
-  function _logMeta(line = {}, compact = false) {
-    const phase = line.phase ? `Phase ${line.phase}` : 'Phase ?';
-    const time = _formatLogTime(line.at, compact);
-    return [phase, time].filter(Boolean).join(' | ');
-  }
-
-  function _formatLogTime(value, compact = false) {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    const options = compact
-      ? { hour: '2-digit', minute: '2-digit' }
-      : { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return date.toLocaleString([], options);
-  }
+  // _renderLogEntry, _logKind, _logMeta, _formatLogTime live in
+  // js/campaign/ui/cui-log.js (bound as aliases at the top).
 
   function _renderSettings(state) {
     return _renderSaveManager(state);
@@ -11785,202 +11637,12 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _equipmentOptions(member, slot) {
-    const kind = _slotKind(slot);
-    const slots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
-    const currentId = slots[slot];
-    const otherAccessorySlot = slot === 'accessory1' ? 'accessory2' : 'accessory1';
-    const otherAccessory = kind === 'accessory' ? DS().get('items', slots[otherAccessorySlot]) : null;
-    const otherAccessoryType = otherAccessory ? _accessoryType(otherAccessory) : '';
-    const state = CS().getState() || {};
-    const world = state.currentWorld;
-    const itemInventory = state.inventory?.items || {};
-    const equipmentInventory = state.inventory?.equipment || {};
-    const inWorld = (entry) => !entry._world || entry._world === world || entry._scope === 'universal' || entry._scope === 'system';
-    return DS().getAllAsArray('items')
-      .filter((entry) => entry?.id && inWorld(entry) && _equipmentKind(entry) === kind)
-      .filter((entry) => {
-        if (kind === 'weapon') return _memberCanUseWeapon(member, entry);
-        if (kind === 'armor') return _memberCanUseArmor(member, entry);
-        if (kind === 'accessory' && otherAccessoryType && entry.id !== currentId) return _accessoryType(entry) !== otherAccessoryType;
-        return true;
-      })
-      .map((entry) => ({
-        value: entry.id,
-        label: entry.name || entry.id,
-        sub: [_equipmentType(entry), entry.rarity, `Owned: ${itemInventory[entry.id] || equipmentInventory[entry.id] || 0}`].filter(Boolean).join(' | '),
-        description: _equipmentDesc(entry),
-        change: _equipmentChangeDescription(member, slot, entry, true),
-        group: _slotLabel(slot),
-        tags: [entry.id, entry.name, _equipmentType(entry), _equipmentKind(entry), ...(entry.tags || [])].filter(Boolean)
-      }))
-      .sort(_sortOptionLabel);
-  }
-
-  function _equipmentPickerItem(option) {
-    return `
-      <div class="campaign-picker-option campaign-equipment-option">
-        <strong>${_esc(option.label || option.value)}</strong>
-        ${option.sub ? `<small>${_esc(option.sub)}</small>` : ''}
-        ${option.description ? `<span>${_esc(option.description)}</span>` : ''}
-        ${option.change ? `<span class="campaign-picker-change">${_esc(option.change)}</span>` : ''}
-      </div>
-    `;
-  }
-
-  function _normalizeEquipmentSlots(rawSlots, equipment = []) {
-    const slots = {
-      weapon: rawSlots?.weapon || null,
-      armor: rawSlots?.armor || null,
-      accessory1: rawSlots?.accessory1 || null,
-      accessory2: rawSlots?.accessory2 || null
-    };
-    const used = new Set(Object.values(slots).filter(Boolean));
-    for (const itemId of equipment || []) {
-      if (!itemId || used.has(itemId)) continue;
-      const item = DS().get('items', itemId);
-      const kind = _equipmentKind(item);
-      if (kind === 'weapon' && !slots.weapon) slots.weapon = itemId;
-      else if (kind === 'armor' && !slots.armor) slots.armor = itemId;
-      else if (kind === 'accessory' && !slots.accessory1) slots.accessory1 = itemId;
-      else if (kind === 'accessory' && !slots.accessory2) slots.accessory2 = itemId;
-      used.add(itemId);
-    }
-    return slots;
-  }
-
-  function _slotKind(slot) {
-    if (slot === 'weapon') return 'weapon';
-    if (slot === 'armor') return 'armor';
-    return 'accessory';
-  }
-
-  function _slotLabel(slot) {
-    if (slot === 'accessory1') return 'Accessory 1';
-    if (slot === 'accessory2') return 'Accessory 2';
-    return _label(slot);
-  }
-
-  function _equipmentKind(item = {}) {
-    const slot = item?.slot || '';
-    if (item?.equipmentCategory) return item.equipmentCategory;
-    if (slot === 'weapon' || slot === 'offhand') return 'weapon';
-    if (['armor', 'head', 'body', 'legs', 'feet'].includes(slot)) return 'armor';
-    if (['accessory', 'accessory1', 'accessory2'].includes(slot)) return 'accessory';
-    return '';
-  }
-
-  function _equipmentType(item = {}) {
-    const kind = _equipmentKind(item);
-    if (kind === 'weapon') return _label(_weaponType(item) || 'weapon');
-    if (kind === 'armor') return _label(_armorType(item) || 'armor');
-    if (kind === 'accessory') return _label(_accessoryType(item) || 'accessory');
-    return '';
-  }
-
-  function _equipmentDesc(item = {}) {
-    return [
-      _desc(item),
-      item.characteristic ? `Characteristic: ${item.characteristic}` : '',
-      item.changeNotes ? `Change: ${item.changeNotes}` : '',
-      _weaponSummary(item),
-      _effectSummary(item)
-    ].filter(Boolean).join(' ');
-  }
-
-  function _equipmentChangeDescription(member, slot, item, includeCurrent = true) {
-    const slots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
-    const current = DS().get('items', slots[slot]);
-    const parts = [];
-    if (includeCurrent) parts.push(current ? `Replaces ${current.name || slots[slot]}` : 'Fills empty slot');
-    if (_equipmentKind(item) === 'weapon') {
-      const next = item.weaponData || {};
-      const prior = current?.weaponData || {};
-      if (next.baseDamage != null || prior.baseDamage != null) parts.push(`Damage ${_delta(next.baseDamage, prior.baseDamage)}`);
-      if (next.range != null || prior.range != null) parts.push(`Range ${_delta(next.range, prior.range)}`);
-      if (next.element || prior.element) parts.push(`Element ${next.element || 'None'}`);
-    }
-    if ((item.effects || []).length || (current?.effects || []).length) {
-      parts.push(`Effects ${(current?.effects || []).length} -> ${(item.effects || []).length}`);
-    }
-    if (item.changeNotes) parts.push(item.changeNotes);
-    return parts.filter(Boolean).join(' | ');
-  }
-
-  function _weaponSummary(item = {}) {
-    const data = item.weaponData || {};
-    if (_equipmentKind(item) !== 'weapon' || !Object.keys(data).length) return '';
-    return [
-      data.baseDamage != null ? `Damage ${data.baseDamage}` : '',
-      data.range != null ? `Range ${data.range}` : '',
-      data.damageType || '',
-      data.element ? `${data.element} element` : ''
-    ].filter(Boolean).join(', ');
-  }
-
-  function _effectSummary(item = {}) {
-    const effects = item.effects || [];
-    if (!effects.length) return '';
-    return effects.slice(0, 3).map((effect) => {
-      const def = DS().get('effects', effect.effectId || effect.id) || {};
-      const value = effect.overrides?.value ?? effect.value ?? def.value;
-      return `${def.name || effect.effectId || effect.id}${value != null ? ` ${Number(value) >= 0 ? '+' : ''}${value}` : ''}`;
-    }).join(', ') + (effects.length > 3 ? `, +${effects.length - 3} more` : '');
-  }
-
-  function _delta(next, prior) {
-    const diff = Number(next || 0) - Number(prior || 0);
-    return `${Number(next || 0)} (${diff >= 0 ? '+' : ''}${diff})`;
-  }
-
-  function _memberCanUseWeapon(member, item) {
-    const allowed = _allowedTypes(member, 'allowedWeaponTypes');
-    return !allowed.length || allowed.includes(_weaponType(item));
-  }
-
-  function _memberCanUseArmor(member, item) {
-    const allowed = _allowedTypes(member, 'allowedArmorTypes');
-    return !allowed.length || allowed.includes(_armorType(item));
-  }
-
-  function _allowedTypes(member = {}, key) {
-    const base = DS().get('characters', member.baseCharacterId) || {};
-    const values = [...(base[key] || []), ...(member[key] || [])].map(_cleanType).filter(Boolean);
-    return Array.from(new Set(values));
-  }
-
-  function _weaponType(item = {}) {
-    return _cleanType(item.weaponType || item.weaponData?.weaponType || item.type || _inferType(item, C()?.WEAPON_TYPES || []));
-  }
-
-  function _armorType(item = {}) {
-    return _cleanType(item.armorType || item.type || _inferType(item, C()?.ARMOR_TYPES || []));
-  }
-
-  function _accessoryType(item = {}) {
-    return _cleanType(item.accessoryType || item.type || _inferType(item, C()?.ACCESSORY_TYPES || []));
-  }
-
-  function _inferType(item, types) {
-    const text = [item?.id, item?.name, item?.slot, ...(item?.tags || [])].join(' ').toLowerCase();
-    const aliases = {
-      blade: 'sword', longsword: 'sword', shortsword: 'sword', katana: 'sword',
-      fang: 'dagger', knife: 'dagger',
-      longbow: 'bow', shortbow: 'bow',
-      fist: 'knuckles', claw: 'knuckles', gauntlet: 'knuckles',
-      rod: 'staff', tome: 'staff',
-      leather: 'light', cloak: 'light', boots: 'light', cloth: 'robe', mail: 'heavy', plate: 'heavy',
-      pendant: 'amulet', necklace: 'amulet', coin: 'charm', core: 'trinket'
-    };
-    for (const [alias, type] of Object.entries(aliases)) {
-      if ((types || []).includes(type) && text.includes(alias)) return type;
-    }
-    return (types || []).find((type) => text.includes(type)) || '';
-  }
-
-  function _cleanType(value) {
-    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_ -]+/g, '').replace(/\s+/g, '_');
-  }
+  // Equipment helpers (_cleanType, _inferType, _weaponType, _armorType,
+  // _accessoryType, _allowedTypes, _memberCanUseWeapon, _memberCanUseArmor,
+  // _equipmentKind, _equipmentType, _weaponSummary, _effectSummary,
+  // _equipmentDesc, _delta, _slotKind, _slotLabel, _normalizeEquipmentSlots,
+  // _equipmentChangeDescription, _equipmentOptions, _equipmentPickerItem)
+  // live in js/campaign/ui/cui-equipment.js (bound as aliases at the top).
 
   function _memberSkillEntries(id, member = CS().getState()?.party?.[id] || {}) {
     const base = _memberBase(id, member);
@@ -12145,261 +11807,19 @@ window.CJS.CampaignUI = (() => {
     return (Array.isArray(raw) ? raw : [raw]).map(_cleanType).filter(Boolean);
   }
 
-  function _desc(record = {}) {
-    return record.description || record.desc || record.flavor || record.notes || record.effectText || record.summary || '';
-  }
+  // _desc, _pickerItem, _sortOptionLabel, _formLabel, _formModal live in
+  // js/campaign/ui/cui-modals.js (bound as aliases at the top of this IIFE).
 
-  function _pickerItem(option) {
-    return `
-      <div class="campaign-picker-option">
-        <strong>${_esc(option.label || option.value)}</strong>
-        ${option.sub ? `<small>${_esc(option.sub)}</small>` : ''}
-        ${option.description ? `<span>${_esc(option.description)}</span>` : ''}
-      </div>
-    `;
-  }
+  // _bucketOptions, _statusOptions, _seedOptions, _worldOptions, _tentOptions
+  // live in js/campaign/ui/cui-options.js (bound as aliases at the top of this IIFE).
 
-  function _sortOptionLabel(a, b) {
-    return String(a.label || '').localeCompare(String(b.label || ''));
-  }
+  // _opPickerModal, _textareaModal, _numberModal live in
+  // js/campaign/ui/cui-modals.js (bound as aliases at the top of this IIFE).
 
-  function _formLabel(text) {
-    const lbl = document.createElement('label');
-    lbl.className = 'form-label';
-    lbl.textContent = text;
-    lbl.style.marginTop = '10px';
-    lbl.style.display = 'block';
-    return lbl;
-  }
-
-  function _formModal({ title, body, onSubmit, primaryLabel = 'Apply', width = '480px' }) {
-    const footer = document.createElement('div');
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-primary';
-    btn.textContent = primaryLabel;
-    footer.appendChild(btn);
-    const overlay = UI().openModal({ title, content: body, footer, width });
-    btn.onclick = () => {
-      const close = onSubmit();
-      if (close !== false) UI().closeModal(overlay);
-    };
-    return overlay;
-  }
-
-  function _bucketOptions(bucket) {
-    const world = CS().getState()?.currentWorld;
-    const inWorld = (entry) => !entry._world || entry._world === world || entry._scope === 'universal' || entry._scope === 'system';
-    const sortLabel = (a, b) => String(a.label).localeCompare(String(b.label));
-    if (bucket === 'materials') {
-      return DS().getAllAsArray('materials').filter(inWorld)
-        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || entry.rarity || '', description: _desc(entry), tags: entry.tags || [] }))
-        .sort(sortLabel);
-    }
-    if (bucket === 'food') {
-      return DS().getAllAsArray('food').filter(inWorld)
-        .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: entry._world || entry.type || '', description: _desc(entry), tags: entry.tags || [] }))
-        .sort(sortLabel);
-    }
-    return DS().getAllAsArray('items').filter(inWorld)
-      .map((entry) => ({ value: entry.id, label: entry.name || entry.id, sub: [entry.type, entry.rarity, entry._world].filter(Boolean).join(' | '), description: _desc(entry), tags: entry.tags || [] }))
-      .sort(sortLabel);
-  }
-
-  function _statusOptions() {
-    const customIds = new Set();
-    const opts = DS().getAllAsArray('statuses').map((entry) => {
-      customIds.add(entry.id);
-      return {
-        value: entry.id,
-        label: entry.name || entry.id,
-        sub: entry.kind || entry.category || '',
-        description: _desc(entry),
-        tags: entry.tags || []
-      };
-    });
-    for (const [id, def] of Object.entries(C()?.STATUS_DEFINITIONS || {})) {
-      if (customIds.has(id)) continue;
-      opts.push({
-        value: id,
-        label: def.name || id,
-        sub: def.category || 'Built-in',
-        description: _desc(def),
-        tags: def.tags || []
-      });
-    }
-    return opts.sort((a, b) => String(a.label).localeCompare(String(b.label)));
-  }
-
-  function _seedOptions() {
-    const world = CS().getState()?.currentWorld;
-    return DS().getAllAsArray('crops')
-      .filter((crop) => !crop._world || crop._world === world)
-      .map((crop) => ({
-        value: crop.id,
-        label: crop.name || crop.id,
-        sub: crop.growTime ? `${crop.growTime}t` : ''
-      }))
-      .sort((a, b) => String(a.label).localeCompare(String(b.label)));
-  }
-
-  function _worldOptions() {
-    const campaign = CS().getCurrentCampaign();
-    const worlds = CS().getContent().worlds || {};
-    const allowed = campaign?.allowedWorlds || Object.keys(worlds);
-    return allowed.map((id) => ({
-      value: id,
-      label: worlds[id]?.displayName || id,
-      sub: id
-    }));
-  }
-
-  function _tentOptions() {
-    const inv = CS().getState()?.inventory?.items || {};
-    const owned = Object.keys(inv).filter((id) => (inv[id] || 0) > 0);
-    const items = DS().getAllAsArray('items');
-    const tagged = items.filter((entry) => {
-      const tags = entry.tags || [];
-      return tags.includes('tent') || tags.includes('camp') || /tent|camp/i.test(entry.id || '');
-    });
-    const tentIds = new Set(tagged.map((entry) => entry.id));
-    const all = new Set([...owned, ...tentIds]);
-    return Array.from(all).map((id) => {
-      const entry = items.find((e) => e.id === id);
-      return { value: id, label: entry?.name || id, sub: `Owned: ${inv[id] || 0}` };
-    });
-  }
-
-  function _opPickerModal({ title, options, primaryLabel = 'Apply', placeholder, withQty, qtyLabel = 'Qty', qtyMin = 1, qtyMax = 99, qtyDefault = 1, withDuration, renderItem = _pickerItem, onSubmit }) {
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Select'));
-    const select = UI().createSearchableSelect({ options, placeholder: placeholder || 'Search...', renderItem });
-    body.appendChild(select);
-
-    let qty = null;
-    if (withQty) {
-      body.appendChild(_formLabel(qtyLabel));
-      qty = UI().createNumberSlider({ value: qtyDefault, min: qtyMin, max: qtyMax, step: 1 });
-      body.appendChild(qty);
-    }
-
-    let duration = null;
-    if (withDuration) {
-      body.appendChild(_formLabel('Duration'));
-      duration = UI().createSelect({
-        options: [
-          { value: 'manual', label: 'Manual (GM clears)' },
-          { value: 'scene', label: 'Scene' },
-          { value: 'scenario', label: 'Scenario' },
-          { value: '3', label: '3 turns' },
-          { value: '5', label: '5 turns' },
-          { value: '10', label: '10 turns' }
-        ],
-        value: 'manual'
-      });
-      body.appendChild(duration);
-    }
-
-    return _formModal({
-      title,
-      body,
-      primaryLabel,
-      onSubmit: () => {
-        const value = select._getValue();
-        if (!value) {
-          UI().toast('Pick a value first', 'error');
-          return false;
-        }
-        onSubmit({
-          value,
-          qty: qty ? qty._getValue() : undefined,
-          duration: duration ? duration.value : undefined
-        });
-      }
-    });
-  }
-
-  function _textareaModal({ title, label, placeholder, primaryLabel = 'Save', onSubmit, width = '520px', defaultValue = '' }) {
-    const body = document.createElement('div');
-    if (label) body.appendChild(_formLabel(label));
-    const ta = document.createElement('textarea');
-    ta.style.width = '100%';
-    ta.style.minHeight = '120px';
-    ta.placeholder = placeholder || '';
-    ta.value = defaultValue;
-    body.appendChild(ta);
-    return _formModal({
-      title,
-      body,
-      primaryLabel,
-      width,
-      onSubmit: () => onSubmit(ta.value.trim())
-    });
-  }
-
-  function _numberModal({ title, label, primaryLabel = 'Apply', min = 1, max = 999, value = 5, onSubmit }) {
-    const body = document.createElement('div');
-    body.appendChild(_formLabel(label || 'Amount'));
-    const slider = UI().createNumberSlider({ value, min, max, step: 1 });
-    body.appendChild(slider);
-    return _formModal({
-      title,
-      body,
-      primaryLabel,
-      onSubmit: () => onSubmit(slider._getValue())
-    });
-  }
-
-  function _lootLine(drop) {
-    if (drop.type === 'money') return `${drop.amount || drop.qty || 0} ${_currencyLabel(drop.currency || 'gold')}`;
-    if (drop.type === 'jp') return `${drop.amount || drop.qty || 0} ${_currencyLabel('jp')}`;
-    return `${drop.qty || 1}x ${drop.name || _recordName(drop.type === 'material' ? 'materials' : 'items', drop.id)}`;
-  }
-
-  function _currencyLabel(id) {
-    const value = String(id || '').toLowerCase();
-    if (value === 'jp' || value === 'jester_points') return 'Jester Points';
-    if (value.endsWith('_gold')) return `${_label(value.replace(/_gold$/, ''))} Gold`;
-    return _label(id);
-  }
-
-  function _recordName(bucketOrType, id) {
-    const bucket = bucketOrType === 'material' ? 'materials'
-      : bucketOrType === 'food' ? 'food'
-        : bucketOrType === 'questItem' ? 'questItems'
-          : bucketOrType || 'items';
-    return DS().get(bucket, id)?.name || id;
-  }
-
-  function _formatBundleText(bundle) {
-    const parts = [];
-    for (const [id, qty] of Object.entries(bundle?.currencies || {})) parts.push(`${qty} ${_currencyLabel(id)}`);
-    for (const [id, qty] of Object.entries(bundle?.items || {})) parts.push(`${qty} ${_recordName('items', id)}`);
-    for (const [id, qty] of Object.entries(bundle?.materials || {})) parts.push(`${qty} ${_recordName('materials', id)}`);
-    for (const [id, qty] of Object.entries(bundle?.food || {})) parts.push(`${qty} ${_recordName('food', id)}`);
-    for (const [id, qty] of Object.entries(bundle?.questItems || {})) parts.push(`${qty} ${_recordName('questItems', id)}`);
-    return parts.join(', ');
-  }
-
-  function _label(value) {
-    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
-  }
-
-  function _safe(value) {
-    return String(value || 'campaign').toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
-  }
-
-  function _truncate(value, max = 60) {
-    const text = String(value || '').trim();
-    return text.length > max ? `${text.slice(0, Math.max(0, max - 3))}...` : text;
-  }
-
-  function _esc(value) {
-    return String(value || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-  }
-
-  function _escAttr(value) {
-    return _esc(value);
-  }
+  // Leaf utilities (_esc, _escAttr, _label, _safe, _truncate, _lootLine,
+  // _currencyLabel, _recordName, _formatBundleText) live in
+  // js/campaign/ui/cui-utils.js and are bound as aliases at the top of
+  // this IIFE.
 
   // Lightweight begin/end narrative modal used by generated and user-built
   // quests. Replaces the heavyweight fullscreen visual novel for those runs;

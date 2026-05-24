@@ -93,14 +93,8 @@
           </div>
         </div>
 
-        <iframe
-          class="launcher-frame"
-          id="launcher-frame"
-          name="launcher-frame"
-          title="CJS mode"
-          allow="autoplay; clipboard-read; clipboard-write"
-          loading="lazy"
-          hidden></iframe>
+        <!-- Per-mode iframes are created lazily by launcher.js and kept
+             alive after first visit so state survives switches. -->
       </div>
     </main>
   </div>

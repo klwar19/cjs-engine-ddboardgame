@@ -10,7 +10,7 @@ Use it as:
 ## 1. Start Here
 
 Main entry points:
-- `index.html` - unified app launcher (sidebar shell that loads the modes below in an iframe)
+- `index.html` - unified app launcher (sidebar shell that loads each mode in its own persistent iframe; iframes are created lazily on first visit and kept alive, so switching modes preserves audio playback, in-memory campaign state, and open modals)
 - `tests.html` - lightweight engine sanity tests + master effect library browser
 - `editor.html` - content editor
 - `combat.html` - combat simulator
@@ -148,6 +148,8 @@ What it does:
 - initializes builder panels
 - shows scope/world filters
 - opens save, GitHub, migration, import, export flows
+
+The page itself is now thin (~225 lines of HTML/CSS plus two `<script type="module">` tags). The actual boot logic — sidebar wiring, panel switching, save/export buttons, GitHub flow — lives in `js/editor/editor-controller.js`.
 
 Important editor responsibilities:
 - call `ContentManager.loadDefaultData()`
@@ -555,6 +557,14 @@ Core files:
 - `js/campaign/campaign-map.js` - layered node-map renderer for active scenario maps
 - `js/campaign/campaign-scenario-generator.js` - save-local random, quest, and quest-chain scenario generator
 - `js/campaign/campaign-ui.js` - Scenario tabs, generator controls, run controls, battle/event handoff
+- `js/campaign/ui/cui-*.js` - leaf helpers extracted from `campaign-ui.js`. The main file binds short aliases at the top of its IIFE and continues to own all stateful render/handler logic. Submodules:
+  - `cui-utils.js` - pure string helpers (`esc`, `label`, `safe`, `truncate`, `currencyLabel`, `recordName`, `lootLine`, `formatBundleText`)
+  - `cui-portraits.js` - `icon`, `memberPortrait`, `memberPortraitFocus`, `focusAttrStyle`
+  - `cui-modals.js` - `formModal`, `opPickerModal`, `textareaModal`, `numberModal`, `formLabel`, `pickerItem`, `sortOptionLabel`, `desc`
+  - `cui-options.js` - searchable-select option builders (`bucketOptions`, `statusOptions`, `seedOptions`, `worldOptions`, `tentOptions`)
+  - `cui-controls.js` - HTML control builders (`actionBtn`, `actionMenu`, `controlGroup`, `renderInlinePurpose`, etc.)
+  - `cui-equipment.js` - equipment loadout helpers (slot kinds, type inference, picker options, change descriptions)
+  - `cui-log.js` - event-log entry rendering (`logKind`, `logMeta`, `formatLogTime`, `renderLogEntry`)
 
 Supported scenario travel modes:
 - `node_map` - uses an authored or generated scenario map by `mapId`
