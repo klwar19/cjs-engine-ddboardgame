@@ -741,569 +741,64 @@ window.CJS.CampaignUI = (() => {
     render();
   }
 
+  // Party / roster rendering lives in
+  // `js/campaign/ui/tabs/cui-party-tab.js`. These delegators keep the
+  // shell's existing closure callers (command rail panel, party sheet
+  // modal) working with a single import.
   function _renderParty(state) {
-    const active = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
-    const bench = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') === 'bench');
-    return `
-      <div class="campaign-panel-head">
-        <h2>Party</h2>
-        <button class="campaign-icon-btn" data-campaign-action="open-roster-tab">Roster</button>
-      </div>
-      ${active.map(([id, member]) => _renderPartyCard(id, member)).join('') || '<div class="campaign-empty">No active party members.</div>'}
-      ${bench.length ? `<div class="campaign-muted campaign-sidebar-label">Bench</div>${bench.map(([id, member]) => _renderPartyCard(id, member)).join('')}` : ''}
-    `;
+    return window.CJS.CampaignUIInternal.PartyTab.renderParty(state, _tabHelpers());
   }
 
   function _renderPartyCard(id, member) {
-    const hpPct = Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100);
-    const mpPct = Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100);
-    const statuses = (member.statuses || []).map((status) => `<span class="campaign-chip">${_esc(status.label || status.id)}</span>`).join('');
-    const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
-    const availability = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
-    const isBench = (member.rosterRole || 'active') === 'bench';
-    const rankInfo = _memberRankInfo(member);
-    return `
-      <section class="campaign-character ${battleReady ? '' : 'is-unavailable'}">
-        <div class="campaign-character-head">
-          <div class="campaign-avatar">${(() => { const p = _memberPortrait(member, id); const f = _memberPortraitFocus(member, id); return p ? `<img src="${_escAttr(p)}" alt="" style="${_escAttr(_focusAttrStyle(f))}">` : _icon(member, { kind: 'character', size: 'lg', alt: member.name || id }); })()}</div>
-          <div>
-            <strong>${_esc(member.name || id)}</strong>
-            <div class="campaign-muted">Lv ${member.level || 1} | Rank ${_esc(rankInfo.label)}${rankInfo.trialPending ? ' <span class="campaign-chip" title="Ready to rank up — visit the Adventurer Guild">Trial!</span>' : ''}</div>
-            ${_renderRankBar(rankInfo)}
-          </div>
-          <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${_esc(availability)}</span>
-        </div>
-        <div class="campaign-bar"><span class="hp" style="width:${hpPct}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
-        <div class="campaign-bar"><span class="mp" style="width:${mpPct}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
-        <div class="campaign-chip-row">${statuses || '<span class="campaign-muted">No statuses</span>'}</div>
-        <div class="campaign-mini-actions">
-          <button data-campaign-action="damage-char" data-id="${_escAttr(id)}">Damage</button>
-          <button data-campaign-action="heal-char" data-id="${_escAttr(id)}">Heal</button>
-          <button data-campaign-action="mp-char" data-id="${_escAttr(id)}">MP</button>
-          <button data-campaign-action="status-char" data-id="${_escAttr(id)}">Status</button>
-          <button data-campaign-action="party-sheet" data-id="${_escAttr(id)}">Sheet</button>
-          <button data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>
-          <button data-campaign-action="party-availability" data-id="${_escAttr(id)}">Availability</button>
-          ${battleReady ? '' : `<button data-campaign-action="party-available" data-id="${_escAttr(id)}">Return</button>`}
-        </div>
-      </section>
-    `;
+    return window.CJS.CampaignUIInternal.PartyTab.renderPartyCard(id, member, _tabHelpers());
   }
 
   function _renderRoster(state) {
-    const entries = Object.entries(state.party || {});
-    const active = entries.filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
-    const bench = entries.filter(([, member]) => (member.rosterRole || 'active') === 'bench');
-    return `
-      <div class="campaign-tab-stack">
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h2>Roster</h2>
-            <button class="campaign-action" data-campaign-action="recruit-character">Recruit</button>
-          </div>
-          ${active.length ? active.map(([id, member]) => _renderRosterMember(id, member)).join('') : '<div class="campaign-empty">No active roster.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Bench</h2></div>
-          ${bench.length ? bench.map(([id, member]) => _renderRosterMember(id, member)).join('') : '<div class="campaign-empty">No benched members.</div>'}
-        </section>
-      </div>
-    `;
+    return window.CJS.CampaignUIInternal.PartyTab.renderRoster(state, _tabHelpers());
   }
 
   function _renderRosterMember(id, member) {
-    const base = _memberBase(id, member);
-    const stats = _memberStats(id, member);
-    const skills = _memberSkillEntries(id, member);
-    const passives = _memberPassives(id, member);
-    const statuses = member.statuses || [];
-    const isBench = (member.rosterRole || 'active') === 'bench';
-    const F = window.CJS.Formulas;
-    const charLevel = Number(member.level || 1);
-    const charXp = Number(member.xp || 0);
-    const xpToNext = F?.calcCharXpToNextLevel ? F.calcCharXpToNextLevel(charXp, charLevel) : null;
-    const charXpMeta = xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`;
-    const battleReady = Bridge()?.isMemberBattleReady ? Bridge().isMemberBattleReady(member) : true;
-    const availLabel = battleReady ? 'Ready' : (Bridge()?.availabilityLabel?.(member) || 'Unavailable');
-    const resolvedPortrait = _memberPortrait(member, id);
-    const resolvedFocus = _memberPortraitFocus(member, id);
-    const portraitContent = resolvedPortrait
-      ? `<img src="${_escAttr(resolvedPortrait)}" alt="" style="${_escAttr(_focusAttrStyle(resolvedFocus))}">`
-      : `<span class="campaign-roster-portrait-fallback">${_esc(member.icon || member.name?.[0] || '?')}</span>`;
-    const rosterToggle = `<button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${_escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>`;
-    const gameplayActions = `
-      ${rosterToggle}
-      <button class="campaign-action" data-campaign-action="party-sheet" data-id="${_escAttr(id)}">Sheet</button>
-      <button class="campaign-action" data-campaign-action="change-job" data-id="${_escAttr(id)}">Job Change</button>
-      <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${_escAttr(id)}">Job Tree</button>
-      <button class="campaign-action" data-campaign-action="change-persona" data-id="${_escAttr(id)}" title="Switch world persona">Persona</button>
-      <button class="campaign-action" data-campaign-action="rank-up-apply" title="Apply for a rank-up trial at the Adventurer Guild.">Rank Trial</button>
-      <button class="campaign-action" data-campaign-action="party-availability" data-id="${_escAttr(id)}">Availability</button>
-    `;
-    const gmActions = `
-      <button class="campaign-action" data-campaign-action="gm-member-override" data-id="${_escAttr(id)}">GM Edit</button>
-      <button class="campaign-action" data-campaign-action="level-char" data-id="${_escAttr(id)}">Level</button>
-      <button class="campaign-action" data-campaign-action="grant-xp" data-id="${_escAttr(id)}">+XP</button>
-      <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${_escAttr(id)}">+Job XP</button>
-      <button class="campaign-action" data-campaign-action="stat-boost" data-id="${_escAttr(id)}">Stats</button>
-      <button class="campaign-action" data-campaign-action="learn-skill" data-id="${_escAttr(id)}">Learn Skill</button>
-      <button class="campaign-action" data-campaign-action="learn-passive" data-id="${_escAttr(id)}">Learn Passive</button>
-      <button class="campaign-action" data-campaign-action="status-char" data-id="${_escAttr(id)}">Status</button>
-      <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${_escAttr(id)}">Remove</button>
-    `;
-    return `
-      <article class="campaign-roster-member ${isBench ? 'is-bench' : 'is-active'} ${battleReady ? '' : 'is-unavailable'}">
-        <header class="campaign-roster-hero">
-          <div class="campaign-roster-portrait">${portraitContent}</div>
-          <div class="campaign-roster-hero-info">
-            <div class="campaign-roster-hero-title">
-              <strong class="campaign-roster-name">${_esc(member.name || base?.name || id)}</strong>
-              <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${_esc(availLabel)}</span>
-              <span class="campaign-pill">${isBench ? 'Bench' : 'Active'}</span>
-              ${_renderPersonaPill(id, member)}
-            </div>
-            <div class="campaign-roster-hero-meta">
-              <span><b>Lv</b> ${charLevel}</span>
-              <span title="${_escAttr(_memberRankInfo(member).atMax ? 'Max rank' : `RP ${_memberRankInfo(member).rp}/${_memberRankInfo(member).threshold} → ${_memberRankInfo(member).next || '—'}`)}"><b>Rank</b> ${_esc(_memberRankInfo(member).label)}${_memberRankInfo(member).trialPending ? ' <span class="campaign-chip">Trial!</span>' : ''}</span>
-              <span class="campaign-roster-hero-job">${_renderJobChip(id, member)}</span>
-              <span title="${_escAttr(charXpMeta)}"><b>XP</b> ${charXp}${xpToNext != null ? ` <small>(${xpToNext} to next)</small>` : ' <small>(max)</small>'}</span>
-              <span class="campaign-muted">${_esc(id)}${base?.id && base.id !== id ? ` from ${_esc(base.id)}` : ''}</span>
-            </div>
-            <div class="campaign-roster-action-groups">
-              <div class="campaign-roster-action-block">
-                <span class="campaign-roster-actions-title">Gameplay</span>
-                <div class="campaign-roster-hero-actions campaign-row-actions">${gameplayActions}</div>
-              </div>
-              <details class="campaign-roster-action-block is-gm">
-                <summary class="campaign-roster-actions-title">GM Edit</summary>
-                <div class="campaign-roster-hero-actions campaign-row-actions">${gmActions}</div>
-              </details>
-            </div>
-          </div>
-        </header>
-
-        <div class="campaign-roster-vitals-row">
-          <section class="campaign-roster-card campaign-roster-vitals">
-            <div class="campaign-roster-card-title">Vitals</div>
-            <div class="campaign-bar"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
-            <div class="campaign-bar"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
-            <div class="campaign-roster-stats-grid">
-              ${Object.entries(stats).map(([stat, value]) => `
-                <div class="campaign-roster-stat">
-                  <span>${_esc(_statName(stat))}</span>
-                  <strong>${Number(value || 0)}</strong>
-                </div>
-              `).join('')}
-            </div>
-          </section>
-          <section class="campaign-roster-card campaign-roster-affinities">
-            <div class="campaign-roster-card-title">Affinities</div>
-            ${_renderResistances(base, member, stats)}
-          </section>
-        </div>
-
-        <div class="campaign-roster-detail-row">
-          <section class="campaign-roster-card campaign-roster-skills">
-            <div class="campaign-roster-card-title">
-              <span>Skills</span>
-              <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'skill')}</small>
-            </div>
-            ${_renderSkillSlotView(id, member)}
-            <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberSkillPoolCount(id, member)} in pool)</summary>${_renderSkillPoolList(id, member, skills)}</details>
-          </section>
-          <section class="campaign-roster-card campaign-roster-passives">
-            <div class="campaign-roster-card-title">
-              <span>Passives</span>
-              <small class="campaign-muted">${_renderSelectionBudgetBadge(id, member, 'passive')}</small>
-            </div>
-            ${_renderPassiveSlotView(id, member)}
-            <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${_memberPassivePoolCount(id, member)} in pool)</summary>${_renderPassivePoolList(id, member, passives)}</details>
-          </section>
-          <section class="campaign-roster-card campaign-roster-statuses">
-            <div class="campaign-roster-card-title">
-              <span>Statuses</span>
-              <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${_escAttr(id)}">+</button>
-            </div>
-            ${statuses.length ? statuses.map((status) => _renderKnownStatus(status)).join('') : '<div class="campaign-empty">No statuses.</div>'}
-          </section>
-          <section class="campaign-roster-card campaign-roster-equipment">
-            <div class="campaign-roster-card-title"><span>Equipment</span></div>
-            ${_renderEquipmentLoadout(id, member)}
-          </section>
-        </div>
-      </article>
-    `;
+    return window.CJS.CampaignUIInternal.PartyTab.renderRosterMember(id, member, _tabHelpers());
   }
 
-  // Selection budget chip — shows "X/Y slots · A/B SP" for a member.
-  function _renderSelectionBudgetBadge(memberId, member, kind /* 'skill' | 'passive' */) {
-    const F = window.CJS.Formulas;
-    if (!F) return '';
-    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
-    const eqField = kind === 'skill' ? 'equippedSkills' : 'equippedPassives';
-    const slotCap = kind === 'skill'
-      ? (F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : member.skillSlots || 0)
-      : (F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : member.passiveSlots || 0);
-    const spCap = kind === 'skill'
-      ? (F.calcEffectiveSkillPoints ? F.calcEffectiveSkillPoints(member, base) : member.skillPoints || 0)
-      : (F.calcEffectivePassivePoints ? F.calcEffectivePassivePoints(member, base) : member.passivePoints || 0);
-    const equipped = member[eqField] || [];
-    const used = F.calcEquippedSpCost
-      ? F.calcEquippedSpCost(equipped, kind === 'skill' ? 'skills' : 'passives')
-      : equipped.length;
-    return `${equipped.length}/${slotCap} slots · ${used}/${spCap} SP`;
-  }
-
-  // Render the FULL skill pool for a member, with equip/unequip controls
-  // per row. authoredEntries: the merged list from base + learned (used by
-  // _renderKnownSkill so per-skill overrides like authored level still apply).
-  function _renderSkillPoolList(memberId, member, authoredEntries) {
-    const pool = CS().skillPoolIds ? CS().skillPoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
-    if (!pool.length) return '<div class="campaign-empty">No skills in pool. Use the + button to learn one.</div>';
-    const equippedSet = new Set(member.equippedSkills || []);
-    // Map id → authored entry (so per-character overrides + level survive).
-    const entryById = new Map();
-    for (const e of authoredEntries || []) {
-      const sid = typeof e === 'string' ? e : e?.skillId;
-      if (sid) entryById.set(sid, e);
-    }
-    return pool.map((sid) => {
-      const entry = entryById.get(sid) || { skillId: sid };
-      return _renderKnownSkill(memberId, entry, equippedSet.has(sid));
-    }).join('');
-  }
-
-  function _renderPassivePoolList(memberId, member, authoredPassives) {
-    const pool = CS().passivePoolIds ? CS().passivePoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
-    if (!pool.length) return '<div class="campaign-empty">No passives in pool. Use the + button to learn one.</div>';
-    const equippedSet = new Set(member.equippedPassives || []);
-    return pool.map((pid) => _renderKnownPassive(memberId, pid, equippedSet.has(pid))).join('');
-  }
-
-  // ── Slot-based equip views ──────────────────────────────────────────
-  // Show equipped items as filled slots, empty slots as [+] picker buttons.
-  function _renderSkillSlotView(memberId, member) {
-    const F = window.CJS.Formulas;
-    if (!F) return '';
-    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
-    const slotCap = F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : (member.skillSlots || 4);
-    const equipped = member.equippedSkills || [];
-    let html = '<div class="campaign-slot-grid">';
-    for (let i = 0; i < slotCap; i++) {
-      if (i < equipped.length) {
-        const sid = equipped[i];
-        const skill = DS().get('skills', sid);
-        const spCost = F.calcSpCost ? F.calcSpCost(skill) : 1;
-        html += `<div class="campaign-slot filled" title="${_escAttr(skill?.name || sid)} (SP ${spCost})">
-          ${_icon(skill, { kind: 'skill', size: 'md', alt: skill?.name || sid })}
-          <span class="campaign-slot-name">${_esc(skill?.name || sid)}</span>
-          <button class="campaign-slot-remove" data-campaign-action="unequip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(sid)}" title="Unequip">✕</button>
-        </div>`;
-      } else {
-        html += `<div class="campaign-slot empty" data-campaign-action="pick-equip-skill" data-id="${_escAttr(memberId)}" title="Equip a skill from pool">
-          <span class="campaign-slot-plus">+</span>
-        </div>`;
-      }
-    }
-    html += '</div>';
-    return html;
-  }
-
-  function _renderPassiveSlotView(memberId, member) {
-    const F = window.CJS.Formulas;
-    if (!F) return '';
-    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
-    const slotCap = F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : (member.passiveSlots || 3);
-    const equipped = member.equippedPassives || [];
-    let html = '<div class="campaign-slot-grid">';
-    for (let i = 0; i < slotCap; i++) {
-      if (i < equipped.length) {
-        const pid = equipped[i];
-        const passive = DS().get('passives', pid) || DS().get('effects', pid);
-        const spCost = F.calcSpCost ? F.calcSpCost(passive) : 1;
-        const rankInfo = _passiveRankInfo(memberId, pid, passive);
-        html += `<div class="campaign-slot filled" title="${_escAttr(passive?.name || pid)} (SP ${spCost}, Rank ${rankInfo.rank}/${rankInfo.max})">
-          ${_icon(passive, { kind: 'passive', size: 'md', alt: passive?.name || pid })}
-          <span class="campaign-slot-name">${_esc(passive?.name || pid)} <small>R ${rankInfo.rank}/${rankInfo.max}</small></span>
-          <button class="campaign-slot-remove" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(pid)}" title="Unequip">✕</button>
-        </div>`;
-      } else {
-        html += `<div class="campaign-slot empty" data-campaign-action="pick-equip-passive" data-id="${_escAttr(memberId)}" title="Equip a passive from pool">
-          <span class="campaign-slot-plus">+</span>
-        </div>`;
-      }
-    }
-    html += '</div>';
-    return html;
-  }
-
-  function _memberSkillPoolCount(memberId, member) {
-    const pool = CS().skillPoolIds ? CS().skillPoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
-    return pool.length;
-  }
-
-  function _memberPassivePoolCount(memberId, member) {
-    const pool = CS().passivePoolIds ? CS().passivePoolIds(member, DS().get('characters', member.baseCharacterId || memberId) || {}) : [];
-    return pool.length;
-  }
-
-  // Pool picker modal — shows unequipped items from the char's pool for quick equip
+  // Pool pickers + passive rank math live in
+  // `js/campaign/ui/tabs/cui-party-tab.js`. The shell keeps thin
+  // delegators because the action handler (`pick-equip-skill`,
+  // `pick-equip-passive`) and the rank-up modal call them directly
+  // from closure.
   function _openSkillPoolPicker(memberId) {
-    const member = CS().getState()?.party?.[memberId];
-    if (!member) return;
-    const F = window.CJS.Formulas;
-    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
-    const pool = CS().skillPoolIds ? CS().skillPoolIds(member, base) : [];
-    const equippedSet = new Set(member.equippedSkills || []);
-    const available = pool.filter((sid) => !equippedSet.has(sid));
-
-    if (!available.length) return UI().toast('No unequipped skills in pool.', 'info');
-
-    const body = document.createElement('div');
-    const search = document.createElement('input');
-    search.type = 'search';
-    search.placeholder = 'Search skills...';
-    search.style.cssText = 'width:100%;margin-bottom:8px';
-    body.appendChild(search);
-
-    const list = document.createElement('div');
-    list.className = 'data-list';
-    list.style.maxHeight = '400px';
-    body.appendChild(list);
-
-    let overlay;
-    function renderList(q) {
-      list.innerHTML = '';
-      const query = (q || '').toLowerCase();
-      for (const sid of available) {
-        const skill = DS().get('skills', sid);
-        if (!skill) continue;
-        if (query && !(skill.name || '').toLowerCase().includes(query) && !sid.toLowerCase().includes(query)) continue;
-        const spCost = F?.calcSpCost ? F.calcSpCost(skill) : 1;
-        const prog = member.skillProgress?.[sid] || { level: 1 };
-        const row = document.createElement('div');
-        row.className = 'data-list-item';
-        row.style.cursor = 'pointer';
-        row.innerHTML = `${_icon(skill, { kind: 'skill', size: 'sm', alt: skill.name || sid })}<div><div class="item-name">${_esc(skill.name || sid)}</div><div class="item-sub">SP ${spCost} | Lv ${prog.level || 1} | ${_esc(skill.description?.substring(0, 60) || '')}</div></div>`;
-        row.onclick = () => {
-          Ops().apply({ op: 'equip_skill', target: memberId, skillId: sid }, { source: 'ui' });
-          UI().closeModal(overlay);
-        };
-        list.appendChild(row);
-      }
-      if (!list.children.length) list.innerHTML = '<div class="data-list-empty">No matching skills.</div>';
-    }
-
-    search.oninput = () => renderList(search.value);
-    renderList('');
-
-    overlay = UI().openModal({ title: 'Equip Skill from Pool', content: body, width: '500px' });
-    search.focus();
+    return window.CJS.CampaignUIInternal.PartyTab.openSkillPoolPicker(memberId);
   }
 
   function _openPassivePoolPicker(memberId) {
-    const member = CS().getState()?.party?.[memberId];
-    if (!member) return;
-    const F = window.CJS.Formulas;
-    const base = DS().get('characters', member.baseCharacterId || memberId) || {};
-    const pool = CS().passivePoolIds ? CS().passivePoolIds(member, base) : [];
-    const equippedSet = new Set(member.equippedPassives || []);
-    const available = pool.filter((pid) => !equippedSet.has(pid));
-
-    if (!available.length) return UI().toast('No unequipped passives in pool.', 'info');
-
-    const body = document.createElement('div');
-    const search = document.createElement('input');
-    search.type = 'search';
-    search.placeholder = 'Search passives...';
-    search.style.cssText = 'width:100%;margin-bottom:8px';
-    body.appendChild(search);
-
-    const list = document.createElement('div');
-    list.className = 'data-list';
-    list.style.maxHeight = '400px';
-    body.appendChild(list);
-
-    let overlay;
-    function renderList(q) {
-      list.innerHTML = '';
-      const query = (q || '').toLowerCase();
-      for (const pid of available) {
-        const passive = DS().get('passives', pid) || DS().get('effects', pid);
-        if (!passive) continue;
-        if (query && !(passive.name || '').toLowerCase().includes(query) && !pid.toLowerCase().includes(query)) continue;
-        const spCost = F?.calcSpCost ? F.calcSpCost(passive) : 1;
-        const rankInfo = _passiveRankInfo(memberId, pid, passive);
-        const row = document.createElement('div');
-        row.className = 'data-list-item';
-        row.style.cursor = 'pointer';
-        row.innerHTML = `${_icon(passive, { kind: 'passive', size: 'sm', alt: passive.name || pid })}<div><div class="item-name">${_esc(passive.name || pid)}</div><div class="item-sub">SP ${spCost} | Rank ${rankInfo.rank}/${rankInfo.max} | ${_esc(passive.trigger || passive.category || '')} | ${_esc(passive.description?.substring(0, 60) || '')}</div></div>`;
-        row.onclick = () => {
-          Ops().apply({ op: 'equip_passive', target: memberId, passiveId: pid }, { source: 'ui' });
-          UI().closeModal(overlay);
-        };
-        list.appendChild(row);
-      }
-      if (!list.children.length) list.innerHTML = '<div class="data-list-empty">No matching passives.</div>';
-    }
-
-    search.oninput = () => renderList(search.value);
-    renderList('');
-
-    overlay = UI().openModal({ title: 'Equip Passive from Pool', content: body, width: '500px' });
-    search.focus();
-  }
-
-  function _renderKnownSkill(memberId, entry, isEquipped) {
-    const skillId = _skillEntryId(entry);
-    const skill = DS().get('skills', skillId);
-    const learned = entry.source === 'campaign' || _memberLearnedSkillIds(memberId).includes(skillId);
-    const member = CS().getState()?.party?.[memberId] || {};
-    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const F = window.CJS.Formulas;
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill || {}) : 5;
-    const apTotal = Number(prog.ap || 0);
-    const level = Math.max(1, Number(prog.level || 1));
-    const apToNext = (skill && F?.calcSkillApToNextLevel) ? F.calcSkillApToNextLevel(skill, apTotal, level) : null;
-    const apMeta = level >= cap
-      ? `Lv ${level}/${cap} (max)`
-      : (apToNext != null ? `Lv ${level}/${cap} | ${apToNext} AbP to next` : `Lv ${level}/${cap}`);
-    const baseMeta = _skillMeta(skill, entry);
-    const meta = [baseMeta, apMeta].filter(Boolean).join(' | ');
-    const apButton = (skill && level < cap)
-      ? `<button class="campaign-action" data-campaign-action="grant-skill-ap" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Grant AbP for this skill (edit-mode)">+AbP</button>`
-      : '';
-    const levelButton = (skill && level < cap)
-      ? `<button class="campaign-action" data-campaign-action="level-up-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Force level-up (edit-mode)">+Lv</button>`
-      : '';
-    const detailButton = skill
-      ? `<button class="campaign-action" data-campaign-action="show-skill-detail" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Show full perk tree">Detail</button>`
-      : '';
-    const equippedFlag = isEquipped === true;
-    const spCost = (skill && window.CJS.Formulas?.calcSpCost) ? window.CJS.Formulas.calcSpCost(skill) : 1;
-    const equipButton = isEquipped == null
-      ? '' // older callers (back-compat) don't pass an equip state
-      : (equippedFlag
-          ? `<button class="campaign-action danger" data-campaign-action="unequip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Unequip (frees slot/SP)">Unequip</button>`
-          : `<button class="campaign-action" data-campaign-action="equip-skill" data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
-    const extraActions = `${equipButton}${apButton}${levelButton}${detailButton}`;
-
-    // Inline preview of earned perks + next perk so progress is visible
-    // without opening the detail modal.
-    const earned = (skill && F?.getEarnedSkillPerks) ? F.getEarnedSkillPerks(skill, level) : [];
-    const next = (skill && F?.getNextSkillPerk) ? F.getNextSkillPerk(skill, level) : null;
-    const earnedLine = earned.length
-      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `Lv${p.level} — ${_esc(p.description || '...')}`).join(' • ')}</div>`
-      : '';
-    const nextLine = next
-      ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at Lv${next.level}: ${_esc(next.description || '...')}</div>`
-      : '';
-    const baseDesc = _desc(skill) || '';
-    const descriptionHtml = `<p>${_esc(baseDesc || 'No description yet.')}</p>${earnedLine}${nextLine}`;
-    const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
-    return _renderKnownRecord({
-      title: `${titlePrefix}${skill?.name || skillId}`,
-      meta: `SP ${spCost} | ${meta}`,
-      descriptionHtml,
-      removeAction: learned ? 'unlearn-skill' : '',
-      removeData: learned ? `data-id="${_escAttr(memberId)}" data-skill-id="${_escAttr(skillId)}"` : '',
-      extraActions
-    });
-  }
-
-  function _renderKnownPassive(memberId, passiveId, isEquipped) {
-    const passiveRecord = DS().get('passives', passiveId);
-    const passive = passiveRecord || DS().get('effects', passiveId);
-    const learned = (CS().getState()?.party?.[memberId]?.learnedPassives || []).includes(passiveId);
-    const spCost = (passive && window.CJS.Formulas?.calcSpCost) ? window.CJS.Formulas.calcSpCost(passive) : 1;
-    const rankInfo = _passiveRankInfo(memberId, passiveId, passive);
-    const rankCostText = _passiveRankCostText(passive, rankInfo.rank);
-    const equippedFlag = isEquipped === true;
-    const equipButton = isEquipped == null
-      ? ''
-      : (equippedFlag
-          ? `<button class="campaign-action danger" data-campaign-action="unequip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Unequip (frees slot/SP)">Unequip</button>`
-          : `<button class="campaign-action" data-campaign-action="equip-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
-    const rankButton = (passiveRecord && !rankInfo.isMax)
-      ? `<button class="campaign-action" data-campaign-action="rank-up-passive" data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}" title="Consumes ${_escAttr(rankCostText || 'rank material')}">Rank Up</button>`
-      : '';
-    const F = window.CJS.Formulas;
-    const earned = (passiveRecord && F?.getEarnedPassiveRankPerks) ? F.getEarnedPassiveRankPerks(passiveRecord, rankInfo.rank) : [];
-    const next = (passiveRecord && F?.getNextPassiveRankPerk) ? F.getNextPassiveRankPerk(passiveRecord, rankInfo.rank) : null;
-    const earnedLine = earned.length
-      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `R${_passivePerkRank(p)} - ${_esc(p.description || '...')}`).join(' | ')}</div>`
-      : '';
-    const nextLine = next
-      ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at R${_passivePerkRank(next)}: ${_esc(next.description || '...')}</div>`
-      : '';
-    const descriptionHtml = `<p>${_esc(_desc(passive) || 'No description yet.')}</p>${earnedLine}${nextLine}`;
-    const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
-    return _renderKnownRecord({
-      title: `${titlePrefix}${passive?.name || passiveId}`,
-      meta: `SP ${spCost} | Rank ${rankInfo.rank}/${rankInfo.max}${rankInfo.isMax ? ' (max)' : ''} | ${passive?.trigger || passive?.category || passiveId}`,
-      descriptionHtml,
-      removeAction: learned ? 'unlearn-passive' : '',
-      removeData: learned ? `data-id="${_escAttr(memberId)}" data-passive-id="${_escAttr(passiveId)}"` : '',
-      extraActions: `${equipButton}${rankButton}`
-    });
-  }
-
-  function _passivePerkRank(perk = {}) {
-    return Number(perk.rank ?? perk.level ?? perk.targetRank ?? 0) || '?';
+    return window.CJS.CampaignUIInternal.PartyTab.openPassivePoolPicker(memberId);
   }
 
   function _passiveRankInfo(memberId, passiveId, passive = null) {
-    const member = CS().getState()?.party?.[memberId] || {};
-    const rank = Math.max(1, Number(member.passiveProgress?.[passiveId]?.rank || 1));
-    const F = window.CJS.Formulas;
-    const max = F?.getPassiveMaxRank ? F.getPassiveMaxRank(passive || DS().get('passives', passiveId) || {}) : 5;
-    return { rank, max, isMax: rank >= max };
+    return window.CJS.CampaignUIInternal.PartyTab.passiveRankInfo(memberId, passiveId, passive);
   }
 
   function _passiveRankCostText(passive, currentRank) {
-    const F = window.CJS.Formulas;
-    const cost = passive && F?.calcPassiveRankCost ? F.calcPassiveRankCost(passive, currentRank) : null;
-    return _formatBundleText(cost);
+    return window.CJS.CampaignUIInternal.PartyTab.passiveRankCostText(passive, currentRank);
   }
 
-  function _renderKnownStatus(status) {
-    const def = _statusDef(status.id);
-    return _renderKnownRecord({
-      title: def?.name || status.label || status.id,
-      meta: `${status.duration || 'manual'} | stacks ${status.stacks || 1}`,
-      description: status.notes || _desc(def)
-    });
-  }
+  // _renderSelectionBudgetBadge, _renderSkillPoolList, _renderPassivePoolList,
+  // _renderSkillSlotView, _renderPassiveSlotView, _memberSkillPoolCount,
+  // _memberPassivePoolCount, _renderKnownSkill, _renderKnownPassive,
+  // _passivePerkRank, _renderKnownStatus, _renderKnownRecord all live in
+  // `js/campaign/ui/tabs/cui-party-tab.js` and are only used from the
+  // party tab's render pipeline now. _renderKnownItem was unused and was
+  // dropped during the move.
 
-  function _renderKnownItem(bucket, id) {
-    const record = DS().get(bucket, id) || DS().get('items', id);
-    return _renderKnownRecord({
-      title: record?.name || id,
-      meta: record?.type || record?._world || id,
-      description: _desc(record)
-    });
-  }
-
-  function _renderKnownRecord({ title, meta, description, descriptionHtml, removeAction, removeData, extraActions }) {
-    const body = descriptionHtml != null
-      ? descriptionHtml
-      : `<p>${_esc(description || 'No description yet.')}</p>`;
-    return `
-      <div class="campaign-record-line">
-        <div>
-          <strong>${_esc(title || '')}</strong>
-          <small>${_esc(meta || '')}</small>
-          ${body}
-        </div>
-        <div style="display:flex;gap:4px;align-items:center">
-          ${extraActions || ''}
-          ${removeAction ? `<button class="campaign-icon-btn danger" title="Remove" data-campaign-action="${removeAction}" ${removeData}>-</button>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
+  // Tab body delegate. The tab registry owns extracted tabs (party,
+  // hub, world map); anything not in the registry falls back to the
+  // shell's switch case below so migration can land tab-by-tab.
   function _renderMain(state) {
+    const Tabs = window.CJS.CampaignUIInternal.Tabs;
+    if (Tabs?.has?.(_activeTab)) {
+      const html = Tabs.render(_activeTab, state, _tabHelpers());
+      if (html != null) return html;
+    }
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
@@ -1314,20 +809,12 @@ window.CJS.CampaignUI = (() => {
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'eventLog': return _renderEventLog(state);
-      case 'roster': return _renderRoster(state);
       case 'relationships': return window.CJS.RelationshipsTab
         ? window.CJS.RelationshipsTab.render(state)
         : '<div class="campaign-panel">Relationships UI not loaded.</div>';
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'sideForge': return _renderSideForge(state);
-      case 'questChains': return _renderQuestChains(state);
-      case 'battleSets': return _renderBattleSets(state);
-      case 'mapSeeds': return _renderMapSeeds(state);
-      case 'oracleForge': return _renderOracleForge(state);
       case 'inventory': return window.CJS.CampaignInventory.render();
       case 'shops': return `${window.CJS.CampaignEconomy.renderRest()}${window.CJS.CampaignEconomy.renderShops()}`;
-      case 'worldMap': return window.CJS.CampaignWorldMap?.renderTravelMap?.(state) || '<div class="campaign-panel">World map UI not loaded.</div>';
-      case 'worldActivities': return window.CJS.CampaignWorldMap?.renderActivities?.(state) || '<div class="campaign-panel">World activities UI not loaded.</div>';
       case 'craft': return window.CJS.PocketHaven.renderCraft();
       case 'cook': return window.CJS.PocketHaven.renderCook();
       case 'farm': return window.CJS.PocketHaven.renderFarm();
@@ -1340,6 +827,39 @@ window.CJS.CampaignUI = (() => {
       case 'overview':
       default: return _renderOverview(state);
     }
+  }
+
+  // Frozen helper bundle passed to every registered tab. Built lazily
+  // on first render so all the closure-private helpers below have been
+  // defined by the time we capture them. Tab modules call into this
+  // bundle for shell-only math (member rank, equipment loadout, persona
+  // pill, etc.) and for cross-tab interactions like rendering the solo
+  // hook notice on the hub.
+  let _tabHelpersCache = null;
+  function _tabHelpers() {
+    if (_tabHelpersCache) return _tabHelpersCache;
+    _tabHelpersCache = Object.freeze({
+      // Member math + sheet helpers (party tab)
+      memberBase: _memberBase,
+      memberRankInfo: _memberRankInfo,
+      renderRankBar: _renderRankBar,
+      memberStats: _memberStats,
+      renderResistances: _renderResistances,
+      renderEquipmentLoadout: _renderEquipmentLoadout,
+      memberSkillEntries: _memberSkillEntries,
+      memberPassives: _memberPassives,
+      memberLearnedSkillIds: _memberLearnedSkillIds,
+      renderJobChip: _renderJobChip,
+      renderPersonaPill: _renderPersonaPill,
+      statName: _statName,
+      skillMeta: _skillMeta,
+      skillEntryId: _skillEntryId,
+      statusDef: _statusDef,
+      // Hub tab — solo hook notice + pending card
+      renderSoloNotice: _renderSoloNotice,
+      pendingSoloHookCard: _pendingSoloHookCard
+    });
+    return _tabHelpersCache;
   }
 
   function _renderStoryHome(state) {
@@ -3127,402 +2647,48 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderSideForge(state) {
-    const hub = window.CJS.CampaignHub.getCurrentHubDefinition();
-    const hubState = window.CJS.CampaignHub.getCurrentHubState();
-    const last = state.lastSideContentCard;
-    const ideas = Object.values(state.sideContent?.generatedIdeas || {});
-    const saved = ideas.filter((idea) => idea.status === 'saved' || idea.status === 'active');
-    const review = state.sideContent?.reviewQueue || [];
-    const history = state.sideContent?.contentHistory || [];
-    return `
-      <div class="campaign-dashboard side-forge">
-        <section class="campaign-panel side-forge-hero">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>${_esc(hub?.name || 'Living Hub')}</h2>
-              <div class="campaign-muted">${_esc(hub?.description || 'Town pulse, rumors, problems, and content review queue.')}</div>
-            </div>
-            <span class="campaign-pill">${_esc(_label(hubState?.mood || 'neutral'))}</span>
-          </div>
-          <div class="campaign-stat-grid">
-            <span>Security <b>${hubState?.security ?? 0}</b></span>
-            <span>Prosperity <b>${hubState?.prosperity ?? 0}</b></span>
-            <span>Warmth <b>${hubState?.warmth ?? 0}</b></span>
-            <span>Weirdness <b>${hubState?.weirdness ?? 0}</b></span>
-          </div>
-          <div class="campaign-control-help">Roll a pulse table for a flavorful idea, or roll a quest / rumor hook. Each result lands in the floating box and only commits when you accept it.</div>
-          <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="roll-hub-pulse" data-table="town" title="Roll the general hub pulse table - gossip, mood, mundane problems.">Hub Pulse</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="guild" title="Roll the adventurer guild table — contracts, recruits, factions.">Guild</button>
-            <button class="campaign-action" data-campaign-action="rank-up-apply" title="Apply for a rank-up trial at the Adventurer Guild.">Rank Up</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="tavern" title="Roll the tavern table — gossip, suppliers, drinking-spot drama.">Tavern</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="forge" title="Roll the forge / craft table — weapons, materials, smith requests.">Forge</button>
-            <button class="campaign-action" data-campaign-action="roll-hub-pulse" data-table="weird" title="Roll the weirdness table — ominous omens, supernatural beats.">Weird</button>
-            <button class="campaign-action" data-campaign-action="random-quest-offer" title="Pick a random quest template and auto-start its map run.">Quest Run</button>
-            <button class="campaign-action" data-campaign-action="random-rumor-offer" title="Create a marked lead. Mechanics only happen when you promote it later.">Rumor Hook</button>
-            <button class="campaign-action" data-campaign-action="manual-rumor" title="Type a custom rumor / lead into the hub bank.">Manual Rumor</button>
-            <button class="campaign-action" data-campaign-action="roll-forge-oracle" title="Roll a GM inspiration prompt — text only, no mechanics.">Oracle</button>
-          </div>
-        </section>
-        ${_renderSoloNotice(state)}
-        ${last ? _renderSideCard(last, { mode: 'last' }) : ''}
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Hub Problems</h3><span class="campaign-muted">Pressure cards on this hub. Resolve them by spending phases or addressing the cause.</span></div>
-          ${_renderInlinePurpose('problem')}
-          ${(hubState?.activeProblems || []).map((problem) => `
-            <div class="campaign-row">
-              <strong>${_esc(_label(problem))}</strong>
-              <button class="campaign-action" data-campaign-action="resolve-hub-problem" data-id="${_escAttr(problem)}" data-hub-id="${_escAttr(hub?.id || '')}" title="Mark this problem solved. Frees Pressure budget.">Resolve</button>
-            </div>
-          `).join('') || '<div class="campaign-empty">No active hub problems.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Rumors</h3><button class="campaign-action" data-campaign-action="manual-rumor">Add Rumor</button></div>
-          ${_renderRumorPurpose()}
-          ${_openRumors(hubState).slice(0, 6).map((rumor) => _renderRumorRow(rumor)).join('') || '<div class="campaign-empty">No open rumors.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Saved Ideas</h3></div>
-          ${saved.length ? saved.slice(0, 8).map((idea) => _renderSideCard(idea, { compact: true })).join('') : '<div class="campaign-empty">No saved ideas yet.</div>'}
-        </section>
-        <section class="campaign-panel review-panel">
-          <div class="campaign-panel-head"><h3>Review Queue</h3></div>
-          ${review.length ? review.slice(0, 8).map((item) => `
-            <div class="campaign-row">
-              <div>
-                <strong>${_esc(item.contentId)}</strong>
-                <div class="campaign-muted">${_esc(item.reason || '')}</div>
-              </div>
-              <div class="campaign-row-actions">
-                <span class="campaign-risk ${Side().riskClass(item.canonRisk)}">${_esc(item.canonRisk || 'red')}</span>
-                <button class="campaign-action" data-campaign-action="review-resolve" data-id="${_escAttr(item.id)}" data-decision="approved">Approve</button>
-                <button class="campaign-action campaign-action-reject" data-campaign-action="review-resolve" data-id="${_escAttr(item.id)}" data-decision="rejected" title="Reject this content. It will not be added.">Reject</button>
-              </div>
-            </div>
-          `).join('') : '<div class="campaign-empty">No pending review.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Side History</h3></div>
-          ${history.slice(0, 10).map((line) => `<div class="campaign-log-line"><span>${_esc(line.title || line.type)}: ${_esc(line.result || '')}</span><small>Phase ${line.phase}</small></div>`).join('') || '<div class="campaign-empty">No side content history.</div>'}
-        </section>
-      </div>
-    `;
-  }
+  // Hub tab body renderers (`sideForge`, `questChains`, `oracleForge`,
+  // `battleSets`, `mapSeeds`) live in `js/campaign/ui/tabs/cui-hub-tab.js`.
+  // The tab registry already routes them; no shell stubs are needed.
 
-  function _renderQuestChains() {
-    const available = window.CJS.CampaignQuestChains.getAvailable();
-    const active = window.CJS.CampaignQuestChains.getActive();
-    const finished = window.CJS.CampaignQuestChains.getFinished?.() || [];
-    return `
-      <div class="campaign-tab-grid">
-        <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head">
-            <h2>Event Side Stories</h2>
-            <span class="campaign-pill">${active.length} active · ${available.length} available</span>
-          </div>
-          ${_renderSideStoryFlowGuide(active[0]?.template || available[0])}
-          ${active.length ? active.map((chain) => _renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side stories. Start one below or use Normal Quest for a single farming run.</div>'}
-          ${finished.length ? `<details class="campaign-resolved-quests"><summary>Resolved side stories (${finished.length})</summary>${finished.map(_renderQuestChainResolved).join('')}</details>` : ''}
-        </section>
-        ${available.length ? available.map((chain) => _renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No side-story templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
-      </div>
-    `;
-  }
-
+  // Shared hub-flavored primitives kept as closure delegators so the
+  // story home, overview, event log, and manual builder can keep
+  // calling them without learning about the hub tab module.
   function _renderTownSnapshot(state) {
-    const hub = window.CJS.CampaignHub?.getCurrentHubDefinition?.();
-    const hubState = window.CJS.CampaignHub?.getCurrentHubState?.();
-    const activeQuests = Object.values(state.quests || {}).filter((quest) => !_isQuestResolved(quest));
-    const activeChains = CS().getActiveQuestChains?.() || [];
-    const problems = hubState?.activeProblems || [];
-    const rumors = _openRumors(hubState);
-    const metrics = ['security', 'prosperity', 'warmth', 'weirdness']
-      .map((stat) => `<span>${_esc(_label(stat))} <b>${_esc(hubState?.[stat] ?? 0)}</b></span>`)
-      .join('');
-    const locations = (hub?.locations || []).slice(0, 5).map((loc) => `
-      <div class="campaign-town-line">
-        <strong>${_esc(loc.name || loc.id)}</strong>
-        <span>${_esc(loc.notes || _label(loc.type || 'location'))}</span>
-      </div>
-    `).join('');
-
-    return `
-      <section class="campaign-panel campaign-town-snapshot">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${_esc(hub?.name || 'Town Overview')}</h2>
-            <div class="campaign-muted">${_esc(hub?.description || 'Town phase command view.')}</div>
-          </div>
-          <span class="campaign-pill">${_esc(_label(hubState?.mood || 'neutral'))}</span>
-        </div>
-        <div class="campaign-town-summary">
-          <div class="campaign-stat-grid campaign-town-stats">${metrics}</div>
-          <div class="campaign-town-now">
-            <div class="campaign-town-kpi">
-              <b>${activeQuests.length}</b>
-              <span>Open quests</span>
-            </div>
-            <div class="campaign-town-kpi">
-              <b>${activeChains.length}</b>
-              <span>Quest arcs</span>
-            </div>
-            <div class="campaign-town-kpi ${problems.length ? 'is-risk' : ''}">
-              <b>${problems.length}</b>
-              <span>Problems</span>
-            </div>
-            <div class="campaign-town-kpi ${rumors.length ? 'is-plot' : ''}">
-              <b>${rumors.length}</b>
-              <span>Rumors</span>
-            </div>
-          </div>
-        </div>
-        ${_renderRumorPurpose()}
-        <div class="campaign-town-columns">
-          <div>
-            <div class="campaign-section-title">Pressure</div>
-            ${(problems.length ? problems.slice(0, 4).map((problem) => `
-              <div class="campaign-town-line is-risk">
-                <strong>${_esc(_label(problem))}</strong>
-                <span>Active hub problem</span>
-              </div>
-            `).join('') : '<div class="campaign-empty">No active hub problems.</div>')}
-            ${(rumors.length ? rumors.slice(0, 3).map((rumor) => _renderRumorRow(rumor, { compact: true })).join('') : '')}
-          </div>
-          <div>
-            <div class="campaign-section-title">Places</div>
-            ${locations || '<div class="campaign-empty">No hub locations loaded.</div>'}
-          </div>
-        </div>
-      </section>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderTownSnapshot(state);
   }
 
   function _renderTownRollFloat(state) {
-    const pending = _pendingSoloHookCard(state);
-    const pendingOps = pending ? _cardChoiceOps(pending) : [];
-    const pendingSummary = pending
-      ? _consequenceSummary(pendingOps, { hasText: !!(pending.prompt || pending.summary || pending.text) })
-      : null;
-    return `
-      <section class="campaign-panel campaign-random-float ${pending ? 'has-pending' : ''}">
-        <div class="campaign-floating-eyebrow">Roll Random</div>
-        <h3>${pending ? 'Resolve Current Roll' : 'Hub Pulse Box'}</h3>
-        ${pending
-          ? `<p>${_esc(pending.title || pending.name || pending.id)}</p>
-             <div class="campaign-impact-row">
-               <span class="campaign-impact-badge is-${_escAttr(pendingSummary.tone)}">${_esc(pendingSummary.label)}</span>
-               <span>${_esc(pendingSummary.short)}</span>
-             </div>`
-          : '<p>Click once, then deal with the result before rolling again.</p>'}
-        <div class="campaign-action-grid">
-          ${pending
-            ? `<button class="campaign-action primary" data-campaign-action="accept-solo-hook">${pendingOps.length ? 'Accept & Apply' : 'Accept as Quest'}</button>
-               <button class="campaign-action" data-campaign-action="save-solo-hook">Save Text</button>
-               <button class="campaign-action danger" data-campaign-action="ignore-solo-hook">Reject</button>`
-            : '<button class="campaign-action primary campaign-roll-now" data-campaign-action="solo-surprise">Roll Random</button>'}
-        </div>
-        <div class="campaign-impact-legend">
-          ${_impactLegendItem('reward', 'gain')}
-          ${_impactLegendItem('risk', 'risk')}
-          ${_impactLegendItem('quest', 'quest')}
-          ${_impactLegendItem('plot', 'plot')}
-          ${_impactLegendItem('flavor', 'text')}
-        </div>
-      </section>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderTownRollFloat(state, {
+      pendingSoloHookCard: _pendingSoloHookCard
+    });
   }
 
   function _isRumorOpen(rumor = {}) {
-    return !['resolved', 'promoted', 'dismissed', 'archived'].includes(String(rumor.status || 'active').toLowerCase());
+    return window.CJS.CampaignUIInternal.HubTab.isRumorOpen(rumor);
   }
 
   function _openRumors(hubState) {
-    return (hubState?.rumors || []).filter(_isRumorOpen);
+    return window.CJS.CampaignUIInternal.HubTab.openRumors(hubState);
   }
 
   function _renderRumorRow(rumor = {}, options = {}) {
-    const hubId = window.CJS.CampaignHub?.getCurrentHubId?.() || '';
-    const compact = !!options.compact;
-    return `
-      <div class="campaign-row campaign-rumor-row ${compact ? 'is-compact' : ''}">
-        <div>
-          <strong>${_esc(rumor.text || rumor.id)}</strong>
-          <div class="campaign-muted">${_esc(rumor.status || 'active')} | ${_esc(_label(rumor.canonRisk || 'green'))} lead | parked until promoted</div>
-        </div>
-        <div class="campaign-row-actions">
-          <span class="campaign-risk ${Side().riskClass(rumor.canonRisk)}">${_esc(rumor.canonRisk || 'green')}</span>
-          <button class="campaign-action" data-campaign-action="rumor-to-quest" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Make Quest</button>
-          <button class="campaign-action" data-campaign-action="rumor-to-problem" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Make Problem</button>
-          <button class="campaign-action danger" data-campaign-action="resolve-rumor" data-id="${_escAttr(rumor.id)}" data-hub-id="${_escAttr(hubId)}">Resolve</button>
-        </div>
-      </div>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderRumorRow(rumor, options);
   }
 
   function _renderQuestChainActive(chain) {
-    const template = chain.template || {};
-    const step = (template.steps || []).find((entry) => entry.id === chain.currentStepId);
-    const steps = template.steps || [];
-    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === chain.currentStepId));
-    return `
-      <div class="campaign-row">
-        <div>
-          <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
-          <div class="campaign-muted">${_esc(chain.status)} | Step ${currentIndex + 1}/${steps.length || 1}: ${_esc(step?.label || chain.currentStepId || '-')}</div>
-          ${_renderQuestChainStepDetail(step)}
-          ${_renderContextTags([...(template.tags || []), ...(template.contextTags || []), ...(template.monsterTags || [])])}
-          ${_renderObjectivePulseHint(step)}
-          ${_renderQuestChainVnPanel(chain, { active: true })}
-          ${_renderChainStakes(template)}
-        </div>
-        <div class="campaign-row-actions">
-          <button class="campaign-action primary" data-campaign-action="chain-scenario" data-id="${_escAttr(chain.templateId)}">Map Run</button>
-          <button class="campaign-action" data-campaign-action="chain-battle" data-id="${_escAttr(chain.templateId)}">Battle</button>
-          <button class="campaign-action" data-campaign-action="advance-chain" data-id="${_escAttr(chain.templateId)}">Complete Step</button>
-          <button class="campaign-action" data-campaign-action="complete-chain" data-id="${_escAttr(chain.templateId)}">Resolve</button>
-          <button class="campaign-action danger" data-campaign-action="fail-chain" data-id="${_escAttr(chain.templateId)}">Fail</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderQuestChainResolved(chain) {
-    const template = chain.template || {};
-    return `
-      <div class="campaign-row">
-        <div>
-          <strong>${_esc(chain.title || template.title || chain.templateId)}</strong>
-          <div class="campaign-muted">${_esc(_label(chain.status || 'resolved'))} at phase ${_esc(chain.completedAtPhase || chain.failedAtPhase || '-')}</div>
-        </div>
-      </div>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderQuestChainActive(chain);
   }
 
   function _renderQuestChainTemplate(chain) {
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h3>${_esc(chain.title || chain.name || chain.id)}</h3>
-          <span class="campaign-risk ${Side().riskClass(chain.canonRisk)}">${_esc(chain.canonRisk || 'green')}</span>
-        </div>
-        <div class="campaign-muted">${_esc(chain.summary || '')}</div>
-        ${_renderQuestChainVnPanel(chain)}
-        <div class="campaign-chip-row">${(chain.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>
-        ${_renderChainStakes(chain)}
-        ${(chain.steps || []).map((step, index) => _renderQuestChainStepCard(step, index)).join('')}
-        <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="start-chain" data-id="${_escAttr(chain.id)}">Start Quest Run</button>
-          <button class="campaign-action" data-campaign-action="save-chain" data-id="${_escAttr(chain.id)}">Save Idea</button>
-          <button class="campaign-action" data-campaign-action="promote-chain" data-id="${_escAttr(chain.id)}">Add To Quests</button>
-        </div>
-      </section>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderQuestChainTemplate(chain);
   }
 
-  function _renderSideStoryFlowGuide(chain = {}) {
-    if (!chain) return '';
-    const phases = (chain.phasePlan || []).slice(0, 4).map((phase) => `${phase.chapterLabel || phase.id || ''} ${phase.title || phase.phaseType || ''}`.trim()).filter(Boolean);
-    return `
-      <div class="campaign-side-story-guide">
-        <span class="campaign-impact-badge is-plot">Side Story VN</span>
-        <strong>${_esc(chain.title || chain.name || 'Side Story')}</strong>
-        <span>${_esc(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.')}</span>
-        ${phases.length ? `<span>${_esc(phases.join(' -> '))}</span>` : ''}
-      </div>
-    `;
-  }
-
-  function _renderQuestChainStepCard(step = {}, index = 0) {
-    return `
-      <div class="campaign-step">
-        <b>${index + 1}. ${_esc(step.label || step.id)}</b>
-        ${_renderQuestChainStepDetail(step)}
-        ${_renderObjectivePulseHint(step)}
-      </div>
-    `;
-  }
-
-  function _renderQuestChainStepDetail(step = {}) {
-    if (!step) return '';
-    const systems = _questChainStepSystems(step);
-    const meta = [
-      step.chapterLabel ? `Chapter ${step.chapterLabel}` : '',
-      step.phaseType ? _label(step.phaseType) : '',
-      step.kind ? _label(step.kind) : ''
-    ].filter(Boolean);
-    const detail = [
-      step.vn?.prompt || step.visualNovel?.prompt,
-      step.character?.beat,
-      step.event?.prompt,
-      step.map?.objective,
-      step.combat?.objective,
-      step.minigame?.objective
-    ].filter(Boolean);
-    return `
-      ${meta.length ? `<div class="campaign-muted">${_esc(meta.join(' | '))}</div>` : ''}
-      ${step.text ? `<span>${_esc(step.text)}</span>` : ''}
-      ${systems.length ? `<div class="campaign-chip-row">${systems.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>` : ''}
-      ${detail.length ? `<div class="campaign-muted">${_esc(detail.slice(0, 2).join(' | '))}</div>` : ''}
-    `;
-  }
-
-  function _questChainStepSystems(step = {}) {
-    const systems = [];
-    if (step.vn || step.visualNovel) systems.push('VN');
-    if (step.character) systems.push('Character');
-    if (step.event) systems.push('Event');
-    if (step.map) systems.push('Map');
-    if (step.combat) systems.push('Combat');
-    if (step.minigame) systems.push('Mini-Game');
-    return systems;
-  }
-
-  function _renderQuestChainVnPanel(chain = {}, options = {}) {
-    const template = chain.template || chain || {};
-    const steps = template.steps || [];
-    const currentId = options.active ? chain.currentStepId : steps[0]?.id;
-    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === currentId));
-    const current = steps[currentIndex] || steps[0] || {};
-    const npcs = (template.mainNpcs || []).slice(0, 4);
-    const systems = _questChainStepSystems(current);
-    return `
-      <div class="campaign-side-story-vn">
-        <div class="campaign-side-story-scene">
-          <span class="campaign-impact-badge is-plot">${options.active ? 'Current Scene' : 'Opening Scene'}</span>
-          <strong>${_esc(current.label || template.title || template.id || 'Side Story')}</strong>
-          <p>${_esc(current.text || template.summary || 'Pick a scene, run it as VN/table narration, then decide whether it becomes a map, battle, quest progress, or a parked lead.')}</p>
-          ${systems.length ? `<div class="campaign-chip-row">${systems.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>` : ''}
-        </div>
-        <div class="campaign-side-story-meta">
-          <span><b>Plot</b> ${_esc(template.flowSummary || template.type || 'side story')}</span>
-          <span><b>Characters</b> ${_esc(npcs.join(', ') || 'GM choice')}</span>
-          <span><b>Control</b> Start map, battle manually, complete step, resolve, or fail.</span>
-        </div>
-        <div class="campaign-side-story-steps">
-          ${steps.map((step, index) => `
-            <span class="${index === currentIndex ? 'is-current' : index < currentIndex ? 'is-done' : ''}">
-              <b>${index + 1}</b>${_esc(step.label || step.id)}
-            </span>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderChainStakes(chain = {}) {
-    const rewards = Ops().describe(chain.rewardOps || chain.rewards || []);
-    const failures = Ops().describe(chain.failureOps || chain.failureConsequences || []);
-    const battleCount = (chain.battleSetIds || []).length;
-    const mapCount = (chain.mapSeedIds || []).length + (chain.linkedScenario ? 1 : 0);
-    return `
-      <div class="campaign-preview">
-        <b>Run</b>: ${mapCount ? `${mapCount} map hook${mapCount === 1 ? '' : 's'}` : 'generated map'}${battleCount ? ` · ${battleCount} battle hook${battleCount === 1 ? '' : 's'}` : ''}<br>
-        ${rewards.length ? `<b>Reward</b>: ${rewards.map(_esc).join('; ')}<br>` : ''}
-        ${failures.length ? `<b>If failed</b>: ${failures.map(_esc).join('; ')}` : '<b>If failed</b>: GM consequence or mark failed'}
-      </div>
-    `;
-  }
+  // _renderQuestChainResolved, _renderSideStoryFlowGuide,
+  // _renderQuestChainStepCard, _renderQuestChainStepDetail,
+  // _questChainStepSystems, _renderQuestChainVnPanel, _renderChainStakes
+  // are referenced only inside the chain template card itself; they
+  // moved with the rest of the hub tab.
 
   function _startQuestChainRun(templateId) {
     const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
@@ -3601,222 +2767,36 @@ window.CJS.CampaignUI = (() => {
     UI().toast('Quest arc failed', 'info');
   }
 
-  function _renderBattleSets() {
-    const cards = window.CJS.CampaignBattleSetForge.getCards();
-    return `
-      <div class="campaign-tab-grid">
-        ${cards.map((card) => `
-          <section class="campaign-panel">
-            <div class="campaign-panel-head">
-              <h3>${_esc(card.name || card.id)}</h3>
-              <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
-            </div>
-            <div class="campaign-muted">Rank ${_esc(card.rank || '-')} | ${_esc(card.objective || '')}</div>
-            <div class="campaign-chip-row">${(card.tags || []).map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>
-            <div class="campaign-preview">
-              <b>Enemy Mix</b><br>
-              ${(card.enemyMix || []).map((enemy) => `${_esc(enemy.qty || 1)}x ${_esc(enemy.label || enemy.name || enemy.id || 'unit')}`).join('<br>') || 'Manual enemy mix'}
-            </div>
-            <div class="campaign-muted">${_esc(card.gimmick || '')}</div>
-            <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="queue-battle-set" data-id="${_escAttr(card.id)}">${card.encounterId ? 'Queue Combat' : 'Queue Manual'}</button>
-              <button class="campaign-action" data-campaign-action="save-battle-card" data-id="${_escAttr(card.id)}">Save Idea</button>
-              <button class="campaign-action" data-campaign-action="copy-battle-card" data-id="${_escAttr(card.id)}">Copy</button>
-            </div>
-          </section>
-        `).join('') || '<div class="campaign-empty">No battle set cards.</div>'}
-      </div>
-    `;
-  }
-
-  function _renderMapSeeds() {
-    const seeds = window.CJS.CampaignMapSeedForge.getSeeds();
-    return `
-      <div class="campaign-tab-grid">
-        ${seeds.map((seed) => `
-          <section class="campaign-panel">
-            <div class="campaign-panel-head">
-              <h3>${_esc(seed.name || seed.id)}</h3>
-              <span class="campaign-risk ${Side().riskClass(seed.canonRisk)}">${_esc(seed.canonRisk || 'green')}</span>
-            </div>
-            <div class="campaign-muted">${(Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean)).map(_esc).join(', ')}</div>
-            ${(seed.nodes || []).map((node, index) => `<div class="campaign-step"><b>${index + 1}. ${_esc(node.name || node.id)}</b><span>${_esc(node.role || node.notes || '')}</span></div>`).join('')}
-            <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="save-map-seed" data-id="${_escAttr(seed.id)}">Save Idea</button>
-              <button class="campaign-action" data-campaign-action="copy-map-seed" data-id="${_escAttr(seed.id)}">Copy</button>
-            </div>
-          </section>
-        `).join('') || '<div class="campaign-empty">No map seeds.</div>'}
-      </div>
-    `;
-  }
-
-  function _renderOracleForge(state) {
-    const last = state.lastSideContentCard?.type === 'oracle_prompt' ? state.lastSideContentCard : null;
-    const tables = window.CJS.CampaignDataLoader.getOracleTables();
-    return `
-      <div class="campaign-dashboard">
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Oracle / Keyword Forge</h2></div>
-          ${_renderInlinePurpose('oracle')}
-          <div class="campaign-muted">${tables.map((table) => _esc(table.name || table.id)).join(', ') || 'No oracle tables loaded.'}</div>
-          <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="roll-forge-oracle">Roll Oracle</button>
-            <button class="campaign-action" data-campaign-action="import-side-pack">Import Pack</button>
-            <button class="campaign-action" data-campaign-action="export-side-pack">Export Save Ideas</button>
-          </div>
-        </section>
-        ${last ? _renderSideCard(last, { mode: 'oracle' }) : ''}
-      </div>
-    `;
-  }
-
+  // Side card, consequence preview, flavor trail, and the consequence
+  // tone helpers all live in `js/campaign/ui/tabs/cui-hub-tab.js`. The
+  // story home, event log, manual builder, and overview keep calling
+  // them through these thin closure delegators.
   function _renderSideCard(card, options = {}) {
-    const compact = !!options.compact;
-    const choices = card.suggestedChoices || [];
-    const primaryOps = _cardChoiceOps(card);
-    const summary = _consequenceSummary(primaryOps, { hasText: !!(card.prompt || card.text || card.summary) });
-    return `
-      <section class="campaign-panel campaign-side-card campaign-result-card is-${_escAttr(summary.tone)} ${compact ? 'compact' : ''}">
-        <div class="campaign-panel-head">
-          <div>
-            <h3>${_esc(card.title || card.name || card.id)}</h3>
-            <div class="campaign-muted">${_esc(card.type || 'side content')} | ${_esc(card.source || '')} | ${_esc(card.status || 'idea')}</div>
-          </div>
-          <div class="campaign-impact-row">
-            <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
-            <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
-          </div>
-        </div>
-        ${!compact ? _renderInlinePurpose(_purposeKeyForCard(card)) : ''}
-        ${card.prompt ? `<p>${_esc(card.prompt)}</p>` : ''}
-        ${card.text ? `<p>${_esc(card.text)}</p>` : ''}
-        ${card.summary && !compact ? `<p>${_esc(card.summary)}</p>` : ''}
-        ${!compact ? _renderFlavorTrail(card) : ''}
-        ${card.gmKeywords?.length && !compact ? `<div class="campaign-chip-row">${card.gmKeywords.map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>` : ''}
-        ${card.gmNote && !compact ? `<div class="campaign-warning">${_esc(card.gmNote)}</div>` : ''}
-        ${choices.length && !compact ? `<div class="campaign-choice-stack">${choices.map((choice, index) => _renderChoiceConsequence(choice, index)).join('')}</div>` : ''}
-        <div class="campaign-action-grid">
-          ${choices.length ? choices.map((choice, index) => `
-            <button class="campaign-action ${index === 0 ? 'primary' : ''}" data-campaign-action="apply-side-choice" data-id="${_escAttr(card.id)}" data-choice="${index}" title="${_escAttr('Apply: ' + (choice.label || ('Choice ' + (index + 1))))}"><span class="ku-action-prefix">Apply</span><span class="ku-action-label">${_esc(choice.label || `Choice ${index + 1}`)}</span></button>
-          `).join('') : ''}
-          <button class="campaign-action" data-campaign-action="save-side-idea" data-id="${_escAttr(card.id)}" title="Save this idea to the bank without committing it.">Save</button>
-          <button class="campaign-action" data-campaign-action="copy-side-card" data-id="${_escAttr(card.id)}" title="Copy the card text to clipboard.">Copy</button>
-          ${!compact ? `<button class="campaign-action" data-campaign-action="dismiss-side-card" data-id="${_escAttr(card.id)}" title="Hide this card from the current result slot.">Dismiss</button>` : ''}
-          <button class="campaign-action campaign-action-reject" data-campaign-action="reject-side-idea" data-id="${_escAttr(card.id)}" title="Discard this idea. Nothing is committed.">Reject</button>
-        </div>
-      </section>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderSideCard(card, options);
   }
 
   function _cardChoiceOps(card = {}) {
-    const firstChoice = card.suggestedChoices?.[0]?.ops;
-    const ops = firstChoice || card.suggested || card.suggestedOps || card.rewardOps || [];
-    return Array.isArray(ops) ? ops : [];
+    return window.CJS.CampaignUIInternal.HubTab.cardChoiceOps(card);
   }
 
   function _renderChoiceConsequence(choice = {}, index = 0) {
-    return _renderConsequencePreview(choice.ops || [], {
-      title: choice.label || `Choice ${index + 1}`,
-      emptyTitle: choice.label || `Choice ${index + 1}`,
-      emptyText: 'Flavor choice only. Save it as text or use it to steer the next scene.'
-    });
+    return window.CJS.CampaignUIInternal.HubTab.renderChoiceConsequence(choice, index);
   }
 
   function _renderConsequencePreview(ops = [], options = {}) {
-    const list = Array.isArray(ops) ? ops.filter(Boolean) : [];
-    const summary = _consequenceSummary(list, { hasText: options.hasText });
-    const title = options.title || (list.length ? summary.title : options.emptyTitle) || summary.title;
-    const text = list.length ? summary.detail : (options.emptyText || summary.detail);
-    const lines = list.length ? Ops().describe(list) : [];
-    return `
-      <div class="campaign-consequence is-${_escAttr(summary.tone)}">
-        <div class="campaign-consequence-head">
-          <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
-          <strong>${_esc(title)}</strong>
-        </div>
-        <span>${_esc(text)}</span>
-        ${lines.length ? `<ul>${lines.map((line) => `<li>${_esc(line)}</li>`).join('')}</ul>` : ''}
-      </div>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderConsequencePreview(ops, options);
   }
 
   function _renderFlavorTrail(entry = {}) {
-    const lines = [];
-    if (entry.suggestedUse) lines.push(['Use', entry.suggestedUse]);
-    if (entry.objective) lines.push(['Objective', entry.objective]);
-    if (entry.gimmick) lines.push(['Scene logic', entry.gimmick]);
-    if (entry.followUpHooks?.length) lines.push(['Follow-up', entry.followUpHooks.join(' / ')]);
-    if (entry.oracleTableId) lines.push(['Oracle', 'Roll a linked prompt if the text needs a sharper direction.']);
-    if (!lines.length) return '';
-    return `
-      <div class="campaign-flavor-trail">
-        ${lines.map(([label, text]) => `
-          <div>
-            <b>${_esc(label)}</b>
-            <span>${_esc(text)}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
+    return window.CJS.CampaignUIInternal.HubTab.renderFlavorTrail(entry);
   }
 
   function _consequenceSummary(ops = [], options = {}) {
-    const list = Array.isArray(ops) ? ops.filter(Boolean) : [];
-    const counts = { reward: 0, risk: 0, quest: 0, plot: 0, flavor: 0 };
-    for (const op of list) counts[_operationTone(op)] += 1;
-    let tone = 'flavor';
-    if (counts.reward && !counts.risk && !counts.quest && !counts.plot) tone = 'reward';
-    else if (counts.risk && !counts.reward && !counts.quest && !counts.plot) tone = 'risk';
-    else if (counts.quest && !counts.reward && !counts.risk) tone = 'quest';
-    else if (counts.plot && !counts.reward && !counts.risk && !counts.quest) tone = 'plot';
-    else if (counts.reward || counts.risk || counts.quest || counts.plot) tone = 'mixed';
-    else if (options.hasText) tone = 'flavor';
-
-    const labels = {
-      reward: 'Gain',
-      risk: 'Risk / Cost',
-      quest: 'Quest / Progress',
-      plot: 'Plot / Text',
-      flavor: 'Flavor Only',
-      mixed: 'Mixed'
-    };
-    const titles = {
-      reward: 'Applies rewards',
-      risk: 'Applies a cost or danger',
-      quest: 'Changes quest or hub progress',
-      plot: 'Adds plot state or table text',
-      flavor: 'Flavor text only',
-      mixed: 'Applies mixed consequences'
-    };
-    const details = {
-      reward: 'Clicking applies gains such as items, money, JP, healing, unlocks, or roster growth.',
-      risk: 'Clicking applies loss, damage, danger, status pressure, or a similar cost.',
-      quest: 'Clicking starts or advances a quest, scenario, hub problem, service, map, or clock.',
-      plot: 'Clicking records story state such as rumors, flags, bonds, reputation, notes, or review items.',
-      flavor: 'No mechanical change yet. Keep it as narration, save it as a note, or turn it into a plot seed.',
-      mixed: 'Clicking applies more than one kind of result. Review the exact list before applying.'
-    };
-    const shorts = {
-      reward: 'You get something.',
-      risk: 'Something pushes back.',
-      quest: 'The campaign state moves forward.',
-      plot: 'Story text or plot state changes.',
-      flavor: 'Text only until you save or promote it.',
-      mixed: 'Multiple consequences apply.'
-    };
-    return { tone, label: labels[tone], title: titles[tone], detail: details[tone], short: shorts[tone] };
+    return window.CJS.CampaignUIInternal.HubTab.consequenceSummary(ops, options);
   }
 
   function _operationTone(op = {}) {
-    const name = String(op.op || '').toLowerCase();
-    if (!name || name === 'log') return 'flavor';
-    if (/^(give_|heal_|restore_mp|recruit_character|learn_|unlock_|add_xp|add_level)/.test(name)) return 'reward';
-    if (/^(take_|damage_|spend_|add_status|remove_character|bench_character)/.test(name)) return 'risk';
-    if (name === 'danger') return Number(op.amount || 0) > 0 ? 'risk' : 'reward';
-    if (/quest|scenario|battle|node|map|hub_problem|hub_service|clock/.test(name)) return 'quest';
-    if (/rumor|flag|bond|reputation|npc_mood|hub_mood|hub_stat|memory|side_idea|review|world_transition|chapter_transition/.test(name)) return 'plot';
-    return 'plot';
+    return window.CJS.CampaignUIInternal.HubTab.operationTone(op);
   }
 
   // _impactLegendItem, _controlGroup, _actionMenu, _actionBtn live in
