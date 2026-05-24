@@ -7,7 +7,7 @@
 // registry without a full CampaignState wiring.
 //
 // This is the guard rail for the campaign-ui.js -> tab modules split:
-// if a tab file gets dropped from entry-campaign.js (or its IIFE throws
+// if a tab file gets dropped from src/campaign/main.tsx (or its IIFE throws
 // at load), _renderMain in the shell would silently fall back to its
 // shrunken switch-case fallback and the wrong content would render for
 // that tab. The smoke test catches that drift at the load boundary
@@ -47,7 +47,7 @@ sandbox.window.addEventListener = () => {};
 
 vm.createContext(sandbox);
 
-// Load order mirrors the entry-campaign.js chain: leaf helpers first,
+// Load order mirrors the src/campaign/main.tsx chain: leaf helpers first,
 // then the tab registry, then the tab modules that self-register against
 // it. Each tab IIFE calls Tabs.register(...) at the bottom, so simply
 // loading the file is enough to populate the registry.
@@ -101,7 +101,7 @@ ok('Tabs.render is a function', typeof Tabs?.render === 'function');
 ok('Tabs.ids is a function', typeof Tabs?.ids === 'function');
 
 // 2. The canonical tabs self-registered on module load. If any of the
-//    tab modules failed to import (e.g. dropped from entry-campaign.js
+//    tab modules failed to import (e.g. dropped from src/campaign/main.tsx
 //    after a refactor), at least one of these checks will fail.
 const REQUIRED_TABS = ['roster', 'sideForge', 'oracleForge', 'worldMap', 'worldActivities'];
 for (const id of REQUIRED_TABS) {

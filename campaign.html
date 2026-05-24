@@ -22,71 +22,7 @@
   <link rel="stylesheet" href="css/responsive.css?v=responsive-20260523">
 </head>
 <body class="campaign-page">
-  <div id="campaign-root" class="campaign-root">
-    <div class="campaign-loading">Loading Campaign Mode...</div>
-  </div>
-
-  <button type="button" class="ku-help-fab" id="ku-help-fab"
-          aria-label="Open quick guide" aria-expanded="false"
-          aria-controls="ku-help-popover">?</button>
-  <aside class="ku-help-popover" id="ku-help-popover" role="dialog"
-         aria-labelledby="ku-help-popover-title" aria-hidden="true">
-    <div class="ku-help-popover-head">
-      <h3 id="ku-help-popover-title">Campaign Quick Guide</h3>
-      <button type="button" class="ku-help-popover-close"
-              data-ku-help-close aria-label="Close quick guide"></button>
-    </div>
-    <ol>
-      <li><b>World</b> Switch between Haven, Earth, Zombie World, and Bazaar; each world loads its own story/activity/map content.</li>
-      <li><b>Story</b> Main arc chapter files, active VN sequence, replay, manual notes, and story summary live here.</li>
-      <li><b>Quest / Scavenge</b> Haven keeps classic quests. Zombie presents this as scavenging/survival runs. Earth and Bazaar use story, events, maps, and activities instead.</li>
-      <li><b>Event</b> Only character events, special events, and side stories live here. Random events moved out.</li>
-      <li><b>Activities</b> Hub, oracle/manual event notes, farm, forge, cooking, shops, rest, and inventory live here.</li>
-      <li><b>Manual Control</b> Use Current Run, Party, Logs, Settings, and each tab's manual buttons whenever you want GM control.</li>
-      <li><b>Combat Return</b> Campaign battles open the Combat screen and return results here automatically.</li>
-    </ol>
-  </aside>
-
-  <script>
-    (function () {
-      function bindHelpFab() {
-        var fab = document.getElementById('ku-help-fab');
-        var pop = document.getElementById('ku-help-popover');
-        if (!fab || !pop) return;
-        function setOpen(open) {
-          pop.dataset.open = open ? 'true' : 'false';
-          pop.setAttribute('aria-hidden', open ? 'false' : 'true');
-          fab.setAttribute('aria-expanded', open ? 'true' : 'false');
-        }
-        fab.addEventListener('click', function () {
-          setOpen(pop.dataset.open !== 'true');
-        });
-        pop.querySelectorAll('[data-ku-help-close]').forEach(function (btn) {
-          btn.addEventListener('click', function () { setOpen(false); });
-        });
-        document.addEventListener('keydown', function (event) {
-          if (event.key === 'Escape' && pop.dataset.open === 'true') setOpen(false);
-        });
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindHelpFab);
-      } else {
-        bindHelpFab();
-      }
-    })();
-  </script>
-
-  <script type="module" src="./src/entry-campaign.js"></script>
-
-  <script type="module">
-    document.addEventListener('DOMContentLoaded', async () => {
-      await window.CJS.CampaignUI.init(document.getElementById('campaign-root'));
-      window.CJS.ScenePlayer?.wireCampaign?.();
-      window.CJS.CampaignSequenceVN?.init?.();
-      if (window.CJS.L2DCompanion) {
-        window.CJS.L2DCompanion.init({ mode: 'campaign' }).catch(err => console.warn('L2D init:', err));
-      }
-    });
-  </script>
+  <div id="campaign-mount"></div>
+  <script type="module" src="./src/campaign/main.tsx"></script>
 </body>
 </html>

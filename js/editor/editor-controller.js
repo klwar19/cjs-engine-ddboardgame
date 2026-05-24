@@ -890,3 +890,7 @@
 
   boot();
 })();
+
+// Marker export so this file is treated as an ES module (the controller is
+// pure side-effects; the empty object is just to satisfy isolatedModules).
+export {};

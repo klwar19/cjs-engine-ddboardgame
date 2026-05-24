@@ -1,0 +1,51 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "../../js/core/constants.js";
+import "../../js/core/formulas.js";
+import "../../js/core/dice.js";
+import "../../js/core/undo-manager.js";
+import "../../js/core/state-tools.js";
+import "../../js/core/data-store.js";
+import "../../js/core/save-manager.js";
+import "../../js/core/content-manager.js";
+import "../../js/core/skill-resolver.js";
+import "../../js/effects/value-calc.js";
+import "../../js/effects/conditions.js";
+import "../../js/effects/effect-registry.js";
+import "../../js/ui/ui-helpers.js";
+import "../../js/ui/ui-icons.js";
+import "../../js/ui/portrait-picker.js";
+import "../../js/ui/audio-manager.js";
+import "../../js/builders/effect-editor.js";
+import "../../js/builders/status-editor.js";
+import "../../js/builders/passive-editor.js";
+import "../../js/builders/skill-editor.js";
+import "../../js/builders/job-editor.js";
+import "../../js/services/persona-service.js";
+import "../../js/services/content-validator.js";
+import "../../js/services/data-hot-reload.js";
+import "../../js/services/dev-console.js";
+import "../../js/builders/persona-editor.js";
+import "../../js/builders/item-editor.js";
+import "../../js/builders/simple-collection-editor.js";
+import "../../js/builders/char-editor.js";
+import "../../js/builders/monster-editor.js";
+import "../../js/builders/encounter-editor.js";
+import "../../js/builders/campaign-editor.js";
+import "../../js/builders/audio-library.js";
+import "../../js/ui/data-browser.js";
+import { markEmbeddedIfNeeded } from "../shared/embed";
+import { EditorPage } from "./EditorPage";
+
+markEmbeddedIfNeeded();
+
+const container = document.getElementById("editor-root");
+if (!container) {
+  throw new Error("Editor mount node #editor-root not found");
+}
+
+createRoot(container).render(
+  <StrictMode>
+    <EditorPage />
+  </StrictMode>
+);
