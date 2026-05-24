@@ -1,4 +1,3 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../../js/core/constants.js";
 import "../../js/core/formulas.js";
@@ -44,8 +43,7 @@ if (!container) {
   throw new Error("Editor mount node #editor-root not found");
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <EditorPage />
-  </StrictMode>
-);
+// Plain root (no StrictMode): the dynamic-imported editor-controller IIFE
+// binds DOM event handlers; under StrictMode dev double-mount the same
+// useEffect would fire twice and attempt to re-import it.
+createRoot(container).render(<EditorPage />);

@@ -1,4 +1,3 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../../js/core/constants.js";
 import "../../js/core/formulas.js";
@@ -94,8 +93,7 @@ if (!container) {
   throw new Error("Campaign mount node #campaign-mount not found");
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <CampaignPage />
-  </StrictMode>
-);
+// Plain root (no StrictMode): CampaignUI.init binds events and subscribes
+// to CampaignState imperatively, which would double-fire under
+// StrictMode's dev double-mount.
+createRoot(container).render(<CampaignPage />);
