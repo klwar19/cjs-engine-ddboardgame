@@ -107,7 +107,6 @@ export interface CjsEditor {
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  CharEditor?: BuilderApi;
   MonsterEditor?: BuilderApi;
   EncounterEditor?: BuilderApi;
   CampaignEditor?: BuilderApi;
@@ -152,8 +151,6 @@ export type PanelId =
 export function builderFor(panel: PanelId): BuilderApi | undefined {
   const c = getEditorCjs();
   switch (panel) {
-    case "characters":
-      return c.CharEditor;
     case "monsters":
       return c.MonsterEditor;
     case "encounters":

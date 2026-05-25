@@ -173,12 +173,15 @@ export interface CjsConstants {
   CONDITION_DEFS: ConditionDef[];
   CLEANSE_LABELS: Record<string, CleanseLabel>;
   RANKS?: string[];
-  RANK_DATA?: Record<string, unknown>;
   EQUIPMENT_SLOTS?: string[];
   WEAPON_TYPES?: string[];
   ARMOR_TYPES?: string[];
   ACCESSORY_TYPES?: string[];
-  UNIT_SIZES?: string[];
+  UNIT_SIZES?: Record<string, { w: number; h: number; label: string }>;
+  RANK_DATA?: Record<
+    string,
+    { statMin: number; statMax: number; totalSpecial: number; [k: string]: unknown }
+  >;
   MOVEMENT_DEFAULTS?: Record<string, unknown>;
   COLLISION?: Record<string, unknown>;
   LINE_OF_SIGHT?: Record<string, unknown>;
@@ -259,6 +262,56 @@ export function constants(): CjsConstants {
   const c = (cjs() as unknown as { CONST?: CjsConstants }).CONST;
   if (!c) throw new Error("CJS.CONST is not initialized");
   return c;
+}
+
+export interface FormulasApi {
+  calcMaxHP: (
+    stats: Record<string, number>,
+    rank: string,
+    context?: Record<string, unknown>
+  ) => number;
+  calcMaxMP: (stats: Record<string, number>, rank: string) => number;
+  calcPhysicalDR: (stats: Record<string, number>) => number;
+  calcMagicDR: (stats: Record<string, number>) => number;
+  calcChaosDR: (stats: Record<string, number>) => number;
+  calcCritChance: (luck: number, critBonus: number) => number;
+  calcMovement: (baseMovement: number, movementBonus: number) => number;
+  getSkillMaxLevel?: (skill: unknown) => number;
+  getNextSkillPerk?: (skill: unknown, level: number) => { level: number; description?: string } | null;
+  getEarnedSkillPerks?: (
+    skill: unknown,
+    level: number
+  ) => Array<{ level: number; description?: string }>;
+}
+
+export function formulas(): FormulasApi {
+  const f = (cjs() as unknown as { Formulas?: FormulasApi }).Formulas;
+  if (!f) throw new Error("CJS.Formulas is not initialized");
+  return f;
+}
+
+export interface PersonaServiceApi {
+  personasForCharacter: (charId: string) => Array<{
+    id: string;
+    name?: string;
+    icon?: string;
+    world?: string;
+    unlock?: {
+      default?: boolean;
+      requiresChapter?: number;
+      requiresPhaseNumber?: number;
+      requiresFlag?: string;
+    };
+    statOverrides?: Record<string, number>;
+    defaultJob?: string;
+  }>;
+}
+
+export function personaService(): PersonaServiceApi | null {
+  return (
+    (cjs() as unknown as { PersonaService?: PersonaServiceApi }).PersonaService ||
+    null
+  );
 }
 
 export interface PortraitWidget {

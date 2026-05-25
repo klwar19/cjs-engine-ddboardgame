@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { BaseEntity, Effect, PortraitWidget } from "./cjs";
-import { cm, constants, effectRegistry, portraitPicker, ui } from "./cjs";
+import { cm, constants, ds, effectRegistry, portraitPicker, ui } from "./cjs";
 
 // ── INTERNAL HTML PARSING HELPERS ────────────────────────────────────
 function renderRawHtml(html: string): ReactNode {
@@ -696,6 +696,157 @@ export function EffectListBuilder({
       </button>
       {/* editingIndex tracked for cleanup but not visually consumed */}
       {editingIndex === -1 ? null : null}
+    </div>
+  );
+}
+
+// ── GENERIC REFERENCE PICKER MODAL ──────────────────────────────────
+// Opens a modal listing items from a DataStore collection, calls
+// onPick(item) when a row is clicked. Used for items / passives / jobs
+// / skills pickers in character / monster editors.
+function ReferencePickerModal({
+  type,
+  label,
+  onPick,
+  onClose
+}: {
+  type: string;
+  label: string;
+  onPick: (item: BaseEntity) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const items = useMemo<BaseEntity[]>(
+    () => (search ? ds().search<BaseEntity>(type, search) : ds().getAllAsArray<BaseEntity>(type)),
+    [search, type]
+  );
+  return (
+    <div>
+      <input
+        type="search"
+        placeholder={`Search ${label}s...`}
+        style={{ width: "100%", marginBottom: 8 }}
+        value={search}
+        onChange={(e) => setSearch(e.currentTarget.value)}
+        autoFocus
+      />
+      <div className="data-list" style={{ maxHeight: 350 }}>
+        {items.length === 0 ? (
+          <div className="data-list-empty">None found</div>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className="data-list-item"
+              onClick={() => {
+                onPick(item);
+                onClose();
+              }}
+            >
+              <span className="item-icon">{item.icon || "✦"}</span>
+              <div>
+                <div className="item-name">{item.name || item.id}</div>
+                <div className="item-sub">
+                  {(item.description || "").slice(0, 60)}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function openReferencePicker(
+  type: string,
+  label: string,
+  onPick: (item: BaseEntity) => void
+) {
+  void import("react-dom/client").then(({ createRoot }) => {
+    const mount = document.createElement("div");
+    let overlay: HTMLElement | null = null;
+    const close = () => {
+      if (overlay) ui().closeModal(overlay);
+    };
+    const root = createRoot(mount);
+    root.render(
+      <ReferencePickerModal
+        type={type}
+        label={label}
+        onPick={onPick}
+        onClose={close}
+      />
+    );
+    overlay = ui().openModal({
+      title: `Pick ${label}`,
+      content: mount,
+      width: "550px",
+      onClose: () => {
+        try { root.unmount(); } catch { /* ignore */ }
+      }
+    });
+  });
+}
+
+// ── REFERENCE LIST (id-only) ────────────────────────────────────────
+// Chip list of DataStore ids for a given collection (items / passives /
+// jobs). Resolves each chip against DS().get for icon/name display.
+export function ReferenceList({
+  type,
+  label,
+  ids,
+  onChange
+}: {
+  type: string;
+  label: string;
+  ids: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  return (
+    <div>
+      {ids.map((id, i) => {
+        const item = ds().get<BaseEntity>(type, id);
+        return (
+          <div key={`${id}-${i}`} className="effect-chip">
+            {item ? (
+              <>
+                <span className="chip-icon">{item.icon || "✦"}</span>
+                <span className="chip-name">{item.name || item.id}</span>
+                <span className="chip-desc">
+                  {(item.description || "").slice(0, 50) || item.id}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="chip-icon">⚠️</span>
+                <span className="chip-name">{id}</span>
+                <span className="chip-desc" style={{ color: "var(--red)" }}>
+                  Not found
+                </span>
+              </>
+            )}
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => onChange(ids.filter((_, idx) => idx !== i))}
+            >
+              ❌
+            </button>
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        className="btn btn-ghost btn-sm"
+        onClick={() =>
+          openReferencePicker(type, label, (picked) => {
+            if (!ids.includes(picked.id)) onChange([...ids, picked.id]);
+          })
+        }
+      >
+        + Add {label}
+      </button>
     </div>
   );
 }
