@@ -43,7 +43,8 @@ if (!container) {
   throw new Error("Editor mount node #editor-root not found");
 }
 
-// Plain root (no StrictMode): the dynamic-imported editor-controller IIFE
-// binds DOM event handlers; under StrictMode dev double-mount the same
-// useEffect would fire twice and attempt to re-import it.
+// Plain root (no StrictMode): the underlying vanilla builder modules
+// (CharEditor, MonsterEditor, etc.) mount imperatively into their panel
+// DIVs; under StrictMode dev double-mount their useEffect would re-mount
+// them and break their internal state.
 createRoot(container).render(<EditorPage />);
