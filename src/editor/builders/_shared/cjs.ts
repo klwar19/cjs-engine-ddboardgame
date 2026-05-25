@@ -154,6 +154,8 @@ export interface CjsConstants {
   STATUS_CATEGORIES?: Record<string, { name: string; color: string }>;
   QTE_TYPES?: string[];
   QTE_DIFFICULTIES?: string[];
+  RARITIES?: string[];
+  RARITY_COLORS?: Record<string, string>;
   PROGRESSION?: {
     skillApThresholds?: number[];
     charXpThresholds?: number[];
@@ -257,6 +259,31 @@ export function constants(): CjsConstants {
   const c = (cjs() as unknown as { CONST?: CjsConstants }).CONST;
   if (!c) throw new Error("CJS.CONST is not initialized");
   return c;
+}
+
+export interface PortraitWidget {
+  el: HTMLElement;
+  getValue: () => string;
+  getFocus: () => unknown;
+  setFallbackIcon: (icon: string) => void;
+}
+
+export interface PortraitPickerApi {
+  loadManifest: () => Promise<unknown>;
+  createWidget: (opts: {
+    currentPath?: string;
+    currentFocus?: unknown;
+    category?: string;
+    id?: string;
+    name?: string;
+    fallbackIcon?: string;
+  }) => PortraitWidget;
+}
+
+export function portraitPicker(): PortraitPickerApi | null {
+  return (
+    (cjs() as unknown as { PortraitPicker?: PortraitPickerApi }).PortraitPicker || null
+  );
 }
 
 export interface AudioManagerApi {

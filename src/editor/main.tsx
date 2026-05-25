@@ -19,7 +19,6 @@ import "../../js/services/persona-service.js";
 import "../../js/services/content-validator.js";
 import "../../js/services/data-hot-reload.js";
 import "../../js/services/dev-console.js";
-import "../../js/builders/item-editor.js";
 import "../../js/builders/simple-collection-editor.js";
 import "../../js/builders/char-editor.js";
 import "../../js/builders/monster-editor.js";

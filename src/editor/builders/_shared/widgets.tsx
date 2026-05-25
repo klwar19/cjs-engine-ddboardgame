@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import type { BaseEntity, Effect } from "./cjs";
-import { cm, constants, effectRegistry, ui } from "./cjs";
+import type { BaseEntity, Effect, PortraitWidget } from "./cjs";
+import { cm, constants, effectRegistry, portraitPicker, ui } from "./cjs";
 
 // ── INTERNAL HTML PARSING HELPERS ────────────────────────────────────
 function renderRawHtml(html: string): ReactNode {
@@ -262,6 +262,64 @@ export function useStableHandler<T extends (...args: never[]) => unknown>(
     ref.current = handler;
   });
   return useMemo(() => ((...args) => ref.current(...args)) as T, []);
+}
+
+// ── PORTRAIT FIELD ───────────────────────────────────────────────────
+// Thin React wrapper around the vanilla CJS.PortraitPicker widget. The
+// imperative widget owns its own DOM and exposes getValue/getFocus; we
+// give it a host div, store a ref to the widget so callers can read
+// the current path/focus on save, and let the fallback icon track an
+// external value (usually the item icon input).
+export function PortraitField({
+  currentPath,
+  currentFocus,
+  category,
+  id,
+  name,
+  fallbackIcon,
+  widgetRef
+}: {
+  currentPath?: string;
+  currentFocus?: unknown;
+  category?: string;
+  id?: string;
+  name?: string;
+  fallbackIcon?: string;
+  widgetRef: { current: PortraitWidget | null };
+}) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const PP = portraitPicker();
+    if (!PP) return;
+    const widget = PP.createWidget({
+      currentPath,
+      currentFocus,
+      category,
+      id,
+      name,
+      fallbackIcon
+    });
+    host.appendChild(widget.el);
+    widgetRef.current = widget;
+    return () => {
+      widgetRef.current = null;
+      try { host.removeChild(widget.el); } catch { /* ignore */ }
+    };
+    // Mount-once: subsequent prop changes are applied via setFallbackIcon below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync fallback icon when the parent input changes.
+  useEffect(() => {
+    if (widgetRef.current && fallbackIcon != null) {
+      widgetRef.current.setFallbackIcon(fallbackIcon || "?");
+    }
+  }, [fallbackIcon, widgetRef]);
+
+  return <div ref={hostRef} />;
 }
 
 // ── EFFECT REF TYPES ────────────────────────────────────────────────
