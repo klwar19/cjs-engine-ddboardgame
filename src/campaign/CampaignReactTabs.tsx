@@ -5,6 +5,13 @@ import { CampaignSettingsTab } from "./tabs/CampaignSettingsTab";
 import { CampaignLogsTab } from "./tabs/CampaignLogsTab";
 import { CampaignRosterTab } from "./tabs/CampaignRosterTab";
 import { CampaignWorldMapTab, CampaignWorldActivitiesTab } from "./tabs/CampaignWorldMapTab";
+import {
+  CampaignSideForgeTab,
+  CampaignQuestChainsTab,
+  CampaignOracleForgeTab,
+  CampaignBattleSetsTab,
+  CampaignMapSeedsTab
+} from "./tabs/CampaignHubTabs";
 
 // Registry of React components that own a migrated campaign tab. The
 // matching vanilla-side tab registration lives in
@@ -16,7 +23,12 @@ const REACT_TAB_COMPONENTS: Readonly<
   logs: (props) => <CampaignLogsTab {...props} />,
   roster: (props) => <CampaignRosterTab {...props} />,
   worldMap: (props) => <CampaignWorldMapTab {...props} />,
-  worldActivities: (props) => <CampaignWorldActivitiesTab {...props} />
+  worldActivities: (props) => <CampaignWorldActivitiesTab {...props} />,
+  sideForge: (props) => <CampaignSideForgeTab {...props} />,
+  questChains: (props) => <CampaignQuestChainsTab {...props} />,
+  oracleForge: (props) => <CampaignOracleForgeTab {...props} />,
+  battleSets: (props) => <CampaignBattleSetsTab {...props} />,
+  mapSeeds: (props) => <CampaignMapSeedsTab {...props} />
 };
 
 // Bridges React-owned tabs into the vanilla shell. After every vanilla

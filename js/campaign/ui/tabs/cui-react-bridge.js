@@ -65,4 +65,23 @@ window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
   Tabs.register('worldActivities', {
     render: () => mount('worldActivities')
   });
+
+  // Hub-family tabs: cui-hub-tab.js registers each of these with a
+  // vanilla string renderer; the React bridge takes over the placeholder
+  // so the hub-family migration can happen tab-by-tab from JSX side.
+  Tabs.register('sideForge', {
+    render: () => mount('sideForge')
+  });
+  Tabs.register('questChains', {
+    render: () => mount('questChains')
+  });
+  Tabs.register('oracleForge', {
+    render: () => mount('oracleForge')
+  });
+  Tabs.register('battleSets', {
+    render: () => mount('battleSets')
+  });
+  Tabs.register('mapSeeds', {
+    render: () => mount('mapSeeds')
+  });
 })();

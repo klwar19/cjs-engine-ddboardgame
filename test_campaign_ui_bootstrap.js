@@ -104,21 +104,14 @@ ok('Tabs.ids is a function', typeof Tabs?.ids === 'function');
 // 2. The canonical tabs self-registered on module load. If any of the
 //    tab modules failed to import (e.g. dropped from src/campaign/main.tsx
 //    after a refactor), at least one of these checks will fail.
-// Tabs still owned by vanilla render (the registry returns their HTML
-// directly). Tabs the React bridge has taken over are NOT in this list.
-const REQUIRED_TABS = ['sideForge', 'oracleForge'];
-for (const id of REQUIRED_TABS) {
-  ok('tab "' + id + '" is registered', Tabs.has(id));
-  const def = Tabs.get(id);
-  ok('tab "' + id + '" has a render function', typeof def?.render === 'function');
-}
-
-// React-owned tabs register a stable mount-point placeholder; the React
-// shell portals the actual component into the div on each vanilla
-// render. `roster`, `worldMap`, `worldActivities` end up here because
-// cui-react-bridge.js re-registers them AFTER the per-domain tab
-// modules — Map.set wins.
-const REACT_TABS = ['settings', 'logs', 'roster', 'worldMap', 'worldActivities'];
+// All previously-vanilla tabs the React bridge has taken over.
+// cui-react-bridge.js loads AFTER each per-domain tab module so its
+// re-registration wins on Map.set.
+const REACT_TABS = [
+  'settings', 'logs', 'roster',
+  'worldMap', 'worldActivities',
+  'sideForge', 'questChains', 'oracleForge', 'battleSets', 'mapSeeds'
+];
 for (const id of REACT_TABS) {
   ok('React tab "' + id + '" is registered', Tabs.has(id));
   const html = Tabs.render(id, { currentWorld: 'haven' }, {});
