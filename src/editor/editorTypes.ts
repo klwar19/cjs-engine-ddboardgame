@@ -107,7 +107,6 @@ export interface CjsEditor {
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  PersonaEditor?: BuilderApi;
   ItemEditor?: BuilderApi;
   SimpleCollectionEditor?: {
     food: BuilderApi;
@@ -159,8 +158,6 @@ export type PanelId =
 export function builderFor(panel: PanelId): BuilderApi | undefined {
   const c = getEditorCjs();
   switch (panel) {
-    case "personas":
-      return c.PersonaEditor;
     case "items":
       return c.ItemEditor;
     case "food":
