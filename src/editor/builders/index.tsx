@@ -9,11 +9,13 @@
 import type { ComponentType } from "react";
 import type { PanelId } from "../editorTypes";
 import { EffectEditor } from "./EffectEditor";
+import { PassiveEditor } from "./PassiveEditor";
 import { StatusEditor } from "./StatusEditor";
 
 export const REACT_BUILDERS: Partial<Record<PanelId, ComponentType>> = {
   effects: EffectEditor,
-  statuses: StatusEditor
+  statuses: StatusEditor,
+  passives: PassiveEditor
 };
 
 export function getReactBuilder(panel: PanelId): ComponentType | undefined {

@@ -152,6 +152,20 @@ export interface CjsConstants {
   VALUE_SOURCES: string[];
   STATUS_DEFINITIONS: Record<string, StatusDef>;
   STATUS_CATEGORIES?: Record<string, { name: string; color: string }>;
+  PROGRESSION?: {
+    skillApThresholds?: number[];
+    charXpThresholds?: number[];
+    jobXpThresholds?: number[];
+    skillMaxLevelDefault?: number;
+    skillMaxLevelCap?: number;
+    passiveMaxRankDefault?: number;
+    passiveMaxRankCap?: number;
+    passiveRankValuePerRank?: number;
+    passiveRankMaterialDefault?: string;
+    charMaxLevel?: number;
+    jobMaxLevelDefault?: number;
+    [k: string]: unknown;
+  };
   CONDITION_DEFS: ConditionDef[];
   CLEANSE_LABELS: Record<string, CleanseLabel>;
   RANKS?: string[];
