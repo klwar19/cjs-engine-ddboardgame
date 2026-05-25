@@ -353,10 +353,41 @@ export function portraitPicker(): PortraitPickerApi | null {
   );
 }
 
+export interface AudioManifest {
+  sfx?: Record<string, unknown>;
+  bgm?: Record<string, unknown>;
+  music?: Record<string, unknown>;
+  sfxSlots?: Record<string, { label?: string; path?: string }>;
+  [k: string]: unknown;
+}
+
 export interface AudioManagerApi {
   loadManifest: () => Promise<unknown>;
-  getManifest: () => { sfx?: Record<string, unknown>; music?: Record<string, unknown> };
+  getManifest: () => AudioManifest;
   playSfx: (key: string, opts?: Record<string, unknown>) => void;
+  playBgm?: (key: string, opts?: Record<string, unknown>) => void;
+}
+
+export interface SaveManagerExtended {
+  hasGitHubToken: () => boolean;
+  fileToBase64: (file: File) => Promise<string>;
+  uploadBinaryFileToGitHub: (
+    path: string,
+    base64: string,
+    opts?: { message?: string }
+  ) => Promise<unknown>;
+  saveTextFileToGitHub: (
+    path: string,
+    text: string,
+    opts?: { message?: string }
+  ) => Promise<unknown>;
+}
+
+export function saveManagerExtended(): SaveManagerExtended | null {
+  return (
+    (cjs() as unknown as { SaveManager?: SaveManagerExtended }).SaveManager ||
+    null
+  );
 }
 
 export function audioManager(): AudioManagerApi | null {

@@ -8,6 +8,7 @@
 
 import type { ComponentType } from "react";
 import type { PanelId } from "../editorTypes";
+import { AudioLibrary } from "./AudioLibrary";
 import { CampaignEditor } from "./CampaignEditor";
 import { CharEditor } from "./CharEditor";
 import { DataBrowser } from "./DataBrowser";
@@ -41,7 +42,8 @@ export const REACT_BUILDERS: Partial<Record<PanelId, ComponentType>> = {
   monsters: MonsterEditor,
   encounters: EncounterEditor,
   campaign: CampaignEditor,
-  browser: DataBrowser
+  browser: DataBrowser,
+  audio: AudioLibrary
 };
 
 export function getReactBuilder(panel: PanelId): ComponentType | undefined {

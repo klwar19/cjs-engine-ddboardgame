@@ -5,7 +5,6 @@ import {
   useRef,
   useState
 } from "react";
-import { BuilderPanel } from "./BuilderPanel";
 import { getReactBuilder } from "./builders";
 import {
   editorStore,
@@ -150,8 +149,9 @@ export function EditorPage() {
   useEditorBoot();
 
   const [activePanel, setActivePanel] = useState<PanelId>("effects");
-  // Each panel-switch (or migration / import) bumps the panel epoch so the
-  // BuilderPanel for that ID re-inits the underlying vanilla builder.
+  // Each panel-switch (or migration / import) bumps the panel epoch so
+  // the React builder for that ID fully remounts (re-fetching DataStore
+  // snapshots and resetting local form state).
   const [panelEpoch, setPanelEpoch] = useState<Record<PanelId, number>>({
     effects: 0,
     statuses: 0,
@@ -913,10 +913,10 @@ export function EditorPage() {
                 if (panel === activePanel) return;
                 setActivePanel(panel);
                 // Note: we do NOT bump panelEpoch on simple switches.
-                // The BuilderPanel useEffect calls refresh() when its
-                // `active` prop flips back to true, and we only force a
-                // full re-init when data shape changes (import, migrate,
-                // filter change) via resetAllPanels().
+                // React builders subscribe to DataStore changes
+                // themselves; we only force a full remount (via
+                // panelEpoch) when the data shape changes (import,
+                // migrate, filter change) through resetAllPanels().
               }}
             />
           ))}
@@ -944,23 +944,14 @@ export function EditorPage() {
             ] as PanelId[]
           ).map((panel) => {
             const ReactBuilder = getReactBuilder(panel);
-            if (ReactBuilder) {
-              return (
-                <div
-                  key={`${panel}:${panelEpoch[panel]}`}
-                  className={`editor-panel${panel === activePanel ? " active" : ""}`}
-                  id={`panel-${panel}`}
-                >
-                  {panel === activePanel ? <ReactBuilder /> : null}
-                </div>
-              );
-            }
             return (
-              <BuilderPanel
+              <div
                 key={`${panel}:${panelEpoch[panel]}`}
-                panel={panel}
-                active={panel === activePanel}
-              />
+                className={`editor-panel${panel === activePanel ? " active" : ""}`}
+                id={`panel-${panel}`}
+              >
+                {ReactBuilder && panel === activePanel ? <ReactBuilder /> : null}
+              </div>
             );
           })}
         </div>

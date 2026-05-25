@@ -96,18 +96,12 @@ export interface UndoManagerApi {
   clear?: () => void;
 }
 
-export interface BuilderApi {
-  init: (panel: HTMLElement) => void;
-  refresh?: () => void;
-}
-
 export interface CjsEditor {
   DataStore?: DataStoreApi;
   SaveManager?: SaveManagerApi;
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  AudioLibrary?: BuilderApi;
   PortraitPicker?: { loadManifest?: () => Promise<unknown> };
   CONST?: { STATUS_DEFINITIONS?: Record<string, Record<string, unknown>> };
 }
@@ -144,12 +138,3 @@ export type PanelId =
   | "browser"
   | "audio";
 
-export function builderFor(panel: PanelId): BuilderApi | undefined {
-  const c = getEditorCjs();
-  switch (panel) {
-    case "audio":
-      return c.AudioLibrary;
-    default:
-      return undefined;
-  }
-}
