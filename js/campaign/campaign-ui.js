@@ -824,6 +824,13 @@ window.CJS.CampaignUI = (() => {
       const html = Tabs.render(_activeTab, state, _tabHelpers());
       if (html != null) return html;
     }
+    // Tabs the React bridge has taken over (`settings`, `logs`,
+    // `roster`, `worldMap`, `worldActivities`, the hub family,
+    // `inventory`, `shops`, `craft`, `cook`, `farm`, `relationships`)
+    // never reach this switch — `Tabs.has(id)` returns true above and
+    // the early-return wins. Tabs that still render vanilla HTML live
+    // here until they migrate. Anything unrecognised falls back to
+    // Overview, which is safer than rendering nothing.
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
@@ -834,25 +841,11 @@ window.CJS.CampaignUI = (() => {
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'eventLog': return _renderEventLog(state);
-      case 'relationships': return window.CJS.RelationshipsTab
-        ? window.CJS.RelationshipsTab.render(state)
-        : '<div class="campaign-panel">Relationships UI not loaded.</div>';
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'inventory': return window.CJS.CampaignInventory.render();
-      case 'shops': return `${window.CJS.CampaignEconomy.renderRest()}${window.CJS.CampaignEconomy.renderShops()}`;
-      case 'craft': return window.CJS.PocketHaven.renderCraft();
-      case 'cook': return window.CJS.PocketHaven.renderCook();
-      case 'farm': return window.CJS.PocketHaven.renderFarm();
       case 'minigameTest': return _renderMiniGameTest(state);
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
-      // 'logs' and 'settings' are React-owned via the Tabs registry
-      // (see js/campaign/ui/tabs/cui-react-bridge.js). The branches that
-      // used to call `_renderLogPanel` / `_renderSettings` here are
-      // intentionally dropped — if `Tabs.has(id)` ever returns false for
-      // them we'd land on the default Overview, which is a safer failure
-      // mode than rendering nothing.
       case 'overview':
       default: return _renderOverview(state);
     }

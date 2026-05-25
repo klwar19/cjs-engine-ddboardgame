@@ -110,7 +110,8 @@ ok('Tabs.ids is a function', typeof Tabs?.ids === 'function');
 const REACT_TABS = [
   'settings', 'logs', 'roster',
   'worldMap', 'worldActivities',
-  'sideForge', 'questChains', 'oracleForge', 'battleSets', 'mapSeeds'
+  'sideForge', 'questChains', 'oracleForge', 'battleSets', 'mapSeeds',
+  'inventory', 'shops', 'craft', 'cook', 'farm', 'relationships'
 ];
 for (const id of REACT_TABS) {
   ok('React tab "' + id + '" is registered', Tabs.has(id));

@@ -84,4 +84,28 @@ window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
   Tabs.register('mapSeeds', {
     render: () => mount('mapSeeds')
   });
+
+  // External-module tabs: vanilla campaign-ui shell used to switch-case
+  // these into CampaignInventory / CampaignEconomy / PocketHaven /
+  // RelationshipsTab. The matching React wrappers in
+  // `src/campaign/tabs/CampaignExternalTabs.tsx` call into those same
+  // modules, so the data-campaign-action wiring inside is unchanged.
+  Tabs.register('inventory', {
+    render: () => mount('inventory')
+  });
+  Tabs.register('shops', {
+    render: () => mount('shops')
+  });
+  Tabs.register('craft', {
+    render: () => mount('craft')
+  });
+  Tabs.register('cook', {
+    render: () => mount('cook')
+  });
+  Tabs.register('farm', {
+    render: () => mount('farm')
+  });
+  Tabs.register('relationships', {
+    render: () => mount('relationships')
+  });
 })();
