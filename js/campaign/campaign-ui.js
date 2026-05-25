@@ -367,13 +367,11 @@ window.CJS.CampaignUI = (() => {
       </div>
     `;
 
-    const mapRegion = _root.querySelector('#campaign-map-region');
-    if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+    // The drawer / panel-layer / encounter flash UI all live OUTSIDE
+    // any React-owned tab placeholder, so they can bind immediately.
     if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
-    _bindRunPanel();
     _renderPanelLayer();
     _flashOnNewEncounter(state);
-    setTimeout(() => window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.(), 0);
 
     // Phase D React-tab bridge: notify any React-owned tab mounts that the
     // vanilla shell just blew away their previous DOM, so they can re-mount
@@ -384,6 +382,21 @@ window.CJS.CampaignUI = (() => {
         detail: { activeTab: _activeTab, activeMode: _activeMode }
       }));
     } catch (e) { /* CustomEvent unsupported in some test envs — ignore */ }
+
+    // The remaining post-render hooks query DOM that lives INSIDE a
+    // React-owned tab placeholder (#campaign-map-region inside maps,
+    // #campaign-beat-list inside scenarios, the story scene entry
+    // pop). React mounts the placeholder's contents in a microtask
+    // after the event dispatch above; a macrotask (setTimeout 0)
+    // runs after that microtask, so the queries below see the full
+    // post-mount DOM. The same hooks fire for the still-vanilla
+    // shell parts (header, sub-tabs) without further change.
+    setTimeout(() => {
+      const mapRegion = _root.querySelector('#campaign-map-region');
+      if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+      _bindRunPanel();
+      window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
+    }, 0);
   }
 
   function _flashOnNewEncounter(state = {}) {
