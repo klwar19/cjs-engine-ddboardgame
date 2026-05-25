@@ -111,7 +111,13 @@ const REACT_TABS = [
   'settings', 'logs', 'roster',
   'worldMap', 'worldActivities',
   'sideForge', 'questChains', 'oracleForge', 'battleSets', 'mapSeeds',
-  'inventory', 'shops', 'craft', 'cook', 'farm', 'relationships'
+  'inventory', 'shops', 'craft', 'cook', 'farm', 'relationships',
+  // closure-private vanilla renderers exposed via
+  // CampaignUI.renderTabBody and re-registered through the bridge.
+  'worldGate', 'storyHome', 'storySummary', 'storyDirector',
+  'questHome', 'quests',
+  'eventHome', 'eventCharacter', 'eventSpecial', 'eventSide', 'eventLog',
+  'scenarios', 'maps', 'minigameTest', 'overview'
 ];
 for (const id of REACT_TABS) {
   ok('React tab "' + id + '" is registered', Tabs.has(id));

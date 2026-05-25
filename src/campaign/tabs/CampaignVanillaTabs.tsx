@@ -1,0 +1,96 @@
+import type { CampaignStateSnapshot } from "../store";
+
+// Wrappers for tabs whose body is still produced by a closure-private
+// `_render*` function inside `campaign-ui.js`. The vanilla side exposes
+// `CampaignUI.renderTabBody(tabId, state)` to bridge over the closure;
+// these React components just mount the resulting HTML so the rest of
+// the shell (header, mode bar, sub-tabs, command rail) can be wholly
+// React-owned without porting every inner renderer in one go.
+
+interface CampaignUIModule {
+  readonly renderTabBody: (tabId: string, state?: CampaignStateSnapshot) => string;
+}
+
+interface Cjs {
+  readonly CampaignUI?: CampaignUIModule;
+}
+
+function cjs(): Cjs {
+  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
+}
+
+interface Props {
+  readonly state: CampaignStateSnapshot;
+}
+
+function VanillaTab({
+  tabId,
+  state,
+  mountClass
+}: {
+  tabId: string;
+  state: CampaignStateSnapshot;
+  mountClass: string;
+}) {
+  const UI = cjs().CampaignUI;
+  if (!UI?.renderTabBody) {
+    return (
+      <section className="campaign-panel">
+        <div className="campaign-empty">Campaign shell still booting…</div>
+      </section>
+    );
+  }
+  let html: string;
+  try {
+    html = UI.renderTabBody(tabId, state);
+  } catch (error) {
+    console.error(`renderTabBody(${tabId}) failed:`, error);
+    html = `<section class="campaign-panel"><div class="campaign-empty">${tabId} render failed.</div></section>`;
+  }
+  return <div className={mountClass} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+export const CampaignWorldGateTab = ({ state }: Props) =>
+  <VanillaTab tabId="worldGate" state={state} mountClass="campaign-world-gate-react" />;
+
+export const CampaignStoryHomeTab = ({ state }: Props) =>
+  <VanillaTab tabId="storyHome" state={state} mountClass="campaign-story-home-react" />;
+
+export const CampaignStorySummaryTab = ({ state }: Props) =>
+  <VanillaTab tabId="storySummary" state={state} mountClass="campaign-story-summary-react" />;
+
+export const CampaignStoryDirectorTab = ({ state }: Props) =>
+  <VanillaTab tabId="storyDirector" state={state} mountClass="campaign-story-director-react" />;
+
+export const CampaignQuestHomeTab = ({ state }: Props) =>
+  <VanillaTab tabId="questHome" state={state} mountClass="campaign-quest-home-react" />;
+
+export const CampaignQuestsPanelTab = ({ state }: Props) =>
+  <VanillaTab tabId="quests" state={state} mountClass="campaign-quests-react" />;
+
+export const CampaignEventHomeTab = ({ state }: Props) =>
+  <VanillaTab tabId="eventHome" state={state} mountClass="campaign-event-home-react" />;
+
+export const CampaignEventCharacterTab = ({ state }: Props) =>
+  <VanillaTab tabId="eventCharacter" state={state} mountClass="campaign-event-character-react" />;
+
+export const CampaignEventSpecialTab = ({ state }: Props) =>
+  <VanillaTab tabId="eventSpecial" state={state} mountClass="campaign-event-special-react" />;
+
+export const CampaignEventSideTab = ({ state }: Props) =>
+  <VanillaTab tabId="eventSide" state={state} mountClass="campaign-event-side-react" />;
+
+export const CampaignEventLogTab = ({ state }: Props) =>
+  <VanillaTab tabId="eventLog" state={state} mountClass="campaign-event-log-react" />;
+
+export const CampaignScenariosTab = ({ state }: Props) =>
+  <VanillaTab tabId="scenarios" state={state} mountClass="campaign-scenarios-react" />;
+
+export const CampaignMapsTab = ({ state }: Props) =>
+  <VanillaTab tabId="maps" state={state} mountClass="campaign-maps-react" />;
+
+export const CampaignMinigameTestTab = ({ state }: Props) =>
+  <VanillaTab tabId="minigameTest" state={state} mountClass="campaign-minigame-test-react" />;
+
+export const CampaignOverviewTab = ({ state }: Props) =>
+  <VanillaTab tabId="overview" state={state} mountClass="campaign-overview-react" />;

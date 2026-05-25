@@ -108,4 +108,20 @@ window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
   Tabs.register('relationships', {
     render: () => mount('relationships')
   });
+
+  // Closure-private vanilla renderers: these tabs are still implemented
+  // as `_render*` closures inside campaign-ui.js. `CampaignUI.renderTabBody`
+  // exposes them for the React wrappers in
+  // `src/campaign/tabs/CampaignVanillaTabs.tsx`. A future commit can
+  // promote each renderer out of the campaign-ui closure into its own
+  // TypeScript port without touching the bridge.
+  const VANILLA_BRIDGE_TABS = [
+    'worldGate', 'storyHome', 'storySummary', 'storyDirector',
+    'questHome', 'quests',
+    'eventHome', 'eventCharacter', 'eventSpecial', 'eventSide', 'eventLog',
+    'scenarios', 'maps', 'minigameTest', 'overview'
+  ];
+  for (const id of VANILLA_BRIDGE_TABS) {
+    Tabs.register(id, { render: () => mount(id) });
+  }
 })();

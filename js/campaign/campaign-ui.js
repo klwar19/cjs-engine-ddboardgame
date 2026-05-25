@@ -10776,6 +10776,33 @@ window.CJS.CampaignUI = (() => {
     return overlay;
   }
 
+  // Bridge entry for React tabs that wrap a closure-private vanilla
+  // renderer (worldGate, storyHome, questHome, eventHome, eventLog,
+  // storyDirector, scenarios, maps, quests, minigameTest, overview).
+  // Returns the HTML body string the matching _render* would produce
+  // when the shell renders that tab through the switch case below.
+  function renderTabBody(tabId, state = CS().getState()) {
+    if (!state) return '';
+    switch (tabId) {
+      case 'worldGate': return _renderWorldGate(state);
+      case 'storyHome': return _renderStoryHome(state);
+      case 'storySummary': return _renderStorySummary(state);
+      case 'questHome': return _renderQuestHome(state);
+      case 'eventHome':
+      case 'eventCharacter': return _renderEventTypeTab(state, 'character');
+      case 'eventSpecial': return _renderEventTypeTab(state, 'special');
+      case 'eventSide': return _renderEventTypeTab(state, 'side');
+      case 'eventLog': return _renderEventLog(state);
+      case 'storyDirector': return _renderStoryDirector(state);
+      case 'minigameTest': return _renderMiniGameTest(state);
+      case 'scenarios': return _renderScenarios(state);
+      case 'maps': return _renderRun(state);
+      case 'quests': return _renderQuestPanel(state);
+      case 'overview':
+      default: return _renderOverview(state);
+    }
+  }
+
   return Object.freeze({
     init,
     render,
@@ -10790,6 +10817,9 @@ window.CJS.CampaignUI = (() => {
     // (memberBase, memberStats, renderEquipmentLoadout, etc.). React tabs
     // call into these for the closure-private math + sub-renderers that
     // would be invasive to port one-by-one to TypeScript right now.
-    getTabHelpers: () => _tabHelpers()
+    getTabHelpers: () => _tabHelpers(),
+    // Returns the HTML body string for any closure-private vanilla
+    // renderer the React-tab bridge wraps.
+    renderTabBody
   });
 })();

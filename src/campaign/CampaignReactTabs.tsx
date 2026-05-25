@@ -20,6 +20,23 @@ import {
   CampaignFarmTab,
   CampaignRelationshipsTab
 } from "./tabs/CampaignExternalTabs";
+import {
+  CampaignWorldGateTab,
+  CampaignStoryHomeTab,
+  CampaignStorySummaryTab,
+  CampaignStoryDirectorTab,
+  CampaignQuestHomeTab,
+  CampaignQuestsPanelTab,
+  CampaignEventHomeTab,
+  CampaignEventCharacterTab,
+  CampaignEventSpecialTab,
+  CampaignEventSideTab,
+  CampaignEventLogTab,
+  CampaignScenariosTab,
+  CampaignMapsTab,
+  CampaignMinigameTestTab,
+  CampaignOverviewTab
+} from "./tabs/CampaignVanillaTabs";
 
 // Registry of React components that own a migrated campaign tab. The
 // matching vanilla-side tab registration lives in
@@ -42,7 +59,23 @@ const REACT_TAB_COMPONENTS: Readonly<
   craft: (props) => <CampaignCraftTab {...props} />,
   cook: (props) => <CampaignCookTab {...props} />,
   farm: (props) => <CampaignFarmTab {...props} />,
-  relationships: (props) => <CampaignRelationshipsTab {...props} />
+  relationships: (props) => <CampaignRelationshipsTab {...props} />,
+  // Closure-private vanilla renderers behind CampaignUI.renderTabBody.
+  worldGate: (props) => <CampaignWorldGateTab {...props} />,
+  storyHome: (props) => <CampaignStoryHomeTab {...props} />,
+  storySummary: (props) => <CampaignStorySummaryTab {...props} />,
+  storyDirector: (props) => <CampaignStoryDirectorTab {...props} />,
+  questHome: (props) => <CampaignQuestHomeTab {...props} />,
+  quests: (props) => <CampaignQuestsPanelTab {...props} />,
+  eventHome: (props) => <CampaignEventHomeTab {...props} />,
+  eventCharacter: (props) => <CampaignEventCharacterTab {...props} />,
+  eventSpecial: (props) => <CampaignEventSpecialTab {...props} />,
+  eventSide: (props) => <CampaignEventSideTab {...props} />,
+  eventLog: (props) => <CampaignEventLogTab {...props} />,
+  scenarios: (props) => <CampaignScenariosTab {...props} />,
+  maps: (props) => <CampaignMapsTab {...props} />,
+  minigameTest: (props) => <CampaignMinigameTestTab {...props} />,
+  overview: (props) => <CampaignOverviewTab {...props} />
 };
 
 // Bridges React-owned tabs into the vanilla shell. After every vanilla
