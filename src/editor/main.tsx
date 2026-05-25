@@ -20,7 +20,6 @@ import "../../js/services/content-validator.js";
 import "../../js/services/data-hot-reload.js";
 import "../../js/services/dev-console.js";
 import "../../js/builders/audio-library.js";
-import "../../js/ui/data-browser.js";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { EditorPage } from "./EditorPage";
 

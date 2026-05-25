@@ -107,7 +107,6 @@ export interface CjsEditor {
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  DataBrowser?: BuilderApi;
   AudioLibrary?: BuilderApi;
   PortraitPicker?: { loadManifest?: () => Promise<unknown> };
   CONST?: { STATUS_DEFINITIONS?: Record<string, Record<string, unknown>> };
@@ -148,8 +147,6 @@ export type PanelId =
 export function builderFor(panel: PanelId): BuilderApi | undefined {
   const c = getEditorCjs();
   switch (panel) {
-    case "browser":
-      return c.DataBrowser;
     case "audio":
       return c.AudioLibrary;
     default:
