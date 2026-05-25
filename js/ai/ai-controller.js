@@ -322,7 +322,44 @@ window.CJS.AIController = (() => {
   // When no rule matches (or unit has no rules), fall back to an archetype-
   // based default behavior.
   function _archetypeDefault(unit, ctx) {
-    const archetype = _normalizeArchetype(unit.behaviorAI || 'aggressive');
+    // Characters typically have no authored behaviorAI; treat a unit with
+    // a mostly-support skill kit as 'support' so a cleric on auto doesn't
+    // basic-attack while their tank dies. Monsters and units with an
+    // explicit archetype keep that archetype.
+    let archetype = _normalizeArchetype(unit.behaviorAI || 'aggressive');
+    if (!unit.behaviorAI && _inferSupportKit(unit)) {
+      archetype = 'support';
+    }
+
+    const SR = window.CJS.SkillResolver;
+    const readySkills = (unit.skills || [])
+      .map(entry => {
+        const sid = SR ? SR.getSkillId(entry) : (typeof entry === 'string' ? entry : entry.skillId);
+        return SR ? SR.resolveUnitSkill(unit, sid) : DS().get('skills', sid);
+      })
+      .filter(s => s && _canUseSkill(unit, s));
+
+    // ── Emergency heal preemption ────────────────────────────────────
+    // If any ally (or self) is critically wounded and we have a ready
+    // heal-type skill, use it BEFORE falling through to basic attack.
+    // Without this, the AI's "basic attack first" preference burns the
+    // turn on a chip-damage attack while an ally drops dead.
+    //
+    // Scoped to characters (no authored behaviorAI), inferred-support
+    // kits, and explicit support / summoner archetypes so authored
+    // monster behaviour is preserved. A monster with a heal skill in
+    // its kit can opt in by declaring behaviorAI: 'support'.
+    const wantsEmergencyHeal = !unit.behaviorAI || archetype === 'support' || archetype === 'summoner';
+    if (wantsEmergencyHeal) {
+      const critAlly = _criticallyWoundedAlly(unit, ctx);
+      if (critAlly) {
+        const healSkills = readySkills.filter(_isHealSkill);
+        for (const skill of healSkills) {
+          const decision = _firstSkillDecision(unit, skill, ['lowest_hp_ally', 'self'], ctx);
+          if (decision) return decision;
+        }
+      }
+    }
 
     // Try to attack an enemy in weapon range
     const AH = window.CJS.ActionHandler;
@@ -335,13 +372,6 @@ window.CJS.AIController = (() => {
     }
 
     // Try a ready skill (pick highest-power one)
-    const SR = window.CJS.SkillResolver;
-    const readySkills = (unit.skills || [])
-      .map(entry => {
-        const sid = SR ? SR.getSkillId(entry) : (typeof entry === 'string' ? entry : entry.skillId);
-        return SR ? SR.resolveUnitSkill(unit, sid) : DS().get('skills', sid);
-      })
-      .filter(s => s && _canUseSkill(unit, s));
     const skillTargetPrefs = _skillTargetPrefs(archetype, unit);
     for (const skill of _rankSkillsForArchetype(readySkills, archetype)) {
       const decision = _firstSkillDecision(unit, skill, _targetPrefsForSkill(skill, skillTargetPrefs), ctx);
@@ -358,6 +388,12 @@ window.CJS.AIController = (() => {
         const allyMove = _tryMoveToward(unit, 'pack_anchor_ally', ctx);
         if (allyMove) return allyMove;
       }
+      // Support units close the gap to allies (not enemies) when they
+      // have no offensive option in range — keeps them in heal range.
+      if (archetype === 'support' || archetype === 'summoner') {
+        const allyMove = _tryMoveToward(unit, 'lowest_hp_ally', ctx);
+        if (allyMove) return allyMove;
+      }
       const moveTarget = _moveTargetForArchetype(archetype);
       const mv = _tryMoveToward(unit, moveTarget, ctx)
         || (moveTarget !== 'nearest_enemy' ? _tryMoveToward(unit, 'nearest_enemy', ctx) : null);
@@ -370,6 +406,47 @@ window.CJS.AIController = (() => {
     }
 
     return { type: 'end_turn' };
+  }
+
+  // Returns true if the unit's equipped skill kit is dominated by heal /
+  // buff / shield skills. Used to infer 'support' archetype for player
+  // characters that don't author a behaviorAI value.
+  function _inferSupportKit(unit) {
+    const skills = unit.skills || [];
+    if (skills.length < 2) return false;
+    const SR = window.CJS.SkillResolver;
+    let supportCount = 0;
+    for (const entry of skills) {
+      const sid = SR ? SR.getSkillId(entry) : (typeof entry === 'string' ? entry : entry?.skillId);
+      const skill = SR ? SR.resolveUnitSkill(unit, sid) : DS().get('skills', sid);
+      if (!skill) continue;
+      const text = [skill.id, skill.name, skill.description, ...(skill.tags || [])]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (/(heal|regen|restore|mend|cure|shield|guard|buff|chant|raise|summon)/.test(text)
+          || (!skill.power && !skill.aoe)) {
+        supportCount += 1;
+      }
+    }
+    // 50%+ of equipped skills look like support
+    return supportCount * 2 >= skills.length;
+  }
+
+  // Returns the first ally (or self) below 30% HP. Used to trigger the
+  // emergency-heal preemption inside `_archetypeDefault`.
+  function _criticallyWoundedAlly(unit, ctx) {
+    const allies = ctx.allAllies || [];
+    for (const a of allies) {
+      if (!a || !a.maxHP) continue;
+      if ((a.currentHP || 0) / a.maxHP < 0.30) return a;
+    }
+    return null;
+  }
+
+  function _isHealSkill(skill) {
+    if (!skill) return false;
+    const text = [skill.id, skill.name, skill.description, ...(skill.tags || [])]
+      .filter(Boolean).join(' ').toLowerCase();
+    return /(heal|regen|restore|mend|cure)/.test(text);
   }
 
   function _canUseSkill(unit, skill) {

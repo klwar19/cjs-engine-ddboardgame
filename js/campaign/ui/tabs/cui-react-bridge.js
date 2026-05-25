@@ -44,4 +44,84 @@ window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
   Tabs.register('logs', {
     render: () => mount('logs')
   });
+
+  // `roster` is also registered by `cui-party-tab.js` at module-load
+  // time; this entry overwrites that registration (Map.set semantics)
+  // so the React-side bridge wins. The PartyTab module remains loaded
+  // — CampaignRosterTab.tsx calls into it to render each member's body
+  // until the full per-card JSX port lands in a follow-up.
+  Tabs.register('roster', {
+    render: () => mount('roster')
+  });
+
+  // World Map + World Activities follow the same override pattern. The
+  // CampaignWorldMap module produces both panels' inner HTML; the React
+  // wrapper just owns the mount point so a future JSX port can swap
+  // the SVG / activity-card body in place.
+  Tabs.register('worldMap', {
+    render: () => mount('worldMap')
+  });
+
+  Tabs.register('worldActivities', {
+    render: () => mount('worldActivities')
+  });
+
+  // Hub-family tabs: cui-hub-tab.js registers each of these with a
+  // vanilla string renderer; the React bridge takes over the placeholder
+  // so the hub-family migration can happen tab-by-tab from JSX side.
+  Tabs.register('sideForge', {
+    render: () => mount('sideForge')
+  });
+  Tabs.register('questChains', {
+    render: () => mount('questChains')
+  });
+  Tabs.register('oracleForge', {
+    render: () => mount('oracleForge')
+  });
+  Tabs.register('battleSets', {
+    render: () => mount('battleSets')
+  });
+  Tabs.register('mapSeeds', {
+    render: () => mount('mapSeeds')
+  });
+
+  // External-module tabs: vanilla campaign-ui shell used to switch-case
+  // these into CampaignInventory / CampaignEconomy / PocketHaven /
+  // RelationshipsTab. The matching React wrappers in
+  // `src/campaign/tabs/CampaignExternalTabs.tsx` call into those same
+  // modules, so the data-campaign-action wiring inside is unchanged.
+  Tabs.register('inventory', {
+    render: () => mount('inventory')
+  });
+  Tabs.register('shops', {
+    render: () => mount('shops')
+  });
+  Tabs.register('craft', {
+    render: () => mount('craft')
+  });
+  Tabs.register('cook', {
+    render: () => mount('cook')
+  });
+  Tabs.register('farm', {
+    render: () => mount('farm')
+  });
+  Tabs.register('relationships', {
+    render: () => mount('relationships')
+  });
+
+  // Closure-private vanilla renderers: these tabs are still implemented
+  // as `_render*` closures inside campaign-ui.js. `CampaignUI.renderTabBody`
+  // exposes them for the React wrappers in
+  // `src/campaign/tabs/CampaignVanillaTabs.tsx`. A future commit can
+  // promote each renderer out of the campaign-ui closure into its own
+  // TypeScript port without touching the bridge.
+  const VANILLA_BRIDGE_TABS = [
+    'worldGate', 'storyHome', 'storySummary', 'storyDirector',
+    'questHome', 'quests',
+    'eventHome', 'eventCharacter', 'eventSpecial', 'eventSide', 'eventLog',
+    'scenarios', 'maps', 'minigameTest', 'overview'
+  ];
+  for (const id of VANILLA_BRIDGE_TABS) {
+    Tabs.register(id, { render: () => mount(id) });
+  }
 })();

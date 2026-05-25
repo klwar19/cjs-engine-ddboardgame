@@ -367,13 +367,11 @@ window.CJS.CampaignUI = (() => {
       </div>
     `;
 
-    const mapRegion = _root.querySelector('#campaign-map-region');
-    if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+    // The drawer / panel-layer / encounter flash UI all live OUTSIDE
+    // any React-owned tab placeholder, so they can bind immediately.
     if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
-    _bindRunPanel();
     _renderPanelLayer();
     _flashOnNewEncounter(state);
-    setTimeout(() => window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.(), 0);
 
     // Phase D React-tab bridge: notify any React-owned tab mounts that the
     // vanilla shell just blew away their previous DOM, so they can re-mount
@@ -384,6 +382,21 @@ window.CJS.CampaignUI = (() => {
         detail: { activeTab: _activeTab, activeMode: _activeMode }
       }));
     } catch (e) { /* CustomEvent unsupported in some test envs — ignore */ }
+
+    // The remaining post-render hooks query DOM that lives INSIDE a
+    // React-owned tab placeholder (#campaign-map-region inside maps,
+    // #campaign-beat-list inside scenarios, the story scene entry
+    // pop). React mounts the placeholder's contents in a microtask
+    // after the event dispatch above; a macrotask (setTimeout 0)
+    // runs after that microtask, so the queries below see the full
+    // post-mount DOM. The same hooks fire for the still-vanilla
+    // shell parts (header, sub-tabs) without further change.
+    setTimeout(() => {
+      const mapRegion = _root.querySelector('#campaign-map-region');
+      if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+      _bindRunPanel();
+      window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
+    }, 0);
   }
 
   function _flashOnNewEncounter(state = {}) {
@@ -824,6 +837,13 @@ window.CJS.CampaignUI = (() => {
       const html = Tabs.render(_activeTab, state, _tabHelpers());
       if (html != null) return html;
     }
+    // Tabs the React bridge has taken over (`settings`, `logs`,
+    // `roster`, `worldMap`, `worldActivities`, the hub family,
+    // `inventory`, `shops`, `craft`, `cook`, `farm`, `relationships`)
+    // never reach this switch — `Tabs.has(id)` returns true above and
+    // the early-return wins. Tabs that still render vanilla HTML live
+    // here until they migrate. Anything unrecognised falls back to
+    // Overview, which is safer than rendering nothing.
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
@@ -834,25 +854,11 @@ window.CJS.CampaignUI = (() => {
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'eventLog': return _renderEventLog(state);
-      case 'relationships': return window.CJS.RelationshipsTab
-        ? window.CJS.RelationshipsTab.render(state)
-        : '<div class="campaign-panel">Relationships UI not loaded.</div>';
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'inventory': return window.CJS.CampaignInventory.render();
-      case 'shops': return `${window.CJS.CampaignEconomy.renderRest()}${window.CJS.CampaignEconomy.renderShops()}`;
-      case 'craft': return window.CJS.PocketHaven.renderCraft();
-      case 'cook': return window.CJS.PocketHaven.renderCook();
-      case 'farm': return window.CJS.PocketHaven.renderFarm();
       case 'minigameTest': return _renderMiniGameTest(state);
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
-      // 'logs' and 'settings' are React-owned via the Tabs registry
-      // (see js/campaign/ui/tabs/cui-react-bridge.js). The branches that
-      // used to call `_renderLogPanel` / `_renderSettings` here are
-      // intentionally dropped — if `Tabs.has(id)` ever returns false for
-      // them we'd land on the default Overview, which is a safer failure
-      // mode than rendering nothing.
       case 'overview':
       default: return _renderOverview(state);
     }
@@ -10783,6 +10789,33 @@ window.CJS.CampaignUI = (() => {
     return overlay;
   }
 
+  // Bridge entry for React tabs that wrap a closure-private vanilla
+  // renderer (worldGate, storyHome, questHome, eventHome, eventLog,
+  // storyDirector, scenarios, maps, quests, minigameTest, overview).
+  // Returns the HTML body string the matching _render* would produce
+  // when the shell renders that tab through the switch case below.
+  function renderTabBody(tabId, state = CS().getState()) {
+    if (!state) return '';
+    switch (tabId) {
+      case 'worldGate': return _renderWorldGate(state);
+      case 'storyHome': return _renderStoryHome(state);
+      case 'storySummary': return _renderStorySummary(state);
+      case 'questHome': return _renderQuestHome(state);
+      case 'eventHome':
+      case 'eventCharacter': return _renderEventTypeTab(state, 'character');
+      case 'eventSpecial': return _renderEventTypeTab(state, 'special');
+      case 'eventSide': return _renderEventTypeTab(state, 'side');
+      case 'eventLog': return _renderEventLog(state);
+      case 'storyDirector': return _renderStoryDirector(state);
+      case 'minigameTest': return _renderMiniGameTest(state);
+      case 'scenarios': return _renderScenarios(state);
+      case 'maps': return _renderRun(state);
+      case 'quests': return _renderQuestPanel(state);
+      case 'overview':
+      default: return _renderOverview(state);
+    }
+  }
+
   return Object.freeze({
     init,
     render,
@@ -10792,6 +10825,14 @@ window.CJS.CampaignUI = (() => {
     // Bridge surface for React-owned tabs (Phase D migration). Tabs that
     // have moved to React read engine state through these getters instead
     // of reaching into closure-private state.
-    getBootIncompatibleNotice: () => _bootIncompatibleNotice
+    getBootIncompatibleNotice: () => _bootIncompatibleNotice,
+    // Exposes the frozen helper bundle that vanilla tab modules consume
+    // (memberBase, memberStats, renderEquipmentLoadout, etc.). React tabs
+    // call into these for the closure-private math + sub-renderers that
+    // would be invasive to port one-by-one to TypeScript right now.
+    getTabHelpers: () => _tabHelpers(),
+    // Returns the HTML body string for any closure-private vanilla
+    // renderer the React-tab bridge wraps.
+    renderTabBody
   });
 })();

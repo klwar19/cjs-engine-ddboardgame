@@ -104,16 +104,21 @@ ok('Tabs.ids is a function', typeof Tabs?.ids === 'function');
 // 2. The canonical tabs self-registered on module load. If any of the
 //    tab modules failed to import (e.g. dropped from src/campaign/main.tsx
 //    after a refactor), at least one of these checks will fail.
-const REQUIRED_TABS = ['roster', 'sideForge', 'oracleForge', 'worldMap', 'worldActivities'];
-for (const id of REQUIRED_TABS) {
-  ok('tab "' + id + '" is registered', Tabs.has(id));
-  const def = Tabs.get(id);
-  ok('tab "' + id + '" has a render function', typeof def?.render === 'function');
-}
-
-// React-owned tabs register a stable mount-point placeholder; the React
-// shell portals the actual component into the div on each vanilla render.
-const REACT_TABS = ['settings', 'logs'];
+// All previously-vanilla tabs the React bridge has taken over.
+// cui-react-bridge.js loads AFTER each per-domain tab module so its
+// re-registration wins on Map.set.
+const REACT_TABS = [
+  'settings', 'logs', 'roster',
+  'worldMap', 'worldActivities',
+  'sideForge', 'questChains', 'oracleForge', 'battleSets', 'mapSeeds',
+  'inventory', 'shops', 'craft', 'cook', 'farm', 'relationships',
+  // closure-private vanilla renderers exposed via
+  // CampaignUI.renderTabBody and re-registered through the bridge.
+  'worldGate', 'storyHome', 'storySummary', 'storyDirector',
+  'questHome', 'quests',
+  'eventHome', 'eventCharacter', 'eventSpecial', 'eventSide', 'eventLog',
+  'scenarios', 'maps', 'minigameTest', 'overview'
+];
 for (const id of REACT_TABS) {
   ok('React tab "' + id + '" is registered', Tabs.has(id));
   const html = Tabs.render(id, { currentWorld: 'haven' }, {});
@@ -126,41 +131,16 @@ for (const id of REACT_TABS) {
 // 3. The tab modules also expose their public namespaces so the shell's
 //    closure delegators (HubTab.renderSideCard, PartyTab.openSkillPoolPicker,
 //    WorldMapTab.renderTravelMap) can keep calling into them by reference.
+//    The React tabs (CampaignRosterTab, CampaignWorldMapTab) also reach
+//    into these namespaces for the inner-card / inner-panel HTML.
 ok('PartyTab namespace exposed', !!CJS.CampaignUIInternal.PartyTab);
 ok('HubTab namespace exposed', !!CJS.CampaignUIInternal.HubTab);
 ok('WorldMapTab namespace exposed', !!CJS.CampaignUIInternal.WorldMapTab);
 
-// 4. End-to-end render through the registry. The world-map tab adapter
-//    is the thinnest registered renderer: when CampaignWorldMap is not
-//    loaded it returns a defensive "module not loaded" panel string. This
-//    stands in for the "campaign shell renders without errors" check —
-//    it proves Tabs.render(id, state, helpers) reaches a real renderer
-//    end-to-end without a full CampaignState wiring.
-const minimalState = { currentWorld: 'haven' };
-
-let worldMapHtml = null;
-let worldMapThrew = null;
-try { worldMapHtml = Tabs.render('worldMap', minimalState, {}); }
-catch (e) { worldMapThrew = e; }
-ok('worldMap render returns a string without throwing',
-   !worldMapThrew && typeof worldMapHtml === 'string' && worldMapHtml.length > 0,
-   worldMapThrew ? worldMapThrew.message : 'len=' + (worldMapHtml ? worldMapHtml.length : 0));
-ok('worldMap fallback contains the defensive panel marker',
-   typeof worldMapHtml === 'string' && worldMapHtml.indexOf('World map UI not loaded') >= 0);
-
-let activitiesHtml = null;
-let activitiesThrew = null;
-try { activitiesHtml = Tabs.render('worldActivities', minimalState, {}); }
-catch (e) { activitiesThrew = e; }
-ok('worldActivities render returns a string without throwing',
-   !activitiesThrew && typeof activitiesHtml === 'string' && activitiesHtml.length > 0,
-   activitiesThrew ? activitiesThrew.message : 'len=' + (activitiesHtml ? activitiesHtml.length : 0));
-ok('worldActivities fallback contains the defensive panel marker',
-   typeof activitiesHtml === 'string' && activitiesHtml.indexOf('World activities UI not loaded') >= 0);
-
-// 5. The registry call should be a no-op when the id is unknown — the
+// 4. The registry call should be a no-op when the id is unknown — the
 //    shell relies on this to fall through to its switch-case fallback
 //    for tabs that have not been migrated yet (storyHome, eventLog, etc.).
+const minimalState = { currentWorld: 'haven' };
 ok('Tabs.has returns false for an unknown tab id', !Tabs.has('definitelyNotARealTab'));
 ok('Tabs.render returns null for an unknown tab id',
    Tabs.render('definitelyNotARealTab', minimalState, {}) === null);

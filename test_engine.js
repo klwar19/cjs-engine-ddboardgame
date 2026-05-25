@@ -855,6 +855,61 @@ aiUnits = [summonerActor, aiTargetStrong];
 const summonerDecision = AI.decide(summonerActor);
 assertEq('summoner fallback prefers a self-targeted support skill', summonerDecision.targetId, 'summoner_actor');
 
+// TEST 10c: emergency heal preemption (Phase B character-AI fix).
+// A character with a heal skill, an adjacent enemy in basic-attack range,
+// and a critically-wounded ally should heal the ally FIRST — not basic-
+// attack the enemy. Without the emergency-heal preemption, the AI would
+// always do the basic attack before considering its heal skill.
+DS.replace('skills', 'test_heal_light', {
+  id: 'test_heal_light', name: 'Test Heal Light', power: 12, ap: 1, mp: 0,
+  range: 3, element: 'Light', damageType: 'Magic', scalingStat: 'I',
+  cooldown: 0, qte: 'none', effects: []
+});
+const healer = {
+  instanceId: 'healer_actor',
+  name: 'Test Healer',
+  team: 'player',
+  // No behaviorAI authored — exercises the fallback path for player
+  // characters on auto-mode.
+  skills: ['test_heal_light', 'test_shock'],
+  pos: [0, 0],
+  currentHP: 40, maxHP: 40, currentMP: 10,
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} },
+  aiRules: []
+};
+const woundedAlly = {
+  instanceId: 'wounded_ally',
+  name: 'Wounded Ally',
+  team: 'player',
+  pos: [0, 2],
+  currentHP: 4, maxHP: 40,
+  compiledStats: { S: 5, I: 3 }
+};
+const enemyInRange = {
+  instanceId: 'enemy_near',
+  name: 'Enemy Near',
+  team: 'enemy',
+  pos: [0, 1],
+  currentHP: 30, maxHP: 30,
+  compiledStats: { S: 10, I: 5 }
+};
+aiUnits = [healer, woundedAlly, enemyInRange];
+const healDecision = AI.decide(healer);
+assert('emergency-heal preempts basic attack on critically wounded ally',
+  healDecision.type === 'skill' && healDecision.skillId === 'test_heal_light'
+  && healDecision.targetId === 'wounded_ally');
+
+// With the same ally at full HP, the AI falls through to the existing
+// archetype logic — the preemption only fires when needed and doesn't
+// hijack every healer's turn.
+woundedAlly.currentHP = 40;
+const calmDecision = AI.decide(healer);
+assert('emergency-heal does not fire when no ally is critically wounded',
+  !(calmDecision.type === 'skill' && calmDecision.skillId === 'test_heal_light'
+    && calmDecision.targetId === 'wounded_ally' && woundedAlly.currentHP === 40));
+
+DS.remove('skills', 'test_heal_light');
+
 CJS.AIConditions = savedAIConditions;
 CJS.AITargeting = savedAITargeting;
 CJS.GridEngine = savedGridForAI;
