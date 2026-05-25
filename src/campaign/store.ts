@@ -9,7 +9,8 @@ export interface CampaignStateSnapshot {
   readonly currentWorld?: string;
   readonly activeAppMode?: string;
   readonly activeTab?: string;
-  readonly logs?: readonly unknown[];
+  // Vanilla CampaignState stores session events under `log` (singular).
+  readonly log?: readonly unknown[];
   readonly pendingBattle?: unknown;
   readonly [key: string]: unknown;
 }

@@ -40,38 +40,57 @@ each step (`npm test`).
   rejects ultimate-flagged skills when the unit doesn't have enough
   ultimate meter, preventing the same "AI burns turn on invalid
   decision" failure mode for player-controlled units running on auto.
-- [x] **Phase B AI fix — skill range fallback.** When a single-target
-  skill targets `most_clustered` or other AoE-ish strategies, fall back
-  to in-range strategies if the original prefs find no target. Adds a
-  final `nearest_enemy` pass so we never abandon a usable skill because
-  the preferred-strategy target wasn't in range.
-- [x] **Phase B AI fix — LoS validated on AoE.** `bestAoECell` now
-  honours `skill.requiresLoS` even for AoE skills.
+- [x] **Phase B AI fix — empty-AoE rejection + LoS on AoE.**
+  `bestAoECell` only returns a cell that hits at least one enemy and
+  honours `skill.requiresLoS`.
+- [x] **Phase B AI fix — getValidMoves fallback for hemmed-in units.**
+  If every melee-anchor stepToward is null, `_tryMoveToward` falls back
+  to the unit's actual reachable cells and picks the closest to the
+  target, so the snow bear closes ground even when surrounded.
 - [x] **D.1 foundation — `src/campaign/store.ts`.** Typed `useCampaignState`
   hook that subscribes to `CJS.CampaignState`. Re-renders on every state
   emit; returns a stable snapshot.
+- [x] **D.1 — React-tab bridge.** `cui-react-bridge.js` registers each
+  migrated tab in the existing `CampaignUIInternal.Tabs` registry,
+  returning a stable mount-point div. Vanilla `render()` dispatches
+  `campaign:rendered` after every shell rebuild; the new
+  `CampaignReactTabs.tsx` listens and re-portals migrated tabs into
+  their freshly-painted placeholder. Buttons inside React still emit
+  `data-campaign-action` attributes so the legacy event delegator in
+  `_bindEvents` keeps handling them — no parallel action wiring.
+- [x] **D.1 — Settings tab migrated.** `CampaignSettingsTab.tsx`
+  matches `_renderSaveManager` behaviour-for-behaviour (boot notice,
+  build/min version line, sorted slot list, compatibility chips,
+  load/export/delete buttons). `_renderSettings`/`_renderSaveManager`
+  removed from `campaign-ui.js`; `CampaignUI.getBootIncompatibleNotice`
+  exposes the only piece of internal state React needs.
+- [x] **D.1 — Logs tab migrated.** `CampaignLogsTab.tsx` re-uses
+  `CampaignUIInternal.Log.logKind`/`logMeta` for parity with the
+  recent-log header strip, which is still vanilla-rendered. The drawer
+  side-panel keeps using `_renderLogFallback` for the compact variant.
+- [x] **D.1 — bootstrap smoke test updated.** Asserts both new tabs
+  register and emit `data-react-tab` mount markers.
 
 ### In progress / next
 
-- [ ] **D.1 — `CampaignShell.tsx`.** Header, world switcher, mode bar,
-  sub-tabs, log strip, command rail mount, tab body mount. Initial
-  implementation delegates each tab's body to the vanilla
-  `CampaignUI._render*` helper via a new `renderTabBody(mount, tabId,
-  state)` entry point on the vanilla side. Replace the inline-script
-  bootstrap in `CampaignPage.tsx` with the shell.
-- [ ] **D.1 — migrate Settings tab.** First React tab. Hand-port the
-  settings panel from `campaign-ui.js`.
-- [ ] **D.1 — migrate Logs tab.** Reads `state.logs`, renders entries
-  with the existing `cui-log` formatters (which become a pure module).
-- [ ] **D.1 — migrate Party tab.** Subscribe to party slice, render
-  roster cards, dispatch through `CampaignOps`.
+- [ ] **D.1 — migrate Party tab (roster).** 689 lines in
+  `cui-party-tab.js` plus the sidebar `_renderParty` adapter. Strategy:
+  use the same bridge pattern, port `renderRoster` to JSX first, then
+  the sidebar variant. Keep `openSkillPoolPicker` /
+  `openPassivePoolPicker` modal helpers in vanilla for now (they create
+  full-screen modal overlays via the `UI` module; React will trigger
+  them by calling the existing exports).
 
 ### Later (D.2)
 
-- [ ] World Map tab.
-- [ ] Story tab.
-- [ ] Hub / Activities tab.
-- [ ] Quest / Scavenge tab.
+- [ ] World Map tab (`cui-world-map-tab.js` is a 47-line adapter; the
+  real renderer is `CampaignWorldMap` — likely the lightest of the
+  remaining tabs).
+- [ ] Story tab (`_renderStoryHome`, `_renderStoryDirector`,
+  `_renderStorySummary` — branchy).
+- [ ] Hub / Activities tab (`cui-hub-tab.js`, 808 lines).
+- [ ] Quest / Scavenge tab (`_renderQuestHome`,
+  `_renderZombieScavengeHome`).
 - [ ] Drop `js/campaign/campaign-ui.js` and `js/campaign/ui/`. Drop or
   rewrite `test_campaign_ui_bootstrap.js`.
 
