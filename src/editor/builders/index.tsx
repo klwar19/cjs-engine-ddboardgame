@@ -10,6 +10,7 @@ import type { ComponentType } from "react";
 import type { PanelId } from "../editorTypes";
 import { CharEditor } from "./CharEditor";
 import { EffectEditor } from "./EffectEditor";
+import { EncounterEditor } from "./EncounterEditor";
 import { ItemEditor } from "./ItemEditor";
 import { JobEditor } from "./JobEditor";
 import { MonsterEditor } from "./MonsterEditor";
@@ -35,7 +36,8 @@ export const REACT_BUILDERS: Partial<Record<PanelId, ComponentType>> = {
   materials: MaterialsEditor,
   crafting: CraftingEditor,
   characters: CharEditor,
-  monsters: MonsterEditor
+  monsters: MonsterEditor,
+  encounters: EncounterEditor
 };
 
 export function getReactBuilder(panel: PanelId): ComponentType | undefined {

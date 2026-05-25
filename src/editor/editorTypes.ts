@@ -107,7 +107,6 @@ export interface CjsEditor {
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  EncounterEditor?: BuilderApi;
   CampaignEditor?: BuilderApi;
   DataBrowser?: BuilderApi;
   AudioLibrary?: BuilderApi;
@@ -150,8 +149,6 @@ export type PanelId =
 export function builderFor(panel: PanelId): BuilderApi | undefined {
   const c = getEditorCjs();
   switch (panel) {
-    case "encounters":
-      return c.EncounterEditor;
     case "campaign":
       return c.CampaignEditor;
     case "browser":

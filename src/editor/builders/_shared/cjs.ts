@@ -136,6 +136,11 @@ export interface StatusDef {
 }
 
 export interface TerrainDef {
+  icon?: string;
+  color?: string;
+  moveCost?: number;
+  passable?: boolean;
+  blocksLoS?: boolean;
   [key: string]: unknown;
 }
 
@@ -187,7 +192,12 @@ export interface CjsConstants {
     { statMin: number; statMax: number; totalSpecial: number; [k: string]: unknown }
   >;
   MOVEMENT_DEFAULTS?: Record<string, unknown>;
-  COLLISION?: Record<string, unknown>;
+  COLLISION?: {
+    wallDamageFlat: number;
+    unitCollisionDamageFlat: number;
+    knockbackResistPerEnd: number;
+    [k: string]: unknown;
+  };
   LINE_OF_SIGHT?: Record<string, unknown>;
   ELEMENT_COLORS?: Record<string, string>;
   ELEMENT_CHART?: Record<string, unknown>;
