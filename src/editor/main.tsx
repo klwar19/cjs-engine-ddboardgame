@@ -15,7 +15,6 @@ import "../../js/ui/ui-helpers.js";
 import "../../js/ui/ui-icons.js";
 import "../../js/ui/portrait-picker.js";
 import "../../js/ui/audio-manager.js";
-import "../../js/builders/skill-editor.js";
 import "../../js/builders/job-editor.js";
 import "../../js/services/persona-service.js";
 import "../../js/services/content-validator.js";

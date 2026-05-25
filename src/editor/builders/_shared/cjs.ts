@@ -152,6 +152,8 @@ export interface CjsConstants {
   VALUE_SOURCES: string[];
   STATUS_DEFINITIONS: Record<string, StatusDef>;
   STATUS_CATEGORIES?: Record<string, { name: string; color: string }>;
+  QTE_TYPES?: string[];
+  QTE_DIFFICULTIES?: string[];
   PROGRESSION?: {
     skillApThresholds?: number[];
     charXpThresholds?: number[];
@@ -255,6 +257,18 @@ export function constants(): CjsConstants {
   const c = (cjs() as unknown as { CONST?: CjsConstants }).CONST;
   if (!c) throw new Error("CJS.CONST is not initialized");
   return c;
+}
+
+export interface AudioManagerApi {
+  loadManifest: () => Promise<unknown>;
+  getManifest: () => { sfx?: Record<string, unknown>; music?: Record<string, unknown> };
+  playSfx: (key: string, opts?: Record<string, unknown>) => void;
+}
+
+export function audioManager(): AudioManagerApi | null {
+  return (
+    (cjs() as unknown as { AudioManager?: AudioManagerApi }).AudioManager || null
+  );
 }
 
 export function effectRegistry(): EffectRegistryApi {
