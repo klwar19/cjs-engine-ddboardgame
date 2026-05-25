@@ -71,28 +71,73 @@ each step (`npm test`).
 - [x] **D.1 — bootstrap smoke test updated.** Asserts both new tabs
   register and emit `data-react-tab` mount markers.
 
+- [x] **Phase B AI fix — character-AI emergency heal.** Player
+  characters on auto-mode now run an emergency-heal pass before the
+  basic-attack branch when an ally drops below 30% HP. Scoped to units
+  without an authored `behaviorAI` plus explicit support / summoner
+  archetypes so monster behaviour stays as authored.
+- [x] **Phase B AI fix — auto-detected support archetype.**
+  `_inferSupportKit` flips the default archetype to `support` when a
+  unit's equipped skill kit is 50%+ heal / shield / buff. Support /
+  summoner archetypes also close the gap to allies (lowest_hp_ally)
+  when they have no in-range action, so a cleric on auto stays inside
+  heal range.
+- [x] **D.1 — Roster (Party) tab — hybrid migration.**
+  `CampaignRosterTab.tsx` owns the active / bench panel structure in
+  JSX. Each member's body is still produced by the existing
+  `cui-party-tab.js::renderRosterMember`, embedded via a controlled
+  `dangerouslySetInnerHTML` mount. The legacy event delegation handles
+  every `data-campaign-action` inside the card unchanged.
+- [x] **D.2 — World Map + World Activities tab shells migrated.**
+  `CampaignWorldMapTab.tsx` wraps the existing `CampaignWorldMap`
+  renderers.
+- [x] **D.2 — Hub family tab shells migrated.** sideForge /
+  questChains / oracleForge / battleSets / mapSeeds wrap the
+  `CampaignUIInternal.HubTab` renderers.
+- [x] **D.2 — External-module tab shells migrated.** inventory,
+  shops, craft, cook, farm, relationships now flow through React
+  wrappers around the sibling vanilla modules (CampaignInventory,
+  CampaignEconomy, PocketHaven, RelationshipsTab). The old vanilla
+  switch-case branches for these were deleted.
+- [x] **D.2 — Closure-private vanilla renderers bridged.** Exposed
+  `CampaignUI.renderTabBody(tabId, state)` so the React shell can
+  host `worldGate`, `storyHome`, `storySummary`, `storyDirector`,
+  `questHome`, `quests`, `eventHome`, `eventCharacter`,
+  `eventSpecial`, `eventSide`, `eventLog`, `scenarios`, `maps`,
+  `minigameTest`, `overview` without porting their closure-private
+  bodies in one go.
+
 ### In progress / next
 
-- [ ] **D.1 — migrate Party tab (roster).** 689 lines in
-  `cui-party-tab.js` plus the sidebar `_renderParty` adapter. Strategy:
-  use the same bridge pattern, port `renderRoster` to JSX first, then
-  the sidebar variant. Keep `openSkillPoolPicker` /
-  `openPassivePoolPicker` modal helpers in vanilla for now (they create
-  full-screen modal overlays via the `UI` module; React will trigger
-  them by calling the existing exports).
+The structural Phase D migration is complete — every tab in the
+campaign shell is React-owned at the entry point. The remaining work
+moves each `_render*` body OUT of the campaign-ui closure into its own
+TypeScript port, in any order:
 
-### Later (D.2)
-
-- [ ] World Map tab (`cui-world-map-tab.js` is a 47-line adapter; the
-  real renderer is `CampaignWorldMap` — likely the lightest of the
-  remaining tabs).
-- [ ] Story tab (`_renderStoryHome`, `_renderStoryDirector`,
-  `_renderStorySummary` — branchy).
-- [ ] Hub / Activities tab (`cui-hub-tab.js`, 808 lines).
-- [ ] Quest / Scavenge tab (`_renderQuestHome`,
-  `_renderZombieScavengeHome`).
-- [ ] Drop `js/campaign/campaign-ui.js` and `js/campaign/ui/`. Drop or
-  rewrite `test_campaign_ui_bootstrap.js`.
+- [ ] Port `cui-party-tab.js::renderRosterMember` (slot views, known
+  skill / passive rows, status badges) to per-section React
+  components inside `CampaignRosterTab.tsx`. Drop the
+  `dangerouslySetInnerHTML` mount once everything is JSX.
+- [ ] Port `CampaignWorldMap.renderTravelMap` SVG to a `WorldMap.tsx`
+  component reading the same state shape.
+- [ ] Port the hub-family inner renderers (`renderSideForge`,
+  `renderOracleForge`, …) to JSX inside `CampaignHubTabs.tsx`.
+- [ ] Port the external-module renderers (CampaignInventory,
+  CampaignEconomy.renderShops, PocketHaven.renderCraft/Cook/Farm,
+  RelationshipsTab.render) to JSX inside the matching
+  `CampaignExternalTabs.tsx` components.
+- [ ] Promote the closure-private `_render*` functions
+  (`_renderWorldGate`, `_renderStoryHome`, …) out of campaign-ui.js
+  into their own TypeScript modules consumed by the matching React
+  components.
+- [ ] Migrate the shell parts that still live in campaign-ui.js
+  (`_renderHeader`, `_renderModeBar`, `_renderSubTabs`,
+  `_renderRecentLogStrip`, `_renderCommandRail`, `_panelLayer`) into
+  a top-level `CampaignShell.tsx`. The vanilla `render()` becomes
+  the React render. At that point `campaign-ui.js` is just data
+  loading + action dispatch, and the file can be split.
+- [ ] Drop `js/campaign/campaign-ui.js` and `js/campaign/ui/`.
+  Rewrite `test_campaign_ui_bootstrap.js` against the React tree.
 
 ## Done-when gate
 
