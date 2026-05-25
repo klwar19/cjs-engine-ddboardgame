@@ -12,6 +12,7 @@ import { CharEditor } from "./CharEditor";
 import { EffectEditor } from "./EffectEditor";
 import { ItemEditor } from "./ItemEditor";
 import { JobEditor } from "./JobEditor";
+import { MonsterEditor } from "./MonsterEditor";
 import { PassiveEditor } from "./PassiveEditor";
 import { PersonaEditor } from "./PersonaEditor";
 import {
@@ -33,7 +34,8 @@ export const REACT_BUILDERS: Partial<Record<PanelId, ComponentType>> = {
   food: FoodEditor,
   materials: MaterialsEditor,
   crafting: CraftingEditor,
-  characters: CharEditor
+  characters: CharEditor,
+  monsters: MonsterEditor
 };
 
 export function getReactBuilder(panel: PanelId): ComponentType | undefined {

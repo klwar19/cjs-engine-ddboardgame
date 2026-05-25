@@ -173,6 +173,10 @@ export interface CjsConstants {
   CONDITION_DEFS: ConditionDef[];
   CLEANSE_LABELS: Record<string, CleanseLabel>;
   RANKS?: string[];
+  AI_ARCHETYPES?: string[];
+  AI_ARCHETYPE_INFO?: Record<string, { label: string; desc: string }>;
+  AI_TARGET_TYPES?: string[];
+  AI_TARGET_INFO?: Record<string, { label: string; desc?: string }>;
   EQUIPMENT_SLOTS?: string[];
   WEAPON_TYPES?: string[];
   ARMOR_TYPES?: string[];
