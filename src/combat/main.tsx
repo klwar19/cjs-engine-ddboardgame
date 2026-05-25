@@ -52,7 +52,6 @@ import "../../js/ui/audio-manager.js";
 import "../../js/ui/animation-bus.js";
 import "../../js/ui/scene-player.js";
 import "../../js/ui/gm-controls.js";
-import "../../js/ui/combat-ui.js";
 import "../../js/ui/loot-roller.js";
 import "../../js/ui/l2d-avatar.js";
 import "../../js/ui/l2d-companion.js";
@@ -71,6 +70,6 @@ if (!container) {
 }
 
 // Plain root (no StrictMode): the underlying vanilla engine modules
-// (CombatUI, BattleSetup, CampaignCombatBridge) bind events imperatively
+// (BattleSetup, CampaignCombatBridge, GMControls) bind events imperatively
 // on init, which would double-fire under StrictMode's dev double-mount.
 createRoot(container).render(<CombatPage />);

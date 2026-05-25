@@ -9,16 +9,8 @@ export interface CombatManagerApi {
   readonly getState?: () => CombatState | null;
   readonly subscribe?: (cb: (state: CombatState) => void) => () => void;
   readonly reset?: () => void;
-}
-
-export interface CombatUIApi {
-  readonly init: (
-    container: HTMLElement,
-    opts?: { onReturnToSetup?: () => void }
-  ) => void;
-  readonly startCombat: (encounterId: string) => void;
-  readonly destroy: () => void;
-  readonly refresh?: () => void;
+  readonly startEncounter?: (encounterId: string) => unknown;
+  readonly runUntilInput?: (maxSteps?: number) => unknown;
 }
 
 export interface BattleSetupApi {
@@ -108,7 +100,6 @@ export interface GridRendererApi {
 
 interface CJSCombat {
   CombatManager?: CombatManagerApi;
-  CombatUI?: CombatUIApi;
   BattleSetup?: BattleSetupApi;
   CombatSettings?: CombatSettingsApi;
   DataStore?: DataStoreApi;

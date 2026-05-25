@@ -9,6 +9,14 @@ import {
 import { CampaignBridgeBanner } from "./CampaignBridgeBanner";
 import { HelpPopover } from "./HelpPopover";
 import { PhaseStrip } from "./PhaseStrip";
+import { CombatScreen } from "./components/CombatScreen";
+import {
+  activateCombat,
+  attachCombatSubscriptions,
+  detachCombatSubscriptions,
+  prepareCombat,
+  teardownCombat
+} from "./combatLifecycle";
 import {
   getCombatCjs,
   type CampaignRequest,
@@ -182,7 +190,6 @@ interface EncounterOption {
 
 export function CombatPage() {
   const setupRef = useRef<HTMLDivElement | null>(null);
-  const combatRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const [bootReady, setBootReady] = useState(false);
@@ -194,15 +201,21 @@ export function CombatPage() {
   const [campaignRequest, setCampaignRequest] =
     useState<CampaignRequest | null>(null);
   const [campaignResult, setCampaignResult] = useState<CombatResult | null>(null);
+  const [themeImage, setThemeImage] = useState<string>("");
 
   const battleSetupReadyRef = useRef(false);
   const demoCreatedRef = useRef(false);
   const activeEncounterIdRef = useRef<string | null>(null);
+  const lastEncounterIdRef = useRef<string | null>(null);
   const campaignRequestRef = useRef<CampaignRequest | null>(null);
   const campaignResultWrittenRef = useRef(false);
   const campaignReturnTimerRef = useRef<number | null>(null);
   const campaignResultPollRef = useRef<number | null>(null);
   const unsubCampaignResultRef = useRef<(() => void) | null>(null);
+  // Set to true after CombatManager.startEncounter has returned and the
+  // CombatScreen has mounted; the post-mount effect then activates the
+  // engine (subscribe, narrator, BGM, runUntilInput).
+  const [pendingActivation, setPendingActivation] = useState(false);
 
   const removeRuntimeEncounter = useCallback((encounterId: string | null) => {
     if (!encounterId) return;
@@ -218,7 +231,6 @@ export function CombatPage() {
   const teardownCombatView = useCallback(
     (opts: { removeActiveRuntime?: boolean } = {}) => {
       const removeActiveRuntime = opts.removeActiveRuntime !== false;
-      const cjs = getCombatCjs();
 
       if (unsubCampaignResultRef.current) {
         try {
@@ -232,20 +244,8 @@ export function CombatPage() {
         clearInterval(campaignResultPollRef.current);
         campaignResultPollRef.current = null;
       }
-      try {
-        cjs.CombatUI?.destroy();
-      } catch {
-        /* ignore */
-      }
-      try {
-        cjs.CombatManager?.reset?.();
-      } catch {
-        /* ignore */
-      }
 
-      if (combatRef.current) {
-        combatRef.current.innerHTML = "";
-      }
+      teardownCombat();
       setShowCombatView(false);
 
       if (removeActiveRuntime) {
@@ -422,8 +422,7 @@ export function CombatPage() {
       }
       const cjs = getCombatCjs();
       const DS = cjs.DataStore;
-      const CombatUI = cjs.CombatUI;
-      if (!DS || !CombatUI) return;
+      if (!DS) return;
       const encounter = DS.get<EncounterRecord>("encounters", encounterId);
       if (!encounter) {
         alert(`Encounter not found: ${encounterId}`);
@@ -431,6 +430,7 @@ export function CombatPage() {
       }
 
       teardownCombatView();
+      prepareCombat();
 
       const settings = cjs.CombatSettings;
       if (settings) {
@@ -440,42 +440,35 @@ export function CombatPage() {
       }
 
       const setupEl = setupRef.current;
-      const combatEl = combatRef.current;
       if (setupEl) setupEl.style.display = "none";
-      setShowCombatView(true);
 
       activeEncounterIdRef.current = encounterId;
-      if (combatEl) {
-        CombatUI.init(combatEl, {
-          onReturnToSetup: () => {
-            if (campaignRequestRef.current) {
-              returnToCampaign();
-            } else {
-              showSetup();
-            }
-          }
-        });
+      lastEncounterIdRef.current = encounterId;
+      setThemeImage(pickGridThemeImage(campaignRequestRef.current, encounter));
+      setShowCombatView(true);
 
-        try {
-          CombatUI.startCombat(encounterId);
-          bindCampaignResult();
-          const themeImage = pickGridThemeImage(
-            campaignRequestRef.current,
-            encounter
-          );
-          if (themeImage && cjs.GridRenderer?.setTheme) {
-            cjs.GridRenderer.setTheme({ image: themeImage });
-          }
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : String(error);
-          console.error("Combat start failed:", error);
-          alert(`Combat failed to start: ${msg}`);
-          showSetup();
-        }
+      try {
+        cjs.CombatManager?.startEncounter?.(encounterId);
+        // Defer activateCombat until <CombatScreen /> has mounted (and
+        // CombatGrid's useEffect has initialised the GridRenderer). A
+        // post-render effect picks up `pendingActivation` and runs
+        // activateCombat exactly once.
+        setPendingActivation(true);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error("Combat start failed:", error);
+        alert(`Combat failed to start: ${msg}`);
+        setShowCombatView(false);
+        showSetup();
       }
     },
-    [bindCampaignResult, returnToCampaign, showSetup, teardownCombatView]
+    [bindCampaignResult, showSetup, teardownCombatView]
   );
+
+  const restartCombat = useCallback(() => {
+    if (!lastEncounterIdRef.current) return;
+    startCombat(lastEncounterIdRef.current);
+  }, [startCombat]);
 
   const handleImportClick = useCallback(() => {
     importInputRef.current?.click();
@@ -509,6 +502,25 @@ export function CombatPage() {
     [ensureBattleSetup, populateEncounters, showSetup, teardownCombatView]
   );
 
+  // Attach store to engine subscriptions once on first mount.
+  useEffect(() => {
+    attachCombatSubscriptions();
+    return () => {
+      detachCombatSubscriptions();
+    };
+  }, []);
+
+  // Run activateCombat AFTER the CombatScreen has mounted and the grid
+  // renderer is initialised. This effect fires when both showCombatView
+  // and pendingActivation flip true; it runs once and clears the flag.
+  useEffect(() => {
+    if (!showCombatView || !pendingActivation) return;
+    activateCombat();
+    bindCampaignResult();
+    setPendingActivation(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCombatView, pendingActivation]);
+
   // Boot: wait until the vanilla CJS modules have self-registered before
   // bootstrapping data + setup. Matches the original DOMContentLoaded IIFE.
   useEffect(() => {
@@ -522,8 +534,8 @@ export function CombatPage() {
         cjs.NarratorData &&
         cjs.ContentManager &&
         cjs.BattleSetup &&
-        cjs.CombatUI &&
-        cjs.CampaignCombatBridge
+        cjs.CampaignCombatBridge &&
+        cjs.CombatManager
       );
       if (!ready) {
         tries += 1;
@@ -585,8 +597,7 @@ export function CombatPage() {
     return () => {
       cancelled = true;
     };
-    // We deliberately want this effect to run only once at mount. The callbacks
-    // it closes over are stable refs/state setters.
+    // We deliberately want this effect to run only once at mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -690,11 +701,6 @@ export function CombatPage() {
           ref={setupRef}
           style={{ display: showCombatView ? "none" : undefined }}
         />
-        {/*
-          The banner lives outside #combat-container so React owns it cleanly.
-          CombatUI manipulates #combat-container imperatively, which would
-          collide with React children inside it.
-        */}
         {showCombatView && campaignRequest ? (
           <CampaignBridgeBanner
             request={campaignRequest}
@@ -704,9 +710,20 @@ export function CombatPage() {
         ) : null}
         <main
           id="combat-container"
-          ref={combatRef}
           style={{ display: showCombatView ? "" : "none" }}
-        />
+        >
+          {showCombatView ? (
+            <CombatScreen
+              themeImage={themeImage}
+              onReturnToSetup={
+                campaignRequest
+                  ? returnToCampaign
+                  : () => showSetup()
+              }
+              onRestart={restartCombat}
+            />
+          ) : null}
+        </main>
       </div>
 
       <HelpPopover title="Combat Quick Guide" />
