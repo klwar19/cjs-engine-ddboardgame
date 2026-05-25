@@ -151,6 +151,7 @@ export interface CjsConstants {
   EFFECT_TARGETS: string[];
   VALUE_SOURCES: string[];
   STATUS_DEFINITIONS: Record<string, StatusDef>;
+  STATUS_CATEGORIES?: Record<string, { name: string; color: string }>;
   CONDITION_DEFS: ConditionDef[];
   CLEANSE_LABELS: Record<string, CleanseLabel>;
   RANKS?: string[];
@@ -166,7 +167,6 @@ export interface CjsConstants {
   ELEMENT_COLORS?: Record<string, string>;
   ELEMENT_CHART?: Record<string, unknown>;
   ELEMENT_MULTIPLIERS?: Record<string, number>;
-  STATUS_CATEGORIES?: string[];
 }
 
 // ── CONTENT MANAGER FULL API ─────────────────────────────────────────

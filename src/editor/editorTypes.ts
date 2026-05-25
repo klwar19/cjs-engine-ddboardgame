@@ -107,7 +107,6 @@ export interface CjsEditor {
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  StatusEditor?: BuilderApi;
   PassiveEditor?: BuilderApi;
   SkillEditor?: BuilderApi;
   JobEditor?: BuilderApi;
@@ -163,8 +162,6 @@ export type PanelId =
 export function builderFor(panel: PanelId): BuilderApi | undefined {
   const c = getEditorCjs();
   switch (panel) {
-    case "statuses":
-      return c.StatusEditor;
     case "passives":
       return c.PassiveEditor;
     case "skills":
