@@ -53,4 +53,16 @@ window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
   Tabs.register('roster', {
     render: () => mount('roster')
   });
+
+  // World Map + World Activities follow the same override pattern. The
+  // CampaignWorldMap module produces both panels' inner HTML; the React
+  // wrapper just owns the mount point so a future JSX port can swap
+  // the SVG / activity-card body in place.
+  Tabs.register('worldMap', {
+    render: () => mount('worldMap')
+  });
+
+  Tabs.register('worldActivities', {
+    render: () => mount('worldActivities')
+  });
 })();
