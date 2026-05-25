@@ -156,7 +156,7 @@ declare global {
 
   interface CJSAITargeting {
     pickTarget(strategy: string, attacker: CJSCombatUnit, allUnits?: CJSCombatUnit[], opts?: Record<string, unknown>): { unit: CJSCombatUnit; score: number } | null;
-    bestAoECell?(attacker: CJSCombatUnit, aoeShape: string, aoeSize: number, range: number, opts?: Record<string, unknown>): [number, number] | null;
+    bestAoECell?(attacker: CJSCombatUnit, aoeShape: string, aoeSize: number, range: number, opts?: Record<string, unknown>): { cell: [number, number]; score: number } | null;
   }
 
   interface CJSAIController {
@@ -502,6 +502,7 @@ declare global {
     getAvailableActions(unit: CJSCombatUnit): CJSAvailableActions;
     simulateAIQTE(unit: CJSCombatUnit, skill: CJSSkill): { grade: string; multiplier: number };
     getAttackRange(unit: CJSCombatUnit): number;
+    meetsWeaponRequirement(unit: CJSCombatUnit, skill: CJSSkill): boolean;
   }
 
   // ── UndoManager ──────────────────────────────────────────────────────
