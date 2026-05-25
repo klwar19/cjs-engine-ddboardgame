@@ -13,6 +13,11 @@ import { ItemEditor } from "./ItemEditor";
 import { JobEditor } from "./JobEditor";
 import { PassiveEditor } from "./PassiveEditor";
 import { PersonaEditor } from "./PersonaEditor";
+import {
+  CraftingEditor,
+  FoodEditor,
+  MaterialsEditor
+} from "./SimpleCollectionEditor";
 import { SkillEditor } from "./SkillEditor";
 import { StatusEditor } from "./StatusEditor";
 
@@ -23,7 +28,10 @@ export const REACT_BUILDERS: Partial<Record<PanelId, ComponentType>> = {
   skills: SkillEditor,
   jobs: JobEditor,
   personas: PersonaEditor,
-  items: ItemEditor
+  items: ItemEditor,
+  food: FoodEditor,
+  materials: MaterialsEditor,
+  crafting: CraftingEditor
 };
 
 export function getReactBuilder(panel: PanelId): ComponentType | undefined {

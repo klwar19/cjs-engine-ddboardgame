@@ -107,11 +107,6 @@ export interface CjsEditor {
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  SimpleCollectionEditor?: {
-    food: BuilderApi;
-    materials: BuilderApi;
-    crafting: BuilderApi;
-  };
   CharEditor?: BuilderApi;
   MonsterEditor?: BuilderApi;
   EncounterEditor?: BuilderApi;
@@ -157,12 +152,6 @@ export type PanelId =
 export function builderFor(panel: PanelId): BuilderApi | undefined {
   const c = getEditorCjs();
   switch (panel) {
-    case "food":
-      return c.SimpleCollectionEditor?.food;
-    case "materials":
-      return c.SimpleCollectionEditor?.materials;
-    case "crafting":
-      return c.SimpleCollectionEditor?.crafting;
     case "characters":
       return c.CharEditor;
     case "monsters":
