@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CampaignHelpPopover } from "./HelpPopover";
+import { CampaignReactTabs } from "./CampaignReactTabs";
 
 interface CampaignCjs {
   readonly CampaignUI?: {
@@ -82,6 +83,7 @@ export function CampaignPage() {
         ref={rootRef}
         dangerouslySetInnerHTML={{ __html: initialHtml }}
       />
+      <CampaignReactTabs />
       <CampaignHelpPopover />
     </>
   );

@@ -374,6 +374,16 @@ window.CJS.CampaignUI = (() => {
     _renderPanelLayer();
     _flashOnNewEncounter(state);
     setTimeout(() => window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.(), 0);
+
+    // Phase D React-tab bridge: notify any React-owned tab mounts that the
+    // vanilla shell just blew away their previous DOM, so they can re-mount
+    // into the freshly-rendered placeholder.
+    try {
+      _root.dispatchEvent(new CustomEvent('campaign:rendered', {
+        bubbles: false,
+        detail: { activeTab: _activeTab, activeMode: _activeMode }
+      }));
+    } catch (e) { /* CustomEvent unsupported in some test envs — ignore */ }
   }
 
   function _flashOnNewEncounter(state = {}) {
@@ -837,8 +847,12 @@ window.CJS.CampaignUI = (() => {
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
-      case 'logs': return _renderLogPanel(state);
-      case 'settings': return _renderSettings(state);
+      // 'logs' and 'settings' are React-owned via the Tabs registry
+      // (see js/campaign/ui/tabs/cui-react-bridge.js). The branches that
+      // used to call `_renderLogPanel` / `_renderSettings` here are
+      // intentionally dropped — if `Tabs.has(id)` ever returns false for
+      // them we'd land on the default Overview, which is a safer failure
+      // mode than rendering nothing.
       case 'overview':
       default: return _renderOverview(state);
     }
@@ -3501,7 +3515,9 @@ window.CJS.CampaignUI = (() => {
       case 'quests':
         return typeof _renderQuestPanel === 'function' ? _renderQuestPanel(state) : _renderQuestsFallback(state);
       case 'log':
-        return typeof _renderLogPanel === 'function' ? _renderLogPanel(state) : _renderLogFallback(state);
+        // Drawer side-panel keeps using the compact fallback — the React
+        // Logs tab owns the main-panel variant.
+        return _renderLogFallback(state);
       case 'notes':
         return _renderNotesPanel(state);
       default:
@@ -4129,98 +4145,18 @@ window.CJS.CampaignUI = (() => {
     return `<span class="campaign-pill campaign-muted-pill" title="No scenario yet — Map Run will generate one">no map yet</span>`;
   }
 
-  function _renderLogPanel(state) {
-    const hasLog = (state.log || []).length > 0;
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h2>Session Log</h2>
-          <div class="campaign-panel-actions">
-            <button class="campaign-action" data-campaign-action="export-log">Export Log</button>
-            ${hasLog ? '<button class="campaign-action danger" data-campaign-action="clear-log">Clear Log</button>' : ''}
-          </div>
-        </div>
-        ${(state.log || []).map((line) => _renderLogEntry(line)).join('') || '<div class="campaign-empty">No log entries.</div>'}
-      </section>
-    `;
-  }
-
-  // _renderLogEntry, _logKind, _logMeta, _formatLogTime live in
-  // js/campaign/ui/cui-log.js (bound as aliases at the top).
-
-  function _renderSettings(state) {
-    return _renderSaveManager(state);
-  }
-
-  function _renderSaveManager(state) {
-    const Sv = Save();
-    const slots = Object.values(Sv.getSlots()).sort((a, b) => String(b.lastUpdated || '').localeCompare(String(a.lastUpdated || '')));
-    const activeId = Sv.getActiveSlotId();
-    const buildVersion = Sv.currentSaveVersion ? Sv.currentSaveVersion() : 1;
-    const minVersion = Sv.minCompatibleVersion ? Sv.minCompatibleVersion() : 1;
-
-    const notice = _bootIncompatibleNotice
-      ? `
-        <div class="campaign-save-warning">
-          <strong>Heads up:</strong> Your previous save <em>${_esc(_bootIncompatibleNotice.slotName)}</em> was made by an older build and could not be loaded. ${_esc(_bootIncompatibleNotice.reason)} A fresh save has been started — you can delete or export the old slot below.
-        </div>
-      `
-      : '';
-
-    const rows = slots.length ? slots.map((slot) => {
-      const compatible = Sv.isCompatible ? Sv.isCompatible(slot) : true;
-      const reason = !compatible && Sv.describeIncompatibility ? Sv.describeIncompatibility(slot) : '';
-      const isActive = slot.saveId === activeId;
-      return `
-        <div class="campaign-save-slot ${isActive ? 'is-active' : ''} ${compatible ? '' : 'is-incompatible'}">
-          <div>
-            <h4>${_esc(slot.slotName || slot.saveId)}</h4>
-            <div class="campaign-save-meta">
-              <span>World: ${_esc(slot.currentWorld || '?')}</span>
-              <span>Chapter ${_esc(slot.storyMode?.currentChapterLabel || slot.currentChapter || '1.1')}</span>
-              <span>Saved ${_esc(_formatLogTime(slot.lastUpdated))}</span>
-              <span>v${_esc(slot.saveVersion || 0)}</span>
-              ${isActive ? '<span>● Active</span>' : ''}
-              ${!compatible ? `<span class="is-warn">Incompatible</span>` : ''}
-            </div>
-            ${!compatible ? `<div class="campaign-muted" style="margin-top:6px">${_esc(reason)}</div>` : ''}
-          </div>
-          <div class="campaign-save-row-actions">
-            ${compatible
-              ? `<button class="campaign-action primary" data-campaign-action="load-slot" data-id="${_escAttr(slot.saveId)}" ${isActive ? 'disabled' : ''}>${isActive ? 'Loaded' : 'Load'}</button>`
-              : `<button class="campaign-action" data-campaign-action="export-slot" data-id="${_escAttr(slot.saveId)}" title="Export the old save before deleting">Export</button>`
-            }
-            <button class="campaign-action danger" data-campaign-action="delete-slot" data-id="${_escAttr(slot.saveId)}">Delete</button>
-          </div>
-        </div>
-      `;
-    }).join('') : '<div class="campaign-save-empty">No saved campaigns yet. Use <strong>New Campaign Save</strong> below to start one.</div>';
-
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>Campaign Saves</h2>
-            <div class="campaign-muted">Build save version <strong>${buildVersion}</strong> · Min compatible <strong>${minVersion}</strong></div>
-          </div>
-        </div>
-        ${notice}
-        <div class="campaign-save-manager">
-          <div class="campaign-save-actions">
-            <button class="campaign-action primary" data-campaign-action="new-save">+ New Campaign Save</button>
-            <button class="campaign-action" data-campaign-action="save-slot">Save Now</button>
-            <button class="campaign-action" data-campaign-action="fork-save">Fork Current</button>
-            <button class="campaign-action" data-campaign-action="export-save">Export Current</button>
-            <button class="campaign-action" data-campaign-action="import-save">Import…</button>
-            <button class="campaign-action danger" data-campaign-action="delete-all-saves">Delete All Saves</button>
-          </div>
-          ${rows}
-        </div>
-      </section>
-    `;
-    void state;
-  }
-
+  // The Session Log panel (`tab: logs`) and the Save Manager / Settings
+  // panel (`tab: settings`) are owned by React — see
+  // `src/campaign/tabs/CampaignLogsTab.tsx` and
+  // `src/campaign/tabs/CampaignSettingsTab.tsx`. The vanilla shell's
+  // `_renderMain` consults `CampaignUIInternal.Tabs` first, which the
+  // React bridge in `js/campaign/ui/tabs/cui-react-bridge.js` populates
+  // with mount-point placeholders for each migrated tab.
+  //
+  // `_renderLogEntry`, `_logKind`, `_logMeta`, `_formatLogTime` still
+  // live in `js/campaign/ui/cui-log.js`; the React side reuses them so
+  // categorisation stays consistent with the recent-log strip in the
+  // header (which is still vanilla-rendered).
   function _bindEvents() {
     _root.addEventListener('click', (event) => {
       const panelBtn = event.target.closest('[data-campaign-panel]');
@@ -10852,6 +10788,10 @@ window.CJS.CampaignUI = (() => {
     render,
     isBooted: () => _booted,
     playSequenceMinigame: _playSequenceMiniGame,
-    showQuestNarrative
+    showQuestNarrative,
+    // Bridge surface for React-owned tabs (Phase D migration). Tabs that
+    // have moved to React read engine state through these getters instead
+    // of reaching into closure-private state.
+    getBootIncompatibleNotice: () => _bootIncompatibleNotice
   });
 })();
