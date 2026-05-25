@@ -15,7 +15,6 @@ import "../../js/ui/ui-helpers.js";
 import "../../js/ui/ui-icons.js";
 import "../../js/ui/portrait-picker.js";
 import "../../js/ui/audio-manager.js";
-import "../../js/builders/effect-editor.js";
 import "../../js/builders/status-editor.js";
 import "../../js/builders/passive-editor.js";
 import "../../js/builders/skill-editor.js";

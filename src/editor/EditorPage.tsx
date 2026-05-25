@@ -6,6 +6,7 @@ import {
   useState
 } from "react";
 import { BuilderPanel } from "./BuilderPanel";
+import { getReactBuilder } from "./builders";
 import {
   editorStore,
   useEditorBoot,
@@ -941,13 +942,27 @@ export function EditorPage() {
               "browser",
               "audio"
             ] as PanelId[]
-          ).map((panel) => (
-            <BuilderPanel
-              key={`${panel}:${panelEpoch[panel]}`}
-              panel={panel}
-              active={panel === activePanel}
-            />
-          ))}
+          ).map((panel) => {
+            const ReactBuilder = getReactBuilder(panel);
+            if (ReactBuilder) {
+              return (
+                <div
+                  key={`${panel}:${panelEpoch[panel]}`}
+                  className={`editor-panel${panel === activePanel ? " active" : ""}`}
+                  id={`panel-${panel}`}
+                >
+                  {panel === activePanel ? <ReactBuilder /> : null}
+                </div>
+              );
+            }
+            return (
+              <BuilderPanel
+                key={`${panel}:${panelEpoch[panel]}`}
+                panel={panel}
+                active={panel === activePanel}
+              />
+            );
+          })}
         </div>
       </div>
 
