@@ -9,6 +9,7 @@
 import type { ComponentType } from "react";
 import type { PanelId } from "../editorTypes";
 import { EffectEditor } from "./EffectEditor";
+import { JobEditor } from "./JobEditor";
 import { PassiveEditor } from "./PassiveEditor";
 import { SkillEditor } from "./SkillEditor";
 import { StatusEditor } from "./StatusEditor";
@@ -17,7 +18,8 @@ export const REACT_BUILDERS: Partial<Record<PanelId, ComponentType>> = {
   effects: EffectEditor,
   statuses: StatusEditor,
   passives: PassiveEditor,
-  skills: SkillEditor
+  skills: SkillEditor,
+  jobs: JobEditor
 };
 
 export function getReactBuilder(panel: PanelId): ComponentType | undefined {
