@@ -96,35 +96,12 @@ export interface UndoManagerApi {
   clear?: () => void;
 }
 
-export interface BuilderApi {
-  init: (panel: HTMLElement) => void;
-  refresh?: () => void;
-}
-
 export interface CjsEditor {
   DataStore?: DataStoreApi;
   SaveManager?: SaveManagerApi;
   ContentManager?: ContentManagerApi;
   UI?: UiHelpersApi;
   UndoManager?: UndoManagerApi;
-  EffectEditor?: BuilderApi;
-  StatusEditor?: BuilderApi;
-  PassiveEditor?: BuilderApi;
-  SkillEditor?: BuilderApi;
-  JobEditor?: BuilderApi;
-  PersonaEditor?: BuilderApi;
-  ItemEditor?: BuilderApi;
-  SimpleCollectionEditor?: {
-    food: BuilderApi;
-    materials: BuilderApi;
-    crafting: BuilderApi;
-  };
-  CharEditor?: BuilderApi;
-  MonsterEditor?: BuilderApi;
-  EncounterEditor?: BuilderApi;
-  CampaignEditor?: BuilderApi;
-  DataBrowser?: BuilderApi;
-  AudioLibrary?: BuilderApi;
   PortraitPicker?: { loadManifest?: () => Promise<unknown> };
   CONST?: { STATUS_DEFINITIONS?: Record<string, Record<string, unknown>> };
 }
@@ -161,42 +138,3 @@ export type PanelId =
   | "browser"
   | "audio";
 
-export function builderFor(panel: PanelId): BuilderApi | undefined {
-  const c = getEditorCjs();
-  switch (panel) {
-    case "effects":
-      return c.EffectEditor;
-    case "statuses":
-      return c.StatusEditor;
-    case "passives":
-      return c.PassiveEditor;
-    case "skills":
-      return c.SkillEditor;
-    case "jobs":
-      return c.JobEditor;
-    case "personas":
-      return c.PersonaEditor;
-    case "items":
-      return c.ItemEditor;
-    case "food":
-      return c.SimpleCollectionEditor?.food;
-    case "materials":
-      return c.SimpleCollectionEditor?.materials;
-    case "crafting":
-      return c.SimpleCollectionEditor?.crafting;
-    case "characters":
-      return c.CharEditor;
-    case "monsters":
-      return c.MonsterEditor;
-    case "encounters":
-      return c.EncounterEditor;
-    case "campaign":
-      return c.CampaignEditor;
-    case "browser":
-      return c.DataBrowser;
-    case "audio":
-      return c.AudioLibrary;
-    default:
-      return undefined;
-  }
-}
