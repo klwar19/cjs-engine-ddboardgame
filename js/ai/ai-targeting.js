@@ -201,25 +201,33 @@ window.CJS.AITargeting = (() => {
 
   // ── CELL TARGETING (for AoE skills that target cells, not units) ──
   // Find the cell whose AoE-at-size covers the most enemies of attacker.
+  // Returns null when no cell hits at least one enemy — the AI should fall
+  // through to another action rather than blow MP on an empty blast.
   function bestAoECell(attacker, aoeShape, aoeSize, range, opts = {}) {
     if (!GE() || !attacker) return null;
     const AoE = window.CJS.AoE;
     if (!AoE) return null;
     const dims = GE().getDims();
-    const all = GE().getAllUnits();
     const enemyTeam = _oppositeTeam(attacker.team);
 
     let bestCell = null;
-    let bestScore = -1;
+    let bestScore = 0;
+    let bestEnemyCount = 0;
     for (let r = 0; r < dims.height; r++) {
       for (let c = 0; c < dims.width; c++) {
         if (GE().distance(attacker.pos[0], attacker.pos[1], r, c) > range) continue;
         if (opts.requireLoS && !GE().hasLineOfSight(attacker.pos[0], attacker.pos[1], r, c, attacker.instanceId)) continue;
         const cells = AoE.getCellsForShape(aoeShape, [r, c], aoeSize, null, dims.width, dims.height);
         const hits = AoE.unitsInCells(cells, GE());
-        const score = hits.filter(u => u.team === enemyTeam && (u.currentHP||0) > 0).length
-                    - hits.filter(u => u.team === attacker.team).length * 0.5;
-        if (score > bestScore) { bestScore = score; bestCell = [r, c]; }
+        const enemyHits = hits.filter(u => u.team === enemyTeam && (u.currentHP || 0) > 0).length;
+        if (enemyHits === 0) continue;
+        const allyHits = hits.filter(u => u.team === attacker.team && (u.currentHP || 0) > 0).length;
+        const score = enemyHits - allyHits * 0.5;
+        if (score > bestScore || (score === bestScore && enemyHits > bestEnemyCount)) {
+          bestScore = score;
+          bestEnemyCount = enemyHits;
+          bestCell = [r, c];
+        }
       }
     }
     return bestCell ? { cell: bestCell, score: bestScore } : null;

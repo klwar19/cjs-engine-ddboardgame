@@ -112,6 +112,19 @@ window.CJS.AIController = (() => {
     // AP check
     if ((unit.turnState?.apRemaining || 0) < (skill.ap || 1)) return null;
 
+    // Weapon requirement — ActionHandler.validate rejects the action if the
+    // unit doesn't meet it, which previously ended the AI's turn with no
+    // action taken. Skip the skill entirely so the AI can fall through to a
+    // viable option.
+    const AH = window.CJS.ActionHandler;
+    if (AH && AH.meetsWeaponRequirement && !AH.meetsWeaponRequirement(unit, skill)) return null;
+
+    // Ultimate meter gate — same rationale.
+    if (skill.isUltimate) {
+      const cost = Number(skill.ultimateCost || 100);
+      if ((unit.ultimateMeter || 0) < cost) return null;
+    }
+
     // Find target(s)
     const range = Math.max(1, Number(skill.range || 1) + Number(unit.rangeBonus || 0));
 
@@ -123,7 +136,9 @@ window.CJS.AIController = (() => {
         };
       }
       // AoE skill — pick best cell
-      const cell = AIT().bestAoECell(unit, `aoe_${skill.aoe}`, skill.aoeSize || 2, range);
+      const cell = AIT().bestAoECell(unit, `aoe_${skill.aoe}`, skill.aoeSize || 2, range, {
+        requireLoS: !!skill.requiresLoS
+      });
       if (!cell) return null;
       return {
         type: 'skill', skillId, aoeCenter: cell.cell,
@@ -166,20 +181,26 @@ window.CJS.AIController = (() => {
     if (!GE() || !PF()) return null;
     const dims = GE().getDims();
 
-    // Find a destination cell ADJACENT to the target (the target's cell
-    // itself is occupied). Pick the adjacent cell closest to us that's passable
-    // and within our movement range.
+    // Find an attacker anchor cell that puts the attacker's footprint
+    // ADJACENT to the target's footprint (Chebyshev distance 1 between
+    // any cell of the attacker and any cell of the target). We need to
+    // account for the ATTACKER's size too — for a 2x2 attacker, valid
+    // melee anchors extend (size-1) cells beyond the 1-ring of a 1x1
+    // target.
     const tgt = pick.unit;
     const candidates = [];
-    const sz = window.CJS.CONST.UNIT_SIZES[tgt.size || '1x1'] || { w: 1, h: 1 };
-    // All cells adjacent to the target's footprint
-    for (let r = tgt.pos[0] - 1; r <= tgt.pos[0] + sz.h; r++) {
-      for (let c = tgt.pos[1] - 1; c <= tgt.pos[1] + sz.w; c++) {
-        // Skip cells inside the target's footprint
-        if (r >= tgt.pos[0] && r < tgt.pos[0] + sz.h &&
-            c >= tgt.pos[1] && c < tgt.pos[1] + sz.w) continue;
-        // Skip out of bounds
-        if (r < 0 || c < 0 || r >= dims.height || c >= dims.width) continue;
+    const tgtSz = window.CJS.CONST.UNIT_SIZES[tgt.size || '1x1'] || { w: 1, h: 1 };
+    const atkSz = window.CJS.CONST.UNIT_SIZES[unit.size || '1x1'] || { w: 1, h: 1 };
+    for (let r = tgt.pos[0] - atkSz.h; r <= tgt.pos[0] + tgtSz.h; r++) {
+      for (let c = tgt.pos[1] - atkSz.w; c <= tgt.pos[1] + tgtSz.w; c++) {
+        // Footprint must fit on the board
+        if (r < 0 || c < 0 ||
+            r + atkSz.h > dims.height || c + atkSz.w > dims.width) continue;
+        // Footprint must not overlap the target's footprint
+        const overlaps =
+          r < tgt.pos[0] + tgtSz.h && r + atkSz.h > tgt.pos[0] &&
+          c < tgt.pos[1] + tgtSz.w && c + atkSz.w > tgt.pos[1];
+        if (overlaps) continue;
         candidates.push([r, c]);
       }
     }
@@ -230,7 +251,25 @@ window.CJS.AIController = (() => {
         bestStep = step;
       }
     }
-    return bestStep ? { type: 'move', targetPos: bestStep.to } : null;
+    if (bestStep) return { type: 'move', targetPos: bestStep.to };
+
+    // Final fallback: every melee anchor was unreachable (typically a large
+    // unit hemmed in by walls/units around the target). Pick whichever
+    // reachable cell minimises footprint distance to the target so the
+    // attacker at least closes the gap instead of standing still.
+    const reach = GE().getValidMoves(unit.instanceId);
+    if (!reach.length) return null;
+    const tgtAnchor = tgt.pos;
+    let fallback = null;
+    let fallbackDist = Infinity;
+    for (const [r, c] of reach) {
+      const d = Math.max(
+        Math.abs(r - tgtAnchor[0]),
+        Math.abs(c - tgtAnchor[1])
+      );
+      if (d < fallbackDist) { fallbackDist = d; fallback = [r, c]; }
+    }
+    return fallback ? { type: 'move', targetPos: fallback } : null;
   }
 
   // ── TRY MOVE AWAY ──────────────────────────────────────────────────
@@ -338,6 +377,12 @@ window.CJS.AIController = (() => {
     if (cd && cd > 0) return false;
     if ((unit.currentMP || 0) < (skill.mp || 0)) return false;
     if ((unit.turnState?.apRemaining || 0) < (skill.ap || 1)) return false;
+    const AH = window.CJS.ActionHandler;
+    if (AH && AH.meetsWeaponRequirement && !AH.meetsWeaponRequirement(unit, skill)) return false;
+    if (skill.isUltimate) {
+      const cost = Number(skill.ultimateCost || 100);
+      if ((unit.ultimateMeter || 0) < cost) return false;
+    }
     return true;
   }
 
