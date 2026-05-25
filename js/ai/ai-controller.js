@@ -344,12 +344,20 @@ window.CJS.AIController = (() => {
     // heal-type skill, use it BEFORE falling through to basic attack.
     // Without this, the AI's "basic attack first" preference burns the
     // turn on a chip-damage attack while an ally drops dead.
-    const critAlly = _criticallyWoundedAlly(unit, ctx);
-    if (critAlly) {
-      const healSkills = readySkills.filter(_isHealSkill);
-      for (const skill of healSkills) {
-        const decision = _firstSkillDecision(unit, skill, ['lowest_hp_ally', 'self'], ctx);
-        if (decision) return decision;
+    //
+    // Scoped to characters (no authored behaviorAI), inferred-support
+    // kits, and explicit support / summoner archetypes so authored
+    // monster behaviour is preserved. A monster with a heal skill in
+    // its kit can opt in by declaring behaviorAI: 'support'.
+    const wantsEmergencyHeal = !unit.behaviorAI || archetype === 'support' || archetype === 'summoner';
+    if (wantsEmergencyHeal) {
+      const critAlly = _criticallyWoundedAlly(unit, ctx);
+      if (critAlly) {
+        const healSkills = readySkills.filter(_isHealSkill);
+        for (const skill of healSkills) {
+          const decision = _firstSkillDecision(unit, skill, ['lowest_hp_ally', 'self'], ctx);
+          if (decision) return decision;
+        }
       }
     }
 

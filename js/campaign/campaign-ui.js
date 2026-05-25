@@ -10792,6 +10792,11 @@ window.CJS.CampaignUI = (() => {
     // Bridge surface for React-owned tabs (Phase D migration). Tabs that
     // have moved to React read engine state through these getters instead
     // of reaching into closure-private state.
-    getBootIncompatibleNotice: () => _bootIncompatibleNotice
+    getBootIncompatibleNotice: () => _bootIncompatibleNotice,
+    // Exposes the frozen helper bundle that vanilla tab modules consume
+    // (memberBase, memberStats, renderEquipmentLoadout, etc.). React tabs
+    // call into these for the closure-private math + sub-renderers that
+    // would be invasive to port one-by-one to TypeScript right now.
+    getTabHelpers: () => _tabHelpers()
   });
 })();

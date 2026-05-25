@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useCampaignState, type CampaignStateSnapshot } from "./store";
 import { CampaignSettingsTab } from "./tabs/CampaignSettingsTab";
 import { CampaignLogsTab } from "./tabs/CampaignLogsTab";
+import { CampaignRosterTab } from "./tabs/CampaignRosterTab";
 
 // Registry of React components that own a migrated campaign tab. The
 // matching vanilla-side tab registration lives in
@@ -11,7 +12,8 @@ const REACT_TAB_COMPONENTS: Readonly<
   Record<string, (props: { state: CampaignStateSnapshot }) => React.ReactNode>
 > = {
   settings: (props) => <CampaignSettingsTab {...props} />,
-  logs: (props) => <CampaignLogsTab {...props} />
+  logs: (props) => <CampaignLogsTab {...props} />,
+  roster: (props) => <CampaignRosterTab {...props} />
 };
 
 // Bridges React-owned tabs into the vanilla shell. After every vanilla

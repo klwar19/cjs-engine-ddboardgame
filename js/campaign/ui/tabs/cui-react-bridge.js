@@ -44,4 +44,13 @@ window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
   Tabs.register('logs', {
     render: () => mount('logs')
   });
+
+  // `roster` is also registered by `cui-party-tab.js` at module-load
+  // time; this entry overwrites that registration (Map.set semantics)
+  // so the React-side bridge wins. The PartyTab module remains loaded
+  // — CampaignRosterTab.tsx calls into it to render each member's body
+  // until the full per-card JSX port lands in a follow-up.
+  Tabs.register('roster', {
+    render: () => mount('roster')
+  });
 })();

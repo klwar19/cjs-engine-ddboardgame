@@ -104,7 +104,10 @@ ok('Tabs.ids is a function', typeof Tabs?.ids === 'function');
 // 2. The canonical tabs self-registered on module load. If any of the
 //    tab modules failed to import (e.g. dropped from src/campaign/main.tsx
 //    after a refactor), at least one of these checks will fail.
-const REQUIRED_TABS = ['roster', 'sideForge', 'oracleForge', 'worldMap', 'worldActivities'];
+// Tabs still owned by vanilla render (the registry returns their HTML
+// directly). `roster` is intentionally NOT in this list — the React
+// bridge overrides cui-party-tab.js's registration.
+const REQUIRED_TABS = ['sideForge', 'oracleForge', 'worldMap', 'worldActivities'];
 for (const id of REQUIRED_TABS) {
   ok('tab "' + id + '" is registered', Tabs.has(id));
   const def = Tabs.get(id);
@@ -113,7 +116,9 @@ for (const id of REQUIRED_TABS) {
 
 // React-owned tabs register a stable mount-point placeholder; the React
 // shell portals the actual component into the div on each vanilla render.
-const REACT_TABS = ['settings', 'logs'];
+// `roster` is here because cui-react-bridge.js re-registers it AFTER
+// cui-party-tab.js has registered the vanilla renderer — Map.set wins.
+const REACT_TABS = ['settings', 'logs', 'roster'];
 for (const id of REACT_TABS) {
   ok('React tab "' + id + '" is registered', Tabs.has(id));
   const html = Tabs.render(id, { currentWorld: 'haven' }, {});
