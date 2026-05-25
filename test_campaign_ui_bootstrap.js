@@ -62,7 +62,8 @@ const loadOrder = [
   'campaign/ui/tabs/cui-tabs-registry.js',
   'campaign/ui/tabs/cui-party-tab.js',
   'campaign/ui/tabs/cui-hub-tab.js',
-  'campaign/ui/tabs/cui-world-map-tab.js'
+  'campaign/ui/tabs/cui-world-map-tab.js',
+  'campaign/ui/tabs/cui-react-bridge.js'
 ];
 
 for (const file of loadOrder) {
@@ -108,6 +109,18 @@ for (const id of REQUIRED_TABS) {
   ok('tab "' + id + '" is registered', Tabs.has(id));
   const def = Tabs.get(id);
   ok('tab "' + id + '" has a render function', typeof def?.render === 'function');
+}
+
+// React-owned tabs register a stable mount-point placeholder; the React
+// shell portals the actual component into the div on each vanilla render.
+const REACT_TABS = ['settings', 'logs'];
+for (const id of REACT_TABS) {
+  ok('React tab "' + id + '" is registered', Tabs.has(id));
+  const html = Tabs.render(id, { currentWorld: 'haven' }, {});
+  ok('React tab "' + id + '" returns a mount placeholder',
+     typeof html === 'string'
+     && html.indexOf('data-react-tab="' + id + '"') >= 0
+     && html.indexOf('id="campaign-react-tab-' + id + '"') >= 0);
 }
 
 // 3. The tab modules also expose their public namespaces so the shell's

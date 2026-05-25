@@ -1092,6 +1092,9 @@ window.CJS.ActionHandler = (() => {
   return Object.freeze({
     validate, execute, getAvailableActions,
     simulateAIQTE, getAttackRange,
+    // Exposed for AI pre-validation so the AI doesn't pick a skill
+    // whose weapon requirement will then be rejected at execute time.
+    meetsWeaponRequirement: _meetsWeaponRequirement,
     // Combo system
     getComboState, getComboBonus, resetCombo
   });

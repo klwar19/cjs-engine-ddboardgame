@@ -79,6 +79,7 @@ import "../../js/campaign/ui/tabs/cui-tabs-registry.js";
 import "../../js/campaign/ui/tabs/cui-party-tab.js";
 import "../../js/campaign/ui/tabs/cui-hub-tab.js";
 import "../../js/campaign/ui/tabs/cui-world-map-tab.js";
+import "../../js/campaign/ui/tabs/cui-react-bridge.js";
 import "../../js/campaign/campaign-ui.js";
 import "../../js/ui/audio-manager.js";
 import "../../js/ui/l2d-avatar.js";
