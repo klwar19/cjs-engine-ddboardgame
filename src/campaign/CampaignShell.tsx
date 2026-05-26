@@ -3,6 +3,12 @@ import { createPortal } from "react-dom";
 import { useCampaignState, type CampaignStateSnapshot } from "./store";
 import { CampaignHelpPopover } from "./HelpPopover";
 import { dispatchCampaignAction } from "./actions";
+import { CampaignHeader } from "./shell/Header";
+import { CampaignModeBar } from "./shell/ModeBar";
+import { CampaignSubTabs } from "./shell/SubTabs";
+import { CampaignRecentLog } from "./shell/RecentLog";
+import { CampaignCommandRail } from "./shell/CommandRail";
+import { getChromeData } from "./shell/bridge";
 import { CampaignSettingsTab } from "./tabs/CampaignSettingsTab";
 import { CampaignLogsTab } from "./tabs/CampaignLogsTab";
 import { CampaignRosterTab } from "./tabs/CampaignRosterTab";
@@ -40,12 +46,10 @@ import {
   CampaignOverviewTab
 } from "./tabs/CampaignVanillaTabs";
 
-// Phase E React Shell: this component owns the campaign chrome
+// React Shell: this component owns the campaign chrome
 // (header, mode bar, sub-tabs, recent log strip, command rail, drawer)
-// in real React. The legacy `js/campaign/campaign-ui.js` still produces
-// the HTML strings for those parts via `getShellFragments()`, but they
-// live inside stable React-owned containers now — so React-portal'd
-// tabs no longer get torn down + re-mounted on every vanilla render.
+// in real React. Each chrome strip is its own JSX component in
+// `./shell/`, reading typed data via `getChromeData(state)`.
 //
 // The body area renders React tab components directly. Tabs not yet
 // migrated to JSX fall back to `getMainBody()` (vanilla HTML).
@@ -54,18 +58,6 @@ import {
 // imperative `_drawerEl`/`_drawerBackdropEl` flow in campaign-ui.js.
 
 // ── Bridge surface (mirror of campaign-ui.js bridge) ───────────────
-interface ShellFragments {
-  readonly header: string;
-  readonly modeBar: string;
-  readonly subTabs: string;
-  readonly recentLog: string;
-  readonly commandRail: string;
-  readonly activePanel: string | null;
-  readonly activeMode: string;
-  readonly activeTab: string;
-  readonly isUtility: boolean;
-}
-
 interface PanelDef {
   readonly icon: string;
   readonly label: string;
@@ -75,7 +67,6 @@ interface PanelDef {
 interface CampaignUIShell {
   readonly enableReactShell: () => void;
   readonly init: (root: HTMLElement) => Promise<void> | void;
-  readonly getShellFragments: (state?: CampaignStateSnapshot) => ShellFragments | null;
   readonly getMainBody: (state?: CampaignStateSnapshot) => string;
   readonly getPanelDefs: (state?: CampaignStateSnapshot) => Record<string, PanelDef>;
   readonly getPanelOrder: () => readonly string[];
@@ -237,9 +228,8 @@ export function CampaignShell() {
     );
   }
 
-  const UI = cjs().CampaignUI;
-  const fragments = UI?.getShellFragments(state) ?? null;
-  if (!fragments) {
+  const chrome = getChromeData(state);
+  if (!chrome) {
     return (
       <div ref={rootRef} id="campaign-root" className="campaign-root">
         <div className="campaign-loading">Loading Campaign Mode...</div>
@@ -247,8 +237,8 @@ export function CampaignShell() {
     );
   }
 
-  const activeTab = fragments.activeTab;
-  const activePanel = fragments.activePanel;
+  const activeTab = chrome.activeTab;
+  const activePanel = chrome.activePanel;
   const ReactTab = REACT_TAB_COMPONENTS[activeTab];
 
   return (
@@ -258,39 +248,27 @@ export function CampaignShell() {
       className="campaign-root"
     >
       <div className={`campaign-shell${activePanel ? " has-drawer-open" : ""}`}>
-        <ShellFragment kind="header" html={fragments.header} />
-        <ShellFragment kind="mode-bar" html={fragments.modeBar} />
-        <ShellFragment kind="sub-tabs" html={fragments.subTabs} />
-        <ShellFragment kind="log-strip" html={fragments.recentLog} />
+        <CampaignHeader data={chrome.header} />
+        <CampaignModeBar data={chrome.modeBar} />
+        <CampaignSubTabs
+          tabs={chrome.subTabs}
+          activeTab={chrome.activeTab}
+          isUtility={chrome.isUtility}
+        />
+        <CampaignRecentLog data={chrome.recentLog} />
         <div className="campaign-body">
           <main className="campaign-main">
             {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
           </main>
-          <aside
-            className="campaign-rail"
-            dangerouslySetInnerHTML={{ __html: fragments.commandRail }}
-          />
+          <aside className="campaign-rail">
+            <CampaignCommandRail data={chrome.commandRail} />
+          </aside>
         </div>
         <input type="file" id="campaign-import-file" accept=".json" hidden />
       </div>
       {activePanel ? <CampaignDrawer panelId={activePanel} state={state} /> : null}
       <CampaignHelpPopover />
     </div>
-  );
-}
-
-// ── Small helpers ─────────────────────────────────────────────────
-// Each chrome fragment is a stable div with `dangerouslySetInnerHTML`.
-// React keeps the wrapper across re-renders (same DOM node, same key),
-// so React tab components nested inside the body don't get unmounted
-// when the chrome's innerHTML changes.
-function ShellFragment({ kind, html }: { kind: string; html: string }) {
-  return (
-    <div
-      className={`campaign-shell-fragment campaign-shell-${kind}`}
-      data-shell-fragment={kind}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
   );
 }
 

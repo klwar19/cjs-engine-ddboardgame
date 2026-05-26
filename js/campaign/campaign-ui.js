@@ -110,8 +110,8 @@ window.CJS.CampaignUI = (() => {
   // When the React shell takes ownership of the chrome, this flag stops
   // `render()` from clobbering _root.innerHTML on every mutate. The
   // shell still gets notified via the `campaign:state-tick` event so it
-  // can re-read getShellFragments() and re-render its dangerouslySetInnerHTML
-  // panes. See `src/campaign/CampaignShell.tsx` for the consumer side.
+  // can re-read getChromeData() and re-render the JSX chrome strips.
+  // See `src/campaign/CampaignShell.tsx` for the consumer side.
   let _reactShellEnabled = false;
   let _combatResultUnsub = null;
   let _combatReturnEventsBound = false;
@@ -380,8 +380,8 @@ window.CJS.CampaignUI = (() => {
 
     if (_reactShellEnabled) {
       // React owns the chrome. Skip the innerHTML clobber and let the
-      // CampaignShell read fresh fragments via getShellFragments() on
-      // the next state-tick. The shell still listens for `campaign:rendered`
+      // CampaignShell read fresh data via getChromeData() on the next
+      // state-tick. The shell still listens for `campaign:rendered`
       // for backward compatibility with the legacy portal bridge.
       try {
         _root.dispatchEvent(new CustomEvent('campaign:state-tick', {
@@ -10902,21 +10902,121 @@ window.CJS.CampaignUI = (() => {
     _reactShellEnabled = true;
   }
 
-  function getShellFragments(state = CS().getState()) {
+  // Structured, JSX-friendly chrome data consumed by the React chrome
+  // components in `src/campaign/shell/`. Returns a typed snapshot the
+  // components map directly into JSX — no HTML strings. The legacy
+  // vanilla render() path uses `_renderHeader`/`_renderModeBar`/…
+  // directly and never calls this.
+  function getChromeData(state = CS().getState()) {
     if (!state) return null;
     const campaign = CS().getCurrentCampaign();
+    const world = CS().getCurrentWorld();
     const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
-    const subTabs = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
+    const subTabsRaw = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
     return {
-      header: _renderHeader(state, campaign),
-      modeBar: _renderModeBar(state),
-      subTabs: _renderSubTabs(subTabs, isUtility),
-      recentLog: _renderRecentLogStrip(state),
-      commandRail: _renderCommandRail(state),
-      activePanel: _activePanel,
       activeMode: _activeMode,
       activeTab: _activeTab,
-      isUtility
+      activePanel: _activePanel,
+      isUtility,
+      header: _chromeHeaderData(state, campaign, world),
+      modeBar: _chromeModeBarData(state, isUtility),
+      subTabs: subTabsRaw.map(([id, label]) => ({ id, label })),
+      recentLog: _chromeRecentLogData(state),
+      commandRail: _chromeCommandRailData(state)
+    };
+  }
+
+  function _chromeHeaderData(state, campaign, world) {
+    const phase = state.phase || { number: 1, type: 'unknown', name: '' };
+    const WE = window.CJS.CampaignWorldEvents;
+    const events = WE?.getActive ? WE.getActive() : [];
+    return {
+      campaignName: campaign?.name || 'Campaign',
+      worldName: world?.displayName || state.currentWorld || '',
+      chapter: state.storyMode?.currentChapterLabel || state.currentChapter || 1,
+      phaseNumber: phase.number,
+      phaseLabel: phase.name || phase.type,
+      worldEvents: events.map((ev) => ({
+        id: ev.id,
+        name: ev.name || ev.id,
+        icon: ev.icon || '✨',
+        summary: ev.summary || '',
+        category: ev.category || 'boon',
+        remainingPhases: ev.remainingPhases
+      })),
+      currencies: _currencyAmounts(state)
+    };
+  }
+
+  function _chromeModeBarData(state, isUtility) {
+    const modes = _appModesForState(state).map(([id, label, icon]) => ({ id, label, icon }));
+    const utilityTabs = APP_UTILITY_TABS.map(([id, label]) => ({ id, label }));
+    return {
+      modes,
+      activeMode: isUtility ? null : _activeMode,
+      utilityTabs,
+      activeTab: _activeTab,
+      scenarioHud: _chromeScenarioHudData(state)
+    };
+  }
+
+  function _chromeScenarioHudData(state) {
+    const run = state.activeScenarioRun;
+    if (!run) return null;
+    const scenario = CS().getScenarioById(run.scenarioId);
+    return {
+      scenarioName: scenario?.name || run.scenarioId,
+      danger: run.danger,
+      dangerMax: run.dangerMax,
+      campsUsed: run.usedCampRests,
+      campsMax: run.limits?.campRests ?? 0,
+      battlesUsed: run.randomBattlesUsed,
+      battlesMax: run.limits?.randomBattles ?? 0,
+      generated: !!scenario?.generated
+    };
+  }
+
+  function _chromeRecentLogData(state) {
+    const entries = (state.log || []).slice(0, 3).map((line) => ({
+      kind: _CUILog.logKind(line),
+      text: line.text || '',
+      meta: _CUILog.logMeta(line, true)
+    }));
+    return {
+      entries,
+      hasLog: (state.log || []).length > 0
+    };
+  }
+
+  function _chromeCommandRailData(state) {
+    const panelDefs = _panelDefsForState(state);
+    const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
+    const logCount = (state.log || []).length;
+    const notesCount = (state.pinnedNotes || []).length;
+    const inventoryCount = ['items', 'materials', 'food', 'questItems']
+      .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
+    const partyCount = Object.keys(state.party || {}).length;
+    const counts = {
+      party: partyCount,
+      inventory: inventoryCount,
+      quests: activeQuests,
+      log: logCount,
+      notes: notesCount
+    };
+    const panels = RAIL_ORDER.filter((id) => panelDefs[id]).map((id) => {
+      const def = panelDefs[id];
+      return {
+        id,
+        icon: def.icon,
+        label: def.label,
+        title: def.title,
+        count: counts[id] || 0
+      };
+    });
+    return {
+      panels,
+      activePanel: _activePanel,
+      currency: _currencyAmounts(state)
     };
   }
 
@@ -11000,7 +11100,7 @@ window.CJS.CampaignUI = (() => {
     // and instead emits `campaign:state-tick` events for the shell to
     // re-render against.
     enableReactShell,
-    getShellFragments,
+    getChromeData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

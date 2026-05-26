@@ -41,11 +41,12 @@ const ui = fs.readFileSync(uiPath, 'utf8');
 const shell = fs.readFileSync(shellPath, 'utf8');
 const page = fs.readFileSync(pagePath, 'utf8');
 
-// Bridge functions: every name listed here is read by the React shell.
+// Bridge functions: every name listed here is read by the React shell
+// (directly or through the `src/campaign/shell/bridge.ts` wrapper).
 // Removing one without updating the shell will break the chrome.
 const BRIDGE_FUNCS = [
   'enableReactShell',
-  'getShellFragments',
+  'getChromeData',
   'getMainBody',
   'getPanelDefs',
   'getPanelOrder',
@@ -65,13 +66,39 @@ for (const name of BRIDGE_FUNCS) {
   ok('bridge exposes ' + name, reFn.test(ui) || reKey.test(ui));
 }
 
-// The React shell must read each of those functions for the chrome to
-// be wired up correctly.
-const SHELL_USES = ['enableReactShell', 'getShellFragments', 'getMainBody',
-  'getPanelDefs', 'renderDrawerBody', 'setActivePanel'];
+// The React shell must read these functions for the chrome to be wired
+// up correctly. `getChromeData` lives behind `src/campaign/shell/bridge.ts`
+// so we check that the wrapper imports it as well.
+const SHELL_USES = ['enableReactShell', 'getMainBody', 'getPanelDefs',
+  'renderDrawerBody', 'setActivePanel'];
 for (const name of SHELL_USES) {
   ok('CampaignShell.tsx uses ' + name, shell.indexOf(name) >= 0);
 }
+
+const bridgeShellPath = path.join(__dirname, 'src/campaign/shell/bridge.ts');
+ok('src/campaign/shell/bridge.ts exists', fs.existsSync(bridgeShellPath));
+const bridgeShell = fs.readFileSync(bridgeShellPath, 'utf8');
+ok('shell/bridge.ts uses getChromeData', bridgeShell.indexOf('getChromeData') >= 0);
+ok('shell/bridge.ts uses setActiveMode', bridgeShell.indexOf('setActiveMode') >= 0);
+ok('shell/bridge.ts uses setActiveTab', bridgeShell.indexOf('setActiveTab') >= 0);
+ok('shell/bridge.ts uses setActivePanel', bridgeShell.indexOf('setActivePanel') >= 0);
+
+// CampaignShell.tsx renders the new JSX chrome components instead of
+// dangerouslySetInnerHTML fragments. Asserting the imports is enough:
+// the JSX directly references them so any drift breaks build/typecheck.
+const CHROME_COMPONENTS = ['CampaignHeader', 'CampaignModeBar',
+  'CampaignSubTabs', 'CampaignRecentLog', 'CampaignCommandRail'];
+for (const name of CHROME_COMPONENTS) {
+  ok('CampaignShell.tsx renders ' + name, shell.indexOf('<' + name) >= 0);
+}
+
+// The shell must NOT use dangerouslySetInnerHTML to render the chrome
+// strip after Phase F. The drawer body and unmigrated tab bodies still
+// do, so we look for the chrome-specific `__html: fragments.` pattern
+// the old shell used.
+ok('CampaignShell.tsx does not render fragments.header via dangerouslySetInnerHTML',
+   shell.indexOf('fragments.header') < 0 && shell.indexOf('fragments.modeBar') < 0
+   && shell.indexOf('fragments.commandRail') < 0);
 
 // CampaignPage.tsx delegates to CampaignShell with no other Shell logic.
 ok('CampaignPage renders CampaignShell', /<CampaignShell\s*\/?>/.test(page));
