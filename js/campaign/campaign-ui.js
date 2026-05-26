@@ -2828,22 +2828,48 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  // Phase G — typed scenario pill for the quest row. Returns a
+  // QuestPillData shape (or null) the React `QuestPill` renders.
   function _questScenarioPill(quest = {}, activeRun = null, activeScenario = null) {
-    if (!quest?.id) return '';
+    if (!quest?.id) return null;
     if (_activeRunQuestId(activeRun, activeScenario) === quest.id) {
-      return `<span class="campaign-pill campaign-pill-link" title="A scenario for this quest is currently running">▶ Running: ${_esc(activeScenario?.name || activeRun?.scenarioId || 'scenario')}</span>`;
+      return {
+        variant: 'running',
+        label: `▶ Running: ${activeScenario?.name || activeRun?.scenarioId || 'scenario'}`,
+        title: 'A scenario for this quest is currently running',
+        linkable: true,
+        muted: false
+      };
     }
     const linkedId = quest.linkedScenario || quest.scenarioId || quest.scenario;
     if (linkedId) {
       const sc = CS().getScenarioById?.(linkedId);
-      return `<span class="campaign-pill" title="This quest has a pre-built scenario linked to it">📜 Linked: ${_esc(sc?.name || linkedId)}</span>`;
+      return {
+        variant: 'linked',
+        label: `📜 Linked: ${sc?.name || linkedId}`,
+        title: 'This quest has a pre-built scenario linked to it',
+        linkable: false,
+        muted: false
+      };
     }
     const generated = Object.values(CS().getState()?.sideContent?.generatedScenarios || {})
       .find((sc) => sc?.source?.questId === quest.id);
     if (generated) {
-      return `<span class="campaign-pill" title="A scenario was previously generated for this quest">🗺 Generated: ${_esc(generated.name || generated.id)}</span>`;
+      return {
+        variant: 'generated',
+        label: `🗺 Generated: ${generated.name || generated.id}`,
+        title: 'A scenario was previously generated for this quest',
+        linkable: false,
+        muted: false
+      };
     }
-    return `<span class="campaign-pill campaign-muted-pill" title="No scenario yet — Map Run will generate one">no map yet</span>`;
+    return {
+      variant: 'noMap',
+      label: 'no map yet',
+      title: 'No scenario yet — Map Run will generate one',
+      linkable: false,
+      muted: true
+    };
   }
 
   // The Session Log panel (`tab: logs`) and the Save Manager / Settings
@@ -10048,7 +10074,7 @@ window.CJS.CampaignUI = (() => {
       scenarioHint: isRunQuest
         ? 'Jump to the active map for this quest'
         : 'Start (or generate) the map run for this quest',
-      scenarioPillHtml: _questScenarioPill(quest, activeRun, activeScenario) || '',
+      scenarioPill: _questScenarioPill(quest, activeRun, activeScenario),
       hasMiniGame: !!_questMiniGameObjective(quest),
       tagChips: tags,
       variant: (variantLabel || variantText || variantRepeat)

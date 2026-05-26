@@ -3,12 +3,12 @@
 // One JSX component rendering one quest card. Shared by QuestHome
 // (first 4 active quests) and QuestsPanel (all active + resolved).
 // Action buttons use direct onClick handlers via dispatchCampaignAction
-// with the quest id payload. The scenario pill at the title row stays
-// as a small HTML bridge because `_questScenarioPill` has four-way
-// conditional logic that has not been ported.
+// with the quest id payload. The scenario pill at the title row uses
+// the shared typed `<QuestPill>` (G.15 + Phase G completion).
 
 import { dispatchCampaignAction } from "../actions";
 import type { QuestRowData, QuestObjective, QuestVariant } from "./data/questRow";
+import { QuestPill } from "./ScenarioChips";
 
 export function QuestRow({ row }: { row: QuestRowData }) {
   return (
@@ -19,12 +19,7 @@ export function QuestRow({ row }: { row: QuestRowData }) {
           <span className={`campaign-pill campaign-quest-status ${row.statusClass}`}>
             {row.statusLabel}
           </span>
-          {row.scenarioPillHtml && (
-            <span
-              className="campaign-quest-scenario-pill-bridge"
-              dangerouslySetInnerHTML={{ __html: row.scenarioPillHtml }}
-            />
-          )}
+          <QuestPill data={row.scenarioPill} />
         </div>
         {row.metaLine && <div className="campaign-muted">{row.metaLine}</div>}
         {row.summary && <div className="campaign-muted">{row.summary}</div>}

@@ -6,7 +6,9 @@ export type QuestPillVariant =
   | "arc"
   | "running"
   | "linked"
-  | "noBinding";
+  | "generated"
+  | "noBinding"
+  | "noMap";
 
 export interface QuestPillData {
   readonly variant: QuestPillVariant;

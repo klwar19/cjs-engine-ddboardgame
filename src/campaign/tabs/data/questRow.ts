@@ -1,6 +1,8 @@
 // questRow.ts — Phase G typed shape for the shared QuestRow JSX
 // component used by QuestHome and QuestsPanel.
 
+import type { QuestPillData } from "./scenarioShared";
+
 export interface QuestObjective {
   readonly id: string;
   readonly label: string;
@@ -29,7 +31,7 @@ export interface QuestRowData {
   readonly scenarioDisabled: boolean;
   readonly scenarioLabel: string;
   readonly scenarioHint: string;
-  readonly scenarioPillHtml: string;
+  readonly scenarioPill: QuestPillData | null;
   readonly hasMiniGame: boolean;
   readonly tagChips: readonly string[];
   readonly variant: QuestVariant | null;
