@@ -3,8 +3,10 @@
 // campaign-ui.js (`_storyVnHeroData`, `_storyNextStepData`) produces
 // these.
 
+import type { CampaignActionName } from "../../actionNames";
+
 export interface StoryActionButton {
-  readonly action: string;
+  readonly action: CampaignActionName;
   readonly label: string;
   readonly hint: string;
   readonly kind: string;

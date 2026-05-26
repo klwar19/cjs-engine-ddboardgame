@@ -7,7 +7,7 @@
 // pills on each entry are now full JSX (Phase G.9).
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getEventTabData,
   type EventTabData,
@@ -96,7 +96,7 @@ function HeroAction({
   hint,
   kind
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

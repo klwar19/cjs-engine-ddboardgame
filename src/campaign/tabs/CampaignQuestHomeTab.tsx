@@ -13,7 +13,7 @@
 // dispatchCampaignAction.
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import { getQuestHomeData, type QuestHomeData, type QuestPaperLite } from "./data/questHome";
 import { QuestRow } from "./QuestRow";
 import type { QuestRowData } from "./data/questRow";
@@ -269,7 +269,7 @@ function QuestRunTools({ data }: { data: Extract<QuestHomeData, { isZombie: fals
 }
 
 interface ActionProps {
-  readonly action: string;
+  readonly action: CampaignActionName;
   readonly label: string;
   readonly hint: string;
   readonly kind?: string;
@@ -296,6 +296,6 @@ function ActionButton({ action, label, hint, kind, disabled, data }: ActionProps
   );
 }
 
-function HeroAction({ action, label, hint, kind }: { action: string; label: string; hint: string; kind?: string }) {
+function HeroAction({ action, label, hint, kind }: { action: CampaignActionName; label: string; hint: string; kind?: string }) {
   return <ActionButton action={action} label={label} hint={hint} kind={kind} />;
 }

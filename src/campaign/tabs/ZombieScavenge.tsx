@@ -4,7 +4,7 @@
 // (`_renderZombieScavengeTracker`). Legacy quest rows reuse the
 // shared `<QuestRow>` component (G.1).
 
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import { QuestRow } from "./QuestRow";
 import type { QuestRowData } from "./data/questRow";
 import type {
@@ -193,7 +193,7 @@ function HeroAction({
   kind,
   data
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

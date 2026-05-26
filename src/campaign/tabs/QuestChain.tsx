@@ -2,7 +2,7 @@
 // side-story chain cards (active + template). The shared VN panel,
 // step cards, and stakes preview render from typed bridge data.
 
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import type {
   QuestChainActiveData,
   QuestChainTemplateData,
@@ -162,7 +162,7 @@ function ActionBtn({
   kind,
   children
 }: {
-  action: string;
+  action: CampaignActionName;
   id: string;
   kind?: string;
   children: React.ReactNode;

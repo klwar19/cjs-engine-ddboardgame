@@ -18,6 +18,9 @@
 // `js/campaign/campaign-ui.js` can stay (vanilla still uses it) until
 // every consumer has switched over.
 
+import type { CampaignActionName } from "./actionNames";
+export type { CampaignActionName } from "./actionNames";
+
 // Minimal CJS surface used by the action wrappers.
 interface UiToastModule {
   toast: (message: string, kind?: "info" | "success" | "error", durationMs?: number) => void;
@@ -61,6 +64,7 @@ interface CampaignStateModule {
 
 interface CampaignUIModule {
   render: () => void;
+  handleAction?: (name: string, data?: Record<string, string | number | undefined>) => void;
 }
 
 interface Cjs {
@@ -288,30 +292,25 @@ export function passPhase(): void {
   ops().apply({ op: "pass_phase" }, { source: "ui" });
 }
 
-// ── Bridge to vanilla data-campaign-action dispatch ────────────────
-// React tabs can stay on the vanilla code path while we migrate them
-// one button at a time. dispatchCampaignAction emulates an event-style
-// dispatch so callers in TSX can call `dispatchCampaignAction("foo", { id: 1 })`
-// for any action that doesn't have a typed wrapper yet.
+// ── Typed bridge to the vanilla action dispatcher (Phase H.1) ──────
+// React tabs that haven't been given a dedicated typed wrapper above
+// dispatch by name. This routes directly to `CampaignUI.handleAction`
+// (the public boundary over the `_handleAction` switch) — no synthetic
+// DOM-button click. The legacy delegated listener in campaign-ui.js
+// still feeds `_handleAction` for buttons inside the remaining
+// HTML-bridge tabs (HubTab / PartyTab / WorldMapTab, ported in K.3).
+//
+// `data` keys must be camelCase — they mirror the dataset names each
+// `_handleAction` case reads (id, choice, worldId, targetTab, tab,
+// mode, table, bucket, dir, tool, x, y, ...).
 export function dispatchCampaignAction(
-  campaignAction: string,
+  campaignAction: CampaignActionName,
   data: Record<string, string | number | undefined> = {}
 ): void {
-  const root = document.getElementById("campaign-root");
-  if (!root) {
-    toast(`Action "${campaignAction}" not deliverable: campaign-root missing`, "error");
+  const ui = cjs().CampaignUI;
+  if (!ui?.handleAction) {
+    toast(`Action "${campaignAction}" not deliverable: CampaignUI not loaded`, "error");
     return;
   }
-  // Build a synthetic button and dispatch a click so the vanilla
-  // delegated listener picks it up identically.
-  const btn = document.createElement("button");
-  btn.dataset.campaignAction = campaignAction;
-  for (const [k, v] of Object.entries(data)) {
-    if (v === undefined) continue;
-    btn.dataset[k] = String(v);
-  }
-  btn.style.display = "none";
-  root.appendChild(btn);
-  btn.click();
-  btn.remove();
+  ui.handleAction(campaignAction, data);
 }

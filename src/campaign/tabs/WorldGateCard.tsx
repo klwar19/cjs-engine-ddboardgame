@@ -1,7 +1,7 @@
 // WorldGateCard.tsx — Phase G.13 JSX port of `_renderWorldGateCard`
 // plus the cross-world pressure-strip mini.
 
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import type {
   WorldGateCardEntry,
   WorldGateAction,

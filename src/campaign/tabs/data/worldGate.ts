@@ -1,6 +1,7 @@
 // worldGate.ts — Phase F bridge for the World Gate tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { CampaignActionName } from "../../actionNames";
 
 export interface WorldGatePressureChip {
   readonly id: string;
@@ -9,7 +10,7 @@ export interface WorldGatePressureChip {
 }
 
 export interface WorldGateAction {
-  readonly action: string;
+  readonly action: CampaignActionName;
   readonly label: string;
   readonly hint: string;
   readonly kind: string;

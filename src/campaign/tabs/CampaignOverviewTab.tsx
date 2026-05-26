@@ -7,7 +7,7 @@
 // rumor rows remain a small HTML bridge until HubTab ports (K.3).
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getTownSnapshotData,
   getTownRollFloatData,
@@ -147,7 +147,7 @@ function AdventureDesk() {
 }
 
 interface ControlAction {
-  readonly action: string;
+  readonly action: CampaignActionName;
   readonly label: string;
   readonly hint: string;
   readonly kind?: string;

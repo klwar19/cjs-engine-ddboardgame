@@ -11,7 +11,7 @@
 // All buttons use direct onClick handlers via dispatchCampaignAction.
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getEventLogData,
   type EventLogData,
@@ -99,7 +99,7 @@ function HeroAction({
   hint,
   kind
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

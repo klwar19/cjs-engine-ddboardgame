@@ -57,11 +57,12 @@ for (const name of REQUIRED_EXPORTS) {
   ok('exports ' + name, re.test(source));
 }
 
-// dispatchCampaignAction must look up campaign-root from the DOM. If a
-// future refactor swaps the id, the React shell will silently stop
-// receiving action callbacks — this is the structural check.
-ok('dispatchCampaignAction looks up #campaign-root',
-   /getElementById\("campaign-root"\)/.test(source));
+// dispatchCampaignAction must route through the typed
+// `CampaignUI.handleAction` boundary (Phase H.1). If a future refactor
+// drops this call, the React shell silently stops dispatching actions
+// — this is the structural check.
+ok('dispatchCampaignAction routes through CampaignUI.handleAction',
+   /ui\.handleAction\(campaignAction, data\)/.test(source));
 
 // Settings + Logs tabs must use the typed actions, NOT inline
 // `data-campaign-action` attributes. If a contributor reverts a migrated
@@ -94,6 +95,23 @@ ok('passPhase routes through CampaignOps.apply',
    /export function passPhase[\s\S]{0,200}ops\(\)\.apply\(\{\s*op:\s*"pass_phase"/.test(source));
 ok('benchCharacter routes through CampaignOps.apply',
    /export function benchCharacter[\s\S]{0,200}ops\(\)\.apply\(\{\s*op:\s*"bench_character"/.test(source));
+
+// Phase H.1 — every name in the CampaignActionName union must have a
+// matching `case '<name>':` in the `_handleAction` switch, or a React
+// onClick would compile yet no-op at runtime. Cross-check both ways.
+const namesSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/actionNames.ts'), 'utf8');
+const unionNames = (namesSrc.match(/^\s*\|\s*"([^"]+)"/gm) || [])
+  .map((line) => line.replace(/^\s*\|\s*"/, '').replace(/"$/, ''));
+ok('actionNames union is non-empty', unionNames.length > 100, unionNames.length + ' names');
+
+const uiSrc = fs.readFileSync(path.join(__dirname, 'js/campaign/campaign-ui.js'), 'utf8');
+const switchCases = new Set(
+  (uiSrc.match(/case '([^']+)':/g) || []).map((c) => c.replace(/^case '/, '').replace(/':$/, ''))
+);
+const missingFromSwitch = unionNames.filter((n) => !switchCases.has(n));
+ok('every CampaignActionName has a _handleAction case',
+   missingFromSwitch.length === 0,
+   missingFromSwitch.length ? 'missing: ' + missingFromSwitch.join(', ') : '');
 
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');

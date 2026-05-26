@@ -51,6 +51,7 @@ const BRIDGE_FUNCS = [
   'getPanelDefs',
   'getPanelOrder',
   'renderDrawerBody',
+  'handleAction',
   'setActiveMode',
   'setActiveTab',
   'setActivePanel',

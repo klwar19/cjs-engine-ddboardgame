@@ -6,7 +6,7 @@
 // with the quest id payload. The scenario pill at the title row uses
 // the shared typed `<QuestPill>` (G.15 + Phase G completion).
 
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import type { QuestRowData, QuestObjective, QuestVariant } from "./data/questRow";
 import { QuestPill } from "./ScenarioChips";
 
@@ -125,7 +125,7 @@ function ActionBtn({
   data,
   disabled
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

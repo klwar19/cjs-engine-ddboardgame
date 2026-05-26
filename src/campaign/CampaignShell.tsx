@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCampaignState, type CampaignStateSnapshot } from "./store";
 import { CampaignHelpPopover } from "./HelpPopover";
-import { dispatchCampaignAction } from "./actions";
+import { dispatchCampaignAction, type CampaignActionName } from "./actions";
 import { CampaignHeader } from "./shell/Header";
 import { CampaignModeBar } from "./shell/ModeBar";
 import { CampaignSubTabs } from "./shell/SubTabs";
@@ -379,13 +379,15 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
           ]);
           if (closesPanel.has(action)) close();
           // Forward to the vanilla dispatcher with the same dataset
-          // payload the original delegate would have seen.
+          // payload the original delegate would have seen. `action` is a
+          // runtime DOM string from the HTML-bridge drawer body, so it
+          // crosses the typed boundary via a cast.
           const payload: Record<string, string | number | undefined> = {};
           for (const k of Object.keys(actionBtn.dataset)) {
             if (k === "campaignAction") continue;
             payload[k] = actionBtn.dataset[k];
           }
-          dispatchCampaignAction(action, payload);
+          dispatchCampaignAction(action as CampaignActionName, payload);
         }}
       >
         <header className="campaign-drawer-head">

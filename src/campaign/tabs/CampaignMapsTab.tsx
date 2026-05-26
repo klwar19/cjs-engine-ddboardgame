@@ -11,7 +11,7 @@
 // Action buttons use direct onClick handlers via dispatchCampaignAction.
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getRunData,
   type RunData,
@@ -164,7 +164,7 @@ function SetBattleRow({ battle }: { battle: SetBattle }) {
       </div>
       <button
         className="campaign-action"
-        onClick={() => dispatchCampaignAction("run-queue-set-battle", { "battle-id": battle.id })}
+        onClick={() => dispatchCampaignAction("run-queue-set-battle", { battleId: battle.id })}
       >
         Queue
       </button>
@@ -235,7 +235,7 @@ function BeatRow({ beat }: { beat: LinearBeat }) {
 }
 
 interface ControlAction {
-  readonly action: string;
+  readonly action: CampaignActionName;
   readonly label: string;
   readonly hint: string;
   readonly kind?: string;

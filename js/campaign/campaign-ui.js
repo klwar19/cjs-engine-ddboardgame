@@ -711,7 +711,7 @@ window.CJS.CampaignUI = (() => {
           label: def.enterLabel || `Enter ${world.displayName || worldId}`,
           hint: def.enterHint || 'Switch world and load its content menu',
           kind: 'primary',
-          data: { 'world-id': worldId, 'target-tab': targetTab }
+          data: { worldId, targetTab }
         });
     const secondary = [];
     if (isCurrent) {
@@ -2933,6 +2933,18 @@ window.CJS.CampaignUI = (() => {
         event.target.value = '';
       }
     });
+  }
+
+  // Phase H.1 — public typed action boundary. React components call
+  // `CampaignActions.dispatchCampaignAction(name, data)` which routes
+  // here directly (no synthetic DOM-button click). The delegated
+  // `_bindEvents` listener still feeds `_handleAction` for buttons
+  // inside the remaining HTML-bridge tabs (HubTab / PartyTab /
+  // WorldMapTab, ported in K.3). `data` carries camelCase keys that
+  // mirror the dataset names each case reads (id, choice, worldId,
+  // targetTab, tab, mode, table, bucket, dir, tool, x, y, ...).
+  function handleAction(name, data = {}) {
+    return _handleAction({ campaignAction: String(name), ...data });
   }
 
   function _handleAction(data) {
@@ -10715,6 +10727,7 @@ window.CJS.CampaignUI = (() => {
     getPanelDefs,
     getPanelOrder,
     renderDrawerBody,
+    handleAction,
     setActiveMode,
     setActiveTab,
     setActivePanel,

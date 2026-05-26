@@ -6,7 +6,7 @@
 // are the three hero buttons.
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getStorySummaryData,
   type StorySummaryData,
@@ -81,7 +81,7 @@ function HeroAction({
   hint,
   kind
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

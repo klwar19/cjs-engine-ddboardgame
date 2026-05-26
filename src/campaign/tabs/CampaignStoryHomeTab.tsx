@@ -7,7 +7,7 @@
 // shared result panels.
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import { getStoryHomeData, type StoryHomeData } from "./data/storyHome";
 import { getSequenceShelfData } from "./data/sequence";
 import {
@@ -133,7 +133,7 @@ function ActionButton({
   hint,
   kind
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

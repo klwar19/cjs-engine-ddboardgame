@@ -7,7 +7,7 @@
 // (`HubTab.renderConsequencePreview`) until K.3 ports the HubTab
 // renderers.
 
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import type {
   StoryStageEntry,
   StoryDirectorCardData,
@@ -173,7 +173,7 @@ function CardActionBtn({
   hint,
   kind
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind: string;

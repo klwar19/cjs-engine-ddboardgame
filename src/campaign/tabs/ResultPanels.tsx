@@ -9,7 +9,7 @@
 // their inner data shapes live in sibling modules (HubTab / Controls).
 
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getEventResultData,
   getOracleData,
@@ -509,7 +509,7 @@ function ActionBtn({
   kind,
   disabled
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;

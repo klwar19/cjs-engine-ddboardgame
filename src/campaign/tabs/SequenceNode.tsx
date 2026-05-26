@@ -7,7 +7,7 @@
 // hints, replay-aware labels, and chip text so this component stays
 // presentational.
 
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import type {
   SequenceNodeData,
   SequenceNodeChoice
@@ -214,7 +214,7 @@ function ActionBtn({
   kind,
   disabled
 }: {
-  action: string;
+  action: CampaignActionName;
   label: string;
   hint: string;
   kind?: string;
