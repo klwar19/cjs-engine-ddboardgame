@@ -81,8 +81,8 @@ export const CampaignQuestsPanelTab = ({ state }: Props) =>
 // CampaignScenariosTab moved to a dedicated JSX port at
 // `src/campaign/tabs/CampaignScenariosTab.tsx` (Phase F.8).
 
-export const CampaignMapsTab = ({ state }: Props) =>
-  <VanillaTab tabId="maps" state={state} mountClass="campaign-maps-react" />;
+// CampaignMapsTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignMapsTab.tsx` (Phase F.9).
 
 // CampaignMinigameTestTab moved to a dedicated JSX port at
 // `src/campaign/tabs/CampaignMinigameTestTab.tsx` (Phase F.3).

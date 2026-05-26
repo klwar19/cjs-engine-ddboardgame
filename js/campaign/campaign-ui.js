@@ -901,7 +901,6 @@ window.CJS.CampaignUI = (() => {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
       default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
     }
@@ -3217,143 +3216,10 @@ window.CJS.CampaignUI = (() => {
     if (scenario.size) pills.push(`<span class="campaign-chip">Size: ${sizeLabels[scenario.size] || scenario.size}</span>`);
     return `<div class="campaign-chip-row">${pills.join('')}</div>`;
   }
-  function _renderRun(state) {
-    const run = state.activeScenarioRun;
-    if (!run) {
-      return `
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Current Run</h2></div>
-          <div class="campaign-empty">No run active. Start one from Run Setup.</div>
-          <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Run Setup</button>
-          </div>
-        </section>
-      `;
-    }
-    const mode = run.travelMode || (run.mapId ? 'node_map' : 'freeform');
-    let panel;
-    if (mode === 'freeform') panel = _renderRunFreeform(state, run);
-    else if (mode === 'linear') panel = _renderRunLinear(state, run);
-    else panel = `<div id="campaign-map-region"></div>`;
-    return `
-      <div class="campaign-dashboard">
-        ${panel}
-        ${_renderTravelSurprise(state)}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderLastCombatResult(state)}
-        ${_renderEventResult(state)}
-      </div>
-    `;
-  }
-
-  function _renderRunFreeform(state, run) {
-    const scenario = CS().getActiveScenario();
-    const setBattles = scenario?.setBattles || [];
-    const questPill = _runQuestPill(state, run, scenario);
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h2>${_esc(scenario?.name || 'Run')}</h2>
-          <span class="campaign-pill">Freeform</span>
-          ${questPill}
-        </div>
-        ${_renderShapePills(scenario || {})}
-        <div class="campaign-muted">${_esc(scenario?.notes || 'No map. Pick what happens next.')}</div>
-        <div class="campaign-stat-grid">
-          <span>Danger <b>${run.danger}/${run.dangerMax}</b></span>
-          <span>Camps <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
-          <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
-          <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
-        </div>
-        <div class="campaign-control-stack">
-          ${_controlGroup('Roll Random', `
-            ${_actionBtn({ action: 'run-roll-battle',     label: 'Random Battle',    hint: 'Roll from this scenario’s battle pool', kind: 'primary' })}
-            ${_actionBtn({ action: 'roll-travel-surprise', label: 'Movement Surprise', hint: 'Random encounter from movement (loot, danger, character)' })}
-          `, 'Random output appears below the panel as a card you accept, edit, or ignore.')}
-          ${_controlGroup('Pick / Manual', `
-            ${_actionBtn({ action: 'run-pick-battle',  label: 'Pick Battle',  hint: 'Pick a specific battle from the catalog' })}
-            ${_actionBtn({ action: 'camp-rest',         label: 'Camp Rest',     hint: 'Spend a camp slot to heal and recover' })}
-            ${_actionBtn({ action: 'run-tick-danger',  label: 'Tick Danger +1', hint: 'Manually raise danger (GM control)' })}
-            ${_actionBtn({ action: 'end-scenario',      label: 'End Run',       hint: 'Finish run and write a report', kind: 'danger' })}
-          `, 'Direct controls. End Run writes a report; Cancel (in summary) discards without one.')}
-        </div>
-        <div class="campaign-action-grid" hidden>
-          <button class="campaign-action primary" data-campaign-action="run-roll-battle">🎲 Random Battle</button>
-          <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
-          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
-          <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
-          <button class="campaign-action" data-campaign-action="run-tick-danger">⚠ Tick Danger +1</button>
-          <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
-        </div>
-        ${setBattles.length ? `
-          <div class="campaign-panel-head" style="margin-top:14px"><h3>Set Battles</h3></div>
-          ${setBattles.map((b) => `
-            <div class="campaign-row">
-              <div>
-                <strong>${_esc(b.label || b.name || b.encounterId || b.battleSetId)}</strong>
-                <div class="campaign-muted">${_esc(b.encounterId || b.battleSetId || '')}</div>
-              </div>
-              <button class="campaign-action" data-campaign-action="run-queue-set-battle" data-battle-id="${_escAttr(b.id || b.battleSetId || b.encounterId)}">Queue</button>
-            </div>
-          `).join('')}
-        ` : ''}
-      </section>
-    `;
-  }
-
-  function _renderRunLinear(state, run) {
-    const scenario = CS().getActiveScenario();
-    const beats = scenario?.beats || [];
-    const idx = run.currentBeatIndex ?? 0;
-    const done = idx >= beats.length;
-    const questPill = _runQuestPill(state, run, scenario);
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h2>${_esc(scenario?.name || 'Run')}</h2>
-          <span class="campaign-pill">Linear · Beat ${Math.min(idx + 1, beats.length)}/${beats.length}</span>
-          ${questPill}
-        </div>
-        ${_renderShapePills(scenario || {})}
-        <div class="campaign-muted">${_esc(scenario?.notes || '')}</div>
-        <div class="campaign-stat-grid">
-          <span>Danger <b>${run.danger}/${run.dangerMax}</b></span>
-          <span>Camps <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
-        </div>
-        <ol class="campaign-beat-list" id="campaign-beat-list">
-          ${beats.map((b, i) => `
-            <li class="campaign-beat ${i === idx ? 'is-current' : i < idx ? 'is-done' : ''}" data-beat-id="${_escAttr(b.id)}">
-              <span class="campaign-beat-num">${i + 1}</span>
-              <span class="campaign-beat-icon">${_beatIcon(b.kind)}</span>
-              <div class="campaign-beat-body">
-                <strong>${_esc(b.label || b.id)}</strong>
-                <div class="campaign-muted">${_esc(b.kind || '')}${b.encounterId ? ' · ' + _esc(b.encounterId) : ''}${b.prompt ? ' · ' + _esc(b.prompt) : ''}</div>
-              </div>
-            </li>
-          `).join('')}
-        </ol>
-        <div class="campaign-control-stack">
-          ${_controlGroup('Run Flow', `
-            <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat'}</button>
-            <button class="campaign-action" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
-          `)}
-          ${_controlGroup('Manual Control', `
-            <button class="campaign-action" data-campaign-action="run-pick-battle">Pick Battle</button>
-            <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-            <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
-          `)}
-        </div>
-        <div class="campaign-action-grid" hidden>
-          <button class="campaign-action primary" data-campaign-action="run-next-beat" ${done ? 'disabled' : ''}>${done ? 'All Beats Done' : 'Next Beat ▶'}</button>
-          <button class="campaign-action" data-campaign-action="run-pick-battle">📋 Pick Battle</button>
-          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
-          <button class="campaign-action" data-campaign-action="camp-rest">🏕 Camp</button>
-          <button class="campaign-action danger" data-campaign-action="end-scenario">End</button>
-        </div>
-      </section>
-    `;
-  }
+  // _renderRun / _renderRunFreeform / _renderRunLinear — Phase F.9 port.
+  // Body moved to `src/campaign/tabs/CampaignMapsTab.tsx`. Typed data
+  // flows through `getRunData(state)`. `_beatIcon` stays because the
+  // bridge calls it for the linear-beat icon character.
 
   function _beatIcon(kind) {
     const map = { battle: '⚔', event: '🎴', trap: '🪤', rest: '🏕', reward: '🎁', boss: '👹', exit: '🚪' };
@@ -10312,7 +10178,6 @@ window.CJS.CampaignUI = (() => {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
       default: return '';
     }
@@ -10506,6 +10371,94 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getRunData(state = CS().getState()) {
+    if (!state) return null;
+    const run = state.activeScenarioRun;
+    if (!run) {
+      return {
+        hasRun: false,
+        mode: null,
+        scenarioName: '',
+        scenarioNotes: '',
+        questPillHtml: '',
+        shapePillsHtml: '',
+        run: null,
+        freeform: null,
+        linear: null,
+        travelSurpriseHtml: '',
+        pendingBattleHtml: '',
+        combatResultHtml: '',
+        lastCombatResultHtml: '',
+        eventResultHtml: ''
+      };
+    }
+    const mode = run.travelMode || (run.mapId ? 'node_map' : 'freeform');
+    const scenario = CS().getActiveScenario();
+    const shared = {
+      hasRun: true,
+      mode,
+      scenarioName: scenario?.name || 'Run',
+      scenarioNotes: scenario?.notes || '',
+      questPillHtml: _runQuestPill(state, run, scenario) || '',
+      shapePillsHtml: _renderShapePills(scenario || {}) || '',
+      run: {
+        danger: run.danger,
+        dangerMax: run.dangerMax,
+        campsUsed: run.usedCampRests,
+        campsMax: run.limits?.campRests ?? 0,
+        battlesUsed: run.randomBattlesUsed,
+        battlesMax: run.limits?.randomBattles ?? 0,
+        eventsUsed: run.eventsUsed,
+        eventsMax: run.limits?.events ?? 0
+      },
+      travelSurpriseHtml: _renderTravelSurprise(state) || '',
+      pendingBattleHtml: _renderPendingBattle(state) || '',
+      combatResultHtml: _renderCombatResult(state) || '',
+      lastCombatResultHtml: _renderLastCombatResult(state) || '',
+      eventResultHtml: _renderEventResult(state) || ''
+    };
+    if (mode === 'freeform') {
+      const setBattles = scenario?.setBattles || [];
+      return {
+        ...shared,
+        freeform: {
+          setBattles: setBattles.map((b) => ({
+            id: b.id || b.battleSetId || b.encounterId || '',
+            label: b.label || b.name || b.encounterId || b.battleSetId || '',
+            sub: b.encounterId || b.battleSetId || ''
+          }))
+        },
+        linear: null
+      };
+    }
+    if (mode === 'linear') {
+      const beats = scenario?.beats || [];
+      const idx = run.currentBeatIndex ?? 0;
+      return {
+        ...shared,
+        freeform: null,
+        linear: {
+          beats: beats.map((b, i) => ({
+            id: String(b.id || ''),
+            number: i + 1,
+            label: b.label || b.id || '',
+            kind: b.kind || '',
+            iconChar: _beatIcon(b.kind),
+            encounterId: b.encounterId || '',
+            prompt: b.prompt || '',
+            isCurrent: i === idx,
+            isDone: i < idx
+          })),
+          currentIndex: idx,
+          totalBeats: beats.length,
+          allDone: idx >= beats.length
+        }
+      };
+    }
+    // node_map / grid_map render into #campaign-map-region via CampaignMap.render
+    return { ...shared, freeform: null, linear: null };
+  }
+
   function getScenariosData(state = CS().getState()) {
     if (!state) return null;
     const campaign = CS().getCurrentCampaign();
@@ -10845,6 +10798,7 @@ window.CJS.CampaignUI = (() => {
     getQuestHomeData,
     getEventTabData,
     getScenariosData,
+    getRunData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
