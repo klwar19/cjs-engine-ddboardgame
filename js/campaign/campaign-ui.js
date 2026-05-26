@@ -1856,15 +1856,10 @@ window.CJS.CampaignUI = (() => {
   // Shared hub-flavored primitives kept as closure delegators so the
   // story home, overview, event log, and manual builder can keep
   // calling them without learning about the hub tab module.
-  function _renderTownSnapshot(state) {
-    return window.CJS.CampaignUIInternal.HubTab.renderTownSnapshot(state);
-  }
-
-  function _renderTownRollFloat(state) {
-    return window.CJS.CampaignUIInternal.HubTab.renderTownRollFloat(state, {
-      pendingSoloHookCard: _pendingSoloHookCard
-    });
-  }
+  // _renderTownSnapshot / _renderTownRollFloat removed in Phase G.16 —
+  // the Overview tab now reads typed `getTownSnapshotData(state)` /
+  // `getTownRollFloatData(state)` and renders JSX via
+  // `src/campaign/tabs/TownPanels.tsx`.
 
   function _isRumorOpen(rumor = {}) {
     return window.CJS.CampaignUIInternal.HubTab.isRumorOpen(rumor);
@@ -10624,19 +10619,73 @@ window.CJS.CampaignUI = (() => {
     return { storyParts, manual, facts, queue };
   }
 
-  // Per-section HTML bridge for the Overview tab. Each sectionId maps
-  // to a closure-private `_renderXxx(state)` helper that returns an
-  // HTML string. The JSX port at
-  // `src/campaign/tabs/CampaignOverviewTab.tsx` calls this once per
-  // sub-panel; replacing a bridge call with a JSX component as each
-  // sub-panel migrates.
-  function renderOverviewSectionHtml(sectionId, state = CS().getState()) {
-    if (!state) return '';
-    switch (sectionId) {
-      case 'townSnapshot':     return _renderTownSnapshot(state);
-      case 'townRollFloat':    return _renderTownRollFloat(state);
-      default: return '';
+  // Phase G.16 — typed Town Snapshot + Roll Float data for the
+  // Overview tab. The HubTab still owns the underlying hub state
+  // (CampaignHub.getCurrentHubDefinition / getCurrentHubState); the
+  // rumor row markup stays as an HTML bridge until HubTab itself
+  // ports (K.3).
+  function getTownSnapshotData(state = CS().getState()) {
+    if (!state) return null;
+    const Hub = window.CJS.CampaignHub;
+    const HubTab = window.CJS.CampaignUIInternal.HubTab;
+    const hub = Hub?.getCurrentHubDefinition?.() || {};
+    const hubState = Hub?.getCurrentHubState?.() || {};
+    const activeQuests = Object.values(state.quests || {}).filter((quest) => !_isQuestResolved(quest));
+    const activeChains = CS().getActiveQuestChains?.() || [];
+    const problems = hubState.activeProblems || [];
+    const rumors = HubTab?.openRumors?.(hubState) || [];
+    const stats = ['security', 'prosperity', 'warmth', 'weirdness'].map((stat) => ({
+      id: stat,
+      label: _label(stat),
+      value: Number(hubState[stat] ?? 0)
+    }));
+    return {
+      hubName: String(hub.name || 'Town Overview'),
+      hubDescription: String(hub.description || 'Town phase command view.'),
+      moodLabel: _label(hubState.mood || 'neutral'),
+      stats,
+      kpis: [
+        { count: activeQuests.length, label: 'Open quests', tone: '' },
+        { count: activeChains.length, label: 'Quest arcs', tone: '' },
+        { count: problems.length, label: 'Problems', tone: problems.length ? 'is-risk' : '' },
+        { count: rumors.length, label: 'Rumors', tone: rumors.length ? 'is-plot' : '' }
+      ],
+      problems: problems.slice(0, 4).map((problem) => ({
+        id: String(problem),
+        label: _label(problem)
+      })),
+      rumorRowsHtml: rumors.slice(0, 3)
+        .map((rumor) => HubTab?.renderRumorRow?.(rumor, { compact: true }) || '')
+        .join(''),
+      locations: (hub.locations || []).slice(0, 5).map((loc) => ({
+        id: String(loc.id || ''),
+        name: String(loc.name || loc.id || ''),
+        detail: String(loc.notes || _label(loc.type || 'location'))
+      }))
+    };
+  }
+
+  function getTownRollFloatData(state = CS().getState()) {
+    if (!state) return null;
+    const pending = _pendingSoloHookCard(state);
+    if (!pending) {
+      return { pending: null };
     }
+    const ops = _cardChoiceOps(pending);
+    const hasOps = ops.length > 0;
+    const HubTab = window.CJS.CampaignUIInternal.HubTab;
+    const summary = HubTab?.consequenceSummary?.(ops, {
+      hasText: !!(pending.prompt || pending.summary || pending.text)
+    }) || { tone: 'flavor', label: 'flavor', short: '' };
+    return {
+      pending: {
+        title: String(pending.title || pending.name || pending.id || ''),
+        toneLabel: String(summary.label || ''),
+        toneClass: `is-${summary.tone}`,
+        short: String(summary.short || ''),
+        hasOps
+      }
+    };
   }
 
   function getMinigameTestData(state = CS().getState()) {
@@ -10765,7 +10814,8 @@ window.CJS.CampaignUI = (() => {
     getChromeData,
     getEventLogData,
     getMinigameTestData,
-    renderOverviewSectionHtml,
+    getTownSnapshotData,
+    getTownRollFloatData,
     getAdventureLegendVisible,
     getStorySummaryData,
     getQuestHomeData,

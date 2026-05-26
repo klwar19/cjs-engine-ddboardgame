@@ -1,20 +1,19 @@
 // CampaignOverviewTab.tsx — Phase F JSX port of `_renderOverview`.
 //
-// The Overview tab is the campaign's town/dashboard view. Its outer
-// structure is JSX now: dashboard wrapper, float stack, Adventure
-// Desk action panel. The Adventure Desk's three control groups are
-// fully JSX-driven (the ~22 actions use direct onClick handlers via
-// dispatchCampaignAction).
-//
-// The shared read-only sub-panels (town snapshot, roll float, solo
-// notice, scenario summary, etc.) still render through HTML-string
-// bridges. Each is its own `<Section>` block; porting one to JSX
-// means replacing one dangerouslySetInnerHTML and removing the
-// matching case from `renderOverviewSectionHtml` in campaign-ui.js.
+// The Overview tab is the campaign's town/dashboard view. Every
+// panel is now JSX: dashboard wrapper, town snapshot (G.16), roll
+// float (G.16), Adventure Desk action panel, and the shared result
+// panels (solo notice, scenario summary, etc.). The town-snapshot
+// rumor rows remain a small HTML bridge until HubTab ports (K.3).
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
-import { renderOverviewSectionHtml, getAdventureLegendVisible, type OverviewSectionId } from "./data/overview";
+import {
+  getTownSnapshotData,
+  getTownRollFloatData,
+  getAdventureLegendVisible
+} from "./data/overview";
+import { TownSnapshotPanel, TownRollFloatPanel } from "./TownPanels";
 import {
   EventResultPanel,
   OraclePanel,
@@ -32,11 +31,13 @@ interface Props {
 }
 
 export function CampaignOverviewTab({ state }: Props) {
+  const snapshot = getTownSnapshotData(state);
+  const rollFloat = getTownRollFloatData(state);
   return (
     <div className="campaign-dashboard campaign-town-dashboard">
-      <Section state={state} id="townSnapshot" />
+      {snapshot && <TownSnapshotPanel data={snapshot} />}
       <div className="campaign-town-float-stack">
-        <Section state={state} id="townRollFloat" />
+        {rollFloat && <TownRollFloatPanel data={rollFloat} />}
         <SoloNoticePanel state={state} />
       </div>
       <AdventureDesk />
@@ -50,20 +51,6 @@ export function CampaignOverviewTab({ state }: Props) {
       <OraclePanel state={state} />
       <LastReportPanel state={state} />
     </div>
-  );
-}
-
-// Renders one sub-panel of the overview via the HTML bridge. Empty
-// strings render nothing (the matching `_renderXxx` returns '' when
-// there's no data — e.g. no pending battle, no last oracle).
-function Section({ state, id }: { state: CampaignStateSnapshot; id: OverviewSectionId }) {
-  const html = renderOverviewSectionHtml(id, state);
-  if (!html) return null;
-  return (
-    <div
-      className={`campaign-overview-section campaign-overview-${id}`}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
   );
 }
 

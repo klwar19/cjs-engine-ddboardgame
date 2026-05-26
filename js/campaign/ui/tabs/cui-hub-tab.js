@@ -222,122 +222,12 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
   }
 
   // ── Town pulse (overview helpers) ──────────────────────────────────
-
-  function renderTownSnapshot(state) {
-    const esc = _U().esc;
-    const label = _U().label;
-    const C = _C();
-    const hub = _Hub()?.getCurrentHubDefinition?.();
-    const hubState = _Hub()?.getCurrentHubState?.();
-    const activeQuests = Object.values(state.quests || {}).filter((quest) => !_questResolvedSnapshot(quest));
-    const activeChains = _CS().getActiveQuestChains?.() || [];
-    const problems = hubState?.activeProblems || [];
-    const rumors = openRumors(hubState);
-    const metrics = ['security', 'prosperity', 'warmth', 'weirdness']
-      .map((stat) => `<span>${esc(label(stat))} <b>${esc(hubState?.[stat] ?? 0)}</b></span>`)
-      .join('');
-    const locations = (hub?.locations || []).slice(0, 5).map((loc) => `
-      <div class="campaign-town-line">
-        <strong>${esc(loc.name || loc.id)}</strong>
-        <span>${esc(loc.notes || label(loc.type || 'location'))}</span>
-      </div>
-    `).join('');
-
-    return `
-      <section class="campaign-panel campaign-town-snapshot">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${esc(hub?.name || 'Town Overview')}</h2>
-            <div class="campaign-muted">${esc(hub?.description || 'Town phase command view.')}</div>
-          </div>
-          <span class="campaign-pill">${esc(label(hubState?.mood || 'neutral'))}</span>
-        </div>
-        <div class="campaign-town-summary">
-          <div class="campaign-stat-grid campaign-town-stats">${metrics}</div>
-          <div class="campaign-town-now">
-            <div class="campaign-town-kpi">
-              <b>${activeQuests.length}</b>
-              <span>Open quests</span>
-            </div>
-            <div class="campaign-town-kpi">
-              <b>${activeChains.length}</b>
-              <span>Quest arcs</span>
-            </div>
-            <div class="campaign-town-kpi ${problems.length ? 'is-risk' : ''}">
-              <b>${problems.length}</b>
-              <span>Problems</span>
-            </div>
-            <div class="campaign-town-kpi ${rumors.length ? 'is-plot' : ''}">
-              <b>${rumors.length}</b>
-              <span>Rumors</span>
-            </div>
-          </div>
-        </div>
-        ${C.renderRumorPurpose()}
-        <div class="campaign-town-columns">
-          <div>
-            <div class="campaign-section-title">Pressure</div>
-            ${(problems.length ? problems.slice(0, 4).map((problem) => `
-              <div class="campaign-town-line is-risk">
-                <strong>${esc(label(problem))}</strong>
-                <span>Active hub problem</span>
-              </div>
-            `).join('') : '<div class="campaign-empty">No active hub problems.</div>')}
-            ${(rumors.length ? rumors.slice(0, 3).map((rumor) => renderRumorRow(rumor, { compact: true })).join('') : '')}
-          </div>
-          <div>
-            <div class="campaign-section-title">Places</div>
-            ${locations || '<div class="campaign-empty">No hub locations loaded.</div>'}
-          </div>
-        </div>
-      </section>
-    `;
-  }
-
-  // Mirrors the shell's `_isQuestResolved` predicate. Town snapshot needs
-  // to know "open quests" without depending on the shell's closure-private
-  // copy, so we re-state the rule here. Keep in sync with campaign-ui.js.
-  function _questResolvedSnapshot(quest = {}) {
-    return ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'));
-  }
-
-  function renderTownRollFloat(state, ctx = {}) {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const C = _C();
-    const pending = typeof ctx.pendingSoloHookCard === 'function' ? ctx.pendingSoloHookCard(state) : null;
-    const pendingOps = pending ? cardChoiceOps(pending) : [];
-    const pendingSummary = pending
-      ? consequenceSummary(pendingOps, { hasText: !!(pending.prompt || pending.summary || pending.text) })
-      : null;
-    return `
-      <section class="campaign-panel campaign-random-float ${pending ? 'has-pending' : ''}">
-        <div class="campaign-floating-eyebrow">Roll Random</div>
-        <h3>${pending ? 'Resolve Current Roll' : 'Hub Pulse Box'}</h3>
-        ${pending
-          ? `<p>${esc(pending.title || pending.name || pending.id)}</p>
-             <div class="campaign-impact-row">
-               <span class="campaign-impact-badge is-${escAttr(pendingSummary.tone)}">${esc(pendingSummary.label)}</span>
-               <span>${esc(pendingSummary.short)}</span>
-             </div>`
-          : '<p>Click once, then deal with the result before rolling again.</p>'}
-        <div class="campaign-action-grid">
-          ${pending
-            ? `<button class="campaign-action primary" data-campaign-action="accept-solo-hook">${pendingOps.length ? 'Accept & Apply' : 'Accept as Quest'}</button>
-               <button class="campaign-action" data-campaign-action="save-solo-hook">Save Text</button>
-               <button class="campaign-action danger" data-campaign-action="ignore-solo-hook">Reject</button>`
-            : '<button class="campaign-action primary campaign-roll-now" data-campaign-action="solo-surprise">Roll Random</button>'}
-        </div>
-        <div class="campaign-impact-legend">
-          ${C.impactLegendItem('reward', 'gain')}
-          ${C.impactLegendItem('risk', 'risk')}
-          ${C.impactLegendItem('quest', 'quest')}
-          ${C.impactLegendItem('plot', 'plot')}
-          ${C.impactLegendItem('flavor', 'text')}
-        </div>
-      </section>
-    `;
-  }
+  // renderTownSnapshot / renderTownRollFloat / _questResolvedSnapshot
+  // removed in Phase G.16. The Overview tab now reads typed
+  // `getTownSnapshotData` / `getTownRollFloatData` from campaign-ui.js
+  // and renders JSX via `src/campaign/tabs/TownPanels.tsx`. The typed
+  // bridge still calls `HubTab.openRumors` / `renderRumorRow` /
+  // `consequenceSummary`, so those stay exported below.
 
   // ── Side Forge (Hub) tab ───────────────────────────────────────────
 
@@ -793,8 +683,6 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     renderRumorRow,
     openRumors,
     isRumorOpen,
-    renderTownSnapshot,
-    renderTownRollFloat,
     renderQuestChainActive,
     renderQuestChainResolved,
     renderQuestChainTemplate,
