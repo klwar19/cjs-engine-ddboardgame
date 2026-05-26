@@ -1,13 +1,10 @@
 // CampaignStoryHomeTab.tsx — Phase F JSX port of `_renderStoryHome`.
 //
-// Renders the Story Home tab. The outer dashboard wrapper, the Story
-// Controls panel (4 onClick buttons), the Current Arc stat panel,
-// the Active Sequence body (G.7/G.8), and the sequence shelf (G.10)
-// are full JSX. The other sub-panels — VN hero with the chapter
-// banner video, chapter tree, choice-consequences alignment grid,
-// AI story-context, pipeline, sync-summary — still render via HTML
-// bridges. Each is its own isolated chunk so individual ports can
-// land later.
+// Every sub-panel here is JSX as of Phase G.12: the dashboard
+// wrapper, the VN hero (G.11a), active sequence (G.7 / G.8), chapter
+// tree, choice consequence, AI story context, sequence shelf (G.10),
+// story controls, current arc, pipeline, sync summary, and the
+// shared result panels.
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
@@ -22,6 +19,13 @@ import {
 } from "./ResultPanels";
 import { SequenceShelfPanel } from "./SequenceCard";
 import { StoryVnHero } from "./StoryVn";
+import {
+  ChapterTreePanel,
+  ChoiceConsequencePanel,
+  AiStoryContextPanel,
+  StoryPipelinePanel,
+  SyncSummaryPanel
+} from "./StoryHomePanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -46,25 +50,20 @@ export function CampaignStoryHomeTab({ state }: Props) {
     <div className={dashboardCls} style={data.themeStyleVars as React.CSSProperties}>
       <StoryVnHero data={data.vnHero} />
       <ActiveSequencePanel state={state} scopes={["story"]} />
-      <HtmlBridge html={data.chapterTreeHtml} className="campaign-chapter-tree-bridge" />
-      <HtmlBridge html={data.choiceConsequenceHtml} className="campaign-choice-consequence-bridge" />
-      <HtmlBridge html={data.aiStoryContextHtml} className="campaign-ai-story-context-bridge" />
+      {data.chapterTree && <ChapterTreePanel data={data.chapterTree} />}
+      {data.choiceConsequence && <ChoiceConsequencePanel data={data.choiceConsequence} />}
+      <AiStoryContextPanel data={data.aiStoryContext} />
       {shelf && <SequenceShelfPanel shelf={shelf} />}
       <StoryControlsPanel data={data} />
       <CurrentArcPanel data={data} />
-      <HtmlBridge html={data.storyPipelineHtml} className="campaign-story-pipeline-bridge" />
-      <HtmlBridge html={data.syncSummaryHtml} className="campaign-sync-summary-bridge" />
+      <StoryPipelinePanel data={data.storyPipeline} />
+      <SyncSummaryPanel data={data.syncSummary} />
       <SoloNoticePanel state={state} />
       <ScenarioSummaryPanel state={state} />
       <PendingBattlePanel state={state} />
       <CombatResultPanel state={state} />
     </div>
   );
-}
-
-function HtmlBridge({ html, className }: { html: string; className: string }) {
-  if (!html) return null;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function StoryControlsPanel({ data }: { data: StoryHomeData }) {

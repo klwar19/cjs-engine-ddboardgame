@@ -925,56 +925,41 @@ window.CJS.CampaignUI = (() => {
   // pipeline, sync summary, and shared sub-panels still render as
   // HTML strings via that bridge until each helper ports.
 
-  function _renderChoiceConsequencePanel(state) {
+  // _renderChoiceConsequencePanel removed in Phase G.12. Typed
+  // `_choiceConsequenceData(state)` returns the alignment snapshot
+  // for the React `ChoiceConsequencePanel` component
+  // (`src/campaign/tabs/StoryHomePanels.tsx`).
+  function _choiceConsequenceData(state) {
     const Align = window.CJS.CampaignAlignment;
-    if (!Align?.snapshot) return '';
+    if (!Align?.snapshot) return null;
     const snap = Align.snapshot(state, { actor: 'bin', world: state.currentWorld });
     const axes = Object.entries(Align.AXES || {});
-    const axisCards = axes.map(([axis, meta]) => {
-      const current = Number(snap.axes?.[axis] || 0);
-      const world = Number(snap.worldAxes?.[axis] || 0);
-      const range = snap.range?.[axis] || { min: current, max: current };
-      return `
-        <div class="campaign-alignment-axis">
-          <span>${_esc(meta.label || axis)}</span>
-          <strong>${current >= 0 ? '+' : ''}${current}</strong>
-          <small>Here ${world >= 0 ? '+' : ''}${world} | possible ${range.min >= 0 ? '+' : ''}${range.min}..${range.max >= 0 ? '+' : ''}${range.max}</small>
-        </div>
-      `;
-    }).join('');
-    const recent = (snap.recent || []).slice(0, 3).map((entry) => `
-      <div class="campaign-alignment-line">
-        <strong>${_esc(entry.label || entry.choiceId || 'Choice')}</strong>
-        <span>${_esc(Align.describeDeltas?.(entry.deltas) || 'Tracked')}</span>
-      </div>
-    `).join('');
-    const potentials = (snap.potential || []).slice(0, 4).map((entry) => `
-      <span class="campaign-chip ${entry.reachable === false ? '' : 'is-route'}" title="${_escAttr(entry.summary || entry.sequenceId || '')}">
-        ${_esc(entry.label || entry.choiceId || 'Future')} ${_esc(Align.describeDeltas?.(entry.deltas) || '')}
-      </span>
-    `).join('');
-    return `
-      <section class="campaign-panel campaign-wide-panel campaign-alignment-panel">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>Choice Consequences</h2>
-            <div class="campaign-muted">Bin's soft leanings for dialogue gates, NPC reactions, quest unlocks, and future branches.</div>
-          </div>
-          <span class="campaign-pill">${(snap.potential || []).length} possible points</span>
-        </div>
-        <div class="campaign-alignment-grid">${axisCards}</div>
-        <div class="campaign-alignment-bottom">
-          <div>
-            <strong>Recent</strong>
-            ${recent || '<div class="campaign-muted">No consequence choices recorded yet.</div>'}
-          </div>
-          <div>
-            <strong>Future Checks</strong>
-            <div class="campaign-chip-row">${potentials || '<span class="campaign-muted">No authored potential points visible yet.</span>'}</div>
-          </div>
-        </div>
-      </section>
-    `;
+    return {
+      axes: axes.map(([axis, meta]) => {
+        const current = Number(snap.axes?.[axis] || 0);
+        const world = Number(snap.worldAxes?.[axis] || 0);
+        const range = snap.range?.[axis] || { min: current, max: current };
+        return {
+          id: String(axis),
+          label: String(meta.label || axis),
+          currentValue: current,
+          worldValue: world,
+          rangeMin: Number(range.min || 0),
+          rangeMax: Number(range.max || 0)
+        };
+      }),
+      recent: (snap.recent || []).slice(0, 3).map((entry) => ({
+        label: String(entry.label || entry.choiceId || 'Choice'),
+        description: String(Align.describeDeltas?.(entry.deltas) || 'Tracked')
+      })),
+      potential: (snap.potential || []).slice(0, 4).map((entry) => ({
+        label: String(entry.label || entry.choiceId || 'Future'),
+        description: String(Align.describeDeltas?.(entry.deltas) || ''),
+        summary: String(entry.summary || entry.sequenceId || ''),
+        reachable: entry.reachable !== false
+      })),
+      potentialCount: (snap.potential || []).length
+    };
   }
 
   // _renderStorySummary — Phase F.5 port. Body moved to
@@ -1283,47 +1268,36 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _renderChapterTreePanel(state = CS().getState() || {}) {
+  // _renderChapterTreePanel / _renderChapterTreeNode removed in
+  // Phase G.12. The React `ChapterTreePanel`
+  // (`src/campaign/tabs/StoryHomePanels.tsx`) renders the tree from
+  // typed `chapterTree` data produced by `_chapterTreeData(state)`.
+  function _chapterTreeData(state) {
     const Seq = window.CJS.CampaignSequences;
-    if (!Seq?.chapterTree) return '';
+    if (!Seq?.chapterTree) return null;
     let tree = Seq.chapterTree(state.currentWorld, state);
     if (!tree) tree = { roots: [], byPartId: {}, nodes: [] };
-    // Inject runtime branch chapters (1.4.a, 1.4.b, ...) authored via the
-    // Story Controls "Branch from current chapter" panel.
     const Branch = window.CJS.CampaignStoryBranch;
     if (Branch?.applyToTree) tree = Branch.applyToTree(tree, state.currentWorld);
-    if (!tree.roots?.length) return '';
+    if (!tree.roots?.length) return null;
     const route = Seq.currentRouteChoices(state, state.currentWorld) || [];
     const routeText = route.length
       ? route.map((entry) => entry.partLabel || entry.title || entry.sequenceId).join(' → ')
       : 'No story parts played yet.';
-    return `
-      <section class="campaign-panel campaign-wide-panel campaign-chapter-tree-panel">
-        <div class="campaign-panel-head">
-          <div>
-            <h3>Chapter Routes</h3>
-            <div class="campaign-muted">Branches unlock from the choices you made. Locked rows show what you still need before they can play.</div>
-          </div>
-          <span class="campaign-pill">${route.length} played</span>
-        </div>
-        <div class="campaign-route-trail" aria-label="Current route">
-          <strong>Route taken:</strong>
-          <span>${_esc(routeText)}</span>
-        </div>
-        <div class="campaign-chapter-tree" role="tree" aria-label="Chapter tree">
-          ${tree.roots.map((node) => _renderChapterTreeNode(node, 0)).join('')}
-        </div>
-      </section>
-    `;
+    return {
+      routeText: String(routeText),
+      routeCount: route.length,
+      roots: tree.roots.map((node) => _chapterTreeNodeData(node, 0))
+    };
   }
 
-  function _renderChapterTreeNode(node = {}, depth = 0) {
+  function _chapterTreeNodeData(node = {}, depth = 0) {
     const status = node.status || {};
     const eligibility = node.eligibility || { eligible: true, reasons: [] };
-    const blocked = status.deliveryBlocked;
-    const completed = status.completed;
-    const defaulted = status.defaulted;
-    const replayOnly = status.replayOnly;
+    const blocked = !!status.deliveryBlocked;
+    const completed = !!status.completed;
+    const defaulted = !!status.defaulted;
+    const replayOnly = !!status.replayOnly;
     const locked = !eligibility.eligible && !replayOnly;
     let stateLabel = 'Ready';
     let stateClass = 'is-ready';
@@ -1331,66 +1305,45 @@ window.CJS.CampaignUI = (() => {
     else if (completed) { stateLabel = 'Played'; stateClass = 'is-played'; }
     else if (defaulted) { stateLabel = 'Defaulted'; stateClass = 'is-defaulted'; }
     else if (locked) { stateLabel = 'Locked'; stateClass = 'is-locked'; }
-    const reasons = locked ? eligibility.reasons.join(' | ') : '';
-    const routeChip = node.routeLabel
-      ? `<span class="campaign-chip is-route">${_esc(node.routeLabel)}</span>`
-      : (node.routeKey ? `<span class="campaign-chip is-route">${_esc(_label(node.routeKey))}</span>` : '');
-    const action = blocked
-      ? `<span class="campaign-pill is-update">In Update</span>`
-      : (locked
-        ? `<button class="campaign-action" data-campaign-action="sequence-start" data-id="${_escAttr(node.id)}" disabled title="${_escAttr(reasons || 'Locked')}">Locked</button>`
-        : `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(node.id)}">${replayOnly ? 'Read' : 'Play'}</button>`);
-    return `
-      <div class="campaign-chapter-tree-node depth-${Math.min(depth, 4)} ${stateClass}" role="treeitem" aria-level="${depth + 1}">
-        <div class="campaign-chapter-tree-row">
-          <div class="campaign-chapter-tree-marker" aria-hidden="true"></div>
-          <div class="campaign-chapter-tree-body">
-            <div class="campaign-chapter-tree-head">
-              <strong>${_esc(node.partLabel || node.orderKey || node.id)}</strong>
-              <span>${_esc(node.title || '')}</span>
-              ${routeChip}
-              <span class="campaign-pill ${stateClass}">${_esc(stateLabel)}</span>
-            </div>
-            ${node.meta?.summary?.short ? `<div class="campaign-muted">${_esc(node.meta.summary.short)}</div>` : ''}
-            ${reasons ? `<div class="campaign-muted is-warning">Unlock requires: ${_esc(reasons)}</div>` : ''}
-            ${node.nextCandidates?.length ? `<div class="campaign-muted">Next: ${_esc(node.nextCandidates.join(' / '))}</div>` : ''}
-            <div class="campaign-chapter-tree-actions">${action}</div>
-          </div>
-        </div>
-        ${node.children?.length ? `<div class="campaign-chapter-tree-children">${node.children.map((child) => _renderChapterTreeNode(child, depth + 1)).join('')}</div>` : ''}
-      </div>
-    `;
+    return {
+      id: String(node.id || ''),
+      partLabel: String(node.partLabel || node.orderKey || node.id || ''),
+      title: String(node.title || ''),
+      routeLabel: String(node.routeLabel || (node.routeKey ? _label(node.routeKey) : '')),
+      stateLabel,
+      stateClass,
+      summaryShort: String(node.meta?.summary?.short || ''),
+      lockReasons: locked ? (eligibility.reasons || []).join(' | ') : '',
+      nextCandidates: Array.isArray(node.nextCandidates) ? node.nextCandidates.map(String) : [],
+      blocked,
+      locked,
+      replayOnly,
+      depth,
+      children: Array.isArray(node.children)
+        ? node.children.map((child) => _chapterTreeNodeData(child, depth + 1))
+        : []
+    };
   }
 
-  function _renderStoryPipelinePanel(pipeline = {}) {
-    const items = Array.isArray(pipeline.nextCandidates) ? pipeline.nextCandidates.filter(Boolean) : [];
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h3>Next Planned Parts</h3>
-          <span class="campaign-pill">${items.length}</span>
-        </div>
-        <div class="campaign-muted">${pipeline.anchorTitle ? `Following ${pipeline.anchorTitle}` : 'Upcoming story delivery for this arc.'}</div>
-        ${items.length
-          ? `<div class="campaign-chip-row">${items.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>`
-          : '<div class="campaign-empty">No next-part notes yet.</div>'}
-      </section>
-    `;
+  // _renderStoryPipelinePanel / _renderSyncSummaryPanel removed in
+  // Phase G.12. The React `StoryPipelinePanel` / `SyncSummaryPanel`
+  // (`src/campaign/tabs/StoryHomePanels.tsx`) render from typed
+  // data produced by the helpers below.
+  function _storyPipelinePanelData(pipeline = {}) {
+    return {
+      anchorTitle: String(pipeline.anchorTitle || ''),
+      nextCandidates: (Array.isArray(pipeline.nextCandidates) ? pipeline.nextCandidates : [])
+        .filter(Boolean)
+        .map(String)
+    };
   }
 
-  function _renderSyncSummaryPanel(title = 'State Sync', lines = [], sourceTitle = '') {
-    const items = Array.isArray(lines) ? lines.filter(Boolean) : [];
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h3>${_esc(title)}</h3>
-          ${sourceTitle ? `<span class="campaign-pill">${_esc(_shortenPanelLabel(sourceTitle))}</span>` : ''}
-        </div>
-        ${items.length
-          ? items.map((line) => `<div class="campaign-row"><div>${_esc(line)}</div></div>`).join('')
-          : '<div class="campaign-empty">No quest, hub, or rumor sync notes for this part yet.</div>'}
-      </section>
-    `;
+  function _syncSummaryData(title = 'State Sync', lines = [], sourceTitle = '') {
+    return {
+      title: String(title),
+      sourcePill: sourceTitle ? _shortenPanelLabel(sourceTitle) : '',
+      lines: (Array.isArray(lines) ? lines : []).filter(Boolean).map(String)
+    };
   }
 
   function _shortenPanelLabel(value = '') {
@@ -3447,41 +3400,31 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _renderAiStoryContextPanel(state) {
+  // _renderAiStoryContextPanel removed in Phase G.12. The React
+  // `AiStoryContextPanel` (`src/campaign/tabs/StoryHomePanels.tsx`)
+  // renders from typed data produced by `_aiStoryContextData`.
+  function _aiStoryContextData(state) {
     const ctx = _storyContextFor(state.currentWorld || 'haven');
     const manual = state.storyMode?.manualSummaryEntries || [];
-    const branches = window.CJS.CampaignStoryBranch?.getBranches?.(state.currentWorld) || state.storyMode?.manualBranches || [];
+    const branches = window.CJS.CampaignStoryBranch?.getBranches?.(state.currentWorld)
+      || state.storyMode?.manualBranches || [];
     const loaded = [ctx.indexData ? 1 : 0, ctx.allWorldText ? 1 : 0, ctx.worldText ? 1 : 0, ctx.structuredWorldData ? 1 : 0].reduce((a, b) => a + b, 0);
     const arcs = Array.isArray(ctx.structuredWorldData?.arcs) ? ctx.structuredWorldData.arcs : [];
-    return `
-      <section class="campaign-panel campaign-wide-panel campaign-ai-context-panel">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>AI Story Context</h2>
-            <div class="campaign-muted">Copy GM Prompt merges static summaries, low-token arc context, live GM notes, runtime branches, and consequence trackers.</div>
-          </div>
-          <span class="campaign-pill">${loaded}/4 files</span>
-        </div>
-        <div class="campaign-ai-context-grid">
-          <div>
-            <strong>Static summaries</strong>
-            <div class="campaign-muted">${_esc(ctx.allWorldPath)} - ${_esc(_label(ctx.allWorldStatus))}</div>
-            <div class="campaign-muted">${_esc(ctx.worldPath)} - ${_esc(_label(ctx.worldStatus))}</div>
-          </div>
-          <div>
-            <strong>Arc/event/quest index</strong>
-            <div class="campaign-muted">${_esc(ctx.indexPath)} - ${_esc(_label(ctx.indexStatus))}</div>
-            <div class="campaign-muted">${_esc(ctx.structuredWorldPath)} - ${_esc(_label(ctx.structuredWorldStatus))}</div>
-            <div class="campaign-muted">${arcs.length} arc${arcs.length === 1 ? '' : 's'} with compact event, quest, branch, and consequence slots.</div>
-          </div>
-          <div>
-            <strong>Live overlay</strong>
-            <div class="campaign-muted">${manual.length} GM note${manual.length === 1 ? '' : 's'} and ${branches.length} manual branch${branches.length === 1 ? '' : 'es'} will be included after the markdown summary.</div>
-            <div class="campaign-muted">If live GM notes disagree with a static summary, the prompt tells AI to treat the GM notes as newer table truth.</div>
-          </div>
-        </div>
-      </section>
-    `;
+    return {
+      loaded,
+      total: 4,
+      staticLines: [
+        { path: String(ctx.allWorldPath), statusLabel: _label(ctx.allWorldStatus) },
+        { path: String(ctx.worldPath), statusLabel: _label(ctx.worldStatus) }
+      ],
+      indexLines: [
+        { path: String(ctx.indexPath), statusLabel: _label(ctx.indexStatus) },
+        { path: String(ctx.structuredWorldPath), statusLabel: _label(ctx.structuredWorldStatus) }
+      ],
+      arcsCount: arcs.length,
+      manualCount: manual.length,
+      branchCount: branches.length
+    };
   }
 
   function _relationshipNarrativeModal(narrative = {}) {
@@ -10226,11 +10169,11 @@ window.CJS.CampaignUI = (() => {
       },
       hasActiveRun: !!activeRun,
       vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
-      chapterTreeHtml: _renderChapterTreePanel(state) || '',
-      choiceConsequenceHtml: _renderChoiceConsequencePanel(state) || '',
-      aiStoryContextHtml: _renderAiStoryContextPanel(state) || '',
-      storyPipelineHtml: _renderStoryPipelinePanel(pipeline) || '',
-      syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || ''
+      chapterTree: _chapterTreeData(state),
+      choiceConsequence: _choiceConsequenceData(state),
+      aiStoryContext: _aiStoryContextData(state),
+      storyPipeline: _storyPipelinePanelData(pipeline),
+      syncSummary: _syncSummaryData('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle)
     };
   }
 
