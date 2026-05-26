@@ -220,65 +220,247 @@ campaign shell is React-owned at the entry point.
 
 ### Next — Phase G (remaining sub-renderers)
 
-- [ ] `_renderSequenceNode` (7 node-type variants: choice,
-  stat_check, combat, minigame, scenario, end, narration) → drops
-  `_renderActiveSequence` when ported.
-- [ ] `_renderSequenceDeliveryState`, `_renderSequenceActionButton`
-  (EventTab per-entry).
-- [ ] `_renderSequenceShelf` (StoryHome).
-- [ ] Story Director sub-renderers (10 helpers):
-  `_renderStoryVnHero`, `_renderStorySoloGuide`,
-  `_renderStoryActionDeck`, `_renderStoryStageRail`,
-  `_renderStoryDirectorCard`, `_renderStoryDirectorEmptyCard`,
-  `_renderStoryPressureBoard`, `_renderStorySideFlow`,
-  `_renderStoryCluesPanel`, `_renderStoryQueuePanel`,
-  `_renderStoryTruthsPanel`.
-- [ ] Story Home sub-renderers: `_renderChapterTreePanel`,
+Each entry is one commit. The pattern is uniform: expose a typed
+`get<Thing>Data(state, ...)` bridge that returns structured data,
+write a JSX component in `src/campaign/tabs/` that maps that data
+to markup with direct onClick handlers, swap the consumers from
+HTML-bridge to JSX, delete the closure-private `_render*` helper
+and any sub-helpers it owned exclusively.
+
+- [ ] **G.8 — `_renderSequenceNode` (7 variants).** Discriminated
+  union: `choice` (per-choice eligibility + alignment hint),
+  `stat_check` (pass/fail), `combat` (queue battle / manual win/lose,
+  replay aware), `minigame` (play / manual clear/fail), `scenario`
+  (start / continue / abort), `end` (Complete), default narration
+  (continue with `condition→sequence-resolve` or `ops→Apply&Continue`
+  label rewrites). Ported alongside this drops `_renderActiveSequence`
+  too — the wrapper already moved in G.7 but still calls the node
+  helper.
+- [ ] **G.9 — `_renderSequenceDeliveryState`,
+  `_renderSequenceActionButton`** (EventTab per-entry card). Typed
+  delivery `{ status, note, blocked }`; the "Start / In Update"
+  button becomes a typed action.
+- [ ] **G.10 — `_renderSequenceShelf`** (StoryHome chapter files).
+  Same shape as event entries; reuse the per-entry component.
+- [ ] **G.11 — Story Director sub-renderers (one commit per group).**
+  Three logical groups:
+  - **G.11a** — VN hero + control deck: `_renderStoryVnHero`,
+    `_renderStorySoloGuide`, `_renderStoryActionDeck`. Includes the
+    chapter-banner video element and the 4-step solo guide ladder.
+  - **G.11b** — Episode + Card: `_renderStoryStageRail`,
+    `_renderStoryDirectorCard`, `_renderStoryDirectorEmptyCard`.
+  - **G.11c** — Support grid: `_renderStoryPressureBoard`,
+    `_renderStorySideFlow`, `_renderStoryCluesPanel`,
+    `_renderStoryQueuePanel`, `_renderStoryTruthsPanel`.
+- [ ] **G.12 — Story Home sub-renderers.** `_renderChapterTreePanel`,
   `_renderChoiceConsequencePanel`, `_renderAiStoryContextPanel`,
   `_renderStoryPipelinePanel`, `_renderSyncSummaryPanel`.
-- [ ] `_renderWorldGateCard` (WorldGate per-world card).
-- [ ] `_renderQuestChainActive`, `_renderQuestChainTemplate`
+- [ ] **G.13 — `_renderWorldGateCard`** + `_worldMenuDef` (per-world
+  banner, conditional Enter/Open/Activities buttons). The
+  `worldGateData` bridge returns typed per-world records; the JSX
+  card consumes them.
+- [ ] **G.14 — `_renderQuestChainActive`, `_renderQuestChainTemplate`**
   (EventTab side-story chains).
-- [ ] `_renderShapePills`, `_scenarioQuestPill`,
-  `_renderScenarioRunActions` (Scenarios + Maps).
-- [ ] Overview HubTab pass-throughs: `_renderTownSnapshot`,
-  `_renderTownRollFloat`.
-- [ ] `_renderZombieScavengeHome`, `_renderZombieScavengeTracker`
-  (zombie-world variants of QuestHome / QuestsPanel).
+- [ ] **G.15 — `_renderShapePills`, `_scenarioQuestPill`,
+  `_renderScenarioRunActions`** (Scenarios + Maps shared chips +
+  per-card run actions).
+- [ ] **G.16 — `_renderTownSnapshot`, `_renderTownRollFloat`**
+  (Overview HubTab pass-throughs). Either port HubTab's renderers
+  directly or wrap them with typed bridges first.
+- [ ] **G.17 — Zombie scavenge** `_renderZombieScavengeHome`,
+  `_renderZombieScavengeTracker`. World-specific variant of
+  QuestHome / QuestsPanel.
 
-### Then — Phase H
+### Then — Phase H (delete campaign-ui.js)
 
-- [ ] Once every helper above ports, drop `js/campaign/campaign-ui.js`
-  and `js/campaign/ui/`. Rewrite `test_campaign_ui_bootstrap.js`
-  against the React tree.
+Once every G.* entry above is ported, the closure in
+`js/campaign/campaign-ui.js` retains only:
+
+- The bridge surface: `enableReactShell`, `init`, all `get*Data`
+  functions, the chrome setters (`setActiveMode/Tab/Panel`).
+- The action dispatcher (`_handleAction` + supporting closures for
+  every `data-campaign-action` string).
+- The vanilla render fallback for non-React mode.
+
+Phase H removes both halves:
+
+- [ ] **H.1 — Port `_handleAction`** to a typed reducer in TypeScript.
+  Each case becomes either a typed action wrapper in
+  `src/campaign/actions.ts` or a slot in a CampaignActions registry.
+  The `dispatchCampaignAction` bridge becomes a direct map lookup.
+- [ ] **H.2 — Remove the vanilla render fallback.** With React shell
+  always enabled and every tab/sub-panel JSX, `render()` and
+  `_renderMain` are dead; the chrome events route through `onClick`
+  + the bridge setters; the drawer is React-portaled.
+- [ ] **H.3 — Migrate `getXxxData` bridge functions** to TypeScript.
+  Move them into `src/campaign/bridge/` modules grouped by domain
+  (chrome, tabs, panels). The CampaignState typed surface gets the
+  fields these readers touch, so the bridge no longer depends on
+  closure-private helpers.
+- [ ] **H.4 — Delete `js/campaign/campaign-ui.js` + `js/campaign/ui/`**
+  (cui-controls / cui-equipment / cui-log / cui-modals / cui-options
+  / cui-portraits / cui-utils / cui-tabs/* / cui-react-bridge).
+  Their stable helpers (`Utils.esc`, `Log.logKind`, etc.) move to
+  TypeScript util modules.
+- [ ] **H.5 — Rewrite `test_campaign_ui_bootstrap.js`** against the
+  React tree. The bridge surface test (`test_campaign_shell_bridge.js`)
+  becomes a TypeScript unit test, also exercised in vitest if added.
+
+## Phase I — Performance (after H)
+
+With campaign-ui.js gone, the React tree owns every render path.
+Now optimizations that were impossible while HTML strings ran the
+show become tractable:
+
+- [ ] **I.1 — `React.memo` boundaries.** Every shared sub-panel
+  (QuestRow, EventResultPanel, SoloNoticePanel, etc.) takes its
+  typed snapshot as a prop. Wrap them in `memo` so a tab re-render
+  doesn't re-render unrelated cards. The shell's `tick` re-render
+  already passes the same panel data when nothing changed, so memo
+  is a clean win.
+- [ ] **I.2 — Selector hooks.** `useCampaignState()` currently
+  returns the entire snapshot. Replace consumers with selector
+  hooks (`useCampaignSelector(s => s.eventLog.entries)`) backed by
+  `useSyncExternalStore` so only components whose slice actually
+  changed re-render.
+- [ ] **I.3 — Virtualize long lists.** Quest list, event ledger,
+  log entries panel, save slots — each can pass 100+ rows. Add
+  `react-window` or a tiny custom virtualizer.
+- [ ] **I.4 — Defer heavy panels.** The Story Director support
+  grid (clues / queue / truths / pressure board) and the Hub
+  family's inner grids are not visible on first paint. Wrap with
+  `Suspense` + `React.lazy` so each panel ships only when active.
+- [ ] **I.5 — Service worker fine-tune.** Today the PWA precaches
+  every chunk on first visit. With domain-split chunks (combat /
+  campaign / minigames / qte / media), shift to a runtime-cache
+  policy keyed by mode so a Story-Mode-only player never downloads
+  the combat chunk's grid renderer.
+- [ ] **I.6 — Image / asset budget.** Audit the `assets/` and
+  `images/` trees against bundle size. Move large story-mode VN
+  art behind a per-world dynamic import; cap thumbnail sizes;
+  expose a build-time check in `tools/` that fails CI on regressions.
+- [ ] **I.7 — Re-baseline build sizes.** Add `tools/build-size-check.mjs`
+  that compares `dist/assets/*.js` chunks to a committed baseline and
+  fails CI when any chunk grows >5% without an explicit baseline
+  bump. Run on every PR.
+
+## Phase J — AI-friendly authoring (after H, parallel with I)
+
+The migration's other goal: make the codebase easy to extend with
+AI-generated content (skills, monsters, story files, events, items,
+worlds). Phase E set up the compact-index foundation; Phase J
+finishes the authoring loop:
+
+- [ ] **J.1 — Author/generator schemas extend.** `data/schemas/*`
+  today covers core entries. Add schemas for the remaining types
+  (campaignQuests, eventTables, oracleTables, worldActivityPacks,
+  travelMaps, storyDirector packs). Each schema is the canonical
+  contract — both the engine and the AI generator read it.
+- [ ] **J.2 — Authoring CLI.** `tools/author/<type>.mjs` scripts
+  scaffold a new entry, validate it against the schema, and write
+  it into the right `data/` directory. AI generators call the same
+  script with JSON on stdin so the validation runs identically.
+- [ ] **J.3 — AI-context bundles.** `tools/build-ai-index.mjs`
+  already ships compact indices. Add per-type "AI brief" markdown
+  files in `data/ai-briefs/` (one per content type) describing
+  exactly the contract the schema enforces, with a 200-token
+  example. AI generators read the brief + the compact index for
+  their context, not the full data tree.
+- [ ] **J.4 — Patch-and-validate flow.** `tools/content-lint.mjs
+  --patch <file>` already exists; widen it to support multi-file
+  patches and to report which downstream content is affected (e.g.
+  a new skill changes monster skill kits). Output a diff summary
+  an AI agent can react to.
+- [ ] **J.5 — Hot-reload authoring.** When `data/` files change,
+  the dev server invalidates DataStore caches in place so the
+  React tabs re-read the new content without a page reload. Today
+  every content change requires a refresh.
+- [ ] **J.6 — Slash-command authoring agent.** Add a Claude Code
+  agent definition (`.claude/agents/content-author.md`) whose
+  prompt embeds the AI brief + compact index for a type, and whose
+  workflow ends with `npm run content:lint -- --patch` before
+  committing. This lets `/content-author skill new ice_lance` go
+  end-to-end without manual hand-holding.
+
+## Phase K — Stretch goals
+
+- [ ] **K.1 — Storybook (optional).** Now that every panel is a
+  typed JSX component reading a typed snapshot, mocking a snapshot
+  in Storybook costs ~10 lines. Useful for UI review and AI agents
+  that want a visual preview without booting the engine.
+- [ ] **K.2 — Visual regression harness.** Render every tab against
+  a fixed CampaignState fixture, snapshot the DOM tree, fail CI on
+  unexpected differences.
+- [ ] **K.3 — Replace the legacy hub / party / world-map tabs.**
+  These tabs still mount HTML strings from `cui-hub-tab.js` /
+  `cui-party-tab.js` / `cui-world-map-tab.js`. They follow the same
+  Phase G pattern: typed bridge + JSX component. Lower priority
+  because their bodies are stable; Phase H targets the closure
+  helpers in campaign-ui.js first.
 
 ## Size progression (cjs-campaign-core chunk)
 
-- Pre-Phase F (after E): 641 KB
-- After F.1 (chrome): 640 KB
-- After F.13 (all tab bodies): 615 KB
-- After cleanup: 614 KB
-- After G.1 (QuestRow): 615 KB
-- After G.2 (EventResult/Oracle): 611 KB
-- After G.3 (SoloNotice): 612 KB
-- After G.4 (5 small panels): 608 KB
-- After G.5 (ScenarioSummary): 605 KB
-- After G.6 (AdventureLegend): 604 KB
-- After G.7 (ActiveSequence wrapper): 602 KB
+| Step | Size (KB) |
+| --- | --- |
+| Pre-Phase F (after E) | 641 |
+| After F.1 (chrome) | 640 |
+| After F.13 (all tab bodies) | 615 |
+| After post-F cleanup | 614 |
+| After G.1 (QuestRow) | 615 |
+| After G.2 (EventResult/Oracle) | 611 |
+| After G.3 (SoloNotice) | 612 |
+| After G.4 (5 small panels) | 608 |
+| After G.5 (ScenarioSummary) | 605 |
+| After G.6 (AdventureLegend) | 604 |
+| After G.7 (ActiveSequence wrapper) | 602 |
 
-Cumulative reduction: 641 KB → 602 KB = 39 KB (6%). The remaining
-~600 KB sits in the un-ported sub-renderers (Story Director, Story
-Home complex panels) plus the legacy hub-tab + party-tab paths that
-the React shell still wraps. Subsequent Phase G commits keep
-shrinking it; Phase H removes campaign-ui.js entirely.
+Cumulative Phase F+G so far: 641 KB → 602 KB. The remaining ~600 KB
+sits in the un-ported sub-renderers (Story Director / Story Home
+complex panels, sequence node body, world-gate cards, zombie
+scavenge variants) plus the legacy hub/party/world-map tab paths
+the React shell still wraps. Phase G keeps shrinking it; Phase H
+removes campaign-ui.js entirely; Phases I/J pivot from "remove
+HTML strings" to "optimize the React tree + open the authoring
+loop for AI generators."
 
 ## Done-when gate
 
-For every tab migration commit:
+For every tab/panel migration commit:
 
-- `npm test` is green.
-- The migrated tab renders identical content to the vanilla version for
-  the same `CampaignState` snapshot.
-- Vanilla helpers for the migrated tab are deleted (no dead code).
+- `npm test` is green (currently 901 assertions across 12 files).
+- `npm run typecheck` is clean.
+- `npm run build` succeeds.
+- The migrated tab/panel renders identical content to the vanilla
+  version for the same `CampaignState` snapshot.
+- Vanilla helpers that become unreachable after the port are deleted
+  (no dead code).
 - No new behaviour, no new feature, no new abstractions — behaviour
   parity only.
+
+## Architecture invariants (do not break)
+
+These are the contracts every Phase F+G+H commit upholds:
+
+1. **One bridge boundary.** All cross-language reads go through
+   `CampaignUI.get<X>Data(state)` in campaign-ui.js. Components in
+   `src/campaign/` never reach into `window.CJS.*` modules
+   directly except via the typed bridge file in
+   `src/campaign/shell/bridge.ts` or per-tab data files in
+   `src/campaign/tabs/data/`.
+2. **Direct onClick > data attribute.** Migrated buttons use
+   `onClick={() => dispatchCampaignAction(name, payload)}` or a
+   typed wrapper in `src/campaign/actions.ts`. Stamping
+   `data-campaign-action` into JSX is reserved for the legacy
+   bubble-delegated path that ports later.
+3. **JSX > dangerouslySetInnerHTML.** Every JSX component that
+   still uses `dangerouslySetInnerHTML` carries a comment naming
+   the closure helper it's bridging to, and the comment names the
+   Phase G entry that ports it.
+4. **No new HTML-string renderers.** Adding a new panel ships as
+   JSX from day one, with a typed `get<X>Data` bridge if it needs
+   data the React tree can't compute. campaign-ui.js gains no new
+   `_render*` helpers.
+5. **Tests track contracts.** `test_campaign_shell_bridge.js` lists
+   every bridge function the React shell consumes. Adding a
+   `get<X>Data` adds an entry. Adding a JSX shell component adds
+   a presence check.
