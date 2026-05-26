@@ -901,7 +901,6 @@ window.CJS.CampaignUI = (() => {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'quests': return _renderQuestPanel(state);
       default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
     }
   }
@@ -3226,39 +3225,11 @@ window.CJS.CampaignUI = (() => {
     return map[kind] || '·';
   }
 
-  function _renderQuestPanel(state) {
-    if (state?.currentWorld === 'zombie') return _renderZombieScavengeTracker(state);
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const activeChains = window.CJS.CampaignQuestChains?.getActive?.() || [];
-    const availableChains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
-    const finishedChains = window.CJS.CampaignQuestChains?.getFinished?.() || [];
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h2>Quest Tracker</h2>
-          <div class="campaign-panel-actions">
-            <span class="campaign-pill">${active.length} active | ${finished.length} resolved | ${templateCount} templates</span>
-            <button class="campaign-action primary" data-campaign-action="add-quest">Add Quest</button>
-            <button class="campaign-action" data-campaign-action="random-quest-offer">Quest Run</button>
-          </div>
-        </div>
-        ${_renderSoloNotice(state)}
-        <div class="campaign-quest-list">
-          ${active.length ? active.map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests.</div>'}
-        </div>
-        ${finished.length ? `
-          <details class="campaign-resolved-quests">
-            <summary>Resolved (${finished.length})</summary>
-            <div class="campaign-quest-list">${finished.map((quest) => _renderQuestRow(quest, { resolved: true })).join('')}</div>
-          </details>
-        ` : ''}
-      </section>
-    `;
-  }
+  // _renderQuestPanel — Phase F.10 port. Body moved to
+  // `src/campaign/tabs/CampaignQuestsPanelTab.tsx`. Typed data flows
+  // through `getQuestPanelData(state)`. The zombie variant still
+  // renders via `_renderZombieScavengeTracker` (returned as one HTML
+  // string in the bridge data) until its own JSX port.
 
   function _worldHomeHeroStyle() {
     const world = CS().getCurrentWorld?.() || {};
@@ -10178,7 +10149,6 @@ window.CJS.CampaignUI = (() => {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'quests': return _renderQuestPanel(state);
       default: return '';
     }
   }
@@ -10371,6 +10341,27 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getQuestPanelData(state = CS().getState()) {
+    if (!state) return null;
+    if (state.currentWorld === 'zombie') {
+      return { isZombie: true, zombieHtml: _renderZombieScavengeTracker(state) };
+    }
+    const quests = Object.values(state.quests || {});
+    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
+    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
+    const templateCount = Object.values(CS().getContent().campaignQuests || {})
+      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
+    return {
+      isZombie: false,
+      activeCount: active.length,
+      finishedCount: finished.length,
+      templateCount,
+      activeQuestRows: active.map((quest) => _renderQuestRow(quest)),
+      finishedQuestRows: finished.map((quest) => _renderQuestRow(quest, { resolved: true })),
+      soloNoticeHtml: _renderSoloNotice(state) || ''
+    };
+  }
+
   function getRunData(state = CS().getState()) {
     if (!state) return null;
     const run = state.activeScenarioRun;
@@ -10799,6 +10790,7 @@ window.CJS.CampaignUI = (() => {
     getEventTabData,
     getScenariosData,
     getRunData,
+    getQuestPanelData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
