@@ -2034,41 +2034,14 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderAdventureLegend(state) {
-    const hasResult = state?.lastEvent || state?.lastOracle || state?.pendingSoloHook || state?.pendingBattle;
-    if (hasResult) return '';
-    return `
-      <section class="campaign-panel campaign-legend">
-        <div class="campaign-panel-head">
-          <h3>What each output means</h3>
-          <small class="campaign-muted">Click any Adventure Desk button to see a result here</small>
-        </div>
-        <div class="campaign-legend-grid">
-          <div class="campaign-legend-item">
-            <strong>📜 Story Offer / Hook</strong>
-            <p>A narrative card with a suggested choice. Buttons let you <b>Accept</b> (apply choice's ops),
-            <b>Make Quest</b> (add to Quest Tracker), <b>Make Rumor</b> (post to hub), or <b>Save</b>/<b>Ignore</b>.
-            Accepting a quest offer also auto-starts its map run.</p>
-          </div>
-          <div class="campaign-legend-item">
-            <strong>🎴 Event</strong>
-            <p>A table-rolled event with prepared consequence ops (gold, danger, status, etc.).
-            <b>Apply</b> commits the ops; <b>Edit First</b> lets you change them; <b>Save Note</b> just logs it;
-            <b>Pin Plot Seed</b> stores it as a future hook; <b>Ignore</b> discards it.</p>
-          </div>
-          <div class="campaign-legend-item">
-            <strong>🔮 GM Prompt (Oracle)</strong>
-            <p>Pure inspiration text. <b>No bonuses</b> are applied to the campaign. Use it to riff a scene,
-            then either <b>Save as Note</b> for later or <b>Reroll</b>.</p>
-          </div>
-          <div class="campaign-legend-item">
-            <strong>⚔ Battle / Scenario</strong>
-            <p>Battle Ready cards run combat (or take a manual result). Scenarios are the run/map flow;
-            quests with linked maps will create one when you press <b>Map Run</b> in the Quest Tracker.</p>
-          </div>
-        </div>
-      </section>
-    `;
+  // _renderAdventureLegend — Phase G.6 port. The legend body moved to
+  // JSX in `src/campaign/tabs/CampaignOverviewTab.tsx`; only the
+  // visibility check (hide when there's any active result card) lives
+  // here as the typed `getAdventureLegendVisible(state)` bridge.
+  function getAdventureLegendVisible(state = CS().getState()) {
+    if (!state) return false;
+    const hasResult = state.lastEvent || state.lastOracle || state.pendingSoloHook || state.pendingBattle;
+    return !hasResult;
   }
 
   // Hub tab body renderers (`sideForge`, `questChains`, `oracleForge`,
@@ -10615,7 +10588,6 @@ window.CJS.CampaignUI = (() => {
     switch (sectionId) {
       case 'townSnapshot':     return _renderTownSnapshot(state);
       case 'townRollFloat':    return _renderTownRollFloat(state);
-      case 'adventureLegend':  return _renderAdventureLegend(state);
       default: return '';
     }
   }
@@ -10747,6 +10719,7 @@ window.CJS.CampaignUI = (() => {
     getEventLogData,
     getMinigameTestData,
     renderOverviewSectionHtml,
+    getAdventureLegendVisible,
     getStorySummaryData,
     getQuestHomeData,
     getEventTabData,

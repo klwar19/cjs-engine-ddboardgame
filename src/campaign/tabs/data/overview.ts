@@ -11,14 +11,14 @@ import type { CampaignStateSnapshot } from "../../store";
 
 export type OverviewSectionId =
   | "townSnapshot"
-  | "townRollFloat"
-  | "adventureLegend";
+  | "townRollFloat";
 
 interface Bridge {
   readonly renderOverviewSectionHtml: (
     sectionId: OverviewSectionId,
     state?: CampaignStateSnapshot
   ) => string;
+  readonly getAdventureLegendVisible: (state?: CampaignStateSnapshot) => boolean;
 }
 
 interface Cjs {
@@ -34,4 +34,8 @@ export function renderOverviewSectionHtml(
   state: CampaignStateSnapshot
 ): string {
   return cjs().CampaignUI?.renderOverviewSectionHtml(sectionId, state) ?? "";
+}
+
+export function getAdventureLegendVisible(state: CampaignStateSnapshot): boolean {
+  return cjs().CampaignUI?.getAdventureLegendVisible(state) ?? false;
 }
