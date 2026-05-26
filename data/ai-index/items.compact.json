@@ -1,0 +1,391 @@
+[
+  {
+    "id": "itm_basic_fishing_rod",
+    "name": "Basic Fishing Rod",
+    "rarity": "Common",
+    "tags": [
+      "fishing_rod",
+      "tool"
+    ],
+    "summary": "A simple wooden rod. Can land easy and medium-difficulty fish."
+  },
+  {
+    "id": "itm_silver_fishing_rod",
+    "name": "Silver Fishing Rod",
+    "rarity": "Uncommon",
+    "tags": [
+      "fishing_rod_silver",
+      "tool"
+    ],
+    "summary": "Sturdy alloy rod. Can pull in hard-difficulty fish."
+  },
+  {
+    "id": "itm_gold_fishing_rod",
+    "name": "Gold Fishing Rod",
+    "rarity": "Rare",
+    "tags": [
+      "fishing_rod_gold",
+      "tool"
+    ],
+    "summary": "Master-crafted rod. Can battle legendary catches."
+  },
+  {
+    "id": "warm_stew",
+    "name": "Warm Stew",
+    "rarity": "Common",
+    "summary": "Comforting food. Endurance +2 next battle. Requires bear hide + ice crystal — gather, buy, or harvest from Pocket Haven."
+  },
+  {
+    "id": "frostcap_skewer",
+    "name": "Frostcap Skewer",
+    "rarity": "Common",
+    "summary": "Light field food. Perception +2 next battle. Cooked from a Frostcap mushroom dusted with sprite essence."
+  },
+  {
+    "id": "hunters_brew",
+    "name": "Hunter's Brew",
+    "rarity": "Uncommon",
+    "summary": "A bracing brew. Strength +2 next battle. Trophy-grade ingredients only."
+  },
+  {
+    "id": "food_fresh_fish",
+    "name": "Fresh Fish",
+    "rarity": "Common",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Raw fish. Cook at a station for a stamina buff."
+  },
+  {
+    "id": "food_silver_trout",
+    "name": "Silver Trout",
+    "rarity": "Uncommon",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "A glittering trout. Eat raw for +1 Agility next battle, or cook for a longer agility surge."
+  },
+  {
+    "id": "food_coral_snapper",
+    "name": "Coral Snapper",
+    "rarity": "Uncommon",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Reef-fresh fish. Cook for sustained HP regen."
+  },
+  {
+    "id": "food_void_eel",
+    "name": "Void Eel",
+    "rarity": "Rare",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Wriggling deep-water predator. Cooking unlocks a magic-power surge."
+  },
+  {
+    "id": "food_mire_catfish",
+    "name": "Mire Catfish",
+    "rarity": "Uncommon",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Surprisingly tasty once cooked. Grants poison resistance."
+  },
+  {
+    "id": "food_emberfin_pike",
+    "name": "Emberfin Pike",
+    "rarity": "Rare",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Hunts in molten currents. Spicy. Cook to boost fire damage."
+  },
+  {
+    "id": "food_lantern_jelly",
+    "name": "Lantern Jelly",
+    "rarity": "Rare",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Glowing jelly. Cook to enhance vision range."
+  },
+  {
+    "id": "food_thunder_carp",
+    "name": "Thunder Carp",
+    "rarity": "Rare",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Static-charged carp. Cook for a lightning-damage boost."
+  },
+  {
+    "id": "food_moonlit_koi",
+    "name": "Moonlit Koi",
+    "rarity": "Legendary",
+    "tags": [
+      "fish",
+      "raw",
+      "legendary"
+    ],
+    "summary": "Legendary. Cooked, grants +1 to all stats."
+  },
+  {
+    "id": "food_dragon_tuna",
+    "name": "Dragon Tuna",
+    "rarity": "Legendary",
+    "tags": [
+      "fish",
+      "raw",
+      "legendary"
+    ],
+    "summary": "Legendary. Cooked, fills 50% of the ultimate meter."
+  },
+  {
+    "id": "food_scrap_stew",
+    "name": "Scrap Stew",
+    "rarity": "Common",
+    "tags": [
+      "fish",
+      "cooked"
+    ],
+    "summary": "Whatever was left. Confers disease resistance."
+  },
+  {
+    "id": "food_starcruiser_squid",
+    "name": "Starcruiser Squid",
+    "rarity": "Rare",
+    "tags": [
+      "fish",
+      "raw"
+    ],
+    "summary": "Cyber-bio squid. Cook to enhance tech damage."
+  },
+  {
+    "id": "food_frostcap_stew",
+    "name": "Frostcap Stew",
+    "rarity": "Uncommon",
+    "tags": [
+      "cooked",
+      "discoverable"
+    ],
+    "summary": "A discoverable recipe. Combine ice crystal + sprite dust + bear hide and cook to discover Frostcap Stew. Endurance +3 next battle."
+  },
+  {
+    "id": "food_hunters_pie",
+    "name": "Hunter's Pie",
+    "rarity": "Rare",
+    "tags": [
+      "cooked",
+      "discoverable",
+      "savory"
+    ],
+    "summary": "A discoverable recipe. Combine two bear claws and a wolf pelt to discover Hunter's Pie. Strength +3 next battle."
+  },
+  {
+    "id": "food_jesters_souffle",
+    "name": "Jester's Soufflé",
+    "rarity": "Legendary",
+    "tags": [
+      "cooked",
+      "discoverable",
+      "legendary"
+    ],
+    "summary": "A discoverable recipe. Combine a memory shard and three sprite dust to discover Jester's Soufflé. Luck +4 next battle. Perfect cook adds +1."
+  },
+  {
+    "id": "haven_basic_tent",
+    "name": "Basic Tent",
+    "slot": "consumable",
+    "rarity": "Common",
+    "summary": "Simple camping shelter. Campaign Mode can consume it for a camp rest."
+  },
+  {
+    "id": "haven_minor_potion",
+    "name": "Minor Potion",
+    "slot": "consumable",
+    "rarity": "Common",
+    "summary": "Small healing draught. Campaign Mode tracks it as a manual-use item."
+  },
+  {
+    "id": "haven_reroll_ticket",
+    "name": "Jester Reroll Ticket",
+    "slot": "consumable",
+    "rarity": "Uncommon",
+    "summary": "A system-shop token for a GM-approved reroll or oracle replacement."
+  },
+  {
+    "id": "haven_punchline_charm",
+    "name": "Punchline Charm",
+    "slot": "accessory1",
+    "rarity": "Rare",
+    "summary": "A tiny charm that laughs at bad odds."
+  },
+  {
+    "id": "haven_frostbitten_writ",
+    "name": "Frostbitten Trade Writ",
+    "slot": "key",
+    "rarity": "Uncommon",
+    "summary": "A local writ accepted by special hub vendors."
+  },
+  {
+    "id": "haven_adventurers_cloak",
+    "name": "Adventurer's Cloak",
+    "slot": "body",
+    "rarity": "Common",
+    "summary": "A warm travelling cloak. Slightly helps dodging."
+  },
+  {
+    "id": "haven_chimera_fang",
+    "name": "Chimera Fang Dagger",
+    "slot": "weapon",
+    "rarity": "Rare",
+    "summary": "Forged from a chimera's fang. Drains life and scorches."
+  },
+  {
+    "id": "haven_frost_staff",
+    "name": "Frost Staff",
+    "slot": "weapon",
+    "rarity": "Common",
+    "summary": "A simple staff channeling ice magic."
+  },
+  {
+    "id": "haven_frostfire_core",
+    "name": "Frostfire Core",
+    "slot": "accessory1",
+    "rarity": "Epic",
+    "summary": "The dual-element heart of the Frostfire Chimera. Radiates impossible warmth and cold."
+  },
+  {
+    "id": "haven_healers_pendant",
+    "name": "Healer's Pendant",
+    "slot": "accessory1",
+    "rarity": "Uncommon",
+    "summary": "A pendant that strengthens the wearer's mana reserves."
+  },
+  {
+    "id": "haven_hunters_blade",
+    "name": "Hunter's Blade",
+    "slot": "weapon",
+    "rarity": "Common",
+    "summary": "Garr's well-maintained hunting knife."
+  },
+  {
+    "id": "haven_leather_armor",
+    "name": "Leather Armor",
+    "slot": "body",
+    "rarity": "Common",
+    "summary": "Basic leather protection."
+  },
+  {
+    "id": "haven_lucky_coin",
+    "name": "Lucky Coin",
+    "slot": "accessory1",
+    "rarity": "Uncommon",
+    "summary": "Found in Bin's pocket on arrival. Suspiciously warm."
+  },
+  {
+    "id": "haven_rusty_sword",
+    "name": "Rusty Sword",
+    "slot": "weapon",
+    "rarity": "Junk",
+    "summary": "A chipped, dull blade. Better than fists. Barely."
+  },
+  {
+    "id": "haven_thunder_crossbow",
+    "name": "Thunder",
+    "slot": "weapon",
+    "rarity": "Uncommon",
+    "summary": "Bowy's beloved crossbow. Named Thunder. Do NOT touch it."
+  },
+  {
+    "id": "haven_warm_boots",
+    "name": "Warm Boots",
+    "slot": "feet",
+    "rarity": "Common",
+    "summary": "Fur-lined boots. Essential in Frostbitten."
+  },
+  {
+    "id": "haven_bear_claw",
+    "name": "Bear Claw",
+    "rarity": "Rare",
+    "summary": "Bear Claw material drop (Rare)."
+  },
+  {
+    "id": "haven_bear_hide",
+    "name": "Bear Hide",
+    "rarity": "Uncommon",
+    "summary": "Bear Hide material drop (Uncommon)."
+  },
+  {
+    "id": "haven_frost_fang",
+    "name": "Frost Fang",
+    "rarity": "Uncommon",
+    "summary": "Frost Fang material drop (Uncommon)."
+  },
+  {
+    "id": "haven_ice_crystal",
+    "name": "Ice Crystal",
+    "rarity": "Uncommon",
+    "summary": "Ice Crystal material drop (Uncommon)."
+  },
+  {
+    "id": "haven_grass_clippings",
+    "name": "Grass Clippings",
+    "rarity": "Common",
+    "summary": "Cut from Pocket Haven grass. Useful for simple fertilizer."
+  },
+  {
+    "id": "haven_basic_fertilizer",
+    "name": "Basic Fertilizer",
+    "rarity": "Common",
+    "summary": "A simple soil booster for Pocket Haven crops."
+  },
+  {
+    "id": "haven_memory_shard",
+    "name": "Memory Shard",
+    "rarity": "Rare",
+    "summary": "Catalyst used to rank up passives."
+  },
+  {
+    "id": "haven_sprite_dust",
+    "name": "Sprite Dust",
+    "rarity": "Common",
+    "summary": "Sprite Dust material drop (Common)."
+  },
+  {
+    "id": "haven_wolf_pelt",
+    "name": "Wolf Pelt",
+    "rarity": "Common",
+    "summary": "Wolf Pelt material drop (Common)."
+  },
+  {
+    "id": "zombie_burnice_flare_carbine",
+    "name": "Burnice's Flare Carbine",
+    "slot": "weapon",
+    "rarity": "Uncommon",
+    "summary": "A scavenged launcher tuned for flare bolts and short burn bursts. Light enough for rooftop fights."
+  },
+  {
+    "id": "zombie_burnice_scavenger_jacket",
+    "name": "Burnice's Scavenger Jacket",
+    "slot": "body",
+    "rarity": "Common",
+    "summary": "A reinforced jacket stitched with route tape, patch plates, and just enough padding to matter."
+  },
+  {
+    "id": "zombie_burnice_route_badge",
+    "name": "Burnice's Route Badge",
+    "slot": "accessory1",
+    "rarity": "Common",
+    "summary": "A clipped route badge marked with fallback arrows and fuel notes. Helps Burnice pace longer runs."
+  }
+]

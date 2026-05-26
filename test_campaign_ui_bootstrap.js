@@ -145,5 +145,16 @@ ok('Tabs.has returns false for an unknown tab id', !Tabs.has('definitelyNotAReal
 ok('Tabs.render returns null for an unknown tab id',
    Tabs.render('definitelyNotARealTab', minimalState, {}) === null);
 
+// 5. React-shell bridge surface lives on CampaignUI. The bootstrap
+//    sandbox here doesn't execute campaign-ui.js, but the bridge is
+//    documented in `src/campaign/CampaignShell.tsx` and exercised
+//    end-to-end in `test_campaign_shell_bridge.js`. This block only
+//    sanity-checks that the cui-react-bridge file is the last loaded
+//    so the React wrapper wins for the registered ids.
+const bridgeFile = 'campaign/ui/tabs/cui-react-bridge.js';
+ok('cui-react-bridge is last in load order',
+   loadOrder[loadOrder.length - 1] === bridgeFile,
+   loadOrder[loadOrder.length - 1]);
+
 console.log('\nRESULTS: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

@@ -1,4 +1,5 @@
 import {
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -950,7 +951,11 @@ export function EditorPage() {
                 className={`editor-panel${panel === activePanel ? " active" : ""}`}
                 id={`panel-${panel}`}
               >
-                {ReactBuilder && panel === activePanel ? <ReactBuilder /> : null}
+                {ReactBuilder && panel === activePanel ? (
+                  <Suspense fallback={<div className="editor-panel-loading">Loading…</div>}>
+                    <ReactBuilder />
+                  </Suspense>
+                ) : null}
               </div>
             );
           })}

@@ -1,4 +1,5 @@
 import type { CampaignStateSnapshot } from "../store";
+import * as CampaignActions from "../actions";
 
 // Save metadata as the vanilla CampaignSave module exposes it. Anything
 // the settings panel doesn't read is left as `unknown`.
@@ -49,11 +50,11 @@ interface Props {
   readonly state: CampaignStateSnapshot;
 }
 
-// Re-uses the vanilla event delegation: every button carries the same
-// `data-campaign-action` attribute that the campaign-ui shell already
-// listens for via event bubbling on the campaign-root. React doesn't need
-// to bind its own handlers — the existing `_handleAction` dispatcher in
-// campaign-ui.js still wins.
+// Buttons here call typed wrappers from `src/campaign/actions.ts` directly.
+// The vanilla `_handleAction` dispatcher is still wired for any
+// `data-campaign-action` attributes that haven't been migrated yet, but
+// settings is the canonical example of the migrated style: typed function
+// calls instead of stringly attributes.
 export function CampaignSettingsTab(_props: Props) {
   const Save = cjs().CampaignSave;
   const UI = cjs().CampaignUI;
@@ -100,24 +101,24 @@ export function CampaignSettingsTab(_props: Props) {
 
       <div className="campaign-save-manager">
         <div className="campaign-save-actions">
-          <button className="campaign-action primary" data-campaign-action="new-save">
+          <button className="campaign-action primary" onClick={CampaignActions.newSave}>
             + New Campaign Save
           </button>
-          <button className="campaign-action" data-campaign-action="save-slot">
+          <button className="campaign-action" onClick={CampaignActions.quickSave}>
             Save Now
           </button>
-          <button className="campaign-action" data-campaign-action="fork-save">
+          <button className="campaign-action" onClick={CampaignActions.forkSave}>
             Fork Current
           </button>
-          <button className="campaign-action" data-campaign-action="export-save">
+          <button className="campaign-action" onClick={CampaignActions.exportSave}>
             Export Current
           </button>
-          <button className="campaign-action" data-campaign-action="import-save">
+          <button className="campaign-action" onClick={CampaignActions.importSavePicker}>
             Import…
           </button>
           <button
             className="campaign-action danger"
-            data-campaign-action="delete-all-saves"
+            onClick={CampaignActions.deleteAllSaves}
           >
             Delete All Saves
           </button>
@@ -162,8 +163,7 @@ export function CampaignSettingsTab(_props: Props) {
                   {compatible ? (
                     <button
                       className="campaign-action primary"
-                      data-campaign-action="load-slot"
-                      data-id={slot.saveId}
+                      onClick={() => CampaignActions.loadSlot(slot.saveId)}
                       disabled={isActive}
                     >
                       {isActive ? "Loaded" : "Load"}
@@ -171,8 +171,7 @@ export function CampaignSettingsTab(_props: Props) {
                   ) : (
                     <button
                       className="campaign-action"
-                      data-campaign-action="export-slot"
-                      data-id={slot.saveId}
+                      onClick={() => CampaignActions.exportSlot(slot.saveId)}
                       title="Export the old save before deleting"
                     >
                       Export
@@ -180,8 +179,7 @@ export function CampaignSettingsTab(_props: Props) {
                   )}
                   <button
                     className="campaign-action danger"
-                    data-campaign-action="delete-slot"
-                    data-id={slot.saveId}
+                    onClick={() => CampaignActions.deleteSlot(slot.saveId)}
                   >
                     Delete
                   </button>

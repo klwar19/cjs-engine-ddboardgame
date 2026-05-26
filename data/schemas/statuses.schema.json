@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:statuses",
+  "title": "Statuses File",
+  "description": "Status registry (buffs/debuffs/environments). Note: the legacy data/system/statuses.json may omit the _file envelope; the lint allows that as a transitional shape.",
+  "type": "object",
+  "additionalProperties": true,
+  "anyOf": [
+    {
+      "type": "object",
+      "required": ["entries"],
+      "properties": {
+        "_file": {
+          "type": "object",
+          "properties": { "format": { "enum": ["cjs-statuses", "cjs-collection"] } }
+        },
+        "entries": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/StatusEntry" }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z_][a-z0-9_]*$": { "$ref": "#/definitions/StatusEntry" }
+      }
+    }
+  ],
+  "definitions": {
+    "StatusEntry": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z_][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "icon": { "type": "string" },
+        "desc": { "type": "string" },
+        "category": { "type": "string" },
+        "maxStacks": { "type": "number", "minimum": 1 },
+        "defaultDuration": { "type": "number", "minimum": 0 },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

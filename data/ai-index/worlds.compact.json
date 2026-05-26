@@ -1,0 +1,101 @@
+[
+  {
+    "id": "bazaar",
+    "displayName": "Bazaar of Broken Chains",
+    "ceiling": "A",
+    "tone": "cosmic_market",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "starter",
+    "summary": "Read this first for Bazaar story work. The Bazaar of Broken Chains is the optional cross-world economy hub: arena tests, auction sinks, contracts, weird food, and trade consequences."
+  },
+  {
+    "id": "cyberpunk",
+    "displayName": "Neo-Kowloon",
+    "ceiling": "A",
+    "tone": "cyberpunk_neon",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "stub",
+    "summary": "Read this first for Neo-Kowloon story work."
+  },
+  {
+    "id": "earth",
+    "displayName": "Earth",
+    "ceiling": "C",
+    "tone": "daily_life_pressure",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "starter",
+    "summary": "Read this first for Earth story work. Earth is the ordinary-life anchor: school, hospital, delivery shifts, social suspicion, and the reason cross-world power must stay human-scale."
+  },
+  {
+    "id": "fantasy_eldenring",
+    "displayName": "Sundered Lands",
+    "ceiling": "S",
+    "tone": "fantasy_dark",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "stub",
+    "summary": "Read this first for Sundered Lands story work."
+  },
+  {
+    "id": "haven",
+    "displayName": "Haven",
+    "ceiling": "S",
+    "tone": "fantasy_warm",
+    "monsterCount": 12,
+    "characterCount": 3,
+    "encounterCount": 8,
+    "status": "stub",
+    "summary": "Read this first for Haven story work. Open the referenced files only when you need exact dialogue, operations, or node data."
+  },
+  {
+    "id": "neo_starcraft",
+    "displayName": "Sectors",
+    "ceiling": "SR",
+    "tone": "techno_sterile",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "stub",
+    "summary": "Read this first for Sectors story work."
+  },
+  {
+    "id": "wuxia_immortal",
+    "displayName": "Immortal Realms",
+    "ceiling": "SSR",
+    "tone": "xianxia_grand",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "stub",
+    "summary": "Read this first for Immortal Realms story work."
+  },
+  {
+    "id": "wuxia_jianghu",
+    "displayName": "Jianghu",
+    "ceiling": "A",
+    "tone": "wuxia_classical",
+    "monsterCount": 0,
+    "characterCount": 0,
+    "encounterCount": 0,
+    "status": "stub",
+    "summary": "Read this first for Jianghu story work."
+  },
+  {
+    "id": "zombie",
+    "displayName": "Last Light",
+    "ceiling": "B",
+    "tone": "horror_grim",
+    "monsterCount": 7,
+    "characterCount": 1,
+    "encounterCount": 0,
+    "status": "stub",
+    "summary": "Read this first for Zombie world story work. Last Light is the survival expedition loop: route planning, scavenging, building, medical salvage, and deciding what limited resources mean."
+  }
+]

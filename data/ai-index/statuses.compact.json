@@ -1,0 +1,266 @@
+[
+  {
+    "id": "adapt",
+    "name": "Adapt",
+    "category": "exotic",
+    "summary": "Gains resistance to the last element that hit this unit."
+  },
+  {
+    "id": "barrier",
+    "name": "Barrier",
+    "category": "buff",
+    "summary": "Absorbs magic damage only."
+  },
+  {
+    "id": "berserk",
+    "name": "Berserk",
+    "category": "buff",
+    "summary": "Damage +30%, but DR reduced by 5."
+  },
+  {
+    "id": "bleed",
+    "name": "Bleed",
+    "category": "dot",
+    "summary": "Takes physical damage each turn. Worse when moving."
+  },
+  {
+    "id": "blind",
+    "name": "Blind",
+    "category": "control",
+    "summary": "Accuracy reduced by 50%. Fishing/quickpress QTE harder."
+  },
+  {
+    "id": "burn",
+    "name": "Burn",
+    "category": "dot",
+    "summary": "Takes fire damage each turn."
+  },
+  {
+    "id": "charm",
+    "name": "Charm",
+    "category": "control",
+    "summary": "Attacks own allies instead of enemies. Breaks if ally damages you."
+  },
+  {
+    "id": "clumsy",
+    "name": "Clumsy",
+    "category": "statdown",
+    "summary": "Agility reduced."
+  },
+  {
+    "id": "confuse",
+    "name": "Confuse",
+    "category": "control",
+    "summary": "Actions target randomly (friend or foe)."
+  },
+  {
+    "id": "corrode",
+    "name": "Corrode",
+    "category": "dot",
+    "summary": "Takes damage each turn. Reduces DR by 2 per stack."
+  },
+  {
+    "id": "counter_stance",
+    "name": "Counter Stance",
+    "category": "buff",
+    "summary": "Automatically counter-attacks when hit."
+  },
+  {
+    "id": "curse",
+    "name": "Curse",
+    "category": "dot",
+    "summary": "Takes dark damage each turn. Cannot be healed."
+  },
+  {
+    "id": "doom",
+    "name": "Doom",
+    "category": "exotic",
+    "summary": "Dies when duration expires. Can be cleansed."
+  },
+  {
+    "id": "dull",
+    "name": "Dull",
+    "category": "statdown",
+    "summary": "Intelligence reduced."
+  },
+  {
+    "id": "exposed",
+    "name": "Exposed",
+    "category": "statdown",
+    "summary": "All DR reduced by 5."
+  },
+  {
+    "id": "fear",
+    "name": "Fear",
+    "category": "control",
+    "summary": "Must move away from the source. Cannot attack the source."
+  },
+  {
+    "id": "focus",
+    "name": "Focus",
+    "category": "buff",
+    "summary": "Next attack has +50% crit chance."
+  },
+  {
+    "id": "fragile",
+    "name": "Fragile",
+    "category": "statdown",
+    "summary": "Endurance and DR reduced."
+  },
+  {
+    "id": "freeze",
+    "name": "Freeze",
+    "category": "control",
+    "summary": "Cannot act or move. Takes 50% extra from Fire."
+  },
+  {
+    "id": "frostbite",
+    "name": "Frostbite",
+    "category": "dot",
+    "summary": "Takes water damage each turn. Slows movement by 1."
+  },
+  {
+    "id": "haste",
+    "name": "Haste",
+    "category": "buff",
+    "summary": "Movement +2, Agility +3."
+  },
+  {
+    "id": "immobilize",
+    "name": "Immobilize",
+    "category": "movement",
+    "summary": "Cannot move. Same as Root but doesn't break."
+  },
+  {
+    "id": "link",
+    "name": "Link",
+    "category": "exotic",
+    "summary": "Damage taken is split between linked units."
+  },
+  {
+    "id": "mark",
+    "name": "Mark",
+    "category": "exotic",
+    "summary": "Marked target takes bonus damage from the marker."
+  },
+  {
+    "id": "petrify",
+    "name": "Petrify",
+    "category": "control",
+    "summary": "Cannot act or move. +10 Physical DR while petrified."
+  },
+  {
+    "id": "poison",
+    "name": "Poison",
+    "category": "dot",
+    "summary": "Takes nature damage each turn. Stacks."
+  },
+  {
+    "id": "protect",
+    "name": "Protect",
+    "category": "buff",
+    "summary": "Redirects attacks from adjacent allies to self."
+  },
+  {
+    "id": "regen",
+    "name": "Regen",
+    "category": "buff",
+    "summary": "Heals HP each turn."
+  },
+  {
+    "id": "root",
+    "name": "Root",
+    "category": "movement",
+    "summary": "Cannot move. Can still attack and use skills."
+  },
+  {
+    "id": "shield",
+    "name": "Shield",
+    "category": "buff",
+    "summary": "Absorbs damage before HP. Shield has its own HP pool that depletes."
+  },
+  {
+    "id": "shock",
+    "name": "Shock",
+    "category": "dot",
+    "summary": "Takes lightning damage each turn. QTE difficulty +1."
+  },
+  {
+    "id": "silence",
+    "name": "Silence",
+    "category": "control",
+    "summary": "Cannot use skills (only basic attack/move/defend). Quiz QTE auto-fails."
+  },
+  {
+    "id": "sleep",
+    "name": "Sleep",
+    "category": "control",
+    "summary": "Cannot act or move. BREAKS when taking damage."
+  },
+  {
+    "id": "slow",
+    "name": "Slow",
+    "category": "movement",
+    "summary": "Movement reduced by 2."
+  },
+  {
+    "id": "stealth",
+    "name": "Stealth",
+    "category": "buff",
+    "summary": "Cannot be targeted. Breaks on attacking or taking AoE damage."
+  },
+  {
+    "id": "stun",
+    "name": "Stun",
+    "category": "control",
+    "summary": "Cannot act or move. Does NOT break on damage."
+  },
+  {
+    "id": "taunt",
+    "name": "Taunt",
+    "category": "control",
+    "summary": "Must target the taunter with attacks."
+  },
+  {
+    "id": "transform",
+    "name": "Transform",
+    "category": "exotic",
+    "summary": "Changed into another form. Stats replaced temporarily."
+  },
+  {
+    "id": "unlucky",
+    "name": "Unlucky",
+    "category": "statdown",
+    "summary": "Luck reduced. Crit chance down."
+  },
+  {
+    "id": "weakness",
+    "name": "Weakness",
+    "category": "statdown",
+    "summary": "Strength reduced."
+  },
+  {
+    "id": "web",
+    "name": "Web",
+    "category": "movement",
+    "summary": "Cannot move. Breaks on taking fire damage."
+  },
+  {
+    "id": "storm_surge",
+    "name": "Storm Surge",
+    "category": "buff",
+    "summary": "Charged with storm energy. +20% damage while Rain or Blizzard is active."
+  },
+  {
+    "id": "wet",
+    "name": "Wet",
+    "category": "statdown",
+    "summary": "Soaked through. +25% damage taken from Lightning. Rain extends this."
+  },
+  {
+    "id": "negate_next_damage",
+    "name": "Negate Next Damage",
+    "category": "buff",
+    "summary": "Next incoming damage instance is fully negated."
+  }
+]

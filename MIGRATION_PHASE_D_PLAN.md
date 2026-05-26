@@ -110,18 +110,61 @@ each step (`npm test`).
 ### In progress / next
 
 The structural Phase D migration is complete — every tab in the
-campaign shell is React-owned at the entry point. The remaining work
-moves each `_render*` body OUT of the campaign-ui closure into its own
-TypeScript port, in any order:
+campaign shell is React-owned at the entry point.
 
-- [ ] Port `cui-party-tab.js::renderRosterMember` (slot views, known
-  skill / passive rows, status badges) to per-section React
-  components inside `CampaignRosterTab.tsx`. Drop the
-  `dangerouslySetInnerHTML` mount once everything is JSX.
+- [x] **Phase E — CampaignShell.tsx scaffold.** The shell now owns the
+  campaign-root mount, the chrome row containers (header, mode bar,
+  sub-tabs, log strip, body, command rail), and the drawer/portal layer.
+  The chrome fragments still come from the vanilla
+  `_render*` helpers via `CampaignUI.getShellFragments()`, but the
+  React-owned wrapper divs are stable so React-tab components no
+  longer get torn down + re-portaled on every state change. See
+  `src/campaign/CampaignShell.tsx`. The drawer moved into a React
+  portal (`createPortal` to `document.body`); the imperative
+  `_drawerEl`/`_drawerBackdropEl` flow is bypassed in shell mode.
+
+- [x] **Phase E — Typed action layer.** `src/campaign/actions.ts`
+  exposes typed wrappers around `CampaignSave`, `CampaignOps`, and
+  `CampaignState`. Migrated tabs (`CampaignSettingsTab`,
+  `CampaignLogsTab`) call them via direct `onClick` handlers instead
+  of stamping `data-campaign-action` attributes. The vanilla
+  `_handleAction` switch still handles unported strings.
+  `dispatchCampaignAction(name, data)` bridges the gap for buttons
+  still using the legacy contract.
+
+- [x] **Phase E — AI content contracts.** `src/content/types.ts`
+  defines the canonical entry shapes. `data/schemas/*.schema.json`
+  validate authored JSON. `tools/content-lint.mjs` runs the schema
+  validator (and accepts an `--patch` flag so AI generators can
+  validate their output before committing). Wired into `npm test`
+  via `test_content_lint.js`.
+
+- [x] **Phase E — AI compact indexes.** `tools/build-ai-index.mjs`
+  produces `data/ai-index/<type>.compact.json` (skills, passives,
+  statuses, items, monsters, characters, worlds, encounters) plus
+  `index.json` manifest. ~70 KB total vs. several MB of full content
+  — AI generators read these for context instead of paying the token
+  cost of the full files.
+
+- [x] **Phase E — Code splitting.** Vite `manualChunks` splits per
+  domain (campaign / combat / minigames / qte / media / core / etc.)
+  so a fix to one domain doesn't invalidate cached chunks elsewhere.
+  Editor builders are `React.lazy()`'d so a panel's editor only
+  ships when the user opens it.
+  - Editor initial download: 235 KB → 29 KB
+  - Campaign initial download: 926 KB → 33 KB (rest in per-domain
+    chunks under 50–70 KB each)
+
+The remaining work moves each `_render*` body OUT of the campaign-ui
+closure into its own TypeScript port. None of these block correctness —
+they remove the dangerouslySetInnerHTML scaffolds:
+
+- [ ] Port `cui-party-tab.js::renderRosterMember` to per-section React
+  components inside `CampaignRosterTab.tsx`.
 - [ ] Port `CampaignWorldMap.renderTravelMap` SVG to a `WorldMap.tsx`
   component reading the same state shape.
-- [ ] Port the hub-family inner renderers (`renderSideForge`,
-  `renderOracleForge`, …) to JSX inside `CampaignHubTabs.tsx`.
+- [ ] Port the hub-family inner renderers to JSX inside
+  `CampaignHubTabs.tsx`.
 - [ ] Port the external-module renderers (CampaignInventory,
   CampaignEconomy.renderShops, PocketHaven.renderCraft/Cook/Farm,
   RelationshipsTab.render) to JSX inside the matching
@@ -130,14 +173,13 @@ TypeScript port, in any order:
   (`_renderWorldGate`, `_renderStoryHome`, …) out of campaign-ui.js
   into their own TypeScript modules consumed by the matching React
   components.
-- [ ] Migrate the shell parts that still live in campaign-ui.js
-  (`_renderHeader`, `_renderModeBar`, `_renderSubTabs`,
-  `_renderRecentLogStrip`, `_renderCommandRail`, `_panelLayer`) into
-  a top-level `CampaignShell.tsx`. The vanilla `render()` becomes
-  the React render. At that point `campaign-ui.js` is just data
-  loading + action dispatch, and the file can be split.
-- [ ] Drop `js/campaign/campaign-ui.js` and `js/campaign/ui/`.
-  Rewrite `test_campaign_ui_bootstrap.js` against the React tree.
+- [ ] Port the chrome (header, modeBar, subTabs, recentLog, rail) from
+  vanilla HTML-string helpers to real JSX. Today the React shell
+  embeds them via `dangerouslySetInnerHTML`. JSX will let us bind
+  events with `onClick` instead of bubbling through campaign-root.
+- [ ] Drop `js/campaign/campaign-ui.js` and `js/campaign/ui/` once
+  every tab body and the chrome are JSX. Rewrite
+  `test_campaign_ui_bootstrap.js` against the React tree.
 
 ## Done-when gate
 

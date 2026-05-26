@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:passives",
+  "title": "Passives File",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "properties": { "format": { "enum": ["cjs-passives", "cjs-collection"] } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/PassiveEntry" }
+    }
+  },
+  "definitions": {
+    "PassiveEntry": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "icon": { "type": "string" },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "anyOf": [
+              { "required": ["effectId"], "properties": { "effectId": { "type": "string" } } },
+              { "required": ["type"], "properties": { "type": { "type": "string" } } }
+            ]
+          }
+        },
+        "ranks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rank", "effects"],
+            "additionalProperties": true,
+            "properties": {
+              "rank": { "type": "number", "minimum": 1 },
+              "cost": { "type": "number", "minimum": 0 },
+              "effects": { "type": "array" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -91,6 +91,11 @@ export default defineConfig({
     })
   ],
   build: {
+    // The campaign-core chunk includes campaign-ui.js (~510 KB before
+    // minification), which is the next refactor target. Until that file
+    // splits, raise the warning to 700 KB so the CI signal still fires
+    // on accidental new bulk but does not noise on the known offender.
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: {
         index: resolve(root, "index.html"),
@@ -99,6 +104,33 @@ export default defineConfig({
         campaign: resolve(root, "campaign.html"),
         editor: resolve(root, "editor.html"),
         minigames: resolve(root, "minigames.html")
+      },
+      output: {
+        // Split vendor + per-domain code so a single bug-fix doesn't
+        // invalidate the entire campaign bundle for end users. The
+        // manualChunks here are loaded eagerly (static imports), but
+        // they cache separately. Async lazy-loading for the campaign
+        // tab families happens via React.lazy in the React shell.
+        manualChunks: (id) => {
+          if (id.includes("node_modules/react")) return "react-vendor";
+          if (id.includes("/js/minigames/")) return "cjs-minigames";
+          if (id.includes("/js/qte/")) return "cjs-qte";
+          if (id.includes("/js/ui/l2d") || id.includes("/js/ui/audio")) return "cjs-media";
+          if (id.includes("/js/campaign/campaign-scenario-generator")) return "cjs-campaign-generators";
+          if (id.includes("/js/campaign/campaign-story-")) return "cjs-campaign-story";
+          if (id.includes("/js/campaign/campaign-sequence-")) return "cjs-campaign-sequences";
+          if (id.includes("/js/campaign/campaign-world-map") || id.includes("/js/campaign/campaign-map.js")) return "cjs-campaign-maps";
+          if (id.includes("/js/campaign/farming-mode") || id.includes("/js/campaign/pocket-haven")) return "cjs-campaign-haven";
+          if (id.includes("/js/campaign/scenario-runner")) return "cjs-campaign-scenario-runner";
+          if (id.includes("/js/campaign/")) return "cjs-campaign-core";
+          if (id.includes("/js/combat/")) return "cjs-combat";
+          if (id.includes("/js/grid/")) return "cjs-grid";
+          if (id.includes("/js/ai/")) return "cjs-ai";
+          if (id.includes("/js/effects/")) return "cjs-effects";
+          if (id.includes("/js/core/")) return "cjs-core";
+          if (id.includes("/js/services/")) return "cjs-services";
+          return undefined;
+        }
       }
     }
   }

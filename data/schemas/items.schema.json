@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:items",
+  "title": "Items File",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "properties": { "format": { "enum": ["cjs-items", "cjs-materials", "cjs-food", "cjs-questItems", "cjs-collection"] } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/ItemEntry" }
+    }
+  },
+  "definitions": {
+    "ItemEntry": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "icon": { "type": "string" },
+        "description": { "type": "string" },
+        "rarity": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "buyValue": { "type": "number", "minimum": 0 },
+        "sellValue": { "type": "number", "minimum": 0 },
+        "stackable": { "type": "boolean" },
+        "unique": { "type": "boolean" },
+        "slot": { "type": "string" },
+        "weaponType": { "type": "string" },
+        "armorType": { "type": "string" },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "S": { "type": "number" }, "P": { "type": "number" }, "E": { "type": "number" },
+            "C": { "type": "number" }, "I": { "type": "number" }, "A": { "type": "number" },
+            "L": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

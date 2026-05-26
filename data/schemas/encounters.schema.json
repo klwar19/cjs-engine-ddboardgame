@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:encounters",
+  "title": "Encounters File",
+  "description": "Per-world combat encounters: grid map plus starting unit placements.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "properties": { "format": { "enum": ["cjs-encounters", "cjs-collection"] } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/EncounterEntry" }
+    }
+  },
+  "definitions": {
+    "EncounterEntry": {
+      "type": "object",
+      "required": ["id", "name", "width", "height", "grid", "units"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "width": { "type": "number", "minimum": 1 },
+        "height": { "type": "number", "minimum": 1 },
+        "grid": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "units": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "pos"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "pos": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "number", "minimum": 0 }
+              },
+              "size": { "type": "string" },
+              "team": { "type": "string" }
+            }
+          }
+        },
+        "objectives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "type"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string" },
+              "summary": { "type": "string" }
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "weatherId": { "type": "string" },
+            "bgmId": { "type": "string" }
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

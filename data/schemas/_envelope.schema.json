@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:_envelope",
+  "title": "Content File Envelope",
+  "description": "Shared two-layer file shape: every authored CJS content file is { _file, entries }.",
+  "type": "object",
+  "required": ["_file", "entries"],
+  "additionalProperties": true,
+  "properties": {
+    "_file": {
+      "type": "object",
+      "required": ["version", "format", "scope"],
+      "additionalProperties": true,
+      "properties": {
+        "version": { "type": "number", "minimum": 1 },
+        "format": { "type": "string", "minLength": 4 },
+        "scope": { "type": "string", "enum": ["universal", "world"] },
+        "world": { "type": "string", "minLength": 1 }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  }
+}

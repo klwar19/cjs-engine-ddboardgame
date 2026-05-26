@@ -107,6 +107,12 @@ window.CJS.CampaignUI = (() => {
   let _activeMode = 'story';
   let _activeTab = 'storyHome';
   let _booted = false;
+  // When the React shell takes ownership of the chrome, this flag stops
+  // `render()` from clobbering _root.innerHTML on every mutate. The
+  // shell still gets notified via the `campaign:state-tick` event so it
+  // can re-read getShellFragments() and re-render its dangerouslySetInnerHTML
+  // panes. See `src/campaign/CampaignShell.tsx` for the consumer side.
+  let _reactShellEnabled = false;
   let _combatResultUnsub = null;
   let _combatReturnEventsBound = false;
   let _lastCombatResultKey = '';
@@ -303,7 +309,11 @@ window.CJS.CampaignUI = (() => {
 
   async function init(root) {
     _root = root;
-    _root.innerHTML = '<div class="campaign-loading">Loading Campaign Mode...</div>';
+    // The loading placeholder is owned by React when the React shell is
+    // enabled — skip the clobber to keep the React-rendered DOM intact.
+    if (!_reactShellEnabled) {
+      _root.innerHTML = '<div class="campaign-loading">Loading Campaign Mode...</div>';
+    }
 
     try {
       await CM().loadDefaultData();
@@ -339,7 +349,25 @@ window.CJS.CampaignUI = (() => {
       render();
     } catch (error) {
       console.error(error);
-      _root.innerHTML = `<div class="campaign-error">Campaign Mode failed to load: ${_esc(error.message || error)}</div>`;
+      if (_reactShellEnabled) {
+        // React owns the chrome — surface the error through the same
+        // state-tick event so CampaignShell can render its boot-error
+        // banner. We stash the message on the closure so the bridge
+        // surface can read it back.
+        _bootIncompatibleNotice = _bootIncompatibleNotice || {
+          slotName: 'Campaign Mode',
+          reason: (error && error.message) || String(error),
+          slotId: ''
+        };
+        try {
+          _root.dispatchEvent(new CustomEvent('campaign:state-tick', {
+            bubbles: false,
+            detail: { bootError: true, message: (error && error.message) || String(error) }
+          }));
+        } catch (e) { /* ignore */ }
+      } else {
+        _root.innerHTML = `<div class="campaign-error">Campaign Mode failed to load: ${_esc(error.message || error)}</div>`;
+      }
     }
   }
 
@@ -349,6 +377,32 @@ window.CJS.CampaignUI = (() => {
     const campaign = CS().getCurrentCampaign();
     _ensureStoryContext(state.currentWorld || 'haven').catch(() => {});
     _normalizeActiveWorldUi(state);
+
+    if (_reactShellEnabled) {
+      // React owns the chrome. Skip the innerHTML clobber and let the
+      // CampaignShell read fresh fragments via getShellFragments() on
+      // the next state-tick. The shell still listens for `campaign:rendered`
+      // for backward compatibility with the legacy portal bridge.
+      try {
+        _root.dispatchEvent(new CustomEvent('campaign:state-tick', {
+          bubbles: false,
+          detail: { activeTab: _activeTab, activeMode: _activeMode, activePanel: _activePanel }
+        }));
+      } catch (e) { /* CustomEvent unsupported in some test envs — ignore */ }
+      // The drawer + encounter flash + farm bind still run; React reads
+      // the panel state but the drawer DOM is React-owned now so we don't
+      // call `_renderPanelLayer` here. Farm and run-panel bindings run
+      // after React mounts the body — same setTimeout trick.
+      _flashOnNewEncounter(state);
+      setTimeout(() => {
+        const mapRegion = _root.querySelector('#campaign-map-region');
+        if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
+        _bindRunPanel();
+        window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
+        if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
+      }, 0);
+      return;
+    }
 
     const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
     const subTabs = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
@@ -3409,6 +3463,18 @@ window.CJS.CampaignUI = (() => {
     }
     _lastFocus = document.activeElement;
     _activePanel = panelId;
+    if (_reactShellEnabled) {
+      // React owns the drawer + chrome class. Just trigger a state-tick;
+      // the shell will render the drawer portal and add the has-drawer-open
+      // class on its own. Focus management still runs after React mounts.
+      render();
+      requestAnimationFrame(() => {
+        const drawer = document.querySelector('.campaign-drawer');
+        const focusTarget = drawer?.querySelector('button, [tabindex], a, input, select, textarea');
+        focusTarget?.focus?.();
+      });
+      return;
+    }
     _renderPanelLayer({ rebuild: true });
     _root.querySelector('.campaign-shell')?.classList.add('has-drawer-open');
     _root.querySelectorAll('.campaign-rail-btn').forEach((btn) => {
@@ -3423,6 +3489,14 @@ window.CJS.CampaignUI = (() => {
   function _closePanel() {
     if (!_activePanel) return;
     _activePanel = null;
+    if (_reactShellEnabled) {
+      render();
+      if (_lastFocus && document.contains(_lastFocus)) {
+        try { _lastFocus.focus(); } catch (e) { /* ignore */ }
+      }
+      _lastFocus = null;
+      return;
+    }
     _renderPanelLayer({ rebuild: true });
     _root.querySelector('.campaign-shell')?.classList.remove('has-drawer-open');
     _root.querySelectorAll('.campaign-rail-btn.is-active').forEach((btn) => btn.classList.remove('is-active'));
@@ -10816,6 +10890,93 @@ window.CJS.CampaignUI = (() => {
     }
   }
 
+  // ── React Shell Bridge ─────────────────────────────────────────
+  // Surface used by `src/campaign/CampaignShell.tsx` to take ownership
+  // of the chrome (header, modeBar, subTabs, log strip, command rail,
+  // drawer) while leaving the closure-private renderers untouched. The
+  // shell reads fragment strings, the active mode/tab/panel ids, and
+  // panel defs; it mutates state by calling the setters below or via
+  // src/campaign/actions.ts (which uses CampaignOps directly).
+
+  function enableReactShell() {
+    _reactShellEnabled = true;
+  }
+
+  function getShellFragments(state = CS().getState()) {
+    if (!state) return null;
+    const campaign = CS().getCurrentCampaign();
+    const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
+    const subTabs = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
+    return {
+      header: _renderHeader(state, campaign),
+      modeBar: _renderModeBar(state),
+      subTabs: _renderSubTabs(subTabs, isUtility),
+      recentLog: _renderRecentLogStrip(state),
+      commandRail: _renderCommandRail(state),
+      activePanel: _activePanel,
+      activeMode: _activeMode,
+      activeTab: _activeTab,
+      isUtility
+    };
+  }
+
+  // Renders the main-area body. Returns a string for vanilla tabs;
+  // returns `null` if the tab is owned by a React component (the shell
+  // mounts the React component directly when this returns null).
+  function getMainBody(state = CS().getState()) {
+    if (!state) return '';
+    const Tabs = window.CJS.CampaignUIInternal?.Tabs;
+    if (Tabs && Tabs.has(_activeTab)) {
+      // A registered tab — could be React-owned (a cui-react-bridge
+      // placeholder) or vanilla. Render and return the HTML; React will
+      // mount inside any mount-point div the string contains.
+      return Tabs.render(_activeTab, state, _tabHelpers()) ?? '';
+    }
+    return _renderMain(state);
+  }
+
+  function getPanelDefs(state = CS().getState()) {
+    return _panelDefsForState(state);
+  }
+
+  function getPanelOrder() {
+    return RAIL_ORDER.slice();
+  }
+
+  function renderDrawerBody(panelId, state = CS().getState()) {
+    if (!state || !panelId) return '';
+    return _renderDrawerBody(panelId, state);
+  }
+
+  function setActiveMode(mode, opts = {}) {
+    if (!mode) return;
+    _activeMode = mode;
+    if (!opts.keepTab) {
+      const next = _defaultTabForMode(mode, CS().getState());
+      if (next) _activeTab = next;
+    }
+    render();
+  }
+
+  function setActiveTab(tab, opts = {}) {
+    if (!tab) return;
+    _activeTab = tab;
+    const owningMode = APP_TAB_TO_MODE[tab];
+    if (owningMode && !opts.keepMode) _activeMode = owningMode;
+    render();
+  }
+
+  function setActivePanel(panelId) {
+    if (panelId == null) {
+      _activePanel = null;
+    } else {
+      // Toggle: clicking the active panel again closes it (mirrors the
+      // vanilla _openPanel behaviour).
+      _activePanel = _activePanel === panelId ? null : panelId;
+    }
+    render();
+  }
+
   return Object.freeze({
     init,
     render,
@@ -10833,6 +10994,22 @@ window.CJS.CampaignUI = (() => {
     getTabHelpers: () => _tabHelpers(),
     // Returns the HTML body string for any closure-private vanilla
     // renderer the React-tab bridge wraps.
-    renderTabBody
+    renderTabBody,
+    // Phase E React Shell bridge. See enableReactShell() above for the
+    // contract — when this is set, render() no longer clobbers _root
+    // and instead emits `campaign:state-tick` events for the shell to
+    // re-render against.
+    enableReactShell,
+    getShellFragments,
+    getMainBody,
+    getPanelDefs,
+    getPanelOrder,
+    renderDrawerBody,
+    setActiveMode,
+    setActiveTab,
+    setActivePanel,
+    getActiveTab: () => _activeTab,
+    getActiveMode: () => _activeMode,
+    getActivePanel: () => _activePanel
   });
 })();

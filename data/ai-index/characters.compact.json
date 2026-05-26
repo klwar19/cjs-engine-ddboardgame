@@ -1,0 +1,44 @@
+[
+  {
+    "id": "bin",
+    "name": "Bin Chen",
+    "team": "player",
+    "rank": "F",
+    "summary": "The Cosmic Jester himself. Broke, snarky, surprisingly tactical. Charisma is his weapon. Trains as Warrior (sword) or Thief (dagger)."
+  },
+  {
+    "id": "peri",
+    "name": "Peri",
+    "team": "support",
+    "rank": "?",
+    "summary": "Bin's CJS narrator-companion. Speaks in stage directions. Tags her own jokes for the system to log."
+  },
+  {
+    "id": "haven_bowy",
+    "name": "Bowy",
+    "team": "player",
+    "rank": "F",
+    "summary": "Half-orc/half-boar marksman. Gruff, loyal. His crossbow Thunder is his pride. Trains as Archer (bow) or Thief (dagger)."
+  },
+  {
+    "id": "haven_garr",
+    "name": "Garr",
+    "team": "player",
+    "rank": "F",
+    "summary": "Veteran hunter, adoptive father. Holds a secret from Peri. Steady and reliable."
+  },
+  {
+    "id": "haven_mitia",
+    "name": "Mitia",
+    "team": "player",
+    "rank": "F",
+    "summary": "Shy and kind. Secret Fae heritage. The emotional heart of the group. Ice magic."
+  },
+  {
+    "id": "zombie_burnice",
+    "name": "Burnice",
+    "team": "player",
+    "rank": "E",
+    "summary": "Rooftop scout and burn-lane specialist. Burnice uses flare bolts, scavenged accelerant, and practiced route discipline to keep the horde…"
+  }
+]

@@ -1,4 +1,5 @@
 import type { CampaignStateSnapshot } from "../store";
+import { dispatchCampaignAction } from "../actions";
 
 // Vanilla `cui-party-tab.js` exposes per-member rendering helpers we
 // reuse for the inner card body. Porting those sub-renderers (skills,
@@ -60,7 +61,7 @@ export function CampaignRosterTab({ state }: Props) {
           <h2>Roster</h2>
           <button
             className="campaign-action"
-            data-campaign-action="recruit-character"
+            onClick={() => dispatchCampaignAction("recruit-character")}
           >
             Recruit
           </button>

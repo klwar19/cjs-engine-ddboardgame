@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:monsters",
+  "title": "Monsters File",
+  "description": "Per-world monster entries. Format applies equally to universal characters.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "properties": { "format": { "enum": ["cjs-monsters", "cjs-characters", "cjs-collection"] } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/MonsterEntry" }
+    }
+  },
+  "definitions": {
+    "MonsterEntry": {
+      "type": "object",
+      "required": ["id", "name", "team"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "icon": { "type": "string" },
+        "portrait": { "type": "string" },
+        "team": { "type": "string" },
+        "rank": { "type": "string", "enum": ["F", "E", "D", "C", "B", "A", "S", "SS", "SSS", "?"] },
+        "type": { "type": "string" },
+        "stats": { "$ref": "#/definitions/StatBlock" },
+        "skills": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "required": ["skillId"],
+                "properties": {
+                  "skillId": { "type": "string" },
+                  "level": { "type": "number", "minimum": 1 }
+                }
+              }
+            ]
+          }
+        },
+        "ultimateSkillId": { "type": "string" },
+        "ultimateMax": { "type": "number", "minimum": 0 },
+        "equipment": { "type": "array", "items": { "type": "string" } },
+        "innatePassives": { "type": "array", "items": { "type": "string" } },
+        "behaviorAI": { "type": "string" },
+        "weak": { "type": "array", "items": { "type": "string" } },
+        "resist": { "type": "array", "items": { "type": "string" } },
+        "immune": { "type": "array", "items": { "type": "string" } },
+        "loot": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "anyOf": [
+              { "required": ["type"], "properties": { "type": { "type": "string" } } },
+              { "required": ["itemId"], "properties": { "itemId": { "type": "string" } } },
+              { "required": ["id"], "properties": { "id": { "type": "string" } } },
+              { "required": ["currencyId"], "properties": { "currencyId": { "type": "string" } } }
+            ],
+            "properties": {
+              "type": { "type": "string" },
+              "id": { "type": "string" },
+              "itemId": { "type": "string" },
+              "currencyId": { "type": "string" },
+              "name": { "type": "string" },
+              "rarity": { "type": "string" },
+              "min": { "type": "number" },
+              "max": { "type": "number" },
+              "chance": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "StatBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "S": { "type": "number" },
+        "P": { "type": "number" },
+        "E": { "type": "number" },
+        "C": { "type": "number" },
+        "I": { "type": "number" },
+        "A": { "type": "number" },
+        "L": { "type": "number" }
+      }
+    }
+  }
+}

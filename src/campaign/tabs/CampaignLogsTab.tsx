@@ -1,4 +1,5 @@
 import type { CampaignStateSnapshot } from "../store";
+import * as CampaignActions from "../actions";
 
 interface LogLine {
   readonly op?: string;
@@ -35,11 +36,11 @@ export function CampaignLogsTab({ state }: Props) {
       <div className="campaign-panel-head">
         <h2>Session Log</h2>
         <div className="campaign-panel-actions">
-          <button className="campaign-action" data-campaign-action="export-log">
+          <button className="campaign-action" onClick={CampaignActions.exportLog}>
             Export Log
           </button>
           {hasLog ? (
-            <button className="campaign-action danger" data-campaign-action="clear-log">
+            <button className="campaign-action danger" onClick={CampaignActions.clearLog}>
               Clear Log
             </button>
           ) : null}

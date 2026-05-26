@@ -1,0 +1,396 @@
+[
+  {
+    "id": "comedy_armor",
+    "name": "Comedy Armor",
+    "tags": [
+      "bin",
+      "defense",
+      "comedy"
+    ],
+    "summary": "If you're already the joke, nothing hits as hard. Minor DR and evasion."
+  },
+  {
+    "id": "jester_luck",
+    "name": "Jester's Luck",
+    "tags": [
+      "bin",
+      "luck",
+      "crit"
+    ],
+    "summary": "The universe finds Bin entertaining. Slightly better luck and crits."
+  },
+  {
+    "id": "enemy_mod_frozen_aura",
+    "name": "Frozen Aura",
+    "tags": [
+      "procedural",
+      "ice",
+      "enemy_modifier"
+    ],
+    "summary": "Procedural enemy modifier. A chilling aura toughens the bearer slightly."
+  },
+  {
+    "id": "enemy_mod_rabid_doublestrike",
+    "name": "Rabid Frenzy",
+    "tags": [
+      "procedural",
+      "frenzy",
+      "enemy_modifier"
+    ],
+    "summary": "Procedural enemy modifier. Faster but reckless — strikes hard but accepts more incoming damage."
+  },
+  {
+    "id": "enemy_mod_alpha_aura",
+    "name": "Alpha Aura",
+    "tags": [
+      "procedural",
+      "leader",
+      "enemy_modifier"
+    ],
+    "summary": "Procedural enemy modifier. Pack leader. Nearby allies share its resolve."
+  },
+  {
+    "id": "enemy_mod_swift_evasion",
+    "name": "Swift Step",
+    "tags": [
+      "procedural",
+      "evasion",
+      "enemy_modifier"
+    ],
+    "summary": "Procedural enemy modifier. Quick on its feet — dodges more often."
+  },
+  {
+    "id": "enemy_mod_tough_hide",
+    "name": "Tough Hide",
+    "tags": [
+      "procedural",
+      "defense",
+      "enemy_modifier"
+    ],
+    "summary": "Procedural enemy modifier. Hardened skin grants +DR and bulk."
+  },
+  {
+    "id": "enemy_mod_hungry_drain",
+    "name": "Hungry Bite",
+    "tags": [
+      "procedural",
+      "drain",
+      "enemy_modifier"
+    ],
+    "summary": "Procedural enemy modifier. Each bite restores a sliver of its own HP."
+  },
+  {
+    "id": "pas_sword_mastery",
+    "name": "Sword Mastery",
+    "tags": [
+      "job:warrior"
+    ],
+    "summary": "+10% physical damage. Trained on sword forms (the engine applies it whenever physical damage is dealt; restrict by weapon when conditional…"
+  },
+  {
+    "id": "pas_warriors_resolve",
+    "name": "Warrior's Resolve",
+    "tags": [
+      "job:warrior"
+    ],
+    "summary": "Below 30% HP: enrages, +20% damage. Hooks the existing on_low_hp berserk effect."
+  },
+  {
+    "id": "pas_shield_brace",
+    "name": "Shield Brace",
+    "tags": [
+      "job:knight"
+    ],
+    "summary": "+3 physical DR (the Knight braces even outside the defend round; defend still adds the action-economy bonus on top)."
+  },
+  {
+    "id": "pas_bulwark",
+    "name": "Bulwark",
+    "tags": [
+      "job:knight"
+    ],
+    "summary": "+1 DR vs all damage types."
+  },
+  {
+    "id": "pas_indomitable",
+    "name": "Indomitable",
+    "tags": [
+      "job:knight"
+    ],
+    "summary": "Immune to fear and charm."
+  },
+  {
+    "id": "pas_rage_buildup",
+    "name": "Rage Buildup",
+    "tags": [
+      "job:berserker"
+    ],
+    "summary": "+5% crit chance baseline. (Per-round stacking will swap in once on_turn_end stacking is supported.)"
+  },
+  {
+    "id": "pas_bloodlust",
+    "name": "Bloodlust",
+    "tags": [
+      "job:berserker"
+    ],
+    "summary": "Heal 5% max HP on kill."
+  },
+  {
+    "id": "pas_frenzy",
+    "name": "Frenzy",
+    "tags": [
+      "job:berserker"
+    ],
+    "summary": "Below 50% HP: +30% damage (uses the existing berserk_low_hp hook)."
+  },
+  {
+    "id": "pas_dodge_step",
+    "name": "Dodge Step",
+    "tags": [
+      "job:thief"
+    ],
+    "summary": "+5% evasion."
+  },
+  {
+    "id": "pas_backstab",
+    "name": "Backstab",
+    "tags": [
+      "job:thief"
+    ],
+    "summary": "+10% physical damage. (Conditional surrounded-target bonus wires once that trigger is added.)"
+  },
+  {
+    "id": "pas_eagle_eye",
+    "name": "Eagle Eye",
+    "tags": [
+      "job:archer"
+    ],
+    "summary": "+1 range to skills and basic attacks."
+  },
+  {
+    "id": "pas_marksman",
+    "name": "Marksman",
+    "tags": [
+      "job:archer"
+    ],
+    "summary": "+15% physical damage. (Range-conditional bonus wires once that trigger is added.)"
+  },
+  {
+    "id": "haven_abominable",
+    "name": "Abominable",
+    "tags": [
+      "abomination",
+      "boss",
+      "immunity"
+    ],
+    "summary": "Mythic, nearly unkillable. Mundane weapons cannot harm it; only enchanted, fire, or boss-tier abilities deal real damage."
+  },
+  {
+    "id": "haven_alpha_presence",
+    "name": "Alpha Presence",
+    "tags": [
+      "wolf",
+      "buff",
+      "pack"
+    ],
+    "summary": "Pack alpha. Nearby wolves deal more damage."
+  },
+  {
+    "id": "haven_climber",
+    "name": "Climber",
+    "tags": [
+      "zombie",
+      "mobility"
+    ],
+    "summary": "Can scale walls and obstacles as if they were open ground. Cover does not protect against this enemy."
+  },
+  {
+    "id": "haven_demonic_might",
+    "name": "Demonic Might",
+    "tags": [
+      "demon",
+      "oni",
+      "damage"
+    ],
+    "summary": "Hellish strength. Every blow lands harder."
+  },
+  {
+    "id": "haven_fae_blood",
+    "name": "Fae Blood",
+    "tags": [
+      "mitia",
+      "magic",
+      "regen"
+    ],
+    "summary": "Hidden Fae heritage. Natural mana recovery and magic resistance."
+  },
+  {
+    "id": "haven_frostbitten_flesh",
+    "name": "Frostbitten Flesh",
+    "tags": [
+      "zombie",
+      "undead",
+      "frost"
+    ],
+    "summary": "The cold preserves it. Immune to frost, but fire burns away its flesh faster."
+  },
+  {
+    "id": "haven_frozen_carapace",
+    "name": "Frozen Carapace",
+    "tags": [
+      "chimera",
+      "defense",
+      "boss"
+    ],
+    "summary": "The chimera's frostfire-hardened scales. High DR and reflects damage."
+  },
+  {
+    "id": "haven_gentle_heart",
+    "name": "Gentle Heart",
+    "tags": [
+      "mitia",
+      "support",
+      "heal"
+    ],
+    "summary": "Mitia's kindness strengthens her magic and charm."
+  },
+  {
+    "id": "haven_iron_hide",
+    "name": "Iron Hide",
+    "tags": [
+      "bowy",
+      "defense",
+      "physical"
+    ],
+    "summary": "Half-orc/half-boar toughness. Thick skin."
+  },
+  {
+    "id": "haven_marksmans_eye",
+    "name": "Marksman's Eye",
+    "tags": [
+      "bowy",
+      "accuracy",
+      "ranged"
+    ],
+    "summary": "Bowy's trained eye. Better accuracy and extended basic attack range."
+  },
+  {
+    "id": "haven_nine_tails",
+    "name": "Nine Tails",
+    "tags": [
+      "kumiho",
+      "abomination",
+      "magic"
+    ],
+    "summary": "Nine spirit-tails amplify her magic. Spell-lifesteal restores HP from every dark spell."
+  },
+  {
+    "id": "haven_oni_horns",
+    "name": "Oni Horns",
+    "tags": [
+      "oni",
+      "demon",
+      "crit"
+    ],
+    "summary": "Cursed horns harden the Oni's crits — extra crit rate and devastating crit damage."
+  },
+  {
+    "id": "haven_unfeeling",
+    "name": "Unfeeling",
+    "tags": [
+      "construct",
+      "undead",
+      "immunity"
+    ],
+    "summary": "No nerves, no fear. Highly resistant to charm, fear, bleed, and pain-based effects."
+  },
+  {
+    "id": "haven_unholy_aura",
+    "name": "Unholy Aura",
+    "tags": [
+      "necromancer",
+      "undead",
+      "buff"
+    ],
+    "summary": "Pulses of dark energy fuel the necromancer's spells. Buffs nearby undead and refills mana."
+  },
+  {
+    "id": "haven_veterans_instinct",
+    "name": "Veteran's Instinct",
+    "tags": [
+      "garr",
+      "counter",
+      "initiative"
+    ],
+    "summary": "Decades of hunting hone reflexes. Counter chance on melee + perception."
+  },
+  {
+    "id": "zombie_abominable",
+    "name": "Abominable",
+    "tags": [
+      "abomination",
+      "boss",
+      "immunity"
+    ],
+    "summary": "Impervious to mundane weapons. Only fire, explosives, or boss-tier weapons deal real damage. Immune to most status effects."
+  },
+  {
+    "id": "zombie_armored_flesh",
+    "name": "Armored Flesh",
+    "tags": [
+      "fatty",
+      "abomination",
+      "defense"
+    ],
+    "summary": "Layers of dead muscle absorb the first damage of any hit. Anything below the threshold just bounces off."
+  },
+  {
+    "id": "zombie_low_profile",
+    "name": "Low Profile",
+    "tags": [
+      "crawler",
+      "evasion"
+    ],
+    "summary": "Belly-down on the ground. Hard to hit with arrows, bullets, or any ranged weapon."
+  },
+  {
+    "id": "zombie_toxic_aura",
+    "name": "Toxic Aura",
+    "tags": [
+      "toxic_walker",
+      "aura",
+      "poison"
+    ],
+    "summary": "Constantly leaks poison gas. Adjacent survivors take damage each round."
+  },
+  {
+    "id": "zombie_unholy_focus",
+    "name": "Unholy Focus",
+    "tags": [
+      "necromancer",
+      "caster",
+      "buff"
+    ],
+    "summary": "Channels the Beacon's corruption. Massive mana regen and dark-spell amplification."
+  },
+  {
+    "id": "zombie_walking_dead",
+    "name": "Walking Dead",
+    "tags": [
+      "zombie",
+      "undead",
+      "core"
+    ],
+    "summary": "It's already dead. Doesn't bleed, doesn't fear, doesn't tire. But it burns."
+  },
+  {
+    "id": "zombie_burnice_runner",
+    "name": "Burnice Runner",
+    "tags": [
+      "burnice",
+      "fire",
+      "mobility"
+    ],
+    "summary": "Burnice fights by reading routes before the horde closes. Better fire damage, movement, and snap-shot accuracy."
+  }
+]

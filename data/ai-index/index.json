@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-05-26T03:46:08.224Z",
+  "generator": "tools/build-ai-index.mjs",
+  "description": "Compact AI indexes. Use these to give an AI generator context about existing ids and tags without paying the token cost of full content files.",
+  "files": {
+    "skills.compact.json": {
+      "count": 52
+    },
+    "passives.compact.json": {
+      "count": 42
+    },
+    "statuses.compact.json": {
+      "count": 44
+    },
+    "items.compact.json": {
+      "count": 49
+    },
+    "monsters.compact.json": {
+      "count": 19
+    },
+    "characters.compact.json": {
+      "count": 6
+    },
+    "worlds.compact.json": {
+      "count": 9
+    },
+    "encounters.compact.json": {
+      "count": 8
+    }
+  }
+}

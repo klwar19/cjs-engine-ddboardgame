@@ -1,0 +1,350 @@
+[
+  {
+    "id": "haven_frost_brute",
+    "name": "Frost Brute",
+    "world": "haven",
+    "rank": "E",
+    "hp": 120,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Physical",
+      "Water"
+    ],
+    "skills": [
+      "haven_frost_crush",
+      "haven_walker_bite"
+    ],
+    "summary": "Towering corpse swollen by glacial rot. Two damage per hit and ignores light armor. The signature heavy zombie of the frozen wastes."
+  },
+  {
+    "id": "haven_frost_climber",
+    "name": "Frost Climber",
+    "world": "haven",
+    "rank": "E",
+    "hp": 50,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Water"
+    ],
+    "skills": [
+      "haven_climbing_leap",
+      "haven_walker_bite"
+    ],
+    "summary": "Skitters straight up walls and battlements — barricades and obstacles will not save you. Lunges over cover to reach archers."
+  },
+  {
+    "id": "haven_frost_necromancer",
+    "name": "Frost Necromancer",
+    "world": "haven",
+    "rank": "D",
+    "hp": 80,
+    "weak": [
+      "Fire",
+      "Light"
+    ],
+    "resist": [
+      "Water"
+    ],
+    "skills": [
+      "haven_raise_frostling",
+      "haven_undying_chant",
+      "haven_ice_shard"
+    ],
+    "summary": "D-rank caster. Summons fresh frost walkers each turn — kill it fast or be overrun. Always flees melee."
+  },
+  {
+    "id": "haven_frost_runner",
+    "name": "Frost Runner",
+    "world": "haven",
+    "rank": "F",
+    "hp": 40,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Water"
+    ],
+    "skills": [
+      "haven_frost_charge",
+      "haven_walker_bite"
+    ],
+    "summary": "Sprinting corpse, unnaturally fast. Activates twice on Necromancer turns. Targets the wounded first."
+  },
+  {
+    "id": "haven_frost_sprite",
+    "name": "Frost Sprite",
+    "world": "haven",
+    "rank": "F",
+    "hp": 30,
+    "weak": [
+      "Fire",
+      "Lightning"
+    ],
+    "resist": [
+      "Water"
+    ],
+    "skills": [
+      "haven_ice_shard",
+      "haven_chill_wind"
+    ],
+    "summary": "Mischievous ice elemental. Fragile but dangerous magic. Stays at range."
+  },
+  {
+    "id": "haven_frost_walker",
+    "name": "Frost Walker",
+    "world": "haven",
+    "rank": "F",
+    "hp": 50,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Water"
+    ],
+    "skills": [
+      "haven_walker_bite"
+    ],
+    "summary": "Shambling frost-rotted corpse. Slow, weak, and individually no threat — but they always come in numbers."
+  },
+  {
+    "id": "haven_frostfire_chimera",
+    "name": "Frostfire Chimera",
+    "world": "haven",
+    "rank": "C",
+    "hp": 160,
+    "weak": [
+      "Lightning"
+    ],
+    "resist": [
+      "Fire",
+      "Water"
+    ],
+    "skills": [
+      "haven_chimera_flame_wave",
+      "haven_chimera_frost_breath",
+      "haven_chimera_fire_swipe"
+    ],
+    "summary": "C-rank boss. Dual fire/ice heads. The first real challenge in Frostbitten. Resists both fire and water."
+  },
+  {
+    "id": "haven_ice_wolf",
+    "name": "Ice Wolf",
+    "world": "haven",
+    "rank": "F",
+    "hp": 40,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Water"
+    ],
+    "skills": [
+      "haven_wolf_bite",
+      "haven_pack_howl"
+    ],
+    "summary": "Common predator of the Frostwood. Hunts in packs. Weak to fire."
+  },
+  {
+    "id": "haven_kumiho",
+    "name": "Kumiho, Nine-Tailed Trickster",
+    "world": "haven",
+    "rank": "B",
+    "hp": 140,
+    "weak": [
+      "Light"
+    ],
+    "resist": [
+      "Dark",
+      "Magic"
+    ],
+    "skills": [
+      "haven_charm_gaze",
+      "haven_phantom_tails",
+      "haven_fox_fire"
+    ],
+    "summary": "B-rank abomination. The nine-tailed fox-spirit, mythical entity of trickery and deception. Charms a survivor each turn — once charmed…"
+  },
+  {
+    "id": "haven_oni_marauder",
+    "name": "Oni Marauder",
+    "world": "haven",
+    "rank": "C",
+    "hp": 180,
+    "weak": [
+      "Light"
+    ],
+    "resist": [
+      "Fire",
+      "Physical"
+    ],
+    "skills": [
+      "haven_oni_smash",
+      "haven_demon_fire",
+      "haven_oni_roar"
+    ],
+    "summary": "C-rank demon. Crashed down from the mountain shrines wielding an iron kanabō. Each smash sends survivors flying; rage builds the longer…"
+  },
+  {
+    "id": "haven_snow_bear",
+    "name": "Snow Bear",
+    "world": "haven",
+    "rank": "E",
+    "hp": 110,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Water",
+      "Physical"
+    ],
+    "skills": [
+      "haven_bear_maul",
+      "haven_bear_roar"
+    ],
+    "summary": "Massive bear of the frozen north. Extremely tough. Don't let it reach you."
+  },
+  {
+    "id": "haven_yeti",
+    "name": "Yeti, the Mountain Terror",
+    "world": "haven",
+    "rank": "B",
+    "hp": 220,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Physical",
+      "Water"
+    ],
+    "skills": [
+      "haven_snow_hurl",
+      "haven_avalanche",
+      "haven_yeti_slam"
+    ],
+    "summary": "B-rank abomination. The elusive cryptid of the high peaks. Ignores mundane weapons; pulls down the mountain itself to bury survivors.…"
+  },
+  {
+    "id": "zombie_abomination",
+    "name": "Abomination",
+    "world": "zombie",
+    "rank": "B",
+    "hp": 240,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Physical"
+    ],
+    "skills": [
+      "zombie_abomination_crush",
+      "zombie_abomination_hurl",
+      "zombie_walker_bite"
+    ],
+    "summary": "B-rank boss zombie. Towering mass of fused corpses — impervious to mundane weapons. Only fire, explosives, or boss-tier abilities deal…"
+  },
+  {
+    "id": "zombie_crawler",
+    "name": "Crawler",
+    "world": "zombie",
+    "rank": "F",
+    "hp": 50,
+    "weak": [
+      "Fire"
+    ],
+    "skills": [
+      "zombie_ankle_bite",
+      "zombie_walker_bite"
+    ],
+    "summary": "Half-eaten zombie dragging itself along the ground. Hard to hit with ranged weapons — high evasion vs. arrows and bullets."
+  },
+  {
+    "id": "zombie_fatty",
+    "name": "Fatty",
+    "world": "zombie",
+    "rank": "E",
+    "hp": 140,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Physical"
+    ],
+    "skills": [
+      "zombie_fatty_smash",
+      "zombie_fatty_split",
+      "zombie_walker_bite"
+    ],
+    "summary": "Bloated zombie, swollen on rot. Two damage minimum to kill — anything weaker just bounces off. When it dies, two Walkers spawn from the…"
+  },
+  {
+    "id": "zombie_necromancer",
+    "name": "Necromancer",
+    "world": "zombie",
+    "rank": "C",
+    "hp": 80,
+    "weak": [
+      "Fire",
+      "Light"
+    ],
+    "resist": [
+      "Dark"
+    ],
+    "skills": [
+      "zombie_raise_walker",
+      "zombie_dark_bolt",
+      "zombie_corruption_pulse"
+    ],
+    "summary": "C-rank caster. The most dangerous threat in any horde — opens new spawn zones each turn and floods the map with walkers. Always kill the…"
+  },
+  {
+    "id": "zombie_runner",
+    "name": "Runner",
+    "world": "zombie",
+    "rank": "F",
+    "hp": 40,
+    "weak": [
+      "Fire"
+    ],
+    "skills": [
+      "zombie_runner_pounce",
+      "zombie_walker_bite"
+    ],
+    "summary": "Sprinting corpse. Activates twice on Necromancer turns — covers ground frighteningly fast. Goes for the wounded first."
+  },
+  {
+    "id": "zombie_toxic_walker",
+    "name": "Toxic Walker",
+    "world": "zombie",
+    "rank": "E",
+    "hp": 70,
+    "weak": [
+      "Fire"
+    ],
+    "resist": [
+      "Poison"
+    ],
+    "skills": [
+      "zombie_toxic_bite",
+      "zombie_toxic_burst"
+    ],
+    "summary": "Pus-bloated walker leaking acid bile. Releases a poison cloud when killed — close-range melee carries serious risk."
+  },
+  {
+    "id": "zombie_walker",
+    "name": "Walker",
+    "world": "zombie",
+    "rank": "F",
+    "hp": 50,
+    "weak": [
+      "Fire"
+    ],
+    "skills": [
+      "zombie_walker_bite"
+    ],
+    "summary": "Standard shambling corpse. Slow, weak, individually no threat. The horde is the threat."
+  }
+]

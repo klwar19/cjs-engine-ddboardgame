@@ -1,0 +1,66 @@
+[
+  {
+    "id": "haven_enc_bear_cave",
+    "name": "Frostwood: Bear Cave",
+    "world": "haven",
+    "size": "8x8",
+    "units": 7,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_chimera_boss",
+    "name": "Frostfire Chimera Boss Fight",
+    "world": "haven",
+    "size": "10x10",
+    "units": 7,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_temple_floor1",
+    "name": "Frostbitten Temple: Floor 1",
+    "world": "haven",
+    "size": "10x8",
+    "units": 8,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_wolf_pack",
+    "name": "Frostwood: Wolf Pack",
+    "world": "haven",
+    "size": "8x8",
+    "units": 7,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_escort_caravan",
+    "name": "Caravan Escort",
+    "world": "haven",
+    "size": "10x8",
+    "units": 6,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_hold_the_camp",
+    "name": "Hold the Camp",
+    "world": "haven",
+    "size": "8x8",
+    "units": 8,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_survive_blizzard",
+    "name": "Survive the Blizzard",
+    "world": "haven",
+    "size": "8x8",
+    "units": 5,
+    "objectives": 0
+  },
+  {
+    "id": "haven_enc_assassinate_alpha",
+    "name": "Assassinate the Pack Alpha",
+    "world": "haven",
+    "size": "10x10",
+    "units": 6,
+    "objectives": 0
+  }
+]
