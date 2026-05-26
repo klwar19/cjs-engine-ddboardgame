@@ -6,17 +6,18 @@
 // full multi-megabyte content packs into a prompt.
 //
 // Run after editing data/ or before shipping a build:
-//   node tools/build-ai-index.mjs
+//   node tools/build-ai-index.mjs                      # writes to data/ai-index/
+//   node tools/build-ai-index.mjs --out /tmp/foo       # writes elsewhere (CI / tests)
 //
 // Outputs:
-//   data/ai-index/skills.compact.json
-//   data/ai-index/passives.compact.json
-//   data/ai-index/statuses.compact.json
-//   data/ai-index/items.compact.json
-//   data/ai-index/monsters.compact.json
-//   data/ai-index/characters.compact.json
-//   data/ai-index/worlds.compact.json
-//   data/ai-index/index.json   (top-level manifest with counts and timestamps)
+//   <out>/skills.compact.json
+//   <out>/passives.compact.json
+//   <out>/statuses.compact.json
+//   <out>/items.compact.json
+//   <out>/monsters.compact.json
+//   <out>/characters.compact.json
+//   <out>/worlds.compact.json
+//   <out>/index.json   (top-level manifest with counts and timestamps)
 
 import fs from "node:fs";
 import path from "node:path";
@@ -24,7 +25,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const outDir = path.join(root, "data/ai-index");
+
+const args = process.argv.slice(2);
+const outIdx = args.indexOf("--out");
+const outOverride = outIdx >= 0 ? args[outIdx + 1] : null;
+const outDir = outOverride
+  ? path.resolve(process.cwd(), outOverride)
+  : path.join(root, "data/ai-index");
 fs.mkdirSync(outDir, { recursive: true });
 
 // ── Helpers ────────────────────────────────────────────────────────

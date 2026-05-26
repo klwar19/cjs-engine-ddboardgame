@@ -68,30 +68,45 @@ ok('content-lint accepts a valid patch', good.status === 0,
    good.status !== 0 ? (good.stdout + good.stderr).slice(-300) : 'good');
 
 // 4. build-ai-index runs without error and produces expected files.
-const idx = spawnSync('node', ['tools/build-ai-index.mjs'], {
-  cwd: __dirname, encoding: 'utf8'
-});
-ok('build-ai-index runs', idx.status === 0,
-   idx.status !== 0 ? (idx.stdout + idx.stderr).slice(-300) : 'good');
+//    Write to a tmpdir so test runs don't dirty the committed indexes
+//    under data/ai-index/ (each run would otherwise bump the
+//    generatedAt timestamp and show up in `git status`).
+const tmpOut = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cjs-ai-index-'));
+try {
+  const idx = spawnSync('node', ['tools/build-ai-index.mjs', '--out', tmpOut], {
+    cwd: __dirname, encoding: 'utf8'
+  });
+  ok('build-ai-index runs', idx.status === 0,
+     idx.status !== 0 ? (idx.stdout + idx.stderr).slice(-300) : 'good');
 
-const indexFiles = ['skills', 'passives', 'statuses', 'items', 'monsters', 'characters', 'worlds', 'encounters'];
-for (const name of indexFiles) {
-  const p = path.join(__dirname, 'data/ai-index', `${name}.compact.json`);
-  if (!fs.existsSync(p)) {
-    ok(`ai-index/${name}.compact.json exists`, false);
-    continue;
+  const indexFiles = ['skills', 'passives', 'statuses', 'items', 'monsters', 'characters', 'worlds', 'encounters'];
+  for (const name of indexFiles) {
+    const p = path.join(tmpOut, `${name}.compact.json`);
+    if (!fs.existsSync(p)) {
+      ok(`ai-index/${name}.compact.json exists`, false);
+      continue;
+    }
+    let parsed;
+    try { parsed = JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { parsed = null; }
+    ok(`ai-index/${name}.compact.json is array`, Array.isArray(parsed), parsed === null ? 'parse failed' : '');
   }
-  let parsed;
-  try { parsed = JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { parsed = null; }
-  ok(`ai-index/${name}.compact.json is array`, Array.isArray(parsed), parsed === null ? 'parse failed' : '');
-}
 
-const manifest = path.join(__dirname, 'data/ai-index/index.json');
-ok('ai-index/index.json exists', fs.existsSync(manifest));
-if (fs.existsSync(manifest)) {
-  const m = JSON.parse(fs.readFileSync(manifest, 'utf8'));
-  ok('manifest has generatedAt', typeof m.generatedAt === 'string');
-  ok('manifest has files map', m.files && typeof m.files === 'object');
+  const manifest = path.join(tmpOut, 'index.json');
+  ok('ai-index/index.json exists', fs.existsSync(manifest));
+  if (fs.existsSync(manifest)) {
+    const m = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+    ok('manifest has generatedAt', typeof m.generatedAt === 'string');
+    ok('manifest has files map', m.files && typeof m.files === 'object');
+  }
+
+  // Sanity check: the committed data/ai-index/ files must also exist
+  // (someone may have generated them and committed; we don't regenerate
+  // here because that would dirty the working tree). The committed
+  // index is the one shipped with the build.
+  const committed = path.join(__dirname, 'data/ai-index/index.json');
+  ok('committed data/ai-index/index.json exists', fs.existsSync(committed));
+} finally {
+  fs.rmSync(tmpOut, { recursive: true, force: true });
 }
 
 console.log('');
