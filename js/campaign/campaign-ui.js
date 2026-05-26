@@ -908,7 +908,6 @@ window.CJS.CampaignUI = (() => {
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'minigameTest': return _renderMiniGameTest(state);
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
@@ -1222,86 +1221,11 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  // ── Mini-Game Test (Activities → Mini-Game Test) ──────────────────
-  // Lists every registered mini-game and lets the GM pick a level to play
-  function _renderMiniGameTest(state) {
-    const MG = window.CJS.Minigames;
-    const games = MG?.listGames?.() || [];
-    const selected = _root?.dataset?.mgTestGame || (games[0]?.id || '');
-    const levelCache = _mgTestLevels;
-
-    const ensureLevels = async () => {
-      if (!selected || levelCache[selected]) return;
-      try {
-        const res = await fetch(`data/minigames/${selected}_levels.json?v=grid-regression-20260517c`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        levelCache[selected] = Array.isArray(data.levels) ? data.levels : [];
-        render();
-      } catch (err) {
-        console.warn('Minigame test: failed to load levels for', selected, err);
-        levelCache[selected] = [];
-        render();
-      }
-    };
-    if (selected && !levelCache[selected]) void ensureLevels();
-
-    const levels = levelCache[selected] || [];
-    const gameTabs = games.map((g) => `
-      <button class="campaign-action ${g.id === selected ? 'primary' : ''}" data-campaign-action="mg-test-pick" data-game="${_escAttr(g.id)}">
-        ${_esc(g.title || g.id)}
-      </button>
-    `).join('');
-
-    const levelCards = levels.length ? levels.map((lvl) => `
-      <article class="campaign-minigame-card">
-        <header>
-          <strong>${_esc(lvl.title || lvl.id)}</strong>
-          <span class="campaign-pill">D${_esc(lvl.difficulty || 1)}</span>
-        </header>
-        <div class="campaign-muted">${_esc(lvl.theme || 'any')} | ${_esc(lvl.width || '?')}x${_esc(lvl.height || '?')} | optimal ${_esc(lvl.optimalTurns || lvl.optimalMoves || '?')}</div>
-        <p>${_esc(lvl.hint || lvl.description || '')}</p>
-        <div class="campaign-chip-row">${(lvl.tags || []).map((t) => `<span class="campaign-chip">${_esc(t)}</span>`).join('')}</div>
-        <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="mg-test-play" data-game="${_escAttr(selected)}" data-level="${_escAttr(lvl.id)}">Play ${_esc(lvl.id)}</button>
-          <button class="campaign-action" data-campaign-action="mg-test-random" data-game="${_escAttr(selected)}" data-difficulty="${_esc(lvl.difficulty || 1)}">Random D${_esc(lvl.difficulty || 1)}</button>
-        </div>
-      </article>
-    `).join('') : (selected
-      ? '<div class="campaign-empty">Loading levels...</div>'
-      : '<div class="campaign-empty">No mini-games registered.</div>');
-
-    return `
-      <div class="campaign-dashboard campaign-minigame-test">
-        <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Mini-Game Test Lab</h2>
-              <div class="campaign-muted">Launch any registered mini-game level without quest context. Results are logged here only.</div>
-            </div>
-            <span class="campaign-pill">${games.length} games | ${levels.length} levels</span>
-          </div>
-          <div class="campaign-action-grid">${gameTabs}</div>
-        </section>
-        <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head">
-            <h3>Levels</h3>
-            <div class="campaign-action-grid">
-              <button class="campaign-action" data-campaign-action="mg-test-random-any" data-game="${_escAttr(selected)}">Surprise Me</button>
-            </div>
-          </div>
-          <div class="campaign-minigame-grid">${levelCards}</div>
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h3>Last Result</h3>
-            <span class="campaign-pill">${state.lastMiniGameTestResult ? _esc(state.lastMiniGameTestResult.status || '-') : 'none yet'}</span>
-          </div>
-          <pre class="campaign-minigame-result">${_esc(state.lastMiniGameTestResult ? JSON.stringify(state.lastMiniGameTestResult, null, 2) : 'Run a level to see the result payload that Campaign Mode would receive.')}</pre>
-        </section>
-      </div>
-    `;
-  }
+  // _renderMiniGameTest — Phase F.3 port. Body moved to
+  // `src/campaign/tabs/CampaignMinigameTestTab.tsx`. Typed data flows
+  // through `getMinigameTestData(state)`. The level cache and the
+  // selected-game state (kept on `_root.dataset.mgTestGame`) still
+  // live here so the legacy `mg-test-*` actions stay unchanged.
 
   function _mgTestPick(gameId) {
     if (!_root) return;
@@ -10834,7 +10758,6 @@ window.CJS.CampaignUI = (() => {
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'minigameTest': return _renderMiniGameTest(state);
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
@@ -11027,6 +10950,49 @@ window.CJS.CampaignUI = (() => {
     return _renderOracle(state);
   }
 
+  function getMinigameTestData(state = CS().getState()) {
+    if (!state) return null;
+    const MG = window.CJS.Minigames;
+    const games = MG?.listGames?.() || [];
+    const selected = _root?.dataset?.mgTestGame || (games[0]?.id || '');
+    const levelCache = _mgTestLevels;
+    const ensureLevels = async () => {
+      if (!selected || levelCache[selected]) return;
+      try {
+        const res = await fetch(`data/minigames/${selected}_levels.json?v=grid-regression-20260517c`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        levelCache[selected] = Array.isArray(data.levels) ? data.levels : [];
+        render();
+      } catch (err) {
+        console.warn('Minigame test: failed to load levels for', selected, err);
+        levelCache[selected] = [];
+        render();
+      }
+    };
+    if (selected && !levelCache[selected]) void ensureLevels();
+    const levels = (levelCache[selected] || []).map((lvl) => ({
+      id: String(lvl.id || ''),
+      title: lvl.title || lvl.id || '',
+      difficulty: lvl.difficulty || 1,
+      theme: lvl.theme || 'any',
+      width: lvl.width || null,
+      height: lvl.height || null,
+      optimalTurns: lvl.optimalTurns || lvl.optimalMoves || null,
+      hint: lvl.hint || lvl.description || '',
+      tags: Array.isArray(lvl.tags) ? lvl.tags.slice(0) : []
+    }));
+    const lastResult = state.lastMiniGameTestResult || null;
+    return {
+      games: games.map((g) => ({ id: String(g.id || ''), title: g.title || g.id || '' })),
+      selectedGameId: selected || null,
+      levels,
+      levelsLoaded: !!levelCache[selected],
+      lastResultStatus: lastResult?.status || null,
+      lastResultJson: lastResult ? JSON.stringify(lastResult, null, 2) : null
+    };
+  }
+
   // Renders the main-area body. Returns a string for vanilla tabs;
   // returns `null` if the tab is owned by a React component (the shell
   // mounts the React component directly when this returns null).
@@ -11111,6 +11077,7 @@ window.CJS.CampaignUI = (() => {
     getEventLogData,
     renderEventResultHtml,
     renderOracleHtml,
+    getMinigameTestData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

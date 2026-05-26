@@ -92,8 +92,8 @@ export const CampaignScenariosTab = ({ state }: Props) =>
 export const CampaignMapsTab = ({ state }: Props) =>
   <VanillaTab tabId="maps" state={state} mountClass="campaign-maps-react" />;
 
-export const CampaignMinigameTestTab = ({ state }: Props) =>
-  <VanillaTab tabId="minigameTest" state={state} mountClass="campaign-minigame-test-react" />;
+// CampaignMinigameTestTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignMinigameTestTab.tsx` (Phase F.3).
 
 export const CampaignOverviewTab = ({ state }: Props) =>
   <VanillaTab tabId="overview" state={state} mountClass="campaign-overview-react" />;

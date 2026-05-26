@@ -41,10 +41,10 @@ import {
   CampaignEventSideTab,
   CampaignScenariosTab,
   CampaignMapsTab,
-  CampaignMinigameTestTab,
   CampaignOverviewTab
 } from "./tabs/CampaignVanillaTabs";
 import { CampaignEventLogTab } from "./tabs/CampaignEventLogTab";
+import { CampaignMinigameTestTab } from "./tabs/CampaignMinigameTestTab";
 
 // React Shell: this component owns the campaign chrome
 // (header, mode bar, sub-tabs, recent log strip, command rail, drawer)
