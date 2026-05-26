@@ -10071,6 +10071,44 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  // Typed snapshot for the React SoloNotice panel. Returns null when
+  // there's no pending solo hook card. Shared by Overview / EventTab /
+  // QuestHome / QuestsPanel / StoryHome.
+  function getSoloNoticeData(state = CS().getState()) {
+    if (!state) return null;
+    const card = _pendingSoloHookCard(state);
+    if (!card) return null;
+    const kind = state.pendingSoloHook?.kind || card.type || 'hook';
+    const risk = Side().risk(card.canonRisk);
+    const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
+    const ops = _cardChoiceOps(card);
+    const summary = _consequenceSummary(ops, { hasText: !!prompt });
+    const firstChoice = card.suggestedChoices?.[0];
+    const choiceLabel = firstChoice?.label || 'Apply the first suggested choice';
+    const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer');
+    const acceptHint = isQuestOffer
+      ? 'Add quest to tracker and auto-start its map run'
+      : (ops.length ? `Apply: ${Ops().describe(ops).join('; ')}` : 'Create a quest from this story-only hook');
+    return {
+      tone: summary.tone,
+      summaryLabel: summary.label,
+      kindLabel: _label(kind),
+      choiceLabel,
+      risk,
+      riskClass: Side().riskClass(risk),
+      title: card.title || card.name || card.id || '',
+      prompt,
+      inlinePurposeHtml: _renderInlinePurpose(kind === 'rumor_offer' ? 'rumor' : _purposeKeyForCard(card)),
+      consequencePreviewHtml: _renderConsequencePreview(ops, {
+        emptyTitle: 'Flavor only',
+        emptyText: 'No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest.'
+      }),
+      flavorTrailHtml: _renderFlavorTrail(card),
+      acceptLabel: ops.length ? 'Accept & Apply' : 'Accept as Quest',
+      acceptHint
+    };
+  }
+
   // Typed snapshot of state.lastEvent for the React EventResult panel.
   // Returns null when no event has been rolled. Used by EventLog,
   // EventTab, Overview, and Maps. Embedded sub-fragments (inline
@@ -10336,7 +10374,6 @@ window.CJS.CampaignUI = (() => {
       }),
       storyPipelineHtml: _renderStoryPipelinePanel(pipeline) || '',
       syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || '',
-      soloNoticeHtml: _renderSoloNotice(state) || '',
       scenarioSummaryHtml: activeRun ? (_renderScenarioSummary(state) || '') : '',
       pendingBattleHtml: _renderPendingBattle(state) || '',
       combatResultHtml: _renderCombatResult(state) || ''
@@ -10359,8 +10396,7 @@ window.CJS.CampaignUI = (() => {
       finishedCount: finished.length,
       templateCount,
       activeQuestRows: active.map((quest) => getQuestRowData(quest)),
-      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true })),
-      soloNoticeHtml: _renderSoloNotice(state) || ''
+      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true }))
     };
   }
 
@@ -10544,7 +10580,6 @@ window.CJS.CampaignUI = (() => {
           ? availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')
           : ''
       } : null,
-      soloNoticeHtml: _renderSoloNotice(state) || '',
       pendingBattleHtml: _renderPendingBattle(state) || '',
       combatResultHtml: _renderCombatResult(state) || ''
     };
@@ -10590,7 +10625,6 @@ window.CJS.CampaignUI = (() => {
       storyPapers: paperLite(storyPapers),
       activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest)),
       activeSequenceHtml: _renderActiveSequence(state, ['quest']) || '',
-      soloNoticeHtml: _renderSoloNotice(state) || '',
       scenarioSummaryHtml: run ? (_renderScenarioSummary(state) || '') : '',
       pendingBattleHtml: _renderPendingBattle(state) || '',
       combatResultHtml: _renderCombatResult(state) || '',
@@ -10642,7 +10676,6 @@ window.CJS.CampaignUI = (() => {
     switch (sectionId) {
       case 'townSnapshot':     return _renderTownSnapshot(state);
       case 'townRollFloat':    return _renderTownRollFloat(state);
-      case 'soloNotice':       return _renderSoloNotice(state);
       case 'adventureLegend':  return _renderAdventureLegend(state);
       case 'scenarioSummary':  return _renderScenarioSummary(state);
       case 'travelSurprise':   return _renderTravelSurprise(state);
@@ -10793,6 +10826,7 @@ window.CJS.CampaignUI = (() => {
     getQuestRowData,
     getEventResultData,
     getOracleData,
+    getSoloNoticeData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

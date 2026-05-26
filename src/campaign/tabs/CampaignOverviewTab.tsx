@@ -15,7 +15,7 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { renderOverviewSectionHtml, type OverviewSectionId } from "./data/overview";
-import { EventResultPanel, OraclePanel } from "./ResultPanels";
+import { EventResultPanel, OraclePanel, SoloNoticePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -27,7 +27,7 @@ export function CampaignOverviewTab({ state }: Props) {
       <Section state={state} id="townSnapshot" />
       <div className="campaign-town-float-stack">
         <Section state={state} id="townRollFloat" />
-        <Section state={state} id="soloNotice" />
+        <SoloNoticePanel state={state} />
       </div>
       <AdventureDesk />
       <Section state={state} id="adventureLegend" />

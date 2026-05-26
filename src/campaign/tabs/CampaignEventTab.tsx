@@ -17,7 +17,7 @@ import {
   type EventFileEntry,
   type EventTabQuestChains
 } from "./data/eventTab";
-import { EventResultPanel } from "./ResultPanels";
+import { EventResultPanel, SoloNoticePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -41,7 +41,7 @@ export function CampaignEventTab({ state, kind }: Props) {
       {data.questChains && (
         <SideStoryChainsPanel chains={data.questChains} />
       )}
-      <HtmlBridge html={data.soloNoticeHtml} className="campaign-solo-notice-bridge" />
+      <SoloNoticePanel state={state} />
       <HtmlBridge html={data.pendingBattleHtml} className="campaign-pending-battle-bridge" />
       <HtmlBridge html={data.combatResultHtml} className="campaign-combat-result-bridge" />
       <EventResultPanel state={state} />

@@ -12,7 +12,6 @@ import type { CampaignStateSnapshot } from "../../store";
 export type OverviewSectionId =
   | "townSnapshot"
   | "townRollFloat"
-  | "soloNotice"
   | "adventureLegend"
   | "scenarioSummary"
   | "travelSurprise"

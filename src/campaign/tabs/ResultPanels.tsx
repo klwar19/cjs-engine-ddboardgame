@@ -13,8 +13,10 @@ import { dispatchCampaignAction } from "../actions";
 import {
   getEventResultData,
   getOracleData,
+  getSoloNoticeData,
   type EventResultData,
-  type ManualSummary
+  type ManualSummary,
+  type SoloNoticeData
 } from "./data/resultPanels";
 
 // ── EventResult ───────────────────────────────────────────────────
@@ -124,6 +126,49 @@ export function OraclePanel({ state }: { state: CampaignStateSnapshot }) {
         <ActionBtn action="pick-oracle" label="Pick Different" hint="Pick a specific prompt from the catalog" />
       </div>
     </section>
+  );
+}
+
+// ── SoloNotice ────────────────────────────────────────────────────
+export function SoloNoticePanel({ state }: { state: CampaignStateSnapshot }) {
+  const data = getSoloNoticeData(state);
+  if (!data) return null;
+  const cls = ["campaign-panel", "campaign-solo-notice", "campaign-result-card", `is-${data.tone}`];
+  if (data.risk === "red") cls.push("risk-red");
+  return (
+    <section className={cls.join(" ")}>
+      <div className="campaign-panel-head">
+        <div>
+          <h2>Immediate Roll Result</h2>
+          <div className="campaign-muted">{data.kindLabel} | Suggested: {data.choiceLabel}</div>
+        </div>
+        <div className="campaign-impact-row">
+          <span className={`campaign-impact-badge is-${data.tone}`}>{data.summaryLabel}</span>
+          <span className={`campaign-risk ${data.riskClass}`}>{data.risk}</span>
+        </div>
+      </div>
+      <HtmlBridge html={data.inlinePurposeHtml} className="campaign-inline-purpose-bridge" />
+      <strong>{data.title}</strong>
+      {data.prompt && <p>{data.prompt}</p>}
+      <HtmlBridge html={data.consequencePreviewHtml} className="campaign-consequence-preview-bridge" />
+      <HtmlBridge html={data.flavorTrailHtml} className="campaign-flavor-trail-bridge" />
+      <div className="campaign-control-help">
+        Pick one: <b>Accept</b> commits the suggested choice. <b>Make Quest</b> only adds it to the Quest Tracker when possible. <b>Make Rumor</b> plants it in the hub lead bank. <b>Save</b> stores the card as a saved idea. <b>Ignore</b> drops it.
+      </div>
+      <SoloNoticeActions data={data} />
+    </section>
+  );
+}
+
+function SoloNoticeActions({ data }: { data: SoloNoticeData }) {
+  return (
+    <div className="campaign-action-grid">
+      <ActionBtn action="accept-solo-hook" label={data.acceptLabel} hint={data.acceptHint} kind="primary" />
+      <ActionBtn action="solo-hook-quest" label="Make Quest" hint="Add to Quest Tracker, no map run yet" />
+      <ActionBtn action="solo-hook-rumor" label="Make Rumor" hint="Add as a hub rumor / lead bank item" />
+      <ActionBtn action="save-solo-hook" label="Save Text" hint="Store in Saved Ideas to use later" />
+      <ActionBtn action="ignore-solo-hook" label="Ignore" hint="Discard this hook" kind="danger" />
+    </div>
   );
 }
 

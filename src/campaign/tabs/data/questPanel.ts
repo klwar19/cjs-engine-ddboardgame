@@ -10,7 +10,6 @@ interface QuestPanelNormal {
   readonly templateCount: number;
   readonly activeQuestRows: readonly QuestRowData[];
   readonly finishedQuestRows: readonly QuestRowData[];
-  readonly soloNoticeHtml: string;
 }
 
 interface QuestPanelZombie {

@@ -13,6 +13,7 @@ import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getQuestPanelData, type QuestPanelData } from "./data/questPanel";
 import { QuestRow } from "./QuestRow";
+import { SoloNoticePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -35,10 +36,16 @@ export function CampaignQuestsPanelTab({ state }: Props) {
       />
     );
   }
-  return <NormalQuestPanel data={data} />;
+  return <NormalQuestPanel state={state} data={data} />;
 }
 
-function NormalQuestPanel({ data }: { data: Extract<QuestPanelData, { isZombie: false }> }) {
+function NormalQuestPanel({
+  state,
+  data
+}: {
+  state: CampaignStateSnapshot;
+  data: Extract<QuestPanelData, { isZombie: false }>;
+}) {
   return (
     <section className="campaign-panel">
       <div className="campaign-panel-head">
@@ -61,12 +68,7 @@ function NormalQuestPanel({ data }: { data: Extract<QuestPanelData, { isZombie: 
           </button>
         </div>
       </div>
-      {data.soloNoticeHtml && (
-        <div
-          className="campaign-solo-notice-bridge"
-          dangerouslySetInnerHTML={{ __html: data.soloNoticeHtml }}
-        />
-      )}
+      <SoloNoticePanel state={state} />
       <div className="campaign-quest-list">
         {data.activeQuestRows.length ? (
           data.activeQuestRows.map((row) => <QuestRow key={row.id} row={row} />)

@@ -12,6 +12,7 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getStoryHomeData, type StoryHomeData } from "./data/storyHome";
+import { SoloNoticePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -39,7 +40,7 @@ export function CampaignStoryHomeTab({ state }: Props) {
       <CurrentArcPanel data={data} />
       <HtmlBridge html={data.storyPipelineHtml} className="campaign-story-pipeline-bridge" />
       <HtmlBridge html={data.syncSummaryHtml} className="campaign-sync-summary-bridge" />
-      <HtmlBridge html={data.soloNoticeHtml} className="campaign-solo-notice-bridge" />
+      <SoloNoticePanel state={state} />
       <HtmlBridge html={data.scenarioSummaryHtml} className="campaign-scenario-summary-bridge" />
       <HtmlBridge html={data.pendingBattleHtml} className="campaign-pending-battle-bridge" />
       <HtmlBridge html={data.combatResultHtml} className="campaign-combat-result-bridge" />

@@ -31,7 +31,6 @@ interface QuestHomeNormal {
   readonly storyPapers: readonly QuestPaperLite[];
   readonly activeQuestRows: readonly QuestRowData[];
   readonly activeSequenceHtml: string;
-  readonly soloNoticeHtml: string;
   readonly scenarioSummaryHtml: string;
   readonly pendingBattleHtml: string;
   readonly combatResultHtml: string;

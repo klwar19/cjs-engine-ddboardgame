@@ -33,7 +33,6 @@ export interface EventTabData {
   readonly entries: readonly EventFileEntry[];
   readonly activeSequenceHtml: string;
   readonly questChains: EventTabQuestChains | null;
-  readonly soloNoticeHtml: string;
   readonly pendingBattleHtml: string;
   readonly combatResultHtml: string;
 }

@@ -19,6 +19,7 @@ import { dispatchCampaignAction } from "../actions";
 import { getQuestHomeData, type QuestHomeData, type QuestPaperLite } from "./data/questHome";
 import { QuestRow } from "./QuestRow";
 import type { QuestRowData } from "./data/questRow";
+import { SoloNoticePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -44,10 +45,16 @@ export function CampaignQuestHomeTab({ state }: Props) {
       />
     );
   }
-  return <NormalQuestHome data={data} />;
+  return <NormalQuestHome state={state} data={data} />;
 }
 
-function NormalQuestHome({ data }: { data: Extract<QuestHomeData, { isZombie: false }> }) {
+function NormalQuestHome({
+  state,
+  data
+}: {
+  state: CampaignStateSnapshot;
+  data: Extract<QuestHomeData, { isZombie: false }>;
+}) {
   return (
     <div className="campaign-dashboard campaign-mode-home campaign-quest-home">
       <QuestHomeHero data={data} />
@@ -55,7 +62,7 @@ function NormalQuestHome({ data }: { data: Extract<QuestHomeData, { isZombie: fa
       <QuestTypesPanel data={data} />
       <ActiveQuestsPanel rows={data.activeQuestRows} activeCount={data.activeCount} />
       <QuestRunTools data={data} />
-      <HtmlBridge html={data.soloNoticeHtml} className="campaign-solo-notice-bridge" />
+      <SoloNoticePanel state={state} />
       <HtmlBridge html={data.scenarioSummaryHtml} className="campaign-scenario-summary-bridge" />
       <HtmlBridge html={data.pendingBattleHtml} className="campaign-pending-battle-bridge" />
       <HtmlBridge html={data.combatResultHtml} className="campaign-combat-result-bridge" />

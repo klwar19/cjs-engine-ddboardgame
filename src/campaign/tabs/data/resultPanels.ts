@@ -35,9 +35,26 @@ export interface OracleData {
   readonly consequencePreviewHtml: string;
 }
 
+export interface SoloNoticeData {
+  readonly tone: string;
+  readonly summaryLabel: string;
+  readonly kindLabel: string;
+  readonly choiceLabel: string;
+  readonly risk: string;
+  readonly riskClass: string;
+  readonly title: string;
+  readonly prompt: string;
+  readonly inlinePurposeHtml: string;
+  readonly consequencePreviewHtml: string;
+  readonly flavorTrailHtml: string;
+  readonly acceptLabel: string;
+  readonly acceptHint: string;
+}
+
 interface Bridge {
   readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
   readonly getOracleData: (state?: CampaignStateSnapshot) => OracleData | null;
+  readonly getSoloNoticeData: (state?: CampaignStateSnapshot) => SoloNoticeData | null;
 }
 
 interface Cjs {
@@ -54,4 +71,8 @@ export function getEventResultData(state: CampaignStateSnapshot): EventResultDat
 
 export function getOracleData(state: CampaignStateSnapshot): OracleData | null {
   return cjs().CampaignUI?.getOracleData(state) ?? null;
+}
+
+export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData | null {
+  return cjs().CampaignUI?.getSoloNoticeData(state) ?? null;
 }

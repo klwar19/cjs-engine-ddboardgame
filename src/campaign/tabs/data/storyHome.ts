@@ -24,7 +24,6 @@ export interface StoryHomeData {
   readonly sequenceShelfHtml: string;
   readonly storyPipelineHtml: string;
   readonly syncSummaryHtml: string;
-  readonly soloNoticeHtml: string;
   readonly scenarioSummaryHtml: string;
   readonly pendingBattleHtml: string;
   readonly combatResultHtml: string;
