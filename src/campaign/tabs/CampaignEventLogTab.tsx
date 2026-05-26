@@ -14,11 +14,10 @@ import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import {
   getEventLogData,
-  renderEventResultHtml,
-  renderOracleHtml,
   type EventLogData,
   type EventLogEntry
 } from "./data/eventLog";
+import { EventResultPanel, OraclePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -40,25 +39,12 @@ export function CampaignEventLogTab({ state }: Props) {
     ? ({ "--campaign-home-backdrop": `url('${data.heroBackdropUrl}')` } as React.CSSProperties)
     : undefined;
 
-  const lastEventHtml = renderEventResultHtml(state);
-  const lastOracleHtml = renderOracleHtml(state);
-
   return (
     <div className="campaign-dashboard campaign-event-log">
       <EventLogHero data={data} style={heroStyle} />
       <EventLedger data={data} />
-      {lastEventHtml && (
-        <div
-          className="campaign-event-result-bridge"
-          dangerouslySetInnerHTML={{ __html: lastEventHtml }}
-        />
-      )}
-      {lastOracleHtml && (
-        <div
-          className="campaign-oracle-bridge"
-          dangerouslySetInnerHTML={{ __html: lastOracleHtml }}
-        />
-      )}
+      <EventResultPanel state={state} />
+      <OraclePanel state={state} />
     </div>
   );
 }

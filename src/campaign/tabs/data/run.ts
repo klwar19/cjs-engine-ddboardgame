@@ -58,7 +58,6 @@ export interface RunData {
   readonly pendingBattleHtml: string;
   readonly combatResultHtml: string;
   readonly lastCombatResultHtml: string;
-  readonly eventResultHtml: string;
 }
 
 interface Bridge {

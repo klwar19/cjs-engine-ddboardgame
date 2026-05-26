@@ -36,7 +36,6 @@ export interface EventTabData {
   readonly soloNoticeHtml: string;
   readonly pendingBattleHtml: string;
   readonly combatResultHtml: string;
-  readonly eventResultHtml: string;
 }
 
 interface Bridge {

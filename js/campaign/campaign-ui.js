@@ -1134,10 +1134,10 @@ window.CJS.CampaignUI = (() => {
 
   // _renderEventLog / _renderEventLogEntry — Phase F.2 port. The body
   // moved to `src/campaign/tabs/CampaignEventLogTab.tsx` (JSX). Typed
-  // data comes through `getEventLogData(state)`; the two shared
-  // sub-panels (event result, oracle) are still HTML bridges via
-  // `renderEventResultHtml` / `renderOracleHtml` and migrate when
-  // event{Character,Special,Side} port.
+  // data comes through `getEventLogData(state)`. The two shared
+  // sub-panels (event result, oracle) ported in Phase G.2 to typed
+  // bridges `getEventResultData(state)` / `getOracleData(state)` —
+  // see `src/campaign/tabs/ResultPanels.tsx`.
 
   function _renderSequenceShelf(scope, options = {}) {
     const Seq = window.CJS.CampaignSequences;
@@ -2524,110 +2524,13 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderEventResult(state) {
-    const event = state.lastEvent;
-    if (!event) return '';
-    const suggested = event.suggested || [];
-    const summary = _consequenceSummary(suggested, { hasText: !!(event.prompt || event.gmHook) });
-    const ideaLabels = {
-      new_char: '👤 New Character',
-      new_item: '🎁 Item idea',
-      weapon: '⚔ Weapon idea',
-      back_story: '📖 Backstory beat',
-      main_plot: '🌌 Main plot thread',
-      development: '✨ Character development',
-      faction: '🏛 Faction hook',
-      mystery: '🔮 Mystery hook'
-    };
-    const ideaPill = event.gmIdea ? `<span class="campaign-pill">${_esc(ideaLabels[event.gmIdea] || event.gmIdea)}</span>` : '';
-    const opsDesc = (event.suggested || []).length ? Ops().describe(event.suggested).filter(Boolean) : [];
-    const consequenceLabel = opsDesc.length ? 'Consequences if applied' : 'Story-only event (no automatic ops)';
-    return `
-      <section class="campaign-panel campaign-event-result campaign-result-card is-${_escAttr(summary.tone)}">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${_esc(event.title || event.id || 'Event')}</h2>
-            <div class="campaign-muted">${_esc(event.tableName || event.type || 'event')}</div>
-          </div>
-          <div class="campaign-impact-row">
-            <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
-            ${ideaPill}
-          </div>
-        </div>
-        ${_renderInlinePurpose('event')}
-        ${event.manualSummary ? _renderManualEventSummary(event) : ''}
-        <p>${_esc(event.prompt || '')}</p>
-        ${event.gmHook ? `<div class="campaign-warning"><b>GM hook:</b> ${_esc(event.gmHook)}</div>` : ''}
-        ${_renderConsequencePreview(suggested, {
-          emptyTitle: 'Flavor or plot text only',
-          emptyText: 'No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.'
-        })}
-        ${_renderFlavorTrail(event)}
-        <div class="campaign-control-help">Pick one: <b>Apply</b> commits listed ops and writes the event ledger. <b>Edit Rewards/Consequences</b> lets you tweak ops. <b>Event Log</b> records summary only. <b>To Quest</b> promotes the hook into the quest tracker.</div>
-        <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'apply-event', label: suggested.length ? 'Apply Listed Changes' : 'Log Flavor', hint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes', kind: 'primary' })}
-          ${_actionBtn({ action: 'edit-event', label: 'Edit Rewards/Consequences', hint: 'Tweak the ops, then apply' })}
-          ${_actionBtn({ action: 'event-to-quest', label: 'To Quest', hint: 'Create a tracked quest from this event' })}
-          ${_actionBtn({ action: 'event-log-only', label: 'Event Log', hint: 'Summarize this event without applying mechanics' })}
-          ${_actionBtn({ action: 'event-add-tags', label: 'Add Tags', hint: 'Tag this event in the campaign ledger' })}
-          ${event.manualSummary ? _actionBtn({ action: 'copy-event-summary', label: 'Copy Summary', hint: 'Copy the event summary and separate main-story notes for outside writing', kind: 'manual' }) : ''}
-          ${(event.gmHook || event.gmIdea) ? _actionBtn({ action: 'pin-plot-seed', label: 'Pin Plot Seed', hint: 'Save as a future plot hook in pinned notes' }) : ''}
-          ${event.oracleTableId ? _actionBtn({ action: 'event-to-oracle', label: 'Roll Linked Oracle', hint: 'Roll an oracle prompt linked to this event' }) : ''}
-          ${_actionBtn({ action: 'ignore-event', label: 'Ignore', hint: 'Discard this event with no log entry', kind: 'danger' })}
-          ${_actionBtn({ action: 'pick-event', label: 'Pick Different', hint: 'Replace with a specific event from the catalog' })}
-
-        </div>
-      </section>
-    `;
-  }
-
-  function _renderManualEventSummary(event = {}) {
-    const summary = event.manualSummary || {};
-    const tags = (summary.tags || []).filter(Boolean);
-    return `
-      <div class="campaign-manual-summary">
-        <div>
-          <strong>Event Summary</strong>
-          <span>${_esc(summary.short || 'No short result written yet.')}</span>
-        </div>
-        ${summary.main ? `
-          <div>
-            <strong>Main Story</strong>
-            <span>${_esc(summary.main)}</span>
-          </div>
-        ` : ''}
-        ${tags.length ? `<div class="campaign-manual-summary-tags">${tags.map((tag) => `<span>${_esc(tag)}</span>`).join('')}</div>` : ''}
-      </div>
-    `;
-  }
-
-  function _renderOracle(state) {
-    if (!state.lastOracle) return '';
-    return `
-      <section class="campaign-panel oracle campaign-result-card is-flavor">
-        <div class="campaign-panel-head">
-          <h2>GM Prompt</h2>
-          <span class="campaign-impact-badge is-flavor">Text only</span>
-        </div>
-        ${_renderInlinePurpose('oracle')}
-        <p>${_esc(state.lastOracle.text)}</p>
-        ${_renderConsequencePreview([], {
-          emptyTitle: 'Flavor prompt',
-          emptyText: 'Use as narration now, save it as a note, or reroll for a sharper prompt.'
-        })}
-        <div class="campaign-control-help">Pure narrative until promoted. Turn it into a quest, summarize it into Event Log, or open the event builder when you want rewards, consequences, or tags.</div>
-        <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'oracle-event-log', label: 'Event Log', hint: 'Summarize this prompt into the event ledger', kind: 'primary' })}
-          ${_actionBtn({ action: 'oracle-to-quest', label: 'To Quest', hint: 'Create a tracked quest from this prompt' })}
-          ${_actionBtn({ action: 'oracle-to-event-builder', label: 'Event Builder', hint: 'Add rewards, consequences, tags, or a main-story note' })}
-          ${_actionBtn({ action: 'oracle-add-tags', label: 'Add Tags', hint: 'Tag this oracle result' })}
-          ${_actionBtn({ action: 'roll-oracle', label: 'Reroll Prompt', hint: 'Roll a different prompt' })}
-          ${_actionBtn({ action: 'pick-oracle', label: 'Pick Different', hint: 'Pick a specific prompt from the catalog' })}
-
-        </div>
-      </section>
-    `;
-  }
+  // _renderEventResult / _renderManualEventSummary / _renderOracle —
+  // Phase G.2 port. Bodies moved to
+  // `src/campaign/tabs/ResultPanels.tsx`. Typed bridges
+  // `getEventResultData(state)` / `getOracleData(state)` produce the
+  // data; the JSX consumes it directly. Inline-purpose chip,
+  // consequence-preview, and flavor-trail HTML chunks still come from
+  // their HubTab/Controls renderers and embed via small bridges.
 
   function _renderLastReport(state) {
     const report = state.lastScenarioReport;
@@ -10115,11 +10018,11 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // ── Typed tab data for Phase F per-tab ports ───────────────────────
+  // ── Typed tab data for Phase F/G per-tab ports ─────────────────────
   // Each `get<Tab>Data` returns a JSON-friendly snapshot the matching
-  // React component reads. Heavy / shared sub-panels that still render
-  // through other tabs (e.g. _renderEventResult, _renderOracle) stay as
-  // HTML-string bridges until those tabs migrate.
+  // React component reads. Heavy / shared sub-panels that haven't yet
+  // ported produce HTML fragments via closure-private helpers; the
+  // React component embeds them via dangerouslySetInnerHTML chunks.
 
   function getEventLogData(state = CS().getState()) {
     if (!state) return null;
@@ -10159,20 +10062,80 @@ window.CJS.CampaignUI = (() => {
   // Special,Side} tabs that haven't migrated yet. When those tabs port,
   // these get replaced with typed getEventResultData / getOracleData
   // and JSX renderers.
-  function renderEventResultHtml(state = CS().getState()) {
-    if (!state) return '';
-    return _renderEventResult(state);
-  }
-
-  function renderOracleHtml(state = CS().getState()) {
-    if (!state) return '';
-    return _renderOracle(state);
-  }
+  // renderEventResultHtml / renderOracleHtml removed in Phase G.2 —
+  // the React shell now reads typed `getEventResultData(state)` /
+  // `getOracleData(state)` and renders JSX via
+  // `src/campaign/tabs/ResultPanels.tsx`.
 
   // Quest Home (non-zombie). The hero / quest-types panel / quest-run
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  // Typed snapshot of state.lastEvent for the React EventResult panel.
+  // Returns null when no event has been rolled. Used by EventLog,
+  // EventTab, Overview, and Maps. Embedded sub-fragments (inline
+  // purpose, consequence preview, flavor trail) still come through
+  // closure-private helpers because their inner data shapes live in
+  // sibling modules (HubTab, Controls).
+  function getEventResultData(state = CS().getState()) {
+    if (!state) return null;
+    const event = state.lastEvent;
+    if (!event) return null;
+    const suggested = event.suggested || [];
+    const summary = _consequenceSummary(suggested, { hasText: !!(event.prompt || event.gmHook) });
+    const ideaLabels = {
+      new_char: '👤 New Character',
+      new_item: '🎁 Item idea',
+      weapon: '⚔ Weapon idea',
+      back_story: '📖 Backstory beat',
+      main_plot: '🌌 Main plot thread',
+      development: '✨ Character development',
+      faction: '🏛 Faction hook',
+      mystery: '🔮 Mystery hook'
+    };
+    const opsDesc = suggested.length ? Ops().describe(suggested).filter(Boolean) : [];
+    return {
+      title: event.title || event.id || 'Event',
+      subLabel: event.tableName || event.type || 'event',
+      tone: summary.tone,
+      summaryLabel: summary.label,
+      ideaPillLabel: event.gmIdea ? (ideaLabels[event.gmIdea] || event.gmIdea) : '',
+      prompt: event.prompt || '',
+      gmHook: event.gmHook || '',
+      inlinePurposeHtml: _renderInlinePurpose('event'),
+      manualSummary: event.manualSummary ? {
+        short: event.manualSummary.short || 'No short result written yet.',
+        main: event.manualSummary.main || '',
+        tags: (event.manualSummary.tags || []).filter(Boolean)
+      } : null,
+      consequencePreviewHtml: _renderConsequencePreview(suggested, {
+        emptyTitle: 'Flavor or plot text only',
+        emptyText: 'No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.'
+      }),
+      flavorTrailHtml: _renderFlavorTrail(event),
+      applyLabel: suggested.length ? 'Apply Listed Changes' : 'Log Flavor',
+      applyHint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes',
+      hasManualSummary: !!event.manualSummary,
+      hasPlotSeedTrigger: !!(event.gmHook || event.gmIdea),
+      hasOracleTableId: !!event.oracleTableId
+    };
+  }
+
+  // Typed snapshot of state.lastOracle for the React Oracle panel.
+  function getOracleData(state = CS().getState()) {
+    if (!state) return null;
+    const oracle = state.lastOracle;
+    if (!oracle) return null;
+    return {
+      text: oracle.text || '',
+      inlinePurposeHtml: _renderInlinePurpose('oracle'),
+      consequencePreviewHtml: _renderConsequencePreview([], {
+        emptyTitle: 'Flavor prompt',
+        emptyText: 'Use as narration now, save it as a note, or reroll for a sharper prompt.'
+      })
+    };
+  }
+
   // Typed snapshot of one quest for the React QuestRow component.
   // Used by QuestHome (active rows, capped) and QuestsPanel (active +
   // resolved rows). Replaces the per-row HTML bridge with structured
@@ -10444,8 +10407,7 @@ window.CJS.CampaignUI = (() => {
       travelSurpriseHtml: _renderTravelSurprise(state) || '',
       pendingBattleHtml: _renderPendingBattle(state) || '',
       combatResultHtml: _renderCombatResult(state) || '',
-      lastCombatResultHtml: _renderLastCombatResult(state) || '',
-      eventResultHtml: _renderEventResult(state) || ''
+      lastCombatResultHtml: _renderLastCombatResult(state) || ''
     };
     if (mode === 'freeform') {
       const setBattles = scenario?.setBattles || [];
@@ -10584,8 +10546,7 @@ window.CJS.CampaignUI = (() => {
       } : null,
       soloNoticeHtml: _renderSoloNotice(state) || '',
       pendingBattleHtml: _renderPendingBattle(state) || '',
-      combatResultHtml: _renderCombatResult(state) || '',
-      eventResultHtml: _renderEventResult(state) || ''
+      combatResultHtml: _renderCombatResult(state) || ''
     };
   }
 
@@ -10688,8 +10649,6 @@ window.CJS.CampaignUI = (() => {
       case 'pendingBattle':    return _renderPendingBattle(state);
       case 'combatResult':     return _renderCombatResult(state);
       case 'lastCombatResult': return _renderLastCombatResult(state);
-      case 'eventResult':      return _renderEventResult(state);
-      case 'oracle':           return _renderOracle(state);
       case 'lastReport':       return _renderLastReport(state);
       default: return '';
     }
@@ -10820,8 +10779,6 @@ window.CJS.CampaignUI = (() => {
     enableReactShell,
     getChromeData,
     getEventLogData,
-    renderEventResultHtml,
-    renderOracleHtml,
     getMinigameTestData,
     renderOverviewSectionHtml,
     getStorySummaryData,
@@ -10834,6 +10791,8 @@ window.CJS.CampaignUI = (() => {
     getWorldGateData,
     getStoryDirectorData,
     getQuestRowData,
+    getEventResultData,
+    getOracleData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

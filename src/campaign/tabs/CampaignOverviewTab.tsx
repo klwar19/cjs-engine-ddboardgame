@@ -15,6 +15,7 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { renderOverviewSectionHtml, type OverviewSectionId } from "./data/overview";
+import { EventResultPanel, OraclePanel } from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -35,8 +36,8 @@ export function CampaignOverviewTab({ state }: Props) {
       <Section state={state} id="pendingBattle" />
       <Section state={state} id="combatResult" />
       <Section state={state} id="lastCombatResult" />
-      <Section state={state} id="eventResult" />
-      <Section state={state} id="oracle" />
+      <EventResultPanel state={state} />
+      <OraclePanel state={state} />
       <Section state={state} id="lastReport" />
     </div>
   );

@@ -19,8 +19,6 @@ export type OverviewSectionId =
   | "pendingBattle"
   | "combatResult"
   | "lastCombatResult"
-  | "eventResult"
-  | "oracle"
   | "lastReport";
 
 interface Bridge {

@@ -1,9 +1,9 @@
 // eventLog.ts — Phase F typed bridge for the Event Log tab.
 //
 // `getEventLogData(state)` returns a JSON snapshot the JSX renderer
-// reads. The two HTML-string sub-panel bridges (renderEventResultHtml,
-// renderOracleHtml) stay as bridges until eventCharacter/Special/Side
-// migrate (those tabs share those panels).
+// reads. The two shared sub-panels (event result, oracle) live in
+// `src/campaign/tabs/ResultPanels.tsx` and are imported by the
+// Event Log JSX directly.
 
 import type { CampaignStateSnapshot } from "../../store";
 
@@ -27,8 +27,6 @@ export interface EventLogData {
 
 interface CampaignUIEventLogBridge {
   readonly getEventLogData: (state?: CampaignStateSnapshot) => EventLogData | null;
-  readonly renderEventResultHtml: (state?: CampaignStateSnapshot) => string;
-  readonly renderOracleHtml: (state?: CampaignStateSnapshot) => string;
 }
 
 interface Cjs {
@@ -41,12 +39,4 @@ function cjs(): Cjs {
 
 export function getEventLogData(state: CampaignStateSnapshot): EventLogData | null {
   return cjs().CampaignUI?.getEventLogData(state) ?? null;
-}
-
-export function renderEventResultHtml(state: CampaignStateSnapshot): string {
-  return cjs().CampaignUI?.renderEventResultHtml(state) ?? "";
-}
-
-export function renderOracleHtml(state: CampaignStateSnapshot): string {
-  return cjs().CampaignUI?.renderOracleHtml(state) ?? "";
 }
