@@ -900,7 +900,6 @@ window.CJS.CampaignUI = (() => {
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
-      case 'storySummary': return _renderStorySummary(state);
       case 'questHome': return _renderQuestHome(state);
       case 'eventHome': return _renderEventTypeTab(state, 'character');
       case 'eventCharacter': return _renderEventTypeTab(state, 'character');
@@ -1081,63 +1080,10 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderStorySummary(state) {
-    const storyParts = _storySummaryEntries(state);
-    const manual = state.storyMode?.manualSummaryEntries || [];
-    const facts = Object.values(state.storyDirector?.revealedFacts || {}).slice(0, 8);
-    const queue = Object.values(state.storyDirector?.storyQueue || {}).slice(0, 8);
-    return `
-      <div class="campaign-dashboard campaign-story-summary">
-        ${_renderGachaHomeHero({
-          tone: 'story',
-          kicker: 'Story Log',
-          title: 'Current Arc Summary',
-          text: 'Readable memory for main-story parts, defaults, and GM-written story addenda. Event notes live in the separate Event Log.',
-          meta: [`${storyParts.length} story parts`, `${manual.length} manual notes`, `${facts.length} facts`],
-          actions: [
-            _actionBtn({ action: 'open-story-home', label: 'Story Home', hint: 'Return to chapter play', kind: 'primary' }),
-            _actionBtn({ action: 'story-manual-note', label: 'Add Manual Scene', hint: 'Write a GM summary note' }),
-            _actionBtn({ action: 'story-copy-prompt', label: 'Copy Story Prompt', hint: 'Use current story state with AI' })
-          ]
-        })}
-        <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head">
-            <h2>Completed Story Parts</h2>
-            <span class="campaign-pill">${storyParts.length}</span>
-          </div>
-          ${storyParts.length ? storyParts.map((entry) => `
-            <div class="campaign-row">
-              <div>
-                <strong>${_esc(entry.title || entry.sequenceId)}</strong>
-                <div class="campaign-chip-row">
-                  ${entry.chapterLabel ? `<span class="campaign-chip">Chapter ${_esc(entry.chapterLabel)}</span>` : ''}
-                  ${entry.partLabel ? `<span class="campaign-chip">${_esc(entry.partLabel)}</span>` : ''}
-                  <span class="campaign-chip">${_esc(_label(entry.mode || 'played'))}</span>
-                </div>
-                <div class="campaign-muted">${_esc(entry.result || 'complete')} | ${_esc(entry.completedAt || entry.startedAt || '')}</div>
-                <p>${_esc(entry.summaryText || _storySummaryTextFromRecord(entry))}</p>
-                ${entry.routeChoices?.length ? `<div class="campaign-muted">Route: ${_esc(entry.routeChoices.map((choice) => choice.label || choice.choiceId).filter(Boolean).join(' → '))}</div>` : ''}
-                ${entry.syncSummary?.length ? `<div class="campaign-muted">State Sync: ${_esc(entry.syncSummary.join(' | '))}</div>` : ''}
-              </div>
-            </div>
-          `).join('') : '<div class="campaign-empty">No completed story sequence parts yet.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>GM Manual Bookkeeping</h3></div>
-          <div class="campaign-muted">These are hand-written main-story addenda, separate from oracle/event notes.</div>
-          ${manual.length ? manual.map((entry) => `<div class="campaign-row"><div><strong>${_esc(entry.title || 'Manual Note')}</strong><div class="campaign-muted">${_esc(entry.at || '')}</div><p>${_esc(entry.text || '')}</p></div></div>`).join('') : '<div class="campaign-empty">Manual GM story addenda will appear here.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Revealed Facts</h3></div>
-          ${facts.length ? facts.map((fact) => `<div class="campaign-row"><div><strong>${_esc(fact.title || fact.id || 'Fact')}</strong><p>${_esc(fact.text || fact.note || '')}</p></div></div>`).join('') : '<div class="campaign-empty">No revealed facts yet.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h3>Held Story Beats</h3></div>
-          ${queue.length ? queue.map((beat) => `<div class="campaign-row"><div><strong>${_esc(beat.title || beat.id)}</strong><div class="campaign-muted">${_esc(beat.status || 'held')}</div><p>${_esc(beat.prompt || beat.summary || '')}</p></div></div>`).join('') : '<div class="campaign-empty">No held beats.</div>'}
-        </section>
-      </div>
-    `;
-  }
+  // _renderStorySummary — Phase F.5 port. Body moved to
+  // `src/campaign/tabs/CampaignStorySummaryTab.tsx`. Typed data flows
+  // through `getStorySummaryData(state)`. `_storySummaryEntries` and
+  // `_storySummaryTextFromRecord` stay (the bridge calls them).
 
   function _renderQuestHome(state) {
     if (state?.currentWorld === 'zombie') return _renderZombieScavengeHome(state);
@@ -10706,7 +10652,6 @@ window.CJS.CampaignUI = (() => {
     switch (tabId) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
-      case 'storySummary': return _renderStorySummary(state);
       case 'questHome': return _renderQuestHome(state);
       case 'eventHome':
       case 'eventCharacter': return _renderEventTypeTab(state, 'character');
@@ -10904,6 +10849,39 @@ window.CJS.CampaignUI = (() => {
     return _renderOracle(state);
   }
 
+  function getStorySummaryData(state = CS().getState()) {
+    if (!state) return null;
+    const storyParts = _storySummaryEntries(state).map((entry) => ({
+      title: entry.title || entry.sequenceId || 'Story Part',
+      chapterLabel: entry.chapterLabel || '',
+      partLabel: entry.partLabel || '',
+      modeLabel: _label(entry.mode || 'played'),
+      result: entry.result || 'complete',
+      timestamp: entry.completedAt || entry.startedAt || '',
+      summaryText: entry.summaryText || '',
+      routeText: (entry.routeChoices || [])
+        .map((choice) => choice.label || choice.choiceId)
+        .filter(Boolean)
+        .join(' → '),
+      syncSummary: Array.isArray(entry.syncSummary) ? entry.syncSummary.slice(0) : []
+    }));
+    const manual = (state.storyMode?.manualSummaryEntries || []).map((entry) => ({
+      title: entry.title || 'Manual Note',
+      timestamp: entry.at || '',
+      text: entry.text || ''
+    }));
+    const facts = Object.values(state.storyDirector?.revealedFacts || {}).slice(0, 8).map((fact) => ({
+      title: fact.title || fact.id || 'Fact',
+      text: fact.text || fact.note || ''
+    }));
+    const queue = Object.values(state.storyDirector?.storyQueue || {}).slice(0, 8).map((beat) => ({
+      title: beat.title || beat.id || 'Beat',
+      status: beat.status || 'held',
+      text: beat.prompt || beat.summary || ''
+    }));
+    return { storyParts, manual, facts, queue };
+  }
+
   // Per-section HTML bridge for the Overview tab. Each sectionId maps
   // to a closure-private `_renderXxx(state)` helper that returns an
   // HTML string. The JSX port at
@@ -11058,6 +11036,7 @@ window.CJS.CampaignUI = (() => {
     renderOracleHtml,
     getMinigameTestData,
     renderOverviewSectionHtml,
+    getStorySummaryData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
