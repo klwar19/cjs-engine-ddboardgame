@@ -12,6 +12,7 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getQuestPanelData, type QuestPanelData } from "./data/questPanel";
+import { QuestRow } from "./QuestRow";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -68,13 +69,7 @@ function NormalQuestPanel({ data }: { data: Extract<QuestPanelData, { isZombie: 
       )}
       <div className="campaign-quest-list">
         {data.activeQuestRows.length ? (
-          data.activeQuestRows.map((html, i) => (
-            <div
-              key={i}
-              className="campaign-quest-row-bridge"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          ))
+          data.activeQuestRows.map((row) => <QuestRow key={row.id} row={row} />)
         ) : (
           <div className="campaign-empty">No active quests.</div>
         )}
@@ -83,13 +78,7 @@ function NormalQuestPanel({ data }: { data: Extract<QuestPanelData, { isZombie: 
         <details className="campaign-resolved-quests">
           <summary>Resolved ({data.finishedCount})</summary>
           <div className="campaign-quest-list">
-            {data.finishedQuestRows.map((html, i) => (
-              <div
-                key={i}
-                className="campaign-quest-row-bridge"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            ))}
+            {data.finishedQuestRows.map((row) => <QuestRow key={row.id} row={row} />)}
           </div>
         </details>
       )}

@@ -1,14 +1,15 @@
 // questPanel.ts — Phase F bridge for the Quests (Tracker) panel tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { QuestRowData } from "./questRow";
 
 interface QuestPanelNormal {
   readonly isZombie: false;
   readonly activeCount: number;
   readonly finishedCount: number;
   readonly templateCount: number;
-  readonly activeQuestRows: readonly string[];
-  readonly finishedQuestRows: readonly string[];
+  readonly activeQuestRows: readonly QuestRowData[];
+  readonly finishedQuestRows: readonly QuestRowData[];
   readonly soloNoticeHtml: string;
 }
 

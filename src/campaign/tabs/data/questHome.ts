@@ -8,6 +8,7 @@
 // move out of campaign-ui.js.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { QuestRowData } from "./questRow";
 
 export interface QuestPaperLite {
   readonly id: string;
@@ -28,7 +29,7 @@ interface QuestHomeNormal {
   readonly dailyPapers: readonly QuestPaperLite[];
   readonly normalPapers: readonly QuestPaperLite[];
   readonly storyPapers: readonly QuestPaperLite[];
-  readonly activeQuestRows: readonly string[];
+  readonly activeQuestRows: readonly QuestRowData[];
   readonly activeSequenceHtml: string;
   readonly soloNoticeHtml: string;
   readonly scenarioSummaryHtml: string;

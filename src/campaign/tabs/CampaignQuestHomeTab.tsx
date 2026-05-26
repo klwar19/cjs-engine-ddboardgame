@@ -17,6 +17,8 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getQuestHomeData, type QuestHomeData, type QuestPaperLite } from "./data/questHome";
+import { QuestRow } from "./QuestRow";
+import type { QuestRowData } from "./data/questRow";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -210,7 +212,7 @@ function QuestPaperButton({ paper }: { paper: QuestPaperLite }) {
   );
 }
 
-function ActiveQuestsPanel({ rows, activeCount }: { rows: readonly string[]; activeCount: number }) {
+function ActiveQuestsPanel({ rows, activeCount }: { rows: readonly QuestRowData[]; activeCount: number }) {
   return (
     <section className="campaign-panel campaign-wide-panel campaign-home-focus">
       <div className="campaign-panel-head">
@@ -224,13 +226,7 @@ function ActiveQuestsPanel({ rows, activeCount }: { rows: readonly string[]; act
       </div>
       <div className="campaign-quest-list">
         {rows.length ? (
-          rows.map((html, i) => (
-            <div
-              key={i}
-              className="campaign-quest-row-bridge"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          ))
+          rows.map((row) => <QuestRow key={row.id} row={row} />)
         ) : (
           <div className="campaign-empty">
             No active quests yet. Create one, start a daily paper, or roll a normal/random quest.

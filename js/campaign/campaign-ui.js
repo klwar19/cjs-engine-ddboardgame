@@ -10173,6 +10173,73 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  // Typed snapshot of one quest for the React QuestRow component.
+  // Used by QuestHome (active rows, capped) and QuestsPanel (active +
+  // resolved rows). Replaces the per-row HTML bridge with structured
+  // data so the row body can render as JSX.
+  function getQuestRowData(quest = {}, opts = {}) {
+    const objectives = quest.objectives || [];
+    const nextObjective = opts.resolved ? null : _questNextObjective(quest);
+    const done = objectives.filter((obj) => _questObjectiveDone(obj)).length;
+    const total = objectives.length || 1;
+    const meta = [
+      _label(quest.status || 'active'),
+      quest.giver ? `Giver: ${quest.giver}` : '',
+      quest.timer?.phasesRemaining ? `${quest.timer.phasesRemaining} phases left` : ''
+    ].filter(Boolean).join(' | ');
+    const activeRun = CS().getState()?.activeScenarioRun;
+    const activeScenario = CS().getActiveScenario?.();
+    const isRunQuest = _activeRunQuestId(activeRun, activeScenario) === quest.id;
+    const scenarioDisabled = !!(activeRun && !isRunQuest);
+    const tags = Array.from(new Set([
+      ...(quest.tags || []),
+      ...(quest.contextTags || []),
+      ...(quest.monsterTags || [])
+    ].filter(Boolean))).slice(0, 8).map((t) => _label(t));
+    const variant = quest.activeVariant || null;
+    const variantLabel = variant?.label || quest.variantLabel || '';
+    const variantText = quest.variantDialogue || quest.variantSummary || variant?.dialogue || variant?.summary || '';
+    const variantRepeat = quest.repeatCycle ? `Cycle ${quest.repeatCycle + 1}` : '';
+    return {
+      id: String(quest.id || ''),
+      title: quest.title || quest.id || 'Quest',
+      summary: quest.summary || '',
+      statusLabel: _label(quest.status || 'active'),
+      statusClass: _questStatusClass(quest),
+      metaLine: meta,
+      resolved: !!opts.resolved,
+      isRunQuest,
+      scenarioDisabled,
+      scenarioLabel: isRunQuest ? 'Open Map' : 'Map Run',
+      scenarioHint: isRunQuest
+        ? 'Jump to the active map for this quest'
+        : 'Start (or generate) the map run for this quest',
+      scenarioPillHtml: _questScenarioPill(quest, activeRun, activeScenario) || '',
+      hasMiniGame: !!_questMiniGameObjective(quest),
+      tagChips: tags,
+      variant: (variantLabel || variantText || variantRepeat)
+        ? { label: variantLabel, text: variantText, repeat: variantRepeat }
+        : null,
+      phaseLabel: opts.resolved ? 'Resolved' : (nextObjective?.label || 'Open'),
+      doneCount: done,
+      totalCount: total,
+      objectives: objectives.map((obj) => {
+        const cur = Number(obj.current || 0);
+        const req = Math.max(1, Number(obj.required || 1));
+        const pct = Math.max(0, Math.min(100, Math.round((cur / req) * 100)));
+        return {
+          id: String(obj.id || obj.label || ''),
+          label: obj.label || obj.id || 'Objective',
+          current: cur,
+          required: req,
+          pct,
+          done: cur >= req,
+          pulseHints: (obj.progressTriggers || []).slice(0, 2).map((trigger) => _triggerLabel(trigger))
+        };
+      })
+    };
+  }
+
   function getStoryDirectorData(state = CS().getState()) {
     if (!state) return null;
     const theme = _storyTheme(state);
@@ -10328,8 +10395,8 @@ window.CJS.CampaignUI = (() => {
       activeCount: active.length,
       finishedCount: finished.length,
       templateCount,
-      activeQuestRows: active.map((quest) => _renderQuestRow(quest)),
-      finishedQuestRows: finished.map((quest) => _renderQuestRow(quest, { resolved: true })),
+      activeQuestRows: active.map((quest) => getQuestRowData(quest)),
+      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true })),
       soloNoticeHtml: _renderSoloNotice(state) || ''
     };
   }
@@ -10560,7 +10627,7 @@ window.CJS.CampaignUI = (() => {
       dailyPapers: paperLite(dailyPapers),
       normalPapers: paperLite(normalPapers).slice(0, 1),
       storyPapers: paperLite(storyPapers),
-      activeQuestRows: active.slice(0, 4).map((quest) => _renderQuestRow(quest)),
+      activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest)),
       activeSequenceHtml: _renderActiveSequence(state, ['quest']) || '',
       soloNoticeHtml: _renderSoloNotice(state) || '',
       scenarioSummaryHtml: run ? (_renderScenarioSummary(state) || '') : '',
@@ -10766,6 +10833,7 @@ window.CJS.CampaignUI = (() => {
     getStoryHomeData,
     getWorldGateData,
     getStoryDirectorData,
+    getQuestRowData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
