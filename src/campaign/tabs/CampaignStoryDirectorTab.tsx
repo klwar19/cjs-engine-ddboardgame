@@ -7,17 +7,22 @@
 //   • Pack loaded: the VN hero, a Story Desk panel (solo-guide +
 //     action-deck), Episode Route panel with the stage rail, the
 //     last director card (or empty card), and the five-panel
-//     support grid.
+//     support grid (pressure / side-flow / clues / queue / truths).
 //
-// VN hero + solo guide + action deck (G.11a), stage rail + director
-// card + empty card (G.11b) are JSX. The support-grid panels
-// (pressure / side-flow / clues / queue / truths) remain HTML
-// bridges until G.11c ports them.
+// All bodies are full JSX after G.11a / G.11b / G.11c.
 
 import type { CampaignStateSnapshot } from "../store";
 import { getStoryDirectorData, type StoryDirectorData } from "./data/storyDirector";
 import { StoryVnHero, StorySoloGuide, StoryActionDeck } from "./StoryVn";
-import { StoryStageRail, StoryDirectorCard } from "./StoryDirectorPanels";
+import {
+  StoryStageRail,
+  StoryDirectorCard,
+  StoryPressureBoard,
+  StoryCluesPanel,
+  StoryQueuePanel,
+  StoryTruthsPanel,
+  StorySideFlowPanel
+} from "./StoryDirectorPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -64,19 +69,14 @@ function ReadyDashboard({
       <EpisodeRoutePanel data={data} />
       <StoryDirectorCard card={data.lastCard} />
       <div className="campaign-story-support-grid campaign-wide-panel">
-        <HtmlBridge html={data.pressureBoardHtml} className="campaign-story-pressure-bridge" />
-        <HtmlBridge html={data.sideFlowHtml} className="campaign-story-side-flow-bridge" />
-        <HtmlBridge html={data.cluesHtml} className="campaign-story-clues-bridge" />
-        <HtmlBridge html={data.queueHtml} className="campaign-story-queue-bridge" />
-        <HtmlBridge html={data.truthsHtml} className="campaign-story-truths-bridge" />
+        <StoryPressureBoard data={data.pressureBoard} />
+        <StorySideFlowPanel data={data.sideFlow} />
+        <StoryCluesPanel data={data.clues} />
+        <StoryQueuePanel data={data.queue} />
+        <StoryTruthsPanel data={data.truths} />
       </div>
     </div>
   );
-}
-
-function HtmlBridge({ html, className }: { html: string; className: string }) {
-  if (!html) return null;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function StoryDeskPanel({

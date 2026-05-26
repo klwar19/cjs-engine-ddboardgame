@@ -1,6 +1,9 @@
-// StoryDirectorPanels.tsx — Phase G.11b JSX components for the Story
-// Director episode rail, the last-beat director card, and the empty
-// fallback. The route consequence preview is still an HTML bridge
+// StoryDirectorPanels.tsx — Phase G.11b + G.11c JSX components for
+// the Story Director episode rail, the last-beat director card, the
+// empty fallback, and the five support-grid panels (pressure /
+// clues / queue / truths / side-flow).
+//
+// The route consequence preview is still an HTML bridge
 // (`HubTab.renderConsequencePreview`) until K.3 ports the HubTab
 // renderers.
 
@@ -8,7 +11,13 @@ import { dispatchCampaignAction } from "../actions";
 import type {
   StoryStageEntry,
   StoryDirectorCardData,
-  StoryRouteChoice
+  StoryRouteChoice,
+  PressureBoardData,
+  StoryCluesPanelData,
+  StoryQueuePanelData,
+  StoryTruthsPanelData,
+  StorySideFlowData,
+  SideFlowColumn
 } from "./data/storyDirector";
 
 export function StoryStageRail({ stages }: { stages: readonly StoryStageEntry[] }) {
@@ -194,5 +203,163 @@ function ActionMenu({ label, children }: { label: string; children: React.ReactN
       </summary>
       <div className="campaign-action-menu-panel">{children}</div>
     </details>
+  );
+}
+
+// ── Support-grid panels (G.11c) ─────────────────────────────────
+
+export function StoryPressureBoard({ data }: { data: PressureBoardData }) {
+  return (
+    <section className="campaign-panel campaign-story-support-panel">
+      <div className="campaign-panel-head">
+        <h3>Pressure Board</h3>
+      </div>
+      <div className="campaign-stat-grid">
+        {data.metrics.length > 0 ? (
+          data.metrics.map((metric) => (
+            <span key={metric.id}>
+              {metric.label} <b>{metric.value}</b>
+            </span>
+          ))
+        ) : (
+          <span>No metrics authored.</span>
+        )}
+      </div>
+      <div className="campaign-control-help">{data.rule}</div>
+    </section>
+  );
+}
+
+export function StoryCluesPanel({ data }: { data: StoryCluesPanelData }) {
+  return (
+    <section className="campaign-panel campaign-story-support-panel">
+      <div className="campaign-panel-head">
+        <h3>Clues &amp; Reveals</h3>
+      </div>
+      {data.clues.length > 0 ? (
+        data.clues.map((clue) => (
+          <div key={clue.id} className="campaign-row">
+            <div>
+              <strong>{clue.title}</strong>
+              <div className="campaign-muted">{clue.text}</div>
+            </div>
+            <span className={`campaign-risk ${clue.canonRiskClass}`}>{clue.canonRisk}</span>
+          </div>
+        ))
+      ) : (
+        <div className="campaign-empty">No story clues recorded yet.</div>
+      )}
+      {data.facts.length > 0 && (
+        <>
+          <div className="campaign-section-title">Revealed Facts</div>
+          {data.facts.map((fact) => (
+            <div key={fact.id} className="campaign-town-line is-plot">
+              <strong>{fact.title}</strong>
+              <span>{fact.text}</span>
+            </div>
+          ))}
+        </>
+      )}
+    </section>
+  );
+}
+
+export function StoryQueuePanel({ data }: { data: StoryQueuePanelData }) {
+  return (
+    <section className="campaign-panel campaign-story-support-panel">
+      <div className="campaign-panel-head">
+        <h3>Held Scenes</h3>
+      </div>
+      {data.beats.length > 0 ? (
+        data.beats.map((beat) => (
+          <div key={beat.id} className="campaign-row">
+            <div>
+              <strong>{beat.title}</strong>
+              <div className="campaign-muted">
+                {beat.statusLabel} | {beat.stageLabel}
+              </div>
+            </div>
+            <span className={`campaign-risk ${beat.canonRiskClass}`}>{beat.canonRisk}</span>
+          </div>
+        ))
+      ) : (
+        <div className="campaign-empty">Hold a scene to keep it here for later.</div>
+      )}
+    </section>
+  );
+}
+
+export function StoryTruthsPanel({ data }: { data: StoryTruthsPanelData }) {
+  return (
+    <section className="campaign-panel campaign-story-support-panel">
+      <div className="campaign-panel-head">
+        <h3>Protected Truths</h3>
+      </div>
+      {data.truths.length > 0 ? (
+        data.truths.map((truth) => (
+          <div key={truth.id} className="campaign-town-line is-risk">
+            <strong>{truth.title}</strong>
+            <span>{truth.rule}</span>
+          </div>
+        ))
+      ) : (
+        <div className="campaign-empty">No protected truths listed.</div>
+      )}
+    </section>
+  );
+}
+
+export function StorySideFlowPanel({ data }: { data: StorySideFlowData }) {
+  if (!data.hasFlow) {
+    return (
+      <section className="campaign-panel campaign-story-support-panel">
+        <div className="campaign-panel-head">
+          <h3>Side Routes</h3>
+        </div>
+        <div className="campaign-empty">No side route flow authored for this episode.</div>
+      </section>
+    );
+  }
+  return (
+    <section className="campaign-panel campaign-story-support-panel">
+      <div className="campaign-panel-head">
+        <div>
+          <h3>Side Routes</h3>
+          <div className="campaign-muted">{data.summary}</div>
+        </div>
+        <div className="campaign-row-actions">
+          <span className={`campaign-chip ${data.flowSynced ? "is-good" : "is-warn"}`}>
+            {data.flowSynced ? "Updated" : "Not updated"}
+          </span>
+          <button
+            className={`campaign-action ${data.flowSynced ? "" : "quest"}`}
+            disabled={data.flowSynced}
+            onClick={() => dispatchCampaignAction("story-sync-sidequests")}
+          >
+            Update Routes
+          </button>
+        </div>
+      </div>
+      <div className="campaign-town-columns">
+        {data.columns.map((col, i) => (
+          <SideFlowColumnView key={i} column={col} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SideFlowColumnView({ column }: { column: SideFlowColumn }) {
+  if (column.items.length === 0) return null;
+  return (
+    <div>
+      <div className="campaign-section-title">{column.label}</div>
+      {column.items.map((item, i) => (
+        <div key={i} className={`campaign-town-line is-${column.tone}`}>
+          <strong>{item.title}</strong>
+          <span>{item.reason}</span>
+        </div>
+      ))}
+    </div>
   );
 }

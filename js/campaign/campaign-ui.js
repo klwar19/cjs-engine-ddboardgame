@@ -1760,101 +1760,90 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderStoryPressureBoard(metrics, snap, pack) {
-    return `
-      <section class="campaign-panel campaign-story-support-panel">
-        <div class="campaign-panel-head"><h3>Pressure Board</h3></div>
-        <div class="campaign-stat-grid">
-          ${metrics.map((metric) => `<span>${_esc(metric.label || _label(metric.id))} <b>${_esc(snap.metrics[metric.id] || 0)}</b></span>`).join('') || '<span>No metrics authored.</span>'}
-        </div>
-        <div class="campaign-control-help">${_esc(pack.pressureRule || 'Offscreen trouble suggests consequences. Apply only what fits the session.')}</div>
-      </section>
-    `;
+  // _renderStoryPressureBoard / _renderStoryCluesPanel /
+  // _renderStoryQueuePanel / _renderStoryTruthsPanel /
+  // _renderStorySideFlow removed in Phase G.11c. The React
+  // support-grid components in
+  // `src/campaign/tabs/StoryDirectorPanels.tsx` render these
+  // panels from typed bridge data.
+  function _storyPressureBoardData(metrics, snap, pack) {
+    return {
+      metrics: (metrics || []).map((metric) => ({
+        id: String(metric.id || ''),
+        label: String(metric.label || _label(metric.id || '')),
+        value: snap?.metrics?.[metric.id] != null ? snap.metrics[metric.id] : 0
+      })),
+      rule: String(pack?.pressureRule || 'Offscreen trouble suggests consequences. Apply only what fits the session.')
+    };
   }
 
-  function _renderStoryCluesPanel(clues, facts) {
-    return `
-      <section class="campaign-panel campaign-story-support-panel">
-        <div class="campaign-panel-head"><h3>Clues & Reveals</h3></div>
-        ${clues.length ? clues.map((clue) => `
-          <div class="campaign-row">
-            <div>
-              <strong>${_esc(clue.title || clue.id)}</strong>
-              <div class="campaign-muted">${_esc(clue.text || '')}</div>
-            </div>
-            <span class="campaign-risk ${Side().riskClass(clue.canonRisk)}">${_esc(clue.canonRisk || 'green')}</span>
-          </div>
-        `).join('') : '<div class="campaign-empty">No story clues recorded yet.</div>'}
-        ${facts.length ? `<div class="campaign-section-title">Revealed Facts</div>${facts.map((fact) => `<div class="campaign-town-line is-plot"><strong>${_esc(fact.title || fact.id)}</strong><span>${_esc(fact.text || '')}</span></div>`).join('')}` : ''}
-      </section>
-    `;
+  function _storyCluesPanelData(clues, facts) {
+    return {
+      clues: (clues || []).map((clue) => ({
+        id: String(clue.id || ''),
+        title: String(clue.title || clue.id || ''),
+        text: String(clue.text || ''),
+        canonRisk: String(clue.canonRisk || 'green'),
+        canonRiskClass: Side().riskClass(clue.canonRisk)
+      })),
+      facts: (facts || []).map((fact) => ({
+        id: String(fact.id || ''),
+        title: String(fact.title || fact.id || ''),
+        text: String(fact.text || '')
+      }))
+    };
   }
 
-  function _renderStoryQueuePanel(queue) {
-    return `
-      <section class="campaign-panel campaign-story-support-panel">
-        <div class="campaign-panel-head"><h3>Held Scenes</h3></div>
-        ${queue.length ? queue.map((beat) => `
-          <div class="campaign-row">
-            <div>
-              <strong>${_esc(beat.title || beat.id)}</strong>
-              <div class="campaign-muted">${_esc(beat.status || 'saved')} | ${_esc(beat.stageName || beat.stageId || '')}</div>
-            </div>
-            <span class="campaign-risk ${Side().riskClass(beat.canonRisk)}">${_esc(beat.canonRisk || 'green')}</span>
-          </div>
-        `).join('') : '<div class="campaign-empty">Hold a scene to keep it here for later.</div>'}
-      </section>
-    `;
+  function _storyQueuePanelData(queue) {
+    return {
+      beats: (queue || []).map((beat) => ({
+        id: String(beat.id || ''),
+        title: String(beat.title || beat.id || ''),
+        statusLabel: String(beat.status || 'saved'),
+        stageLabel: String(beat.stageName || beat.stageId || ''),
+        canonRisk: String(beat.canonRisk || 'green'),
+        canonRiskClass: Side().riskClass(beat.canonRisk)
+      }))
+    };
   }
 
-  function _renderStoryTruthsPanel(pack) {
-    return `
-      <section class="campaign-panel campaign-story-support-panel">
-        <div class="campaign-panel-head"><h3>Protected Truths</h3></div>
-        ${(pack.protectedTruths || []).slice(0, 10).map((truth) => `
-          <div class="campaign-town-line is-risk">
-            <strong>${_esc(truth.title || truth.id)}</strong>
-            <span>${_esc(truth.rule || 'Red-risk until the GM promotes it.')}</span>
-          </div>
-        `).join('') || '<div class="campaign-empty">No protected truths listed.</div>'}
-      </section>
-    `;
+  function _storyTruthsPanelData(pack) {
+    return {
+      truths: (pack?.protectedTruths || []).slice(0, 10).map((truth) => ({
+        id: String(truth.id || ''),
+        title: String(truth.title || truth.id || ''),
+        rule: String(truth.rule || 'Red-risk until the GM promotes it.')
+      }))
+    };
   }
 
-  function _renderStorySideFlow(flow, flowSynced = false) {
+  function _storySideFlowData(flow, flowSynced = false) {
     if (!flow) {
-      return `
-        <section class="campaign-panel campaign-story-support-panel">
-          <div class="campaign-panel-head"><h3>Side Routes</h3></div>
-          <div class="campaign-empty">No side route flow authored for this episode.</div>
-        </section>
-      `;
+      return {
+        hasFlow: false,
+        summary: '',
+        flowSynced: !!flowSynced,
+        columns: []
+      };
     }
-    const row = (label, list, tone) => list?.length ? `
-      <div>
-        <div class="campaign-section-title">${_esc(label)}</div>
-        ${list.map((item) => `<div class="campaign-town-line is-${_escAttr(tone)}"><strong>${_esc(item.title || item.id || item)}</strong><span>${_esc(item.reason || item.note || '')}</span></div>`).join('')}
-      </div>
-    ` : '';
-    return `
-      <section class="campaign-panel campaign-story-support-panel">
-        <div class="campaign-panel-head">
-          <div>
-            <h3>Side Routes</h3>
-            <div class="campaign-muted">${_esc(flow.summary || 'Keep, promote, or retire optional content as the main arc moves.')}</div>
-          </div>
-          <div class="campaign-row-actions">
-            <span class="campaign-chip ${flowSynced ? 'is-good' : 'is-warn'}">${flowSynced ? 'Updated' : 'Not updated'}</span>
-            <button class="campaign-action ${flowSynced ? '' : 'quest'}" data-campaign-action="story-sync-sidequests" ${flowSynced ? 'disabled' : ''}>Update Routes</button>
-          </div>
-        </div>
-        <div class="campaign-town-columns">
-          ${row('Keep Available', flow.keep, 'flavor')}
-          ${row('Promote Soon', flow.promote, 'plot')}
-          ${row('Retire / Downgrade', flow.retire, 'risk')}
-        </div>
-      </section>
-    `;
+    const column = (label, list, tone) => ({
+      label,
+      tone,
+      items: (list || []).map((item) => ({
+        title: String(item.title || item.id || item || ''),
+        reason: String(item.reason || item.note || '')
+      }))
+    });
+    return {
+      hasFlow: true,
+      summary: String(flow.summary || 'Keep, promote, or retire optional content as the main arc moves.'),
+      flowSynced: !!flowSynced,
+      columns: [
+        column('Keep Available', flow.keep, 'flavor'),
+        column('Promote Soon', flow.promote, 'plot'),
+        column('Retire / Downgrade', flow.retire, 'risk')
+      ]
+    };
   }
 
   // _renderAdventureLegend — Phase G.6 port. The legend body moved to
@@ -10169,11 +10158,11 @@ window.CJS.CampaignUI = (() => {
       actionDeckHasFlow: !!flow,
       stageRailEntries: _storyStageRailData(stages, stage),
       lastCard: _storyDirectorCardData(snap.last),
-      pressureBoardHtml: _renderStoryPressureBoard(metrics, snap, pack),
-      sideFlowHtml: _renderStorySideFlow(flow, flowSynced),
-      cluesHtml: _renderStoryCluesPanel(clues, facts),
-      queueHtml: _renderStoryQueuePanel(queue),
-      truthsHtml: _renderStoryTruthsPanel(pack)
+      pressureBoard: _storyPressureBoardData(metrics, snap, pack),
+      sideFlow: _storySideFlowData(flow, flowSynced),
+      clues: _storyCluesPanelData(clues, facts),
+      queue: _storyQueuePanelData(queue),
+      truths: _storyTruthsPanelData(pack)
     };
   }
 

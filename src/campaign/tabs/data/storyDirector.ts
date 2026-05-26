@@ -40,6 +40,81 @@ export interface StoryDirectorCardData {
   readonly routes: readonly StoryRouteChoice[];
 }
 
+// G.11c — typed support-grid panels (pressure / clues / queue /
+// truths / side-flow).
+export interface PressureMetric {
+  readonly id: string;
+  readonly label: string;
+  readonly value: number | string;
+}
+
+export interface PressureBoardData {
+  readonly metrics: readonly PressureMetric[];
+  readonly rule: string;
+}
+
+export interface StoryClue {
+  readonly id: string;
+  readonly title: string;
+  readonly text: string;
+  readonly canonRisk: string;
+  readonly canonRiskClass: string;
+}
+
+export interface StoryFact {
+  readonly id: string;
+  readonly title: string;
+  readonly text: string;
+}
+
+export interface StoryCluesPanelData {
+  readonly clues: readonly StoryClue[];
+  readonly facts: readonly StoryFact[];
+}
+
+export interface StoryQueueBeat {
+  readonly id: string;
+  readonly title: string;
+  readonly statusLabel: string;
+  readonly stageLabel: string;
+  readonly canonRisk: string;
+  readonly canonRiskClass: string;
+}
+
+export interface StoryQueuePanelData {
+  readonly beats: readonly StoryQueueBeat[];
+}
+
+export interface StoryTruth {
+  readonly id: string;
+  readonly title: string;
+  readonly rule: string;
+}
+
+export interface StoryTruthsPanelData {
+  readonly truths: readonly StoryTruth[];
+}
+
+export type SideFlowTone = "flavor" | "plot" | "risk";
+
+export interface SideFlowItem {
+  readonly title: string;
+  readonly reason: string;
+}
+
+export interface SideFlowColumn {
+  readonly label: string;
+  readonly tone: SideFlowTone;
+  readonly items: readonly SideFlowItem[];
+}
+
+export interface StorySideFlowData {
+  readonly hasFlow: boolean;
+  readonly summary: string;
+  readonly flowSynced: boolean;
+  readonly columns: readonly SideFlowColumn[];
+}
+
 interface StoryDirectorMissing {
   readonly moduleAvailable: false;
   readonly themeClassName: string;
@@ -67,11 +142,11 @@ interface StoryDirectorReady {
   readonly actionDeckHasFlow: boolean;
   readonly stageRailEntries: readonly StoryStageEntry[];
   readonly lastCard: StoryDirectorCardData | null;
-  readonly pressureBoardHtml: string;
-  readonly sideFlowHtml: string;
-  readonly cluesHtml: string;
-  readonly queueHtml: string;
-  readonly truthsHtml: string;
+  readonly pressureBoard: PressureBoardData;
+  readonly sideFlow: StorySideFlowData;
+  readonly clues: StoryCluesPanelData;
+  readonly queue: StoryQueuePanelData;
+  readonly truths: StoryTruthsPanelData;
 }
 
 export type StoryDirectorData = StoryDirectorMissing | StoryDirectorNoPack | StoryDirectorReady;
