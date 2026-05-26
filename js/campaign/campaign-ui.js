@@ -1557,18 +1557,9 @@ window.CJS.CampaignUI = (() => {
     return 'video/mp4';
   }
 
-  function _renderStoryDirectorEmptyCard() {
-    return `
-      <section class="campaign-panel campaign-wide-panel campaign-solo-notice campaign-story-card campaign-story-dialogue is-empty">
-        <div class="campaign-panel-head"><h3>Scene Waiting</h3></div>
-        <div class="campaign-story-dialogue-box">
-          <div class="campaign-story-speaker">Narrator</div>
-          <p>Choose <b>Next Scene</b> when you want the app to surprise you. Choose <b>Write Scene</b> when you already know what should happen and only want the campaign log to remember it.</p>
-          <small>Nothing random commits until you choose a route.</small>
-        </div>
-      </section>
-    `;
-  }
+  // _renderStoryDirectorEmptyCard removed in Phase G.11b. The
+  // React `StoryDirectorCard` falls back to an empty-card JSX
+  // when `data.lastCard === null`.
 
   // _renderStorySoloGuide / _renderStoryActionDeck removed in Phase
   // G.11a. The React `StorySoloGuide` and `StoryActionDeck`
@@ -1645,25 +1636,56 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _renderStoryStageRail(stages, stage = {}) {
-    if (!stages.length) return '<div class="campaign-empty">No stages authored.</div>';
+  // _renderStoryStageRail removed in Phase G.11b. The React
+  // `StoryStageRail` (`src/campaign/tabs/StoryDirectorPanels.tsx`)
+  // renders the rail directly from `stageRailEntries`.
+  function _storyStageRailData(stages, stage = {}) {
+    if (!stages.length) return [];
     const activeIndex = Math.max(0, stages.findIndex((entry) => entry.id === stage.id));
-    return `
-      <div class="campaign-story-stage-rail">
-        ${stages.map((entry, index) => {
-          const cls = ['campaign-story-stage'];
-          if (entry.id === stage.id) cls.push('is-active');
-          else if (index < activeIndex) cls.push('is-past');
-          return `
-            <button class="${cls.join(' ')}" data-campaign-action="story-set-stage" data-id="${_escAttr(entry.id)}" title="${_escAttr(entry.summary || '')}">
-              <span>${index + 1}</span>
-              <strong>${_esc(entry.name || entry.id)}</strong>
-              <small>${_esc(entry.summary || '')}</small>
-            </button>
-          `;
-        }).join('')}
-      </div>
-    `;
+    return stages.map((entry, index) => ({
+      id: String(entry.id || ''),
+      name: String(entry.name || entry.id || ''),
+      summary: String(entry.summary || ''),
+      index: index + 1,
+      isActive: entry.id === stage.id,
+      isPast: index < activeIndex && entry.id !== stage.id
+    }));
+  }
+
+  function _storyDirectorCardData(card) {
+    if (!card) return null;
+    const kindLabel = _label(card.kind || 'story');
+    const stageLabel = card.stageName || card.stageId || '';
+    const choices = card.suggestedChoices || [];
+    const branchChoices = choices.length ? choices : [{
+      label: 'Accept as story note',
+      ops: [{ op: 'log', text: card.prompt || card.text || card.summary || card.title || 'Story beat accepted.' }]
+    }];
+    const routes = branchChoices.map((choice, index) => ({
+      index,
+      label: String(choice.label || `Choice ${index + 1}`),
+      cardId: String(card.id || ''),
+      isRecommended: index === 0,
+      consequencePreviewHtml: _renderConsequencePreview(choice.ops || [], {
+        title: choice.label || `Choice ${index + 1}`,
+        emptyTitle: choice.label || `Choice ${index + 1}`,
+        emptyText: 'Story-only route. Choose it if it fits the current scene.'
+      })
+    }));
+    return {
+      id: String(card.id || ''),
+      title: String(card.title || card.id || ''),
+      stageLabel: String(stageLabel),
+      kindLabel: String(kindLabel),
+      canonRisk: String(card.canonRisk || 'green'),
+      canonRiskClass: Side().riskClass(card.canonRisk),
+      prompt: String(card.prompt || ''),
+      text: String(card.text || ''),
+      summary: String(card.summary || ''),
+      gmNote: String(card.gmNote || ''),
+      tags: Array.isArray(card.tags) ? card.tags.map((tag) => String(tag)) : [],
+      routes
+    };
   }
 
   function _renderStoryDirectorCard(card, options = {}) {
@@ -10145,8 +10167,8 @@ window.CJS.CampaignUI = (() => {
       soloGuideActiveIndex: Number(next.index || 0),
       actionDeckFlowSynced: !!flowSynced,
       actionDeckHasFlow: !!flow,
-      stageRailHtml: _renderStoryStageRail(stages, stage),
-      lastCardHtml: snap.last ? _renderStoryDirectorCard(snap.last) : _renderStoryDirectorEmptyCard(),
+      stageRailEntries: _storyStageRailData(stages, stage),
+      lastCard: _storyDirectorCardData(snap.last),
       pressureBoardHtml: _renderStoryPressureBoard(metrics, snap, pack),
       sideFlowHtml: _renderStorySideFlow(flow, flowSynced),
       cluesHtml: _renderStoryCluesPanel(clues, facts),

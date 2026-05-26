@@ -5,17 +5,19 @@
 //   • Pack not loaded for this world: the VN hero plus an empty
 //     "Story Mode" panel.
 //   • Pack loaded: the VN hero, a Story Desk panel (solo-guide +
-//     action-deck), Episode Route panel with the stage rail (HTML
-//     bridge until G.11b), the last director card (or empty card),
-//     and the five-panel support grid.
+//     action-deck), Episode Route panel with the stage rail, the
+//     last director card (or empty card), and the five-panel
+//     support grid.
 //
-// VN hero + solo guide + action deck are JSX (Phase G.11a). Episode
-// stage rail, director card, and support-grid panels remain HTML
-// bridges until G.11b and G.11c port them.
+// VN hero + solo guide + action deck (G.11a), stage rail + director
+// card + empty card (G.11b) are JSX. The support-grid panels
+// (pressure / side-flow / clues / queue / truths) remain HTML
+// bridges until G.11c ports them.
 
 import type { CampaignStateSnapshot } from "../store";
 import { getStoryDirectorData, type StoryDirectorData } from "./data/storyDirector";
 import { StoryVnHero, StorySoloGuide, StoryActionDeck } from "./StoryVn";
+import { StoryStageRail, StoryDirectorCard } from "./StoryDirectorPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -60,7 +62,7 @@ function ReadyDashboard({
       <StoryVnHero data={data.vnHero} />
       <StoryDeskPanel data={data} />
       <EpisodeRoutePanel data={data} />
-      <HtmlBridge html={data.lastCardHtml} className="campaign-story-director-card-bridge" />
+      <StoryDirectorCard card={data.lastCard} />
       <div className="campaign-story-support-grid campaign-wide-panel">
         <HtmlBridge html={data.pressureBoardHtml} className="campaign-story-pressure-bridge" />
         <HtmlBridge html={data.sideFlowHtml} className="campaign-story-side-flow-bridge" />
@@ -115,7 +117,7 @@ function EpisodeRoutePanel({
           <div className="campaign-muted">{data.stageSummary}</div>
         </div>
       </div>
-      <HtmlBridge html={data.stageRailHtml} className="campaign-story-stage-rail-bridge" />
+      <StoryStageRail stages={data.stageRailEntries} />
     </section>
   );
 }
