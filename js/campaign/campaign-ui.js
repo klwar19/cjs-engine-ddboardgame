@@ -403,54 +403,6 @@ window.CJS.CampaignUI = (() => {
       }, 0);
       return;
     }
-
-    const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
-    const subTabs = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
-
-    _root.innerHTML = `
-      <div class="campaign-shell ${_activePanel ? 'has-drawer-open' : ''}">
-        ${_renderHeader(state, campaign)}
-        ${_renderModeBar(state)}
-        ${_renderSubTabs(subTabs, isUtility)}
-        ${_renderRecentLogStrip(state)}
-        <div class="campaign-body">
-          <main class="campaign-main">${_renderMain(state)}</main>
-          <aside class="campaign-rail">${_renderCommandRail(state)}</aside>
-        </div>
-        <input type="file" id="campaign-import-file" accept=".json" hidden>
-      </div>
-    `;
-
-    // The drawer / panel-layer / encounter flash UI all live OUTSIDE
-    // any React-owned tab placeholder, so they can bind immediately.
-    if (_activeTab === 'farm') window.CJS.FarmingMode?.bindControls?.(_root);
-    _renderPanelLayer();
-    _flashOnNewEncounter(state);
-
-    // Phase D React-tab bridge: notify any React-owned tab mounts that the
-    // vanilla shell just blew away their previous DOM, so they can re-mount
-    // into the freshly-rendered placeholder.
-    try {
-      _root.dispatchEvent(new CustomEvent('campaign:rendered', {
-        bubbles: false,
-        detail: { activeTab: _activeTab, activeMode: _activeMode }
-      }));
-    } catch (e) { /* CustomEvent unsupported in some test envs — ignore */ }
-
-    // The remaining post-render hooks query DOM that lives INSIDE a
-    // React-owned tab placeholder (#campaign-map-region inside maps,
-    // #campaign-beat-list inside scenarios, the story scene entry
-    // pop). React mounts the placeholder's contents in a microtask
-    // after the event dispatch above; a macrotask (setTimeout 0)
-    // runs after that microtask, so the queries below see the full
-    // post-mount DOM. The same hooks fire for the still-vanilla
-    // shell parts (header, sub-tabs) without further change.
-    setTimeout(() => {
-      const mapRegion = _root.querySelector('#campaign-map-region');
-      if (mapRegion) window.CJS.CampaignMap.render(mapRegion);
-      _bindRunPanel();
-      window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
-    }, 0);
   }
 
   function _flashOnNewEncounter(state = {}) {
@@ -561,66 +513,6 @@ window.CJS.CampaignUI = (() => {
     ].filter(Boolean).join('|');
   }
 
-  function _renderHeader(state, campaign) {
-    const world = CS().getCurrentWorld();
-    return `
-      <header class="campaign-header">
-        <a class="campaign-back" href="index.html">Main Menu</a>
-        <div class="campaign-title">
-          <h1>${_esc(campaign?.name || 'Campaign')}</h1>
-          <span>${_esc(world?.displayName || state.currentWorld)} | Chapter ${_storyChapterText(state)} | Phase ${state.phase.number}: ${_esc(state.phase.name || state.phase.type)}</span>
-          ${_renderWorldEventsTicker(state)}
-        </div>
-        ${_renderCompactCurrencies(state)}
-        <div class="campaign-header-actions">
-          <button class="campaign-action primary campaign-world-gate-quick" data-campaign-action="open-world-gate">World Gate</button>
-          ${_actionMenu('Save', `
-            <button class="campaign-action" data-campaign-action="save-slot">Quick Save</button>
-            <button class="campaign-action" data-campaign-action="new-save">New Save</button>
-            <button class="campaign-action" data-campaign-action="fork-save">Fork Save</button>
-          `)}
-          ${_actionMenu('Transfer', `
-            <button class="campaign-action" data-campaign-action="export-save">Export</button>
-            <button class="campaign-action" data-campaign-action="import-save">Import</button>
-            <button class="campaign-action" data-campaign-action="push-github">GitHub Sync</button>
-          `)}
-          ${_actionMenu('Apps', `
-            <a class="campaign-action" href="editor.html">Editor</a>
-            <a class="campaign-action" href="combat.html">Combat</a>
-          `)}
-        </div>
-      </header>
-    `;
-  }
-
-  function _renderWorldEventsTicker(state) {
-    const WE = window.CJS.CampaignWorldEvents;
-    if (!WE?.getActive) return '';
-    const active = WE.getActive();
-    if (!active.length) return '';
-    return `
-      <div class="cjs-world-event-ticker" aria-label="Active world events">
-        ${active.map((ev) => `
-          <span class="cjs-world-event-chip category-${_esc(ev.category || 'boon')}" title="${_esc(ev.summary || '')}">
-            <span class="we-icon">${_esc(ev.icon || '✨')}</span>
-            <span class="we-name">${_esc(ev.name || ev.id)}</span>
-            <span class="we-remaining">${ev.remainingPhases}p</span>
-          </span>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  function _renderCompactCurrencies(state) {
-    const values = _currencyAmounts(state);
-    return `
-      <div class="campaign-stats campaign-stats-compact" aria-label="Currencies">
-        <span><small>Gold</small><b>${values.gold}</b></span>
-        <span title="Jester Points"><small>JP</small><b>${values.jp}</b></span>
-      </div>
-    `;
-  }
-
   function _currencyAmounts(state) {
     const currencies = state.currencies || {};
     const worldGold = `${state.currentWorld || 'haven'}_gold`;
@@ -630,51 +522,6 @@ window.CJS.CampaignUI = (() => {
       gold: goldId ? Number(currencies[goldId] || 0) : 0,
       jp: Number(currencies.jp || currencies.jester_points || 0)
     };
-  }
-
-  function _renderRecentLogStrip(state) {
-    const hasLog = (state.log || []).length > 0;
-    return `
-      <section class="campaign-log-strip">
-        <div class="campaign-panel-head">
-          <h2>Recent Log</h2>
-          <div class="campaign-panel-actions">
-            <button class="campaign-icon-btn" data-campaign-panel="log">All</button>
-            ${hasLog ? '<button class="campaign-icon-btn danger" data-campaign-action="clear-log">Clear</button>' : ''}
-          </div>
-        </div>
-        ${(state.log || []).slice(0, 3).map((line) => _renderLogEntry(line, { compact: true })).join('') || '<div class="campaign-empty">No log entries yet.</div>'}
-      </section>
-    `;
-  }
-
-  function _renderModeBar(state) {
-    const modeButtons = _appModesForState(state).map(([id, label, icon]) => {
-      const active = id === _activeMode && !APP_UTILITY_TABS.some(([u]) => u === _activeTab);
-      return `<button class="campaign-mode-btn ${active ? 'active' : ''}" data-campaign-mode="${id}">
-        <span class="campaign-mode-icon">${icon}</span><span>${label}</span>
-      </button>`;
-    }).join('');
-    const utilityButtons = APP_UTILITY_TABS.map(([id, label]) => {
-      const active = id === _activeTab;
-      return `<button class="campaign-util-btn ${active ? 'active' : ''}" data-campaign-tab="${id}">${label}</button>`;
-    }).join('');
-    return `
-      <div class="campaign-modes">
-        <div class="campaign-modes-primary">${modeButtons}</div>
-        ${_renderScenarioHud(state)}
-        <div class="campaign-modes-utility">${utilityButtons}</div>
-      </div>
-    `;
-  }
-
-  function _renderSubTabs(tabs, isUtility) {
-    if (!tabs || !tabs.length) return '';
-    return `
-      <nav class="campaign-subtabs ${isUtility ? 'is-utility' : ''}">
-        ${tabs.map(([id, label]) => `<button class="campaign-tab ${id === _activeTab ? 'active' : ''}" data-campaign-tab="${id}">${_esc(label)}</button>`).join('')}
-      </nav>
-    `;
   }
 
   // _renderWorldGate — Phase F.12 port. Body moved to
@@ -832,24 +679,6 @@ window.CJS.CampaignUI = (() => {
 
   function _modeForTab(tabId) {
     return APP_TAB_TO_MODE[tabId] || 'story';
-  }
-
-  function _renderScenarioHud(state) {
-    const run = state.activeScenarioRun;
-    if (!run) return '<div class="campaign-hud-spacer"></div>';
-    const scenario = CS().getScenarioById(run.scenarioId);
-    const generated = !!scenario?.generated;
-    return `
-      <div class="campaign-scenario-hud">
-        <span class="campaign-pill is-current">${_esc(scenario?.name || run.scenarioId)}</span>
-        <span class="campaign-pill">Danger ${run.danger}/${run.dangerMax}</span>
-        <span class="campaign-pill">Camps ${run.usedCampRests}/${run.limits?.campRests ?? 0}</span>
-        <span class="campaign-pill">Battles ${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</span>
-        <button class="campaign-action" data-campaign-action="open-maps-tab">Run</button>
-        <button class="campaign-action danger" data-campaign-action="end-scenario">End</button>
-        ${generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without recording a report">Cancel</button>' : ''}
-      </div>
-    `;
   }
 
   function _goto(mode, tab) {
@@ -2241,54 +2070,6 @@ window.CJS.CampaignUI = (() => {
       out[id] = { ...def, ...(profile.panelLabels?.[id] || {}) };
     }
     return out;
-  }
-
-  function _renderCommandRail(state) {
-    const panelDefs = _panelDefsForState(state);
-    const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
-    const logCount = (state.log || []).length;
-    const notesCount = (state.pinnedNotes || []).length;
-    const inventoryCount = ['items', 'materials', 'food', 'questItems']
-      .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
-    const partyCount = Object.keys(state.party || {}).length;
-    const counts = {
-      party: partyCount,
-      inventory: inventoryCount,
-      quests: activeQuests,
-      log: logCount,
-      notes: notesCount
-    };
-    const currency = _currencyAmounts(state);
-    const buttons = RAIL_ORDER.filter((id) => panelDefs[id]).map((id) => {
-      const def = panelDefs[id];
-      const active = _activePanel === id;
-      const dot = counts[id] > 0 ? '<span class="campaign-rail-dot" aria-hidden="true"></span>' : '';
-      return `
-        <button class="campaign-rail-btn ${active ? 'is-active' : ''}"
-                data-campaign-panel="${id}"
-                title="${_esc(def.title)}"
-                aria-label="${_esc(def.title)}">
-          <span class="campaign-rail-btn-icon" aria-hidden="true">${def.icon}</span>
-          <span class="campaign-rail-btn-label">${_esc(def.label)}</span>
-          ${dot}
-        </button>
-      `;
-    }).join('');
-    return `
-      ${buttons}
-      <div class="campaign-rail-divider" aria-hidden="true"></div>
-      <button class="campaign-rail-btn is-gm"
-              data-campaign-action="gm-override"
-              title="GM Override"
-              aria-label="GM Override">
-        <span class="campaign-rail-btn-icon" aria-hidden="true">⚜</span>
-        <span class="campaign-rail-btn-label">GM</span>
-      </button>
-      <div class="campaign-rail-currency" title="Gold and Jester Points">
-        <span>G ${currency.gold}</span>
-        <span class="campaign-rail-jp" title="Jester Points">JP ${currency.jp}</span>
-      </div>
-    `;
   }
 
   function _openPanel(panelId) {
@@ -9352,9 +9133,10 @@ window.CJS.CampaignUI = (() => {
 
   // Structured, JSX-friendly chrome data consumed by the React chrome
   // components in `src/campaign/shell/`. Returns a typed snapshot the
-  // components map directly into JSX — no HTML strings. The legacy
-  // vanilla render() path uses `_renderHeader`/`_renderModeBar`/…
-  // directly and never calls this.
+  // components map directly into JSX — no HTML strings. This is the
+  // only chrome renderer now; the vanilla `_render{Header,ModeBar,
+  // SubTabs,RecentLogStrip,CommandRail}` helpers were removed with the
+  // render() fallback (the React shell is always enabled).
   function getChromeData(state = CS().getState()) {
     if (!state) return null;
     const campaign = CS().getCurrentCampaign();
