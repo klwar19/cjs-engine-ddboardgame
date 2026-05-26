@@ -1,6 +1,7 @@
 // storyHome.ts — Phase F bridge for the Story Home tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { StoryVnHeroData } from "./storyShared";
 
 export interface StoryArcStats {
   readonly completed: number;
@@ -16,7 +17,7 @@ export interface StoryHomeData {
   readonly currentChapter: string | number;
   readonly currentArc: StoryArcStats;
   readonly hasActiveRun: boolean;
-  readonly vnHeroHtml: string;
+  readonly vnHero: StoryVnHeroData;
   readonly chapterTreeHtml: string;
   readonly choiceConsequenceHtml: string;
   readonly aiStoryContextHtml: string;

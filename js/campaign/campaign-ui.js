@@ -1510,41 +1510,44 @@ window.CJS.CampaignUI = (() => {
     return parts.length ? `style="${parts.join('; ')}"` : '';
   }
 
-  function _renderStoryVnHero({ state = {}, pack = null, stage = null, next = {}, theme = {} }) {
+  // _renderStoryVnHero removed in Phase G.11a. The React
+  // `StoryVnHero` (`src/campaign/tabs/StoryDirector.tsx`) renders
+  // the hero from the typed `vnHero` data produced by
+  // `_storyVnHeroData` below.
+  function _storyVnHeroData({ state = {}, pack = null, stage = null, next = {}, theme = {} }) {
     const phase = state.phase || {};
-    const title = pack?.name || `${theme.worldName || 'World'} Story Mode`;
-    const summary = pack?.summary || 'Story Mode is ready for this world theme, but no authored story pack is loaded yet.';
-    const actions = next.actions?.length ? `<div class="campaign-story-next-actions">${next.actions.join('')}</div>` : '';
     const video = theme.bannerVideo || '';
-    const videoMarkup = video
-      ? `<video class="campaign-story-vn-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1">
-          <source src="${_escAttr(video)}" type="${_escAttr(_videoTypeFromPath(video))}">
-        </video>`
-      : '';
-    return `
-      <section class="campaign-story-vn-hero campaign-wide-panel ${video ? 'has-video' : ''}">
-        ${videoMarkup}
-        <div class="campaign-story-vn-shade" aria-hidden="true"></div>
-        <div class="campaign-story-vn-content">
-          <div class="campaign-story-vn-kicker">
-            <span>${_esc(theme.worldName || state.currentWorld || 'World')}</span>
-            <span>Chapter ${_storyChapterText(state)} / Phase ${_esc(phase.number || 1)}</span>
-          </div>
-          <div class="campaign-story-vn-title">
-            <span class="campaign-story-motif">${_esc(theme.motif || 'story')}</span>
-            <h2>${_esc(title)}</h2>
-            <p>${_esc(summary)}</p>
-          </div>
-          <div class="campaign-story-vn-next">
-            <span class="campaign-story-step-badge">Next Action</span>
-            <strong>${_esc(next.title || 'Choose the next story action')}</strong>
-            <p>${_esc(next.text || 'Pick a stage, roll a scene, then choose a route when the popup opens.')}</p>
-            ${actions}
-            <small>Route choices are previews until you click one.</small>
-          </div>
-        </div>
-      </section>
-    `;
+    return {
+      worldName: String(theme.worldName || state.currentWorld || 'World'),
+      chapterLabel: String(state.storyMode?.currentChapterLabel || state.currentChapter || 1),
+      phaseLabel: String(phase.number || 1),
+      motif: String(theme.motif || 'story'),
+      title: String(pack?.name || `${theme.worldName || 'World'} Story Mode`),
+      summary: String(pack?.summary || 'Story Mode is ready for this world theme, but no authored story pack is loaded yet.'),
+      bannerVideoUrl: video ? String(_cssVarAssetUrl(video) || video) : '',
+      bannerVideoType: video ? _videoTypeFromPath(video) : '',
+      next: _storyNextStepData(next)
+    };
+  }
+
+  function _storyActionBtnData(opts = {}) {
+    return {
+      action: String(opts.action || ''),
+      label: String(opts.label || ''),
+      hint: String(opts.hint || ''),
+      kind: String(opts.kind || ''),
+      disabled: !!opts.disabled,
+      data: Object.freeze(Object.fromEntries(Object.entries(opts.data || {}).map(([k, v]) => [k, String(v)])))
+    };
+  }
+
+  function _storyNextStepData(next = {}) {
+    return {
+      index: Number(next.index || 0),
+      title: String(next.title || ''),
+      text: String(next.text || ''),
+      actions: Array.isArray(next.actions) ? next.actions.map(_storyActionBtnData) : []
+    };
   }
 
   function _videoTypeFromPath(path = '') {
@@ -1567,50 +1570,10 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderStorySoloGuide(next) {
-    const steps = [
-      ['Stage', 'Pick the episode you are playing now.'],
-      ['Scene', 'Roll or write a playable story beat.'],
-      ['Route', 'Read the choices and their outcomes.'],
-      ['Commit', 'Choose, hold, or skip the roll.'],
-      ['Table', 'Update side routes, then play.']
-    ];
-    return `
-      <div class="campaign-story-guide">
-        <div class="campaign-story-ladder" aria-label="Solo story flow">
-          ${steps.map((step, index) => `
-            <div class="campaign-story-ladder-step ${index === next.index ? 'is-active' : index < next.index ? 'is-done' : ''}">
-              <span>${index + 1}</span>
-              <b>${_esc(step[0])}</b>
-              <small>${_esc(step[1])}</small>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderStoryActionDeck(flow, flowSynced) {
-    return `
-      <div class="campaign-story-roll-pad">
-        <div class="campaign-section-title">Scene Controls</div>
-        <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'story-roll-scene', label: 'Next Scene', hint: 'Default story roll. Opens a popup before anything is applied.', kind: 'primary story' })}
-          ${_actionBtn({ action: 'story-manual-note', label: 'Write Scene', hint: 'Write your own table beat and save it without random rolling.', kind: 'manual' })}
-          ${_actionMenu('Roll Type', `
-            ${_actionBtn({ action: 'story-roll-peri', label: 'Peri Interrupt', hint: 'Comic system interruption, helpful glitch, or suspicious advice.', kind: 'random' })}
-            ${_actionBtn({ action: 'story-roll-memory', label: 'Memory / Clue', hint: 'Mystery clue or emotional leak. Good when the scene needs plot smoke.', kind: 'plot' })}
-            ${_actionBtn({ action: 'story-pressure-tick', label: 'Offscreen Trouble', hint: 'Pressure that happens away from the current scene when time passes or the table stalls.', kind: 'risk' })}
-          `)}
-          ${_actionMenu('Story Tools', `
-            ${_actionBtn({ action: 'story-sync-sidequests', label: flowSynced ? 'Routes Updated' : 'Update Side Routes', hint: 'Marks which side routes should stay, rise, or pause for this episode.', kind: flowSynced ? 'manual' : 'quest', disabled: !flow || flowSynced })}
-            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copies current stage, last beat, clues, and queue for outside AI or GM drafting.', kind: 'manual' })}
-            ${_actionBtn({ action: 'story-help', label: 'Flow Help', hint: 'Short solo/GM instructions for this Story Mode desk.' })}
-          `)}
-        </div>
-      </div>
-    `;
-  }
+  // _renderStorySoloGuide / _renderStoryActionDeck removed in Phase
+  // G.11a. The React `StorySoloGuide` and `StoryActionDeck`
+  // components (`src/campaign/tabs/StoryDirector.tsx`) render their
+  // bodies from the typed data on `StoryDirectorData`.
 
   function _storyNextStep(snap, state, flowSynced) {
     const last = snap?.last;
@@ -1629,8 +1592,8 @@ window.CJS.CampaignUI = (() => {
         title: 'Roll or write the next scene',
         text: 'Use Next Scene for normal story flow, Peri Interrupt for comedy, Memory / Clue for mystery, or Write Scene when you want GM control.',
         actions: [
-          _actionBtn({ action: 'story-roll-scene', label: 'Next Scene', hint: 'Best default for solo play', kind: 'primary story' }),
-          _actionBtn({ action: 'story-manual-note', label: 'Write Scene', hint: 'Save your own beat', kind: 'manual' })
+          { action: 'story-roll-scene', label: 'Next Scene', hint: 'Best default for solo play', kind: 'primary story' },
+          { action: 'story-manual-note', label: 'Write Scene', hint: 'Save your own beat', kind: 'manual' }
         ]
       };
     }
@@ -1640,15 +1603,15 @@ window.CJS.CampaignUI = (() => {
         title: 'Choose a route',
         text: 'Read the route cards below. Choose one if it fits, hold it for later, or skip the roll with no guilt.',
         actions: [
-          _actionBtn({ action: 'story-open-last', label: 'Open Popup', hint: 'Reopen the current beat window', kind: 'primary story' }),
-          _actionBtn({ action: 'story-save-beat', label: 'Hold For Later', hint: 'Keep it in the queue without applying consequences', kind: 'manual' }),
-          _actionBtn({
+          { action: 'story-open-last', label: 'Open Popup', hint: 'Reopen the current beat window', kind: 'primary story' },
+          { action: 'story-save-beat', label: 'Hold For Later', hint: 'Keep it in the queue without applying consequences', kind: 'manual' },
+          {
             action: 'story-apply-choice',
             label: choices[0]?.label ? `Choose: ${choices[0].label}` : 'Accept Note',
             hint: 'Apply the first route',
             kind: 'quest',
             data: { id: last.id, choice: 0 }
-          })
+          }
         ]
       };
     }
@@ -1658,7 +1621,7 @@ window.CJS.CampaignUI = (() => {
         title: 'Update side routes',
         text: 'This episode has advice for which side routes should stay available, get promoted, or politely leave the room.',
         actions: [
-          _actionBtn({ action: 'story-sync-sidequests', label: 'Update Side Routes', hint: 'Applies this episode side-flow once', kind: 'quest' })
+          { action: 'story-sync-sidequests', label: 'Update Side Routes', hint: 'Applies this episode side-flow once', kind: 'quest' }
         ]
       };
     }
@@ -1668,7 +1631,7 @@ window.CJS.CampaignUI = (() => {
         title: 'Continue the tabletop run',
         text: 'A scenario is active. Use the story beat as table color, then continue moving pieces and resolving encounters on the map.',
         actions: [
-          _actionBtn({ action: 'open-maps-tab', label: 'Open Run Map', hint: 'Return to the tactical board', kind: 'primary' })
+          { action: 'open-maps-tab', label: 'Open Run Map', hint: 'Return to the tactical board', kind: 'primary' }
         ]
       };
     }
@@ -1677,7 +1640,7 @@ window.CJS.CampaignUI = (() => {
       title: 'Ready for the next scene',
       text: 'The last beat is handled. Roll again, write a scene, or just let the table breathe for a moment.',
       actions: [
-        _actionBtn({ action: 'story-roll-scene', label: 'Next Scene', hint: 'Continue the story flow', kind: 'primary story' })
+        { action: 'story-roll-scene', label: 'Next Scene', hint: 'Continue the story flow', kind: 'primary story' }
       ]
     };
   }
@@ -10158,7 +10121,7 @@ window.CJS.CampaignUI = (() => {
         hasPack: false,
         themeClassName: theme.className || '',
         themeStyleVars,
-        vnHeroHtml: _renderStoryVnHero({ state, pack: null, stage: null, next, theme })
+        vnHero: _storyVnHeroData({ state, pack: null, stage: null, next, theme })
       };
     }
     const stage = snap.stage || {};
@@ -10178,9 +10141,10 @@ window.CJS.CampaignUI = (() => {
       themeStyleVars,
       stageName: stage.name || stage.id || 'No stage',
       stageSummary: stage.summary || '',
-      vnHeroHtml: _renderStoryVnHero({ state, pack, stage, next, theme }),
-      soloGuideHtml: _renderStorySoloGuide(next),
-      actionDeckHtml: _renderStoryActionDeck(flow, flowSynced),
+      vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
+      soloGuideActiveIndex: Number(next.index || 0),
+      actionDeckFlowSynced: !!flowSynced,
+      actionDeckHasFlow: !!flow,
       stageRailHtml: _renderStoryStageRail(stages, stage),
       lastCardHtml: snap.last ? _renderStoryDirectorCard(snap.last) : _renderStoryDirectorEmptyCard(),
       pressureBoardHtml: _renderStoryPressureBoard(metrics, snap, pack),
@@ -10228,9 +10192,9 @@ window.CJS.CampaignUI = (() => {
         ? 'The current story file is open below. Continue node by node, then complete it when the conclusion is reached.'
         : 'Start a story file when you are ready. Starting ahead should be treated as revealing earlier parts with the default path.',
       actions: [
-        _actionBtn({ action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' }),
-        _actionBtn({ action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' }),
-        _actionBtn({ action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' })
+        { action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' },
+        { action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' },
+        { action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' }
       ]
     };
     // CSS-vars derived from theme; React will set them as style props.
@@ -10250,7 +10214,7 @@ window.CJS.CampaignUI = (() => {
         phase: state.phase?.number || 1
       },
       hasActiveRun: !!activeRun,
-      vnHeroHtml: _renderStoryVnHero({ state, pack, stage, next, theme }),
+      vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
       chapterTreeHtml: _renderChapterTreePanel(state) || '',
       choiceConsequenceHtml: _renderChoiceConsequencePanel(state) || '',
       aiStoryContextHtml: _renderAiStoryContextPanel(state) || '',

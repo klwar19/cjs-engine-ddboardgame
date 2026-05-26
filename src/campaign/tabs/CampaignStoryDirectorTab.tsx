@@ -4,21 +4,18 @@
 //   • Module not loaded: a small empty notice.
 //   • Pack not loaded for this world: the VN hero plus an empty
 //     "Story Mode" panel.
-//   • Pack loaded: the VN hero, a Story Desk panel (with solo-guide
-//     and action-deck inner HTML), Episode Route panel with the
-//     stage-rail HTML, the last director card (or empty card), and
-//     the five-panel support grid (pressure board, side flow, clues,
-//     queue, truths).
+//   • Pack loaded: the VN hero, a Story Desk panel (solo-guide +
+//     action-deck), Episode Route panel with the stage rail (HTML
+//     bridge until G.11b), the last director card (or empty card),
+//     and the five-panel support grid.
 //
-// All sub-panel bodies are still HTML bridges because they are
-// produced by closure-private helpers (`_renderStoryVnHero`,
-// `_renderStorySoloGuide`, `_renderStoryActionDeck`,
-// `_renderStoryStageRail`, `_renderStoryDirectorCard`, etc.). Each
-// remains an isolated chunk so later commits can port them
-// individually.
+// VN hero + solo guide + action deck are JSX (Phase G.11a). Episode
+// stage rail, director card, and support-grid panels remain HTML
+// bridges until G.11b and G.11c port them.
 
 import type { CampaignStateSnapshot } from "../store";
 import { getStoryDirectorData, type StoryDirectorData } from "./data/storyDirector";
+import { StoryVnHero, StorySoloGuide, StoryActionDeck } from "./StoryVn";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -40,7 +37,7 @@ export function CampaignStoryDirectorTab({ state }: Props) {
   if (data.hasPack === false) {
     return (
       <div className={dashboardCls} style={data.themeStyleVars as React.CSSProperties}>
-        <HtmlBridge html={data.vnHeroHtml} className="campaign-story-vn-hero-bridge" />
+        <StoryVnHero data={data.vnHero} />
         <section className="campaign-panel campaign-wide-panel campaign-story-empty-world">
           <div className="campaign-panel-head"><h2>Story Mode</h2></div>
           <div className="campaign-empty">No Story Director pack loaded for this world.</div>
@@ -60,7 +57,7 @@ function ReadyDashboard({
 }) {
   return (
     <div className={dashboardCls} style={data.themeStyleVars as React.CSSProperties}>
-      <HtmlBridge html={data.vnHeroHtml} className="campaign-story-vn-hero-bridge" />
+      <StoryVnHero data={data.vnHero} />
       <StoryDeskPanel data={data} />
       <EpisodeRoutePanel data={data} />
       <HtmlBridge html={data.lastCardHtml} className="campaign-story-director-card-bridge" />
@@ -95,8 +92,11 @@ function StoryDeskPanel({
         <span className="campaign-pill">{data.stageName}</span>
       </div>
       <div className="campaign-story-command-grid">
-        <HtmlBridge html={data.soloGuideHtml} className="campaign-story-solo-guide-bridge" />
-        <HtmlBridge html={data.actionDeckHtml} className="campaign-story-action-deck-bridge" />
+        <StorySoloGuide activeIndex={data.soloGuideActiveIndex} />
+        <StoryActionDeck
+          flowSynced={data.actionDeckFlowSynced}
+          hasFlow={data.actionDeckHasFlow}
+        />
       </div>
     </section>
   );

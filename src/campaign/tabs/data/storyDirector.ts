@@ -1,6 +1,9 @@
 // storyDirector.ts — Phase F bridge for the Story Director tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { StoryVnHeroData } from "./storyShared";
+
+export type { StoryVnHeroData, StoryNextStep, StoryActionButton } from "./storyShared";
 
 interface StoryDirectorMissing {
   readonly moduleAvailable: false;
@@ -13,7 +16,7 @@ interface StoryDirectorNoPack {
   readonly hasPack: false;
   readonly themeClassName: string;
   readonly themeStyleVars: Readonly<Record<string, string>>;
-  readonly vnHeroHtml: string;
+  readonly vnHero: StoryVnHeroData;
 }
 
 interface StoryDirectorReady {
@@ -23,9 +26,10 @@ interface StoryDirectorReady {
   readonly themeStyleVars: Readonly<Record<string, string>>;
   readonly stageName: string;
   readonly stageSummary: string;
-  readonly vnHeroHtml: string;
-  readonly soloGuideHtml: string;
-  readonly actionDeckHtml: string;
+  readonly vnHero: StoryVnHeroData;
+  readonly soloGuideActiveIndex: number;
+  readonly actionDeckFlowSynced: boolean;
+  readonly actionDeckHasFlow: boolean;
   readonly stageRailHtml: string;
   readonly lastCardHtml: string;
   readonly pressureBoardHtml: string;

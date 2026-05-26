@@ -21,6 +21,7 @@ import {
   ActiveSequencePanel
 } from "./ResultPanels";
 import { SequenceShelfPanel } from "./SequenceCard";
+import { StoryVnHero } from "./StoryVn";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -43,7 +44,7 @@ export function CampaignStoryHomeTab({ state }: Props) {
   const dashboardCls = `campaign-dashboard campaign-mode-home campaign-story-home campaign-story-vn ${data.themeClassName}`;
   return (
     <div className={dashboardCls} style={data.themeStyleVars as React.CSSProperties}>
-      <HtmlBridge html={data.vnHeroHtml} className="campaign-story-vn-hero-bridge" />
+      <StoryVnHero data={data.vnHero} />
       <ActiveSequencePanel state={state} scopes={["story"]} />
       <HtmlBridge html={data.chapterTreeHtml} className="campaign-chapter-tree-bridge" />
       <HtmlBridge html={data.choiceConsequenceHtml} className="campaign-choice-consequence-bridge" />
