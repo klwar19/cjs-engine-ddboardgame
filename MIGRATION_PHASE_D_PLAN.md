@@ -190,50 +190,87 @@ campaign shell is React-owned at the entry point.
   `_renderMain`'s switch + `renderTabBody` switch are empty (every
   case is now a JSX-only path in the React shell).
 
-### Next — Phase G (shared sub-renderers)
+### Done — Phase G (shared sub-renderers, in progress)
 
-The next migration layer ports the closure-private sub-renderers in
-`campaign-ui.js` that current Phase F components mount via
-`dangerouslySetInnerHTML`. Each port replaces one or more bridge
-calls with a typed JSX component. None of these block correctness;
-they shrink `cjs-campaign-core` further:
+- [x] **G.1 — Shared QuestRow.tsx.** `_renderQuestRow` produces typed
+  data via `getQuestRowData`; QuestHome and QuestsPanel render the
+  same `<QuestRow row={...}>` JSX. The eight-button quest-action
+  menu, three conditional state pills (running/linked/generated),
+  variant/objective/tag chips all in JSX. Scenario pill stays as a
+  small HTML bridge.
+- [x] **G.2 — EventResult + Oracle panels.** Move
+  `_renderEventResult` / `_renderOracle` to typed components in
+  `ResultPanels.tsx`. EventLog, EventTab, Overview, and Maps all
+  render `<EventResultPanel />` / `<OraclePanel />` directly.
+- [x] **G.3 — SoloNotice panel.** Move `_renderSoloNotice` to typed
+  component. Five consumers (Overview, EventTab, QuestHome,
+  QuestsPanel, StoryHome) now render `<SoloNoticePanel state>`.
+- [x] **G.4 — Small shared panels.** `_renderPendingBattle`,
+  `_renderTravelSurprise`, `_renderCombatResult`,
+  `_renderLastCombatResult`, `_renderLastReport` ported to JSX
+  components. Five tabs updated.
+- [x] **G.5 — ScenarioSummary panel.** Shared by Overview /
+  QuestHome / StoryHome. JSX component, discriminated hasRun union.
+- [x] **G.6 — AdventureLegend.** Static legend body inlined in
+  Overview JSX; `getAdventureLegendVisible(state)` exposes the
+  visibility predicate.
+- [x] **G.7 — ActiveSequence wrapper.** Shared by Story / Quest /
+  Event tabs. JSX component handles VN-mode + inline-mode wrappers.
+  Node body still HTML bridge.
 
-- [ ] `_renderQuestRow` → shared `QuestRow.tsx` (used by QuestHome
-  and QuestsPanel).
-- [ ] `_renderEventResult` + `_renderOracle` → typed components
-  (used by EventLog, EventTab, Overview, Maps).
-- [ ] `_renderActiveSequence` + `_renderSequenceNode` → typed
-  components (used by StoryHome, QuestHome, EventTab).
-- [ ] `_renderStoryVnHero`, `_renderStorySoloGuide`,
-  `_renderStoryActionDeck`, `_renderStoryStageRail`,
-  `_renderStoryDirectorCard`, `_renderStoryPressureBoard`,
-  `_renderStorySideFlow`, `_renderStoryCluesPanel`,
-  `_renderStoryQueuePanel`, `_renderStoryTruthsPanel` →
-  individual components (StoryDirector + StoryHome).
-- [ ] `_renderChapterTreePanel`, `_renderChoiceConsequencePanel`,
-  `_renderAiStoryContextPanel`, `_renderSequenceShelf`,
-  `_renderStoryPipelinePanel`, `_renderSyncSummaryPanel` (StoryHome).
-- [ ] Overview sub-panels (12): `_renderTownSnapshot`,
-  `_renderTownRollFloat`, `_renderSoloNotice`,
-  `_renderAdventureLegend`, `_renderScenarioSummary`,
-  `_renderTravelSurprise`, `_renderPendingBattle`,
-  `_renderCombatResult`, `_renderLastCombatResult`,
-  `_renderLastReport`, plus the already-listed event/oracle pair.
-- [ ] `_renderWorldGateCard` (WorldGate).
-- [ ] `_renderQuestChainActive`, `_renderQuestChainTemplate`
-  (EventTab).
-- [ ] `_renderShapePills`, `_scenarioQuestPill`,
-  `_renderScenarioRunActions` (Scenarios).
-- [ ] `_renderZombieScavengeHome`, `_renderZombieScavengeTracker`
-  (zombie-world variants of QuestHome / QuestsPanel).
+### Next — Phase G (remaining sub-renderers)
+
+- [ ] `_renderSequenceNode` (7 node-type variants: choice,
+  stat_check, combat, minigame, scenario, end, narration) → drops
+  `_renderActiveSequence` when ported.
 - [ ] `_renderSequenceDeliveryState`, `_renderSequenceActionButton`
   (EventTab per-entry).
+- [ ] `_renderSequenceShelf` (StoryHome).
+- [ ] Story Director sub-renderers (10 helpers):
+  `_renderStoryVnHero`, `_renderStorySoloGuide`,
+  `_renderStoryActionDeck`, `_renderStoryStageRail`,
+  `_renderStoryDirectorCard`, `_renderStoryDirectorEmptyCard`,
+  `_renderStoryPressureBoard`, `_renderStorySideFlow`,
+  `_renderStoryCluesPanel`, `_renderStoryQueuePanel`,
+  `_renderStoryTruthsPanel`.
+- [ ] Story Home sub-renderers: `_renderChapterTreePanel`,
+  `_renderChoiceConsequencePanel`, `_renderAiStoryContextPanel`,
+  `_renderStoryPipelinePanel`, `_renderSyncSummaryPanel`.
+- [ ] `_renderWorldGateCard` (WorldGate per-world card).
+- [ ] `_renderQuestChainActive`, `_renderQuestChainTemplate`
+  (EventTab side-story chains).
+- [ ] `_renderShapePills`, `_scenarioQuestPill`,
+  `_renderScenarioRunActions` (Scenarios + Maps).
+- [ ] Overview HubTab pass-throughs: `_renderTownSnapshot`,
+  `_renderTownRollFloat`.
+- [ ] `_renderZombieScavengeHome`, `_renderZombieScavengeTracker`
+  (zombie-world variants of QuestHome / QuestsPanel).
 
 ### Then — Phase H
 
 - [ ] Once every helper above ports, drop `js/campaign/campaign-ui.js`
   and `js/campaign/ui/`. Rewrite `test_campaign_ui_bootstrap.js`
   against the React tree.
+
+## Size progression (cjs-campaign-core chunk)
+
+- Pre-Phase F (after E): 641 KB
+- After F.1 (chrome): 640 KB
+- After F.13 (all tab bodies): 615 KB
+- After cleanup: 614 KB
+- After G.1 (QuestRow): 615 KB
+- After G.2 (EventResult/Oracle): 611 KB
+- After G.3 (SoloNotice): 612 KB
+- After G.4 (5 small panels): 608 KB
+- After G.5 (ScenarioSummary): 605 KB
+- After G.6 (AdventureLegend): 604 KB
+- After G.7 (ActiveSequence wrapper): 602 KB
+
+Cumulative reduction: 641 KB → 602 KB = 39 KB (6%). The remaining
+~600 KB sits in the un-ported sub-renderers (Story Director, Story
+Home complex panels) plus the legacy hub-tab + party-tab paths that
+the React shell still wraps. Subsequent Phase G commits keep
+shrinking it; Phase H removes campaign-ui.js entirely.
 
 ## Done-when gate
 
