@@ -2272,68 +2272,11 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderScenarioSummary(state) {
-    const run = state.activeScenarioRun;
-    if (!run) {
-      return `
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Current Run</h2></div>
-          <div class="campaign-empty">No active run.</div>
-          <button class="campaign-action primary" data-campaign-action="open-scenarios-tab">Run Setup</button>
-        </section>
-      `;
-    }
-    const scenario = CS().getScenarioById(run.scenarioId);
-    const location = run.travelMode === 'grid_map' && run.currentCell
-      ? `${run.currentCell.x},${run.currentCell.y}`
-      : (run.currentNode || '-');
-    const questPill = _runQuestPill(state, run, scenario);
-    const objective = run.objectiveState || null;
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h2>${_esc(scenario?.name || run.scenarioId)}</h2>
-          <span class="campaign-pill">Danger ${run.danger}/${run.dangerMax}</span>
-          ${questPill}
-        </div>
-        <div class="campaign-stat-grid">
-          <span>${run.travelMode === 'grid_map' ? 'Cell' : 'Node'} <b>${_esc(location)}</b></span>
-          <span>Camp <b>${run.usedCampRests}/${run.limits?.campRests ?? 0}</b></span>
-          <span>Events <b>${run.eventsUsed}/${run.limits?.events ?? 0}</b></span>
-          <span>Battles <b>${run.randomBattlesUsed}/${run.limits?.randomBattles ?? 0}</b></span>
-          ${run.movingThreats?.length ? `<span>Roamers <b>${run.movingThreats.length}</b></span>` : ''}
-        </div>
-        ${objective ? `
-          <div class="campaign-quest-phase campaign-scenario-task">
-            <span>${objective.completed ? 'Objective Complete' : (objective.visible === false ? 'Objective Hidden' : 'Current Objective')}</span>
-            <strong>${_esc(objective.label || 'Reach the target')}</strong>
-            <small>${_esc(_scenarioObjectiveMeta(run, objective))}</small>
-          </div>
-        ` : ''}
-        ${_renderQuestRunTask(state, run, scenario)}
-        <div class="campaign-control-stack">
-          ${_controlGroup('Run Tools', `
-            <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
-            <button class="campaign-action primary" data-campaign-action="roll-travel-surprise">Movement Surprise</button>
-            <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-          `)}
-          ${_controlGroup('Manual Control', `
-            <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
-            <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
-            ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Run</button>' : ''}
-          `)}
-        </div>
-        <div class="campaign-action-grid" hidden>
-          <button class="campaign-action" data-campaign-action="open-maps-tab">Map</button>
-          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Travel Surprise</button>
-          <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-          <button class="campaign-action" data-campaign-action="manual-battle">Manual Battle Result</button>
-          <button class="campaign-action danger" data-campaign-action="end-scenario">End Run</button>
-          ${scenario?.generated ? '<button class="campaign-action danger" data-campaign-action="cancel-scenario" title="Discard without report">Cancel Run</button>' : ''}
-        </div>
-      </section>
-    `;
-  }
+  // _renderScenarioSummary — Phase G.5 port. Body moved to
+  // `src/campaign/tabs/ResultPanels.tsx`. Typed bridge
+  // `getScenarioSummaryData(state)` produces the data. `_runQuestPill`,
+  // `_renderQuestRunTask`, and `_scenarioObjectiveMeta` stay (the
+  // bridge calls them).
 
   function _renderQuestRunTask(state, run, scenario) {
     const questId = _activeRunQuestId(run, scenario);
@@ -9969,6 +9912,43 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getScenarioSummaryData(state = CS().getState()) {
+    if (!state) return null;
+    const run = state.activeScenarioRun;
+    if (!run) {
+      return { hasRun: false };
+    }
+    const scenario = CS().getScenarioById(run.scenarioId);
+    const location = run.travelMode === 'grid_map' && run.currentCell
+      ? `${run.currentCell.x},${run.currentCell.y}`
+      : (run.currentNode || '-');
+    const objective = run.objectiveState || null;
+    return {
+      hasRun: true,
+      name: scenario?.name || run.scenarioId || 'Run',
+      questPillHtml: _runQuestPill(state, run, scenario) || '',
+      isGrid: run.travelMode === 'grid_map',
+      location,
+      danger: run.danger,
+      dangerMax: run.dangerMax,
+      campsUsed: run.usedCampRests,
+      campsMax: run.limits?.campRests ?? 0,
+      eventsUsed: run.eventsUsed,
+      eventsMax: run.limits?.events ?? 0,
+      battlesUsed: run.randomBattlesUsed,
+      battlesMax: run.limits?.randomBattles ?? 0,
+      roamerCount: (run.movingThreats || []).length,
+      objective: objective ? {
+        completed: !!objective.completed,
+        visible: objective.visible !== false,
+        label: objective.label || 'Reach the target',
+        meta: _scenarioObjectiveMeta(run, objective)
+      } : null,
+      questRunTaskHtml: _renderQuestRunTask(state, run, scenario) || '',
+      hasGeneratedScenario: !!scenario?.generated
+    };
+  }
+
   // Typed snapshots for small shared panels used across tabs.
   function getTravelSurpriseData(state = CS().getState()) {
     if (!state) return null;
@@ -10345,8 +10325,7 @@ window.CJS.CampaignUI = (() => {
         note: 'Pick the chapter part to play. Branches are gated by the choice you made in the previous chapter, so unlocked branches will be marked. If you start ahead, prior parts are revealed with the default path.'
       }),
       storyPipelineHtml: _renderStoryPipelinePanel(pipeline) || '',
-      syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || '',
-      scenarioSummaryHtml: activeRun ? (_renderScenarioSummary(state) || '') : ''
+      syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || ''
     };
   }
 
@@ -10588,8 +10567,7 @@ window.CJS.CampaignUI = (() => {
       normalPapers: paperLite(normalPapers).slice(0, 1),
       storyPapers: paperLite(storyPapers),
       activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest)),
-      activeSequenceHtml: _renderActiveSequence(state, ['quest']) || '',
-      scenarioSummaryHtml: run ? (_renderScenarioSummary(state) || '') : ''
+      activeSequenceHtml: _renderActiveSequence(state, ['quest']) || ''
     };
   }
 
@@ -10638,7 +10616,6 @@ window.CJS.CampaignUI = (() => {
       case 'townSnapshot':     return _renderTownSnapshot(state);
       case 'townRollFloat':    return _renderTownRollFloat(state);
       case 'adventureLegend':  return _renderAdventureLegend(state);
-      case 'scenarioSummary':  return _renderScenarioSummary(state);
       default: return '';
     }
   }
@@ -10788,6 +10765,7 @@ window.CJS.CampaignUI = (() => {
     getLastCombatResultData,
     getLastReportData,
     getPendingBattleData,
+    getScenarioSummaryData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

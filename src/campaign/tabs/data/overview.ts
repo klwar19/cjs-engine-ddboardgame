@@ -12,8 +12,7 @@ import type { CampaignStateSnapshot } from "../../store";
 export type OverviewSectionId =
   | "townSnapshot"
   | "townRollFloat"
-  | "adventureLegend"
-  | "scenarioSummary";
+  | "adventureLegend";
 
 interface Bridge {
   readonly renderOverviewSectionHtml: (

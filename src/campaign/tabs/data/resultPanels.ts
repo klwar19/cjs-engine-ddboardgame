@@ -81,6 +81,39 @@ export interface PendingBattleData {
   readonly isRandom: boolean;
 }
 
+export interface ScenarioObjective {
+  readonly completed: boolean;
+  readonly visible: boolean;
+  readonly label: string;
+  readonly meta: string;
+}
+
+export interface ScenarioSummaryRun {
+  readonly hasRun: true;
+  readonly name: string;
+  readonly questPillHtml: string;
+  readonly isGrid: boolean;
+  readonly location: string;
+  readonly danger: number;
+  readonly dangerMax: number;
+  readonly campsUsed: number;
+  readonly campsMax: number;
+  readonly eventsUsed: number;
+  readonly eventsMax: number;
+  readonly battlesUsed: number;
+  readonly battlesMax: number;
+  readonly roamerCount: number;
+  readonly objective: ScenarioObjective | null;
+  readonly questRunTaskHtml: string;
+  readonly hasGeneratedScenario: boolean;
+}
+
+interface ScenarioSummaryNoRun {
+  readonly hasRun: false;
+}
+
+export type ScenarioSummaryData = ScenarioSummaryNoRun | ScenarioSummaryRun;
+
 export interface SoloNoticeData {
   readonly tone: string;
   readonly summaryLabel: string;
@@ -106,6 +139,7 @@ interface Bridge {
   readonly getLastCombatResultData: (state?: CampaignStateSnapshot) => LastCombatResultData | null;
   readonly getLastReportData: (state?: CampaignStateSnapshot) => LastReportData | null;
   readonly getPendingBattleData: (state?: CampaignStateSnapshot) => PendingBattleData | null;
+  readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
 }
 
 interface Cjs {
@@ -146,4 +180,8 @@ export function getLastReportData(state: CampaignStateSnapshot): LastReportData 
 
 export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattleData | null {
   return cjs().CampaignUI?.getPendingBattleData(state) ?? null;
+}
+
+export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSummaryData | null {
+  return cjs().CampaignUI?.getScenarioSummaryData(state) ?? null;
 }

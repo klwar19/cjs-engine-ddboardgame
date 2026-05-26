@@ -23,7 +23,8 @@ import {
   SoloNoticePanel,
   PendingBattlePanel,
   CombatResultPanel,
-  LastReportPanel
+  LastReportPanel,
+  ScenarioSummaryPanel
 } from "./ResultPanels";
 
 interface Props {
@@ -68,7 +69,7 @@ function NormalQuestHome({
       <ActiveQuestsPanel rows={data.activeQuestRows} activeCount={data.activeCount} />
       <QuestRunTools data={data} />
       <SoloNoticePanel state={state} />
-      <HtmlBridge html={data.scenarioSummaryHtml} className="campaign-scenario-summary-bridge" />
+      <ScenarioSummaryPanel state={state} />
       <PendingBattlePanel state={state} />
       <CombatResultPanel state={state} />
       <LastReportPanel state={state} />

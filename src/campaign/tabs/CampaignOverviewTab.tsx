@@ -23,7 +23,8 @@ import {
   CombatResultPanel,
   LastCombatResultPanel,
   LastReportPanel,
-  PendingBattlePanel
+  PendingBattlePanel,
+  ScenarioSummaryPanel
 } from "./ResultPanels";
 
 interface Props {
@@ -40,7 +41,7 @@ export function CampaignOverviewTab({ state }: Props) {
       </div>
       <AdventureDesk />
       <Section state={state} id="adventureLegend" />
-      <Section state={state} id="scenarioSummary" />
+      <ScenarioSummaryPanel state={state} />
       <TravelSurprisePanel state={state} />
       <PendingBattlePanel state={state} />
       <CombatResultPanel state={state} />

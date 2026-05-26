@@ -19,10 +19,13 @@ import {
   getLastCombatResultData,
   getLastReportData,
   getPendingBattleData,
+  getScenarioSummaryData,
   type EventResultData,
   type ManualSummary,
   type SoloNoticeData,
-  type PendingBattleData
+  type PendingBattleData,
+  type ScenarioSummaryData,
+  type ScenarioSummaryRun
 } from "./data/resultPanels";
 
 // ── EventResult ───────────────────────────────────────────────────
@@ -329,6 +332,96 @@ function PendingBattleActions({ data }: { data: PendingBattleData }) {
         </div>
       </details>
     </div>
+  );
+}
+
+// ── Scenario Summary ──────────────────────────────────────────────
+export function ScenarioSummaryPanel({
+  state,
+  showWhenNoRun = false
+}: {
+  state: CampaignStateSnapshot;
+  showWhenNoRun?: boolean;
+}) {
+  const data = getScenarioSummaryData(state);
+  if (!data) return null;
+  if (!data.hasRun) {
+    if (!showWhenNoRun) return null;
+    return (
+      <section className="campaign-panel">
+        <div className="campaign-panel-head"><h2>Current Run</h2></div>
+        <div className="campaign-empty">No active run.</div>
+        <button
+          className="campaign-action primary"
+          onClick={() => dispatchCampaignAction("open-scenarios-tab")}
+        >
+          Run Setup
+        </button>
+      </section>
+    );
+  }
+  return <ScenarioSummaryActive data={data} />;
+}
+
+function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
+  return (
+    <section className="campaign-panel">
+      <div className="campaign-panel-head">
+        <h2>{data.name}</h2>
+        <span className="campaign-pill">Danger {data.danger}/{data.dangerMax}</span>
+        {data.questPillHtml && (
+          <span
+            className="campaign-run-quest-pill-bridge"
+            dangerouslySetInnerHTML={{ __html: data.questPillHtml }}
+          />
+        )}
+      </div>
+      <div className="campaign-stat-grid">
+        <span>{data.isGrid ? "Cell" : "Node"} <b>{data.location}</b></span>
+        <span>Camp <b>{data.campsUsed}/{data.campsMax}</b></span>
+        <span>Events <b>{data.eventsUsed}/{data.eventsMax}</b></span>
+        <span>Battles <b>{data.battlesUsed}/{data.battlesMax}</b></span>
+        {data.roamerCount > 0 && <span>Roamers <b>{data.roamerCount}</b></span>}
+      </div>
+      {data.objective && (
+        <div className="campaign-quest-phase campaign-scenario-task">
+          <span>
+            {data.objective.completed
+              ? "Objective Complete"
+              : (!data.objective.visible ? "Objective Hidden" : "Current Objective")}
+          </span>
+          <strong>{data.objective.label}</strong>
+          <small>{data.objective.meta}</small>
+        </div>
+      )}
+      <HtmlBridge html={data.questRunTaskHtml} className="campaign-quest-run-task-bridge" />
+      <div className="campaign-control-stack">
+        <div className="campaign-control-group">
+          <div className="campaign-control-title">Run Tools</div>
+          <div className="campaign-action-grid">
+            <button className="campaign-action" onClick={() => dispatchCampaignAction("open-maps-tab")}>Map</button>
+            <button className="campaign-action primary" onClick={() => dispatchCampaignAction("roll-travel-surprise")}>Movement Surprise</button>
+            <button className="campaign-action" onClick={() => dispatchCampaignAction("camp-rest")}>Camp Rest</button>
+          </div>
+        </div>
+        <div className="campaign-control-group">
+          <div className="campaign-control-title">Manual Control</div>
+          <div className="campaign-action-grid">
+            <button className="campaign-action" onClick={() => dispatchCampaignAction("manual-battle")}>Manual Battle Result</button>
+            <button className="campaign-action danger" onClick={() => dispatchCampaignAction("end-scenario")}>End Run</button>
+            {data.hasGeneratedScenario && (
+              <button
+                className="campaign-action danger"
+                onClick={() => dispatchCampaignAction("cancel-scenario")}
+                title="Discard without report"
+              >
+                Cancel Run
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -31,7 +31,6 @@ interface QuestHomeNormal {
   readonly storyPapers: readonly QuestPaperLite[];
   readonly activeQuestRows: readonly QuestRowData[];
   readonly activeSequenceHtml: string;
-  readonly scenarioSummaryHtml: string;
 }
 
 interface QuestHomeZombie {

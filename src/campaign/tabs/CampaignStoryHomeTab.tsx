@@ -15,7 +15,8 @@ import { getStoryHomeData, type StoryHomeData } from "./data/storyHome";
 import {
   SoloNoticePanel,
   PendingBattlePanel,
-  CombatResultPanel
+  CombatResultPanel,
+  ScenarioSummaryPanel
 } from "./ResultPanels";
 
 interface Props {
@@ -45,7 +46,7 @@ export function CampaignStoryHomeTab({ state }: Props) {
       <HtmlBridge html={data.storyPipelineHtml} className="campaign-story-pipeline-bridge" />
       <HtmlBridge html={data.syncSummaryHtml} className="campaign-sync-summary-bridge" />
       <SoloNoticePanel state={state} />
-      <HtmlBridge html={data.scenarioSummaryHtml} className="campaign-scenario-summary-bridge" />
+      <ScenarioSummaryPanel state={state} />
       <PendingBattlePanel state={state} />
       <CombatResultPanel state={state} />
     </div>
