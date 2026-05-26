@@ -1139,58 +1139,17 @@ window.CJS.CampaignUI = (() => {
   // bridges `getEventResultData(state)` / `getOracleData(state)` —
   // see `src/campaign/tabs/ResultPanels.tsx`.
 
-  function _renderSequenceShelf(scope, options = {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const entries = Seq?.list?.(scope) || [];
-    const title = options.title || (scope === 'story' ? 'Story Files' : scope === 'event' ? 'Event Files' : 'Quest Papers');
-    const note = options.note || 'Small authored files that can be played one node at a time.';
-    return `
-      <section class="campaign-panel ${options.wide ? 'campaign-wide-panel' : ''} campaign-sequence-shelf">
-        <div class="campaign-panel-head">
-          <div>
-            <h3>${_esc(title)}</h3>
-            <div class="campaign-muted">${_esc(note)}</div>
-          </div>
-          <span class="campaign-pill">${entries.length} files</span>
-        </div>
-        <div class="campaign-sequence-grid">
-          ${entries.length ? entries.map((entry) => `
-            <article class="campaign-sequence-card is-${_escAttr(scope)}">
-              <div class="campaign-sequence-paper-pin"></div>
-              <div class="campaign-sequence-kind">${_esc(_label(entry.kind || scope))}</div>
-              <strong>${_esc(entry.title || entry.id)}</strong>
-              ${scope === 'story' ? _renderStorySequenceMeta(entry) : ''}
-              ${(scope === 'story' || entry.summary?.short || entry.summary?.default || entry.description) ? `<p>${_esc(_storySequenceSummary(entry))}</p>` : ''}
-              <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
-              ${_renderSequenceDeliveryState(entry, scope)}
-              ${scope === 'story' ? _renderStorySequenceStatus(entry) : ''}
-              ${_renderSequenceActionButton(entry, scope)}
-            </article>
-          `).join('') : '<div class="campaign-empty">No sequence files loaded for this scope.</div>'}
-        </div>
-      </section>
-    `;
-  }
-
   // _renderActiveSequence / _renderSequenceNode / _sequenceNodeMeta
-  // removed in Phase G.8. The React `ActiveSequencePanel` +
-  // `SequenceNodePanel` (`src/campaign/tabs/ResultPanels.tsx` /
-  // `src/campaign/tabs/SequenceNode.tsx`) own this rendering now.
-  // The bridge `getActiveSequenceData` returns typed `node` data via
-  // `_sequenceNodeSnapshot`.
+  // removed in Phase G.8. _renderSequenceShelf /
+  // _renderSequenceDeliveryState / _renderSequenceActionButton /
+  // _renderStorySequenceMeta / _renderStorySequenceStatus removed in
+  // Phase G.10. The React `SequenceShelfPanel` + `SequenceCard`
+  // (`src/campaign/tabs/SequenceCard.tsx`) own this rendering now.
+  // The bridge `getSequenceShelfData` returns typed shelf data; the
+  // bridge `_sequenceShelfEntryData` produces per-entry typed records.
 
   function _storyChapterText(state = CS().getState() || {}) {
     return _esc(state.storyMode?.currentChapterLabel || state.currentChapter || 1);
-  }
-
-  function _renderStorySequenceMeta(entry = {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    const meta = Seq?.storyMeta?.(entry, state.currentWorld) || {};
-    const bits = [];
-    if (meta.chapterLabel) bits.push(`Chapter ${meta.chapterLabel}`);
-    if (meta.partLabel) bits.push(meta.partLabel);
-    return bits.length ? `<div class="campaign-chip-row">${bits.map((bit) => `<span class="campaign-chip">${_esc(bit)}</span>`).join('')}</div>` : '';
   }
 
   function _storySequenceSummary(entry = {}) {
@@ -1208,21 +1167,24 @@ window.CJS.CampaignUI = (() => {
     return status?.replayOnly ? 'Read' : 'Start';
   }
 
-  function _renderStorySequenceStatus(entry = {}) {
+  function _storySequenceMetaChips(entry = {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const state = CS().getState() || {};
+    const meta = Seq?.storyMeta?.(entry, state.currentWorld) || {};
+    const bits = [];
+    if (meta.chapterLabel) bits.push(`Chapter ${meta.chapterLabel}`);
+    if (meta.partLabel) bits.push(meta.partLabel);
+    return bits;
+  }
+
+  function _storySequenceStatusLabel(entry = {}) {
     const Seq = window.CJS.CampaignSequences;
     const state = CS().getState() || {};
     const status = Seq?.storyStatus?.(entry.id, state, state.currentWorld);
     if (!status?.record) return '';
-    const label = status.defaulted ? 'Defaulted' : (status.completed ? 'Played' : 'Read');
-    return `<div class="campaign-chip-row"><span class="campaign-chip">${_esc(label)}</span></div>`;
+    return status.defaulted ? 'Defaulted' : (status.completed ? 'Played' : 'Read');
   }
 
-  // Phase G.9 — typed delivery / action for sequence-card entries.
-  // The HTML siblings (`_renderSequenceDeliveryState`,
-  // `_renderSequenceActionButton`) stay until G.10 ports the
-  // sequence-shelf (storyHome / questHome) so the shelf keeps
-  // working without parallel data wiring. They now compose over
-  // these typed builders so behaviour stays in one place.
   function _sequenceDeliveryData(entry = {}, scope = 'story') {
     const status = _sequenceDeliveryStatus(entry, scope);
     const note = _sequenceDeliveryNote(entry, scope);
@@ -1245,19 +1207,37 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _renderSequenceDeliveryState(entry = {}, scope = 'story') {
-    const data = _sequenceDeliveryData(entry, scope);
-    if (!data) return '';
-    const chip = data.statusLabel
-      ? `<div class="campaign-chip-row"><span class="campaign-chip">${_esc(data.statusLabel)}</span></div>`
-      : '';
-    const note = data.note ? `<div class="campaign-muted">${_esc(data.note)}</div>` : '';
-    return chip ? `${chip}${note}` : note;
+  function _sequenceShelfEntryData(entry = {}, scope = 'story') {
+    const isStory = scope === 'story';
+    const hasNativeSummary = entry.summary?.short || entry.summary?.default || entry.description;
+    const summary = isStory ? _storySequenceSummary(entry) : (hasNativeSummary ? String(entry.summary?.short || entry.summary?.default || entry.description) : '');
+    return {
+      id: String(entry.id || ''),
+      scope,
+      kindLabel: _label(entry.kind || scope),
+      title: String(entry.title || entry.id || ''),
+      summary: String(summary),
+      storyMetaChips: isStory ? _storySequenceMetaChips(entry) : [],
+      storyStatusLabel: isStory ? _storySequenceStatusLabel(entry) : '',
+      tags: (entry.tags || []).slice(0, 4).map((tag) => _label(tag)),
+      delivery: _sequenceDeliveryData(entry, scope),
+      action: _sequenceActionData(entry, scope)
+    };
   }
 
-  function _renderSequenceActionButton(entry = {}, scope = 'story') {
-    const data = _sequenceActionData(entry, scope);
-    return `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(data.entryId)}" ${data.blocked ? 'disabled' : ''}>${_esc(data.label)}</button>`;
+  function getSequenceShelfData(scope, options = {}, state = CS().getState()) {
+    if (!state) return null;
+    const Seq = window.CJS.CampaignSequences;
+    const entries = Seq?.list?.(scope) || [];
+    const title = options.title || (scope === 'story' ? 'Story Files' : scope === 'event' ? 'Event Files' : 'Quest Papers');
+    const note = options.note || 'Small authored files that can be played one node at a time.';
+    return {
+      scope,
+      wide: !!options.wide,
+      title: String(title),
+      note: String(note),
+      entries: entries.map((entry) => _sequenceShelfEntryData(entry, scope))
+    };
   }
 
   function _sequenceDeliveryStatus(entry = {}, scope = 'story') {
@@ -10274,11 +10254,6 @@ window.CJS.CampaignUI = (() => {
       chapterTreeHtml: _renderChapterTreePanel(state) || '',
       choiceConsequenceHtml: _renderChoiceConsequencePanel(state) || '',
       aiStoryContextHtml: _renderAiStoryContextPanel(state) || '',
-      sequenceShelfHtml: _renderSequenceShelf('story', {
-        wide: true,
-        title: 'Chapter Files',
-        note: 'Pick the chapter part to play. Branches are gated by the choice you made in the previous chapter, so unlocked branches will be marked. If you start ahead, prior parts are revealed with the default path.'
-      }),
       storyPipelineHtml: _renderStoryPipelinePanel(pipeline) || '',
       syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || ''
     };
@@ -10720,6 +10695,7 @@ window.CJS.CampaignUI = (() => {
     getPendingBattleData,
     getScenarioSummaryData,
     getActiveSequenceData,
+    getSequenceShelfData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

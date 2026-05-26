@@ -20,7 +20,6 @@ export interface StoryHomeData {
   readonly chapterTreeHtml: string;
   readonly choiceConsequenceHtml: string;
   readonly aiStoryContextHtml: string;
-  readonly sequenceShelfHtml: string;
   readonly storyPipelineHtml: string;
   readonly syncSummaryHtml: string;
 }

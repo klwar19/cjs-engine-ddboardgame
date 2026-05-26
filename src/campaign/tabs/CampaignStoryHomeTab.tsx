@@ -1,17 +1,18 @@
 // CampaignStoryHomeTab.tsx — Phase F JSX port of `_renderStoryHome`.
 //
 // Renders the Story Home tab. The outer dashboard wrapper, the Story
-// Controls panel (4 onClick buttons), and the Current Arc stat panel
+// Controls panel (4 onClick buttons), the Current Arc stat panel,
+// the Active Sequence body (G.7/G.8), and the sequence shelf (G.10)
 // are full JSX. The other sub-panels — VN hero with the chapter
-// banner video, active sequence, chapter tree, choice-consequences
-// alignment grid, AI story-context, sequence shelf, pipeline,
-// sync-summary, solo notice, scenario summary, pending battle,
-// combat result — still render via HTML bridges. Each is its own
-// isolated chunk so individual ports can land later.
+// banner video, chapter tree, choice-consequences alignment grid,
+// AI story-context, pipeline, sync-summary — still render via HTML
+// bridges. Each is its own isolated chunk so individual ports can
+// land later.
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getStoryHomeData, type StoryHomeData } from "./data/storyHome";
+import { getSequenceShelfData } from "./data/sequence";
 import {
   SoloNoticePanel,
   PendingBattlePanel,
@@ -19,6 +20,7 @@ import {
   ScenarioSummaryPanel,
   ActiveSequencePanel
 } from "./ResultPanels";
+import { SequenceShelfPanel } from "./SequenceCard";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -33,6 +35,11 @@ export function CampaignStoryHomeTab({ state }: Props) {
       </section>
     );
   }
+  const shelf = getSequenceShelfData("story", {
+    wide: true,
+    title: "Chapter Files",
+    note: "Pick the chapter part to play. Branches are gated by the choice you made in the previous chapter, so unlocked branches will be marked. If you start ahead, prior parts are revealed with the default path."
+  }, state);
   const dashboardCls = `campaign-dashboard campaign-mode-home campaign-story-home campaign-story-vn ${data.themeClassName}`;
   return (
     <div className={dashboardCls} style={data.themeStyleVars as React.CSSProperties}>
@@ -41,7 +48,7 @@ export function CampaignStoryHomeTab({ state }: Props) {
       <HtmlBridge html={data.chapterTreeHtml} className="campaign-chapter-tree-bridge" />
       <HtmlBridge html={data.choiceConsequenceHtml} className="campaign-choice-consequence-bridge" />
       <HtmlBridge html={data.aiStoryContextHtml} className="campaign-ai-story-context-bridge" />
-      <HtmlBridge html={data.sequenceShelfHtml} className="campaign-sequence-shelf-bridge" />
+      {shelf && <SequenceShelfPanel shelf={shelf} />}
       <StoryControlsPanel data={data} />
       <CurrentArcPanel data={data} />
       <HtmlBridge html={data.storyPipelineHtml} className="campaign-story-pipeline-bridge" />
