@@ -900,10 +900,6 @@ window.CJS.CampaignUI = (() => {
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
-      case 'eventHome': return _renderEventTypeTab(state, 'character');
-      case 'eventCharacter': return _renderEventTypeTab(state, 'character');
-      case 'eventSpecial': return _renderEventTypeTab(state, 'special');
-      case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'storyDirector': return _renderStoryDirector(state);
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
@@ -1213,10 +1209,6 @@ window.CJS.CampaignUI = (() => {
     }
   }
 
-  function _renderEventHome(state) {
-    return _renderEventTypeTab(state, 'character');
-  }
-
   function _questPaperKind(entry = {}) {
     const kind = String(entry.kind || '').toLowerCase();
     const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
@@ -1225,176 +1217,17 @@ window.CJS.CampaignUI = (() => {
     return 'normal';
   }
 
-  function _renderEventHomeClean(state) {
-    const Seq = window.CJS.CampaignSequences;
-    const entries = Seq?.list?.('event') || [];
-    const characterEvents = entries.filter((entry) => _eventFileKind(entry) === 'character');
-    const specialEvents = entries.filter((entry) => _eventFileKind(entry) === 'special');
-    const sideEvents = entries.filter((entry) => _eventFileKind(entry) === 'side');
-    const activeChains = window.CJS.CampaignQuestChains?.getActive?.() || [];
-    const availableChains = window.CJS.CampaignQuestChains?.getAvailable?.() || [];
-
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-event-home">
-        ${_renderGachaHomeHero({
-          tone: 'event',
-          kicker: 'Event',
-          title: 'Character, Special, Side Stories',
-          text: 'Event is no longer random. Pick authored character events, special events, or side stories that use the same VN/state-machine flow as Story.',
-          meta: [`${characterEvents.length} character`, `${specialEvents.length} special`, `${sideEvents.length + activeChains.length + availableChains.length} side`],
-          actions: [
-            _actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'GM-authored event/consequence', kind: 'manual' }),
-            _actionBtn({ action: 'open-event-log', label: 'Event Log', hint: 'Read oracle/event bookkeeping' }),
-            _actionBtn({ action: 'open-story-summary', label: 'Story Log', hint: 'Read main-story context before choosing an event' })
-          ]
-        })}
-        ${_renderActiveSequence(state, ['event'])}
-        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Event Files</h2>
-              <div class="campaign-muted">No random event button here. Choose one of the three content families.</div>
-            </div>
-            <span class="campaign-pill">${entries.length} files</span>
-          </div>
-          <div class="campaign-tab-grid">
-            <article class="campaign-sequence-card is-event">
-              <div class="campaign-sequence-kind">Character Event</div>
-              <strong>Relationship / Persona Scenes</strong>
-              <p>Focused scenes for party members, dialogue, relationship flags, and small consequences.</p>
-              ${_renderEventFileButtons(characterEvents, 'No character events loaded yet.')}
-            </article>
-            <article class="campaign-sequence-card is-event">
-              <div class="campaign-sequence-kind">Special Event</div>
-              <strong>Limited or Plot-Timed</strong>
-              <p>Rank-up, holiday, unlock, or story-progression events with proper authored flow.</p>
-              ${_renderEventFileButtons(specialEvents, 'No special events loaded yet.')}
-            </article>
-            <article class="campaign-sequence-card is-event">
-              <div class="campaign-sequence-kind">Side Stories</div>
-              <strong>Optional Story Content</strong>
-              <p>Side-story files and existing side-story chains. Battles and map runs should be attached through Quest.</p>
-              ${_renderEventFileButtons(sideEvents, '')}
-              ${activeChains.length
-                ? activeChains.slice(0, 2).map((chain) => _renderQuestChainActive(chain)).join('')
-                : (availableChains.length
-                  ? availableChains.slice(0, 2).map((chain) => _renderQuestChainTemplate(chain)).join('')
-                  : (!sideEvents.length ? '<div class="campaign-empty">No side stories loaded yet.</div>' : ''))}
-            </article>
-          </div>
-        </section>
-        ${_renderSoloNotice(state)}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderEventResult(state)}
-      </div>
-    `;
-  }
-
-  function _renderEventTypeTab(state, kind = 'character') {
-    const Seq = window.CJS.CampaignSequences;
-    const entries = (Seq?.list?.('event') || []).filter((entry) => _eventFileKind(entry) === kind);
-    const labels = {
-      character: {
-        kicker: 'Character Event',
-        title: 'Relationship / Persona Scenes',
-        text: 'Focused authored scenes for party members, dialogue, relationship flags, and small consequences.',
-        empty: 'No character events loaded yet.'
-      },
-      special: {
-        kicker: 'Special Event',
-        title: 'Limited or Plot-Timed',
-        text: 'Rank-up, holiday, unlock, or story-progression events with proper authored flow.',
-        empty: 'No special events loaded yet.'
-      },
-      side: {
-        kicker: 'Side Stories',
-        title: 'Optional Story Content',
-        text: 'Side-story files and existing side-story chains. Battles and map runs should be attached through Quest.',
-        empty: 'No side stories loaded yet.'
-      }
-    };
-    const activeChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getActive?.() || []) : [];
-    const availableChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getAvailable?.() || []) : [];
-    const info = labels[kind] || labels.character;
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-event-home">
-        ${_renderGachaHomeHero({
-          tone: 'event',
-          kicker: info.kicker,
-          title: info.title,
-          text: info.text,
-          meta: kind === 'side'
-            ? [`${entries.length} files`, `${activeChains.length} active`, `${availableChains.length} available`]
-            : [`${entries.length} files`, 'authored flow', 'event log ready'],
-          actions: [
-            _actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'GM-authored event/consequence', kind: 'manual' }),
-            _actionBtn({ action: 'open-event-log', label: 'Event Log', hint: 'Read oracle/event bookkeeping' }),
-            _actionBtn({ action: 'open-story-summary', label: 'Story Log', hint: 'Read main-story context before choosing an event' })
-          ]
-        })}
-        ${_renderActiveSequence(state, ['event'])}
-        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>${_esc(info.kicker)} Files</h2>
-              <div class="campaign-muted">Event has three content tabs only: Character, Special, and Side Stories. Bookkeeping goes to Event Log.</div>
-            </div>
-            <span class="campaign-pill">${entries.length} files</span>
-          </div>
-          <div class="campaign-sequence-grid">
-            ${entries.length ? entries.map((entry) => `
-              <article class="campaign-sequence-card is-event">
-                <div class="campaign-sequence-paper-pin"></div>
-                <div class="campaign-sequence-kind">${_esc(_label(entry.kind || kind))}</div>
-                <strong>${_esc(entry.title || entry.id)}</strong>
-                ${entry.summary?.short || entry.summary?.default || entry.description ? `<p>${_esc(entry.summary?.short || entry.summary?.default || entry.description)}</p>` : ''}
-                <div class="campaign-chip-row">${(entry.tags || []).slice(0, 4).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>
-                ${_renderSequenceDeliveryState(entry, 'event')}
-                ${_renderSequenceActionButton(entry, 'event')}
-              </article>
-            `).join('') : `<div class="campaign-empty">${_esc(info.empty)}</div>`}
-          </div>
-        </section>
-        ${kind === 'side' ? `
-          <section class="campaign-panel campaign-wide-panel">
-            <div class="campaign-panel-head">
-              <div>
-                <h2>Side Story Chains</h2>
-                <div class="campaign-muted">Existing side-story chains stay here, separate from normal quests.</div>
-              </div>
-              <span class="campaign-pill">${activeChains.length} active | ${availableChains.length} available</span>
-            </div>
-            ${activeChains.length
-              ? activeChains.map((chain) => _renderQuestChainActive(chain)).join('')
-              : (availableChains.length
-                ? `<div class="campaign-tab-grid">${availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')}</div>`
-                : '<div class="campaign-empty">No side-story chains available.</div>')}
-          </section>
-        ` : ''}
-        ${_renderSoloNotice(state)}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderEventResult(state)}
-      </div>
-    `;
-  }
-
+  // _renderEventTypeTab — Phase F.7 port. Body moved to
+  // `src/campaign/tabs/CampaignEventTab.tsx`. Typed data flows through
+  // `getEventTabData(kind, state)`. `_renderEventHome`,
+  // `_renderEventHomeClean`, and `_renderEventFileButtons` were dead
+  // (only used by `_renderEventTypeTab`) and have been removed.
   function _eventFileKind(entry = {}) {
     const kind = String(entry.kind || '').toLowerCase();
     const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
     if (kind.includes('special') || tags.includes('special_event')) return 'special';
     if (kind.includes('side') || tags.includes('side_story')) return 'side';
     return 'character';
-  }
-
-  function _renderEventFileButtons(entries = [], emptyText = '') {
-    if (!entries.length) return emptyText ? `<div class="campaign-empty">${_esc(emptyText)}</div>` : '';
-    return `
-      <div class="campaign-action-grid">
-        ${entries.slice(0, 3).map((entry) => _renderSequenceActionButton(entry, 'event')).join('')}
-      </div>
-    `;
   }
 
   // _renderEventLog / _renderEventLogEntry — Phase F.2 port. The body
@@ -10541,10 +10374,6 @@ window.CJS.CampaignUI = (() => {
     switch (tabId) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
-      case 'eventHome':
-      case 'eventCharacter': return _renderEventTypeTab(state, 'character');
-      case 'eventSpecial': return _renderEventTypeTab(state, 'special');
-      case 'eventSide': return _renderEventTypeTab(state, 'side');
       case 'storyDirector': return _renderStoryDirector(state);
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
@@ -10741,6 +10570,68 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getEventTabData(kind, state = CS().getState()) {
+    if (!state) return null;
+    const Seq = window.CJS.CampaignSequences;
+    const entries = (Seq?.list?.('event') || []).filter((entry) => _eventFileKind(entry) === kind);
+    const labels = {
+      character: {
+        kicker: 'Character Event',
+        title: 'Relationship / Persona Scenes',
+        text: 'Focused authored scenes for party members, dialogue, relationship flags, and small consequences.',
+        empty: 'No character events loaded yet.'
+      },
+      special: {
+        kicker: 'Special Event',
+        title: 'Limited or Plot-Timed',
+        text: 'Rank-up, holiday, unlock, or story-progression events with proper authored flow.',
+        empty: 'No special events loaded yet.'
+      },
+      side: {
+        kicker: 'Side Stories',
+        title: 'Optional Story Content',
+        text: 'Side-story files and existing side-story chains. Battles and map runs should be attached through Quest.',
+        empty: 'No side stories loaded yet.'
+      }
+    };
+    const info = labels[kind] || labels.character;
+    const activeChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getActive?.() || []) : [];
+    const availableChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getAvailable?.() || []) : [];
+    return {
+      kind,
+      kicker: info.kicker,
+      title: info.title,
+      text: info.text,
+      empty: info.empty,
+      meta: kind === 'side'
+        ? [`${entries.length} files`, `${activeChains.length} active`, `${availableChains.length} available`]
+        : [`${entries.length} files`, 'authored flow', 'event log ready'],
+      entryCount: entries.length,
+      entries: entries.map((entry) => ({
+        id: String(entry.id || ''),
+        title: entry.title || entry.id || '',
+        kindLabel: _label(entry.kind || kind),
+        summary: entry.summary?.short || entry.summary?.default || entry.description || '',
+        tagLabels: (entry.tags || []).slice(0, 4).map((tag) => _label(tag)),
+        deliveryHtml: _renderSequenceDeliveryState(entry, 'event'),
+        actionHtml: _renderSequenceActionButton(entry, 'event')
+      })),
+      activeSequenceHtml: _renderActiveSequence(state, ['event']) || '',
+      questChains: kind === 'side' ? {
+        activeCount: activeChains.length,
+        availableCount: availableChains.length,
+        activeHtml: activeChains.map((chain) => _renderQuestChainActive(chain)).join(''),
+        availableHtml: availableChains.length
+          ? availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')
+          : ''
+      } : null,
+      soloNoticeHtml: _renderSoloNotice(state) || '',
+      pendingBattleHtml: _renderPendingBattle(state) || '',
+      combatResultHtml: _renderCombatResult(state) || '',
+      eventResultHtml: _renderEventResult(state) || ''
+    };
+  }
+
   function getQuestHomeData(state = CS().getState()) {
     if (!state) return null;
     const isZombie = state.currentWorld === 'zombie';
@@ -10978,6 +10869,7 @@ window.CJS.CampaignUI = (() => {
     renderOverviewSectionHtml,
     getStorySummaryData,
     getQuestHomeData,
+    getEventTabData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

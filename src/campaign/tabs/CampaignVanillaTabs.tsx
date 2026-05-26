@@ -68,17 +68,9 @@ export const CampaignStoryDirectorTab = ({ state }: Props) =>
 export const CampaignQuestsPanelTab = ({ state }: Props) =>
   <VanillaTab tabId="quests" state={state} mountClass="campaign-quests-react" />;
 
-export const CampaignEventHomeTab = ({ state }: Props) =>
-  <VanillaTab tabId="eventHome" state={state} mountClass="campaign-event-home-react" />;
-
-export const CampaignEventCharacterTab = ({ state }: Props) =>
-  <VanillaTab tabId="eventCharacter" state={state} mountClass="campaign-event-character-react" />;
-
-export const CampaignEventSpecialTab = ({ state }: Props) =>
-  <VanillaTab tabId="eventSpecial" state={state} mountClass="campaign-event-special-react" />;
-
-export const CampaignEventSideTab = ({ state }: Props) =>
-  <VanillaTab tabId="eventSide" state={state} mountClass="campaign-event-side-react" />;
+// CampaignEventHomeTab / CampaignEventCharacterTab / CampaignEventSpecialTab
+// / CampaignEventSideTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignEventTab.tsx` (Phase F.7).
 
 // CampaignEventLogTab moved to its own JSX-first port at
 // `src/campaign/tabs/CampaignEventLogTab.tsx` (Phase F.2). The vanilla
