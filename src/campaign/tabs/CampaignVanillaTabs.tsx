@@ -59,8 +59,8 @@ function VanillaTab({
 // CampaignStorySummaryTab moved to a dedicated JSX port at
 // `src/campaign/tabs/CampaignStorySummaryTab.tsx` (Phase F.5).
 
-export const CampaignStoryDirectorTab = ({ state }: Props) =>
-  <VanillaTab tabId="storyDirector" state={state} mountClass="campaign-story-director-react" />;
+// CampaignStoryDirectorTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignStoryDirectorTab.tsx` (Phase F.13).
 
 // CampaignQuestHomeTab moved to a dedicated JSX port at
 // `src/campaign/tabs/CampaignQuestHomeTab.tsx` (Phase F.6).

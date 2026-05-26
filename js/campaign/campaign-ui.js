@@ -883,7 +883,6 @@ window.CJS.CampaignUI = (() => {
     // — `Tabs.has(id)` returns true above and the early-return wins.
     // Tabs that still render vanilla HTML live here until they migrate.
     switch (_activeTab) {
-      case 'storyDirector': return _renderStoryDirector(state);
       default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
     }
   }
@@ -1643,80 +1642,12 @@ window.CJS.CampaignUI = (() => {
   // `renderOverviewSectionHtml(sectionId, state)`; each one migrates
   // independently by replacing its <Section> with a JSX render.
 
-  function _renderStoryDirector(state) {
-    const director = SD();
-    if (!director) return '<div class="campaign-empty">Story Director module is not loaded.</div>';
-    const snap = director.snapshot();
-    const pack = snap.pack;
-    const theme = _storyTheme(state);
-    if (!pack) {
-      const next = {
-        index: 0,
-        title: 'No story pack loaded',
-        text: 'This world has a visual theme, but no Story Director pack yet. Add one later to unlock scene rolls, routes, clues, and side route guidance.',
-        actions: []
-      };
-      return `
-        <div class="campaign-dashboard campaign-story-dashboard campaign-story-vn ${_escAttr(theme.className)}" ${_storyThemeStyle(theme)}>
-          ${_renderStoryVnHero({ state, pack: null, stage: null, next, theme })}
-          <section class="campaign-panel campaign-wide-panel campaign-story-empty-world">
-            <div class="campaign-panel-head"><h2>Story Mode</h2></div>
-            <div class="campaign-empty">No Story Director pack loaded for this world.</div>
-          </section>
-        </div>
-      `;
-    }
-    const stage = snap.stage || {};
-    const stages = pack.stages || [];
-    const metrics = pack.metrics || [];
-    const flow = snap.flow;
-    const queue = snap.queue.slice(0, 8);
-    const clues = snap.clues.slice(0, 8);
-    const facts = snap.facts.slice(0, 8);
-    const syncKey = pack.id && flow?.stageId ? `${pack.id}:${flow.stageId}` : '';
-    const flowSynced = !!(syncKey && state.storyDirector?.sideQuestSync?.[syncKey]);
-    const next = _storyNextStep(snap, state, flowSynced);
-
-    return `
-      <div class="campaign-dashboard campaign-story-dashboard campaign-story-vn ${_escAttr(theme.className)}" ${_storyThemeStyle(theme)}>
-        ${_renderStoryVnHero({ state, pack, stage, next, theme })}
-
-        <section class="campaign-panel campaign-wide-panel campaign-story-control-deck">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Story Desk</h2>
-              <div class="campaign-muted">Rolls open a decision window first. Nothing changes until you choose a route.</div>
-            </div>
-            <span class="campaign-pill">${_esc(stage.name || stage.id || 'No stage')}</span>
-          </div>
-          <div class="campaign-story-command-grid">
-            ${_renderStorySoloGuide(next)}
-            ${_renderStoryActionDeck(flow, flowSynced)}
-          </div>
-        </section>
-
-        <section class="campaign-panel campaign-wide-panel campaign-story-episode-panel">
-          <div class="campaign-panel-head">
-            <div>
-              <h3>Episode Route</h3>
-              <div class="campaign-muted">${_esc(stage.summary || '')}</div>
-            </div>
-          </div>
-          ${_renderStoryStageRail(stages, stage)}
-        </section>
-
-        ${snap.last ? _renderStoryDirectorCard(snap.last) : _renderStoryDirectorEmptyCard()}
-
-        <div class="campaign-story-support-grid campaign-wide-panel">
-          ${_renderStoryPressureBoard(metrics, snap, pack)}
-          ${_renderStorySideFlow(flow, flowSynced)}
-          ${_renderStoryCluesPanel(clues, facts)}
-          ${_renderStoryQueuePanel(queue)}
-          ${_renderStoryTruthsPanel(pack)}
-        </div>
-      </div>
-    `;
-  }
+  // _renderStoryDirector — Phase F.13 port. Body moved to
+  // `src/campaign/tabs/CampaignStoryDirectorTab.tsx`. Typed data flows
+  // through `getStoryDirectorData(state)`. All sub-panels (VN hero,
+  // solo guide, action deck, stage rail, director card, pressure
+  // board, side flow, clues, queue, truths) still render as HTML
+  // strings via that bridge until each helper ports.
 
   function _storyTheme(state = {}) {
     const world = CS().getCurrentWorld?.() || {};
@@ -10054,7 +9985,6 @@ window.CJS.CampaignUI = (() => {
   function renderTabBody(tabId, state = CS().getState()) {
     if (!state) return '';
     switch (tabId) {
-      case 'storyDirector': return _renderStoryDirector(state);
       default: return '';
     }
   }
@@ -10247,6 +10177,68 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getStoryDirectorData(state = CS().getState()) {
+    if (!state) return null;
+    const theme = _storyTheme(state);
+    const themeStyleVars = {};
+    if (theme.backdrop) themeStyleVars['--story-backdrop'] = `url('${_cssVarAssetUrl(theme.backdrop)}')`;
+    if (theme.accent) themeStyleVars['--story-accent'] = theme.accent;
+    if (theme.danger) themeStyleVars['--story-danger'] = theme.danger;
+    const director = SD();
+    if (!director) {
+      return {
+        moduleAvailable: false,
+        themeClassName: theme.className || '',
+        themeStyleVars
+      };
+    }
+    const snap = director.snapshot();
+    const pack = snap.pack;
+    if (!pack) {
+      const next = {
+        index: 0,
+        title: 'No story pack loaded',
+        text: 'This world has a visual theme, but no Story Director pack yet. Add one later to unlock scene rolls, routes, clues, and side route guidance.',
+        actions: []
+      };
+      return {
+        moduleAvailable: true,
+        hasPack: false,
+        themeClassName: theme.className || '',
+        themeStyleVars,
+        vnHeroHtml: _renderStoryVnHero({ state, pack: null, stage: null, next, theme })
+      };
+    }
+    const stage = snap.stage || {};
+    const stages = pack.stages || [];
+    const metrics = pack.metrics || [];
+    const flow = snap.flow;
+    const queue = snap.queue.slice(0, 8);
+    const clues = snap.clues.slice(0, 8);
+    const facts = snap.facts.slice(0, 8);
+    const syncKey = pack.id && flow?.stageId ? `${pack.id}:${flow.stageId}` : '';
+    const flowSynced = !!(syncKey && state.storyDirector?.sideQuestSync?.[syncKey]);
+    const next = _storyNextStep(snap, state, flowSynced);
+    return {
+      moduleAvailable: true,
+      hasPack: true,
+      themeClassName: theme.className || '',
+      themeStyleVars,
+      stageName: stage.name || stage.id || 'No stage',
+      stageSummary: stage.summary || '',
+      vnHeroHtml: _renderStoryVnHero({ state, pack, stage, next, theme }),
+      soloGuideHtml: _renderStorySoloGuide(next),
+      actionDeckHtml: _renderStoryActionDeck(flow, flowSynced),
+      stageRailHtml: _renderStoryStageRail(stages, stage),
+      lastCardHtml: snap.last ? _renderStoryDirectorCard(snap.last) : _renderStoryDirectorEmptyCard(),
+      pressureBoardHtml: _renderStoryPressureBoard(metrics, snap, pack),
+      sideFlowHtml: _renderStorySideFlow(flow, flowSynced),
+      cluesHtml: _renderStoryCluesPanel(clues, facts),
+      queueHtml: _renderStoryQueuePanel(queue),
+      truthsHtml: _renderStoryTruthsPanel(pack)
+    };
+  }
+
   function getWorldGateData(state = CS().getState()) {
     if (!state) return null;
     const worlds = CS().getContent().worlds || {};
@@ -10777,6 +10769,7 @@ window.CJS.CampaignUI = (() => {
     getQuestPanelData,
     getStoryHomeData,
     getWorldGateData,
+    getStoryDirectorData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

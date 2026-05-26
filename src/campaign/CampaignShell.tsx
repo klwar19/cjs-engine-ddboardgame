@@ -28,11 +28,9 @@ import {
   CampaignFarmTab,
   CampaignRelationshipsTab
 } from "./tabs/CampaignExternalTabs";
-import {
-  CampaignStoryDirectorTab
-} from "./tabs/CampaignVanillaTabs";
 import { CampaignStoryHomeTab } from "./tabs/CampaignStoryHomeTab";
 import { CampaignWorldGateTab } from "./tabs/CampaignWorldGateTab";
+import { CampaignStoryDirectorTab } from "./tabs/CampaignStoryDirectorTab";
 import { CampaignQuestsPanelTab } from "./tabs/CampaignQuestsPanelTab";
 import { CampaignEventLogTab } from "./tabs/CampaignEventLogTab";
 import { CampaignMinigameTestTab } from "./tabs/CampaignMinigameTestTab";
