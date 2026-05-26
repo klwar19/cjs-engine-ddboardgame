@@ -21,7 +21,8 @@ import {
   EventResultPanel,
   SoloNoticePanel,
   PendingBattlePanel,
-  CombatResultPanel
+  CombatResultPanel,
+  ActiveSequencePanel
 } from "./ResultPanels";
 
 interface Props {
@@ -41,7 +42,7 @@ export function CampaignEventTab({ state, kind }: Props) {
   return (
     <div className="campaign-dashboard campaign-mode-home campaign-event-home">
       <EventTabHero data={data} />
-      <HtmlBridge html={data.activeSequenceHtml} className="campaign-active-sequence-bridge" />
+      <ActiveSequencePanel state={state} scopes={["event"]} />
       <EventFilesPanel data={data} />
       {data.questChains && (
         <SideStoryChainsPanel chains={data.questChains} />

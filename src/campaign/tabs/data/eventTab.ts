@@ -31,7 +31,6 @@ export interface EventTabData {
   readonly meta: readonly string[];
   readonly entryCount: number;
   readonly entries: readonly EventFileEntry[];
-  readonly activeSequenceHtml: string;
   readonly questChains: EventTabQuestChains | null;
 }
 

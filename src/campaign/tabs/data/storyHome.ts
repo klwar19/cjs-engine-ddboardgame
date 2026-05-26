@@ -17,7 +17,6 @@ export interface StoryHomeData {
   readonly currentArc: StoryArcStats;
   readonly hasActiveRun: boolean;
   readonly vnHeroHtml: string;
-  readonly activeSequenceHtml: string;
   readonly chapterTreeHtml: string;
   readonly choiceConsequenceHtml: string;
   readonly aiStoryContextHtml: string;

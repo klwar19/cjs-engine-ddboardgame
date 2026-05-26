@@ -24,7 +24,8 @@ import {
   PendingBattlePanel,
   CombatResultPanel,
   LastReportPanel,
-  ScenarioSummaryPanel
+  ScenarioSummaryPanel,
+  ActiveSequencePanel
 } from "./ResultPanels";
 
 interface Props {
@@ -64,7 +65,7 @@ function NormalQuestHome({
   return (
     <div className="campaign-dashboard campaign-mode-home campaign-quest-home">
       <QuestHomeHero data={data} />
-      <HtmlBridge html={data.activeSequenceHtml} className="campaign-active-sequence-bridge" />
+      <ActiveSequencePanel state={state} scopes={["quest"]} />
       <QuestTypesPanel data={data} />
       <ActiveQuestsPanel rows={data.activeQuestRows} activeCount={data.activeCount} />
       <QuestRunTools data={data} />

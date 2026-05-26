@@ -16,7 +16,8 @@ import {
   SoloNoticePanel,
   PendingBattlePanel,
   CombatResultPanel,
-  ScenarioSummaryPanel
+  ScenarioSummaryPanel,
+  ActiveSequencePanel
 } from "./ResultPanels";
 
 interface Props {
@@ -36,7 +37,7 @@ export function CampaignStoryHomeTab({ state }: Props) {
   return (
     <div className={dashboardCls} style={data.themeStyleVars as React.CSSProperties}>
       <HtmlBridge html={data.vnHeroHtml} className="campaign-story-vn-hero-bridge" />
-      <HtmlBridge html={data.activeSequenceHtml} className="campaign-active-sequence-bridge" />
+      <ActiveSequencePanel state={state} scopes={["story"]} />
       <HtmlBridge html={data.chapterTreeHtml} className="campaign-chapter-tree-bridge" />
       <HtmlBridge html={data.choiceConsequenceHtml} className="campaign-choice-consequence-bridge" />
       <HtmlBridge html={data.aiStoryContextHtml} className="campaign-ai-story-context-bridge" />

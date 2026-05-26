@@ -20,12 +20,14 @@ import {
   getLastReportData,
   getPendingBattleData,
   getScenarioSummaryData,
+  getActiveSequenceData,
   type EventResultData,
   type ManualSummary,
   type SoloNoticeData,
   type PendingBattleData,
   type ScenarioSummaryData,
-  type ScenarioSummaryRun
+  type ScenarioSummaryRun,
+  type SequenceScope
 } from "./data/resultPanels";
 
 // ── EventResult ───────────────────────────────────────────────────
@@ -421,6 +423,82 @@ function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+// ── Active Sequence ───────────────────────────────────────────────
+// Shared by StoryHome (scope='story'), QuestHome (scope='quest'),
+// and EventTab (scope='event'). The wrapper renders in JSX; the
+// node body (choice / stat-check / combat / minigame / scenario /
+// end / narration variants) still comes through an HTML bridge
+// because each variant has its own action set.
+export function ActiveSequencePanel({
+  state,
+  scopes
+}: {
+  state: CampaignStateSnapshot;
+  scopes: readonly SequenceScope[];
+}) {
+  const data = getActiveSequenceData(state, scopes);
+  if (!data) return null;
+  if (data.vnActive) {
+    return (
+      <section className="campaign-panel campaign-wide-panel campaign-sequence-active is-vn-active">
+        <div className="campaign-sequence-active-avatar" aria-hidden="true">
+          <span className="campaign-grid-player" data-facing="down" />
+        </div>
+        <div className="campaign-sequence-active-body">
+          <div className="campaign-panel-head">
+            <div>
+              <h2>Now playing — {data.title}</h2>
+              <div className="campaign-muted">
+                {data.chapterLabel && `Chapter ${data.chapterLabel} · `}
+                {data.scopeLabel}
+                {data.replayMode && " · Replay mode"}
+              </div>
+            </div>
+            <button
+              className="campaign-action danger"
+              onClick={() => dispatchCampaignAction("sequence-complete")}
+            >
+              End
+            </button>
+          </div>
+          <div className="campaign-muted">
+            The visual novel overlay is open. Click anywhere in it to continue, or use Panel to switch back to the inline view.
+          </div>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="campaign-panel campaign-wide-panel campaign-sequence-active">
+      <div className="campaign-panel-head">
+        <div>
+          <h2>{data.title}</h2>
+          <div className="campaign-muted">
+            {data.scopeLabel} | {data.chapterLabel && `Chapter ${data.chapterLabel} | `}
+            {data.nodeId}
+            {data.replayMode && " | Replay mode"}
+          </div>
+        </div>
+        {data.replayMode && <span className="campaign-pill">Replay</span>}
+        <button className="campaign-action" onClick={() => dispatchCampaignAction("sequence-open-vn")}>
+          Open VN
+        </button>
+        <button className="campaign-action danger" onClick={() => dispatchCampaignAction("sequence-complete")}>
+          End
+        </button>
+      </div>
+      {data.nodeBodyHtml ? (
+        <div
+          className="campaign-sequence-node-bridge"
+          dangerouslySetInnerHTML={{ __html: data.nodeBodyHtml }}
+        />
+      ) : (
+        <div className="campaign-empty">Loading sequence node...</div>
+      )}
     </section>
   );
 }

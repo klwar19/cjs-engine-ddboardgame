@@ -9885,6 +9885,29 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  // Typed snapshot for the React ActiveSequencePanel. Accepts an
+  // optional `scopes` filter so each tab only shows its own scope
+  // (story / quest / event). Returns null when no sequence matches.
+  function getActiveSequenceData(state = CS().getState(), scopes = null) {
+    if (!state) return null;
+    const Seq = window.CJS.CampaignSequences;
+    const active = Seq?.active?.(state);
+    if (!active || (scopes && !scopes.includes(active.scope))) return null;
+    const sequence = Seq.cachedSequence?.(active.sequenceId, state.currentWorld) || null;
+    const meta = Seq?.storyMeta?.(sequence || active.sequenceId, state.currentWorld) || {};
+    const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
+    const vnActive = !!(window.CJS.CampaignSequenceVN?.isEnabled?.() && active);
+    return {
+      title: active.title || active.sequenceId || '',
+      scopeLabel: _label(active.scope || 'sequence'),
+      chapterLabel: meta.chapterLabel || '',
+      nodeId: active.nodeId || '',
+      replayMode: active.applyConsequences === false,
+      vnActive,
+      nodeBodyHtml: node ? _renderSequenceNode(node, active) : ''
+    };
+  }
+
   function getScenarioSummaryData(state = CS().getState()) {
     if (!state) return null;
     const run = state.activeScenarioRun;
@@ -10288,7 +10311,6 @@ window.CJS.CampaignUI = (() => {
       },
       hasActiveRun: !!activeRun,
       vnHeroHtml: _renderStoryVnHero({ state, pack, stage, next, theme }),
-      activeSequenceHtml: _renderActiveSequence(state, ['story']) || '',
       chapterTreeHtml: _renderChapterTreePanel(state) || '',
       choiceConsequenceHtml: _renderChoiceConsequencePanel(state) || '',
       aiStoryContextHtml: _renderAiStoryContextPanel(state) || '',
@@ -10489,7 +10511,6 @@ window.CJS.CampaignUI = (() => {
         deliveryHtml: _renderSequenceDeliveryState(entry, 'event'),
         actionHtml: _renderSequenceActionButton(entry, 'event')
       })),
-      activeSequenceHtml: _renderActiveSequence(state, ['event']) || '',
       questChains: kind === 'side' ? {
         activeCount: activeChains.length,
         availableCount: availableChains.length,
@@ -10539,8 +10560,7 @@ window.CJS.CampaignUI = (() => {
       dailyPapers: paperLite(dailyPapers),
       normalPapers: paperLite(normalPapers).slice(0, 1),
       storyPapers: paperLite(storyPapers),
-      activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest)),
-      activeSequenceHtml: _renderActiveSequence(state, ['quest']) || ''
+      activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest))
     };
   }
 
@@ -10739,6 +10759,7 @@ window.CJS.CampaignUI = (() => {
     getLastReportData,
     getPendingBattleData,
     getScenarioSummaryData,
+    getActiveSequenceData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

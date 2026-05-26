@@ -114,6 +114,18 @@ interface ScenarioSummaryNoRun {
 
 export type ScenarioSummaryData = ScenarioSummaryNoRun | ScenarioSummaryRun;
 
+export type SequenceScope = "story" | "quest" | "event";
+
+export interface ActiveSequenceData {
+  readonly title: string;
+  readonly scopeLabel: string;
+  readonly chapterLabel: string;
+  readonly nodeId: string;
+  readonly replayMode: boolean;
+  readonly vnActive: boolean;
+  readonly nodeBodyHtml: string;
+}
+
 export interface SoloNoticeData {
   readonly tone: string;
   readonly summaryLabel: string;
@@ -140,6 +152,10 @@ interface Bridge {
   readonly getLastReportData: (state?: CampaignStateSnapshot) => LastReportData | null;
   readonly getPendingBattleData: (state?: CampaignStateSnapshot) => PendingBattleData | null;
   readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
+  readonly getActiveSequenceData: (
+    state?: CampaignStateSnapshot,
+    scopes?: readonly SequenceScope[] | null
+  ) => ActiveSequenceData | null;
 }
 
 interface Cjs {
@@ -184,4 +200,11 @@ export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattl
 
 export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSummaryData | null {
   return cjs().CampaignUI?.getScenarioSummaryData(state) ?? null;
+}
+
+export function getActiveSequenceData(
+  state: CampaignStateSnapshot,
+  scopes?: readonly SequenceScope[]
+): ActiveSequenceData | null {
+  return cjs().CampaignUI?.getActiveSequenceData(state, scopes ?? null) ?? null;
 }
