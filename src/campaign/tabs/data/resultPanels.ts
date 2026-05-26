@@ -116,6 +116,77 @@ export type ScenarioSummaryData = ScenarioSummaryNoRun | ScenarioSummaryRun;
 
 export type SequenceScope = "story" | "quest" | "event";
 
+// Typed shape for one sequence node. The vanilla bridge
+// (`_sequenceNodeSnapshot` in campaign-ui.js) pre-resolves eligibility,
+// alignment hints, replay state, and chip text so the React tree
+// renders each variant without reaching back into CJS modules.
+export interface SequenceNodeChoice {
+  readonly id: string;
+  readonly label: string;
+  readonly hint: string;
+  readonly locked: boolean;
+}
+
+interface SequenceNodeBase {
+  readonly text: string;
+}
+
+interface SequenceNodeChoiceData extends SequenceNodeBase {
+  readonly type: "choice";
+  readonly speaker: string;
+  readonly choices: readonly SequenceNodeChoice[];
+}
+
+interface SequenceNodeMetaCarrier extends SequenceNodeBase {
+  readonly meta: readonly string[];
+}
+
+interface SequenceNodeStatCheckData extends SequenceNodeMetaCarrier {
+  readonly type: "stat_check";
+}
+
+interface SequenceNodeCombatData extends SequenceNodeMetaCarrier {
+  readonly type: "combat";
+  readonly replay: boolean;
+  readonly encounterId: string;
+  readonly battleSetId: string;
+}
+
+interface SequenceNodeMinigameData extends SequenceNodeMetaCarrier {
+  readonly type: "minigame";
+  readonly replay: boolean;
+  readonly gameId: string;
+  readonly gameLabel: string;
+}
+
+interface SequenceNodeScenarioData extends SequenceNodeMetaCarrier {
+  readonly type: "scenario";
+  readonly replay: boolean;
+  readonly scenarioId: string;
+  readonly scenarioOpen: boolean;
+}
+
+interface SequenceNodeEndData extends SequenceNodeBase {
+  readonly type: "end";
+}
+
+interface SequenceNodeDefaultData extends SequenceNodeMetaCarrier {
+  readonly type: "default";
+  readonly kind: string;
+  readonly speaker: string;
+  readonly replay: boolean;
+  readonly next: string;
+}
+
+export type SequenceNodeData =
+  | SequenceNodeChoiceData
+  | SequenceNodeStatCheckData
+  | SequenceNodeCombatData
+  | SequenceNodeMinigameData
+  | SequenceNodeScenarioData
+  | SequenceNodeEndData
+  | SequenceNodeDefaultData;
+
 export interface ActiveSequenceData {
   readonly title: string;
   readonly scopeLabel: string;
@@ -123,7 +194,7 @@ export interface ActiveSequenceData {
   readonly nodeId: string;
   readonly replayMode: boolean;
   readonly vnActive: boolean;
-  readonly nodeBodyHtml: string;
+  readonly node: SequenceNodeData | null;
 }
 
 export interface SoloNoticeData {

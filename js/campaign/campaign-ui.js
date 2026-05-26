@@ -1172,181 +1172,12 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderActiveSequence(state, scopes = null) {
-    const Seq = window.CJS.CampaignSequences;
-    const active = Seq?.active?.(state);
-    if (!active || (scopes && !scopes.includes(active.scope))) return '';
-    const sequence = Seq.cachedSequence?.(active.sequenceId, state.currentWorld) || null;
-    const meta = Seq?.storyMeta?.(sequence || active.sequenceId, state.currentWorld) || {};
-    const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
-
-    // When the fullscreen sequence-VN is enabled (default), the overlay
-    // handles the active node. Render a slim "playing" card so the
-    // story-home tab still acknowledges the active run without
-    // duplicating the dialogue UI.
-    const vnActive = !!(window.CJS.CampaignSequenceVN?.isEnabled?.() && active);
-    if (vnActive) {
-      return `
-        <section class="campaign-panel campaign-wide-panel campaign-sequence-active is-vn-active">
-          <div class="campaign-sequence-active-avatar" aria-hidden="true">
-            <span class="campaign-grid-player" data-facing="down"></span>
-          </div>
-          <div class="campaign-sequence-active-body">
-            <div class="campaign-panel-head">
-              <div>
-                <h2>Now playing — ${_esc(active.title || active.sequenceId)}</h2>
-                <div class="campaign-muted">${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} · ` : ''}${_esc(_label(active.scope || 'sequence'))}${active.applyConsequences === false ? ' · Replay mode' : ''}</div>
-              </div>
-              <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
-            </div>
-            <div class="campaign-muted">The visual novel overlay is open. Click anywhere in it to continue, or use Panel to switch back to the inline view.</div>
-          </div>
-        </section>
-      `;
-    }
-
-    return `
-      <section class="campaign-panel campaign-wide-panel campaign-sequence-active">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${_esc(active.title || active.sequenceId)}</h2>
-            <div class="campaign-muted">${_esc(_label(active.scope || 'sequence'))} | ${meta.chapterLabel ? `Chapter ${_esc(meta.chapterLabel)} | ` : ''}${_esc(active.nodeId || '')}${active.applyConsequences === false ? ' | Replay mode' : ''}</div>
-          </div>
-          ${active.applyConsequences === false ? '<span class="campaign-pill">Replay</span>' : ''}
-          <button class="campaign-action" data-campaign-action="sequence-open-vn">Open VN</button>
-          <button class="campaign-action danger" data-campaign-action="sequence-complete">End</button>
-        </div>
-        ${node ? _renderSequenceNode(node, active) : '<div class="campaign-empty">Loading sequence node...</div>'}
-      </section>
-    `;
-  }
-
-  function _renderSequenceNode(node = {}, active = {}) {
-    const type = String(node.type || 'narration').toLowerCase();
-    const replay = active?.applyConsequences === false;
-    const speaker = node.speaker ? `<span class="campaign-story-speaker">${_esc(node.speaker)}</span>` : '';
-    const text = node.text || node.prompt || node.summary || node.title || '';
-    if (type === 'choice') {
-      const state = CS().getState() || {};
-      const Seq = window.CJS.CampaignSequences;
-      const choiceButtons = (node.choices || []).map((choice) => {
-        const eligibility = Seq?.choiceEligibility?.(choice, node, state, { active }) || { ok: true, blockers: [], hidden: false };
-        if (eligibility.hidden) return '';
-        const locked = !eligibility.ok;
-        const alignmentHint = window.CJS.CampaignAlignment?.describeDeltas?.(
-          choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta
-        );
-        const hint = locked
-          ? (eligibility.blockers || []).join(' | ')
-          : (choice.summary || alignmentHint || choice.next || '');
-        return _actionBtn({
-          action: 'sequence-choice',
-          label: choice.label || choice.id,
-          hint,
-          kind: locked ? 'is-locked' : '',
-          disabled: locked,
-          data: { choice: choice.id }
-        });
-      }).join('');
-      return `
-        <div class="campaign-story-dialogue-box">
-          ${speaker}
-          <p>${_esc(text || 'Choose a path.')}</p>
-          <div class="campaign-action-grid">
-            ${choiceButtons || '<div class="campaign-muted">No available choices right now.</div>'}
-          </div>
-        </div>
-      `;
-    }
-    if (type === 'stat_check') {
-      return `
-        <div class="campaign-story-dialogue-box">
-          <p>${_esc(text || `${node.actor || 'Party'} checks ${node.stat || '?'} vs ${node.difficulty || node.dc || '?'}.`)}</p>
-          ${_sequenceNodeMeta(node)}
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'sequence-pass', label: 'Pass', hint: 'Route to pass node', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-fail', label: 'Fail', hint: 'Route to fail node', kind: 'danger' })}
-          </div>
-        </div>
-      `;
-    }
-    if (type === 'combat') {
-      return `
-        <div class="campaign-story-dialogue-box">
-          <p>${_esc(text || node.label || 'Combat encounter')}</p>
-          ${_sequenceNodeMeta(node)}
-          <div class="campaign-action-grid">
-            ${replay ? '' : _actionBtn({ action: 'sequence-queue-battle', label: 'Queue Battle', hint: node.encounterId || node.battleSetId || 'Open in combat/manual result', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-win', label: replay ? 'Continue as Win' : 'Manual Win', hint: replay ? 'Advance without reapplying battle rewards or flags' : 'Advance as victory' })}
-            ${_actionBtn({ action: 'sequence-lose', label: replay ? 'Continue as Loss' : 'Manual Loss', hint: replay ? 'Advance without reapplying defeat consequences' : 'Advance as defeat', kind: 'danger' })}
-          </div>
-        </div>
-      `;
-    }
-    if (type === 'minigame') {
-      const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
-      return `
-        <div class="campaign-story-dialogue-box">
-          <p>${_esc(text || `${_label(gameId || 'Mini-game')} challenge`)}</p>
-          ${_sequenceNodeMeta(node)}
-          <div class="campaign-action-grid">
-            ${replay ? '' : _actionBtn({ action: 'sequence-play-minigame', label: 'Play Mini-Game', hint: gameId ? `Open ${_label(gameId)}` : 'Open the linked mini-game', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-win', label: replay ? 'Continue as Clear' : 'Manual Clear', hint: replay ? 'Advance without replaying rewards or flags' : 'Advance as mini-game success' })}
-            ${_actionBtn({ action: 'sequence-lose', label: replay ? 'Continue as Fail' : 'Manual Fail', hint: replay ? 'Advance without replaying failure penalties' : 'Advance as mini-game failure', kind: 'danger' })}
-          </div>
-        </div>
-      `;
-    }
-    if (type === 'scenario') {
-      const state = CS().getState();
-      const activeRun = state.activeScenarioRun;
-      const scenarioId = node.scenarioId || '';
-      const scenarioOpen = activeRun?.scenarioId === scenarioId;
-      return `
-        <div class="campaign-story-dialogue-box">
-          <p>${_esc(text || node.label || node.title || 'Exploration run')}</p>
-          ${_sequenceNodeMeta(node)}
-          <div class="campaign-action-grid">
-            ${replay ? '' : _actionBtn({ action: scenarioOpen ? 'open-maps-tab' : 'sequence-next', label: scenarioOpen ? 'Open Map' : 'Start Exploration', hint: scenarioId || 'Launch the linked scenario', kind: 'primary' })}
-            ${_actionBtn({ action: 'sequence-win', label: 'Continue as Success', hint: 'Resume story after a successful run' })}
-            ${_actionBtn({ action: 'sequence-lose', label: 'Continue as Failure', hint: 'Resume story after a failed run', kind: 'danger' })}
-            ${_actionBtn({ action: 'sequence-abort', label: 'Abort Run', hint: 'Resume story as an aborted exploration' })}
-          </div>
-        </div>
-      `;
-    }
-    if (type === 'end') {
-      return `
-        <div class="campaign-story-dialogue-box">
-          <p>${_esc(text || 'This sequence is ready to close.')}</p>
-          <button class="campaign-action primary" data-campaign-action="sequence-complete">Complete</button>
-        </div>
-      `;
-    }
-    return `
-      <div class="campaign-story-dialogue-box">
-        ${speaker}
-        <p>${_esc(text)}</p>
-        ${_sequenceNodeMeta(node)}
-        <div class="campaign-action-grid">
-          ${_actionBtn({ action: type === 'condition' ? 'sequence-resolve' : 'sequence-next', label: type === 'ops' ? (replay ? 'Continue' : 'Apply & Continue') : 'Continue', hint: node.next || '', kind: 'primary' })}
-        </div>
-      </div>
-    `;
-  }
-
-  function _sequenceNodeMeta(node = {}) {
-    const bits = [];
-    if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || '?'}`);
-    if (node.encounterId) bits.push(node.encounterId);
-    if (node.battleSetId) bits.push(node.battleSetId);
-    if (node.scenarioId) bits.push(`Scenario: ${_label(node.scenarioId)}`);
-    const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
-    const difficulty = node.minigame?.difficulty || node.difficulty;
-    if (gameId) bits.push(`Mini-Game: ${_label(gameId)} Lv ${difficulty || 1}`);
-    if (node.tags?.length) bits.push((node.tags || []).map(_label).join(', '));
-    return bits.length ? `<div class="campaign-chip-row">${bits.map((bit) => `<span class="campaign-chip">${_esc(bit)}</span>`).join('')}</div>` : '';
-  }
+  // _renderActiveSequence / _renderSequenceNode / _sequenceNodeMeta
+  // removed in Phase G.8. The React `ActiveSequencePanel` +
+  // `SequenceNodePanel` (`src/campaign/tabs/ResultPanels.tsx` /
+  // `src/campaign/tabs/SequenceNode.tsx`) own this rendering now.
+  // The bridge `getActiveSequenceData` returns typed `node` data via
+  // `_sequenceNodeSnapshot`.
 
   function _storyChapterText(state = CS().getState() || {}) {
     return _esc(state.storyMode?.currentChapterLabel || state.currentChapter || 1);
@@ -9904,8 +9735,110 @@ window.CJS.CampaignUI = (() => {
       nodeId: active.nodeId || '',
       replayMode: active.applyConsequences === false,
       vnActive,
-      nodeBodyHtml: node ? _renderSequenceNode(node, active) : ''
+      node: node ? _sequenceNodeSnapshot(node, active, state) : null
     };
+  }
+
+  // Typed snapshot for one sequence node. The React `SequenceNodePanel`
+  // (`src/campaign/tabs/SequenceNode.tsx`) consumes this directly —
+  // it replaces the closure-private `_renderSequenceNode` HTML helper
+  // (deleted in Phase G.8). Discriminated by `type`. The choice variant
+  // pre-resolves eligibility + alignment hint per choice so the React
+  // tree doesn't need to reach back into CJS.CampaignSequences /
+  // CampaignAlignment.
+  function _sequenceNodeSnapshot(node = {}, active = {}, state = CS().getState() || {}) {
+    const Seq = window.CJS.CampaignSequences;
+    const type = String(node.type || 'narration').toLowerCase();
+    const replay = active?.applyConsequences === false;
+    const speaker = node.speaker || '';
+    const text = node.text || node.prompt || node.summary || node.title || '';
+    const meta = _sequenceNodeMetaBits(node);
+    if (type === 'choice') {
+      const choices = (node.choices || []).map((choice) => {
+        const eligibility = Seq?.choiceEligibility?.(choice, node, state, { active }) || { ok: true, blockers: [], hidden: false };
+        if (eligibility.hidden) return null;
+        const locked = !eligibility.ok;
+        const alignmentHint = window.CJS.CampaignAlignment?.describeDeltas?.(
+          choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta
+        );
+        const hint = locked
+          ? (eligibility.blockers || []).join(' | ')
+          : (choice.summary || alignmentHint || choice.next || '');
+        return {
+          id: String(choice.id || ''),
+          label: String(choice.label || choice.id || ''),
+          hint: String(hint || ''),
+          locked
+        };
+      }).filter(Boolean);
+      return { type: 'choice', speaker, text: text || 'Choose a path.', choices };
+    }
+    if (type === 'stat_check') {
+      return {
+        type: 'stat_check',
+        text: text || `${node.actor || 'Party'} checks ${node.stat || '?'} vs ${node.difficulty || node.dc || '?'}.`,
+        meta
+      };
+    }
+    if (type === 'combat') {
+      return {
+        type: 'combat',
+        text: text || node.label || 'Combat encounter',
+        meta,
+        replay,
+        encounterId: String(node.encounterId || ''),
+        battleSetId: String(node.battleSetId || '')
+      };
+    }
+    if (type === 'minigame') {
+      const gameId = node.minigame?.gameId || node.minigameId || node.gameId || '';
+      return {
+        type: 'minigame',
+        text: text || `${_label(gameId || 'Mini-game')} challenge`,
+        meta,
+        replay,
+        gameId: String(gameId),
+        gameLabel: gameId ? _label(gameId) : ''
+      };
+    }
+    if (type === 'scenario') {
+      const activeRun = state.activeScenarioRun;
+      const scenarioId = String(node.scenarioId || '');
+      const scenarioOpen = !!(activeRun && activeRun.scenarioId === scenarioId);
+      return {
+        type: 'scenario',
+        text: text || node.label || node.title || 'Exploration run',
+        meta,
+        replay,
+        scenarioId,
+        scenarioOpen
+      };
+    }
+    if (type === 'end') {
+      return { type: 'end', text: text || 'This sequence is ready to close.' };
+    }
+    return {
+      type: 'default',
+      kind: type,
+      speaker,
+      text,
+      meta,
+      replay,
+      next: String(node.next || '')
+    };
+  }
+
+  function _sequenceNodeMetaBits(node = {}) {
+    const bits = [];
+    if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || '?'}`);
+    if (node.encounterId) bits.push(String(node.encounterId));
+    if (node.battleSetId) bits.push(String(node.battleSetId));
+    if (node.scenarioId) bits.push(`Scenario: ${_label(node.scenarioId)}`);
+    const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
+    const difficulty = node.minigame?.difficulty || node.difficulty;
+    if (gameId) bits.push(`Mini-Game: ${_label(gameId)} Lv ${difficulty || 1}`);
+    if (node.tags?.length) bits.push((node.tags || []).map(_label).join(', '));
+    return bits;
   }
 
   function getScenarioSummaryData(state = CS().getState()) {

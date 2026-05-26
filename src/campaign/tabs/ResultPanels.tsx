@@ -29,6 +29,7 @@ import {
   type ScenarioSummaryRun,
   type SequenceScope
 } from "./data/resultPanels";
+import { SequenceNodePanel } from "./SequenceNode";
 
 // ── EventResult ───────────────────────────────────────────────────
 export function EventResultPanel({ state }: { state: CampaignStateSnapshot }) {
@@ -429,10 +430,9 @@ function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
 
 // ── Active Sequence ───────────────────────────────────────────────
 // Shared by StoryHome (scope='story'), QuestHome (scope='quest'),
-// and EventTab (scope='event'). The wrapper renders in JSX; the
-// node body (choice / stat-check / combat / minigame / scenario /
-// end / narration variants) still comes through an HTML bridge
-// because each variant has its own action set.
+// and EventTab (scope='event'). The wrapper + node body are now full
+// JSX. The bridge returns a typed `node` discriminated union; the
+// `SequenceNodePanel` JSX component handles each of the 7 variants.
 export function ActiveSequencePanel({
   state,
   scopes
@@ -491,11 +491,8 @@ export function ActiveSequencePanel({
           End
         </button>
       </div>
-      {data.nodeBodyHtml ? (
-        <div
-          className="campaign-sequence-node-bridge"
-          dangerouslySetInnerHTML={{ __html: data.nodeBodyHtml }}
-        />
+      {data.node ? (
+        <SequenceNodePanel node={data.node} />
       ) : (
         <div className="campaign-empty">Loading sequence node...</div>
       )}
