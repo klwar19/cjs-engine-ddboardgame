@@ -1903,6 +1903,45 @@ assertEq('Negate ultimate zeroes damage applied', negResult.applied, 0);
 assertEq('Negate ultimate keeps HP intact', aegis.currentHP, 50);
 assertEq('Flag cleared after consumption', aegis.nextDamageNegated, false);
 
+DS.replace('skills', 'inline_probe_skill', {
+  id: 'inline_probe_skill',
+  name: 'Inline Probe',
+  power: 0,
+  ap: 1,
+  mp: 0,
+  range: 0,
+  effects: [{
+    effectId: '_inline_probe_status',
+    inline: {
+      id: '_inline_probe_status',
+      name: 'Inline Probe Status',
+      trigger: 'on_skill_use',
+      target: 'self',
+      action: 'status_apply',
+      statusId: 'negate_next_damage',
+      duration: 1,
+      value: 1,
+      source: 'flat'
+    }
+  }]
+});
+const inlineValidation = DS.validate();
+assert('inline skill effect passes DataStore validate',
+  !inlineValidation.errors.some((error) => error.includes('_inline_probe_status')));
+const inlineCaster = {
+  instanceId: 'inline_probe_user',
+  name: 'Inline Probe User',
+  team: 'player',
+  pos: [0, 0],
+  currentHP: 50,
+  currentMP: 10,
+  skills: ['inline_probe_skill'],
+  turnState: { hasMoved: false, mainActionUsed: false, apRemaining: 2, cooldowns: {} }
+};
+const inlineSkillResult = AH.execute(inlineCaster, { type: 'skill', skillId: 'inline_probe_skill' }, { turnNumber: 1 });
+assert('inline skill executes', inlineSkillResult.success);
+assertEq('inline skill applies status effect', inlineCaster.nextDamageNegated, true);
+
 // ────────────────────────────────────────────────────────────────────
 // TEST 26: Relationship tiers and condition gating
 // ────────────────────────────────────────────────────────────────────

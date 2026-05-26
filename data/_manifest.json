@@ -290,6 +290,12 @@
       "category": "campaignEvents"
     },
     {
+      "path": "data/campaigns/haven/events/haven_plot_seeds.table.json",
+      "scope": "world",
+      "world": "haven",
+      "category": "campaignEvents"
+    },
+    {
       "path": "data/campaigns/haven/map_seeds/haven_extra_map_seeds.json",
       "scope": "world",
       "world": "haven",

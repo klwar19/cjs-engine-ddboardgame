@@ -386,12 +386,22 @@ window.CJS.ContentManager = (() => {
       if (ids.includes(raw)) return raw;
       return ids.find((id) => String(id).endsWith(`_${raw}`)) || raw;
     };
+    const effectIdOf = (ref) => typeof ref === 'string' ? ref : (ref?.effectId || ref?.inline?.id);
+    const hasInlineEffect = (ref, effectId) => {
+      const inline = typeof ref === 'object' ? ref?.inline : null;
+      return !!(inline && (!inline.id || !effectId || inline.id === effectId));
+    };
+    const hasEffectRef = (ref) => {
+      const effectId = effectIdOf(ref);
+      return !!(effectId && (DS().exists('effects', effectId) || hasInlineEffect(ref, effectId)));
+    };
 
     for (const skill of DS().getAllAsArray('skills')) {
       for (let i = 0; i < (skill.effects || []).length; i++) {
         const ref = skill.effects[i];
-        if (ref?.effectId && !DS().exists('effects', ref.effectId)) {
-          _addValidationIssue(issues, 'error', skill._origin, 'skills', skill.id, `effects[${i}]`, `Missing effect "${ref.effectId}"`);
+        const effectId = effectIdOf(ref);
+        if (effectId && !hasEffectRef(ref)) {
+          _addValidationIssue(issues, 'error', skill._origin, 'skills', skill.id, `effects[${i}]`, `Missing effect "${effectId}"`);
         }
       }
     }
@@ -399,8 +409,9 @@ window.CJS.ContentManager = (() => {
     for (const item of DS().getAllAsArray('items')) {
       for (let i = 0; i < (item.effects || []).length; i++) {
         const ref = item.effects[i];
-        if (ref?.effectId && !DS().exists('effects', ref.effectId)) {
-          _addValidationIssue(issues, 'error', item._origin, 'items', item.id, `effects[${i}]`, `Missing effect "${ref.effectId}"`);
+        const effectId = effectIdOf(ref);
+        if (effectId && !hasEffectRef(ref)) {
+          _addValidationIssue(issues, 'error', item._origin, 'items', item.id, `effects[${i}]`, `Missing effect "${effectId}"`);
         }
       }
       for (let i = 0; i < (item.grantedSkills || []).length; i++) {
@@ -414,8 +425,9 @@ window.CJS.ContentManager = (() => {
     for (const passive of DS().getAllAsArray('passives')) {
       for (let i = 0; i < (passive.effects || []).length; i++) {
         const ref = passive.effects[i];
-        if (ref?.effectId && !DS().exists('effects', ref.effectId)) {
-          _addValidationIssue(issues, 'error', passive._origin, 'passives', passive.id, `effects[${i}]`, `Missing effect "${ref.effectId}"`);
+        const effectId = effectIdOf(ref);
+        if (effectId && !hasEffectRef(ref)) {
+          _addValidationIssue(issues, 'error', passive._origin, 'passives', passive.id, `effects[${i}]`, `Missing effect "${effectId}"`);
         }
       }
     }
@@ -504,7 +516,12 @@ window.CJS.ContentManager = (() => {
 
   function formatValidationReport(result) {
     const lines = [];
-    const byFile = result?.byFile || {};
+    const byFile = result?.byFile || (result?.issues || []).reduce((out, issue) => {
+      const file = issue.file || '(unknown file)';
+      out[file] = out[file] || [];
+      out[file].push(issue);
+      return out;
+    }, {});
     for (const file of Object.keys(byFile).sort()) {
       lines.push(file);
       for (const issue of byFile[file]) {

@@ -452,13 +452,29 @@ window.CJS.DataStore = (() => {
   function validate() {
     const errors = [];
     const warnings = [];
+    const _effectId = (ref) => typeof ref === 'string' ? ref : (ref?.effectId || ref?.inline?.id);
+    const _hasInlineEffect = (ref, effectId) => {
+      const inline = typeof ref === 'object' ? ref?.inline : null;
+      return !!(inline && (!inline.id || !effectId || inline.id === effectId));
+    };
+    const _hasEffectRef = (ref) => {
+      const effectId = _effectId(ref);
+      return !!(effectId && (exists('effects', effectId) || _hasInlineEffect(ref, effectId)));
+    };
+    const _hasBattleSetRef = (battleSetId) => {
+      if (!battleSetId) return false;
+      if (exists('battleSets', battleSetId)) return true;
+      return Object.values(_data.battleSets || {}).some((set) =>
+        (set.cards || []).some((card) => card.id === battleSetId)
+      );
+    };
 
     // Validate skills → effects
     for (const [id, skill] of Object.entries(_data.skills)) {
       if (skill.effects) {
         for (const ref of skill.effects) {
-          if (!exists('effects', ref.effectId)) {
-            errors.push(`Skill "${id}" references missing effect "${ref.effectId}"`);
+          if (!_hasEffectRef(ref)) {
+            errors.push(`Skill "${id}" references missing effect "${_effectId(ref)}"`);
           }
         }
       }
@@ -468,8 +484,8 @@ window.CJS.DataStore = (() => {
     for (const [id, item] of Object.entries(_data.items)) {
       if (item.effects) {
         for (const ref of item.effects) {
-          if (!exists('effects', ref.effectId)) {
-            errors.push(`Item "${id}" references missing effect "${ref.effectId}"`);
+          if (!_hasEffectRef(ref)) {
+            errors.push(`Item "${id}" references missing effect "${_effectId(ref)}"`);
           }
         }
       }
@@ -479,8 +495,8 @@ window.CJS.DataStore = (() => {
     for (const [id, passive] of Object.entries(_data.passives)) {
       if (passive.effects) {
         for (const ref of passive.effects) {
-          if (!exists('effects', ref.effectId)) {
-            errors.push(`Passive "${id}" references missing effect "${ref.effectId}"`);
+          if (!_hasEffectRef(ref)) {
+            errors.push(`Passive "${id}" references missing effect "${_effectId(ref)}"`);
           }
         }
       }
@@ -602,9 +618,16 @@ window.CJS.DataStore = (() => {
         warnings.push(`Scenario "${id}" references missing map "${scenario.mapId}"`);
       }
       (scenario.setBattles || []).forEach((battle) => {
-        const encounterId = battle.encounterId || battle.id;
+        const encounterId = battle.encounterId;
         if (encounterId && !exists('encounters', encounterId)) {
           warnings.push(`Scenario "${id}" references missing encounter "${encounterId}"`);
+        }
+        const battleSetId = battle.battleSetId;
+        if (battleSetId && !_hasBattleSetRef(battleSetId)) {
+          warnings.push(`Scenario "${id}" references missing battle set "${battleSetId}"`);
+        }
+        if (!encounterId && !battleSetId) {
+          warnings.push(`Scenario "${id}" battle "${battle.id || '(unnamed)'}" has no encounterId or battleSetId`);
         }
       });
     }

@@ -33,6 +33,16 @@ window.CJS.ActionHandler = (() => {
 
   function _sfx(key, opts) { try { AM()?.playSfx(key, opts); } catch (e) {} }
   function _anim(name, payload) { try { AB()?.emit(name, payload); } catch (e) {} }
+  function _resolveEffectRef(ref) {
+    if (!ref) return null;
+    const effectId = typeof ref === 'string' ? ref : (ref.effectId || ref.inline?.id);
+    const inline = typeof ref === 'object' ? ref.inline : null;
+    const master = effectId ? DS().get('effects', effectId) : null;
+    const base = master || (inline && (!effectId || !inline.id || inline.id === effectId) ? inline : null);
+    if (!base) return null;
+    const overrides = typeof ref === 'object' ? (ref.overrides || {}) : {};
+    return { ...base, ...overrides, id: base.id || effectId };
+  }
 
   // ── COMBO SYSTEM ───────────────────────────────────────────────────
   // Chaining QTE successes within a single unit's turn (or across
@@ -654,10 +664,8 @@ window.CJS.ActionHandler = (() => {
 
     // Apply skill's additional effects (from skill.effects[])
     for (const ref of (skill.effects || [])) {
-      const effectRef = /** @type {any} */ (ref);
-      const master = DS().get('effects', effectRef.effectId);
-      if (!master) continue;
-      const merged = { ...master, ...(effectRef.overrides || {}) };
+      const merged = _resolveEffectRef(ref);
+      if (!merged) continue;
       ER().executeEffect(merged, {
         caster: unit, unit, target, skillUsed: skill,
         aoeOrigin, aoeDirection: target?.pos,
@@ -710,9 +718,8 @@ window.CJS.ActionHandler = (() => {
 
     // Fire each item effect
     for (const ref of (item.effects || [])) {
-      const master = DS().get('effects', ref.effectId);
-      if (!master) continue;
-      const merged = { ...master, ...(ref.overrides || {}) };
+      const merged = _resolveEffectRef(ref);
+      if (!merged) continue;
       const target = action.targetId ? GE().getUnit(action.targetId) : unit;
       ER().executeEffect(merged, {
         caster: unit, unit, target,
