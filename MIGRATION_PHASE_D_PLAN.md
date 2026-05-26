@@ -275,40 +275,71 @@ and any sub-helpers it owned exclusively.
   `QuestPillData` reusing `<QuestPill>`. Every closure-private
   `_render*` sub-renderer in campaign-ui.js is now JSX.
 
-### Then — Phase H (delete campaign-ui.js)
+### Phase H (shrink, then delete campaign-ui.js)
 
-Once every G.* entry above is ported, the closure in
-`js/campaign/campaign-ui.js` retains only:
+After Phase G, the closure in `js/campaign/campaign-ui.js` retains:
 
 - The bridge surface: `enableReactShell`, `init`, all `get*Data`
-  functions, the chrome setters (`setActiveMode/Tab/Panel`).
-- The action dispatcher (`_handleAction` + supporting closures for
-  every `data-campaign-action` string).
-- The vanilla render fallback for non-React mode.
+  functions, the chrome setters (`setActiveMode/Tab/Panel`), and the
+  new `handleAction` dispatcher boundary.
+- The action implementation (`_handleAction` switch + ~200 closure
+  functions: modals, scenario generation, story-director rolls,
+  ops calls, save/log management).
+- The vanilla render fallback for non-React mode
+  (`render()` else-branch, `_renderMain`, `_renderHeader`,
+  `_renderModeBar`, `_renderSubTabs`, `_renderRecentLogStrip`,
+  `_renderCommandRail`, `_renderPanelLayer`).
 
-Phase H removes both halves:
+- [x] **H.1 — Typed action dispatcher + registry.** `dispatchCampaignAction`
+  no longer synthesizes a hidden `<button>` click; it calls the new
+  public `CampaignUI.handleAction(name, data)` boundary directly.
+  `src/campaign/actionNames.ts` is a `CampaignActionName` union of all
+  246 action strings; `dispatchCampaignAction`'s first arg is typed
+  against it (every React onClick is compile-checked). All per-tab
+  action helpers + the `StoryActionButton` / `WorldGateAction` data
+  shapes use `CampaignActionName`. `test_actions_bridge.js`
+  cross-checks union ↔ switch parity. Also fixed two latent kebab-key
+  payload bugs (`world-id`/`target-tab`, `battle-id`).
 
-- [ ] **H.1 — Port `_handleAction`** to a typed reducer in TypeScript.
-  Each case becomes either a typed action wrapper in
-  `src/campaign/actions.ts` or a slot in a CampaignActions registry.
-  The `dispatchCampaignAction` bridge becomes a direct map lookup.
-- [ ] **H.2 — Remove the vanilla render fallback.** With React shell
-  always enabled and every tab/sub-panel JSX, `render()` and
-  `_renderMain` are dead; the chrome events route through `onClick`
-  + the bridge setters; the drawer is React-portaled.
-- [ ] **H.3 — Migrate `getXxxData` bridge functions** to TypeScript.
-  Move them into `src/campaign/bridge/` modules grouped by domain
-  (chrome, tabs, panels). The CampaignState typed surface gets the
-  fields these readers touch, so the bridge no longer depends on
-  closure-private helpers.
-- [ ] **H.4 — Delete `js/campaign/campaign-ui.js` + `js/campaign/ui/`**
-  (cui-controls / cui-equipment / cui-log / cui-modals / cui-options
-  / cui-portraits / cui-utils / cui-tabs/* / cui-react-bridge).
-  Their stable helpers (`Utils.esc`, `Log.logKind`, etc.) move to
-  TypeScript util modules.
+  > **Note:** H.1 deliberately keeps the `_handleAction` switch + its
+  > closure functions in campaign-ui.js. They are the actual game
+  > logic (modals, scenario gen, etc.), not thin wrappers — porting
+  > them to TS is the bulk of H.3/H.4 and must come after K.3 (see
+  > below). `handleAction` is the typed seam that lets that port
+  > happen function-by-function without touching React call sites.
+
+**Hard dependency — do K.3 before H.2–H.5.** The legacy
+`cui-hub-tab.js` / `cui-party-tab.js` / `cui-world-map-tab.js` still
+render their tab bodies + the drawer body as HTML strings carrying
+`data-campaign-action` / `data-campaign-mode` / `data-campaign-tab`.
+Those rely on the delegated `_bindEvents` click listener and the
+vanilla chrome. Until K.3 ports them to JSX (typed bridge + onClick),
+`_bindEvents`, `_handleAction`, and the chrome `_render*` helpers
+cannot be removed. So the remaining Phase H steps are gated on K.3:
+
+- [ ] **K.3 (prerequisite) — port HubTab / PartyTab / WorldMapTab**
+  tab bodies + drawer panels to typed bridges + JSX (same pattern as
+  Phase G). Removes the last `data-campaign-action` HTML strings.
+- [ ] **H.2 — Remove the vanilla render fallback.** Once K.3 lands,
+  `render()`'s else-branch, `_renderMain`, the chrome `_render*`
+  helpers, `_renderPanelLayer`, and the dead `_openPanel`/`_closePanel`
+  non-React branches are all unreachable (`_reactShellEnabled` is only
+  ever set true, by the sole `CampaignShell` boot path). Delete them
+  and `_bindEvents` (no `data-campaign-*` HTML left to delegate).
+  Update the four `_reactShellEnabled`-branch assertions in
+  `test_campaign_shell_bridge.js`.
+- [ ] **H.3 — Port `_handleAction` closures to TS.** Move each handler
+  (modals, scenario gen, story director, ops calls) into typed modules
+  under `src/campaign/actions/` domain-by-domain. `handleAction` shrinks
+  to a `Record<CampaignActionName, fn>` lookup; the switch is deleted
+  as cases migrate.
+- [ ] **H.4 — Migrate `get*Data` bridges to TS** under
+  `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
+  CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
+  `js/campaign/ui/`**. Stable leaf helpers (`Utils.esc`, `Log.logKind`,
+  `Controls.actionBtn`, etc.) move to TS util modules first.
 - [ ] **H.5 — Rewrite `test_campaign_ui_bootstrap.js`** against the
-  React tree. The bridge surface test (`test_campaign_shell_bridge.js`)
-  becomes a TypeScript unit test, also exercised in vitest if added.
+  React tree; fold `test_campaign_shell_bridge.js` into a TS unit test.
 
 ## Phase I — Performance (after H)
 
@@ -431,13 +462,14 @@ finishes the authoring loop:
 | After G.17 (zombie scavenge + dead-code purge) | 576 |
 
 Cumulative Phase F+G: 641 KB → 576 KB. Every closure-private
-`_render*` sub-renderer in campaign-ui.js is now JSX. The remaining
-~576 KB is the `_handleAction` dispatcher, the `get*Data` bridges,
-the vanilla render fallback, and the legacy hub/party/world-map tab
-HTML paths the React shell still wraps. Phase H removes the
-campaign-ui.js render/dispatch halves; Phases I/J pivot from "remove
-HTML strings" to "optimize the React tree + open the authoring
-loop for AI generators."
+`_render*` sub-renderer in campaign-ui.js is now JSX. H.1 (typed
+dispatcher + action registry) is a logic/type change, not a size
+change — campaign-ui.js still holds the `_handleAction` switch, the
+`get*Data` bridges, the vanilla render fallback, and the legacy
+hub/party/world-map tab HTML paths. Those come out in K.3 + H.2–H.5
+(K.3 is a hard prerequisite — see the Phase H section). Phases I/J
+pivot from "remove HTML strings" to "optimize the React tree + open
+the authoring loop for AI generators."
 
 ## Done-when gate
 
