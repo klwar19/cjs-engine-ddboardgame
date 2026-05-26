@@ -320,14 +320,21 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
 - [ ] **K.3 (prerequisite) — port HubTab / PartyTab / WorldMapTab**
   tab bodies + drawer panels to typed bridges + JSX (same pattern as
   Phase G). Removes the last `data-campaign-action` HTML strings.
-- [ ] **H.2 — Remove the vanilla render fallback.** Once K.3 lands,
-  `render()`'s else-branch, `_renderMain`, the chrome `_render*`
-  helpers, `_renderPanelLayer`, and the dead `_openPanel`/`_closePanel`
-  non-React branches are all unreachable (`_reactShellEnabled` is only
-  ever set true, by the sole `CampaignShell` boot path). Delete them
-  and `_bindEvents` (no `data-campaign-*` HTML left to delegate).
-  Update the four `_reactShellEnabled`-branch assertions in
-  `test_campaign_shell_bridge.js`.
+- [~] **H.2 — Remove the vanilla render fallback. (render() else-branch
+  done.)** `render()`'s unreachable else-branch (`_root.innerHTML`
+  vanilla chrome) and its exclusive chrome helpers (`_renderHeader`,
+  `_renderModeBar`, `_renderSubTabs`, `_renderRecentLogStrip`,
+  `_renderCommandRail`, `_renderScenarioHud`,
+  `_renderCompactCurrencies`, `_renderWorldEventsTicker`) are deleted —
+  `getChromeData` is the only chrome renderer. Also purged ~17 other
+  dead `_`-private closures the React migration orphaned across D–G.
+  Remaining (kept intentionally as flag-guarded defensive no-ops, all
+  validated by `test_campaign_shell_bridge.js`): the `!_reactShellEnabled`
+  loading clobber in `init()` and the non-React branches of
+  `_openPanel`/`_closePanel`. `_renderMain` stays as the `getMainBody`
+  defensive fallback (reachable only if a tab id isn't registered).
+  `_bindEvents` stays until K.3 (HTML-bridge tabs still delegate
+  clicks through it).
 - [ ] **H.3 — Port `_handleAction` closures to TS.** Move each handler
   (modals, scenario gen, story director, ops calls) into typed modules
   under `src/campaign/actions/` domain-by-domain. `handleAction` shrinks
@@ -460,6 +467,9 @@ finishes the authoring loop:
 | After G.15 (scenario chips) | 588 |
 | After G.16 (town snapshot/roll float) | 585 |
 | After G.17 (zombie scavenge + dead-code purge) | 576 |
+| After H.1 (typed dispatcher; logic-only) | 576 |
+| After orphan-closure cleanup (D–G dead code) | 576 |
+| After H.2 render-fallback removal | 569 |
 
 Cumulative Phase F+G: 641 KB → 576 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX. H.1 (typed
