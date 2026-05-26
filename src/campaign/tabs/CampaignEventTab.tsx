@@ -23,6 +23,7 @@ import {
   ActiveSequencePanel
 } from "./ResultPanels";
 import { SequenceDeliveryState, SequenceActionButton } from "./SequenceCard";
+import { QuestChainActiveCard, QuestChainTemplateCard } from "./QuestChain";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -52,11 +53,6 @@ export function CampaignEventTab({ state, kind }: Props) {
       <EventResultPanel state={state} />
     </div>
   );
-}
-
-function HtmlBridge({ html, className }: { html: string; className: string }) {
-  if (!html) return null;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function EventTabHero({ data }: { data: EventTabData }) {
@@ -177,15 +173,15 @@ function SideStoryChainsPanel({ chains }: { chains: EventTabQuestChains }) {
         </span>
       </div>
       {hasActive ? (
-        <div
-          className="campaign-quest-chain-active-bridge"
-          dangerouslySetInnerHTML={{ __html: chains.activeHtml }}
-        />
+        chains.active.map((chain) => (
+          <QuestChainActiveCard key={chain.templateId} chain={chain} />
+        ))
       ) : hasAvailable ? (
-        <div
-          className="campaign-tab-grid campaign-quest-chain-template-bridge"
-          dangerouslySetInnerHTML={{ __html: chains.availableHtml }}
-        />
+        <div className="campaign-tab-grid">
+          {chains.available.map((chain) => (
+            <QuestChainTemplateCard key={chain.id} chain={chain} />
+          ))}
+        </div>
       ) : (
         <div className="campaign-empty">No side-story chains available.</div>
       )}

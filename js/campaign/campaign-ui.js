@@ -1878,12 +1878,119 @@ window.CJS.CampaignUI = (() => {
     return window.CJS.CampaignUIInternal.HubTab.renderRumorRow(rumor, options);
   }
 
-  function _renderQuestChainActive(chain) {
-    return window.CJS.CampaignUIInternal.HubTab.renderQuestChainActive(chain);
+  // Phase G.14 — typed quest-chain data for the EventTab side-story
+  // cards. The HubTab still renders chains as HTML for its own
+  // questChains tab body; that path ports later (K.3). Until then,
+  // these typed builders read the same chain shape and produce
+  // structured data the React tree consumes.
+  function _questChainStepData(step = {}, index = 0) {
+    const meta = [
+      step.chapterLabel ? `Chapter ${step.chapterLabel}` : '',
+      step.phaseType ? _label(step.phaseType) : '',
+      step.kind ? _label(step.kind) : ''
+    ].filter(Boolean);
+    const detail = [
+      step.vn?.prompt || step.visualNovel?.prompt,
+      step.character?.beat,
+      step.event?.prompt,
+      step.map?.objective,
+      step.combat?.objective,
+      step.minigame?.objective
+    ].filter(Boolean).slice(0, 2);
+    return {
+      id: String(step.id || ''),
+      label: String(step.label || step.id || `Step ${index + 1}`),
+      text: String(step.text || ''),
+      meta: meta.map(String),
+      systems: _questChainStepSystems(step),
+      detailLines: detail.map(String),
+      pulseHints: (step.progressTriggers || []).slice(0, 2).map((trigger) => _triggerLabel(trigger))
+    };
   }
 
-  function _renderQuestChainTemplate(chain) {
-    return window.CJS.CampaignUIInternal.HubTab.renderQuestChainTemplate(chain);
+  function _questChainStepSystems(step = {}) {
+    const systems = [];
+    if (step.vn || step.visualNovel) systems.push('VN');
+    if (step.character) systems.push('Character');
+    if (step.event) systems.push('Event');
+    if (step.map) systems.push('Map');
+    if (step.combat) systems.push('Combat');
+    if (step.minigame) systems.push('Mini-Game');
+    return systems;
+  }
+
+  function _questChainStakesData(chain = {}) {
+    const rewards = Ops().describe(chain.rewardOps || chain.rewards || []);
+    const failures = Ops().describe(chain.failureOps || chain.failureConsequences || []);
+    const battleCount = (chain.battleSetIds || []).length;
+    const mapCount = (chain.mapSeedIds || []).length + (chain.linkedScenario ? 1 : 0);
+    const runBits = [mapCount ? `${mapCount} map hook${mapCount === 1 ? '' : 's'}` : 'generated map'];
+    if (battleCount) runBits.push(`${battleCount} battle hook${battleCount === 1 ? '' : 's'}`);
+    return {
+      runLine: runBits.join(' · '),
+      rewardLine: rewards.length ? rewards.join('; ') : '',
+      failureLine: failures.length ? failures.join('; ') : 'GM consequence or mark failed'
+    };
+  }
+
+  function _questChainVnPanelData(chain = {}, options = {}) {
+    const template = chain.template || chain || {};
+    const steps = template.steps || [];
+    const currentId = options.active ? chain.currentStepId : steps[0]?.id;
+    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === currentId));
+    const current = steps[currentIndex] || steps[0] || {};
+    const npcs = (template.mainNpcs || []).slice(0, 4);
+    return {
+      badgeLabel: options.active ? 'Current Scene' : 'Opening Scene',
+      title: String(current.label || template.title || template.id || 'Side Story'),
+      text: String(current.text || template.summary || 'Pick a scene, run it as VN/table narration, then decide whether it becomes a map, battle, quest progress, or a parked lead.'),
+      systems: _questChainStepSystems(current),
+      plot: String(template.flowSummary || template.type || 'side story'),
+      characters: npcs.length ? npcs.join(', ') : 'GM choice',
+      steps: steps.map((step, index) => ({
+        index: index + 1,
+        label: String(step.label || step.id || `Step ${index + 1}`),
+        state: index === currentIndex ? 'current' : (index < currentIndex ? 'done' : 'upcoming')
+      }))
+    };
+  }
+
+  function _questChainActiveData(chain = {}) {
+    const template = chain.template || {};
+    const steps = template.steps || [];
+    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === chain.currentStepId));
+    const step = steps.find((entry) => entry.id === chain.currentStepId) || null;
+    const tags = Array.from(new Set([
+      ...(template.tags || []),
+      ...(template.contextTags || []),
+      ...(template.monsterTags || [])
+    ].filter(Boolean))).slice(0, 8);
+    return {
+      templateId: String(chain.templateId || ''),
+      title: String(chain.title || template.title || chain.templateId || ''),
+      status: String(chain.status || ''),
+      stepIndex: currentIndex + 1,
+      stepCount: steps.length || 1,
+      stepLabel: String(step?.label || chain.currentStepId || '-'),
+      currentStepDetail: step ? _questChainStepData(step, currentIndex) : null,
+      contextTags: tags.map((tag) => _label(tag)),
+      vnPanel: _questChainVnPanelData(chain, { active: true }),
+      stakes: _questChainStakesData(template)
+    };
+  }
+
+  function _questChainTemplateData(chain = {}) {
+    return {
+      id: String(chain.id || ''),
+      title: String(chain.title || chain.name || chain.id || ''),
+      summary: String(chain.summary || ''),
+      canonRisk: String(chain.canonRisk || 'green'),
+      canonRiskClass: Side().riskClass(chain.canonRisk),
+      tags: Array.isArray(chain.tags) ? chain.tags.map(String) : [],
+      vnPanel: _questChainVnPanelData(chain, { active: false }),
+      stakes: _questChainStakesData(chain),
+      steps: (chain.steps || []).map((step, index) => _questChainStepData(step, index))
+    };
   }
 
   // _renderQuestChainResolved, _renderSideStoryFlowGuide,
@@ -10404,10 +10511,8 @@ window.CJS.CampaignUI = (() => {
       questChains: kind === 'side' ? {
         activeCount: activeChains.length,
         availableCount: availableChains.length,
-        activeHtml: activeChains.map((chain) => _renderQuestChainActive(chain)).join(''),
-        availableHtml: availableChains.length
-          ? availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')
-          : ''
+        active: activeChains.map((chain) => _questChainActiveData(chain)),
+        available: availableChains.map((chain) => _questChainTemplateData(chain))
       } : null
     };
   }
