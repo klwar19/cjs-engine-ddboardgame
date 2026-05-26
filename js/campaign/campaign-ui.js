@@ -1217,20 +1217,47 @@ window.CJS.CampaignUI = (() => {
     return `<div class="campaign-chip-row"><span class="campaign-chip">${_esc(label)}</span></div>`;
   }
 
-  function _renderSequenceActionButton(entry = {}, scope = 'story') {
+  // Phase G.9 — typed delivery / action for sequence-card entries.
+  // The HTML siblings (`_renderSequenceDeliveryState`,
+  // `_renderSequenceActionButton`) stay until G.10 ports the
+  // sequence-shelf (storyHome / questHome) so the shelf keeps
+  // working without parallel data wiring. They now compose over
+  // these typed builders so behaviour stays in one place.
+  function _sequenceDeliveryData(entry = {}, scope = 'story') {
+    const status = _sequenceDeliveryStatus(entry, scope);
+    const note = _sequenceDeliveryNote(entry, scope);
+    if (!status || status === 'ready') {
+      return note ? { statusLabel: null, note: String(note) } : null;
+    }
+    return {
+      statusLabel: _label(status),
+      note: String(note || '')
+    };
+  }
+
+  function _sequenceActionData(entry = {}, scope = 'story') {
     const blocked = _sequenceDeliveryBlocked(entry, scope);
     const label = scope === 'story' ? _storySequenceActionLabel(entry) : (blocked ? 'In Update' : 'Start');
-    return `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(entry.id)}" ${blocked ? 'disabled' : ''}>${_esc(label)}</button>`;
+    return {
+      entryId: String(entry.id || ''),
+      label: String(label),
+      blocked: !!blocked
+    };
   }
 
   function _renderSequenceDeliveryState(entry = {}, scope = 'story') {
-    const status = _sequenceDeliveryStatus(entry, scope);
-    const note = _sequenceDeliveryNote(entry, scope);
-    if (!status || status === 'ready') return note ? `<div class="campaign-muted">${_esc(note)}</div>` : '';
-    return `
-      <div class="campaign-chip-row"><span class="campaign-chip">${_esc(_label(status))}</span></div>
-      ${note ? `<div class="campaign-muted">${_esc(note)}</div>` : ''}
-    `;
+    const data = _sequenceDeliveryData(entry, scope);
+    if (!data) return '';
+    const chip = data.statusLabel
+      ? `<div class="campaign-chip-row"><span class="campaign-chip">${_esc(data.statusLabel)}</span></div>`
+      : '';
+    const note = data.note ? `<div class="campaign-muted">${_esc(data.note)}</div>` : '';
+    return chip ? `${chip}${note}` : note;
+  }
+
+  function _renderSequenceActionButton(entry = {}, scope = 'story') {
+    const data = _sequenceActionData(entry, scope);
+    return `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_escAttr(data.entryId)}" ${data.blocked ? 'disabled' : ''}>${_esc(data.label)}</button>`;
   }
 
   function _sequenceDeliveryStatus(entry = {}, scope = 'story') {
@@ -10441,8 +10468,8 @@ window.CJS.CampaignUI = (() => {
         kindLabel: _label(entry.kind || kind),
         summary: entry.summary?.short || entry.summary?.default || entry.description || '',
         tagLabels: (entry.tags || []).slice(0, 4).map((tag) => _label(tag)),
-        deliveryHtml: _renderSequenceDeliveryState(entry, 'event'),
-        actionHtml: _renderSequenceActionButton(entry, 'event')
+        delivery: _sequenceDeliveryData(entry, 'event'),
+        action: _sequenceActionData(entry, 'event')
       })),
       questChains: kind === 'side' ? {
         activeCount: activeChains.length,

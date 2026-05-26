@@ -2,11 +2,9 @@
 //
 // One component for all three event tabs (character / special / side).
 // `kind` switches the kicker text and the meta line; `side` adds a
-// Side Story Chains section. Hero buttons and per-entry sequence
-// actions use the shared HTML bridges (deliveryHtml, actionHtml,
-// activeSequenceHtml, eventResultHtml) until they get their own JSX
-// port — when that happens, those properties drop and the matching
-// closure-private helpers in campaign-ui.js are deleted.
+// Side Story Chains section. Quest-chain panels (active / available)
+// still use HTML bridges until the G.14 port lands. Delivery + action
+// pills on each entry are now full JSX (Phase G.9).
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
@@ -24,6 +22,7 @@ import {
   CombatResultPanel,
   ActiveSequencePanel
 } from "./ResultPanels";
+import { SequenceDeliveryState, SequenceActionButton } from "./SequenceCard";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -157,22 +156,8 @@ function EventFileCard({ entry }: { entry: EventFileEntry }) {
           ))}
         </div>
       )}
-      {/* deliveryHtml is a chip row with a status note, conditional on
-          authored delivery state. Stays as a bridge string until the
-          sequence-delivery rules port. */}
-      {entry.deliveryHtml && (
-        <div
-          className="campaign-sequence-delivery-bridge"
-          dangerouslySetInnerHTML={{ __html: entry.deliveryHtml }}
-        />
-      )}
-      {/* actionHtml is the "Start" / "In Update" sequence-start button.
-          Stays as a bridge string until sequence-start ports to a
-          typed action wrapper. */}
-      <div
-        className="campaign-sequence-action-bridge"
-        dangerouslySetInnerHTML={{ __html: entry.actionHtml }}
-      />
+      <SequenceDeliveryState delivery={entry.delivery} />
+      <SequenceActionButton action={entry.action} />
     </article>
   );
 }
