@@ -19,7 +19,12 @@ import { dispatchCampaignAction } from "../actions";
 import { getQuestHomeData, type QuestHomeData, type QuestPaperLite } from "./data/questHome";
 import { QuestRow } from "./QuestRow";
 import type { QuestRowData } from "./data/questRow";
-import { SoloNoticePanel } from "./ResultPanels";
+import {
+  SoloNoticePanel,
+  PendingBattlePanel,
+  CombatResultPanel,
+  LastReportPanel
+} from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -64,9 +69,9 @@ function NormalQuestHome({
       <QuestRunTools data={data} />
       <SoloNoticePanel state={state} />
       <HtmlBridge html={data.scenarioSummaryHtml} className="campaign-scenario-summary-bridge" />
-      <HtmlBridge html={data.pendingBattleHtml} className="campaign-pending-battle-bridge" />
-      <HtmlBridge html={data.combatResultHtml} className="campaign-combat-result-bridge" />
-      <HtmlBridge html={data.lastReportHtml} className="campaign-last-report-bridge" />
+      <PendingBattlePanel state={state} />
+      <CombatResultPanel state={state} />
+      <LastReportPanel state={state} />
     </div>
   );
 }

@@ -33,8 +33,6 @@ export interface EventTabData {
   readonly entries: readonly EventFileEntry[];
   readonly activeSequenceHtml: string;
   readonly questChains: EventTabQuestChains | null;
-  readonly pendingBattleHtml: string;
-  readonly combatResultHtml: string;
 }
 
 interface Bridge {

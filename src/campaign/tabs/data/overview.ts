@@ -13,12 +13,7 @@ export type OverviewSectionId =
   | "townSnapshot"
   | "townRollFloat"
   | "adventureLegend"
-  | "scenarioSummary"
-  | "travelSurprise"
-  | "pendingBattle"
-  | "combatResult"
-  | "lastCombatResult"
-  | "lastReport";
+  | "scenarioSummary";
 
 interface Bridge {
   readonly renderOverviewSectionHtml: (

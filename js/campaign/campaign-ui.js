@@ -2362,69 +2362,11 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderPendingBattle(state) {
-    const battle = state.pendingBattle;
-    if (!battle) return '';
-    const isRandom = battle.source === 'random';
-    const canRun = battle.encounterId || battle.battleSetId || battle.monsterIds?.length;
-    return `
-      <section class="campaign-panel battle-ready">
-        <div class="campaign-panel-head">
-          <h2>Battle Ready</h2>
-          <span class="campaign-pill">${_esc(_battleSourceLabel(battle))}</span>
-        </div>
-        <strong>${_esc(battle.label || battle.encounterId)}</strong>
-        <div class="campaign-muted">${_esc(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '')}</div>
-        ${battle.battleMap?.theme ? `<div class="campaign-muted">Auto map: ${_esc(_label(battle.battleMap.theme))}</div>` : ''}
-        ${_renderPendingBattleContext(state, battle)}
-        ${_renderBattlePartySummary(state)}
-        <div class="campaign-control-help">Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.</div>
-        <div class="campaign-action-grid campaign-battle-primary-actions">
-          ${_actionBtn({ action: 'run-battle',       label: 'Run in Combat App', hint: 'Open the tactical combat screen with this encounter', kind: 'primary', disabled: !canRun })}
-          ${_actionBtn({ action: 'manual-battle',    label: 'Resolve Manually',  hint: 'Type a custom outcome and rewards' })}
-          ${_actionMenu('Battle Options', `
-            ${isRandom ? _actionBtn({ action: 'battle-reroll', label: 'Reroll', hint: 'Re-roll from the same random table' }) : ''}
-            ${_actionBtn({ action: 'battle-override',  label: 'Override',        hint: 'Pick a specific encounter from the catalog' })}
-            ${_actionBtn({ action: 'skip-victory',     label: 'Manual Victory',  hint: 'Skip the fight as a win (basic rewards)' })}
-            ${_actionBtn({ action: 'skip-defeat',      label: 'Manual Defeat',   hint: 'Skip as a loss (default: danger +2 and 10% currency loss)' })}
-            ${_actionBtn({ action: 'cancel-battle',    label: 'Cancel Battle',   hint: 'Remove pending battle, no effect', kind: 'danger' })}
-          `)}
-        </div>
-        <div class="campaign-action-grid campaign-battle-legacy-actions" hidden>
-          ${_actionBtn({ action: 'run-battle',       label: 'Run in Combat App',     hint: 'Open the tactical combat screen with this encounter', kind: 'primary', disabled: !canRun })}
-          ${_actionBtn({ action: 'manual-battle',    label: 'Resolve Manually',      hint: 'Type a custom outcome and rewards' })}
-          ${isRandom ? _actionBtn({ action: 'battle-reroll', label: '🎲 Reroll', hint: 'Re-roll from the same random table' }) : ''}
-          ${_actionBtn({ action: 'battle-override',  label: '📋 Override',           hint: 'Pick a specific encounter from the catalog' })}
-          ${_actionBtn({ action: 'skip-victory',     label: 'Manual Victory',        hint: 'Skip the fight as a win (basic rewards)' })}
-          ${_actionBtn({ action: 'skip-defeat',      label: 'Manual Defeat',         hint: 'Skip as a loss (default: danger +2 and 10% currency loss)' })}
-          ${_actionBtn({ action: 'cancel-battle',    label: 'Cancel',                hint: 'Remove pending battle, no effect', kind: 'danger' })}
-        </div>
-      </section>
-    `;
-  }
-
-  function _renderTravelSurprise(state) {
-    const notice = state.lastTravelSurprise;
-    if (!notice || !state.activeScenarioRun) return '';
-    const repeat = notice.repeated ? `Revisit ${notice.visitCount || 2}` : 'New route';
-    return `
-      <section class="campaign-panel campaign-travel-notice">
-        <div class="campaign-panel-head">
-          <h2>${_esc(notice.title || 'Travel Surprise')}</h2>
-          <span class="campaign-pill">${_esc(_label(notice.category || 'surprise'))}</span>
-        </div>
-        <p>${_esc(notice.prompt || '')}</p>
-        <div class="campaign-chip-row">
-          <span class="campaign-chip">${_esc(notice.area || 'Area')}</span>
-          <span class="campaign-chip">${_esc(repeat)}</span>
-          ${notice.location ? `<span class="campaign-chip">${_esc(notice.location)}</span>` : ''}
-        </div>
-        <div class="campaign-action-grid" style="margin-top:12px">
-          <button class="campaign-action" data-campaign-action="roll-travel-surprise">Roll Another</button>
-        </div>
-      </section>
-    `;
-  }
+  // _renderPendingBattle / _renderTravelSurprise — Phase G.4 port.
+  // Bodies moved to `src/campaign/tabs/ResultPanels.tsx`. Typed
+  // bridges `getPendingBattleData(state)` / `getTravelSurpriseData(state)`
+  // produce the data. `_battleSourceLabel`, `_renderBattlePartySummary`,
+  // `_renderPendingBattleContext` stay because they're sub-renderers.
 
   function _battleSourceLabel(battle) {
     const map = { random: '🎲 Random Roll', set: '📌 Set Battle', manual_pick: '📋 Picked', beat: '📜 Beat', manual: 'Manual' };
@@ -2450,41 +2392,10 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderCombatResult(state) {
-    const result = state.pendingBattleResult;
-    if (!result) return '';
-    const loot = _renderLootSummary(result.loot || []);
-    return `
-      <section class="campaign-panel battle-result">
-        <div class="campaign-panel-head"><h2>Returned From Combat</h2><span class="campaign-pill">${_esc(result.result)}</span></div>
-        <div class="campaign-muted">${_esc(result.encounterId || '')} | ${result.rounds || 0} rounds</div>
-        ${loot}
-        ${_renderCombatConsequenceNotice(result, state)}
-        <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="apply-combat-result">Apply to Campaign</button>
-          <button class="campaign-action danger" data-campaign-action="ignore-combat-result">Ignore</button>
-        </div>
-      </section>
-    `;
-  }
-
-  function _renderLastCombatResult(state) {
-    const result = state.lastCombatResult;
-    if (!result) return '';
-    const loot = _renderLootSummary(result.loot || []);
-    return `
-      <section class="campaign-panel battle-result applied">
-        <div class="campaign-panel-head">
-          <h2>Combat Applied</h2>
-          <span class="campaign-pill">${_esc(result.result || 'resolved')}</span>
-        </div>
-        <div class="campaign-muted">${_esc(result.encounterId || result.label || 'Campaign battle')} | ${result.rounds || 0} rounds</div>
-        ${result.summary ? `<p>${_esc(result.summary)}</p>` : ''}
-        ${_renderCombatPulseSummary(result.combatPulse)}
-        ${loot}
-      </section>
-    `;
-  }
+  // _renderCombatResult / _renderLastCombatResult — Phase G.4 port.
+  // Bodies moved to `src/campaign/tabs/ResultPanels.tsx`. Typed
+  // bridges `getCombatResultData(state)` / `getLastCombatResultData(state)`
+  // produce the data.
 
   function _renderCombatConsequenceNotice(result, state) {
     const outcome = String(result?.result || '').toLowerCase();
@@ -2532,22 +2443,9 @@ window.CJS.CampaignUI = (() => {
   // consequence-preview, and flavor-trail HTML chunks still come from
   // their HubTab/Controls renderers and embed via small bridges.
 
-  function _renderLastReport(state) {
-    const report = state.lastScenarioReport;
-    if (!report) return '';
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head"><h2>Last Scenario Report</h2><span class="campaign-pill">${_esc(report.outcome)}</span></div>
-        <div class="campaign-stat-grid">
-          <span>Danger <b>${report.danger}</b></span>
-          <span>Camp <b>${report.usedCampRests}</b></span>
-          <span>Events <b>${report.eventsUsed}</b></span>
-          <span>Battles <b>${report.completedBattles?.length || 0}</b></span>
-        </div>
-        <pre class="campaign-report">${_esc(JSON.stringify(report.diff, null, 2))}</pre>
-      </section>
-    `;
-  }
+  // _renderLastReport — Phase G.4 port. Body moved to
+  // `src/campaign/tabs/ResultPanels.tsx`. Typed bridge
+  // `getLastReportData(state)` produces the data.
 
   function _renderSide(state) {
     const activeQuests = Object.values(state.quests || {}).filter((quest) => quest.status === 'active');
@@ -10071,6 +9969,80 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  // Typed snapshots for small shared panels used across tabs.
+  function getTravelSurpriseData(state = CS().getState()) {
+    if (!state) return null;
+    const notice = state.lastTravelSurprise;
+    if (!notice || !state.activeScenarioRun) return null;
+    return {
+      title: notice.title || 'Travel Surprise',
+      categoryLabel: _label(notice.category || 'surprise'),
+      prompt: notice.prompt || '',
+      areaLabel: notice.area || 'Area',
+      repeatLabel: notice.repeated ? `Revisit ${notice.visitCount || 2}` : 'New route',
+      locationLabel: notice.location || ''
+    };
+  }
+
+  function getCombatResultData(state = CS().getState()) {
+    if (!state) return null;
+    const result = state.pendingBattleResult;
+    if (!result) return null;
+    return {
+      resultLabel: result.result || 'resolved',
+      encounterId: result.encounterId || '',
+      rounds: result.rounds || 0,
+      lootHtml: _renderLootSummary(result.loot || []),
+      consequenceNoticeHtml: _renderCombatConsequenceNotice(result, state)
+    };
+  }
+
+  function getLastCombatResultData(state = CS().getState()) {
+    if (!state) return null;
+    const result = state.lastCombatResult;
+    if (!result) return null;
+    return {
+      resultLabel: result.result || 'resolved',
+      label: result.encounterId || result.label || 'Campaign battle',
+      rounds: result.rounds || 0,
+      summary: result.summary || '',
+      pulseHtml: _renderCombatPulseSummary(result.combatPulse) || '',
+      lootHtml: _renderLootSummary(result.loot || [])
+    };
+  }
+
+  function getLastReportData(state = CS().getState()) {
+    if (!state) return null;
+    const report = state.lastScenarioReport;
+    if (!report) return null;
+    return {
+      outcome: report.outcome || '',
+      danger: report.danger || 0,
+      campsUsed: report.usedCampRests || 0,
+      eventsUsed: report.eventsUsed || 0,
+      battlesCount: (report.completedBattles || []).length,
+      diffJson: JSON.stringify(report.diff, null, 2)
+    };
+  }
+
+  function getPendingBattleData(state = CS().getState()) {
+    if (!state) return null;
+    const battle = state.pendingBattle;
+    if (!battle) return null;
+    const isRandom = battle.source === 'random';
+    const canRun = !!(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).length);
+    return {
+      sourceLabel: _battleSourceLabel(battle),
+      label: battle.label || battle.encounterId || '',
+      subLabel: battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '',
+      autoMapLabel: battle.battleMap?.theme ? _label(battle.battleMap.theme) : '',
+      contextHtml: _renderPendingBattleContext(state, battle) || '',
+      partySummaryHtml: _renderBattlePartySummary(state) || '',
+      canRun,
+      isRandom
+    };
+  }
+
   // Typed snapshot for the React SoloNotice panel. Returns null when
   // there's no pending solo hook card. Shared by Overview / EventTab /
   // QuestHome / QuestsPanel / StoryHome.
@@ -10374,9 +10346,7 @@ window.CJS.CampaignUI = (() => {
       }),
       storyPipelineHtml: _renderStoryPipelinePanel(pipeline) || '',
       syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || '',
-      scenarioSummaryHtml: activeRun ? (_renderScenarioSummary(state) || '') : '',
-      pendingBattleHtml: _renderPendingBattle(state) || '',
-      combatResultHtml: _renderCombatResult(state) || ''
+      scenarioSummaryHtml: activeRun ? (_renderScenarioSummary(state) || '') : ''
     };
   }
 
@@ -10439,11 +10409,7 @@ window.CJS.CampaignUI = (() => {
         battlesMax: run.limits?.randomBattles ?? 0,
         eventsUsed: run.eventsUsed,
         eventsMax: run.limits?.events ?? 0
-      },
-      travelSurpriseHtml: _renderTravelSurprise(state) || '',
-      pendingBattleHtml: _renderPendingBattle(state) || '',
-      combatResultHtml: _renderCombatResult(state) || '',
-      lastCombatResultHtml: _renderLastCombatResult(state) || ''
+      }
     };
     if (mode === 'freeform') {
       const setBattles = scenario?.setBattles || [];
@@ -10579,9 +10545,7 @@ window.CJS.CampaignUI = (() => {
         availableHtml: availableChains.length
           ? availableChains.map((chain) => _renderQuestChainTemplate(chain)).join('')
           : ''
-      } : null,
-      pendingBattleHtml: _renderPendingBattle(state) || '',
-      combatResultHtml: _renderCombatResult(state) || ''
+      } : null
     };
   }
 
@@ -10625,10 +10589,7 @@ window.CJS.CampaignUI = (() => {
       storyPapers: paperLite(storyPapers),
       activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest)),
       activeSequenceHtml: _renderActiveSequence(state, ['quest']) || '',
-      scenarioSummaryHtml: run ? (_renderScenarioSummary(state) || '') : '',
-      pendingBattleHtml: _renderPendingBattle(state) || '',
-      combatResultHtml: _renderCombatResult(state) || '',
-      lastReportHtml: _renderLastReport(state) || ''
+      scenarioSummaryHtml: run ? (_renderScenarioSummary(state) || '') : ''
     };
   }
 
@@ -10678,11 +10639,6 @@ window.CJS.CampaignUI = (() => {
       case 'townRollFloat':    return _renderTownRollFloat(state);
       case 'adventureLegend':  return _renderAdventureLegend(state);
       case 'scenarioSummary':  return _renderScenarioSummary(state);
-      case 'travelSurprise':   return _renderTravelSurprise(state);
-      case 'pendingBattle':    return _renderPendingBattle(state);
-      case 'combatResult':     return _renderCombatResult(state);
-      case 'lastCombatResult': return _renderLastCombatResult(state);
-      case 'lastReport':       return _renderLastReport(state);
       default: return '';
     }
   }
@@ -10827,6 +10783,11 @@ window.CJS.CampaignUI = (() => {
     getEventResultData,
     getOracleData,
     getSoloNoticeData,
+    getTravelSurpriseData,
+    getCombatResultData,
+    getLastCombatResultData,
+    getLastReportData,
+    getPendingBattleData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

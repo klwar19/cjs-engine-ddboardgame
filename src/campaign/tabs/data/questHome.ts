@@ -32,9 +32,6 @@ interface QuestHomeNormal {
   readonly activeQuestRows: readonly QuestRowData[];
   readonly activeSequenceHtml: string;
   readonly scenarioSummaryHtml: string;
-  readonly pendingBattleHtml: string;
-  readonly combatResultHtml: string;
-  readonly lastReportHtml: string;
 }
 
 interface QuestHomeZombie {

@@ -54,10 +54,6 @@ export interface RunData {
   readonly run: RunStats | null;
   readonly freeform: FreeformPanel | null;
   readonly linear: LinearPanel | null;
-  readonly travelSurpriseHtml: string;
-  readonly pendingBattleHtml: string;
-  readonly combatResultHtml: string;
-  readonly lastCombatResultHtml: string;
 }
 
 interface Bridge {

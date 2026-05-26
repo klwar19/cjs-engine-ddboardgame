@@ -35,6 +35,52 @@ export interface OracleData {
   readonly consequencePreviewHtml: string;
 }
 
+export interface TravelSurpriseData {
+  readonly title: string;
+  readonly categoryLabel: string;
+  readonly prompt: string;
+  readonly areaLabel: string;
+  readonly repeatLabel: string;
+  readonly locationLabel: string;
+}
+
+export interface CombatResultData {
+  readonly resultLabel: string;
+  readonly encounterId: string;
+  readonly rounds: number;
+  readonly lootHtml: string;
+  readonly consequenceNoticeHtml: string;
+}
+
+export interface LastCombatResultData {
+  readonly resultLabel: string;
+  readonly label: string;
+  readonly rounds: number;
+  readonly summary: string;
+  readonly pulseHtml: string;
+  readonly lootHtml: string;
+}
+
+export interface LastReportData {
+  readonly outcome: string;
+  readonly danger: number;
+  readonly campsUsed: number;
+  readonly eventsUsed: number;
+  readonly battlesCount: number;
+  readonly diffJson: string;
+}
+
+export interface PendingBattleData {
+  readonly sourceLabel: string;
+  readonly label: string;
+  readonly subLabel: string;
+  readonly autoMapLabel: string;
+  readonly contextHtml: string;
+  readonly partySummaryHtml: string;
+  readonly canRun: boolean;
+  readonly isRandom: boolean;
+}
+
 export interface SoloNoticeData {
   readonly tone: string;
   readonly summaryLabel: string;
@@ -55,6 +101,11 @@ interface Bridge {
   readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
   readonly getOracleData: (state?: CampaignStateSnapshot) => OracleData | null;
   readonly getSoloNoticeData: (state?: CampaignStateSnapshot) => SoloNoticeData | null;
+  readonly getTravelSurpriseData: (state?: CampaignStateSnapshot) => TravelSurpriseData | null;
+  readonly getCombatResultData: (state?: CampaignStateSnapshot) => CombatResultData | null;
+  readonly getLastCombatResultData: (state?: CampaignStateSnapshot) => LastCombatResultData | null;
+  readonly getLastReportData: (state?: CampaignStateSnapshot) => LastReportData | null;
+  readonly getPendingBattleData: (state?: CampaignStateSnapshot) => PendingBattleData | null;
 }
 
 interface Cjs {
@@ -75,4 +126,24 @@ export function getOracleData(state: CampaignStateSnapshot): OracleData | null {
 
 export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData | null {
   return cjs().CampaignUI?.getSoloNoticeData(state) ?? null;
+}
+
+export function getTravelSurpriseData(state: CampaignStateSnapshot): TravelSurpriseData | null {
+  return cjs().CampaignUI?.getTravelSurpriseData(state) ?? null;
+}
+
+export function getCombatResultData(state: CampaignStateSnapshot): CombatResultData | null {
+  return cjs().CampaignUI?.getCombatResultData(state) ?? null;
+}
+
+export function getLastCombatResultData(state: CampaignStateSnapshot): LastCombatResultData | null {
+  return cjs().CampaignUI?.getLastCombatResultData(state) ?? null;
+}
+
+export function getLastReportData(state: CampaignStateSnapshot): LastReportData | null {
+  return cjs().CampaignUI?.getLastReportData(state) ?? null;
+}
+
+export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattleData | null {
+  return cjs().CampaignUI?.getPendingBattleData(state) ?? null;
 }

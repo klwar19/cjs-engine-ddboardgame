@@ -14,9 +14,15 @@ import {
   getEventResultData,
   getOracleData,
   getSoloNoticeData,
+  getTravelSurpriseData,
+  getCombatResultData,
+  getLastCombatResultData,
+  getLastReportData,
+  getPendingBattleData,
   type EventResultData,
   type ManualSummary,
-  type SoloNoticeData
+  type SoloNoticeData,
+  type PendingBattleData
 } from "./data/resultPanels";
 
 // ── EventResult ───────────────────────────────────────────────────
@@ -172,6 +178,160 @@ function SoloNoticeActions({ data }: { data: SoloNoticeData }) {
   );
 }
 
+// ── Travel Surprise ───────────────────────────────────────────────
+export function TravelSurprisePanel({ state }: { state: CampaignStateSnapshot }) {
+  const data = getTravelSurpriseData(state);
+  if (!data) return null;
+  return (
+    <section className="campaign-panel campaign-travel-notice">
+      <div className="campaign-panel-head">
+        <h2>{data.title}</h2>
+        <span className="campaign-pill">{data.categoryLabel}</span>
+      </div>
+      <p>{data.prompt}</p>
+      <div className="campaign-chip-row">
+        <span className="campaign-chip">{data.areaLabel}</span>
+        <span className="campaign-chip">{data.repeatLabel}</span>
+        {data.locationLabel && <span className="campaign-chip">{data.locationLabel}</span>}
+      </div>
+      <div className="campaign-action-grid" style={{ marginTop: 12 }}>
+        <button
+          className="campaign-action"
+          onClick={() => dispatchCampaignAction("roll-travel-surprise")}
+        >
+          Roll Another
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ── Combat Result (pending) ───────────────────────────────────────
+export function CombatResultPanel({ state }: { state: CampaignStateSnapshot }) {
+  const data = getCombatResultData(state);
+  if (!data) return null;
+  return (
+    <section className="campaign-panel battle-result">
+      <div className="campaign-panel-head">
+        <h2>Returned From Combat</h2>
+        <span className="campaign-pill">{data.resultLabel}</span>
+      </div>
+      <div className="campaign-muted">{data.encounterId} | {data.rounds} rounds</div>
+      <HtmlBridge html={data.lootHtml} className="campaign-loot-summary-bridge" />
+      <HtmlBridge html={data.consequenceNoticeHtml} className="campaign-combat-consequence-bridge" />
+      <div className="campaign-action-grid">
+        <button
+          className="campaign-action primary"
+          onClick={() => dispatchCampaignAction("apply-combat-result")}
+        >
+          Apply to Campaign
+        </button>
+        <button
+          className="campaign-action danger"
+          onClick={() => dispatchCampaignAction("ignore-combat-result")}
+        >
+          Ignore
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ── Last Combat Result (applied) ──────────────────────────────────
+export function LastCombatResultPanel({ state }: { state: CampaignStateSnapshot }) {
+  const data = getLastCombatResultData(state);
+  if (!data) return null;
+  return (
+    <section className="campaign-panel battle-result applied">
+      <div className="campaign-panel-head">
+        <h2>Combat Applied</h2>
+        <span className="campaign-pill">{data.resultLabel}</span>
+      </div>
+      <div className="campaign-muted">{data.label} | {data.rounds} rounds</div>
+      {data.summary && <p>{data.summary}</p>}
+      <HtmlBridge html={data.pulseHtml} className="campaign-combat-pulse-bridge" />
+      <HtmlBridge html={data.lootHtml} className="campaign-loot-summary-bridge" />
+    </section>
+  );
+}
+
+// ── Last Scenario Report ──────────────────────────────────────────
+export function LastReportPanel({ state }: { state: CampaignStateSnapshot }) {
+  const data = getLastReportData(state);
+  if (!data) return null;
+  return (
+    <section className="campaign-panel">
+      <div className="campaign-panel-head">
+        <h2>Last Scenario Report</h2>
+        <span className="campaign-pill">{data.outcome}</span>
+      </div>
+      <div className="campaign-stat-grid">
+        <span>Danger <b>{data.danger}</b></span>
+        <span>Camp <b>{data.campsUsed}</b></span>
+        <span>Events <b>{data.eventsUsed}</b></span>
+        <span>Battles <b>{data.battlesCount}</b></span>
+      </div>
+      <pre className="campaign-report">{data.diffJson}</pre>
+    </section>
+  );
+}
+
+// ── Pending Battle ────────────────────────────────────────────────
+export function PendingBattlePanel({ state }: { state: CampaignStateSnapshot }) {
+  const data = getPendingBattleData(state);
+  if (!data) return null;
+  return (
+    <section className="campaign-panel battle-ready">
+      <div className="campaign-panel-head">
+        <h2>Battle Ready</h2>
+        <span className="campaign-pill">{data.sourceLabel}</span>
+      </div>
+      <strong>{data.label}</strong>
+      <div className="campaign-muted">{data.subLabel}</div>
+      {data.autoMapLabel && (
+        <div className="campaign-muted">Auto map: {data.autoMapLabel}</div>
+      )}
+      <HtmlBridge html={data.contextHtml} className="campaign-pending-battle-context-bridge" />
+      <HtmlBridge html={data.partySummaryHtml} className="campaign-battle-party-summary-bridge" />
+      <div className="campaign-control-help">
+        Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.
+      </div>
+      <PendingBattleActions data={data} />
+    </section>
+  );
+}
+
+function PendingBattleActions({ data }: { data: PendingBattleData }) {
+  return (
+    <div className="campaign-action-grid campaign-battle-primary-actions">
+      <ActionBtn
+        action="run-battle"
+        label="Run in Combat App"
+        hint="Open the tactical combat screen with this encounter"
+        kind="primary"
+        disabled={!data.canRun}
+      />
+      <ActionBtn
+        action="manual-battle"
+        label="Resolve Manually"
+        hint="Type a custom outcome and rewards"
+      />
+      <details className="campaign-action-menu">
+        <summary className="campaign-action-menu-trigger"><span>Battle Options</span></summary>
+        <div className="campaign-action-menu-panel">
+          {data.isRandom && (
+            <ActionBtn action="battle-reroll" label="Reroll" hint="Re-roll from the same random table" />
+          )}
+          <ActionBtn action="battle-override" label="Override" hint="Pick a specific encounter from the catalog" />
+          <ActionBtn action="skip-victory" label="Manual Victory" hint="Skip the fight as a win (basic rewards)" />
+          <ActionBtn action="skip-defeat" label="Manual Defeat" hint="Skip as a loss (default: danger +2 and 10% currency loss)" />
+          <ActionBtn action="cancel-battle" label="Cancel Battle" hint="Remove pending battle, no effect" kind="danger" />
+        </div>
+      </details>
+    </div>
+  );
+}
+
 // ── helpers ───────────────────────────────────────────────────────
 function HtmlBridge({ html, className }: { html: string; className: string }) {
   if (!html) return null;
@@ -182,12 +342,14 @@ function ActionBtn({
   action,
   label,
   hint,
-  kind
+  kind,
+  disabled
 }: {
   action: string;
   label: string;
   hint: string;
   kind?: string;
+  disabled?: boolean;
 }) {
   const cls = ["campaign-action", "has-hint"];
   if (kind) cls.push(kind);
@@ -196,6 +358,7 @@ function ActionBtn({
       className={cls.join(" ")}
       onClick={() => dispatchCampaignAction(action)}
       title={hint}
+      disabled={!!disabled}
     >
       <span className="campaign-action-label">{label}</span>
       <small className="campaign-action-hint">{hint}</small>

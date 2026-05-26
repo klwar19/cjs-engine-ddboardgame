@@ -25,8 +25,6 @@ export interface StoryHomeData {
   readonly storyPipelineHtml: string;
   readonly syncSummaryHtml: string;
   readonly scenarioSummaryHtml: string;
-  readonly pendingBattleHtml: string;
-  readonly combatResultHtml: string;
 }
 
 interface Bridge {

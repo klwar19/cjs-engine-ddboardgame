@@ -15,7 +15,16 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { renderOverviewSectionHtml, type OverviewSectionId } from "./data/overview";
-import { EventResultPanel, OraclePanel, SoloNoticePanel } from "./ResultPanels";
+import {
+  EventResultPanel,
+  OraclePanel,
+  SoloNoticePanel,
+  TravelSurprisePanel,
+  CombatResultPanel,
+  LastCombatResultPanel,
+  LastReportPanel,
+  PendingBattlePanel
+} from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -32,13 +41,13 @@ export function CampaignOverviewTab({ state }: Props) {
       <AdventureDesk />
       <Section state={state} id="adventureLegend" />
       <Section state={state} id="scenarioSummary" />
-      <Section state={state} id="travelSurprise" />
-      <Section state={state} id="pendingBattle" />
-      <Section state={state} id="combatResult" />
-      <Section state={state} id="lastCombatResult" />
+      <TravelSurprisePanel state={state} />
+      <PendingBattlePanel state={state} />
+      <CombatResultPanel state={state} />
+      <LastCombatResultPanel state={state} />
       <EventResultPanel state={state} />
       <OraclePanel state={state} />
-      <Section state={state} id="lastReport" />
+      <LastReportPanel state={state} />
     </div>
   );
 }

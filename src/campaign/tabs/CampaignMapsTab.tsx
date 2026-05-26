@@ -21,7 +21,13 @@ import {
   type LinearBeat,
   type SetBattle
 } from "./data/run";
-import { EventResultPanel } from "./ResultPanels";
+import {
+  EventResultPanel,
+  TravelSurprisePanel,
+  PendingBattlePanel,
+  CombatResultPanel,
+  LastCombatResultPanel
+} from "./ResultPanels";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -62,10 +68,10 @@ export function CampaignMapsTab({ state }: Props) {
         // node_map / grid_map / anything else: CampaignMap renders here.
         <div id="campaign-map-region" />
       )}
-      <HtmlBridge html={data.travelSurpriseHtml} className="campaign-travel-surprise-bridge" />
-      <HtmlBridge html={data.pendingBattleHtml} className="campaign-pending-battle-bridge" />
-      <HtmlBridge html={data.combatResultHtml} className="campaign-combat-result-bridge" />
-      <HtmlBridge html={data.lastCombatResultHtml} className="campaign-last-combat-result-bridge" />
+      <TravelSurprisePanel state={state} />
+      <PendingBattlePanel state={state} />
+      <CombatResultPanel state={state} />
+      <LastCombatResultPanel state={state} />
       <EventResultPanel state={state} />
     </div>
   );
