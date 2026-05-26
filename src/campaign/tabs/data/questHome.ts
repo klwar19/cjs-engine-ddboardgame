@@ -9,6 +9,7 @@
 
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestRowData } from "./questRow";
+import type { ZombieScavengeHomeData } from "./zombie";
 
 export interface QuestPaperLite {
   readonly id: string;
@@ -34,7 +35,7 @@ interface QuestHomeNormal {
 
 interface QuestHomeZombie {
   readonly isZombie: true;
-  readonly zombieHtml: string;
+  readonly zombie: ZombieScavengeHomeData;
 }
 
 export type QuestHomeData = QuestHomeNormal | QuestHomeZombie;

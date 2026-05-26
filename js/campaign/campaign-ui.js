@@ -1013,62 +1013,30 @@ window.CJS.CampaignUI = (() => {
   // renders via `_renderZombieScavengeHome` (returned as one HTML
   // string in the bridge data) until its own JSX port.
 
-  function _renderZombieScavengeHome(state) {
+  // _renderZombieScavengeHome / _renderGachaHomeHero /
+  // _renderWorldActivityPreviewCard removed in Phase G.17. The
+  // zombie Quest Home now reads typed `getQuestHomeData(state).zombie`
+  // and renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`.
+  function _zombieScavengeHomeData(state) {
     const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
     const scavenge = activities.filter((activity) => activity.type === 'scavenge');
     const build = activities.filter((activity) => activity.type === 'build');
     const pressures = Object.values(state.crossWorld?.pressures || {})
       .filter((pressure) => String(pressure.id || '').startsWith('zombie_'));
-    const run = state.activeScenarioRun;
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-quest-home campaign-scavenge-home">
-        ${_renderGachaHomeHero({
-          tone: 'quest',
-          kicker: 'Scavenge',
-          title: 'Last Light Scavenge Board',
-          text: 'Zombie world does not use normal quests by default. It is built around supply routes, medical runs, safehouse projects, and pressure clocks that react to noise and infection.',
-          meta: [`${scavenge.length} supply runs`, `${build.length} build projects`, `${pressures.length} pressures`],
-          actions: [
-            _actionBtn({ action: 'open-world-content', label: 'Open Last Light Map', hint: 'Move between safehouse, mall, clinic, subway, and tower.', kind: 'primary', data: { tab: 'worldMap', mode: 'activities' } }),
-            _actionBtn({ action: 'open-world-content', label: 'Supply Activities', hint: 'Run scavenging and safehouse actions from the current location.', data: { tab: 'worldActivities', mode: 'activities' } }),
-            _actionBtn({ action: 'open-maps-tab', label: run ? 'Current Run' : 'No Combat Run', hint: run ? 'Continue the active scenario run.' : 'Zombie scavenge currently uses map activities unless a combat run is started.' })
-          ]
-        })}
-        <section class="campaign-panel campaign-wide-panel campaign-scavenge-route-panel">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Supply Routes</h2>
-              <div class="campaign-muted">These replace Earth/Bazaar-style quests: choose a location on the zombie map, then run the activity there.</div>
-            </div>
-            <span class="campaign-pill">${scavenge.length} routes</span>
-          </div>
-          <div class="campaign-tab-grid">
-            ${scavenge.map((activity) => _renderWorldActivityPreviewCard(activity, 'Scavenge route')).join('') || '<div class="campaign-empty">No scavenge routes authored yet.</div>'}
-          </div>
-        </section>
-        <section class="campaign-panel campaign-wide-panel campaign-scavenge-build-panel">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Safehouse Projects</h2>
-              <div class="campaign-muted">Build actions convert salvage into security, medicine storage, and later survivor facilities.</div>
-            </div>
-            <span class="campaign-pill">${build.length} projects</span>
-          </div>
-          <div class="campaign-tab-grid">
-            ${build.map((activity) => _renderWorldActivityPreviewCard(activity, 'Build project')).join('') || '<div class="campaign-empty">No build projects authored yet.</div>'}
-          </div>
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h3>Pressure Clocks</h3>
-            <span class="campaign-muted">Zombie progress should feel like survival weather.</span>
-          </div>
-          <div class="campaign-stat-grid">
-            ${pressures.length ? pressures.map((pressure) => `<span>${_esc(pressure.title || pressure.id)} <b>${Number(pressure.value || 0)}</b></span>`).join('') : '<span>No zombie pressures yet <b>0</b></span>'}
-          </div>
-        </section>
-      </div>
-    `;
+    return {
+      scavengeCount: scavenge.length,
+      buildCount: build.length,
+      pressureCount: pressures.length,
+      hasRun: !!state.activeScenarioRun,
+      heroBackdropUrl: _worldHomeBackdropUrl(),
+      scavenge: scavenge.map((activity) => _worldActivityPreviewData(activity, 'Scavenge route')),
+      build: build.map((activity) => _worldActivityPreviewData(activity, 'Build project')),
+      pressures: pressures.map((pressure) => ({
+        id: String(pressure.id || ''),
+        title: String(pressure.title || pressure.id || ''),
+        value: Number(pressure.value || 0)
+      }))
+    };
   }
 
   function _worldActivitiesFor(worldId) {
@@ -1077,15 +1045,14 @@ window.CJS.CampaignUI = (() => {
       .flatMap((pack) => pack.activities || []);
   }
 
-  function _renderWorldActivityPreviewCard(activity = {}, kicker = 'Activity') {
-    return `
-      <article class="campaign-sequence-card is-quest">
-        <div class="campaign-sequence-kind">${_esc(kicker)}</div>
-        <strong>${_esc(activity.title || activity.name || activity.id)}</strong>
-        <p>${_esc(activity.summary || activity.description || '')}</p>
-        <div class="campaign-muted">${_esc(activity.rewardText || 'No reward text yet.')}</div>
-      </article>
-    `;
+  function _worldActivityPreviewData(activity = {}, kicker = 'Activity') {
+    return {
+      id: String(activity.id || activity.name || activity.title || ''),
+      kicker: String(kicker),
+      title: String(activity.title || activity.name || activity.id || ''),
+      summary: String(activity.summary || activity.description || ''),
+      rewardText: String(activity.rewardText || 'No reward text yet.')
+    };
   }
 
   // _renderMiniGameTest — Phase F.3 port. Body moved to
@@ -1431,19 +1398,10 @@ window.CJS.CampaignUI = (() => {
       || 'Story part recorded.';
   }
 
-  function _renderGachaHomeHero({ tone = 'story', kicker = '', title = '', text = '', meta = [], actions = [] } = {}) {
-    return `
-      <section class="campaign-gacha-hero campaign-wide-panel is-${_escAttr(tone)}" ${_worldHomeHeroStyle()}>
-        <div class="campaign-gacha-hero-copy">
-          <div class="campaign-gacha-kicker">${_esc(kicker)}</div>
-          <h2>${_esc(title)}</h2>
-          <p>${_esc(text)}</p>
-          <div class="campaign-chip-row">${meta.map((item) => `<span class="campaign-chip">${_esc(item)}</span>`).join('')}</div>
-        </div>
-        <div class="campaign-gacha-hero-actions">${actions.join('')}</div>
-      </section>
-    `;
-  }
+  // _renderGachaHomeHero removed in Phase G.17 — its only caller, the
+  // HTML _renderZombieScavengeHome, is gone. The zombie scavenge hero
+  // is JSX now (`src/campaign/tabs/ZombieScavenge.tsx`); other gacha
+  // heroes (Quest Home, Event tabs) were already inline JSX.
 
   function _renderFarmingStageCard(title, text, action, opts = {}) {
     const tag = opts.tag ? `<span class="campaign-stage-tag">${_esc(opts.tag)}</span>` : '';
@@ -2706,12 +2664,10 @@ window.CJS.CampaignUI = (() => {
   // renders via `_renderZombieScavengeTracker` (returned as one HTML
   // string in the bridge data) until its own JSX port.
 
-  function _worldHomeHeroStyle() {
-    const world = CS().getCurrentWorld?.() || {};
-    const theme = world.storyModeTheme || {};
-    const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
-    return backdrop ? `style="--campaign-home-backdrop: url('${_escAttr(_cssVarAssetUrl(backdrop))}')"` : '';
-  }
+  // _worldHomeHeroStyle removed in Phase G.17 — its only caller
+  // (_renderGachaHomeHero) is gone. JSX heroes read the resolved
+  // backdrop URL via `_worldHomeBackdropUrl()` and set the CSS var
+  // through a typed style prop.
 
   function _cssVarAssetUrl(path = '') {
     const value = String(path || '').trim();
@@ -2720,130 +2676,29 @@ window.CJS.CampaignUI = (() => {
     return `../${value}`;
   }
 
-  function _renderZombieScavengeTracker(state) {
+  // _renderZombieScavengeTracker removed in Phase G.17. The zombie
+  // Quests tracker now reads typed `getQuestPanelData(state).zombie`
+  // and renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`. The
+  // legacy quest rows reuse the shared typed `getQuestRowData` +
+  // `<QuestRow>` component.
+  function _zombieScavengeTrackerData(state) {
     const quests = Object.values(state.quests || {});
     const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
     const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
     const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
-    return `
-      <section class="campaign-panel campaign-scavenge-tracker">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>Scavenge Run Log</h2>
-            <div class="campaign-muted">This is the zombie-world survival tracker. Normal quest creation is hidden behind the map/activity loop.</div>
-          </div>
-          <div class="campaign-panel-actions">
-            <span class="campaign-pill">${active.length} active runs | ${finished.length} resolved</span>
-            <button class="campaign-action primary" data-campaign-action="open-world-content" data-tab="worldActivities" data-mode="activities">Open Activities</button>
-            <button class="campaign-action" data-campaign-action="open-world-content" data-tab="worldMap" data-mode="activities">Open Map</button>
-          </div>
-        </div>
-        <div class="campaign-tab-grid">
-          ${activities.map((activity) => _renderWorldActivityPreviewCard(activity, activity.type === 'build' ? 'Build project' : 'Scavenge route')).join('') || '<div class="campaign-empty">No zombie activities authored yet.</div>'}
-        </div>
-        ${active.length ? `
-          <div class="campaign-section-title">Active Legacy Runs</div>
-          <div class="campaign-quest-list">${active.map((quest) => _renderQuestRow(quest)).join('')}</div>
-        ` : ''}
-        ${finished.length ? `
-          <details class="campaign-resolved-quests">
-            <summary>Resolved legacy runs (${finished.length})</summary>
-            <div class="campaign-quest-list">${finished.map((quest) => _renderQuestRow(quest, { resolved: true })).join('')}</div>
-          </details>
-        ` : ''}
-      </section>
-    `;
+    return {
+      activeCount: active.length,
+      finishedCount: finished.length,
+      activities: activities.map((activity) => _worldActivityPreviewData(activity, activity.type === 'build' ? 'Build project' : 'Scavenge route')),
+      activeQuestRows: active.map((quest) => getQuestRowData(quest)),
+      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true }))
+    };
   }
 
-  function _renderQuestRow(quest, opts = {}) {
-    const objectives = quest.objectives || [];
-    const nextObjective = opts.resolved ? null : _questNextObjective(quest);
-    const done = objectives.filter((obj) => _questObjectiveDone(obj)).length;
-    const total = objectives.length || 1;
-    const meta = [
-      _label(quest.status || 'active'),
-      quest.giver ? `Giver: ${quest.giver}` : '',
-      quest.timer?.phasesRemaining ? `${quest.timer.phasesRemaining} phases left` : ''
-    ].filter(Boolean).join(' | ');
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    const isRunQuest = _activeRunQuestId(activeRun, activeScenario) === quest.id;
-    const scenarioDisabled = activeRun && !isRunQuest;
-    const scenarioLabel = isRunQuest ? 'Open Map' : 'Map Run';
-    const scenarioPill = _questScenarioPill(quest, activeRun, activeScenario);
-    const hasMiniGame = !!_questMiniGameObjective(quest);
-    return `
-      <article class="campaign-quest-card ${opts.resolved ? 'is-resolved' : ''}">
-        <div class="campaign-quest-main">
-          <div class="campaign-quest-title-row">
-            <strong>${_esc(quest.title || quest.id)}</strong>
-            <span class="campaign-pill campaign-quest-status ${_escAttr(_questStatusClass(quest))}">${_esc(_label(quest.status || 'active'))}</span>
-            ${scenarioPill}
-          </div>
-          ${meta ? `<div class="campaign-muted">${_esc(meta)}</div>` : ''}
-          ${quest.summary ? `<div class="campaign-muted">${_esc(quest.summary)}</div>` : ''}
-          ${_renderQuestVariant(quest)}
-          ${_renderContextTags([...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || [])])}
-          <div class="campaign-quest-phase">
-            <span>Phase</span>
-            <strong>${_esc(opts.resolved ? 'Resolved' : (nextObjective?.label || 'Open'))}</strong>
-            <small>${done}/${total}</small>
-          </div>
-          <div class="campaign-quest-objectives">
-            ${objectives.length ? objectives.map(_renderQuestObjective).join('') : '<div class="campaign-muted">No written objective yet.</div>'}
-          </div>
-        </div>
-        ${opts.resolved ? '' : `
-          <div class="campaign-quest-actions">
-            ${_actionBtn({ action: 'quest-scenario', label: scenarioLabel, hint: isRunQuest ? 'Jump to the active map for this quest' : 'Start (or generate) the map run for this quest', kind: 'primary', data: { id: quest.id }, disabled: scenarioDisabled })}
-            ${_actionBtn({ action: 'quest-progress', label: 'Progress', hint: 'Tick an objective forward by 1', data: { id: quest.id } })}
-            ${_actionMenu('Quest Actions', `
-              ${_actionBtn({ action: 'quest-battle',  label: 'Battle',   hint: 'Run a battle linked to this quest', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-hub-event', label: 'Hub Scene', hint: 'Run one logical hub scene and tick an objective', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-harvest', label: 'Harvest', hint: 'Manual harvest/gather progress with light loot', data: { id: quest.id } })}
-              ${hasMiniGame ? _actionBtn({ action: 'quest-minigame', label: 'Mini-Game', hint: 'Play the linked puzzle room and apply its result', data: { id: quest.id } }) : ''}
-              ${_actionBtn({ action: 'quest-check',   label: 'Check',    hint: 'Make a stat or skill check toward this quest', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-hand-in', label: 'Hand In',  hint: 'Deliver an item to complete an objective', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-answer',  label: 'Answer',   hint: 'Resolve a riddle / dialog objective', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-complete', label: 'Resolve', hint: 'Mark complete and grant rewards', data: { id: quest.id } })}
-              ${_actionBtn({ action: 'quest-fail',     label: 'Fail',     hint: 'Mark failed (no rewards)', kind: 'danger', data: { id: quest.id } })}
-            `)}
-          </div>
-        `}
-      </article>
-    `;
-  }
-
-  function _renderQuestObjective(obj = {}) {
-    const current = Number(obj.current || 0);
-    const required = Math.max(1, Number(obj.required || 1));
-    const pct = Math.max(0, Math.min(100, Math.round((current / required) * 100)));
-    return `
-      <div class="campaign-quest-objective ${current >= required ? 'is-done' : ''}">
-        <div>
-          <strong>${_esc(obj.label || obj.id || 'Objective')}</strong>
-          <small>${current}/${required}</small>
-        </div>
-        <div class="campaign-quest-progress"><span style="width:${pct}%"></span></div>
-        ${_renderObjectivePulseHint(obj)}
-      </div>
-    `;
-  }
-
-  function _renderQuestVariant(quest = {}) {
-    const variant = quest.activeVariant || null;
-    const label = variant?.label || quest.variantLabel || '';
-    const text = quest.variantDialogue || quest.variantSummary || variant?.dialogue || variant?.summary || '';
-    const repeat = quest.repeatCycle ? `Cycle ${quest.repeatCycle + 1}` : '';
-    if (!label && !text && !repeat) return '';
-    return `
-      <div class="campaign-quest-variant">
-        ${label ? `<strong>${_esc(label)}</strong>` : ''}
-        ${text ? `<span>${_esc(text)}</span>` : ''}
-        ${repeat ? `<small>${_esc(repeat)}</small>` : ''}
-      </div>
-    `;
-  }
+  // _renderQuestRow / _renderQuestObjective / _renderQuestVariant
+  // removed in Phase G.17. The shared QuestRow ported to JSX in G.1
+  // (`src/campaign/tabs/QuestRow.tsx` + typed `getQuestRowData`); the
+  // zombie scavenge tracker (its last HTML caller) ported in G.17.
 
   function _renderContextTags(tags = []) {
     const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
@@ -2855,15 +2710,9 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderObjectivePulseHint(obj = {}) {
-    const triggers = obj.progressTriggers || [];
-    if (!triggers.length) return '';
-    return `
-      <div class="campaign-quest-pulse">
-        ${triggers.slice(0, 2).map((trigger) => `<span>${_esc(_triggerLabel(trigger))}</span>`).join('')}
-      </div>
-    `;
-  }
+  // _renderObjectivePulseHint removed in Phase G.17 (its only caller,
+  // the HTML _renderQuestObjective, is gone). The JSX QuestRow renders
+  // objective pulse hints from `getQuestRowData`'s typed pulseHints.
 
   function _triggerLabel(trigger = {}) {
     const bits = [];
@@ -10356,7 +10205,7 @@ window.CJS.CampaignUI = (() => {
   function getQuestPanelData(state = CS().getState()) {
     if (!state) return null;
     if (state.currentWorld === 'zombie') {
-      return { isZombie: true, zombieHtml: _renderZombieScavengeTracker(state) };
+      return { isZombie: true, zombie: _zombieScavengeTrackerData(state) };
     }
     const quests = Object.values(state.quests || {});
     const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
@@ -10548,9 +10397,7 @@ window.CJS.CampaignUI = (() => {
     if (!state) return null;
     const isZombie = state.currentWorld === 'zombie';
     if (isZombie) {
-      // The component reads `zombieHtml` and renders it as one HTML
-      // bridge. World-specific variants migrate to JSX separately.
-      return { isZombie: true, zombieHtml: _renderZombieScavengeHome(state) };
+      return { isZombie: true, zombie: _zombieScavengeHomeData(state) };
     }
     const quests = Object.values(state.quests || {});
     const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));

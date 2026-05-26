@@ -1,24 +1,23 @@
 // CampaignQuestHomeTab.tsx — Phase F JSX port of `_renderQuestHome`.
 //
 // Renders the Quest Home tab. Two variants:
-//   • Zombie world: a special scavenge-focused dashboard. Still
-//     rendered as one HTML chunk via `zombieHtml`; will migrate to JSX
-//     when the zombie scavenge variant gets its own port.
+//   • Zombie world: a scavenge-focused dashboard, full JSX as of
+//     Phase G.17 (`ZombieScavengeHome`).
 //   • Normal worlds: hero card with shortcut actions, a Quest Types
 //     panel (3 cards: daily / normal / story), an Active Quests
-//     list (per-row HTML for now), Quest Run Tools, plus the shared
-//     read-only sub-panels (solo notice, scenario summary, pending
-//     battle, combat result, last report).
+//     list (shared `<QuestRow>` JSX), Quest Run Tools, plus the
+//     shared read-only sub-panels (solo notice, scenario summary,
+//     pending battle, combat result, last report).
 //
 // Every JSX-owned button uses direct onClick handlers via
-// dispatchCampaignAction. Per-quest rows still come through the
-// HTML bridge until `_renderQuestRow` migrates.
+// dispatchCampaignAction.
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getQuestHomeData, type QuestHomeData, type QuestPaperLite } from "./data/questHome";
 import { QuestRow } from "./QuestRow";
 import type { QuestRowData } from "./data/questRow";
+import { ZombieScavengeHome } from "./ZombieScavenge";
 import {
   SoloNoticePanel,
   PendingBattlePanel,
@@ -42,15 +41,7 @@ export function CampaignQuestHomeTab({ state }: Props) {
     );
   }
   if (data.isZombie === true) {
-    // Zombie-world variant still renders as one HTML chunk. Will get
-    // its own JSX port (and the matching `_renderZombieScavengeHome`
-    // helper will drop) when the zombie tab migrates.
-    return (
-      <div
-        className="campaign-quest-home-zombie-bridge"
-        dangerouslySetInnerHTML={{ __html: data.zombieHtml }}
-      />
-    );
+    return <ZombieScavengeHome data={data.zombie} />;
   }
   return <NormalQuestHome state={state} data={data} />;
 }
@@ -76,11 +67,6 @@ function NormalQuestHome({
       <LastReportPanel state={state} />
     </div>
   );
-}
-
-function HtmlBridge({ html, className }: { html: string; className: string }) {
-  if (!html) return null;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function QuestHomeHero({ data }: { data: Extract<QuestHomeData, { isZombie: false }> }) {

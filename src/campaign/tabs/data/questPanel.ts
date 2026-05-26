@@ -2,6 +2,7 @@
 
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestRowData } from "./questRow";
+import type { ZombieScavengeTrackerData } from "./zombie";
 
 interface QuestPanelNormal {
   readonly isZombie: false;
@@ -14,7 +15,7 @@ interface QuestPanelNormal {
 
 interface QuestPanelZombie {
   readonly isZombie: true;
-  readonly zombieHtml: string;
+  readonly zombie: ZombieScavengeTrackerData;
 }
 
 export type QuestPanelData = QuestPanelNormal | QuestPanelZombie;

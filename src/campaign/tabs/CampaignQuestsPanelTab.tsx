@@ -1,18 +1,16 @@
 // CampaignQuestsPanelTab.tsx — Phase F JSX port of `_renderQuestPanel`.
 //
 // Renders the Quest Tracker panel: header (counts + Add Quest /
-// Quest Run buttons), solo-notice bridge, the active quest list, and
-// a collapsible "Resolved" section. Per-quest rows still come from
-// the HTML bridge because `_renderQuestRow` is shared with several
-// other tabs.
+// Quest Run buttons), solo-notice panel, the active quest list
+// (shared `<QuestRow>` JSX), and a collapsible "Resolved" section.
 //
-// Zombie world delegates to the existing `_renderZombieScavengeTracker`
-// for now via a single HTML bridge; it ports later.
+// Zombie world renders the scavenge tracker JSX (Phase G.17).
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getQuestPanelData, type QuestPanelData } from "./data/questPanel";
 import { QuestRow } from "./QuestRow";
+import { ZombieScavengeTracker } from "./ZombieScavenge";
 import { SoloNoticePanel } from "./ResultPanels";
 
 interface Props {
@@ -29,12 +27,7 @@ export function CampaignQuestsPanelTab({ state }: Props) {
     );
   }
   if (data.isZombie === true) {
-    return (
-      <div
-        className="campaign-quest-panel-zombie-bridge"
-        dangerouslySetInnerHTML={{ __html: data.zombieHtml }}
-      />
-    );
+    return <ZombieScavengeTracker data={data.zombie} />;
   }
   return <NormalQuestPanel state={state} data={data} />;
 }
