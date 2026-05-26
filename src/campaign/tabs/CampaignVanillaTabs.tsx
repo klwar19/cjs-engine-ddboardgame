@@ -80,8 +80,11 @@ export const CampaignEventSpecialTab = ({ state }: Props) =>
 export const CampaignEventSideTab = ({ state }: Props) =>
   <VanillaTab tabId="eventSide" state={state} mountClass="campaign-event-side-react" />;
 
-export const CampaignEventLogTab = ({ state }: Props) =>
-  <VanillaTab tabId="eventLog" state={state} mountClass="campaign-event-log-react" />;
+// CampaignEventLogTab moved to its own JSX-first port at
+// `src/campaign/tabs/CampaignEventLogTab.tsx` (Phase F.2). The vanilla
+// `_renderEventLog` body has been removed; only the two sub-panels
+// (last event result, last oracle) are still HTML bridges and will
+// migrate alongside the event{Character,Special,Side} tabs.
 
 export const CampaignScenariosTab = ({ state }: Props) =>
   <VanillaTab tabId="scenarios" state={state} mountClass="campaign-scenarios-react" />;

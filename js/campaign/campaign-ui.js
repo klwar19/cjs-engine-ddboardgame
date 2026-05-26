@@ -907,7 +907,6 @@ window.CJS.CampaignUI = (() => {
       case 'eventCharacter': return _renderEventTypeTab(state, 'character');
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
-      case 'eventLog': return _renderEventLog(state);
       case 'storyDirector': return _renderStoryDirector(state);
       case 'minigameTest': return _renderMiniGameTest(state);
       case 'scenarios': return _renderScenarios(state);
@@ -1641,57 +1640,12 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderEventLog(state) {
-    const entries = state.eventLog?.entries || [];
-    const oracleCount = entries.filter((entry) => String(entry.source || '').includes('oracle') || (entry.tags || []).includes('oracle')).length;
-    const manualCount = entries.filter((entry) => String(entry.source || '').includes('manual') || (entry.tags || []).includes('manual_event')).length;
-    return `
-      <div class="campaign-dashboard campaign-event-log">
-        ${_renderGachaHomeHero({
-          tone: 'event',
-          kicker: 'Event Log',
-          title: 'Events, Oracle Notes, Consequences',
-          text: 'Bookkeeping for event-side happenings only. Main story addenda stay in Story Log.',
-          meta: [`${entries.length} entries`, `${oracleCount} oracle`, `${manualCount} manual`],
-          actions: [
-            _actionBtn({ action: 'custom-event', label: 'Manual Event', hint: 'Write an event with quest, reward, consequence, tag, and log options', kind: 'manual' }),
-            _actionBtn({ action: 'roll-oracle', label: 'Oracle Prompt', hint: 'Roll a prompt, then convert or log it' }),
-            _actionBtn({ action: 'export-event-log', label: 'Export', hint: 'Download the event ledger' })
-          ]
-        })}
-        <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Event Ledger</h2>
-              <div class="campaign-muted">Separate from the Story Log and the raw session log.</div>
-            </div>
-            ${entries.length ? '<button class="campaign-action danger" data-campaign-action="clear-event-log">Clear Event Log</button>' : ''}
-          </div>
-          ${entries.length ? entries.map((entry) => _renderEventLogEntry(entry)).join('') : '<div class="campaign-empty">No event ledger entries yet. Use Oracle Prompt, Manual Event, or an Event card and choose Event Log.</div>'}
-        </section>
-        ${_renderEventResult(state)}
-        ${_renderOracle(state)}
-      </div>
-    `;
-  }
-
-  function _renderEventLogEntry(entry = {}) {
-    const consequences = entry.consequences || [];
-    return `
-      <article class="campaign-log-line campaign-log-event campaign-event-log-entry">
-        <div class="campaign-log-main">
-          <span class="campaign-log-type">${_esc(_label(entry.scope || entry.source || 'event'))}</span>
-          <div>
-            <strong>${_esc(entry.title || 'Event')}</strong>
-            ${entry.summary ? `<p>${_esc(entry.summary)}</p>` : ''}
-            ${consequences.length ? `<div class="campaign-muted">${consequences.map(_esc).join(' | ')}</div>` : ''}
-            ${entry.tags?.length ? `<div class="campaign-chip-row">${entry.tags.slice(0, 8).map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}</div>` : ''}
-          </div>
-        </div>
-        <small>${_esc([entry.phase ? `Phase ${entry.phase}` : '', _formatLogTime(entry.at)].filter(Boolean).join(' | '))}</small>
-      </article>
-    `;
-  }
+  // _renderEventLog / _renderEventLogEntry — Phase F.2 port. The body
+  // moved to `src/campaign/tabs/CampaignEventLogTab.tsx` (JSX). Typed
+  // data comes through `getEventLogData(state)`; the two shared
+  // sub-panels (event result, oracle) are still HTML bridges via
+  // `renderEventResultHtml` / `renderOracleHtml` and migrate when
+  // event{Character,Special,Side} port.
 
   function _renderSequenceShelf(scope, options = {}) {
     const Seq = window.CJS.CampaignSequences;
@@ -10879,7 +10833,6 @@ window.CJS.CampaignUI = (() => {
       case 'eventCharacter': return _renderEventTypeTab(state, 'character');
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
       case 'eventSide': return _renderEventTypeTab(state, 'side');
-      case 'eventLog': return _renderEventLog(state);
       case 'storyDirector': return _renderStoryDirector(state);
       case 'minigameTest': return _renderMiniGameTest(state);
       case 'scenarios': return _renderScenarios(state);
@@ -11020,6 +10973,60 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  // ── Typed tab data for Phase F per-tab ports ───────────────────────
+  // Each `get<Tab>Data` returns a JSON-friendly snapshot the matching
+  // React component reads. Heavy / shared sub-panels that still render
+  // through other tabs (e.g. _renderEventResult, _renderOracle) stay as
+  // HTML-string bridges until those tabs migrate.
+
+  function getEventLogData(state = CS().getState()) {
+    if (!state) return null;
+    const entries = (state.eventLog?.entries || []).map((entry) => ({
+      title: entry.title || 'Event',
+      summary: entry.summary || '',
+      scopeLabel: _label(entry.scope || entry.source || 'event'),
+      phase: entry.phase || null,
+      at: entry.at ? _formatLogTime(entry.at) : '',
+      consequences: Array.isArray(entry.consequences) ? entry.consequences.slice(0) : [],
+      tags: Array.isArray(entry.tags) ? entry.tags.slice(0, 8).map((tag) => _label(tag)) : []
+    }));
+    const rawEntries = state.eventLog?.entries || [];
+    const oracleCount = rawEntries.filter((entry) => String(entry.source || '').includes('oracle') || (entry.tags || []).includes('oracle')).length;
+    const manualCount = rawEntries.filter((entry) => String(entry.source || '').includes('manual') || (entry.tags || []).includes('manual_event')).length;
+    return {
+      entries,
+      totalCount: rawEntries.length,
+      oracleCount,
+      manualCount,
+      heroBackdropUrl: _worldHomeBackdropUrl()
+    };
+  }
+
+  // Returns just the resolved backdrop URL (or null) the React hero uses
+  // for its CSS custom property. The vanilla _worldHomeHeroStyle wraps
+  // this in `style="..."`; JSX needs only the URL.
+  function _worldHomeBackdropUrl() {
+    const world = CS().getCurrentWorld?.() || {};
+    const theme = world.storyModeTheme || {};
+    const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
+    if (!backdrop) return null;
+    return _cssVarAssetUrl(backdrop);
+  }
+
+  // HTML-string sub-panel bridges. Shared with the event{Character,
+  // Special,Side} tabs that haven't migrated yet. When those tabs port,
+  // these get replaced with typed getEventResultData / getOracleData
+  // and JSX renderers.
+  function renderEventResultHtml(state = CS().getState()) {
+    if (!state) return '';
+    return _renderEventResult(state);
+  }
+
+  function renderOracleHtml(state = CS().getState()) {
+    if (!state) return '';
+    return _renderOracle(state);
+  }
+
   // Renders the main-area body. Returns a string for vanilla tabs;
   // returns `null` if the tab is owned by a React component (the shell
   // mounts the React component directly when this returns null).
@@ -11101,6 +11108,9 @@ window.CJS.CampaignUI = (() => {
     // re-render against.
     enableReactShell,
     getChromeData,
+    getEventLogData,
+    renderEventResultHtml,
+    renderOracleHtml,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
