@@ -155,31 +155,85 @@ campaign shell is React-owned at the entry point.
   - Campaign initial download: 926 KB → 33 KB (rest in per-domain
     chunks under 50–70 KB each)
 
-The remaining work moves each `_render*` body OUT of the campaign-ui
-closure into its own TypeScript port. None of these block correctness —
-they remove the dangerouslySetInnerHTML scaffolds:
+### Done — Phase F
 
-- [ ] Port `cui-party-tab.js::renderRosterMember` to per-section React
-  components inside `CampaignRosterTab.tsx`.
-- [ ] Port `CampaignWorldMap.renderTravelMap` SVG to a `WorldMap.tsx`
-  component reading the same state shape.
-- [ ] Port the hub-family inner renderers to JSX inside
-  `CampaignHubTabs.tsx`.
-- [ ] Port the external-module renderers (CampaignInventory,
-  CampaignEconomy.renderShops, PocketHaven.renderCraft/Cook/Farm,
-  RelationshipsTab.render) to JSX inside the matching
-  `CampaignExternalTabs.tsx` components.
-- [ ] Promote the closure-private `_render*` functions
-  (`_renderWorldGate`, `_renderStoryHome`, …) out of campaign-ui.js
-  into their own TypeScript modules consumed by the matching React
-  components.
-- [ ] Port the chrome (header, modeBar, subTabs, recentLog, rail) from
-  vanilla HTML-string helpers to real JSX. Today the React shell
-  embeds them via `dangerouslySetInnerHTML`. JSX will let us bind
-  events with `onClick` instead of bubbling through campaign-root.
-- [ ] Drop `js/campaign/campaign-ui.js` and `js/campaign/ui/` once
-  every tab body and the chrome are JSX. Rewrite
-  `test_campaign_ui_bootstrap.js` against the React tree.
+- [x] **Phase F.1 — Chrome JSX port.** The five `<ShellFragment
+  dangerouslySetInnerHTML>` strips (header, mode-bar, sub-tabs,
+  log-strip, rail) in `CampaignShell.tsx` are now full JSX
+  components in `src/campaign/shell/`. They read typed `ChromeData`
+  via `getChromeData(state)`. Buttons use direct `onClick` handlers
+  via `dispatchCampaignAction` / `setActiveMode/Tab/Panel`.
+- [x] **Phase F.2 — eventLog body ported** to `CampaignEventLogTab.tsx`.
+- [x] **Phase F.3 — minigameTest body ported** to
+  `CampaignMinigameTestTab.tsx`.
+- [x] **Phase F.4 — overview body ported** to `CampaignOverviewTab.tsx`
+  (with 12 shared sub-panels still bridged via
+  `renderOverviewSectionHtml`).
+- [x] **Phase F.5 — storySummary body ported** to
+  `CampaignStorySummaryTab.tsx`.
+- [x] **Phase F.6 — questHome body ported** to
+  `CampaignQuestHomeTab.tsx` (zombie variant still HTML-bridged).
+- [x] **Phase F.7 — event{Character,Special,Side} bodies ported** to
+  a shared `CampaignEventTab.tsx`.
+- [x] **Phase F.8 — scenarios body ported** to
+  `CampaignScenariosTab.tsx`.
+- [x] **Phase F.9 — maps body ported** to `CampaignMapsTab.tsx`.
+- [x] **Phase F.10 — quests panel body ported** to
+  `CampaignQuestsPanelTab.tsx`.
+- [x] **Phase F.11 — storyHome body ported** to
+  `CampaignStoryHomeTab.tsx`.
+- [x] **Phase F.12 — worldGate body ported** to
+  `CampaignWorldGateTab.tsx`.
+- [x] **Phase F.13 — storyDirector body ported** to
+  `CampaignStoryDirectorTab.tsx`.
+- [x] **Post-Phase F cleanup.** `CampaignVanillaTabs.tsx` deleted.
+  `_renderMain`'s switch + `renderTabBody` switch are empty (every
+  case is now a JSX-only path in the React shell).
+
+### Next — Phase G (shared sub-renderers)
+
+The next migration layer ports the closure-private sub-renderers in
+`campaign-ui.js` that current Phase F components mount via
+`dangerouslySetInnerHTML`. Each port replaces one or more bridge
+calls with a typed JSX component. None of these block correctness;
+they shrink `cjs-campaign-core` further:
+
+- [ ] `_renderQuestRow` → shared `QuestRow.tsx` (used by QuestHome
+  and QuestsPanel).
+- [ ] `_renderEventResult` + `_renderOracle` → typed components
+  (used by EventLog, EventTab, Overview, Maps).
+- [ ] `_renderActiveSequence` + `_renderSequenceNode` → typed
+  components (used by StoryHome, QuestHome, EventTab).
+- [ ] `_renderStoryVnHero`, `_renderStorySoloGuide`,
+  `_renderStoryActionDeck`, `_renderStoryStageRail`,
+  `_renderStoryDirectorCard`, `_renderStoryPressureBoard`,
+  `_renderStorySideFlow`, `_renderStoryCluesPanel`,
+  `_renderStoryQueuePanel`, `_renderStoryTruthsPanel` →
+  individual components (StoryDirector + StoryHome).
+- [ ] `_renderChapterTreePanel`, `_renderChoiceConsequencePanel`,
+  `_renderAiStoryContextPanel`, `_renderSequenceShelf`,
+  `_renderStoryPipelinePanel`, `_renderSyncSummaryPanel` (StoryHome).
+- [ ] Overview sub-panels (12): `_renderTownSnapshot`,
+  `_renderTownRollFloat`, `_renderSoloNotice`,
+  `_renderAdventureLegend`, `_renderScenarioSummary`,
+  `_renderTravelSurprise`, `_renderPendingBattle`,
+  `_renderCombatResult`, `_renderLastCombatResult`,
+  `_renderLastReport`, plus the already-listed event/oracle pair.
+- [ ] `_renderWorldGateCard` (WorldGate).
+- [ ] `_renderQuestChainActive`, `_renderQuestChainTemplate`
+  (EventTab).
+- [ ] `_renderShapePills`, `_scenarioQuestPill`,
+  `_renderScenarioRunActions` (Scenarios).
+- [ ] `_renderZombieScavengeHome`, `_renderZombieScavengeTracker`
+  (zombie-world variants of QuestHome / QuestsPanel).
+- [ ] `_renderSequenceDeliveryState`, `_renderSequenceActionButton`
+  (EventTab per-entry).
+
+### Then — Phase H
+
+- [ ] Once every helper above ports, drop `js/campaign/campaign-ui.js`
+  and `js/campaign/ui/`. Rewrite `test_campaign_ui_bootstrap.js`
+  against the React tree.
 
 ## Done-when gate
 
