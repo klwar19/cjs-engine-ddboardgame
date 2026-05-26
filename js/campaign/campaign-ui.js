@@ -2620,66 +2620,80 @@ window.CJS.CampaignUI = (() => {
   // `_scenarioQuestPill`); the JSX embeds them via dangerouslySetInnerHTML
   // until those helpers themselves port to typed renderers.
 
-  function _renderScenarioRunActions(scenario, state) {
+  // Phase G.15 — typed scenario chips + per-card run actions. The
+  // HTML siblings (`_renderScenarioRunActions`, `_renderShapePills`,
+  // `_scenarioQuestPill`) are removed; the React components in
+  // `src/campaign/tabs/ScenarioChips.tsx` consume these shapes.
+  function _scenarioRunActionsData(scenario, state) {
     const activeRun = state.activeScenarioRun;
     const isCurrent = activeRun?.scenarioId === scenario.id;
-    const start = activeRun
-      ? (isCurrent
-        ? '<button class="campaign-action primary" data-campaign-action="open-maps-tab" title="This run is already active.">Continue Run</button>'
-        : '<button class="campaign-action" disabled title="Finish or cancel the current run before starting another.">Current Run Active</button>')
-      : `<button class="campaign-action primary" data-campaign-action="start-scenario" data-id="${_escAttr(scenario.id)}" title="Begin this as the current run. Generates a map, applies danger, and switches to Current Run.">Start Run</button>`;
-    return `
-      ${start}
-      <button class="campaign-action" data-campaign-action="inspect-scenario" data-id="${_escAttr(scenario.id)}" title="Open a read-only sheet showing beats, danger budget, and rewards. Does not start it.">Inspect</button>
-    `;
+    let startState = 'start';
+    if (activeRun) startState = isCurrent ? 'continue' : 'other_active';
+    return {
+      scenarioId: String(scenario.id || ''),
+      startState
+    };
   }
 
-  function _scenarioQuestPill(scenario = {}, state = CS().getState()) {
+  function _scenarioQuestPillData(scenario = {}, state = CS().getState()) {
     const src = scenario.source || {};
     const questId = src.questId;
     if (questId) {
       const quest = state?.quests?.[questId];
       const title = quest?.title || src.title || questId;
-      return `<span class="campaign-pill" title="Generated for this quest">📌 Quest: ${_esc(title)}</span>`;
+      return {
+        variant: 'quest',
+        label: `📌 Quest: ${title}`,
+        title: 'Generated for this quest',
+        linkable: false,
+        muted: false
+      };
     }
     if (src.questChainId) {
-      return `<span class="campaign-pill" title="Generated for this quest arc">📌 Arc: ${_esc(src.title || src.questChainId)}</span>`;
+      return {
+        variant: 'arc',
+        label: `📌 Arc: ${src.title || src.questChainId}`,
+        title: 'Generated for this quest arc',
+        linkable: false,
+        muted: false
+      };
     }
-    return '';
+    return null;
   }
 
-  function _renderShapePills(scenario = {}) {
+  const SHAPE_MODE_LABELS = {
+    node_map: 'Movement: Node Map',
+    grid_map: 'Movement: Grid Map',
+    procedural: 'Movement: Procedural',
+    linear: 'Movement: Linear',
+    freeform: 'Movement: Freeform'
+  };
+  const SHAPE_SETTING_LABELS = {
+    outdoor: 'Setting: Outdoor',
+    dungeon: 'Setting: Dungeon',
+    urban: 'Setting: Urban',
+    forest: 'Setting: Forest',
+    cave: 'Setting: Cave',
+    sewer: 'Setting: Sewer',
+    ruins: 'Setting: Ruins',
+    temple: 'Setting: Temple',
+    house: 'Setting: House',
+    tavern: 'Setting: Tavern',
+    castle: 'Setting: Castle',
+    mountain: 'Setting: Mountain',
+    arena: 'Setting: Arena',
+    abstract: 'Setting: Abstract'
+  };
+  const SHAPE_SIZE_LABELS = { tiny: 'XS', small: 'S', medium: 'M', large: 'L' };
+
+  function _shapePillsData(scenario = {}) {
     const mode = scenario.travelMode || scenario.mapForm || (scenario.mapId ? 'node_map' : 'freeform');
-    const modeLabels = {
-      node_map: 'Movement: Node Map',
-      grid_map: 'Movement: Grid Map',
-      procedural: 'Movement: Procedural',
-      linear: 'Movement: Linear',
-      freeform: 'Movement: Freeform'
-    };
-    const settingLabels = {
-      outdoor: 'Setting: Outdoor',
-      dungeon: 'Setting: Dungeon',
-      urban: 'Setting: Urban',
-      forest: 'Setting: Forest',
-      cave: 'Setting: Cave',
-      sewer: 'Setting: Sewer',
-      ruins: 'Setting: Ruins',
-      temple: 'Setting: Temple',
-      house: 'Setting: House',
-      tavern: 'Setting: Tavern',
-      castle: 'Setting: Castle',
-      mountain: 'Setting: Mountain',
-      arena: 'Setting: Arena',
-      abstract: 'Setting: Abstract'
-    };
-    const sizeLabels = { tiny: 'XS', small: 'S', medium: 'M', large: 'L' };
     const pills = [];
-    pills.push(`<span class="campaign-chip">${modeLabels[mode] || `Movement: ${mode}`}</span>`);
+    pills.push({ label: SHAPE_MODE_LABELS[mode] || `Movement: ${mode}` });
     const setting = scenario.mapSetting || scenario.setting;
-    if (setting) pills.push(`<span class="campaign-chip">${settingLabels[setting] || `Setting: ${setting}`}</span>`);
-    if (scenario.size) pills.push(`<span class="campaign-chip">Size: ${sizeLabels[scenario.size] || scenario.size}</span>`);
-    return `<div class="campaign-chip-row">${pills.join('')}</div>`;
+    if (setting) pills.push({ label: SHAPE_SETTING_LABELS[setting] || `Setting: ${setting}` });
+    if (scenario.size) pills.push({ label: `Size: ${SHAPE_SIZE_LABELS[scenario.size] || scenario.size}` });
+    return { pills };
   }
   // _renderRun / _renderRunFreeform / _renderRunLinear — Phase F.9 port.
   // Body moved to `src/campaign/tabs/CampaignMapsTab.tsx`. Typed data
@@ -2935,17 +2949,39 @@ window.CJS.CampaignUI = (() => {
     return 'is-active';
   }
 
+  // Phase G.15 — typed quest-pill data for the active run (consumed
+  // by getScenarioSummaryData and getRunData). The React
+  // `QuestPill` component (`src/campaign/tabs/ScenarioChips.tsx`)
+  // renders the pill from this shape.
   function _runQuestPill(state, run, scenario) {
     const questId = _activeRunQuestId(run, scenario);
     if (questId) {
       const quest = state?.quests?.[questId];
       const title = quest?.title || run?.questTitle || questId;
-      return `<span class="campaign-pill campaign-pill-link" title="This run is linked to a quest">📌 Quest: ${_esc(title)}</span>`;
+      return {
+        variant: 'quest',
+        label: `📌 Quest: ${title}`,
+        title: 'This run is linked to a quest',
+        linkable: true,
+        muted: false
+      };
     }
     if (scenario?.source?.questChainId) {
-      return `<span class="campaign-pill" title="This run is part of a quest arc">📌 Arc: ${_esc(scenario.source.title || scenario.source.questChainId)}</span>`;
+      return {
+        variant: 'arc',
+        label: `📌 Arc: ${scenario.source.title || scenario.source.questChainId}`,
+        title: 'This run is part of a quest arc',
+        linkable: false,
+        muted: false
+      };
     }
-    return '<span class="campaign-pill campaign-muted-pill" title="Standalone run, not bound to a quest">no quest binding</span>';
+    return {
+      variant: 'noBinding',
+      label: 'no quest binding',
+      title: 'Standalone run, not bound to a quest',
+      linkable: false,
+      muted: true
+    };
   }
 
   function _questScenarioPill(quest = {}, activeRun = null, activeScenario = null) {
@@ -6706,11 +6742,12 @@ window.CJS.CampaignUI = (() => {
       scenario.limits?.randomBattles !== undefined ? `${scenario.limits.randomBattles} random battles` : '',
       scenario.limits?.campRests !== undefined ? `${scenario.limits.campRests} camp rests` : ''
     ].filter(Boolean);
+    const shapePillsMarkup = `<div class="campaign-chip-row">${_shapePillsData(scenario).pills.map((p) => `<span class="campaign-chip">${_esc(p.label)}</span>`).join('')}</div>`;
     body.innerHTML = `
       <div class="campaign-preview">
         <b>${_esc(scenario.name || scenario.id)}</b><br>
         ${_esc(scenario.notes || scenario.summary || 'No notes.')}<br>
-        ${_renderShapePills(scenario)}
+        ${shapePillsMarkup}
       </div>
       <div class="campaign-inspect-grid">
         <section>
@@ -9926,7 +9963,7 @@ window.CJS.CampaignUI = (() => {
     return {
       hasRun: true,
       name: scenario?.name || run.scenarioId || 'Run',
-      questPillHtml: _runQuestPill(state, run, scenario) || '',
+      questPill: _runQuestPill(state, run, scenario),
       isGrid: run.travelMode === 'grid_map',
       location,
       danger: run.danger,
@@ -10350,16 +10387,11 @@ window.CJS.CampaignUI = (() => {
         mode: null,
         scenarioName: '',
         scenarioNotes: '',
-        questPillHtml: '',
-        shapePillsHtml: '',
+        questPill: null,
+        shapePills: { pills: [] },
         run: null,
         freeform: null,
-        linear: null,
-        travelSurpriseHtml: '',
-        pendingBattleHtml: '',
-        combatResultHtml: '',
-        lastCombatResultHtml: '',
-        eventResultHtml: ''
+        linear: null
       };
     }
     const mode = run.travelMode || (run.mapId ? 'node_map' : 'freeform');
@@ -10369,8 +10401,8 @@ window.CJS.CampaignUI = (() => {
       mode,
       scenarioName: scenario?.name || 'Run',
       scenarioNotes: scenario?.notes || '',
-      questPillHtml: _runQuestPill(state, run, scenario) || '',
-      shapePillsHtml: _renderShapePills(scenario || {}) || '',
+      questPill: _runQuestPill(state, run, scenario),
+      shapePills: _shapePillsData(scenario || {}),
       run: {
         danger: run.danger,
         dangerMax: run.dangerMax,
@@ -10455,9 +10487,9 @@ window.CJS.CampaignUI = (() => {
         pillLabel: scenario.generated
           ? `generated | ${scenario.source?.kind || 'random'}`
           : (scenario.type || 'scenario'),
-        questPillHtml: _scenarioQuestPill(scenario, state) || '',
-        shapePillsHtml: _renderShapePills(scenario) || '',
-        runActionsHtml: _renderScenarioRunActions(scenario, state)
+        questPill: _scenarioQuestPillData(scenario, state),
+        shapePills: _shapePillsData(scenario),
+        runActions: _scenarioRunActionsData(scenario, state)
       }))
     };
   }

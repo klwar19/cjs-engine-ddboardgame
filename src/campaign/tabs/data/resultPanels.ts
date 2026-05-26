@@ -3,6 +3,7 @@
 // Maps tabs.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { QuestPillData } from "./scenarioShared";
 
 export interface ManualSummary {
   readonly short: string;
@@ -91,7 +92,7 @@ export interface ScenarioObjective {
 export interface ScenarioSummaryRun {
   readonly hasRun: true;
   readonly name: string;
-  readonly questPillHtml: string;
+  readonly questPill: QuestPillData | null;
   readonly isGrid: boolean;
   readonly location: string;
   readonly danger: number;

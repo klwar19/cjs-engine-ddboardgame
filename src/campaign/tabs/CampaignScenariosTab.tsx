@@ -5,14 +5,13 @@
 // implementation so the legacy `_generateScenario` action handler
 // keeps reading them from `_root.querySelector('#campaign-gen-*')`.
 //
-// Per-card "run actions" (Start / Continue / Inspect / Discard) still
-// come through the HTML bridge — they encode multiple dynamic states
-// (active run, current run, generated vs authored). They'll port when
-// the scenario-action handlers get typed wrappers.
+// Per-card quest pill, shape pill row, and Start/Continue/Inspect
+// actions are full JSX (Phase G.15).
 
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getScenariosData, type ScenariosData, type ScenarioCard } from "./data/scenarios";
+import { QuestPill, ShapePillsRow, ScenarioRunActions } from "./ScenarioChips";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -139,25 +138,12 @@ function ScenarioCardView({
       <div className="campaign-panel-head">
         <h3>{scenario.name}</h3>
         <span className="campaign-pill">{scenario.pillLabel}</span>
-        {scenario.questPillHtml && (
-          <span
-            className="campaign-scenario-quest-pill-bridge"
-            dangerouslySetInnerHTML={{ __html: scenario.questPillHtml }}
-          />
-        )}
+        <QuestPill data={scenario.questPill} />
       </div>
-      {scenario.shapePillsHtml && (
-        <div
-          className="campaign-shape-pills-bridge"
-          dangerouslySetInnerHTML={{ __html: scenario.shapePillsHtml }}
-        />
-      )}
+      <ShapePillsRow data={scenario.shapePills} />
       {scenario.notes && <div className="campaign-muted">{scenario.notes}</div>}
       <div className="campaign-action-grid">
-        <div
-          className="campaign-scenario-actions-bridge"
-          dangerouslySetInnerHTML={{ __html: scenario.runActionsHtml }}
-        />
+        <ScenarioRunActions data={scenario.runActions} />
         {scenario.generated && (
           <button
             className="campaign-action danger"

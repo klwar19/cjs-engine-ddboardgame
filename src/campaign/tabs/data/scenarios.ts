@@ -1,6 +1,20 @@
 // scenarios.ts — Phase F bridge for the Scenarios (Run Setup) tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type {
+  QuestPillData,
+  ShapePillsData,
+  ScenarioRunActionsData
+} from "./scenarioShared";
+
+export type {
+  QuestPillData,
+  QuestPillVariant,
+  ShapePill,
+  ShapePillsData,
+  ScenarioRunStartState,
+  ScenarioRunActionsData
+} from "./scenarioShared";
 
 export interface OptionRecord {
   readonly id: string;
@@ -13,9 +27,9 @@ export interface ScenarioCard {
   readonly notes: string;
   readonly generated: boolean;
   readonly pillLabel: string;
-  readonly questPillHtml: string;
-  readonly shapePillsHtml: string;
-  readonly runActionsHtml: string;
+  readonly questPill: QuestPillData | null;
+  readonly shapePills: ShapePillsData;
+  readonly runActions: ScenarioRunActionsData;
 }
 
 export interface ScenariosData {

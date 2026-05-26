@@ -28,6 +28,7 @@ import {
   CombatResultPanel,
   LastCombatResultPanel
 } from "./ResultPanels";
+import { QuestPill, ShapePillsRow } from "./ScenarioChips";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -99,19 +100,9 @@ function PanelHead({ data, modeLabel }: { data: RunData; modeLabel: string }) {
       <div className="campaign-panel-head">
         <h2>{data.scenarioName}</h2>
         <span className="campaign-pill">{modeLabel}</span>
-        {data.questPillHtml && (
-          <span
-            className="campaign-run-quest-pill-bridge"
-            dangerouslySetInnerHTML={{ __html: data.questPillHtml }}
-          />
-        )}
+        <QuestPill data={data.questPill} />
       </div>
-      {data.shapePillsHtml && (
-        <div
-          className="campaign-shape-pills-bridge"
-          dangerouslySetInnerHTML={{ __html: data.shapePillsHtml }}
-        />
-      )}
+      <ShapePillsRow data={data.shapePills} />
     </>
   );
 }

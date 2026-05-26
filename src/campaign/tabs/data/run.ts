@@ -1,6 +1,7 @@
 // run.ts — Phase F bridge for the Maps (Current Run) tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { QuestPillData, ShapePillsData } from "./scenarioShared";
 
 export type RunMode = "node_map" | "grid_map" | "freeform" | "linear" | string;
 
@@ -49,8 +50,8 @@ export interface RunData {
   readonly mode: RunMode | null;
   readonly scenarioName: string;
   readonly scenarioNotes: string;
-  readonly questPillHtml: string;
-  readonly shapePillsHtml: string;
+  readonly questPill: QuestPillData | null;
+  readonly shapePills: ShapePillsData;
   readonly run: RunStats | null;
   readonly freeform: FreeformPanel | null;
   readonly linear: LinearPanel | null;

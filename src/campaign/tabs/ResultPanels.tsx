@@ -30,6 +30,7 @@ import {
   type SequenceScope
 } from "./data/resultPanels";
 import { SequenceNodePanel } from "./SequenceNode";
+import { QuestPill } from "./ScenarioChips";
 
 // ── EventResult ───────────────────────────────────────────────────
 export function EventResultPanel({ state }: { state: CampaignStateSnapshot }) {
@@ -372,12 +373,7 @@ function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
       <div className="campaign-panel-head">
         <h2>{data.name}</h2>
         <span className="campaign-pill">Danger {data.danger}/{data.dangerMax}</span>
-        {data.questPillHtml && (
-          <span
-            className="campaign-run-quest-pill-bridge"
-            dangerouslySetInnerHTML={{ __html: data.questPillHtml }}
-          />
-        )}
+        <QuestPill data={data.questPill} />
       </div>
       <div className="campaign-stat-grid">
         <span>{data.isGrid ? "Cell" : "Node"} <b>{data.location}</b></span>
