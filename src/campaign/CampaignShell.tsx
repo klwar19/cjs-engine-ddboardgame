@@ -32,7 +32,6 @@ import {
   CampaignWorldGateTab,
   CampaignStoryHomeTab,
   CampaignStoryDirectorTab,
-  CampaignQuestHomeTab,
   CampaignQuestsPanelTab,
   CampaignEventHomeTab,
   CampaignEventCharacterTab,
@@ -45,6 +44,7 @@ import { CampaignEventLogTab } from "./tabs/CampaignEventLogTab";
 import { CampaignMinigameTestTab } from "./tabs/CampaignMinigameTestTab";
 import { CampaignOverviewTab } from "./tabs/CampaignOverviewTab";
 import { CampaignStorySummaryTab } from "./tabs/CampaignStorySummaryTab";
+import { CampaignQuestHomeTab } from "./tabs/CampaignQuestHomeTab";
 
 // React Shell: this component owns the campaign chrome
 // (header, mode bar, sub-tabs, recent log strip, command rail, drawer)

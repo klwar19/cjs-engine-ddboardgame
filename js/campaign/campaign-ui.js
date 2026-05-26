@@ -900,7 +900,6 @@ window.CJS.CampaignUI = (() => {
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
-      case 'questHome': return _renderQuestHome(state);
       case 'eventHome': return _renderEventTypeTab(state, 'character');
       case 'eventCharacter': return _renderEventTypeTab(state, 'character');
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
@@ -1085,10 +1084,11 @@ window.CJS.CampaignUI = (() => {
   // through `getStorySummaryData(state)`. `_storySummaryEntries` and
   // `_storySummaryTextFromRecord` stay (the bridge calls them).
 
-  function _renderQuestHome(state) {
-    if (state?.currentWorld === 'zombie') return _renderZombieScavengeHome(state);
-    return _renderQuestHomeClean(state);
-  }
+  // _renderQuestHome — Phase F.6 port. Body moved to
+  // `src/campaign/tabs/CampaignQuestHomeTab.tsx`. The non-zombie data
+  // flows through `getQuestHomeData(state)`; the zombie variant still
+  // renders via `_renderZombieScavengeHome` (returned as one HTML
+  // string in the bridge data) until its own JSX port.
 
   function _renderZombieScavengeHome(state) {
     const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
@@ -1217,123 +1217,12 @@ window.CJS.CampaignUI = (() => {
     return _renderEventTypeTab(state, 'character');
   }
 
-  function _renderQuestHomeClean(state) {
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const nextQuest = active[0] || null;
-    const Seq = window.CJS.CampaignSequences;
-    const questEntries = Seq?.list?.('quest') || [];
-    const dailyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'daily');
-    const storyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'story');
-    const normalPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'normal');
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    const run = state.activeScenarioRun;
-
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-quest-home">
-        ${_renderGachaHomeHero({
-          tone: 'quest',
-          kicker: 'Quest',
-          title: nextQuest ? nextQuest.title || nextQuest.id : 'Daily, Normal, Story Quest',
-          text: nextQuest
-            ? nextQuest.summary || 'Continue the current request, then use its row for map, battle, harvest, hub, or check progress.'
-            : 'Quest keeps repeatable work, random/flavored jobs, and one-time or chapter-repeat quest papers in one place.',
-          meta: [`${active.length} active`, `${finished.length} resolved`, `${templateCount} templates`],
-          actions: [
-            _actionBtn({ action: 'add-quest', label: 'Create Quest', hint: 'Manual quest builder for one-time or repeatable work', kind: 'primary' }),
-            _actionBtn({ action: 'random-quest-offer', label: 'Normal / Random', hint: 'Roll a context-flavored quest template' }),
-            _actionBtn({ action: 'open-quests-tab', label: 'Tracker', hint: 'See all active and resolved quests' }),
-            _actionBtn({ action: 'open-maps-tab', label: run ? 'Current Run' : 'Map', hint: run ? 'Continue the active quest/map run' : 'No active map run yet' })
-          ]
-        })}
-        ${_renderActiveSequence(state, ['quest'])}
-        <section class="campaign-panel campaign-wide-panel campaign-quest-type-panel">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Quest Types</h2>
-              <div class="campaign-muted">Only three buckets: daily reset work, normal/random jobs, and story quests that are one-time or return on chapter beats.</div>
-            </div>
-            <span class="campaign-pill">${questEntries.length} papers</span>
-          </div>
-          <div class="campaign-tab-grid">
-            <article class="campaign-sequence-card is-quest">
-              <div class="campaign-sequence-kind">Daily Quest</div>
-              <strong>Reset by Phase</strong>
-              <p>Small chores, kill counts, harvests, hub errands, or mini-game results. Light flavor only.</p>
-              <div class="campaign-action-grid">
-                ${dailyPapers.length ? _renderQuestPaperButtons(dailyPapers.slice(0, 2)) : _actionBtn({ action: 'random-quest-offer', label: 'Roll Daily Style', hint: 'Use a normal quest template as a light daily job' })}
-                ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Refresh daily/repeatable quest timing' })}
-              </div>
-            </article>
-            <article class="campaign-sequence-card is-quest">
-              <div class="campaign-sequence-kind">Normal / Random</div>
-              <strong>Context Job</strong>
-              <p>Random picks should match rank, plot, tags, and the current monster context.</p>
-              <div class="campaign-action-grid">
-                ${normalPapers.length ? _renderQuestPaperButtons(normalPapers.slice(0, 1)) : ''}
-                ${_actionBtn({ action: 'random-quest-offer', label: 'Roll Quest', hint: 'Create a flavored random quest', kind: 'primary' })}
-                ${_actionBtn({ action: 'generate-quest-scenario', label: 'Map for Active', hint: nextQuest ? `Build a fresh map for "${nextQuest.title || nextQuest.id}"` : 'Add a quest first', disabled: !nextQuest })}
-              </div>
-            </article>
-            <article class="campaign-sequence-card is-quest">
-              <div class="campaign-sequence-kind">Story Quest</div>
-              <strong>One-Time / Chapter Beat</strong>
-              <p>Authored quest content that can appear once, or return when the chapter/beat changes.</p>
-              <div class="campaign-action-grid">
-                ${storyPapers.length ? _renderQuestPaperButtons(storyPapers.slice(0, 2)) : _actionBtn({ action: 'add-quest', label: 'Create Story Quest', hint: 'Add a one-time or chapter-repeat quest' })}
-              </div>
-            </article>
-          </div>
-        </section>
-        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Active Quests</h2>
-              <div class="campaign-muted">Use a quest row for progress, map, battle, harvest, hub scene, check, hand-in, resolve, or fail.</div>
-            </div>
-            <span class="campaign-pill">${active.length} active</span>
-          </div>
-          <div class="campaign-quest-list">
-            ${active.length ? active.slice(0, 4).map((quest) => _renderQuestRow(quest)).join('') : '<div class="campaign-empty">No active quests yet. Create one, start a daily paper, or roll a normal/random quest.</div>'}
-          </div>
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h3>Quest Run Tools</h3>
-            <span class="campaign-muted">Map seed and battle-style tools live here now, attached to quest play.</span>
-          </div>
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'generate-quest-scenario', label: 'Generate Quest Map', hint: nextQuest ? `Build a map for "${nextQuest.title || nextQuest.id}"` : 'Add a quest first', disabled: !nextQuest })}
-            ${_actionBtn({ action: 'manual-battle', label: 'Manual Battle Result', hint: 'Apply a win/loss/escape without opening combat' })}
-            ${_actionBtn({ action: 'pass-phase', label: 'Pass Phase', hint: 'Advance phase and refresh daily/repeatable quest timing' })}
-          </div>
-        </section>
-        ${_renderSoloNotice(state)}
-        ${run ? _renderScenarioSummary(state) : ''}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderLastReport(state)}
-      </div>
-    `;
-  }
-
   function _questPaperKind(entry = {}) {
     const kind = String(entry.kind || '').toLowerCase();
     const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
     if (kind.includes('daily') || tags.includes('daily')) return 'daily';
     if (kind.includes('story') || kind.includes('chapter') || kind.includes('one_time') || tags.includes('story_quest') || tags.includes('chapter_repeat')) return 'story';
     return 'normal';
-  }
-
-  function _renderQuestPaperButtons(entries = []) {
-    return entries.map((entry) => _actionBtn({
-      action: 'sequence-start',
-      label: entry.title || entry.id,
-      hint: _label(entry.kind || 'quest paper'),
-      data: { id: entry.id }
-    })).join('');
   }
 
   function _renderEventHomeClean(state) {
@@ -10652,7 +10541,6 @@ window.CJS.CampaignUI = (() => {
     switch (tabId) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
-      case 'questHome': return _renderQuestHome(state);
       case 'eventHome':
       case 'eventCharacter': return _renderEventTypeTab(state, 'character');
       case 'eventSpecial': return _renderEventTypeTab(state, 'special');
@@ -10849,6 +10737,58 @@ window.CJS.CampaignUI = (() => {
     return _renderOracle(state);
   }
 
+  // Quest Home (non-zombie). The hero / quest-types panel / quest-run
+  // tools render in JSX from this typed snapshot; the active-quest
+  // cards and the optional active-sequence panel still go through
+  // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getQuestHomeData(state = CS().getState()) {
+    if (!state) return null;
+    const isZombie = state.currentWorld === 'zombie';
+    if (isZombie) {
+      // The component reads `zombieHtml` and renders it as one HTML
+      // bridge. World-specific variants migrate to JSX separately.
+      return { isZombie: true, zombieHtml: _renderZombieScavengeHome(state) };
+    }
+    const quests = Object.values(state.quests || {});
+    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
+    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
+    const nextQuest = active[0] || null;
+    const Seq = window.CJS.CampaignSequences;
+    const questEntries = Seq?.list?.('quest') || [];
+    const dailyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'daily');
+    const storyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'story');
+    const normalPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'normal');
+    const templateCount = Object.values(CS().getContent().campaignQuests || {})
+      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
+    const run = state.activeScenarioRun;
+    const paperLite = (entries) => entries.slice(0, 2).map((entry) => ({
+      id: entry.id,
+      title: entry.title || entry.id,
+      kindLabel: _label(entry.kind || 'quest paper')
+    }));
+    return {
+      isZombie: false,
+      activeCount: active.length,
+      finishedCount: finished.length,
+      templateCount,
+      hasRun: !!run,
+      hasNextQuest: !!nextQuest,
+      nextQuestTitle: nextQuest ? (nextQuest.title || nextQuest.id) : '',
+      nextQuestSummary: nextQuest ? (nextQuest.summary || '') : '',
+      paperCount: questEntries.length,
+      dailyPapers: paperLite(dailyPapers),
+      normalPapers: paperLite(normalPapers).slice(0, 1),
+      storyPapers: paperLite(storyPapers),
+      activeQuestRows: active.slice(0, 4).map((quest) => _renderQuestRow(quest)),
+      activeSequenceHtml: _renderActiveSequence(state, ['quest']) || '',
+      soloNoticeHtml: _renderSoloNotice(state) || '',
+      scenarioSummaryHtml: run ? (_renderScenarioSummary(state) || '') : '',
+      pendingBattleHtml: _renderPendingBattle(state) || '',
+      combatResultHtml: _renderCombatResult(state) || '',
+      lastReportHtml: _renderLastReport(state) || ''
+    };
+  }
+
   function getStorySummaryData(state = CS().getState()) {
     if (!state) return null;
     const storyParts = _storySummaryEntries(state).map((entry) => ({
@@ -11037,6 +10977,7 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     renderOverviewSectionHtml,
     getStorySummaryData,
+    getQuestHomeData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
