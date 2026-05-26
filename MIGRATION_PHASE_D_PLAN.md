@@ -236,40 +236,44 @@ and any sub-helpers it owned exclusively.
   label rewrites). Ported alongside this drops `_renderActiveSequence`
   too — the wrapper already moved in G.7 but still calls the node
   helper.
-- [ ] **G.9 — `_renderSequenceDeliveryState`,
+- [x] **G.8 — `_renderSequenceNode` (7 variants).** Typed
+  `SequenceNodeData` discriminated union + `SequenceNodePanel` JSX.
+  `_renderActiveSequence`, `_renderSequenceNode`, `_sequenceNodeMeta`
+  deleted.
+- [x] **G.9 — `_renderSequenceDeliveryState`,
   `_renderSequenceActionButton`** (EventTab per-entry card). Typed
-  delivery `{ status, note, blocked }`; the "Start / In Update"
-  button becomes a typed action.
-- [ ] **G.10 — `_renderSequenceShelf`** (StoryHome chapter files).
-  Same shape as event entries; reuse the per-entry component.
-- [ ] **G.11 — Story Director sub-renderers (one commit per group).**
-  Three logical groups:
-  - **G.11a** — VN hero + control deck: `_renderStoryVnHero`,
-    `_renderStorySoloGuide`, `_renderStoryActionDeck`. Includes the
-    chapter-banner video element and the 4-step solo guide ladder.
-  - **G.11b** — Episode + Card: `_renderStoryStageRail`,
-    `_renderStoryDirectorCard`, `_renderStoryDirectorEmptyCard`.
-  - **G.11c** — Support grid: `_renderStoryPressureBoard`,
-    `_renderStorySideFlow`, `_renderStoryCluesPanel`,
-    `_renderStoryQueuePanel`, `_renderStoryTruthsPanel`.
-- [ ] **G.12 — Story Home sub-renderers.** `_renderChapterTreePanel`,
-  `_renderChoiceConsequencePanel`, `_renderAiStoryContextPanel`,
-  `_renderStoryPipelinePanel`, `_renderSyncSummaryPanel`.
-- [ ] **G.13 — `_renderWorldGateCard`** + `_worldMenuDef` (per-world
-  banner, conditional Enter/Open/Activities buttons). The
-  `worldGateData` bridge returns typed per-world records; the JSX
-  card consumes them.
-- [ ] **G.14 — `_renderQuestChainActive`, `_renderQuestChainTemplate`**
-  (EventTab side-story chains).
-- [ ] **G.15 — `_renderShapePills`, `_scenarioQuestPill`,
-  `_renderScenarioRunActions`** (Scenarios + Maps shared chips +
-  per-card run actions).
-- [ ] **G.16 — `_renderTownSnapshot`, `_renderTownRollFloat`**
-  (Overview HubTab pass-throughs). Either port HubTab's renderers
-  directly or wrap them with typed bridges first.
-- [ ] **G.17 — Zombie scavenge** `_renderZombieScavengeHome`,
-  `_renderZombieScavengeTracker`. World-specific variant of
-  QuestHome / QuestsPanel.
+  `SequenceDelivery` + `SequenceAction`; shared `SequenceCard.tsx`.
+- [x] **G.10 — `_renderSequenceShelf`** (StoryHome chapter files).
+  Typed `SequenceShelfData` + `SequenceShelfPanel` JSX. The shelf
+  delivery/action/meta/status helpers all deleted.
+- [x] **G.11 — Story Director sub-renderers.**
+  - **G.11a** — VN hero + solo guide + action deck → `StoryVn.tsx`.
+  - **G.11b** — Episode rail + director card + empty card →
+    `StoryDirectorPanels.tsx`. The modal-only card stays HTML.
+  - **G.11c** — Support grid (pressure / side-flow / clues / queue /
+    truths) → `StoryDirectorPanels.tsx`.
+- [x] **G.12 — Story Home sub-renderers** → `StoryHomePanels.tsx`
+  (chapter tree, choice consequence, AI story context, pipeline,
+  sync summary).
+- [x] **G.13 — `_renderWorldGateCard` + `_renderPressureStripMini`**
+  → `WorldGateCard.tsx`. `_worldMenuDef` / `_modeForTab` stay (typed
+  bridge consumers).
+- [x] **G.14 — `_renderQuestChainActive`, `_renderQuestChainTemplate`**
+  → `QuestChain.tsx`. HubTab keeps its own HTML chain renderers for
+  the questChains tab (K.3).
+- [x] **G.15 — `_renderShapePills`, `_scenarioQuestPill`,
+  `_renderScenarioRunActions`, `_runQuestPill`** → `ScenarioChips.tsx`.
+  Shared by Scenarios, Maps, and ScenarioSummary.
+- [x] **G.16 — `_renderTownSnapshot`, `_renderTownRollFloat`** →
+  `TownPanels.tsx`. Dead HubTab town renderers removed.
+- [x] **G.17 — Zombie scavenge** `_renderZombieScavengeHome`,
+  `_renderZombieScavengeTracker` → `ZombieScavenge.tsx`. The dead
+  HTML quest-row path (`_renderQuestRow` + sub-helpers,
+  `_renderGachaHomeHero`, `_worldHomeHeroStyle`,
+  `_renderWorldActivityPreviewCard`) deleted.
+- [x] **Phase G completion — `_questScenarioPill`** ported to typed
+  `QuestPillData` reusing `<QuestPill>`. Every closure-private
+  `_render*` sub-renderer in campaign-ui.js is now JSX.
 
 ### Then — Phase H (delete campaign-ui.js)
 
@@ -413,13 +417,25 @@ finishes the authoring loop:
 | After G.5 (ScenarioSummary) | 605 |
 | After G.6 (AdventureLegend) | 604 |
 | After G.7 (ActiveSequence wrapper) | 602 |
+| After G.8 (sequence node) | 599 |
+| After G.9 (sequence card delivery/action) | 599 |
+| After G.10 (sequence shelf) | 597 |
+| After G.11a (Story VN hero/guide/deck) | 594 |
+| After G.11b (Story episode rail + card) | 594 |
+| After G.11c (Story support grid) | 592 |
+| After G.12 (Story Home sub-panels) | 587 |
+| After G.13 (World Gate cards) | 586 |
+| After G.14 (quest chains) | 589 |
+| After G.15 (scenario chips) | 588 |
+| After G.16 (town snapshot/roll float) | 585 |
+| After G.17 (zombie scavenge + dead-code purge) | 576 |
 
-Cumulative Phase F+G so far: 641 KB → 602 KB. The remaining ~600 KB
-sits in the un-ported sub-renderers (Story Director / Story Home
-complex panels, sequence node body, world-gate cards, zombie
-scavenge variants) plus the legacy hub/party/world-map tab paths
-the React shell still wraps. Phase G keeps shrinking it; Phase H
-removes campaign-ui.js entirely; Phases I/J pivot from "remove
+Cumulative Phase F+G: 641 KB → 576 KB. Every closure-private
+`_render*` sub-renderer in campaign-ui.js is now JSX. The remaining
+~576 KB is the `_handleAction` dispatcher, the `get*Data` bridges,
+the vanilla render fallback, and the legacy hub/party/world-map tab
+HTML paths the React shell still wraps. Phase H removes the
+campaign-ui.js render/dispatch halves; Phases I/J pivot from "remove
 HTML strings" to "optimize the React tree + open the authoring
 loop for AI generators."
 
