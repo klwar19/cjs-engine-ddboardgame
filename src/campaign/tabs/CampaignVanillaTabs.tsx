@@ -78,8 +78,8 @@ export const CampaignQuestsPanelTab = ({ state }: Props) =>
 // (last event result, last oracle) are still HTML bridges and will
 // migrate alongside the event{Character,Special,Side} tabs.
 
-export const CampaignScenariosTab = ({ state }: Props) =>
-  <VanillaTab tabId="scenarios" state={state} mountClass="campaign-scenarios-react" />;
+// CampaignScenariosTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignScenariosTab.tsx` (Phase F.8).
 
 export const CampaignMapsTab = ({ state }: Props) =>
   <VanillaTab tabId="maps" state={state} mountClass="campaign-maps-react" />;

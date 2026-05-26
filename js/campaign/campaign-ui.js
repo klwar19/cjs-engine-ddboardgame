@@ -901,7 +901,6 @@ window.CJS.CampaignUI = (() => {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
       default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
@@ -3149,75 +3148,13 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderScenarios(state) {
-    const campaign = CS().getCurrentCampaign();
-    const authored = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
-    const generated = CS().getGeneratedScenarios ? CS().getGeneratedScenarios() : Object.values(state.sideContent?.generatedScenarios || {});
-    const scenarios = [...generated, ...authored];
-    return `
-      <div class="campaign-dashboard">
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h2>Run Setup</h2>
-            <span class="campaign-pill">Save-local</span>
-          </div>
-          <div class="campaign-generator-controls">
-            <label>Source
-              <select id="campaign-gen-source">
-                <option value="random">Random</option>
-                <option value="active_quest">Active Quest</option>
-                <option value="quest_chain">Side Story</option>
-              </select>
-            </label>
-            <label>Movement
-              <select id="campaign-gen-form">
-                <option value="node_map">Node Map</option>
-                <option value="grid_map">Grid Map</option>
-              </select>
-            </label>
-            <label>Setting / Context
-              <select id="campaign-gen-map-type">
-                ${(Gen()?.options?.().mapSettings || Gen()?.options?.().mapTypes || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena']).map((type) => `<option value="${type}">${_esc(_label(type))}</option>`).join('')}
-              </select>
-            </label>
-            <label>Size
-              <select id="campaign-gen-size">
-                ${['tiny', 'small', 'medium', 'large', 'huge', 'massive'].map((size) => `<option value="${size}" ${size === 'small' ? 'selected' : ''}>${_esc(_label(size))}</option>`).join('')}
-              </select>
-            </label>
-            <label>Layers
-              <select id="campaign-gen-layers">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-              </select>
-            </label>
-          </div>
-          <div class="campaign-action-grid">
-            <button class="campaign-action primary" data-campaign-action="generate-scenario" ${state.activeScenarioRun ? 'disabled' : ''}>Generate & Start</button>
-            <button class="campaign-action" data-campaign-action="generate-quest-scenario" ${state.activeScenarioRun ? 'disabled' : ''}>Quest-Based</button>
-          </div>
-        </section>
-        <div class="campaign-tab-grid">
-        ${scenarios.map((scenario) => `
-          <section class="campaign-panel">
-            <div class="campaign-panel-head">
-              <h3>${_esc(scenario.name || scenario.id)}</h3>
-              <span class="campaign-pill">${_esc(scenario.generated ? `generated | ${scenario.source?.kind || 'random'}` : (scenario.type || 'scenario'))}</span>
-              ${_scenarioQuestPill(scenario, state)}
-            </div>
-            ${_renderShapePills(scenario)}
-            <div class="campaign-muted">${_esc(scenario.notes || '')}</div>
-            <div class="campaign-action-grid">
-              ${_renderScenarioRunActions(scenario, state)}
-              ${scenario.generated ? `<button class="campaign-action danger" data-campaign-action="discard-scenario" data-id="${_escAttr(scenario.id)}" ${state.activeScenarioRun?.scenarioId === scenario.id ? 'disabled' : ''}>Discard</button>` : ''}
-            </div>
-          </section>
-        `).join('') || '<div class="campaign-empty">No runs available.</div>'}
-        </div>
-      </div>
-    `;
-  }
+  // _renderScenarios — Phase F.8 port. Body moved to
+  // `src/campaign/tabs/CampaignScenariosTab.tsx`. Typed data flows
+  // through `getScenariosData(state)`. Per-card "run actions" and the
+  // shape/quest pill HTML are still produced by the closure-private
+  // helpers below (`_renderScenarioRunActions`, `_renderShapePills`,
+  // `_scenarioQuestPill`); the JSX embeds them via dangerouslySetInnerHTML
+  // until those helpers themselves port to typed renderers.
 
   function _renderScenarioRunActions(scenario, state) {
     const activeRun = state.activeScenarioRun;
@@ -10375,7 +10312,6 @@ window.CJS.CampaignUI = (() => {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
-      case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
       default: return '';
@@ -10570,6 +10506,44 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getScenariosData(state = CS().getState()) {
+    if (!state) return null;
+    const campaign = CS().getCurrentCampaign();
+    const authored = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
+    const generated = CS().getGeneratedScenarios
+      ? CS().getGeneratedScenarios()
+      : Object.values(state.sideContent?.generatedScenarios || {});
+    const scenarios = [...generated, ...authored];
+    const mapTypeOptions = Gen()?.options?.().mapSettings || Gen()?.options?.().mapTypes
+      || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
+    const activeRun = state.activeScenarioRun;
+    return {
+      hasActiveRun: !!activeRun,
+      activeRunScenarioId: activeRun?.scenarioId || null,
+      mapTypeOptions: mapTypeOptions.map((id) => ({ id, label: _label(id) })),
+      sizeOptions: [
+        { id: 'tiny', label: 'Tiny' },
+        { id: 'small', label: 'Small' },
+        { id: 'medium', label: 'Medium' },
+        { id: 'large', label: 'Large' },
+        { id: 'huge', label: 'Huge' },
+        { id: 'massive', label: 'Massive' }
+      ],
+      scenarios: scenarios.map((scenario) => ({
+        id: String(scenario.id || ''),
+        name: scenario.name || scenario.id || '',
+        notes: scenario.notes || '',
+        generated: !!scenario.generated,
+        pillLabel: scenario.generated
+          ? `generated | ${scenario.source?.kind || 'random'}`
+          : (scenario.type || 'scenario'),
+        questPillHtml: _scenarioQuestPill(scenario, state) || '',
+        shapePillsHtml: _renderShapePills(scenario) || '',
+        runActionsHtml: _renderScenarioRunActions(scenario, state)
+      }))
+    };
+  }
+
   function getEventTabData(kind, state = CS().getState()) {
     if (!state) return null;
     const Seq = window.CJS.CampaignSequences;
@@ -10870,6 +10844,7 @@ window.CJS.CampaignUI = (() => {
     getStorySummaryData,
     getQuestHomeData,
     getEventTabData,
+    getScenariosData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
