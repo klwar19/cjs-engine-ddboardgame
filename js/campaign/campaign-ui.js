@@ -677,26 +677,11 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _renderWorldGate(state) {
-    const worlds = CS().getContent().worlds || {};
-    const options = _worldOptions();
-    const current = state.currentWorld || 'haven';
-    const cards = options.map((option) => _renderWorldGateCard(option.value, worlds[option.value] || {}, state)).join('');
-    return `
-      <section class="campaign-panel campaign-world-gate">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>World Gate</h2>
-            <span class="campaign-muted">Choose which world content to load. Current world: ${_esc(worlds[current]?.displayName || current)}</span>
-          </div>
-          ${_renderPressureStripMini(state)}
-        </div>
-        <div class="campaign-world-gate-grid">
-          ${cards || '<div class="campaign-empty">No campaign worlds are available.</div>'}
-        </div>
-      </section>
-    `;
-  }
+  // _renderWorldGate — Phase F.12 port. Body moved to
+  // `src/campaign/tabs/CampaignWorldGateTab.tsx`. Typed data flows
+  // through `getWorldGateData(state)`. Per-world cards still come
+  // through `_renderWorldGateCard` (kept here because the bridge calls
+  // it) until the per-card banner / button logic ports.
 
   function _renderWorldGateCard(worldId, world, state) {
     const def = _worldMenuDef(worldId);
@@ -898,7 +883,6 @@ window.CJS.CampaignUI = (() => {
     // — `Tabs.has(id)` returns true above and the early-return wins.
     // Tabs that still render vanilla HTML live here until they migrate.
     switch (_activeTab) {
-      case 'worldGate': return _renderWorldGate(state);
       case 'storyDirector': return _renderStoryDirector(state);
       default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
     }
@@ -10070,7 +10054,6 @@ window.CJS.CampaignUI = (() => {
   function renderTabBody(tabId, state = CS().getState()) {
     if (!state) return '';
     switch (tabId) {
-      case 'worldGate': return _renderWorldGate(state);
       case 'storyDirector': return _renderStoryDirector(state);
       default: return '';
     }
@@ -10264,6 +10247,21 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getWorldGateData(state = CS().getState()) {
+    if (!state) return null;
+    const worlds = CS().getContent().worlds || {};
+    const options = _worldOptions();
+    const current = state.currentWorld || 'haven';
+    return {
+      currentWorldName: worlds[current]?.displayName || current,
+      pressureStripHtml: _renderPressureStripMini(state) || '',
+      cards: options.map((option) => ({
+        worldId: option.value,
+        cardHtml: _renderWorldGateCard(option.value, worlds[option.value] || {}, state)
+      }))
+    };
+  }
+
   function getStoryHomeData(state = CS().getState()) {
     if (!state) return null;
     const theme = _storyTheme(state);
@@ -10778,6 +10776,7 @@ window.CJS.CampaignUI = (() => {
     getRunData,
     getQuestPanelData,
     getStoryHomeData,
+    getWorldGateData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

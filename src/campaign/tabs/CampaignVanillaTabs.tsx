@@ -50,8 +50,8 @@ function VanillaTab({
   return <div className={mountClass} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-export const CampaignWorldGateTab = ({ state }: Props) =>
-  <VanillaTab tabId="worldGate" state={state} mountClass="campaign-world-gate-react" />;
+// CampaignWorldGateTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignWorldGateTab.tsx` (Phase F.12).
 
 // CampaignStoryHomeTab moved to a dedicated JSX port at
 // `src/campaign/tabs/CampaignStoryHomeTab.tsx` (Phase F.11).
