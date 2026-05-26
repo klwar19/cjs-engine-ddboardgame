@@ -78,11 +78,6 @@ export function CampaignMapsTab({ state }: Props) {
   );
 }
 
-function HtmlBridge({ html, className }: { html: string; className: string }) {
-  if (!html) return null;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
 function StatGrid({ run, includeEvents }: { run: RunStats; includeEvents: boolean }) {
   return (
     <div className="campaign-stat-grid">

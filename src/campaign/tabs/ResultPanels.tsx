@@ -25,7 +25,6 @@ import {
   type ManualSummary,
   type SoloNoticeData,
   type PendingBattleData,
-  type ScenarioSummaryData,
   type ScenarioSummaryRun,
   type SequenceScope
 } from "./data/resultPanels";

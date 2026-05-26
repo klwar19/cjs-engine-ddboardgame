@@ -866,14 +866,6 @@ window.CJS.CampaignUI = (() => {
     return window.CJS.CampaignUIInternal.PartyTab.renderParty(state, _tabHelpers());
   }
 
-  function _renderPartyCard(id, member) {
-    return window.CJS.CampaignUIInternal.PartyTab.renderPartyCard(id, member, _tabHelpers());
-  }
-
-  function _renderRoster(state) {
-    return window.CJS.CampaignUIInternal.PartyTab.renderRoster(state, _tabHelpers());
-  }
-
   function _renderRosterMember(id, member) {
     return window.CJS.CampaignUIInternal.PartyTab.renderRosterMember(id, member, _tabHelpers());
   }
@@ -1403,22 +1395,6 @@ window.CJS.CampaignUI = (() => {
   // is JSX now (`src/campaign/tabs/ZombieScavenge.tsx`); other gacha
   // heroes (Quest Home, Event tabs) were already inline JSX.
 
-  function _renderFarmingStageCard(title, text, action, opts = {}) {
-    const tag = opts.tag ? `<span class="campaign-stage-tag">${_esc(opts.tag)}</span>` : '';
-    const icon = opts.icon ? `<span class="campaign-stage-icon" aria-hidden="true">${_esc(opts.icon)}</span>` : '';
-    return `
-      <article class="campaign-stage-card">
-        <div class="campaign-stage-head">
-          ${icon}
-          <strong>${_esc(title)}</strong>
-          ${tag}
-        </div>
-        <p>${_esc(text)}</p>
-        <button class="campaign-action" data-campaign-action="${_escAttr(action)}">Start</button>
-      </article>
-    `;
-  }
-
   // TOOL_PURPOSES, _renderInlinePurpose, _purposeTone, _purposeKeyForCard
   // live in js/campaign/ui/cui-controls.js (bound as aliases at the top).
 
@@ -1453,13 +1429,9 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _storyThemeStyle(theme = {}) {
-    const parts = [];
-    if (theme.backdrop) parts.push(`--story-backdrop: url('${_escAttr(_cssVarAssetUrl(theme.backdrop))}')`);
-    if (theme.accent) parts.push(`--story-accent: ${_escAttr(theme.accent)}`);
-    if (theme.danger) parts.push(`--story-danger: ${_escAttr(theme.danger)}`);
-    return parts.length ? `style="${parts.join('; ')}"` : '';
-  }
+  // _storyThemeStyle removed in Phase G — the React story tabs set the
+  // theme CSS vars (`--story-backdrop/accent/danger`) via typed
+  // `themeStyleVars` style props instead of an inline style string.
 
   // _renderStoryVnHero removed in Phase G.11a. The React
   // `StoryVnHero` (`src/campaign/tabs/StoryDirector.tsx`) renders
@@ -1819,16 +1791,8 @@ window.CJS.CampaignUI = (() => {
   // `getTownRollFloatData(state)` and renders JSX via
   // `src/campaign/tabs/TownPanels.tsx`.
 
-  function _isRumorOpen(rumor = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.isRumorOpen(rumor);
-  }
-
   function _openRumors(hubState) {
     return window.CJS.CampaignUIInternal.HubTab.openRumors(hubState);
-  }
-
-  function _renderRumorRow(rumor = {}, options = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.renderRumorRow(rumor, options);
   }
 
   // Phase G.14 — typed quest-chain data for the EventTab side-story
@@ -2029,20 +1993,14 @@ window.CJS.CampaignUI = (() => {
     UI().toast('Quest arc failed', 'info');
   }
 
-  // Side card, consequence preview, flavor trail, and the consequence
-  // tone helpers all live in `js/campaign/ui/tabs/cui-hub-tab.js`. The
-  // story home, event log, manual builder, and overview keep calling
-  // them through these thin closure delegators.
-  function _renderSideCard(card, options = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.renderSideCard(card, options);
-  }
-
+  // Consequence preview, flavor trail, and card-choice-ops helpers
+  // all live in `js/campaign/ui/tabs/cui-hub-tab.js`. The story home,
+  // event log, manual builder, and overview keep calling them through
+  // these thin closure delegators. (renderSideCard / renderChoiceConsequence
+  // / operationTone delegators were removed once their last campaign-ui
+  // callers ported to JSX — HubTab still owns the implementations.)
   function _cardChoiceOps(card = {}) {
     return window.CJS.CampaignUIInternal.HubTab.cardChoiceOps(card);
-  }
-
-  function _renderChoiceConsequence(choice = {}, index = 0) {
-    return window.CJS.CampaignUIInternal.HubTab.renderChoiceConsequence(choice, index);
   }
 
   function _renderConsequencePreview(ops = [], options = {}) {
@@ -2055,10 +2013,6 @@ window.CJS.CampaignUI = (() => {
 
   function _consequenceSummary(ops = [], options = {}) {
     return window.CJS.CampaignUIInternal.HubTab.consequenceSummary(ops, options);
-  }
-
-  function _operationTone(op = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.operationTone(op);
   }
 
   // _impactLegendItem, _controlGroup, _actionMenu, _actionBtn live in
@@ -2227,41 +2181,6 @@ window.CJS.CampaignUI = (() => {
   // _renderLastReport — Phase G.4 port. Body moved to
   // `src/campaign/tabs/ResultPanels.tsx`. Typed bridge
   // `getLastReportData(state)` produces the data.
-
-  function _renderSide(state) {
-    const activeQuests = Object.values(state.quests || {}).filter((quest) => quest.status === 'active');
-    return `
-      ${_renderWallet(state)}
-      ${_renderInventorySnapshot(state)}
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Quests</h2></div>
-        ${activeQuests.length ? activeQuests.slice(0, 5).map(_renderQuestMini).join('') : '<div class="campaign-empty">No active quests.</div>'}
-      </section>
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Recent Log</h2></div>
-        ${(state.log || []).slice(0, 10).map((line) => _renderLogEntry(line, { compact: true })).join('') || '<div class="campaign-empty">No log entries.</div>'}
-      </section>
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Notes</h2><button class="campaign-icon-btn" data-campaign-action="add-note">+</button></div>
-        ${(state.pinnedNotes || []).slice(0, 6).map((note) => `<div class="campaign-log-line">${_esc(note.text || note)}</div>`).join('') || '<div class="campaign-empty">No pinned notes.</div>'}
-      </section>
-    `;
-  }
-
-  function _renderWallet(state) {
-    const entries = Object.entries(state.currencies || {});
-    return `
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Wallet</h2></div>
-        ${entries.length ? entries.map(([id, amount]) => `
-          <div class="campaign-row">
-            <strong>${_esc(_currencyLabel(id))}</strong>
-            <span class="campaign-pill">${amount || 0}</span>
-          </div>
-        `).join('') : '<div class="campaign-empty">No currency tracked.</div>'}
-      </section>
-    `;
-  }
 
   function _renderInventorySnapshot(state, opts = {}) {
     const buckets = [
@@ -3282,15 +3201,6 @@ window.CJS.CampaignUI = (() => {
       .catch((error) => UI().toast(error.message || 'GitHub save failed', 'error', 5000));
   }
 
-  function _rollEvent() {
-    const campaign = CS().getCurrentCampaign();
-    const world = CS().getState().currentWorld;
-    const tables = campaign?.eventTables || [];
-    const tableId = window.CJS.CampaignEvents.pickTable(tables, { world, setting: 'town', tags: ['town'] });
-    const event = window.CJS.CampaignEvents.roll(tableId, { world, setting: 'town', tags: ['town'] });
-    if (!event) UI().toast('No event table available', 'info');
-  }
-
   function _rollOracle() {
     const oracle = window.CJS.CampaignOracle.roll();
     if (!oracle) return UI().toast('No oracle table available', 'info');
@@ -3513,59 +3423,6 @@ window.CJS.CampaignUI = (() => {
       width: '420px'
     });
     close.onclick = () => UI().closeModal(overlay);
-  }
-
-  function _legacyCustomEventUnused() {
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Title'));
-    const title = document.createElement('input');
-    title.type = 'text';
-    title.style.width = '100%';
-    title.placeholder = 'Event title';
-    body.appendChild(title);
-    body.appendChild(_formLabel('Prompt'));
-    const prompt = document.createElement('textarea');
-    prompt.style.width = '100%';
-    prompt.style.minHeight = '90px';
-    prompt.placeholder = 'What happens?';
-    body.appendChild(prompt);
-    body.appendChild(_formLabel('Quick consequence (optional)'));
-    const consequence = UI().createSelect({
-      options: [
-        { value: 'none', label: 'None — story only' },
-        { value: 'gain_gold', label: 'Gain 25 gold' },
-        { value: 'lose_gold', label: 'Lose 15 gold' },
-        { value: 'damage_party', label: 'Damage party 5' },
-        { value: 'heal_party', label: 'Heal party 10' },
-        { value: 'add_status_cold', label: 'Cold status on party (scenario)' },
-        { value: 'danger_up', label: 'Danger +1' },
-        { value: 'danger_down', label: 'Danger -1' }
-      ],
-      value: 'none'
-    });
-    body.appendChild(consequence);
-    _formModal({
-      title: 'Custom Event',
-      body,
-      width: '520px',
-      primaryLabel: 'Use',
-      onSubmit: () => {
-        const t = title.value.trim() || 'Custom Event';
-        const p = prompt.value.trim();
-        const choice = consequence.value;
-        const world = CS().getState().currentWorld;
-        const ops = _consequenceOps(choice, world);
-        const event = {
-          id: `custom_${Date.now()}`,
-          title: t,
-          prompt: p,
-          suggested: ops,
-          tableName: 'Custom',
-          rolledAt: new Date().toISOString()
-        };
-        CS().mutate((state) => { state.lastEvent = event; }, { source: 'event_custom' });
-      }
-    });
   }
 
   function _openManualEventBuilder(prefill = {}) {
@@ -4228,19 +4085,6 @@ window.CJS.CampaignUI = (() => {
       .concat(draft.customTags || [])
       .concat(draft.selectedRumor ? ['rumor'] : [])
       .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
-  }
-
-  function _consequenceOps(choice, world) {
-    switch (choice) {
-      case 'gain_gold': return [{ op: 'give_money', currency: `${world}_gold`, amount: 25 }];
-      case 'lose_gold': return [{ op: 'take_money', currency: `${world}_gold`, amount: 15 }];
-      case 'damage_party': return [{ op: 'damage_party', amount: 5 }];
-      case 'heal_party': return [{ op: 'heal_party', amount: 10 }];
-      case 'add_status_cold': return [{ op: 'add_status', target: 'party', status: 'cold', duration: 'scenario' }];
-      case 'danger_up': return [{ op: 'danger', amount: 1 }];
-      case 'danger_down': return [{ op: 'danger', amount: -1 }];
-      default: return [];
-    }
   }
 
   function _oracleChoices() {
@@ -7021,25 +6865,6 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _runRollEvent() {
-    const scenario = CS().getActiveScenario();
-    const campaign = CS().getCurrentCampaign();
-    const world = CS().getState().currentWorld;
-    const node = Runner().findCurrentNode?.();
-    const cell = Runner().findCurrentCell?.();
-    const context = {
-      world,
-      setting: scenario?.setting || '',
-      tags: [...(scenario?.tags || []), ...(node?.tags || []), ...(cell?.tags || [])],
-      locationKind: node?.kind || cell?.kind || ''
-    };
-    const tables = [...(scenario?.eventTables || []), ...(campaign?.eventTables || [])];
-    const tableId = window.CJS.CampaignEvents.pickTable(tables, context);
-    if (!tableId) return UI().toast('No event tables available', 'info');
-    const event = window.CJS.CampaignEvents.roll(tableId, context);
-    if (!event) UI().toast('Event roll returned nothing', 'info');
-  }
-
   function _runQueueSetBattle(battleId) {
     const scenario = CS().getActiveScenario();
     const battle = (scenario?.setBattles || []).find((b) => b.id === battleId || b.encounterId === battleId || b.battleSetId === battleId);
@@ -7379,12 +7204,6 @@ window.CJS.CampaignUI = (() => {
     _activeMode = 'quest';
     _activeTab = 'maps';
     render();
-  }
-
-  function _questEvent(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    UI().toast('Random quest events are disabled. Use Hub Scene, Check, Battle, or authored Event files.', 'info');
   }
 
   function _questHubEvent(questId) {
@@ -7753,10 +7572,6 @@ window.CJS.CampaignUI = (() => {
     if (/arena|training|spar/.test(text)) return 'arena';
     if (/outdoor|road|trail|field|wild/.test(text)) return 'outdoor';
     return 'any';
-  }
-
-  function _questTags(quest = {}) {
-    return ['quest', quest.id, ...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || []), _questMapType(quest)].filter(Boolean);
   }
 
   function _ownedInventoryOptions() {
