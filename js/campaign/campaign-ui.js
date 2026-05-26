@@ -899,7 +899,6 @@ window.CJS.CampaignUI = (() => {
     // Tabs that still render vanilla HTML live here until they migrate.
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
-      case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
       default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
     }
@@ -938,87 +937,12 @@ window.CJS.CampaignUI = (() => {
     return _tabHelpersCache;
   }
 
-  function _renderStoryHome(state) {
-    const director = SD();
-    const snap = director?.snapshot?.() || {};
-    const pack = snap.pack || null;
-    const stage = snap.stage || {};
-    const theme = _storyTheme(state);
-    const Seq = window.CJS.CampaignSequences;
-    const storyFiles = Seq?.list?.('story') || [];
-    const activeSequence = Seq?.active?.(state);
-    const runtime = state.sequenceRuntime || {};
-    const storyHistory = (runtime.history || []).filter((entry) => entry.scope === 'story');
-    const storyParts = _storySummaryEntries(state);
-    const manualCount = state.storyMode?.manualSummaryEntries?.length || 0;
-    const defaultedCount = Object.keys(state.storyMode?.defaultedParts || {}).length;
-    const activeRun = state.activeScenarioRun;
-    const pipeline = _storyPipelineSnapshot(state);
-    const next = {
-      index: activeSequence?.scope === 'story' ? 1 : 0,
-      title: activeSequence?.scope === 'story' ? 'Continue Current Story Part' : 'Choose a Chapter Part',
-      text: activeSequence?.scope === 'story'
-        ? 'The current story file is open below. Continue node by node, then complete it when the conclusion is reached.'
-        : 'Start a story file when you are ready. Starting ahead should be treated as revealing earlier parts with the default path.',
-      actions: [
-        _actionBtn({ action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' }),
-        _actionBtn({ action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' }),
-        _actionBtn({ action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' })
-      ]
-    };
-
-    return `
-      <div class="campaign-dashboard campaign-mode-home campaign-story-home campaign-story-vn ${_escAttr(theme.className)}" ${_storyThemeStyle(theme)}>
-        ${_renderStoryVnHero({ state, pack, stage, next, theme })}
-        ${_renderActiveSequence(state, ['story'])}
-        ${_renderChapterTreePanel(state)}
-        ${_renderChoiceConsequencePanel(state)}
-        ${_renderAiStoryContextPanel(state)}
-        ${_renderSequenceShelf('story', {
-          wide: true,
-          title: 'Chapter Files',
-          note: 'Pick the chapter part to play. Branches are gated by the choice you made in the previous chapter, so unlocked branches will be marked. If you start ahead, prior parts are revealed with the default path.'
-        })}
-        <section class="campaign-panel campaign-wide-panel campaign-home-focus">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Story Controls</h2>
-              <div class="campaign-muted">Compact story mode: chapter files, current sequence, summary, and manual GM notes.</div>
-            </div>
-            <span class="campaign-pill">${storyFiles.length} chapter parts</span>
-          </div>
-          <div class="campaign-home-actions">
-            ${_actionBtn({ action: 'story-manual-note', label: 'Add Manual Scene', hint: 'Add story text to the summary without a VN scene', kind: 'manual' })}
-            ${_actionBtn({ action: 'open-story-summary', label: 'Open Summary', hint: 'Read completed parts, facts, and manual notes', kind: 'primary story' })}
-            ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Includes static story summary files plus GM-added save notes and runtime branches', kind: 'manual' })}
-            ${_actionBtn({ action: 'open-maps-tab', label: activeRun ? 'Continue Map' : 'Current Map', hint: activeRun ? 'Return to the active map' : 'No active map run yet' })}
-          </div>
-        </section>
-
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h3>Current Arc</h3>
-            <span class="campaign-pill">Chapter ${_storyChapterText(state)}</span>
-          </div>
-          <div class="campaign-stat-grid">
-            <span>Completed <b>${storyParts.length}</b></span>
-            <span>Defaulted <b>${defaultedCount}</b></span>
-            <span>Manual Notes <b>${manualCount}</b></span>
-            <span>Phase <b>${_esc(state.phase?.number || 1)}</b></span>
-          </div>
-          <div class="campaign-muted">Jumping ahead defaults earlier unrevealed parts once. Re-reading a played/defaulted part stays in story-only replay unless you add a future override flow.</div>
-        </section>
-
-        ${_renderStoryPipelinePanel(pipeline)}
-        ${_renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle)}
-
-        ${_renderSoloNotice(state)}
-        ${activeRun ? _renderScenarioSummary(state) : ''}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-      </div>
-    `;
-  }
+  // _renderStoryHome — Phase F.11 port. Body moved to
+  // `src/campaign/tabs/CampaignStoryHomeTab.tsx`. Typed data flows
+  // through `getStoryHomeData(state)`. The VN hero, chapter tree,
+  // choice consequence panel, AI context panel, sequence shelf,
+  // pipeline, sync summary, and shared sub-panels still render as
+  // HTML strings via that bridge until each helper ports.
 
   function _renderChoiceConsequencePanel(state) {
     const Align = window.CJS.CampaignAlignment;
@@ -10147,7 +10071,6 @@ window.CJS.CampaignUI = (() => {
     if (!state) return '';
     switch (tabId) {
       case 'worldGate': return _renderWorldGate(state);
-      case 'storyHome': return _renderStoryHome(state);
       case 'storyDirector': return _renderStoryDirector(state);
       default: return '';
     }
@@ -10341,6 +10264,69 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
+  function getStoryHomeData(state = CS().getState()) {
+    if (!state) return null;
+    const theme = _storyTheme(state);
+    const director = SD();
+    const snap = director?.snapshot?.() || {};
+    const pack = snap.pack || null;
+    const stage = snap.stage || {};
+    const Seq = window.CJS.CampaignSequences;
+    const storyFiles = Seq?.list?.('story') || [];
+    const activeSequence = Seq?.active?.(state);
+    const storyParts = _storySummaryEntries(state);
+    const manualCount = state.storyMode?.manualSummaryEntries?.length || 0;
+    const defaultedCount = Object.keys(state.storyMode?.defaultedParts || {}).length;
+    const activeRun = state.activeScenarioRun;
+    const pipeline = _storyPipelineSnapshot(state);
+    const next = {
+      index: activeSequence?.scope === 'story' ? 1 : 0,
+      title: activeSequence?.scope === 'story' ? 'Continue Current Story Part' : 'Choose a Chapter Part',
+      text: activeSequence?.scope === 'story'
+        ? 'The current story file is open below. Continue node by node, then complete it when the conclusion is reached.'
+        : 'Start a story file when you are ready. Starting ahead should be treated as revealing earlier parts with the default path.',
+      actions: [
+        _actionBtn({ action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' }),
+        _actionBtn({ action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' }),
+        _actionBtn({ action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' })
+      ]
+    };
+    // CSS-vars derived from theme; React will set them as style props.
+    const themeStyleVars = {};
+    if (theme.backdrop) themeStyleVars['--story-backdrop'] = `url('${_cssVarAssetUrl(theme.backdrop)}')`;
+    if (theme.accent) themeStyleVars['--story-accent'] = theme.accent;
+    if (theme.danger) themeStyleVars['--story-danger'] = theme.danger;
+    return {
+      themeClassName: theme.className || '',
+      themeStyleVars,
+      chapterPartsCount: storyFiles.length,
+      currentChapter: state.storyMode?.currentChapterLabel || state.currentChapter || 1,
+      currentArc: {
+        completed: storyParts.length,
+        defaulted: defaultedCount,
+        manualNotes: manualCount,
+        phase: state.phase?.number || 1
+      },
+      hasActiveRun: !!activeRun,
+      vnHeroHtml: _renderStoryVnHero({ state, pack, stage, next, theme }),
+      activeSequenceHtml: _renderActiveSequence(state, ['story']) || '',
+      chapterTreeHtml: _renderChapterTreePanel(state) || '',
+      choiceConsequenceHtml: _renderChoiceConsequencePanel(state) || '',
+      aiStoryContextHtml: _renderAiStoryContextPanel(state) || '',
+      sequenceShelfHtml: _renderSequenceShelf('story', {
+        wide: true,
+        title: 'Chapter Files',
+        note: 'Pick the chapter part to play. Branches are gated by the choice you made in the previous chapter, so unlocked branches will be marked. If you start ahead, prior parts are revealed with the default path.'
+      }),
+      storyPipelineHtml: _renderStoryPipelinePanel(pipeline) || '',
+      syncSummaryHtml: _renderSyncSummaryPanel('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle) || '',
+      soloNoticeHtml: _renderSoloNotice(state) || '',
+      scenarioSummaryHtml: activeRun ? (_renderScenarioSummary(state) || '') : '',
+      pendingBattleHtml: _renderPendingBattle(state) || '',
+      combatResultHtml: _renderCombatResult(state) || ''
+    };
+  }
+
   function getQuestPanelData(state = CS().getState()) {
     if (!state) return null;
     if (state.currentWorld === 'zombie') {
@@ -10791,6 +10777,7 @@ window.CJS.CampaignUI = (() => {
     getScenariosData,
     getRunData,
     getQuestPanelData,
+    getStoryHomeData,
     getMainBody,
     getPanelDefs,
     getPanelOrder,

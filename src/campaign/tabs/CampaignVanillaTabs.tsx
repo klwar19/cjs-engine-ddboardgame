@@ -53,8 +53,8 @@ function VanillaTab({
 export const CampaignWorldGateTab = ({ state }: Props) =>
   <VanillaTab tabId="worldGate" state={state} mountClass="campaign-world-gate-react" />;
 
-export const CampaignStoryHomeTab = ({ state }: Props) =>
-  <VanillaTab tabId="storyHome" state={state} mountClass="campaign-story-home-react" />;
+// CampaignStoryHomeTab moved to a dedicated JSX port at
+// `src/campaign/tabs/CampaignStoryHomeTab.tsx` (Phase F.11).
 
 // CampaignStorySummaryTab moved to a dedicated JSX port at
 // `src/campaign/tabs/CampaignStorySummaryTab.tsx` (Phase F.5).

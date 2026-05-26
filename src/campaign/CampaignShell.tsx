@@ -30,9 +30,9 @@ import {
 } from "./tabs/CampaignExternalTabs";
 import {
   CampaignWorldGateTab,
-  CampaignStoryHomeTab,
   CampaignStoryDirectorTab
 } from "./tabs/CampaignVanillaTabs";
+import { CampaignStoryHomeTab } from "./tabs/CampaignStoryHomeTab";
 import { CampaignQuestsPanelTab } from "./tabs/CampaignQuestsPanelTab";
 import { CampaignEventLogTab } from "./tabs/CampaignEventLogTab";
 import { CampaignMinigameTestTab } from "./tabs/CampaignMinigameTestTab";
