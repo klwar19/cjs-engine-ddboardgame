@@ -1,15 +1,14 @@
 // CampaignWorldGateTab.tsx — Phase F JSX port of `_renderWorldGate`.
 //
 // Renders the World Gate panel: header (title + current world line +
-// pressure-strip HTML bridge), then the world card grid. Each card
-// still comes through `_renderWorldGateCard` as one HTML string —
-// the card body has a banner CSS-var, conditional buttons (Enter /
-// Open / Map Movement / Activities / Arena), per-world feature
-// chips, and per-world dev notes. Porting those to JSX requires
-// porting the world-menu defs alongside, which is its own slice.
+// pressure-strip chips), then the world card grid. As of Phase G.13
+// each card is a full JSX `WorldGateCard` with typed banner, status
+// pill, feature/loop chips, dev note, and primary/secondary buttons
+// (Enter / Open / Map Movement / Activities / Arena).
 
 import type { CampaignStateSnapshot } from "../store";
-import { getWorldGateData, type WorldGateCardEntry } from "./data/worldGate";
+import { getWorldGateData } from "./data/worldGate";
+import { WorldGateCard, WorldGatePressureStrip } from "./WorldGateCard";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -33,12 +32,7 @@ export function CampaignWorldGateTab({ state }: Props) {
             Choose which world content to load. Current world: {data.currentWorldName}
           </span>
         </div>
-        {data.pressureStripHtml && (
-          <div
-            className="campaign-pressure-strip-bridge"
-            dangerouslySetInnerHTML={{ __html: data.pressureStripHtml }}
-          />
-        )}
+        <WorldGatePressureStrip pressures={data.pressures} />
       </div>
       <div className="campaign-world-gate-grid">
         {data.cards.length ? (
@@ -48,14 +42,5 @@ export function CampaignWorldGateTab({ state }: Props) {
         )}
       </div>
     </section>
-  );
-}
-
-function WorldGateCard({ card }: { card: WorldGateCardEntry }) {
-  return (
-    <div
-      className="campaign-world-gate-card-bridge"
-      dangerouslySetInnerHTML={{ __html: card.cardHtml }}
-    />
   );
 }

@@ -683,52 +683,92 @@ window.CJS.CampaignUI = (() => {
   // through `_renderWorldGateCard` (kept here because the bridge calls
   // it) until the per-card banner / button logic ports.
 
-  function _renderWorldGateCard(worldId, world, state) {
+  // _renderWorldGateCard / _renderPressureStripMini removed in Phase
+  // G.13. The React `WorldGateCard` + `WorldGatePressureStrip`
+  // (`src/campaign/tabs/WorldGateCard.tsx`) render from the typed
+  // data produced below.
+  function _worldGateCardData(worldId, world, state) {
     const def = _worldMenuDef(worldId);
     const isCurrent = worldId === state.currentWorld;
     const bannerImage = def.bannerImage || world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || '';
-    const bannerStyle = bannerImage ? ` style="--world-card-image:url('${_escAttr(_cssVarAssetUrl(bannerImage))}')"` : '';
+    const bannerImageUrl = bannerImage ? String(_cssVarAssetUrl(bannerImage) || bannerImage) : '';
     const mapCount = DS().getAllAsArray('travelMaps').filter((map) => map.world === worldId).length;
     const activityPacks = DS().getAllAsArray('worldActivityPacks').filter((pack) => pack.world === worldId);
     const activities = activityPacks.flatMap((pack) => pack.activities || []);
     const activityTypes = Array.from(new Set(activities.map((activity) => activity.type || 'activity'))).slice(0, 4);
     const status = isCurrent ? 'Loaded' : (def.status || 'Available');
     const targetTab = def.defaultTab || (mapCount ? 'worldMap' : 'storyHome');
-    const action = isCurrent
-      ? _actionBtn({ action: 'open-world-content', label: def.openLabel || 'Open Content', hint: def.openHint || 'Open this world content', kind: 'primary', data: { tab: targetTab, mode: def.defaultMode || _modeForTab(targetTab) } })
-      : _actionBtn({ action: 'travel-world-card', label: def.enterLabel || `Enter ${world.displayName || worldId}`, hint: def.enterHint || 'Switch world and load its content menu', kind: 'primary', data: { 'world-id': worldId, 'target-tab': targetTab } });
-    const secondary = isCurrent
-      ? `${mapCount ? _actionBtn({ action: 'open-world-content', label: 'Map Movement', hint: 'Open this world travel map', data: { tab: 'worldMap', mode: 'activities' } }) : ''}
-         ${activities.length ? _actionBtn({ action: 'open-world-content', label: 'Activities', hint: 'Open this world activities', data: { tab: 'worldActivities', mode: 'activities' } }) : ''}
-         ${worldId === 'bazaar' ? _actionBtn({ action: 'open-world-content', label: 'Arena / Auction', hint: 'Open Bazaar activities', data: { tab: 'worldActivities', mode: 'activities' } }) : ''}`
-      : '';
-    return `
-      <article class="campaign-world-gate-card theme-${_escAttr(worldId)} ${isCurrent ? 'is-current' : ''} ${bannerImage ? 'has-banner' : ''}"${bannerStyle}>
-        ${bannerImage ? '<div class="campaign-world-gate-banner" aria-hidden="true"></div>' : ''}
-        <div class="campaign-world-gate-card-head">
-          <div>
-            <h3>${_esc(def.title || world.displayName || worldId)}</h3>
-            <span>${_esc(def.kicker || world.tone || worldId)}</span>
-          </div>
-          <b>${_esc(status)}</b>
-        </div>
-        <p>${_esc(def.summary || 'World content placeholder.')}</p>
-        <div class="campaign-world-gate-tags">
-          ${(def.features || []).map((feature) => `<span>${_esc(feature)}</span>`).join('')}
-          ${mapCount ? `<span>${mapCount} map${mapCount === 1 ? '' : 's'}</span>` : ''}
-          ${activities.length ? `<span>${activities.length} activities</span>` : ''}
-        </div>
-        ${activityTypes.length ? `<div class="campaign-muted">Loops: ${_esc(activityTypes.map(_label).join(', '))}</div>` : ''}
-        ${def.devNote ? `<div class="campaign-world-gate-note">${_esc(def.devNote)}</div>` : ''}
-        <div class="campaign-panel-actions">${action}${secondary}</div>
-      </article>
-    `;
+    const primary = isCurrent
+      ? _worldGateActionData({
+          action: 'open-world-content',
+          label: def.openLabel || 'Open Content',
+          hint: def.openHint || 'Open this world content',
+          kind: 'primary',
+          data: { tab: targetTab, mode: def.defaultMode || _modeForTab(targetTab) }
+        })
+      : _worldGateActionData({
+          action: 'travel-world-card',
+          label: def.enterLabel || `Enter ${world.displayName || worldId}`,
+          hint: def.enterHint || 'Switch world and load its content menu',
+          kind: 'primary',
+          data: { 'world-id': worldId, 'target-tab': targetTab }
+        });
+    const secondary = [];
+    if (isCurrent) {
+      if (mapCount) {
+        secondary.push(_worldGateActionData({
+          action: 'open-world-content', label: 'Map Movement', hint: 'Open this world travel map',
+          data: { tab: 'worldMap', mode: 'activities' }
+        }));
+      }
+      if (activities.length) {
+        secondary.push(_worldGateActionData({
+          action: 'open-world-content', label: 'Activities', hint: 'Open this world activities',
+          data: { tab: 'worldActivities', mode: 'activities' }
+        }));
+      }
+      if (worldId === 'bazaar') {
+        secondary.push(_worldGateActionData({
+          action: 'open-world-content', label: 'Arena / Auction', hint: 'Open Bazaar activities',
+          data: { tab: 'worldActivities', mode: 'activities' }
+        }));
+      }
+    }
+    return {
+      worldId: String(worldId),
+      title: String(def.title || world.displayName || worldId),
+      kicker: String(def.kicker || world.tone || worldId),
+      summary: String(def.summary || 'World content placeholder.'),
+      features: Array.isArray(def.features) ? def.features.map(String) : [],
+      bannerImageUrl,
+      isCurrent,
+      status: String(status),
+      mapCount,
+      activitiesCount: activities.length,
+      activityTypeLabels: activityTypes.map(_label),
+      devNote: String(def.devNote || ''),
+      primaryAction: primary,
+      secondaryActions: secondary
+    };
   }
 
-  function _renderPressureStripMini(state) {
+  function _worldGateActionData(opts = {}) {
+    return {
+      action: String(opts.action || ''),
+      label: String(opts.label || ''),
+      hint: String(opts.hint || ''),
+      kind: String(opts.kind || ''),
+      data: Object.freeze(Object.fromEntries(Object.entries(opts.data || {}).map(([k, v]) => [k, String(v)])))
+    };
+  }
+
+  function _pressureStripChips(state) {
     const pressures = Object.values(state.crossWorld?.pressures || {});
-    if (!pressures.length) return '';
-    return `<div class="campaign-panel-actions">${pressures.slice(0, 3).map((p) => `<span class="campaign-pill">${_esc(p.title || p.id)} ${Number(p.value || 0)}</span>`).join('')}</div>`;
+    return pressures.slice(0, 3).map((p) => ({
+      id: String(p.id || ''),
+      title: String(p.title || p.id || ''),
+      value: Number(p.value || 0)
+    }));
   }
 
   function _worldMenuDef(worldId) {
@@ -10116,11 +10156,8 @@ window.CJS.CampaignUI = (() => {
     const current = state.currentWorld || 'haven';
     return {
       currentWorldName: worlds[current]?.displayName || current,
-      pressureStripHtml: _renderPressureStripMini(state) || '',
-      cards: options.map((option) => ({
-        worldId: option.value,
-        cardHtml: _renderWorldGateCard(option.value, worlds[option.value] || {}, state)
-      }))
+      pressures: _pressureStripChips(state),
+      cards: options.map((option) => _worldGateCardData(option.value, worlds[option.value] || {}, state))
     };
   }
 
