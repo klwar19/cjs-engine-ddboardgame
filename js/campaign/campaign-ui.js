@@ -871,20 +871,18 @@ window.CJS.CampaignUI = (() => {
   // hub, world map); anything not in the registry falls back to the
   // shell's switch case below so migration can land tab-by-tab.
   function _renderMain(state) {
+    // The vanilla render() path is only reachable when the React shell
+    // is NOT enabled. In that case the Tabs registry holds the React
+    // mount placeholders + the legacy per-domain renderers (party,
+    // hub, world map). For tabs whose body has fully migrated to JSX
+    // (Phase F), `_renderMain` returns the registry placeholder when
+    // a registry entry exists, or an empty notice otherwise.
     const Tabs = window.CJS.CampaignUIInternal.Tabs;
     if (Tabs?.has?.(_activeTab)) {
       const html = Tabs.render(_activeTab, state, _tabHelpers());
       if (html != null) return html;
     }
-    // Tabs the React bridge has taken over (`settings`, `logs`,
-    // `roster`, `worldMap`, `worldActivities`, the hub family,
-    // `inventory`, `shops`, `craft`, `cook`, `farm`, `relationships`,
-    // `overview`, `eventLog`, `minigameTest`) never reach this switch
-    // — `Tabs.has(id)` returns true above and the early-return wins.
-    // Tabs that still render vanilla HTML live here until they migrate.
-    switch (_activeTab) {
-      default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
-    }
+    return '<div class="campaign-empty">Tab body is JSX-only. Run with the React shell enabled.</div>';
   }
 
   // Frozen helper bundle passed to every registered tab. Built lazily
@@ -9977,16 +9975,14 @@ window.CJS.CampaignUI = (() => {
     return overlay;
   }
 
-  // Bridge entry for React tabs that wrap a closure-private vanilla
-  // renderer (worldGate, storyHome, questHome, eventHome, eventLog,
-  // storyDirector, scenarios, maps, quests, minigameTest, overview).
-  // Returns the HTML body string the matching _render* would produce
-  // when the shell renders that tab through the switch case below.
-  function renderTabBody(tabId, state = CS().getState()) {
-    if (!state) return '';
-    switch (tabId) {
-      default: return '';
-    }
+  // renderTabBody — kept on the bridge for backward-compatibility.
+  // Phase F migrated every tab body to JSX, so the React shell calls
+  // typed `get<Tab>Data` getters rather than this. The function stays
+  // exported so external callers (e.g. cui-react-bridge.js tests, or
+  // future tooling that needs an HTML snapshot of a tab) still
+  // resolve — it returns an empty string for every id now.
+  function renderTabBody(_tabId, _state = CS().getState()) {
+    return '';
   }
 
   // ── React Shell Bridge ─────────────────────────────────────────
