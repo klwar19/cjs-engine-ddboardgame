@@ -893,11 +893,10 @@ window.CJS.CampaignUI = (() => {
     }
     // Tabs the React bridge has taken over (`settings`, `logs`,
     // `roster`, `worldMap`, `worldActivities`, the hub family,
-    // `inventory`, `shops`, `craft`, `cook`, `farm`, `relationships`)
-    // never reach this switch — `Tabs.has(id)` returns true above and
-    // the early-return wins. Tabs that still render vanilla HTML live
-    // here until they migrate. Anything unrecognised falls back to
-    // Overview, which is safer than rendering nothing.
+    // `inventory`, `shops`, `craft`, `cook`, `farm`, `relationships`,
+    // `overview`, `eventLog`, `minigameTest`) never reach this switch
+    // — `Tabs.has(id)` returns true above and the early-return wins.
+    // Tabs that still render vanilla HTML live here until they migrate.
     switch (_activeTab) {
       case 'worldGate': return _renderWorldGate(state);
       case 'storyHome': return _renderStoryHome(state);
@@ -911,8 +910,7 @@ window.CJS.CampaignUI = (() => {
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
-      case 'overview':
-      default: return _renderOverview(state);
+      default: return '<div class="campaign-empty">Unknown tab: ' + _esc(_activeTab) + '</div>';
     }
   }
 
@@ -2065,55 +2063,12 @@ window.CJS.CampaignUI = (() => {
   // TOOL_PURPOSES, _renderInlinePurpose, _purposeTone, _purposeKeyForCard
   // live in js/campaign/ui/cui-controls.js (bound as aliases at the top).
 
-  function _renderOverview(state) {
-    return `
-      <div class="campaign-dashboard campaign-town-dashboard">
-        ${_renderTownSnapshot(state)}
-        <div class="campaign-town-float-stack">
-          ${_renderTownRollFloat(state)}
-          ${_renderSoloNotice(state)}
-        </div>
-        <section class="campaign-panel campaign-actions-panel campaign-town-actions">
-          <div class="campaign-panel-head">
-            <div>
-              <h2>Adventure Desk</h2>
-              <div class="campaign-muted">Roll something random, pick something specific, or run admin tools. Every result shows its consequence before it touches the save.</div>
-            </div>
-          </div>
-          <div class="campaign-control-stack">
-            ${_controlGroup('Roll Random', `
-              ${_actionBtn({ action: 'solo-surprise',       label: 'Story Offer',  hint: 'Hook card you can accept, make quest, plant as rumor, save, or ignore', kind: 'primary' })}
-              ${_actionBtn({ action: 'random-quest-offer',  label: 'Quest Run',    hint: 'Pick a random quest template and auto-start its map run' })}
-              ${_actionBtn({ action: 'random-rumor-offer',  label: 'Rumor Hook',   hint: 'Create a marked lead bank item. No mechanics happen until you promote it later' })}
-              ${_actionBtn({ action: 'roll-oracle',         label: 'Roll GM Prompt', hint: 'GM inspiration text only. No bonuses applied' })}
-            `, 'Random outputs land in the floating box and result cards. Nothing is committed until you accept it.')}
-            ${_controlGroup('Pick / Customize', `
-              ${_actionBtn({ action: 'add-quest',      label: 'Add Quest',     hint: 'Quest builder: pick template, edit fields, optionally start its run' })}
-              ${_actionBtn({ action: 'manual-rumor',   label: 'Write Rumor',   hint: 'Type a custom lead into the hub rumor bank' })}
-              ${_actionBtn({ action: 'pick-event',     label: 'Pick Event',    hint: 'Choose a specific authored event from the catalog' })}
-              ${_actionBtn({ action: 'custom-event',   label: 'Custom Event',  hint: 'Write your own event with optional quick consequence' })}
-              ${_actionBtn({ action: 'pick-oracle',    label: 'Pick GM Prompt', hint: 'Pick a specific GM prompt from the catalog' })}
-              ${_actionBtn({ action: 'custom-oracle',  label: 'Custom Prompt', hint: 'Type your own GM scene prompt' })}
-            `, 'Same outputs as Roll Random but you choose what shows up. Rumors are saved leads, not automatic mechanics.')}
-            ${_controlGroup('Run Admin', `
-              ${_actionBtn({ action: 'pass-phase',    label: 'Pass Phase',  hint: 'Advance the campaign phase: ticks timers, ages rumors, advances quests' })}
-              ${_actionBtn({ action: 'full-rest',     label: 'Full Rest',   hint: 'Restore party HP/MP and clear non-permanent statuses' })}
-              ${_actionBtn({ action: 'travel-world',  label: 'Travel World', hint: 'Switch to a different world / region in your campaign' })}
-            `, 'Game-state controls. These commit immediately.')}
-          </div>
-        </section>
-        ${_renderAdventureLegend(state)}
-        ${_renderScenarioSummary(state)}
-        ${_renderTravelSurprise(state)}
-        ${_renderPendingBattle(state)}
-        ${_renderCombatResult(state)}
-        ${_renderLastCombatResult(state)}
-        ${_renderEventResult(state)}
-        ${_renderOracle(state)}
-        ${_renderLastReport(state)}
-      </div>
-    `;
-  }
+  // _renderOverview — Phase F.4 port. Body moved to
+  // `src/campaign/tabs/CampaignOverviewTab.tsx`. The outer dashboard
+  // and Adventure Desk (3 control groups, 13 buttons) are JSX. The 12
+  // shared sub-panels still come through the HTML bridge
+  // `renderOverviewSectionHtml(sectionId, state)`; each one migrates
+  // independently by replacing its <Section> with a JSX render.
 
   function _renderStoryDirector(state) {
     const director = SD();
@@ -10761,8 +10716,7 @@ window.CJS.CampaignUI = (() => {
       case 'scenarios': return _renderScenarios(state);
       case 'maps': return _renderRun(state);
       case 'quests': return _renderQuestPanel(state);
-      case 'overview':
-      default: return _renderOverview(state);
+      default: return '';
     }
   }
 
@@ -10950,6 +10904,31 @@ window.CJS.CampaignUI = (() => {
     return _renderOracle(state);
   }
 
+  // Per-section HTML bridge for the Overview tab. Each sectionId maps
+  // to a closure-private `_renderXxx(state)` helper that returns an
+  // HTML string. The JSX port at
+  // `src/campaign/tabs/CampaignOverviewTab.tsx` calls this once per
+  // sub-panel; replacing a bridge call with a JSX component as each
+  // sub-panel migrates.
+  function renderOverviewSectionHtml(sectionId, state = CS().getState()) {
+    if (!state) return '';
+    switch (sectionId) {
+      case 'townSnapshot':     return _renderTownSnapshot(state);
+      case 'townRollFloat':    return _renderTownRollFloat(state);
+      case 'soloNotice':       return _renderSoloNotice(state);
+      case 'adventureLegend':  return _renderAdventureLegend(state);
+      case 'scenarioSummary':  return _renderScenarioSummary(state);
+      case 'travelSurprise':   return _renderTravelSurprise(state);
+      case 'pendingBattle':    return _renderPendingBattle(state);
+      case 'combatResult':     return _renderCombatResult(state);
+      case 'lastCombatResult': return _renderLastCombatResult(state);
+      case 'eventResult':      return _renderEventResult(state);
+      case 'oracle':           return _renderOracle(state);
+      case 'lastReport':       return _renderLastReport(state);
+      default: return '';
+    }
+  }
+
   function getMinigameTestData(state = CS().getState()) {
     if (!state) return null;
     const MG = window.CJS.Minigames;
@@ -11078,6 +11057,7 @@ window.CJS.CampaignUI = (() => {
     renderEventResultHtml,
     renderOracleHtml,
     getMinigameTestData,
+    renderOverviewSectionHtml,
     getMainBody,
     getPanelDefs,
     getPanelOrder,
