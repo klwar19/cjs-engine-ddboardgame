@@ -2854,15 +2854,10 @@ window.CJS.CampaignUI = (() => {
       case 'status-char': return _charStatusModal(data.id);
       case 'party-sheet': return _partySheetModal(data.id);
       case 'recruit-character': return _recruitCharacterModal();
-      case 'bench-character': return Ops().apply({ op: 'bench_character', target: data.id }, { source: 'ui' });
-      case 'activate-character': return Ops().apply({ op: 'activate_character', target: data.id }, { source: 'ui' });
       case 'remove-character': return _removeCharacter(data.id);
       case 'learn-skill': return _learnSkillModal(data.id);
-      case 'unlearn-skill': return Ops().apply({ op: 'unlearn_skill', target: data.id, skillId: data.skillId }, { source: 'ui' });
       case 'learn-passive': return _learnPassiveModal(data.id);
-      case 'unlearn-passive': return Ops().apply({ op: 'unlearn_passive', target: data.id, passiveId: data.passiveId }, { source: 'ui' });
       case 'equip-item': return _equipItemModal(data.id, data.slot);
-      case 'unequip-item': return Ops().apply({ op: 'unequip_item', target: data.id, slot: data.slot }, { source: 'ui' });
       case 'stat-boost': return _statBoostModal(data.id);
       case 'level-char': return _charNumberOp(data.id, 'add_level', 'Level change');
       case 'grant-xp': return _grantXpModal(data.id);
@@ -2874,17 +2869,15 @@ window.CJS.CampaignUI = (() => {
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
       case 'rank-up-passive': return _rankUpPassiveConfirm(data.id, data.passiveId);
       case 'rank-up-apply': return _rankUpApplyModal();
-      case 'equip-skill':    return Ops().apply({ op: 'equip_skill',    target: data.id, skillId:   data.skillId   }, { source: 'ui' });
-      case 'unequip-skill':  return Ops().apply({ op: 'unequip_skill',  target: data.id, skillId:   data.skillId   }, { source: 'ui' });
-      case 'equip-passive':  return Ops().apply({ op: 'equip_passive',  target: data.id, passiveId: data.passiveId }, { source: 'ui' });
-      case 'unequip-passive':return Ops().apply({ op: 'unequip_passive',target: data.id, passiveId: data.passiveId }, { source: 'ui' });
+      // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
+      // skill + passive, unequip-item, party-available) ported to
+      // src/campaign/actions/{roster,actions}.ts (H.3 roster).
       case 'pick-equip-skill':   return _openSkillPoolPicker(data.id);
       case 'pick-equip-passive': return _openPassivePoolPicker(data.id);
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
       case 'unlock-job-from-tree': return _confirmUnlockJob(data.id, data.jobId);
       case 'switch-job-from-tree': return _switchJob(data.id, data.jobId);
       case 'party-availability': return _partyAvailabilityModal(data.id);
-      case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
       case 'gm-member-override': return _gmOverride(data.id);
       // load-slot / delete-slot / delete-all-saves / export-slot /

@@ -21,6 +21,7 @@
 
 import type { CampaignActionName } from "../actionNames";
 import * as Actions from "../actions";
+import * as Roster from "./roster";
 
 export type ActionData = Record<string, string | number | undefined>;
 export type ActionHandler = (data: ActionData) => unknown;
@@ -45,7 +46,18 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "export-log": () => Actions.exportLog(),
   "clear-log": () => Actions.clearLog(),
   "export-event-log": () => Actions.exportEventLog(),
-  "clear-event-log": () => Actions.clearEventLog()
+  "clear-event-log": () => Actions.clearEventLog(),
+  // ── Roster: pure CampaignOps (detail-row cards + gameplay actions) ─
+  "bench-character": (d) => Actions.benchCharacter(str(d.id)),
+  "activate-character": (d) => Actions.activateCharacter(str(d.id)),
+  "unlearn-skill": (d) => Roster.unlearnSkill(str(d.id), str(d.skillId)),
+  "unlearn-passive": (d) => Roster.unlearnPassive(str(d.id), str(d.passiveId)),
+  "unequip-item": (d) => Roster.unequipItem(str(d.id), str(d.slot)),
+  "equip-skill": (d) => Roster.equipSkill(str(d.id), str(d.skillId)),
+  "unequip-skill": (d) => Roster.unequipSkill(str(d.id), str(d.skillId)),
+  "equip-passive": (d) => Roster.equipPassive(str(d.id), str(d.passiveId)),
+  "unequip-passive": (d) => Roster.unequipPassive(str(d.id), str(d.passiveId)),
+  "party-available": (d) => Roster.clearPartyAvailability(str(d.id))
 };
 
 export function hasHandler(name: string): boolean {
