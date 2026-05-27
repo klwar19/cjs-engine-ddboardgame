@@ -409,7 +409,7 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   consults a `Record<CampaignActionName, fn>` registry first; the switch
   is deleted as cases migrate.
 
-  **Done — the registry seam + the cleanly-separable domains (60/246):**
+  **Done — the registry seam + the cleanly-separable domains (67/246):**
   - **Seam.** `src/campaign/action-handlers/registry.ts` holds the
     `Record<CampaignActionName, handler>` and installs
     `window.CJS.CampaignActionsRuntime` (`has` / `run`). The vanilla
@@ -431,6 +431,14 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     passive, equip/unequip-skill, equip/unequip-passive, unequip-item,
     party-available → `action-handlers/roster.ts` (+ actions.ts for
     bench/activate). These back the K.3-leftover detail-row island.
+  - **roster GM stat modals** (7): damage-char, heal-char, level-char,
+    mp-char, status-char, grant-xp, grant-job-xp →
+    `action-handlers/roster-modals.ts`. First *modal* cluster ported —
+    establishes the pattern for the rest of H.3: a handler that opens a
+    `CampaignUIInternal.Modals` primitive and applies a CampaignOps op on
+    submit, depending only on accessible primitives. (stat-boost waits on
+    `_statName` moving to a shared util.) The roster detail-row / GM
+    action surface is now fully registry-backed.
   - **thin engine ops** (15): pass-phase, full-rest, review-resolve,
     resolve-hub-problem, quest-complete/-fail, quest-event +
     run-roll-event notices, shop-sell, run-tick-danger, reveal-node,
@@ -611,6 +619,7 @@ finishes the authoring loop:
 | After H.3 save + log registry | 547 |
 | After H.3 roster pure-ops | 546 |
 | After H.3 thin-ops + farm + forge + world-map | 543 |
+| After H.3 roster GM stat modals | 541 |
 
 Cumulative Phase F+G+K.3+H-so-far: 641 KB → 543 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
@@ -619,10 +628,10 @@ JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
 bridged HTML: the roster detail row (icon-heavy, action surface now
 TS-registry-backed), the world map (SVG), and the intentionally-vanilla
 external-module tabs + maps tab. `_bindEvents` is gone (H.2). H.3 has
-ported the registry seam + 60/246 actions (save/log/roster-ops/thin-ops/
-farm/forge/world-map) into `src/campaign/action-handlers/`; the
-`_handleAction` switch now holds only the unported modal / scenario-gen /
-story-director cluster, behind the runtime seam. Remaining: finish H.3
+ported the registry seam + 67/246 actions (save/log/roster-ops/roster-GM-
+modals/thin-ops/farm/forge/world-map) into `src/campaign/action-handlers/`;
+the `_handleAction` switch now holds only the unported modal / scenario-gen
+/ story-director cluster, behind the runtime seam. Remaining: finish H.3
 (that cluster, gated on moving `_activeMode`/`_activeTab` into TS) → H.4
 (`get*Data` → TS, then delete campaign-ui.js + `js/campaign/ui/`) → H.5
 (test rewrite). Phases I/J then pivot from "remove HTML strings" to
