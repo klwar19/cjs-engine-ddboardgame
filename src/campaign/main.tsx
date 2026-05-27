@@ -88,7 +88,7 @@ import "../../js/ui/l2d-companion.js";
 // `_handleAction` switch routes ported actions to their TS handlers.
 // Must load after campaign-ui.js defines the switch (above), before the
 // React app mounts (below).
-import "./actions/registry";
+import "./action-handlers/registry";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { CampaignPage } from "./CampaignPage";
 

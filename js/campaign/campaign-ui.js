@@ -2640,11 +2640,11 @@ window.CJS.CampaignUI = (() => {
       case 'open-world-content': return _goto(data.mode || _modeForTab(data.tab), data.tab || 'worldGate');
       case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
       case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
-      // Ported to TS handlers (H.3) registered in actions/registry.ts:
-      //   world-map-* / world-activity-use -> actions/worldmap.ts
-      //   save + log -> actions.ts ; roster ops -> actions/roster.ts
-      //   pass-phase + thin engine ops -> actions/ops.ts
-      //   farm/haven -> actions/farm.ts ; forge saves -> actions/forge.ts
+      // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
+      //   world-map-* / world-activity-use -> action-handlers/worldmap.ts
+      //   save + log -> actions.ts ; roster ops -> action-handlers/roster.ts
+      //   pass-phase + thin engine ops -> action-handlers/ops.ts
+      //   farm/haven -> action-handlers/farm.ts ; forge -> action-handlers/forge.ts
       case 'roll-event': return _pickEvent();
       case 'pick-event': return _pickEvent();
       case 'custom-event': return _customEvent();
@@ -2837,7 +2837,7 @@ window.CJS.CampaignUI = (() => {
       case 'rank-up-apply': return _rankUpApplyModal();
       // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
       // skill + passive, unequip-item, party-available) ported to
-      // src/campaign/actions/{roster,actions}.ts (H.3 roster).
+      // src/campaign/action-handlers/roster.ts + actions.ts (H.3 roster).
       case 'pick-equip-skill':   return _openSkillPoolPicker(data.id);
       case 'pick-equip-passive': return _openPassivePoolPicker(data.id);
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
@@ -2848,14 +2848,14 @@ window.CJS.CampaignUI = (() => {
       case 'gm-member-override': return _gmOverride(data.id);
       // load-slot / delete-slot / delete-all-saves / export-slot /
       // export-log / clear-log / export-event-log / clear-event-log
-      // ported to src/campaign/actions/registry.ts (H.3 save + log).
+      // ported to src/campaign/action-handlers/registry.ts (H.3 save + log).
       default: break;
     }
   }
 
   // Save-management handlers (_newSave / _loadSlot / _deleteSlot /
   // _deleteAllSaves / _exportSlot / _pushGitHub) ported to
-  // src/campaign/actions.ts + registered in actions/registry.ts (H.3).
+  // src/campaign/actions.ts + registered in action-handlers/registry.ts (H.3).
 
   function _rollOracle() {
     const oracle = window.CJS.CampaignOracle.roll();
@@ -8600,7 +8600,7 @@ window.CJS.CampaignUI = (() => {
 
   // Log-management handlers (_exportLog / _clearLog / _exportEventLog /
   // _clearEventLog) ported to src/campaign/actions.ts + registered in
-  // actions/registry.ts (H.3 log).
+  // action-handlers/registry.ts (H.3 log).
 
   function _consumeCombatResult() {
     const result = Bridge().readResult?.() || Bridge().consumeResult();

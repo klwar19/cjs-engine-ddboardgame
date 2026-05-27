@@ -100,7 +100,7 @@ ok('benchCharacter routes through CampaignOps.apply',
 
 // Phase H.3 — every name in the CampaignActionName union must be handled
 // by EITHER a `case '<name>':` in the vanilla `_handleAction` switch OR an
-// entry in the TS action registry (src/campaign/actions/registry.ts).
+// entry in the TS action registry (src/campaign/action-handlers/registry.ts).
 // Porting an action moves it from the switch to the registry, so the two
 // sets must stay disjoint and together cover the whole union — otherwise a
 // React onClick would compile yet no-op at runtime.
@@ -115,7 +115,7 @@ const switchCases = new Set(
 );
 
 // Registry keys live in the HANDLERS object literal of registry.ts.
-const regSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/actions/registry.ts'), 'utf8');
+const regSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/action-handlers/registry.ts'), 'utf8');
 const handlersBlock = (regSrc.match(/const HANDLERS[\s\S]*?\n};/) || [''])[0];
 const registryKeys = new Set(
   (handlersBlock.match(/"([a-z0-9-]+)":/g) || []).map((k) => k.replace(/^"/, '').replace(/":$/, ''))
