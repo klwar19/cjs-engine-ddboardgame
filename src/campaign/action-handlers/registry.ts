@@ -31,6 +31,8 @@ import * as Nav from "./nav";
 import * as Sequence from "./sequence";
 import * as Story from "./story-director";
 import * as Oracle from "./oracle";
+import * as MapActions from "./map";
+import * as Haven from "./haven";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -171,7 +173,16 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "custom-oracle": () => Oracle.customOracle(),
   "oracle-note": () => Oracle.saveOracleNote(),
   "oracle-event-log": () => Oracle.oracleToEventLog(),
-  "roll-forge-oracle": () => Oracle.rollForgeOracle()
+  "roll-forge-oracle": () => Oracle.rollForgeOracle(),
+  // ── Scenario map interaction ──────────────────────────────────────
+  "move-node": (d) => MapActions.moveNode(str(d.nodeId)),
+  "move-cell": (d) => MapActions.moveCell(d.x, d.y),
+  "map-layer": (d) => MapActions.setMapLayer(str(d.layer)),
+  "clear-node": (d) => MapActions.clearNode(str(d.nodeId)),
+  // ── Pocket Haven facility ops ─────────────────────────────────────
+  "haven-build-facility": (d) => Haven.buildFacility(str(d.facility)),
+  "haven-upgrade-facility": (d) => Haven.upgradeFacility(str(d.facility)),
+  "haven-ranch-collect": (d) => Haven.ranchCollect(str(d.facility))
 };
 
 export function hasHandler(name: string): boolean {

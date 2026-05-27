@@ -2704,10 +2704,8 @@ window.CJS.CampaignUI = (() => {
       // end-scenario ported to action-handlers/ops.ts (H.3).
       case 'cancel-scenario': return _cancelScenario();
       case 'discard-scenario': return _discardGeneratedScenario(data.id);
-      case 'move-node': return _moveNode(data.nodeId);
-      case 'move-cell': return _moveCell(data.x, data.y);
-      case 'map-layer': return _setMapLayer(data.layer);
-      case 'clear-node': return _clearNode(data.nodeId);
+      // move-node/move-cell/map-layer/clear-node ported to
+      // action-handlers/map.ts (H.3).
       case 'run-battle': return _runBattle();
       case 'manual-battle': return _manualBattleModal();
       case 'apply-combat-result': return _applyCombatResult();
@@ -2715,11 +2713,10 @@ window.CJS.CampaignUI = (() => {
       case 'quick-add-inventory': return _quickAddInventory(data.bucket);
       case 'shop-buy': return _shopBuy(data);
       case 'plant-seed': return _plantSeed(data.plotId);
-      case 'haven-build-facility': return _havenBuildFacility(data.facility);
-      case 'haven-upgrade-facility': return _havenUpgradeFacility(data.facility);
+      // haven-build-facility/haven-upgrade-facility/haven-ranch-collect
+      // ported to action-handlers/haven.ts (H.3).
       case 'haven-train-skill': return _havenTrainSkill(data.facility);
       case 'haven-ranch-assign': return _havenRanchAssign(data.facility);
-      case 'haven-ranch-collect': return _havenRanchCollect(data.facility);
       case 'haven-open-trivia': return _openGuildTrivia(data.world);
       case 'haven-open-cooking': return _openCookingMinigame(data.foodId);
       case 'haven-play-minigame': return _havenPlayMinigame(data.game);
@@ -5967,35 +5964,8 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _setMapLayer(layer) {
-    if (!layer) return;
-    CS().mutate((state) => {
-      if (state.activeScenarioRun) state.activeScenarioRun.mapLayer = layer;
-    }, { source: 'map_layer' });
-  }
-
-  function _moveNode(nodeId) {
-    const current = Runner().findCurrentNode();
-    const link = (current?.exits || []).find((exit) => exit.to === nodeId) || null;
-    const moved = Runner().moveToNode(nodeId, link);
-    if (!moved) UI().toast('That node is not connected from here yet', 'info');
-    else window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
-  }
-
-  function _moveCell(x, y) {
-    const moved = Runner().moveToCell?.(Number(x), Number(y));
-    if (!moved) UI().toast('That cell is blocked or out of reach', 'info');
-  }
-
-  function _clearNode(nodeId) {
-    CS().mutate((state) => {
-      const mapId = state.activeScenarioRun?.mapId;
-      if (!mapId) return;
-      state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
-      state.mapState[mapId].cleared[nodeId] = true;
-    }, { source: 'map' });
-    Ops().apply({ op: 'log', text: `Node cleared: ${nodeId}.` }, { source: 'map' });
-  }
+  // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
+  // action-handlers/map.ts (H.3).
 
   function _runBattle() {
     const battle = CS().getState().pendingBattle;
@@ -6414,18 +6384,8 @@ window.CJS.CampaignUI = (() => {
   }
 
   // ── POCKET HAVEN FACILITIES ────────────────────────────────────
-  function _havenBuildFacility(facilityId) {
-    if (!facilityId) return;
-    const def = window.CJS.PocketHavenFacilities?.getFacilityDef?.(facilityId);
-    if (!def) return UI().toast('Unknown facility', 'error');
-    Ops().apply({ op: 'build_facility', facilityId }, { source: 'pocket_haven_ui' });
-    UI().toast(`Built ${def.name}`, 'success');
-  }
-
-  function _havenUpgradeFacility(facilityId) {
-    if (!facilityId) return;
-    Ops().apply({ op: 'upgrade_facility', facilityId }, { source: 'pocket_haven_ui' });
-  }
+  // _havenBuildFacility / _havenUpgradeFacility / _havenRanchCollect
+  // ported to action-handlers/haven.ts (H.3).
 
   function _havenTrainSkill(facilityId) {
     const state = CS().getState();
@@ -6482,10 +6442,6 @@ window.CJS.CampaignUI = (() => {
         Ops().apply({ op: 'ranch_assign', facilityId, beastId }, { source: 'pocket_haven_ui' });
       }
     });
-  }
-
-  function _havenRanchCollect(facilityId) {
-    Ops().apply({ op: 'ranch_collect', facilityId }, { source: 'pocket_haven_ui' });
   }
 
   async function _openCookingMinigame(foodId) {
