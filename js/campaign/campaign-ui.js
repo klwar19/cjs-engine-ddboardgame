@@ -1816,30 +1816,8 @@ window.CJS.CampaignUI = (() => {
     return CS().getState()?.quests?.[questId] || quest;
   }
 
-  function _addQuestChainToTracker(templateId) {
-    window.CJS.CampaignQuestChains.start(templateId);
-    _activeMode = 'event';
-    _activeTab = 'questChains';
-    render();
-    UI().toast('Side story added to Event', 'success');
-  }
-
-  function _advanceQuestChainStep(templateId) {
-    window.CJS.CampaignQuestChains.advance(templateId);
-    render();
-  }
-
-  function _completeQuestChain(templateId) {
-    window.CJS.CampaignQuestChains.complete(templateId);
-    render();
-    UI().toast('Quest arc resolved', 'success');
-  }
-
-  function _failQuestChain(templateId) {
-    window.CJS.CampaignQuestChains.fail(templateId);
-    render();
-    UI().toast('Quest arc failed', 'info');
-  }
+  // _addQuestChainToTracker / _advanceQuestChainStep / _completeQuestChain
+  // / _failQuestChain ported to action-handlers/quest-chain.ts (H.3).
 
   // Consequence preview, flavor trail, and card-choice-ops helpers
   // all live in `js/campaign/ui/tabs/cui-hub-tab.js`. The story home,
@@ -2670,15 +2648,12 @@ window.CJS.CampaignUI = (() => {
       case 'rumor-to-quest': return _rumorToQuest(data.id, data.hubId);
       case 'rumor-to-problem': return _rumorToProblem(data.id, data.hubId);
       case 'start-chain': return _startQuestChainRun(data.id);
-      case 'advance-chain': return _advanceQuestChainStep(data.id);
-      case 'complete-chain': return _completeQuestChain(data.id);
-      case 'fail-chain': return _failQuestChain(data.id);
-      case 'promote-chain': return _addQuestChainToTracker(data.id);
+      // advance-chain/complete-chain/fail-chain/promote-chain ported to
+      // action-handlers/quest-chain.ts (H.3).
       case 'chain-scenario': return _startQuestChainScenario(data.id);
       case 'chain-battle': return _questChainBattle(data.id);
-      case 'copy-battle-card': return _copyBattleCard(data.id);
-      case 'copy-map-seed': return _copyMapSeed(data.id);
-      // roll-forge-oracle ported to action-handlers/oracle.ts (H.3).
+      // copy-battle-card/copy-map-seed + roll-forge-oracle ported to
+      // action-handlers/{forge,oracle}.ts (H.3).
       case 'story-roll-scene': return _rollStoryDirector('scene');
       case 'story-roll-peri': return _rollStoryDirector('peri');
       case 'story-roll-memory': return _rollStoryDirector('memory');
@@ -4103,16 +4078,7 @@ window.CJS.CampaignUI = (() => {
     Side().copyMarkdown(card).then(() => UI().toast('Card copied as Markdown', 'success'));
   }
 
-  function _copyBattleCard(id) {
-    const card = window.CJS.CampaignBattleSetForge.getCard(id);
-    if (card) Side().copyMarkdown({ ...card, type: 'battle_set', title: card.name || card.id }).then(() => UI().toast('Battle card copied', 'success'));
-  }
-
-  function _copyMapSeed(id) {
-    const seed = window.CJS.CampaignMapSeedForge.getSeed(id);
-    if (seed) Side().copyMarkdown({ ...seed, type: 'map_seed', title: seed.name || seed.id }).then(() => UI().toast('Map seed copied', 'success'));
-  }
-
+  // _copyBattleCard / _copyMapSeed ported to action-handlers/forge.ts (H.3).
   // _rollForgeOracle ported to action-handlers/oracle.ts (H.3).
 
   function _rollStoryDirector(kind) {

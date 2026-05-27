@@ -26,6 +26,7 @@ import * as RosterModals from "./roster-modals";
 import * as Ops from "./ops";
 import * as Farm from "./farm";
 import * as Forge from "./forge";
+import * as QuestChain from "./quest-chain";
 import * as Nav from "./nav";
 import * as Sequence from "./sequence";
 import * as Story from "./story-director";
@@ -111,6 +112,13 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "queue-battle-set": (d) => Forge.queueBattleSet(str(d.id)),
   "save-battle-card": (d) => Forge.saveBattleCard(str(d.id)),
   "save-map-seed": (d) => Forge.saveMapSeed(str(d.id)),
+  "copy-battle-card": (d) => Forge.copyBattleCard(str(d.id)),
+  "copy-map-seed": (d) => Forge.copyMapSeed(str(d.id)),
+  // ── Quest chains (advance / complete / fail / promote) ────────────
+  "advance-chain": (d) => QuestChain.advanceChain(str(d.id)),
+  "complete-chain": (d) => QuestChain.completeChain(str(d.id)),
+  "fail-chain": (d) => QuestChain.failChain(str(d.id)),
+  "promote-chain": (d) => QuestChain.promoteChain(str(d.id)),
   // ── World map delegation ──────────────────────────────────────────
   "world-map-travel": (d) => worldMapAction(d),
   "world-map-switch-map": (d) => worldMapAction(d),
