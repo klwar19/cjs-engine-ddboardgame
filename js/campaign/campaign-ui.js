@@ -1739,11 +1739,28 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // _renderQuestChainResolved, _renderSideStoryFlowGuide,
-  // _renderQuestChainStepCard, _renderQuestChainStepDetail,
-  // _questChainStepSystems, _renderQuestChainVnPanel, _renderChainStakes
-  // are referenced only inside the chain template card itself; they
-  // moved with the rest of the hub tab.
+  // K.3 — typed builders for the questChains tab body (flow guide +
+  // resolved rows). The active/template card data reuses the builders
+  // above; these two cover the parts the EventTab side panel didn't need.
+  function _sideStoryFlowGuideData(chain = {}) {
+    const phases = (chain.phasePlan || []).slice(0, 4)
+      .map((phase) => `${phase.chapterLabel || phase.id || ''} ${phase.title || phase.phaseType || ''}`.trim())
+      .filter(Boolean);
+    return {
+      title: String(chain.title || chain.name || 'Side Story'),
+      summary: String(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.'),
+      phases: phases.map(String)
+    };
+  }
+
+  function _questChainResolvedData(chain = {}) {
+    const template = chain.template || {};
+    return {
+      title: String(chain.title || template.title || chain.templateId || ''),
+      statusLabel: _label(chain.status || 'resolved'),
+      phaseLabel: String(chain.completedAtPhase || chain.failedAtPhase || '-')
+    };
+  }
 
   function _startQuestChainRun(templateId) {
     const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
@@ -10195,6 +10212,25 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  function getQuestChainsData() {
+    const QC = window.CJS.CampaignQuestChains;
+    if (!QC) {
+      return { activeCount: 0, availableCount: 0, flowGuide: null, active: [], finished: [], available: [] };
+    }
+    const available = QC.getAvailable?.() || [];
+    const active = QC.getActive?.() || [];
+    const finished = QC.getFinished?.() || [];
+    const guideSource = active[0]?.template || available[0] || null;
+    return {
+      activeCount: active.length,
+      availableCount: available.length,
+      flowGuide: guideSource ? _sideStoryFlowGuideData(guideSource) : null,
+      active: active.map((chain) => _questChainActiveData(chain)),
+      finished: finished.map((chain) => _questChainResolvedData(chain)),
+      available: available.map((chain) => _questChainTemplateData(chain))
+    };
+  }
+
   function getMapSeedsData() {
     const seeds = window.CJS.CampaignMapSeedForge?.getSeeds?.() || [];
     return {
@@ -10343,6 +10379,7 @@ window.CJS.CampaignUI = (() => {
     getTownRollFloatData,
     getBattleSetsData,
     getMapSeedsData,
+    getQuestChainsData,
     getAdventureLegendVisible,
     getStorySummaryData,
     getQuestHomeData,

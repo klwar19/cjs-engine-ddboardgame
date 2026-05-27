@@ -26,7 +26,6 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
   const _Ops = () => window.CJS.CampaignOps;
   const _Side = () => window.CJS.CampaignSideContent;
   const _Hub = () => window.CJS.CampaignHub;
-  const _QC = () => window.CJS.CampaignQuestChains;
   const _DL = () => window.CJS.CampaignDataLoader;
 
   // ── Tone / consequence math ────────────────────────────────────────
@@ -317,248 +316,11 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     `;
   }
 
-  // ── Quest Chains tab ───────────────────────────────────────────────
-
-  function renderQuestChains() {
-    const QC = _QC();
-    const available = QC.getAvailable();
-    const active = QC.getActive();
-    const finished = QC.getFinished?.() || [];
-    return `
-      <div class="campaign-tab-grid">
-        <section class="campaign-panel campaign-wide-panel">
-          <div class="campaign-panel-head">
-            <h2>Event Side Stories</h2>
-            <span class="campaign-pill">${active.length} active · ${available.length} available</span>
-          </div>
-          ${renderSideStoryFlowGuide(active[0]?.template || available[0])}
-          ${active.length ? active.map((chain) => renderQuestChainActive(chain)).join('') : '<div class="campaign-empty">No active side stories. Start one below or use Normal Quest for a single farming run.</div>'}
-          ${finished.length ? `<details class="campaign-resolved-quests"><summary>Resolved side stories (${finished.length})</summary>${finished.map(renderQuestChainResolved).join('')}</details>` : ''}
-        </section>
-        ${available.length ? available.map((chain) => renderQuestChainTemplate(chain)).join('') : '<section class="campaign-panel campaign-wide-panel"><div class="campaign-empty">No side-story templates available for this world. Add some in the editor or import a side content pack.</div></section>'}
-      </div>
-    `;
-  }
-
-  function renderQuestChainActive(chain) {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const template = chain.template || {};
-    const step = (template.steps || []).find((entry) => entry.id === chain.currentStepId);
-    const steps = template.steps || [];
-    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === chain.currentStepId));
-    return `
-      <div class="campaign-row">
-        <div>
-          <strong>${esc(chain.title || template.title || chain.templateId)}</strong>
-          <div class="campaign-muted">${esc(chain.status)} | Step ${currentIndex + 1}/${steps.length || 1}: ${esc(step?.label || chain.currentStepId || '-')}</div>
-          ${renderQuestChainStepDetail(step)}
-          ${renderContextTagsLocal([...(template.tags || []), ...(template.contextTags || []), ...(template.monsterTags || [])])}
-          ${renderObjectivePulseHintLocal(step)}
-          ${renderQuestChainVnPanel(chain, { active: true })}
-          ${renderChainStakes(template)}
-        </div>
-        <div class="campaign-row-actions">
-          <button class="campaign-action primary" data-campaign-action="chain-scenario" data-id="${escAttr(chain.templateId)}">Map Run</button>
-          <button class="campaign-action" data-campaign-action="chain-battle" data-id="${escAttr(chain.templateId)}">Battle</button>
-          <button class="campaign-action" data-campaign-action="advance-chain" data-id="${escAttr(chain.templateId)}">Complete Step</button>
-          <button class="campaign-action" data-campaign-action="complete-chain" data-id="${escAttr(chain.templateId)}">Resolve</button>
-          <button class="campaign-action danger" data-campaign-action="fail-chain" data-id="${escAttr(chain.templateId)}">Fail</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderQuestChainResolved(chain) {
-    const esc = _U().esc;
-    const label = _U().label;
-    const template = chain.template || {};
-    return `
-      <div class="campaign-row">
-        <div>
-          <strong>${esc(chain.title || template.title || chain.templateId)}</strong>
-          <div class="campaign-muted">${esc(label(chain.status || 'resolved'))} at phase ${esc(chain.completedAtPhase || chain.failedAtPhase || '-')}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderQuestChainTemplate(chain) {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <h3>${esc(chain.title || chain.name || chain.id)}</h3>
-          <span class="campaign-risk ${_Side().riskClass(chain.canonRisk)}">${esc(chain.canonRisk || 'green')}</span>
-        </div>
-        <div class="campaign-muted">${esc(chain.summary || '')}</div>
-        ${renderQuestChainVnPanel(chain)}
-        <div class="campaign-chip-row">${(chain.tags || []).map((tag) => `<span class="campaign-chip">${esc(tag)}</span>`).join('')}</div>
-        ${renderChainStakes(chain)}
-        ${(chain.steps || []).map((step, index) => renderQuestChainStepCard(step, index)).join('')}
-        <div class="campaign-action-grid">
-          <button class="campaign-action primary" data-campaign-action="start-chain" data-id="${escAttr(chain.id)}">Start Quest Run</button>
-          <button class="campaign-action" data-campaign-action="save-chain" data-id="${escAttr(chain.id)}">Save Idea</button>
-          <button class="campaign-action" data-campaign-action="promote-chain" data-id="${escAttr(chain.id)}">Add To Quests</button>
-        </div>
-      </section>
-    `;
-  }
-
-  function renderSideStoryFlowGuide(chain = {}) {
-    if (!chain) return '';
-    const esc = _U().esc;
-    const phases = (chain.phasePlan || []).slice(0, 4).map((phase) => `${phase.chapterLabel || phase.id || ''} ${phase.title || phase.phaseType || ''}`.trim()).filter(Boolean);
-    return `
-      <div class="campaign-side-story-guide">
-        <span class="campaign-impact-badge is-plot">Side Story VN</span>
-        <strong>${esc(chain.title || chain.name || 'Side Story')}</strong>
-        <span>${esc(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.')}</span>
-        ${phases.length ? `<span>${esc(phases.join(' → '))}</span>` : ''}
-      </div>
-    `;
-  }
-
-  function renderQuestChainStepCard(step = {}, index = 0) {
-    const esc = _U().esc;
-    return `
-      <div class="campaign-step">
-        <b>${index + 1}. ${esc(step.label || step.id)}</b>
-        ${renderQuestChainStepDetail(step)}
-        ${renderObjectivePulseHintLocal(step)}
-      </div>
-    `;
-  }
-
-  function renderQuestChainStepDetail(step = {}) {
-    if (!step) return '';
-    const esc = _U().esc;
-    const label = _U().label;
-    const systems = questChainStepSystems(step);
-    const meta = [
-      step.chapterLabel ? `Chapter ${step.chapterLabel}` : '',
-      step.phaseType ? label(step.phaseType) : '',
-      step.kind ? label(step.kind) : ''
-    ].filter(Boolean);
-    const detail = [
-      step.vn?.prompt || step.visualNovel?.prompt,
-      step.character?.beat,
-      step.event?.prompt,
-      step.map?.objective,
-      step.combat?.objective,
-      step.minigame?.objective
-    ].filter(Boolean);
-    return `
-      ${meta.length ? `<div class="campaign-muted">${esc(meta.join(' | '))}</div>` : ''}
-      ${step.text ? `<span>${esc(step.text)}</span>` : ''}
-      ${systems.length ? `<div class="campaign-chip-row">${systems.map((item) => `<span class="campaign-chip">${esc(item)}</span>`).join('')}</div>` : ''}
-      ${detail.length ? `<div class="campaign-muted">${esc(detail.slice(0, 2).join(' | '))}</div>` : ''}
-    `;
-  }
-
-  function questChainStepSystems(step = {}) {
-    const systems = [];
-    if (step.vn || step.visualNovel) systems.push('VN');
-    if (step.character) systems.push('Character');
-    if (step.event) systems.push('Event');
-    if (step.map) systems.push('Map');
-    if (step.combat) systems.push('Combat');
-    if (step.minigame) systems.push('Mini-Game');
-    return systems;
-  }
-
-  function renderQuestChainVnPanel(chain = {}, options = {}) {
-    const esc = _U().esc;
-    const template = chain.template || chain || {};
-    const steps = template.steps || [];
-    const currentId = options.active ? chain.currentStepId : steps[0]?.id;
-    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === currentId));
-    const current = steps[currentIndex] || steps[0] || {};
-    const npcs = (template.mainNpcs || []).slice(0, 4);
-    const systems = questChainStepSystems(current);
-    return `
-      <div class="campaign-side-story-vn">
-        <div class="campaign-side-story-scene">
-          <span class="campaign-impact-badge is-plot">${options.active ? 'Current Scene' : 'Opening Scene'}</span>
-          <strong>${esc(current.label || template.title || template.id || 'Side Story')}</strong>
-          <p>${esc(current.text || template.summary || 'Pick a scene, run it as VN/table narration, then decide whether it becomes a map, battle, quest progress, or a parked lead.')}</p>
-          ${systems.length ? `<div class="campaign-chip-row">${systems.map((item) => `<span class="campaign-chip">${esc(item)}</span>`).join('')}</div>` : ''}
-        </div>
-        <div class="campaign-side-story-meta">
-          <span><b>Plot</b> ${esc(template.flowSummary || template.type || 'side story')}</span>
-          <span><b>Characters</b> ${esc(npcs.join(', ') || 'GM choice')}</span>
-          <span><b>Control</b> Start map, battle manually, complete step, resolve, or fail.</span>
-        </div>
-        <div class="campaign-side-story-steps">
-          ${steps.map((step, index) => `
-            <span class="${index === currentIndex ? 'is-current' : index < currentIndex ? 'is-done' : ''}">
-              <b>${index + 1}</b>${esc(step.label || step.id)}
-            </span>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  function renderChainStakes(chain = {}) {
-    const esc = _U().esc;
-    const Ops = _Ops();
-    const rewards = Ops.describe(chain.rewardOps || chain.rewards || []);
-    const failures = Ops.describe(chain.failureOps || chain.failureConsequences || []);
-    const battleCount = (chain.battleSetIds || []).length;
-    const mapCount = (chain.mapSeedIds || []).length + (chain.linkedScenario ? 1 : 0);
-    return `
-      <div class="campaign-preview">
-        <b>Run</b>: ${mapCount ? `${mapCount} map hook${mapCount === 1 ? '' : 's'}` : 'generated map'}${battleCount ? ` · ${battleCount} battle hook${battleCount === 1 ? '' : 's'}` : ''}<br>
-        ${rewards.length ? `<b>Reward</b>: ${rewards.map(esc).join('; ')}<br>` : ''}
-        ${failures.length ? `<b>If failed</b>: ${failures.map(esc).join('; ')}` : '<b>If failed</b>: GM consequence or mark failed'}
-      </div>
-    `;
-  }
-
-  // Local clones of two small overview helpers used by quest chain cards.
-  // Both helpers also exist in the shell (`_renderContextTags`,
-  // `_renderObjectivePulseHint`) and need to render identically — the
-  // pulse hint also reuses the shell's `_triggerLabel` logic, which is
-  // inlined as `_triggerLabel` below to keep the chain cards self-
-  // contained.
-  function renderContextTagsLocal(tags = []) {
-    const esc = _U().esc;
-    const label = _U().label;
-    const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
-    if (!list.length) return '';
-    return `
-      <div class="campaign-chip-row campaign-context-tags">
-        ${list.map((tag) => `<span class="campaign-chip">${esc(label(tag))}</span>`).join('')}
-      </div>
-    `;
-  }
-
-  function renderObjectivePulseHintLocal(obj = {}) {
-    const triggers = obj?.progressTriggers || [];
-    if (!triggers.length) return '';
-    const esc = _U().esc;
-    return `
-      <div class="campaign-quest-pulse">
-        ${triggers.slice(0, 2).map((trigger) => `<span>${esc(_triggerLabel(trigger))}</span>`).join('')}
-      </div>
-    `;
-  }
-
-  function _triggerLabel(trigger = {}) {
-    const label = _U().label;
-    const bits = [];
-    if (trigger.outcome) bits.push(label(trigger.outcome));
-    if (trigger.skillIds?.length) bits.push(trigger.skillIds.map(label).join(' / '));
-    if (trigger.statusIds?.length) bits.push(`Status ${trigger.statusIds.map(label).join(' / ')}`);
-    if (trigger.defeatedTypes?.length) bits.push(`Defeat ${trigger.defeatedTypes.map(label).join(' / ')}`);
-    if (trigger.defeatedMonsterIds?.length) bits.push(`Defeat ${trigger.defeatedMonsterIds.map(label).join(' / ')}`);
-    const tags = trigger.requiresTags || trigger.requiresAnyTags || trigger.anyTags || [];
-    if (tags.length) bits.push((Array.isArray(tags) ? tags : [tags]).map(label).join(' / '));
-    if (trigger.onlyPlayerActionTags?.length) bits.push(`Only ${trigger.onlyPlayerActionTags.map(label).join(' / ')}`);
-    return bits.length ? `Auto: ${bits.join(' + ')}` : 'Auto progress available';
-  }
+  // Quest Chains tab body ported to JSX in Phase K.3. The React tree
+  // reads typed `getQuestChainsData()` from campaign-ui.js (which reuses
+  // the `_questChainActiveData` / `_questChainTemplateData` builders the
+  // EventTab side panel already used) and renders
+  // `src/campaign/tabs/CampaignHubTabs.tsx` + `QuestChain.tsx`.
 
   // Battle Sets / Map Seeds tab bodies ported to JSX in Phase K.3.
   // The React tree reads typed `getBattleSetsData()` / `getMapSeedsData()`
@@ -596,12 +358,11 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     Tabs.register('sideForge', {
       render: (state, helpers) => renderSideForge(state, helpers)
     });
-    Tabs.register('questChains', {
-      render: () => renderQuestChains()
-    });
     Tabs.register('oracleForge', {
       render: (state) => renderOracleForge(state)
     });
+    // questChains is React-owned (K.3) — registered as a React mount
+    // point by cui-react-bridge.js, rendered as JSX by the shell.
     // battleSets / mapSeeds are React-owned (K.3) — registered as React
     // mount points by cui-react-bridge.js, rendered as JSX by the shell.
   }
@@ -610,7 +371,6 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
   return Object.freeze({
     // Tab body renderers
     renderSideForge,
-    renderQuestChains,
     renderOracleForge,
     // Shared side-content primitives used by overview, story home, event log
     operationTone,
@@ -622,15 +382,6 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     renderSideCard,
     renderRumorRow,
     openRumors,
-    isRumorOpen,
-    renderQuestChainActive,
-    renderQuestChainResolved,
-    renderQuestChainTemplate,
-    renderSideStoryFlowGuide,
-    renderQuestChainStepCard,
-    renderQuestChainStepDetail,
-    questChainStepSystems,
-    renderQuestChainVnPanel,
-    renderChainStakes
+    isRumorOpen
   });
 })();

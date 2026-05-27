@@ -1,24 +1,28 @@
 import { Fragment } from "react";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
+import { QuestChainActiveCard, QuestChainTemplateCard } from "./QuestChain";
 import {
+  getQuestChainsData,
   getBattleSetsData,
   getMapSeedsData,
+  type SideStoryFlowGuide,
+  type QuestChainResolved,
   type BattleSetCard,
   type MapSeedCard
 } from "./data/hub";
 
-// Hub-family tabs. Battle Sets and Map Seeds are full JSX (K.3),
-// reading typed data from `getBattleSetsData` / `getMapSeedsData`.
+// Hub-family tabs. Battle Sets, Map Seeds, and Quest Chains are full
+// JSX (K.3), reading typed data from `getBattleSetsData` /
+// `getMapSeedsData` / `getQuestChainsData`.
 //
-// Side Forge / Quest Chains / Oracle Forge are still produced as HTML
-// strings by `cui-hub-tab.js`; the wrappers below own the mount points
-// until their K.3 commits land. Every `data-campaign-action` inside
-// those three still reaches the vanilla event delegator on campaign-root.
+// Side Forge / Oracle Forge are still produced as HTML strings by
+// `cui-hub-tab.js`; the wrappers below own the mount points until their
+// K.3 commit lands. Every `data-campaign-action` inside those two still
+// reaches the vanilla event delegator on campaign-root.
 
 interface HubTabModule {
   readonly renderSideForge: (state: CampaignStateSnapshot, helpers: unknown) => string;
-  readonly renderQuestChains: () => string;
   readonly renderOracleForge: (state: CampaignStateSnapshot) => string;
 }
 
@@ -70,12 +74,74 @@ export function CampaignSideForgeTab({ state }: Props) {
   );
 }
 
-export function CampaignQuestChainsTab(_props: Props) {
-  const HubTab = cjs().CampaignUIInternal?.HubTab;
-  if (!HubTab?.renderQuestChains) return fallback("Quest chains UI not loaded.");
-  return wrap(
-    safeRender("renderQuestChains", () => HubTab.renderQuestChains()),
-    "campaign-quest-chains-react"
+// ── Quest Chains / Event Side Stories (K.3 JSX port) ───────────────
+export function CampaignQuestChainsTab({ state }: Props) {
+  const data = getQuestChainsData(state);
+  if (!data) return fallback("Quest chains UI not loaded.");
+  return (
+    <div className="campaign-tab-grid">
+      <section className="campaign-panel campaign-wide-panel">
+        <div className="campaign-panel-head">
+          <h2>Event Side Stories</h2>
+          <span className="campaign-pill">
+            {data.activeCount} active · {data.availableCount} available
+          </span>
+        </div>
+        {data.flowGuide && <SideStoryFlowGuideView guide={data.flowGuide} />}
+        {data.active.length === 0 ? (
+          <div className="campaign-empty">
+            No active side stories. Start one below or use Normal Quest for a single farming run.
+          </div>
+        ) : (
+          data.active.map((chain) => (
+            <QuestChainActiveCard key={chain.templateId} chain={chain} />
+          ))
+        )}
+        {data.finished.length > 0 && (
+          <details className="campaign-resolved-quests">
+            <summary>Resolved side stories ({data.finished.length})</summary>
+            {data.finished.map((chain, i) => (
+              <QuestChainResolvedRow key={i} chain={chain} />
+            ))}
+          </details>
+        )}
+      </section>
+      {data.available.length === 0 ? (
+        <section className="campaign-panel campaign-wide-panel">
+          <div className="campaign-empty">
+            No side-story templates available for this world. Add some in the editor or import a side content pack.
+          </div>
+        </section>
+      ) : (
+        data.available.map((chain) => (
+          <QuestChainTemplateCard key={chain.id} chain={chain} />
+        ))
+      )}
+    </div>
+  );
+}
+
+function SideStoryFlowGuideView({ guide }: { guide: SideStoryFlowGuide }) {
+  return (
+    <div className="campaign-side-story-guide">
+      <span className="campaign-impact-badge is-plot">Side Story VN</span>
+      <strong>{guide.title}</strong>
+      <span>{guide.summary}</span>
+      {guide.phases.length > 0 && <span>{guide.phases.join(" → ")}</span>}
+    </div>
+  );
+}
+
+function QuestChainResolvedRow({ chain }: { chain: QuestChainResolved }) {
+  return (
+    <div className="campaign-row">
+      <div>
+        <strong>{chain.title}</strong>
+        <div className="campaign-muted">
+          {chain.statusLabel} at phase {chain.phaseLabel}
+        </div>
+      </div>
+    </div>
   );
 }
 

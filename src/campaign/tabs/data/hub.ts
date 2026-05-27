@@ -6,6 +6,28 @@
 // and renders JSX with direct onClick dispatch.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { QuestChainActiveData, QuestChainTemplateData } from "./eventTab";
+
+export interface SideStoryFlowGuide {
+  readonly title: string;
+  readonly summary: string;
+  readonly phases: readonly string[];
+}
+
+export interface QuestChainResolved {
+  readonly title: string;
+  readonly statusLabel: string;
+  readonly phaseLabel: string;
+}
+
+export interface QuestChainsData {
+  readonly activeCount: number;
+  readonly availableCount: number;
+  readonly flowGuide: SideStoryFlowGuide | null;
+  readonly active: readonly QuestChainActiveData[];
+  readonly finished: readonly QuestChainResolved[];
+  readonly available: readonly QuestChainTemplateData[];
+}
 
 export interface BattleSetEnemy {
   readonly qty: number;
@@ -48,6 +70,7 @@ export interface MapSeedsData {
 }
 
 interface Bridge {
+  readonly getQuestChainsData: () => QuestChainsData | null;
   readonly getBattleSetsData: () => BattleSetsData | null;
   readonly getMapSeedsData: () => MapSeedsData | null;
 }
@@ -60,9 +83,13 @@ function cjs(): Cjs {
   return (window as unknown as { CJS?: Cjs }).CJS ?? {};
 }
 
+export function getQuestChainsData(_state: CampaignStateSnapshot): QuestChainsData | null {
+  return cjs().CampaignUI?.getQuestChainsData() ?? null;
+}
+
 // State is threaded so the data refreshes on every shell tick even
-// though these two bridges read from the forge modules, not the
-// snapshot.
+// though these bridges read from the forge / quest-chain modules, not
+// the snapshot.
 export function getBattleSetsData(_state: CampaignStateSnapshot): BattleSetsData | null {
   return cjs().CampaignUI?.getBattleSetsData() ?? null;
 }
