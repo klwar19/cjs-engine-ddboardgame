@@ -26,6 +26,7 @@ import * as RosterModals from "./roster-modals";
 import * as Ops from "./ops";
 import * as Farm from "./farm";
 import * as Forge from "./forge";
+import * as Nav from "./nav";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -111,7 +112,28 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "world-map-switch-map": (d) => worldMapAction(d),
   "world-map-interaction": (d) => worldMapAction(d),
   "world-map-node-action": (d) => worldMapAction(d),
-  "world-activity-use": (d) => worldMapAction(d)
+  "world-activity-use": (d) => worldMapAction(d),
+  // ── Navigation (mode/tab switches; TS port of _goto) ──────────────
+  "open-world-gate": () => Nav.goto("world", "worldGate"),
+  "open-world-content": (d) => Nav.openWorldContent(str(d.mode), str(d.tab)),
+  "open-story-home": () => Nav.goto("story", "storyHome"),
+  "open-story-summary": () => Nav.goto("story", "storySummary"),
+  "open-quest-home": () => Nav.goto("quest", "questHome"),
+  "open-event-home": () => Nav.goto("event", "eventCharacter"),
+  "open-event-log": () => Nav.goto("event", "eventLog"),
+  "open-roster-tab": () => Nav.goto(null, "roster"),
+  "open-scenarios-tab": () => Nav.goto(null, "scenarios"),
+  "open-maps-tab": () => Nav.goto(null, "maps"),
+  "open-inventory-tab": () => Nav.goto("activities", "inventory"),
+  "open-farm-tab": () => Nav.goto("activities", "farm"),
+  "open-craft-tab": () => Nav.goto("activities", "craft"),
+  "open-cook-tab": () => Nav.goto("activities", "cook"),
+  "open-oracle-event-tab": () => Nav.goto("activities", "oracleForge"),
+  "open-quests-tab": () => Nav.goto("quest", "quests"),
+  "open-shops-tab": () => Nav.goto("activities", "shops"),
+  "open-sideforge-tab": () => Nav.goto("activities", "sideForge"),
+  "open-event-stories-tab": () => Nav.goto("event", "eventSide"),
+  "open-event-battles-tab": () => Nav.goto("event", "battleSets")
 };
 
 export function hasHandler(name: string): boolean {

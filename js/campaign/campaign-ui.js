@@ -2636,11 +2636,10 @@ window.CJS.CampaignUI = (() => {
       return runtime.run(data.campaignAction, data);
     }
     switch (data.campaignAction) {
-      case 'open-world-gate': return _goto('world', 'worldGate');
-      case 'open-world-content': return _goto(data.mode || _modeForTab(data.tab), data.tab || 'worldGate');
       case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
       case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
       // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
+      //   navigation (open-* / _goto) -> action-handlers/nav.ts
       //   world-map-* / world-activity-use -> action-handlers/worldmap.ts
       //   save + log -> actions.ts ; roster ops -> action-handlers/roster.ts
       //   pass-phase + thin engine ops -> action-handlers/ops.ts
@@ -2727,24 +2726,7 @@ window.CJS.CampaignUI = (() => {
       case 'add-quest': return _openQuestModal();
       case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
-      case 'open-story-home': return _goto('story', 'storyHome');
-      case 'open-story-summary': return _goto('story', 'storySummary');
-      case 'open-quest-home': return _goto('quest', 'questHome');
-      case 'open-event-home': return _goto('event', 'eventCharacter');
-      case 'open-event-log': return _goto('event', 'eventLog');
-      case 'open-roster-tab': return _goto(null, 'roster');
-      case 'open-scenarios-tab': return _goto(null, 'scenarios');
-      case 'open-maps-tab': return _goto(null, 'maps');
-      case 'open-inventory-tab': return _goto('activities', 'inventory');
-      case 'open-farm-tab': return _goto('activities', 'farm');
-      case 'open-craft-tab': return _goto('activities', 'craft');
-      case 'open-cook-tab': return _goto('activities', 'cook');
-      case 'open-oracle-event-tab': return _goto('activities', 'oracleForge');
-      case 'open-quests-tab': return _goto('quest', 'quests');
-      case 'open-shops-tab': return _goto('activities', 'shops');
-      case 'open-sideforge-tab': return _goto('activities', 'sideForge');
-      case 'open-event-stories-tab': return _goto('event', 'eventSide');
-      case 'open-event-battles-tab': return _goto('event', 'battleSets');
+      // open-* navigation cases ported to action-handlers/nav.ts (H.3).
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
       case 'roll-travel-surprise': return _rollTravelSurprise();
@@ -10191,6 +10173,19 @@ window.CJS.CampaignUI = (() => {
     render();
   }
 
+  // Phase H.3 — render-free chrome setters for ported TS action handlers.
+  // The legacy `_goto` (still used by many unported closures) assigns
+  // _activeMode / _activeTab directly with no derivation, then calls
+  // render() once. Ported handlers replicate that exactly: call these
+  // (no derive, no render) at the points the closure assigned, then
+  // `render()` where the closure rendered. Distinct from
+  // setActiveMode/setActiveTab, which derive the partner dimension +
+  // render (the chrome-forwarder contract). These collapse into a TS
+  // chrome-state slice in H.4 when _activeMode/_activeTab move off the
+  // closure.
+  function setActiveModeRaw(mode) { if (mode) _activeMode = mode; }
+  function setActiveTabRaw(tab) { if (tab) _activeTab = tab; }
+
   function setActivePanel(panelId) {
     if (panelId == null) {
       _activePanel = null;
@@ -10270,6 +10265,11 @@ window.CJS.CampaignUI = (() => {
     setActiveMode,
     setActiveTab,
     setActivePanel,
+    // Phase H.3 — render-free setters + tab→mode lookup the ported nav /
+    // sequence handlers use (see action-handlers/nav.ts).
+    setActiveModeRaw,
+    setActiveTabRaw,
+    modeForTab: _modeForTab,
     getActiveTab: () => _activeTab,
     getActiveMode: () => _activeMode,
     getActivePanel: () => _activePanel
