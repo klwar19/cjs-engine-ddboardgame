@@ -33,6 +33,7 @@ import * as Story from "./story-director";
 import * as Oracle from "./oracle";
 import * as MapActions from "./map";
 import * as Haven from "./haven";
+import * as Side from "./side";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -182,7 +183,15 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   // ── Pocket Haven facility ops ─────────────────────────────────────
   "haven-build-facility": (d) => Haven.buildFacility(str(d.facility)),
   "haven-upgrade-facility": (d) => Haven.upgradeFacility(str(d.facility)),
-  "haven-ranch-collect": (d) => Haven.ranchCollect(str(d.facility))
+  "haven-ranch-collect": (d) => Haven.ranchCollect(str(d.facility)),
+  // ── Side content (Hub Pulse cards + packs) ────────────────────────
+  "apply-side-choice": (d) => Side.applySideChoice(str(d.id), Number(d.choice || 0)),
+  "save-side-idea": (d) => Side.saveSideIdea(str(d.id)),
+  "reject-side-idea": (d) => Side.rejectSideIdea(str(d.id)),
+  "dismiss-side-card": (d) => Side.dismissSideCard(str(d.id)),
+  "copy-side-card": (d) => Side.copySideCard(str(d.id)),
+  "import-side-pack": () => Side.importSidePack(),
+  "export-side-pack": () => Side.exportSidePack()
 };
 
 export function hasHandler(name: string): boolean {

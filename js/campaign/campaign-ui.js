@@ -2639,11 +2639,8 @@ window.CJS.CampaignUI = (() => {
       case 'solo-hook-rumor': return _soloHookToRumor();
       case 'save-solo-hook': return _saveSoloHook();
       case 'ignore-solo-hook': return _ignoreSoloHook();
-      case 'apply-side-choice': return _applySideChoice(data.id, Number(data.choice || 0));
-      case 'save-side-idea': return _saveSideIdea(data.id);
-      case 'reject-side-idea': return _rejectSideIdea(data.id);
-      case 'dismiss-side-card': return _dismissSideCard(data.id);
-      case 'copy-side-card': return _copySideCard(data.id);
+      // apply/save/reject/dismiss/copy side-card ported to
+      // action-handlers/side.ts (H.3).
       case 'resolve-rumor': return _resolveRumor(data.id, data.hubId);
       case 'rumor-to-quest': return _rumorToQuest(data.id, data.hubId);
       case 'rumor-to-problem': return _rumorToProblem(data.id, data.hubId);
@@ -2667,8 +2664,7 @@ window.CJS.CampaignUI = (() => {
       // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
       // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
       case 'sequence-play-minigame': return _playSequenceMiniGame();
-      case 'import-side-pack': return _importSidePack();
-      case 'export-side-pack': return _exportSidePack();
+      // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
       // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
       case 'oracle-to-quest': return _oracleToQuest();
       case 'oracle-to-event-builder': return _oracleToEventBuilder();
@@ -3958,56 +3954,8 @@ window.CJS.CampaignUI = (() => {
     _clearPendingSoloHook();
   }
 
-  function _applySideChoice(id, choiceIndex) {
-    const card = _sideCardById(id);
-    const applyNow = (approved) => {
-      window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved });
-      _clearCurrentSideCard(id);
-      render();
-      UI().toast(approved ? 'Pulse applied and cleared' : 'Pulse sent to review and cleared', approved ? 'success' : 'info');
-    };
-    if (card?.canonRisk === 'red') {
-      UI().confirm('This is red-risk content. Approve and apply it now?',
-        () => applyNow(true),
-        () => applyNow(false));
-      return;
-    }
-    applyNow(true);
-  }
-
-  function _saveSideIdea(id) {
-    const card = _sideCardById(id);
-    if (!card) return;
-    Side().saveCard(card, { status: 'saved', source: 'ui' });
-    _clearCurrentSideCard(id);
-    render();
-    UI().toast('Idea saved and cleared from current result', 'success');
-  }
-
-  function _rejectSideIdea(id) {
-    _textareaModal({
-      title: 'Reject Idea',
-      label: 'Reason (optional)',
-      placeholder: 'Why is this rejected?',
-      primaryLabel: 'Reject',
-      onSubmit: (reason) => {
-        Side().rejectCard(id, reason || '');
-        _clearCurrentSideCard(id);
-        render();
-      }
-    });
-  }
-
-  function _dismissSideCard(id) {
-    _clearCurrentSideCard(id);
-    render();
-  }
-
-  function _clearCurrentSideCard(id) {
-    CS().mutate((state) => {
-      if (!id || state.lastSideContentCard?.id === id) state.lastSideContentCard = null;
-    }, { source: 'side_card_clear' });
-  }
+  // _applySideChoice / _saveSideIdea / _rejectSideIdea / _dismissSideCard
+  // / _clearCurrentSideCard ported to action-handlers/side.ts (H.3).
 
   function _rumorById(rumorId, hubId) {
     const id = hubId || window.CJS.CampaignHub?.getCurrentHubId?.();
@@ -4069,11 +4017,7 @@ window.CJS.CampaignUI = (() => {
     UI().toast('Rumor escalated to hub problem', 'success');
   }
 
-  function _copySideCard(id) {
-    const card = _sideCardById(id);
-    if (!card) return;
-    Side().copyMarkdown(card).then(() => UI().toast('Card copied as Markdown', 'success'));
-  }
+  // _copySideCard ported to action-handlers/side.ts (H.3).
 
   // _copyBattleCard / _copyMapSeed ported to action-handlers/forge.ts (H.3).
   // _rollForgeOracle ported to action-handlers/oracle.ts (H.3).
@@ -4877,46 +4821,8 @@ window.CJS.CampaignUI = (() => {
   // _setStoryDirectorStage / _syncStoryDirectorSideQuests ported to
   // action-handlers/story-director.ts (H.3).
 
-  function _importSidePack() {
-    _textareaModal({
-      title: 'Import Side Content Pack',
-      label: 'Paste pack JSON',
-      placeholder: '{ "id": "...", "cards": [...] }',
-      primaryLabel: 'Import',
-      width: '640px',
-      onSubmit: (raw) => {
-        if (!raw) {
-          UI().toast('Nothing to import', 'info');
-          return false;
-        }
-        try {
-          const pack = JSON.parse(raw);
-          window.CJS.CampaignSideContent.importPack(pack);
-          UI().toast('Side content pack imported', 'success');
-        } catch (error) {
-          UI().toast(error.message || 'Invalid JSON', 'error');
-          return false;
-        }
-      }
-    });
-  }
-
-  function _exportSidePack() {
-    const state = CS().getState();
-    const content = {
-      exportedAt: new Date().toISOString(),
-      saveId: state.saveId,
-      generatedIdeas: state.sideContent?.generatedIdeas || {},
-      reviewQueue: state.sideContent?.reviewQueue || [],
-      activeQuestChains: state.sideContent?.activeQuestChains || {}
-    };
-    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-side-content.json`, `${JSON.stringify(content, null, 2)}\n`, 'application/json');
-  }
-
-  function _sideCardById(id) {
-    const state = CS().getState();
-    return state.sideContent?.generatedIdeas?.[id] || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
-  }
+  // _importSidePack / _exportSidePack / _sideCardById ported to
+  // action-handlers/side.ts (H.3).
 
   // _saveOracleNote / _oracleToEventLog ported to
   // action-handlers/oracle.ts (H.3).
