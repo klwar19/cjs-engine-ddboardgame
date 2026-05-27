@@ -29,6 +29,7 @@ import * as Forge from "./forge";
 import * as Nav from "./nav";
 import * as Sequence from "./sequence";
 import * as Story from "./story-director";
+import * as Oracle from "./oracle";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -87,6 +88,7 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "run-roll-event": () => Ops.noticeRandomEventsDisabled(),
   "run-tick-danger": () => Ops.tickRunDanger(),
   "reveal-node": (d) => Ops.revealNode(str(d.nodeId)),
+  "end-scenario": () => Ops.endScenario(),
   "skip-victory": () => Ops.skipBattleVictory(),
   "skip-defeat": () => Ops.skipBattleDefeat(),
   "cancel-battle": () => Ops.cancelPendingBattle(),
@@ -154,7 +156,14 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "story-reject-beat": () => Story.rejectStoryBeat(),
   "story-apply-choice": (d) => Story.applyStoryChoice(str(d.id), Number(d.choice || 0)),
   "story-set-stage": (d) => Story.setStoryStage(str(d.id)),
-  "story-sync-sidequests": () => Story.syncStorySideQuests()
+  "story-sync-sidequests": () => Story.syncStorySideQuests(),
+  // ── Oracle / GM prompt (roll / pick / custom / note / event-log) ──
+  "roll-oracle": () => Oracle.rollOracle(),
+  "pick-oracle": () => Oracle.pickOracle(),
+  "custom-oracle": () => Oracle.customOracle(),
+  "oracle-note": () => Oracle.saveOracleNote(),
+  "oracle-event-log": () => Oracle.oracleToEventLog(),
+  "roll-forge-oracle": () => Oracle.rollForgeOracle()
 };
 
 export function hasHandler(name: string): boolean {

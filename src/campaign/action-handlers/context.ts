@@ -20,6 +20,7 @@ interface CampaignOpsModule {
 
 interface CampaignStateModule {
   getState: () => Record<string, unknown> | null;
+  getContent: () => Record<string, unknown>;
   mutate: (recipe: (state: Record<string, unknown>) => void, options?: { source?: string }) => void;
 }
 

@@ -7,7 +7,16 @@
 // passPhase — pinned there by the bridge test — and is registered from
 // there.)
 
-import { applyOp, cs, toast } from "./context";
+import { applyOp, cs, mod, toast } from "./context";
+
+interface ScenarioRunnerModule {
+  endScenario?: (reason: string) => void;
+}
+
+// ── Scenario runner ───────────────────────────────────────────────
+export function endScenario(): void {
+  mod<ScenarioRunnerModule>("ScenarioRunner")?.endScenario?.("manual");
+}
 
 // ── Phase / rest ──────────────────────────────────────────────────
 export function fullRest(): void {

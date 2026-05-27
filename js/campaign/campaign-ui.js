@@ -2647,9 +2647,8 @@ window.CJS.CampaignUI = (() => {
       case 'roll-event': return _pickEvent();
       case 'pick-event': return _pickEvent();
       case 'custom-event': return _customEvent();
-      case 'roll-oracle': return _rollOracle();
-      case 'pick-oracle': return _pickOracle();
-      case 'custom-oracle': return _customOracle();
+      // roll-oracle / pick-oracle / custom-oracle ported to
+      // action-handlers/oracle.ts (H.3).
       case 'battle-reroll': return _battleReroll();
       case 'battle-override': return _battleOverride();
       case 'roll-hub-pulse': return _rollHubPulse(data.table);
@@ -2679,7 +2678,7 @@ window.CJS.CampaignUI = (() => {
       case 'chain-battle': return _questChainBattle(data.id);
       case 'copy-battle-card': return _copyBattleCard(data.id);
       case 'copy-map-seed': return _copyMapSeed(data.id);
-      case 'roll-forge-oracle': return _rollForgeOracle();
+      // roll-forge-oracle ported to action-handlers/oracle.ts (H.3).
       case 'story-roll-scene': return _rollStoryDirector('scene');
       case 'story-roll-peri': return _rollStoryDirector('peri');
       case 'story-roll-memory': return _rollStoryDirector('memory');
@@ -2695,8 +2694,7 @@ window.CJS.CampaignUI = (() => {
       case 'sequence-play-minigame': return _playSequenceMiniGame();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
-      case 'oracle-note': return _saveOracleNote();
-      case 'oracle-event-log': return _oracleToEventLog();
+      // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
       case 'oracle-to-quest': return _oracleToQuest();
       case 'oracle-to-event-builder': return _oracleToEventBuilder();
       case 'oracle-add-tags': return _oracleAddTags();
@@ -2728,7 +2726,7 @@ window.CJS.CampaignUI = (() => {
       case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'grid_map' });
       case 'start-scenario': return _startScenarioFromUi(data.id);
       case 'inspect-scenario': return _inspectScenario(data.id);
-      case 'end-scenario': return Runner().endScenario('manual');
+      // end-scenario ported to action-handlers/ops.ts (H.3).
       case 'cancel-scenario': return _cancelScenario();
       case 'discard-scenario': return _discardGeneratedScenario(data.id);
       case 'move-node': return _moveNode(data.nodeId);
@@ -2819,11 +2817,7 @@ window.CJS.CampaignUI = (() => {
   // _deleteAllSaves / _exportSlot / _pushGitHub) ported to
   // src/campaign/actions.ts + registered in action-handlers/registry.ts (H.3).
 
-  function _rollOracle() {
-    const oracle = window.CJS.CampaignOracle.roll();
-    if (!oracle) return UI().toast('No oracle table available', 'info');
-    CS().mutate((state) => { state.lastOracle = oracle; }, { source: 'oracle' });
-  }
+  // _rollOracle ported to action-handlers/oracle.ts (H.3).
 
   function _eventChoices() {
     const campaign = CS().getCurrentCampaign();
@@ -3705,59 +3699,8 @@ window.CJS.CampaignUI = (() => {
       .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
   }
 
-  function _oracleChoices() {
-    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || Object.values(CS().getContent().oracleTables || {});
-    const seen = new Map();
-    for (const table of tables) {
-      const entries = table.entries || table.prompts || [];
-      for (const entry of entries) {
-        const text = entry.text || entry.prompt || entry.label;
-        if (!text) continue;
-        const value = entry.id || `${table.id}_${seen.size}`;
-        seen.set(value, {
-          value,
-          label: text.length > 80 ? text.slice(0, 80) + '…' : text,
-          sub: table.name || table.id,
-          _text: text,
-          _tableId: table.id
-        });
-      }
-    }
-    return Array.from(seen.values());
-  }
-
-  function _pickOracle() {
-    const choices = _oracleChoices();
-    if (!choices.length) return UI().toast('No oracle prompts available', 'info');
-    _opPickerModal({
-      title: 'Pick GM Prompt',
-      options: choices.map(({ value, label, sub }) => ({ value, label, sub })),
-      placeholder: 'Search prompts…',
-      primaryLabel: 'Use Prompt',
-      onSubmit: ({ value }) => {
-        const opt = choices.find((c) => c.value === value);
-        if (!opt) return;
-        CS().mutate((state) => {
-          state.lastOracle = { id: opt.value, text: opt._text, tableId: opt._tableId, rolledAt: new Date().toISOString() };
-        }, { source: 'oracle_pick' });
-      }
-    });
-  }
-
-  function _customOracle() {
-    _textareaModal({
-      title: 'Custom GM Prompt',
-      label: 'Prompt text',
-      placeholder: 'A scene seed in your own words…',
-      primaryLabel: 'Use',
-      onSubmit: (text) => {
-        if (!text) return false;
-        CS().mutate((state) => {
-          state.lastOracle = { id: `custom_${Date.now()}`, text, source: 'custom', rolledAt: new Date().toISOString() };
-        }, { source: 'oracle_custom' });
-      }
-    });
-  }
+  // _oracleChoices / _pickOracle / _customOracle ported to
+  // action-handlers/oracle.ts (H.3).
 
   function _battleReroll() {
     const battle = CS().getState().pendingBattle;
@@ -4170,13 +4113,7 @@ window.CJS.CampaignUI = (() => {
     if (seed) Side().copyMarkdown({ ...seed, type: 'map_seed', title: seed.name || seed.id }).then(() => UI().toast('Map seed copied', 'success'));
   }
 
-  function _rollForgeOracle() {
-    _activeMode = 'event';
-    _activeTab = 'oracleForge';
-    const card = window.CJS.CampaignIdeaForge.rollOracle();
-    if (!card) return UI().toast('No oracle table available', 'info');
-    render();
-  }
+  // _rollForgeOracle ported to action-handlers/oracle.ts (H.3).
 
   function _rollStoryDirector(kind) {
     _activeMode = 'story';
@@ -5018,33 +4955,8 @@ window.CJS.CampaignUI = (() => {
     return state.sideContent?.generatedIdeas?.[id] || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
   }
 
-  function _saveOracleNote() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    CS().mutate((state) => {
-      state.pinnedNotes.unshift({ at: new Date().toISOString(), text: oracle.text });
-      state.lastOracle = null;
-    }, { source: 'oracle_note' });
-    Ops().apply({ op: 'log', text: 'GM prompt saved as note.' }, { source: 'oracle' });
-  }
-
-  function _oracleToEventLog() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    Ops().apply({
-      op: 'event_log_add',
-      entry: {
-        title: oracle.title || 'Oracle Prompt',
-        summary: oracle.text || oracle.prompt || '',
-        source: oracle.source || 'oracle',
-        scope: 'oracle',
-        relatedId: oracle.id || null,
-        tags: ['oracle', ...(oracle.tags || [])]
-      }
-    }, { source: 'oracle_event_log' });
-    CS().mutate((state) => { state.lastOracle = null; }, { source: 'oracle_event_log' });
-    UI().toast('Oracle summarized in Event Log', 'success');
-  }
+  // _saveOracleNote / _oracleToEventLog ported to
+  // action-handlers/oracle.ts (H.3).
 
   function _oracleToQuest() {
     const oracle = CS().getState().lastOracle;
