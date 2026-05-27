@@ -747,9 +747,69 @@ window.CJS.CampaignWorldMap = (() => {
     return _esc(value);
   }
 
+  // ── K.3 typed bridges ──────────────────────────────────────────────
+  // Structured data for the React World Activities tab. The travel-map
+  // SVG ports separately; the activity / journal / pressure logic lives
+  // here (conditions, cost gating) so it stays the single source.
+  const _ACTIVITY_GROUP_LABELS = {
+    hospital: 'Hospital',
+    journal: 'Journal',
+    arena: 'Arena',
+    auction: 'Auction House',
+    scavenge: 'Scavenge',
+    build: 'Build'
+  };
+
+  function _activityCardData(activity, state) {
+    const cond = _condition(activity.conditions || activity.requires, state);
+    const cost = _costOps(activity.cost || activity.inputs || {}, state);
+    const ready = cond.ok && cost.ok;
+    const record = _progress(state, activity.world).activities?.[activity.id] || {};
+    const costText = _costText(activity.cost || activity.inputs);
+    return {
+      id: String(activity.id || ''),
+      title: String(activity.title || activity.name || activity.id || ''),
+      typePill: record.count ? `Used ${record.count}` : String(activity.type || 'activity'),
+      summary: String(activity.summary || activity.description || ''),
+      rewardText: String(activity.rewardText || ''),
+      costText: costText ? `Cost: ${costText}` : '',
+      ready,
+      buttonLabel: String(activity.buttonLabel || 'Use'),
+      disabledTitle: ready ? 'Run activity' : [...cond.blockers, ...cost.missing].join(' / ')
+    };
+  }
+
+  function getActivitiesData(state = CS().getState()) {
+    if (!state) return null;
+    const progress = _progress(state);
+    const activities = _visibleActivities(state);
+    const grouped = _groupBy(activities, (activity) => activity.type || 'activity');
+    const journal = _journalEntries(state);
+    return {
+      worldName: _worldName(state),
+      locationName: _locationName(progress.currentLocation) || 'Choose a location on World Map',
+      pressures: Object.values(state.crossWorld?.pressures || {}).slice(0, 4).map((p) => ({
+        id: String(p.id || ''),
+        title: String(p.title || p.id || ''),
+        value: Number(p.value || 0)
+      })),
+      groups: Object.entries(grouped).map(([type, rows]) => ({
+        type,
+        label: _ACTIVITY_GROUP_LABELS[type] || _title(type),
+        activities: rows.map((activity) => _activityCardData(activity, state))
+      })),
+      journal: journal.map((entry) => ({
+        title: String(entry.title || entry.id || ''),
+        sub: [entry.world, entry.scope].filter(Boolean).join(' / '),
+        text: String(entry.text || entry.summary || '')
+      }))
+    };
+  }
+
   return Object.freeze({
     renderTravelMap,
     renderActivities,
+    getActivitiesData,
     handleAction,
     travelToLocation,
     useActivity
