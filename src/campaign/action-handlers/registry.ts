@@ -27,6 +27,7 @@ import * as Ops from "./ops";
 import * as Farm from "./farm";
 import * as Forge from "./forge";
 import * as Nav from "./nav";
+import * as Sequence from "./sequence";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -133,7 +134,20 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "open-shops-tab": () => Nav.goto("activities", "shops"),
   "open-sideforge-tab": () => Nav.goto("activities", "sideForge"),
   "open-event-stories-tab": () => Nav.goto("event", "eventSide"),
-  "open-event-battles-tab": () => Nav.goto("event", "battleSets")
+  "open-event-battles-tab": () => Nav.goto("event", "battleSets"),
+  // ── Sequence runner (start / advance / complete / VN) ─────────────
+  "sequence-start": (d) => Sequence.startSequence(str(d.id)),
+  "sequence-next": () => Sequence.advanceSequence("next"),
+  "sequence-resolve": () => Sequence.advanceSequence("resolve"),
+  "sequence-choice": (d) => Sequence.advanceSequence("choice", d.choice),
+  "sequence-pass": () => Sequence.advanceSequence("pass"),
+  "sequence-fail": () => Sequence.advanceSequence("fail"),
+  "sequence-queue-battle": () => Sequence.advanceSequence("queue"),
+  "sequence-win": () => Sequence.advanceSequence("win"),
+  "sequence-lose": () => Sequence.advanceSequence("lose"),
+  "sequence-abort": () => Sequence.advanceSequence("abort"),
+  "sequence-complete": () => Sequence.completeSequence(),
+  "sequence-open-vn": () => Sequence.openSequenceVn()
 };
 
 export function hasHandler(name: string): boolean {

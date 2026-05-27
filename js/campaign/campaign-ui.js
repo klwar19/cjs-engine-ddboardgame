@@ -2693,19 +2693,9 @@ window.CJS.CampaignUI = (() => {
       case 'story-manual-note': return _manualStoryNote();
       case 'story-copy-prompt': return _copyStoryPrompt();
       case 'story-help': return _openStoryHelpModal();
-      case 'sequence-start': return _startSequenceFromUi(data.id);
-      case 'sequence-next': return _advanceSequenceFromUi('next');
-      case 'sequence-resolve': return _advanceSequenceFromUi('resolve');
-      case 'sequence-choice': return _advanceSequenceFromUi('choice', data.choice);
-      case 'sequence-pass': return _advanceSequenceFromUi('pass');
-      case 'sequence-fail': return _advanceSequenceFromUi('fail');
-      case 'sequence-queue-battle': return _advanceSequenceFromUi('queue');
+      // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
+      // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
       case 'sequence-play-minigame': return _playSequenceMiniGame();
-      case 'sequence-win': return _advanceSequenceFromUi('win');
-      case 'sequence-lose': return _advanceSequenceFromUi('lose');
-      case 'sequence-abort': return _advanceSequenceFromUi('abort');
-      case 'sequence-complete': return _completeSequenceFromUi();
-      case 'sequence-open-vn': window.CJS.CampaignSequenceVN?.setEnabled?.(true); return render();
       case 'import-side-pack': return _importSidePack();
       case 'export-side-pack': return _exportSidePack();
       case 'oracle-note': return _saveOracleNote();
@@ -4200,71 +4190,10 @@ window.CJS.CampaignUI = (() => {
     _openStoryBeatModal(card);
   }
 
-  async function _startSequenceFromUi(sequenceId) {
-    if (!sequenceId) return;
-    // Manual branch chapters live outside the sequence runner — they're
-    // authored at runtime in Story Controls and stored in state. Route
-    // them through CampaignStoryBranch so they play as VN scenes.
-    if (String(sequenceId).startsWith('branch_')) {
-      const Branch = window.CJS.CampaignStoryBranch;
-      const branch = Branch?.getBranch?.(sequenceId);
-      if (!branch) return UI().toast('Branch chapter is missing.', 'error');
-      _activeMode = 'story';
-      const ok = Branch.playBranch(sequenceId, {
-        onComplete: () => { render(); }
-      });
-      if (!ok) UI().toast('Branch chapter could not open.', 'error');
-      return;
-    }
-    try {
-      const started = await window.CJS.CampaignSequences?.start?.(sequenceId);
-      if (started?.blocked) {
-        render();
-        return UI().toast(started?.meta?.deliveryNote || 'That chapter part is still in update.', 'info');
-      }
-      const sequence = started?.sequence || null;
-      if (!sequence) return UI().toast('Sequence file not found', 'info');
-      const scope = sequence.scope || sequence._indexEntry?.scope || 'event';
-      if (scope === 'story') _activeMode = 'story';
-      else if (scope === 'quest') _activeMode = 'quest';
-      else if (scope === 'event') _activeMode = 'event';
-      render();
-      if (started?.replayOnly) {
-        return UI().toast(`Opened ${sequence.title || sequence.id} in replay mode`, 'info');
-      }
-      if (started?.defaulted?.length) {
-        return UI().toast(`Started ${sequence.title || sequence.id}; defaulted ${started.defaulted.length} earlier part${started.defaulted.length === 1 ? '' : 's'}`, 'success');
-      }
-      UI().toast(`Started ${sequence.title || sequence.id}`, 'success');
-    } catch (error) {
-      console.error(error);
-      UI().toast(error?.message || 'Sequence could not start', 'error');
-    }
-  }
-
-  async function _advanceSequenceFromUi(action, value = null) {
-    try {
-      const result = await window.CJS.CampaignSequences?.advance?.(action, value);
-      if (result?.scenarioStarted || result?.queued) _activeTab = 'maps';
-      render();
-      if (result?.replayOnly && result?.reason === 'replay_queue_blocked') {
-        return UI().toast('Replay mode keeps consequences frozen. Use the continue buttons instead of queuing battle.', 'info');
-      }
-      if (result?.replayOnly && result?.reason === 'replay_scenario_blocked') {
-        return UI().toast('Replay mode keeps exploration frozen too. Use the continue buttons instead of launching a scenario.', 'info');
-      }
-      if (result?.scenarioStarted) return UI().toast('Exploration run started from sequence', 'success');
-      if (result?.queued) return UI().toast('Battle queued from sequence', 'success');
-      if (result?.complete) return UI().toast('Sequence complete', 'success');
-      if (!result?.ok && result?.reason === 'choice_locked') {
-        return UI().toast((result.blockers || []).join(' | ') || 'That choice is locked by earlier consequences.', 'info');
-      }
-      if (!result?.ok) return UI().toast('No active sequence node', 'info');
-    } catch (error) {
-      console.error(error);
-      UI().toast(error?.message || 'Sequence could not advance', 'error');
-    }
-  }
+  // _startSequenceFromUi / _advanceSequenceFromUi ported to
+  // src/campaign/action-handlers/sequence.ts (H.3). _playSequenceMiniGame
+  // (below) stays here — it owns the mini-game session machinery — and
+  // routes its win/lose follow-ups back through the action registry.
 
   async function _playSequenceMiniGame() {
     const Seq = window.CJS.CampaignSequences;
@@ -4285,8 +4214,11 @@ window.CJS.CampaignUI = (() => {
       node,
       onComplete: (result, storyContext) => {
         _applyMiniGameResult(result, 'sequence_minigame', storyContext);
-        if (result?.status === 'win') return _advanceSequenceFromUi('win');
-        if (result?.status === 'fail' || result?.status === 'giveup') return _advanceSequenceFromUi('lose');
+        // sequence advance ported to action-handlers/sequence.ts (H.3);
+        // route the win/lose follow-up back through the action registry.
+        const Actions = window.CJS.CampaignActionsRuntime;
+        if (result?.status === 'win') return Actions?.run?.('sequence-win');
+        if (result?.status === 'fail' || result?.status === 'giveup') return Actions?.run?.('sequence-lose');
         return UI().toast('Mini-game could not resolve this sequence node', 'error');
       }
     });
@@ -4504,11 +4436,7 @@ window.CJS.CampaignUI = (() => {
     if (result.status === 'error') return UI().toast('Mini-game returned an error', 'error');
   }
 
-  async function _completeSequenceFromUi() {
-    const result = await window.CJS.CampaignSequences?.complete?.('manual');
-    render();
-    if (result?.ok) UI().toast('Sequence closed', 'success');
-  }
+  // _completeSequenceFromUi ported to action-handlers/sequence.ts (H.3).
 
   function _saveStoryDirectorBeat() {
     const card = SD()?.saveLast?.('saved');
