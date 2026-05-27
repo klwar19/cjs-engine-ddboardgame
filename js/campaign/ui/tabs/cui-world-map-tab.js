@@ -1,47 +1,14 @@
-// cui-world-map-tab.js — World Map / World Activities tab adapters.
+// cui-world-map-tab.js — World Map / World Activities tabs.
 //
-// The actual map / activities rendering lives in
-// `js/campaign/campaign-world-map.js` (CJS.CampaignWorldMap). The two
-// tabs `worldMap` and `worldActivities` are already thin pass-throughs
-// in the shell. Moving them through the tab registry just makes the
-// boundary explicit and keeps `_renderMain` from carrying tab-specific
-// branches that the registry should own.
-//
-// We keep a defensive "module not loaded" message so a partial deploy
-// can't blow up the page — matches the prior shell behaviour.
+// Both tabs are React-owned (Phase K.3): the shell renders
+// `CampaignWorldMapTab` / `CampaignWorldActivitiesTab` from the typed
+// `getTravelMapData` / `getActivitiesData` bridges on
+// `CJS.CampaignWorldMap`, and `cui-react-bridge.js` registers the React
+// mount points. This module no longer renders or registers anything; it
+// only establishes the `WorldMapTab` namespace that the bootstrap smoke
+// test still asserts (dropped when that test is rewritten in H.5).
 
 window.CJS = window.CJS || {};
 window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
 
-window.CJS.CampaignUIInternal.WorldMapTab = (function () {
-  'use strict';
-
-  function _WM() { return window.CJS.CampaignWorldMap; }
-
-  function renderTravelMap(state) {
-    return _WM()?.renderTravelMap?.(state)
-      || '<div class="campaign-panel">World map UI not loaded.</div>';
-  }
-
-  function renderActivities(state) {
-    return _WM()?.renderActivities?.(state)
-      || '<div class="campaign-panel">World activities UI not loaded.</div>';
-  }
-
-  function _registerTabs() {
-    const Tabs = window.CJS.CampaignUIInternal.Tabs;
-    if (!Tabs) return;
-    Tabs.register('worldMap', {
-      render: (state) => renderTravelMap(state)
-    });
-    Tabs.register('worldActivities', {
-      render: (state) => renderActivities(state)
-    });
-  }
-  _registerTabs();
-
-  return Object.freeze({
-    renderTravelMap,
-    renderActivities
-  });
-})();
+window.CJS.CampaignUIInternal.WorldMapTab = Object.freeze({});

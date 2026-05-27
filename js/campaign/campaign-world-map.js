@@ -13,132 +13,12 @@ window.CJS.CampaignWorldMap = (() => {
   const Conditions = () => window.CJS.CampaignConditions;
   const UI = () => window.CJS.UI;
 
-  function renderTravelMap(state = CS().getState()) {
-    const map = _currentTravelMap(state);
-    const progress = _progress(state);
-    if (!map) {
-      return `<section class="campaign-panel"><div class="campaign-empty">No travel map for this world yet.</div></section>`;
-    }
-    if (map.visualMode === 'vn_travel') return _renderVisualTravelMap(map, state, progress);
-    return _renderClassicTravelMap(map, state, progress);
-  }
-
-  function _renderClassicTravelMap(map, state, progress) {
-    const canvas = map.canvas || {};
-    const width = Number(canvas.width || map.width || 720);
-    const height = Number(canvas.height || map.height || 420);
-    const theme = _slug(map.visualTheme?.id || map.world || 'world');
-    const backdropStyle = _travelMapBackdropStyle(map, state);
-    const nodeById = Object.fromEntries((map.nodes || []).map((node) => [node.id, node]));
-    const currentId = progress.currentLocation || map.defaultLocationId || map.nodes?.[0]?.id || '';
-    const currentNode = nodeById[currentId] || map.nodes?.[0] || null;
-    const links = (map.links || []).map((link) => {
-      const from = nodeById[link.from];
-      const to = nodeById[link.to];
-      if (!from || !to) return '';
-      return `<line x1="${Number(from.x || 0)}" y1="${Number(from.y || 0)}" x2="${Number(to.x || 0)}" y2="${Number(to.y || 0)}" class="campaign-world-link" />`;
-    }).join('');
-    const nodes = (map.nodes || []).map((node) => {
-      const active = node.id === currentId;
-      const visited = (progress.visitedLocations || []).includes(node.id);
-      return `<g class="campaign-world-node ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''}" data-campaign-action="world-map-travel" data-map-id="${_escAttr(map.id)}" data-node-id="${_escAttr(node.id)}" data-world-node="${_escAttr(node.id)}">
-        <circle cx="${Number(node.x || 0)}" cy="${Number(node.y || 0)}" r="${active ? 20 : 16}"></circle>
-        <text x="${Number(node.x || 0)}" y="${Number(node.y || 0) + 34}" text-anchor="middle">${_esc(_short(node.name || node.id, 18))}</text>
-      </g>`;
-    }).join('');
-
-    return `
-      <section class="campaign-panel campaign-world-map-panel theme-${_escAttr(theme)}"${backdropStyle}>
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${_esc(map.name || 'World Map')}</h2>
-            <span class="campaign-muted">${_esc(_worldName(state))} / ${_esc(currentNode?.name || 'No location')}</span>
-          </div>
-          ${_renderWorldProgress(state)}
-        </div>
-        <div class="campaign-world-map-layout">
-          <svg class="campaign-world-map-canvas" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}">
-            <rect x="0" y="0" width="${width}" height="${height}" rx="8" class="campaign-world-map-bg"></rect>
-            ${links}
-            ${nodes}
-          </svg>
-          <div class="campaign-world-location">
-            ${_renderLocationDetail(map, currentNode, progress, state)}
-          </div>
-        </div>
-      </section>
-    `;
-  }
-
-  function _renderVisualTravelMap(map, state, progress) {
-    const canvas = map.canvas || {};
-    const width = Number(canvas.width || map.width || 760);
-    const height = Number(canvas.height || map.height || 430);
-    const nodeById = Object.fromEntries((map.nodes || []).map((node) => [node.id, node]));
-    const currentId = nodeById[progress.currentLocation] ? progress.currentLocation : (map.defaultLocationId || map.nodes?.[0]?.id || '');
-    const currentNode = nodeById[currentId] || map.nodes?.[0] || null;
-    const theme = _slug(map.visualTheme?.id || map.world || 'world');
-    const backdropStyle = _travelMapBackdropStyle(map, state);
-    const backdropUrl = _travelMapBackdrop(map, state);
-    const backdropImage = backdropUrl
-      ? `<image class="campaign-world-map-image" href="${_escAttr(_assetUrlForCss(backdropUrl))}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="${_escAttr(map.visualBackdropFit || 'xMidYMid slice')}"></image>
-         <rect x="0" y="0" width="${width}" height="${height}" rx="18" class="campaign-world-map-image-shade"></rect>`
-      : '';
-    const layers = _renderVisualLayers(map);
-    const roads = _renderVisualRoads(map, nodeById);
-    const nodes = (map.nodes || []).map((node) => _renderVisualNode(map, node, currentId, progress, state, width, height)).join('');
-
-    return `
-      <section class="campaign-panel campaign-world-map-panel is-visual-map theme-${_escAttr(theme)}"${backdropStyle}>
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${_esc(map.name || 'World Map')}</h2>
-            <span class="campaign-muted">${_esc(_worldName(state))} / ${_esc(currentNode?.name || 'No location')}</span>
-          </div>
-          ${_renderWorldProgress(state)}
-        </div>
-        ${_renderAreaButtons(map)}
-        <div class="campaign-world-map-layout">
-          <div class="campaign-world-map-stage">
-            <svg class="campaign-world-map-canvas is-visual" viewBox="0 0 ${width} ${height}" role="img" aria-label="${_escAttr(map.name || map.id)}">
-              <rect x="0" y="0" width="${width}" height="${height}" rx="18" class="campaign-world-map-bg"></rect>
-              ${backdropImage}
-              ${layers}
-              ${roads}
-              ${nodes}
-            </svg>
-            ${_renderMapLegend(map)}
-          </div>
-          <div class="campaign-world-location">
-            ${_renderLocationDetail(map, currentNode, progress, state)}
-          </div>
-        </div>
-      </section>
-    `;
-  }
-
-  function renderActivities(state = CS().getState()) {
-    const progress = _progress(state);
-    const activities = _visibleActivities(state);
-    const grouped = _groupBy(activities, (activity) => activity.type || 'activity');
-    const journal = _journalEntries(state);
-    return `
-      <section class="campaign-panel">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>${_esc(_worldName(state))} Activities</h2>
-            <span class="campaign-muted">${_esc(_locationName(progress.currentLocation) || 'Choose a location on World Map')}</span>
-          </div>
-          ${_renderPressureStrip(state)}
-        </div>
-        ${Object.keys(grouped).length ? Object.entries(grouped).map(([type, rows]) => _renderActivityGroup(type, rows, state)).join('') : '<div class="campaign-empty">No activities available at this location.</div>'}
-      </section>
-      <section class="campaign-panel">
-        <div class="campaign-panel-head"><h2>Journal & Recap</h2></div>
-        ${journal.map(_renderJournalEntry).join('') || '<div class="campaign-empty">No journal entries yet.</div>'}
-      </section>
-    `;
-  }
+  // renderTravelMap / renderActivities and their classic + visual SVG
+  // assemblers ported to JSX in Phase K.3. React reads typed
+  // getTravelMapData / getActivitiesData (below) and renders
+  // src/campaign/tabs/CampaignWorldMapTab.tsx. The SVG geometry helpers
+  // (_renderVisualLayers / _renderVisualRoads / _renderMarkerShape /
+  // node + label math) stay — the typed builders reuse them.
 
   function handleAction(data = {}) {
     switch (data.campaignAction) {
@@ -244,76 +124,6 @@ window.CJS.CampaignWorldMap = (() => {
     return true;
   }
 
-  function _renderLocationDetail(map, node, progress, state = CS().getState()) {
-    if (!node) return '<div class="campaign-empty">No location selected.</div>';
-    const isCurrent = node.id === progress.currentLocation;
-    const people = (node.people || []).map((person) => _renderNodeButton('world-map-interaction', map.id, node.id, person)).join('');
-    const actions = (node.actions || []).map((action) => _renderNodeButton('world-map-node-action', map.id, node.id, action)).join('');
-    const activities = _activitiesForLocation(state, map, node);
-    return `
-      <div class="campaign-world-location-head">
-        <h3>${_esc(node.name || node.id)}</h3>
-        <span class="campaign-pill">${_esc(node.type || 'location')}</span>
-      </div>
-      <p>${_esc(node.description || 'No notes yet.')}</p>
-      ${activities.length ? _renderLocationActivityPreview(activities) : '<div class="campaign-muted">No location activities yet. This place can still hold story scenes, people, or future systems.</div>'}
-      <div class="campaign-panel-actions">
-        <button class="campaign-action primary" data-campaign-action="world-map-travel" data-map-id="${_escAttr(map.id)}" data-node-id="${_escAttr(node.id)}" ${isCurrent ? 'disabled' : ''}>${isCurrent ? 'Here' : 'Travel'}</button>
-        ${activities.length ? '<button class="campaign-action" data-campaign-tab="worldActivities">Open Activities</button>' : ''}
-      </div>
-      ${people ? `<h4>People</h4><div class="campaign-world-action-list">${people}</div>` : ''}
-      ${actions ? `<h4>Local Actions</h4><div class="campaign-world-action-list">${actions}</div>` : ''}
-    `;
-  }
-
-  function _renderLocationActivityPreview(activities) {
-    return `
-      <div class="campaign-world-location-activities">
-        <strong>Available here</strong>
-        ${activities.slice(0, 3).map((activity) => `<span>${_esc(activity.title || activity.name || activity.id)}</span>`).join('')}
-      </div>
-    `;
-  }
-
-  function _renderNodeButton(actionName, mapId, nodeId, entry) {
-    const cond = _condition(entry.conditions || entry.requires);
-    return `
-      <button class="campaign-action ${entry.kind === 'primary' ? 'primary' : ''}" data-campaign-action="${actionName}" data-map-id="${_escAttr(mapId)}" data-node-id="${_escAttr(nodeId)}" data-entry-id="${_escAttr(entry.id)}" ${cond.ok ? '' : 'disabled'} title="${_escAttr(cond.ok ? (entry.summary || entry.text || '') : cond.blockers.join(' / '))}">
-        ${_esc(entry.label || entry.name || entry.title || entry.id)}
-      </button>
-    `;
-  }
-
-  function _renderAreaButtons(map) {
-    const areas = map.areaButtons || map.cities || [];
-    if (!areas.length) return '';
-    const buttons = areas.map((area) => {
-      const active = area.mapId === map.id || area.active === true;
-      const dev = !area.mapId || area.status === 'placeholder' || area.status === 'dev';
-      const disabled = active || dev;
-      const classes = ['campaign-world-area-btn'];
-      if (active) classes.push('is-active');
-      if (dev) classes.push('is-dev');
-      const attrs = disabled
-        ? 'disabled'
-        : `data-campaign-action="world-map-switch-map" data-map-id="${_escAttr(area.mapId)}"`;
-      return `<button class="${classes.join(' ')}" ${attrs} title="${_escAttr(area.summary || area.description || '')}">
-        <span>${_esc(area.label || area.name || area.id)}</span>
-        <small>${_esc(active ? 'Current' : (dev ? 'Future' : 'Travel'))}</small>
-      </button>`;
-    }).join('');
-    const devNotes = areas
-      .filter((area) => !area.mapId || area.status === 'placeholder' || area.status === 'dev')
-      .map((area) => `<span><strong>${_esc(area.label || area.name || area.id)}:</strong> ${_esc(area.summary || area.description || 'Planned for a later update.')}</span>`)
-      .join('');
-    return `
-      <div class="campaign-world-area-switcher">
-        ${buttons}
-      </div>
-      ${devNotes ? `<div class="campaign-world-dev-notes">${devNotes}</div>` : ''}
-    `;
-  }
-
   function _renderVisualLayers(map) {
     return (map.visualLayers || []).map((layer) => {
       const cls = _layerClass(layer);
@@ -347,52 +157,6 @@ window.CJS.CampaignWorldMap = (() => {
       const midY = (Number(from.y || 0) + Number(to.y || 0)) / 2;
       return `<path d="M ${Number(from.x || 0)} ${Number(from.y || 0)} Q ${midX} ${midY} ${Number(to.x || 0)} ${Number(to.y || 0)}" class="campaign-world-road route-${_escAttr(_slug(link.route || 'road'))} risk-${_escAttr(_slug(link.risk || 'safe'))}"></path>`;
     }).join('');
-  }
-
-  function _renderVisualNode(map, node, currentId, progress, state, width, height) {
-    const active = node.id === currentId;
-    const visited = (progress.visitedLocations || []).includes(node.id);
-    const shape = _slug(node.visual?.shape || node.type || 'location');
-    const activities = _activitiesForLocation(state, map, node);
-    const x = Number(node.x || 0);
-    const y = Number(node.y || 0);
-    const previewX = Math.min(Math.max(x + 18, 12), Math.max(12, width - 226));
-    const previewY = Math.min(Math.max(y - 112, 12), Math.max(12, height - 108));
-    const visual = node.visual || {};
-    const label = _nodeLabelPosition(node, x, y, width, map);
-    const markerScale = _scaleValue(active
-      ? (visual.activeMarkerScale ?? map.visualActiveMarkerScale ?? visual.markerScale ?? map.visualMarkerScale)
-      : (visual.markerScale ?? map.visualMarkerScale), 1);
-    const markerOpacity = _opacityAttr(active
-      ? (visual.activeMarkerOpacity ?? map.visualActiveMarkerOpacity ?? visual.markerOpacity ?? map.visualMarkerOpacity)
-      : (visual.markerOpacity ?? map.visualMarkerOpacity));
-    const labelScale = _scaleValue(active
-      ? (visual.activeLabelScale ?? map.visualActiveLabelScale ?? visual.labelScale ?? map.visualLabelScale)
-      : (visual.labelScale ?? map.visualLabelScale), 1);
-    const labelOpacity = _opacityAttr(active
-      ? (visual.activeLabelOpacity ?? map.visualActiveLabelOpacity ?? visual.labelOpacity ?? map.visualLabelOpacity)
-      : (visual.labelOpacity ?? map.visualLabelOpacity));
-    const labelHeight = _scaleValue(visual.labelHeight ?? map.visualLabelHeight, 34);
-    const markerTransform = _scaleTransform(x, y, markerScale);
-    const labelTransform = _scaleTransform(label.x + label.width / 2, label.y + labelHeight / 2, labelScale);
-    const activityText = activities.length
-      ? `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} here`
-      : 'Story / future activity slot';
-    return `<g class="campaign-world-node campaign-world-visual-node is-${_escAttr(shape)} ${active ? 'is-active' : ''} ${visited ? 'is-visited' : ''}" data-campaign-action="world-map-travel" data-map-id="${_escAttr(map.id)}" data-node-id="${_escAttr(node.id)}" data-world-node="${_escAttr(node.id)}">
-      <g class="campaign-world-node-marker"${markerTransform}${markerOpacity}>
-        ${_renderMarkerShape(shape, x, y, active)}
-      </g>
-      <foreignObject class="campaign-world-node-label-wrap" x="${label.x}" y="${label.y}" width="${label.width}" height="${labelHeight}"${labelTransform}${labelOpacity}>
-        <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-label-box">${_esc(_short(node.name || node.id, 24))}</div>
-      </foreignObject>
-      <foreignObject class="campaign-world-node-preview-wrap" x="${previewX}" y="${previewY}" width="214" height="98">
-        <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-preview">
-          <strong>${_esc(node.name || node.id)}</strong>
-          <span>${_esc(node.description || 'No notes yet.')}</span>
-          <em>${_esc(activityText)}</em>
-        </div>
-      </foreignObject>
-    </g>`;
   }
 
   function _nodeLabelPosition(node = {}, x = 0, y = 0, width = 760, map = {}) {
@@ -483,78 +247,6 @@ window.CJS.CampaignWorldMap = (() => {
         return `<circle class="node-route-ring" cx="${x}" cy="${y}" r="${active ? 25 : 21}"></circle>
           <circle class="node-route-dot" cx="${x}" cy="${y}" r="9"></circle>`;
     }
-  }
-
-  function _renderMapLegend(map) {
-    const items = map.legend || [];
-    if (!items.length) return '';
-    return `<div class="campaign-world-map-legend">${items.map((item) => `<span><i class="legend-dot ${_escAttr(_slug(item.kind || item.id || 'dot'))}"></i>${_esc(item.label || item.name || item.id)}</span>`).join('')}</div>`;
-  }
-
-  function _renderActivityGroup(type, rows, state) {
-    const label = {
-      hospital: 'Hospital',
-      journal: 'Journal',
-      arena: 'Arena',
-      auction: 'Auction House',
-      scavenge: 'Scavenge',
-      build: 'Build'
-    }[type] || _title(type);
-    return `
-      <div class="campaign-world-activity-group">
-        <h3>${_esc(label)}</h3>
-        <div class="campaign-tab-grid">
-          ${rows.map((activity) => _renderActivityCard(activity, state)).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderActivityCard(activity, state) {
-    const cond = _condition(activity.conditions || activity.requires, state);
-    const cost = _costOps(activity.cost || activity.inputs || {}, state);
-    const ready = cond.ok && cost.ok;
-    const record = _progress(state, activity.world).activities?.[activity.id] || {};
-    return `
-      <article class="campaign-card">
-        <div class="campaign-card-head">
-          <h3>${_esc(activity.title || activity.name || activity.id)}</h3>
-          <span class="campaign-pill">${_esc(record.count ? `Used ${record.count}` : activity.type || 'activity')}</span>
-        </div>
-        <p>${_esc(activity.summary || activity.description || '')}</p>
-        ${activity.rewardText ? `<div class="campaign-muted">${_esc(activity.rewardText)}</div>` : ''}
-        ${_costText(activity.cost || activity.inputs) ? `<div class="campaign-muted">Cost: ${_esc(_costText(activity.cost || activity.inputs))}</div>` : ''}
-        <div class="campaign-panel-actions">
-          <button class="campaign-action primary" data-campaign-action="world-activity-use" data-activity-id="${_escAttr(activity.id)}" ${ready ? '' : 'disabled'} title="${_escAttr(ready ? 'Run activity' : [...cond.blockers, ...cost.missing].join(' / '))}">${_esc(activity.buttonLabel || 'Use')}</button>
-        </div>
-      </article>
-    `;
-  }
-
-  function _renderJournalEntry(entry) {
-    return `
-      <div class="campaign-record-line">
-        <div>
-          <strong>${_esc(entry.title || entry.id)}</strong>
-          <small>${_esc([entry.world, entry.scope].filter(Boolean).join(' / '))}</small>
-          <p>${_esc(entry.text || entry.summary || '')}</p>
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderWorldProgress(state) {
-    const progress = _progress(state);
-    return `<div class="campaign-panel-actions">
-      <span class="campaign-pill">Zone ${_esc(progress.currentZone || 'new')}</span>
-      <span class="campaign-pill">Visited ${(progress.visitedLocations || []).length}</span>
-    </div>`;
-  }
-
-  function _renderPressureStrip(state) {
-    const pressures = Object.values(state.crossWorld?.pressures || {});
-    if (!pressures.length) return '';
-    return `<div class="campaign-panel-actions">${pressures.slice(0, 4).map((p) => `<span class="campaign-pill">${_esc(p.title || p.id)} ${Number(p.value || 0)}</span>`).join('')}</div>`;
   }
 
   function _currentTravelMap(state = CS().getState()) {
@@ -707,11 +399,6 @@ window.CJS.CampaignWorldMap = (() => {
     return parts.join(' ');
   }
 
-  function _travelMapBackdropStyle(map = {}, state = {}) {
-    const backdrop = _travelMapBackdrop(map, state);
-    return backdrop ? ` style="--world-map-backdrop: url('${_escAttr(_assetUrlForCss(backdrop))}')"` : '';
-  }
-
   function _travelMapBackdrop(map = {}, state = {}) {
     const worldId = map.world || state.currentWorld || '';
     const world = DS().get('worlds', worldId) || {};
@@ -779,6 +466,193 @@ window.CJS.CampaignWorldMap = (() => {
     };
   }
 
+  function _nodeButtonData(action, mapId, nodeId, entry) {
+    const cond = _condition(entry.conditions || entry.requires);
+    return {
+      action,
+      mapId: String(mapId),
+      nodeId: String(nodeId),
+      entryId: String(entry.id || ''),
+      label: String(entry.label || entry.name || entry.title || entry.id || ''),
+      primary: entry.kind === 'primary',
+      disabled: !cond.ok,
+      title: cond.ok ? String(entry.summary || entry.text || '') : cond.blockers.join(' / ')
+    };
+  }
+
+  function _locationDetailData(map, node, progress, state) {
+    if (!node) return null;
+    const activities = _activitiesForLocation(state, map, node);
+    return {
+      name: String(node.name || node.id || ''),
+      type: String(node.type || 'location'),
+      description: String(node.description || 'No notes yet.'),
+      isCurrent: node.id === progress.currentLocation,
+      hasActivities: activities.length > 0,
+      activityPreviewNames: activities.slice(0, 3).map((a) => String(a.title || a.name || a.id || '')),
+      mapId: String(map.id || ''),
+      nodeId: String(node.id || ''),
+      people: (node.people || []).map((person) => _nodeButtonData('world-map-interaction', map.id, node.id, person)),
+      actions: (node.actions || []).map((action) => _nodeButtonData('world-map-node-action', map.id, node.id, action))
+    };
+  }
+
+  function _areaSwitcherData(map) {
+    const areas = map.areaButtons || map.cities || [];
+    if (!areas.length) return null;
+    return {
+      buttons: areas.map((area) => {
+        const active = area.mapId === map.id || area.active === true;
+        const dev = !area.mapId || area.status === 'placeholder' || area.status === 'dev';
+        return {
+          label: String(area.label || area.name || area.id || ''),
+          sublabel: active ? 'Current' : (dev ? 'Future' : 'Travel'),
+          active,
+          dev,
+          switchMapId: (active || dev) ? null : String(area.mapId),
+          title: String(area.summary || area.description || '')
+        };
+      }),
+      devNotes: areas
+        .filter((area) => !area.mapId || area.status === 'placeholder' || area.status === 'dev')
+        .map((area) => ({
+          label: String(area.label || area.name || area.id || ''),
+          text: String(area.summary || area.description || 'Planned for a later update.')
+        }))
+    };
+  }
+
+  function _classicNodeData(map, node, currentId, progress) {
+    const active = node.id === currentId;
+    const visited = (progress.visitedLocations || []).includes(node.id);
+    const x = Number(node.x || 0);
+    const y = Number(node.y || 0);
+    return {
+      mapId: String(map.id || ''),
+      nodeId: String(node.id || ''),
+      classes: ['campaign-world-node', active ? 'is-active' : '', visited ? 'is-visited' : '']
+        .filter(Boolean).join(' '),
+      innerSvg: `<circle cx="${x}" cy="${y}" r="${active ? 20 : 16}"></circle>`
+        + `<text x="${x}" y="${y + 34}" text-anchor="middle">${_esc(_short(node.name || node.id, 18))}</text>`
+    };
+  }
+
+  function _visualNodeData(map, node, currentId, progress, state, width, height) {
+    const active = node.id === currentId;
+    const visited = (progress.visitedLocations || []).includes(node.id);
+    const shape = _slug(node.visual?.shape || node.type || 'location');
+    const activities = _activitiesForLocation(state, map, node);
+    const x = Number(node.x || 0);
+    const y = Number(node.y || 0);
+    const previewX = Math.min(Math.max(x + 18, 12), Math.max(12, width - 226));
+    const previewY = Math.min(Math.max(y - 112, 12), Math.max(12, height - 108));
+    const visual = node.visual || {};
+    const label = _nodeLabelPosition(node, x, y, width, map);
+    const markerScale = _scaleValue(active
+      ? (visual.activeMarkerScale ?? map.visualActiveMarkerScale ?? visual.markerScale ?? map.visualMarkerScale)
+      : (visual.markerScale ?? map.visualMarkerScale), 1);
+    const markerOpacity = _opacityAttr(active
+      ? (visual.activeMarkerOpacity ?? map.visualActiveMarkerOpacity ?? visual.markerOpacity ?? map.visualMarkerOpacity)
+      : (visual.markerOpacity ?? map.visualMarkerOpacity));
+    const labelScale = _scaleValue(active
+      ? (visual.activeLabelScale ?? map.visualActiveLabelScale ?? visual.labelScale ?? map.visualLabelScale)
+      : (visual.labelScale ?? map.visualLabelScale), 1);
+    const labelOpacity = _opacityAttr(active
+      ? (visual.activeLabelOpacity ?? map.visualActiveLabelOpacity ?? visual.labelOpacity ?? map.visualLabelOpacity)
+      : (visual.labelOpacity ?? map.visualLabelOpacity));
+    const labelHeight = _scaleValue(visual.labelHeight ?? map.visualLabelHeight, 34);
+    const markerTransform = _scaleTransform(x, y, markerScale);
+    const labelTransform = _scaleTransform(label.x + label.width / 2, label.y + labelHeight / 2, labelScale);
+    const activityText = activities.length
+      ? `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} here`
+      : 'Story / future activity slot';
+    const innerSvg = `<g class="campaign-world-node-marker"${markerTransform}${markerOpacity}>
+        ${_renderMarkerShape(shape, x, y, active)}
+      </g>
+      <foreignObject class="campaign-world-node-label-wrap" x="${label.x}" y="${label.y}" width="${label.width}" height="${labelHeight}"${labelTransform}${labelOpacity}>
+        <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-label-box">${_esc(_short(node.name || node.id, 24))}</div>
+      </foreignObject>
+      <foreignObject class="campaign-world-node-preview-wrap" x="${previewX}" y="${previewY}" width="214" height="98">
+        <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-preview">
+          <strong>${_esc(node.name || node.id)}</strong>
+          <span>${_esc(node.description || 'No notes yet.')}</span>
+          <em>${_esc(activityText)}</em>
+        </div>
+      </foreignObject>`;
+    return {
+      mapId: String(map.id || ''),
+      nodeId: String(node.id || ''),
+      classes: ['campaign-world-node', 'campaign-world-visual-node', `is-${shape}`,
+        active ? 'is-active' : '', visited ? 'is-visited' : ''].filter(Boolean).join(' '),
+      innerSvg
+    };
+  }
+
+  // K.3 — typed travel-map data. The intricate SVG geometry (markers,
+  // labels, layers, roads) stays as raw-SVG strings (no JSX attribute
+  // conversion risk); React owns the <section>, <svg>, the interactive
+  // <g> node wrappers (onClick travel), location-detail panel, and area
+  // buttons. Discriminated by `mode`.
+  function getTravelMapData(state = CS().getState()) {
+    if (!state) return { hasMap: false };
+    const map = _currentTravelMap(state);
+    if (!map) return { hasMap: false };
+    const progress = _progress(state);
+    const visual = map.visualMode === 'vn_travel';
+    const canvas = map.canvas || {};
+    const width = Number(canvas.width || map.width || (visual ? 760 : 720));
+    const height = Number(canvas.height || map.height || (visual ? 430 : 420));
+    const theme = _slug(map.visualTheme?.id || map.world || 'world');
+    const backdrop = _travelMapBackdrop(map, state);
+    const nodeById = Object.fromEntries((map.nodes || []).map((node) => [node.id, node]));
+    const currentId = visual
+      ? (nodeById[progress.currentLocation] ? progress.currentLocation : (map.defaultLocationId || map.nodes?.[0]?.id || ''))
+      : (progress.currentLocation || map.defaultLocationId || map.nodes?.[0]?.id || '');
+    const currentNode = nodeById[currentId] || map.nodes?.[0] || null;
+    const base = {
+      hasMap: true,
+      mode: visual ? 'visual' : 'classic',
+      themeClass: `theme-${theme}`,
+      backdropVar: backdrop ? `url('${_assetUrlForCss(backdrop)}')` : '',
+      title: String(map.name || 'World Map'),
+      worldName: _worldName(state),
+      currentLocationName: String(currentNode?.name || 'No location'),
+      progress: {
+        zone: String(progress.currentZone || 'new'),
+        visited: (progress.visitedLocations || []).length
+      },
+      canvas: { width, height },
+      detail: _locationDetailData(map, currentNode, progress, state)
+    };
+    if (!visual) {
+      return {
+        ...base,
+        linksHtml: (map.links || []).map((link) => {
+          const from = nodeById[link.from];
+          const to = nodeById[link.to];
+          if (!from || !to) return '';
+          return `<line x1="${Number(from.x || 0)}" y1="${Number(from.y || 0)}" x2="${Number(to.x || 0)}" y2="${Number(to.y || 0)}" class="campaign-world-link" />`;
+        }).join(''),
+        nodes: (map.nodes || []).map((node) => _classicNodeData(map, node, currentId, progress))
+      };
+    }
+    const backdropUrl = backdrop;
+    return {
+      ...base,
+      backdropImageHtml: backdropUrl
+        ? `<image class="campaign-world-map-image" href="${_escAttr(_assetUrlForCss(backdropUrl))}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="${_escAttr(map.visualBackdropFit || 'xMidYMid slice')}"></image><rect x="0" y="0" width="${width}" height="${height}" rx="18" class="campaign-world-map-image-shade"></rect>`
+        : '',
+      layersHtml: _renderVisualLayers(map),
+      roadsHtml: _renderVisualRoads(map, nodeById),
+      legend: (map.legend || []).map((item) => ({
+        kind: _slug(item.kind || item.id || 'dot'),
+        label: String(item.label || item.name || item.id || '')
+      })),
+      areaSwitcher: _areaSwitcherData(map),
+      nodes: (map.nodes || []).map((node) => _visualNodeData(map, node, currentId, progress, state, width, height))
+    };
+  }
+
   function getActivitiesData(state = CS().getState()) {
     if (!state) return null;
     const progress = _progress(state);
@@ -807,8 +681,7 @@ window.CJS.CampaignWorldMap = (() => {
   }
 
   return Object.freeze({
-    renderTravelMap,
-    renderActivities,
+    getTravelMapData,
     getActivitiesData,
     handleAction,
     travelToLocation,
