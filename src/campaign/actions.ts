@@ -188,6 +188,16 @@ export function importSavePicker(): void {
   picker.click();
 }
 
+// Import handler for the shell's hidden <input id="campaign-import-file">.
+// The `import-save` action clicks that input; this runs on its change.
+// (Replaces the change branch of the removed `_bindEvents` listener.)
+export function importSaveFile(file: File | undefined | null): void {
+  if (!file) return;
+  save().importFile(file)
+    .then(() => { toast("Campaign save imported", "success"); rerender(); })
+    .catch((error: Error) => toast(error.message || "Import failed", "error"));
+}
+
 export function pushToGitHub(): void {
   save().pushCurrentToGitHub()
     .then(() => toast("Campaign save pushed to GitHub", "success"))

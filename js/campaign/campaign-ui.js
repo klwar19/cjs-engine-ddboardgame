@@ -333,7 +333,10 @@ window.CJS.CampaignUI = (() => {
       }
       await window.CJS.CampaignSequences?.loadWorld?.(CS().getState()?.currentWorld || 'haven');
       await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
-      _bindEvents();
+      // _bindEvents() removed (Phase H.2): the React shell forwards every
+      // bridged-body data-campaign-action / -mode / -tab / -panel through
+      // its <main> click/change forwarder (and the drawer's own forwarder),
+      // routing to handleAction / setActive* — no campaign-root delegate.
       _bindEscapeForPanels();
       _bindCombatResultListener();
       _bindCombatReturnEvents();
@@ -2600,56 +2603,13 @@ window.CJS.CampaignUI = (() => {
   // live in `js/campaign/ui/cui-log.js`; the React side reuses them so
   // categorisation stays consistent with the recent-log strip in the
   // header (which is still vanilla-rendered).
-  function _bindEvents() {
-    _root.addEventListener('click', (event) => {
-      const panelBtn = event.target.closest('[data-campaign-panel]');
-      if (panelBtn) {
-        event.preventDefault();
-        _openPanel(panelBtn.dataset.campaignPanel);
-        return;
-      }
-
-      const mode = event.target.closest('[data-campaign-mode]');
-      if (mode) {
-        const id = mode.dataset.campaignMode;
-        _activeMode = id;
-        const tabId = _defaultTabForMode(id, CS().getState());
-        if (tabId) _activeTab = tabId;
-        render();
-        return;
-      }
-
-      const tab = event.target.closest('[data-campaign-tab]');
-      if (tab) {
-        const id = tab.dataset.campaignTab;
-        _activeTab = id;
-        const owningMode = APP_TAB_TO_MODE[id];
-        if (owningMode) _activeMode = owningMode;
-        render();
-        return;
-      }
-
-      const action = event.target.closest('[data-campaign-action]');
-      if (!action) return;
-      event.preventDefault();
-      _handleAction(action.dataset, action);
-    });
-
-    _root.addEventListener('change', (event) => {
-      const farmSelect = event.target.closest?.('[data-farm-select]');
-      if (farmSelect) {
-        if (farmSelect.dataset.farmSelect === 'seed') window.CJS.FarmingMode?.selectSeed?.(farmSelect.value);
-        return;
-      }
-      if (event.target.id === 'campaign-import-file') {
-        Save().importFile(event.target.files?.[0]).then(() => {
-          UI().toast('Campaign save imported', 'success');
-          render();
-        }).catch((error) => UI().toast(error.message || 'Import failed', 'error'));
-        event.target.value = '';
-      }
-    });
-  }
+  // _bindEvents removed in Phase H.2. The campaign-root click/change
+  // delegation moved into the React shell: `CampaignShell.tsx` forwards
+  // every bridged-body `data-campaign-action` / `-mode` / `-tab` /
+  // `-panel` (external-module tabs, maps, roster detail row) through its
+  // `<main>` onClick/onChange to `handleAction` / `setActive*`, and the
+  // hidden import-file input's change runs `importSaveFile`. Migrated JSX
+  // tabs already dispatch via onClick. The drawer keeps its own forwarder.
 
   // Phase H.1 — public typed action boundary. React components call
   // `CampaignActions.dispatchCampaignAction(name, data)` which routes
