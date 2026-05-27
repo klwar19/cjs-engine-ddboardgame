@@ -344,11 +344,16 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     `data-campaign-action` routes through the shell forwarder (below),
     not via per-card JSX. A later step can port them once an
     icon-as-data path exists.
-  - [ ] **World Map / World Activities** (`campaign-world-map.js`
-    `renderTravelMap` / `renderActivities`) — SVG travel map + activity
-    groups. SVG is JSX-native (no icon-bridge issue), so this is a clean
-    full-JSX port via a typed `getWorldMapData` bridge; until then it
-    stays a bridged body handled by the shell forwarder.
+  - [x] **World Map / World Activities ported.** `getActivitiesData`
+    drives `CampaignWorldActivitiesTab` (DIV-based groups + journal +
+    pressure). `getTravelMapData` drives `CampaignWorldMapTab` — React
+    owns the `<section>`, `<svg>`, interactive node `<g>` wrappers
+    (onClick travel), location-detail panel, and area buttons; the
+    intricate inner SVG geometry (markers, labels, layers, roads, links)
+    arrives as raw-SVG strings (no JSX attribute-conversion risk). All
+    vanilla `renderTravelMap` / `renderActivities` + sub-renderers
+    deleted; `campaign-world-map.js` emits zero `data-campaign-action`;
+    `cui-world-map-tab.js` is a namespace stub.
 
   > **Architectural finding (refines H.2/H.3).** "Removes the *last*
   > `data-campaign-action`" was inaccurate: the bridged external-module
@@ -366,8 +371,7 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   > the roster detail row and world map can stay bridged like the
   > external modules. The forwarder must land *with* the `_bindEvents`
   > deletion (H.2) to avoid double-dispatch.
-- [~] **H.2 — Remove the vanilla render fallback. (render() else-branch
-  done.)** `render()`'s unreachable else-branch (`_root.innerHTML`
+- [x] **H.2 — Remove the vanilla render fallback + `_bindEvents`.** `render()`'s unreachable else-branch (`_root.innerHTML`
   vanilla chrome) and its exclusive chrome helpers (`_renderHeader`,
   `_renderModeBar`, `_renderSubTabs`, `_renderRecentLogStrip`,
   `_renderCommandRail`, `_renderScenarioHud`,
@@ -379,12 +383,18 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   loading clobber in `init()` and the non-React branches of
   `_openPanel`/`_closePanel`. `_renderMain` stays as the `getMainBody`
   defensive fallback (reachable only if a tab id isn't registered).
-  **Remaining:** add the React main-body click forwarder (see the K.3
-  finding) and delete `_bindEvents`. The forwarder catches the bridged
-  bodies' `data-campaign-action` / `-mode` / `-tab` / `-panel` (external
-  modules, maps, roster detail row, world map) and routes them through
-  `handleAction` / `setActive*`; it must land in the same commit as the
-  `_bindEvents` deletion to avoid double-dispatch.
+  **Done:** `_bindEvents` deleted. `CampaignShell`'s `<main>` now
+  forwards every bridged-body `data-campaign-action` / `-mode` / `-tab`
+  / `-panel` (external modules, maps, roster detail row, getMainBody
+  fallback) to `dispatchCampaignAction` / `setActiveMode/Tab/Panel`,
+  mirroring `_bindEvents` (panel → mode → tab → action). The farm-seed
+  `<select>` change routes to `FarmingMode.selectSeed`; the hidden
+  import-file input's change runs the new `importSaveFile` action. JSX
+  tabs already dispatch via onClick (no `data-*`, so no double-fire);
+  the drawer keeps its own forwarder. `handleAction` (→ `_handleAction`
+  switch) is now the single action entry point for both React onClick
+  and the forwarder, ready for H.3. (`_openPanel`/`_closePanel` remain
+  as the flag-guarded defensive no-ops the shell-bridge test asserts.)
 - [ ] **H.3 — Port `_handleAction` closures to TS.** Move each handler
   (modals, scenario gen, story director, ops calls) into typed modules
   under `src/campaign/actions/` domain-by-domain. `handleAction` shrinks
@@ -524,6 +534,8 @@ finishes the authoring loop:
 | After K.3 hub (questChains) | 560 |
 | After K.3 hub (sideForge + oracleForge) | 551 |
 | After K.3 roster hero + vitals | 552 |
+| After K.3 world activities + travel map | 552 (maps chunk 61→56) |
+| After H.2 forwarder + `_bindEvents` delete | 550 |
 
 Cumulative Phase F+G+K.3-so-far: 641 KB → 552 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
