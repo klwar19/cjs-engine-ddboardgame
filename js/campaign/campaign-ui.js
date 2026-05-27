@@ -2684,11 +2684,8 @@ window.CJS.CampaignUI = (() => {
       case 'story-roll-peri': return _rollStoryDirector('peri');
       case 'story-roll-memory': return _rollStoryDirector('memory');
       case 'story-pressure-tick': return _rollStoryDirector('pressure');
-      case 'story-save-beat': return _saveStoryDirectorBeat();
-      case 'story-reject-beat': return _rejectStoryDirectorBeat();
-      case 'story-apply-choice': return _applyStoryDirectorChoice(data.id, Number(data.choice || 0));
-      case 'story-set-stage': return _setStoryDirectorStage(data.id);
-      case 'story-sync-sidequests': return _syncStoryDirectorSideQuests();
+      // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
+      // ported to action-handlers/story-director.ts (H.3).
       case 'story-open-last': return _openLastStoryBeatModal();
       case 'story-manual-note': return _manualStoryNote();
       case 'story-copy-prompt': return _copyStoryPrompt();
@@ -4438,32 +4435,9 @@ window.CJS.CampaignUI = (() => {
 
   // _completeSequenceFromUi ported to action-handlers/sequence.ts (H.3).
 
-  function _saveStoryDirectorBeat() {
-    const card = SD()?.saveLast?.('saved');
-    if (!card) return UI().toast('No story scene to hold', 'info');
-    render();
-    UI().toast('Story scene held for later', 'success');
-  }
-
-  function _rejectStoryDirectorBeat() {
-    const card = SD()?.rejectLast?.();
-    if (!card) return UI().toast('No story roll to skip', 'info');
-    render();
-    UI().toast('Story roll skipped', 'info');
-  }
-
-  function _applyStoryDirectorChoice(cardId, choiceIndex = 0) {
-    const result = SD()?.applyChoice?.(cardId, choiceIndex);
-    if (result?.queued) {
-      render();
-      return UI().toast('Red-risk story route queued for review', 'info');
-    }
-    if (result?.applied) {
-      render();
-      return UI().toast('Story route chosen', 'success');
-    }
-    return UI().toast('Story scene not found', 'info');
-  }
+  // _saveStoryDirectorBeat / _rejectStoryDirectorBeat /
+  // _applyStoryDirectorChoice ported to action-handlers/story-director.ts
+  // (H.3). The beat modal below routes its follow-ups via the registry.
 
   function _openLastStoryBeatModal() {
     const card = CS().getState()?.lastStoryDirectorBeat;
@@ -4495,21 +4469,25 @@ window.CJS.CampaignUI = (() => {
       width: '780px'
     });
 
+    // save/reject/apply ported to action-handlers/story-director.ts (H.3);
+    // this modal stays in JS (it builds _renderStoryDirectorCard HTML), so
+    // its follow-ups route back through the action registry.
+    const Actions = window.CJS.CampaignActionsRuntime;
     body.querySelectorAll('[data-story-modal-choice]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const choiceIndex = Number(btn.dataset.storyModalChoice || 0);
         UI().closeModal(overlay);
-        _applyStoryDirectorChoice(card.id, choiceIndex);
+        Actions?.run?.('story-apply-choice', { id: card.id, choice: choiceIndex });
       });
     });
     footer.querySelector('[data-story-modal-close]').onclick = () => UI().closeModal(overlay);
     footer.querySelector('[data-story-modal-save]').onclick = () => {
       UI().closeModal(overlay);
-      _saveStoryDirectorBeat();
+      Actions?.run?.('story-save-beat');
     };
     footer.querySelector('[data-story-modal-reject]').onclick = () => {
       UI().closeModal(overlay);
-      _rejectStoryDirectorBeat();
+      Actions?.run?.('story-reject-beat');
     };
   }
 
@@ -4996,21 +4974,8 @@ window.CJS.CampaignUI = (() => {
     UI().openModal({ title: 'Story Mode Flow', content: body, width: '720px' });
   }
 
-  function _setStoryDirectorStage(stageId) {
-    if (!stageId) return;
-    SD()?.setStage?.(stageId);
-    render();
-  }
-
-  function _syncStoryDirectorSideQuests() {
-    const result = SD()?.syncSideQuestFlow?.();
-    if (result?.already) return UI().toast('Side quest flow already synced for this stage', 'info');
-    if (result?.synced) {
-      render();
-      return UI().toast('Side quest flow synced', 'success');
-    }
-    return UI().toast('No side quest flow for this stage', 'info');
-  }
+  // _setStoryDirectorStage / _syncStoryDirectorSideQuests ported to
+  // action-handlers/story-director.ts (H.3).
 
   function _importSidePack() {
     _textareaModal({

@@ -28,6 +28,7 @@ import * as Farm from "./farm";
 import * as Forge from "./forge";
 import * as Nav from "./nav";
 import * as Sequence from "./sequence";
+import * as Story from "./story-director";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -147,7 +148,13 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "sequence-lose": () => Sequence.advanceSequence("lose"),
   "sequence-abort": () => Sequence.advanceSequence("abort"),
   "sequence-complete": () => Sequence.completeSequence(),
-  "sequence-open-vn": () => Sequence.openSequenceVn()
+  "sequence-open-vn": () => Sequence.openSequenceVn(),
+  // ── Story director (hold / skip / apply route / stage / side sync) ─
+  "story-save-beat": () => Story.saveStoryBeat(),
+  "story-reject-beat": () => Story.rejectStoryBeat(),
+  "story-apply-choice": (d) => Story.applyStoryChoice(str(d.id), Number(d.choice || 0)),
+  "story-set-stage": (d) => Story.setStoryStage(str(d.id)),
+  "story-sync-sidequests": () => Story.syncStorySideQuests()
 };
 
 export function hasHandler(name: string): boolean {
