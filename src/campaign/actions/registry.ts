@@ -22,6 +22,10 @@
 import type { CampaignActionName } from "../actionNames";
 import * as Actions from "../actions";
 import * as Roster from "./roster";
+import * as Ops from "./ops";
+import * as Farm from "./farm";
+import * as Forge from "./forge";
+import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
 export type ActionHandler = (data: ActionData) => unknown;
@@ -57,7 +61,48 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "unequip-skill": (d) => Roster.unequipSkill(str(d.id), str(d.skillId)),
   "equip-passive": (d) => Roster.equipPassive(str(d.id), str(d.passiveId)),
   "unequip-passive": (d) => Roster.unequipPassive(str(d.id), str(d.passiveId)),
-  "party-available": (d) => Roster.clearPartyAvailability(str(d.id))
+  "party-available": (d) => Roster.clearPartyAvailability(str(d.id)),
+  // ── Thin engine ops (phase / hub / quest / shop / combat) ─────────
+  "pass-phase": () => Actions.passPhase(),
+  "full-rest": () => Ops.fullRest(),
+  "review-resolve": (d) => Ops.reviewResolve(str(d.id), str(d.decision)),
+  "resolve-hub-problem": (d) => Ops.resolveHubProblem(str(d.hubId), str(d.id)),
+  "quest-complete": (d) => Ops.completeQuest(str(d.id)),
+  "quest-fail": (d) => Ops.failQuest(str(d.id)),
+  "quest-event": () => Ops.noticeRandomQuestEventsDisabled(),
+  "shop-sell": (d) =>
+    Ops.sellShopItem({ id: str(d.id), type: str(d.type), price: Number(d.price || 0), currency: str(d.currency) }),
+  "run-roll-event": () => Ops.noticeRandomEventsDisabled(),
+  "run-tick-danger": () => Ops.tickRunDanger(),
+  "reveal-node": (d) => Ops.revealNode(str(d.nodeId)),
+  "skip-victory": () => Ops.skipBattleVictory(),
+  "skip-defeat": () => Ops.skipBattleDefeat(),
+  "cancel-battle": () => Ops.cancelPendingBattle(),
+  "ignore-combat-result": () => Ops.ignoreCombatResult(),
+  // ── Farm / Pocket Haven ───────────────────────────────────────────
+  "farm-tick": () => Farm.farmTick(),
+  "farm-move": (d) => Farm.farmMove(d.dir),
+  "farm-interact": () => Farm.farmInteract(),
+  "farm-tile": (d) => Farm.farmFaceOrUseTile(d.x, d.y),
+  "farm-select-tool": (d) => Farm.farmSelectTool(d.tool),
+  "farm-tile-action": (d) => Farm.farmTileAction(d.tileAction, d.x, d.y),
+  "farm-tile-menu-close": () => Farm.farmCloseTileMenu(),
+  "farm-qte-open": () => Farm.farmOpenQte(),
+  "farm-qte-hit": () => Farm.farmHitQte(),
+  "farm-qte-close": () => Farm.farmCloseQte(),
+  "harvest-plot": (d) => Farm.harvestPlot(d.plotId),
+  "open-fishing": () => Farm.openFishing(),
+  // ── Forge passthroughs ────────────────────────────────────────────
+  "save-chain": (d) => Forge.saveChainAsIdea(str(d.id)),
+  "queue-battle-set": (d) => Forge.queueBattleSet(str(d.id)),
+  "save-battle-card": (d) => Forge.saveBattleCard(str(d.id)),
+  "save-map-seed": (d) => Forge.saveMapSeed(str(d.id)),
+  // ── World map delegation ──────────────────────────────────────────
+  "world-map-travel": (d) => worldMapAction(d),
+  "world-map-switch-map": (d) => worldMapAction(d),
+  "world-map-interaction": (d) => worldMapAction(d),
+  "world-map-node-action": (d) => worldMapAction(d),
+  "world-activity-use": (d) => worldMapAction(d)
 };
 
 export function hasHandler(name: string): boolean {

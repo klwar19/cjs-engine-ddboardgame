@@ -2640,15 +2640,11 @@ window.CJS.CampaignUI = (() => {
       case 'open-world-content': return _goto(data.mode || _modeForTab(data.tab), data.tab || 'worldGate');
       case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
       case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
-      case 'world-map-travel':
-      case 'world-map-switch-map':
-      case 'world-map-interaction':
-      case 'world-map-node-action':
-      case 'world-activity-use':
-        return window.CJS.CampaignWorldMap?.handleAction?.(data);
-      // new-save / save-slot / fork-save / export-save / import-save /
-      // push-github ported to src/campaign/actions/registry.ts (H.3 save).
-      case 'pass-phase': return Ops().apply({ op: 'pass_phase' }, { source: 'ui' });
+      // Ported to TS handlers (H.3) registered in actions/registry.ts:
+      //   world-map-* / world-activity-use -> actions/worldmap.ts
+      //   save + log -> actions.ts ; roster ops -> actions/roster.ts
+      //   pass-phase + thin engine ops -> actions/ops.ts
+      //   farm/haven -> actions/farm.ts ; forge saves -> actions/forge.ts
       case 'roll-event': return _pickEvent();
       case 'pick-event': return _pickEvent();
       case 'custom-event': return _customEvent();
@@ -2675,20 +2671,14 @@ window.CJS.CampaignUI = (() => {
       case 'resolve-rumor': return _resolveRumor(data.id, data.hubId);
       case 'rumor-to-quest': return _rumorToQuest(data.id, data.hubId);
       case 'rumor-to-problem': return _rumorToProblem(data.id, data.hubId);
-      case 'review-resolve': return Ops().apply({ op: 'review_queue_resolve', reviewId: data.id, decision: data.decision }, { source: 'ui' });
-      case 'resolve-hub-problem': return Ops().apply({ op: 'hub_problem_remove', hubId: data.hubId, problemId: data.id }, { source: 'ui' });
       case 'start-chain': return _startQuestChainRun(data.id);
       case 'advance-chain': return _advanceQuestChainStep(data.id);
       case 'complete-chain': return _completeQuestChain(data.id);
       case 'fail-chain': return _failQuestChain(data.id);
-      case 'save-chain': return window.CJS.CampaignQuestChains.saveAsIdea(data.id);
       case 'promote-chain': return _addQuestChainToTracker(data.id);
       case 'chain-scenario': return _startQuestChainScenario(data.id);
       case 'chain-battle': return _questChainBattle(data.id);
-      case 'queue-battle-set': return window.CJS.CampaignBattleSetForge.queueBattle(data.id);
-      case 'save-battle-card': return window.CJS.CampaignBattleSetForge.saveCard(data.id);
       case 'copy-battle-card': return _copyBattleCard(data.id);
-      case 'save-map-seed': return window.CJS.CampaignMapSeedForge.saveSeed(data.id);
       case 'copy-map-seed': return _copyMapSeed(data.id);
       case 'roll-forge-oracle': return _rollForgeOracle();
       case 'story-roll-scene': return _rollStoryDirector('scene');
@@ -2735,7 +2725,6 @@ window.CJS.CampaignUI = (() => {
       case 'pin-plot-seed': return _pinPlotSeed();
       case 'event-to-oracle': return _eventToOracle();
       case 'add-quest': return _openQuestModal();
-      case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
       case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
       case 'open-story-home': return _goto('story', 'storyHome');
@@ -2758,10 +2747,8 @@ window.CJS.CampaignUI = (() => {
       case 'open-event-battles-tab': return _goto('event', 'battleSets');
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
-      case 'run-roll-event': return UI().toast('Random event rolls are disabled. Use authored Event files or Quest tools.', 'info');
       case 'roll-travel-surprise': return _rollTravelSurprise();
       case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
-      case 'run-tick-danger': return Ops().apply({ op: 'danger', amount: 1 }, { source: 'run' });
       case 'run-next-beat': return _runNextBeat();
       case 'generate-scenario': return _generateScenario();
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
@@ -2778,32 +2765,14 @@ window.CJS.CampaignUI = (() => {
       case 'move-node': return _moveNode(data.nodeId);
       case 'move-cell': return _moveCell(data.x, data.y);
       case 'map-layer': return _setMapLayer(data.layer);
-      case 'reveal-node': return Ops().apply({ op: 'reveal_node', nodeId: data.nodeId }, { source: 'ui' });
       case 'clear-node': return _clearNode(data.nodeId);
       case 'run-battle': return _runBattle();
       case 'manual-battle': return _manualBattleModal();
-      case 'skip-victory': return Ops().apply({ op: 'manual_battle_result', result: 'victory', summary: 'Skipped as GM-approved victory.' }, { source: 'ui' });
-      case 'skip-defeat': return Ops().apply({ op: 'manual_battle_result', result: 'defeat', summary: 'Skipped as GM-approved defeat.' }, { source: 'ui' });
-      case 'cancel-battle': return CS().mutate((state) => { state.pendingBattle = null; }, { source: 'ui' });
       case 'apply-combat-result': return _applyCombatResult();
-      case 'ignore-combat-result': return CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'ui' });
       case 'inventory-delta': return _inventoryDelta(data);
       case 'quick-add-inventory': return _quickAddInventory(data.bucket);
       case 'shop-buy': return _shopBuy(data);
-      case 'shop-sell': return Ops().apply({ op: 'shop_sell', id: data.id, type: data.type, price: Number(data.price || 0), currency: data.currency, qty: 1 }, { source: 'ui' });
-      case 'farm-tick': return Ops().apply({ op: 'farm_tick', amount: 1 }, { source: 'ui' });
-      case 'farm-move': return window.CJS.FarmingMode?.move?.(data.dir);
-      case 'farm-interact': return window.CJS.FarmingMode?.interact?.();
-      case 'farm-tile': return window.CJS.FarmingMode?.faceOrUseTile?.(data.x, data.y);
-      case 'farm-select-tool': return window.CJS.FarmingMode?.selectTool?.(data.tool);
-      case 'farm-tile-action': return window.CJS.FarmingMode?.tileAction?.(data.tileAction, data.x, data.y);
-      case 'farm-tile-menu-close': return window.CJS.FarmingMode?.closeTileMenu?.();
-      case 'farm-qte-open': return window.CJS.FarmingMode?.openQte?.();
-      case 'farm-qte-hit': return window.CJS.FarmingMode?.hitQte?.();
-      case 'farm-qte-close': return window.CJS.FarmingMode?.closeQte?.();
       case 'plant-seed': return _plantSeed(data.plotId);
-      case 'harvest-plot': return window.CJS.PocketHaven.harvestPlot(data.plotId);
-      case 'open-fishing': return window.CJS.PocketHaven?.openFishing?.();
       case 'haven-build-facility': return _havenBuildFacility(data.facility);
       case 'haven-upgrade-facility': return _havenUpgradeFacility(data.facility);
       case 'haven-train-skill': return _havenTrainSkill(data.facility);
@@ -2835,7 +2804,6 @@ window.CJS.CampaignUI = (() => {
       case 'quest-progress': return _questProgress(data.id);
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
-      case 'quest-event': return UI().toast('Random quest events are disabled. Use Hub Scene, Check, Battle, or authored Event files.', 'info');
       case 'quest-hub-event': return _questHubEvent(data.id);
       case 'quest-harvest': return _questHarvest(data.id);
       case 'quest-minigame': return _questMiniGame(data.id);
@@ -2846,8 +2814,6 @@ window.CJS.CampaignUI = (() => {
       case 'quest-check': return _questCheck(data.id);
       case 'quest-hand-in': return _questHandIn(data.id);
       case 'quest-answer': return _questAnswer(data.id);
-      case 'quest-complete': return Ops().apply({ op: 'complete_quest', questId: data.id }, { source: 'ui' });
-      case 'quest-fail': return Ops().apply({ op: 'fail_quest', questId: data.id }, { source: 'ui' });
       case 'damage-char': return _charNumberOp(data.id, 'damage_character', 'Damage amount');
       case 'heal-char': return _charNumberOp(data.id, 'heal_character', 'Heal amount');
       case 'mp-char': return _charMpModal(data.id);

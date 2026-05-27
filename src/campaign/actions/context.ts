@@ -44,6 +44,15 @@ export function cjs(): ContextCjs {
   return (window as unknown as { CJS?: ContextCjs }).CJS ?? {};
 }
 
+// Typed accessor for a sibling feature module on `window.CJS`. Returns
+// `undefined` when the module isn't loaded; callers use `?.` on the
+// result, so a missing module no-ops instead of throwing (the loaded
+// modules are unconditional in main.tsx, so this only hardens edge
+// cases — it never changes behaviour for a booted campaign).
+export function mod<T>(name: string): T | undefined {
+  return cjs()[name] as T | undefined;
+}
+
 export function ops(): CampaignOpsModule {
   const m = cjs().CampaignOps;
   if (!m) throw new Error("CampaignOps not loaded");
