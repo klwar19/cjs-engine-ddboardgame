@@ -10170,6 +10170,49 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  // K.3 — typed bridges for the Battle Sets / Map Seeds forge tabs.
+  // Replaces HubTab.renderBattleSets / renderMapSeeds (HTML strings with
+  // data-campaign-action) with structured data the React tree renders as
+  // JSX (src/campaign/tabs/CampaignHubTabs.tsx).
+  function getBattleSetsData() {
+    const cards = window.CJS.CampaignBattleSetForge?.getCards?.() || [];
+    return {
+      cards: cards.map((card) => ({
+        id: String(card.id || ''),
+        name: String(card.name || card.id || ''),
+        canonRisk: String(card.canonRisk || 'green'),
+        canonRiskClass: Side().riskClass(card.canonRisk),
+        rank: String(card.rank || '-'),
+        objective: String(card.objective || ''),
+        tags: Array.isArray(card.tags) ? card.tags.map(String) : [],
+        enemyMix: (card.enemyMix || []).map((enemy) => ({
+          qty: Number(enemy.qty || 1),
+          label: String(enemy.label || enemy.name || enemy.id || 'unit')
+        })),
+        gimmick: String(card.gimmick || ''),
+        queueLabel: card.encounterId ? 'Queue Combat' : 'Queue Manual'
+      }))
+    };
+  }
+
+  function getMapSeedsData() {
+    const seeds = window.CJS.CampaignMapSeedForge?.getSeeds?.() || [];
+    return {
+      seeds: seeds.map((seed) => ({
+        id: String(seed.id || ''),
+        name: String(seed.name || seed.id || ''),
+        canonRisk: String(seed.canonRisk || 'green'),
+        canonRiskClass: Side().riskClass(seed.canonRisk),
+        purpose: (Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean))
+          .map(String).join(', '),
+        nodes: (seed.nodes || []).map((node) => ({
+          name: String(node.name || node.id || ''),
+          detail: String(node.role || node.notes || '')
+        }))
+      }))
+    };
+  }
+
   function getMinigameTestData(state = CS().getState()) {
     if (!state) return null;
     const MG = window.CJS.Minigames;
@@ -10298,6 +10341,8 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     getTownSnapshotData,
     getTownRollFloatData,
+    getBattleSetsData,
+    getMapSeedsData,
     getAdventureLegendVisible,
     getStorySummaryData,
     getQuestHomeData,

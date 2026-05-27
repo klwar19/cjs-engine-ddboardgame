@@ -1,18 +1,25 @@
+import { Fragment } from "react";
 import type { CampaignStateSnapshot } from "../store";
+import { dispatchCampaignAction } from "../actions";
+import {
+  getBattleSetsData,
+  getMapSeedsData,
+  type BattleSetCard,
+  type MapSeedCard
+} from "./data/hub";
 
-// The hub-family tabs (sideForge / questChains / oracleForge /
-// battleSets / mapSeeds) are produced as complete HTML strings by the
-// existing `cui-hub-tab.js` module. The React wrappers below own the
-// mount points so a follow-up commit can replace each renderer with
-// JSX in isolation; today every `data-campaign-action` inside still
-// reaches the vanilla event delegator on campaign-root.
+// Hub-family tabs. Battle Sets and Map Seeds are full JSX (K.3),
+// reading typed data from `getBattleSetsData` / `getMapSeedsData`.
+//
+// Side Forge / Quest Chains / Oracle Forge are still produced as HTML
+// strings by `cui-hub-tab.js`; the wrappers below own the mount points
+// until their K.3 commits land. Every `data-campaign-action` inside
+// those three still reaches the vanilla event delegator on campaign-root.
 
 interface HubTabModule {
   readonly renderSideForge: (state: CampaignStateSnapshot, helpers: unknown) => string;
   readonly renderQuestChains: () => string;
   readonly renderOracleForge: (state: CampaignStateSnapshot) => string;
-  readonly renderBattleSets: () => string;
-  readonly renderMapSeeds: () => string;
 }
 
 interface CampaignUIModule {
@@ -81,20 +88,114 @@ export function CampaignOracleForgeTab({ state }: Props) {
   );
 }
 
-export function CampaignBattleSetsTab(_props: Props) {
-  const HubTab = cjs().CampaignUIInternal?.HubTab;
-  if (!HubTab?.renderBattleSets) return fallback("Battle sets UI not loaded.");
-  return wrap(
-    safeRender("renderBattleSets", () => HubTab.renderBattleSets()),
-    "campaign-battle-sets-react"
+// ── Battle Sets (K.3 JSX port) ─────────────────────────────────────
+export function CampaignBattleSetsTab({ state }: Props) {
+  const data = getBattleSetsData(state);
+  if (!data) return fallback("Battle sets UI not loaded.");
+  return (
+    <div className="campaign-tab-grid">
+      {data.cards.length === 0 ? (
+        <div className="campaign-empty">No battle set cards.</div>
+      ) : (
+        data.cards.map((card) => <BattleSetCardView key={card.id} card={card} />)
+      )}
+    </div>
   );
 }
 
-export function CampaignMapSeedsTab(_props: Props) {
-  const HubTab = cjs().CampaignUIInternal?.HubTab;
-  if (!HubTab?.renderMapSeeds) return fallback("Map seeds UI not loaded.");
-  return wrap(
-    safeRender("renderMapSeeds", () => HubTab.renderMapSeeds()),
-    "campaign-map-seeds-react"
+function BattleSetCardView({ card }: { card: BattleSetCard }) {
+  return (
+    <section className="campaign-panel">
+      <div className="campaign-panel-head">
+        <h3>{card.name}</h3>
+        <span className={`campaign-risk ${card.canonRiskClass}`}>{card.canonRisk}</span>
+      </div>
+      <div className="campaign-muted">Rank {card.rank} | {card.objective}</div>
+      <div className="campaign-chip-row">
+        {card.tags.map((tag, i) => (
+          <span key={i} className="campaign-chip">{tag}</span>
+        ))}
+      </div>
+      <div className="campaign-preview">
+        <b>Enemy Mix</b>
+        <br />
+        {card.enemyMix.length === 0
+          ? "Manual enemy mix"
+          : card.enemyMix.map((enemy, i) => (
+              <Fragment key={i}>
+                {i > 0 && <br />}
+                {enemy.qty}x {enemy.label}
+              </Fragment>
+            ))}
+      </div>
+      <div className="campaign-muted">{card.gimmick}</div>
+      <div className="campaign-action-grid">
+        <button
+          className="campaign-action primary"
+          onClick={() => dispatchCampaignAction("queue-battle-set", { id: card.id })}
+        >
+          {card.queueLabel}
+        </button>
+        <button
+          className="campaign-action"
+          onClick={() => dispatchCampaignAction("save-battle-card", { id: card.id })}
+        >
+          Save Idea
+        </button>
+        <button
+          className="campaign-action"
+          onClick={() => dispatchCampaignAction("copy-battle-card", { id: card.id })}
+        >
+          Copy
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// ── Map Seeds (K.3 JSX port) ───────────────────────────────────────
+export function CampaignMapSeedsTab({ state }: Props) {
+  const data = getMapSeedsData(state);
+  if (!data) return fallback("Map seeds UI not loaded.");
+  return (
+    <div className="campaign-tab-grid">
+      {data.seeds.length === 0 ? (
+        <div className="campaign-empty">No map seeds.</div>
+      ) : (
+        data.seeds.map((seed) => <MapSeedCardView key={seed.id} seed={seed} />)
+      )}
+    </div>
+  );
+}
+
+function MapSeedCardView({ seed }: { seed: MapSeedCard }) {
+  return (
+    <section className="campaign-panel">
+      <div className="campaign-panel-head">
+        <h3>{seed.name}</h3>
+        <span className={`campaign-risk ${seed.canonRiskClass}`}>{seed.canonRisk}</span>
+      </div>
+      <div className="campaign-muted">{seed.purpose}</div>
+      {seed.nodes.map((node, i) => (
+        <div key={i} className="campaign-step">
+          <b>{i + 1}. {node.name}</b>
+          <span>{node.detail}</span>
+        </div>
+      ))}
+      <div className="campaign-action-grid">
+        <button
+          className="campaign-action primary"
+          onClick={() => dispatchCampaignAction("save-map-seed", { id: seed.id })}
+        >
+          Save Idea
+        </button>
+        <button
+          className="campaign-action"
+          onClick={() => dispatchCampaignAction("copy-map-seed", { id: seed.id })}
+        >
+          Copy
+        </button>
+      </div>
+    </section>
   );
 }

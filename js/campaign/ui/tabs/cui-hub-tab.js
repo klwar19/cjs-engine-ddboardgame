@@ -27,8 +27,6 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
   const _Side = () => window.CJS.CampaignSideContent;
   const _Hub = () => window.CJS.CampaignHub;
   const _QC = () => window.CJS.CampaignQuestChains;
-  const _BSF = () => window.CJS.CampaignBattleSetForge;
-  const _MSF = () => window.CJS.CampaignMapSeedForge;
   const _DL = () => window.CJS.CampaignDataLoader;
 
   // ── Tone / consequence math ────────────────────────────────────────
@@ -562,61 +560,9 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     return bits.length ? `Auto: ${bits.join(' + ')}` : 'Auto progress available';
   }
 
-  // ── Battle Sets / Map Seeds (Hub-adjacent forges) ──────────────────
-
-  function renderBattleSets() {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const cards = _BSF().getCards();
-    return `
-      <div class="campaign-tab-grid">
-        ${cards.map((card) => `
-          <section class="campaign-panel">
-            <div class="campaign-panel-head">
-              <h3>${esc(card.name || card.id)}</h3>
-              <span class="campaign-risk ${_Side().riskClass(card.canonRisk)}">${esc(card.canonRisk || 'green')}</span>
-            </div>
-            <div class="campaign-muted">Rank ${esc(card.rank || '-')} | ${esc(card.objective || '')}</div>
-            <div class="campaign-chip-row">${(card.tags || []).map((tag) => `<span class="campaign-chip">${esc(tag)}</span>`).join('')}</div>
-            <div class="campaign-preview">
-              <b>Enemy Mix</b><br>
-              ${(card.enemyMix || []).map((enemy) => `${esc(enemy.qty || 1)}x ${esc(enemy.label || enemy.name || enemy.id || 'unit')}`).join('<br>') || 'Manual enemy mix'}
-            </div>
-            <div class="campaign-muted">${esc(card.gimmick || '')}</div>
-            <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="queue-battle-set" data-id="${escAttr(card.id)}">${card.encounterId ? 'Queue Combat' : 'Queue Manual'}</button>
-              <button class="campaign-action" data-campaign-action="save-battle-card" data-id="${escAttr(card.id)}">Save Idea</button>
-              <button class="campaign-action" data-campaign-action="copy-battle-card" data-id="${escAttr(card.id)}">Copy</button>
-            </div>
-          </section>
-        `).join('') || '<div class="campaign-empty">No battle set cards.</div>'}
-      </div>
-    `;
-  }
-
-  function renderMapSeeds() {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const seeds = _MSF().getSeeds();
-    return `
-      <div class="campaign-tab-grid">
-        ${seeds.map((seed) => `
-          <section class="campaign-panel">
-            <div class="campaign-panel-head">
-              <h3>${esc(seed.name || seed.id)}</h3>
-              <span class="campaign-risk ${_Side().riskClass(seed.canonRisk)}">${esc(seed.canonRisk || 'green')}</span>
-            </div>
-            <div class="campaign-muted">${(Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean)).map(esc).join(', ')}</div>
-            ${(seed.nodes || []).map((node, index) => `<div class="campaign-step"><b>${index + 1}. ${esc(node.name || node.id)}</b><span>${esc(node.role || node.notes || '')}</span></div>`).join('')}
-            <div class="campaign-action-grid">
-              <button class="campaign-action primary" data-campaign-action="save-map-seed" data-id="${escAttr(seed.id)}">Save Idea</button>
-              <button class="campaign-action" data-campaign-action="copy-map-seed" data-id="${escAttr(seed.id)}">Copy</button>
-            </div>
-          </section>
-        `).join('') || '<div class="campaign-empty">No map seeds.</div>'}
-      </div>
-    `;
-  }
+  // Battle Sets / Map Seeds tab bodies ported to JSX in Phase K.3.
+  // The React tree reads typed `getBattleSetsData()` / `getMapSeedsData()`
+  // from campaign-ui.js and renders `src/campaign/tabs/CampaignHubTabs.tsx`.
 
   // ── Oracle Forge tab ───────────────────────────────────────────────
 
@@ -656,12 +602,8 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     Tabs.register('oracleForge', {
       render: (state) => renderOracleForge(state)
     });
-    Tabs.register('battleSets', {
-      render: () => renderBattleSets()
-    });
-    Tabs.register('mapSeeds', {
-      render: () => renderMapSeeds()
-    });
+    // battleSets / mapSeeds are React-owned (K.3) — registered as React
+    // mount points by cui-react-bridge.js, rendered as JSX by the shell.
   }
   _registerTabs();
 
@@ -670,8 +612,6 @@ window.CJS.CampaignUIInternal.HubTab = (function () {
     renderSideForge,
     renderQuestChains,
     renderOracleForge,
-    renderBattleSets,
-    renderMapSeeds,
     // Shared side-content primitives used by overview, story home, event log
     operationTone,
     consequenceSummary,
