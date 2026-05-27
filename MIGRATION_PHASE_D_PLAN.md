@@ -409,7 +409,7 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   consults a `Record<CampaignActionName, fn>` registry first; the switch
   is deleted as cases migrate.
 
-  **Done — the registry seam + the cleanly-separable domains (124/246):**
+  **Done — the registry seam + the cleanly-separable domains (131/246):**
   - **Seam.** `src/campaign/action-handlers/registry.ts` holds the
     `Record<CampaignActionName, handler>` and installs
     `window.CJS.CampaignActionsRuntime` (`has` / `run`). The vanilla
@@ -481,6 +481,10 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     `action-handlers/map.ts`. **Pocket Haven ops** (3): haven-build-/
     upgrade-facility, haven-ranch-collect → `action-handlers/haven.ts`.
     **end-scenario** → `ops.ts`.
+  - **side content** (7): apply-side-choice (red-risk confirm),
+    save-/reject-/dismiss-/copy-side-card, import-/export-side-pack →
+    `action-handlers/side.ts` (the tiny `_sideCardById` /
+    `_clearCurrentSideCard` helpers ported alongside).
 
   Every ported handler was verified for behaviour parity at the unit
   level via esbuild-bundled seam harnesses (routing + the exact module
@@ -666,17 +670,18 @@ finishes the authoring loop:
 | After H.3 oracle + end-scenario | 534 |
 | After H.3 quest-chain + card-copy | 533 |
 | After H.3 scenario-map + haven ops | 532 |
+| After H.3 side content | 529 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 532 KB. Every closure-private
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 529 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
 tab bodies + roster hero in `cui-hub-tab.js` / `cui-party-tab.js` are
 JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
 bridged HTML: the roster detail row (icon-heavy, action surface now
 TS-registry-backed), the world map (SVG), and the intentionally-vanilla
 external-module tabs + maps tab. `_bindEvents` is gone (H.2). H.3 has
-ported the registry seam + 124/246 actions (save/log/roster-ops/roster-GM-
+ported the registry seam + 131/246 actions (save/log/roster-ops/roster-GM-
 modals/thin-ops/farm/forge/world-map/nav/sequence/story-director/oracle/
-quest-chain/map/haven) into `src/campaign/action-handlers/`; the
+quest-chain/map/haven/side) into `src/campaign/action-handlers/`; the
 `_handleAction` switch now holds only the unported modal-machinery /
 scenario-gen cluster, behind the runtime seam. Remaining: finish H.3
 (that cluster — the shared manual builders + scenario gen + mini-game
