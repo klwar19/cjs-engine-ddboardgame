@@ -1,6 +1,7 @@
 // overview.ts — Phase F / G bridge for the Overview (Town) tab.
 
 import type { CampaignStateSnapshot } from "../../store";
+import type { RumorRowData } from "./hub";
 
 // G.16 — typed shapes for Town Snapshot + Roll Float panels.
 export interface TownStat {
@@ -35,7 +36,7 @@ export interface TownSnapshotData {
   readonly stats: readonly TownStat[];
   readonly kpis: readonly TownKpi[];
   readonly problems: readonly TownPressureItem[];
-  readonly rumorRowsHtml: string;
+  readonly rumors: readonly RumorRowData[];
   readonly locations: readonly TownLocation[];
 }
 

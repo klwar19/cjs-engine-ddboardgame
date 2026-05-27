@@ -2,7 +2,11 @@ import { Fragment } from "react";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { QuestChainActiveCard, QuestChainTemplateCard } from "./QuestChain";
+import { SideCard, RumorRow, HtmlBridge } from "./SideContent";
+import { SoloNoticePanel } from "./ResultPanels";
 import {
+  getSideForgeData,
+  getOracleForgeData,
   getQuestChainsData,
   getBattleSetsData,
   getMapSeedsData,
@@ -12,39 +16,14 @@ import {
   type MapSeedCard
 } from "./data/hub";
 
-// Hub-family tabs. Battle Sets, Map Seeds, and Quest Chains are full
-// JSX (K.3), reading typed data from `getBattleSetsData` /
-// `getMapSeedsData` / `getQuestChainsData`.
-//
-// Side Forge / Oracle Forge are still produced as HTML strings by
-// `cui-hub-tab.js`; the wrappers below own the mount points until their
-// K.3 commit lands. Every `data-campaign-action` inside those two still
-// reaches the vanilla event delegator on campaign-root.
-
-interface HubTabModule {
-  readonly renderSideForge: (state: CampaignStateSnapshot, helpers: unknown) => string;
-  readonly renderOracleForge: (state: CampaignStateSnapshot) => string;
-}
-
-interface CampaignUIModule {
-  readonly getTabHelpers: () => unknown;
-}
-
-interface Cjs {
-  readonly CampaignUIInternal?: { readonly HubTab?: HubTabModule };
-  readonly CampaignUI?: CampaignUIModule;
-}
-
-function cjs(): Cjs {
-  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
-}
+// Hub-family tabs — fully ported to JSX in Phase K.3. Each reads typed
+// data from a `get*Data` bridge in campaign-ui.js and dispatches actions
+// through direct onClick handlers (no data-campaign-action HTML strings).
+// The shared SideCard / RumorRow live in `SideContent.tsx`; the chain
+// cards in `QuestChain.tsx`.
 
 interface Props {
   readonly state: CampaignStateSnapshot;
-}
-
-function wrap(html: string, mountClass: string) {
-  return <div className={mountClass} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function fallback(label: string) {
@@ -55,26 +34,166 @@ function fallback(label: string) {
   );
 }
 
-function safeRender(label: string, fn: () => string): string {
-  try {
-    return fn();
-  } catch (error) {
-    console.error(`${label} failed:`, error);
-    return `<section class="campaign-panel"><div class="campaign-empty">${label} render failed.</div></section>`;
-  }
-}
-
+// ── Side Forge / Living Hub dashboard ──────────────────────────────
 export function CampaignSideForgeTab({ state }: Props) {
-  const HubTab = cjs().CampaignUIInternal?.HubTab;
-  const UI = cjs().CampaignUI;
-  if (!HubTab?.renderSideForge || !UI) return fallback("Side forge UI not loaded.");
-  return wrap(
-    safeRender("renderSideForge", () => HubTab.renderSideForge(state, UI.getTabHelpers())),
-    "campaign-side-forge-react"
+  const data = getSideForgeData(state);
+  if (!data) return fallback("Side forge UI not loaded.");
+  return (
+    <div className="campaign-dashboard side-forge">
+      <section className="campaign-panel side-forge-hero">
+        <div className="campaign-panel-head">
+          <div>
+            <h2>{data.hubName}</h2>
+            <div className="campaign-muted">{data.hubDescription}</div>
+          </div>
+          <span className="campaign-pill">{data.moodLabel}</span>
+        </div>
+        <div className="campaign-stat-grid">
+          <span>Security <b>{data.stats.security}</b></span>
+          <span>Prosperity <b>{data.stats.prosperity}</b></span>
+          <span>Warmth <b>{data.stats.warmth}</b></span>
+          <span>Weirdness <b>{data.stats.weirdness}</b></span>
+        </div>
+        <div className="campaign-control-help">
+          Roll a pulse table for a flavorful idea, or roll a quest / rumor hook. Each result lands in the floating box and only commits when you accept it.
+        </div>
+        <div className="campaign-action-grid">
+          <button className="campaign-action primary" title="Roll the general hub pulse table - gossip, mood, mundane problems." onClick={() => dispatchCampaignAction("roll-hub-pulse", { table: "town" })}>Hub Pulse</button>
+          <button className="campaign-action" title="Roll the adventurer guild table — contracts, recruits, factions." onClick={() => dispatchCampaignAction("roll-hub-pulse", { table: "guild" })}>Guild</button>
+          <button className="campaign-action" title="Apply for a rank-up trial at the Adventurer Guild." onClick={() => dispatchCampaignAction("rank-up-apply")}>Rank Up</button>
+          <button className="campaign-action" title="Roll the tavern table — gossip, suppliers, drinking-spot drama." onClick={() => dispatchCampaignAction("roll-hub-pulse", { table: "tavern" })}>Tavern</button>
+          <button className="campaign-action" title="Roll the forge / craft table — weapons, materials, smith requests." onClick={() => dispatchCampaignAction("roll-hub-pulse", { table: "forge" })}>Forge</button>
+          <button className="campaign-action" title="Roll the weirdness table — ominous omens, supernatural beats." onClick={() => dispatchCampaignAction("roll-hub-pulse", { table: "weird" })}>Weird</button>
+          <button className="campaign-action" title="Pick a random quest template and auto-start its map run." onClick={() => dispatchCampaignAction("random-quest-offer")}>Quest Run</button>
+          <button className="campaign-action" title="Create a marked lead. Mechanics only happen when you promote it later." onClick={() => dispatchCampaignAction("random-rumor-offer")}>Rumor Hook</button>
+          <button className="campaign-action" title="Type a custom rumor / lead into the hub bank." onClick={() => dispatchCampaignAction("manual-rumor")}>Manual Rumor</button>
+          <button className="campaign-action" title="Roll a GM inspiration prompt — text only, no mechanics." onClick={() => dispatchCampaignAction("roll-forge-oracle")}>Oracle</button>
+        </div>
+      </section>
+
+      <SoloNoticePanel state={state} />
+      {data.lastCard && <SideCard card={data.lastCard} />}
+
+      <section className="campaign-panel">
+        <div className="campaign-panel-head">
+          <h3>Hub Problems</h3>
+          <span className="campaign-muted">Pressure cards on this hub. Resolve them by spending phases or addressing the cause.</span>
+        </div>
+        <HtmlBridge html={data.problemPurposeHtml} className="campaign-inline-purpose-bridge" />
+        {data.problems.length === 0 ? (
+          <div className="campaign-empty">No active hub problems.</div>
+        ) : (
+          data.problems.map((problem) => (
+            <div key={problem.id} className="campaign-row">
+              <strong>{problem.label}</strong>
+              <button
+                className="campaign-action"
+                title="Mark this problem solved. Frees Pressure budget."
+                onClick={() => dispatchCampaignAction("resolve-hub-problem", { id: problem.id, hubId: data.hubId })}
+              >
+                Resolve
+              </button>
+            </div>
+          ))
+        )}
+      </section>
+
+      <section className="campaign-panel">
+        <div className="campaign-panel-head">
+          <h3>Rumors</h3>
+          <button className="campaign-action" onClick={() => dispatchCampaignAction("manual-rumor")}>Add Rumor</button>
+        </div>
+        <div className="campaign-rumor-purpose">
+          <span className="campaign-impact-badge is-plot">Rumor purpose</span>
+          <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, character beat, oracle prompt, or hub problem when the party is ready.</span>
+        </div>
+        {data.rumors.length === 0 ? (
+          <div className="campaign-empty">No open rumors.</div>
+        ) : (
+          data.rumors.map((rumor) => <RumorRow key={rumor.id} rumor={rumor} />)
+        )}
+      </section>
+
+      <section className="campaign-panel">
+        <div className="campaign-panel-head"><h3>Saved Ideas</h3></div>
+        {data.savedIdeas.length === 0 ? (
+          <div className="campaign-empty">No saved ideas yet.</div>
+        ) : (
+          data.savedIdeas.map((idea) => <SideCard key={idea.id} card={idea} />)
+        )}
+      </section>
+
+      <section className="campaign-panel review-panel">
+        <div className="campaign-panel-head"><h3>Review Queue</h3></div>
+        {data.review.length === 0 ? (
+          <div className="campaign-empty">No pending review.</div>
+        ) : (
+          data.review.map((item) => (
+            <div key={item.id} className="campaign-row">
+              <div>
+                <strong>{item.contentId}</strong>
+                <div className="campaign-muted">{item.reason}</div>
+              </div>
+              <div className="campaign-row-actions">
+                <span className={`campaign-risk ${item.canonRiskClass}`}>{item.canonRisk}</span>
+                <button
+                  className="campaign-action"
+                  onClick={() => dispatchCampaignAction("review-resolve", { id: item.id, decision: "approved" })}
+                >
+                  Approve
+                </button>
+                <button
+                  className="campaign-action campaign-action-reject"
+                  title="Reject this content. It will not be added."
+                  onClick={() => dispatchCampaignAction("review-resolve", { id: item.id, decision: "rejected" })}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
+      <section className="campaign-panel">
+        <div className="campaign-panel-head"><h3>Side History</h3></div>
+        {data.history.length === 0 ? (
+          <div className="campaign-empty">No side content history.</div>
+        ) : (
+          data.history.map((line, i) => (
+            <div key={i} className="campaign-log-line">
+              <span>{line.title}: {line.result}</span>
+              <small>Phase {line.phaseLabel}</small>
+            </div>
+          ))
+        )}
+      </section>
+    </div>
   );
 }
 
-// ── Quest Chains / Event Side Stories (K.3 JSX port) ───────────────
+// ── Oracle / Keyword Forge ─────────────────────────────────────────
+export function CampaignOracleForgeTab({ state }: Props) {
+  const data = getOracleForgeData(state);
+  if (!data) return fallback("Oracle forge UI not loaded.");
+  return (
+    <div className="campaign-dashboard">
+      <section className="campaign-panel">
+        <div className="campaign-panel-head"><h2>Oracle / Keyword Forge</h2></div>
+        <HtmlBridge html={data.purposeHtml} className="campaign-inline-purpose-bridge" />
+        <div className="campaign-muted">{data.tableNames}</div>
+        <div className="campaign-action-grid">
+          <button className="campaign-action primary" onClick={() => dispatchCampaignAction("roll-forge-oracle")}>Roll Oracle</button>
+          <button className="campaign-action" onClick={() => dispatchCampaignAction("import-side-pack")}>Import Pack</button>
+          <button className="campaign-action" onClick={() => dispatchCampaignAction("export-side-pack")}>Export Save Ideas</button>
+        </div>
+      </section>
+      {data.lastCard && <SideCard card={data.lastCard} />}
+    </div>
+  );
+}
+
+// ── Quest Chains / Event Side Stories ──────────────────────────────
 export function CampaignQuestChainsTab({ state }: Props) {
   const data = getQuestChainsData(state);
   if (!data) return fallback("Quest chains UI not loaded.");
@@ -145,16 +264,7 @@ function QuestChainResolvedRow({ chain }: { chain: QuestChainResolved }) {
   );
 }
 
-export function CampaignOracleForgeTab({ state }: Props) {
-  const HubTab = cjs().CampaignUIInternal?.HubTab;
-  if (!HubTab?.renderOracleForge) return fallback("Oracle forge UI not loaded.");
-  return wrap(
-    safeRender("renderOracleForge", () => HubTab.renderOracleForge(state)),
-    "campaign-oracle-forge-react"
-  );
-}
-
-// ── Battle Sets (K.3 JSX port) ─────────────────────────────────────
+// ── Battle Sets ────────────────────────────────────────────────────
 export function CampaignBattleSetsTab({ state }: Props) {
   const data = getBattleSetsData(state);
   if (!data) return fallback("Battle sets UI not loaded.");
@@ -219,7 +329,7 @@ function BattleSetCardView({ card }: { card: BattleSetCard }) {
   );
 }
 
-// ── Map Seeds (K.3 JSX port) ───────────────────────────────────────
+// ── Map Seeds ──────────────────────────────────────────────────────
 export function CampaignMapSeedsTab({ state }: Props) {
   const data = getMapSeedsData(state);
   if (!data) return fallback("Map seeds UI not loaded.");

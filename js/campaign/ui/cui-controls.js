@@ -81,14 +81,8 @@ window.CJS.CampaignUIInternal.Controls = (function () {
     `;
   }
 
-  function renderRumorPurpose() {
-    return `
-      <div class="campaign-rumor-purpose">
-        <span class="campaign-impact-badge is-plot">Rumor purpose</span>
-        <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, character beat, oracle prompt, or hub problem when the party is ready.</span>
-      </div>
-    `;
-  }
+  // renderRumorPurpose removed in Phase K.3 — the rumor-purpose blurb is
+  // now static JSX in CampaignHubTabs.tsx / TownPanels.tsx.
 
   function impactLegendItem(tone, label) {
     return `<span class="campaign-impact-badge is-${_escAttr(tone)}">${_esc(label)}</span>`;
@@ -152,7 +146,6 @@ window.CJS.CampaignUIInternal.Controls = (function () {
     purposeTone,
     purposeKeyForCard,
     renderInlinePurpose,
-    renderRumorPurpose,
     impactLegendItem,
     controlGroup,
     actionMenu,

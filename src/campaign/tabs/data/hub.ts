@@ -29,6 +29,93 @@ export interface QuestChainsData {
   readonly available: readonly QuestChainTemplateData[];
 }
 
+// ── Shared side-content card + rumor row ───────────────────────────
+export interface SideCardChoiceButton {
+  readonly index: number;
+  readonly label: string;
+}
+
+export interface SideCardData {
+  readonly id: string;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly tone: string;
+  readonly toneLabel: string;
+  readonly canonRisk: string;
+  readonly canonRiskClass: string;
+  readonly compact: boolean;
+  readonly purposeHtml: string;
+  readonly prompt: string;
+  readonly text: string;
+  readonly summary: string;
+  readonly flavorTrailHtml: string;
+  readonly gmKeywords: readonly string[];
+  readonly gmNote: string;
+  readonly choiceStackHtml: string;
+  readonly choiceButtons: readonly SideCardChoiceButton[];
+  readonly showDismiss: boolean;
+}
+
+export interface RumorRowData {
+  readonly id: string;
+  readonly hubId: string;
+  readonly text: string;
+  readonly statusLabel: string;
+  readonly riskLabel: string;
+  readonly canonRisk: string;
+  readonly canonRiskClass: string;
+  readonly compact: boolean;
+}
+
+// ── Side Forge tab ─────────────────────────────────────────────────
+export interface SideForgeProblem {
+  readonly id: string;
+  readonly label: string;
+}
+
+export interface SideForgeReviewItem {
+  readonly id: string;
+  readonly contentId: string;
+  readonly reason: string;
+  readonly canonRisk: string;
+  readonly canonRiskClass: string;
+}
+
+export interface SideForgeHistoryLine {
+  readonly title: string;
+  readonly result: string;
+  readonly phaseLabel: string;
+}
+
+export interface SideForgeStats {
+  readonly security: number;
+  readonly prosperity: number;
+  readonly warmth: number;
+  readonly weirdness: number;
+}
+
+export interface SideForgeData {
+  readonly hubName: string;
+  readonly hubDescription: string;
+  readonly hubId: string;
+  readonly moodLabel: string;
+  readonly stats: SideForgeStats;
+  readonly problemPurposeHtml: string;
+  readonly problems: readonly SideForgeProblem[];
+  readonly lastCard: SideCardData | null;
+  readonly rumors: readonly RumorRowData[];
+  readonly savedIdeas: readonly SideCardData[];
+  readonly review: readonly SideForgeReviewItem[];
+  readonly history: readonly SideForgeHistoryLine[];
+}
+
+// ── Oracle Forge tab ───────────────────────────────────────────────
+export interface OracleForgeData {
+  readonly purposeHtml: string;
+  readonly tableNames: string;
+  readonly lastCard: SideCardData | null;
+}
+
 export interface BattleSetEnemy {
   readonly qty: number;
   readonly label: string;
@@ -70,6 +157,8 @@ export interface MapSeedsData {
 }
 
 interface Bridge {
+  readonly getSideForgeData: (state?: CampaignStateSnapshot) => SideForgeData | null;
+  readonly getOracleForgeData: (state?: CampaignStateSnapshot) => OracleForgeData | null;
   readonly getQuestChainsData: () => QuestChainsData | null;
   readonly getBattleSetsData: () => BattleSetsData | null;
   readonly getMapSeedsData: () => MapSeedsData | null;
@@ -81,6 +170,14 @@ interface Cjs {
 
 function cjs(): Cjs {
   return (window as unknown as { CJS?: Cjs }).CJS ?? {};
+}
+
+export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | null {
+  return cjs().CampaignUI?.getSideForgeData(state) ?? null;
+}
+
+export function getOracleForgeData(state: CampaignStateSnapshot): OracleForgeData | null {
+  return cjs().CampaignUI?.getOracleForgeData(state) ?? null;
 }
 
 export function getQuestChainsData(_state: CampaignStateSnapshot): QuestChainsData | null {

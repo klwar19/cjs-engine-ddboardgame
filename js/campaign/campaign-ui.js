@@ -66,7 +66,6 @@ window.CJS.CampaignUI = (() => {
   const _purposeTone = _CUIControls.purposeTone;
   const _purposeKeyForCard = _CUIControls.purposeKeyForCard;
   const _renderInlinePurpose = _CUIControls.renderInlinePurpose;
-  const _renderRumorPurpose = _CUIControls.renderRumorPurpose;
   const _impactLegendItem = _CUIControls.impactLegendItem;
   const _controlGroup = _CUIControls.controlGroup;
   const _actionMenu = _CUIControls.actionMenu;
@@ -10153,9 +10152,7 @@ window.CJS.CampaignUI = (() => {
         id: String(problem),
         label: _label(problem)
       })),
-      rumorRowsHtml: rumors.slice(0, 3)
-        .map((rumor) => HubTab?.renderRumorRow?.(rumor, { compact: true }) || '')
-        .join(''),
+      rumors: rumors.slice(0, 3).map((rumor) => _rumorRowData(rumor, { compact: true })),
       locations: (hub.locations || []).slice(0, 5).map((loc) => ({
         id: String(loc.id || ''),
         name: String(loc.name || loc.id || ''),
@@ -10246,6 +10243,117 @@ window.CJS.CampaignUI = (() => {
           detail: String(node.role || node.notes || '')
         }))
       }))
+    };
+  }
+
+  // K.3 — typed side-content card + rumor-row data for the Side Forge /
+  // Oracle Forge tabs (and the Town snapshot rumor rows). Display-only
+  // sub-pieces (inline purpose, flavor trail, choice consequence preview)
+  // stay as pre-rendered HTML the JSX inserts via a <HtmlBridge> div —
+  // the same display-bridge pattern ResultPanels uses; none carry
+  // data-campaign-action. Only the action buttons move to JSX onClick.
+  function _sideCardData(card = {}, options = {}) {
+    const compact = !!options.compact;
+    const choices = card.suggestedChoices || [];
+    const primaryOps = _cardChoiceOps(card);
+    const summary = _consequenceSummary(primaryOps, { hasText: !!(card.prompt || card.text || card.summary) });
+    return {
+      id: String(card.id || ''),
+      title: String(card.title || card.name || card.id || ''),
+      subtitle: `${card.type || 'side content'} | ${card.source || ''} | ${card.status || 'idea'}`,
+      tone: String(summary.tone || 'flavor'),
+      toneLabel: String(summary.label || ''),
+      canonRisk: String(card.canonRisk || 'green'),
+      canonRiskClass: Side().riskClass(card.canonRisk),
+      compact,
+      purposeHtml: compact ? '' : _renderInlinePurpose(_purposeKeyForCard(card)),
+      prompt: String(card.prompt || ''),
+      text: String(card.text || ''),
+      summary: (!compact && card.summary) ? String(card.summary) : '',
+      flavorTrailHtml: compact ? '' : _renderFlavorTrail(card),
+      gmKeywords: (!compact && Array.isArray(card.gmKeywords)) ? card.gmKeywords.map(String) : [],
+      gmNote: compact ? '' : String(card.gmNote || ''),
+      choiceStackHtml: (!compact && choices.length)
+        ? choices.map((choice, index) => _renderConsequencePreview(choice.ops || [], {
+            title: choice.label || `Choice ${index + 1}`,
+            emptyTitle: choice.label || `Choice ${index + 1}`,
+            emptyText: 'Flavor choice only. Save it as text or use it to steer the next scene.'
+          })).join('')
+        : '',
+      choiceButtons: choices.map((choice, index) => ({
+        index,
+        label: String(choice.label || `Choice ${index + 1}`)
+      })),
+      showDismiss: !compact
+    };
+  }
+
+  function _rumorRowData(rumor = {}, options = {}) {
+    const hubId = window.CJS.CampaignHub?.getCurrentHubId?.() || '';
+    return {
+      id: String(rumor.id || ''),
+      hubId: String(hubId),
+      text: String(rumor.text || rumor.id || ''),
+      statusLabel: String(rumor.status || 'active'),
+      riskLabel: _label(rumor.canonRisk || 'green'),
+      canonRisk: String(rumor.canonRisk || 'green'),
+      canonRiskClass: Side().riskClass(rumor.canonRisk),
+      compact: !!options.compact
+    };
+  }
+
+  function getSideForgeData(state = CS().getState()) {
+    if (!state) return null;
+    const Hub = window.CJS.CampaignHub;
+    const hub = Hub?.getCurrentHubDefinition?.() || {};
+    const hubState = Hub?.getCurrentHubState?.() || {};
+    const last = state.lastSideContentCard;
+    const ideas = Object.values(state.sideContent?.generatedIdeas || {});
+    const saved = ideas.filter((idea) => idea.status === 'saved' || idea.status === 'active');
+    const review = state.sideContent?.reviewQueue || [];
+    const history = state.sideContent?.contentHistory || [];
+    return {
+      hubName: String(hub.name || 'Living Hub'),
+      hubDescription: String(hub.description || 'Town pulse, rumors, problems, and content review queue.'),
+      hubId: String(hub.id || ''),
+      moodLabel: _label(hubState.mood || 'neutral'),
+      stats: {
+        security: Number(hubState.security ?? 0),
+        prosperity: Number(hubState.prosperity ?? 0),
+        warmth: Number(hubState.warmth ?? 0),
+        weirdness: Number(hubState.weirdness ?? 0)
+      },
+      problemPurposeHtml: _renderInlinePurpose('problem'),
+      problems: (hubState.activeProblems || []).map((problem) => ({
+        id: String(problem),
+        label: _label(problem)
+      })),
+      lastCard: last ? _sideCardData(last, { mode: 'last' }) : null,
+      rumors: _openRumors(hubState).slice(0, 6).map((rumor) => _rumorRowData(rumor)),
+      savedIdeas: saved.slice(0, 8).map((idea) => _sideCardData(idea, { compact: true })),
+      review: review.slice(0, 8).map((item) => ({
+        id: String(item.id || ''),
+        contentId: String(item.contentId || ''),
+        reason: String(item.reason || ''),
+        canonRisk: String(item.canonRisk || 'red'),
+        canonRiskClass: Side().riskClass(item.canonRisk)
+      })),
+      history: history.slice(0, 10).map((line) => ({
+        title: String(line.title || line.type || ''),
+        result: String(line.result || ''),
+        phaseLabel: String(line.phase ?? '')
+      }))
+    };
+  }
+
+  function getOracleForgeData(state = CS().getState()) {
+    if (!state) return null;
+    const last = state.lastSideContentCard?.type === 'oracle_prompt' ? state.lastSideContentCard : null;
+    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || [];
+    return {
+      purposeHtml: _renderInlinePurpose('oracle'),
+      tableNames: tables.map((table) => String(table.name || table.id || '')).join(', ') || 'No oracle tables loaded.',
+      lastCard: last ? _sideCardData(last, { mode: 'oracle' }) : null
     };
   }
 
@@ -10377,6 +10485,8 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     getTownSnapshotData,
     getTownRollFloatData,
+    getSideForgeData,
+    getOracleForgeData,
     getBattleSetsData,
     getMapSeedsData,
     getQuestChainsData,
