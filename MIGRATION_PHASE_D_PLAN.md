@@ -409,7 +409,7 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   consults a `Record<CampaignActionName, fn>` registry first; the switch
   is deleted as cases migrate.
 
-  **Done — the registry seam + the cleanly-separable domains (67/246):**
+  **Done — the registry seam + the cleanly-separable domains (124/246):**
   - **Seam.** `src/campaign/action-handlers/registry.ts` holds the
     `Record<CampaignActionName, handler>` and installs
     `window.CJS.CampaignActionsRuntime` (`has` / `run`). The vanilla
@@ -450,26 +450,66 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     save-map-seed → `action-handlers/forge.ts`.
   - **world map** (5): world-map-travel/-switch-map/-interaction/
     -node-action / world-activity-use → `action-handlers/worldmap.ts`.
+  - **mode/tab seam** — campaign-ui.js now exposes render-free
+    `setActiveModeRaw` / `setActiveTabRaw` + `modeForTab`, mirroring the
+    closure-private `_activeMode`/`_activeTab` assignment that `_goto`
+    does. This unblocked the handlers below that set mode/tab and render
+    at the exact points the closure did (no derive+render double-fire).
+    The setters collapse into a TS chrome-state slice in H.4.
+  - **navigation** (20): the open-* / `_goto` cases →
+    `action-handlers/nav.ts` (incl. open-world-content's
+    `data.mode || modeForTab(tab)` fallback). `_goto`/`_modeForTab` stay
+    in JS (many unported closures call them).
+  - **sequence runner** (12): sequence-start/next/resolve/choice/pass/
+    fail/queue-battle/win/lose/abort/complete/open-vn →
+    `action-handlers/sequence.ts`. `_playSequenceMiniGame` stays in JS
+    (mini-game session machinery); its win/lose follow-ups route back
+    through the registry.
+  - **story director** (5): story-save-beat/-reject-beat/-apply-choice/
+    -set-stage/-sync-sidequests → `action-handlers/story-director.ts`.
+    The roll + beat-modal cases stay (they build `_renderStoryDirectorCard`
+    HTML); the modal's follow-ups route through the registry.
+  - **oracle** (6): roll-oracle, pick-oracle, custom-oracle, oracle-note,
+    oracle-event-log, roll-forge-oracle → `action-handlers/oracle.ts`.
+    (oracle-to-quest / -to-event-builder / -add-tags share the manual
+    quest/event/tag modal machinery with the event domain — kept.)
+  - **quest chains** (4) + **card copy** (2): advance/complete/fail/
+    promote-chain → `action-handlers/quest-chain.ts`; copy-battle-card /
+    copy-map-seed → `forge.ts`. (start-chain / chain-scenario /
+    chain-battle reach the scenario-launch closures — kept.)
+  - **scenario map** (4): move-node, move-cell, map-layer, clear-node →
+    `action-handlers/map.ts`. **Pocket Haven ops** (3): haven-build-/
+    upgrade-facility, haven-ranch-collect → `action-handlers/haven.ts`.
+    **end-scenario** → `ops.ts`.
 
-  `test_actions_bridge.js` now asserts union == (switch ∪ registry), the
-  two are disjoint, and the runtime install + consultation are wired.
+  Every ported handler was verified for behaviour parity at the unit
+  level via esbuild-bundled seam harnesses (routing + the exact module
+  calls / op payloads / toast branches), on top of `npm test` +
+  `npm run typecheck` + `npm run build` green at each commit.
+  `test_actions_bridge.js` asserts union == (switch ∪ registry), the two
+  are disjoint, and the runtime install + consultation are wired.
 
-  **Remaining (~186) — the modal / scenario-gen / story-director cluster.**
-  These are *not* thin wrappers; they are interdependent closures that
-  (a) directly mutate the closure-private `_activeMode` / `_activeTab`
-  (the public `setActive*` auto-derive + render, so they can't replace a
-  raw assignment without a double-render that re-binds the run/farm
-  panels), and (b) call other private closures — modals (`_opPickerModal`
-  etc.), the mini-game session machinery (`_openMiniGameSession`,
-  `_applyMiniGameResult`), scenario gen (`_generateScenario`), and the
-  story-director beat modals (`_openStoryBeatModal`). Porting them safely
-  needs the **mode/tab state to move into TS first** (a raw, render-free
-  setter pair or a store slice), then each closure *cluster* ported
-  together (handler + the private helpers it transitively owns). The
-  registry seam makes that mechanical and incremental — each cluster adds
-  registry entries + deletes its switch cases with no React call-site
-  churn — but it is the genuine bulk and must stay behaviour-parity, so
-  it is left for the next pass rather than rushed.
+  **Remaining (~122) — the modal-machinery / scenario-gen cluster.** The
+  mode/tab blocker is solved (raw setters above), so what's left is the
+  handlers that call shared closure-private modal builders that haven't
+  moved to TS yet: the manual event / quest / scene builders
+  (`_openManualEventBuilder`, `_addQuestFromPrompt`, `_openManualSceneBuilder`,
+  `_tagPromptModal`, `_opsModal`), the scenario generator
+  (`_generateScenario` + the generate-* / start-/inspect-/cancel-/
+  discard-scenario family), the battle modals (`_battleReroll`,
+  `_battleOverride`, `_manualBattleModal`, `_runBattle`, run-* battle/beat
+  flow, `_applyCombatResult`), the mini-game session machinery
+  (`_playSequenceMiniGame`, `_openMiniGameSession`, mg-test-*,
+  `_havenPlayMinigame`, `_openCookingMinigame`), the roster equip/job/skill
+  pickers (learn-skill, equip-item, change-job, show-job-tree,
+  level-up-skill, rank-up-*, pick-equip-*, etc.), the side-content + rumor
+  + solo-hook handlers (which share `_sideCardById` / `_clearCurrentSideCard`
+  / `_addQuestFromPrompt`), inventory/craft/cook, and the story-context
+  copy/help modals. The next pass ports these **cluster by cluster** —
+  each handler plus the private builder(s) it owns — exactly as the
+  domains above were done: the registry seam + the modal-port pattern
+  (`roster-modals.ts`) make it mechanical, and internal JS callers of a
+  ported closure route back through `window.CJS.CampaignActionsRuntime`.
 - [ ] **H.4 — Migrate `get*Data` bridges to TS** under
   `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
   CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
@@ -620,19 +660,27 @@ finishes the authoring loop:
 | After H.3 roster pure-ops | 546 |
 | After H.3 thin-ops + farm + forge + world-map | 543 |
 | After H.3 roster GM stat modals | 541 |
+| After H.3 navigation | 540 |
+| After H.3 sequence runner | 537 |
+| After H.3 story-director logic | 536 |
+| After H.3 oracle + end-scenario | 534 |
+| After H.3 quest-chain + card-copy | 533 |
+| After H.3 scenario-map + haven ops | 532 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 543 KB. Every closure-private
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 532 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
 tab bodies + roster hero in `cui-hub-tab.js` / `cui-party-tab.js` are
 JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
 bridged HTML: the roster detail row (icon-heavy, action surface now
 TS-registry-backed), the world map (SVG), and the intentionally-vanilla
 external-module tabs + maps tab. `_bindEvents` is gone (H.2). H.3 has
-ported the registry seam + 67/246 actions (save/log/roster-ops/roster-GM-
-modals/thin-ops/farm/forge/world-map) into `src/campaign/action-handlers/`;
-the `_handleAction` switch now holds only the unported modal / scenario-gen
-/ story-director cluster, behind the runtime seam. Remaining: finish H.3
-(that cluster, gated on moving `_activeMode`/`_activeTab` into TS) → H.4
+ported the registry seam + 124/246 actions (save/log/roster-ops/roster-GM-
+modals/thin-ops/farm/forge/world-map/nav/sequence/story-director/oracle/
+quest-chain/map/haven) into `src/campaign/action-handlers/`; the
+`_handleAction` switch now holds only the unported modal-machinery /
+scenario-gen cluster, behind the runtime seam. Remaining: finish H.3
+(that cluster — the shared manual builders + scenario gen + mini-game
+sessions + roster equip/job pickers + side/rumor/solo handlers) → H.4
 (`get*Data` → TS, then delete campaign-ui.js + `js/campaign/ui/`) → H.5
 (test rewrite). Phases I/J then pivot from "remove HTML strings" to
 "optimize the React tree + open the authoring loop for AI generators."
