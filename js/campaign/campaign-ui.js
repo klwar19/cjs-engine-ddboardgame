@@ -2814,10 +2814,6 @@ window.CJS.CampaignUI = (() => {
       case 'quest-check': return _questCheck(data.id);
       case 'quest-hand-in': return _questHandIn(data.id);
       case 'quest-answer': return _questAnswer(data.id);
-      case 'damage-char': return _charNumberOp(data.id, 'damage_character', 'Damage amount');
-      case 'heal-char': return _charNumberOp(data.id, 'heal_character', 'Heal amount');
-      case 'mp-char': return _charMpModal(data.id);
-      case 'status-char': return _charStatusModal(data.id);
       case 'party-sheet': return _partySheetModal(data.id);
       case 'recruit-character': return _recruitCharacterModal();
       case 'remove-character': return _removeCharacter(data.id);
@@ -2825,9 +2821,6 @@ window.CJS.CampaignUI = (() => {
       case 'learn-passive': return _learnPassiveModal(data.id);
       case 'equip-item': return _equipItemModal(data.id, data.slot);
       case 'stat-boost': return _statBoostModal(data.id);
-      case 'level-char': return _charNumberOp(data.id, 'add_level', 'Level change');
-      case 'grant-xp': return _grantXpModal(data.id);
-      case 'grant-job-xp': return _grantJobXpModal(data.id);
       case 'change-job': return _changeJobModal(data.id);
       case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'change-persona': return _changePersonaModal(data.id);
@@ -7260,67 +7253,9 @@ window.CJS.CampaignUI = (() => {
     return map[bucket] || 'take_item';
   }
 
-  function _charNumberOp(id, op, label) {
-    const member = CS().getState()?.party?.[id];
-    const max = op === 'heal_character' ? Math.max(member?.maxHp || 999, 1) : 999;
-    _numberModal({
-      title: `${label}: ${member?.name || id}`,
-      label,
-      value: 5,
-      min: 1,
-      max,
-      primaryLabel: 'Apply',
-      onSubmit: (amount) => {
-        if (amount) Ops().apply({ op, target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _charMpModal(id) {
-    const member = CS().getState()?.party?.[id];
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Direction'));
-    const dir = UI().createSelect({
-      options: [
-        { value: 'restore_mp', label: 'Restore MP' },
-        { value: 'spend_mp', label: 'Spend MP' }
-      ],
-      value: 'restore_mp'
-    });
-    body.appendChild(dir);
-    body.appendChild(_formLabel('Amount'));
-    const slider = UI().createNumberSlider({ value: 5, min: 1, max: Math.max(member?.maxMp || 99, 1), step: 1 });
-    body.appendChild(slider);
-    _formModal({
-      title: `MP: ${member?.name || id}`,
-      body,
-      primaryLabel: 'Apply',
-      onSubmit: () => {
-        const amount = slider._getValue();
-        if (!amount) return false;
-        Ops().apply({ op: dir.value, target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _charStatusModal(id) {
-    const member = CS().getState()?.party?.[id];
-    const options = _statusOptions();
-    if (!options.length) {
-      UI().toast('No statuses authored yet', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: `Add Status: ${member?.name || id}`,
-      options,
-      withDuration: true,
-      placeholder: 'Search statuses…',
-      primaryLabel: 'Apply Status',
-      onSubmit: ({ value, duration }) => {
-        Ops().apply({ op: 'add_status', target: id, status: value, duration: duration || 'manual' }, { source: 'ui' });
-      }
-    });
-  }
+  // Roster GM stat modals (_charNumberOp / _charMpModal / _charStatusModal
+  // → damage/heal/level-char, mp-char, status-char) ported to
+  // src/campaign/action-handlers/roster-modals.ts (H.3).
 
   function _partySheetModal(id) {
     const member = CS().getState()?.party?.[id];
@@ -7458,42 +7393,8 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _grantXpModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    _numberModal({
-      title: `Grant XP: ${member.name || id}`,
-      label: 'XP amount',
-      value: 50,
-      min: 1,
-      max: 99999,
-      primaryLabel: 'Grant',
-      onSubmit: (amount) => {
-        if (amount > 0) Ops().apply({ op: 'add_xp', target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _grantJobXpModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    if (!member.currentJob) {
-      UI().toast(`${member.name || id} has no active job. Pick one with the Job button first.`, 'info');
-      return;
-    }
-    const job = DS().get('jobs', member.currentJob);
-    _numberModal({
-      title: `Grant Job XP: ${member.name || id} (${job?.name || member.currentJob})`,
-      label: 'Job XP amount',
-      value: 30,
-      min: 1,
-      max: 99999,
-      primaryLabel: 'Grant',
-      onSubmit: (amount) => {
-        if (amount > 0) Ops().apply({ op: 'gain_job_xp', target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
+  // _grantXpModal / _grantJobXpModal (grant-xp / grant-job-xp) ported to
+  // src/campaign/action-handlers/roster-modals.ts (H.3).
 
   function _changePersonaModal(id) {
     const state = CS().getState();

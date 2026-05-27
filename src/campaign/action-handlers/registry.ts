@@ -22,6 +22,7 @@
 import type { CampaignActionName } from "../actionNames";
 import * as Actions from "../actions";
 import * as Roster from "./roster";
+import * as RosterModals from "./roster-modals";
 import * as Ops from "./ops";
 import * as Farm from "./farm";
 import * as Forge from "./forge";
@@ -62,6 +63,14 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "equip-passive": (d) => Roster.equipPassive(str(d.id), str(d.passiveId)),
   "unequip-passive": (d) => Roster.unequipPassive(str(d.id), str(d.passiveId)),
   "party-available": (d) => Roster.clearPartyAvailability(str(d.id)),
+  // ── Roster: GM stat modals (number / form / status-picker) ────────
+  "damage-char": (d) => RosterModals.charNumberOp(str(d.id), "damage_character", "Damage amount"),
+  "heal-char": (d) => RosterModals.charNumberOp(str(d.id), "heal_character", "Heal amount"),
+  "level-char": (d) => RosterModals.charNumberOp(str(d.id), "add_level", "Level change"),
+  "mp-char": (d) => RosterModals.charMpModal(str(d.id)),
+  "status-char": (d) => RosterModals.charStatusModal(str(d.id)),
+  "grant-xp": (d) => RosterModals.grantXpModal(str(d.id)),
+  "grant-job-xp": (d) => RosterModals.grantJobXpModal(str(d.id)),
   // ── Thin engine ops (phase / hub / quest / shop / combat) ─────────
   "pass-phase": () => Actions.passPhase(),
   "full-rest": () => Ops.fullRest(),

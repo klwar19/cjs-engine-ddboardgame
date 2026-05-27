@@ -59,6 +59,14 @@ export function ops(): CampaignOpsModule {
   return m;
 }
 
+interface DataStoreModule {
+  get: (type: string, id: string) => Record<string, unknown> | undefined;
+}
+
+export function ds(): DataStoreModule | undefined {
+  return mod<DataStoreModule>("DataStore");
+}
+
 export function cs(): CampaignStateModule {
   const m = cjs().CampaignState;
   if (!m) throw new Error("CampaignState not loaded");
