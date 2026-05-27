@@ -336,14 +336,22 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     hero / gameplay / GM action as JSX onClick. `renderRosterMember`
     stays as a thin HTML formatter over the same typed data for the
     party-sheet modal (one source of truth).
-  - [ ] **Roster detail row** (skills / passives / statuses / equipment
-    cards) stays one `detailCardsHtml` island. These cards are
-    icon-heavy (`Portraits.icon` / `_icon` emit HTML with no JSX
-    precedent) and as complex as the bridged external-module tabs, so
-    they are treated the same way: kept as a bridged HTML body whose
-    `data-campaign-action` routes through the shell forwarder (below),
-    not via per-card JSX. A later step can port them once an
-    icon-as-data path exists.
+  - [x] **Roster detail row** (skills / passives / statuses / equipment
+    cards) — **accepted as a permanently-bridged island**, not a TODO.
+    These cards are icon-heavy (`Portraits.icon` / `_icon` emit HTML with
+    no JSX precedent) and as complex as the bridged external-module tabs,
+    so they are treated the same way: kept as one `detailCardsHtml` HTML
+    body whose `data-campaign-action` buttons route through the shell
+    `<main>` forwarder (and the party-sheet modal's own delegate) →
+    `dispatchCampaignAction` / `_handleAction`. As of H.3 their action
+    surface (equip / unequip / unlearn skill+passive, unequip-item,
+    party-available, bench/activate) is **TS-registry-backed** — the
+    forwarder/delegate now resolve those names to typed handlers in
+    `action-handlers/roster.ts` + `actions.ts`, not the vanilla switch.
+    A future step can swap the HTML for per-card JSX once an
+    icon-as-data path exists, but parity + integration are complete; it
+    is not required for H.4 (the bridged body, like the external-module
+    tabs, survives the campaign-ui.js deletion as a forwarded island).
   - [x] **World Map / World Activities ported.** `getActivitiesData`
     drives `CampaignWorldActivitiesTab` (DIV-based groups + journal +
     pressure). `getTravelMapData` drives `CampaignWorldMapTab` — React
@@ -395,18 +403,82 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   switch) is now the single action entry point for both React onClick
   and the forwarder, ready for H.3. (`_openPanel`/`_closePanel` remain
   as the flag-guarded defensive no-ops the shell-bridge test asserts.)
-- [ ] **H.3 — Port `_handleAction` closures to TS.** Move each handler
+- [~] **H.3 — Port `_handleAction` closures to TS.** Move each handler
   (modals, scenario gen, story director, ops calls) into typed modules
-  under `src/campaign/actions/` domain-by-domain. `handleAction` shrinks
-  to a `Record<CampaignActionName, fn>` lookup; the switch is deleted
-  as cases migrate.
+  under `src/campaign/action-handlers/` domain-by-domain. `handleAction`
+  consults a `Record<CampaignActionName, fn>` registry first; the switch
+  is deleted as cases migrate.
+
+  **Done — the registry seam + the cleanly-separable domains (60/246):**
+  - **Seam.** `src/campaign/action-handlers/registry.ts` holds the
+    `Record<CampaignActionName, handler>` and installs
+    `window.CJS.CampaignActionsRuntime` (`has` / `run`). The vanilla
+    `_handleAction` consults that runtime *first*, falling through to the
+    switch for unported cases. This is the single seam for every dispatch
+    path: React onClick → `dispatchCampaignAction` → `handleAction`, the
+    shell `<main>` + drawer forwarders, and internal delegated callers
+    (the party-sheet modal). `action-handlers/context.ts` is the shared
+    typed accessor layer (`ops`/`cs`/`ui`/`toast`/`confirmDialog`/
+    `rerender`/`applyOp`/`mod<T>`). `main.tsx` imports the registry at
+    boot so the runtime is installed before the first action fires.
+  - **save + log** (14): new-save, save-slot, fork-save, export-save,
+    import-save, push-github, load-slot, delete-slot, delete-all-saves,
+    export-slot, export-log, clear-log, export-event-log, clear-event-log
+    → `actions.ts` (added `exportEventLog`/`clearEventLog`). Fixed a real
+    parity bug — the React save handlers now clear the boot-incompatible
+    banner via the new `CampaignUI.clearBootIncompatibleNotice`.
+  - **roster pure-ops** (10): bench/activate-character, unlearn-skill/
+    passive, equip/unequip-skill, equip/unequip-passive, unequip-item,
+    party-available → `action-handlers/roster.ts` (+ actions.ts for
+    bench/activate). These back the K.3-leftover detail-row island.
+  - **thin engine ops** (15): pass-phase, full-rest, review-resolve,
+    resolve-hub-problem, quest-complete/-fail, quest-event +
+    run-roll-event notices, shop-sell, run-tick-danger, reveal-node,
+    skip-victory/-defeat, cancel-battle, ignore-combat-result →
+    `action-handlers/ops.ts`.
+  - **farm / Pocket Haven** (12): farm-tick + FarmingMode passthroughs +
+    harvest-plot / open-fishing → `action-handlers/farm.ts`.
+  - **forge** (4): save-chain, queue-battle-set, save-battle-card,
+    save-map-seed → `action-handlers/forge.ts`.
+  - **world map** (5): world-map-travel/-switch-map/-interaction/
+    -node-action / world-activity-use → `action-handlers/worldmap.ts`.
+
+  `test_actions_bridge.js` now asserts union == (switch ∪ registry), the
+  two are disjoint, and the runtime install + consultation are wired.
+
+  **Remaining (~186) — the modal / scenario-gen / story-director cluster.**
+  These are *not* thin wrappers; they are interdependent closures that
+  (a) directly mutate the closure-private `_activeMode` / `_activeTab`
+  (the public `setActive*` auto-derive + render, so they can't replace a
+  raw assignment without a double-render that re-binds the run/farm
+  panels), and (b) call other private closures — modals (`_opPickerModal`
+  etc.), the mini-game session machinery (`_openMiniGameSession`,
+  `_applyMiniGameResult`), scenario gen (`_generateScenario`), and the
+  story-director beat modals (`_openStoryBeatModal`). Porting them safely
+  needs the **mode/tab state to move into TS first** (a raw, render-free
+  setter pair or a store slice), then each closure *cluster* ported
+  together (handler + the private helpers it transitively owns). The
+  registry seam makes that mechanical and incremental — each cluster adds
+  registry entries + deletes its switch cases with no React call-site
+  churn — but it is the genuine bulk and must stay behaviour-parity, so
+  it is left for the next pass rather than rushed.
 - [ ] **H.4 — Migrate `get*Data` bridges to TS** under
   `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
   CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
   `js/campaign/ui/`**. Stable leaf helpers (`Utils.esc`, `Log.logKind`,
   `Controls.actionBtn`, etc.) move to TS util modules first.
+  **Blocked on finishing H.3** — campaign-ui.js still owns the unported
+  `_handleAction` cluster + every `get*Data` bridge. The roster detail
+  row and external-module tabs stay bridged HTML islands across the
+  deletion (forwarded, like today). The mode/tab state migration noted
+  in H.3's "Remaining" is the natural first H.4 step.
 - [ ] **H.5 — Rewrite `test_campaign_ui_bootstrap.js`** against the
   React tree; fold `test_campaign_shell_bridge.js` into a TS unit test.
+  **Blocked on H.4** (the bootstrap test loads `js/campaign/ui/`, which
+  H.4 deletes). When it lands, a Node-importable test can exercise the
+  registry directly — the `action-handlers/` rename (vs the old
+  `actions/` dir that clashed with `actions.ts`) was done so Node's ESM
+  resolver can import these modules without an `ERR_*_DIR_IMPORT`.
 
 ## Phase I — Performance (after H)
 
@@ -536,19 +608,25 @@ finishes the authoring loop:
 | After K.3 roster hero + vitals | 552 |
 | After K.3 world activities + travel map | 552 (maps chunk 61→56) |
 | After H.2 forwarder + `_bindEvents` delete | 550 |
+| After H.3 save + log registry | 547 |
+| After H.3 roster pure-ops | 546 |
+| After H.3 thin-ops + farm + forge + world-map | 543 |
 
-Cumulative Phase F+G+K.3-so-far: 641 KB → 552 KB. Every closure-private
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 543 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
 tab bodies + roster hero in `cui-hub-tab.js` / `cui-party-tab.js` are
 JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
-bridged HTML: the roster detail row (icon-heavy), the world map (SVG),
-and the intentionally-vanilla external-module tabs + maps tab. H.1
-(typed dispatcher + action registry) was a logic/type change, not a
-size change — campaign-ui.js still holds the `_handleAction` switch, the
-`get*Data` bridges, and `_bindEvents`. Those come out in H.2
-(main-body forwarder + `_bindEvents` delete) → H.3 → H.4 → H.5. Phases
-I/J pivot from "remove HTML strings" to "optimize the React tree + open
-the authoring loop for AI generators."
+bridged HTML: the roster detail row (icon-heavy, action surface now
+TS-registry-backed), the world map (SVG), and the intentionally-vanilla
+external-module tabs + maps tab. `_bindEvents` is gone (H.2). H.3 has
+ported the registry seam + 60/246 actions (save/log/roster-ops/thin-ops/
+farm/forge/world-map) into `src/campaign/action-handlers/`; the
+`_handleAction` switch now holds only the unported modal / scenario-gen /
+story-director cluster, behind the runtime seam. Remaining: finish H.3
+(that cluster, gated on moving `_activeMode`/`_activeTab` into TS) → H.4
+(`get*Data` → TS, then delete campaign-ui.js + `js/campaign/ui/`) → H.5
+(test rewrite). Phases I/J then pivot from "remove HTML strings" to
+"optimize the React tree + open the authoring loop for AI generators."
 
 ## Done-when gate
 
