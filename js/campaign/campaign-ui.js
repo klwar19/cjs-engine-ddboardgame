@@ -2629,7 +2629,7 @@ window.CJS.CampaignUI = (() => {
       // action-handlers/oracle.ts (H.3).
       case 'battle-reroll': return _battleReroll();
       case 'battle-override': return _battleOverride();
-      case 'roll-hub-pulse': return _rollHubPulse(data.table);
+      // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
       case 'solo-surprise': return _rollSoloSurprise();
       case 'random-quest-offer': return _offerRandomQuest();
       case 'random-rumor-offer': return _offerRandomRumor();
@@ -2641,9 +2641,8 @@ window.CJS.CampaignUI = (() => {
       case 'ignore-solo-hook': return _ignoreSoloHook();
       // apply/save/reject/dismiss/copy side-card ported to
       // action-handlers/side.ts (H.3).
-      case 'resolve-rumor': return _resolveRumor(data.id, data.hubId);
-      case 'rumor-to-quest': return _rumorToQuest(data.id, data.hubId);
-      case 'rumor-to-problem': return _rumorToProblem(data.id, data.hubId);
+      // resolve-rumor / rumor-to-quest / rumor-to-problem ported to
+      // action-handlers/rumor.ts (H.3).
       case 'start-chain': return _startQuestChainRun(data.id);
       // advance-chain/complete-chain/fail-chain/promote-chain ported to
       // action-handlers/quest-chain.ts (H.3).
@@ -3686,13 +3685,7 @@ window.CJS.CampaignUI = (() => {
     _runPickBattle();
   }
 
-  function _rollHubPulse(table) {
-    _activeMode = 'event';
-    _activeTab = 'sideForge';
-    const card = window.CJS.CampaignHub.rollHubPulse(table);
-    if (!card) return UI().toast('No hub events available', 'info');
-    render();
-  }
+  // _rollHubPulse ported to action-handlers/rumor.ts (H.3).
 
   function _rollSoloSurprise() {
     const tables = ['town', 'guild', 'tavern', 'forge', 'weird'];
@@ -3957,65 +3950,8 @@ window.CJS.CampaignUI = (() => {
   // _applySideChoice / _saveSideIdea / _rejectSideIdea / _dismissSideCard
   // / _clearCurrentSideCard ported to action-handlers/side.ts (H.3).
 
-  function _rumorById(rumorId, hubId) {
-    const id = hubId || window.CJS.CampaignHub?.getCurrentHubId?.();
-    const hub = id ? CS().getHubState(id) : window.CJS.CampaignHub?.getCurrentHubState?.();
-    return { hubId: id, rumor: (hub?.rumors || []).find((entry) => entry.id === rumorId) };
-  }
-
-  function _resolveRumor(rumorId, hubId, status = 'resolved') {
-    const found = _rumorById(rumorId, hubId);
-    if (!found.rumor) return UI().toast('Rumor not found', 'info');
-    Ops().apply({ op: 'resolve_rumor', hubId: found.hubId, rumorId, status }, { source: 'rumor' });
-    render();
-    UI().toast(status === 'promoted' ? 'Rumor promoted and removed from open leads' : 'Rumor resolved', 'success');
-  }
-
-  function _rumorToQuest(rumorId, hubId) {
-    const found = _rumorById(rumorId, hubId);
-    const rumor = found.rumor;
-    if (!rumor) return UI().toast('Rumor not found', 'info');
-    const title = _truncate(rumor.text || rumor.id, 52);
-    const questId = `quest_rumor_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    Ops().apply([
-      {
-        op: 'add_quest',
-        quest: {
-          id: questId,
-          title: `Rumor: ${title}`,
-          status: 'active',
-          summary: rumor.text || '',
-          tags: ['rumor', ...(rumor.tags || [])],
-          objectives: [{ id: 'follow_lead', label: 'Follow the rumor lead', current: 0, required: 1 }],
-          rewards: []
-        }
-      },
-      { op: 'resolve_rumor', hubId: found.hubId, rumorId, status: 'promoted' }
-    ], { source: 'rumor_to_quest' });
-    _activeMode = 'quest';
-    _activeTab = 'quests';
-    render();
-    UI().toast('Rumor promoted to Quest', 'success');
-  }
-
-  function _rumorToProblem(rumorId, hubId) {
-    const found = _rumorById(rumorId, hubId);
-    const rumor = found.rumor;
-    if (!rumor) return UI().toast('Rumor not found', 'info');
-    const label = _truncate(rumor.text || rumor.id, 48);
-    Ops().apply([
-      {
-        op: 'hub_problem_add',
-        hubId: found.hubId,
-        problemId: `rumor_problem_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-        label,
-        notes: rumor.text || ''
-      },
-      { op: 'resolve_rumor', hubId: found.hubId, rumorId, status: 'promoted' }
-    ], { source: 'rumor_to_problem' });
-    render();
-    UI().toast('Rumor escalated to hub problem', 'success');
-  }
+  // _rumorById / _resolveRumor / _rumorToQuest / _rumorToProblem ported to
+  // action-handlers/rumor.ts (H.3).
 
   // _copySideCard ported to action-handlers/side.ts (H.3).
 

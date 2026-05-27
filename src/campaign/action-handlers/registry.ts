@@ -34,6 +34,7 @@ import * as Oracle from "./oracle";
 import * as MapActions from "./map";
 import * as Haven from "./haven";
 import * as Side from "./side";
+import * as Rumor from "./rumor";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -191,7 +192,12 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "dismiss-side-card": (d) => Side.dismissSideCard(str(d.id)),
   "copy-side-card": (d) => Side.copySideCard(str(d.id)),
   "import-side-pack": () => Side.importSidePack(),
-  "export-side-pack": () => Side.exportSidePack()
+  "export-side-pack": () => Side.exportSidePack(),
+  // ── Hub pulse + rumors ────────────────────────────────────────────
+  "roll-hub-pulse": (d) => Rumor.rollHubPulse(str(d.table)),
+  "resolve-rumor": (d) => Rumor.resolveRumor(str(d.id), str(d.hubId)),
+  "rumor-to-quest": (d) => Rumor.rumorToQuest(str(d.id), str(d.hubId)),
+  "rumor-to-problem": (d) => Rumor.rumorToProblem(str(d.id), str(d.hubId))
 };
 
 export function hasHandler(name: string): boolean {
