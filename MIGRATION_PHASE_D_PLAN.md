@@ -317,11 +317,61 @@ vanilla chrome. Until K.3 ports them to JSX (typed bridge + onClick),
 `_bindEvents`, `_handleAction`, and the chrome `_render*` helpers
 cannot be removed. So the remaining Phase H steps are gated on K.3:
 
-- [ ] **K.3 (prerequisite) — port HubTab / PartyTab / WorldMapTab**
-  tab bodies + drawer panels to typed bridges + JSX (same pattern as
-  Phase G). Removes the last `data-campaign-action` HTML strings.
-- [~] **H.2 — Remove the vanilla render fallback. (render() else-branch
-  done.)** `render()`'s unreachable else-branch (`_root.innerHTML`
+- [~] **K.3 (prerequisite) — port HubTab / PartyTab / WorldMapTab**
+  tab bodies to typed bridges + JSX (same pattern as Phase G).
+  - [x] **Hub family fully ported.** `battleSets` / `mapSeeds` /
+    `questChains` / `sideForge` / `oracleForge` are JSX
+    (`CampaignHubTabs.tsx` + `SideContent.tsx`, reusing `QuestChain.tsx`),
+    reading typed `getBattleSetsData` / `getMapSeedsData` /
+    `getQuestChainsData` / `getSideForgeData` / `getOracleForgeData`.
+    The shared SideCard + RumorRow are JSX with onClick dispatch; the
+    Town snapshot now returns structured rumors and renders `<RumorRow>`.
+    `cui-hub-tab.js` collapsed to a shared side-content **primitives**
+    library (no tab rendering, no `data-campaign-action`). Orphaned
+    `renderRumorPurpose` dropped from `cui-controls.js`.
+  - [x] **Roster member hero + vitals ported.** `getRosterData` +
+    `PartyTab.rosterMemberData` produce typed hero / identity / rank /
+    persona pill / job chip / vitals / stats / affinities;
+    `CampaignRosterTab.tsx` renders the active/bench panels and every
+    hero / gameplay / GM action as JSX onClick. `renderRosterMember`
+    stays as a thin HTML formatter over the same typed data for the
+    party-sheet modal (one source of truth).
+  - [ ] **Roster detail row** (skills / passives / statuses / equipment
+    cards) stays one `detailCardsHtml` island. These cards are
+    icon-heavy (`Portraits.icon` / `_icon` emit HTML with no JSX
+    precedent) and as complex as the bridged external-module tabs, so
+    they are treated the same way: kept as a bridged HTML body whose
+    `data-campaign-action` routes through the shell forwarder (below),
+    not via per-card JSX. A later step can port them once an
+    icon-as-data path exists.
+  - [x] **World Map / World Activities ported.** `getActivitiesData`
+    drives `CampaignWorldActivitiesTab` (DIV-based groups + journal +
+    pressure). `getTravelMapData` drives `CampaignWorldMapTab` — React
+    owns the `<section>`, `<svg>`, interactive node `<g>` wrappers
+    (onClick travel), location-detail panel, and area buttons; the
+    intricate inner SVG geometry (markers, labels, layers, roads, links)
+    arrives as raw-SVG strings (no JSX attribute-conversion risk). All
+    vanilla `renderTravelMap` / `renderActivities` + sub-renderers
+    deleted; `campaign-world-map.js` emits zero `data-campaign-action`;
+    `cui-world-map-tab.js` is a namespace stub.
+
+  > **Architectural finding (refines H.2/H.3).** "Removes the *last*
+  > `data-campaign-action`" was inaccurate: the bridged external-module
+  > tabs (`inventory` / `shops` / `craft` / `cook` / `farm` /
+  > `relationships`) and the `maps` tab (`campaign-map.js`) are
+  > *intentionally* kept as vanilla HTML and also emit
+  > `data-campaign-action` / `data-campaign-tab` into the **main body**,
+  > where they currently bubble to `_bindEvents`. Removing `_bindEvents`
+  > therefore needs a **single React main-body click forwarder** (on
+  > `<main className="campaign-main">` in `CampaignShell.tsx`, mirroring
+  > the existing `CampaignDrawer` forwarder) that routes every bridged
+  > `data-campaign-action` / `-mode` / `-tab` / `-panel` to
+  > `handleAction` / `setActive*`. With that forwarder, `_bindEvents`
+  > can be deleted **without** fully JSX-porting every icon-heavy body —
+  > the roster detail row and world map can stay bridged like the
+  > external modules. The forwarder must land *with* the `_bindEvents`
+  > deletion (H.2) to avoid double-dispatch.
+- [x] **H.2 — Remove the vanilla render fallback + `_bindEvents`.** `render()`'s unreachable else-branch (`_root.innerHTML`
   vanilla chrome) and its exclusive chrome helpers (`_renderHeader`,
   `_renderModeBar`, `_renderSubTabs`, `_renderRecentLogStrip`,
   `_renderCommandRail`, `_renderScenarioHud`,
@@ -333,8 +383,18 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   loading clobber in `init()` and the non-React branches of
   `_openPanel`/`_closePanel`. `_renderMain` stays as the `getMainBody`
   defensive fallback (reachable only if a tab id isn't registered).
-  `_bindEvents` stays until K.3 (HTML-bridge tabs still delegate
-  clicks through it).
+  **Done:** `_bindEvents` deleted. `CampaignShell`'s `<main>` now
+  forwards every bridged-body `data-campaign-action` / `-mode` / `-tab`
+  / `-panel` (external modules, maps, roster detail row, getMainBody
+  fallback) to `dispatchCampaignAction` / `setActiveMode/Tab/Panel`,
+  mirroring `_bindEvents` (panel → mode → tab → action). The farm-seed
+  `<select>` change routes to `FarmingMode.selectSeed`; the hidden
+  import-file input's change runs the new `importSaveFile` action. JSX
+  tabs already dispatch via onClick (no `data-*`, so no double-fire);
+  the drawer keeps its own forwarder. `handleAction` (→ `_handleAction`
+  switch) is now the single action entry point for both React onClick
+  and the forwarder, ready for H.3. (`_openPanel`/`_closePanel` remain
+  as the flag-guarded defensive no-ops the shell-bridge test asserts.)
 - [ ] **H.3 — Port `_handleAction` closures to TS.** Move each handler
   (modals, scenario gen, story director, ops calls) into typed modules
   under `src/campaign/actions/` domain-by-domain. `handleAction` shrinks
@@ -470,15 +530,24 @@ finishes the authoring loop:
 | After H.1 (typed dispatcher; logic-only) | 576 |
 | After orphan-closure cleanup (D–G dead code) | 576 |
 | After H.2 render-fallback removal | 569 |
+| After K.3 hub (battleSets + mapSeeds) | 568 |
+| After K.3 hub (questChains) | 560 |
+| After K.3 hub (sideForge + oracleForge) | 551 |
+| After K.3 roster hero + vitals | 552 |
+| After K.3 world activities + travel map | 552 (maps chunk 61→56) |
+| After H.2 forwarder + `_bindEvents` delete | 550 |
 
-Cumulative Phase F+G: 641 KB → 576 KB. Every closure-private
-`_render*` sub-renderer in campaign-ui.js is now JSX. H.1 (typed
-dispatcher + action registry) is a logic/type change, not a size
-change — campaign-ui.js still holds the `_handleAction` switch, the
-`get*Data` bridges, the vanilla render fallback, and the legacy
-hub/party/world-map tab HTML paths. Those come out in K.3 + H.2–H.5
-(K.3 is a hard prerequisite — see the Phase H section). Phases I/J
-pivot from "remove HTML strings" to "optimize the React tree + open
+Cumulative Phase F+G+K.3-so-far: 641 KB → 552 KB. Every closure-private
+`_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
+tab bodies + roster hero in `cui-hub-tab.js` / `cui-party-tab.js` are
+JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
+bridged HTML: the roster detail row (icon-heavy), the world map (SVG),
+and the intentionally-vanilla external-module tabs + maps tab. H.1
+(typed dispatcher + action registry) was a logic/type change, not a
+size change — campaign-ui.js still holds the `_handleAction` switch, the
+`get*Data` bridges, and `_bindEvents`. Those come out in H.2
+(main-body forwarder + `_bindEvents` delete) → H.3 → H.4 → H.5. Phases
+I/J pivot from "remove HTML strings" to "optimize the React tree + open
 the authoring loop for AI generators."
 
 ## Done-when gate

@@ -1,59 +1,26 @@
 import type { CampaignStateSnapshot } from "../store";
-import { dispatchCampaignAction } from "../actions";
+import { dispatchCampaignAction, type CampaignActionName } from "../actions";
+import { getRosterData, type RosterMemberData } from "./data/roster";
 
-// Vanilla `cui-party-tab.js` exposes per-member rendering helpers we
-// reuse for the inner card body. Porting those sub-renderers (skills,
-// passives, statuses, equipment loadout, etc.) to JSX is a separate
-// migration step — for now this tab owns the panel + bench structure
-// in React and delegates each member's body to the existing module so
-// `data-campaign-action` event delegation keeps working unchanged.
-interface PartyTabModule {
-  readonly renderRosterMember: (
-    id: string,
-    member: PartyMember,
-    helpers: unknown
-  ) => string;
-}
-
-interface CampaignUIModule {
-  readonly getTabHelpers: () => unknown;
-}
-
-interface PartyMember {
-  readonly name?: string;
-  readonly rosterRole?: string;
-  readonly [key: string]: unknown;
-}
-
-interface Cjs {
-  readonly CampaignUI?: CampaignUIModule;
-  readonly CampaignUIInternal?: { readonly PartyTab?: PartyTabModule };
-}
-
-function cjs(): Cjs {
-  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
-}
+// Roster tab (K.3). The active / bench panel structure, member hero
+// (identity, rank, persona pill, job chip, availability), vitals + stats
+// + affinities, and every gameplay / GM action are JSX with direct
+// onClick dispatch. The skills / passives / statuses / equipment detail
+// row is a 2-column CSS grid whose four cards must be direct grid
+// children to stretch evenly, so they stay one `detailCardsHtml` island
+// (JSX owns the grid div) until their own K.3 step ports them. Those
+// cards' data-campaign-action buttons still bubble to campaign-root's
+// delegated listener (_bindEvents), unchanged from before this port.
 
 interface Props {
   readonly state: CampaignStateSnapshot;
 }
 
 export function CampaignRosterTab({ state }: Props) {
-  const PartyTab = cjs().CampaignUIInternal?.PartyTab;
-  const UI = cjs().CampaignUI;
-  if (!PartyTab || !UI) {
-    return (
-      <div className="campaign-empty">Roster module not loaded.</div>
-    );
+  const data = getRosterData(state);
+  if (!data) {
+    return <div className="campaign-empty">Roster module not loaded.</div>;
   }
-  const helpers = UI.getTabHelpers();
-
-  // Active vs benched split mirrors the vanilla `renderRoster` partition.
-  const partyMap = (state.party as Record<string, PartyMember> | undefined) ?? {};
-  const entries = Object.entries(partyMap);
-  const active = entries.filter(([, m]) => (m.rosterRole || "active") !== "bench");
-  const bench = entries.filter(([, m]) => (m.rosterRole || "active") === "bench");
-
   return (
     <div className="campaign-tab-stack">
       <section className="campaign-panel">
@@ -66,12 +33,10 @@ export function CampaignRosterTab({ state }: Props) {
             Recruit
           </button>
         </div>
-        {active.length === 0 ? (
+        {data.active.length === 0 ? (
           <div className="campaign-empty">No active roster.</div>
         ) : (
-          active.map(([id, member]) => (
-            <MemberCard key={id} id={id} member={member} PartyTab={PartyTab} helpers={helpers} />
-          ))
+          data.active.map((member) => <RosterMemberCard key={member.id} member={member} />)
         )}
       </section>
 
@@ -79,36 +44,190 @@ export function CampaignRosterTab({ state }: Props) {
         <div className="campaign-panel-head">
           <h2>Bench</h2>
         </div>
-        {bench.length === 0 ? (
+        {data.bench.length === 0 ? (
           <div className="campaign-empty">No benched members.</div>
         ) : (
-          bench.map(([id, member]) => (
-            <MemberCard key={id} id={id} member={member} PartyTab={PartyTab} helpers={helpers} />
-          ))
+          data.bench.map((member) => <RosterMemberCard key={member.id} member={member} />)
         )}
       </section>
     </div>
   );
 }
 
-interface CardProps {
-  readonly id: string;
-  readonly member: PartyMember;
-  readonly PartyTab: PartyTabModule;
-  readonly helpers: unknown;
+// Hero / GM action button. All take the member id as `data-id`.
+function MemberActionBtn({
+  member,
+  action,
+  label,
+  title,
+  danger
+}: {
+  member: RosterMemberData;
+  action: CampaignActionName;
+  label: string;
+  title?: string;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      className={`campaign-action${danger ? " danger" : ""}`}
+      title={title}
+      onClick={() => dispatchCampaignAction(action, { id: member.id })}
+    >
+      {label}
+    </button>
+  );
 }
 
-function MemberCard({ id, member, PartyTab, helpers }: CardProps) {
-  // Vanilla `renderRosterMember` returns a complete `<article>` for the
-  // member, including every interactive button. React inserts it via
-  // dangerouslySetInnerHTML so the existing campaign-root event
-  // delegation still catches every `data-campaign-action` click.
-  let html: string;
-  try {
-    html = PartyTab.renderRosterMember(id, member, helpers);
-  } catch (error) {
-    console.error("renderRosterMember failed for", id, error);
-    html = `<article class="campaign-roster-member"><div class="campaign-empty">Failed to render ${id}.</div></article>`;
-  }
-  return <div className="campaign-roster-member-mount" dangerouslySetInnerHTML={{ __html: html }} />;
+function RosterMemberCard({ member }: { member: RosterMemberData }) {
+  const cls = [
+    "campaign-roster-member",
+    member.isBench ? "is-bench" : "is-active",
+    member.battleReady ? "" : "is-unavailable"
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <article className={cls}>
+      <header className="campaign-roster-hero">
+        <div
+          className="campaign-roster-portrait"
+          dangerouslySetInnerHTML={{ __html: member.portraitHtml }}
+        />
+        <div className="campaign-roster-hero-info">
+          <div className="campaign-roster-hero-title">
+            <strong className="campaign-roster-name">{member.name}</strong>
+            <span className={`campaign-pill ${member.battleReady ? "is-current" : "is-blocked"}`}>
+              {member.availLabel}
+            </span>
+            <span className="campaign-pill">{member.isBench ? "Bench" : "Active"}</span>
+            {member.persona && <PersonaPill member={member} persona={member.persona} />}
+          </div>
+          <div className="campaign-roster-hero-meta">
+            <span>
+              <b>Lv</b> {member.level}
+            </span>
+            <span title={member.rank.tooltip}>
+              <b>Rank</b> {member.rank.label}
+              {member.rank.trialPending && <span className="campaign-chip"> Trial!</span>}
+            </span>
+            <span
+              className="campaign-roster-hero-job"
+              dangerouslySetInnerHTML={{ __html: member.jobChipHtml }}
+            />
+            <span title={member.charXpMeta}>
+              <b>XP</b> {member.xp} <small>{member.xpSmall}</small>
+            </span>
+            <span className="campaign-muted">
+              {member.id}
+              {member.baseFrom ? ` from ${member.baseFrom}` : ""}
+            </span>
+          </div>
+          <div className="campaign-roster-action-groups">
+            <div className="campaign-roster-action-block">
+              <span className="campaign-roster-actions-title">Gameplay</span>
+              <div className="campaign-roster-hero-actions campaign-row-actions">
+                <MemberActionBtn
+                  member={member}
+                  action={member.isBench ? "activate-character" : "bench-character"}
+                  label={member.isBench ? "Activate" : "Bench"}
+                />
+                <MemberActionBtn member={member} action="party-sheet" label="Sheet" />
+                <MemberActionBtn member={member} action="change-job" label="Job Change" />
+                <MemberActionBtn member={member} action="show-job-tree" label="Job Tree" />
+                <MemberActionBtn member={member} action="change-persona" label="Persona" title="Switch world persona" />
+                <button
+                  className="campaign-action"
+                  title="Apply for a rank-up trial at the Adventurer Guild."
+                  onClick={() => dispatchCampaignAction("rank-up-apply")}
+                >
+                  Rank Trial
+                </button>
+                <MemberActionBtn member={member} action="party-availability" label="Availability" />
+              </div>
+            </div>
+            <details className="campaign-roster-action-block is-gm">
+              <summary className="campaign-roster-actions-title">GM Edit</summary>
+              <div className="campaign-roster-hero-actions campaign-row-actions">
+                <MemberActionBtn member={member} action="gm-member-override" label="GM Edit" />
+                <MemberActionBtn member={member} action="level-char" label="Level" />
+                <MemberActionBtn member={member} action="grant-xp" label="+XP" />
+                <MemberActionBtn member={member} action="grant-job-xp" label="+Job XP" />
+                <MemberActionBtn member={member} action="stat-boost" label="Stats" />
+                <MemberActionBtn member={member} action="learn-skill" label="Learn Skill" />
+                <MemberActionBtn member={member} action="learn-passive" label="Learn Passive" />
+                <MemberActionBtn member={member} action="status-char" label="Status" />
+                <MemberActionBtn member={member} action="remove-character" label="Remove" danger />
+              </div>
+            </details>
+          </div>
+        </div>
+      </header>
+
+      <div className="campaign-roster-vitals-row">
+        <section className="campaign-roster-card campaign-roster-vitals">
+          <div className="campaign-roster-card-title">Vitals</div>
+          <div className="campaign-bar">
+            <span className="hp" style={{ width: `${member.vitals.hpPct}%` }} />
+            <b>HP {member.vitals.hp}/{member.vitals.maxHp}</b>
+          </div>
+          <div className="campaign-bar">
+            <span className="mp" style={{ width: `${member.vitals.mpPct}%` }} />
+            <b>MP {member.vitals.mp}/{member.vitals.maxMp}</b>
+          </div>
+          <div className="campaign-roster-stats-grid">
+            {member.stats.map((stat, i) => (
+              <div key={i} className="campaign-roster-stat">
+                <span>{stat.name}</span>
+                <strong>{stat.value}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="campaign-roster-card campaign-roster-affinities">
+          <div className="campaign-roster-card-title">Affinities</div>
+          <div dangerouslySetInnerHTML={{ __html: member.resistancesHtml }} />
+        </section>
+      </div>
+
+      <RosterDetailRow member={member} />
+    </article>
+  );
+}
+
+function PersonaPill({
+  member,
+  persona
+}: {
+  member: RosterMemberData;
+  persona: NonNullable<RosterMemberData["persona"]>;
+}) {
+  return (
+    <span
+      className={persona.outOfWorld ? "campaign-pill is-blocked" : "campaign-pill"}
+      title={persona.tooltip}
+      style={{ cursor: "pointer" }}
+      onClick={() => dispatchCampaignAction("change-persona", { id: member.id })}
+    >
+      {persona.icon} {persona.label}
+      {persona.outOfWorld ? " ⚠" : ""}
+    </span>
+  );
+}
+
+// The detail row (skills / passives / statuses / equipment) is a
+// 2-column grid whose four cards must be direct children to stretch
+// evenly, so it stays one HTML island. JSX owns the actual
+// `.campaign-roster-detail-row` grid div (exact DOM parity); the cards'
+// data-campaign-action buttons bubble to campaign-root's delegated
+// listener (_bindEvents), unchanged from before this port. When H.2
+// removes _bindEvents, a single main-body forwarder in the shell will
+// catch these alongside the other bridged-module tabs.
+function RosterDetailRow({ member }: { member: RosterMemberData }) {
+  return (
+    <div
+      className="campaign-roster-detail-row"
+      dangerouslySetInnerHTML={{ __html: member.detailCardsHtml }}
+    />
+  );
 }

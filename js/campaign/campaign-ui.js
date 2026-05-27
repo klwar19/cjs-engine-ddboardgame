@@ -66,7 +66,6 @@ window.CJS.CampaignUI = (() => {
   const _purposeTone = _CUIControls.purposeTone;
   const _purposeKeyForCard = _CUIControls.purposeKeyForCard;
   const _renderInlinePurpose = _CUIControls.renderInlinePurpose;
-  const _renderRumorPurpose = _CUIControls.renderRumorPurpose;
   const _impactLegendItem = _CUIControls.impactLegendItem;
   const _controlGroup = _CUIControls.controlGroup;
   const _actionMenu = _CUIControls.actionMenu;
@@ -334,7 +333,10 @@ window.CJS.CampaignUI = (() => {
       }
       await window.CJS.CampaignSequences?.loadWorld?.(CS().getState()?.currentWorld || 'haven');
       await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
-      _bindEvents();
+      // _bindEvents() removed (Phase H.2): the React shell forwards every
+      // bridged-body data-campaign-action / -mode / -tab / -panel through
+      // its <main> click/change forwarder (and the drawer's own forwarder),
+      // routing to handleAction / setActive* — no campaign-root delegate.
       _bindEscapeForPanels();
       _bindCombatResultListener();
       _bindCombatReturnEvents();
@@ -1739,11 +1741,28 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // _renderQuestChainResolved, _renderSideStoryFlowGuide,
-  // _renderQuestChainStepCard, _renderQuestChainStepDetail,
-  // _questChainStepSystems, _renderQuestChainVnPanel, _renderChainStakes
-  // are referenced only inside the chain template card itself; they
-  // moved with the rest of the hub tab.
+  // K.3 — typed builders for the questChains tab body (flow guide +
+  // resolved rows). The active/template card data reuses the builders
+  // above; these two cover the parts the EventTab side panel didn't need.
+  function _sideStoryFlowGuideData(chain = {}) {
+    const phases = (chain.phasePlan || []).slice(0, 4)
+      .map((phase) => `${phase.chapterLabel || phase.id || ''} ${phase.title || phase.phaseType || ''}`.trim())
+      .filter(Boolean);
+    return {
+      title: String(chain.title || chain.name || 'Side Story'),
+      summary: String(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.'),
+      phases: phases.map(String)
+    };
+  }
+
+  function _questChainResolvedData(chain = {}) {
+    const template = chain.template || {};
+    return {
+      title: String(chain.title || template.title || chain.templateId || ''),
+      statusLabel: _label(chain.status || 'resolved'),
+      phaseLabel: String(chain.completedAtPhase || chain.failedAtPhase || '-')
+    };
+  }
 
   function _startQuestChainRun(templateId) {
     const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
@@ -2584,56 +2603,13 @@ window.CJS.CampaignUI = (() => {
   // live in `js/campaign/ui/cui-log.js`; the React side reuses them so
   // categorisation stays consistent with the recent-log strip in the
   // header (which is still vanilla-rendered).
-  function _bindEvents() {
-    _root.addEventListener('click', (event) => {
-      const panelBtn = event.target.closest('[data-campaign-panel]');
-      if (panelBtn) {
-        event.preventDefault();
-        _openPanel(panelBtn.dataset.campaignPanel);
-        return;
-      }
-
-      const mode = event.target.closest('[data-campaign-mode]');
-      if (mode) {
-        const id = mode.dataset.campaignMode;
-        _activeMode = id;
-        const tabId = _defaultTabForMode(id, CS().getState());
-        if (tabId) _activeTab = tabId;
-        render();
-        return;
-      }
-
-      const tab = event.target.closest('[data-campaign-tab]');
-      if (tab) {
-        const id = tab.dataset.campaignTab;
-        _activeTab = id;
-        const owningMode = APP_TAB_TO_MODE[id];
-        if (owningMode) _activeMode = owningMode;
-        render();
-        return;
-      }
-
-      const action = event.target.closest('[data-campaign-action]');
-      if (!action) return;
-      event.preventDefault();
-      _handleAction(action.dataset, action);
-    });
-
-    _root.addEventListener('change', (event) => {
-      const farmSelect = event.target.closest?.('[data-farm-select]');
-      if (farmSelect) {
-        if (farmSelect.dataset.farmSelect === 'seed') window.CJS.FarmingMode?.selectSeed?.(farmSelect.value);
-        return;
-      }
-      if (event.target.id === 'campaign-import-file') {
-        Save().importFile(event.target.files?.[0]).then(() => {
-          UI().toast('Campaign save imported', 'success');
-          render();
-        }).catch((error) => UI().toast(error.message || 'Import failed', 'error'));
-        event.target.value = '';
-      }
-    });
-  }
+  // _bindEvents removed in Phase H.2. The campaign-root click/change
+  // delegation moved into the React shell: `CampaignShell.tsx` forwards
+  // every bridged-body `data-campaign-action` / `-mode` / `-tab` /
+  // `-panel` (external-module tabs, maps, roster detail row) through its
+  // `<main>` onClick/onChange to `handleAction` / `setActive*`, and the
+  // hidden import-file input's change runs `importSaveFile`. Migrated JSX
+  // tabs already dispatch via onClick. The drawer keeps its own forwarder.
 
   // Phase H.1 — public typed action boundary. React components call
   // `CampaignActions.dispatchCampaignAction(name, data)` which routes
@@ -10136,9 +10112,7 @@ window.CJS.CampaignUI = (() => {
         id: String(problem),
         label: _label(problem)
       })),
-      rumorRowsHtml: rumors.slice(0, 3)
-        .map((rumor) => HubTab?.renderRumorRow?.(rumor, { compact: true }) || '')
-        .join(''),
+      rumors: rumors.slice(0, 3).map((rumor) => _rumorRowData(rumor, { compact: true })),
       locations: (hub.locations || []).slice(0, 5).map((loc) => ({
         id: String(loc.id || ''),
         name: String(loc.name || loc.id || ''),
@@ -10167,6 +10141,196 @@ window.CJS.CampaignUI = (() => {
         short: String(summary.short || ''),
         hasOps
       }
+    };
+  }
+
+  // K.3 — typed bridges for the Battle Sets / Map Seeds forge tabs.
+  // Replaces HubTab.renderBattleSets / renderMapSeeds (HTML strings with
+  // data-campaign-action) with structured data the React tree renders as
+  // JSX (src/campaign/tabs/CampaignHubTabs.tsx).
+  function getBattleSetsData() {
+    const cards = window.CJS.CampaignBattleSetForge?.getCards?.() || [];
+    return {
+      cards: cards.map((card) => ({
+        id: String(card.id || ''),
+        name: String(card.name || card.id || ''),
+        canonRisk: String(card.canonRisk || 'green'),
+        canonRiskClass: Side().riskClass(card.canonRisk),
+        rank: String(card.rank || '-'),
+        objective: String(card.objective || ''),
+        tags: Array.isArray(card.tags) ? card.tags.map(String) : [],
+        enemyMix: (card.enemyMix || []).map((enemy) => ({
+          qty: Number(enemy.qty || 1),
+          label: String(enemy.label || enemy.name || enemy.id || 'unit')
+        })),
+        gimmick: String(card.gimmick || ''),
+        queueLabel: card.encounterId ? 'Queue Combat' : 'Queue Manual'
+      }))
+    };
+  }
+
+  function getQuestChainsData() {
+    const QC = window.CJS.CampaignQuestChains;
+    if (!QC) {
+      return { activeCount: 0, availableCount: 0, flowGuide: null, active: [], finished: [], available: [] };
+    }
+    const available = QC.getAvailable?.() || [];
+    const active = QC.getActive?.() || [];
+    const finished = QC.getFinished?.() || [];
+    const guideSource = active[0]?.template || available[0] || null;
+    return {
+      activeCount: active.length,
+      availableCount: available.length,
+      flowGuide: guideSource ? _sideStoryFlowGuideData(guideSource) : null,
+      active: active.map((chain) => _questChainActiveData(chain)),
+      finished: finished.map((chain) => _questChainResolvedData(chain)),
+      available: available.map((chain) => _questChainTemplateData(chain))
+    };
+  }
+
+  function getMapSeedsData() {
+    const seeds = window.CJS.CampaignMapSeedForge?.getSeeds?.() || [];
+    return {
+      seeds: seeds.map((seed) => ({
+        id: String(seed.id || ''),
+        name: String(seed.name || seed.id || ''),
+        canonRisk: String(seed.canonRisk || 'green'),
+        canonRiskClass: Side().riskClass(seed.canonRisk),
+        purpose: (Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean))
+          .map(String).join(', '),
+        nodes: (seed.nodes || []).map((node) => ({
+          name: String(node.name || node.id || ''),
+          detail: String(node.role || node.notes || '')
+        }))
+      }))
+    };
+  }
+
+  // K.3 — typed side-content card + rumor-row data for the Side Forge /
+  // Oracle Forge tabs (and the Town snapshot rumor rows). Display-only
+  // sub-pieces (inline purpose, flavor trail, choice consequence preview)
+  // stay as pre-rendered HTML the JSX inserts via a <HtmlBridge> div —
+  // the same display-bridge pattern ResultPanels uses; none carry
+  // data-campaign-action. Only the action buttons move to JSX onClick.
+  function _sideCardData(card = {}, options = {}) {
+    const compact = !!options.compact;
+    const choices = card.suggestedChoices || [];
+    const primaryOps = _cardChoiceOps(card);
+    const summary = _consequenceSummary(primaryOps, { hasText: !!(card.prompt || card.text || card.summary) });
+    return {
+      id: String(card.id || ''),
+      title: String(card.title || card.name || card.id || ''),
+      subtitle: `${card.type || 'side content'} | ${card.source || ''} | ${card.status || 'idea'}`,
+      tone: String(summary.tone || 'flavor'),
+      toneLabel: String(summary.label || ''),
+      canonRisk: String(card.canonRisk || 'green'),
+      canonRiskClass: Side().riskClass(card.canonRisk),
+      compact,
+      purposeHtml: compact ? '' : _renderInlinePurpose(_purposeKeyForCard(card)),
+      prompt: String(card.prompt || ''),
+      text: String(card.text || ''),
+      summary: (!compact && card.summary) ? String(card.summary) : '',
+      flavorTrailHtml: compact ? '' : _renderFlavorTrail(card),
+      gmKeywords: (!compact && Array.isArray(card.gmKeywords)) ? card.gmKeywords.map(String) : [],
+      gmNote: compact ? '' : String(card.gmNote || ''),
+      choiceStackHtml: (!compact && choices.length)
+        ? choices.map((choice, index) => _renderConsequencePreview(choice.ops || [], {
+            title: choice.label || `Choice ${index + 1}`,
+            emptyTitle: choice.label || `Choice ${index + 1}`,
+            emptyText: 'Flavor choice only. Save it as text or use it to steer the next scene.'
+          })).join('')
+        : '',
+      choiceButtons: choices.map((choice, index) => ({
+        index,
+        label: String(choice.label || `Choice ${index + 1}`)
+      })),
+      showDismiss: !compact
+    };
+  }
+
+  function _rumorRowData(rumor = {}, options = {}) {
+    const hubId = window.CJS.CampaignHub?.getCurrentHubId?.() || '';
+    return {
+      id: String(rumor.id || ''),
+      hubId: String(hubId),
+      text: String(rumor.text || rumor.id || ''),
+      statusLabel: String(rumor.status || 'active'),
+      riskLabel: _label(rumor.canonRisk || 'green'),
+      canonRisk: String(rumor.canonRisk || 'green'),
+      canonRiskClass: Side().riskClass(rumor.canonRisk),
+      compact: !!options.compact
+    };
+  }
+
+  function getSideForgeData(state = CS().getState()) {
+    if (!state) return null;
+    const Hub = window.CJS.CampaignHub;
+    const hub = Hub?.getCurrentHubDefinition?.() || {};
+    const hubState = Hub?.getCurrentHubState?.() || {};
+    const last = state.lastSideContentCard;
+    const ideas = Object.values(state.sideContent?.generatedIdeas || {});
+    const saved = ideas.filter((idea) => idea.status === 'saved' || idea.status === 'active');
+    const review = state.sideContent?.reviewQueue || [];
+    const history = state.sideContent?.contentHistory || [];
+    return {
+      hubName: String(hub.name || 'Living Hub'),
+      hubDescription: String(hub.description || 'Town pulse, rumors, problems, and content review queue.'),
+      hubId: String(hub.id || ''),
+      moodLabel: _label(hubState.mood || 'neutral'),
+      stats: {
+        security: Number(hubState.security ?? 0),
+        prosperity: Number(hubState.prosperity ?? 0),
+        warmth: Number(hubState.warmth ?? 0),
+        weirdness: Number(hubState.weirdness ?? 0)
+      },
+      problemPurposeHtml: _renderInlinePurpose('problem'),
+      problems: (hubState.activeProblems || []).map((problem) => ({
+        id: String(problem),
+        label: _label(problem)
+      })),
+      lastCard: last ? _sideCardData(last, { mode: 'last' }) : null,
+      rumors: _openRumors(hubState).slice(0, 6).map((rumor) => _rumorRowData(rumor)),
+      savedIdeas: saved.slice(0, 8).map((idea) => _sideCardData(idea, { compact: true })),
+      review: review.slice(0, 8).map((item) => ({
+        id: String(item.id || ''),
+        contentId: String(item.contentId || ''),
+        reason: String(item.reason || ''),
+        canonRisk: String(item.canonRisk || 'red'),
+        canonRiskClass: Side().riskClass(item.canonRisk)
+      })),
+      history: history.slice(0, 10).map((line) => ({
+        title: String(line.title || line.type || ''),
+        result: String(line.result || ''),
+        phaseLabel: String(line.phase ?? '')
+      }))
+    };
+  }
+
+  function getOracleForgeData(state = CS().getState()) {
+    if (!state) return null;
+    const last = state.lastSideContentCard?.type === 'oracle_prompt' ? state.lastSideContentCard : null;
+    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || [];
+    return {
+      purposeHtml: _renderInlinePurpose('oracle'),
+      tableNames: tables.map((table) => String(table.name || table.id || '')).join(', ') || 'No oracle tables loaded.',
+      lastCard: last ? _sideCardData(last, { mode: 'oracle' }) : null
+    };
+  }
+
+  // K.3 — typed roster-tab data. Delegates the per-member breakdown to
+  // PartyTab.rosterMemberData (hero + vitals + stats + affinities typed;
+  // the skills/passives/statuses/equipment detail row stays one HTML
+  // island until its own K.3 step). React renders CampaignRosterTab.tsx.
+  function getRosterData(state = CS().getState()) {
+    if (!state) return null;
+    const PartyTab = window.CJS.CampaignUIInternal.PartyTab;
+    if (!PartyTab?.rosterMemberData) return null;
+    const h = _tabHelpers();
+    const entries = Object.entries(state.party || {});
+    const toData = ([id, member]) => PartyTab.rosterMemberData(id, member, h);
+    return {
+      active: entries.filter(([, m]) => (m.rosterRole || 'active') !== 'bench').map(toData),
+      bench: entries.filter(([, m]) => (m.rosterRole || 'active') === 'bench').map(toData)
     };
   }
 
@@ -10298,6 +10462,12 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     getTownSnapshotData,
     getTownRollFloatData,
+    getRosterData,
+    getSideForgeData,
+    getOracleForgeData,
+    getBattleSetsData,
+    getMapSeedsData,
+    getQuestChainsData,
     getAdventureLegendVisible,
     getStorySummaryData,
     getQuestHomeData,

@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCampaignState, type CampaignStateSnapshot } from "./store";
 import { CampaignHelpPopover } from "./HelpPopover";
-import { dispatchCampaignAction, type CampaignActionName } from "./actions";
+import { dispatchCampaignAction, importSaveFile, type CampaignActionName } from "./actions";
 import { CampaignHeader } from "./shell/Header";
 import { CampaignModeBar } from "./shell/ModeBar";
 import { CampaignSubTabs } from "./shell/SubTabs";
 import { CampaignRecentLog } from "./shell/RecentLog";
 import { CampaignCommandRail } from "./shell/CommandRail";
-import { getChromeData } from "./shell/bridge";
+import { getChromeData, setActiveMode, setActiveTab, setActivePanel } from "./shell/bridge";
 import { CampaignSettingsTab } from "./tabs/CampaignSettingsTab";
 import { CampaignLogsTab } from "./tabs/CampaignLogsTab";
 import { CampaignRosterTab } from "./tabs/CampaignRosterTab";
@@ -90,15 +90,72 @@ interface SeqAttach {
   readonly init?: () => void;
 }
 
+interface FarmingModeModule {
+  readonly selectSeed?: (value: string) => void;
+}
+
 interface ShellCjs {
   readonly CampaignUI?: CampaignUIShell;
   readonly ScenePlayer?: SceneAttach;
   readonly CampaignSequenceVN?: SeqAttach;
   readonly L2DCompanion?: L2dAttach;
+  readonly FarmingMode?: FarmingModeModule;
 }
 
 function cjs(): ShellCjs {
   return (window as unknown as { CJS?: ShellCjs }).CJS ?? {};
+}
+
+// Main-body click/change forwarder. The bridged HTML tabs — the external
+// modules (inventory/shops/craft/cook/farm/relationships), the maps tab,
+// and the roster detail row — still emit `data-campaign-action` /
+// `-mode` / `-tab` / `-panel`. With the legacy `_bindEvents` delegate
+// removed (H.2), this forwarder routes those to the typed dispatch /
+// setters, mirroring `_bindEvents` exactly (panel → mode → tab → action).
+// JSX buttons use onClick directly and carry no `data-*` attribute, so
+// they never match here — no double-fire. Lives on `<main>`; the drawer
+// keeps its own forwarder (it is portaled outside this subtree).
+function forwardBridgedClick(e: React.MouseEvent<HTMLElement>) {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  const panelBtn = target.closest("[data-campaign-panel]") as HTMLElement | null;
+  if (panelBtn) {
+    e.preventDefault();
+    setActivePanel(panelBtn.dataset.campaignPanel ?? null);
+    return;
+  }
+  const modeBtn = target.closest("[data-campaign-mode]") as HTMLElement | null;
+  if (modeBtn) {
+    const id = modeBtn.dataset.campaignMode;
+    if (id) setActiveMode(id);
+    return;
+  }
+  const tabBtn = target.closest("[data-campaign-tab]") as HTMLElement | null;
+  if (tabBtn) {
+    const id = tabBtn.dataset.campaignTab;
+    if (id) setActiveTab(id);
+    return;
+  }
+  const actionBtn = target.closest("[data-campaign-action]") as HTMLElement | null;
+  if (!actionBtn) return;
+  e.preventDefault();
+  const action = actionBtn.dataset.campaignAction;
+  if (!action) return;
+  const payload: Record<string, string | number | undefined> = {};
+  for (const k of Object.keys(actionBtn.dataset)) {
+    if (k === "campaignAction") continue;
+    payload[k] = actionBtn.dataset[k];
+  }
+  dispatchCampaignAction(action as CampaignActionName, payload);
+}
+
+function forwardBridgedChange(e: React.ChangeEvent<HTMLElement>) {
+  const farmSelect = (e.target as HTMLElement | null)?.closest?.(
+    "[data-farm-select]"
+  ) as HTMLSelectElement | null;
+  if (farmSelect && farmSelect.dataset.farmSelect === "seed") {
+    cjs().FarmingMode?.selectSeed?.(farmSelect.value);
+  }
 }
 
 // Registry of React-owned tabs. Mirrors the vanilla
@@ -257,14 +314,27 @@ export function CampaignShell() {
         />
         <CampaignRecentLog data={chrome.recentLog} />
         <div className="campaign-body">
-          <main className="campaign-main">
+          <main
+            className="campaign-main"
+            onClick={forwardBridgedClick}
+            onChange={forwardBridgedChange}
+          >
             {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
           </main>
           <aside className="campaign-rail">
             <CampaignCommandRail data={chrome.commandRail} />
           </aside>
         </div>
-        <input type="file" id="campaign-import-file" accept=".json" hidden />
+        <input
+          type="file"
+          id="campaign-import-file"
+          accept=".json"
+          hidden
+          onChange={(e) => {
+            importSaveFile(e.target.files?.[0]);
+            e.currentTarget.value = "";
+          }}
+        />
       </div>
       {activePanel ? <CampaignDrawer panelId={activePanel} state={state} /> : null}
       <CampaignHelpPopover />

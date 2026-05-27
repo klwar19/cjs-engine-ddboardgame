@@ -1,9 +1,10 @@
 // TownPanels.tsx — Phase G.16 JSX port of `_renderTownSnapshot` and
-// `_renderTownRollFloat` (Overview tab). The underlying hub state
-// still lives in the HubTab module; the rumor rows inside the
-// snapshot stay an HTML bridge until HubTab itself ports (K.3).
+// `_renderTownRollFloat` (Overview tab). The rumor rows render through
+// the shared <RumorRow> JSX (K.3); the underlying hub state still lives
+// in the HubTab module behind the typed `getTownSnapshotData` bridge.
 
 import { dispatchCampaignAction } from "../actions";
+import { RumorRow } from "./SideContent";
 import type {
   TownSnapshotData,
   TownRollFloatData,
@@ -66,12 +67,9 @@ export function TownSnapshotPanel({ data }: { data: TownSnapshotData }) {
           ) : (
             <div className="campaign-empty">No active hub problems.</div>
           )}
-          {data.rumorRowsHtml && (
-            <div
-              className="campaign-town-rumors-bridge"
-              dangerouslySetInnerHTML={{ __html: data.rumorRowsHtml }}
-            />
-          )}
+          {data.rumors.map((rumor) => (
+            <RumorRow key={rumor.id} rumor={rumor} />
+          ))}
         </div>
         <div>
           <div className="campaign-section-title">Places</div>

@@ -109,52 +109,145 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     `;
   }
 
-  function renderRoster(state, h) {
-    const entries = Object.entries(state.party || {});
-    const active = entries.filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
-    const bench = entries.filter(([, member]) => (member.rosterRole || 'active') === 'bench');
-    return `
-      <div class="campaign-tab-stack">
-        <section class="campaign-panel">
-          <div class="campaign-panel-head">
-            <h2>Roster</h2>
-            <button class="campaign-action" data-campaign-action="recruit-character">Recruit</button>
-          </div>
-          ${active.length ? active.map(([id, member]) => renderRosterMember(id, member, h)).join('') : '<div class="campaign-empty">No active roster.</div>'}
-        </section>
-        <section class="campaign-panel">
-          <div class="campaign-panel-head"><h2>Bench</h2></div>
-          ${bench.length ? bench.map(([id, member]) => renderRosterMember(id, member, h)).join('') : '<div class="campaign-empty">No benched members.</div>'}
-        </section>
-      </div>
-    `;
+  // The roster tab body (active / bench panels) is React-owned (K.3) —
+  // `src/campaign/tabs/CampaignRosterTab.tsx` reads typed `getRosterData`
+  // and renders each member from `rosterMemberData` below.
+
+  // ── Roster member typed data (K.3) ─────────────────────────────────
+  // `rosterMemberData` powers the JSX roster card (hero + vitals + stats
+  // + affinities). The detail row (skills / passives / statuses /
+  // equipment) is a 2-column CSS grid; mixing JSX and bridged cards there
+  // breaks the row-height stretch, so its four cards stay one HTML island
+  // (`detailCardsHtml`) until their own K.3 step ports them. Every
+  // hero/action button moves to JSX onClick; the persona pill (the one
+  // hero element carrying data-campaign-action) becomes typed data.
+
+  function _personaPillData(memberId, member = {}) {
+    const personaId = member.activePersona || null;
+    if (!personaId) return null;
+    const persona = _DS().get('personas', personaId);
+    if (!persona) return null;
+    const state = _CS().getState();
+    const outOfWorld = !!(persona.world && state?.currentWorld && persona.world !== state.currentWorld);
+    const worldName = persona.world ? (_DS().get('worlds', persona.world)?.displayName || persona.world) : '';
+    const jobShort = member.currentJob ? (_DS().get('jobs', member.currentJob)?.name || member.currentJob) : '';
+    return {
+      icon: String(persona.icon || '🎭'),
+      label: jobShort ? `${persona.name} · ${jobShort}` : String(persona.name || personaId),
+      tooltip: outOfWorld ? `${persona.name} (${worldName}) — out of world. ⚠` : `${persona.name} (${worldName})`,
+      outOfWorld
+    };
   }
 
-  function renderRosterMember(id, member, h) {
-    const U = _U();
-    const P = _P();
-    const esc = U.esc;
-    const escAttr = U.escAttr;
-    const base = h.memberBase(id, member);
-    const stats = h.memberStats(id, member);
+  // Returns the four detail-row cards (skills / passives / statuses /
+  // equipment) WITHOUT the `.campaign-roster-detail-row` grid wrapper, so
+  // the JSX tab can own that grid div directly (exact DOM parity) while
+  // the party-sheet modal wraps it itself.
+  function _rosterDetailCardsHtml(id, member, h) {
+    const esc = _U().esc;
+    const escAttr = _U().escAttr;
     const skills = h.memberSkillEntries(id, member);
     const passives = h.memberPassives(id, member);
     const statuses = member.statuses || [];
+    return `
+        <section class="campaign-roster-card campaign-roster-skills">
+          <div class="campaign-roster-card-title">
+            <span>Skills</span>
+            <small class="campaign-muted">${renderSelectionBudgetBadge(id, member, 'skill')}</small>
+          </div>
+          ${renderSkillSlotView(id, member)}
+          <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${memberSkillPoolCount(id, member)} in pool)</summary>${renderSkillPoolList(id, member, skills, h)}</details>
+        </section>
+        <section class="campaign-roster-card campaign-roster-passives">
+          <div class="campaign-roster-card-title">
+            <span>Passives</span>
+            <small class="campaign-muted">${renderSelectionBudgetBadge(id, member, 'passive')}</small>
+          </div>
+          ${renderPassiveSlotView(id, member)}
+          <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${memberPassivePoolCount(id, member)} in pool)</summary>${renderPassivePoolList(id, member, passives, h)}</details>
+        </section>
+        <section class="campaign-roster-card campaign-roster-statuses">
+          <div class="campaign-roster-card-title">
+            <span>Statuses</span>
+            <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${escAttr(id)}">+</button>
+          </div>
+          ${statuses.length ? statuses.map((status) => renderKnownStatus(status, h)).join('') : '<div class="campaign-empty">No statuses.</div>'}
+        </section>
+        <section class="campaign-roster-card campaign-roster-equipment">
+          <div class="campaign-roster-card-title"><span>Equipment</span></div>
+          ${h.renderEquipmentLoadout(id, member)}
+        </section>
+    `;
+  }
+
+  function rosterMemberData(id, member, h) {
+    const base = h.memberBase(id, member);
+    const stats = h.memberStats(id, member);
     const isBench = (member.rosterRole || 'active') === 'bench';
     const F = _F();
     const charLevel = Number(member.level || 1);
     const charXp = Number(member.xp || 0);
     const xpToNext = F?.calcCharXpToNextLevel ? F.calcCharXpToNextLevel(charXp, charLevel) : null;
-    const charXpMeta = xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`;
     const Bridge = _Bridge();
     const battleReady = Bridge?.isMemberBattleReady ? Bridge.isMemberBattleReady(member) : true;
     const availLabel = battleReady ? 'Ready' : (Bridge?.availabilityLabel?.(member) || 'Unavailable');
+    const P = _P();
+    const escAttr = _U().escAttr;
+    const esc = _U().esc;
     const resolvedPortrait = P.memberPortrait(member, id);
     const resolvedFocus = P.memberPortraitFocus(member, id);
-    const portraitContent = resolvedPortrait
+    const portraitHtml = resolvedPortrait
       ? `<img src="${escAttr(resolvedPortrait)}" alt="" style="${escAttr(P.focusAttrStyle(resolvedFocus))}">`
       : `<span class="campaign-roster-portrait-fallback">${esc(member.icon || member.name?.[0] || '?')}</span>`;
-    const rosterToggle = `<button class="campaign-action" data-campaign-action="${isBench ? 'activate-character' : 'bench-character'}" data-id="${escAttr(id)}">${isBench ? 'Activate' : 'Bench'}</button>`;
+    const rankInfo = h.memberRankInfo(member);
+    return {
+      id: String(id),
+      name: String(member.name || base?.name || id),
+      baseFrom: (base?.id && base.id !== id) ? String(base.id) : '',
+      isBench,
+      battleReady,
+      availLabel: String(availLabel),
+      level: charLevel,
+      xp: charXp,
+      xpSmall: xpToNext != null ? `(${xpToNext} to next)` : '(max)',
+      charXpMeta: xpToNext != null ? `XP ${charXp} (${xpToNext} to next)` : `XP ${charXp} (max)`,
+      rank: {
+        label: String(rankInfo.label),
+        trialPending: !!rankInfo.trialPending,
+        tooltip: rankInfo.atMax ? 'Max rank' : `RP ${rankInfo.rp}/${rankInfo.threshold} → ${rankInfo.next || '—'}`
+      },
+      portraitHtml,
+      persona: _personaPillData(id, member),
+      jobChipHtml: h.renderJobChip(id, member),
+      vitals: {
+        hpPct: Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100),
+        mpPct: Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100),
+        hp: Number(member.currentHp || 0),
+        maxHp: Number(member.maxHp || 0),
+        mp: Number(member.currentMp || 0),
+        maxMp: Number(member.maxMp || 0)
+      },
+      stats: Object.entries(stats).map(([stat, value]) => ({
+        name: h.statName(stat),
+        value: Number(value || 0)
+      })),
+      resistancesHtml: h.renderResistances(base, member, stats),
+      detailCardsHtml: _rosterDetailCardsHtml(id, member, h)
+    };
+  }
+
+  // renderRosterMember — HTML member sheet for the party-sheet modal
+  // (`_partySheetModal`, which has its own click delegation). The roster
+  // TAB renders JSX from `rosterMemberData`; this formatter derives from
+  // the same typed data so there is one source of truth.
+  function renderRosterMember(id, member, h) {
+    const esc = _U().esc;
+    const escAttr = _U().escAttr;
+    const d = rosterMemberData(id, member, h);
+    const personaPill = d.persona
+      ? `<span class="${d.persona.outOfWorld ? 'campaign-pill is-blocked' : 'campaign-pill'}" title="${escAttr(d.persona.tooltip)}" data-campaign-action="change-persona" data-id="${escAttr(id)}" style="cursor:pointer">${esc(d.persona.icon)} ${esc(d.persona.label)}${d.persona.outOfWorld ? ' ⚠' : ''}</span>`
+      : '';
+    const rosterToggle = `<button class="campaign-action" data-campaign-action="${d.isBench ? 'activate-character' : 'bench-character'}" data-id="${escAttr(id)}">${d.isBench ? 'Activate' : 'Bench'}</button>`;
     const gameplayActions = `
       ${rosterToggle}
       <button class="campaign-action" data-campaign-action="party-sheet" data-id="${escAttr(id)}">Sheet</button>
@@ -175,24 +268,23 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
       <button class="campaign-action" data-campaign-action="status-char" data-id="${escAttr(id)}">Status</button>
       <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${escAttr(id)}">Remove</button>
     `;
-    const rankInfo = h.memberRankInfo(member);
     return `
-      <article class="campaign-roster-member ${isBench ? 'is-bench' : 'is-active'} ${battleReady ? '' : 'is-unavailable'}">
+      <article class="campaign-roster-member ${d.isBench ? 'is-bench' : 'is-active'} ${d.battleReady ? '' : 'is-unavailable'}">
         <header class="campaign-roster-hero">
-          <div class="campaign-roster-portrait">${portraitContent}</div>
+          <div class="campaign-roster-portrait">${d.portraitHtml}</div>
           <div class="campaign-roster-hero-info">
             <div class="campaign-roster-hero-title">
-              <strong class="campaign-roster-name">${esc(member.name || base?.name || id)}</strong>
-              <span class="campaign-pill ${battleReady ? 'is-current' : 'is-blocked'}">${esc(availLabel)}</span>
-              <span class="campaign-pill">${isBench ? 'Bench' : 'Active'}</span>
-              ${h.renderPersonaPill(id, member)}
+              <strong class="campaign-roster-name">${esc(d.name)}</strong>
+              <span class="campaign-pill ${d.battleReady ? 'is-current' : 'is-blocked'}">${esc(d.availLabel)}</span>
+              <span class="campaign-pill">${d.isBench ? 'Bench' : 'Active'}</span>
+              ${personaPill}
             </div>
             <div class="campaign-roster-hero-meta">
-              <span><b>Lv</b> ${charLevel}</span>
-              <span title="${escAttr(rankInfo.atMax ? 'Max rank' : `RP ${rankInfo.rp}/${rankInfo.threshold} → ${rankInfo.next || '—'}`)}"><b>Rank</b> ${esc(rankInfo.label)}${rankInfo.trialPending ? ' <span class="campaign-chip">Trial!</span>' : ''}</span>
-              <span class="campaign-roster-hero-job">${h.renderJobChip(id, member)}</span>
-              <span title="${escAttr(charXpMeta)}"><b>XP</b> ${charXp}${xpToNext != null ? ` <small>(${xpToNext} to next)</small>` : ' <small>(max)</small>'}</span>
-              <span class="campaign-muted">${esc(id)}${base?.id && base.id !== id ? ` from ${esc(base.id)}` : ''}</span>
+              <span><b>Lv</b> ${d.level}</span>
+              <span title="${escAttr(d.rank.tooltip)}"><b>Rank</b> ${esc(d.rank.label)}${d.rank.trialPending ? ' <span class="campaign-chip">Trial!</span>' : ''}</span>
+              <span class="campaign-roster-hero-job">${d.jobChipHtml}</span>
+              <span title="${escAttr(d.charXpMeta)}"><b>XP</b> ${d.xp} <small>${esc(d.xpSmall)}</small></span>
+              <span class="campaign-muted">${esc(id)}${d.baseFrom ? ` from ${esc(d.baseFrom)}` : ''}</span>
             </div>
             <div class="campaign-roster-action-groups">
               <div class="campaign-roster-action-block">
@@ -210,52 +302,19 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
         <div class="campaign-roster-vitals-row">
           <section class="campaign-roster-card campaign-roster-vitals">
             <div class="campaign-roster-card-title">Vitals</div>
-            <div class="campaign-bar"><span class="hp" style="width:${Math.round(((member.currentHp || 0) / (member.maxHp || 1)) * 100)}%"></span><b>HP ${member.currentHp}/${member.maxHp}</b></div>
-            <div class="campaign-bar"><span class="mp" style="width:${Math.round(((member.currentMp || 0) / (member.maxMp || 1)) * 100)}%"></span><b>MP ${member.currentMp}/${member.maxMp}</b></div>
+            <div class="campaign-bar"><span class="hp" style="width:${d.vitals.hpPct}%"></span><b>HP ${d.vitals.hp}/${d.vitals.maxHp}</b></div>
+            <div class="campaign-bar"><span class="mp" style="width:${d.vitals.mpPct}%"></span><b>MP ${d.vitals.mp}/${d.vitals.maxMp}</b></div>
             <div class="campaign-roster-stats-grid">
-              ${Object.entries(stats).map(([stat, value]) => `
-                <div class="campaign-roster-stat">
-                  <span>${esc(h.statName(stat))}</span>
-                  <strong>${Number(value || 0)}</strong>
-                </div>
-              `).join('')}
+              ${d.stats.map((s) => `<div class="campaign-roster-stat"><span>${esc(s.name)}</span><strong>${s.value}</strong></div>`).join('')}
             </div>
           </section>
           <section class="campaign-roster-card campaign-roster-affinities">
             <div class="campaign-roster-card-title">Affinities</div>
-            ${h.renderResistances(base, member, stats)}
+            ${d.resistancesHtml}
           </section>
         </div>
 
-        <div class="campaign-roster-detail-row">
-          <section class="campaign-roster-card campaign-roster-skills">
-            <div class="campaign-roster-card-title">
-              <span>Skills</span>
-              <small class="campaign-muted">${renderSelectionBudgetBadge(id, member, 'skill')}</small>
-            </div>
-            ${renderSkillSlotView(id, member)}
-            <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${memberSkillPoolCount(id, member)} in pool)</summary>${renderSkillPoolList(id, member, skills, h)}</details>
-          </section>
-          <section class="campaign-roster-card campaign-roster-passives">
-            <div class="campaign-roster-card-title">
-              <span>Passives</span>
-              <small class="campaign-muted">${renderSelectionBudgetBadge(id, member, 'passive')}</small>
-            </div>
-            ${renderPassiveSlotView(id, member)}
-            <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${memberPassivePoolCount(id, member)} in pool)</summary>${renderPassivePoolList(id, member, passives, h)}</details>
-          </section>
-          <section class="campaign-roster-card campaign-roster-statuses">
-            <div class="campaign-roster-card-title">
-              <span>Statuses</span>
-              <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${escAttr(id)}">+</button>
-            </div>
-            ${statuses.length ? statuses.map((status) => renderKnownStatus(status, h)).join('') : '<div class="campaign-empty">No statuses.</div>'}
-          </section>
-          <section class="campaign-roster-card campaign-roster-equipment">
-            <div class="campaign-roster-card-title"><span>Equipment</span></div>
-            ${h.renderEquipmentLoadout(id, member)}
-          </section>
-        </div>
+        <div class="campaign-roster-detail-row">${d.detailCardsHtml}</div>
       </article>
     `;
   }
@@ -648,23 +707,17 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     `;
   }
 
-  // ── Tab registration ───────────────────────────────────────────────
-
-  function _registerTabs() {
-    const Tabs = window.CJS.CampaignUIInternal.Tabs;
-    if (!Tabs) return;
-    Tabs.register('roster', {
-      render: (state, helpers) => renderRoster(state, helpers)
-    });
-  }
-  _registerTabs();
+  // roster tab is React-owned (K.3) — registered as a React mount point
+  // by cui-react-bridge.js, rendered as JSX by the shell from the typed
+  // getRosterData bridge.
 
   return Object.freeze({
-    // Tab body renderers
+    // Sidebar party block (command-rail drawer) + party-sheet modal sheet.
     renderParty,
     renderPartyCard,
-    renderRoster,
     renderRosterMember,
+    // Typed roster-tab data (K.3).
+    rosterMemberData,
     // Row renderers
     renderKnownSkill,
     renderKnownPassive,
