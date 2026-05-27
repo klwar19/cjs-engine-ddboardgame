@@ -10357,6 +10357,23 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
+  // K.3 — typed roster-tab data. Delegates the per-member breakdown to
+  // PartyTab.rosterMemberData (hero + vitals + stats + affinities typed;
+  // the skills/passives/statuses/equipment detail row stays one HTML
+  // island until its own K.3 step). React renders CampaignRosterTab.tsx.
+  function getRosterData(state = CS().getState()) {
+    if (!state) return null;
+    const PartyTab = window.CJS.CampaignUIInternal.PartyTab;
+    if (!PartyTab?.rosterMemberData) return null;
+    const h = _tabHelpers();
+    const entries = Object.entries(state.party || {});
+    const toData = ([id, member]) => PartyTab.rosterMemberData(id, member, h);
+    return {
+      active: entries.filter(([, m]) => (m.rosterRole || 'active') !== 'bench').map(toData),
+      bench: entries.filter(([, m]) => (m.rosterRole || 'active') === 'bench').map(toData)
+    };
+  }
+
   function getMinigameTestData(state = CS().getState()) {
     if (!state) return null;
     const MG = window.CJS.Minigames;
@@ -10485,6 +10502,7 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     getTownSnapshotData,
     getTownRollFloatData,
+    getRosterData,
     getSideForgeData,
     getOracleForgeData,
     getBattleSetsData,
