@@ -84,6 +84,11 @@ import "../../js/campaign/campaign-ui.js";
 import "../../js/ui/audio-manager.js";
 import "../../js/ui/l2d-avatar.js";
 import "../../js/ui/l2d-companion.js";
+// Phase H.3 — installs window.CJS.CampaignActionsRuntime so the vanilla
+// `_handleAction` switch routes ported actions to their TS handlers.
+// Must load after campaign-ui.js defines the switch (above), before the
+// React app mounts (below).
+import "./actions/registry";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { CampaignPage } from "./CampaignPage";
 

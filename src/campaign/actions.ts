@@ -65,6 +65,22 @@ interface CampaignStateModule {
 interface CampaignUIModule {
   render: () => void;
   handleAction?: (name: string, data?: Record<string, string | number | undefined>) => void;
+  // Phase H.3 — lets the typed handlers clear the boot-incompatible
+  // banner after the user starts a fresh save / loads a slot, matching
+  // the vanilla `_newSave`/`_loadSlot`/`_deleteAllSaves` closures which
+  // reset `_bootIncompatibleNotice` to null.
+  clearBootIncompatibleNotice?: () => void;
+}
+
+interface CuiLogModule {
+  logKind: (line: { kind?: string; [key: string]: unknown }) => { label: string };
+}
+interface CuiUtilsModule {
+  safe: (value: unknown) => string;
+}
+interface CampaignUIInternalModule {
+  readonly Log?: CuiLogModule;
+  readonly Utils?: CuiUtilsModule;
 }
 
 interface Cjs {
@@ -72,6 +88,7 @@ interface Cjs {
   readonly CampaignSave?: CampaignSaveModule;
   readonly CampaignState?: CampaignStateModule;
   readonly CampaignUI?: CampaignUIModule;
+  readonly CampaignUIInternal?: CampaignUIInternalModule;
   readonly SaveManager?: SaveManagerModule;
   readonly UI?: UiToastModule;
 }
@@ -109,8 +126,14 @@ function rerender(): void {
   cjs().CampaignUI?.render?.();
 }
 
-function toast(message: string, kind: "info" | "success" | "error" = "info"): void {
-  ui()?.toast?.(message, kind);
+function toast(message: string, kind: "info" | "success" | "error" = "info", durationMs?: number): void {
+  ui()?.toast?.(message, kind, durationMs);
+}
+
+// Clears the boot-incompatible banner so it disappears once the user
+// starts a fresh save / loads a slot (parity with the vanilla closures).
+function clearBootNotice(): void {
+  cjs().CampaignUI?.clearBootIncompatibleNotice?.();
 }
 
 // ── Save management ────────────────────────────────────────────────
@@ -131,6 +154,7 @@ export function newSave(): void {
     const campaign = Object.values(cs.getContent().campaigns || {})[0];
     cs.createNewSave(campaign?.id);
     sv.saveCurrent();
+    clearBootNotice();
     toast("New campaign save started", "success");
     rerender();
   };
@@ -201,20 +225,21 @@ export function importSaveFile(file: File | undefined | null): void {
 export function pushToGitHub(): void {
   save().pushCurrentToGitHub()
     .then(() => toast("Campaign save pushed to GitHub", "success"))
-    .catch((error: Error) => toast(error.message || "GitHub save failed", "error"));
+    .catch((error: Error) => toast(error.message || "GitHub save failed", "error", 5000));
 }
 
 export function loadSlot(slotId: string): void {
   if (!slotId) return;
   const result = save().loadSlot(slotId);
   if (result && result.incompatible) {
-    toast(result.reason || "That save is from an older build and cannot be loaded.", "error");
+    toast(result.reason || "That save is from an older build and cannot be loaded.", "error", 5500);
     return;
   }
   if (!result) {
     toast("Save slot not found", "error");
     return;
   }
+  clearBootNotice();
   toast(`Loaded ${result.slotName || result.saveId || "save"}`, "success");
   rerender();
 }
@@ -242,6 +267,7 @@ export function deleteAllSaves(): void {
     const campaign = Object.values(cs.getContent().campaigns || {})[0];
     cs.createNewSave(campaign?.id);
     sv.saveCurrent();
+    clearBootNotice();
     toast("All save slots cleared. Started a fresh campaign.", "success");
     rerender();
   };
@@ -286,6 +312,66 @@ export function exportLog(): void {
   const name = `campaign_log_${new Date().toISOString().slice(0, 10)}.json`;
   SaveMgr.downloadTextFile(name, JSON.stringify(log, null, 2) + "\n", "application/json");
   toast(`Exported ${name}`, "success");
+}
+
+// Event-log entry shape — only the fields the export reads.
+interface EventLogEntry {
+  readonly at?: string;
+  readonly phase?: number | string;
+  readonly world?: string;
+  readonly title?: string;
+  readonly summary?: string;
+  readonly tags?: readonly string[];
+  readonly consequences?: readonly string[];
+}
+
+function safe(value: unknown): string {
+  const fn = cjs().CampaignUIInternal?.Utils?.safe;
+  return fn ? fn(value) : String(value ?? "");
+}
+
+// Matches the vanilla `_exportEventLog`: plain-text export, one block per
+// entry, filename `<slotName>-event-log.txt`. No toast (the file dialog
+// is the feedback), same as the closure it replaces.
+export function exportEventLog(): void {
+  const SaveMgr = cjs().SaveManager;
+  const s = state().getState() as { slotName?: string; eventLog?: { entries?: EventLogEntry[] } } | null;
+  if (!s) return;
+  if (!SaveMgr?.downloadTextFile) { toast("Event log export unavailable", "error"); return; }
+  const entries = s.eventLog?.entries || [];
+  const text = entries
+    .map((entry) =>
+      [
+        `[${entry.at || ""}] Phase ${entry.phase || "?"} ${entry.world || ""}`,
+        entry.title || "Event",
+        entry.summary || "",
+        entry.tags?.length ? `Tags: ${entry.tags.join(", ")}` : "",
+        entry.consequences?.length ? `Consequences: ${entry.consequences.join("; ")}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n")
+    )
+    .join("\n\n");
+  SaveMgr.downloadTextFile(`${safe(s.slotName)}-event-log.txt`, `${text}\n`, "text/plain");
+}
+
+// Matches the vanilla `_clearEventLog`: confirm, then empty
+// `eventLog.entries` with the same `clear_event_log` mutation source.
+export function clearEventLog(): void {
+  const proceed = () => {
+    state().mutate((st) => {
+      const slot = st as { eventLog?: { entries?: unknown[] } };
+      slot.eventLog = slot.eventLog || {};
+      slot.eventLog.entries = [];
+    }, { source: "clear_event_log" });
+    toast("Event log cleared", "info");
+  };
+  const u = ui();
+  if (u?.confirm) {
+    u.confirm("Clear the event log?", proceed);
+  } else if (window.confirm("Clear the event log?")) {
+    proceed();
+  }
 }
 
 // ── Roster management ─────────────────────────────────────────────

@@ -2624,6 +2624,17 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _handleAction(data) {
+    // Phase H.3 — ported handlers live in TS modules registered on
+    // window.CJS.CampaignActionsRuntime. Consult that registry first; it
+    // is the single seam for every dispatch path (React onClick →
+    // dispatchCampaignAction → handleAction, the shell/drawer
+    // forwarders, and internal delegated callers like the party-sheet
+    // modal). Any name not registered there falls through to the switch
+    // below, which holds the not-yet-ported cases.
+    const runtime = window.CJS.CampaignActionsRuntime;
+    if (runtime && runtime.has(data.campaignAction)) {
+      return runtime.run(data.campaignAction, data);
+    }
     switch (data.campaignAction) {
       case 'open-world-gate': return _goto('world', 'worldGate');
       case 'open-world-content': return _goto(data.mode || _modeForTab(data.tab), data.tab || 'worldGate');
@@ -2635,12 +2646,8 @@ window.CJS.CampaignUI = (() => {
       case 'world-map-node-action':
       case 'world-activity-use':
         return window.CJS.CampaignWorldMap?.handleAction?.(data);
-      case 'new-save': return _newSave();
-      case 'save-slot': Save().saveCurrent(); return UI().toast('Campaign saved', 'success');
-      case 'fork-save': Save().forkCurrent(); return UI().toast('Campaign forked', 'success');
-      case 'export-save': return Save().exportCurrent();
-      case 'import-save': return _root.querySelector('#campaign-import-file')?.click();
-      case 'push-github': return _pushGitHub();
+      // new-save / save-slot / fork-save / export-save / import-save /
+      // push-github ported to src/campaign/actions/registry.ts (H.3 save).
       case 'pass-phase': return Ops().apply({ op: 'pass_phase' }, { source: 'ui' });
       case 'roll-event': return _pickEvent();
       case 'pick-event': return _pickEvent();
@@ -2880,83 +2887,16 @@ window.CJS.CampaignUI = (() => {
       case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
       case 'gm-member-override': return _gmOverride(data.id);
-      case 'load-slot': return _loadSlot(data.id);
-      case 'delete-slot': return _deleteSlot(data.id);
-      case 'delete-all-saves': return _deleteAllSaves();
-      case 'export-slot': return _exportSlot(data.id);
-      case 'export-log': return _exportLog();
-      case 'clear-log': return _clearLog();
-      case 'export-event-log': return _exportEventLog();
-      case 'clear-event-log': return _clearEventLog();
+      // load-slot / delete-slot / delete-all-saves / export-slot /
+      // export-log / clear-log / export-event-log / clear-event-log
+      // ported to src/campaign/actions/registry.ts (H.3 save + log).
       default: break;
     }
   }
 
-  function _newSave() {
-    const message = 'Create a fresh campaign save? Your current campaign will keep its own slot — the new save starts empty in a different slot.';
-    UI().confirm(message, () => {
-      const campaign = Object.values(CS().getContent().campaigns)[0];
-      CS().createNewSave(campaign?.id);
-      Save().saveCurrent();
-      _bootIncompatibleNotice = null;
-      UI().toast('New campaign save started', 'success');
-      render();
-    });
-  }
-
-  function _loadSlot(slotId) {
-    if (!slotId) return;
-    const result = Save().loadSlot(slotId);
-    if (result && result.incompatible) {
-      UI().toast(result.reason || 'That save is from an older build and cannot be loaded.', 'error', 5500);
-      return;
-    }
-    if (!result) {
-      UI().toast('Save slot not found', 'error');
-      return;
-    }
-    _bootIncompatibleNotice = null;
-    UI().toast(`Loaded ${result.slotName || result.saveId || 'save'}`, 'success');
-    render();
-  }
-
-  function _deleteSlot(slotId) {
-    if (!slotId) return;
-    UI().confirm('Delete this save slot? This cannot be undone.', () => {
-      Save().deleteSlot(slotId);
-      UI().toast('Save slot deleted', 'info');
-      render();
-    });
-  }
-
-  function _deleteAllSaves() {
-    UI().confirm('Delete ALL local campaign saves? This cannot be undone.', () => {
-      Save().deleteAllSlots();
-      // Start a fresh save immediately so the UI does not crash on an empty slot list.
-      const campaign = Object.values(CS().getContent().campaigns)[0];
-      CS().createNewSave(campaign?.id);
-      Save().saveCurrent();
-      _bootIncompatibleNotice = null;
-      UI().toast('All save slots cleared. Started a fresh campaign.', 'success');
-      render();
-    });
-  }
-
-  function _exportSlot(slotId) {
-    const slot = Save().getSlots()[slotId];
-    if (!slot) { UI().toast('Save slot not found', 'error'); return; }
-    const SaveMgr = window.CJS.SaveManager;
-    if (!SaveMgr?.downloadTextFile) { UI().toast('Save export unavailable', 'error'); return; }
-    const file = `${(slot.slotName || slot.saveId || 'campaign_save').replace(/[^a-z0-9._-]+/gi, '_').toLowerCase()}.save.json`;
-    SaveMgr.downloadTextFile(file, `${JSON.stringify(slot, null, 2)}\n`, 'application/json');
-    UI().toast(`Exported ${file}`, 'success');
-  }
-
-  function _pushGitHub() {
-    Save().pushCurrentToGitHub()
-      .then(() => UI().toast('Campaign save pushed to GitHub', 'success'))
-      .catch((error) => UI().toast(error.message || 'GitHub save failed', 'error', 5000));
-  }
+  // Save-management handlers (_newSave / _loadSlot / _deleteSlot /
+  // _deleteAllSaves / _exportSlot / _pushGitHub) ported to
+  // src/campaign/actions.ts + registered in actions/registry.ts (H.3).
 
   function _rollOracle() {
     const oracle = window.CJS.CampaignOracle.roll();
@@ -8699,41 +8639,9 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _exportLog() {
-    const state = CS().getState();
-    const text = (state.log || []).map((line) => `[${line.at}] [${_logKind(line).label}] Phase ${line.phase} ${line.world}: ${line.text}`).join('\n');
-    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-log.txt`, `${text}\n`, 'text/plain');
-  }
-
-  function _clearLog() {
-    UI().confirm('Clear the session log?', () => {
-      CS().mutate((state) => { state.log = []; }, { source: 'clear_log' });
-      UI().toast('Log cleared', 'info');
-    });
-  }
-
-  function _exportEventLog() {
-    const state = CS().getState();
-    const entries = state.eventLog?.entries || [];
-    const text = entries.map((entry) => [
-      `[${entry.at || ''}] Phase ${entry.phase || '?'} ${entry.world || ''}`,
-      entry.title || 'Event',
-      entry.summary || '',
-      entry.tags?.length ? `Tags: ${entry.tags.join(', ')}` : '',
-      entry.consequences?.length ? `Consequences: ${entry.consequences.join('; ')}` : ''
-    ].filter(Boolean).join('\n')).join('\n\n');
-    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-event-log.txt`, `${text}\n`, 'text/plain');
-  }
-
-  function _clearEventLog() {
-    UI().confirm('Clear the event log?', () => {
-      CS().mutate((state) => {
-        state.eventLog = state.eventLog || {};
-        state.eventLog.entries = [];
-      }, { source: 'clear_event_log' });
-      UI().toast('Event log cleared', 'info');
-    });
-  }
+  // Log-management handlers (_exportLog / _clearLog / _exportEventLog /
+  // _clearEventLog) ported to src/campaign/actions.ts + registered in
+  // actions/registry.ts (H.3 log).
 
   function _consumeCombatResult() {
     const result = Bridge().readResult?.() || Bridge().consumeResult();
@@ -10444,6 +10352,10 @@ window.CJS.CampaignUI = (() => {
     // have moved to React read engine state through these getters instead
     // of reaching into closure-private state.
     getBootIncompatibleNotice: () => _bootIncompatibleNotice,
+    // Phase H.3 — lets the ported save handlers clear the boot-incompatible
+    // banner after the user starts fresh / loads a slot, matching the old
+    // closures that reset `_bootIncompatibleNotice` inline.
+    clearBootIncompatibleNotice: () => { _bootIncompatibleNotice = null; },
     // Exposes the frozen helper bundle that vanilla tab modules consume
     // (memberBase, memberStats, renderEquipmentLoadout, etc.). React tabs
     // call into these for the closure-private math + sub-renderers that
