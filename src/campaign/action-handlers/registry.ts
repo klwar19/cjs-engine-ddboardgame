@@ -333,11 +333,13 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "pick-equip-skill": (d) => RosterPickers.openSkillPoolPicker(str(d.id)),
   "pick-equip-passive": (d) => RosterPickers.openPassivePoolPicker(str(d.id)),
   "party-availability": (d) => RosterPickers.partyAvailabilityModal(str(d.id)),
-  // ── Roster: option-picker / info modals ──────────────────────────
+  // ── Roster: option-picker / info / equipment / stat-boost modals ─
   "recruit-character": () => RosterModalPickers.recruitCharacterModal(),
   "learn-skill": (d) => RosterModalPickers.learnSkillModal(str(d.id)),
   "learn-passive": (d) => RosterModalPickers.learnPassiveModal(str(d.id)),
   "show-skill-detail": (d) => RosterModalPickers.showSkillDetailModal(str(d.id), str(d.skillId)),
+  "equip-item": (d) => RosterModalPickers.equipItemModal(str(d.id), str(d.slot)),
+  "stat-boost": (d) => RosterModalPickers.statBoostModal(str(d.id)),
   // ── Travel ────────────────────────────────────────────────────────
   // travel-world is the world-gate jump (identical to open-world-gate;
   // the closure had dead code after the unconditional return).

@@ -13,16 +13,44 @@
 // `_learnPassiveModal`, `_showSkillDetailModal`).
 
 import { applyOp, cs, ds, mod, toast } from "./context";
-import { esc, modals, type PickerOption } from "./modals";
+import { esc, modals, widgets, type PickerOption } from "./modals";
 
 interface RosterBridge {
   rosterCharacterOptions?: () => PickerOption[];
   rosterSkillOptions?: (memberId: string) => PickerOption[];
   rosterPassiveOptions?: (memberId: string) => PickerOption[];
+  skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
+  recordIconHtml?: (record: unknown, opts: { kind?: string; size?: string }) => string;
 }
 
 function bridge(): RosterBridge | undefined {
   return mod<RosterBridge>("CampaignUI");
+}
+
+// Equipment helpers live in window.CJS.CampaignUIInternal.Equipment — a
+// stable shared module. Typed accessor here so the handlers don't
+// re-declare it.
+interface EquipmentApi {
+  slotLabel: (slot: string) => string;
+  equipmentOptions: (member: Record<string, unknown>, slot: string) => PickerOption[];
+  equipmentPickerItem: (option: PickerOption) => string;
+}
+interface CuiInternalEquipment {
+  Equipment?: EquipmentApi;
+}
+function equipmentApi(): EquipmentApi | undefined {
+  return mod<CuiInternalEquipment>("CampaignUIInternal")?.Equipment;
+}
+
+interface ConstModule {
+  STATS?: string[];
+  STAT_NAMES?: Record<string, string>;
+}
+function constants(): ConstModule | undefined {
+  return mod<ConstModule>("CONST");
+}
+function statName(stat: string): string {
+  return constants()?.STAT_NAMES?.[stat] || stat;
 }
 
 export function recruitCharacterModal(): void {
@@ -203,4 +231,74 @@ export function showSkillDetailModal(memberId: string, skillId: string): void {
   });
   // Reference member name for parity with closure (no UI change).
   void (member?.name || memberId);
+}
+
+// ── equip-item (slot equipment picker) ─────────────────────────────
+
+// Mirrors `_equipItemModal`. Builds a slot-aware option list, uses the
+// equipment-specific picker-item renderer (so the modal shows stat
+// deltas), and applies `equip_item` with the slot kebab-name.
+export function equipItemModal(memberId: string, slot: string): void {
+  if (!memberId || !slot) return;
+  const member = (cs().getState() as { party?: Record<string, Member> } | null)?.party?.[memberId] as
+    | (Member & Record<string, unknown>)
+    | undefined;
+  if (!member) return;
+  const equipment = equipmentApi();
+  const options = equipment?.equipmentOptions(member as Record<string, unknown>, slot) ?? [];
+  if (!options.length) {
+    const label = equipment?.slotLabel(slot) || slot;
+    toast(`No ${label.toLowerCase()} options found in Edit Mode`, "info");
+    return;
+  }
+  const label = equipment?.slotLabel(slot) || slot;
+  modals()?.opPickerModal({
+    title: `Equip ${label}: ${member.name || memberId}`,
+    options,
+    placeholder: "Search equipment...",
+    primaryLabel: "Equip",
+    renderItem: equipment?.equipmentPickerItem,
+    onSubmit: ({ value }) => {
+      applyOp({ op: "equip_item", target: memberId, itemId: value, slot });
+    }
+  });
+}
+
+// ── stat-boost (form modal with stat select + amount slider) ───────
+
+// Mirrors `_statBoostModal`. Renders a Stat select + Change slider
+// (-20..20). The Stat options use the same C().STATS list +
+// C().STAT_NAMES the deleted closure read; falls back to S/P/E/C/I/A/L.
+export function statBoostModal(memberId: string): void {
+  if (!memberId) return;
+  const member = (cs().getState() as { party?: Record<string, Member> } | null)?.party?.[memberId];
+  if (!member) return;
+  const ui = widgets();
+  const m = modals();
+  if (!ui || !m) return;
+
+  const body = document.createElement("div");
+  body.appendChild(m.formLabel("Stat"));
+  const stats = constants()?.STATS || ["S", "P", "E", "C", "I", "A", "L"];
+  const stat = ui.createSelect({
+    options: stats.map((value) => ({ value, label: `${value} - ${statName(value)}` })),
+    value: "S"
+  });
+  body.appendChild(stat);
+  body.appendChild(m.formLabel("Change"));
+  const amount = ui.createNumberSlider({ value: 1, min: -20, max: 20, step: 1 });
+  body.appendChild(amount);
+  m.formModal({
+    title: `Stat Growth: ${member.name || memberId}`,
+    body,
+    primaryLabel: "Apply",
+    onSubmit: () => {
+      applyOp({
+        op: "change_stat",
+        target: memberId,
+        stat: stat.value,
+        amount: amount._getValue() || 0
+      });
+    }
+  });
 }

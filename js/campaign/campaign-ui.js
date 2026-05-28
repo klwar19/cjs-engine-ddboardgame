@@ -2614,8 +2614,10 @@ window.CJS.CampaignUI = (() => {
       // read the still-JS option builders via the new
       // CampaignUI.rosterCharacterOptions / SkillOptions / PassiveOptions
       // bridges (the GM override modal also reads them).
-      case 'equip-item': return _equipItemModal(data.id, data.slot);
-      case 'stat-boost': return _statBoostModal(data.id);
+      // equip-item / stat-boost ported to
+      // action-handlers/roster-modal-pickers.ts (H.3). Equipment helpers
+      // come from window.CJS.CampaignUIInternal.Equipment; stat names
+      // come from window.CJS.CONST.STAT_NAMES.
       case 'change-job': return _changeJobModal(data.id);
       case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'change-persona': return _changePersonaModal(data.id);
@@ -4897,44 +4899,8 @@ window.CJS.CampaignUI = (() => {
 
   // _removeCharacter ported to action-handlers/roster-pickers.ts (H.3).
 
-  function _equipItemModal(id, slot) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const options = _equipmentOptions(member, slot);
-    if (!options.length) {
-      UI().toast(`No ${_slotLabel(slot).toLowerCase()} options found in Edit Mode`, 'info');
-      return;
-    }
-    _opPickerModal({
-      title: `Equip ${_slotLabel(slot)}: ${member.name || id}`,
-      options,
-      placeholder: 'Search equipment...',
-      primaryLabel: 'Equip',
-      renderItem: _equipmentPickerItem,
-      onSubmit: ({ value }) => Ops().apply({ op: 'equip_item', target: id, itemId: value, slot }, { source: 'ui' })
-    });
-  }
-
-  function _statBoostModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Stat'));
-    const stat = UI().createSelect({
-      options: (C()?.STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L']).map((value) => ({ value, label: `${value} - ${_statName(value)}` })),
-      value: 'S'
-    });
-    body.appendChild(stat);
-    body.appendChild(_formLabel('Change'));
-    const amount = UI().createNumberSlider({ value: 1, min: -20, max: 20, step: 1 });
-    body.appendChild(amount);
-    _formModal({
-      title: `Stat Growth: ${member.name || id}`,
-      body,
-      primaryLabel: 'Apply',
-      onSubmit: () => Ops().apply({ op: 'change_stat', target: id, stat: stat.value, amount: amount._getValue() || 0 }, { source: 'ui' })
-    });
-  }
+  // _equipItemModal / _statBoostModal ported to
+  // action-handlers/roster-modal-pickers.ts (H.3 — equip-item / stat-boost).
 
   // _grantXpModal / _grantJobXpModal (grant-xp / grant-job-xp) ported to
   // src/campaign/action-handlers/roster-modals.ts (H.3).
