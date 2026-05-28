@@ -2609,9 +2609,11 @@ window.CJS.CampaignUI = (() => {
       // mg-test-play / mg-test-random / mg-test-random-any ported to
       // action-handlers/mg-test.ts (H.3).
       case 'party-sheet': return _partySheetModal(data.id);
-      case 'recruit-character': return _recruitCharacterModal();
-      case 'learn-skill': return _learnSkillModal(data.id);
-      case 'learn-passive': return _learnPassiveModal(data.id);
+      // recruit-character / learn-skill / learn-passive ported to
+      // action-handlers/roster-modal-pickers.ts (H.3). The TS handlers
+      // read the still-JS option builders via the new
+      // CampaignUI.rosterCharacterOptions / SkillOptions / PassiveOptions
+      // bridges (the GM override modal also reads them).
       case 'equip-item': return _equipItemModal(data.id, data.slot);
       case 'stat-boost': return _statBoostModal(data.id);
       case 'change-job': return _changeJobModal(data.id);
@@ -2625,7 +2627,7 @@ window.CJS.CampaignUI = (() => {
       // unlock-job-from-tree / switch-job-from-tree / grant-skill-ap /
       // pick-equip-skill / pick-equip-passive ported to
       // src/campaign/action-handlers/roster-pickers.ts (H.3).
-      case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
+      // show-skill-detail ported to action-handlers/roster-modal-pickers.ts (H.3).
       // party-availability ported to action-handlers/roster-pickers.ts (H.3).
       case 'gm-override': return _gmOverride();
       case 'gm-member-override': return _gmOverride(data.id);
@@ -4889,52 +4891,11 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _recruitCharacterModal() {
-    const options = _characterOptions();
-    if (!options.length) {
-      UI().toast('No unrecruited characters found in Edit Mode', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Recruit Character',
-      options,
-      placeholder: 'Search characters...',
-      primaryLabel: 'Recruit',
-      onSubmit: ({ value }) => Ops().apply({ op: 'recruit_character', characterId: value }, { source: 'ui' })
-    });
-  }
+  // _recruitCharacterModal / _learnSkillModal / _learnPassiveModal
+  // ported to action-handlers/roster-modal-pickers.ts (H.3 — recruit-
+  // character / learn-skill / learn-passive).
 
   // _removeCharacter ported to action-handlers/roster-pickers.ts (H.3).
-
-  function _learnSkillModal(id) {
-    const options = _skillOptions(id);
-    if (!options.length) {
-      UI().toast('No unlearned skills found in Edit Mode', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Learn Skill',
-      options,
-      placeholder: 'Search skills...',
-      primaryLabel: 'Learn',
-      onSubmit: ({ value }) => Ops().apply({ op: 'learn_skill', target: id, skillId: value }, { source: 'ui' })
-    });
-  }
-
-  function _learnPassiveModal(id) {
-    const options = _passiveOptions(id);
-    if (!options.length) {
-      UI().toast('No unlearned passives found in Edit Mode', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Learn Passive',
-      options,
-      placeholder: 'Search passives...',
-      primaryLabel: 'Learn',
-      onSubmit: ({ value }) => Ops().apply({ op: 'learn_passive', target: id, passiveId: value }, { source: 'ui' })
-    });
-  }
 
   function _equipItemModal(id, slot) {
     const member = CS().getState()?.party?.[id];
@@ -5199,64 +5160,10 @@ window.CJS.CampaignUI = (() => {
 
   // _rankUpPassiveConfirm ported to action-handlers/roster-pickers.ts (H.3).
 
-  // Open a modal listing every level perk on the skill, marking earned vs.
-  // upcoming. Used by the "Detail" button on each known-skill row.
-  function _showSkillDetailModal(memberId, skillId) {
-    const member = CS().getState()?.party?.[memberId];
-    const skill = DS().get('skills', skillId);
-    if (!skill) { UI().toast('Skill not found', 'error'); return; }
-    const F = window.CJS.Formulas;
-    const prog = member?.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 5;
-    const level = Math.max(1, Number(prog.level || 1));
-    const ap = Number(prog.ap || 0);
-    const apToNext = F?.calcSkillApToNextLevel ? F.calcSkillApToNextLevel(skill, ap, level) : null;
-
-    const body = document.createElement('div');
-    body.innerHTML = `
-      <div style="margin-bottom:12px">
-        <div><b>${_icon(skill, { kind: 'skill', size: 'sm' })} ${_esc(skill.name || skillId)}</b></div>
-        <div class="campaign-muted">${_esc(skill.description || '')}</div>
-        <div style="margin-top:6px">
-          ${_esc(_skillMeta(skill, { level }))}
-          | <b>Lv ${level}/${cap}</b>
-          | AbP ${ap}${apToNext != null ? ` (${apToNext} to next)` : ' (max)'}
-        </div>
-      </div>
-      <div class="campaign-section-title">Level Perks</div>
-      <div id="skl-detail-perks"></div>
-    `;
-    const perksArea = body.querySelector('#skl-detail-perks');
-    const perks = Array.isArray(skill.levelPerks) ? [...skill.levelPerks].sort((a, b) => a.level - b.level) : [];
-    if (!perks.length) {
-      perksArea.innerHTML = '<div class="campaign-empty">No authored perks. (Power scales with level via levelScaling.powerPerLevel.)</div>';
-    } else {
-      perksArea.innerHTML = perks.map((perk) => {
-        const earned = Number(perk.level || 0) <= level;
-        const tag = earned ? '<span style="color:var(--green)">✔ earned</span>' : `<span class="campaign-muted">unlocks at Lv ${perk.level}</span>`;
-        const mods = perk.modifiers
-          ? Object.entries(perk.modifiers).filter(([, v]) => v).map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${v}`).join(', ')
-          : '';
-        const addEff = (perk.addEffects || []).map((e) => e.effectId).filter(Boolean).join(', ');
-        return `
-          <div class="campaign-record-line" style="opacity:${earned ? 1 : 0.6}">
-            <div>
-              <strong>Lv ${perk.level}</strong>
-              <small>${tag}</small>
-              <p>${_esc(perk.description || '')}</p>
-              ${mods ? `<div class="campaign-muted" style="font-size:0.8em">Modifiers: ${_esc(mods)}</div>` : ''}
-              ${addEff ? `<div class="campaign-muted" style="font-size:0.8em">Adds effects: ${_esc(addEff)}</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
-    }
-
-    UI().openModal({
-      title: `Skill Detail: ${skill.name || skillId}`,
-      content: body,
-      width: '600px'
-    });
-  }
+  // _showSkillDetailModal ported to action-handlers/roster-modal-pickers.ts
+  // (H.3 — show-skill-detail). The TS handler reads `_skillMeta` and
+  // `_icon` through the CampaignUI.skillMetaText / .recordIconHtml
+  // bridges so the modal stays in sync with the roster row.
 
   // Show the full job tree for a member: every job grouped by branch, each
   // marked unlocked / current / locked, with per-level perks visible.
@@ -7451,6 +7358,22 @@ window.CJS.CampaignUI = (() => {
     // action-handlers/travel.ts (travel-world-card) so the TS handler
     // can resolve a world's default tab without re-declaring the table.
     getWorldMenuDef: (worldId) => _worldMenuDef(worldId),
+    // Roster option builders (still-JS closures shared between modal
+    // handlers + the still-JS GM override modal). Exposed for
+    // action-handlers/roster-modal-pickers.ts (recruit-character,
+    // learn-skill, learn-passive). The H.4 data builders take these.
+    rosterCharacterOptions: () => _characterOptions(),
+    rosterSkillOptions: (memberId) => _skillOptions(memberId),
+    rosterPassiveOptions: (memberId) => _passiveOptions(memberId),
+    // Skill meta text generator (used by the skill-detail modal's
+    // header line). Reads the same fields the still-JS render code
+    // does so the modal stays in sync.
+    skillMetaText: (skill, entry) => _skillMeta(skill, entry),
+    // Generic icon HTML emitter (Portraits.icon). Used by the skill-
+    // detail modal header inline icon. The still-JS roster renders
+    // also use this — keeping a single bridge entry point keeps the
+    // icon styling consistent.
+    recordIconHtml: (record, opts) => _icon(record, opts),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to
