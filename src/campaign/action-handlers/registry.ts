@@ -340,6 +340,9 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "show-skill-detail": (d) => RosterModalPickers.showSkillDetailModal(str(d.id), str(d.skillId)),
   "equip-item": (d) => RosterModalPickers.equipItemModal(str(d.id), str(d.slot)),
   "stat-boost": (d) => RosterModalPickers.statBoostModal(str(d.id)),
+  "change-job": (d) => RosterModalPickers.changeJobModal(str(d.id)),
+  "change-persona": (d) => RosterModalPickers.changePersonaModal(str(d.id)),
+  "show-job-tree": (d) => RosterModalPickers.showJobTreeModal(str(d.id)),
   // ── Travel ────────────────────────────────────────────────────────
   // travel-world is the world-gate jump (identical to open-world-gate;
   // the closure had dead code after the unconditional return).

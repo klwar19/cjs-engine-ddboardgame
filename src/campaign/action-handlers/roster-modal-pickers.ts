@@ -302,3 +302,426 @@ export function statBoostModal(memberId: string): void {
     }
   });
 }
+
+// ── change-job (form modal: job select with allowed/other groups) ──
+
+interface Job {
+  id?: string;
+  name?: string;
+  icon?: string;
+  tier?: number;
+  branch?: string;
+  description?: string;
+  levels?: Array<{
+    level?: number;
+    statBonus?: Record<string, number>;
+    grantsSkills?: string[];
+    grantsPassives?: string[];
+    description?: string;
+  }>;
+  unlockRequirement?: { jobId?: string; minLevel?: number };
+  [key: string]: unknown;
+}
+
+interface MemberWithJob extends Member {
+  baseCharacterId?: string;
+  unlockedJobs?: string[];
+  availableBranches?: string[];
+  baseAvailableJobs?: string[];
+  maxJobs?: number;
+  currentJob?: string;
+  jobProgress?: Record<string, { xp?: number; level?: number }>;
+}
+
+// Mirrors `_changeJobModal`. Builds a 3-section option list:
+// (1) "— Remove current job —", (2) jobs in the character's allowed
+// set (current job tagged), (3) other jobs flagged "(unlock)".
+// On submit: clear / set / unlock+set depending on the choice.
+export function changeJobModal(memberId: string): void {
+  if (!memberId) return;
+  const member = (cs().getState() as { party?: Record<string, MemberWithJob> } | null)?.party?.[memberId];
+  if (!member) return;
+  const baseChar =
+    (ds()?.get("characters", member.baseCharacterId || memberId) as { availableJobs?: string[] } | undefined) || {};
+  const allowed = new Set<string>([
+    ...((baseChar.availableJobs || []) as string[]),
+    ...(member.unlockedJobs || [])
+  ]);
+  if (member.currentJob) allowed.add(member.currentJob);
+  const allJobs = (ds()?.getAllAsArray("jobs") as Job[] | undefined) || [];
+  const fromAllowed = allJobs.filter((j) => allowed.has(j.id || ""));
+  const others = allJobs.filter((j) => !allowed.has(j.id || ""));
+  if (!allJobs.length) {
+    toast("No jobs authored yet. Open the editor → Jobs to create some.", "info");
+    return;
+  }
+  const options = [
+    { value: "", label: "— Remove current job —" },
+    ...fromAllowed.map((j) => ({
+      value: j.id || "",
+      label: `${j.icon || "🛡️"} ${j.name} ${j.id === member.currentJob ? "(current)" : ""}`
+    })),
+    ...(others.length ? [{ value: "__hr__", label: "── Other (will unlock) ──", disabled: true }] : []),
+    ...others.map((j) => ({ value: j.id || "", label: `${j.icon || "🛡️"} ${j.name} (unlock)` }))
+  ];
+  const ui = widgets();
+  const m = modals();
+  if (!ui || !m) return;
+  const body = document.createElement("div");
+  body.appendChild(m.formLabel("Job"));
+  const sel = ui.createSelect({ options, value: member.currentJob || "" });
+  body.appendChild(sel);
+  m.formModal({
+    title: `Change Job: ${member.name || memberId}`,
+    body,
+    primaryLabel: "Apply",
+    onSubmit: () => {
+      const value = sel.value;
+      if (value === "") {
+        applyOp({ op: "set_job", target: memberId, jobId: null });
+      } else if (!allowed.has(value)) {
+        applyOpList([
+          { op: "unlock_job", target: memberId, jobId: value },
+          { op: "set_job", target: memberId, jobId: value }
+        ]);
+      } else {
+        applyOp({ op: "set_job", target: memberId, jobId: value });
+      }
+    }
+  });
+}
+
+// Helper: applyOp variant that takes an array of ops (matches the
+// closure's two-call patterns: unlock_job + set_job).
+function applyOpList(opsList: Array<{ op: string; [key: string]: unknown }>): void {
+  const ops = mod<{ apply: (op: unknown, opts?: { source?: string }) => unknown }>("CampaignOps");
+  ops?.apply(opsList, { source: "ui" });
+}
+
+// ── change-persona (form modal: persona select + live preview) ─────
+
+interface Persona {
+  id?: string;
+  name?: string;
+  icon?: string;
+  description?: string;
+  world?: string;
+  unlock?: {
+    default?: boolean;
+    requiresPhaseNumber?: number;
+    requiresChapter?: number;
+    requiresFlag?: string;
+  };
+  crossWorldPenalty?: {
+    damageDealtMultiplier?: number;
+    damageTakenMultiplier?: number;
+    relationshipModifier?: number;
+  };
+}
+
+interface PersonaServiceModule {
+  personasForCharacter?: (charId: string) => Persona[];
+}
+
+interface MemberWithPersona extends Member {
+  baseCharacterId?: string;
+  unlockedPersonas?: string[];
+  activePersona?: string;
+}
+
+// Mirrors `_changePersonaModal`. Renders a sorted persona select
+// (unlocked first, world-matching first) with a live preview pane.
+// Submit applies `set_persona` with the chosen id (null when
+// "no persona" is picked).
+export function changePersonaModal(memberId: string): void {
+  if (!memberId) return;
+  const state = cs().getState() as { party?: Record<string, MemberWithPersona>; currentWorld?: string } | null;
+  const member = state?.party?.[memberId];
+  if (!member) return;
+  const PS = mod<PersonaServiceModule>("PersonaService");
+  if (!PS) {
+    toast("Persona system not loaded.", "error");
+    return;
+  }
+  const charId = member.baseCharacterId || memberId;
+  const personasList = PS.personasForCharacter?.(charId) || [];
+  if (!personasList.length) {
+    toast(
+      `No personas authored for ${member.name || memberId}. Open the editor → Personas to create one.`,
+      "info"
+    );
+    return;
+  }
+  const currentWorld = state?.currentWorld || "";
+  const unlocked = new Set(member.unlockedPersonas || []);
+  const score = (p: Persona): number => {
+    let s = 0;
+    if (unlocked.has(p.id || "")) s += 10;
+    if (p.world === currentWorld) s += 4;
+    if (p.unlock?.default) s += 1;
+    return s;
+  };
+  const sorted = personasList.slice().sort(
+    (a, b) => score(b) - score(a) || String(a.name || a.id).localeCompare(String(b.name || b.id))
+  );
+
+  const options = [
+    { value: "", label: "— No persona (use base character) —" },
+    ...sorted.map((p) => {
+      const isUnlocked = unlocked.has(p.id || "");
+      const worldLabel = p.world
+        ? (ds()?.get("worlds", p.world) as { displayName?: string } | undefined)?.displayName || p.world
+        : "—";
+      const outOfWorld = p.world && p.world !== currentWorld;
+      const flag = isUnlocked ? "" : " [LOCKED]";
+      const here = p.id === member.activePersona ? " (current)" : "";
+      const penalty = outOfWorld ? " (out of world)" : "";
+      return {
+        value: p.id || "",
+        label: `${p.icon || "🎭"} ${p.name || p.id} — ${worldLabel}${penalty}${here}${flag}`,
+        disabled: !isUnlocked
+      };
+    })
+  ];
+
+  const ui = widgets();
+  const m = modals();
+  if (!ui || !m) return;
+  const body = document.createElement("div");
+  body.appendChild(m.formLabel("Persona"));
+  const sel = ui.createSelect({ options, value: member.activePersona || "" });
+  body.appendChild(sel);
+  const preview = document.createElement("div");
+  preview.style.marginTop = "12px";
+  preview.style.padding = "8px 10px";
+  preview.style.borderRadius = "6px";
+  preview.style.background = "rgba(255,255,255,0.04)";
+  preview.style.fontSize = "0.85rem";
+  body.appendChild(preview);
+  const renderPreview = (): void => {
+    const pid = sel.value;
+    if (!pid) {
+      preview.innerHTML =
+        '<em class="campaign-muted">Clears the active persona. Combat will use the base character record.</em>';
+      return;
+    }
+    const persona = ds()?.get("personas", pid) as Persona | undefined;
+    if (!persona) {
+      preview.innerHTML = "";
+      return;
+    }
+    const pen = persona.crossWorldPenalty || {};
+    const outOfWorld = persona.world && persona.world !== currentWorld;
+    const unlockBits: string[] = [];
+    if (persona.unlock?.default) unlockBits.push("Default unlock");
+    if (persona.unlock?.requiresPhaseNumber) unlockBits.push(`Phase ≥ ${persona.unlock.requiresPhaseNumber}`);
+    if (persona.unlock?.requiresChapter) unlockBits.push(`Chapter ≥ ${persona.unlock.requiresChapter}`);
+    if (persona.unlock?.requiresFlag) unlockBits.push(`Flag: ${persona.unlock.requiresFlag}`);
+    preview.innerHTML = `
+        <div><b>${esc(persona.name || "")}</b> ${persona.world ? `<span class="campaign-muted">(${esc(persona.world)})</span>` : ""}</div>
+        ${persona.description ? `<div style="margin-top:4px">${esc(persona.description)}</div>` : ""}
+        ${unlockBits.length ? `<div class="campaign-muted" style="margin-top:4px">Unlock: ${esc(unlockBits.join(", "))}</div>` : ""}
+        ${outOfWorld ? `<div style="margin-top:6px;color:#f59e0b">⚠ Out of world. Damage dealt ×${Number(pen.damageDealtMultiplier ?? 1)}, taken ×${Number(pen.damageTakenMultiplier ?? 1)}, relationship ${Number(pen.relationshipModifier ?? 0)}.</div>` : ""}
+      `;
+  };
+  sel.addEventListener("change", renderPreview);
+  renderPreview();
+
+  m.formModal({
+    title: `Switch Persona: ${member.name || memberId}`,
+    body,
+    primaryLabel: "Apply",
+    onSubmit: () => {
+      applyOp({ op: "set_persona", target: memberId, personaId: sel.value || null });
+    }
+  });
+}
+
+// ── show-job-tree (per-branch job cards with unlock/switch actions) ─
+
+interface FormulasModuleJobs {
+  getJobMaxLevel?: (job: Job) => number;
+  calcJobXpToNextLevel?: (job: Job, xp: number, level: number) => number | null;
+  canUnlockJob?: (job: Job, member: MemberWithJob, jobs: Record<string, Job>) => {
+    ok: boolean;
+    reason?: string;
+    need?: number;
+  };
+}
+
+interface UiPlain {
+  openModal: (cfg: { title: string; content: HTMLElement; width?: string }) => unknown;
+}
+
+function jobLabel(jobId: string): string {
+  const job = ds()?.get("jobs", jobId) as Job | undefined;
+  return job ? `${job.icon || "🛡️"} ${job.name || jobId}` : jobId;
+}
+
+function eligibilityReasonText(
+  eligibility: { reason?: string; need?: number } | undefined,
+  job: Job
+): string {
+  if (!eligibility) return "unknown";
+  if (eligibility.reason === "max_jobs_reached") return "job slots full";
+  if (eligibility.reason === "branch_not_available") return "branch not allowed for this character";
+  if (eligibility.reason === "prereq_not_unlocked") return `requires ${job.unlockRequirement?.jobId}`;
+  if (eligibility.reason === "prereq_level_low") {
+    return `requires ${job.unlockRequirement?.jobId} Lv ${eligibility.need || job.unlockRequirement?.minLevel}`;
+  }
+  if (eligibility.reason === "prereq_job_missing") return "prereq job missing in DataStore";
+  return eligibility.reason || "locked";
+}
+
+// Mirrors `_renderBranchColumn`. Returns one HTML string per branch:
+// section header + per-job card. Each per-card action button carries
+// data-job-action / data-job-id the outer modal's local click delegate
+// reads to route through the action runtime (unlock-job-from-tree /
+// switch-job-from-tree).
+function renderBranchColumn(
+  memberId: string,
+  member: MemberWithJob,
+  branchId: string,
+  jobs: Job[],
+  jobsCollection: Record<string, Job>,
+  F: FormulasModuleJobs | undefined
+): string {
+  const header = `<div class="campaign-section-title" style="margin-top:8px">${esc(branchId)} branch</div>`;
+  const iconBridge = bridge();
+  const cards = jobs.map((job) => {
+    const unlocked = (member.unlockedJobs || []).includes(job.id || "");
+    const isCurrent = member.currentJob === job.id;
+    const prog = member.jobProgress?.[job.id || ""] || { xp: 0, level: 1 };
+    const cap = F?.getJobMaxLevel?.(job) ?? 5;
+    const level = Math.max(1, Number(prog.level || 1));
+    const xp = Number(prog.xp || 0);
+    const xpToNext = F?.calcJobXpToNextLevel?.(job, xp, level) ?? null;
+    const xpMeta =
+      level >= cap
+        ? `Lv ${level}/${cap} (max)`
+        : xpToNext != null
+          ? `Lv ${level}/${cap} | XP ${xp} (${xpToNext} to next)`
+          : `Lv ${level}/${cap}`;
+    const eligibility = F?.canUnlockJob?.(job, member, jobsCollection) ?? { ok: true };
+    let statusBadge = "";
+    let actionBtn = "";
+    if (isCurrent) {
+      statusBadge = '<span style="color:var(--green)">● ACTIVE</span>';
+    } else if (unlocked) {
+      statusBadge = '<span style="color:var(--accent)">● UNLOCKED</span>';
+      actionBtn = `<button class="campaign-action" data-job-action="switch" data-job-id="${esc(job.id || "")}">Switch to this job</button>`;
+    } else if (eligibility.ok) {
+      statusBadge = '<span class="campaign-muted">○ available</span>';
+      actionBtn = `<button class="campaign-action" data-job-action="unlock" data-job-id="${esc(job.id || "")}">Unlock &amp; switch</button>`;
+    } else {
+      statusBadge = `<span class="campaign-muted">🔒 ${esc(eligibilityReasonText(eligibility, job))}</span>`;
+    }
+    const levels = Array.isArray(job.levels) ? [...job.levels].sort((a, b) => Number(a.level) - Number(b.level)) : [];
+    const levelLines = levels
+      .map((tier) => {
+        const earned = unlocked && Number(tier.level || 0) <= level;
+        const star = earned ? "★" : "☆";
+        const stat = tier.statBonus
+          ? Object.entries(tier.statBonus).filter(([, v]) => v).map(([k, v]) => `${k}+${v}`).join(" ")
+          : "";
+        const skills = (tier.grantsSkills || []).join(", ");
+        const passives = (tier.grantsPassives || []).join(", ");
+        const desc =
+          tier.description ||
+          [stat, skills && `learn ${skills}`, passives && `passive ${passives}`].filter(Boolean).join(" · ");
+        return `<div style="opacity:${earned ? 1 : 0.65};font-size:0.85em">${star} <b>Lv ${tier.level}</b> — ${esc(desc || "...")}</div>`;
+      })
+      .join("");
+    const iconHtml = iconBridge?.recordIconHtml?.(job, { kind: "job", size: "sm" }) ?? "";
+    return `
+        <div class="campaign-record-line" style="margin-bottom:8px">
+          <div>
+            <strong>${iconHtml} ${esc(job.name || job.id || "")} <small style="color:var(--text-mute)">tier ${job.tier || 1}</small></strong>
+            <small>${statusBadge} | ${esc(xpMeta)}</small>
+            <p>${esc(job.description || "")}</p>
+            <div style="margin-top:4px">${levelLines || '<i class="campaign-muted">No level data authored.</i>'}</div>
+          </div>
+          ${actionBtn ? `<div>${actionBtn}</div>` : ""}
+        </div>`;
+  }).join("");
+  // Reference member name for parity (no UI change).
+  void (memberId);
+  return header + cards;
+}
+
+// Mirrors `_showJobTreeModal`. Groups jobs by branch within the
+// member's allowed scope, opens an info modal with per-branch cards.
+// Local click delegate routes per-card action buttons through the
+// runtime registry (fixes a pre-existing bug — the closure modal had
+// no delegate, so unlock/switch buttons silently did nothing).
+export function showJobTreeModal(memberId: string): void {
+  if (!memberId) return;
+  const member = (cs().getState() as { party?: Record<string, MemberWithJob> } | null)?.party?.[memberId];
+  if (!member) return;
+  const ui = mod<UiPlain>("UI");
+  if (!ui?.openModal) return;
+  const F = mod<FormulasModuleJobs>("Formulas");
+  const allJobs = (ds()?.getAllAsArray("jobs") as Job[] | undefined) || [];
+  const jobsCollection =
+    (ds() as unknown as { getAll?: (type: string) => Record<string, Job> } | undefined)?.getAll?.("jobs") || {};
+
+  const memberBranches = new Set(member.availableBranches || []);
+  const memberAllow = new Set(member.baseAvailableJobs || []);
+  const groups: Record<string, Job[]> = {};
+  for (const job of allJobs) {
+    const branch = job.branch || "other";
+    const inScope =
+      memberBranches.has(branch) ||
+      memberAllow.has(job.id || "") ||
+      (member.unlockedJobs || []).includes(job.id || "");
+    if (!inScope) continue;
+    groups[branch] = groups[branch] || [];
+    groups[branch].push(job);
+  }
+  for (const list of Object.values(groups)) {
+    list.sort((a, b) => Number(a.tier || 1) - Number(b.tier || 1));
+  }
+
+  const body = document.createElement("div");
+  const slotInfo = `Slots used: ${(member.unlockedJobs || []).length} / ${member.maxJobs || 3}`;
+  const currentLine = member.currentJob
+    ? ` — Current: <b>${esc(jobLabel(member.currentJob))}</b>`
+    : " — No active job";
+  body.innerHTML = `
+      <div style="margin-bottom:8px" class="campaign-muted">
+        ${esc(member.name || memberId)} — ${slotInfo}
+        ${currentLine}
+      </div>
+      <div id="job-tree-area"></div>
+    `;
+  const area = body.querySelector("#job-tree-area") as HTMLElement | null;
+
+  if (area) {
+    if (!Object.keys(groups).length) {
+      area.innerHTML =
+        '<div class="campaign-empty">No job branches authored on this character. Add availableBranches or availableJobs in the editor.</div>';
+    } else {
+      area.innerHTML = Object.entries(groups)
+        .map(([branch, list]) => renderBranchColumn(memberId, member, branch, list, jobsCollection, F))
+        .join("");
+    }
+  }
+
+  const runtime = mod<{ run?: (name: string, data?: Record<string, unknown>) => unknown }>("CampaignActionsRuntime");
+  body.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const btn = target?.closest("[data-job-action]") as HTMLElement | null;
+    if (!btn) return;
+    event.preventDefault();
+    const action = btn.dataset.jobAction;
+    const jobId = btn.dataset.jobId || "";
+    if (action === "unlock") runtime?.run?.("unlock-job-from-tree", { id: memberId, jobId });
+    else if (action === "switch") runtime?.run?.("switch-job-from-tree", { id: memberId, jobId });
+  });
+
+  ui.openModal({
+    title: `Job Tree: ${member.name || memberId}`,
+    content: body,
+    width: "780px"
+  });
+}
