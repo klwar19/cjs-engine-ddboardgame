@@ -47,12 +47,38 @@ sandbox.window.addEventListener = () => {};
 
 vm.createContext(sandbox);
 
-// Load order mirrors the src/campaign/main.tsx chain: leaf helpers first,
-// then the tab registry, then the tab modules that self-register against
-// it. Each tab IIFE calls Tabs.register(...) at the bottom, so simply
-// loading the file is enough to populate the registry.
+// Phase H.4 — the leaf util helpers are migrating from `js/campaign/ui/*.js`
+// to `src/campaign/util/*.ts` one file at a time. The TS modules install
+// onto `window.CJS.CampaignUIInternal.<Namespace>` the same way the JS
+// originals did, so vanilla consumers (campaign-ui.js + the still-JS
+// helper files) don't need to change. This test loads only the remaining
+// JS files; for ported namespaces it pre-seeds a minimal stub on the
+// sandbox so the still-JS dependents (which look up Utils lazily inside
+// function bodies) don't throw at load time. The full bootstrap test
+// gets rewritten against the React tree in H.5.
+sandbox.window.CJS.CampaignUIInternal = sandbox.window.CJS.CampaignUIInternal || {};
+const id = (v) => v;
+// Utils: ported to src/campaign/util/cui-utils.ts. The cui-*.js files
+// that still live in js/campaign/ui/ call `_U().esc(v)` / `.label(v)` /
+// `.escAttr(v)` lazily inside render functions; those aren't exercised
+// by the registry-only smoke checks in this test, but the modules still
+// reference these methods at module-load via captured aliases.
+sandbox.window.CJS.CampaignUIInternal.Utils = {
+  esc: (v) => String(v == null ? '' : v),
+  escAttr: (v) => String(v == null ? '' : v),
+  label: (v) => String(v == null ? '' : v),
+  safe: (v) => String(v == null ? 'campaign' : v).toLowerCase(),
+  truncate: (v) => String(v == null ? '' : v),
+  currencyLabel: id,
+  recordName: (_b, x) => x,
+  lootLine: () => '',
+  formatBundleText: () => ''
+};
+
+// Load order mirrors src/campaign/main.tsx for the still-JS files only.
+// Anything ported to TS is pre-seeded above; the rest still self-registers
+// via IIFE on load.
 const loadOrder = [
-  'campaign/ui/cui-utils.js',
   'campaign/ui/cui-portraits.js',
   'campaign/ui/cui-modals.js',
   'campaign/ui/cui-options.js',

@@ -22,8 +22,9 @@ window.CJS.CampaignUI = (() => {
   const C = () => window.CJS.CONST;
   const Icons = () => window.CJS.UIIcons;
 
-  // Leaf utilities live in `js/campaign/ui/cui-utils.js`; bind short
-  // aliases so the rest of this file reads the same as before.
+  // Leaf utilities live in `src/campaign/util/cui-utils.ts` (Phase H.4).
+  // The TS module installs `window.CJS.CampaignUIInternal.Utils` so the
+  // rest of this IIFE reads the same surface as before.
   const _CUIUtils = window.CJS.CampaignUIInternal.Utils;
   const _esc = _CUIUtils.esc;
   const _escAttr = _CUIUtils.escAttr;
@@ -5261,8 +5262,8 @@ window.CJS.CampaignUI = (() => {
 
   // Leaf utilities (_esc, _escAttr, _label, _safe, _truncate, _lootLine,
   // _currencyLabel, _recordName, _formatBundleText) live in
-  // js/campaign/ui/cui-utils.js and are bound as aliases at the top of
-  // this IIFE.
+  // src/campaign/util/cui-utils.ts (Phase H.4) and are bound as aliases
+  // at the top of this IIFE via window.CJS.CampaignUIInternal.Utils.
 
   // Lightweight begin/end narrative modal used by generated and user-built
   // quests. Replaces the heavyweight fullscreen visual novel for those runs;

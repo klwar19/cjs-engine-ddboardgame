@@ -2,7 +2,7 @@
 //
 // Extracted from campaign-ui.js. These build small reusable modals
 // (form, textarea, number, op picker) on top of the shared `window.CJS.UI`
-// helpers. They depend on `Utils.esc` from cui-utils.js.
+// helpers. They depend on `Utils.esc` from `src/campaign/util/cui-utils.ts`.
 
 window.CJS = window.CJS || {};
 window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
