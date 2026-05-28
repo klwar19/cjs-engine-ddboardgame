@@ -2621,14 +2621,13 @@ window.CJS.CampaignUI = (() => {
       // run-roll-battle / run-pick-battle / run-queue-set-battle / run-battle /
       // apply-combat-result / manual-battle / run-next-beat /
       // roll-travel-surprise ported to action-handlers/combat.ts (H.3).
-      case 'generate-scenario': return _generateScenario();
-      case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
-      case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
-      case 'generate-bounty-run': return _generateScenario({ source: 'random', mapType: 'outdoor', size: 'tiny', mapForm: 'node_map' });
-      case 'generate-dungeon-run': return _generateScenario({ source: 'random', mapType: 'dungeon', size: 'medium', mapForm: 'grid_map' });
-      case 'generate-urban-run': return _generateScenario({ source: 'random', mapType: 'urban', size: 'small', mapForm: 'node_map' });
-      case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'grid_map' });
-      case 'inspect-scenario': return _inspectScenario(data.id);
+      // generate-scenario + generate-quest-scenario + the static
+      // generate-*-run cluster + inspect-scenario ported to
+      // action-handlers/scenario.ts (H.3). The React `CampaignScenariosTab`
+      // now passes the form state (source/mapForm/mapType/size/layers) in
+      // the dispatch payload — no more `_root.querySelector` form reads.
+      // inspect-scenario reuses `_shapePillsData` via the new
+      // `CampaignUI.getShapePillsData` bridge for the pill row.
       // start-scenario / cancel-scenario / discard-scenario ported to
       // action-handlers/scenario.ts (H.3).
       // end-scenario ported to action-handlers/ops.ts (H.3).
@@ -4894,102 +4893,15 @@ window.CJS.CampaignUI = (() => {
 
   // _manualRumorModal ported to action-handlers/solo.ts (H.3).
 
-  function _generateScenario(overrides = {}) {
-    if (CS().getState()?.activeScenarioRun) return UI().toast('End the active scenario before generating another', 'info');
-    const options = {
-      source: _root.querySelector('#campaign-gen-source')?.value || 'random',
-      mapForm: _root.querySelector('#campaign-gen-form')?.value || 'node_map',
-      mapType: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
-      mapSetting: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
-      size: _root.querySelector('#campaign-gen-size')?.value || 'small',
-      layers: Number(_root.querySelector('#campaign-gen-layers')?.value || 1),
-      ...overrides
-    };
-    const result = Gen().generateAndStart(options);
-    if (!result || result.error) {
-      const messages = {
-        active_run: 'End the active scenario before generating another',
-        no_active_quest: 'No active quest to source from. Add one in the Quests tab first.',
-        no_active_chain: 'No active quest arc. Start one from the Quests tab first.'
-      };
-      const msg = messages[result?.error] || 'Scenario generation skipped';
-      UI().toast(msg, 'info');
-      return result;
-    }
-    _activeMode = 'quest';
-    _activeTab = 'maps';
-    render();
-    UI().toast(`Started ${result.scenario.name}`, 'success');
-    return result;
-  }
+  // _generateScenario + _inspectScenario ported to
+  // action-handlers/scenario.ts (H.3 — generate-scenario / inspect-scenario).
+  // The React `CampaignScenariosTab` now passes the form state in the
+  // dispatch payload; internal launchers (`_startQuestScenario` etc.) call
+  // `window.CJS.CampaignActionsRuntime.run('generate-scenario', overrides)`
+  // for the same payload-shaped contract.
 
-  // _startScenarioFromUi ported to action-handlers/scenario.ts (H.3).
-
-  function _inspectScenario(scenarioId) {
-    const scenario = CS().getScenarioById(scenarioId);
-    if (!scenario) return UI().toast('Run not found', 'info');
-    const body = document.createElement('div');
-    body.className = 'campaign-inspect-sheet';
-    const beats = scenario.beats || [];
-    const nodes = scenario.nodes || scenario.map?.nodes || [];
-    const rewards = Ops().describe(scenario.rewardOps || scenario.rewards || []);
-    const dangers = [
-      scenario.dangerMax ? `Danger max ${scenario.dangerMax}` : '',
-      scenario.limits?.events !== undefined ? `${scenario.limits.events} event rolls` : '',
-      scenario.limits?.randomBattles !== undefined ? `${scenario.limits.randomBattles} random battles` : '',
-      scenario.limits?.campRests !== undefined ? `${scenario.limits.campRests} camp rests` : ''
-    ].filter(Boolean);
-    const shapePillsMarkup = `<div class="campaign-chip-row">${_shapePillsData(scenario).pills.map((p) => `<span class="campaign-chip">${_esc(p.label)}</span>`).join('')}</div>`;
-    body.innerHTML = `
-      <div class="campaign-preview">
-        <b>${_esc(scenario.name || scenario.id)}</b><br>
-        ${_esc(scenario.notes || scenario.summary || 'No notes.')}<br>
-        ${shapePillsMarkup}
-      </div>
-      <div class="campaign-inspect-grid">
-        <section>
-          <h3>Flow</h3>
-          <div class="campaign-muted">${_esc(scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform'))}</div>
-          ${(beats.length ? beats : nodes).slice(0, 12).map((entry, index) => `
-            <div class="campaign-step">
-              <b>${index + 1}. ${_esc(entry.label || entry.name || entry.id)}</b>
-              <span>${_esc(entry.prompt || entry.notes || entry.kind || entry.role || '')}</span>
-            </div>
-          `).join('') || '<div class="campaign-empty">Freeform run. Use manual controls, event notes, and battle picks.</div>'}
-        </section>
-        <section>
-          <h3>Rules</h3>
-          ${dangers.map((line) => `<div class="campaign-town-line"><strong>${_esc(line)}</strong><span>Run limit</span></div>`).join('') || '<div class="campaign-empty">No special limits listed.</div>'}
-          <h3>Rewards</h3>
-          ${rewards.map((line) => `<div class="campaign-town-line is-reward"><strong>${_esc(line)}</strong><span>On resolve</span></div>`).join('') || '<div class="campaign-empty">No authored rewards listed.</div>'}
-        </section>
-      </div>
-    `;
-    const footer = document.createElement('div');
-    footer.innerHTML = `
-      <button class="btn" data-inspect-close>Close</button>
-      ${CS().getState()?.activeScenarioRun
-        ? '<button class="btn btn-primary" data-inspect-current>Open Current Run</button>'
-        : '<button class="btn btn-primary" data-inspect-start>Start Run</button>'}
-    `;
-    const overlay = UI().openModal({ title: 'Run Inspect', content: body, footer, width: '760px' });
-    footer.querySelector('[data-inspect-close]').onclick = () => UI().closeModal(overlay);
-    const current = footer.querySelector('[data-inspect-current]');
-    if (current) current.onclick = () => {
-      UI().closeModal(overlay);
-      _goto(null, 'maps');
-    };
-    const start = footer.querySelector('[data-inspect-start]');
-    if (start) start.onclick = () => {
-      UI().closeModal(overlay);
-      // _startScenarioFromUi ported to action-handlers/scenario.ts (start-scenario);
-      // route this internal caller through the action runtime.
-      window.CJS.CampaignActionsRuntime?.run?.('start-scenario', { id: scenarioId });
-    };
-  }
-
-  // _discardGeneratedScenario / _cancelScenario ported to
-  // action-handlers/scenario.ts (H.3).
+  // _startScenarioFromUi / _discardGeneratedScenario / _cancelScenario
+  // ported to action-handlers/scenario.ts (H.3).
 
   // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
   // action-handlers/map.ts (H.3).
@@ -5082,14 +4994,18 @@ window.CJS.CampaignUI = (() => {
       const existing = _startExistingQuestScenario(quest);
       if (existing) return existing;
     }
-    const result = _generateScenario({
+    // _generateScenario ported to action-handlers/scenario.ts (H.3 —
+    // generate-scenario). Internal callers route through the runtime so
+    // we don't fork the logic; the runtime returns the handler's value
+    // (the `{ scenario, map, ... }` result the closure used to build).
+    const result = window.CJS.CampaignActionsRuntime?.run?.('generate-scenario', {
       source: 'active_quest',
       questId,
       mapForm: requestedMapForm || _questMapForm(quest),
       mapType: _questMapType(quest),
       size: quest.mapSize || 'small',
       ...overrides
-    });
+    }) || null;
     if (result && !result.error) {
       _annotateQuestRun(quest, result.scenario);
       render();
@@ -8048,6 +7964,13 @@ window.CJS.CampaignUI = (() => {
     // (G.11b kept this renderer as HTML). Exposed for action-handlers/
     // story-director-modals.ts; goes away when the renderer ports.
     renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
+    // Run-inspect modal's pill row reuses the closure-private
+    // `_shapePillsData` (the shared source of truth for Movement / Setting
+    // / Size pill labels — also feeds `getScenariosData` / `getRunData`).
+    // Exposed for action-handlers/scenario.ts (inspect-scenario) so the
+    // TS handler doesn't re-declare the SHAPE_*_LABELS tables. Goes away
+    // when the data builders themselves port (H.4).
+    getShapePillsData: (scenario) => _shapePillsData(scenario || {}),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to

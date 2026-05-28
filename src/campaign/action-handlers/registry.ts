@@ -261,10 +261,29 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "event-to-oracle": () => Events.eventToOracle(),
   "oracle-to-quest": () => Events.oracleToQuest(),
   "oracle-add-tags": () => Events.oracleAddTags(),
-  // ── Scenario lifecycle (generate / inspect stay) ──────────────────
+  // ── Scenario lifecycle + generation ───────────────────────────────
   "start-scenario": (d) => Scenario.startScenarioFromUi(str(d.id)),
   "cancel-scenario": () => Scenario.cancelScenario(),
   "discard-scenario": (d) => Scenario.discardGeneratedScenario(str(d.id)),
+  // `generate-scenario` reads the React-passed form payload (source /
+  // mapForm / mapType / size / layers). `generate-quest-scenario` keeps
+  // the chosen form values but forces source='active_quest' (matching the
+  // old `_generateScenario({ source: 'active_quest' })` overrides spread).
+  // The static generate-*-run actions ignore the form entirely and use
+  // hard-coded options just like the deleted switch cases.
+  "generate-scenario": (d) => Scenario.generateScenario(d),
+  "generate-quest-scenario": (d) => Scenario.generateScenario({ ...d, source: "active_quest" }),
+  "generate-material-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "forest", size: "small", mapForm: "node_map" }),
+  "generate-bounty-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "outdoor", size: "tiny", mapForm: "node_map" }),
+  "generate-dungeon-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "dungeon", size: "medium", mapForm: "grid_map" }),
+  "generate-urban-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "urban", size: "small", mapForm: "node_map" }),
+  "generate-training-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "arena", size: "tiny", mapForm: "grid_map" }),
+  "inspect-scenario": (d) => Scenario.inspectScenario(str(d.id)),
   // ── Mini-game test (mg-test-pick stays — _root.dataset coupling) ──
   "mg-test-play": (d) => MgTest.mgTestPlay({ gameId: str(d.game), levelId: str(d.level) }),
   "mg-test-random": (d) => MgTest.mgTestPlay({ gameId: str(d.game), difficulty: Number(d.difficulty || 1) }),
