@@ -45,6 +45,7 @@ import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
 import * as StoryRolls from "./story-director-modals";
 import * as Quest from "./quest";
+import * as QuestLauncher from "./quest-launcher";
 import * as Minigame from "./minigame";
 import * as RosterPickers from "./roster-pickers";
 import { worldMapAction } from "./worldmap";
@@ -300,13 +301,15 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "story-roll-memory": () => StoryRolls.rollStoryDirector("memory"),
   "story-pressure-tick": () => StoryRolls.rollStoryDirector("pressure"),
   "story-open-last": () => StoryRolls.openLastStoryBeatModal(),
-  // ── Quest pure-ops (scenario/battle/minigame-coupled stay) ────────
+  // ── Quest pure-ops + scenario/battle launchers ────────────────────
   "quest-progress": (d) => Quest.questProgress(str(d.id)),
   "quest-hub-event": (d) => Quest.questHubEvent(str(d.id)),
   "quest-harvest": (d) => Quest.questHarvest(str(d.id)),
   "quest-check": (d) => Quest.questCheck(str(d.id)),
   "quest-hand-in": (d) => Quest.questHandIn(str(d.id)),
   "quest-answer": (d) => Quest.questAnswer(str(d.id)),
+  "quest-scenario": (d) => QuestLauncher.questScenario(str(d.id)),
+  "quest-battle": (d) => QuestLauncher.questBattle(str(d.id)),
   // ── Mini-game sessions (sequence / haven / quest) ─────────────────
   "sequence-play-minigame": () => Minigame.playSequenceMiniGame(),
   "haven-play-minigame": (d) => Minigame.havenPlayMinigame(str(d.game)),

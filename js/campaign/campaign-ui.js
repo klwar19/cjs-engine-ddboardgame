@@ -1741,7 +1741,9 @@ window.CJS.CampaignUI = (() => {
       if (_activeRunQuestId(activeRun, activeScenario) === quest.id || activeRun.questChainId === templateId) return _goto(null, 'maps');
       return UI().toast('End the active scenario before starting this quest arc map', 'info');
     }
-    return _startQuestScenario(quest.id, {
+    // _startQuestScenario ported to action-handlers/quest-launcher.ts (H.3);
+    // route this internal caller through the launcher's window.CJS surface.
+    return window.CJS.CampaignQuestLauncher?.startQuestScenario(quest.id, {
       quest,
       source: 'quest_chain',
       questChainId: templateId,
@@ -1757,7 +1759,10 @@ window.CJS.CampaignUI = (() => {
     if (!chain) return UI().toast('Quest arc not found', 'info');
     const quest = _ensureQuestChainQuest(chain);
     if (!quest) return null;
-    return _questBattle(quest.id);
+    // _questBattle ported to action-handlers/quest-launcher.ts (H.3 —
+    // quest-battle); route this internal caller through the launcher's
+    // window.CJS surface (matching the chain-battle action handler path).
+    return window.CJS.CampaignQuestLauncher?.questBattle(quest.id);
   }
 
   function _ensureQuestChainQuest(chain) {
@@ -2643,8 +2648,11 @@ window.CJS.CampaignUI = (() => {
       // to action-handlers/cooking.ts (H.3). haven-play-minigame stays
       // (mini-game session machinery).
       // haven-play-minigame ported to action-handlers/minigame.ts (H.3).
-      case 'quest-scenario': return _questScenario(data.id);
-      case 'quest-battle': return _questBattle(data.id);
+      // quest-scenario / quest-battle ported to
+      // action-handlers/quest-launcher.ts (H.3). Internal JS callers
+      // (`_startQuestChainScenario`, `_startQuestRunFromOffer`, the
+      // `add-quest` "starting run" branch) route through
+      // window.CJS.CampaignQuestLauncher for the same TS path.
       // quest-minigame ported to action-handlers/minigame.ts (H.3).
       // quest-progress / quest-hub-event / quest-harvest / quest-check /
       // quest-hand-in / quest-answer ported to action-handlers/quest.ts (H.3).
@@ -3592,7 +3600,9 @@ window.CJS.CampaignUI = (() => {
     Ops().apply({ op: 'add_quest', quest }, { source: 'quest_run' });
     Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_run', approved: true }, { source: 'quest_run' });
     _clearPendingSoloHook();
-    const result = _startQuestScenario(quest.id, {
+    // _startQuestScenario ported to action-handlers/quest-launcher.ts (H.3);
+    // route this internal caller through the launcher's window.CJS surface.
+    const result = window.CJS.CampaignQuestLauncher?.startQuestScenario(quest.id, {
       quest,
       mapForm: _questMapForm(quest),
       mapType: quest.mapType || _questMapType(quest)
@@ -4853,7 +4863,9 @@ window.CJS.CampaignUI = (() => {
       Ops().apply({ op: 'add_quest', quest }, { source: 'ui' });
       UI().closeModal(overlay);
       UI().toast(`Quest added: ${quest.title}. Starting run…`, 'success');
-      _startQuestScenario(quest.id, {
+      // _startQuestScenario ported to action-handlers/quest-launcher.ts (H.3);
+      // route this internal caller through the launcher's window.CJS surface.
+      window.CJS.CampaignQuestLauncher?.startQuestScenario(quest.id, {
         quest,
         mapForm: _questMapForm(quest),
         mapType: quest.mapType || _questMapType(quest),
@@ -4931,145 +4943,18 @@ window.CJS.CampaignUI = (() => {
 
   // _questProgress ported to action-handlers/quest.ts (H.3).
 
-  function _questScenario(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    if (activeRun) {
-      if (_activeRunQuestId(activeRun, activeScenario) === questId) return _goto(null, 'maps');
-      return UI().toast('End the active scenario before starting a quest map', 'info');
-    }
-    return _startQuestScenario(questId);
-  }
-
-  function _questBattle(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    if (!CS().getState()?.activeScenarioRun) {
-      const result = _startQuestScenario(questId, { size: 'tiny' });
-      if (!result || result.error) return;
-    }
-    // _runRollBattle ported to action-handlers/combat.ts (run-roll-battle);
-    // route this internal caller through the action runtime.
-    window.CJS.CampaignActionsRuntime?.run?.('run-roll-battle');
-    Ops().apply({ op: 'log', text: `Quest battle queued: ${quest.title || quest.id}.` }, { source: 'quest_battle' });
-    _activeMode = 'quest';
-    _activeTab = 'maps';
-    render();
-  }
-
-  // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
-
-  // _questMiniGame ported to action-handlers/minigame.ts (H.3).
-
-  function _questObjectiveByKinds(quest = {}, kinds = []) {
-    const set = new Set(kinds);
-    return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
-  }
-
-  // _questHarvestLoot ported to action-handlers/quest.ts (H.3).
-
-  // _questCheck / _questHandIn / _questAnswer ported to
-  // action-handlers/quest.ts (H.3).
-
-  function _activeQuestById(questId) {
-    const quest = CS().getState()?.quests?.[questId];
-    return quest && !_isQuestResolved(quest) ? quest : null;
-  }
-
-  function _activeRunQuestId(run, scenario) {
-    return run?.questId || scenario?.source?.questId || null;
-  }
-
-  function _startQuestScenario(questId, overrides = {}) {
-    const quest = overrides.quest || _activeQuestById(questId);
-    if (!quest) return null;
-    const requestedMapForm = String(overrides.mapForm || _questMapForm(quest) || '').toLowerCase();
-    // Only run the linked scenario if its movement style agrees with what the
-    // quest (or caller) asked for. Otherwise we'd hand a grid-map quest a
-    // node-map scenario — which is exactly the "I picked Grid Map but got Node
-    // Map" bug.
-    if (!overrides.forceGenerated && _linkedScenarioMatches(quest, requestedMapForm)) {
-      const existing = _startExistingQuestScenario(quest);
-      if (existing) return existing;
-    }
-    // _generateScenario ported to action-handlers/scenario.ts (H.3 —
-    // generate-scenario). Internal callers route through the runtime so
-    // we don't fork the logic; the runtime returns the handler's value
-    // (the `{ scenario, map, ... }` result the closure used to build).
-    const result = window.CJS.CampaignActionsRuntime?.run?.('generate-scenario', {
-      source: 'active_quest',
-      questId,
-      mapForm: requestedMapForm || _questMapForm(quest),
-      mapType: _questMapType(quest),
-      size: quest.mapSize || 'small',
-      ...overrides
-    }) || null;
-    if (result && !result.error) {
-      _annotateQuestRun(quest, result.scenario);
-      render();
-    }
-    return result;
-  }
-
-  // Returns true when the quest's linked scenario uses the same map movement
-  // as the requested form. If the quest has no linked scenario, returns true
-  // (so _startExistingQuestScenario's own null-check handles the fallthrough).
-  function _linkedScenarioMatches(quest = {}, requestedMapForm = '') {
-    const scenarioId = quest?.linkedScenario || quest?.scenarioId || quest?.scenario;
-    if (!scenarioId) return true;
-    if (!requestedMapForm) return true;
-    const scenario = CS().getScenarioById?.(scenarioId);
-    if (!scenario) return true;
-    const scenarioForm = String(scenario.mapForm || scenario.travelMode || '').toLowerCase();
-    if (!scenarioForm) return true;
-    return scenarioForm === requestedMapForm;
-  }
-
-  function _startExistingQuestScenario(quest) {
-    const scenarioId = quest?.linkedScenario || quest?.scenarioId || quest?.scenario;
-    if (!scenarioId) return null;
-    const scenario = CS().getScenarioById(scenarioId);
-    if (!scenario) return null;
-    try {
-      Runner().startScenario(scenarioId);
-    } catch (err) {
-      UI().toast(`Scenario could not start: ${err?.message || scenarioId}`, 'info');
-      return { error: 'start_failed' };
-    }
-    _annotateQuestRun(quest, scenario);
-    _activeMode = 'quest';
-    _activeTab = 'maps';
-    render();
-    UI().toast(`Started ${scenario.name || scenario.id}`, 'success');
-    return { scenario, existing: true };
-  }
-
-  function _annotateQuestRun(quest, scenario) {
-    if (!quest?.id || !CS().getState()?.activeScenarioRun) return;
-    const task = _questTaskDescriptor(quest, scenario);
-    CS().mutate((state) => {
-      const run = state.activeScenarioRun;
-      if (!run) return;
-      run.questId = quest.id;
-      run.questTitle = quest.title || quest.id;
-      // Carry the quest's narrative style into the run. Scenario-level
-      // quickNarrative wins if it's been set; otherwise the quest's value
-      // controls. Defaults to fullscreen VN if neither is set (so authored
-      // story scenarios keep their original feel).
-      if (scenario?.quickNarrative === true || quest.quickNarrative === true) {
-        run.quickNarrative = scenario?.quickNarrative !== false && quest.quickNarrative !== false;
-      } else if (scenario?.quickNarrative === false || quest.quickNarrative === false) {
-        run.quickNarrative = false;
-      }
-      run.questChainId = quest.chainTemplateId || scenario?.source?.questChainId || run.questChainId || null;
-      run.questObjectiveId = task.objectiveId || null;
-      run.questTask = task;
-    }, { source: 'quest_run' });
-    const location = task.location ? ` at ${task.location}` : '';
-    Ops().apply({ op: 'log', text: `Quest task: ${task.label || quest.title || quest.id}${location}.` }, { source: 'quest_run' });
-  }
+  // _questScenario / _questBattle ported to
+  // action-handlers/quest-launcher.ts (H.3 — quest-scenario / quest-battle).
+  // _startQuestScenario / _startExistingQuestScenario /
+  // _linkedScenarioMatches / _annotateQuestRun ported alongside as the
+  // launcher's helpers; the module installs window.CJS.CampaignQuestLauncher
+  // for the still-in-JS callers (`_startQuestChainScenario`,
+  // `_startQuestRunFromOffer`, `_openQuestModal`'s "starting run" branch).
+  // _questTaskDescriptor / _questCellFromRef stay in JS (render-side):
+  // the launcher has its own TS copies, but `_renderQuestRunTask` (the
+  // still-in-JS scenario task strip) reads the same shape for display.
+  // These collapse into the launcher's TS module when the renderer
+  // ports (H.4).
 
   function _questTaskDescriptor(quest = {}, scenario = null) {
     const objectives = quest.objectives || [];
@@ -5136,6 +5021,29 @@ window.CJS.CampaignUI = (() => {
     }
     if (typeof ref === 'string') return (map.cells || []).find((cell) => cell.id === ref) || null;
     return null;
+  }
+
+  // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
+
+  // _questMiniGame ported to action-handlers/minigame.ts (H.3).
+
+  function _questObjectiveByKinds(quest = {}, kinds = []) {
+    const set = new Set(kinds);
+    return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
+  }
+
+  // _questHarvestLoot ported to action-handlers/quest.ts (H.3).
+
+  // _questCheck / _questHandIn / _questAnswer ported to
+  // action-handlers/quest.ts (H.3).
+
+  function _activeQuestById(questId) {
+    const quest = CS().getState()?.quests?.[questId];
+    return quest && !_isQuestResolved(quest) ? quest : null;
+  }
+
+  function _activeRunQuestId(run, scenario) {
+    return run?.questId || scenario?.source?.questId || null;
   }
 
   function _questMapForm(quest = {}) {
