@@ -4,9 +4,69 @@
 // built in `js/campaign/ui/tabs/cui-hub-tab.js` carrying
 // `data-campaign-action`; the React tree now reads this structured data
 // and renders JSX with direct onClick dispatch.
+//
+// Phase H.4 — `getBattleSetsData` and `getMapSeedsData` ported inline
+// (pure reads of `CampaignBattleSetForge` / `CampaignMapSeedForge`).
+// The remaining `getSideForgeData` / `getOracleForgeData` /
+// `getQuestChainsData` still bridge to `CampaignUI.*` while their
+// deep closure-private helpers (`_sideCardData`, `_questChainActiveData`,
+// etc.) wait on the side-card port.
 
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestChainActiveData, QuestChainTemplateData } from "./eventTab";
+
+// Side-content risk classifier surface (already implemented in
+// `js/campaign/campaign-side-content.js`). Lives on
+// `window.CJS.CampaignSideContent`.
+interface SideContentSurface {
+  readonly riskClass?: (canonRisk: string | null | undefined) => string;
+}
+
+interface BattleSetCardLike {
+  readonly id?: string | number;
+  readonly name?: string;
+  readonly canonRisk?: string;
+  readonly rank?: string | number;
+  readonly objective?: string;
+  readonly tags?: readonly unknown[];
+  readonly enemyMix?: ReadonlyArray<{ qty?: number; label?: string; name?: string; id?: string }>;
+  readonly gimmick?: string;
+  readonly encounterId?: string;
+}
+
+interface MapSeedCardLike {
+  readonly id?: string | number;
+  readonly name?: string;
+  readonly canonRisk?: string;
+  readonly purpose?: string | readonly string[];
+  readonly nodes?: ReadonlyArray<{ name?: string; id?: string; role?: string; notes?: string }>;
+}
+
+interface BattleSetForgeSurface {
+  readonly getCards?: () => readonly BattleSetCardLike[];
+}
+
+interface MapSeedForgeSurface {
+  readonly getSeeds?: () => readonly MapSeedCardLike[];
+}
+
+interface CjsHubExtras {
+  readonly CampaignSideContent?: SideContentSurface;
+  readonly CampaignBattleSetForge?: BattleSetForgeSurface;
+  readonly CampaignMapSeedForge?: MapSeedForgeSurface;
+}
+
+function side(): SideContentSurface | undefined {
+  return (window as unknown as { CJS?: CjsHubExtras }).CJS?.CampaignSideContent;
+}
+
+function battleForge(): BattleSetForgeSurface | undefined {
+  return (window as unknown as { CJS?: CjsHubExtras }).CJS?.CampaignBattleSetForge;
+}
+
+function mapForge(): MapSeedForgeSurface | undefined {
+  return (window as unknown as { CJS?: CjsHubExtras }).CJS?.CampaignMapSeedForge;
+}
 
 export interface SideStoryFlowGuide {
   readonly title: string;
@@ -160,8 +220,6 @@ interface Bridge {
   readonly getSideForgeData: (state?: CampaignStateSnapshot) => SideForgeData | null;
   readonly getOracleForgeData: (state?: CampaignStateSnapshot) => OracleForgeData | null;
   readonly getQuestChainsData: () => QuestChainsData | null;
-  readonly getBattleSetsData: () => BattleSetsData | null;
-  readonly getMapSeedsData: () => MapSeedsData | null;
 }
 
 interface Cjs {
@@ -184,13 +242,48 @@ export function getQuestChainsData(_state: CampaignStateSnapshot): QuestChainsDa
   return cjs().CampaignUI?.getQuestChainsData() ?? null;
 }
 
-// State is threaded so the data refreshes on every shell tick even
-// though these bridges read from the forge / quest-chain modules, not
-// the snapshot.
+// Phase H.4 inline port — pure read of CampaignBattleSetForge.
+// State is threaded so the shell refreshes on every tick even though
+// the data source is the forge module, not the snapshot.
 export function getBattleSetsData(_state: CampaignStateSnapshot): BattleSetsData | null {
-  return cjs().CampaignUI?.getBattleSetsData() ?? null;
+  const cards = battleForge()?.getCards?.() || [];
+  const sx = side();
+  return {
+    cards: cards.map((card) => ({
+      id: String(card.id || ""),
+      name: String(card.name || card.id || ""),
+      canonRisk: String(card.canonRisk || "green"),
+      canonRiskClass: sx?.riskClass?.(card.canonRisk) ?? "",
+      rank: String(card.rank || "-"),
+      objective: String(card.objective || ""),
+      tags: Array.isArray(card.tags) ? card.tags.map(String) : [],
+      enemyMix: (card.enemyMix || []).map((enemy) => ({
+        qty: Number(enemy.qty || 1),
+        label: String(enemy.label || enemy.name || enemy.id || "unit")
+      })),
+      gimmick: String(card.gimmick || ""),
+      queueLabel: card.encounterId ? "Queue Combat" : "Queue Manual"
+    }))
+  };
 }
 
+// Phase H.4 inline port — pure read of CampaignMapSeedForge.
 export function getMapSeedsData(_state: CampaignStateSnapshot): MapSeedsData | null {
-  return cjs().CampaignUI?.getMapSeedsData() ?? null;
+  const seeds = mapForge()?.getSeeds?.() || [];
+  const sx = side();
+  return {
+    seeds: seeds.map((seed) => ({
+      id: String(seed.id || ""),
+      name: String(seed.name || seed.id || ""),
+      canonRisk: String(seed.canonRisk || "green"),
+      canonRiskClass: sx?.riskClass?.(seed.canonRisk) ?? "",
+      purpose: (Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean))
+        .map(String)
+        .join(", "),
+      nodes: (seed.nodes || []).map((node) => ({
+        name: String(node.name || node.id || ""),
+        detail: String(node.role || node.notes || "")
+      }))
+    }))
+  };
 }

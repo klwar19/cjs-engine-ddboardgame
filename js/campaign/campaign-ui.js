@@ -6182,26 +6182,8 @@ window.CJS.CampaignUI = (() => {
   // Replaces HubTab.renderBattleSets / renderMapSeeds (HTML strings with
   // data-campaign-action) with structured data the React tree renders as
   // JSX (src/campaign/tabs/CampaignHubTabs.tsx).
-  function getBattleSetsData() {
-    const cards = window.CJS.CampaignBattleSetForge?.getCards?.() || [];
-    return {
-      cards: cards.map((card) => ({
-        id: String(card.id || ''),
-        name: String(card.name || card.id || ''),
-        canonRisk: String(card.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(card.canonRisk),
-        rank: String(card.rank || '-'),
-        objective: String(card.objective || ''),
-        tags: Array.isArray(card.tags) ? card.tags.map(String) : [],
-        enemyMix: (card.enemyMix || []).map((enemy) => ({
-          qty: Number(enemy.qty || 1),
-          label: String(enemy.label || enemy.name || enemy.id || 'unit')
-        })),
-        gimmick: String(card.gimmick || ''),
-        queueLabel: card.encounterId ? 'Queue Combat' : 'Queue Manual'
-      }))
-    };
-  }
+  // `getBattleSetsData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`).
 
   function getQuestChainsData() {
     const QC = window.CJS.CampaignQuestChains;
@@ -6222,23 +6204,8 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getMapSeedsData() {
-    const seeds = window.CJS.CampaignMapSeedForge?.getSeeds?.() || [];
-    return {
-      seeds: seeds.map((seed) => ({
-        id: String(seed.id || ''),
-        name: String(seed.name || seed.id || ''),
-        canonRisk: String(seed.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(seed.canonRisk),
-        purpose: (Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean))
-          .map(String).join(', '),
-        nodes: (seed.nodes || []).map((node) => ({
-          name: String(node.name || node.id || ''),
-          detail: String(node.role || node.notes || '')
-        }))
-      }))
-    };
-  }
+  // `getMapSeedsData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`).
 
   // K.3 — typed side-content card + rumor-row data for the Side Forge /
   // Oracle Forge tabs (and the Town snapshot rumor rows). Display-only
@@ -6579,8 +6546,6 @@ window.CJS.CampaignUI = (() => {
     getRosterData,
     getSideForgeData,
     getOracleForgeData,
-    getBattleSetsData,
-    getMapSeedsData,
     getQuestChainsData,
     getAdventureLegendVisible,
     getStorySummaryData,
