@@ -7,7 +7,7 @@
 // accessors for the already-migrated save/log wrappers; H.4 folds that
 // file's contents into domain modules and the small overlap collapses.
 
-type ToastKind = "info" | "success" | "error";
+type ToastKind = "info" | "success" | "error" | "warning";
 
 interface OpInput {
   op: string;

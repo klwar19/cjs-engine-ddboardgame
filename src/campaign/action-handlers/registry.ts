@@ -37,6 +37,7 @@ import * as Side from "./side";
 import * as Rumor from "./rumor";
 import * as Economy from "./economy";
 import * as Cooking from "./cooking";
+import * as Combat from "./combat";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -221,7 +222,13 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "craft-recipe": (d) => Economy.craftRecipe(str(d.recipeId)),
   "plant-seed": (d) => Economy.plantSeed(str(d.plotId)),
   "add-pocket-note": () => Economy.addPocketNote(),
-  "add-note": () => Economy.addPinnedNote()
+  "add-note": () => Economy.addPinnedNote(),
+  // ── Combat execution / resolution (selection actions stay) ────────
+  "run-battle": () => Combat.runBattle(),
+  "apply-combat-result": () => Combat.applyCombatResult(),
+  "manual-battle": () => Combat.manualBattleModal(),
+  "run-next-beat": () => Combat.runNextBeat(),
+  "roll-travel-surprise": () => Combat.rollTravelSurprise()
 };
 
 export function hasHandler(name: string): boolean {

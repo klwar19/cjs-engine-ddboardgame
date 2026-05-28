@@ -2684,9 +2684,9 @@ window.CJS.CampaignUI = (() => {
       // open-* navigation cases ported to action-handlers/nav.ts (H.3).
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
-      case 'roll-travel-surprise': return _rollTravelSurprise();
       case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
-      case 'run-next-beat': return _runNextBeat();
+      // run-battle / apply-combat-result / manual-battle / run-next-beat /
+      // roll-travel-surprise ported to action-handlers/combat.ts (H.3).
       case 'generate-scenario': return _generateScenario();
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
       case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
@@ -2701,9 +2701,6 @@ window.CJS.CampaignUI = (() => {
       case 'discard-scenario': return _discardGeneratedScenario(data.id);
       // move-node/move-cell/map-layer/clear-node ported to
       // action-handlers/map.ts (H.3).
-      case 'run-battle': return _runBattle();
-      case 'manual-battle': return _manualBattleModal();
-      case 'apply-combat-result': return _applyCombatResult();
       // inventory-delta / quick-add-inventory / shop-buy / plant-seed /
       // craft-recipe / add-pocket-note / add-note ported to
       // action-handlers/economy.ts (H.3).
@@ -5788,26 +5785,7 @@ window.CJS.CampaignUI = (() => {
   // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
   // action-handlers/map.ts (H.3).
 
-  function _runBattle() {
-    const battle = CS().getState().pendingBattle;
-    if (!battle) return;
-    if (!battle.encounterId && !battle.battleSetId && !battle.monsterIds?.length) return UI().toast('This battle needs an encounter, battle set, or monster pool first.', 'info');
-    const readyCount = Object.values(CS().getState().party || {}).filter((member) => Bridge()?.isMemberBattleReady?.(member)).length;
-    if (!readyCount) return UI().toast('No available party members can enter this battle', 'error');
-    Save().saveCurrent();
-    const Popup = window.CJS.CampaignCombatPopup;
-    if (Popup?.show) {
-      Popup.show(battle, {
-        onEngage: (b) => {
-          UI().toast('Opening combat. Results apply automatically when you return.', 'info');
-          Bridge().openBattle(b);
-        }
-      });
-      return;
-    }
-    UI().toast('Opening combat. Results apply automatically when you return.', 'info');
-    Bridge().openBattle(battle);
-  }
+  // _runBattle ported to action-handlers/combat.ts (H.3).
 
   function _runRollBattle() {
     const scenario = CS().getActiveScenario();
@@ -5848,11 +5826,7 @@ window.CJS.CampaignUI = (() => {
     Ops().apply({ op: 'log', text: `Random battle rolled (world pool): ${pending.label}.` }, { source: 'random_battle' });
   }
 
-  function _rollTravelSurprise() {
-    const result = Runner().rollTravelSurprise?.({ force: true });
-    if (!result) return UI().toast('No travel surprise available right now', 'info');
-    UI().toast(result.title || 'Travel surprise ready', result.category === 'battle' ? 'warning' : 'success');
-  }
+  // _rollTravelSurprise ported to action-handlers/combat.ts (H.3).
 
   function _fallbackBattlePool() {
     const world = CS().getState()?.currentWorld;
@@ -6081,39 +6055,8 @@ window.CJS.CampaignUI = (() => {
     Ops().apply({ op: 'log', text: `Set battle queued: ${pending.label}.` }, { source: 'run' });
   }
 
-  function _runNextBeat() {
-    const beat = Runner().advanceLinearBeat();
-    if (!beat) UI().toast('No more beats', 'info');
-  }
-
-  function _manualBattleModal() {
-    const body = document.createElement('div');
-    body.innerHTML = `
-      <label class="form-label">Result</label>
-      <select id="campaign-manual-result"><option value="victory">Victory (battle rewards)</option><option value="defeat">Defeat (setback penalty)</option><option value="draw">Draw (small setback)</option></select>
-      <div class="campaign-muted" style="margin:8px 0 10px">Defeat and draw keep the party alive by default, then apply danger and currency penalties unless this battle has authored consequences.</div>
-      <label class="form-label">Summary</label>
-      <textarea id="campaign-manual-summary"></textarea>
-    `;
-    const footer = document.createElement('div');
-    footer.innerHTML = '<button class="btn btn-primary">Apply</button>';
-    const overlay = UI().openModal({ title: 'Manual Battle Result', content: body, footer, width: '480px' });
-    footer.querySelector('button').onclick = () => {
-      Ops().apply({
-        op: 'manual_battle_result',
-        result: body.querySelector('#campaign-manual-result').value,
-        summary: body.querySelector('#campaign-manual-summary').value.trim()
-      }, { source: 'ui' });
-      UI().closeModal(overlay);
-    };
-  }
-
-  function _applyCombatResult() {
-    const result = CS().getState().pendingBattleResult;
-    if (!result) return;
-    Bridge().applyResult(result);
-    CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'combat_bridge' });
-  }
+  // _runNextBeat / _manualBattleModal / _applyCombatResult ported to
+  // action-handlers/combat.ts (H.3).
 
   // _shopBuy / _shopStock / _inventoryDelta / _quickAddInventory /
   // _plantSeed / _craftRecipe / _addPocketNote / _addPinnedNote ported to
