@@ -3,6 +3,12 @@
 // onClick (CampaignRosterTab.tsx). The skills / passives / statuses /
 // equipment detail row is a 2-column CSS grid, so its four cards stay one
 // HTML island (`detailCardsHtml`) until their own K.3 step ports them.
+//
+// Phase H.4 — `getRosterData` ported inline. Reads
+// `window.CJS.CampaignUIInternal.PartyTab.rosterMemberData` (still-JS
+// bridged island) + the tab-helpers bundle via the existing
+// `CampaignUI.getTabHelpers` bridge — same surfaces the JS original
+// consumed.
 
 import type { CampaignStateSnapshot } from "../../store";
 
@@ -59,18 +65,46 @@ export interface RosterData {
   readonly bench: readonly RosterMemberData[];
 }
 
-interface Bridge {
-  readonly getRosterData: (state?: CampaignStateSnapshot) => RosterData | null;
+// PartyTab module (still-JS bridged island in `js/campaign/ui/tabs/cui-party-tab.js`)
+// owns the per-member render. The TS data builder threads the typed
+// tab-helpers bundle through to it just like the JS original.
+interface PartyMemberInput {
+  readonly rosterRole?: string;
+  readonly [key: string]: unknown;
 }
 
-interface Cjs {
-  readonly CampaignUI?: Bridge;
+interface PartyTabSurface {
+  readonly rosterMemberData?: (id: string, member: PartyMemberInput, helpers: unknown) => RosterMemberData;
 }
 
-function cjs(): Cjs {
-  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
+interface CampaignUIBridge {
+  readonly getTabHelpers?: () => unknown;
+}
+
+interface RosterCjs {
+  readonly CampaignUIInternal?: { PartyTab?: PartyTabSurface };
+  readonly CampaignUI?: CampaignUIBridge;
+}
+
+function cjs(): RosterCjs {
+  return (window as unknown as { CJS?: RosterCjs }).CJS ?? {};
+}
+
+interface CampaignStateForRoster {
+  readonly party?: Record<string, PartyMemberInput>;
 }
 
 export function getRosterData(state: CampaignStateSnapshot): RosterData | null {
-  return cjs().CampaignUI?.getRosterData(state) ?? null;
+  if (!state) return null;
+  const c = cjs();
+  const partyTab = c.CampaignUIInternal?.PartyTab;
+  if (!partyTab?.rosterMemberData) return null;
+  const helpers = c.CampaignUI?.getTabHelpers?.();
+  const entries = Object.entries((state as CampaignStateForRoster).party || {});
+  const toData = ([id, member]: [string, PartyMemberInput]): RosterMemberData =>
+    partyTab.rosterMemberData!(id, member, helpers);
+  return {
+    active: entries.filter(([, m]) => (m.rosterRole || "active") !== "bench").map(toData),
+    bench: entries.filter(([, m]) => (m.rosterRole || "active") === "bench").map(toData)
+  };
 }
