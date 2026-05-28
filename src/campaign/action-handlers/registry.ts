@@ -39,6 +39,7 @@ import * as Economy from "./economy";
 import * as Cooking from "./cooking";
 import * as Combat from "./combat";
 import * as Downtime from "./downtime";
+import * as Events from "./events";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -237,7 +238,22 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "battle-override": () => Combat.battleOverride(),
   // ── Downtime (relationships + camp rest) ──────────────────────────
   "rel-activity": (d) => Downtime.doRelActivity(str(d.characterId), str(d.activityId)),
-  "camp-rest": () => Downtime.campRestModal()
+  "camp-rest": () => Downtime.campRestModal(),
+  // ── Event / oracle resolution (manual builder actions stay) ───────
+  "roll-event": () => Events.pickEvent(),
+  "pick-event": () => Events.pickEvent(),
+  "apply-event": () => Events.applyEvent(),
+  "edit-event": () => Events.editEvent(),
+  "event-to-quest": () => Events.eventToQuest(),
+  "event-log-only": () => Events.eventLogOnly(),
+  "event-add-tags": () => Events.eventAddTags(),
+  "copy-event-summary": () => Events.copyEventSummary(),
+  "note-event": () => Events.noteEvent(),
+  "ignore-event": () => Events.ignoreEvent(),
+  "pin-plot-seed": () => Events.pinPlotSeed(),
+  "event-to-oracle": () => Events.eventToOracle(),
+  "oracle-to-quest": () => Events.oracleToQuest(),
+  "oracle-add-tags": () => Events.oracleAddTags()
 };
 
 export function hasHandler(name: string): boolean {

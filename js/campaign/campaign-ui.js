@@ -2622,8 +2622,7 @@ window.CJS.CampaignUI = (() => {
       //   save + log -> actions.ts ; roster ops -> action-handlers/roster.ts
       //   pass-phase + thin engine ops -> action-handlers/ops.ts
       //   farm/haven -> action-handlers/farm.ts ; forge -> action-handlers/forge.ts
-      case 'roll-event': return _pickEvent();
-      case 'pick-event': return _pickEvent();
+      // roll-event / pick-event ported to action-handlers/events.ts (H.3).
       case 'custom-event': return _customEvent();
       // roll-oracle / pick-oracle / custom-oracle ported to
       // action-handlers/oracle.ts (H.3).
@@ -2664,19 +2663,11 @@ window.CJS.CampaignUI = (() => {
       case 'sequence-play-minigame': return _playSequenceMiniGame();
       // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
       // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
-      case 'oracle-to-quest': return _oracleToQuest();
       case 'oracle-to-event-builder': return _oracleToEventBuilder();
-      case 'oracle-add-tags': return _oracleAddTags();
-      case 'apply-event': return _applyEvent();
-      case 'edit-event': return _editEvent();
-      case 'event-to-quest': return _eventToQuest();
-      case 'event-log-only': return _eventLogOnly();
-      case 'event-add-tags': return _eventAddTags();
-      case 'copy-event-summary': return _copyEventSummary();
-      case 'note-event': return _noteEvent();
-      case 'ignore-event': return _ignoreEvent();
-      case 'pin-plot-seed': return _pinPlotSeed();
-      case 'event-to-oracle': return _eventToOracle();
+      // oracle-to-quest / oracle-add-tags + apply-event / edit-event /
+      // event-to-quest / event-log-only / event-add-tags / copy-event-summary /
+      // note-event / ignore-event / pin-plot-seed / event-to-oracle ported to
+      // action-handlers/events.ts (H.3).
       case 'add-quest': return _openQuestModal();
       case 'travel-world': return _travelWorld();
       // open-* navigation cases ported to action-handlers/nav.ts (H.3).
@@ -2758,42 +2749,7 @@ window.CJS.CampaignUI = (() => {
 
   // _rollOracle ported to action-handlers/oracle.ts (H.3).
 
-  function _eventChoices() {
-    const campaign = CS().getCurrentCampaign();
-    const world = CS().getState().currentWorld;
-    const tables = (campaign?.eventTables || []).map((id) => CS().getContent().campaignEvents[id]).filter(Boolean);
-    const seen = new Map();
-    for (const table of tables) {
-      for (const entry of table.entries || []) {
-        if (!entry.id || seen.has(entry.id)) continue;
-        seen.set(entry.id, {
-          value: entry.id,
-          label: entry.title || entry.id,
-          sub: table.name || table.id,
-          _entry: { ...entry, tableId: table.id, tableName: table.name }
-        });
-      }
-    }
-    void world;
-    return Array.from(seen.values());
-  }
-
-  function _pickEvent() {
-    const choices = _eventChoices();
-    if (!choices.length) return UI().toast('No events authored yet', 'info');
-    _opPickerModal({
-      title: 'Pick Event',
-      options: choices.map(({ value, label, sub }) => ({ value, label, sub })),
-      placeholder: 'Search events…',
-      primaryLabel: 'Use Event',
-      onSubmit: ({ value }) => {
-        const opt = choices.find((c) => c.value === value);
-        if (!opt) return;
-        const event = { ...opt._entry, rolledAt: new Date().toISOString() };
-        CS().mutate((state) => { state.lastEvent = event; }, { source: 'event_pick' });
-      }
-    });
-  }
+  // _eventChoices / _pickEvent ported to action-handlers/events.ts (H.3).
 
   function _customEvent() {
     _openManualEventBuilder();
@@ -3186,7 +3142,7 @@ window.CJS.CampaignUI = (() => {
     footer.querySelector('#manual-copy').onclick = () => {
       const draft = _manualEventDraftFromBody(body, { rumorOptions, battleOptions, characterOptions });
       const ops = _manualEventOps(draft);
-      _copyPlainText('Manual Event Summary', _manualEventSummaryText(draft, ops), 'Manual event summary copied');
+      window.CJS.CampaignCopy.copyPlainText('Manual Event Summary', _manualEventSummaryText(draft, ops), 'Manual event summary copied');
     };
     footer.querySelector('#manual-use').onclick = () => {
       const draft = _manualEventDraftFromBody(body, { rumorOptions, battleOptions, characterOptions });
@@ -4361,13 +4317,15 @@ window.CJS.CampaignUI = (() => {
   async function _copyStoryPrompt() {
     await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
     const text = _storyPromptText();
+    // _openCopyTextModal ported to action-handlers/copy.ts; reached via the
+    // shared runtime export until _copyStoryPrompt itself ports to TS.
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text)
         .then(() => UI().toast('Story prompt copied', 'success'))
-        .catch(() => _openCopyTextModal('Story Prompt', text));
+        .catch(() => window.CJS.CampaignCopy.openCopyTextModal('Story Prompt', text));
       return;
     }
-    _openCopyTextModal('Story Prompt', text);
+    window.CJS.CampaignCopy.openCopyTextModal('Story Prompt', text);
   }
 
   function _storyContextPromptText(state = {}) {
@@ -4628,23 +4586,8 @@ window.CJS.CampaignUI = (() => {
     return `${clean.slice(0, maxChars - 3).trim()}...`;
   }
 
-  function _openCopyTextModal(title, text) {
-    const body = document.createElement('div');
-    const hint = document.createElement('div');
-    hint.className = 'campaign-muted';
-    hint.style.marginBottom = '8px';
-    hint.textContent = 'Clipboard was not available. Copy this text manually:';
-    const ta = document.createElement('textarea');
-    ta.readOnly = true;
-    ta.style.width = '100%';
-    ta.style.minHeight = '280px';
-    ta.style.fontFamily = 'monospace';
-    ta.value = text;
-    body.appendChild(hint);
-    body.appendChild(ta);
-    UI().openModal({ title, content: body, width: '680px' });
-    setTimeout(() => { ta.focus(); ta.select(); }, 30);
-  }
+  // _openCopyTextModal ported to action-handlers/copy.ts (H.3), exposed on
+  // window.CJS.CampaignCopy for _copyStoryPrompt until the story tools port.
 
   function _openStoryHelpModal() {
     const body = document.createElement('div');
@@ -4681,17 +4624,7 @@ window.CJS.CampaignUI = (() => {
   // _saveOracleNote / _oracleToEventLog ported to
   // action-handlers/oracle.ts (H.3).
 
-  function _oracleToQuest() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    _addQuestFromPrompt({
-      title: 'Oracle Quest',
-      summary: oracle.text || oracle.prompt || '',
-      source: 'oracle',
-      tags: ['oracle', ...(oracle.tags || [])]
-    });
-    CS().mutate((state) => { state.lastOracle = null; }, { source: 'oracle_quest' });
-  }
+  // _oracleToQuest ported to action-handlers/events.ts (H.3).
 
   function _oracleToEventBuilder() {
     const oracle = CS().getState().lastOracle;
@@ -4706,180 +4639,10 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _oracleAddTags() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    _tagPromptModal('Tag Oracle Prompt', oracle.text || oracle.prompt || 'Oracle prompt', 'oracle', oracle.id || null);
-  }
-
-  function _applyEvent() {
-    const event = CS().getState().lastEvent;
-    window.CJS.CampaignEvents.applyEvent(event);
-    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
-  }
-
-  function _editEvent() {
-    const event = CS().getState().lastEvent;
-    _opsModal('Edit Event Operations', event?.suggested || [], (ops) => {
-      window.CJS.CampaignEvents.applyEvent(event, ops);
-      CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
-    });
-  }
-
-  function _eventToQuest() {
-    const event = CS().getState().lastEvent;
-    if (!event) return;
-    _addQuestFromPrompt({
-      title: event.title || 'Event Quest',
-      summary: _eventSummary(event),
-      source: event.source || event.tableName || 'event',
-      tags: ['event', ...(event.tags || []), ...(event.manualSummary?.tags || [])]
-    });
-    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event_quest' });
-  }
-
-  function _eventLogOnly() {
-    const event = CS().getState().lastEvent;
-    if (!event) return;
-    Ops().apply({
-      op: 'event_log_add',
-      entry: {
-        title: event.title || event.id || 'Event',
-        summary: _eventSummary(event),
-        source: event.source || event.tableName || 'event',
-        scope: event.type || event.kind || 'event',
-        relatedId: event.id || null,
-        tags: ['event', ...(event.tags || []), ...(event.manualSummary?.tags || [])],
-        consequences: Ops().describe(event.suggested || []).filter(Boolean)
-      }
-    }, { source: 'event_log_only' });
-    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event_log_only' });
-    UI().toast('Event summarized in Event Log', 'success');
-  }
-
-  function _eventAddTags() {
-    const event = CS().getState().lastEvent;
-    if (!event) return;
-    _tagPromptModal('Tag Event', _eventSummary(event), 'event', event.id || null);
-  }
-
-  function _noteEvent() {
-    const event = CS().getState().lastEvent;
-    window.CJS.CampaignEvents.ignoreEvent(event, true);
-    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
-  }
-
-  function _ignoreEvent() {
-    const event = CS().getState().lastEvent;
-    window.CJS.CampaignEvents.ignoreEvent(event, false);
-    CS().mutate((state) => { state.lastEvent = null; }, { source: 'event' });
-  }
-
-  function _pinPlotSeed() {
-    const event = CS().getState().lastEvent;
-    if (!event) return;
-    window.CJS.CampaignEvents.pinAsPlotSeed(event);
-    UI().toast('Plot seed pinned to notes', 'success');
-  }
-
-  function _eventToOracle() {
-    const event = CS().getState().lastEvent;
-    const oracle = window.CJS.CampaignOracle?.roll?.();
-    if (!oracle) return UI().toast('Oracle table empty', 'info');
-    CS().mutate((state) => { state.lastOracle = { ...oracle, source: event ? `event:${event.id}` : 'event' }; }, { source: 'oracle_from_event' });
-    UI().toast('Oracle rolled from event', 'success');
-  }
-
-  function _copyEventSummary() {
-    const event = CS().getState().lastEvent;
-    const text = event?.manualSummary?.full || [
-      event?.title || 'Event',
-      event?.prompt || '',
-      event?.gmHook ? `GM hook: ${event.gmHook}` : ''
-    ].filter(Boolean).join('\n\n');
-    _copyPlainText('Event Summary', text, 'Event summary copied');
-  }
-
-  function _eventSummary(event = {}) {
-    return event.manualSummary?.short
-      || event.summary
-      || event.prompt
-      || event.gmHook
-      || event.text
-      || event.title
-      || event.id
-      || 'Event happened.';
-  }
-
-  function _addQuestFromPrompt({ title = 'Event Quest', summary = '', source = 'event', tags = [] } = {}) {
-    const cleanTitle = title || 'Event Quest';
-    const questId = `${source || 'event'}_quest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const quest = {
-      id: _safe(questId),
-      title: cleanTitle,
-      status: 'active',
-      summary: summary || cleanTitle,
-      notes: summary || '',
-      objectives: [{
-        id: 'obj_1',
-        label: 'Resolve the hook',
-        current: 0,
-        required: 1
-      }],
-      rewards: [],
-      tags: Array.from(new Set(['promoted_event', source, ...tags].filter(Boolean)))
-    };
-    Ops().apply({ op: 'add_quest', quest }, { source: `${source}_to_quest` });
-    Ops().apply({
-      op: 'event_log_add',
-      entry: {
-        title: cleanTitle,
-        summary: summary || cleanTitle,
-        source,
-        scope: 'quest',
-        relatedId: quest.id,
-        tags: quest.tags,
-        consequences: [`Quest created: ${cleanTitle}`]
-      }
-    }, { source: `${source}_to_quest` });
-    UI().toast('Quest created from prompt', 'success');
-  }
-
-  function _tagPromptModal(title, note, scope, targetId) {
-    _textareaModal({
-      title,
-      label: 'Tags',
-      placeholder: 'comma-separated tags',
-      primaryLabel: 'Add Tags',
-      onSubmit: (text) => {
-        const tags = _tagList(text);
-        if (!tags.length) {
-          UI().toast('Add at least one tag', 'info');
-          return false;
-        }
-        Ops().apply(tags.map((tag) => ({
-          op: 'tag_add',
-          tag,
-          scope,
-          targetType: scope,
-          targetId,
-          note,
-          source: 'event_oracle_ui'
-        })), { source: 'event_oracle_tags' });
-      }
-    });
-  }
-
-  function _copyPlainText(title, text, successMessage = 'Copied') {
-    if (!text) return UI().toast('Nothing to copy', 'info');
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(() => UI().toast(successMessage, 'success'))
-        .catch(() => _openCopyTextModal(title, text));
-      return;
-    }
-    _openCopyTextModal(title, text);
-  }
+  // _oracleAddTags / _applyEvent / _editEvent / _eventToQuest / _eventLogOnly /
+  // _eventAddTags / _noteEvent / _ignoreEvent / _pinPlotSeed / _eventToOracle /
+  // _copyEventSummary / _eventSummary / _addQuestFromPrompt / _tagPromptModal /
+  // _copyPlainText ported to action-handlers/events.ts + copy.ts (H.3).
 
   const DEFAULT_QUEST_MINIGAME_CONTEXT = {
     contextText: 'This mini-game room is attached to the current quest. Clearing it advances the tracker and applies the training bonus.',
@@ -7431,21 +7194,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _opsModal(title, ops, onApply) {
-    const body = document.createElement('div');
-    body.innerHTML = `<textarea id="ops-json" style="min-height:220px;font-family:monospace">${_esc(JSON.stringify(ops, null, 2))}</textarea>`;
-    const footer = document.createElement('div');
-    footer.innerHTML = '<button class="btn btn-primary">Apply</button>';
-    const overlay = UI().openModal({ title, content: body, footer, width: '680px' });
-    footer.querySelector('button').onclick = () => {
-      try {
-        onApply(JSON.parse(body.querySelector('#ops-json').value || '[]'));
-        UI().closeModal(overlay);
-      } catch (error) {
-        UI().toast(error.message || 'Invalid JSON', 'error');
-      }
-    };
-  }
+  // _opsModal ported to action-handlers/events.ts (H.3).
 
   // Log-management handlers (_exportLog / _clearLog / _exportEventLog /
   // _clearEventLog) ported to src/campaign/actions.ts + registered in

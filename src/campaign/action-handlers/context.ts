@@ -16,6 +16,7 @@ interface OpInput {
 
 interface CampaignOpsModule {
   apply: (op: OpInput | OpInput[], options?: { source?: string; [key: string]: unknown }) => unknown;
+  describe: (ops: OpInput[] | unknown[]) => string[];
 }
 
 interface CampaignStateModule {
@@ -23,6 +24,7 @@ interface CampaignStateModule {
   getContent: () => Record<string, unknown>;
   getHubState: (hubId: string) => { rumors?: Array<{ id?: string; [key: string]: unknown }> } | null | undefined;
   getActiveScenario: () => Record<string, unknown> | null | undefined;
+  getCurrentCampaign: () => { eventTables?: string[]; [key: string]: unknown } | null | undefined;
   mutate: (recipe: (state: Record<string, unknown>) => void, options?: { source?: string }) => void;
 }
 
