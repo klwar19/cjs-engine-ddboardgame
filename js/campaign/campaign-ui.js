@@ -54,7 +54,7 @@ window.CJS.CampaignUI = (() => {
   const _textareaModal = _CUIModals.textareaModal;
   const _numberModal = _CUIModals.numberModal;
 
-  // Option builders live in `js/campaign/ui/cui-options.js`.
+  // Option builders live in `src/campaign/util/cui-options.ts`.
   const _CUIOptions = window.CJS.CampaignUIInternal.Options;
   const _bucketOptions = _CUIOptions.bucketOptions;
   const _statusOptions = _CUIOptions.statusOptions;
@@ -5255,7 +5255,7 @@ window.CJS.CampaignUI = (() => {
   // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
 
   // _bucketOptions, _statusOptions, _seedOptions, _worldOptions, _tentOptions
-  // live in js/campaign/ui/cui-options.js (bound as aliases at the top of this IIFE).
+  // live in src/campaign/util/cui-options.ts (bound as aliases at the top of this IIFE).
 
   // _opPickerModal, _textareaModal, _numberModal live in
   // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).

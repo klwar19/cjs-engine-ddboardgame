@@ -75,7 +75,7 @@ import "../../js/ui/relationships-tab.js";
 import "./util/cui-utils";
 import "./util/cui-portraits";
 import "./util/cui-modals";
-import "../../js/campaign/ui/cui-options.js";
+import "./util/cui-options";
 import "./util/cui-controls";
 import "../../js/campaign/ui/cui-equipment.js";
 import "./util/cui-log";

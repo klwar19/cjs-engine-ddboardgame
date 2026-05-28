@@ -6,7 +6,7 @@
 //
 // The shapes mirror the actual implementations:
 //   • Modals  — src/campaign/util/cui-modals.ts
-//   • Options — js/campaign/ui/cui-options.js
+//   • Options — src/campaign/util/cui-options.ts
 //   • widgets — js/ui/ui-helpers.js (window.CJS.UI)
 // They are accessible (frozen public namespaces), so a missing module
 // degrades to `undefined` (callers use `?.`) instead of throwing — the

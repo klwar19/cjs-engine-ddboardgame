@@ -111,12 +111,19 @@ sandbox.window.CJS.CampaignUIInternal.Modals = {
   textareaModal: () => null,
   numberModal: () => null
 };
+// Options: ported to src/campaign/util/cui-options.ts.
+sandbox.window.CJS.CampaignUIInternal.Options = {
+  bucketOptions: () => [],
+  statusOptions: () => [],
+  seedOptions: () => [],
+  worldOptions: () => [],
+  tentOptions: () => []
+};
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
 // via IIFE on load.
 const loadOrder = [
-  'campaign/ui/cui-options.js',
   'campaign/ui/cui-equipment.js',
   'campaign/ui/tabs/cui-tabs-registry.js',
   'campaign/ui/tabs/cui-party-tab.js',
