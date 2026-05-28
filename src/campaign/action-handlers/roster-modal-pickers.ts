@@ -22,6 +22,7 @@ interface RosterBridge {
   skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
   recordIconHtml?: (record: unknown, opts: { kind?: string; size?: string }) => string;
   memberRankInfo?: (member: unknown) => MemberRankInfo;
+  renderPartySheetHtml?: (id: string, member: unknown) => string;
 }
 
 export interface MemberRankInfo {
@@ -855,5 +856,50 @@ export function rankUpApplyModal(): void {
       { op: "rank_up_member", target: memberId, toRank, source: "guild_apply" }
     ]);
     ui.closeModal(overlay);
+  });
+}
+
+// ── party-sheet (portrait hero + roster card in a form modal) ──────
+
+interface ActionsRuntime {
+  run?: (name: string, data?: Record<string, unknown>) => unknown;
+}
+
+// Mirrors `_partySheetModal`. Body = portrait hero + full roster card
+// (built by the closure-private renderers and exposed as one HTML
+// string via the new CampaignUI.renderPartySheetHtml bridge). Local
+// click delegate routes every `data-campaign-action` button inside
+// the modal through the action runtime (matches the closure's
+// `_handleAction(action.dataset, action)` call).
+export function partySheetModal(memberId: string): void {
+  if (!memberId) return;
+  const member = (cs().getState() as { party?: Record<string, Member & Record<string, unknown>> } | null)?.party?.[memberId];
+  if (!member) return;
+  const html = bridge()?.renderPartySheetHtml?.(memberId, member);
+  if (typeof html !== "string") return;
+  const m = modals();
+  if (!m) return;
+  const body = document.createElement("div");
+  body.innerHTML = html;
+  const runtime = mod<ActionsRuntime>("CampaignActionsRuntime");
+  body.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const actionBtn = target?.closest("[data-campaign-action]") as HTMLElement | null;
+    if (!actionBtn) return;
+    event.preventDefault();
+    const action = actionBtn.dataset.campaignAction;
+    if (!action) return;
+    const data: Record<string, string | undefined> = {};
+    for (const key of Object.keys(actionBtn.dataset)) {
+      if (key !== "campaignAction") data[key] = actionBtn.dataset[key];
+    }
+    runtime?.run?.(action, data);
+  });
+  m.formModal({
+    title: `${member.name || memberId} Sheet`,
+    body,
+    width: "820px",
+    primaryLabel: "Close",
+    onSubmit: () => true
   });
 }

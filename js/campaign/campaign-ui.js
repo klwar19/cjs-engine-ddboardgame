@@ -2608,7 +2608,7 @@ window.CJS.CampaignUI = (() => {
       case 'mg-test-pick': return _mgTestPick(data.game);
       // mg-test-play / mg-test-random / mg-test-random-any ported to
       // action-handlers/mg-test.ts (H.3).
-      case 'party-sheet': return _partySheetModal(data.id);
+      // party-sheet ported to action-handlers/roster-modal-pickers.ts (H.3).
       // recruit-character / learn-skill / learn-passive ported to
       // action-handlers/roster-modal-pickers.ts (H.3). The TS handlers
       // read the still-JS option builders via the new
@@ -4851,25 +4851,12 @@ window.CJS.CampaignUI = (() => {
   // → damage/heal/level-char, mp-char, status-char) ported to
   // src/campaign/action-handlers/roster-modals.ts (H.3).
 
-  function _partySheetModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const body = document.createElement('div');
-    body.innerHTML = _renderPortraitHero(id, member) + _renderRosterMember(id, member);
-    body.addEventListener('click', (event) => {
-      const action = event.target.closest('[data-campaign-action]');
-      if (!action) return;
-      event.preventDefault();
-      _handleAction(action.dataset, action);
-    });
-    _formModal({
-      title: `${member.name || id} Sheet`,
-      body,
-      width: '820px',
-      primaryLabel: 'Close',
-      onSubmit: () => true
-    });
-  }
+  // _partySheetModal ported to action-handlers/roster-modal-pickers.ts
+  // (H.3 — party-sheet). The TS handler reads
+  // _renderPortraitHero + _renderRosterMember via the new
+  // CampaignUI.renderPartySheetHtml bridge (one HTML body for both),
+  // and routes the body's data-campaign-action buttons through the
+  // action runtime via a local click delegate.
 
   function _renderPortraitHero(id, member) {
     const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
@@ -7019,6 +7006,13 @@ window.CJS.CampaignUI = (() => {
     // source of truth lets the rank-up-apply modal show the exact
     // same numbers the party tab does.
     memberRankInfo: (member) => _memberRankInfo(member),
+    // Party sheet body HTML — portrait hero + full roster member card.
+    // Used by the party-sheet modal in TS. Built here so the portrait
+    // helpers (Portraits.memberPortrait / .memberPortraitFocus /
+    // .focusAttrStyle) and the still-JS PartyTab.renderRosterMember
+    // stay private — the modal handler only knows the HTML body shape.
+    renderPartySheetHtml: (id, member) =>
+      _renderPortraitHero(id, member) + _renderRosterMember(id, member),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to
