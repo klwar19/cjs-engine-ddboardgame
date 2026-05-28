@@ -908,13 +908,15 @@ finishes the authoring loop:
 | After H.4 getOracleData to TS | 416 |
 | After H.4 getSoloNoticeData to TS | 415 |
 | After H.4 getSideForgeData to TS | 412 |
+| After H.4 getAdventureLegendVisible to TS | 412 |
+| After H.4 getRosterData to TS | 412 |
 
 Cumulative Phase F+G+K.3+H-so-far: 641 KB → 412 KB. **Phase H.3 is
 complete**: 246/246 actions live in the TS registry, and the
 `_handleAction` switch is empty (kept as a defensive no-op with
 the port history in comments). **Phase H.4 in progress** —
 chrome state, every leaf util helper, the tab registry, the
-React-bridge tab list, the world-map stub, and 14 of the ~30
+React-bridge tab list, the world-map stub, and 16 of the ~30
 `get*Data` bridges are all TS. The seven
 `js/campaign/ui/cui-*.js` files and three `js/campaign/ui/tabs/cui-*`
 small files were deleted (cui-utils, cui-portraits, cui-log,
@@ -924,9 +926,10 @@ deleted, 11 TS modules created under `src/campaign/util/` + 1 under
 `src/campaign/`). Data builders ported to TS: travelSurprise,
 lastReport, combatResult, lastCombatResult, pendingBattle,
 eventLog, battleSets, mapSeeds, oracleForge, townSnapshot,
-townRollFloat, oracle, soloNotice, sideForge (+ shared `sideCardData`,
-`rumorRowData`, `pendingSoloHookCard`, `isQuestResolved`,
-`questObjectiveDone`, `questNextObjective`, `cssVarAssetUrl` helpers).
+townRollFloat, oracle, soloNotice, sideForge, adventureLegendVisible,
+roster (+ shared `sideCardData`, `rumorRowData`, `pendingSoloHookCard`,
+`isQuestResolved`, `questObjectiveDone`, `questNextObjective`,
+`cssVarAssetUrl` helpers).
 Every closure-private `_render*` sub-renderer in
 campaign-ui.js is JSX, the hub-family tab bodies + roster hero are
 JSX, and the action contract is fully registry-backed for every
