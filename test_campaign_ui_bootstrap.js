@@ -119,12 +119,34 @@ sandbox.window.CJS.CampaignUIInternal.Options = {
   worldOptions: () => [],
   tentOptions: () => []
 };
+// Equipment: ported to src/campaign/util/cui-equipment.ts.
+sandbox.window.CJS.CampaignUIInternal.Equipment = {
+  cleanType: (v) => String(v == null ? '' : v),
+  inferType: () => '',
+  weaponType: () => '',
+  armorType: () => '',
+  accessoryType: () => '',
+  allowedTypes: () => [],
+  memberCanUseWeapon: () => true,
+  memberCanUseArmor: () => true,
+  equipmentKind: () => '',
+  equipmentType: () => '',
+  weaponSummary: () => '',
+  effectSummary: () => '',
+  equipmentDesc: () => '',
+  delta: () => '0',
+  slotKind: () => 'accessory',
+  slotLabel: (v) => String(v == null ? '' : v),
+  normalizeEquipmentSlots: () => ({ weapon: null, armor: null, accessory1: null, accessory2: null }),
+  equipmentChangeDescription: () => '',
+  equipmentOptions: () => [],
+  equipmentPickerItem: () => ''
+};
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
 // via IIFE on load.
 const loadOrder = [
-  'campaign/ui/cui-equipment.js',
   'campaign/ui/tabs/cui-tabs-registry.js',
   'campaign/ui/tabs/cui-party-tab.js',
   'campaign/ui/tabs/cui-hub-tab.js',

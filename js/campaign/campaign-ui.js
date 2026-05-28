@@ -80,7 +80,7 @@ window.CJS.CampaignUI = (() => {
   const _logMeta = _CUILog.logMeta;
   const _renderLogEntry = _CUILog.renderLogEntry;
 
-  // Equipment helpers live in `js/campaign/ui/cui-equipment.js`.
+  // Equipment helpers live in `src/campaign/util/cui-equipment.ts`.
   const _CUIEquipment = window.CJS.CampaignUIInternal.Equipment;
   const _cleanType = _CUIEquipment.cleanType;
   const _inferType = _CUIEquipment.inferType;
@@ -5086,7 +5086,7 @@ window.CJS.CampaignUI = (() => {
   // _equipmentKind, _equipmentType, _weaponSummary, _effectSummary,
   // _equipmentDesc, _delta, _slotKind, _slotLabel, _normalizeEquipmentSlots,
   // _equipmentChangeDescription, _equipmentOptions, _equipmentPickerItem)
-  // live in js/campaign/ui/cui-equipment.js (bound as aliases at the top).
+  // live in src/campaign/util/cui-equipment.ts (bound as aliases at the top).
 
   function _memberSkillEntries(id, member = CS().getState()?.party?.[id] || {}) {
     const base = _memberBase(id, member);
