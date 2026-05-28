@@ -21,6 +21,20 @@ interface RosterBridge {
   rosterPassiveOptions?: (memberId: string) => PickerOption[];
   skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
   recordIconHtml?: (record: unknown, opts: { kind?: string; size?: string }) => string;
+  memberRankInfo?: (member: unknown) => MemberRankInfo;
+}
+
+export interface MemberRankInfo {
+  rank: string;
+  effective: string;
+  capped: boolean;
+  ceiling: string | null;
+  label: string;
+  next: string | null;
+  threshold: number;
+  rp: number;
+  pct: number;
+  atMax: boolean;
 }
 
 function bridge(): RosterBridge | undefined {
@@ -550,7 +564,8 @@ interface FormulasModuleJobs {
 }
 
 interface UiPlain {
-  openModal: (cfg: { title: string; content: HTMLElement; width?: string }) => unknown;
+  openModal: (cfg: { title: string; content: HTMLElement; footer?: HTMLElement; width?: string }) => unknown;
+  closeModal?: (overlay: unknown) => void;
 }
 
 function jobLabel(jobId: string): string {
@@ -723,5 +738,122 @@ export function showJobTreeModal(memberId: string): void {
     title: `Job Tree: ${member.name || memberId}`,
     content: body,
     width: "780px"
+  });
+}
+
+// ── rank-up-apply (Adventurer Guild rank-up trial modal) ───────────
+
+interface MemberWithAdventurer extends Member {
+  rosterRole?: string;
+  adventurer?: { rank?: string; rankPoints?: number; trialPending?: boolean };
+  rank?: string;
+}
+
+interface FormulasModuleRank {
+  rankIndex?: (rank: string) => number;
+  rankUpGates?: (
+    member: MemberWithAdventurer,
+    next: string | null,
+    state: Record<string, unknown>
+  ) => { ok?: boolean; target?: string; reasons?: string[] } | null;
+}
+
+interface WorldDef {
+  displayName?: string;
+  ceiling?: string;
+}
+
+// Mirrors `_rankUpApplyModal`. Lists every active party member with
+// RP progress + gate status, with a "Start Trial → X" button when
+// they're eligible (gates passed, not above the world's ceiling).
+// The button applies start_rank_trial + rank_up_member with the
+// `guild_apply` source. The modal's local click delegate (preserved
+// from the closure) routes button clicks before closing the overlay.
+export function rankUpApplyModal(): void {
+  const ui = mod<UiPlain & { closeModal: (overlay: unknown) => void }>("UI");
+  if (!ui?.openModal) return;
+  const state = (cs().getState() as Record<string, unknown>) || {};
+  const F = mod<FormulasModuleRank>("Formulas");
+  const world = (ds()?.get("worlds", (state as { currentWorld?: string }).currentWorld || "") as WorldDef | undefined) || {};
+  const rankInfo = bridge()?.memberRankInfo;
+
+  const body = document.createElement("div");
+  body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
+      <b>Adventurer Guild — ${esc(world.displayName || (state as { currentWorld?: string }).currentWorld || "")}</b><br>
+      Ceiling here is <b>${esc(world.ceiling || "—")}</b>. Members past the ceiling must travel to a higher-ceiling world for further trials.
+    </div>`;
+  const list = document.createElement("div");
+  list.style.display = "grid";
+  list.style.gap = "8px";
+  body.appendChild(list);
+
+  const party = ((state as { party?: Record<string, MemberWithAdventurer> }).party) || {};
+  for (const [id, member] of Object.entries(party)) {
+    if ((member.rosterRole || "active") === "bench") continue;
+    const info = rankInfo?.(member);
+    if (!info) continue;
+    const gates = F?.rankUpGates?.(member, null, state) || null;
+    const blockedByCeiling = !!(
+      world.ceiling &&
+      gates?.target &&
+      (F?.rankIndex?.(gates.target) ?? 0) > (F?.rankIndex?.(world.ceiling) ?? 0)
+    );
+    const row = document.createElement("div");
+    row.style.padding = "10px";
+    row.style.border = "1px solid rgba(255,255,255,0.1)";
+    row.style.borderRadius = "8px";
+    const reasons = blockedByCeiling
+      ? [`Above ${world.ceiling} ceiling — travel to a higher-ceiling world.`]
+      : gates?.reasons || [];
+    row.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <b>${esc(member.name || id)}</b>
+          <span class="campaign-muted">Rank ${esc(info.label)}${info.atMax ? "" : ` · target ${esc(info.next || "—")}`}</span>
+        </div>
+        ${info.atMax
+          ? '<div class="campaign-muted">At max rank.</div>'
+          : `
+          <div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold}</b></div>
+          ${reasons.length
+            ? `<div class="campaign-muted" style="margin-top:6px;font-size:0.8rem">${reasons.map((r: string) => esc(r)).join(" ")}</div>`
+            : '<div style="margin-top:6px;color:#9dd8ff;font-size:0.8rem">All gates met — ready for trial.</div>'}
+        `}
+      `;
+    if (!info.atMax && gates?.ok && !blockedByCeiling && gates?.target) {
+      const btn = document.createElement("button");
+      btn.className = "campaign-action primary";
+      btn.style.marginTop = "8px";
+      btn.textContent = `Start Trial → ${gates.target}`;
+      btn.dataset.startTrialFor = id;
+      btn.dataset.startTrialRank = gates.target;
+      row.appendChild(btn);
+    }
+    list.appendChild(row);
+  }
+  if (!list.children.length) {
+    const empty = document.createElement("div");
+    empty.className = "campaign-empty";
+    empty.textContent = "No active party members.";
+    body.appendChild(empty);
+  }
+
+  const footer = document.createElement("div");
+  const doneBtn = document.createElement("button");
+  doneBtn.className = "btn btn-primary";
+  doneBtn.textContent = "Done";
+  footer.appendChild(doneBtn);
+  const overlay = ui.openModal({ title: "Apply for Rank-Up", content: body, footer, width: "520px" });
+  doneBtn.onclick = () => ui.closeModal(overlay);
+  body.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const btn = target?.closest("[data-start-trial-for]") as HTMLElement | null;
+    if (!btn) return;
+    const memberId = btn.dataset.startTrialFor || "";
+    const toRank = btn.dataset.startTrialRank || "";
+    applyOpList([
+      { op: "start_rank_trial", target: memberId },
+      { op: "rank_up_member", target: memberId, toRank, source: "guild_apply" }
+    ]);
+    ui.closeModal(overlay);
   });
 }

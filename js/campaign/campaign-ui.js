@@ -2623,7 +2623,7 @@ window.CJS.CampaignUI = (() => {
       // now uses a local click delegate to route its per-card unlock /
       // switch buttons through the action runtime (fixes a pre-existing
       // bug where the closure modal had no delegate at all).
-      case 'rank-up-apply': return _rankUpApplyModal();
+      // rank-up-apply ported to action-handlers/roster-modal-pickers.ts (H.3).
       // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
       // skill + passive, unequip-item, party-available) ported to
       // src/campaign/action-handlers/roster.ts + actions.ts (H.3 roster).
@@ -4914,83 +4914,10 @@ window.CJS.CampaignUI = (() => {
   // _grantSkillApModal / _levelUpSkillConfirm ported to
   // action-handlers/roster-pickers.ts (H.3).
 
-  // Adventurer Guild rank-up modal. Lists each active member with their
-  // RP progress and gate status, and a "Start Trial" button when ready.
-  // The world ceiling explicitly blocks promotions past it, with a hint
-  // to travel to a higher-ceiling world for the next trial.
-  function _rankUpApplyModal() {
-    const state = CS().getState() || {};
-    const F = window.CJS.Formulas;
-    const world = DS().get('worlds', state.currentWorld) || {};
-    const body = document.createElement('div');
-    body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
-      <b>Adventurer Guild — ${_esc(world.displayName || state.currentWorld || '')}</b><br>
-      Ceiling here is <b>${_esc(world.ceiling || '—')}</b>. Members past the ceiling must travel to a higher-ceiling world for further trials.
-    </div>`;
-    const list = document.createElement('div');
-    list.style.display = 'grid';
-    list.style.gap = '8px';
-    body.appendChild(list);
-
-    for (const [id, member] of Object.entries(state.party || {})) {
-      if ((member.rosterRole || 'active') === 'bench') continue;
-      const info = _memberRankInfo(member);
-      const gates = F?.rankUpGates ? F.rankUpGates(member, null, state) : null;
-      const blockedByCeiling = !!(world.ceiling && gates?.target
-        && F?.rankIndex(gates.target) > F.rankIndex(world.ceiling));
-      const row = document.createElement('div');
-      row.style.padding = '10px';
-      row.style.border = '1px solid rgba(255,255,255,0.1)';
-      row.style.borderRadius = '8px';
-      const reasons = blockedByCeiling
-        ? [`Above ${world.ceiling} ceiling — travel to a higher-ceiling world.`]
-        : (gates?.reasons || []);
-      row.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <b>${_esc(member.name || id)}</b>
-          <span class="campaign-muted">Rank ${_esc(info.label)}${info.atMax ? '' : ` · target ${_esc(info.next || '—')}`}</span>
-        </div>
-        ${info.atMax ? '<div class="campaign-muted">At max rank.</div>' : `
-          <div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold}</b></div>
-          ${reasons.length ? `<div class="campaign-muted" style="margin-top:6px;font-size:0.8rem">${reasons.map(_esc).join(' ')}</div>` : '<div style="margin-top:6px;color:#9dd8ff;font-size:0.8rem">All gates met — ready for trial.</div>'}
-        `}
-      `;
-      if (!info.atMax && gates?.ok && !blockedByCeiling) {
-        const btn = document.createElement('button');
-        btn.className = 'campaign-action primary';
-        btn.style.marginTop = '8px';
-        btn.textContent = `Start Trial → ${gates.target}`;
-        btn.dataset.startTrialFor = id;
-        btn.dataset.startTrialRank = gates.target;
-        row.appendChild(btn);
-      }
-      list.appendChild(row);
-    }
-    if (!list.children.length) {
-      const empty = document.createElement('div');
-      empty.className = 'campaign-empty';
-      empty.textContent = 'No active party members.';
-      body.appendChild(empty);
-    }
-    const footer = document.createElement('div');
-    const doneBtn = document.createElement('button');
-    doneBtn.className = 'btn btn-primary';
-    doneBtn.textContent = 'Done';
-    footer.appendChild(doneBtn);
-    const overlay = UI().openModal({ title: 'Apply for Rank-Up', content: body, footer, width: '520px' });
-    doneBtn.onclick = () => UI().closeModal(overlay);
-    body.addEventListener('click', (event) => {
-      const btn = event.target?.closest?.('[data-start-trial-for]');
-      if (!btn) return;
-      const memberId = btn.dataset.startTrialFor;
-      const toRank = btn.dataset.startTrialRank;
-      Ops().apply([
-        { op: 'start_rank_trial', target: memberId },
-        { op: 'rank_up_member', target: memberId, toRank, source: 'guild_apply' }
-      ], { source: 'ui' });
-      UI().closeModal(overlay);
-    });
-  }
+  // _rankUpApplyModal ported to action-handlers/roster-modal-pickers.ts
+  // (H.3 — rank-up-apply). The TS handler reads _memberRankInfo via the
+  // new CampaignUI.memberRankInfo bridge (also read by cui-party-tab.js
+  // render code, so the modal stays in sync with the party tab).
 
   // _rankUpPassiveConfirm ported to action-handlers/roster-pickers.ts (H.3).
 
@@ -7087,6 +7014,11 @@ window.CJS.CampaignUI = (() => {
     // also use this — keeping a single bridge entry point keeps the
     // icon styling consistent.
     recordIconHtml: (record, opts) => _icon(record, opts),
+    // Member rank info (effective rank, RP, threshold, %, gates).
+    // Also read by cui-party-tab.js render code — keeping a single
+    // source of truth lets the rank-up-apply modal show the exact
+    // same numbers the party tab does.
+    memberRankInfo: (member) => _memberRankInfo(member),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to
