@@ -79,11 +79,11 @@ import "./util/cui-options";
 import "./util/cui-controls";
 import "./util/cui-equipment";
 import "./util/cui-log";
-import "../../js/campaign/ui/tabs/cui-tabs-registry.js";
+import "./util/cui-tabs-registry";
 import "../../js/campaign/ui/tabs/cui-party-tab.js";
 import "../../js/campaign/ui/tabs/cui-hub-tab.js";
-import "../../js/campaign/ui/tabs/cui-world-map-tab.js";
-import "../../js/campaign/ui/tabs/cui-react-bridge.js";
+import "./util/cui-world-map-tab";
+import "./util/cui-react-bridge";
 // Phase H.4 — install window.CJS.CampaignChrome BEFORE campaign-ui.js so
 // the IIFE's bridge wrappers can read/write chrome state through the TS
 // canonical slice from the moment they run.

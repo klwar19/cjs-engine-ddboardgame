@@ -131,11 +131,13 @@ ok('CampaignShell still listens for campaign:rendered (legacy fallback)',
    /campaign:rendered/.test(shell));
 
 // REACT_TAB_COMPONENTS in CampaignShell.tsx must cover every tab id
-// the cui-react-bridge.js registers. If a tab id is registered in the
-// vanilla bridge but missing from the React shell map, the active-tab
-// switch silently falls back to dangerouslySetInnerHTML and the React
-// component never renders.
-const bridge = fs.readFileSync(path.join(__dirname, 'js/campaign/ui/tabs/cui-react-bridge.js'), 'utf8');
+// the cui-react-bridge.ts module registers. If a tab id is registered
+// in the vanilla bridge but missing from the React shell map, the
+// active-tab switch silently falls back to dangerouslySetInnerHTML and
+// the React component never renders.
+// (Source path moved from js/campaign/ui/tabs/cui-react-bridge.js to
+// src/campaign/util/cui-react-bridge.ts during Phase H.4.)
+const bridge = fs.readFileSync(path.join(__dirname, 'src/campaign/util/cui-react-bridge.ts'), 'utf8');
 const REGISTERED_IDS = [
   'settings', 'logs', 'roster',
   'worldMap', 'worldActivities',
@@ -147,7 +149,9 @@ const REGISTERED_IDS = [
   'scenarios', 'maps', 'minigameTest', 'overview'
 ];
 for (const id of REGISTERED_IDS) {
-  ok('cui-react-bridge registers "' + id + '"', bridge.indexOf("'" + id + "'") >= 0);
+  // TS module uses double-quoted strings in the REACT_TABS list.
+  ok('cui-react-bridge registers "' + id + '"',
+     bridge.indexOf('"' + id + '"') >= 0 || bridge.indexOf("'" + id + "'") >= 0);
   // The shell's tab map uses bare keys, e.g. `settings: (props) => ...`.
   // Allow either bare or quoted forms (some keys aren't valid ident).
   const reBare = new RegExp('^\\s*' + id + '\\s*:', 'm');

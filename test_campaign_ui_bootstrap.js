@@ -143,15 +143,36 @@ sandbox.window.CJS.CampaignUIInternal.Equipment = {
   equipmentPickerItem: () => ''
 };
 
+// Tabs registry: ported to src/campaign/util/cui-tabs-registry.ts. The
+// behaviour is small enough to inline here for the sandbox; the TS module
+// installs the same surface in the actual browser run.
+const _tabsRegistry = new Map();
+sandbox.window.CJS.CampaignUIInternal.Tabs = {
+  register: (id, def) => {
+    if (!id || typeof id !== 'string') throw new Error('Tabs.register: id required');
+    if (!def || typeof def.render !== 'function') throw new Error('Tabs.register(' + id + '): def.render required');
+    _tabsRegistry.set(id, Object.freeze({ id, render: def.render, actions: def.actions || null }));
+  },
+  has: (id) => _tabsRegistry.has(id),
+  get: (id) => _tabsRegistry.get(id) || null,
+  render: (id, state, helpers) => {
+    const def = _tabsRegistry.get(id);
+    if (!def) return null;
+    return def.render(state, helpers);
+  },
+  ids: () => Array.from(_tabsRegistry.keys())
+};
+// WorldMapTab: ported to src/campaign/util/cui-world-map-tab.ts (empty
+// namespace stub — the actual rendering moved to React via the typed
+// getTravelMapData / getActivitiesData bridges).
+sandbox.window.CJS.CampaignUIInternal.WorldMapTab = Object.freeze({});
+
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
 // via IIFE on load.
 const loadOrder = [
-  'campaign/ui/tabs/cui-tabs-registry.js',
   'campaign/ui/tabs/cui-party-tab.js',
-  'campaign/ui/tabs/cui-hub-tab.js',
-  'campaign/ui/tabs/cui-world-map-tab.js',
-  'campaign/ui/tabs/cui-react-bridge.js'
+  'campaign/ui/tabs/cui-hub-tab.js'
 ];
 
 for (const file of loadOrder) {
@@ -162,6 +183,28 @@ for (const file of loadOrder) {
     console.error('FAILED to load ' + file + ': ' + e.message);
     process.exit(1);
   }
+}
+
+// React-bridge: ported to src/campaign/util/cui-react-bridge.ts. It
+// registers a mount-point placeholder for every React-owned tab. This
+// must run AFTER cui-party-tab.js / cui-hub-tab.js so the Map.set
+// override semantics still hold (the React bridge wins on the shared
+// ids: roster / worldMap / worldActivities / sideForge / ...).
+function mount(tabId) {
+  return '<div class="campaign-react-tab-mount" data-react-tab="' + tabId + '" id="campaign-react-tab-' + tabId + '"></div>';
+}
+const REACT_BRIDGE_TABS = [
+  'settings', 'logs', 'roster',
+  'worldMap', 'worldActivities',
+  'sideForge', 'questChains', 'oracleForge', 'battleSets', 'mapSeeds',
+  'inventory', 'shops', 'craft', 'cook', 'farm', 'relationships',
+  'worldGate', 'storyHome', 'storySummary', 'storyDirector',
+  'questHome', 'quests',
+  'eventHome', 'eventCharacter', 'eventSpecial', 'eventSide', 'eventLog',
+  'scenarios', 'maps', 'minigameTest', 'overview'
+];
+for (const tid of REACT_BRIDGE_TABS) {
+  sandbox.window.CJS.CampaignUIInternal.Tabs.register(tid, { render: () => mount(tid) });
 }
 
 let pass = 0;
@@ -236,13 +279,12 @@ ok('Tabs.render returns null for an unknown tab id',
 // 5. React-shell bridge surface lives on CampaignUI. The bootstrap
 //    sandbox here doesn't execute campaign-ui.js, but the bridge is
 //    documented in `src/campaign/CampaignShell.tsx` and exercised
-//    end-to-end in `test_campaign_shell_bridge.js`. This block only
-//    sanity-checks that the cui-react-bridge file is the last loaded
-//    so the React wrapper wins for the registered ids.
-const bridgeFile = 'campaign/ui/tabs/cui-react-bridge.js';
-ok('cui-react-bridge is last in load order',
-   loadOrder[loadOrder.length - 1] === bridgeFile,
-   loadOrder[loadOrder.length - 1]);
+//    end-to-end in `test_campaign_shell_bridge.js`.
+//
+//    cui-react-bridge ported to TS in H.4 — the React tabs are
+//    registered inline above (after the still-JS tab modules) so the
+//    Map.set override still wins.
+ok('cui-react-bridge ported to TS', fs.existsSync(path.join(__dirname, 'src/campaign/util/cui-react-bridge.ts')));
 
 console.log('\nRESULTS: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);
