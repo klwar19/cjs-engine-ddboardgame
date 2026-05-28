@@ -6116,67 +6116,8 @@ window.CJS.CampaignUI = (() => {
   // (CampaignHub.getCurrentHubDefinition / getCurrentHubState); the
   // rumor row markup stays as an HTML bridge until HubTab itself
   // ports (K.3).
-  function getTownSnapshotData(state = CS().getState()) {
-    if (!state) return null;
-    const Hub = window.CJS.CampaignHub;
-    const HubTab = window.CJS.CampaignUIInternal.HubTab;
-    const hub = Hub?.getCurrentHubDefinition?.() || {};
-    const hubState = Hub?.getCurrentHubState?.() || {};
-    const activeQuests = Object.values(state.quests || {}).filter((quest) => !_isQuestResolved(quest));
-    const activeChains = CS().getActiveQuestChains?.() || [];
-    const problems = hubState.activeProblems || [];
-    const rumors = HubTab?.openRumors?.(hubState) || [];
-    const stats = ['security', 'prosperity', 'warmth', 'weirdness'].map((stat) => ({
-      id: stat,
-      label: _label(stat),
-      value: Number(hubState[stat] ?? 0)
-    }));
-    return {
-      hubName: String(hub.name || 'Town Overview'),
-      hubDescription: String(hub.description || 'Town phase command view.'),
-      moodLabel: _label(hubState.mood || 'neutral'),
-      stats,
-      kpis: [
-        { count: activeQuests.length, label: 'Open quests', tone: '' },
-        { count: activeChains.length, label: 'Quest arcs', tone: '' },
-        { count: problems.length, label: 'Problems', tone: problems.length ? 'is-risk' : '' },
-        { count: rumors.length, label: 'Rumors', tone: rumors.length ? 'is-plot' : '' }
-      ],
-      problems: problems.slice(0, 4).map((problem) => ({
-        id: String(problem),
-        label: _label(problem)
-      })),
-      rumors: rumors.slice(0, 3).map((rumor) => _rumorRowData(rumor, { compact: true })),
-      locations: (hub.locations || []).slice(0, 5).map((loc) => ({
-        id: String(loc.id || ''),
-        name: String(loc.name || loc.id || ''),
-        detail: String(loc.notes || _label(loc.type || 'location'))
-      }))
-    };
-  }
-
-  function getTownRollFloatData(state = CS().getState()) {
-    if (!state) return null;
-    const pending = _pendingSoloHookCard(state);
-    if (!pending) {
-      return { pending: null };
-    }
-    const ops = _cardChoiceOps(pending);
-    const hasOps = ops.length > 0;
-    const HubTab = window.CJS.CampaignUIInternal.HubTab;
-    const summary = HubTab?.consequenceSummary?.(ops, {
-      hasText: !!(pending.prompt || pending.summary || pending.text)
-    }) || { tone: 'flavor', label: 'flavor', short: '' };
-    return {
-      pending: {
-        title: String(pending.title || pending.name || pending.id || ''),
-        toneLabel: String(summary.label || ''),
-        toneClass: `is-${summary.tone}`,
-        short: String(summary.short || ''),
-        hasOps
-      }
-    };
-  }
+  // `getTownSnapshotData` and `getTownRollFloatData` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/overview.ts`).
 
   // K.3 — typed bridges for the Battle Sets / Map Seeds forge tabs.
   // Replaces HubTab.renderBattleSets / renderMapSeeds (HTML strings with
@@ -6535,8 +6476,6 @@ window.CJS.CampaignUI = (() => {
     enableReactShell,
     getChromeData,
     getMinigameTestData,
-    getTownSnapshotData,
-    getTownRollFloatData,
     getRosterData,
     getSideForgeData,
     getQuestChainsData,
