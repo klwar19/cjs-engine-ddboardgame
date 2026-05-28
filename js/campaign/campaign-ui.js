@@ -706,21 +706,8 @@ window.CJS.CampaignUI = (() => {
   // delegators because the action handler (`pick-equip-skill`,
   // `pick-equip-passive`) and the rank-up modal call them directly
   // from closure.
-  function _openSkillPoolPicker(memberId) {
-    return window.CJS.CampaignUIInternal.PartyTab.openSkillPoolPicker(memberId);
-  }
-
-  function _openPassivePoolPicker(memberId) {
-    return window.CJS.CampaignUIInternal.PartyTab.openPassivePoolPicker(memberId);
-  }
-
-  function _passiveRankInfo(memberId, passiveId, passive = null) {
-    return window.CJS.CampaignUIInternal.PartyTab.passiveRankInfo(memberId, passiveId, passive);
-  }
-
-  function _passiveRankCostText(passive, currentRank) {
-    return window.CJS.CampaignUIInternal.PartyTab.passiveRankCostText(passive, currentRank);
-  }
+  // _openSkillPoolPicker / _openPassivePoolPicker / _passiveRankInfo /
+  // _passiveRankCostText ported to action-handlers/roster-pickers.ts (H.3).
 
   // _renderSelectionBudgetBadge, _renderSkillPoolList, _renderPassivePoolList,
   // _renderSkillSlotView, _renderPassiveSlotView, _memberSkillPoolCount,
@@ -2667,7 +2654,6 @@ window.CJS.CampaignUI = (() => {
       // action-handlers/mg-test.ts (H.3).
       case 'party-sheet': return _partySheetModal(data.id);
       case 'recruit-character': return _recruitCharacterModal();
-      case 'remove-character': return _removeCharacter(data.id);
       case 'learn-skill': return _learnSkillModal(data.id);
       case 'learn-passive': return _learnPassiveModal(data.id);
       case 'equip-item': return _equipItemModal(data.id, data.slot);
@@ -2675,18 +2661,15 @@ window.CJS.CampaignUI = (() => {
       case 'change-job': return _changeJobModal(data.id);
       case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'change-persona': return _changePersonaModal(data.id);
-      case 'grant-skill-ap': return _grantSkillApModal(data.id, data.skillId);
-      case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
-      case 'rank-up-passive': return _rankUpPassiveConfirm(data.id, data.passiveId);
       case 'rank-up-apply': return _rankUpApplyModal();
       // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
       // skill + passive, unequip-item, party-available) ported to
       // src/campaign/action-handlers/roster.ts + actions.ts (H.3 roster).
-      case 'pick-equip-skill':   return _openSkillPoolPicker(data.id);
-      case 'pick-equip-passive': return _openPassivePoolPicker(data.id);
+      // remove-character / level-up-skill / rank-up-passive /
+      // unlock-job-from-tree / switch-job-from-tree / grant-skill-ap /
+      // pick-equip-skill / pick-equip-passive ported to
+      // src/campaign/action-handlers/roster-pickers.ts (H.3).
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
-      case 'unlock-job-from-tree': return _confirmUnlockJob(data.id, data.jobId);
-      case 'switch-job-from-tree': return _switchJob(data.id, data.jobId);
       case 'party-availability': return _partyAvailabilityModal(data.id);
       case 'gm-override': return _gmOverride();
       case 'gm-member-override': return _gmOverride(data.id);
@@ -5336,13 +5319,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _removeCharacter(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    UI().confirm(`Remove ${member.name || id} from this campaign roster?`, () => {
-      Ops().apply({ op: 'remove_character', target: id }, { source: 'ui' });
-    });
-  }
+  // _removeCharacter ported to action-handlers/roster-pickers.ts (H.3).
 
   function _learnSkillModal(id) {
     const options = _skillOptions(id);
@@ -5554,42 +5531,8 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _grantSkillApModal(memberId, skillId) {
-    const member = CS().getState()?.party?.[memberId];
-    const skill = DS().get('skills', skillId);
-    if (!member || !skill) return;
-    const F = window.CJS.Formulas;
-    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const apToNext = F?.calcSkillApToNextLevel ? F.calcSkillApToNextLevel(skill, prog.ap, prog.level) : 10;
-    _numberModal({
-      title: `Grant ${skill.name || skillId} AbP: ${member.name || memberId}`,
-      label: `Current AbP: ${prog.ap}, Lv ${prog.level} (${apToNext != null ? `${apToNext} to next` : 'max'})`,
-      value: Math.max(1, apToNext || 5),
-      min: 1,
-      max: 9999,
-      primaryLabel: 'Grant',
-      onSubmit: (amount) => {
-        if (amount > 0) Ops().apply({ op: 'gain_skill_ap', target: memberId, skillId, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _levelUpSkillConfirm(memberId, skillId) {
-    const member = CS().getState()?.party?.[memberId];
-    const skill = DS().get('skills', skillId);
-    if (!member || !skill) return;
-    const F = window.CJS.Formulas;
-    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 5;
-    const target = Math.min(cap, Number(prog.level || 1) + 1);
-    if (target <= prog.level) {
-      UI().toast('Skill is already at max level.', 'info');
-      return;
-    }
-    UI().confirm(`Force ${skill.name || skillId} to Lv ${target}? (Edit-mode only.)`, () => {
-      Ops().apply({ op: 'set_skill_level', target: memberId, skillId, level: target }, { source: 'ui' });
-    });
-  }
+  // _grantSkillApModal / _levelUpSkillConfirm ported to
+  // action-handlers/roster-pickers.ts (H.3).
 
   // Adventurer Guild rank-up modal. Lists each active member with their
   // RP progress and gate status, and a "Start Trial" button when ready.
@@ -5669,20 +5612,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _rankUpPassiveConfirm(memberId, passiveId) {
-    const member = CS().getState()?.party?.[memberId];
-    const passive = DS().get('passives', passiveId);
-    if (!member || !passive) return;
-    const info = _passiveRankInfo(memberId, passiveId, passive);
-    if (info.isMax) {
-      UI().toast('Passive is already at max rank.', 'info');
-      return;
-    }
-    const costText = _passiveRankCostText(passive, info.rank) || 'rank material';
-    UI().confirm(`Rank up ${passive.name || passiveId} to Rank ${info.rank + 1}? Consumes ${costText}.`, () => {
-      Ops().apply({ op: 'rank_up_passive', target: memberId, passiveId }, { source: 'ui' });
-    });
-  }
+  // _rankUpPassiveConfirm ported to action-handlers/roster-pickers.ts (H.3).
 
   // Open a modal listing every level perk on the skill, marking earned vs.
   // upcoming. Used by the "Detail" button on each known-skill row.
@@ -5865,25 +5795,8 @@ window.CJS.CampaignUI = (() => {
     return eligibility.reason || 'locked';
   }
 
-  function _confirmUnlockJob(memberId, jobId) {
-    const member = CS().getState()?.party?.[memberId];
-    const job = DS().get('jobs', jobId);
-    if (!member || !job) return;
-    const slots = (member.unlockedJobs || []).length;
-    UI().confirm(
-      `Unlock ${job.name || jobId} for ${member.name || memberId}? (${slots + 1}/${member.maxJobs || 3} slots will be used.)`,
-      () => Ops().apply([
-        { op: 'unlock_job', target: memberId, jobId },
-        { op: 'set_job', target: memberId, jobId }
-      ], { source: 'ui' })
-    );
-  }
-
-  function _switchJob(memberId, jobId) {
-    const job = DS().get('jobs', jobId);
-    if (!job) return;
-    Ops().apply({ op: 'set_job', target: memberId, jobId }, { source: 'ui' });
-  }
+  // _confirmUnlockJob / _switchJob ported to
+  // action-handlers/roster-pickers.ts (H.3).
 
   function _jobLabel(jobId) {
     const job = DS().get('jobs', jobId);

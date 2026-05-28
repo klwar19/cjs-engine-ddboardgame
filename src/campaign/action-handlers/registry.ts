@@ -46,6 +46,7 @@ import * as Solo from "./solo";
 import * as StoryRolls from "./story-director-modals";
 import * as Quest from "./quest";
 import * as Minigame from "./minigame";
+import * as RosterPickers from "./roster-pickers";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -290,7 +291,16 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   // ── Mini-game sessions (sequence / haven / quest) ─────────────────
   "sequence-play-minigame": () => Minigame.playSequenceMiniGame(),
   "haven-play-minigame": (d) => Minigame.havenPlayMinigame(str(d.game)),
-  "quest-minigame": (d) => Minigame.questMiniGame(str(d.id))
+  "quest-minigame": (d) => Minigame.questMiniGame(str(d.id)),
+  // ── Roster: small confirm / number / picker handlers ─────────────
+  "remove-character": (d) => RosterPickers.removeCharacter(str(d.id)),
+  "level-up-skill": (d) => RosterPickers.levelUpSkillConfirm(str(d.id), str(d.skillId)),
+  "rank-up-passive": (d) => RosterPickers.rankUpPassiveConfirm(str(d.id), str(d.passiveId)),
+  "unlock-job-from-tree": (d) => RosterPickers.confirmUnlockJob(str(d.id), str(d.jobId)),
+  "switch-job-from-tree": (d) => RosterPickers.switchJob(str(d.id), str(d.jobId)),
+  "grant-skill-ap": (d) => RosterPickers.grantSkillApModal(str(d.id), str(d.skillId)),
+  "pick-equip-skill": (d) => RosterPickers.openSkillPoolPicker(str(d.id)),
+  "pick-equip-passive": (d) => RosterPickers.openPassivePoolPicker(str(d.id))
 };
 
 export function hasHandler(name: string): boolean {
