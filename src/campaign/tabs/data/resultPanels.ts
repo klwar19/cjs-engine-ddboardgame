@@ -1,7 +1,13 @@
 // resultPanels.ts — Phase G typed shapes for the shared EventResult
 // and Oracle panels used across EventLog, EventTab, Overview, and
 // Maps tabs.
+//
+// Phase H.4 — `getTravelSurpriseData` and `getLastReportData` are
+// implemented inline here (pure state reads). The remaining builders
+// still bridge to `window.CJS.CampaignUI.get*Data` while they wait on
+// their HTML helper deps to port.
 
+import { label } from "../../util/cui-utils";
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestPillData } from "./scenarioShared";
 
@@ -218,10 +224,8 @@ interface Bridge {
   readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
   readonly getOracleData: (state?: CampaignStateSnapshot) => OracleData | null;
   readonly getSoloNoticeData: (state?: CampaignStateSnapshot) => SoloNoticeData | null;
-  readonly getTravelSurpriseData: (state?: CampaignStateSnapshot) => TravelSurpriseData | null;
   readonly getCombatResultData: (state?: CampaignStateSnapshot) => CombatResultData | null;
   readonly getLastCombatResultData: (state?: CampaignStateSnapshot) => LastCombatResultData | null;
-  readonly getLastReportData: (state?: CampaignStateSnapshot) => LastReportData | null;
   readonly getPendingBattleData: (state?: CampaignStateSnapshot) => PendingBattleData | null;
   readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
   readonly getActiveSequenceData: (
@@ -250,8 +254,30 @@ export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData 
   return cjs().CampaignUI?.getSoloNoticeData(state) ?? null;
 }
 
+// Phase H.4 inline port — pure state read, no closure-private deps.
+interface TravelSurpriseNotice {
+  readonly title?: string;
+  readonly category?: string;
+  readonly prompt?: string;
+  readonly area?: string;
+  readonly repeated?: boolean;
+  readonly visitCount?: number;
+  readonly location?: string;
+}
+
 export function getTravelSurpriseData(state: CampaignStateSnapshot): TravelSurpriseData | null {
-  return cjs().CampaignUI?.getTravelSurpriseData(state) ?? null;
+  if (!state) return null;
+  const notice = (state as { lastTravelSurprise?: TravelSurpriseNotice }).lastTravelSurprise;
+  const activeRun = (state as { activeScenarioRun?: unknown }).activeScenarioRun;
+  if (!notice || !activeRun) return null;
+  return {
+    title: notice.title || "Travel Surprise",
+    categoryLabel: label(notice.category || "surprise"),
+    prompt: notice.prompt || "",
+    areaLabel: notice.area || "Area",
+    repeatLabel: notice.repeated ? `Revisit ${notice.visitCount || 2}` : "New route",
+    locationLabel: notice.location || ""
+  };
 }
 
 export function getCombatResultData(state: CampaignStateSnapshot): CombatResultData | null {
@@ -262,8 +288,28 @@ export function getLastCombatResultData(state: CampaignStateSnapshot): LastComba
   return cjs().CampaignUI?.getLastCombatResultData(state) ?? null;
 }
 
+// Phase H.4 inline port — pure state read, no closure-private deps.
+interface LastScenarioReport {
+  readonly outcome?: string;
+  readonly danger?: number;
+  readonly usedCampRests?: number;
+  readonly eventsUsed?: number;
+  readonly completedBattles?: readonly unknown[];
+  readonly diff?: unknown;
+}
+
 export function getLastReportData(state: CampaignStateSnapshot): LastReportData | null {
-  return cjs().CampaignUI?.getLastReportData(state) ?? null;
+  if (!state) return null;
+  const report = (state as { lastScenarioReport?: LastScenarioReport }).lastScenarioReport;
+  if (!report) return null;
+  return {
+    outcome: report.outcome || "",
+    danger: report.danger || 0,
+    campsUsed: report.usedCampRests || 0,
+    eventsUsed: report.eventsUsed || 0,
+    battlesCount: (report.completedBattles || []).length,
+    diffJson: JSON.stringify(report.diff, null, 2)
+  };
 }
 
 export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattleData | null {

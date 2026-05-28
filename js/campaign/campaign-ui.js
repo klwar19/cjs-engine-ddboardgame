@@ -5653,19 +5653,9 @@ window.CJS.CampaignUI = (() => {
   }
 
   // Typed snapshots for small shared panels used across tabs.
-  function getTravelSurpriseData(state = CS().getState()) {
-    if (!state) return null;
-    const notice = state.lastTravelSurprise;
-    if (!notice || !state.activeScenarioRun) return null;
-    return {
-      title: notice.title || 'Travel Surprise',
-      categoryLabel: _label(notice.category || 'surprise'),
-      prompt: notice.prompt || '',
-      areaLabel: notice.area || 'Area',
-      repeatLabel: notice.repeated ? `Revisit ${notice.visitCount || 2}` : 'New route',
-      locationLabel: notice.location || ''
-    };
-  }
+  // `getTravelSurpriseData` and `getLastReportData` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/resultPanels.ts` — pure state
+  // reads, no closure deps).
 
   function getCombatResultData(state = CS().getState()) {
     if (!state) return null;
@@ -5691,20 +5681,6 @@ window.CJS.CampaignUI = (() => {
       summary: result.summary || '',
       pulseHtml: _renderCombatPulseSummary(result.combatPulse) || '',
       lootHtml: _renderLootSummary(result.loot || [])
-    };
-  }
-
-  function getLastReportData(state = CS().getState()) {
-    if (!state) return null;
-    const report = state.lastScenarioReport;
-    if (!report) return null;
-    return {
-      outcome: report.outcome || '',
-      danger: report.danger || 0,
-      campsUsed: report.usedCampRests || 0,
-      eventsUsed: report.eventsUsed || 0,
-      battlesCount: (report.completedBattles || []).length,
-      diffJson: JSON.stringify(report.diff, null, 2)
     };
   }
 
@@ -6774,10 +6750,8 @@ window.CJS.CampaignUI = (() => {
     getEventResultData,
     getOracleData,
     getSoloNoticeData,
-    getTravelSurpriseData,
     getCombatResultData,
     getLastCombatResultData,
-    getLastReportData,
     getPendingBattleData,
     getScenarioSummaryData,
     getActiveSequenceData,
