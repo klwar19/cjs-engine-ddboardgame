@@ -40,6 +40,8 @@ import * as Cooking from "./cooking";
 import * as Combat from "./combat";
 import * as Downtime from "./downtime";
 import * as Events from "./events";
+import * as Scenario from "./scenario";
+import * as MgTest from "./mg-test";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -253,7 +255,15 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "pin-plot-seed": () => Events.pinPlotSeed(),
   "event-to-oracle": () => Events.eventToOracle(),
   "oracle-to-quest": () => Events.oracleToQuest(),
-  "oracle-add-tags": () => Events.oracleAddTags()
+  "oracle-add-tags": () => Events.oracleAddTags(),
+  // ── Scenario lifecycle (generate / inspect stay) ──────────────────
+  "start-scenario": (d) => Scenario.startScenarioFromUi(str(d.id)),
+  "cancel-scenario": () => Scenario.cancelScenario(),
+  "discard-scenario": (d) => Scenario.discardGeneratedScenario(str(d.id)),
+  // ── Mini-game test (mg-test-pick stays — _root.dataset coupling) ──
+  "mg-test-play": (d) => MgTest.mgTestPlay({ gameId: str(d.game), levelId: str(d.level) }),
+  "mg-test-random": (d) => MgTest.mgTestPlay({ gameId: str(d.game), difficulty: Number(d.difficulty || 1) }),
+  "mg-test-random-any": (d) => MgTest.mgTestPlay({ gameId: str(d.game) })
 };
 
 export function hasHandler(name: string): boolean {

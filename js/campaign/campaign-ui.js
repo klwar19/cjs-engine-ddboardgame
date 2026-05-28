@@ -890,41 +890,7 @@ window.CJS.CampaignUI = (() => {
     render();
   }
 
-  async function _mgTestPlay(gameId, levelId, options = {}) {
-    const MG = window.CJS.Minigames;
-    if (!MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
-    if (!gameId) return UI().toast('No mini-game selected', 'info');
-    try {
-      const session = await MG.openMiniGame({
-        gameId,
-        levelId: levelId || undefined,
-        difficulty: options.difficulty || undefined,
-        source: 'minigame_test_lab',
-        onComplete: (result) => {
-          CS().mutate((state) => {
-            state.lastMiniGameTestResult = result;
-            state.log = state.log || [];
-            state.log.unshift({
-              id: `log_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-              at: new Date().toISOString(),
-              phase: state.phase?.number || 1,
-              world: state.currentWorld,
-              text: `Mini-game test: ${result?.gameId || gameId} ${result?.levelId || ''} -> ${result?.status || 'done'} (score ${result?.score ?? 0})`,
-              op: 'minigame_test'
-            });
-            state.log = state.log.slice(0, 500);
-          }, { source: 'mg_test_result' });
-          if (result?.status === 'win') UI().toast('Mini-game test cleared', 'success');
-          else if (result?.status === 'fail') UI().toast('Mini-game test failed', 'info');
-          else if (result?.status === 'giveup') UI().toast('Mini-game test abandoned', 'info');
-        }
-      });
-      if (!session) UI().toast('Mini-game could not open. Check the selected level data.', 'error');
-    } catch (err) {
-      console.error('mg-test-play failed', err);
-      UI().toast(err?.message || 'Could not open mini-game', 'error');
-    }
-  }
+  // _mgTestPlay ported to action-handlers/mg-test.ts (H.3).
 
   function _questPaperKind(entry = {}) {
     const kind = String(entry.kind || '').toLowerCase();
@@ -2681,11 +2647,10 @@ window.CJS.CampaignUI = (() => {
       case 'generate-dungeon-run': return _generateScenario({ source: 'random', mapType: 'dungeon', size: 'medium', mapForm: 'grid_map' });
       case 'generate-urban-run': return _generateScenario({ source: 'random', mapType: 'urban', size: 'small', mapForm: 'node_map' });
       case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'grid_map' });
-      case 'start-scenario': return _startScenarioFromUi(data.id);
       case 'inspect-scenario': return _inspectScenario(data.id);
+      // start-scenario / cancel-scenario / discard-scenario ported to
+      // action-handlers/scenario.ts (H.3).
       // end-scenario ported to action-handlers/ops.ts (H.3).
-      case 'cancel-scenario': return _cancelScenario();
-      case 'discard-scenario': return _discardGeneratedScenario(data.id);
       // move-node/move-cell/map-layer/clear-node ported to
       // action-handlers/map.ts (H.3).
       // inventory-delta / quick-add-inventory / shop-buy / plant-seed /
@@ -2705,9 +2670,8 @@ window.CJS.CampaignUI = (() => {
       case 'quest-harvest': return _questHarvest(data.id);
       case 'quest-minigame': return _questMiniGame(data.id);
       case 'mg-test-pick': return _mgTestPick(data.game);
-      case 'mg-test-play': return _mgTestPlay(data.game, data.level);
-      case 'mg-test-random': return _mgTestPlay(data.game, '', { difficulty: Number(data.difficulty || 1) });
-      case 'mg-test-random-any': return _mgTestPlay(data.game, '');
+      // mg-test-play / mg-test-random / mg-test-random-any ported to
+      // action-handlers/mg-test.ts (H.3).
       case 'quest-check': return _questCheck(data.id);
       case 'quest-hand-in': return _questHandIn(data.id);
       case 'quest-answer': return _questAnswer(data.id);
@@ -5363,18 +5327,7 @@ window.CJS.CampaignUI = (() => {
     return result;
   }
 
-  function _startScenarioFromUi(scenarioId) {
-    if (!scenarioId) return null;
-    try {
-      const run = Runner().startScenario(scenarioId);
-      _activeTab = 'maps';
-      render();
-      return run;
-    } catch (error) {
-      UI().toast(error?.message || 'Scenario could not start', 'error');
-      return null;
-    }
-  }
+  // _startScenarioFromUi ported to action-handlers/scenario.ts (H.3).
 
   function _inspectScenario(scenarioId) {
     const scenario = CS().getScenarioById(scenarioId);
@@ -5433,59 +5386,14 @@ window.CJS.CampaignUI = (() => {
     const start = footer.querySelector('[data-inspect-start]');
     if (start) start.onclick = () => {
       UI().closeModal(overlay);
-      _startScenarioFromUi(scenarioId);
+      // _startScenarioFromUi ported to action-handlers/scenario.ts (start-scenario);
+      // route this internal caller through the action runtime.
+      window.CJS.CampaignActionsRuntime?.run?.('start-scenario', { id: scenarioId });
     };
   }
 
-  function _discardGeneratedScenario(scenarioId) {
-    if (!scenarioId) return;
-    const state = CS().getState();
-    if (state?.activeScenarioRun?.scenarioId === scenarioId) {
-      return UI().toast('Cancel the active run first', 'info');
-    }
-    UI().confirm('Discard this generated scenario?', () => {
-      CS().mutate((next) => {
-        const sc = next.sideContent || {};
-        const scenario = sc.generatedScenarios?.[scenarioId];
-        const mapId = scenario?.mapId;
-        if (sc.generatedScenarios) delete sc.generatedScenarios[scenarioId];
-        if (mapId && sc.generatedMaps) delete sc.generatedMaps[mapId];
-      }, { source: 'scenario_discard' });
-      Ops().apply({ op: 'log', text: `Generated scenario discarded: ${scenarioId}.` }, { source: 'scenario_discard' });
-      UI().toast('Scenario discarded', 'info');
-    });
-  }
-
-  function _cancelScenario() {
-    const run = CS().getState()?.activeScenarioRun;
-    if (!run) return;
-    UI().confirm('Cancel this scenario without recording a report?', () => {
-      const scenarioId = run.scenarioId;
-      CS().mutate((state) => {
-        state.activeScenarioRun = null;
-        state.pendingBattle = null;
-        for (const member of Object.values(state.party || {})) {
-          if (member.availability?.expires === 'scenario') {
-            member.availability = {
-              status: 'available',
-              reason: '',
-              source: 'scenario_cancel',
-              expires: null,
-              updatedAt: new Date().toISOString()
-            };
-          }
-        }
-        if (scenarioId && state.sideContent?.generatedScenarios?.[scenarioId]) {
-          delete state.sideContent.generatedScenarios[scenarioId];
-        }
-      }, { source: 'scenario_cancel' });
-      Ops().apply({ op: 'log', text: `Scenario cancelled: ${scenarioId}.` }, { source: 'scenario_cancel' });
-      _activeMode = 'quest';
-      _activeTab = 'scenarios';
-      render();
-      UI().toast('Scenario cancelled', 'info');
-    });
-  }
+  // _discardGeneratedScenario / _cancelScenario ported to
+  // action-handlers/scenario.ts (H.3).
 
   // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
   // action-handlers/map.ts (H.3).
