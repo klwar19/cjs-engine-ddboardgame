@@ -1816,30 +1816,8 @@ window.CJS.CampaignUI = (() => {
     return CS().getState()?.quests?.[questId] || quest;
   }
 
-  function _addQuestChainToTracker(templateId) {
-    window.CJS.CampaignQuestChains.start(templateId);
-    _activeMode = 'event';
-    _activeTab = 'questChains';
-    render();
-    UI().toast('Side story added to Event', 'success');
-  }
-
-  function _advanceQuestChainStep(templateId) {
-    window.CJS.CampaignQuestChains.advance(templateId);
-    render();
-  }
-
-  function _completeQuestChain(templateId) {
-    window.CJS.CampaignQuestChains.complete(templateId);
-    render();
-    UI().toast('Quest arc resolved', 'success');
-  }
-
-  function _failQuestChain(templateId) {
-    window.CJS.CampaignQuestChains.fail(templateId);
-    render();
-    UI().toast('Quest arc failed', 'info');
-  }
+  // _addQuestChainToTracker / _advanceQuestChainStep / _completeQuestChain
+  // / _failQuestChain ported to action-handlers/quest-chain.ts (H.3).
 
   // Consequence preview, flavor trail, and card-choice-ops helpers
   // all live in `js/campaign/ui/tabs/cui-hub-tab.js`. The story home,
@@ -2624,33 +2602,34 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _handleAction(data) {
+    // Phase H.3 — ported handlers live in TS modules registered on
+    // window.CJS.CampaignActionsRuntime. Consult that registry first; it
+    // is the single seam for every dispatch path (React onClick →
+    // dispatchCampaignAction → handleAction, the shell/drawer
+    // forwarders, and internal delegated callers like the party-sheet
+    // modal). Any name not registered there falls through to the switch
+    // below, which holds the not-yet-ported cases.
+    const runtime = window.CJS.CampaignActionsRuntime;
+    if (runtime && runtime.has(data.campaignAction)) {
+      return runtime.run(data.campaignAction, data);
+    }
     switch (data.campaignAction) {
-      case 'open-world-gate': return _goto('world', 'worldGate');
-      case 'open-world-content': return _goto(data.mode || _modeForTab(data.tab), data.tab || 'worldGate');
       case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
       case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
-      case 'world-map-travel':
-      case 'world-map-switch-map':
-      case 'world-map-interaction':
-      case 'world-map-node-action':
-      case 'world-activity-use':
-        return window.CJS.CampaignWorldMap?.handleAction?.(data);
-      case 'new-save': return _newSave();
-      case 'save-slot': Save().saveCurrent(); return UI().toast('Campaign saved', 'success');
-      case 'fork-save': Save().forkCurrent(); return UI().toast('Campaign forked', 'success');
-      case 'export-save': return Save().exportCurrent();
-      case 'import-save': return _root.querySelector('#campaign-import-file')?.click();
-      case 'push-github': return _pushGitHub();
-      case 'pass-phase': return Ops().apply({ op: 'pass_phase' }, { source: 'ui' });
+      // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
+      //   navigation (open-* / _goto) -> action-handlers/nav.ts
+      //   world-map-* / world-activity-use -> action-handlers/worldmap.ts
+      //   save + log -> actions.ts ; roster ops -> action-handlers/roster.ts
+      //   pass-phase + thin engine ops -> action-handlers/ops.ts
+      //   farm/haven -> action-handlers/farm.ts ; forge -> action-handlers/forge.ts
       case 'roll-event': return _pickEvent();
       case 'pick-event': return _pickEvent();
       case 'custom-event': return _customEvent();
-      case 'roll-oracle': return _rollOracle();
-      case 'pick-oracle': return _pickOracle();
-      case 'custom-oracle': return _customOracle();
+      // roll-oracle / pick-oracle / custom-oracle ported to
+      // action-handlers/oracle.ts (H.3).
       case 'battle-reroll': return _battleReroll();
       case 'battle-override': return _battleOverride();
-      case 'roll-hub-pulse': return _rollHubPulse(data.table);
+      // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
       case 'solo-surprise': return _rollSoloSurprise();
       case 'random-quest-offer': return _offerRandomQuest();
       case 'random-rumor-offer': return _offerRandomRumor();
@@ -2660,60 +2639,32 @@ window.CJS.CampaignUI = (() => {
       case 'solo-hook-rumor': return _soloHookToRumor();
       case 'save-solo-hook': return _saveSoloHook();
       case 'ignore-solo-hook': return _ignoreSoloHook();
-      case 'apply-side-choice': return _applySideChoice(data.id, Number(data.choice || 0));
-      case 'save-side-idea': return _saveSideIdea(data.id);
-      case 'reject-side-idea': return _rejectSideIdea(data.id);
-      case 'dismiss-side-card': return _dismissSideCard(data.id);
-      case 'copy-side-card': return _copySideCard(data.id);
-      case 'resolve-rumor': return _resolveRumor(data.id, data.hubId);
-      case 'rumor-to-quest': return _rumorToQuest(data.id, data.hubId);
-      case 'rumor-to-problem': return _rumorToProblem(data.id, data.hubId);
-      case 'review-resolve': return Ops().apply({ op: 'review_queue_resolve', reviewId: data.id, decision: data.decision }, { source: 'ui' });
-      case 'resolve-hub-problem': return Ops().apply({ op: 'hub_problem_remove', hubId: data.hubId, problemId: data.id }, { source: 'ui' });
+      // apply/save/reject/dismiss/copy side-card ported to
+      // action-handlers/side.ts (H.3).
+      // resolve-rumor / rumor-to-quest / rumor-to-problem ported to
+      // action-handlers/rumor.ts (H.3).
       case 'start-chain': return _startQuestChainRun(data.id);
-      case 'advance-chain': return _advanceQuestChainStep(data.id);
-      case 'complete-chain': return _completeQuestChain(data.id);
-      case 'fail-chain': return _failQuestChain(data.id);
-      case 'save-chain': return window.CJS.CampaignQuestChains.saveAsIdea(data.id);
-      case 'promote-chain': return _addQuestChainToTracker(data.id);
+      // advance-chain/complete-chain/fail-chain/promote-chain ported to
+      // action-handlers/quest-chain.ts (H.3).
       case 'chain-scenario': return _startQuestChainScenario(data.id);
       case 'chain-battle': return _questChainBattle(data.id);
-      case 'queue-battle-set': return window.CJS.CampaignBattleSetForge.queueBattle(data.id);
-      case 'save-battle-card': return window.CJS.CampaignBattleSetForge.saveCard(data.id);
-      case 'copy-battle-card': return _copyBattleCard(data.id);
-      case 'save-map-seed': return window.CJS.CampaignMapSeedForge.saveSeed(data.id);
-      case 'copy-map-seed': return _copyMapSeed(data.id);
-      case 'roll-forge-oracle': return _rollForgeOracle();
+      // copy-battle-card/copy-map-seed + roll-forge-oracle ported to
+      // action-handlers/{forge,oracle}.ts (H.3).
       case 'story-roll-scene': return _rollStoryDirector('scene');
       case 'story-roll-peri': return _rollStoryDirector('peri');
       case 'story-roll-memory': return _rollStoryDirector('memory');
       case 'story-pressure-tick': return _rollStoryDirector('pressure');
-      case 'story-save-beat': return _saveStoryDirectorBeat();
-      case 'story-reject-beat': return _rejectStoryDirectorBeat();
-      case 'story-apply-choice': return _applyStoryDirectorChoice(data.id, Number(data.choice || 0));
-      case 'story-set-stage': return _setStoryDirectorStage(data.id);
-      case 'story-sync-sidequests': return _syncStoryDirectorSideQuests();
+      // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
+      // ported to action-handlers/story-director.ts (H.3).
       case 'story-open-last': return _openLastStoryBeatModal();
       case 'story-manual-note': return _manualStoryNote();
       case 'story-copy-prompt': return _copyStoryPrompt();
       case 'story-help': return _openStoryHelpModal();
-      case 'sequence-start': return _startSequenceFromUi(data.id);
-      case 'sequence-next': return _advanceSequenceFromUi('next');
-      case 'sequence-resolve': return _advanceSequenceFromUi('resolve');
-      case 'sequence-choice': return _advanceSequenceFromUi('choice', data.choice);
-      case 'sequence-pass': return _advanceSequenceFromUi('pass');
-      case 'sequence-fail': return _advanceSequenceFromUi('fail');
-      case 'sequence-queue-battle': return _advanceSequenceFromUi('queue');
+      // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
+      // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
       case 'sequence-play-minigame': return _playSequenceMiniGame();
-      case 'sequence-win': return _advanceSequenceFromUi('win');
-      case 'sequence-lose': return _advanceSequenceFromUi('lose');
-      case 'sequence-abort': return _advanceSequenceFromUi('abort');
-      case 'sequence-complete': return _completeSequenceFromUi();
-      case 'sequence-open-vn': window.CJS.CampaignSequenceVN?.setEnabled?.(true); return render();
-      case 'import-side-pack': return _importSidePack();
-      case 'export-side-pack': return _exportSidePack();
-      case 'oracle-note': return _saveOracleNote();
-      case 'oracle-event-log': return _oracleToEventLog();
+      // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
+      // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
       case 'oracle-to-quest': return _oracleToQuest();
       case 'oracle-to-event-builder': return _oracleToEventBuilder();
       case 'oracle-add-tags': return _oracleAddTags();
@@ -2728,33 +2679,13 @@ window.CJS.CampaignUI = (() => {
       case 'pin-plot-seed': return _pinPlotSeed();
       case 'event-to-oracle': return _eventToOracle();
       case 'add-quest': return _openQuestModal();
-      case 'full-rest': return Ops().apply({ op: 'full_rest' }, { source: 'ui' });
       case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
-      case 'open-story-home': return _goto('story', 'storyHome');
-      case 'open-story-summary': return _goto('story', 'storySummary');
-      case 'open-quest-home': return _goto('quest', 'questHome');
-      case 'open-event-home': return _goto('event', 'eventCharacter');
-      case 'open-event-log': return _goto('event', 'eventLog');
-      case 'open-roster-tab': return _goto(null, 'roster');
-      case 'open-scenarios-tab': return _goto(null, 'scenarios');
-      case 'open-maps-tab': return _goto(null, 'maps');
-      case 'open-inventory-tab': return _goto('activities', 'inventory');
-      case 'open-farm-tab': return _goto('activities', 'farm');
-      case 'open-craft-tab': return _goto('activities', 'craft');
-      case 'open-cook-tab': return _goto('activities', 'cook');
-      case 'open-oracle-event-tab': return _goto('activities', 'oracleForge');
-      case 'open-quests-tab': return _goto('quest', 'quests');
-      case 'open-shops-tab': return _goto('activities', 'shops');
-      case 'open-sideforge-tab': return _goto('activities', 'sideForge');
-      case 'open-event-stories-tab': return _goto('event', 'eventSide');
-      case 'open-event-battles-tab': return _goto('event', 'battleSets');
+      // open-* navigation cases ported to action-handlers/nav.ts (H.3).
       case 'run-roll-battle': return _runRollBattle();
       case 'run-pick-battle': return _runPickBattle();
-      case 'run-roll-event': return UI().toast('Random event rolls are disabled. Use authored Event files or Quest tools.', 'info');
       case 'roll-travel-surprise': return _rollTravelSurprise();
       case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
-      case 'run-tick-danger': return Ops().apply({ op: 'danger', amount: 1 }, { source: 'run' });
       case 'run-next-beat': return _runNextBeat();
       case 'generate-scenario': return _generateScenario();
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
@@ -2765,43 +2696,22 @@ window.CJS.CampaignUI = (() => {
       case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'grid_map' });
       case 'start-scenario': return _startScenarioFromUi(data.id);
       case 'inspect-scenario': return _inspectScenario(data.id);
-      case 'end-scenario': return Runner().endScenario('manual');
+      // end-scenario ported to action-handlers/ops.ts (H.3).
       case 'cancel-scenario': return _cancelScenario();
       case 'discard-scenario': return _discardGeneratedScenario(data.id);
-      case 'move-node': return _moveNode(data.nodeId);
-      case 'move-cell': return _moveCell(data.x, data.y);
-      case 'map-layer': return _setMapLayer(data.layer);
-      case 'reveal-node': return Ops().apply({ op: 'reveal_node', nodeId: data.nodeId }, { source: 'ui' });
-      case 'clear-node': return _clearNode(data.nodeId);
+      // move-node/move-cell/map-layer/clear-node ported to
+      // action-handlers/map.ts (H.3).
       case 'run-battle': return _runBattle();
       case 'manual-battle': return _manualBattleModal();
-      case 'skip-victory': return Ops().apply({ op: 'manual_battle_result', result: 'victory', summary: 'Skipped as GM-approved victory.' }, { source: 'ui' });
-      case 'skip-defeat': return Ops().apply({ op: 'manual_battle_result', result: 'defeat', summary: 'Skipped as GM-approved defeat.' }, { source: 'ui' });
-      case 'cancel-battle': return CS().mutate((state) => { state.pendingBattle = null; }, { source: 'ui' });
       case 'apply-combat-result': return _applyCombatResult();
-      case 'ignore-combat-result': return CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'ui' });
       case 'inventory-delta': return _inventoryDelta(data);
       case 'quick-add-inventory': return _quickAddInventory(data.bucket);
       case 'shop-buy': return _shopBuy(data);
-      case 'shop-sell': return Ops().apply({ op: 'shop_sell', id: data.id, type: data.type, price: Number(data.price || 0), currency: data.currency, qty: 1 }, { source: 'ui' });
-      case 'farm-tick': return Ops().apply({ op: 'farm_tick', amount: 1 }, { source: 'ui' });
-      case 'farm-move': return window.CJS.FarmingMode?.move?.(data.dir);
-      case 'farm-interact': return window.CJS.FarmingMode?.interact?.();
-      case 'farm-tile': return window.CJS.FarmingMode?.faceOrUseTile?.(data.x, data.y);
-      case 'farm-select-tool': return window.CJS.FarmingMode?.selectTool?.(data.tool);
-      case 'farm-tile-action': return window.CJS.FarmingMode?.tileAction?.(data.tileAction, data.x, data.y);
-      case 'farm-tile-menu-close': return window.CJS.FarmingMode?.closeTileMenu?.();
-      case 'farm-qte-open': return window.CJS.FarmingMode?.openQte?.();
-      case 'farm-qte-hit': return window.CJS.FarmingMode?.hitQte?.();
-      case 'farm-qte-close': return window.CJS.FarmingMode?.closeQte?.();
       case 'plant-seed': return _plantSeed(data.plotId);
-      case 'harvest-plot': return window.CJS.PocketHaven.harvestPlot(data.plotId);
-      case 'open-fishing': return window.CJS.PocketHaven?.openFishing?.();
-      case 'haven-build-facility': return _havenBuildFacility(data.facility);
-      case 'haven-upgrade-facility': return _havenUpgradeFacility(data.facility);
+      // haven-build-facility/haven-upgrade-facility/haven-ranch-collect
+      // ported to action-handlers/haven.ts (H.3).
       case 'haven-train-skill': return _havenTrainSkill(data.facility);
       case 'haven-ranch-assign': return _havenRanchAssign(data.facility);
-      case 'haven-ranch-collect': return _havenRanchCollect(data.facility);
       case 'haven-open-trivia': return _openGuildTrivia(data.world);
       case 'haven-open-cooking': return _openCookingMinigame(data.foodId);
       case 'haven-play-minigame': return _havenPlayMinigame(data.game);
@@ -2828,7 +2738,6 @@ window.CJS.CampaignUI = (() => {
       case 'quest-progress': return _questProgress(data.id);
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
-      case 'quest-event': return UI().toast('Random quest events are disabled. Use Hub Scene, Check, Battle, or authored Event files.', 'info');
       case 'quest-hub-event': return _questHubEvent(data.id);
       case 'quest-harvest': return _questHarvest(data.id);
       case 'quest-minigame': return _questMiniGame(data.id);
@@ -2839,27 +2748,13 @@ window.CJS.CampaignUI = (() => {
       case 'quest-check': return _questCheck(data.id);
       case 'quest-hand-in': return _questHandIn(data.id);
       case 'quest-answer': return _questAnswer(data.id);
-      case 'quest-complete': return Ops().apply({ op: 'complete_quest', questId: data.id }, { source: 'ui' });
-      case 'quest-fail': return Ops().apply({ op: 'fail_quest', questId: data.id }, { source: 'ui' });
-      case 'damage-char': return _charNumberOp(data.id, 'damage_character', 'Damage amount');
-      case 'heal-char': return _charNumberOp(data.id, 'heal_character', 'Heal amount');
-      case 'mp-char': return _charMpModal(data.id);
-      case 'status-char': return _charStatusModal(data.id);
       case 'party-sheet': return _partySheetModal(data.id);
       case 'recruit-character': return _recruitCharacterModal();
-      case 'bench-character': return Ops().apply({ op: 'bench_character', target: data.id }, { source: 'ui' });
-      case 'activate-character': return Ops().apply({ op: 'activate_character', target: data.id }, { source: 'ui' });
       case 'remove-character': return _removeCharacter(data.id);
       case 'learn-skill': return _learnSkillModal(data.id);
-      case 'unlearn-skill': return Ops().apply({ op: 'unlearn_skill', target: data.id, skillId: data.skillId }, { source: 'ui' });
       case 'learn-passive': return _learnPassiveModal(data.id);
-      case 'unlearn-passive': return Ops().apply({ op: 'unlearn_passive', target: data.id, passiveId: data.passiveId }, { source: 'ui' });
       case 'equip-item': return _equipItemModal(data.id, data.slot);
-      case 'unequip-item': return Ops().apply({ op: 'unequip_item', target: data.id, slot: data.slot }, { source: 'ui' });
       case 'stat-boost': return _statBoostModal(data.id);
-      case 'level-char': return _charNumberOp(data.id, 'add_level', 'Level change');
-      case 'grant-xp': return _grantXpModal(data.id);
-      case 'grant-job-xp': return _grantJobXpModal(data.id);
       case 'change-job': return _changeJobModal(data.id);
       case 'show-job-tree': return _showJobTreeModal(data.id);
       case 'change-persona': return _changePersonaModal(data.id);
@@ -2867,102 +2762,29 @@ window.CJS.CampaignUI = (() => {
       case 'level-up-skill': return _levelUpSkillConfirm(data.id, data.skillId);
       case 'rank-up-passive': return _rankUpPassiveConfirm(data.id, data.passiveId);
       case 'rank-up-apply': return _rankUpApplyModal();
-      case 'equip-skill':    return Ops().apply({ op: 'equip_skill',    target: data.id, skillId:   data.skillId   }, { source: 'ui' });
-      case 'unequip-skill':  return Ops().apply({ op: 'unequip_skill',  target: data.id, skillId:   data.skillId   }, { source: 'ui' });
-      case 'equip-passive':  return Ops().apply({ op: 'equip_passive',  target: data.id, passiveId: data.passiveId }, { source: 'ui' });
-      case 'unequip-passive':return Ops().apply({ op: 'unequip_passive',target: data.id, passiveId: data.passiveId }, { source: 'ui' });
+      // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
+      // skill + passive, unequip-item, party-available) ported to
+      // src/campaign/action-handlers/roster.ts + actions.ts (H.3 roster).
       case 'pick-equip-skill':   return _openSkillPoolPicker(data.id);
       case 'pick-equip-passive': return _openPassivePoolPicker(data.id);
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
       case 'unlock-job-from-tree': return _confirmUnlockJob(data.id, data.jobId);
       case 'switch-job-from-tree': return _switchJob(data.id, data.jobId);
       case 'party-availability': return _partyAvailabilityModal(data.id);
-      case 'party-available': return Ops().apply({ op: 'clear_party_availability', target: data.id }, { source: 'ui' });
       case 'gm-override': return _gmOverride();
       case 'gm-member-override': return _gmOverride(data.id);
-      case 'load-slot': return _loadSlot(data.id);
-      case 'delete-slot': return _deleteSlot(data.id);
-      case 'delete-all-saves': return _deleteAllSaves();
-      case 'export-slot': return _exportSlot(data.id);
-      case 'export-log': return _exportLog();
-      case 'clear-log': return _clearLog();
-      case 'export-event-log': return _exportEventLog();
-      case 'clear-event-log': return _clearEventLog();
+      // load-slot / delete-slot / delete-all-saves / export-slot /
+      // export-log / clear-log / export-event-log / clear-event-log
+      // ported to src/campaign/action-handlers/registry.ts (H.3 save + log).
       default: break;
     }
   }
 
-  function _newSave() {
-    const message = 'Create a fresh campaign save? Your current campaign will keep its own slot — the new save starts empty in a different slot.';
-    UI().confirm(message, () => {
-      const campaign = Object.values(CS().getContent().campaigns)[0];
-      CS().createNewSave(campaign?.id);
-      Save().saveCurrent();
-      _bootIncompatibleNotice = null;
-      UI().toast('New campaign save started', 'success');
-      render();
-    });
-  }
+  // Save-management handlers (_newSave / _loadSlot / _deleteSlot /
+  // _deleteAllSaves / _exportSlot / _pushGitHub) ported to
+  // src/campaign/actions.ts + registered in action-handlers/registry.ts (H.3).
 
-  function _loadSlot(slotId) {
-    if (!slotId) return;
-    const result = Save().loadSlot(slotId);
-    if (result && result.incompatible) {
-      UI().toast(result.reason || 'That save is from an older build and cannot be loaded.', 'error', 5500);
-      return;
-    }
-    if (!result) {
-      UI().toast('Save slot not found', 'error');
-      return;
-    }
-    _bootIncompatibleNotice = null;
-    UI().toast(`Loaded ${result.slotName || result.saveId || 'save'}`, 'success');
-    render();
-  }
-
-  function _deleteSlot(slotId) {
-    if (!slotId) return;
-    UI().confirm('Delete this save slot? This cannot be undone.', () => {
-      Save().deleteSlot(slotId);
-      UI().toast('Save slot deleted', 'info');
-      render();
-    });
-  }
-
-  function _deleteAllSaves() {
-    UI().confirm('Delete ALL local campaign saves? This cannot be undone.', () => {
-      Save().deleteAllSlots();
-      // Start a fresh save immediately so the UI does not crash on an empty slot list.
-      const campaign = Object.values(CS().getContent().campaigns)[0];
-      CS().createNewSave(campaign?.id);
-      Save().saveCurrent();
-      _bootIncompatibleNotice = null;
-      UI().toast('All save slots cleared. Started a fresh campaign.', 'success');
-      render();
-    });
-  }
-
-  function _exportSlot(slotId) {
-    const slot = Save().getSlots()[slotId];
-    if (!slot) { UI().toast('Save slot not found', 'error'); return; }
-    const SaveMgr = window.CJS.SaveManager;
-    if (!SaveMgr?.downloadTextFile) { UI().toast('Save export unavailable', 'error'); return; }
-    const file = `${(slot.slotName || slot.saveId || 'campaign_save').replace(/[^a-z0-9._-]+/gi, '_').toLowerCase()}.save.json`;
-    SaveMgr.downloadTextFile(file, `${JSON.stringify(slot, null, 2)}\n`, 'application/json');
-    UI().toast(`Exported ${file}`, 'success');
-  }
-
-  function _pushGitHub() {
-    Save().pushCurrentToGitHub()
-      .then(() => UI().toast('Campaign save pushed to GitHub', 'success'))
-      .catch((error) => UI().toast(error.message || 'GitHub save failed', 'error', 5000));
-  }
-
-  function _rollOracle() {
-    const oracle = window.CJS.CampaignOracle.roll();
-    if (!oracle) return UI().toast('No oracle table available', 'info');
-    CS().mutate((state) => { state.lastOracle = oracle; }, { source: 'oracle' });
-  }
+  // _rollOracle ported to action-handlers/oracle.ts (H.3).
 
   function _eventChoices() {
     const campaign = CS().getCurrentCampaign();
@@ -3844,59 +3666,8 @@ window.CJS.CampaignUI = (() => {
       .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
   }
 
-  function _oracleChoices() {
-    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || Object.values(CS().getContent().oracleTables || {});
-    const seen = new Map();
-    for (const table of tables) {
-      const entries = table.entries || table.prompts || [];
-      for (const entry of entries) {
-        const text = entry.text || entry.prompt || entry.label;
-        if (!text) continue;
-        const value = entry.id || `${table.id}_${seen.size}`;
-        seen.set(value, {
-          value,
-          label: text.length > 80 ? text.slice(0, 80) + '…' : text,
-          sub: table.name || table.id,
-          _text: text,
-          _tableId: table.id
-        });
-      }
-    }
-    return Array.from(seen.values());
-  }
-
-  function _pickOracle() {
-    const choices = _oracleChoices();
-    if (!choices.length) return UI().toast('No oracle prompts available', 'info');
-    _opPickerModal({
-      title: 'Pick GM Prompt',
-      options: choices.map(({ value, label, sub }) => ({ value, label, sub })),
-      placeholder: 'Search prompts…',
-      primaryLabel: 'Use Prompt',
-      onSubmit: ({ value }) => {
-        const opt = choices.find((c) => c.value === value);
-        if (!opt) return;
-        CS().mutate((state) => {
-          state.lastOracle = { id: opt.value, text: opt._text, tableId: opt._tableId, rolledAt: new Date().toISOString() };
-        }, { source: 'oracle_pick' });
-      }
-    });
-  }
-
-  function _customOracle() {
-    _textareaModal({
-      title: 'Custom GM Prompt',
-      label: 'Prompt text',
-      placeholder: 'A scene seed in your own words…',
-      primaryLabel: 'Use',
-      onSubmit: (text) => {
-        if (!text) return false;
-        CS().mutate((state) => {
-          state.lastOracle = { id: `custom_${Date.now()}`, text, source: 'custom', rolledAt: new Date().toISOString() };
-        }, { source: 'oracle_custom' });
-      }
-    });
-  }
+  // _oracleChoices / _pickOracle / _customOracle ported to
+  // action-handlers/oracle.ts (H.3).
 
   function _battleReroll() {
     const battle = CS().getState().pendingBattle;
@@ -3914,13 +3685,7 @@ window.CJS.CampaignUI = (() => {
     _runPickBattle();
   }
 
-  function _rollHubPulse(table) {
-    _activeMode = 'event';
-    _activeTab = 'sideForge';
-    const card = window.CJS.CampaignHub.rollHubPulse(table);
-    if (!card) return UI().toast('No hub events available', 'info');
-    render();
-  }
+  // _rollHubPulse ported to action-handlers/rumor.ts (H.3).
 
   function _rollSoloSurprise() {
     const tables = ['town', 'guild', 'tavern', 'forge', 'weird'];
@@ -4182,140 +3947,16 @@ window.CJS.CampaignUI = (() => {
     _clearPendingSoloHook();
   }
 
-  function _applySideChoice(id, choiceIndex) {
-    const card = _sideCardById(id);
-    const applyNow = (approved) => {
-      window.CJS.CampaignHub.applyChoice(id, choiceIndex, { approved });
-      _clearCurrentSideCard(id);
-      render();
-      UI().toast(approved ? 'Pulse applied and cleared' : 'Pulse sent to review and cleared', approved ? 'success' : 'info');
-    };
-    if (card?.canonRisk === 'red') {
-      UI().confirm('This is red-risk content. Approve and apply it now?',
-        () => applyNow(true),
-        () => applyNow(false));
-      return;
-    }
-    applyNow(true);
-  }
+  // _applySideChoice / _saveSideIdea / _rejectSideIdea / _dismissSideCard
+  // / _clearCurrentSideCard ported to action-handlers/side.ts (H.3).
 
-  function _saveSideIdea(id) {
-    const card = _sideCardById(id);
-    if (!card) return;
-    Side().saveCard(card, { status: 'saved', source: 'ui' });
-    _clearCurrentSideCard(id);
-    render();
-    UI().toast('Idea saved and cleared from current result', 'success');
-  }
+  // _rumorById / _resolveRumor / _rumorToQuest / _rumorToProblem ported to
+  // action-handlers/rumor.ts (H.3).
 
-  function _rejectSideIdea(id) {
-    _textareaModal({
-      title: 'Reject Idea',
-      label: 'Reason (optional)',
-      placeholder: 'Why is this rejected?',
-      primaryLabel: 'Reject',
-      onSubmit: (reason) => {
-        Side().rejectCard(id, reason || '');
-        _clearCurrentSideCard(id);
-        render();
-      }
-    });
-  }
+  // _copySideCard ported to action-handlers/side.ts (H.3).
 
-  function _dismissSideCard(id) {
-    _clearCurrentSideCard(id);
-    render();
-  }
-
-  function _clearCurrentSideCard(id) {
-    CS().mutate((state) => {
-      if (!id || state.lastSideContentCard?.id === id) state.lastSideContentCard = null;
-    }, { source: 'side_card_clear' });
-  }
-
-  function _rumorById(rumorId, hubId) {
-    const id = hubId || window.CJS.CampaignHub?.getCurrentHubId?.();
-    const hub = id ? CS().getHubState(id) : window.CJS.CampaignHub?.getCurrentHubState?.();
-    return { hubId: id, rumor: (hub?.rumors || []).find((entry) => entry.id === rumorId) };
-  }
-
-  function _resolveRumor(rumorId, hubId, status = 'resolved') {
-    const found = _rumorById(rumorId, hubId);
-    if (!found.rumor) return UI().toast('Rumor not found', 'info');
-    Ops().apply({ op: 'resolve_rumor', hubId: found.hubId, rumorId, status }, { source: 'rumor' });
-    render();
-    UI().toast(status === 'promoted' ? 'Rumor promoted and removed from open leads' : 'Rumor resolved', 'success');
-  }
-
-  function _rumorToQuest(rumorId, hubId) {
-    const found = _rumorById(rumorId, hubId);
-    const rumor = found.rumor;
-    if (!rumor) return UI().toast('Rumor not found', 'info');
-    const title = _truncate(rumor.text || rumor.id, 52);
-    const questId = `quest_rumor_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    Ops().apply([
-      {
-        op: 'add_quest',
-        quest: {
-          id: questId,
-          title: `Rumor: ${title}`,
-          status: 'active',
-          summary: rumor.text || '',
-          tags: ['rumor', ...(rumor.tags || [])],
-          objectives: [{ id: 'follow_lead', label: 'Follow the rumor lead', current: 0, required: 1 }],
-          rewards: []
-        }
-      },
-      { op: 'resolve_rumor', hubId: found.hubId, rumorId, status: 'promoted' }
-    ], { source: 'rumor_to_quest' });
-    _activeMode = 'quest';
-    _activeTab = 'quests';
-    render();
-    UI().toast('Rumor promoted to Quest', 'success');
-  }
-
-  function _rumorToProblem(rumorId, hubId) {
-    const found = _rumorById(rumorId, hubId);
-    const rumor = found.rumor;
-    if (!rumor) return UI().toast('Rumor not found', 'info');
-    const label = _truncate(rumor.text || rumor.id, 48);
-    Ops().apply([
-      {
-        op: 'hub_problem_add',
-        hubId: found.hubId,
-        problemId: `rumor_problem_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-        label,
-        notes: rumor.text || ''
-      },
-      { op: 'resolve_rumor', hubId: found.hubId, rumorId, status: 'promoted' }
-    ], { source: 'rumor_to_problem' });
-    render();
-    UI().toast('Rumor escalated to hub problem', 'success');
-  }
-
-  function _copySideCard(id) {
-    const card = _sideCardById(id);
-    if (!card) return;
-    Side().copyMarkdown(card).then(() => UI().toast('Card copied as Markdown', 'success'));
-  }
-
-  function _copyBattleCard(id) {
-    const card = window.CJS.CampaignBattleSetForge.getCard(id);
-    if (card) Side().copyMarkdown({ ...card, type: 'battle_set', title: card.name || card.id }).then(() => UI().toast('Battle card copied', 'success'));
-  }
-
-  function _copyMapSeed(id) {
-    const seed = window.CJS.CampaignMapSeedForge.getSeed(id);
-    if (seed) Side().copyMarkdown({ ...seed, type: 'map_seed', title: seed.name || seed.id }).then(() => UI().toast('Map seed copied', 'success'));
-  }
-
-  function _rollForgeOracle() {
-    _activeMode = 'event';
-    _activeTab = 'oracleForge';
-    const card = window.CJS.CampaignIdeaForge.rollOracle();
-    if (!card) return UI().toast('No oracle table available', 'info');
-    render();
-  }
+  // _copyBattleCard / _copyMapSeed ported to action-handlers/forge.ts (H.3).
+  // _rollForgeOracle ported to action-handlers/oracle.ts (H.3).
 
   function _rollStoryDirector(kind) {
     _activeMode = 'story';
@@ -4326,71 +3967,10 @@ window.CJS.CampaignUI = (() => {
     _openStoryBeatModal(card);
   }
 
-  async function _startSequenceFromUi(sequenceId) {
-    if (!sequenceId) return;
-    // Manual branch chapters live outside the sequence runner — they're
-    // authored at runtime in Story Controls and stored in state. Route
-    // them through CampaignStoryBranch so they play as VN scenes.
-    if (String(sequenceId).startsWith('branch_')) {
-      const Branch = window.CJS.CampaignStoryBranch;
-      const branch = Branch?.getBranch?.(sequenceId);
-      if (!branch) return UI().toast('Branch chapter is missing.', 'error');
-      _activeMode = 'story';
-      const ok = Branch.playBranch(sequenceId, {
-        onComplete: () => { render(); }
-      });
-      if (!ok) UI().toast('Branch chapter could not open.', 'error');
-      return;
-    }
-    try {
-      const started = await window.CJS.CampaignSequences?.start?.(sequenceId);
-      if (started?.blocked) {
-        render();
-        return UI().toast(started?.meta?.deliveryNote || 'That chapter part is still in update.', 'info');
-      }
-      const sequence = started?.sequence || null;
-      if (!sequence) return UI().toast('Sequence file not found', 'info');
-      const scope = sequence.scope || sequence._indexEntry?.scope || 'event';
-      if (scope === 'story') _activeMode = 'story';
-      else if (scope === 'quest') _activeMode = 'quest';
-      else if (scope === 'event') _activeMode = 'event';
-      render();
-      if (started?.replayOnly) {
-        return UI().toast(`Opened ${sequence.title || sequence.id} in replay mode`, 'info');
-      }
-      if (started?.defaulted?.length) {
-        return UI().toast(`Started ${sequence.title || sequence.id}; defaulted ${started.defaulted.length} earlier part${started.defaulted.length === 1 ? '' : 's'}`, 'success');
-      }
-      UI().toast(`Started ${sequence.title || sequence.id}`, 'success');
-    } catch (error) {
-      console.error(error);
-      UI().toast(error?.message || 'Sequence could not start', 'error');
-    }
-  }
-
-  async function _advanceSequenceFromUi(action, value = null) {
-    try {
-      const result = await window.CJS.CampaignSequences?.advance?.(action, value);
-      if (result?.scenarioStarted || result?.queued) _activeTab = 'maps';
-      render();
-      if (result?.replayOnly && result?.reason === 'replay_queue_blocked') {
-        return UI().toast('Replay mode keeps consequences frozen. Use the continue buttons instead of queuing battle.', 'info');
-      }
-      if (result?.replayOnly && result?.reason === 'replay_scenario_blocked') {
-        return UI().toast('Replay mode keeps exploration frozen too. Use the continue buttons instead of launching a scenario.', 'info');
-      }
-      if (result?.scenarioStarted) return UI().toast('Exploration run started from sequence', 'success');
-      if (result?.queued) return UI().toast('Battle queued from sequence', 'success');
-      if (result?.complete) return UI().toast('Sequence complete', 'success');
-      if (!result?.ok && result?.reason === 'choice_locked') {
-        return UI().toast((result.blockers || []).join(' | ') || 'That choice is locked by earlier consequences.', 'info');
-      }
-      if (!result?.ok) return UI().toast('No active sequence node', 'info');
-    } catch (error) {
-      console.error(error);
-      UI().toast(error?.message || 'Sequence could not advance', 'error');
-    }
-  }
+  // _startSequenceFromUi / _advanceSequenceFromUi ported to
+  // src/campaign/action-handlers/sequence.ts (H.3). _playSequenceMiniGame
+  // (below) stays here — it owns the mini-game session machinery — and
+  // routes its win/lose follow-ups back through the action registry.
 
   async function _playSequenceMiniGame() {
     const Seq = window.CJS.CampaignSequences;
@@ -4411,8 +3991,11 @@ window.CJS.CampaignUI = (() => {
       node,
       onComplete: (result, storyContext) => {
         _applyMiniGameResult(result, 'sequence_minigame', storyContext);
-        if (result?.status === 'win') return _advanceSequenceFromUi('win');
-        if (result?.status === 'fail' || result?.status === 'giveup') return _advanceSequenceFromUi('lose');
+        // sequence advance ported to action-handlers/sequence.ts (H.3);
+        // route the win/lose follow-up back through the action registry.
+        const Actions = window.CJS.CampaignActionsRuntime;
+        if (result?.status === 'win') return Actions?.run?.('sequence-win');
+        if (result?.status === 'fail' || result?.status === 'giveup') return Actions?.run?.('sequence-lose');
         return UI().toast('Mini-game could not resolve this sequence node', 'error');
       }
     });
@@ -4630,38 +4213,11 @@ window.CJS.CampaignUI = (() => {
     if (result.status === 'error') return UI().toast('Mini-game returned an error', 'error');
   }
 
-  async function _completeSequenceFromUi() {
-    const result = await window.CJS.CampaignSequences?.complete?.('manual');
-    render();
-    if (result?.ok) UI().toast('Sequence closed', 'success');
-  }
+  // _completeSequenceFromUi ported to action-handlers/sequence.ts (H.3).
 
-  function _saveStoryDirectorBeat() {
-    const card = SD()?.saveLast?.('saved');
-    if (!card) return UI().toast('No story scene to hold', 'info');
-    render();
-    UI().toast('Story scene held for later', 'success');
-  }
-
-  function _rejectStoryDirectorBeat() {
-    const card = SD()?.rejectLast?.();
-    if (!card) return UI().toast('No story roll to skip', 'info');
-    render();
-    UI().toast('Story roll skipped', 'info');
-  }
-
-  function _applyStoryDirectorChoice(cardId, choiceIndex = 0) {
-    const result = SD()?.applyChoice?.(cardId, choiceIndex);
-    if (result?.queued) {
-      render();
-      return UI().toast('Red-risk story route queued for review', 'info');
-    }
-    if (result?.applied) {
-      render();
-      return UI().toast('Story route chosen', 'success');
-    }
-    return UI().toast('Story scene not found', 'info');
-  }
+  // _saveStoryDirectorBeat / _rejectStoryDirectorBeat /
+  // _applyStoryDirectorChoice ported to action-handlers/story-director.ts
+  // (H.3). The beat modal below routes its follow-ups via the registry.
 
   function _openLastStoryBeatModal() {
     const card = CS().getState()?.lastStoryDirectorBeat;
@@ -4693,21 +4249,25 @@ window.CJS.CampaignUI = (() => {
       width: '780px'
     });
 
+    // save/reject/apply ported to action-handlers/story-director.ts (H.3);
+    // this modal stays in JS (it builds _renderStoryDirectorCard HTML), so
+    // its follow-ups route back through the action registry.
+    const Actions = window.CJS.CampaignActionsRuntime;
     body.querySelectorAll('[data-story-modal-choice]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const choiceIndex = Number(btn.dataset.storyModalChoice || 0);
         UI().closeModal(overlay);
-        _applyStoryDirectorChoice(card.id, choiceIndex);
+        Actions?.run?.('story-apply-choice', { id: card.id, choice: choiceIndex });
       });
     });
     footer.querySelector('[data-story-modal-close]').onclick = () => UI().closeModal(overlay);
     footer.querySelector('[data-story-modal-save]').onclick = () => {
       UI().closeModal(overlay);
-      _saveStoryDirectorBeat();
+      Actions?.run?.('story-save-beat');
     };
     footer.querySelector('[data-story-modal-reject]').onclick = () => {
       UI().closeModal(overlay);
-      _rejectStoryDirectorBeat();
+      Actions?.run?.('story-reject-beat');
     };
   }
 
@@ -5194,90 +4754,14 @@ window.CJS.CampaignUI = (() => {
     UI().openModal({ title: 'Story Mode Flow', content: body, width: '720px' });
   }
 
-  function _setStoryDirectorStage(stageId) {
-    if (!stageId) return;
-    SD()?.setStage?.(stageId);
-    render();
-  }
+  // _setStoryDirectorStage / _syncStoryDirectorSideQuests ported to
+  // action-handlers/story-director.ts (H.3).
 
-  function _syncStoryDirectorSideQuests() {
-    const result = SD()?.syncSideQuestFlow?.();
-    if (result?.already) return UI().toast('Side quest flow already synced for this stage', 'info');
-    if (result?.synced) {
-      render();
-      return UI().toast('Side quest flow synced', 'success');
-    }
-    return UI().toast('No side quest flow for this stage', 'info');
-  }
+  // _importSidePack / _exportSidePack / _sideCardById ported to
+  // action-handlers/side.ts (H.3).
 
-  function _importSidePack() {
-    _textareaModal({
-      title: 'Import Side Content Pack',
-      label: 'Paste pack JSON',
-      placeholder: '{ "id": "...", "cards": [...] }',
-      primaryLabel: 'Import',
-      width: '640px',
-      onSubmit: (raw) => {
-        if (!raw) {
-          UI().toast('Nothing to import', 'info');
-          return false;
-        }
-        try {
-          const pack = JSON.parse(raw);
-          window.CJS.CampaignSideContent.importPack(pack);
-          UI().toast('Side content pack imported', 'success');
-        } catch (error) {
-          UI().toast(error.message || 'Invalid JSON', 'error');
-          return false;
-        }
-      }
-    });
-  }
-
-  function _exportSidePack() {
-    const state = CS().getState();
-    const content = {
-      exportedAt: new Date().toISOString(),
-      saveId: state.saveId,
-      generatedIdeas: state.sideContent?.generatedIdeas || {},
-      reviewQueue: state.sideContent?.reviewQueue || [],
-      activeQuestChains: state.sideContent?.activeQuestChains || {}
-    };
-    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-side-content.json`, `${JSON.stringify(content, null, 2)}\n`, 'application/json');
-  }
-
-  function _sideCardById(id) {
-    const state = CS().getState();
-    return state.sideContent?.generatedIdeas?.[id] || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
-  }
-
-  function _saveOracleNote() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    CS().mutate((state) => {
-      state.pinnedNotes.unshift({ at: new Date().toISOString(), text: oracle.text });
-      state.lastOracle = null;
-    }, { source: 'oracle_note' });
-    Ops().apply({ op: 'log', text: 'GM prompt saved as note.' }, { source: 'oracle' });
-  }
-
-  function _oracleToEventLog() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    Ops().apply({
-      op: 'event_log_add',
-      entry: {
-        title: oracle.title || 'Oracle Prompt',
-        summary: oracle.text || oracle.prompt || '',
-        source: oracle.source || 'oracle',
-        scope: 'oracle',
-        relatedId: oracle.id || null,
-        tags: ['oracle', ...(oracle.tags || [])]
-      }
-    }, { source: 'oracle_event_log' });
-    CS().mutate((state) => { state.lastOracle = null; }, { source: 'oracle_event_log' });
-    UI().toast('Oracle summarized in Event Log', 'success');
-  }
+  // _saveOracleNote / _oracleToEventLog ported to
+  // action-handlers/oracle.ts (H.3).
 
   function _oracleToQuest() {
     const oracle = CS().getState().lastOracle;
@@ -6322,35 +5806,8 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _setMapLayer(layer) {
-    if (!layer) return;
-    CS().mutate((state) => {
-      if (state.activeScenarioRun) state.activeScenarioRun.mapLayer = layer;
-    }, { source: 'map_layer' });
-  }
-
-  function _moveNode(nodeId) {
-    const current = Runner().findCurrentNode();
-    const link = (current?.exits || []).find((exit) => exit.to === nodeId) || null;
-    const moved = Runner().moveToNode(nodeId, link);
-    if (!moved) UI().toast('That node is not connected from here yet', 'info');
-    else window.CJS.CampaignStoryScenes?.openPendingNodeEntry?.();
-  }
-
-  function _moveCell(x, y) {
-    const moved = Runner().moveToCell?.(Number(x), Number(y));
-    if (!moved) UI().toast('That cell is blocked or out of reach', 'info');
-  }
-
-  function _clearNode(nodeId) {
-    CS().mutate((state) => {
-      const mapId = state.activeScenarioRun?.mapId;
-      if (!mapId) return;
-      state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
-      state.mapState[mapId].cleared[nodeId] = true;
-    }, { source: 'map' });
-    Ops().apply({ op: 'log', text: `Node cleared: ${nodeId}.` }, { source: 'map' });
-  }
+  // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
+  // action-handlers/map.ts (H.3).
 
   function _runBattle() {
     const battle = CS().getState().pendingBattle;
@@ -6769,18 +6226,8 @@ window.CJS.CampaignUI = (() => {
   }
 
   // ── POCKET HAVEN FACILITIES ────────────────────────────────────
-  function _havenBuildFacility(facilityId) {
-    if (!facilityId) return;
-    const def = window.CJS.PocketHavenFacilities?.getFacilityDef?.(facilityId);
-    if (!def) return UI().toast('Unknown facility', 'error');
-    Ops().apply({ op: 'build_facility', facilityId }, { source: 'pocket_haven_ui' });
-    UI().toast(`Built ${def.name}`, 'success');
-  }
-
-  function _havenUpgradeFacility(facilityId) {
-    if (!facilityId) return;
-    Ops().apply({ op: 'upgrade_facility', facilityId }, { source: 'pocket_haven_ui' });
-  }
+  // _havenBuildFacility / _havenUpgradeFacility / _havenRanchCollect
+  // ported to action-handlers/haven.ts (H.3).
 
   function _havenTrainSkill(facilityId) {
     const state = CS().getState();
@@ -6837,10 +6284,6 @@ window.CJS.CampaignUI = (() => {
         Ops().apply({ op: 'ranch_assign', facilityId, beastId }, { source: 'pocket_haven_ui' });
       }
     });
-  }
-
-  function _havenRanchCollect(facilityId) {
-    Ops().apply({ op: 'ranch_collect', facilityId }, { source: 'pocket_haven_ui' });
   }
 
   async function _openCookingMinigame(foodId) {
@@ -7361,67 +6804,9 @@ window.CJS.CampaignUI = (() => {
     return map[bucket] || 'take_item';
   }
 
-  function _charNumberOp(id, op, label) {
-    const member = CS().getState()?.party?.[id];
-    const max = op === 'heal_character' ? Math.max(member?.maxHp || 999, 1) : 999;
-    _numberModal({
-      title: `${label}: ${member?.name || id}`,
-      label,
-      value: 5,
-      min: 1,
-      max,
-      primaryLabel: 'Apply',
-      onSubmit: (amount) => {
-        if (amount) Ops().apply({ op, target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _charMpModal(id) {
-    const member = CS().getState()?.party?.[id];
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Direction'));
-    const dir = UI().createSelect({
-      options: [
-        { value: 'restore_mp', label: 'Restore MP' },
-        { value: 'spend_mp', label: 'Spend MP' }
-      ],
-      value: 'restore_mp'
-    });
-    body.appendChild(dir);
-    body.appendChild(_formLabel('Amount'));
-    const slider = UI().createNumberSlider({ value: 5, min: 1, max: Math.max(member?.maxMp || 99, 1), step: 1 });
-    body.appendChild(slider);
-    _formModal({
-      title: `MP: ${member?.name || id}`,
-      body,
-      primaryLabel: 'Apply',
-      onSubmit: () => {
-        const amount = slider._getValue();
-        if (!amount) return false;
-        Ops().apply({ op: dir.value, target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _charStatusModal(id) {
-    const member = CS().getState()?.party?.[id];
-    const options = _statusOptions();
-    if (!options.length) {
-      UI().toast('No statuses authored yet', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: `Add Status: ${member?.name || id}`,
-      options,
-      withDuration: true,
-      placeholder: 'Search statuses…',
-      primaryLabel: 'Apply Status',
-      onSubmit: ({ value, duration }) => {
-        Ops().apply({ op: 'add_status', target: id, status: value, duration: duration || 'manual' }, { source: 'ui' });
-      }
-    });
-  }
+  // Roster GM stat modals (_charNumberOp / _charMpModal / _charStatusModal
+  // → damage/heal/level-char, mp-char, status-char) ported to
+  // src/campaign/action-handlers/roster-modals.ts (H.3).
 
   function _partySheetModal(id) {
     const member = CS().getState()?.party?.[id];
@@ -7559,42 +6944,8 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _grantXpModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    _numberModal({
-      title: `Grant XP: ${member.name || id}`,
-      label: 'XP amount',
-      value: 50,
-      min: 1,
-      max: 99999,
-      primaryLabel: 'Grant',
-      onSubmit: (amount) => {
-        if (amount > 0) Ops().apply({ op: 'add_xp', target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _grantJobXpModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    if (!member.currentJob) {
-      UI().toast(`${member.name || id} has no active job. Pick one with the Job button first.`, 'info');
-      return;
-    }
-    const job = DS().get('jobs', member.currentJob);
-    _numberModal({
-      title: `Grant Job XP: ${member.name || id} (${job?.name || member.currentJob})`,
-      label: 'Job XP amount',
-      value: 30,
-      min: 1,
-      max: 99999,
-      primaryLabel: 'Grant',
-      onSubmit: (amount) => {
-        if (amount > 0) Ops().apply({ op: 'gain_job_xp', target: id, amount }, { source: 'ui' });
-      }
-    });
-  }
+  // _grantXpModal / _grantJobXpModal (grant-xp / grant-job-xp) ported to
+  // src/campaign/action-handlers/roster-modals.ts (H.3).
 
   function _changePersonaModal(id) {
     const state = CS().getState();
@@ -8699,41 +8050,9 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _exportLog() {
-    const state = CS().getState();
-    const text = (state.log || []).map((line) => `[${line.at}] [${_logKind(line).label}] Phase ${line.phase} ${line.world}: ${line.text}`).join('\n');
-    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-log.txt`, `${text}\n`, 'text/plain');
-  }
-
-  function _clearLog() {
-    UI().confirm('Clear the session log?', () => {
-      CS().mutate((state) => { state.log = []; }, { source: 'clear_log' });
-      UI().toast('Log cleared', 'info');
-    });
-  }
-
-  function _exportEventLog() {
-    const state = CS().getState();
-    const entries = state.eventLog?.entries || [];
-    const text = entries.map((entry) => [
-      `[${entry.at || ''}] Phase ${entry.phase || '?'} ${entry.world || ''}`,
-      entry.title || 'Event',
-      entry.summary || '',
-      entry.tags?.length ? `Tags: ${entry.tags.join(', ')}` : '',
-      entry.consequences?.length ? `Consequences: ${entry.consequences.join('; ')}` : ''
-    ].filter(Boolean).join('\n')).join('\n\n');
-    window.CJS.SaveManager.downloadTextFile(`${_safe(state.slotName)}-event-log.txt`, `${text}\n`, 'text/plain');
-  }
-
-  function _clearEventLog() {
-    UI().confirm('Clear the event log?', () => {
-      CS().mutate((state) => {
-        state.eventLog = state.eventLog || {};
-        state.eventLog.entries = [];
-      }, { source: 'clear_event_log' });
-      UI().toast('Event log cleared', 'info');
-    });
-  }
+  // Log-management handlers (_exportLog / _clearLog / _exportEventLog /
+  // _clearEventLog) ported to src/campaign/actions.ts + registered in
+  // action-handlers/registry.ts (H.3 log).
 
   function _consumeCombatResult() {
     const result = Bridge().readResult?.() || Bridge().consumeResult();
@@ -10423,6 +9742,19 @@ window.CJS.CampaignUI = (() => {
     render();
   }
 
+  // Phase H.3 — render-free chrome setters for ported TS action handlers.
+  // The legacy `_goto` (still used by many unported closures) assigns
+  // _activeMode / _activeTab directly with no derivation, then calls
+  // render() once. Ported handlers replicate that exactly: call these
+  // (no derive, no render) at the points the closure assigned, then
+  // `render()` where the closure rendered. Distinct from
+  // setActiveMode/setActiveTab, which derive the partner dimension +
+  // render (the chrome-forwarder contract). These collapse into a TS
+  // chrome-state slice in H.4 when _activeMode/_activeTab move off the
+  // closure.
+  function setActiveModeRaw(mode) { if (mode) _activeMode = mode; }
+  function setActiveTabRaw(tab) { if (tab) _activeTab = tab; }
+
   function setActivePanel(panelId) {
     if (panelId == null) {
       _activePanel = null;
@@ -10444,6 +9776,10 @@ window.CJS.CampaignUI = (() => {
     // have moved to React read engine state through these getters instead
     // of reaching into closure-private state.
     getBootIncompatibleNotice: () => _bootIncompatibleNotice,
+    // Phase H.3 — lets the ported save handlers clear the boot-incompatible
+    // banner after the user starts fresh / loads a slot, matching the old
+    // closures that reset `_bootIncompatibleNotice` inline.
+    clearBootIncompatibleNotice: () => { _bootIncompatibleNotice = null; },
     // Exposes the frozen helper bundle that vanilla tab modules consume
     // (memberBase, memberStats, renderEquipmentLoadout, etc.). React tabs
     // call into these for the closure-private math + sub-renderers that
@@ -10498,6 +9834,11 @@ window.CJS.CampaignUI = (() => {
     setActiveMode,
     setActiveTab,
     setActivePanel,
+    // Phase H.3 — render-free setters + tab→mode lookup the ported nav /
+    // sequence handlers use (see action-handlers/nav.ts).
+    setActiveModeRaw,
+    setActiveTabRaw,
+    modeForTab: _modeForTab,
     getActiveTab: () => _activeTab,
     getActiveMode: () => _activeMode,
     getActivePanel: () => _activePanel

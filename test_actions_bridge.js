@@ -45,6 +45,8 @@ const REQUIRED_EXPORTS = [
   'exportSlot',
   'clearLog',
   'exportLog',
+  'exportEventLog',
+  'clearEventLog',
   'benchCharacter',
   'activateCharacter',
   'passPhase',
@@ -96,9 +98,12 @@ ok('passPhase routes through CampaignOps.apply',
 ok('benchCharacter routes through CampaignOps.apply',
    /export function benchCharacter[\s\S]{0,200}ops\(\)\.apply\(\{\s*op:\s*"bench_character"/.test(source));
 
-// Phase H.1 — every name in the CampaignActionName union must have a
-// matching `case '<name>':` in the `_handleAction` switch, or a React
-// onClick would compile yet no-op at runtime. Cross-check both ways.
+// Phase H.3 — every name in the CampaignActionName union must be handled
+// by EITHER a `case '<name>':` in the vanilla `_handleAction` switch OR an
+// entry in the TS action registry (src/campaign/action-handlers/registry.ts).
+// Porting an action moves it from the switch to the registry, so the two
+// sets must stay disjoint and together cover the whole union — otherwise a
+// React onClick would compile yet no-op at runtime.
 const namesSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/actionNames.ts'), 'utf8');
 const unionNames = (namesSrc.match(/^\s*\|\s*"([^"]+)"/gm) || [])
   .map((line) => line.replace(/^\s*\|\s*"/, '').replace(/"$/, ''));
@@ -108,10 +113,38 @@ const uiSrc = fs.readFileSync(path.join(__dirname, 'js/campaign/campaign-ui.js')
 const switchCases = new Set(
   (uiSrc.match(/case '([^']+)':/g) || []).map((c) => c.replace(/^case '/, '').replace(/':$/, ''))
 );
-const missingFromSwitch = unionNames.filter((n) => !switchCases.has(n));
-ok('every CampaignActionName has a _handleAction case',
-   missingFromSwitch.length === 0,
-   missingFromSwitch.length ? 'missing: ' + missingFromSwitch.join(', ') : '');
+
+// Registry keys live in the HANDLERS object literal of registry.ts.
+const regSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/action-handlers/registry.ts'), 'utf8');
+const handlersBlock = (regSrc.match(/const HANDLERS[\s\S]*?\n};/) || [''])[0];
+const registryKeys = new Set(
+  (handlersBlock.match(/"([a-z0-9-]+)":/g) || []).map((k) => k.replace(/^"/, '').replace(/":$/, ''))
+);
+ok('action registry is non-empty', registryKeys.size > 0, registryKeys.size + ' handlers');
+
+const uncovered = unionNames.filter((n) => !switchCases.has(n) && !registryKeys.has(n));
+ok('every CampaignActionName is handled (switch or registry)',
+   uncovered.length === 0,
+   uncovered.length ? 'uncovered: ' + uncovered.join(', ') : '');
+
+// A ported action's switch case is deleted — no dead duplicate.
+const dup = [...registryKeys].filter((n) => switchCases.has(n));
+ok('registry and switch are disjoint (ported cases removed from switch)',
+   dup.length === 0,
+   dup.length ? 'still in both: ' + dup.join(', ') : '');
+
+// Every registry key is a real action name.
+const bogus = [...registryKeys].filter((n) => !unionNames.includes(n));
+ok('every registry key is a CampaignActionName',
+   bogus.length === 0,
+   bogus.length ? 'not in union: ' + bogus.join(', ') : '');
+
+// The registry installs the runtime bridge the vanilla switch reads, and
+// `_handleAction` consults it before falling through to the switch.
+ok('registry installs CampaignActionsRuntime',
+   /CampaignActionsRuntime\s*=\s*\{/.test(regSrc));
+ok('_handleAction consults the action runtime first',
+   /CampaignActionsRuntime[\s\S]{0,240}runtime\.run\(/.test(uiSrc));
 
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');
