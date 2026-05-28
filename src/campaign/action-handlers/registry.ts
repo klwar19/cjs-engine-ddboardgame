@@ -44,6 +44,7 @@ import * as Scenario from "./scenario";
 import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
 import * as StoryRolls from "./story-director-modals";
+import * as Quest from "./quest";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -277,7 +278,14 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "story-roll-peri": () => StoryRolls.rollStoryDirector("peri"),
   "story-roll-memory": () => StoryRolls.rollStoryDirector("memory"),
   "story-pressure-tick": () => StoryRolls.rollStoryDirector("pressure"),
-  "story-open-last": () => StoryRolls.openLastStoryBeatModal()
+  "story-open-last": () => StoryRolls.openLastStoryBeatModal(),
+  // ── Quest pure-ops (scenario/battle/minigame-coupled stay) ────────
+  "quest-progress": (d) => Quest.questProgress(str(d.id)),
+  "quest-hub-event": (d) => Quest.questHubEvent(str(d.id)),
+  "quest-harvest": (d) => Quest.questHarvest(str(d.id)),
+  "quest-check": (d) => Quest.questCheck(str(d.id)),
+  "quest-hand-in": (d) => Quest.questHandIn(str(d.id)),
+  "quest-answer": (d) => Quest.questAnswer(str(d.id))
 };
 
 export function hasHandler(name: string): boolean {

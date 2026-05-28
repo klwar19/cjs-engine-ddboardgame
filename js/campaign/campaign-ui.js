@@ -2657,18 +2657,14 @@ window.CJS.CampaignUI = (() => {
       // to action-handlers/cooking.ts (H.3). haven-play-minigame stays
       // (mini-game session machinery).
       case 'haven-play-minigame': return _havenPlayMinigame(data.game);
-      case 'quest-progress': return _questProgress(data.id);
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
-      case 'quest-hub-event': return _questHubEvent(data.id);
-      case 'quest-harvest': return _questHarvest(data.id);
       case 'quest-minigame': return _questMiniGame(data.id);
+      // quest-progress / quest-hub-event / quest-harvest / quest-check /
+      // quest-hand-in / quest-answer ported to action-handlers/quest.ts (H.3).
       case 'mg-test-pick': return _mgTestPick(data.game);
       // mg-test-play / mg-test-random / mg-test-random-any ported to
       // action-handlers/mg-test.ts (H.3).
-      case 'quest-check': return _questCheck(data.id);
-      case 'quest-hand-in': return _questHandIn(data.id);
-      case 'quest-answer': return _questAnswer(data.id);
       case 'party-sheet': return _partySheetModal(data.id);
       case 'recruit-character': return _recruitCharacterModal();
       case 'remove-character': return _removeCharacter(data.id);
@@ -5308,22 +5304,7 @@ window.CJS.CampaignUI = (() => {
 
   // _openGuildTrivia ported to action-handlers/haven.ts (H.3).
 
-  function _questProgress(questId, objectiveId = null, amount = 1) {
-    const quest = CS().getState().quests[questId];
-    if (!quest) return;
-    let objective = (quest.objectives || []).find((entry) => entry.id === objectiveId) || _questNextObjective(quest);
-    if (!objective) {
-      const fallbackId = `objective_${Date.now()}`;
-      CS().mutate((state) => {
-        const q = state.quests[questId];
-        if (!q) return;
-        q.objectives = [{ id: fallbackId, label: 'Manual progress', current: 0, required: 1 }];
-      }, { source: 'quest_objective_add' });
-      objective = CS().getState().quests[questId]?.objectives?.[0];
-    }
-    if (!objective) return;
-    Ops().apply({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount }, { source: 'ui' });
-  }
+  // _questProgress ported to action-handlers/quest.ts (H.3).
 
   function _questScenario(questId) {
     const quest = _activeQuestById(questId);
@@ -5353,37 +5334,7 @@ window.CJS.CampaignUI = (() => {
     render();
   }
 
-  function _questHubEvent(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const objective = _questObjectiveByKinds(quest, ['hub_event', 'event']) || _questNextObjective(quest);
-    const table = quest.tags?.includes('tavern') ? 'tavern' : quest.tags?.includes('guild') ? 'guild' : 'town';
-    // _rollHubPulse ported to action-handlers/rumor.ts (roll-hub-pulse);
-    // route this internal caller through the action runtime.
-    window.CJS.CampaignActionsRuntime?.run?.('roll-hub-pulse', { table });
-    if (objective) {
-      Ops().apply({
-        op: 'update_quest_progress',
-        questId,
-        objectiveId: objective.id,
-        amount: 1
-      }, { source: 'quest_hub_event' });
-    }
-    Ops().apply({ op: 'log', text: `Quest hub event: ${quest.title || quest.id}.` }, { source: 'quest_hub_event' });
-  }
-
-  function _questHarvest(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const objective = _questObjectiveByKinds(quest, ['harvest', 'gather', 'recover']) || _questNextObjective(quest);
-    const loot = _questHarvestLoot(quest);
-    const ops = [
-      { op: loot.op, id: loot.id, qty: loot.qty || 1 },
-      { op: 'log', text: `Quest harvest: ${quest.title || quest.id} - ${loot.qty || 1} ${loot.id}.` }
-    ];
-    if (objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
-    Ops().apply(ops, { source: 'quest_harvest' });
-  }
+  // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
 
   function _questMiniGame(questId) {
     const quest = _activeQuestById(questId);
@@ -5445,91 +5396,10 @@ window.CJS.CampaignUI = (() => {
     return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
   }
 
-  function _questHarvestLoot(quest = {}) {
-    const tags = new Set([...(quest.tags || []), ...(quest.contextTags || [])].map((tag) => String(tag).toLowerCase()));
-    if (tags.has('mushroom') || tags.has('forage') || tags.has('food')) return { op: 'give_quest_item', id: 'haven_frostcap_mushroom', qty: 1 };
-    if (tags.has('pelt') || tags.has('wolf')) return { op: 'give_material', id: 'haven_wolf_pelt', qty: 1 };
-    if (tags.has('ore') || tags.has('forge') || tags.has('crafting')) return { op: 'give_material', id: 'haven_ice_crystal', qty: 1 };
-    return { op: 'give_material', id: 'haven_sprite_dust', qty: 1 };
-  }
+  // _questHarvestLoot ported to action-handlers/quest.ts (H.3).
 
-  function _questCheck(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const objective = _questNextObjective(quest);
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Stat'));
-    const stat = UI().createSelect({
-      options: (C()?.STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L']).map((value) => ({ value, label: `${value} - ${_statName(value)}` })),
-      value: 'P'
-    });
-    body.appendChild(stat);
-    body.appendChild(_formLabel('DC'));
-    const dc = UI().createNumberSlider({ value: 12, min: 4, max: 25, step: 1 });
-    body.appendChild(dc);
-    _formModal({
-      title: `Quest Check: ${quest.title || quest.id}`,
-      body,
-      primaryLabel: 'Roll',
-      onSubmit: () => {
-        const success = [{ op: 'log', text: `Quest check success: ${quest.title || quest.id}.` }];
-        if (objective) success.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
-        const fail = [
-          { op: 'log', text: `Quest check setback: ${quest.title || quest.id}.` },
-          { op: 'danger', amount: 1 }
-        ];
-        Ops().apply({ op: 'roll_check', stat: stat.value, dc: dc._getValue(), success, fail }, { source: 'quest_check' });
-      }
-    });
-  }
-
-  function _questHandIn(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const options = _ownedInventoryOptions();
-    if (!options.length) return UI().toast('No inventory to hand in', 'info');
-    const objective = _questNextObjective(quest);
-    const maxQty = Math.max(1, ...options.map((opt) => opt.qty || 1));
-    _opPickerModal({
-      title: `Hand In: ${quest.title || quest.id}`,
-      options,
-      withQty: true,
-      qtyDefault: 1,
-      qtyMin: 1,
-      qtyMax: maxQty,
-      primaryLabel: 'Hand In',
-      placeholder: 'Search owned inventory...',
-      onSubmit: ({ value, qty }) => {
-        const opt = options.find((entry) => entry.value === value);
-        if (!opt) return false;
-        const amount = Math.max(1, Math.min(Number(qty || 1), opt.qty || 1));
-        const ops = [
-          { op: _takeOpForBucket(opt.bucket), id: opt.id, qty: amount },
-          { op: 'log', text: `Quest hand-in: ${amount} ${_recordName(opt.bucket, opt.id)} for ${quest.title || quest.id}.` }
-        ];
-        if (objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
-        Ops().apply(ops, { source: 'quest_hand_in' });
-      }
-    });
-  }
-
-  function _questAnswer(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const objective = _questNextObjective(quest);
-    _textareaModal({
-      title: `Answer: ${quest.title || quest.id}`,
-      label: 'Answer',
-      placeholder: 'What did the party answer or do?',
-      primaryLabel: 'Apply',
-      onSubmit: (text) => {
-        if (!text) return false;
-        const ops = [{ op: 'log', text: `Quest answer: ${quest.title || quest.id} - ${text}` }];
-        if (objective) ops.push({ op: 'update_quest_progress', questId, objectiveId: objective.id, amount: 1 });
-        Ops().apply(ops, { source: 'quest_answer' });
-      }
-    });
-  }
+  // _questCheck / _questHandIn / _questAnswer ported to
+  // action-handlers/quest.ts (H.3).
 
   function _activeQuestById(questId) {
     const quest = CS().getState()?.quests?.[questId];
@@ -5723,35 +5593,8 @@ window.CJS.CampaignUI = (() => {
     return 'any';
   }
 
-  function _ownedInventoryOptions() {
-    const state = CS().getState() || {};
-    return [
-      ['questItems', 'Quest Item'],
-      ['items', 'Item'],
-      ['materials', 'Material'],
-      ['food', 'Food']
-    ].flatMap(([bucket, label]) => Object.entries(state.inventory?.[bucket] || {})
-      .filter(([, qty]) => Number(qty || 0) > 0)
-      .map(([id, qty]) => ({
-        value: `${bucket}:${id}`,
-        label: _recordName(bucket, id),
-        sub: `${label} x${qty}`,
-        description: id,
-        bucket,
-        id,
-        qty: Number(qty || 0)
-      })));
-  }
-
-  function _takeOpForBucket(bucket) {
-    const map = {
-      questItems: 'take_quest_item',
-      items: 'take_item',
-      materials: 'take_material',
-      food: 'take_food'
-    };
-    return map[bucket] || 'take_item';
-  }
+  // _ownedInventoryOptions / _takeOpForBucket ported to
+  // action-handlers/quest.ts (H.3).
 
   // Roster GM stat modals (_charNumberOp / _charMpModal / _charStatusModal
   // → damage/heal/level-char, mp-char, status-char) ported to
