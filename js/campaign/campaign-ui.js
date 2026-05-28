@@ -1717,62 +1717,11 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _startQuestChainRun(templateId) {
-    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
-    if (!chain) return UI().toast('Quest arc not found', 'info');
-    if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'event';
-      _activeTab = 'maps';
-      render();
-      return UI().toast('A scenario is already active. Finish it before starting a quest arc run.', 'info');
-    }
-    window.CJS.CampaignQuestChains.start(templateId);
-    return _startQuestChainScenario(templateId);
-  }
-
-  function _startQuestChainScenario(templateId) {
-    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
-    if (!chain) return UI().toast('Quest arc not found', 'info');
-    const quest = _ensureQuestChainQuest(chain);
-    if (!quest) return null;
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    if (activeRun) {
-      if (_activeRunQuestId(activeRun, activeScenario) === quest.id || activeRun.questChainId === templateId) return _goto(null, 'maps');
-      return UI().toast('End the active scenario before starting this quest arc map', 'info');
-    }
-    // _startQuestScenario ported to action-handlers/quest-launcher.ts (H.3);
-    // route this internal caller through the launcher's window.CJS surface.
-    return window.CJS.CampaignQuestLauncher?.startQuestScenario(quest.id, {
-      quest,
-      source: 'quest_chain',
-      questChainId: templateId,
-      mapForm: _questMapForm(chain),
-      mapType: chain.mapType || _questMapType(chain),
-      size: chain.size || 'small',
-      forceGenerated: !chain.linkedScenario
-    });
-  }
-
-  function _questChainBattle(templateId) {
-    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
-    if (!chain) return UI().toast('Quest arc not found', 'info');
-    const quest = _ensureQuestChainQuest(chain);
-    if (!quest) return null;
-    // _questBattle ported to action-handlers/quest-launcher.ts (H.3 —
-    // quest-battle); route this internal caller through the launcher's
-    // window.CJS surface (matching the chain-battle action handler path).
-    return window.CJS.CampaignQuestLauncher?.questBattle(quest.id);
-  }
-
-  function _ensureQuestChainQuest(chain) {
-    const questId = `quest_${chain.id}`;
-    const existing = CS().getState()?.quests?.[questId];
-    if (existing && !_isQuestResolved(existing)) return existing;
-    const quest = window.CJS.CampaignQuestChains.toQuest(chain);
-    Ops().apply({ op: 'add_quest', quest }, { source: 'quest_chain' });
-    return CS().getState()?.quests?.[questId] || quest;
-  }
+  // _startQuestChainRun / _startQuestChainScenario / _questChainBattle /
+  // _ensureQuestChainQuest ported to action-handlers/quest-chain.ts (H.3 —
+  // start-chain / chain-scenario / chain-battle). The chain launcher
+  // also feeds `_startQuestRunFromOffer` for cards carrying a
+  // questChainTemplateId — that path is fully TS now via solo.ts.
 
   // _addQuestChainToTracker / _advanceQuestChainStep / _completeQuestChain
   // / _failQuestChain ported to action-handlers/quest-chain.ts (H.3).
@@ -2586,21 +2535,21 @@ window.CJS.CampaignUI = (() => {
       // action-handlers/oracle.ts (H.3).
       // battle-reroll / battle-override ported to action-handlers/combat.ts (H.3).
       // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
-      case 'random-quest-offer': return _offerRandomQuest();
-      case 'accept-solo-hook': return _acceptSoloHook();
-      case 'solo-hook-quest': return _soloHookToQuest();
-      case 'solo-hook-rumor': return _soloHookToRumor();
+      // random-quest-offer / accept-solo-hook / solo-hook-quest /
+      // solo-hook-rumor ported to action-handlers/solo.ts (H.3).
       // solo-surprise / random-rumor-offer / manual-rumor / save-solo-hook /
       // ignore-solo-hook ported to action-handlers/solo.ts (H.3).
       // apply/save/reject/dismiss/copy side-card ported to
       // action-handlers/side.ts (H.3).
       // resolve-rumor / rumor-to-quest / rumor-to-problem ported to
       // action-handlers/rumor.ts (H.3).
-      case 'start-chain': return _startQuestChainRun(data.id);
+      // start-chain / chain-scenario / chain-battle ported to
+      // action-handlers/quest-chain.ts (H.3). Internal callers of
+      // _startQuestChainRun (e.g. the `_startQuestRunFromOffer` path
+      // for cards carrying questChainTemplateId) now go through the
+      // TS solo.ts handlers; the still-JS card path is gone.
       // advance-chain/complete-chain/fail-chain/promote-chain ported to
       // action-handlers/quest-chain.ts (H.3).
-      case 'chain-scenario': return _startQuestChainScenario(data.id);
-      case 'chain-battle': return _questChainBattle(data.id);
       // copy-battle-card/copy-map-seed + roll-forge-oracle ported to
       // action-handlers/{forge,oracle}.ts (H.3).
       // story-roll-scene / -peri / -memory / story-pressure-tick / story-open-last
@@ -3507,132 +3456,17 @@ window.CJS.CampaignUI = (() => {
 
   // _rollSoloSurprise / _offerRandomRumor ported to action-handlers/solo.ts (H.3).
 
-  function _offerRandomQuest() {
-    if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'quest';
-      _activeTab = 'maps';
-      render();
-      return UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
-    }
-    const card = _randomQuestOfferCard();
-    if (!card) return UI().toast('No single-quest templates available. Finish an active quest or add more quest templates.', 'info');
-    Side().saveCard(card, { status: 'active', source: 'quest_run' });
-    return _startQuestRunFromOffer(card);
-  }
-
-  function _randomQuestOfferCard() {
-    const state = CS().getState();
-    const activeQuestIds = new Set(Object.values(state?.quests || {})
-      .filter((quest) => !_isQuestResolved(quest))
-      .map((quest) => quest.id));
-    const templates = Object.values(CS().getContent().campaignQuests || {})
-      .flatMap((record) => record.templates || [])
-      .filter((quest) => !activeQuestIds.has(quest.id));
-    const options = templates.map((quest) => ({ type: 'quest_template', quest }));
-    if (!options.length) return null;
-    const weighted = options.map((option) => ({
-      option,
-      weight: _questTemplateWeight(option.quest, state)
-    }));
-    const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
-    let roll = Math.random() * Math.max(1, total);
-    let pick = weighted[0]?.option;
-    for (const entry of weighted) {
-      roll -= entry.weight;
-      if (roll <= 0) {
-        pick = entry.option;
-        break;
-      }
-    }
-    const quest = CS().clone(pick.quest);
-    return {
-      id: `idea_offer_${quest.id}_${Date.now()}`,
-      type: 'quest_offer',
-      title: quest.title || quest.id,
-      summary: quest.summary || '',
-      canonRisk: quest.canonRisk || 'green',
-      tags: quest.tags || [],
-      questTemplate: quest,
-      suggestedChoices: [{
-        label: 'Start this quest run',
-        ops: [{ op: 'add_quest', quest }]
-      }]
-    };
-  }
-
-  function _questTemplateWeight(quest = {}, state = CS().getState()) {
-    const activeTags = new Set([
-      state?.currentWorld ? `world:${state.currentWorld}` : '',
-      state?.phase?.type ? `phase:${state.phase.type}` : '',
-      state?.currentChapter ? `chapter:${state.currentChapter}` : '',
-      ...(window.CJS.CampaignTags?.getActiveTags?.(state) || []),
-      ...(Object.values(state?.party || {}).flatMap((member) => member.activePersona ? [`persona:${member.activePersona}`] : []) || [])
-    ].filter(Boolean).map((tag) => String(tag).toLowerCase()));
-    let weight = 1;
-    for (const tag of [...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || [])]) {
-      const cleaned = String(tag || '').toLowerCase();
-      if (activeTags.has(cleaned) || activeTags.has(`world:${cleaned}`) || activeTags.has(`phase:${cleaned}`)) weight += 1;
-      if (cleaned.includes(String(state?.currentWorld || '').toLowerCase())) weight += 1;
-    }
-    const rank = Object.values(state?.party || {})[0]?.rank || 'F';
-    if ((quest.rankBand || quest.ranks || []).includes(rank)) weight += 2;
-    if (quest.kind === 'daily' || quest.repeat) weight += 1;
-    return Math.max(1, weight);
-  }
-
-  function _startQuestRunFromOffer(card) {
-    if (!card) return null;
-    if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'quest';
-      _activeTab = 'maps';
-      render();
-      UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
-      return { error: 'active_run' };
-    }
-    if (card.questChainTemplateId) {
-      Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain_run', approved: true }, { source: 'quest_run' });
-      _clearPendingSoloHook();
-      return _startQuestChainRun(card.questChainTemplateId);
-    }
-
-    const quest = _questFromOfferCard(card);
-    if (!quest) return null;
-    Ops().apply({ op: 'add_quest', quest }, { source: 'quest_run' });
-    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_run', approved: true }, { source: 'quest_run' });
-    _clearPendingSoloHook();
-    // _startQuestScenario ported to action-handlers/quest-launcher.ts (H.3);
-    // route this internal caller through the launcher's window.CJS surface.
-    const result = window.CJS.CampaignQuestLauncher?.startQuestScenario(quest.id, {
-      quest,
-      mapForm: _questMapForm(quest),
-      mapType: quest.mapType || _questMapType(quest)
-    });
-    if (result?.error) {
-      _activeMode = 'quest';
-      _activeTab = 'quests';
-      render();
-    }
-    return result;
-  }
-
-  function _questFromOfferCard(card) {
-    const base = card.questTemplate ? CS().clone(card.questTemplate) : {
-      id: `quest_${card.id || Date.now()}`,
-      title: card.title || card.name || 'Quest Run',
-      summary: card.summary || card.prompt || '',
-      objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
-      rewards: card.rewardOps || [],
-      tags: card.tags || []
-    };
-    base.templateId = base.templateId || base.id;
-    base.mapForm = base.mapForm || card.mapForm || card.travelMode || _questMapForm(base);
-    base.mapType = base.mapType || card.mapType || card.setting || _questMapType(base);
-    base.status = 'active';
-    return base;
-  }
+  // _offerRandomQuest / _randomQuestOfferCard / _questTemplateWeight /
+  // _startQuestRunFromOffer / _questFromOfferCard ported to
+  // action-handlers/solo.ts (H.3 — random-quest-offer +
+  // startQuestRunFromOffer used by accept-solo-hook). Internal callers
+  // that previously called these closures now share the TS path through
+  // solo.ts exports.
 
   // _setPendingSoloHook ported to action-handlers/solo.ts (H.3).
 
+  // _pendingSoloHookCard stays — the data builders (Story / Quest /
+  // Overview render code) still read this shape inline.
   function _pendingSoloHookCard(state = CS().getState()) {
     const id = state?.pendingSoloHook?.cardId;
     if (!id) return null;
@@ -3640,90 +3474,17 @@ window.CJS.CampaignUI = (() => {
       || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
   }
 
+  // _clearPendingSoloHook stays — still-JS handlers (the manual quest
+  // builder, scenario discard) call it; the TS solo handlers duplicate
+  // the one-line mutation rather than depend on this closure (matches
+  // the established H.3 pattern for tiny mutators).
   function _clearPendingSoloHook() {
     CS().mutate((state) => { state.pendingSoloHook = null; }, { source: 'solo_hook' });
   }
 
-  function _acceptSoloHook() {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    const apply = () => {
-      if (card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer') {
-        _startQuestRunFromOffer(card);
-        return;
-      }
-      const choice = card.suggestedChoices?.[0];
-      if (choice?.ops?.length) {
-        Ops().apply(choice.ops, { source: 'solo_hook_accept' });
-        Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'hub_event', approved: true }, { source: 'solo_hook' });
-      } else {
-        _soloHookToQuest(true);
-        return;
-      }
-      _clearPendingSoloHook();
-      _activeMode = 'story';
-      _activeTab = 'storyHome';
-      render();
-      UI().toast('Story offer accepted', 'success');
-    };
-    if (Side().risk(card.canonRisk) === 'red') {
-      return UI().confirm('This is red-risk content. Accept it now?', apply);
-    }
-    apply();
-  }
-
-  function _soloHookToQuest(approved = false) {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    if (Side().risk(card.canonRisk) === 'red' && !approved) {
-      return UI().confirm('This is red-risk content. Make it a quest now?', () => _soloHookToQuest(true));
-    }
-    if (card.questChainTemplateId) {
-      const choice = card.suggestedChoices?.[0];
-      if (choice?.ops?.length) Ops().apply(choice.ops, { source: 'solo_hook_chain' });
-      Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain', approved: true }, { source: 'solo_hook' });
-      _clearPendingSoloHook();
-      _activeMode = 'quest';
-      _activeTab = 'quests';
-      render();
-      UI().toast('Quest arc added', 'success');
-      return;
-    }
-    const quest = card.questTemplate ? CS().clone(card.questTemplate) : {
-      id: `quest_${card.id}`,
-      title: card.title || card.name || 'Story Quest',
-      status: 'active',
-      summary: card.summary || card.prompt || '',
-      objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
-      rewards: card.rewardOps || []
-    };
-    Ops().apply({ op: 'add_quest', quest }, { source: 'solo_hook_quest' });
-    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'accepted_hook', approved: true }, { source: 'solo_hook' });
-    _clearPendingSoloHook();
-    _activeMode = 'quest';
-    _activeTab = 'quests';
-    render();
-    UI().toast(`Quest added: ${quest.title || quest.id}`, 'success');
-  }
-
-  function _soloHookToRumor(approved = false) {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    if (Side().risk(card.canonRisk) === 'red' && !approved) {
-      return UI().confirm('This is red-risk content. Make it a rumor now?', () => _soloHookToRumor(true));
-    }
-    const hubId = window.CJS.CampaignHub.getCurrentHubId();
-    Ops().apply({
-      op: 'add_rumor',
-      hubId,
-      text: card.prompt || card.summary || card.title || card.name || card.id,
-      canonRisk: card.canonRisk || 'green',
-      tags: card.tags || [],
-      source: 'solo_hook'
-    }, { source: 'solo_hook_rumor' });
-    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'rumor', approved: true }, { source: 'solo_hook' });
-    _clearPendingSoloHook();
-  }
+  // _acceptSoloHook / _soloHookToQuest / _soloHookToRumor ported to
+  // action-handlers/solo.ts (H.3). Red-risk confirm copy, op payloads,
+  // mutation sources and mode/tab jumps mirror the deleted closures.
 
   // _saveSoloHook / _ignoreSoloHook ported to action-handlers/solo.ts (H.3).
 

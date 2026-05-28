@@ -71,10 +71,13 @@ interface QuestObjective {
 export interface LauncherQuest {
   id?: string;
   title?: string;
+  summary?: string;
   status?: string;
+  canonRisk?: string;
   tags?: string[];
   contextTags?: string[];
   objectives?: QuestObjective[];
+  rewards?: unknown[];
   mapForm?: string;
   mapType?: string;
   mapSetting?: string;

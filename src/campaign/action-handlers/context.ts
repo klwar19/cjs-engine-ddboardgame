@@ -28,6 +28,7 @@ interface CampaignStateModule {
   getCurrentCampaign: () => { eventTables?: string[]; [key: string]: unknown } | null | undefined;
   getScenarioById: (scenarioId: string) => Record<string, unknown> | null | undefined;
   getScenarioMapById: (mapId: string) => Record<string, unknown> | null | undefined;
+  clone: <T>(value: T) => T;
   mutate: (recipe: (state: Record<string, unknown>) => void, options?: { source?: string }) => void;
 }
 

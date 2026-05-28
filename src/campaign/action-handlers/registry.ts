@@ -131,11 +131,14 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "save-map-seed": (d) => Forge.saveMapSeed(str(d.id)),
   "copy-battle-card": (d) => Forge.copyBattleCard(str(d.id)),
   "copy-map-seed": (d) => Forge.copyMapSeed(str(d.id)),
-  // ── Quest chains (advance / complete / fail / promote) ────────────
+  // ── Quest chains (advance / complete / fail / promote + launchers) ─
   "advance-chain": (d) => QuestChain.advanceChain(str(d.id)),
   "complete-chain": (d) => QuestChain.completeChain(str(d.id)),
   "fail-chain": (d) => QuestChain.failChain(str(d.id)),
   "promote-chain": (d) => QuestChain.promoteChain(str(d.id)),
+  "start-chain": (d) => QuestChain.startQuestChainRun(str(d.id)),
+  "chain-scenario": (d) => QuestChain.startQuestChainScenario(str(d.id)),
+  "chain-battle": (d) => QuestChain.chainBattle(str(d.id)),
   // ── World map delegation ──────────────────────────────────────────
   "world-map-travel": (d) => worldMapAction(d),
   "world-map-switch-map": (d) => worldMapAction(d),
@@ -289,12 +292,16 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "mg-test-play": (d) => MgTest.mgTestPlay({ gameId: str(d.game), levelId: str(d.level) }),
   "mg-test-random": (d) => MgTest.mgTestPlay({ gameId: str(d.game), difficulty: Number(d.difficulty || 1) }),
   "mg-test-random-any": (d) => MgTest.mgTestPlay({ gameId: str(d.game) }),
-  // ── Solo-hook offers + dismiss (accept/quest/rumor stay) ──────────
+  // ── Solo-hook offers + accept / dismiss ───────────────────────────
   "solo-surprise": () => Solo.rollSoloSurprise(),
   "random-rumor-offer": () => Solo.offerRandomRumor(),
+  "random-quest-offer": () => Solo.offerRandomQuest(),
   "manual-rumor": () => Solo.manualRumorModal(),
   "save-solo-hook": () => Solo.saveSoloHook(),
   "ignore-solo-hook": () => Solo.ignoreSoloHook(),
+  "accept-solo-hook": () => Solo.acceptSoloHook(),
+  "solo-hook-quest": () => Solo.soloHookToQuest(),
+  "solo-hook-rumor": () => Solo.soloHookToRumor(),
   // ── Story director rolls + beat modal ─────────────────────────────
   "story-roll-scene": () => StoryRolls.rollStoryDirector("scene"),
   "story-roll-peri": () => StoryRolls.rollStoryDirector("peri"),
