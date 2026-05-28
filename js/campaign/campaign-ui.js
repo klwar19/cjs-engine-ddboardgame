@@ -2611,13 +2611,10 @@ window.CJS.CampaignUI = (() => {
       case 'chain-battle': return _questChainBattle(data.id);
       // copy-battle-card/copy-map-seed + roll-forge-oracle ported to
       // action-handlers/{forge,oracle}.ts (H.3).
-      case 'story-roll-scene': return _rollStoryDirector('scene');
-      case 'story-roll-peri': return _rollStoryDirector('peri');
-      case 'story-roll-memory': return _rollStoryDirector('memory');
-      case 'story-pressure-tick': return _rollStoryDirector('pressure');
+      // story-roll-scene / -peri / -memory / story-pressure-tick / story-open-last
+      // ported to action-handlers/story-director-modals.ts (H.3).
       // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
       // ported to action-handlers/story-director.ts (H.3).
-      case 'story-open-last': return _openLastStoryBeatModal();
       case 'story-manual-note': return _manualStoryNote();
       case 'story-copy-prompt': return _copyStoryPrompt();
       case 'story-help': return _openStoryHelpModal();
@@ -3753,14 +3750,7 @@ window.CJS.CampaignUI = (() => {
   // _copyBattleCard / _copyMapSeed ported to action-handlers/forge.ts (H.3).
   // _rollForgeOracle ported to action-handlers/oracle.ts (H.3).
 
-  function _rollStoryDirector(kind) {
-    _activeMode = 'story';
-    _activeTab = 'storyDirector';
-    const card = SD()?.roll(kind);
-    if (!card) return UI().toast('No matching story beat available', 'info');
-    render();
-    _openStoryBeatModal(card);
-  }
+  // _rollStoryDirector ported to action-handlers/story-director-modals.ts (H.3).
 
   // _startSequenceFromUi / _advanceSequenceFromUi ported to
   // src/campaign/action-handlers/sequence.ts (H.3). _playSequenceMiniGame
@@ -4014,57 +4004,10 @@ window.CJS.CampaignUI = (() => {
   // _applyStoryDirectorChoice ported to action-handlers/story-director.ts
   // (H.3). The beat modal below routes its follow-ups via the registry.
 
-  function _openLastStoryBeatModal() {
-    const card = CS().getState()?.lastStoryDirectorBeat;
-    if (!card) return UI().toast('No story scene to show', 'info');
-    _openStoryBeatModal(card);
-  }
-
-  function _openStoryBeatModal(card) {
-    if (!card || !UI()?.openModal) return;
-    const body = document.createElement('div');
-    body.className = 'campaign-story-modal-body';
-    body.innerHTML = `
-      <div class="campaign-story-popup-hint">
-        This roll has not changed the campaign yet. Choose a route, hold it for later, or skip it if the table says "nice try, app."
-      </div>
-      ${_renderStoryDirectorCard(card, { modal: true })}
-    `;
-
-    const footer = document.createElement('div');
-    footer.innerHTML = `
-      <button class="btn btn-ghost" data-story-modal-close>Keep On Page</button>
-      <button class="btn btn-ghost" data-story-modal-save>Hold For Later</button>
-      <button class="btn btn-danger" data-story-modal-reject>Skip Roll</button>
-    `;
-    const overlay = UI().openModal({
-      title: `${_label(card.kind || 'story')} - ${card.title || card.id}`,
-      content: body,
-      footer,
-      width: '780px'
-    });
-
-    // save/reject/apply ported to action-handlers/story-director.ts (H.3);
-    // this modal stays in JS (it builds _renderStoryDirectorCard HTML), so
-    // its follow-ups route back through the action registry.
-    const Actions = window.CJS.CampaignActionsRuntime;
-    body.querySelectorAll('[data-story-modal-choice]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const choiceIndex = Number(btn.dataset.storyModalChoice || 0);
-        UI().closeModal(overlay);
-        Actions?.run?.('story-apply-choice', { id: card.id, choice: choiceIndex });
-      });
-    });
-    footer.querySelector('[data-story-modal-close]').onclick = () => UI().closeModal(overlay);
-    footer.querySelector('[data-story-modal-save]').onclick = () => {
-      UI().closeModal(overlay);
-      Actions?.run?.('story-save-beat');
-    };
-    footer.querySelector('[data-story-modal-reject]').onclick = () => {
-      UI().closeModal(overlay);
-      Actions?.run?.('story-reject-beat');
-    };
-  }
+  // _openLastStoryBeatModal / _openStoryBeatModal ported to
+  // action-handlers/story-director-modals.ts (H.3). The card body still
+  // comes from _renderStoryDirectorCard via the CampaignUI bridge method
+  // renderStoryDirectorCardHtml (G.11b keeps the renderer in JS).
 
   function _manualStoryNote() {
     const snap = SD()?.snapshot?.();
@@ -8756,6 +8699,10 @@ window.CJS.CampaignUI = (() => {
     // Returns the HTML body string for any closure-private vanilla
     // renderer the React-tab bridge wraps.
     renderTabBody,
+    // Story-director beat modal still needs the closure-private card HTML
+    // (G.11b kept this renderer as HTML). Exposed for action-handlers/
+    // story-director-modals.ts; goes away when the renderer ports.
+    renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to

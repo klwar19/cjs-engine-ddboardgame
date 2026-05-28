@@ -43,6 +43,7 @@ import * as Events from "./events";
 import * as Scenario from "./scenario";
 import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
+import * as StoryRolls from "./story-director-modals";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -270,7 +271,13 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "random-rumor-offer": () => Solo.offerRandomRumor(),
   "manual-rumor": () => Solo.manualRumorModal(),
   "save-solo-hook": () => Solo.saveSoloHook(),
-  "ignore-solo-hook": () => Solo.ignoreSoloHook()
+  "ignore-solo-hook": () => Solo.ignoreSoloHook(),
+  // ── Story director rolls + beat modal ─────────────────────────────
+  "story-roll-scene": () => StoryRolls.rollStoryDirector("scene"),
+  "story-roll-peri": () => StoryRolls.rollStoryDirector("peri"),
+  "story-roll-memory": () => StoryRolls.rollStoryDirector("memory"),
+  "story-pressure-tick": () => StoryRolls.rollStoryDirector("pressure"),
+  "story-open-last": () => StoryRolls.openLastStoryBeatModal()
 };
 
 export function hasHandler(name: string): boolean {
