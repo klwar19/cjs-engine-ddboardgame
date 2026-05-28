@@ -1441,15 +1441,8 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // _renderAdventureLegend — Phase G.6 port. The legend body moved to
-  // JSX in `src/campaign/tabs/CampaignOverviewTab.tsx`; only the
-  // visibility check (hide when there's any active result card) lives
-  // here as the typed `getAdventureLegendVisible(state)` bridge.
-  function getAdventureLegendVisible(state = CS().getState()) {
-    if (!state) return false;
-    const hasResult = state.lastEvent || state.lastOracle || state.pendingSoloHook || state.pendingBattle;
-    return !hasResult;
-  }
+  // `getAdventureLegendVisible` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/overview.ts`).
 
   // Hub tab body renderers (`sideForge`, `questChains`, `oracleForge`,
   // `battleSets`, `mapSeeds`) live in `js/campaign/ui/tabs/cui-hub-tab.js`.
@@ -6393,7 +6386,6 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     getRosterData,
     getQuestChainsData,
-    getAdventureLegendVisible,
     getStorySummaryData,
     getQuestHomeData,
     getEventTabData,

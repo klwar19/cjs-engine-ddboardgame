@@ -190,21 +190,19 @@ export function getTownRollFloatData(state: CampaignStateSnapshot): TownRollFloa
   };
 }
 
-// `getAdventureLegendVisible` stays bridged — its visibility logic
-// lives in campaign-ui.js's `getAdventureLegendVisible` closure and
-// reads `_lastAdventureLegendShown` plus campaign profile flags.
-interface Bridge {
-  readonly getAdventureLegendVisible: (state?: CampaignStateSnapshot) => boolean;
-}
-
-interface CjsForLegend {
-  readonly CampaignUI?: Bridge;
-}
-
-function cjsBridge(): CjsForLegend {
-  return (window as unknown as { CJS?: CjsForLegend }).CJS ?? {};
+// Phase H.4 inline port — pure state read. The legend hides when
+// there's any active result card (event / oracle / solo hook /
+// pending battle) so it doesn't compete with them for attention.
+interface CampaignStateForLegend {
+  readonly lastEvent?: unknown;
+  readonly lastOracle?: unknown;
+  readonly pendingSoloHook?: unknown;
+  readonly pendingBattle?: unknown;
 }
 
 export function getAdventureLegendVisible(state: CampaignStateSnapshot): boolean {
-  return cjsBridge().CampaignUI?.getAdventureLegendVisible(state) ?? false;
+  if (!state) return false;
+  const typed = state as CampaignStateForLegend;
+  const hasResult = typed.lastEvent || typed.lastOracle || typed.pendingSoloHook || typed.pendingBattle;
+  return !hasResult;
 }
