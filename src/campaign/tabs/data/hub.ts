@@ -68,6 +68,139 @@ function mapForge(): MapSeedForgeSurface | undefined {
   return (window as unknown as { CJS?: CjsHubExtras }).CJS?.CampaignMapSeedForge;
 }
 
+// HubTab module (still-JS bridged island in `js/campaign/ui/tabs/cui-hub-tab.js`)
+// exposes the consequence-preview / flavor-trail HTML builders that the
+// side-card data builder embeds.
+interface HubTabSurface {
+  readonly cardChoiceOps?: (card: unknown) => readonly unknown[];
+  readonly renderConsequencePreview?: (ops: readonly unknown[], options?: {
+    title?: string;
+    emptyTitle?: string;
+    emptyText?: string;
+  }) => string;
+  readonly renderFlavorTrail?: (entry: unknown) => string;
+  readonly consequenceSummary?: (
+    ops: readonly unknown[],
+    options?: { hasText?: boolean }
+  ) => { tone?: string; label?: string };
+}
+
+interface CampaignHubSurface {
+  readonly getCurrentHubId?: () => string;
+}
+
+function hubTab(): HubTabSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignUIInternal?: { HubTab?: HubTabSurface } } }).CJS?.CampaignUIInternal?.HubTab;
+}
+
+function campaignHub(): CampaignHubSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignHub?: CampaignHubSurface } }).CJS?.CampaignHub;
+}
+
+// ── Side-content card + rumor row builders ──────────────────────────
+// Used by the Side Forge / Oracle Forge / Town snapshot data builders.
+// Display-only sub-pieces (inline purpose, flavor trail, choice
+// consequence preview) arrive pre-rendered as HTML via HubTab — the
+// JSX consumer threads them through `<HtmlBridge>` divs (same pattern
+// ResultPanels uses).
+interface SideCardInput {
+  readonly id?: string;
+  readonly title?: string;
+  readonly name?: string;
+  readonly type?: string;
+  readonly source?: string;
+  readonly status?: string;
+  readonly canonRisk?: string;
+  readonly prompt?: string;
+  readonly text?: string;
+  readonly summary?: string;
+  readonly gmKeywords?: readonly string[];
+  readonly gmNote?: string;
+  readonly suggestedChoices?: ReadonlyArray<{ label?: string; ops?: readonly unknown[] }>;
+  readonly [key: string]: unknown;
+}
+
+interface RumorInput {
+  readonly id?: string;
+  readonly text?: string;
+  readonly status?: string;
+  readonly canonRisk?: string;
+}
+
+import { label } from "../../util/cui-utils";
+import { renderInlinePurpose, purposeKeyForCard } from "../../util/cui-controls";
+
+export function sideCardData(card: SideCardInput = {}, options: { compact?: boolean; mode?: string } = {}): SideCardData {
+  const compact = !!options.compact;
+  const choices = card.suggestedChoices || [];
+  const hub = hubTab();
+  const primaryOps = hub?.cardChoiceOps?.(card) || [];
+  const summary = hub?.consequenceSummary?.(primaryOps, {
+    hasText: !!(card.prompt || card.text || card.summary)
+  }) || {};
+  const sx = side();
+  return {
+    id: String(card.id || ""),
+    title: String(card.title || card.name || card.id || ""),
+    subtitle: `${card.type || "side content"} | ${card.source || ""} | ${card.status || "idea"}`,
+    tone: String(summary.tone || "flavor"),
+    toneLabel: String(summary.label || ""),
+    canonRisk: String(card.canonRisk || "green"),
+    canonRiskClass: sx?.riskClass?.(card.canonRisk) ?? "",
+    compact,
+    purposeHtml: compact ? "" : renderInlinePurpose(purposeKeyForCard(card)),
+    prompt: String(card.prompt || ""),
+    text: String(card.text || ""),
+    summary: (!compact && card.summary) ? String(card.summary) : "",
+    flavorTrailHtml: compact ? "" : (hub?.renderFlavorTrail?.(card) ?? ""),
+    gmKeywords: (!compact && Array.isArray(card.gmKeywords)) ? card.gmKeywords.map(String) : [],
+    gmNote: compact ? "" : String(card.gmNote || ""),
+    choiceStackHtml: (!compact && choices.length)
+      ? choices.map((choice, index) => hub?.renderConsequencePreview?.(choice.ops || [], {
+          title: choice.label || `Choice ${index + 1}`,
+          emptyTitle: choice.label || `Choice ${index + 1}`,
+          emptyText: "Flavor choice only. Save it as text or use it to steer the next scene."
+        }) ?? "").join("")
+      : "",
+    choiceButtons: choices.map((choice, index) => ({
+      index,
+      label: String(choice.label || `Choice ${index + 1}`)
+    })),
+    showDismiss: !compact
+  };
+}
+
+export function rumorRowData(rumor: RumorInput = {}, options: { compact?: boolean } = {}): RumorRowData {
+  const hubId = campaignHub()?.getCurrentHubId?.() || "";
+  const sx = side();
+  return {
+    id: String(rumor.id || ""),
+    hubId: String(hubId),
+    text: String(rumor.text || rumor.id || ""),
+    statusLabel: String(rumor.status || "active"),
+    riskLabel: label(rumor.canonRisk || "green"),
+    canonRisk: String(rumor.canonRisk || "green"),
+    canonRiskClass: sx?.riskClass?.(rumor.canonRisk) ?? "",
+    compact: !!options.compact
+  };
+}
+
+// Oracle Forge data source — `CampaignDataLoader` provides the table
+// list (the still-JS data loader stays as-is).
+interface OracleTableLike {
+  readonly id?: string;
+  readonly name?: string;
+}
+
+interface CampaignDataLoaderSurface {
+  readonly getOracleTables?: () => readonly OracleTableLike[];
+}
+
+function dataLoader(): CampaignDataLoaderSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignDataLoader?: CampaignDataLoaderSurface } })
+    .CJS?.CampaignDataLoader;
+}
+
 export interface SideStoryFlowGuide {
   readonly title: string;
   readonly summary: string;
@@ -218,7 +351,6 @@ export interface MapSeedsData {
 
 interface Bridge {
   readonly getSideForgeData: (state?: CampaignStateSnapshot) => SideForgeData | null;
-  readonly getOracleForgeData: (state?: CampaignStateSnapshot) => OracleForgeData | null;
   readonly getQuestChainsData: () => QuestChainsData | null;
 }
 
@@ -234,8 +366,21 @@ export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | 
   return cjs().CampaignUI?.getSideForgeData(state) ?? null;
 }
 
+// Phase H.4 inline port — pure read of state + DataLoader + sideCardData.
+interface CampaignStateForOracleForge {
+  readonly lastSideContentCard?: SideCardInput & { type?: string };
+}
+
 export function getOracleForgeData(state: CampaignStateSnapshot): OracleForgeData | null {
-  return cjs().CampaignUI?.getOracleForgeData(state) ?? null;
+  if (!state) return null;
+  const cardSlot = (state as CampaignStateForOracleForge).lastSideContentCard;
+  const last = cardSlot && cardSlot.type === "oracle_prompt" ? cardSlot : null;
+  const tables = dataLoader()?.getOracleTables?.() || [];
+  return {
+    purposeHtml: renderInlinePurpose("oracle"),
+    tableNames: tables.map((table) => String(table.name || table.id || "")).join(", ") || "No oracle tables loaded.",
+    lastCard: last ? sideCardData(last, { mode: "oracle" }) : null
+  };
 }
 
 export function getQuestChainsData(_state: CampaignStateSnapshot): QuestChainsData | null {

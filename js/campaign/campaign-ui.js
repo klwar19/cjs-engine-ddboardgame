@@ -6307,16 +6307,10 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getOracleForgeData(state = CS().getState()) {
-    if (!state) return null;
-    const last = state.lastSideContentCard?.type === 'oracle_prompt' ? state.lastSideContentCard : null;
-    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || [];
-    return {
-      purposeHtml: _renderInlinePurpose('oracle'),
-      tableNames: tables.map((table) => String(table.name || table.id || '')).join(', ') || 'No oracle tables loaded.',
-      lastCard: last ? _sideCardData(last, { mode: 'oracle' }) : null
-    };
-  }
+  // `getOracleForgeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
+  // `_rumorRowData` helpers also moved alongside; `getSideForgeData` +
+  // `getTownSnapshotData` still call the JS originals until they port.
 
   // K.3 — typed roster-tab data. Delegates the per-member breakdown to
   // PartyTab.rosterMemberData (hero + vitals + stats + affinities typed;
@@ -6545,7 +6539,6 @@ window.CJS.CampaignUI = (() => {
     getTownRollFloatData,
     getRosterData,
     getSideForgeData,
-    getOracleForgeData,
     getQuestChainsData,
     getAdventureLegendVisible,
     getStorySummaryData,
