@@ -5637,20 +5637,8 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // Typed snapshot of state.lastOracle for the React Oracle panel.
-  function getOracleData(state = CS().getState()) {
-    if (!state) return null;
-    const oracle = state.lastOracle;
-    if (!oracle) return null;
-    return {
-      text: oracle.text || '',
-      inlinePurposeHtml: _renderInlinePurpose('oracle'),
-      consequencePreviewHtml: _renderConsequencePreview([], {
-        emptyTitle: 'Flavor prompt',
-        emptyText: 'Use as narration now, save it as a note, or reroll for a sharper prompt.'
-      })
-    };
-  }
+  // `getOracleData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`).
 
   // Typed snapshot of one quest for the React QuestRow component.
   // Used by QuestHome (active rows, capped) and QuestsPanel (active +
@@ -6491,7 +6479,6 @@ window.CJS.CampaignUI = (() => {
     getStoryDirectorData,
     getQuestRowData,
     getEventResultData,
-    getOracleData,
     getSoloNoticeData,
     getScenarioSummaryData,
     getActiveSequenceData,

@@ -8,8 +8,23 @@
 // "HTML helpers" section below.
 
 import { esc, lootLine, label } from "../../util/cui-utils";
+import { renderInlinePurpose } from "../../util/cui-controls";
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestPillData } from "./scenarioShared";
+
+// HubTab module (still-JS bridged island) renders the consequence
+// preview / flavor trail HTML the side panels embed.
+interface HubTabSurface {
+  readonly renderConsequencePreview?: (
+    ops: readonly unknown[],
+    options?: { title?: string; emptyTitle?: string; emptyText?: string }
+  ) => string;
+}
+
+function hubTab(): HubTabSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignUIInternal?: { HubTab?: HubTabSurface } } })
+    .CJS?.CampaignUIInternal?.HubTab;
+}
 
 // ── HTML helpers (Phase H.4 — ported from campaign-ui.js) ────────────
 // These build small HTML fragments that the data builders below embed
@@ -418,7 +433,6 @@ export interface SoloNoticeData {
 
 interface Bridge {
   readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
-  readonly getOracleData: (state?: CampaignStateSnapshot) => OracleData | null;
   readonly getSoloNoticeData: (state?: CampaignStateSnapshot) => SoloNoticeData | null;
   readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
   readonly getActiveSequenceData: (
@@ -439,8 +453,25 @@ export function getEventResultData(state: CampaignStateSnapshot): EventResultDat
   return cjs().CampaignUI?.getEventResultData(state) ?? null;
 }
 
+// Phase H.4 inline port — `state.lastOracle` + the HubTab
+// consequence-preview HTML the side panel renders (with the static
+// "flavor prompt" copy the JS original used).
+interface OracleStateSlot {
+  readonly text?: string;
+}
+
 export function getOracleData(state: CampaignStateSnapshot): OracleData | null {
-  return cjs().CampaignUI?.getOracleData(state) ?? null;
+  if (!state) return null;
+  const oracle = (state as { lastOracle?: OracleStateSlot }).lastOracle;
+  if (!oracle) return null;
+  return {
+    text: oracle.text || "",
+    inlinePurposeHtml: renderInlinePurpose("oracle"),
+    consequencePreviewHtml: hubTab()?.renderConsequencePreview?.([], {
+      emptyTitle: "Flavor prompt",
+      emptyText: "Use as narration now, save it as a note, or reroll for a sharper prompt."
+    }) ?? ""
+  };
 }
 
 export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData | null {
