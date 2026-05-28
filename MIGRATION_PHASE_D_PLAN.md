@@ -409,7 +409,7 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   consults a `Record<CampaignActionName, fn>` registry first; the switch
   is deleted as cases migrate.
 
-  **Done — the registry seam + the cleanly-separable domains (154/246):**
+  **Done — the registry seam + the cleanly-separable domains (208/246):**
   - **Seam.** `src/campaign/action-handlers/registry.ts` holds the
     `Record<CampaignActionName, handler>` and installs
     `window.CJS.CampaignActionsRuntime` (`has` / `run`). The vanilla
@@ -519,6 +519,80 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     `_rollHubPulse` closure (ported earlier to rumor.ts), which threw on
     quest-hub-event; it now routes through `window.CJS.CampaignActionsRuntime`,
     matching the established internal-caller pattern.
+  - **battle selection + shared battle-pool** (5): run-roll-battle,
+    run-pick-battle, run-queue-set-battle, battle-reroll, battle-override
+    extend `action-handlers/combat.ts`; the shared pool helpers
+    (`battleDefeatFields` / `battleMapForArea` / `battleMapForCard` /
+    `fallbackBattlePool` / `pickContextualBattle` / `battleContext*`) port to
+    a new `action-handlers/battle-pool.ts` and are installed on
+    `window.CJS.CampaignBattlePool` for the still-in-JS manual event builder
+    (`_manualEventOps` / `_manualEventBattleOptions`). The `_questBattle`
+    internal caller of `_runRollBattle` now routes through the runtime.
+    Adds `getActiveScenario` to the typed CampaignState accessor.
+  - **event / oracle resolution + shared event builders** (14):
+    roll-event, pick-event, apply-event, edit-event, event-to-quest,
+    event-log-only, event-add-tags, copy-event-summary, note-event,
+    ignore-event, pin-plot-seed, event-to-oracle, oracle-to-quest,
+    oracle-add-tags -> `action-handlers/events.ts` (with the shared
+    `addQuestFromPrompt` / `tagPromptModal` / `opsModal` / `eventSummary` /
+    `eventChoices` builders). Adds `action-handlers/copy.ts`
+    (`copyPlainText` / `openCopyTextModal`) installed on
+    `window.CJS.CampaignCopy` for the still-in-JS manual event builder copy
+    + story-prompt copy. Adds `getCurrentCampaign` + `Ops.describe` to the
+    typed accessors. custom-event + oracle-to-event-builder stay pending the
+    266-line `_openManualEventBuilder` port.
+  - **scenario lifecycle + mg-test play** (6): start-scenario,
+    cancel-scenario, discard-scenario -> `action-handlers/scenario.ts`;
+    mg-test-play, mg-test-random, mg-test-random-any ->
+    `action-handlers/mg-test.ts`. `_inspectScenario`'s internal "Start Run"
+    caller routes through the start-scenario action. generate-scenario +
+    inspect-scenario stay (form `_root.querySelector` reads + shared
+    `_shapePillsData`); mg-test-pick stays (closure `_root.dataset`
+    selection state, deferred to H.4).
+  - **solo-hook offers + dismiss** (5): solo-surprise, random-rumor-offer,
+    manual-rumor, save-solo-hook, ignore-solo-hook ->
+    `action-handlers/solo.ts`. `_setPendingSoloHook` ports along (no other
+    callers); `_clearPendingSoloHook` / `_pendingSoloHookCard` stay in JS
+    (still-JS scenario-coupled handlers and render/data still call them; TS
+    handlers inline the same tiny mutate/lookup).
+    random-quest-offer / accept-solo-hook / solo-hook-quest / solo-hook-rumor
+    stay pending the `_startQuestRunFromOffer` launcher port.
+  - **story-director rolls + beat modal** (5): story-roll-scene,
+    story-roll-peri, story-roll-memory, story-pressure-tick, story-open-last
+    -> `action-handlers/story-director-modals.ts`. Adds one bridge method
+    `CampaignUI.renderStoryDirectorCardHtml` so the modal reads the
+    closure-private `_renderStoryDirectorCard` markup (G.11b keeps the
+    renderer in JS). The route / save / reject buttons route through the
+    runtime to the existing story-director.ts handlers.
+    story-manual-note / story-copy-prompt / story-help stay (scene-builder
+    + prompt + help generators).
+  - **quest pure-ops** (6): quest-progress, quest-hub-event, quest-harvest,
+    quest-check, quest-hand-in, quest-answer -> `action-handlers/quest.ts`
+    with TS copies of the small shared quest helpers (the JS originals stay
+    because render/data still call them). quest-hub-event routes
+    roll-hub-pulse through the runtime. quest-scenario / quest-battle /
+    quest-minigame stay pending their launchers.
+  - **mini-game session machinery + 3 handlers** (3): the cohesive session
+    cluster (miniGameConfig, openMiniGameSession, miniGameStoryContext,
+    applyMiniGameResult, showMiniGameBriefing + conversation/context
+    helpers) and the three actions that drive it (sequence-play-minigame,
+    haven-play-minigame, quest-minigame) port to
+    `action-handlers/minigame.ts`. Adds `questMiniGameObjective` to quest.ts.
+    Removes the bridge export `CampaignUI.playSequenceMinigame` (the VN
+    sequence module now routes through `CampaignActionsRuntime`).
+  - **small roster pickers** (8): remove-character, level-up-skill,
+    rank-up-passive, unlock-job-from-tree, switch-job-from-tree,
+    grant-skill-ap, pick-equip-skill, pick-equip-passive ->
+    `action-handlers/roster-pickers.ts` (confirm / number modal / PartyTab
+    delegations). The bigger modal-heavy roster handlers (party-sheet,
+    recruit-character, learn-skill / -passive, equip-item, stat-boost,
+    change-job, show-job-tree, change-persona, rank-up-apply,
+    show-skill-detail, gm-override, gm-member-override) stay pending their
+    option / render-helper ports.
+  - **travel-world + party-availability** (2): travel-world collapses to
+    `Nav.goto('world', 'worldGate')` (the closure was just that, plus dead
+    code after the unconditional return); party-availability ->
+    `action-handlers/roster-pickers.ts`.
 
   Every ported handler was verified for behaviour parity at the unit
   level via esbuild-bundled seam harnesses (routing + the exact module
@@ -527,74 +601,67 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   `test_actions_bridge.js` asserts union == (switch ∪ registry), the two
   are disjoint, and the runtime install + consultation are wired.
 
-  **Remaining (~92) — the interconnected modal-machinery / scenario-gen
-  core.** The cleanly-separable *leaf* handlers (those reachable through
-  accessible primitives + engine modules only) are now done. What's left
-  is one tightly-coupled web: every remaining handler bottoms out in a
-  closure-private builder/helper/state that is **shared** — either between
-  handler clusters, or with the render/data builders that still back the
-  `get*Data` bridges. So the next pass can no longer pick off independent
-  leaves; it needs a small amount of infrastructure first. The coupling,
-  precisely:
+  **Remaining (~38) — the deep-shared-helper tail.** The clean leaf
+  handlers are done; the still-here handlers all bottom out in a large
+  shared modal builder, a JS render helper, or a launcher that hasn't
+  ported yet. The coupling, precisely:
 
-  1. **Shared modal builders (still JS).** `_openManualEventBuilder` (266
-     lines), `_openQuestModal` (~475), `_openManualSceneBuilder` (~127),
-     `_gmOverride` (~290), `_addQuestFromPrompt`, `_tagPromptModal`,
-     `_opsModal`. Each is owned by several handlers (e.g. `_addQuestFromPrompt`
-     ← oracle-to-quest + event-to-quest; `_tagPromptModal` ← oracle-add-tags
-     + event-add-tags; `_openManualEventBuilder` ← custom-event +
-     oracle-to-event-builder). Port the builder *with* the first cluster that
-     owns it; later clusters import it from the same TS module.
-  2. **Shared battle-pool helpers (still JS).** `_battleDefeatFields`,
-     `_battleMapForArea`, `_battleMapForCard`, `_fallbackBattlePool`,
-     `_pickContextualBattle`, `_battleContext*` are used by *both* the battle
-     selection actions (run-roll/-pick/-queue-set-battle) **and** the manual
-     event builder (`_manualEventBattleOptions`). Port battle-selection +
-     event-builder together, or move these to a shared TS `battle-pool` module.
-  3. **Shared render helpers (still JS, feed `get*Data`).** `_renderConsequencePreview`
-     (7 call sites), `_renderStoryDirectorCard`, `_shapePillsData` are used by
-     the modals *and* the React-tab data builders. A handler that opens a
-     modal containing this HTML needs the helper exposed on the bridge
-     (precedent: `renderOverviewSectionHtml`, `renderTabBody`) until H.4 ports
-     the data builders too.
-  4. **Shared run/quest/scenario launchers (still JS).** `_startQuestScenario`
-     (→ `_generateScenario`), `_startQuestRunFromOffer`, `_startQuestChainRun`,
-     `_startScenarioFromUi` are called by quest actions, solo-hooks, and quest
-     chains. `_generateScenario` also reads the generator form straight off
-     `_root.querySelector('#campaign-gen-*')` — those values must arrive in the
-     action payload (the React Scenarios tab dispatches them) once `_root` is
-     gone. Several of these *are* actions (run-roll-battle, start-chain,
-     generate-scenario), so JS callers route via the runtime; the pure helpers
-     need exposing on `window.CJS` or porting in the same sub-graph.
-  5. **Shared solo-hook state (in CampaignState, plus JS helpers).**
-     `_pendingSoloHookCard` reads `state.pendingSoloHook` (accessible via `cs()`),
-     but `_setPendingSoloHook` / `_clearPendingSoloHook` / `_startQuestRunFromOffer`
-     are JS and also read by render/data code — port the solo cluster as a unit.
-  6. **Mini-game session machinery (still JS).** `_openMiniGameSession`,
-     `_miniGameConfig`, `_applyMiniGameResult`, `_showMiniGameBriefing`, the
-     story-context builders. Used by sequence-play-minigame, quest-minigame,
-     haven-play-minigame. Port as one `minigame.ts`; the mg-test actions also
-     need `_mgTestPick`'s `_root.dataset.mgTestGame` selection state moved into
-     CampaignState (the `getMinigameTestData` bridge reads it today).
-  7. **Story-context / prompt / copy helpers (still JS).** `_storyContextFor`,
-     `_ensureStoryContext`, `_storyPromptText` + generators, `_openCopyTextModal`,
-     `_copyPlainText` are shared with the AI-story-context data builder and the
-     event-copy handlers — port the story-tools + event-copy clusters together.
+  1. **`_openManualEventBuilder` (266 lines + 14 sub-helpers).** Blocks
+     custom-event + oracle-to-event-builder (2). The sub-helpers
+     (`_manualEventDraftFromBody`, `_manualEventFromDraft`, `_manualEventOps`,
+     `_manualRewardOps`, `_manualEventSummaryText`, `_eventShortSummary`,
+     `_manualKeyword*`, `_manualEventBattleOptions` / -RumorOptions /
+     -LayerOptions / -CharacterOptions, `_tagList`, `_manualEventTags`) port
+     with it; the battle helpers already come from
+     `window.CJS.CampaignBattlePool`, copy helpers from
+     `window.CJS.CampaignCopy`. Once ported, `_tagList` (the only remaining
+     window.CJS-untouched shared helper) goes away.
+  2. **Scenario launchers + generate form reads.** `_generateScenario` reads
+     `_root.querySelector('#campaign-gen-*')`; the React `CampaignScenariosTab`
+     needs to dispatch those form values in the `generate-scenario` payload
+     before the closure can port. Blocks generate-scenario family (7),
+     inspect-scenario (1, also needs the shared `_shapePillsData` rendered
+     as HTML — precedent: `renderStoryDirectorCardHtml`). Once
+     `_generateScenario` ports, `_startQuestScenario` + `_startQuestRunFromOffer`
+     + `_startQuestChainRun` can port (with their small helpers), which
+     unblocks quest-scenario / quest-battle (2), accept-solo-hook /
+     solo-hook-quest / -rumor / random-quest-offer (4), start-chain /
+     chain-scenario / chain-battle (3).
+  3. **Big roster modals (still JS).** party-sheet, recruit-character,
+     learn-skill / -passive, equip-item, stat-boost, change-job /
+     show-job-tree / change-persona, rank-up-apply, show-skill-detail,
+     gm-override / gm-member-override (14). Each owns large option /
+     render helpers (`_skillOptions` / `_passiveOptions` /
+     `_memberSkillEntries` / `_memberPassives` / `_renderJobChip` etc.) that
+     the render/data side still consumes. Same pattern as quest pure-ops:
+     port the small helpers as TS copies, leave the JS originals for render
+     until H.4 takes the data builders.
+  4. **Story-context / prompt / scene-builder helpers (still JS).**
+     `_storyContextFor`, `_ensureStoryContext`, `_storyPromptText` +
+     generators, `_openManualSceneBuilder` (127 lines), `_openStoryHelpModal`
+     are shared with the AI-story-context data builder. Blocks
+     story-manual-note / story-copy-prompt / story-help (3).
+  5. **add-quest** (`_openQuestModal`, ~475 lines). Largest single modal.
+     Ports once its helpers (`_randomizedQuestTemplate`, `_inferObjectiveKind`,
+     `_questBuilderMiniGame`, `_parseMiniGameConversation`) are extracted.
+  6. **travel-world-card** (with `_completeWorldTravel` /
+     `_defaultTravelLanding` / `_evaluateTravelRankGate` /
+     `_hasMeaningfulPersonaChoice` / `_openPreTravelPersonaPicker`, ~150
+     lines).
+  7. **mg-test-pick** (1) — needs the `_root.dataset.mgTestGame` selection
+     state moved into CampaignState (the `getMinigameTestData` bridge
+     reads it today). Cleanest as part of H.4.
 
-  Recommended order (each builds on the prior): **(a)** a shared
-  `battle-pool.ts` + the battle-selection cluster; **(b)** the manual event
-  builder + event handlers + oracle-to-* + `_tagPromptModal`/`_addQuestFromPrompt`/
-  `_opsModal`; **(c)** scenario-gen (`_generateScenario` reading payload, not
-  `_root`) + start/inspect/cancel/discard; **(d)** `minigame.ts` + mg-test
-  state move; **(e)** quest actions; **(f)** solo-hooks + quest chains;
-  **(g)** story-director tools (bridge `_renderStoryDirectorCard` /
-  `_renderConsequencePreview` or co-port with the data builders); **(h)** roster
-  equip/job/skill pickers + `_gmOverride` + `_openQuestModal`/add-quest. The
-  registry seam + the modal-port pattern (`roster-modals.ts`, `economy.ts`,
-  `combat.ts`) still make each step mechanical; internal JS callers of a ported
-  closure route back through `window.CJS.CampaignActionsRuntime` when it is an
-  action, or call a `window.CJS`-exposed helper when it is a pure builder, until
-  that caller is itself ported.
+  Recommended order: **(a)** scenario-gen (payload-pass first, then the
+  launcher chain), which unblocks the largest cluster (quest+solo+chain
+  ~9); **(b)** the manual event builder; **(c)** big roster modals
+  cluster-by-cluster; **(d)** story-tools (scene builder, prompt, help);
+  **(e)** add-quest; **(f)** travel-world-card; **(g)** mg-test-pick during
+  H.4. The registry seam + the modal-port pattern still make each step
+  mechanical; internal JS callers of a ported closure route through
+  `window.CJS.CampaignActionsRuntime` when it is an action, or call a
+  `window.CJS`-exposed helper when it is a pure builder, until the caller
+  is itself ported.
 - [ ] **H.4 — Migrate `get*Data` bridges to TS** under
   `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
   CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
@@ -757,25 +824,39 @@ finishes the authoring loop:
 | After H.3 haven + cooking | 523 |
 | After H.3 combat execution/resolution | 521 |
 | After H.3 downtime (rel-activity + camp-rest) | 519 |
+| After H.3 battle selection + battle-pool | 512 |
+| After H.3 event/oracle resolution + copy.ts | 506 |
+| After H.3 scenario lifecycle + mg-test play | 503 |
+| After H.3 solo-hook offers + dismiss | 501 |
+| After H.3 story-director rolls + beat modal | 499 |
+| After H.3 quest pure-ops | 495 |
+| After H.3 mini-game session machinery | 487 |
+| After H.3 small roster pickers | 484 |
+| After H.3 travel-world + party-availability | 483 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 519 KB. Every closure-private
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 483 KB. Every closure-private
 `_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
 tab bodies + roster hero in `cui-hub-tab.js` / `cui-party-tab.js` are
 JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
 bridged HTML: the roster detail row (icon-heavy, action surface now
 TS-registry-backed), the world map (SVG), and the intentionally-vanilla
 external-module tabs + maps tab. `_bindEvents` is gone (H.2). H.3 has
-ported the registry seam + 154/246 actions (save/log/roster-ops/roster-GM-
+ported the registry seam + 208/246 actions (save/log/roster-ops/roster-GM-
 modals/thin-ops/farm/forge/world-map/nav/sequence/story-director/oracle/
-quest-chain/map/haven/side/rumor + economy/cooking/combat/downtime) into
-`src/campaign/action-handlers/`, with a shared typed modal/widget/option/util
-accessor layer (`modals.ts`); the `_handleAction` switch now holds only the
-unported, interconnected modal-machinery / scenario-gen core (~92 cases),
-behind the runtime seam. Remaining: finish H.3 (that core — see the
-detailed coupling map + recommended order under H.3 "Remaining (~92)"
-above) → H.4 (`get*Data` → TS, then delete campaign-ui.js + `js/campaign/ui/`)
-→ H.5 (test rewrite). Phases I/J then pivot from "remove HTML strings" to
-"optimize the React tree + open the authoring loop for AI generators."
+quest-chain/map/haven/side/rumor + economy/cooking/combat-exec/downtime +
+battle-selection+battle-pool+event/oracle-resolution+scenario-lifecycle+
+mg-test-play+solo-offers+story-director-rolls+quest-pure-ops+mini-game-
+session-machinery+small-roster-pickers+travel-world+party-availability)
+into `src/campaign/action-handlers/`, with a shared typed
+modal/widget/option/util accessor layer (`modals.ts`) and `window.CJS`-exposed
+shared helpers (`CampaignBattlePool` / `CampaignCopy`) for the still-in-JS
+callers that haven't ported yet. The `_handleAction` switch now holds only
+the deep-shared-helper tail (~38 cases — see the coupling map + recommended
+order under H.3 "Remaining" above), behind the runtime seam. Remaining:
+finish H.3 (that tail) → H.4 (`get*Data` → TS, then delete campaign-ui.js +
+`js/campaign/ui/`) → H.5 (test rewrite). Phases I/J then pivot from
+"remove HTML strings" to "optimize the React tree + open the authoring
+loop for AI generators."
 
 ## Done-when gate
 
