@@ -1,13 +1,17 @@
 // CampaignScenariosTab.tsx — Phase F JSX port of `_renderScenarios`.
 //
 // Renders the Run Setup form (5 selects + 2 generate buttons) and the
-// grid of scenario cards. The form-input IDs match the vanilla
-// implementation so the legacy `_generateScenario` action handler
-// keeps reading them from `_root.querySelector('#campaign-gen-*')`.
+// grid of scenario cards. Phase H.3 — the form is now controlled
+// (useState per select) so the chosen values dispatch in the
+// generate-scenario / generate-quest-scenario payload directly. The
+// vanilla `_generateScenario` closure that used to read these via
+// `_root.querySelector('#campaign-gen-*')` is gone; the TS handler
+// (`action-handlers/scenario.ts::generateScenario`) reads the payload.
 //
 // Per-card quest pill, shape pill row, and Start/Continue/Inspect
 // actions are full JSX (Phase G.15).
 
+import { useState } from "react";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { getScenariosData, type ScenariosData, type ScenarioCard } from "./data/scenarios";
@@ -37,7 +41,23 @@ export function CampaignScenariosTab({ state }: Props) {
   );
 }
 
+// Form defaults match the vanilla closure (the `_root.querySelector`
+// fallbacks: source='random', mapForm='node_map', mapType='any',
+// size='small', layers=1). The IDs are kept on the elements so users
+// inspecting the DOM (or downstream styling targeting `#campaign-gen-*`)
+// keep working; nothing reads `.value` off them now.
 function RunSetupPanel({ data }: { data: ScenariosData }) {
+  const [source, setSource] = useState<string>("random");
+  const [mapForm, setMapForm] = useState<string>("node_map");
+  const [mapType, setMapType] = useState<string>("any");
+  const [size, setSize] = useState<string>("small");
+  const [layers, setLayers] = useState<string>("1");
+
+  // Form payload — passed for both Generate & Quest-Based. The
+  // generate-quest-scenario handler spreads this then forces
+  // source='active_quest' (matching the deleted switch override).
+  const payload = { source, mapForm, mapType, size, layers: Number(layers) };
+
   return (
     <section className="campaign-panel">
       <div className="campaign-panel-head">
@@ -47,7 +67,11 @@ function RunSetupPanel({ data }: { data: ScenariosData }) {
       <div className="campaign-generator-controls">
         <label>
           Source
-          <select id="campaign-gen-source" defaultValue="random">
+          <select
+            id="campaign-gen-source"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+          >
             <option value="random">Random</option>
             <option value="active_quest">Active Quest</option>
             <option value="quest_chain">Side Story</option>
@@ -55,14 +79,22 @@ function RunSetupPanel({ data }: { data: ScenariosData }) {
         </label>
         <label>
           Movement
-          <select id="campaign-gen-form" defaultValue="node_map">
+          <select
+            id="campaign-gen-form"
+            value={mapForm}
+            onChange={(e) => setMapForm(e.target.value)}
+          >
             <option value="node_map">Node Map</option>
             <option value="grid_map">Grid Map</option>
           </select>
         </label>
         <label>
           Setting / Context
-          <select id="campaign-gen-map-type" defaultValue="any">
+          <select
+            id="campaign-gen-map-type"
+            value={mapType}
+            onChange={(e) => setMapType(e.target.value)}
+          >
             {data.mapTypeOptions.map((opt) => (
               <option key={opt.id} value={opt.id}>{opt.label}</option>
             ))}
@@ -70,7 +102,11 @@ function RunSetupPanel({ data }: { data: ScenariosData }) {
         </label>
         <label>
           Size
-          <select id="campaign-gen-size" defaultValue="small">
+          <select
+            id="campaign-gen-size"
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+          >
             {data.sizeOptions.map((opt) => (
               <option key={opt.id} value={opt.id}>{opt.label}</option>
             ))}
@@ -78,7 +114,11 @@ function RunSetupPanel({ data }: { data: ScenariosData }) {
         </label>
         <label>
           Layers
-          <select id="campaign-gen-layers" defaultValue="1">
+          <select
+            id="campaign-gen-layers"
+            value={layers}
+            onChange={(e) => setLayers(e.target.value)}
+          >
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -88,14 +128,14 @@ function RunSetupPanel({ data }: { data: ScenariosData }) {
       <div className="campaign-action-grid">
         <button
           className="campaign-action primary"
-          onClick={() => dispatchCampaignAction("generate-scenario")}
+          onClick={() => dispatchCampaignAction("generate-scenario", payload)}
           disabled={data.hasActiveRun}
         >
           Generate &amp; Start
         </button>
         <button
           className="campaign-action"
-          onClick={() => dispatchCampaignAction("generate-quest-scenario")}
+          onClick={() => dispatchCampaignAction("generate-quest-scenario", payload)}
           disabled={data.hasActiveRun}
         >
           Quest-Based

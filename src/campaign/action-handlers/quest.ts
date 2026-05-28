@@ -47,6 +47,91 @@ export function isQuestResolved(quest: Quest = {}): boolean {
   return ["complete", "completed", "failed"].includes(String(quest.status || "active"));
 }
 
+// Quest fields the launcher reads (mapForm / mapType / linked map nodes
+// + cells) plus the optional fields _questMapForm / _questMapType
+// text-search over. The launcher uses the same fields as the rendering
+// data builders (still in JS) — this stays a Quest extension here so
+// the launcher only depends on quest.ts.
+interface QuestWithMap extends Quest {
+  mapForm?: string;
+  travelMode?: string;
+  movement?: string;
+  mapMode?: string;
+  summary?: string;
+  mapType?: string;
+  mapSetting?: string;
+  setting?: string;
+  location?: string;
+}
+
+// Mirrors `_questMapForm` in campaign-ui.js — explicit field wins, else
+// a text-search over title + summary + tags + contextTags decides
+// grid_map vs node_map. The fallbacks intentionally bias toward
+// node_map (the more common case for the generator).
+export function questMapForm(quest: QuestWithMap = {}): "grid_map" | "node_map" {
+  const explicit = String(quest.mapForm || quest.travelMode || "").toLowerCase();
+  if (explicit === "grid_map" || explicit === "grid") return "grid_map";
+  if (explicit === "node_map" || explicit === "node") return "node_map";
+  const text = [
+    quest.movement,
+    quest.mapMode,
+    quest.title,
+    quest.summary,
+    ...(quest.tags || []),
+    ...(quest.contextTags || [])
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (/grid|tile|square|board|tactical|crawl|maze/.test(text)) return "grid_map";
+  return "node_map";
+}
+
+// Mirrors `_questMapType` in campaign-ui.js — explicit `mapSetting`
+// wins (unless 'any'), else a text-search over the same surface
+// decides one of the SHAPE_SETTING_LABELS keys; 'any' fallback.
+export function questMapType(quest: QuestWithMap = {}): string {
+  const explicit = String(quest.mapSetting || "").toLowerCase();
+  if (explicit && explicit !== "any") return explicit;
+  const text = [
+    quest.mapType,
+    quest.setting,
+    quest.location,
+    quest.title,
+    quest.summary,
+    ...(quest.tags || [])
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (/town|city|street|market|guild|urban/.test(text)) return "urban";
+  if (/forest|grove|wood|pine/.test(text)) return "forest";
+  if (/dungeon|crypt|vault/.test(text)) return "dungeon";
+  if (/cave|hollow|den/.test(text)) return "cave";
+  if (/sewer|canal|drain/.test(text)) return "sewer";
+  if (/ruin|relic/.test(text)) return "ruins";
+  if (/temple|shrine|holy/.test(text)) return "temple";
+  if (/house|home|hut/.test(text)) return "house";
+  if (/tavern|inn/.test(text)) return "tavern";
+  if (/castle|keep|tower/.test(text)) return "castle";
+  if (/mountain|ridge|summit|ice|snow/.test(text)) return "mountain";
+  if (/arena|training|spar/.test(text)) return "arena";
+  if (/outdoor|road|trail|field|wild/.test(text)) return "outdoor";
+  return "any";
+}
+
+// Mirrors `_activeRunQuestId`. The launcher uses this to decide whether
+// to redirect to maps (the run already belongs to this quest) or refuse
+// (a different scenario is active).
+interface ActiveRunLike {
+  questId?: string;
+  [key: string]: unknown;
+}
+interface ScenarioWithSource {
+  source?: { questId?: string; [key: string]: unknown };
+  [key: string]: unknown;
+}
+export function activeRunQuestId(
+  run: ActiveRunLike | null | undefined,
+  scenario: ScenarioWithSource | null | undefined
+): string | null {
+  return run?.questId || scenario?.source?.questId || null;
+}
+
 export function questObjectiveDone(obj: Objective = {}): boolean {
   return Number(obj.current || 0) >= Math.max(1, Number(obj.required || 1));
 }

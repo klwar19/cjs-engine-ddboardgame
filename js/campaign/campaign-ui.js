@@ -871,11 +871,9 @@ window.CJS.CampaignUI = (() => {
   // selected-game state (kept on `_root.dataset.mgTestGame`) still
   // live here so the legacy `mg-test-*` actions stay unchanged.
 
-  function _mgTestPick(gameId) {
-    if (!_root) return;
-    _root.dataset.mgTestGame = String(gameId || '');
-    render();
-  }
+  // _mgTestPick ported to action-handlers/mg-test.ts (H.3). The TS
+  // handler writes _root.dataset.mgTestGame via the new
+  // CampaignUI.setMinigameTestGame bridge then rerenders.
 
   // _mgTestPlay ported to action-handlers/mg-test.ts (H.3).
 
@@ -1717,57 +1715,11 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _startQuestChainRun(templateId) {
-    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
-    if (!chain) return UI().toast('Quest arc not found', 'info');
-    if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'event';
-      _activeTab = 'maps';
-      render();
-      return UI().toast('A scenario is already active. Finish it before starting a quest arc run.', 'info');
-    }
-    window.CJS.CampaignQuestChains.start(templateId);
-    return _startQuestChainScenario(templateId);
-  }
-
-  function _startQuestChainScenario(templateId) {
-    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
-    if (!chain) return UI().toast('Quest arc not found', 'info');
-    const quest = _ensureQuestChainQuest(chain);
-    if (!quest) return null;
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    if (activeRun) {
-      if (_activeRunQuestId(activeRun, activeScenario) === quest.id || activeRun.questChainId === templateId) return _goto(null, 'maps');
-      return UI().toast('End the active scenario before starting this quest arc map', 'info');
-    }
-    return _startQuestScenario(quest.id, {
-      quest,
-      source: 'quest_chain',
-      questChainId: templateId,
-      mapForm: _questMapForm(chain),
-      mapType: chain.mapType || _questMapType(chain),
-      size: chain.size || 'small',
-      forceGenerated: !chain.linkedScenario
-    });
-  }
-
-  function _questChainBattle(templateId) {
-    const chain = window.CJS.CampaignQuestChains?.getTemplate?.(templateId);
-    if (!chain) return UI().toast('Quest arc not found', 'info');
-    const quest = _ensureQuestChainQuest(chain);
-    if (!quest) return null;
-    return _questBattle(quest.id);
-  }
-
-  function _ensureQuestChainQuest(chain) {
-    const questId = `quest_${chain.id}`;
-    const existing = CS().getState()?.quests?.[questId];
-    if (existing && !_isQuestResolved(existing)) return existing;
-    const quest = window.CJS.CampaignQuestChains.toQuest(chain);
-    Ops().apply({ op: 'add_quest', quest }, { source: 'quest_chain' });
-    return CS().getState()?.quests?.[questId] || quest;
-  }
+  // _startQuestChainRun / _startQuestChainScenario / _questChainBattle /
+  // _ensureQuestChainQuest ported to action-handlers/quest-chain.ts (H.3 —
+  // start-chain / chain-scenario / chain-battle). The chain launcher
+  // also feeds `_startQuestRunFromOffer` for cards carrying a
+  // questChainTemplateId — that path is fully TS now via solo.ts.
 
   // _addQuestChainToTracker / _advanceQuestChainStep / _completeQuestChain
   // / _failQuestChain ported to action-handlers/quest-chain.ts (H.3).
@@ -2544,140 +2496,25 @@ window.CJS.CampaignUI = (() => {
 
   // Phase H.1 — public typed action boundary. React components call
   // `CampaignActions.dispatchCampaignAction(name, data)` which routes
-  // here directly (no synthetic DOM-button click). The delegated
-  // `_bindEvents` listener still feeds `_handleAction` for buttons
-  // inside the remaining HTML-bridge tabs (HubTab / PartyTab /
-  // WorldMapTab, ported in K.3). `data` carries camelCase keys that
-  // mirror the dataset names each case reads (id, choice, worldId,
+  // here directly (no synthetic DOM-button click). The shell `<main>`
+  // + drawer click forwarders and modal-local click delegates also
+  // funnel through this entry. `data` carries camelCase keys that
+  // mirror the dataset names each handler reads (id, choice, worldId,
   // targetTab, tab, mode, table, bucket, dir, tool, x, y, ...).
   function handleAction(name, data = {}) {
     return _handleAction({ campaignAction: String(name), ...data });
   }
 
+  // Phase H.3 complete — every CampaignActionName resolves through the
+  // TS registry on window.CJS.CampaignActionsRuntime. The full port
+  // map (closure helper → action-handlers/<module>.ts) lives in the
+  // registry source + MIGRATION_PHASE_D_PLAN.md; this function is
+  // intentionally tiny. (H.4 may move it into the runtime itself.)
   function _handleAction(data) {
-    // Phase H.3 — ported handlers live in TS modules registered on
-    // window.CJS.CampaignActionsRuntime. Consult that registry first; it
-    // is the single seam for every dispatch path (React onClick →
-    // dispatchCampaignAction → handleAction, the shell/drawer
-    // forwarders, and internal delegated callers like the party-sheet
-    // modal). Any name not registered there falls through to the switch
-    // below, which holds the not-yet-ported cases.
     const runtime = window.CJS.CampaignActionsRuntime;
-    if (runtime && runtime.has(data.campaignAction)) {
-      return runtime.run(data.campaignAction, data);
-    }
-    switch (data.campaignAction) {
-      case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
-      // rel-activity / camp-rest ported to action-handlers/downtime.ts (H.3).
-      // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
-      //   navigation (open-* / _goto) -> action-handlers/nav.ts
-      //   world-map-* / world-activity-use -> action-handlers/worldmap.ts
-      //   save + log -> actions.ts ; roster ops -> action-handlers/roster.ts
-      //   pass-phase + thin engine ops -> action-handlers/ops.ts
-      //   farm/haven -> action-handlers/farm.ts ; forge -> action-handlers/forge.ts
-      // roll-event / pick-event ported to action-handlers/events.ts (H.3).
-      case 'custom-event': return _customEvent();
-      // roll-oracle / pick-oracle / custom-oracle ported to
-      // action-handlers/oracle.ts (H.3).
-      // battle-reroll / battle-override ported to action-handlers/combat.ts (H.3).
-      // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
-      case 'random-quest-offer': return _offerRandomQuest();
-      case 'accept-solo-hook': return _acceptSoloHook();
-      case 'solo-hook-quest': return _soloHookToQuest();
-      case 'solo-hook-rumor': return _soloHookToRumor();
-      // solo-surprise / random-rumor-offer / manual-rumor / save-solo-hook /
-      // ignore-solo-hook ported to action-handlers/solo.ts (H.3).
-      // apply/save/reject/dismiss/copy side-card ported to
-      // action-handlers/side.ts (H.3).
-      // resolve-rumor / rumor-to-quest / rumor-to-problem ported to
-      // action-handlers/rumor.ts (H.3).
-      case 'start-chain': return _startQuestChainRun(data.id);
-      // advance-chain/complete-chain/fail-chain/promote-chain ported to
-      // action-handlers/quest-chain.ts (H.3).
-      case 'chain-scenario': return _startQuestChainScenario(data.id);
-      case 'chain-battle': return _questChainBattle(data.id);
-      // copy-battle-card/copy-map-seed + roll-forge-oracle ported to
-      // action-handlers/{forge,oracle}.ts (H.3).
-      // story-roll-scene / -peri / -memory / story-pressure-tick / story-open-last
-      // ported to action-handlers/story-director-modals.ts (H.3).
-      // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
-      // ported to action-handlers/story-director.ts (H.3).
-      case 'story-manual-note': return _manualStoryNote();
-      case 'story-copy-prompt': return _copyStoryPrompt();
-      case 'story-help': return _openStoryHelpModal();
-      // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
-      // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
-      // sequence-play-minigame ported to action-handlers/minigame.ts (H.3).
-      // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
-      // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
-      case 'oracle-to-event-builder': return _oracleToEventBuilder();
-      // oracle-to-quest / oracle-add-tags + apply-event / edit-event /
-      // event-to-quest / event-log-only / event-add-tags / copy-event-summary /
-      // note-event / ignore-event / pin-plot-seed / event-to-oracle ported to
-      // action-handlers/events.ts (H.3).
-      case 'add-quest': return _openQuestModal();
-      // travel-world ported to action-handlers/registry.ts (H.3).
-      // open-* navigation cases ported to action-handlers/nav.ts (H.3).
-      // run-roll-battle / run-pick-battle / run-queue-set-battle / run-battle /
-      // apply-combat-result / manual-battle / run-next-beat /
-      // roll-travel-surprise ported to action-handlers/combat.ts (H.3).
-      case 'generate-scenario': return _generateScenario();
-      case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
-      case 'generate-material-run': return _generateScenario({ source: 'random', mapType: 'forest', size: 'small', mapForm: 'node_map' });
-      case 'generate-bounty-run': return _generateScenario({ source: 'random', mapType: 'outdoor', size: 'tiny', mapForm: 'node_map' });
-      case 'generate-dungeon-run': return _generateScenario({ source: 'random', mapType: 'dungeon', size: 'medium', mapForm: 'grid_map' });
-      case 'generate-urban-run': return _generateScenario({ source: 'random', mapType: 'urban', size: 'small', mapForm: 'node_map' });
-      case 'generate-training-run': return _generateScenario({ source: 'random', mapType: 'arena', size: 'tiny', mapForm: 'grid_map' });
-      case 'inspect-scenario': return _inspectScenario(data.id);
-      // start-scenario / cancel-scenario / discard-scenario ported to
-      // action-handlers/scenario.ts (H.3).
-      // end-scenario ported to action-handlers/ops.ts (H.3).
-      // move-node/move-cell/map-layer/clear-node ported to
-      // action-handlers/map.ts (H.3).
-      // inventory-delta / quick-add-inventory / shop-buy / plant-seed /
-      // craft-recipe / add-pocket-note / add-note ported to
-      // action-handlers/economy.ts (H.3).
-      // haven-build-facility/haven-upgrade-facility/haven-ranch-collect
-      // ported to action-handlers/haven.ts (H.3).
-      // haven-train-skill / haven-ranch-assign / haven-open-trivia ported
-      // to action-handlers/haven.ts; haven-open-cooking / cook-food ported
-      // to action-handlers/cooking.ts (H.3). haven-play-minigame stays
-      // (mini-game session machinery).
-      // haven-play-minigame ported to action-handlers/minigame.ts (H.3).
-      case 'quest-scenario': return _questScenario(data.id);
-      case 'quest-battle': return _questBattle(data.id);
-      // quest-minigame ported to action-handlers/minigame.ts (H.3).
-      // quest-progress / quest-hub-event / quest-harvest / quest-check /
-      // quest-hand-in / quest-answer ported to action-handlers/quest.ts (H.3).
-      case 'mg-test-pick': return _mgTestPick(data.game);
-      // mg-test-play / mg-test-random / mg-test-random-any ported to
-      // action-handlers/mg-test.ts (H.3).
-      case 'party-sheet': return _partySheetModal(data.id);
-      case 'recruit-character': return _recruitCharacterModal();
-      case 'learn-skill': return _learnSkillModal(data.id);
-      case 'learn-passive': return _learnPassiveModal(data.id);
-      case 'equip-item': return _equipItemModal(data.id, data.slot);
-      case 'stat-boost': return _statBoostModal(data.id);
-      case 'change-job': return _changeJobModal(data.id);
-      case 'show-job-tree': return _showJobTreeModal(data.id);
-      case 'change-persona': return _changePersonaModal(data.id);
-      case 'rank-up-apply': return _rankUpApplyModal();
-      // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
-      // skill + passive, unequip-item, party-available) ported to
-      // src/campaign/action-handlers/roster.ts + actions.ts (H.3 roster).
-      // remove-character / level-up-skill / rank-up-passive /
-      // unlock-job-from-tree / switch-job-from-tree / grant-skill-ap /
-      // pick-equip-skill / pick-equip-passive ported to
-      // src/campaign/action-handlers/roster-pickers.ts (H.3).
-      case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
-      // party-availability ported to action-handlers/roster-pickers.ts (H.3).
-      case 'gm-override': return _gmOverride();
-      case 'gm-member-override': return _gmOverride(data.id);
-      // load-slot / delete-slot / delete-all-saves / export-slot /
-      // export-log / clear-log / export-event-log / clear-event-log
-      // ported to src/campaign/action-handlers/registry.ts (H.3 save + log).
-      default: break;
-    }
+    return runtime?.has?.(data.campaignAction)
+      ? runtime.run(data.campaignAction, data)
+      : undefined;
   }
 
   // Save-management handlers (_newSave / _loadSlot / _deleteSlot /
@@ -2688,9 +2525,8 @@ window.CJS.CampaignUI = (() => {
 
   // _eventChoices / _pickEvent ported to action-handlers/events.ts (H.3).
 
-  function _customEvent() {
-    _openManualEventBuilder();
-  }
+  // _customEvent ported to action-handlers/manual-builders.ts (H.3 —
+  // bridge-wrapped). The TS handler calls CampaignUI.openManualEventBuilder.
 
   // _doRelActivity / _relationshipNarrativeModal ported to
   // action-handlers/downtime.ts (H.3).
@@ -3500,130 +3336,17 @@ window.CJS.CampaignUI = (() => {
 
   // _rollSoloSurprise / _offerRandomRumor ported to action-handlers/solo.ts (H.3).
 
-  function _offerRandomQuest() {
-    if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'quest';
-      _activeTab = 'maps';
-      render();
-      return UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
-    }
-    const card = _randomQuestOfferCard();
-    if (!card) return UI().toast('No single-quest templates available. Finish an active quest or add more quest templates.', 'info');
-    Side().saveCard(card, { status: 'active', source: 'quest_run' });
-    return _startQuestRunFromOffer(card);
-  }
-
-  function _randomQuestOfferCard() {
-    const state = CS().getState();
-    const activeQuestIds = new Set(Object.values(state?.quests || {})
-      .filter((quest) => !_isQuestResolved(quest))
-      .map((quest) => quest.id));
-    const templates = Object.values(CS().getContent().campaignQuests || {})
-      .flatMap((record) => record.templates || [])
-      .filter((quest) => !activeQuestIds.has(quest.id));
-    const options = templates.map((quest) => ({ type: 'quest_template', quest }));
-    if (!options.length) return null;
-    const weighted = options.map((option) => ({
-      option,
-      weight: _questTemplateWeight(option.quest, state)
-    }));
-    const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
-    let roll = Math.random() * Math.max(1, total);
-    let pick = weighted[0]?.option;
-    for (const entry of weighted) {
-      roll -= entry.weight;
-      if (roll <= 0) {
-        pick = entry.option;
-        break;
-      }
-    }
-    const quest = CS().clone(pick.quest);
-    return {
-      id: `idea_offer_${quest.id}_${Date.now()}`,
-      type: 'quest_offer',
-      title: quest.title || quest.id,
-      summary: quest.summary || '',
-      canonRisk: quest.canonRisk || 'green',
-      tags: quest.tags || [],
-      questTemplate: quest,
-      suggestedChoices: [{
-        label: 'Start this quest run',
-        ops: [{ op: 'add_quest', quest }]
-      }]
-    };
-  }
-
-  function _questTemplateWeight(quest = {}, state = CS().getState()) {
-    const activeTags = new Set([
-      state?.currentWorld ? `world:${state.currentWorld}` : '',
-      state?.phase?.type ? `phase:${state.phase.type}` : '',
-      state?.currentChapter ? `chapter:${state.currentChapter}` : '',
-      ...(window.CJS.CampaignTags?.getActiveTags?.(state) || []),
-      ...(Object.values(state?.party || {}).flatMap((member) => member.activePersona ? [`persona:${member.activePersona}`] : []) || [])
-    ].filter(Boolean).map((tag) => String(tag).toLowerCase()));
-    let weight = 1;
-    for (const tag of [...(quest.tags || []), ...(quest.contextTags || []), ...(quest.monsterTags || [])]) {
-      const cleaned = String(tag || '').toLowerCase();
-      if (activeTags.has(cleaned) || activeTags.has(`world:${cleaned}`) || activeTags.has(`phase:${cleaned}`)) weight += 1;
-      if (cleaned.includes(String(state?.currentWorld || '').toLowerCase())) weight += 1;
-    }
-    const rank = Object.values(state?.party || {})[0]?.rank || 'F';
-    if ((quest.rankBand || quest.ranks || []).includes(rank)) weight += 2;
-    if (quest.kind === 'daily' || quest.repeat) weight += 1;
-    return Math.max(1, weight);
-  }
-
-  function _startQuestRunFromOffer(card) {
-    if (!card) return null;
-    if (CS().getState()?.activeScenarioRun) {
-      _activeMode = 'quest';
-      _activeTab = 'maps';
-      render();
-      UI().toast('A scenario is already active. Finish it before starting another quest run.', 'info');
-      return { error: 'active_run' };
-    }
-    if (card.questChainTemplateId) {
-      Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain_run', approved: true }, { source: 'quest_run' });
-      _clearPendingSoloHook();
-      return _startQuestChainRun(card.questChainTemplateId);
-    }
-
-    const quest = _questFromOfferCard(card);
-    if (!quest) return null;
-    Ops().apply({ op: 'add_quest', quest }, { source: 'quest_run' });
-    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_run', approved: true }, { source: 'quest_run' });
-    _clearPendingSoloHook();
-    const result = _startQuestScenario(quest.id, {
-      quest,
-      mapForm: _questMapForm(quest),
-      mapType: quest.mapType || _questMapType(quest)
-    });
-    if (result?.error) {
-      _activeMode = 'quest';
-      _activeTab = 'quests';
-      render();
-    }
-    return result;
-  }
-
-  function _questFromOfferCard(card) {
-    const base = card.questTemplate ? CS().clone(card.questTemplate) : {
-      id: `quest_${card.id || Date.now()}`,
-      title: card.title || card.name || 'Quest Run',
-      summary: card.summary || card.prompt || '',
-      objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
-      rewards: card.rewardOps || [],
-      tags: card.tags || []
-    };
-    base.templateId = base.templateId || base.id;
-    base.mapForm = base.mapForm || card.mapForm || card.travelMode || _questMapForm(base);
-    base.mapType = base.mapType || card.mapType || card.setting || _questMapType(base);
-    base.status = 'active';
-    return base;
-  }
+  // _offerRandomQuest / _randomQuestOfferCard / _questTemplateWeight /
+  // _startQuestRunFromOffer / _questFromOfferCard ported to
+  // action-handlers/solo.ts (H.3 — random-quest-offer +
+  // startQuestRunFromOffer used by accept-solo-hook). Internal callers
+  // that previously called these closures now share the TS path through
+  // solo.ts exports.
 
   // _setPendingSoloHook ported to action-handlers/solo.ts (H.3).
 
+  // _pendingSoloHookCard stays — the data builders (Story / Quest /
+  // Overview render code) still read this shape inline.
   function _pendingSoloHookCard(state = CS().getState()) {
     const id = state?.pendingSoloHook?.cardId;
     if (!id) return null;
@@ -3631,90 +3354,17 @@ window.CJS.CampaignUI = (() => {
       || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
   }
 
+  // _clearPendingSoloHook stays — still-JS handlers (the manual quest
+  // builder, scenario discard) call it; the TS solo handlers duplicate
+  // the one-line mutation rather than depend on this closure (matches
+  // the established H.3 pattern for tiny mutators).
   function _clearPendingSoloHook() {
     CS().mutate((state) => { state.pendingSoloHook = null; }, { source: 'solo_hook' });
   }
 
-  function _acceptSoloHook() {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    const apply = () => {
-      if (card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer') {
-        _startQuestRunFromOffer(card);
-        return;
-      }
-      const choice = card.suggestedChoices?.[0];
-      if (choice?.ops?.length) {
-        Ops().apply(choice.ops, { source: 'solo_hook_accept' });
-        Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'hub_event', approved: true }, { source: 'solo_hook' });
-      } else {
-        _soloHookToQuest(true);
-        return;
-      }
-      _clearPendingSoloHook();
-      _activeMode = 'story';
-      _activeTab = 'storyHome';
-      render();
-      UI().toast('Story offer accepted', 'success');
-    };
-    if (Side().risk(card.canonRisk) === 'red') {
-      return UI().confirm('This is red-risk content. Accept it now?', apply);
-    }
-    apply();
-  }
-
-  function _soloHookToQuest(approved = false) {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    if (Side().risk(card.canonRisk) === 'red' && !approved) {
-      return UI().confirm('This is red-risk content. Make it a quest now?', () => _soloHookToQuest(true));
-    }
-    if (card.questChainTemplateId) {
-      const choice = card.suggestedChoices?.[0];
-      if (choice?.ops?.length) Ops().apply(choice.ops, { source: 'solo_hook_chain' });
-      Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'quest_chain', approved: true }, { source: 'solo_hook' });
-      _clearPendingSoloHook();
-      _activeMode = 'quest';
-      _activeTab = 'quests';
-      render();
-      UI().toast('Quest arc added', 'success');
-      return;
-    }
-    const quest = card.questTemplate ? CS().clone(card.questTemplate) : {
-      id: `quest_${card.id}`,
-      title: card.title || card.name || 'Story Quest',
-      status: 'active',
-      summary: card.summary || card.prompt || '',
-      objectives: [{ id: 'follow_hook', label: 'Follow this hook', current: 0, required: 1 }],
-      rewards: card.rewardOps || []
-    };
-    Ops().apply({ op: 'add_quest', quest }, { source: 'solo_hook_quest' });
-    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'accepted_hook', approved: true }, { source: 'solo_hook' });
-    _clearPendingSoloHook();
-    _activeMode = 'quest';
-    _activeTab = 'quests';
-    render();
-    UI().toast(`Quest added: ${quest.title || quest.id}`, 'success');
-  }
-
-  function _soloHookToRumor(approved = false) {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    if (Side().risk(card.canonRisk) === 'red' && !approved) {
-      return UI().confirm('This is red-risk content. Make it a rumor now?', () => _soloHookToRumor(true));
-    }
-    const hubId = window.CJS.CampaignHub.getCurrentHubId();
-    Ops().apply({
-      op: 'add_rumor',
-      hubId,
-      text: card.prompt || card.summary || card.title || card.name || card.id,
-      canonRisk: card.canonRisk || 'green',
-      tags: card.tags || [],
-      source: 'solo_hook'
-    }, { source: 'solo_hook_rumor' });
-    Ops().apply({ op: 'side_idea_promote', contentId: card.id, targetType: 'rumor', approved: true }, { source: 'solo_hook' });
-    _clearPendingSoloHook();
-  }
+  // _acceptSoloHook / _soloHookToQuest / _soloHookToRumor ported to
+  // action-handlers/solo.ts (H.3). Red-risk confirm copy, op payloads,
+  // mutation sources and mode/tab jumps mirror the deleted closures.
 
   // _saveSoloHook / _ignoreSoloHook ported to action-handlers/solo.ts (H.3).
 
@@ -3748,11 +3398,9 @@ window.CJS.CampaignUI = (() => {
   // comes from _renderStoryDirectorCard via the CampaignUI bridge method
   // renderStoryDirectorCardHtml (G.11b keeps the renderer in JS).
 
-  function _manualStoryNote() {
-    const snap = SD()?.snapshot?.();
-    const stage = snap?.stage || {};
-    _openManualSceneBuilder({ stage });
-  }
+  // _manualStoryNote ported to action-handlers/manual-builders.ts
+  // (H.3 — bridge-wrapped). The TS handler reads the current Story
+  // Director stage then calls CampaignUI.openManualSceneBuilder.
 
   // Manual Scene builder — also creates branching chapters like 1.4.a /
   // 1.4.b that slot into the auto-generated chapter tree.
@@ -3917,19 +3565,10 @@ window.CJS.CampaignUI = (() => {
     }, { source: 'story_manual_summary' });
   }
 
-  async function _copyStoryPrompt() {
-    await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
-    const text = _storyPromptText();
-    // _openCopyTextModal ported to action-handlers/copy.ts; reached via the
-    // shared runtime export until _copyStoryPrompt itself ports to TS.
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(() => UI().toast('Story prompt copied', 'success'))
-        .catch(() => window.CJS.CampaignCopy.openCopyTextModal('Story Prompt', text));
-      return;
-    }
-    window.CJS.CampaignCopy.openCopyTextModal('Story Prompt', text);
-  }
+  // _copyStoryPrompt ported to action-handlers/story-tools.ts (H.3).
+  // The TS handler reads _storyPromptText + _ensureStoryContext via
+  // the new CampaignUI.computeStoryPromptText / .ensureStoryContext
+  // bridges so the prompt assembly stays in JS until H.4.
 
   function _storyContextPromptText(state = {}) {
     const ctx = _storyContextFor(state.currentWorld || 'haven');
@@ -4192,31 +3831,9 @@ window.CJS.CampaignUI = (() => {
   // _openCopyTextModal ported to action-handlers/copy.ts (H.3), exposed on
   // window.CJS.CampaignCopy for _copyStoryPrompt until the story tools port.
 
-  function _openStoryHelpModal() {
-    const body = document.createElement('div');
-    body.className = 'campaign-story-help';
-    body.innerHTML = `
-      <div class="campaign-story-help-grid">
-        <div>
-          <strong>Solo default</strong>
-          <p>Pick the current episode, roll Next Scene, read the popup, then choose one route. The app handles clocks, rumors, clues, and queue changes only after you choose.</p>
-        </div>
-        <div>
-          <strong>Manual GM control</strong>
-          <p>Use the episode rail to jump anywhere, Write Scene to author your own beat, Hold For Later to keep an idea, and Skip Roll when the random result is being dramatic for attention.</p>
-        </div>
-        <div>
-          <strong>Random flavor</strong>
-          <p>Peri Interrupt is for system comedy, Memory / Clue is for mystery pressure, and Offscreen Trouble is for consequences when time passes or the table gets too comfortable.</p>
-        </div>
-        <div>
-          <strong>Tabletop flow</strong>
-          <p>Use Story for scenes and route choices, then switch to Current Run for tactical movement and encounters. Side Routes tells you what content should stay, rise, or pause.</p>
-        </div>
-      </div>
-    `;
-    UI().openModal({ title: 'Story Mode Flow', content: body, width: '720px' });
-  }
+  // _openStoryHelpModal ported to action-handlers/story-tools.ts (H.3).
+  // Static info modal — no closure dependencies, so the TS port is
+  // a direct copy of the HTML body + UI.openModal call.
 
   // _setStoryDirectorStage / _syncStoryDirectorSideQuests ported to
   // action-handlers/story-director.ts (H.3).
@@ -4229,18 +3846,9 @@ window.CJS.CampaignUI = (() => {
 
   // _oracleToQuest ported to action-handlers/events.ts (H.3).
 
-  function _oracleToEventBuilder() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    _openManualEventBuilder({
-      title: 'Oracle Event',
-      source: 'oracle',
-      scope: 'event',
-      seed: oracle.text || oracle.prompt || '',
-      short: _truncate(oracle.text || oracle.prompt || '', 160),
-      tags: ['oracle', ...(oracle.tags || [])]
-    });
-  }
+  // _oracleToEventBuilder ported to action-handlers/manual-builders.ts
+  // (H.3 — bridge-wrapped). The TS handler seeds the manual event
+  // builder from state.lastOracle and calls CampaignUI.openManualEventBuilder.
 
   // _oracleAddTags / _applyEvent / _editEvent / _eventToQuest / _eventLogOnly /
   // _eventAddTags / _noteEvent / _ignoreEvent / _pinPlotSeed / _eventToOracle /
@@ -4854,7 +4462,9 @@ window.CJS.CampaignUI = (() => {
       Ops().apply({ op: 'add_quest', quest }, { source: 'ui' });
       UI().closeModal(overlay);
       UI().toast(`Quest added: ${quest.title}. Starting run…`, 'success');
-      _startQuestScenario(quest.id, {
+      // _startQuestScenario ported to action-handlers/quest-launcher.ts (H.3);
+      // route this internal caller through the launcher's window.CJS surface.
+      window.CJS.CampaignQuestLauncher?.startQuestScenario(quest.id, {
         quest,
         mapForm: _questMapForm(quest),
         mapType: quest.mapType || _questMapType(quest),
@@ -4894,102 +4504,15 @@ window.CJS.CampaignUI = (() => {
 
   // _manualRumorModal ported to action-handlers/solo.ts (H.3).
 
-  function _generateScenario(overrides = {}) {
-    if (CS().getState()?.activeScenarioRun) return UI().toast('End the active scenario before generating another', 'info');
-    const options = {
-      source: _root.querySelector('#campaign-gen-source')?.value || 'random',
-      mapForm: _root.querySelector('#campaign-gen-form')?.value || 'node_map',
-      mapType: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
-      mapSetting: _root.querySelector('#campaign-gen-map-type')?.value || 'any',
-      size: _root.querySelector('#campaign-gen-size')?.value || 'small',
-      layers: Number(_root.querySelector('#campaign-gen-layers')?.value || 1),
-      ...overrides
-    };
-    const result = Gen().generateAndStart(options);
-    if (!result || result.error) {
-      const messages = {
-        active_run: 'End the active scenario before generating another',
-        no_active_quest: 'No active quest to source from. Add one in the Quests tab first.',
-        no_active_chain: 'No active quest arc. Start one from the Quests tab first.'
-      };
-      const msg = messages[result?.error] || 'Scenario generation skipped';
-      UI().toast(msg, 'info');
-      return result;
-    }
-    _activeMode = 'quest';
-    _activeTab = 'maps';
-    render();
-    UI().toast(`Started ${result.scenario.name}`, 'success');
-    return result;
-  }
+  // _generateScenario + _inspectScenario ported to
+  // action-handlers/scenario.ts (H.3 — generate-scenario / inspect-scenario).
+  // The React `CampaignScenariosTab` now passes the form state in the
+  // dispatch payload; internal launchers (`_startQuestScenario` etc.) call
+  // `window.CJS.CampaignActionsRuntime.run('generate-scenario', overrides)`
+  // for the same payload-shaped contract.
 
-  // _startScenarioFromUi ported to action-handlers/scenario.ts (H.3).
-
-  function _inspectScenario(scenarioId) {
-    const scenario = CS().getScenarioById(scenarioId);
-    if (!scenario) return UI().toast('Run not found', 'info');
-    const body = document.createElement('div');
-    body.className = 'campaign-inspect-sheet';
-    const beats = scenario.beats || [];
-    const nodes = scenario.nodes || scenario.map?.nodes || [];
-    const rewards = Ops().describe(scenario.rewardOps || scenario.rewards || []);
-    const dangers = [
-      scenario.dangerMax ? `Danger max ${scenario.dangerMax}` : '',
-      scenario.limits?.events !== undefined ? `${scenario.limits.events} event rolls` : '',
-      scenario.limits?.randomBattles !== undefined ? `${scenario.limits.randomBattles} random battles` : '',
-      scenario.limits?.campRests !== undefined ? `${scenario.limits.campRests} camp rests` : ''
-    ].filter(Boolean);
-    const shapePillsMarkup = `<div class="campaign-chip-row">${_shapePillsData(scenario).pills.map((p) => `<span class="campaign-chip">${_esc(p.label)}</span>`).join('')}</div>`;
-    body.innerHTML = `
-      <div class="campaign-preview">
-        <b>${_esc(scenario.name || scenario.id)}</b><br>
-        ${_esc(scenario.notes || scenario.summary || 'No notes.')}<br>
-        ${shapePillsMarkup}
-      </div>
-      <div class="campaign-inspect-grid">
-        <section>
-          <h3>Flow</h3>
-          <div class="campaign-muted">${_esc(scenario.travelMode || (scenario.mapId ? 'node_map' : 'freeform'))}</div>
-          ${(beats.length ? beats : nodes).slice(0, 12).map((entry, index) => `
-            <div class="campaign-step">
-              <b>${index + 1}. ${_esc(entry.label || entry.name || entry.id)}</b>
-              <span>${_esc(entry.prompt || entry.notes || entry.kind || entry.role || '')}</span>
-            </div>
-          `).join('') || '<div class="campaign-empty">Freeform run. Use manual controls, event notes, and battle picks.</div>'}
-        </section>
-        <section>
-          <h3>Rules</h3>
-          ${dangers.map((line) => `<div class="campaign-town-line"><strong>${_esc(line)}</strong><span>Run limit</span></div>`).join('') || '<div class="campaign-empty">No special limits listed.</div>'}
-          <h3>Rewards</h3>
-          ${rewards.map((line) => `<div class="campaign-town-line is-reward"><strong>${_esc(line)}</strong><span>On resolve</span></div>`).join('') || '<div class="campaign-empty">No authored rewards listed.</div>'}
-        </section>
-      </div>
-    `;
-    const footer = document.createElement('div');
-    footer.innerHTML = `
-      <button class="btn" data-inspect-close>Close</button>
-      ${CS().getState()?.activeScenarioRun
-        ? '<button class="btn btn-primary" data-inspect-current>Open Current Run</button>'
-        : '<button class="btn btn-primary" data-inspect-start>Start Run</button>'}
-    `;
-    const overlay = UI().openModal({ title: 'Run Inspect', content: body, footer, width: '760px' });
-    footer.querySelector('[data-inspect-close]').onclick = () => UI().closeModal(overlay);
-    const current = footer.querySelector('[data-inspect-current]');
-    if (current) current.onclick = () => {
-      UI().closeModal(overlay);
-      _goto(null, 'maps');
-    };
-    const start = footer.querySelector('[data-inspect-start]');
-    if (start) start.onclick = () => {
-      UI().closeModal(overlay);
-      // _startScenarioFromUi ported to action-handlers/scenario.ts (start-scenario);
-      // route this internal caller through the action runtime.
-      window.CJS.CampaignActionsRuntime?.run?.('start-scenario', { id: scenarioId });
-    };
-  }
-
-  // _discardGeneratedScenario / _cancelScenario ported to
-  // action-handlers/scenario.ts (H.3).
+  // _startScenarioFromUi / _discardGeneratedScenario / _cancelScenario
+  // ported to action-handlers/scenario.ts (H.3).
 
   // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
   // action-handlers/map.ts (H.3).
@@ -5019,141 +4542,18 @@ window.CJS.CampaignUI = (() => {
 
   // _questProgress ported to action-handlers/quest.ts (H.3).
 
-  function _questScenario(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    if (activeRun) {
-      if (_activeRunQuestId(activeRun, activeScenario) === questId) return _goto(null, 'maps');
-      return UI().toast('End the active scenario before starting a quest map', 'info');
-    }
-    return _startQuestScenario(questId);
-  }
-
-  function _questBattle(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    if (!CS().getState()?.activeScenarioRun) {
-      const result = _startQuestScenario(questId, { size: 'tiny' });
-      if (!result || result.error) return;
-    }
-    // _runRollBattle ported to action-handlers/combat.ts (run-roll-battle);
-    // route this internal caller through the action runtime.
-    window.CJS.CampaignActionsRuntime?.run?.('run-roll-battle');
-    Ops().apply({ op: 'log', text: `Quest battle queued: ${quest.title || quest.id}.` }, { source: 'quest_battle' });
-    _activeMode = 'quest';
-    _activeTab = 'maps';
-    render();
-  }
-
-  // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
-
-  // _questMiniGame ported to action-handlers/minigame.ts (H.3).
-
-  function _questObjectiveByKinds(quest = {}, kinds = []) {
-    const set = new Set(kinds);
-    return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
-  }
-
-  // _questHarvestLoot ported to action-handlers/quest.ts (H.3).
-
-  // _questCheck / _questHandIn / _questAnswer ported to
-  // action-handlers/quest.ts (H.3).
-
-  function _activeQuestById(questId) {
-    const quest = CS().getState()?.quests?.[questId];
-    return quest && !_isQuestResolved(quest) ? quest : null;
-  }
-
-  function _activeRunQuestId(run, scenario) {
-    return run?.questId || scenario?.source?.questId || null;
-  }
-
-  function _startQuestScenario(questId, overrides = {}) {
-    const quest = overrides.quest || _activeQuestById(questId);
-    if (!quest) return null;
-    const requestedMapForm = String(overrides.mapForm || _questMapForm(quest) || '').toLowerCase();
-    // Only run the linked scenario if its movement style agrees with what the
-    // quest (or caller) asked for. Otherwise we'd hand a grid-map quest a
-    // node-map scenario — which is exactly the "I picked Grid Map but got Node
-    // Map" bug.
-    if (!overrides.forceGenerated && _linkedScenarioMatches(quest, requestedMapForm)) {
-      const existing = _startExistingQuestScenario(quest);
-      if (existing) return existing;
-    }
-    const result = _generateScenario({
-      source: 'active_quest',
-      questId,
-      mapForm: requestedMapForm || _questMapForm(quest),
-      mapType: _questMapType(quest),
-      size: quest.mapSize || 'small',
-      ...overrides
-    });
-    if (result && !result.error) {
-      _annotateQuestRun(quest, result.scenario);
-      render();
-    }
-    return result;
-  }
-
-  // Returns true when the quest's linked scenario uses the same map movement
-  // as the requested form. If the quest has no linked scenario, returns true
-  // (so _startExistingQuestScenario's own null-check handles the fallthrough).
-  function _linkedScenarioMatches(quest = {}, requestedMapForm = '') {
-    const scenarioId = quest?.linkedScenario || quest?.scenarioId || quest?.scenario;
-    if (!scenarioId) return true;
-    if (!requestedMapForm) return true;
-    const scenario = CS().getScenarioById?.(scenarioId);
-    if (!scenario) return true;
-    const scenarioForm = String(scenario.mapForm || scenario.travelMode || '').toLowerCase();
-    if (!scenarioForm) return true;
-    return scenarioForm === requestedMapForm;
-  }
-
-  function _startExistingQuestScenario(quest) {
-    const scenarioId = quest?.linkedScenario || quest?.scenarioId || quest?.scenario;
-    if (!scenarioId) return null;
-    const scenario = CS().getScenarioById(scenarioId);
-    if (!scenario) return null;
-    try {
-      Runner().startScenario(scenarioId);
-    } catch (err) {
-      UI().toast(`Scenario could not start: ${err?.message || scenarioId}`, 'info');
-      return { error: 'start_failed' };
-    }
-    _annotateQuestRun(quest, scenario);
-    _activeMode = 'quest';
-    _activeTab = 'maps';
-    render();
-    UI().toast(`Started ${scenario.name || scenario.id}`, 'success');
-    return { scenario, existing: true };
-  }
-
-  function _annotateQuestRun(quest, scenario) {
-    if (!quest?.id || !CS().getState()?.activeScenarioRun) return;
-    const task = _questTaskDescriptor(quest, scenario);
-    CS().mutate((state) => {
-      const run = state.activeScenarioRun;
-      if (!run) return;
-      run.questId = quest.id;
-      run.questTitle = quest.title || quest.id;
-      // Carry the quest's narrative style into the run. Scenario-level
-      // quickNarrative wins if it's been set; otherwise the quest's value
-      // controls. Defaults to fullscreen VN if neither is set (so authored
-      // story scenarios keep their original feel).
-      if (scenario?.quickNarrative === true || quest.quickNarrative === true) {
-        run.quickNarrative = scenario?.quickNarrative !== false && quest.quickNarrative !== false;
-      } else if (scenario?.quickNarrative === false || quest.quickNarrative === false) {
-        run.quickNarrative = false;
-      }
-      run.questChainId = quest.chainTemplateId || scenario?.source?.questChainId || run.questChainId || null;
-      run.questObjectiveId = task.objectiveId || null;
-      run.questTask = task;
-    }, { source: 'quest_run' });
-    const location = task.location ? ` at ${task.location}` : '';
-    Ops().apply({ op: 'log', text: `Quest task: ${task.label || quest.title || quest.id}${location}.` }, { source: 'quest_run' });
-  }
+  // _questScenario / _questBattle ported to
+  // action-handlers/quest-launcher.ts (H.3 — quest-scenario / quest-battle).
+  // _startQuestScenario / _startExistingQuestScenario /
+  // _linkedScenarioMatches / _annotateQuestRun ported alongside as the
+  // launcher's helpers; the module installs window.CJS.CampaignQuestLauncher
+  // for the still-in-JS callers (`_startQuestChainScenario`,
+  // `_startQuestRunFromOffer`, `_openQuestModal`'s "starting run" branch).
+  // _questTaskDescriptor / _questCellFromRef stay in JS (render-side):
+  // the launcher has its own TS copies, but `_renderQuestRunTask` (the
+  // still-in-JS scenario task strip) reads the same shape for display.
+  // These collapse into the launcher's TS module when the renderer
+  // ports (H.4).
 
   function _questTaskDescriptor(quest = {}, scenario = null) {
     const objectives = quest.objectives || [];
@@ -5222,6 +4622,29 @@ window.CJS.CampaignUI = (() => {
     return null;
   }
 
+  // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
+
+  // _questMiniGame ported to action-handlers/minigame.ts (H.3).
+
+  function _questObjectiveByKinds(quest = {}, kinds = []) {
+    const set = new Set(kinds);
+    return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
+  }
+
+  // _questHarvestLoot ported to action-handlers/quest.ts (H.3).
+
+  // _questCheck / _questHandIn / _questAnswer ported to
+  // action-handlers/quest.ts (H.3).
+
+  function _activeQuestById(questId) {
+    const quest = CS().getState()?.quests?.[questId];
+    return quest && !_isQuestResolved(quest) ? quest : null;
+  }
+
+  function _activeRunQuestId(run, scenario) {
+    return run?.questId || scenario?.source?.questId || null;
+  }
+
   function _questMapForm(quest = {}) {
     const explicit = String(quest.mapForm || quest.travelMode || '').toLowerCase();
     if (explicit === 'grid_map' || explicit === 'grid') return 'grid_map';
@@ -5260,25 +4683,12 @@ window.CJS.CampaignUI = (() => {
   // → damage/heal/level-char, mp-char, status-char) ported to
   // src/campaign/action-handlers/roster-modals.ts (H.3).
 
-  function _partySheetModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const body = document.createElement('div');
-    body.innerHTML = _renderPortraitHero(id, member) + _renderRosterMember(id, member);
-    body.addEventListener('click', (event) => {
-      const action = event.target.closest('[data-campaign-action]');
-      if (!action) return;
-      event.preventDefault();
-      _handleAction(action.dataset, action);
-    });
-    _formModal({
-      title: `${member.name || id} Sheet`,
-      body,
-      width: '820px',
-      primaryLabel: 'Close',
-      onSubmit: () => true
-    });
-  }
+  // _partySheetModal ported to action-handlers/roster-modal-pickers.ts
+  // (H.3 — party-sheet). The TS handler reads
+  // _renderPortraitHero + _renderRosterMember via the new
+  // CampaignUI.renderPartySheetHtml bridge (one HTML body for both),
+  // and routes the body's data-campaign-action buttons through the
+  // action runtime via a local click delegate.
 
   function _renderPortraitHero(id, member) {
     const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
@@ -5304,710 +4714,56 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  function _recruitCharacterModal() {
-    const options = _characterOptions();
-    if (!options.length) {
-      UI().toast('No unrecruited characters found in Edit Mode', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Recruit Character',
-      options,
-      placeholder: 'Search characters...',
-      primaryLabel: 'Recruit',
-      onSubmit: ({ value }) => Ops().apply({ op: 'recruit_character', characterId: value }, { source: 'ui' })
-    });
-  }
+  // _recruitCharacterModal / _learnSkillModal / _learnPassiveModal
+  // ported to action-handlers/roster-modal-pickers.ts (H.3 — recruit-
+  // character / learn-skill / learn-passive).
 
   // _removeCharacter ported to action-handlers/roster-pickers.ts (H.3).
 
-  function _learnSkillModal(id) {
-    const options = _skillOptions(id);
-    if (!options.length) {
-      UI().toast('No unlearned skills found in Edit Mode', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Learn Skill',
-      options,
-      placeholder: 'Search skills...',
-      primaryLabel: 'Learn',
-      onSubmit: ({ value }) => Ops().apply({ op: 'learn_skill', target: id, skillId: value }, { source: 'ui' })
-    });
-  }
-
-  function _learnPassiveModal(id) {
-    const options = _passiveOptions(id);
-    if (!options.length) {
-      UI().toast('No unlearned passives found in Edit Mode', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Learn Passive',
-      options,
-      placeholder: 'Search passives...',
-      primaryLabel: 'Learn',
-      onSubmit: ({ value }) => Ops().apply({ op: 'learn_passive', target: id, passiveId: value }, { source: 'ui' })
-    });
-  }
-
-  function _equipItemModal(id, slot) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const options = _equipmentOptions(member, slot);
-    if (!options.length) {
-      UI().toast(`No ${_slotLabel(slot).toLowerCase()} options found in Edit Mode`, 'info');
-      return;
-    }
-    _opPickerModal({
-      title: `Equip ${_slotLabel(slot)}: ${member.name || id}`,
-      options,
-      placeholder: 'Search equipment...',
-      primaryLabel: 'Equip',
-      renderItem: _equipmentPickerItem,
-      onSubmit: ({ value }) => Ops().apply({ op: 'equip_item', target: id, itemId: value, slot }, { source: 'ui' })
-    });
-  }
-
-  function _statBoostModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Stat'));
-    const stat = UI().createSelect({
-      options: (C()?.STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L']).map((value) => ({ value, label: `${value} - ${_statName(value)}` })),
-      value: 'S'
-    });
-    body.appendChild(stat);
-    body.appendChild(_formLabel('Change'));
-    const amount = UI().createNumberSlider({ value: 1, min: -20, max: 20, step: 1 });
-    body.appendChild(amount);
-    _formModal({
-      title: `Stat Growth: ${member.name || id}`,
-      body,
-      primaryLabel: 'Apply',
-      onSubmit: () => Ops().apply({ op: 'change_stat', target: id, stat: stat.value, amount: amount._getValue() || 0 }, { source: 'ui' })
-    });
-  }
+  // _equipItemModal / _statBoostModal ported to
+  // action-handlers/roster-modal-pickers.ts (H.3 — equip-item / stat-boost).
 
   // _grantXpModal / _grantJobXpModal (grant-xp / grant-job-xp) ported to
   // src/campaign/action-handlers/roster-modals.ts (H.3).
 
-  function _changePersonaModal(id) {
-    const state = CS().getState();
-    const member = state?.party?.[id];
-    if (!member) return;
-    const PS = window.CJS.PersonaService;
-    if (!PS) {
-      UI().toast('Persona system not loaded.', 'error');
-      return;
-    }
-    const charId = member.baseCharacterId || id;
-    const personas = PS.personasForCharacter(charId);
-    if (!personas.length) {
-      UI().toast(`No personas authored for ${member.name || id}. Open the editor → Personas to create one.`, 'info');
-      return;
-    }
-    const currentWorld = state.currentWorld || '';
-    const unlocked = new Set(member.unlockedPersonas || []);
-    // Group: unlocked first, then locked. Sort each group by world matching the
-    // current world first so the player can pick a same-world skin quickly.
-    const score = (p) => {
-      let s = 0;
-      if (unlocked.has(p.id)) s += 10;
-      if (p.world === currentWorld) s += 4;
-      if (p.unlock?.default) s += 1;
-      return s;
-    };
-    const sorted = personas.slice().sort((a, b) => score(b) - score(a) || String(a.name || a.id).localeCompare(String(b.name || b.id)));
-
-    const options = [
-      { value: '', label: '— No persona (use base character) —' },
-      ...sorted.map((p) => {
-        const isUnlocked = unlocked.has(p.id);
-        const worldLabel = p.world ? (DS().get('worlds', p.world)?.displayName || p.world) : '—';
-        const outOfWorld = p.world && p.world !== currentWorld;
-        const flag = isUnlocked ? '' : ' [LOCKED]';
-        const here = p.id === member.activePersona ? ' (current)' : '';
-        const penalty = outOfWorld ? ' (out of world)' : '';
-        return {
-          value: p.id,
-          label: `${p.icon || '🎭'} ${p.name || p.id} — ${worldLabel}${penalty}${here}${flag}`,
-          disabled: !isUnlocked
-        };
-      })
-    ];
-
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Persona'));
-    const sel = UI().createSelect({ options, value: member.activePersona || '' });
-    body.appendChild(sel);
-
-    // Live preview: show description / unlock rule / penalty on selection.
-    const preview = document.createElement('div');
-    preview.style.marginTop = '12px';
-    preview.style.padding = '8px 10px';
-    preview.style.borderRadius = '6px';
-    preview.style.background = 'rgba(255,255,255,0.04)';
-    preview.style.fontSize = '0.85rem';
-    body.appendChild(preview);
-    const renderPreview = () => {
-      const pid = sel.value;
-      if (!pid) {
-        preview.innerHTML = '<em class="campaign-muted">Clears the active persona. Combat will use the base character record.</em>';
-        return;
-      }
-      const persona = DS().get('personas', pid);
-      if (!persona) { preview.innerHTML = ''; return; }
-      const pen = persona.crossWorldPenalty || {};
-      const outOfWorld = persona.world && persona.world !== currentWorld;
-      const unlockedBits = [];
-      if (persona.unlock?.default) unlockedBits.push('Default unlock');
-      if (persona.unlock?.requiresPhaseNumber) unlockedBits.push(`Phase ≥ ${persona.unlock.requiresPhaseNumber}`);
-      if (persona.unlock?.requiresChapter) unlockedBits.push(`Chapter ≥ ${persona.unlock.requiresChapter}`);
-      if (persona.unlock?.requiresFlag) unlockedBits.push(`Flag: ${persona.unlock.requiresFlag}`);
-      preview.innerHTML = `
-        <div><b>${_esc(persona.name)}</b> ${persona.world ? `<span class="campaign-muted">(${_esc(persona.world)})</span>` : ''}</div>
-        ${persona.description ? `<div style="margin-top:4px">${_esc(persona.description)}</div>` : ''}
-        ${unlockedBits.length ? `<div class="campaign-muted" style="margin-top:4px">Unlock: ${_esc(unlockedBits.join(', '))}</div>` : ''}
-        ${outOfWorld ? `<div style="margin-top:6px;color:#f59e0b">⚠ Out of world. Damage dealt ×${Number(pen.damageDealtMultiplier ?? 1)}, taken ×${Number(pen.damageTakenMultiplier ?? 1)}, relationship ${Number(pen.relationshipModifier ?? 0)}.</div>` : ''}
-      `;
-    };
-    sel.addEventListener('change', renderPreview);
-    renderPreview();
-
-    _formModal({
-      title: `Switch Persona: ${member.name || id}`,
-      body,
-      primaryLabel: 'Apply',
-      onSubmit: () => {
-        Ops().apply({ op: 'set_persona', target: id, personaId: sel.value || null }, { source: 'ui' });
-      }
-    });
-  }
-
-  function _changeJobModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const base = DS().get('characters', member.baseCharacterId || id) || {};
-    const allowed = new Set([...(base.availableJobs || []), ...(member.unlockedJobs || [])]);
-    if (member.currentJob) allowed.add(member.currentJob);
-    const allJobs = DS().getAllAsArray('jobs');
-    const fromAllowed = allJobs.filter((j) => allowed.has(j.id));
-    const others = allJobs.filter((j) => !allowed.has(j.id));
-    const options = [
-      { value: '', label: '— Remove current job —' },
-      ...fromAllowed.map((j) => ({ value: j.id, label: `${j.icon || '🛡️'} ${j.name} ${j.id === member.currentJob ? '(current)' : ''}` })),
-      ...(others.length ? [{ value: '__hr__', label: '── Other (will unlock) ──', disabled: true }] : []),
-      ...others.map((j) => ({ value: j.id, label: `${j.icon || '🛡️'} ${j.name} (unlock)` }))
-    ];
-    if (!allJobs.length) {
-      UI().toast('No jobs authored yet. Open the editor → Jobs to create some.', 'info');
-      return;
-    }
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Job'));
-    const sel = UI().createSelect({ options, value: member.currentJob || '' });
-    body.appendChild(sel);
-    _formModal({
-      title: `Change Job: ${member.name || id}`,
-      body,
-      primaryLabel: 'Apply',
-      onSubmit: () => {
-        const value = sel.value;
-        if (value === '') {
-          Ops().apply({ op: 'set_job', target: id, jobId: null }, { source: 'ui' });
-        } else {
-          if (!allowed.has(value)) {
-            Ops().apply([
-              { op: 'unlock_job', target: id, jobId: value },
-              { op: 'set_job', target: id, jobId: value }
-            ], { source: 'ui' });
-          } else {
-            Ops().apply({ op: 'set_job', target: id, jobId: value }, { source: 'ui' });
-          }
-        }
-      }
-    });
-  }
+  // _changePersonaModal / _changeJobModal ported to
+  // action-handlers/roster-modal-pickers.ts (H.3 — change-persona /
+  // change-job).
 
   // _grantSkillApModal / _levelUpSkillConfirm ported to
   // action-handlers/roster-pickers.ts (H.3).
 
-  // Adventurer Guild rank-up modal. Lists each active member with their
-  // RP progress and gate status, and a "Start Trial" button when ready.
-  // The world ceiling explicitly blocks promotions past it, with a hint
-  // to travel to a higher-ceiling world for the next trial.
-  function _rankUpApplyModal() {
-    const state = CS().getState() || {};
-    const F = window.CJS.Formulas;
-    const world = DS().get('worlds', state.currentWorld) || {};
-    const body = document.createElement('div');
-    body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
-      <b>Adventurer Guild — ${_esc(world.displayName || state.currentWorld || '')}</b><br>
-      Ceiling here is <b>${_esc(world.ceiling || '—')}</b>. Members past the ceiling must travel to a higher-ceiling world for further trials.
-    </div>`;
-    const list = document.createElement('div');
-    list.style.display = 'grid';
-    list.style.gap = '8px';
-    body.appendChild(list);
-
-    for (const [id, member] of Object.entries(state.party || {})) {
-      if ((member.rosterRole || 'active') === 'bench') continue;
-      const info = _memberRankInfo(member);
-      const gates = F?.rankUpGates ? F.rankUpGates(member, null, state) : null;
-      const blockedByCeiling = !!(world.ceiling && gates?.target
-        && F?.rankIndex(gates.target) > F.rankIndex(world.ceiling));
-      const row = document.createElement('div');
-      row.style.padding = '10px';
-      row.style.border = '1px solid rgba(255,255,255,0.1)';
-      row.style.borderRadius = '8px';
-      const reasons = blockedByCeiling
-        ? [`Above ${world.ceiling} ceiling — travel to a higher-ceiling world.`]
-        : (gates?.reasons || []);
-      row.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <b>${_esc(member.name || id)}</b>
-          <span class="campaign-muted">Rank ${_esc(info.label)}${info.atMax ? '' : ` · target ${_esc(info.next || '—')}`}</span>
-        </div>
-        ${info.atMax ? '<div class="campaign-muted">At max rank.</div>' : `
-          <div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold}</b></div>
-          ${reasons.length ? `<div class="campaign-muted" style="margin-top:6px;font-size:0.8rem">${reasons.map(_esc).join(' ')}</div>` : '<div style="margin-top:6px;color:#9dd8ff;font-size:0.8rem">All gates met — ready for trial.</div>'}
-        `}
-      `;
-      if (!info.atMax && gates?.ok && !blockedByCeiling) {
-        const btn = document.createElement('button');
-        btn.className = 'campaign-action primary';
-        btn.style.marginTop = '8px';
-        btn.textContent = `Start Trial → ${gates.target}`;
-        btn.dataset.startTrialFor = id;
-        btn.dataset.startTrialRank = gates.target;
-        row.appendChild(btn);
-      }
-      list.appendChild(row);
-    }
-    if (!list.children.length) {
-      const empty = document.createElement('div');
-      empty.className = 'campaign-empty';
-      empty.textContent = 'No active party members.';
-      body.appendChild(empty);
-    }
-    const footer = document.createElement('div');
-    const doneBtn = document.createElement('button');
-    doneBtn.className = 'btn btn-primary';
-    doneBtn.textContent = 'Done';
-    footer.appendChild(doneBtn);
-    const overlay = UI().openModal({ title: 'Apply for Rank-Up', content: body, footer, width: '520px' });
-    doneBtn.onclick = () => UI().closeModal(overlay);
-    body.addEventListener('click', (event) => {
-      const btn = event.target?.closest?.('[data-start-trial-for]');
-      if (!btn) return;
-      const memberId = btn.dataset.startTrialFor;
-      const toRank = btn.dataset.startTrialRank;
-      Ops().apply([
-        { op: 'start_rank_trial', target: memberId },
-        { op: 'rank_up_member', target: memberId, toRank, source: 'guild_apply' }
-      ], { source: 'ui' });
-      UI().closeModal(overlay);
-    });
-  }
+  // _rankUpApplyModal ported to action-handlers/roster-modal-pickers.ts
+  // (H.3 — rank-up-apply). The TS handler reads _memberRankInfo via the
+  // new CampaignUI.memberRankInfo bridge (also read by cui-party-tab.js
+  // render code, so the modal stays in sync with the party tab).
 
   // _rankUpPassiveConfirm ported to action-handlers/roster-pickers.ts (H.3).
 
-  // Open a modal listing every level perk on the skill, marking earned vs.
-  // upcoming. Used by the "Detail" button on each known-skill row.
-  function _showSkillDetailModal(memberId, skillId) {
-    const member = CS().getState()?.party?.[memberId];
-    const skill = DS().get('skills', skillId);
-    if (!skill) { UI().toast('Skill not found', 'error'); return; }
-    const F = window.CJS.Formulas;
-    const prog = member?.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill) : 5;
-    const level = Math.max(1, Number(prog.level || 1));
-    const ap = Number(prog.ap || 0);
-    const apToNext = F?.calcSkillApToNextLevel ? F.calcSkillApToNextLevel(skill, ap, level) : null;
+  // _showSkillDetailModal ported to action-handlers/roster-modal-pickers.ts
+  // (H.3 — show-skill-detail). The TS handler reads `_skillMeta` and
+  // `_icon` through the CampaignUI.skillMetaText / .recordIconHtml
+  // bridges so the modal stays in sync with the roster row.
 
-    const body = document.createElement('div');
-    body.innerHTML = `
-      <div style="margin-bottom:12px">
-        <div><b>${_icon(skill, { kind: 'skill', size: 'sm' })} ${_esc(skill.name || skillId)}</b></div>
-        <div class="campaign-muted">${_esc(skill.description || '')}</div>
-        <div style="margin-top:6px">
-          ${_esc(_skillMeta(skill, { level }))}
-          | <b>Lv ${level}/${cap}</b>
-          | AbP ${ap}${apToNext != null ? ` (${apToNext} to next)` : ' (max)'}
-        </div>
-      </div>
-      <div class="campaign-section-title">Level Perks</div>
-      <div id="skl-detail-perks"></div>
-    `;
-    const perksArea = body.querySelector('#skl-detail-perks');
-    const perks = Array.isArray(skill.levelPerks) ? [...skill.levelPerks].sort((a, b) => a.level - b.level) : [];
-    if (!perks.length) {
-      perksArea.innerHTML = '<div class="campaign-empty">No authored perks. (Power scales with level via levelScaling.powerPerLevel.)</div>';
-    } else {
-      perksArea.innerHTML = perks.map((perk) => {
-        const earned = Number(perk.level || 0) <= level;
-        const tag = earned ? '<span style="color:var(--green)">✔ earned</span>' : `<span class="campaign-muted">unlocks at Lv ${perk.level}</span>`;
-        const mods = perk.modifiers
-          ? Object.entries(perk.modifiers).filter(([, v]) => v).map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${v}`).join(', ')
-          : '';
-        const addEff = (perk.addEffects || []).map((e) => e.effectId).filter(Boolean).join(', ');
-        return `
-          <div class="campaign-record-line" style="opacity:${earned ? 1 : 0.6}">
-            <div>
-              <strong>Lv ${perk.level}</strong>
-              <small>${tag}</small>
-              <p>${_esc(perk.description || '')}</p>
-              ${mods ? `<div class="campaign-muted" style="font-size:0.8em">Modifiers: ${_esc(mods)}</div>` : ''}
-              ${addEff ? `<div class="campaign-muted" style="font-size:0.8em">Adds effects: ${_esc(addEff)}</div>` : ''}
-            </div>
-          </div>`;
-      }).join('');
-    }
-
-    UI().openModal({
-      title: `Skill Detail: ${skill.name || skillId}`,
-      content: body,
-      width: '600px'
-    });
-  }
-
-  // Show the full job tree for a member: every job grouped by branch, each
-  // marked unlocked / current / locked, with per-level perks visible.
-  function _showJobTreeModal(memberId) {
-    const member = CS().getState()?.party?.[memberId];
-    if (!member) return;
-    const F = window.CJS.Formulas;
-    const allJobs = DS().getAllAsArray('jobs') || [];
-    const jobsCollection = DS().getAll('jobs') || {};
-
-    // Group: branches the member can access, plus an "other" group for any
-    // jobs they've unlocked outside their authored branches.
-    const memberBranches = new Set(member.availableBranches || []);
-    const memberAllow = new Set(member.baseAvailableJobs || []);
-    const groups = {};
-
-    for (const job of allJobs) {
-      const branch = job.branch || 'other';
-      const inScope = memberBranches.has(branch) || memberAllow.has(job.id) || (member.unlockedJobs || []).includes(job.id);
-      if (!inScope) continue;
-      groups[branch] = groups[branch] || [];
-      groups[branch].push(job);
-    }
-    for (const list of Object.values(groups)) {
-      list.sort((a, b) => Number(a.tier || 1) - Number(b.tier || 1));
-    }
-
-    const body = document.createElement('div');
-    const slotInfo = `Slots used: ${(member.unlockedJobs || []).length} / ${member.maxJobs || 3}`;
-    body.innerHTML = `
-      <div style="margin-bottom:8px" class="campaign-muted">
-        ${_esc(member.name || memberId)} — ${slotInfo}
-        ${member.currentJob ? ` — Current: <b>${_esc(_jobLabel(member.currentJob))}</b>` : ' — No active job'}
-      </div>
-      <div id="job-tree-area"></div>
-    `;
-    const area = body.querySelector('#job-tree-area');
-
-    if (!Object.keys(groups).length) {
-      area.innerHTML = '<div class="campaign-empty">No job branches authored on this character. Add availableBranches or availableJobs in the editor.</div>';
-    } else {
-      area.innerHTML = Object.entries(groups).map(([branch, list]) =>
-        _renderBranchColumn(memberId, member, branch, list, jobsCollection, F)
-      ).join('');
-    }
-
-    UI().openModal({
-      title: `Job Tree: ${member.name || memberId}`,
-      content: body,
-      width: '780px'
-    });
-  }
-
-  function _renderBranchColumn(memberId, member, branchId, jobs, jobsCollection, F) {
-    const header = `<div class="campaign-section-title" style="margin-top:8px">${_esc(branchId)} branch</div>`;
-    const cards = jobs.map((job) => {
-      const unlocked = (member.unlockedJobs || []).includes(job.id);
-      const isCurrent = member.currentJob === job.id;
-      const prog = member.jobProgress?.[job.id] || { xp: 0, level: 1 };
-      const cap = F?.getJobMaxLevel ? F.getJobMaxLevel(job) : 5;
-      const level = Math.max(1, Number(prog.level || 1));
-      const xp = Number(prog.xp || 0);
-      const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
-      const xpMeta = level >= cap
-        ? `Lv ${level}/${cap} (max)`
-        : (xpToNext != null ? `Lv ${level}/${cap} | XP ${xp} (${xpToNext} to next)` : `Lv ${level}/${cap}`);
-
-      const eligibility = F?.canUnlockJob
-        ? F.canUnlockJob(job, member, jobsCollection)
-        : { ok: true };
-
-      let statusBadge = '';
-      let actionBtn = '';
-      if (isCurrent) {
-        statusBadge = '<span style="color:var(--green)">● ACTIVE</span>';
-      } else if (unlocked) {
-        statusBadge = '<span style="color:var(--accent)">● UNLOCKED</span>';
-        actionBtn = `<button class="campaign-action" data-campaign-action="switch-job-from-tree" data-id="${_escAttr(memberId)}" data-job-id="${_escAttr(job.id)}">Switch to this job</button>`;
-      } else if (eligibility.ok) {
-        statusBadge = '<span class="campaign-muted">○ available</span>';
-        actionBtn = `<button class="campaign-action" data-campaign-action="unlock-job-from-tree" data-id="${_escAttr(memberId)}" data-job-id="${_escAttr(job.id)}">Unlock & switch</button>`;
-      } else {
-        const reasonText = _eligibilityReason(eligibility, job);
-        statusBadge = `<span class="campaign-muted">🔒 ${_esc(reasonText)}</span>`;
-      }
-
-      const levels = Array.isArray(job.levels) ? [...job.levels].sort((a, b) => Number(a.level) - Number(b.level)) : [];
-      const levelLines = levels.map((tier) => {
-        const earned = unlocked && Number(tier.level || 0) <= level;
-        const star = earned ? '★' : '☆';
-        const stat = tier.statBonus
-          ? Object.entries(tier.statBonus).filter(([, v]) => v).map(([k, v]) => `${k}+${v}`).join(' ')
-          : '';
-        const skills = (tier.grantsSkills || []).join(', ');
-        const passives = (tier.grantsPassives || []).join(', ');
-        const desc = tier.description || [stat, skills && `learn ${skills}`, passives && `passive ${passives}`].filter(Boolean).join(' · ');
-        return `<div style="opacity:${earned ? 1 : 0.65};font-size:0.85em">${star} <b>Lv ${tier.level}</b> — ${_esc(desc || '...')}</div>`;
-      }).join('');
-
-      return `
-        <div class="campaign-record-line" style="margin-bottom:8px">
-          <div>
-            <strong>${_icon(job, { kind: 'job', size: 'sm' })} ${_esc(job.name || job.id)} <small style="color:var(--text-mute)">tier ${job.tier || 1}</small></strong>
-            <small>${statusBadge} | ${_esc(xpMeta)}</small>
-            <p>${_esc(job.description || '')}</p>
-            <div style="margin-top:4px">${levelLines || '<i class="campaign-muted">No level data authored.</i>'}</div>
-          </div>
-          ${actionBtn ? `<div>${actionBtn}</div>` : ''}
-        </div>`;
-    }).join('');
-    return header + cards;
-  }
-
-  function _eligibilityReason(eligibility, job) {
-    if (!eligibility) return 'unknown';
-    if (eligibility.reason === 'max_jobs_reached') return 'job slots full';
-    if (eligibility.reason === 'branch_not_available') return 'branch not allowed for this character';
-    if (eligibility.reason === 'prereq_not_unlocked') return `requires ${job.unlockRequirement?.jobId}`;
-    if (eligibility.reason === 'prereq_level_low') return `requires ${job.unlockRequirement?.jobId} Lv ${eligibility.need || job.unlockRequirement?.minLevel}`;
-    if (eligibility.reason === 'prereq_job_missing') return 'prereq job missing in DataStore';
-    return eligibility.reason || 'locked';
-  }
+  // _showJobTreeModal / _renderBranchColumn / _eligibilityReason / _jobLabel
+  // ported to action-handlers/roster-modal-pickers.ts (H.3 — show-job-tree).
+  // The TS port adds a local click delegate for the per-card unlock /
+  // switch buttons (the closure modal had none, so the buttons were
+  // silently broken — fixed in passing).
 
   // _confirmUnlockJob / _switchJob ported to
   // action-handlers/roster-pickers.ts (H.3).
 
-  function _jobLabel(jobId) {
-    const job = DS().get('jobs', jobId);
-    return job ? `${job.icon || '🛡️'} ${job.name || jobId}` : jobId;
-  }
-
   // _partyAvailabilityModal ported to action-handlers/roster-pickers.ts (H.3).
   // _travelWorld ported to action-handlers/registry.ts (travel-world).
 
-  function _travelWorldCard(worldId, targetTab = null) {
-    if (!worldId) return;
-    if (worldId === CS().getState()?.currentWorld) {
-      const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'worldGate';
-      return _goto(_modeForTab(tab), tab);
-    }
-    const gate = _evaluateTravelRankGate(worldId);
-    if (!gate.allowed) {
-      UI().toast(gate.message, 'warn');
-      return;
-    }
-    const proceed = () => {
-      const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'storyHome';
-      if (_hasMeaningfulPersonaChoice(worldId)) {
-        _openPreTravelPersonaPicker(worldId, tab);
-      } else {
-        _completeWorldTravel(worldId, tab);
-      }
-    };
-    if (gate.softWarning) {
-      const ok = window.confirm(gate.softWarning + '\n\nTravel anyway?');
-      if (!ok) return;
-    }
-    proceed();
-  }
-
-  function _completeWorldTravel(worldId, targetTab = null, preOps = []) {
-    const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'storyHome';
-    const ops = [
-      ...preOps,
-      { op: 'world_transition', toWorld: worldId, carryoverProfile: 'carryover_new_world_default' }
-    ];
-    const landing = _defaultTravelLanding(worldId);
-    if (landing) ops.push(landing);
-    Ops().apply(ops, { source: 'world_gate' });
-    const finish = () => {
-      _activeMode = _modeForTab(tab);
-      _activeTab = tab;
-      UI()?.toast?.(`Loaded ${DS().get('worlds', worldId)?.displayName || worldId}.`, 'success');
-      render();
-    };
-    const load = window.CJS.CampaignSequences?.loadWorld?.(worldId);
-    if (load && typeof load.then === 'function') load.then(finish).catch((error) => {
-      console.warn('World story load failed:', error);
-      finish();
-    });
-    else finish();
-  }
-
-  function _defaultTravelLanding(worldId) {
-    const existing = CS().getState()?.worldProgress?.[worldId];
-    if (existing?.currentLocation && existing?.currentTravelMap) return null;
-    const map = DS().getAllAsArray('travelMaps').find((entry) => entry.world === worldId);
-    if (!map?.defaultLocationId) return null;
-    const node = (map.nodes || []).find((entry) => entry.id === map.defaultLocationId) || {};
-    return {
-      op: 'travel_location',
-      world: worldId,
-      mapId: map.id,
-      locationId: map.defaultLocationId,
-      title: node.name || map.defaultLocationId,
-      zone: node.zone || map.zone,
-      hubId: node.hubId || map.hubId
-    };
-  }
-
-  // Build a travel decision for a destination world by looking up its
-  // requiredRank (hard), recommendedRank (soft), and ceiling. Hard gate
-  // returns allowed=false with a toast message; soft gate sets
-  // softWarning so we can confirm before proceeding.
-  function _evaluateTravelRankGate(toWorld) {
-    const F = window.CJS.Formulas;
-    const dest = DS().get('worlds', toWorld) || {};
-    const state = CS().getState() || {};
-    const active = Object.values(state.party || {})
-      .filter((m) => (m.rosterRole || 'active') !== 'bench');
-    const topRank = active.reduce((best, m) => {
-      const r = m.adventurer?.rank || m.rank || 'F';
-      if (!best) return r;
-      return F?.rankIndex?.(r) > F?.rankIndex?.(best) ? r : best;
-    }, null);
-
-    if (dest.requiredRank && !F?.meetsRank?.(topRank, dest.requiredRank)) {
-      return {
-        allowed: false,
-        message: `${dest.displayName || toWorld} requires rank ${dest.requiredRank}. Party top: ${topRank || 'F'}.`
-      };
-    }
-    const warnings = [];
-    if (dest.recommendedRank && !F?.meetsRank?.(topRank, dest.recommendedRank)) {
-      warnings.push(`Underranked: ${dest.displayName || toWorld} recommends ${dest.recommendedRank} (party top: ${topRank || 'F'}). Monsters will spawn tougher.`);
-    }
-    if (dest.ceiling && F?.rankIndex?.(topRank) > F?.rankIndex?.(dest.ceiling)) {
-      warnings.push(`This world caps ranks at ${dest.ceiling}. Higher-rank members are treated as ${dest.ceiling} here; RP rewards taper out.`);
-    }
-    return {
-      allowed: true,
-      softWarning: warnings.length ? warnings.join('\n\n') : null
-    };
-  }
-
-  function _hasMeaningfulPersonaChoice(targetWorld) {
-    const PS = window.CJS.PersonaService;
-    if (!PS) return false;
-    const state = CS().getState();
-    if (!state?.party) return false;
-    for (const [id, member] of Object.entries(state.party)) {
-      const charId = member.baseCharacterId || id;
-      const choices = PS.personasForCharacterInWorld(charId, targetWorld);
-      if (!choices.length) continue;
-      // Meaningful = at least two unlocked-or-default personas for that world,
-      // OR exactly one persona that is NOT the currently active one.
-      const unlocked = new Set(member.unlockedPersonas || []);
-      const eligible = choices.filter((p) => unlocked.has(p.id) || p.unlock?.default);
-      if (eligible.length >= 2) return true;
-      if (eligible.length === 1 && eligible[0].id !== member.activePersona) return true;
-    }
-    return false;
-  }
-
-  function _openPreTravelPersonaPicker(targetWorld, targetTab = null) {
-    const PS = window.CJS.PersonaService;
-    const state = CS().getState();
-    const worldName = DS().get('worlds', targetWorld)?.displayName || targetWorld;
-    const body = document.createElement('div');
-    body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
-      Heading to <b>${_esc(worldName)}</b>. Pick a persona for each member who has one — out-of-world personas keep their loadout but pay penalties in combat and with the locals. Unset members will auto-switch on arrival.
-    </div>`;
-    const choicesArea = document.createElement('div');
-    choicesArea.style.display = 'grid';
-    choicesArea.style.gridTemplateColumns = '1fr';
-    choicesArea.style.gap = '10px';
-    body.appendChild(choicesArea);
-
-    const memberChoices = new Map();
-    for (const [id, member] of Object.entries(state.party || {})) {
-      const charId = member.baseCharacterId || id;
-      const choices = PS ? PS.personasForCharacterInWorld(charId, targetWorld) : [];
-      const otherWorlds = PS ? PS.personasForCharacter(charId).filter((p) => p.world !== targetWorld) : [];
-      if (!choices.length && !otherWorlds.length) continue;
-      const unlocked = new Set(member.unlockedPersonas || []);
-      const eligibleWorld = choices.filter((p) => unlocked.has(p.id) || p.unlock?.default);
-      const eligibleOther = otherWorlds.filter((p) => unlocked.has(p.id));
-
-      const options = [
-        { value: '__keep__', label: '— Keep current persona (out-of-world penalty if any) —' },
-        ...eligibleWorld.map((p) => ({
-          value: p.id,
-          label: `${p.icon || '🎭'} ${p.name} ${p.id === member.activePersona ? '(current)' : ''}`
-        })),
-        ...(eligibleOther.length ? [{ value: '__hr__', label: '── Out-of-world (penalty applies) ──', disabled: true }] : []),
-        ...eligibleOther.map((p) => ({
-          value: p.id,
-          label: `${p.icon || '🎭'} ${p.name} — ${p.world} (penalty)`
-        }))
-      ];
-
-      const sel = UI().createSelect({
-        options,
-        value: eligibleWorld.find((p) => p.id === member.activePersona)?.id || (eligibleWorld[0]?.id || '__keep__')
-      });
-
-      const card = document.createElement('div');
-      card.style.padding = '10px';
-      card.style.border = '1px solid rgba(255,255,255,0.1)';
-      card.style.borderRadius = '8px';
-      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <b>${_esc(member.name || id)}</b>
-          <span class="campaign-muted" style="font-size:0.78rem">${_esc(charId)}</span>
-        </div>`;
-      const label = document.createElement('div');
-      label.innerHTML = '<div class="form-label" style="font-size:0.78rem">Persona for ' + _esc(worldName) + '</div>';
-      card.appendChild(label);
-      card.appendChild(sel);
-      choicesArea.appendChild(card);
-      memberChoices.set(id, sel);
-    }
-
-    if (!memberChoices.size) {
-      // Nothing meaningful after all — skip the modal.
-      _completeWorldTravel(targetWorld, targetTab || _worldMenuDef(targetWorld).defaultTab);
-      return;
-    }
-
-    _formModal({
-      title: `Travel: → ${worldName}`,
-      body,
-      primaryLabel: 'Travel',
-      onSubmit: () => {
-        // Apply the persona picks BEFORE transition so the autoSwitch step in
-        // world_transition doesn't overwrite the player's chosen personas.
-        const ops = [];
-        for (const [id, sel] of memberChoices) {
-          const value = sel.value;
-          if (!value || value === '__keep__' || value === '__hr__') continue;
-          ops.push({ op: 'unlock_persona', target: id, personaId: value });
-          ops.push({ op: 'set_persona', target: id, personaId: value });
-        }
-        _completeWorldTravel(targetWorld, targetTab || _worldMenuDef(targetWorld).defaultTab, ops);
-      }
-    });
-  }
+  // _travelWorldCard / _completeWorldTravel / _defaultTravelLanding /
+  // _evaluateTravelRankGate / _hasMeaningfulPersonaChoice /
+  // _openPreTravelPersonaPicker ported to action-handlers/travel.ts
+  // (H.3 — travel-world-card). `_worldMenuDef` stays in JS (chrome
+  // data builders also read it); the TS handler resolves the
+  // destination's default tab through the new `CampaignUI.getWorldMenuDef`
+  // bridge.
 
   // _campRestModal ported to action-handlers/downtime.ts (H.3).
 
@@ -8048,6 +6804,73 @@ window.CJS.CampaignUI = (() => {
     // (G.11b kept this renderer as HTML). Exposed for action-handlers/
     // story-director-modals.ts; goes away when the renderer ports.
     renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
+    // Run-inspect modal's pill row reuses the closure-private
+    // `_shapePillsData` (the shared source of truth for Movement / Setting
+    // / Size pill labels — also feeds `getScenariosData` / `getRunData`).
+    // Exposed for action-handlers/scenario.ts (inspect-scenario) so the
+    // TS handler doesn't re-declare the SHAPE_*_LABELS tables. Goes away
+    // when the data builders themselves port (H.4).
+    getShapePillsData: (scenario) => _shapePillsData(scenario || {}),
+    // World menu definitions (title / kicker / summary / defaultTab /
+    // bannerImage / etc.) live in the closure-private `_worldMenuDef`
+    // (also reads by chrome data builders). Exposed for
+    // action-handlers/travel.ts (travel-world-card) so the TS handler
+    // can resolve a world's default tab without re-declaring the table.
+    getWorldMenuDef: (worldId) => _worldMenuDef(worldId),
+    // Roster option builders (still-JS closures shared between modal
+    // handlers + the still-JS GM override modal). Exposed for
+    // action-handlers/roster-modal-pickers.ts (recruit-character,
+    // learn-skill, learn-passive). The H.4 data builders take these.
+    rosterCharacterOptions: () => _characterOptions(),
+    rosterSkillOptions: (memberId) => _skillOptions(memberId),
+    rosterPassiveOptions: (memberId) => _passiveOptions(memberId),
+    // Skill meta text generator (used by the skill-detail modal's
+    // header line). Reads the same fields the still-JS render code
+    // does so the modal stays in sync.
+    skillMetaText: (skill, entry) => _skillMeta(skill, entry),
+    // Generic icon HTML emitter (Portraits.icon). Used by the skill-
+    // detail modal header inline icon. The still-JS roster renders
+    // also use this — keeping a single bridge entry point keeps the
+    // icon styling consistent.
+    recordIconHtml: (record, opts) => _icon(record, opts),
+    // Member rank info (effective rank, RP, threshold, %, gates).
+    // Also read by cui-party-tab.js render code — keeping a single
+    // source of truth lets the rank-up-apply modal show the exact
+    // same numbers the party tab does.
+    memberRankInfo: (member) => _memberRankInfo(member),
+    // Party sheet body HTML — portrait hero + full roster member card.
+    // Used by the party-sheet modal in TS. Built here so the portrait
+    // helpers (Portraits.memberPortrait / .memberPortraitFocus /
+    // .focusAttrStyle) and the still-JS PartyTab.renderRosterMember
+    // stay private — the modal handler only knows the HTML body shape.
+    renderPartySheetHtml: (id, member) =>
+      _renderPortraitHero(id, member) + _renderRosterMember(id, member),
+    // Mini-game test selection. The selected game lives on
+    // `_root.dataset.mgTestGame` (read by getMinigameTestData); the TS
+    // mg-test-pick handler calls this to update it + trigger render.
+    // The state moves into CampaignState in H.4 (per the plan).
+    setMinigameTestGame: (gameId) => {
+      if (_root) _root.dataset.mgTestGame = String(gameId || '');
+    },
+    // Story-tools bridges (story-copy-prompt). _storyPromptText reads
+    // closure-private state (SD.snapshot, Seq.currentRouteChoices,
+    // chapter tree, alignment, story context cache) so the closure
+    // stays JS; the TS handler reads the assembled prompt text here.
+    // _ensureStoryContext lazy-loads world story summary + AI context
+    // JSON used by the prompt — return its promise so callers can await.
+    computeStoryPromptText: () => _storyPromptText(),
+    ensureStoryContext: (world) => _ensureStoryContext(world),
+    // Big modal builders that still live in JS (each is 100–500 lines
+    // with many closure-private sub-helpers — render-side data builders
+    // also depend on them). The TS action handlers in
+    // action-handlers/manual-builders.ts wrap these as thin dispatchers
+    // so the action contract is registry-backed even while the modal
+    // implementation stays JS. H.4 ports the bodies + their data
+    // builders together.
+    openManualEventBuilder: (prefill) => _openManualEventBuilder(prefill || {}),
+    openQuestModal: (prefill) => _openQuestModal(prefill || {}),
+    openGmOverride: (defaultTarget) => _gmOverride(defaultTarget || ''),
+    openManualSceneBuilder: (opts) => _openManualSceneBuilder(opts || {}),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to

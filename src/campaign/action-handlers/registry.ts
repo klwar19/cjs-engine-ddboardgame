@@ -43,10 +43,15 @@ import * as Events from "./events";
 import * as Scenario from "./scenario";
 import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
+import * as Travel from "./travel";
 import * as StoryRolls from "./story-director-modals";
+import * as StoryTools from "./story-tools";
+import * as ManualBuilders from "./manual-builders";
 import * as Quest from "./quest";
+import * as QuestLauncher from "./quest-launcher";
 import * as Minigame from "./minigame";
 import * as RosterPickers from "./roster-pickers";
+import * as RosterModalPickers from "./roster-modal-pickers";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -130,11 +135,14 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "save-map-seed": (d) => Forge.saveMapSeed(str(d.id)),
   "copy-battle-card": (d) => Forge.copyBattleCard(str(d.id)),
   "copy-map-seed": (d) => Forge.copyMapSeed(str(d.id)),
-  // ── Quest chains (advance / complete / fail / promote) ────────────
+  // ── Quest chains (advance / complete / fail / promote + launchers) ─
   "advance-chain": (d) => QuestChain.advanceChain(str(d.id)),
   "complete-chain": (d) => QuestChain.completeChain(str(d.id)),
   "fail-chain": (d) => QuestChain.failChain(str(d.id)),
   "promote-chain": (d) => QuestChain.promoteChain(str(d.id)),
+  "start-chain": (d) => QuestChain.startQuestChainRun(str(d.id)),
+  "chain-scenario": (d) => QuestChain.startQuestChainScenario(str(d.id)),
+  "chain-battle": (d) => QuestChain.chainBattle(str(d.id)),
   // ── World map delegation ──────────────────────────────────────────
   "world-map-travel": (d) => worldMapAction(d),
   "world-map-switch-map": (d) => worldMapAction(d),
@@ -261,33 +269,70 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "event-to-oracle": () => Events.eventToOracle(),
   "oracle-to-quest": () => Events.oracleToQuest(),
   "oracle-add-tags": () => Events.oracleAddTags(),
-  // ── Scenario lifecycle (generate / inspect stay) ──────────────────
+  // ── Scenario lifecycle + generation ───────────────────────────────
   "start-scenario": (d) => Scenario.startScenarioFromUi(str(d.id)),
   "cancel-scenario": () => Scenario.cancelScenario(),
   "discard-scenario": (d) => Scenario.discardGeneratedScenario(str(d.id)),
-  // ── Mini-game test (mg-test-pick stays — _root.dataset coupling) ──
+  // `generate-scenario` reads the React-passed form payload (source /
+  // mapForm / mapType / size / layers). `generate-quest-scenario` keeps
+  // the chosen form values but forces source='active_quest' (matching the
+  // old `_generateScenario({ source: 'active_quest' })` overrides spread).
+  // The static generate-*-run actions ignore the form entirely and use
+  // hard-coded options just like the deleted switch cases.
+  "generate-scenario": (d) => Scenario.generateScenario(d),
+  "generate-quest-scenario": (d) => Scenario.generateScenario({ ...d, source: "active_quest" }),
+  "generate-material-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "forest", size: "small", mapForm: "node_map" }),
+  "generate-bounty-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "outdoor", size: "tiny", mapForm: "node_map" }),
+  "generate-dungeon-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "dungeon", size: "medium", mapForm: "grid_map" }),
+  "generate-urban-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "urban", size: "small", mapForm: "node_map" }),
+  "generate-training-run": () =>
+    Scenario.generateScenario({ source: "random", mapType: "arena", size: "tiny", mapForm: "grid_map" }),
+  "inspect-scenario": (d) => Scenario.inspectScenario(str(d.id)),
+  // ── Mini-game test (selection + play / random / random-any) ──────
+  "mg-test-pick": (d) => MgTest.mgTestPick(str(d.game)),
   "mg-test-play": (d) => MgTest.mgTestPlay({ gameId: str(d.game), levelId: str(d.level) }),
   "mg-test-random": (d) => MgTest.mgTestPlay({ gameId: str(d.game), difficulty: Number(d.difficulty || 1) }),
   "mg-test-random-any": (d) => MgTest.mgTestPlay({ gameId: str(d.game) }),
-  // ── Solo-hook offers + dismiss (accept/quest/rumor stay) ──────────
+  // ── Solo-hook offers + accept / dismiss ───────────────────────────
   "solo-surprise": () => Solo.rollSoloSurprise(),
   "random-rumor-offer": () => Solo.offerRandomRumor(),
+  "random-quest-offer": () => Solo.offerRandomQuest(),
   "manual-rumor": () => Solo.manualRumorModal(),
   "save-solo-hook": () => Solo.saveSoloHook(),
   "ignore-solo-hook": () => Solo.ignoreSoloHook(),
+  "accept-solo-hook": () => Solo.acceptSoloHook(),
+  "solo-hook-quest": () => Solo.soloHookToQuest(),
+  "solo-hook-rumor": () => Solo.soloHookToRumor(),
   // ── Story director rolls + beat modal ─────────────────────────────
   "story-roll-scene": () => StoryRolls.rollStoryDirector("scene"),
   "story-roll-peri": () => StoryRolls.rollStoryDirector("peri"),
   "story-roll-memory": () => StoryRolls.rollStoryDirector("memory"),
   "story-pressure-tick": () => StoryRolls.rollStoryDirector("pressure"),
   "story-open-last": () => StoryRolls.openLastStoryBeatModal(),
-  // ── Quest pure-ops (scenario/battle/minigame-coupled stay) ────────
+  "story-help": () => StoryTools.openStoryHelpModal(),
+  "story-copy-prompt": () => StoryTools.copyStoryPrompt(),
+  "story-manual-note": () => ManualBuilders.manualStoryNote(),
+  // ── Manual builders (event / quest / GM override) ─────────────────
+  // Action contract is registry-backed; the modal implementations
+  // stay in JS until H.4 ports them alongside their data builders.
+  "custom-event": () => ManualBuilders.customEvent(),
+  "oracle-to-event-builder": () => ManualBuilders.oracleToEventBuilder(),
+  "add-quest": () => ManualBuilders.addQuest(),
+  "gm-override": () => ManualBuilders.gmOverride(),
+  "gm-member-override": (d) => ManualBuilders.gmOverride(str(d.id)),
+  // ── Quest pure-ops + scenario/battle launchers ────────────────────
   "quest-progress": (d) => Quest.questProgress(str(d.id)),
   "quest-hub-event": (d) => Quest.questHubEvent(str(d.id)),
   "quest-harvest": (d) => Quest.questHarvest(str(d.id)),
   "quest-check": (d) => Quest.questCheck(str(d.id)),
   "quest-hand-in": (d) => Quest.questHandIn(str(d.id)),
   "quest-answer": (d) => Quest.questAnswer(str(d.id)),
+  "quest-scenario": (d) => QuestLauncher.questScenario(str(d.id)),
+  "quest-battle": (d) => QuestLauncher.questBattle(str(d.id)),
   // ── Mini-game sessions (sequence / haven / quest) ─────────────────
   "sequence-play-minigame": () => Minigame.playSequenceMiniGame(),
   "haven-play-minigame": (d) => Minigame.havenPlayMinigame(str(d.game)),
@@ -302,10 +347,26 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "pick-equip-skill": (d) => RosterPickers.openSkillPoolPicker(str(d.id)),
   "pick-equip-passive": (d) => RosterPickers.openPassivePoolPicker(str(d.id)),
   "party-availability": (d) => RosterPickers.partyAvailabilityModal(str(d.id)),
+  // ── Roster: option-picker / info / equipment / stat-boost modals ─
+  "recruit-character": () => RosterModalPickers.recruitCharacterModal(),
+  "learn-skill": (d) => RosterModalPickers.learnSkillModal(str(d.id)),
+  "learn-passive": (d) => RosterModalPickers.learnPassiveModal(str(d.id)),
+  "show-skill-detail": (d) => RosterModalPickers.showSkillDetailModal(str(d.id), str(d.skillId)),
+  "equip-item": (d) => RosterModalPickers.equipItemModal(str(d.id), str(d.slot)),
+  "stat-boost": (d) => RosterModalPickers.statBoostModal(str(d.id)),
+  "change-job": (d) => RosterModalPickers.changeJobModal(str(d.id)),
+  "change-persona": (d) => RosterModalPickers.changePersonaModal(str(d.id)),
+  "show-job-tree": (d) => RosterModalPickers.showJobTreeModal(str(d.id)),
+  "rank-up-apply": () => RosterModalPickers.rankUpApplyModal(),
+  "party-sheet": (d) => RosterModalPickers.partySheetModal(str(d.id)),
   // ── Travel ────────────────────────────────────────────────────────
   // travel-world is the world-gate jump (identical to open-world-gate;
   // the closure had dead code after the unconditional return).
-  "travel-world": () => Nav.goto("world", "worldGate")
+  "travel-world": () => Nav.goto("world", "worldGate"),
+  // travel-world-card: cross-world travel with rank-gate + persona
+  // picker. data carries `worldId`/`world` (both names — internal JS
+  // callers used the kebab-case key) and `targetTab`.
+  "travel-world-card": (d) => Travel.travelWorldCard(str(d.worldId || d.world), str(d.targetTab) || null)
 };
 
 export function hasHandler(name: string): boolean {

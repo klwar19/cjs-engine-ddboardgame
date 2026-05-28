@@ -403,11 +403,12 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   switch) is now the single action entry point for both React onClick
   and the forwarder, ready for H.3. (`_openPanel`/`_closePanel` remain
   as the flag-guarded defensive no-ops the shell-bridge test asserts.)
-- [~] **H.3 — Port `_handleAction` closures to TS.** Move each handler
-  (modals, scenario gen, story director, ops calls) into typed modules
-  under `src/campaign/action-handlers/` domain-by-domain. `handleAction`
-  consults a `Record<CampaignActionName, fn>` registry first; the switch
-  is deleted as cases migrate.
+- [x] **H.3 — Port `_handleAction` closures to TS.** All 246 actions
+  now resolve through the TS registry in `src/campaign/action-handlers/`.
+  The `_handleAction` switch is empty (kept as a defensive no-op + the
+  comment-history of each port); `window.CJS.CampaignActionsRuntime` is
+  the only live dispatch path. `test_actions_bridge.js` asserts
+  `actionNames union ⊆ registry keys` (and the switch is empty).
 
   **Done — the registry seam + the cleanly-separable domains (208/246):**
   - **Seam.** `src/campaign/action-handlers/registry.ts` holds the
@@ -601,67 +602,72 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   `test_actions_bridge.js` asserts union == (switch ∪ registry), the two
   are disjoint, and the runtime install + consultation are wired.
 
-  **Remaining (~38) — the deep-shared-helper tail.** The clean leaf
-  handlers are done; the still-here handlers all bottom out in a large
-  shared modal builder, a JS render helper, or a launcher that hasn't
-  ported yet. The coupling, precisely:
+  **Tail completed — Phase H.3 done (208 → 246).** The follow-on
+  commits ported the deep-shared-helper tail in the recommended order:
 
-  1. **`_openManualEventBuilder` (266 lines + 14 sub-helpers).** Blocks
-     custom-event + oracle-to-event-builder (2). The sub-helpers
-     (`_manualEventDraftFromBody`, `_manualEventFromDraft`, `_manualEventOps`,
-     `_manualRewardOps`, `_manualEventSummaryText`, `_eventShortSummary`,
-     `_manualKeyword*`, `_manualEventBattleOptions` / -RumorOptions /
-     -LayerOptions / -CharacterOptions, `_tagList`, `_manualEventTags`) port
-     with it; the battle helpers already come from
-     `window.CJS.CampaignBattlePool`, copy helpers from
-     `window.CJS.CampaignCopy`. Once ported, `_tagList` (the only remaining
-     window.CJS-untouched shared helper) goes away.
-  2. **Scenario launchers + generate form reads.** `_generateScenario` reads
-     `_root.querySelector('#campaign-gen-*')`; the React `CampaignScenariosTab`
-     needs to dispatch those form values in the `generate-scenario` payload
-     before the closure can port. Blocks generate-scenario family (7),
-     inspect-scenario (1, also needs the shared `_shapePillsData` rendered
-     as HTML — precedent: `renderStoryDirectorCardHtml`). Once
-     `_generateScenario` ports, `_startQuestScenario` + `_startQuestRunFromOffer`
-     + `_startQuestChainRun` can port (with their small helpers), which
-     unblocks quest-scenario / quest-battle (2), accept-solo-hook /
-     solo-hook-quest / -rumor / random-quest-offer (4), start-chain /
-     chain-scenario / chain-battle (3).
-  3. **Big roster modals (still JS).** party-sheet, recruit-character,
-     learn-skill / -passive, equip-item, stat-boost, change-job /
-     show-job-tree / change-persona, rank-up-apply, show-skill-detail,
-     gm-override / gm-member-override (14). Each owns large option /
-     render helpers (`_skillOptions` / `_passiveOptions` /
-     `_memberSkillEntries` / `_memberPassives` / `_renderJobChip` etc.) that
-     the render/data side still consumes. Same pattern as quest pure-ops:
-     port the small helpers as TS copies, leave the JS originals for render
-     until H.4 takes the data builders.
-  4. **Story-context / prompt / scene-builder helpers (still JS).**
-     `_storyContextFor`, `_ensureStoryContext`, `_storyPromptText` +
-     generators, `_openManualSceneBuilder` (127 lines), `_openStoryHelpModal`
-     are shared with the AI-story-context data builder. Blocks
-     story-manual-note / story-copy-prompt / story-help (3).
-  5. **add-quest** (`_openQuestModal`, ~475 lines). Largest single modal.
-     Ports once its helpers (`_randomizedQuestTemplate`, `_inferObjectiveKind`,
-     `_questBuilderMiniGame`, `_parseMiniGameConversation`) are extracted.
-  6. **travel-world-card** (with `_completeWorldTravel` /
-     `_defaultTravelLanding` / `_evaluateTravelRankGate` /
-     `_hasMeaningfulPersonaChoice` / `_openPreTravelPersonaPicker`, ~150
-     lines).
-  7. **mg-test-pick** (1) — needs the `_root.dataset.mgTestGame` selection
-     state moved into CampaignState (the `getMinigameTestData` bridge
-     reads it today). Cleanest as part of H.4.
-
-  Recommended order: **(a)** scenario-gen (payload-pass first, then the
-  launcher chain), which unblocks the largest cluster (quest+solo+chain
-  ~9); **(b)** the manual event builder; **(c)** big roster modals
-  cluster-by-cluster; **(d)** story-tools (scene builder, prompt, help);
-  **(e)** add-quest; **(f)** travel-world-card; **(g)** mg-test-pick during
-  H.4. The registry seam + the modal-port pattern still make each step
-  mechanical; internal JS callers of a ported closure route through
-  `window.CJS.CampaignActionsRuntime` when it is an action, or call a
-  `window.CJS`-exposed helper when it is a pure builder, until the caller
-  is itself ported.
+  1. **Scenario-gen + inspect-scenario (8).** The React
+     `CampaignScenariosTab` switched to controlled `useState` form
+     fields and dispatches the values in the `generate-scenario` /
+     `generate-quest-scenario` payload. `generateScenario(payload)` +
+     `inspectScenario(scenarioId)` ported to `scenario.ts`;
+     `_shapePillsData` exposed via the typed `CampaignUI.getShapePillsData`
+     bridge for the inspect modal pill row.
+  2. **Quest launchers (2).** quest-scenario / quest-battle moved to
+     `quest-launcher.ts` with the full launcher chain
+     (`startQuestScenario`, `startExistingQuestScenario`,
+     `linkedScenarioMatches`, `annotateQuestRun`). `questMapForm` /
+     `questMapType` / `activeRunQuestId` added as TS copies in
+     `quest.ts`. The module installs
+     `window.CJS.CampaignQuestLauncher` for still-in-JS callers
+     (`_startQuestChainScenario`, `_startQuestRunFromOffer`,
+     `_openQuestModal`'s "starting run" branch).
+  3. **Chain launchers + solo-hook accept/quest/rumor (7).** start-chain /
+     chain-scenario / chain-battle ported to `quest-chain.ts` with
+     `ensureQuestChainQuest`. random-quest-offer / accept-solo-hook /
+     solo-hook-quest / solo-hook-rumor ported to `solo.ts` with
+     `startQuestRunFromOffer`, `questFromOfferCard`,
+     `randomQuestOfferCard`, `questTemplateWeight`.
+  4. **travel-world-card (1).** Ported to `travel.ts` with the full
+     cluster (`completeWorldTravel`, `defaultTravelLanding`,
+     `evaluateTravelRankGate`, `hasMeaningfulPersonaChoice`,
+     `openPreTravelPersonaPicker`). `_worldMenuDef` stays in JS
+     (chrome data also reads it); resolved via the new
+     `CampaignUI.getWorldMenuDef` bridge.
+  5. **Roster modal cluster (12).** recruit-character / learn-skill /
+     learn-passive / show-skill-detail / equip-item / stat-boost /
+     change-job / change-persona / show-job-tree / rank-up-apply /
+     party-sheet ported to `roster-modal-pickers.ts`. Option builders
+     (`_characterOptions` / `_skillOptions` / `_passiveOptions`),
+     `_skillMeta`, `_icon`, `_memberRankInfo`, `_renderPortraitHero` +
+     `_renderRosterMember` stay in JS (shared with the GM override
+     modal + cui-party-tab.js); each reached via a typed
+     `CampaignUI.*` bridge. **show-job-tree fixes a pre-existing bug**:
+     the closure modal had no click delegate (since H.2 deleted
+     `_bindEvents`), so the unlock / switch buttons silently did
+     nothing — the TS port adds a local click delegate routing
+     through `CampaignActionsRuntime`.
+  6. **Story tools (2).** story-help (static info modal) + story-copy-prompt
+     (clipboard + fallback) ported to `story-tools.ts`. `_storyPromptText`
+     + `_ensureStoryContext` stay in JS (share helpers with AI-story-context
+     data builder); reached via `CampaignUI.computeStoryPromptText` /
+     `.ensureStoryContext` bridges.
+  7. **mg-test-pick (1).** Ported to `mg-test.ts`; the selected-game
+     state still lives on `_root.dataset.mgTestGame` (read by
+     `getMinigameTestData`) and the TS handler writes it via the new
+     `CampaignUI.setMinigameTestGame` bridge. The state migration to
+     `CampaignState` happens in H.4 alongside the data builder.
+  8. **Manual builders (6).** custom-event, oracle-to-event-builder,
+     add-quest, gm-override, gm-member-override, story-manual-note
+     ported to `manual-builders.ts` as **bridge-wrapped** action
+     handlers. The big modal bodies stay in JS
+     (`_openManualEventBuilder` 266 lines, `_openQuestModal` 475
+     lines, `_gmOverride` 174 lines, `_openManualSceneBuilder` 127
+     lines) because the render-side data builders still share their
+     14+ sub-helpers; H.4 ports the bodies + their data builders
+     together and the bridge entries become redundant. The action
+     contract is registry-backed even while the implementation
+     stays JS — same pattern as `renderStoryDirectorCardHtml`,
+     `renderPartySheetHtml`, etc.
 - [ ] **H.4 — Migrate `get*Data` bridges to TS** under
   `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
   CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
@@ -833,30 +839,41 @@ finishes the authoring loop:
 | After H.3 mini-game session machinery | 487 |
 | After H.3 small roster pickers | 484 |
 | After H.3 travel-world + party-availability | 483 |
+| After H.3 scenario-gen + inspect | 479 |
+| After H.3 quest launchers | 475 |
+| After H.3 chain launchers + solo offers | 470 |
+| After H.3 travel-world-card | 465 |
+| After H.3 recruit/learn/skill-detail | 462 |
+| After H.3 equip-item + stat-boost | 461 |
+| After H.3 change-job/persona + job-tree | 454 |
+| After H.3 rank-up-apply | 451 |
+| After H.3 party-sheet | 451 |
+| After H.3 mg-test-pick | 451 |
+| After H.3 story-help + copy-prompt | 449 |
+| After H.3 manual builders (complete 246/246) | 449 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 483 KB. Every closure-private
-`_render*` sub-renderer in campaign-ui.js is now JSX, and the hub-family
-tab bodies + roster hero in `cui-hub-tab.js` / `cui-party-tab.js` are
-JSX too. `cui-hub-tab.js` is now a primitives-only library. Still
-bridged HTML: the roster detail row (icon-heavy, action surface now
-TS-registry-backed), the world map (SVG), and the intentionally-vanilla
-external-module tabs + maps tab. `_bindEvents` is gone (H.2). H.3 has
-ported the registry seam + 208/246 actions (save/log/roster-ops/roster-GM-
-modals/thin-ops/farm/forge/world-map/nav/sequence/story-director/oracle/
-quest-chain/map/haven/side/rumor + economy/cooking/combat-exec/downtime +
-battle-selection+battle-pool+event/oracle-resolution+scenario-lifecycle+
-mg-test-play+solo-offers+story-director-rolls+quest-pure-ops+mini-game-
-session-machinery+small-roster-pickers+travel-world+party-availability)
-into `src/campaign/action-handlers/`, with a shared typed
-modal/widget/option/util accessor layer (`modals.ts`) and `window.CJS`-exposed
-shared helpers (`CampaignBattlePool` / `CampaignCopy`) for the still-in-JS
-callers that haven't ported yet. The `_handleAction` switch now holds only
-the deep-shared-helper tail (~38 cases — see the coupling map + recommended
-order under H.3 "Remaining" above), behind the runtime seam. Remaining:
-finish H.3 (that tail) → H.4 (`get*Data` → TS, then delete campaign-ui.js +
-`js/campaign/ui/`) → H.5 (test rewrite). Phases I/J then pivot from
-"remove HTML strings" to "optimize the React tree + open the authoring
-loop for AI generators."
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 449 KB. **Phase H.3 is
+complete**: 246/246 actions live in the TS registry, and the
+`_handleAction` switch is empty (kept as a defensive no-op with
+the port history in comments). Every closure-private `_render*`
+sub-renderer in campaign-ui.js is JSX, the hub-family tab bodies +
+roster hero are JSX, and the action contract is now fully
+registry-backed for every dispatch path (React onClick, the shell
+`<main>` + drawer click forwarders, modal-local click delegates).
+Still bridged HTML: the roster detail row (icon-heavy, action
+surface registry-backed), the world map SVG, the intentionally-
+vanilla external-module tabs + maps tab. Still in JS: the big
+modal builder bodies (`_openManualEventBuilder` 266 lines,
+`_openQuestModal` 475 lines, `_gmOverride` 174 lines,
+`_openManualSceneBuilder` 127 lines) — bridge-wrapped from TS so
+the action contract is registry-backed even though the bodies
+share many sub-helpers with the still-JS data builders. **Next:
+H.4** ports the `get*Data` bridges to TS (chrome, tabs, panels)
+and deletes `js/campaign/campaign-ui.js` + `js/campaign/ui/`,
+folding the bridge-wrapped modal bodies into TS alongside their
+data builders. Then H.5 (test rewrite). Phases I/J pivot from
+"remove HTML strings" to "optimize the React tree + open the
+authoring loop for AI generators."
 
 ## Done-when gate
 
