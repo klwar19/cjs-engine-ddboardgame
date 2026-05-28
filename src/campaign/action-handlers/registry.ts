@@ -45,6 +45,7 @@ import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
 import * as StoryRolls from "./story-director-modals";
 import * as Quest from "./quest";
+import * as Minigame from "./minigame";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -285,7 +286,11 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "quest-harvest": (d) => Quest.questHarvest(str(d.id)),
   "quest-check": (d) => Quest.questCheck(str(d.id)),
   "quest-hand-in": (d) => Quest.questHandIn(str(d.id)),
-  "quest-answer": (d) => Quest.questAnswer(str(d.id))
+  "quest-answer": (d) => Quest.questAnswer(str(d.id)),
+  // ── Mini-game sessions (sequence / haven / quest) ─────────────────
+  "sequence-play-minigame": () => Minigame.playSequenceMiniGame(),
+  "haven-play-minigame": (d) => Minigame.havenPlayMinigame(str(d.game)),
+  "quest-minigame": (d) => Minigame.questMiniGame(str(d.id))
 };
 
 export function hasHandler(name: string): boolean {

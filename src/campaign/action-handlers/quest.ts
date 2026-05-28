@@ -69,6 +69,18 @@ export function activeQuestById(questId: string): Quest | null {
   return quest && !isQuestResolved(quest) ? quest : null;
 }
 
+// Finds the next mini-game-flagged objective on a quest. Shared by the
+// quest-minigame handler in minigame.ts.
+export function questMiniGameObjective(quest: Quest = {}): Objective | null {
+  return (
+    (quest.objectives || []).find((objective) => {
+      if (questObjectiveDone(objective)) return false;
+      const kind = String(objective.kind || "").toLowerCase();
+      return !!(objective.minigame || objective.miniGame || objective.minigameId || kind === "minigame" || kind === "puzzle");
+    }) || null
+  );
+}
+
 interface HarvestLoot {
   op: string;
   id: string;

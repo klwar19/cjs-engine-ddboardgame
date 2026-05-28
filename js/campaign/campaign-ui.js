@@ -2620,7 +2620,7 @@ window.CJS.CampaignUI = (() => {
       case 'story-help': return _openStoryHelpModal();
       // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
       // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
-      case 'sequence-play-minigame': return _playSequenceMiniGame();
+      // sequence-play-minigame ported to action-handlers/minigame.ts (H.3).
       // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
       // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
       case 'oracle-to-event-builder': return _oracleToEventBuilder();
@@ -2656,10 +2656,10 @@ window.CJS.CampaignUI = (() => {
       // to action-handlers/haven.ts; haven-open-cooking / cook-food ported
       // to action-handlers/cooking.ts (H.3). haven-play-minigame stays
       // (mini-game session machinery).
-      case 'haven-play-minigame': return _havenPlayMinigame(data.game);
+      // haven-play-minigame ported to action-handlers/minigame.ts (H.3).
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
-      case 'quest-minigame': return _questMiniGame(data.id);
+      // quest-minigame ported to action-handlers/minigame.ts (H.3).
       // quest-progress / quest-hub-event / quest-harvest / quest-check /
       // quest-hand-in / quest-answer ported to action-handlers/quest.ts (H.3).
       case 'mg-test-pick': return _mgTestPick(data.game);
@@ -3748,251 +3748,11 @@ window.CJS.CampaignUI = (() => {
 
   // _rollStoryDirector ported to action-handlers/story-director-modals.ts (H.3).
 
-  // _startSequenceFromUi / _advanceSequenceFromUi ported to
-  // src/campaign/action-handlers/sequence.ts (H.3). _playSequenceMiniGame
-  // (below) stays here — it owns the mini-game session machinery — and
-  // routes its win/lose follow-ups back through the action registry.
-
-  async function _playSequenceMiniGame() {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState();
-    const active = Seq?.active?.(state);
-    const sequence = active ? Seq.cachedSequence?.(active.sequenceId, state.currentWorld) : null;
-    const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
-    if (!node || String(node.type || '').toLowerCase() !== 'minigame') {
-      return UI().toast('No active mini-game node', 'info');
-    }
-    const config = _miniGameConfig(node, { includeOps: false });
-    config.seed = config.seed || `${active.sequenceId}:${node.id}`;
-    return _openMiniGameSession(config, {
-      source: 'sequence_minigame',
-      eventId: active.sequenceId,
-      nodeId: node.id,
-      sequence,
-      node,
-      onComplete: (result, storyContext) => {
-        _applyMiniGameResult(result, 'sequence_minigame', storyContext);
-        // sequence advance ported to action-handlers/sequence.ts (H.3);
-        // route the win/lose follow-up back through the action registry.
-        const Actions = window.CJS.CampaignActionsRuntime;
-        if (result?.status === 'win') return Actions?.run?.('sequence-win');
-        if (result?.status === 'fail' || result?.status === 'giveup') return Actions?.run?.('sequence-lose');
-        return UI().toast('Mini-game could not resolve this sequence node', 'error');
-      }
-    });
-  }
-
-  function _miniGameConfig(source = {}, options = {}) {
-    const raw = source.minigame || source.miniGame || {};
-    const nested = typeof raw === 'string' ? { gameId: raw } : raw;
-    const includeOps = options.includeOps !== false;
-    return {
-      gameId: nested.gameId || source.minigameId || source.gameId || '',
-      levelId: nested.levelId || source.levelId || '',
-      difficulty: Number(nested.difficulty || source.difficulty || 1),
-      seed: nested.seed || source.seed || '',
-      theme: nested.theme || source.theme || '',
-      briefingTitle: nested.briefingTitle || source.briefingTitle || nested.title || source.title || '',
-      contextText: nested.contextText || nested.context || source.contextText || source.context || source.text || '',
-      conversation: nested.conversation || source.conversation || [],
-      bonusText: nested.bonusText || source.bonusText || '',
-      bonusOps: includeOps ? (nested.bonusOps || source.bonusOps || []) : [],
-      contextualBonus: nested.contextualBonus ?? source.contextualBonus,
-      onWinOps: includeOps ? (nested.onWinOps || source.onWinOps || source.winOps || []) : [],
-      onLoseOps: includeOps ? (nested.onLoseOps || source.onLoseOps || source.failOps || source.loseOps || []) : []
-    };
-  }
-
-  async function _openMiniGameSession(config = {}, context = {}) {
-    const MG = window.CJS.Minigames;
-    if (!MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
-    if (!config.gameId) return UI().toast('No mini-game is linked here', 'info');
-    const questId = context.questId && context.objectiveId ? context.questId : null;
-    const objectiveId = context.questId && context.objectiveId ? context.objectiveId : null;
-    const storyContext = _miniGameStoryContext(config, context);
-    const launch = async () => {
-      try {
-        const session = await MG.openMiniGame({
-          gameId: config.gameId,
-          levelId: config.levelId || undefined,
-          difficulty: config.difficulty || undefined,
-          seed: config.seed || undefined,
-          theme: config.theme || undefined,
-          source: context.source || 'campaign_minigame',
-          questId,
-          objectiveId,
-          eventId: context.eventId || null,
-          mapId: context.mapId || null,
-          nodeId: context.nodeId || null,
-          contextText: storyContext.contextText || undefined,
-          conversation: storyContext.conversation || [],
-          bonusText: storyContext.bonusText || undefined,
-          onWinOps: storyContext.onWinOps || [],
-          onLoseOps: storyContext.onLoseOps || [],
-          onComplete: (result) => context.onComplete
-            ? context.onComplete(result, storyContext)
-            : _applyMiniGameResult(result, context.source || 'campaign_minigame', storyContext)
-        });
-        if (!session) UI().toast('Mini-game could not open', 'error');
-        return session;
-      } catch (error) {
-        console.error(error);
-        UI().toast(error?.message || 'Mini-game failed to open', 'error');
-        return null;
-      }
-    };
-    if (context.requireBriefing) {
-      _showMiniGameBriefing(storyContext, launch);
-      return null;
-    }
-    return launch();
-  }
-
-  function _miniGameStoryContext(config = {}, context = {}) {
-    const source = String(context.source || 'campaign_minigame');
-    const quest = context.quest || (context.questId ? _activeQuestById(context.questId) : null);
-    const objective = context.objective || (quest ? _questMiniGameObjective(quest) : null);
-    const node = context.node || null;
-    const title = config.briefingTitle
-      || (quest ? `${quest.title || quest.id}: ${objective?.label || 'Puzzle room'}` : '')
-      || node?.title
-      || node?.label
-      || _label(config.gameId || 'Mini-game');
-    const contextText = config.contextText
-      || (quest ? _questMiniGameContextText(quest, objective) : '')
-      || node?.text
-      || (source === 'scenario_progress' ? 'A route obstacle resolves as a small puzzle beat before the run can continue.' : '');
-    const conversation = _normalizeMiniGameConversation(config.conversation);
-    const defaultConversation = conversation.length ? [] : _defaultMiniGameConversation(source, quest, objective, node);
-    const bonusOps = _asOps(config.bonusOps);
-    const contextOps = _miniGameContextWinOps(config, context, { quest, objective, title });
-    return {
-      title,
-      contextText,
-      conversation: conversation.length ? conversation : defaultConversation,
-      bonusText: config.bonusText || '',
-      briefingBonusText: config.bonusText || 'Clear bonus: the selected room applies its next-battle buff and JP reward on success.',
-      onWinOps: [..._asOps(config.onWinOps), ...bonusOps, ...contextOps],
-      onLoseOps: _asOps(config.onLoseOps)
-    };
-  }
-
-  function _normalizeMiniGameConversation(lines) {
-    return (Array.isArray(lines) ? lines : []).map((line) => {
-      if (typeof line === 'string') return { speaker: 'Scene', text: line };
-      return {
-        speaker: line?.speaker || line?.name || 'Scene',
-        text: line?.text || line?.line || ''
-      };
-    }).filter((line) => line.text);
-  }
-
-  function _asOps(value) {
-    if (!value) return [];
-    return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
-  }
-
-  function _defaultMiniGameConversation(source, quest, objective, node) {
-    if (source === 'quest_minigame' && quest) {
-      const giver = quest.giver || 'Guild Clerk';
-      const label = objective?.label || 'the puzzle room';
-      return [
-        { speaker: giver, text: `This is part of the job, not a side diversion. Clear ${label} and I can mark the bonus.` },
-        { speaker: 'Bin', text: 'Then it counts. Open the room.' }
-      ];
-    }
-    if (source === 'scenario_progress') {
-      return [
-        { speaker: 'Route Beat', text: 'The obstacle is small, but it decides whether the run keeps momentum.' }
-      ];
-    }
-    if (node?.speaker && node?.text) {
-      return [{ speaker: node.speaker, text: node.text }];
-    }
-    return [];
-  }
-
-  function _questMiniGameContextText(quest = {}, objective = {}) {
-    const pieces = [
-      quest.summary || '',
-      objective?.label ? `Objective: ${objective.label}.` : '',
-      quest.giver ? `Giver: ${quest.giver}.` : ''
-    ].filter(Boolean);
-    return pieces.join(' ');
-  }
-
-  function _miniGameContextWinOps(config = {}, context = {}, resolved = {}) {
-    if (config.contextualBonus === false) return [];
-    const source = String(context.source || '');
-    const quest = resolved.quest;
-    const objective = resolved.objective;
-    if (source === 'quest_minigame' && quest) {
-      return [{
-        op: 'log',
-        text: `Quest mini-game cleared in context: ${quest.title || quest.id}${objective?.label ? ` - ${objective.label}` : ''}.`
-      }];
-    }
-    if (source === 'sequence_minigame') {
-      return [{ op: 'log', text: `Story mini-game cleared: ${resolved.title || config.gameId || 'scene challenge'}.` }];
-    }
-    if (source === 'scenario_progress') {
-      return [{ op: 'log', text: 'Scenario mini-game cleared and the route keeps its momentum.' }];
-    }
-    return [];
-  }
-
-  function _showMiniGameBriefing(storyContext = {}, launch) {
-    const body = document.createElement('div');
-    body.className = 'campaign-minigame-briefing';
-    if (storyContext.contextText) {
-      const p = document.createElement('p');
-      p.className = 'campaign-minigame-briefing-context';
-      p.textContent = storyContext.contextText;
-      body.appendChild(p);
-    }
-    for (const line of storyContext.conversation || []) {
-      const row = document.createElement('p');
-      row.className = 'campaign-minigame-briefing-line';
-      const speaker = document.createElement('strong');
-      speaker.textContent = line.speaker || 'Scene';
-      const text = document.createElement('span');
-      text.textContent = line.text || '';
-      row.appendChild(speaker);
-      row.appendChild(text);
-      body.appendChild(row);
-    }
-    if (storyContext.briefingBonusText) {
-      const bonus = document.createElement('div');
-      bonus.className = 'campaign-minigame-briefing-bonus';
-      bonus.textContent = storyContext.briefingBonusText;
-      body.appendChild(bonus);
-    }
-    _formModal({
-      title: storyContext.title || 'Mini-Game Beat',
-      body,
-      width: '540px',
-      primaryLabel: 'Play Mini-Game',
-      onSubmit: () => { launch?.(); }
-    });
-  }
-
-  function _applyMiniGameResult(result, source = 'campaign_minigame', storyContext = null) {
-    if (!result) return;
-    const ops = (result.suggestedOps || []).filter((op) => {
-      return !(op?.op === 'update_quest_progress' && (!op.questId || !op.objectiveId));
-    });
-    if (ops.length) Ops().apply(ops, { source });
-    else render();
-    if (result.status === 'win') {
-      const buff = result.narrative?.buffName || '';
-      if (buff) return UI().toast(`Mini-game cleared: ${buff} ready`, 'success');
-      if (storyContext?.bonusText) return UI().toast(`Mini-game cleared: ${storyContext.bonusText}`, 'success');
-      return UI().toast('Mini-game cleared', 'success');
-    }
-    if (result.status === 'fail') return UI().toast('Mini-game failed', 'info');
-    if (result.status === 'giveup') return UI().toast('Mini-game abandoned', 'info');
-    if (result.status === 'error') return UI().toast('Mini-game returned an error', 'error');
-  }
+  // _playSequenceMiniGame + the mini-game session machinery
+  // (_miniGameConfig / _openMiniGameSession / _miniGameStoryContext /
+  // _normalizeMiniGameConversation / _asOps / _defaultMiniGameConversation /
+  // _questMiniGameContextText / _miniGameContextWinOps / _showMiniGameBriefing /
+  // _applyMiniGameResult) ported to action-handlers/minigame.ts (H.3).
 
   // _completeSequenceFromUi ported to action-handlers/sequence.ts (H.3).
 
@@ -5271,37 +5031,7 @@ window.CJS.CampaignUI = (() => {
   // action-handlers/haven.ts (H.3). _openCookingMinigame ported to
   // action-handlers/cooking.ts (H.3).
 
-  // ── POCKET HAVEN MINI-GAMES ─────────────────────────────────────
-  // Launches a registered mini-game from the Pocket Haven tile. The
-  // host wires the level-authored `onWinOps` (contextual buffs / JP)
-  // into the result, so all we do here is open the session and let
-  // `_applyMiniGameResult` route the rewards.
-  async function _havenPlayMinigame(gameId) {
-    if (!gameId) return;
-    const MG = window.CJS.Minigames;
-    if (!MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
-    const state = CS().getState();
-    try {
-      const session = await MG.openMiniGame({
-        gameId,
-        source: 'pocket_haven',
-        mapId: 'pocket_haven',
-        nodeId: gameId,
-        onComplete: (result) => {
-          _applyMiniGameResult(result, 'pocket_haven');
-          if (result?.status === 'win') {
-            UI().toast(`${result.narrative?.buffName || 'Buff'} applied for the next battle`, 'success');
-          }
-        }
-      });
-      if (!session) UI().toast('Mini-game could not open', 'error');
-      return session;
-    } catch (error) {
-      console.error(error);
-      UI().toast(error?.message || 'Mini-game failed to open', 'error');
-    }
-  }
-
+  // _havenPlayMinigame ported to action-handlers/minigame.ts (H.3).
   // _openGuildTrivia ported to action-handlers/haven.ts (H.3).
 
   // _questProgress ported to action-handlers/quest.ts (H.3).
@@ -5336,60 +5066,7 @@ window.CJS.CampaignUI = (() => {
 
   // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
 
-  function _questMiniGame(questId) {
-    const quest = _activeQuestById(questId);
-    if (!quest) return UI().toast('Quest is not active', 'info');
-    const objective = _questMiniGameObjective(quest);
-    if (!objective) return UI().toast('This quest has no mini-game objective', 'info');
-    const config = _miniGameConfig(objective);
-    if (config.gameId) {
-      config.seed = config.seed || `${quest.id}:${objective.id || 'objective'}`;
-      return _openMiniGameSession(config, {
-        source: 'quest_minigame',
-        questId,
-        objectiveId: objective.id,
-        quest,
-        objective,
-        requireBriefing: true
-      });
-    }
-    const MG = window.CJS.Minigames;
-    if (!MG?.listGames || !MG?.openMiniGame) return UI().toast('Mini-game module is not loaded', 'error');
-    const games = MG.listGames() || [];
-    if (!games.length) return UI().toast('No mini-games are registered', 'info');
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Mini-Game'));
-    const game = UI().createSelect({
-      options: games.map((entry) => ({ value: entry.id, label: entry.title || _label(entry.id) })),
-      value: games[0]?.id || ''
-    });
-    body.appendChild(game);
-    body.appendChild(_formLabel('Difficulty'));
-    const difficulty = UI().createSelect({
-      options: [1, 2, 3, 4, 5].map((value) => ({ value: String(value), label: `Difficulty ${value}` })),
-      value: '1'
-    });
-    body.appendChild(difficulty);
-    _formModal({
-      title: `Mini-Game: ${quest.title || quest.id}`,
-      body,
-      primaryLabel: 'Play',
-      onSubmit: () => {
-        _openMiniGameSession({
-          gameId: game.value,
-          difficulty: Number(difficulty.value || 1),
-          seed: `${quest.id}:${objective.id || 'objective'}`
-        }, {
-          source: 'quest_minigame',
-          questId,
-          objectiveId: objective.id,
-          quest,
-          objective,
-          requireBriefing: true
-        });
-      }
-    });
-  }
+  // _questMiniGame ported to action-handlers/minigame.ts (H.3).
 
   function _questObjectiveByKinds(quest = {}, kinds = []) {
     const set = new Set(kinds);
@@ -8524,7 +8201,9 @@ window.CJS.CampaignUI = (() => {
     init,
     render,
     isBooted: () => _booted,
-    playSequenceMinigame: _playSequenceMiniGame,
+    // playSequenceMinigame bridge removed (Phase H.3): _playSequenceMiniGame
+    // ported to action-handlers/minigame.ts; campaign-sequence-vn.js routes
+    // through CampaignActionsRuntime.run('sequence-play-minigame') instead.
     showQuestNarrative,
     // Bridge surface for React-owned tabs (Phase D migration). Tabs that
     // have moved to React read engine state through these getters instead

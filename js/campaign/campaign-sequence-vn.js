@@ -426,9 +426,11 @@ window.CJS.CampaignSequenceVN = (() => {
           if (action === 'complete') {
             await Seq()?.complete?.('manual');
           } else if (action === 'play_minigame') {
-            // Defer to the existing campaign-ui handler if present.
-            const fn = window.CJS.CampaignUI?.playSequenceMinigame;
-            if (typeof fn === 'function') fn();
+            // Defer to the ported sequence-play-minigame action runtime;
+            // falls through to sequence advance when the action handlers
+            // aren't loaded yet (test sandboxes, etc.).
+            const runtime = window.CJS.CampaignActionsRuntime;
+            if (runtime?.has?.('sequence-play-minigame')) runtime.run('sequence-play-minigame');
             else await Seq()?.advance?.('next');
           } else {
             await Seq()?.advance?.(action);
