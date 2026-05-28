@@ -38,6 +38,7 @@ import * as Rumor from "./rumor";
 import * as Economy from "./economy";
 import * as Cooking from "./cooking";
 import * as Combat from "./combat";
+import * as Downtime from "./downtime";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -228,7 +229,10 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "apply-combat-result": () => Combat.applyCombatResult(),
   "manual-battle": () => Combat.manualBattleModal(),
   "run-next-beat": () => Combat.runNextBeat(),
-  "roll-travel-surprise": () => Combat.rollTravelSurprise()
+  "roll-travel-surprise": () => Combat.rollTravelSurprise(),
+  // ── Downtime (relationships + camp rest) ──────────────────────────
+  "rel-activity": (d) => Downtime.doRelActivity(str(d.characterId), str(d.activityId)),
+  "camp-rest": () => Downtime.campRestModal()
 };
 
 export function hasHandler(name: string): boolean {

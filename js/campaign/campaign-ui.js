@@ -2615,7 +2615,7 @@ window.CJS.CampaignUI = (() => {
     }
     switch (data.campaignAction) {
       case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
-      case 'rel-activity': return _doRelActivity(data.characterId, data.activityId);
+      // rel-activity / camp-rest ported to action-handlers/downtime.ts (H.3).
       // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
       //   navigation (open-* / _goto) -> action-handlers/nav.ts
       //   world-map-* / world-activity-use -> action-handlers/worldmap.ts
@@ -2679,7 +2679,6 @@ window.CJS.CampaignUI = (() => {
       case 'pin-plot-seed': return _pinPlotSeed();
       case 'event-to-oracle': return _eventToOracle();
       case 'add-quest': return _openQuestModal();
-      case 'camp-rest': return _campRestModal();
       case 'travel-world': return _travelWorld();
       // open-* navigation cases ported to action-handlers/nav.ts (H.3).
       case 'run-roll-battle': return _runRollBattle();
@@ -2803,29 +2802,8 @@ window.CJS.CampaignUI = (() => {
     _openManualEventBuilder();
   }
 
-  function _doRelActivity(characterId, activityId) {
-    if (!characterId) return UI().toast('Pick a character first', 'info');
-    const acts = CS().getState()?.relationshipActs;
-    if (acts && Number(acts.remaining || 0) <= 0) {
-      return UI().toast('No activity acts left. Pass a phase to refresh.', 'info');
-    }
-    Ops().apply({
-      op: 'relationship_activity',
-      characterId,
-      activityId: activityId || 'hang_out'
-    }, { source: 'relationships_ui' });
-    const narrative = CS().getState()?.lastRelationshipNarrative;
-    if (narrative?.characterId === characterId && narrative?.activityId === (activityId || 'hang_out')) {
-      _relationshipNarrativeModal(narrative);
-      return;
-    }
-    const def = (window.CJS.RelationshipsTab?.ACTIVITIES || []).find((a) => a.id === activityId);
-    if (def) {
-      const charBase = window.CJS.DataStore?.get?.('characters', characterId);
-      const name = charBase?.name || characterId;
-      UI().toast(`${def.label}: ${name} (${def.hint})`, 'success');
-    }
-  }
+  // _doRelActivity / _relationshipNarrativeModal ported to
+  // action-handlers/downtime.ts (H.3).
 
   async function _ensureStoryContext(world = 'haven') {
     const worldId = world || 'haven';
@@ -2957,28 +2935,6 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function _relationshipNarrativeModal(narrative = {}) {
-    const body = document.createElement('div');
-    body.className = 'campaign-relationship-narrative';
-    body.innerHTML = `
-      <div class="campaign-quest-narrative">
-        <p>${_esc(narrative.text || 'A small moment passes between you.')}</p>
-        ${narrative.blocked ? '' : `<p class="campaign-muted">+${_esc(narrative.amount || 0)} ${_esc(narrative.field || 'bond')}</p>`}
-      </div>
-    `;
-    const footer = document.createElement('div');
-    const close = document.createElement('button');
-    close.className = 'btn btn-primary';
-    close.textContent = 'Continue';
-    footer.appendChild(close);
-    const overlay = UI().openModal({
-      title: narrative.title || 'Relationship Moment',
-      content: body,
-      footer,
-      width: '420px'
-    });
-    close.onclick = () => UI().closeModal(overlay);
-  }
 
   function _openManualEventBuilder(prefill = {}) {
     const state = CS().getState() || {};
@@ -6151,7 +6107,9 @@ window.CJS.CampaignUI = (() => {
     if (!quest) return UI().toast('Quest is not active', 'info');
     const objective = _questObjectiveByKinds(quest, ['hub_event', 'event']) || _questNextObjective(quest);
     const table = quest.tags?.includes('tavern') ? 'tavern' : quest.tags?.includes('guild') ? 'guild' : 'town';
-    _rollHubPulse(table);
+    // _rollHubPulse ported to action-handlers/rumor.ts (roll-hub-pulse);
+    // route this internal caller through the action runtime.
+    window.CJS.CampaignActionsRuntime?.run?.('roll-hub-pulse', { table });
     if (objective) {
       Ops().apply({
         op: 'update_quest_progress',
@@ -7457,31 +7415,7 @@ window.CJS.CampaignUI = (() => {
     });
   }
 
-  function _campRestModal() {
-    const options = _tentOptions();
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Consume Item (optional)'));
-    const select = UI().createSearchableSelect({
-      options: [{ value: '', label: '— None (no item consumed) —' }, ...options],
-      value: options.find((opt) => opt.value === 'haven_basic_tent') ? 'haven_basic_tent' : '',
-      placeholder: 'Search items…'
-    });
-    body.appendChild(select);
-    body.appendChild(_formLabel('Danger change'));
-    const danger = UI().createNumberSlider({ value: 1, min: -3, max: 5, step: 1 });
-    body.appendChild(danger);
-    _formModal({
-      title: 'Camp Rest',
-      body,
-      primaryLabel: 'Camp',
-      onSubmit: () => {
-        const consumeItem = select._getValue() || null;
-        const op = { op: 'camp_rest', dangerChange: danger._getValue() || 0 };
-        if (consumeItem) op.consumeItem = consumeItem;
-        Ops().apply(op, { source: 'ui' });
-      }
-    });
-  }
+  // _campRestModal ported to action-handlers/downtime.ts (H.3).
 
   function _gmOverride(defaultTarget = '') {
     const GM_OPS = [

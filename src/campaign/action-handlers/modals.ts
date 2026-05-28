@@ -124,9 +124,22 @@ export interface UiWidgetsApi {
   }) => TagInputEl;
 }
 
+export interface UtilsApi {
+  esc: (value: unknown) => string;
+  escAttr: (value: unknown) => string;
+  label: (value: unknown) => string;
+  safe: (value: unknown) => string;
+  truncate: (value: string, max?: number) => string;
+  currencyLabel: (id: string) => string;
+  recordName: (bucketOrType: string, id: string) => string;
+  lootLine: (drop: unknown) => string;
+  formatBundleText: (bundle: unknown) => string;
+}
+
 interface CuiInternal {
   Modals?: ModalsApi;
   Options?: OptionsApi;
+  Utils?: UtilsApi;
 }
 
 export function modals(): ModalsApi | undefined {
@@ -135,6 +148,16 @@ export function modals(): ModalsApi | undefined {
 
 export function options(): OptionsApi | undefined {
   return mod<CuiInternal>("CampaignUIInternal")?.Options;
+}
+
+export function utils(): UtilsApi | undefined {
+  return mod<CuiInternal>("CampaignUIInternal")?.Utils;
+}
+
+// Convenience: HTML-escape with a safe fallback (used by the raw-HTML
+// modal bodies some handlers still build, matching the closure's `_esc`).
+export function esc(value: unknown): string {
+  return utils()?.esc(value) ?? String(value ?? "");
 }
 
 export function widgets(): UiWidgetsApi | undefined {
