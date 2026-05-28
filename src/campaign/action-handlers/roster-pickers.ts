@@ -17,13 +17,14 @@
 // the render/data side of the roster still consumes.
 
 import { applyOp, confirmDialog, cs, ds, mod, ops, toast } from "./context";
-import { modals } from "./modals";
+import { modals, widgets } from "./modals";
 
 interface Member {
   name?: string;
   unlockedJobs?: string[];
   maxJobs?: number;
   skillProgress?: Record<string, { ap?: number; level?: number }>;
+  availability?: { status?: string; reason?: string; expires?: string | null };
 }
 
 interface FormulasModule {
@@ -138,4 +139,62 @@ export function openSkillPoolPicker(memberId: string): void {
 
 export function openPassivePoolPicker(memberId: string): void {
   partyTab()?.openPassivePoolPicker?.(memberId);
+}
+
+export function partyAvailabilityModal(id: string): void {
+  const m = member(id);
+  if (!m) return;
+  const ui = widgets();
+  const mods = modals();
+  if (!ui || !mods) return;
+  const body = document.createElement("div");
+  body.appendChild(mods.formLabel("Status"));
+  const status = ui.createSelect({
+    options: [
+      { value: "available", label: "Available" },
+      { value: "unavailable", label: "Unavailable" },
+      { value: "busy", label: "Busy" },
+      { value: "injured", label: "Injured" },
+      { value: "story_locked", label: "Story Locked" }
+    ],
+    value: m.availability?.status || "available"
+  });
+  body.appendChild(status);
+  body.appendChild(mods.formLabel("Reason"));
+  const reason = document.createElement("input");
+  reason.type = "text";
+  reason.style.width = "100%";
+  reason.placeholder = "guarding the sled, recovering, story split...";
+  reason.value = m.availability?.reason || "";
+  body.appendChild(reason);
+  body.appendChild(mods.formLabel("Expires"));
+  const expires = ui.createSelect({
+    options: [
+      { value: "", label: "Manual" },
+      { value: "scenario", label: "Scenario" },
+      { value: "phase", label: "Phase" },
+      { value: "battle", label: "Battle" }
+    ],
+    value: m.availability?.expires || ""
+  });
+  body.appendChild(expires);
+  mods.formModal({
+    title: `Availability: ${m.name || id}`,
+    body,
+    primaryLabel: "Save",
+    onSubmit: () => {
+      if (status.value === "available") {
+        applyOp({ op: "clear_party_availability", target: id });
+      } else {
+        applyOp({
+          op: "set_party_availability",
+          target: id,
+          status: status.value,
+          reason: reason.value.trim(),
+          expires: expires.value || null,
+          source: "manual"
+        });
+      }
+    }
+  });
 }

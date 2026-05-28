@@ -300,7 +300,12 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "switch-job-from-tree": (d) => RosterPickers.switchJob(str(d.id), str(d.jobId)),
   "grant-skill-ap": (d) => RosterPickers.grantSkillApModal(str(d.id), str(d.skillId)),
   "pick-equip-skill": (d) => RosterPickers.openSkillPoolPicker(str(d.id)),
-  "pick-equip-passive": (d) => RosterPickers.openPassivePoolPicker(str(d.id))
+  "pick-equip-passive": (d) => RosterPickers.openPassivePoolPicker(str(d.id)),
+  "party-availability": (d) => RosterPickers.partyAvailabilityModal(str(d.id)),
+  // ── Travel ────────────────────────────────────────────────────────
+  // travel-world is the world-gate jump (identical to open-world-gate;
+  // the closure had dead code after the unconditional return).
+  "travel-world": () => Nav.goto("world", "worldGate")
 };
 
 export function hasHandler(name: string): boolean {

@@ -2616,7 +2616,7 @@ window.CJS.CampaignUI = (() => {
       // note-event / ignore-event / pin-plot-seed / event-to-oracle ported to
       // action-handlers/events.ts (H.3).
       case 'add-quest': return _openQuestModal();
-      case 'travel-world': return _travelWorld();
+      // travel-world ported to action-handlers/registry.ts (H.3).
       // open-* navigation cases ported to action-handlers/nav.ts (H.3).
       // run-roll-battle / run-pick-battle / run-queue-set-battle / run-battle /
       // apply-combat-result / manual-battle / run-next-beat /
@@ -2670,7 +2670,7 @@ window.CJS.CampaignUI = (() => {
       // pick-equip-skill / pick-equip-passive ported to
       // src/campaign/action-handlers/roster-pickers.ts (H.3).
       case 'show-skill-detail': return _showSkillDetailModal(data.id, data.skillId);
-      case 'party-availability': return _partyAvailabilityModal(data.id);
+      // party-availability ported to action-handlers/roster-pickers.ts (H.3).
       case 'gm-override': return _gmOverride();
       case 'gm-member-override': return _gmOverride(data.id);
       // load-slot / delete-slot / delete-all-saves / export-slot /
@@ -5803,98 +5803,8 @@ window.CJS.CampaignUI = (() => {
     return job ? `${job.icon || '🛡️'} ${job.name || jobId}` : jobId;
   }
 
-  function _partyAvailabilityModal(id) {
-    const member = CS().getState()?.party?.[id];
-    if (!member) return;
-    const body = document.createElement('div');
-    body.appendChild(_formLabel('Status'));
-    const status = UI().createSelect({
-      options: [
-        { value: 'available', label: 'Available' },
-        { value: 'unavailable', label: 'Unavailable' },
-        { value: 'busy', label: 'Busy' },
-        { value: 'injured', label: 'Injured' },
-        { value: 'story_locked', label: 'Story Locked' }
-      ],
-      value: member.availability?.status || 'available'
-    });
-    body.appendChild(status);
-    body.appendChild(_formLabel('Reason'));
-    const reason = document.createElement('input');
-    reason.type = 'text';
-    reason.style.width = '100%';
-    reason.placeholder = 'guarding the sled, recovering, story split...';
-    reason.value = member.availability?.reason || '';
-    body.appendChild(reason);
-    body.appendChild(_formLabel('Expires'));
-    const expires = UI().createSelect({
-      options: [
-        { value: '', label: 'Manual' },
-        { value: 'scenario', label: 'Scenario' },
-        { value: 'phase', label: 'Phase' },
-        { value: 'battle', label: 'Battle' }
-      ],
-      value: member.availability?.expires || ''
-    });
-    body.appendChild(expires);
-    _formModal({
-      title: `Availability: ${member.name || id}`,
-      body,
-      primaryLabel: 'Save',
-      onSubmit: () => {
-        if (status.value === 'available') {
-          Ops().apply({ op: 'clear_party_availability', target: id }, { source: 'ui' });
-        } else {
-          Ops().apply({
-            op: 'set_party_availability',
-            target: id,
-            status: status.value,
-            reason: reason.value.trim(),
-            expires: expires.value || null,
-            source: 'manual'
-          }, { source: 'ui' });
-        }
-      }
-    });
-  }
-
-  function _travelWorld() {
-    _goto('world', 'worldGate');
-    return;
-    const options = _worldOptions().filter((opt) => opt.value !== CS().getState().currentWorld);
-    if (!options.length) {
-      UI().toast('No other worlds available', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Travel to World',
-      options,
-      placeholder: 'Search worlds…',
-      primaryLabel: 'Travel',
-      onSubmit: ({ value }) => {
-        // Hard rank gate: refuse outright if requiredRank is unmet. Soft gate:
-        // warn before continuing. Ceiling: inform if it caps the party.
-        const gate = _evaluateTravelRankGate(value);
-        if (!gate.allowed) {
-          UI().toast(gate.message, 'warn');
-          return;
-        }
-        const proceed = () => {
-          const meaningful = _hasMeaningfulPersonaChoice(value);
-          if (meaningful) {
-            _openPreTravelPersonaPicker(value);
-          } else {
-            Ops().apply({ op: 'world_transition', toWorld: value, carryoverProfile: 'carryover_new_world_default' }, { source: 'ui' });
-          }
-        };
-        if (gate.softWarning) {
-          const ok = window.confirm(gate.softWarning + '\n\nTravel anyway?');
-          if (!ok) return;
-        }
-        proceed();
-      }
-    });
-  }
+  // _partyAvailabilityModal ported to action-handlers/roster-pickers.ts (H.3).
+  // _travelWorld ported to action-handlers/registry.ts (travel-world).
 
   function _travelWorldCard(worldId, targetTab = null) {
     if (!worldId) return;
