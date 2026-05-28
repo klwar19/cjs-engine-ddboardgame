@@ -2704,10 +2704,9 @@ window.CJS.CampaignUI = (() => {
       case 'run-battle': return _runBattle();
       case 'manual-battle': return _manualBattleModal();
       case 'apply-combat-result': return _applyCombatResult();
-      case 'inventory-delta': return _inventoryDelta(data);
-      case 'quick-add-inventory': return _quickAddInventory(data.bucket);
-      case 'shop-buy': return _shopBuy(data);
-      case 'plant-seed': return _plantSeed(data.plotId);
+      // inventory-delta / quick-add-inventory / shop-buy / plant-seed /
+      // craft-recipe / add-pocket-note / add-note ported to
+      // action-handlers/economy.ts (H.3).
       // haven-build-facility/haven-upgrade-facility/haven-ranch-collect
       // ported to action-handlers/haven.ts (H.3).
       case 'haven-train-skill': return _havenTrainSkill(data.facility);
@@ -2715,7 +2714,6 @@ window.CJS.CampaignUI = (() => {
       case 'haven-open-trivia': return _openGuildTrivia(data.world);
       case 'haven-open-cooking': return _openCookingMinigame(data.foodId);
       case 'haven-play-minigame': return _havenPlayMinigame(data.game);
-      case 'craft-recipe': return _craftRecipe(data.recipeId);
       case 'cook-food': {
         // If the cooking minigame is loaded, route through it so timing
         // affects buff potency and recipes can be discovered. Falls back
@@ -2733,8 +2731,6 @@ window.CJS.CampaignUI = (() => {
           outputs: { food: { [data.foodId]: 1 } }
         }, { source: 'ui' });
       }
-      case 'add-pocket-note': return _addPocketNote();
-      case 'add-note': return _addPinnedNote();
       case 'quest-progress': return _questProgress(data.id);
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
@@ -6136,94 +6132,9 @@ window.CJS.CampaignUI = (() => {
     CS().mutate((state) => { state.pendingBattleResult = null; }, { source: 'combat_bridge' });
   }
 
-  function _shopBuy(data) {
-    const stock = _shopStock(data.shopId, data.stockIndex);
-    Ops().apply({
-      op: 'shop_buy',
-      shopId: data.shopId,
-      id: data.id || stock?.id,
-      type: data.type || stock?.type || 'item',
-      bucket: stock?.bucket,
-      price: Number(data.price ?? stock?.price ?? 0),
-      currency: data.currency || stock?.currency,
-      qty: 1,
-      requires: stock?.requires || {},
-      costs: stock?.costs || stock?.costBundle || {},
-      consumeRequires: !!stock?.consumeRequires
-    }, { source: 'ui' });
-  }
-
-  function _shopStock(shopId, stockIndex) {
-    const shop = shopId ? DS().get('shops', shopId) : null;
-    const index = Number(stockIndex);
-    return shop?.stock?.[index] || null;
-  }
-
-  function _inventoryDelta(data) {
-    const bucketToOps = {
-      items: ['give_item', 'take_item'],
-      materials: ['give_material', 'take_material'],
-      food: ['give_food', 'take_food'],
-      questItems: ['give_quest_item', 'take_quest_item'],
-      equipment: ['give_item', 'take_item']
-    };
-    const delta = Number(data.delta || 0);
-    const pair = bucketToOps[data.bucket] || bucketToOps.items;
-    Ops().apply({ op: delta >= 0 ? pair[0] : pair[1], id: data.id, qty: Math.abs(delta) }, { source: 'ui' });
-  }
-
-  function _quickAddInventory(bucket) {
-    const options = _bucketOptions(bucket || 'items');
-    if (!options.length) {
-      UI().toast(`No ${bucket || 'items'} available in this world`, 'info');
-      return;
-    }
-    const titleByBucket = { items: 'Add Item', materials: 'Add Material', food: 'Add Food', equipment: 'Add Equipment', questItems: 'Add Quest Item' };
-    _opPickerModal({
-      title: titleByBucket[bucket] || 'Add Inventory',
-      options,
-      withQty: true,
-      qtyDefault: 1,
-      qtyMin: 1,
-      qtyMax: 99,
-      primaryLabel: 'Add',
-      onSubmit: ({ value, qty }) => _inventoryDelta({ bucket, id: value, delta: qty || 1 })
-    });
-  }
-
-  function _plantSeed(plotId) {
-    const options = _seedOptions();
-    if (!options.length) {
-      UI().toast('No seeds available in this world', 'info');
-      return;
-    }
-    _opPickerModal({
-      title: 'Plant Seed',
-      options,
-      primaryLabel: 'Plant',
-      placeholder: 'Search seeds…',
-      onSubmit: ({ value }) => window.CJS.PocketHaven.plantSeed(plotId, value)
-    });
-  }
-
-  function _craftRecipe(recipeId) {
-    const recipe = DS().get('crafting', recipeId);
-    if (!recipe) return;
-    Ops().apply({ op: 'craft_basic', id: recipe.id, label: recipe.name, inputs: recipe.inputs || {}, outputs: recipe.outputs || {} }, { source: 'ui' });
-  }
-
-  function _addPocketNote() {
-    _textareaModal({
-      title: 'Activity Note',
-      label: 'Note',
-      placeholder: 'A short note about your haven…',
-      primaryLabel: 'Save Note',
-      onSubmit: (text) => {
-        if (!text) return false;
-        CS().mutate((state) => state.pocketHaven.notes.unshift({ at: new Date().toISOString(), text }), { source: 'note' });
-      }
-    });
-  }
+  // _shopBuy / _shopStock / _inventoryDelta / _quickAddInventory /
+  // _plantSeed / _craftRecipe / _addPocketNote / _addPinnedNote ported to
+  // src/campaign/action-handlers/economy.ts (H.3).
 
   // ── POCKET HAVEN FACILITIES ────────────────────────────────────
   // _havenBuildFacility / _havenUpgradeFacility / _havenRanchCollect
@@ -6348,19 +6259,6 @@ window.CJS.CampaignUI = (() => {
     if (result?.ok) {
       UI().toast(`Trivia: ${result.correct}/${result.total} correct · +${result.jp} JP`, 'success');
     }
-  }
-
-  function _addPinnedNote() {
-    _textareaModal({
-      title: 'Pinned Note',
-      label: 'Note',
-      placeholder: 'Pin a reminder for the campaign…',
-      primaryLabel: 'Pin',
-      onSubmit: (text) => {
-        if (!text) return false;
-        CS().mutate((state) => state.pinnedNotes.unshift({ at: new Date().toISOString(), text }), { source: 'note' });
-      }
-    });
   }
 
   function _questProgress(questId, objectiveId = null, amount = 1) {

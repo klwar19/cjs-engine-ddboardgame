@@ -35,6 +35,7 @@ import * as MapActions from "./map";
 import * as Haven from "./haven";
 import * as Side from "./side";
 import * as Rumor from "./rumor";
+import * as Economy from "./economy";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -197,7 +198,23 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "roll-hub-pulse": (d) => Rumor.rollHubPulse(str(d.table)),
   "resolve-rumor": (d) => Rumor.resolveRumor(str(d.id), str(d.hubId)),
   "rumor-to-quest": (d) => Rumor.rumorToQuest(str(d.id), str(d.hubId)),
-  "rumor-to-problem": (d) => Rumor.rumorToProblem(str(d.id), str(d.hubId))
+  "rumor-to-problem": (d) => Rumor.rumorToProblem(str(d.id), str(d.hubId)),
+  // ── Inventory / shop / craft / seed / notes ───────────────────────
+  "inventory-delta": (d) => Economy.inventoryDelta({ bucket: d.bucket, id: d.id, delta: d.delta }),
+  "quick-add-inventory": (d) => Economy.quickAddInventory(str(d.bucket)),
+  "shop-buy": (d) =>
+    Economy.shopBuy({
+      shopId: d.shopId,
+      stockIndex: d.stockIndex,
+      id: d.id,
+      type: d.type,
+      price: d.price,
+      currency: d.currency
+    }),
+  "craft-recipe": (d) => Economy.craftRecipe(str(d.recipeId)),
+  "plant-seed": (d) => Economy.plantSeed(str(d.plotId)),
+  "add-pocket-note": () => Economy.addPocketNote(),
+  "add-note": () => Economy.addPinnedNote()
 };
 
 export function hasHandler(name: string): boolean {
