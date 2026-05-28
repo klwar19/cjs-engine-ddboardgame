@@ -2,14 +2,210 @@
 // and Oracle panels used across EventLog, EventTab, Overview, and
 // Maps tabs.
 //
-// Phase H.4 — `getTravelSurpriseData` and `getLastReportData` are
-// implemented inline here (pure state reads). The remaining builders
-// still bridge to `window.CJS.CampaignUI.get*Data` while they wait on
-// their HTML helper deps to port.
+// Phase H.4 — pure-state-read data builders move inline here. The
+// helpers that emit HTML strings (`renderLootSummary`,
+// `renderCombatConsequenceNotice`, etc.) are ported alongside in the
+// "HTML helpers" section below.
 
-import { label } from "../../util/cui-utils";
+import { esc, lootLine, label } from "../../util/cui-utils";
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestPillData } from "./scenarioShared";
+
+// ── HTML helpers (Phase H.4 — ported from campaign-ui.js) ────────────
+// These build small HTML fragments that the data builders below embed
+// in their typed snapshots. They are intentionally still HTML strings
+// rather than JSX because the consumers (`ResultPanels.tsx` etc.)
+// render them via `dangerouslySetInnerHTML` — the React-side bridge
+// pattern Phase G established.
+
+function renderContextTags(tags: readonly string[] = []): string {
+  const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
+  if (!list.length) return "";
+  return `
+      <div class="campaign-chip-row campaign-context-tags">
+        ${list.map((tag) => `<span class="campaign-chip">${esc(label(tag))}</span>`).join("")}
+      </div>
+    `;
+}
+
+interface LootDrop {
+  readonly type?: string;
+  readonly id?: string;
+  readonly name?: string;
+  readonly amount?: number;
+  readonly qty?: number;
+  readonly currency?: string;
+}
+
+function renderLootSummary(drops: readonly LootDrop[]): string {
+  if (!drops.length) return '<div class="campaign-empty">No loot in this result.</div>';
+  return `
+      <div class="campaign-preview">
+        <b>Loot</b><br>
+        ${drops.map((drop) => esc(lootLine(drop))).join("<br>")}
+      </div>
+    `;
+}
+
+interface CombatPulse {
+  readonly summary?: string;
+  readonly tags?: readonly string[];
+}
+
+function renderCombatPulseSummary(pulse: CombatPulse | null | undefined): string {
+  if (!pulse) return "";
+  const tags = (pulse.tags || [])
+    .filter((tag) => /^(behavior|defeated_tag|status|skill):/.test(tag))
+    .slice(0, 8);
+  return `
+      <div class="campaign-combat-pulse">
+        ${pulse.summary ? `<span>${esc(pulse.summary)}</span>` : ""}
+        ${renderContextTags(tags.map((tag) => tag.replace(/^[^:]+:/, "")))}
+      </div>
+    `;
+}
+
+interface CombatResultInput {
+  readonly result?: string;
+  readonly defeatOps?: readonly unknown[];
+  readonly drawOps?: readonly unknown[];
+  readonly badEndingOps?: readonly unknown[];
+  readonly badEndingOnDefeat?: boolean;
+  readonly defeatOutcome?: string;
+  readonly defeatMode?: string;
+  readonly defeatNoRecovery?: boolean;
+}
+
+interface PendingBattleLike {
+  readonly source?: string;
+  readonly defeatOps?: readonly unknown[];
+  readonly lossOps?: readonly unknown[];
+  readonly badEndingOps?: readonly unknown[];
+  readonly drawOps?: readonly unknown[];
+  readonly badEndingOnDefeat?: boolean;
+  readonly defeatOutcome?: string;
+  readonly defeatMode?: string;
+  readonly defeatNoRecovery?: boolean;
+  readonly noDefeatRecovery?: boolean;
+  readonly encounterId?: string;
+  readonly battleSetId?: string;
+  readonly monsterIds?: readonly string[];
+  readonly label?: string;
+  readonly battleMap?: { readonly theme?: string };
+}
+
+function renderCombatConsequenceNotice(
+  result: CombatResultInput,
+  state: { pendingBattle?: PendingBattleLike }
+): string {
+  const outcome = String(result?.result || "").toLowerCase();
+  if (!["defeat", "draw"].includes(outcome)) return "";
+  const battle = state.pendingBattle || {};
+  const hasCustom = outcome === "defeat"
+    ? !!(
+      (result.defeatOps || battle.defeatOps || battle.lossOps
+        || result.badEndingOps || battle.badEndingOps || []).length
+    )
+    : !!((result.drawOps || battle.drawOps || []).length);
+  const badEnding = outcome === "defeat" && !!(
+    result.badEndingOnDefeat
+    || battle.badEndingOnDefeat
+    || result.defeatOutcome === "bad_ending"
+    || battle.defeatOutcome === "bad_ending"
+    || result.defeatMode === "bad_ending"
+    || battle.defeatMode === "bad_ending"
+  );
+  const lines: string[] = [];
+  if (badEnding) lines.push("Defeat can branch into a bad-ending route for this battle.");
+  if (hasCustom) lines.push("This battle has authored defeat consequences.");
+  if (!hasCustom) lines.push(
+    outcome === "draw"
+      ? "Default draw penalty: danger +1 and 5% currency loss."
+      : "Default defeat penalty: danger +2 and 10% currency loss."
+  );
+  if (!(result.defeatNoRecovery || battle.defeatNoRecovery || battle.noDefeatRecovery)) {
+    lines.push("KO party members recover to low HP instead of an instant wipeout.");
+  }
+  return `
+      <div class="campaign-preview">
+        <b>Campaign Consequence</b><br>
+        ${lines.map((line) => esc(line)).join("<br>")}
+      </div>
+    `;
+}
+
+function battleSourceLabel(battle: PendingBattleLike): string {
+  const map: Readonly<Record<string, string>> = {
+    random: "🎲 Random Roll",
+    set: "📌 Set Battle",
+    manual_pick: "📋 Picked",
+    beat: "📜 Beat",
+    manual: "Manual"
+  };
+  if (battle.source === "travel_surprise") return "Travel Surprise";
+  if (battle.source === "moving_threat") return "Moving Threat";
+  if (battle.source === "random_monster_pool") return "Monster Pool";
+  return map[battle.source || ""] || battle.source || "manual";
+}
+
+interface CombatBridgeSurface {
+  readonly isMemberBattleReady?: (member: unknown) => boolean;
+  readonly availabilityLabel?: (member: unknown) => string;
+}
+
+interface QuestPulseSurface {
+  readonly battleContextForPending?: (
+    state: unknown,
+    battle: unknown
+  ) => { questId?: string; questTitle?: string; contextTags?: string[]; monsterTags?: string[] } | null | undefined;
+}
+
+function combatBridge(): CombatBridgeSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignCombatBridge?: CombatBridgeSurface } }).CJS?.CampaignCombatBridge;
+}
+
+function questPulse(): QuestPulseSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignQuestPulse?: QuestPulseSurface } }).CJS?.CampaignQuestPulse;
+}
+
+interface PartyMemberLike {
+  readonly name?: string;
+}
+
+function renderBattlePartySummary(state: { party?: Record<string, PartyMemberLike> }): string {
+  const ready: string[] = [];
+  const blocked: string[] = [];
+  const bridge = combatBridge();
+  for (const [id, member] of Object.entries(state.party || {})) {
+    if (bridge?.isMemberBattleReady?.(member)) {
+      ready.push(member.name || id);
+    } else {
+      blocked.push(`${member.name || id}: ${bridge?.availabilityLabel?.(member) || "Unavailable"}`);
+    }
+  }
+  return `
+      <div class="campaign-preview">
+        <b>Battle Party</b><br>
+        Ready: ${esc(ready.join(", ") || "none")}<br>
+        ${blocked.length ? `Unavailable: ${esc(blocked.join("; "))}` : "Unavailable: none"}
+      </div>
+    `;
+}
+
+function renderPendingBattleContext(state: unknown, battle: PendingBattleLike = {}): string {
+  const ctx = questPulse()?.battleContextForPending?.(state, battle);
+  const tags = [
+    ...(ctx?.contextTags || []),
+    ...(ctx?.monsterTags || [])
+  ];
+  if (!ctx?.questId && !tags.length) return "";
+  return `
+      <div class="campaign-battle-context">
+        ${ctx?.questTitle ? `<strong>${esc(ctx.questTitle)}</strong>` : ""}
+        ${renderContextTags(tags)}
+      </div>
+    `;
+}
 
 export interface ManualSummary {
   readonly short: string;
@@ -224,9 +420,6 @@ interface Bridge {
   readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
   readonly getOracleData: (state?: CampaignStateSnapshot) => OracleData | null;
   readonly getSoloNoticeData: (state?: CampaignStateSnapshot) => SoloNoticeData | null;
-  readonly getCombatResultData: (state?: CampaignStateSnapshot) => CombatResultData | null;
-  readonly getLastCombatResultData: (state?: CampaignStateSnapshot) => LastCombatResultData | null;
-  readonly getPendingBattleData: (state?: CampaignStateSnapshot) => PendingBattleData | null;
   readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
   readonly getActiveSequenceData: (
     state?: CampaignStateSnapshot,
@@ -280,12 +473,58 @@ export function getTravelSurpriseData(state: CampaignStateSnapshot): TravelSurpr
   };
 }
 
+interface PendingBattleResult {
+  readonly result?: string;
+  readonly encounterId?: string;
+  readonly rounds?: number;
+  readonly loot?: readonly LootDrop[];
+  readonly defeatOps?: readonly unknown[];
+  readonly drawOps?: readonly unknown[];
+  readonly badEndingOps?: readonly unknown[];
+  readonly badEndingOnDefeat?: boolean;
+  readonly defeatOutcome?: string;
+  readonly defeatMode?: string;
+  readonly defeatNoRecovery?: boolean;
+}
+
 export function getCombatResultData(state: CampaignStateSnapshot): CombatResultData | null {
-  return cjs().CampaignUI?.getCombatResultData(state) ?? null;
+  if (!state) return null;
+  const result = (state as { pendingBattleResult?: PendingBattleResult }).pendingBattleResult;
+  if (!result) return null;
+  return {
+    resultLabel: result.result || "resolved",
+    encounterId: result.encounterId || "",
+    rounds: result.rounds || 0,
+    lootHtml: renderLootSummary(result.loot || []),
+    consequenceNoticeHtml: renderCombatConsequenceNotice(
+      result,
+      state as { pendingBattle?: PendingBattleLike }
+    )
+  };
+}
+
+interface LastCombatResult {
+  readonly result?: string;
+  readonly encounterId?: string;
+  readonly label?: string;
+  readonly rounds?: number;
+  readonly summary?: string;
+  readonly combatPulse?: CombatPulse;
+  readonly loot?: readonly LootDrop[];
 }
 
 export function getLastCombatResultData(state: CampaignStateSnapshot): LastCombatResultData | null {
-  return cjs().CampaignUI?.getLastCombatResultData(state) ?? null;
+  if (!state) return null;
+  const result = (state as { lastCombatResult?: LastCombatResult }).lastCombatResult;
+  if (!result) return null;
+  return {
+    resultLabel: result.result || "resolved",
+    label: result.encounterId || result.label || "Campaign battle",
+    rounds: result.rounds || 0,
+    summary: result.summary || "",
+    pulseHtml: renderCombatPulseSummary(result.combatPulse) || "",
+    lootHtml: renderLootSummary(result.loot || [])
+  };
 }
 
 // Phase H.4 inline port — pure state read, no closure-private deps.
@@ -313,7 +552,21 @@ export function getLastReportData(state: CampaignStateSnapshot): LastReportData 
 }
 
 export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattleData | null {
-  return cjs().CampaignUI?.getPendingBattleData(state) ?? null;
+  if (!state) return null;
+  const battle = (state as { pendingBattle?: PendingBattleLike }).pendingBattle;
+  if (!battle) return null;
+  const isRandom = battle.source === "random";
+  const canRun = !!(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).length);
+  return {
+    sourceLabel: battleSourceLabel(battle),
+    label: battle.label || battle.encounterId || "",
+    subLabel: battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(", ") || "",
+    autoMapLabel: battle.battleMap?.theme ? label(battle.battleMap.theme) : "",
+    contextHtml: renderPendingBattleContext(state, battle) || "",
+    partySummaryHtml: renderBattlePartySummary(state as { party?: Record<string, PartyMemberLike> }) || "",
+    canRun,
+    isRandom
+  };
 }
 
 export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSummaryData | null {

@@ -1716,72 +1716,14 @@ window.CJS.CampaignUI = (() => {
   // produce the data. `_battleSourceLabel`, `_renderBattlePartySummary`,
   // `_renderPendingBattleContext` stay because they're sub-renderers.
 
-  function _battleSourceLabel(battle) {
-    const map = { random: '🎲 Random Roll', set: '📌 Set Battle', manual_pick: '📋 Picked', beat: '📜 Beat', manual: 'Manual' };
-    if (battle.source === 'travel_surprise') return 'Travel Surprise';
-    if (battle.source === 'moving_threat') return 'Moving Threat';
-    if (battle.source === 'random_monster_pool') return 'Monster Pool';
-    return map[battle.source] || battle.source || 'manual';
-  }
-
-  function _renderBattlePartySummary(state) {
-    const ready = [];
-    const blocked = [];
-    for (const [id, member] of Object.entries(state.party || {})) {
-      if (Bridge()?.isMemberBattleReady?.(member)) ready.push(member.name || id);
-      else blocked.push(`${member.name || id}: ${Bridge()?.availabilityLabel?.(member) || 'Unavailable'}`);
-    }
-    return `
-      <div class="campaign-preview">
-        <b>Battle Party</b><br>
-        Ready: ${_esc(ready.join(', ') || 'none')}<br>
-        ${blocked.length ? `Unavailable: ${_esc(blocked.join('; '))}` : 'Unavailable: none'}
-      </div>
-    `;
-  }
-
-  // _renderCombatResult / _renderLastCombatResult — Phase G.4 port.
-  // Bodies moved to `src/campaign/tabs/ResultPanels.tsx`. Typed
-  // bridges `getCombatResultData(state)` / `getLastCombatResultData(state)`
-  // produce the data.
-
-  function _renderCombatConsequenceNotice(result, state) {
-    const outcome = String(result?.result || '').toLowerCase();
-    if (!['defeat', 'draw'].includes(outcome)) return '';
-    const battle = state.pendingBattle || {};
-    const hasCustom = outcome === 'defeat'
-      ? !!((result.defeatOps || battle.defeatOps || battle.lossOps || result.badEndingOps || battle.badEndingOps || []).length)
-      : !!((result.drawOps || battle.drawOps || []).length);
-    const badEnding = outcome === 'defeat' && !!(
-      result.badEndingOnDefeat ||
-      battle.badEndingOnDefeat ||
-      result.defeatOutcome === 'bad_ending' ||
-      battle.defeatOutcome === 'bad_ending' ||
-      result.defeatMode === 'bad_ending' ||
-      battle.defeatMode === 'bad_ending'
-    );
-    const lines = [];
-    if (badEnding) lines.push('Defeat can branch into a bad-ending route for this battle.');
-    if (hasCustom) lines.push('This battle has authored defeat consequences.');
-    if (!hasCustom) lines.push(outcome === 'draw' ? 'Default draw penalty: danger +1 and 5% currency loss.' : 'Default defeat penalty: danger +2 and 10% currency loss.');
-    if (!(result.defeatNoRecovery || battle.defeatNoRecovery || battle.noDefeatRecovery)) lines.push('KO party members recover to low HP instead of an instant wipeout.');
-    return `
-      <div class="campaign-preview">
-        <b>Campaign Consequence</b><br>
-        ${lines.map((line) => _esc(line)).join('<br>')}
-      </div>
-    `;
-  }
-
-  function _renderLootSummary(drops) {
-    if (!drops.length) return '<div class="campaign-empty">No loot in this result.</div>';
-    return `
-      <div class="campaign-preview">
-        <b>Loot</b><br>
-        ${drops.map((drop) => _esc(_lootLine(drop))).join('<br>')}
-      </div>
-    `;
-  }
+  // `_battleSourceLabel`, `_renderBattlePartySummary`,
+  // `_renderCombatConsequenceNotice`, `_renderLootSummary`,
+  // `_renderCombatPulseSummary`, `_renderPendingBattleContext` and the
+  // matching `getCombatResultData` / `getLastCombatResultData` /
+  // `getPendingBattleData` data builders ported to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). The pure-state-read
+  // versions read CampaignCombatBridge + CampaignQuestPulse directly,
+  // matching the JS originals exactly.
 
   // _renderEventResult / _renderManualEventSummary / _renderOracle —
   // Phase G.2 port. Bodies moved to
@@ -2184,15 +2126,9 @@ window.CJS.CampaignUI = (() => {
   // (`src/campaign/tabs/QuestRow.tsx` + typed `getQuestRowData`); the
   // zombie scavenge tracker (its last HTML caller) ported in G.17.
 
-  function _renderContextTags(tags = []) {
-    const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
-    if (!list.length) return '';
-    return `
-      <div class="campaign-chip-row campaign-context-tags">
-        ${list.map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}
-      </div>
-    `;
-  }
+  // `_renderContextTags` moved to `resultPanels.ts` in Phase H.4 as a
+  // private helper shared by the combat pulse / pending battle data
+  // builders.
 
   // _renderObjectivePulseHint removed in Phase G.17 (its only caller,
   // the HTML _renderQuestObjective, is gone). The JSX QuestRow renders
@@ -2211,31 +2147,9 @@ window.CJS.CampaignUI = (() => {
     return bits.length ? `Auto: ${bits.join(' + ')}` : 'Auto progress available';
   }
 
-  function _renderPendingBattleContext(state, battle = {}) {
-    const ctx = QP()?.battleContextForPending?.(state, battle);
-    const tags = [
-      ...(ctx?.contextTags || []),
-      ...(ctx?.monsterTags || [])
-    ];
-    if (!ctx?.questId && !tags.length) return '';
-    return `
-      <div class="campaign-battle-context">
-        ${ctx?.questTitle ? `<strong>${_esc(ctx.questTitle)}</strong>` : ''}
-        ${_renderContextTags(tags)}
-      </div>
-    `;
-  }
-
-  function _renderCombatPulseSummary(pulse = null) {
-    if (!pulse) return '';
-    const tags = (pulse.tags || []).filter((tag) => /^(behavior|defeated_tag|status|skill):/.test(tag)).slice(0, 8);
-    return `
-      <div class="campaign-combat-pulse">
-        ${pulse.summary ? `<span>${_esc(pulse.summary)}</span>` : ''}
-        ${_renderContextTags(tags.map((tag) => tag.replace(/^[^:]+:/, '')))}
-      </div>
-    `;
-  }
+  // `_renderPendingBattleContext` and `_renderCombatPulseSummary`
+  // moved to `resultPanels.ts` in Phase H.4 alongside the data builders
+  // that consume them.
 
   function _questNextObjective(quest = {}) {
     const objectives = quest.objectives || [];
@@ -5657,50 +5571,8 @@ window.CJS.CampaignUI = (() => {
   // Phase H.4 (`src/campaign/tabs/data/resultPanels.ts` — pure state
   // reads, no closure deps).
 
-  function getCombatResultData(state = CS().getState()) {
-    if (!state) return null;
-    const result = state.pendingBattleResult;
-    if (!result) return null;
-    return {
-      resultLabel: result.result || 'resolved',
-      encounterId: result.encounterId || '',
-      rounds: result.rounds || 0,
-      lootHtml: _renderLootSummary(result.loot || []),
-      consequenceNoticeHtml: _renderCombatConsequenceNotice(result, state)
-    };
-  }
-
-  function getLastCombatResultData(state = CS().getState()) {
-    if (!state) return null;
-    const result = state.lastCombatResult;
-    if (!result) return null;
-    return {
-      resultLabel: result.result || 'resolved',
-      label: result.encounterId || result.label || 'Campaign battle',
-      rounds: result.rounds || 0,
-      summary: result.summary || '',
-      pulseHtml: _renderCombatPulseSummary(result.combatPulse) || '',
-      lootHtml: _renderLootSummary(result.loot || [])
-    };
-  }
-
-  function getPendingBattleData(state = CS().getState()) {
-    if (!state) return null;
-    const battle = state.pendingBattle;
-    if (!battle) return null;
-    const isRandom = battle.source === 'random';
-    const canRun = !!(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).length);
-    return {
-      sourceLabel: _battleSourceLabel(battle),
-      label: battle.label || battle.encounterId || '',
-      subLabel: battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '',
-      autoMapLabel: battle.battleMap?.theme ? _label(battle.battleMap.theme) : '',
-      contextHtml: _renderPendingBattleContext(state, battle) || '',
-      partySummaryHtml: _renderBattlePartySummary(state) || '',
-      canRun,
-      isRandom
-    };
-  }
+  // getCombatResultData / getLastCombatResultData / getPendingBattleData
+  // moved to TS in Phase H.4 — see resultPanels.ts.
 
   // Typed snapshot for the React SoloNotice panel. Returns null when
   // there's no pending solo hook card. Shared by Overview / EventTab /
@@ -6750,9 +6622,6 @@ window.CJS.CampaignUI = (() => {
     getEventResultData,
     getOracleData,
     getSoloNoticeData,
-    getCombatResultData,
-    getLastCombatResultData,
-    getPendingBattleData,
     getScenarioSummaryData,
     getActiveSequenceData,
     getSequenceShelfData,
