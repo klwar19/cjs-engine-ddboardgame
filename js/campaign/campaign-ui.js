@@ -62,7 +62,7 @@ window.CJS.CampaignUI = (() => {
   const _worldOptions = _CUIOptions.worldOptions;
   const _tentOptions = _CUIOptions.tentOptions;
 
-  // HTML control builders live in `js/campaign/ui/cui-controls.js`.
+  // HTML control builders live in `src/campaign/util/cui-controls.ts`.
   const _CUIControls = window.CJS.CampaignUIInternal.Controls;
   const _purposeTone = _CUIControls.purposeTone;
   const _purposeKeyForCard = _CUIControls.purposeKeyForCard;
@@ -1060,7 +1060,7 @@ window.CJS.CampaignUI = (() => {
   // heroes (Quest Home, Event tabs) were already inline JSX.
 
   // TOOL_PURPOSES, _renderInlinePurpose, _purposeTone, _purposeKeyForCard
-  // live in js/campaign/ui/cui-controls.js (bound as aliases at the top).
+  // live in src/campaign/util/cui-controls.ts (bound as aliases at the top).
 
   // _renderOverview — Phase F.4 port. Body moved to
   // `src/campaign/tabs/CampaignOverviewTab.tsx`. The outer dashboard
@@ -1629,7 +1629,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   // _impactLegendItem, _controlGroup, _actionMenu, _actionBtn live in
-  // js/campaign/ui/cui-controls.js (bound as aliases at the top).
+  // src/campaign/util/cui-controls.ts (bound as aliases at the top).
 
   function _renderSoloNotice(state) {
     const card = _pendingSoloHookCard(state);

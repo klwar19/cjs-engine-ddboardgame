@@ -89,6 +89,17 @@ sandbox.window.CJS.CampaignUIInternal.Log = {
   logMeta: () => '',
   renderLogEntry: () => ''
 };
+// Controls: ported to src/campaign/util/cui-controls.ts.
+sandbox.window.CJS.CampaignUIInternal.Controls = {
+  purposeTone: () => 'flavor',
+  purposeKeyForCard: () => 'hubPulse',
+  renderInlinePurpose: () => '',
+  impactLegendItem: () => '',
+  controlGroup: () => '',
+  actionMenu: () => '',
+  actionBtn: () => '',
+  renderTownActionButton: () => ''
+};
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
@@ -96,7 +107,6 @@ sandbox.window.CJS.CampaignUIInternal.Log = {
 const loadOrder = [
   'campaign/ui/cui-modals.js',
   'campaign/ui/cui-options.js',
-  'campaign/ui/cui-controls.js',
   'campaign/ui/cui-equipment.js',
   'campaign/ui/tabs/cui-tabs-registry.js',
   'campaign/ui/tabs/cui-party-tab.js',

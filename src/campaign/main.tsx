@@ -76,7 +76,7 @@ import "./util/cui-utils";
 import "./util/cui-portraits";
 import "../../js/campaign/ui/cui-modals.js";
 import "../../js/campaign/ui/cui-options.js";
-import "../../js/campaign/ui/cui-controls.js";
+import "./util/cui-controls";
 import "../../js/campaign/ui/cui-equipment.js";
 import "./util/cui-log";
 import "../../js/campaign/ui/tabs/cui-tabs-registry.js";
