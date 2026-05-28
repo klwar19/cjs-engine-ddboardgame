@@ -2627,8 +2627,7 @@ window.CJS.CampaignUI = (() => {
       case 'custom-event': return _customEvent();
       // roll-oracle / pick-oracle / custom-oracle ported to
       // action-handlers/oracle.ts (H.3).
-      case 'battle-reroll': return _battleReroll();
-      case 'battle-override': return _battleOverride();
+      // battle-reroll / battle-override ported to action-handlers/combat.ts (H.3).
       // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
       case 'solo-surprise': return _rollSoloSurprise();
       case 'random-quest-offer': return _offerRandomQuest();
@@ -2681,10 +2680,8 @@ window.CJS.CampaignUI = (() => {
       case 'add-quest': return _openQuestModal();
       case 'travel-world': return _travelWorld();
       // open-* navigation cases ported to action-handlers/nav.ts (H.3).
-      case 'run-roll-battle': return _runRollBattle();
-      case 'run-pick-battle': return _runPickBattle();
-      case 'run-queue-set-battle': return _runQueueSetBattle(data.battleId);
-      // run-battle / apply-combat-result / manual-battle / run-next-beat /
+      // run-roll-battle / run-pick-battle / run-queue-set-battle / run-battle /
+      // apply-combat-result / manual-battle / run-next-beat /
       // roll-travel-surprise ported to action-handlers/combat.ts (H.3).
       case 'generate-scenario': return _generateScenario();
       case 'generate-quest-scenario': return _generateScenario({ source: 'active_quest' });
@@ -3365,10 +3362,13 @@ window.CJS.CampaignUI = (() => {
         label: draft.battleLabel || battle.label || `Manual battle: ${title}`,
         source: 'manual_event',
         rewardOps: battle.rewardOps || [],
-        ..._battleDefeatFields(battle),
+        // _battleDefeatFields / _battleMapForArea ported to
+        // action-handlers/battle-pool.ts; reached via the shared runtime
+        // export until this manual event builder ports to TS.
+        ...window.CJS.CampaignBattlePool.battleDefeatFields(battle),
         objective: battle.objective || draft.questObjective || '',
         notes: battle.notes || draft.scene || short,
-        battleMap: battle.battleMap || _battleMapForArea(CS().getActiveScenario?.()?.setting || 'outdoor')
+        battleMap: battle.battleMap || window.CJS.CampaignBattlePool.battleMapForArea(CS().getActiveScenario?.()?.setting || 'outdoor')
       });
     }
 
@@ -3532,7 +3532,7 @@ window.CJS.CampaignUI = (() => {
         label: battle.label || battle.name || battle.encounterId || battle.battleSetId || `Set Battle ${index + 1}`
       }
     }));
-    const fallback = _fallbackBattlePool().slice(0, 10).map((battle, index) => ({
+    const fallback = window.CJS.CampaignBattlePool.fallbackBattlePool().slice(0, 10).map((battle, index) => ({
       value: `pool_${battle.id || battle.encounterId || battle.battleSetId || index}`,
       label: battle.label || battle.name || battle.encounterId || battle.battleSetId || `Battle ${index + 1}`,
       battle
@@ -3601,21 +3601,7 @@ window.CJS.CampaignUI = (() => {
   // _oracleChoices / _pickOracle / _customOracle ported to
   // action-handlers/oracle.ts (H.3).
 
-  function _battleReroll() {
-    const battle = CS().getState().pendingBattle;
-    if (!battle || battle.source !== 'random') return UI().toast('Only random battles can be rerolled', 'info');
-    const scenario = CS().getActiveScenario();
-    const tables = scenario?.randomBattleTables || [];
-    const tableId = battle.tableId || tables[0]?.id;
-    if (!tableId) return UI().toast('No random table to reroll from', 'info');
-    Runner().rollRandomBattle(tableId);
-  }
-
-  function _battleOverride() {
-    const battle = CS().getState().pendingBattle;
-    if (!battle) return;
-    _runPickBattle();
-  }
+  // _battleReroll / _battleOverride ported to action-handlers/combat.ts (H.3).
 
   // _rollHubPulse ported to action-handlers/rumor.ts (H.3).
 
@@ -5741,278 +5727,13 @@ window.CJS.CampaignUI = (() => {
   // _setMapLayer / _moveNode / _moveCell / _clearNode ported to
   // action-handlers/map.ts (H.3).
 
-  // _runBattle ported to action-handlers/combat.ts (H.3).
-
-  function _runRollBattle() {
-    const scenario = CS().getActiveScenario();
-    const tables = scenario?.randomBattleTables || [];
-    if (tables.length) {
-      const pending = Runner().rollRandomBattle(tables[0].id);
-      if (!pending) UI().toast('No battle rolled', 'info');
-      return;
-    }
-    const fallbackPool = _fallbackBattlePool();
-    if (!fallbackPool.length) return UI().toast('No battles available in this world', 'info');
-    const pick = _pickContextualBattle(fallbackPool);
-    const questContext = QP()?.battleContextForPending?.(CS().getState(), pick) || null;
-    const pending = {
-      encounterId: pick.encounterId || null,
-      battleSetId: pick.battleSetId || null,
-      monsterIds: pick.monsterIds || [],
-      label: pick.label,
-      source: 'random',
-      rewardOps: pick.rewardOps || [],
-      ..._battleDefeatFields(pick),
-      objective: pick.objective || '',
-      notes: pick.notes || '',
-      battleMap: pick.battleMap || null,
-      setting: pick.setting || scenario?.setting || null,
-      tags: pick.tags || [],
-      contextTags: questContext?.contextTags || [],
-      monsterTags: questContext?.monsterTags || pick.monsterTags || [],
-      questId: questContext?.questId || null,
-      questChainId: questContext?.questChainId || null,
-      objectiveId: questContext?.objectiveId || null,
-      questContext
-    };
-    CS().mutate((state) => {
-      state.pendingBattle = pending;
-      if (state.activeScenarioRun) state.activeScenarioRun.randomBattlesUsed = (state.activeScenarioRun.randomBattlesUsed || 0) + 1;
-    }, { source: 'random_battle_fallback' });
-    Ops().apply({ op: 'log', text: `Random battle rolled (world pool): ${pending.label}.` }, { source: 'random_battle' });
-  }
-
-  // _rollTravelSurprise ported to action-handlers/combat.ts (H.3).
-
-  function _fallbackBattlePool() {
-    const world = CS().getState()?.currentWorld;
-    const cards = window.CJS.CampaignBattleSetForge?.getCards?.({ world }) || [];
-    const fromCards = cards
-      .map((card) => ({
-        id: card.id,
-        battleSetId: card.id,
-        encounterId: card.encounterId || null,
-        label: card.name || card.id,
-        rewardOps: card.rewardOps || [],
-        ..._battleDefeatFields(card),
-        objective: card.objective || '',
-        notes: card.gimmick || '',
-        battleMap: _battleMapForCard(card),
-        tags: card.tags || [],
-        contextTags: card.tags || [],
-        monsterTags: card.tags || []
-      }))
-      .filter((entry) => entry.encounterId || entry.battleSetId);
-    if (fromCards.length) return fromCards;
-    const encounters = DS().getAllAsArray('encounters')
-      .filter((enc) => !enc._world || enc._world === world)
-      .slice(0, 6)
-      .map((enc) => ({ id: enc.id, encounterId: enc.id, label: enc.name || enc.id }));
-    if (encounters.length) return encounters;
-    const monsters = DS().getAllAsArray('monsters')
-      .filter((monster) => !world || !monster._world || monster._world === world)
-      .slice(0, 8);
-    if (!monsters.length) return [];
-    return monsters.map((monster) => ({
-      id: `monster_pool_${monster.id}`,
-      monsterIds: [monster.id],
-      label: monster.name || monster.id,
-      setting: CS().getActiveScenario()?.setting || 'outdoor',
-      battleMap: _battleMapForArea(CS().getActiveScenario()?.setting || 'outdoor'),
-      tags: [monster.type, monster.id].filter(Boolean),
-      monsterTags: QP()?.monsterTags?.(monster) || [monster.type, monster.id].filter(Boolean)
-    }));
-  }
-
-  function _pickContextualBattle(pool = []) {
-    const scored = pool
-      .map((entry) => ({ entry, score: _battleContextScore(entry) }))
-      .sort((a, b) => b.score - a.score);
-    const top = scored.slice(0, Math.min(4, scored.length));
-    const total = top.reduce((sum, item) => sum + Math.max(1, item.score), 0);
-    let roll = Math.random() * total;
-    for (const item of top) {
-      roll -= Math.max(1, item.score);
-      if (roll <= 0) return item.entry;
-    }
-    return top[0]?.entry || pool[Math.floor(Math.random() * pool.length)];
-  }
-
-  function _battleContextScore(entry = {}) {
-    const context = _battleContextTags();
-    const entryTags = [
-      entry.label,
-      entry.objective,
-      entry.notes,
-      entry.setting,
-      ...(entry.tags || []),
-      ...(entry.contextTags || []),
-      ...(entry.monsterTags || [])
-    ].join(' ').toLowerCase();
-    let score = 1;
-    for (const tag of context) {
-      if (tag && entryTags.includes(tag)) score += 5;
-    }
-    if (/boss|chimera|preview/.test(entryTags) && !context.includes('boss') && !context.includes('training')) score -= 4;
-    return Math.max(1, score);
-  }
-
-  function _battleContextTags() {
-    const state = CS().getState() || {};
-    const ctx = QP()?.battleContextForPending?.(state, state.pendingBattle || {}) || {};
-    const run = state.activeScenarioRun || {};
-    const raw = [
-      run.questTask?.label,
-      run.questTask?.location,
-      ...(ctx.tags || []),
-      ...(ctx.contextTags || []),
-      ...(ctx.monsterTags || [])
-    ].filter(Boolean).map((tag) => String(tag).toLowerCase());
-    return Array.from(new Set(raw.flatMap((tag) => [
-      tag,
-      tag.replace(/[^a-z0-9_:-]+/g, '_')
-    ])));
-  }
-
-  function _battleMapForArea(area) {
-    const key = String(area || '').toLowerCase();
-    let theme = 'forest';
-    if (['dungeon', 'cave', 'sewer', 'house'].includes(key)) theme = 'cave';
-    else if (key === 'temple') theme = 'temple';
-    else if (key === 'ruins') theme = 'ruins';
-    else if (['urban', 'tavern', 'castle', 'arena'].includes(key)) theme = 'arena';
-    else if (key === 'mountain') theme = 'tundra';
-    return { theme, width: 8, height: 8 };
-  }
-
-  function _battleMapForCard(card = {}) {
-    const text = [card.name, card.objective, card.gimmick, ...(card.tags || [])].join(' ').toLowerCase();
-    let theme = 'forest';
-    if (/temple|shrine|holy/.test(text)) theme = 'temple';
-    else if (/ruins|relic|pillar/.test(text)) theme = 'ruins';
-    else if (/cave|cellar|sewer|underground|den/.test(text)) theme = 'cave';
-    else if (/snow|ice|frost|ridge|mountain/.test(text)) theme = 'tundra';
-    else if (/arena|spar|training|guild|tavern|house|urban|street/.test(text)) theme = 'arena';
-    return {
-      theme,
-      width: Number(card.grid?.width || 8),
-      height: Number(card.grid?.height || 8)
-    };
-  }
-
-  function _battleDefeatFields(entry = {}, card = {}) {
-    const defeatOutcome = entry.defeatOutcome || card?.defeatOutcome || null;
-    const defeatMode = entry.defeatMode || card?.defeatMode || null;
-    return {
-      defeatOps: entry.defeatOps || entry.lossOps || card?.defeatOps || card?.lossOps || [],
-      drawOps: entry.drawOps || card?.drawOps || [],
-      badEndingOps: entry.badEndingOps || card?.badEndingOps || [],
-      badEndingOnDefeat: !!(entry.badEndingOnDefeat || card?.badEndingOnDefeat || defeatOutcome === 'bad_ending' || defeatMode === 'bad_ending'),
-      badEndingFlag: entry.badEndingFlag || card?.badEndingFlag || null,
-      defeatOutcome,
-      defeatMode,
-      defeatNoRecovery: !!(entry.defeatNoRecovery || entry.noDefeatRecovery || card?.defeatNoRecovery || card?.noDefeatRecovery)
-    };
-  }
-
-  function _runPickBattle() {
-    const scenario = CS().getActiveScenario();
-    const seen = new Map();
-    for (const set of scenario?.setBattles || []) {
-      const value = set.id || set.battleSetId || set.encounterId;
-      if (!value || seen.has(value)) continue;
-      seen.set(value, { value, label: set.label || set.name || set.encounterId || set.battleSetId, sub: 'scenario', _battle: set });
-    }
-    for (const table of scenario?.randomBattleTables || []) {
-      for (const entry of table.entries || []) {
-        const value = entry.id || entry.battleSetId || entry.encounterId;
-        if (!value || seen.has(value)) continue;
-        seen.set(value, { value, label: entry.label || entry.encounterId || entry.battleSetId, sub: table.name || table.id, _battle: entry });
-      }
-    }
-    for (const card of window.CJS.CampaignBattleSetForge.getCards()) {
-      if (seen.has(card.id)) continue;
-      seen.set(card.id, {
-        value: card.id,
-        label: card.name || card.id,
-        sub: `battle set ${card.rank || ''}`.trim(),
-        _battle: {
-          battleSetId: card.id,
-          encounterId: card.encounterId || null,
-          label: card.name || card.id,
-          rewardOps: card.rewardOps || [],
-          ..._battleDefeatFields(card),
-          objective: card.objective || '',
-          notes: card.gimmick || '',
-          battleMap: _battleMapForCard(card),
-          tags: card.tags || [],
-          contextTags: card.tags || [],
-          monsterTags: card.tags || []
-        }
-      });
-    }
-    const world = CS().getState()?.currentWorld;
-    for (const enc of DS().getAllAsArray('encounters')) {
-      if (seen.has(enc.id)) continue;
-      if (enc._world && enc._world !== world) continue;
-      seen.set(enc.id, { value: enc.id, label: enc.name || enc.id, sub: enc._world || 'all' });
-    }
-    const options = Array.from(seen.values()).sort((a, b) => String(a.label).localeCompare(String(b.label)));
-    if (!options.length) return UI().toast('No encounters available', 'info');
-    _opPickerModal({
-      title: 'Pick Battle',
-      options,
-      placeholder: 'Search encounters…',
-      primaryLabel: 'Queue Battle',
-      onSubmit: ({ value }) => {
-        const opt = seen.get(value);
-        const battle = opt?._battle || {};
-        const pending = {
-          encounterId: battle.battleSetId ? (battle.encounterId || null) : (battle.encounterId || value),
-          battleSetId: battle.battleSetId || null,
-          label: battle.label || opt?.label || value,
-          source: 'manual_pick',
-          rewardOps: battle.rewardOps || [],
-          ..._battleDefeatFields(battle),
-          objective: battle.objective || '',
-          notes: battle.notes || '',
-          battleMap: battle.battleMap || null,
-          tags: battle.tags || [],
-          contextTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.contextTags || [],
-          monsterTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.monsterTags || battle.monsterTags || [],
-          questContext: QP()?.battleContextForPending?.(CS().getState(), battle) || null
-        };
-        CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_pick_battle' });
-        Ops().apply({ op: 'log', text: `Battle queued (manual pick): ${pending.label}.` }, { source: 'run' });
-      }
-    });
-  }
-
-  function _runQueueSetBattle(battleId) {
-    const scenario = CS().getActiveScenario();
-    const battle = (scenario?.setBattles || []).find((b) => b.id === battleId || b.encounterId === battleId || b.battleSetId === battleId);
-    if (!battle) return UI().toast('Set battle not found', 'error');
-    const pending = {
-      encounterId: battle.encounterId || null,
-      battleSetId: battle.battleSetId || null,
-      label: battle.label || battle.name || battle.encounterId || battle.battleSetId,
-      source: 'set',
-      rewardOps: battle.rewardOps || [],
-      ..._battleDefeatFields(battle),
-      objective: battle.objective || '',
-      notes: battle.notes || '',
-      battleMap: battle.battleMap || null,
-      tags: battle.tags || [],
-      contextTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.contextTags || [],
-      monsterTags: QP()?.battleContextForPending?.(CS().getState(), battle)?.monsterTags || battle.monsterTags || [],
-      questContext: QP()?.battleContextForPending?.(CS().getState(), battle) || null
-    };
-    CS().mutate((state) => { state.pendingBattle = pending; }, { source: 'run_set_battle' });
-    Ops().apply({ op: 'log', text: `Set battle queued: ${pending.label}.` }, { source: 'run' });
-  }
-
+  // _runBattle / _runRollBattle / _runPickBattle / _runQueueSetBattle /
   // _runNextBeat / _manualBattleModal / _applyCombatResult ported to
-  // action-handlers/combat.ts (H.3).
+  // action-handlers/combat.ts (H.3). The shared battle-pool helpers
+  // (_fallbackBattlePool / _pickContextualBattle / _battleContext* /
+  // _battleMapFor* / _battleDefeatFields) ported to
+  // action-handlers/battle-pool.ts, exposed on window.CJS.CampaignBattlePool
+  // for the still-in-JS manual event builder.
 
   // _shopBuy / _shopStock / _inventoryDelta / _quickAddInventory /
   // _plantSeed / _craftRecipe / _addPocketNote / _addPinnedNote ported to
@@ -6095,7 +5816,9 @@ window.CJS.CampaignUI = (() => {
       const result = _startQuestScenario(questId, { size: 'tiny' });
       if (!result || result.error) return;
     }
-    _runRollBattle();
+    // _runRollBattle ported to action-handlers/combat.ts (run-roll-battle);
+    // route this internal caller through the action runtime.
+    window.CJS.CampaignActionsRuntime?.run?.('run-roll-battle');
     Ops().apply({ op: 'log', text: `Quest battle queued: ${quest.title || quest.id}.` }, { source: 'quest_battle' });
     _activeMode = 'quest';
     _activeTab = 'maps';

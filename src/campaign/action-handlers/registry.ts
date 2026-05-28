@@ -224,12 +224,17 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "plant-seed": (d) => Economy.plantSeed(str(d.plotId)),
   "add-pocket-note": () => Economy.addPocketNote(),
   "add-note": () => Economy.addPinnedNote(),
-  // ── Combat execution / resolution (selection actions stay) ────────
+  // ── Combat execution / resolution + selection ────────────────────
   "run-battle": () => Combat.runBattle(),
   "apply-combat-result": () => Combat.applyCombatResult(),
   "manual-battle": () => Combat.manualBattleModal(),
   "run-next-beat": () => Combat.runNextBeat(),
   "roll-travel-surprise": () => Combat.rollTravelSurprise(),
+  "run-roll-battle": () => Combat.runRollBattle(),
+  "run-pick-battle": () => Combat.runPickBattle(),
+  "run-queue-set-battle": (d) => Combat.runQueueSetBattle(str(d.battleId)),
+  "battle-reroll": () => Combat.battleReroll(),
+  "battle-override": () => Combat.battleOverride(),
   // ── Downtime (relationships + camp rest) ──────────────────────────
   "rel-activity": (d) => Downtime.doRelActivity(str(d.characterId), str(d.activityId)),
   "camp-rest": () => Downtime.campRestModal()

@@ -22,6 +22,7 @@ interface CampaignStateModule {
   getState: () => Record<string, unknown> | null;
   getContent: () => Record<string, unknown>;
   getHubState: (hubId: string) => { rumors?: Array<{ id?: string; [key: string]: unknown }> } | null | undefined;
+  getActiveScenario: () => Record<string, unknown> | null | undefined;
   mutate: (recipe: (state: Record<string, unknown>) => void, options?: { source?: string }) => void;
 }
 

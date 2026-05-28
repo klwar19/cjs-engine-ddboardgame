@@ -1,20 +1,29 @@
-// combat.ts — Phase H.3 combat execution / resolution handlers.
+// combat.ts — Phase H.3 combat execution / resolution / selection handlers.
 //
-// run-battle opens the pending battle through CampaignCombatBridge (saving
-// first, and routing through the combat popup when present). apply-combat-result
-// applies the returned result and clears it. manual-battle records a GM-entered
-// result. run-next-beat advances the linear scenario beat. roll-travel-surprise
-// forces a travel surprise. These touch only engine modules (CampaignCombatBridge
-// / ScenarioRunner / CampaignSave / CampaignCombatPopup) + CampaignOps, with no
-// shared battle-selection helpers, so they port cleanly. Toast strings, op
-// names, the `combat_bridge`/`ui` sources and guards mirror the deleted closures.
+// Execution / resolution: run-battle opens the pending battle through
+// CampaignCombatBridge (saving first, routing through the combat popup when
+// present). apply-combat-result applies the returned result and clears it.
+// manual-battle records a GM-entered result. run-next-beat advances the linear
+// scenario beat. roll-travel-surprise forces a travel surprise.
 //
-// The battle-selection actions (run-roll-battle / run-pick-battle /
-// run-queue-set-battle / battle-reroll / battle-override) stay in the switch:
-// they share `_battleDefeatFields` / `_battleMapFor*` / `_fallbackBattlePool`
-// with the manual event builder, so they port with that cluster.
+// Selection: run-roll-battle (random table, else contextual world-pool roll),
+// run-pick-battle (searchable encounter picker), run-queue-set-battle (queue an
+// authored set battle), battle-reroll (reroll a random battle), battle-override
+// (re-open the picker). These build the same pending-battle payloads as the
+// deleted closures via the shared `battle-pool.ts` helpers (also used by the
+// still-in-JS manual event builder). Op names, payload keys, sources, modal
+// titles and the QP context wiring mirror the deleted closures exactly.
 
-import { applyOp, cs, mod, toast } from "./context";
+import { applyOp, cs, ds, mod, ops, toast } from "./context";
+import { modals, type PickerOption } from "./modals";
+import {
+  battleContextFor,
+  battleDefeatFields,
+  battleMapForCard,
+  fallbackBattlePool,
+  pickContextualBattle,
+  type BattleLike
+} from "./battle-pool";
 
 interface PendingBattle {
   encounterId?: string | null;
@@ -30,6 +39,18 @@ interface CombatBridgeModule {
 interface RunnerModule {
   advanceLinearBeat?: () => unknown;
   rollTravelSurprise?: (cfg: { force?: boolean }) => { title?: string; category?: string } | null | undefined;
+  rollRandomBattle?: (tableId: string) => unknown;
+}
+interface BattleSetForgeModule {
+  getCards?: (opts?: { world?: string }) => BattleLike[];
+}
+interface Scenario {
+  setting?: string;
+  randomBattleTables?: Array<{ id?: string; name?: string; entries?: BattleLike[] }>;
+  setBattles?: BattleLike[];
+}
+interface PickerEntry extends PickerOption {
+  _battle?: BattleLike;
 }
 interface SaveModule {
   saveCurrent?: () => void;
@@ -128,4 +149,183 @@ export function rollTravelSurprise(): void {
     return;
   }
   toast(result.title || "Travel surprise ready", result.category === "battle" ? "warning" : "success");
+}
+
+// ── Battle selection ──────────────────────────────────────────────
+function activeScenario(): Scenario | null | undefined {
+  return cs().getActiveScenario() as Scenario | null | undefined;
+}
+
+export function runRollBattle(): void {
+  const scenario = activeScenario();
+  const tables = scenario?.randomBattleTables || [];
+  if (tables.length) {
+    const pending = runner()?.rollRandomBattle?.(tables[0].id || "");
+    if (!pending) toast("No battle rolled", "info");
+    return;
+  }
+  const pool = fallbackBattlePool();
+  if (!pool.length) {
+    toast("No battles available in this world", "info");
+    return;
+  }
+  const pick = pickContextualBattle(pool) || {};
+  const questContext = battleContextFor(pick);
+  const pending = {
+    encounterId: pick.encounterId || null,
+    battleSetId: pick.battleSetId || null,
+    monsterIds: pick.monsterIds || [],
+    label: pick.label,
+    source: "random",
+    rewardOps: pick.rewardOps || [],
+    ...battleDefeatFields(pick),
+    objective: pick.objective || "",
+    notes: pick.notes || "",
+    battleMap: pick.battleMap || null,
+    setting: pick.setting || scenario?.setting || null,
+    tags: pick.tags || [],
+    contextTags: questContext?.contextTags || [],
+    monsterTags: questContext?.monsterTags || pick.monsterTags || [],
+    questId: questContext?.questId || null,
+    questChainId: questContext?.questChainId || null,
+    objectiveId: questContext?.objectiveId || null,
+    questContext
+  };
+  cs().mutate((state) => {
+    state.pendingBattle = pending;
+    const run = state.activeScenarioRun as { randomBattlesUsed?: number } | null;
+    if (run) run.randomBattlesUsed = (run.randomBattlesUsed || 0) + 1;
+  }, { source: "random_battle_fallback" });
+  ops().apply({ op: "log", text: `Random battle rolled (world pool): ${pending.label}.` }, { source: "random_battle" });
+}
+
+export function runPickBattle(): void {
+  const scenario = activeScenario();
+  const seen = new Map<string, PickerEntry>();
+  for (const set of scenario?.setBattles || []) {
+    const value = set.id || set.battleSetId || set.encounterId;
+    if (!value || seen.has(value)) continue;
+    seen.set(value, { value, label: set.label || set.name || set.encounterId || set.battleSetId || value, sub: "scenario", _battle: set });
+  }
+  for (const table of scenario?.randomBattleTables || []) {
+    for (const entry of table.entries || []) {
+      const value = entry.id || entry.battleSetId || entry.encounterId;
+      if (!value || seen.has(value)) continue;
+      seen.set(value, { value, label: entry.label || entry.encounterId || entry.battleSetId || value, sub: table.name || table.id, _battle: entry });
+    }
+  }
+  for (const card of mod<BattleSetForgeModule>("CampaignBattleSetForge")?.getCards?.() || []) {
+    if (!card.id || seen.has(card.id)) continue;
+    seen.set(card.id, {
+      value: card.id,
+      label: card.name || card.id,
+      sub: `battle set ${card.rank || ""}`.trim(),
+      _battle: {
+        battleSetId: card.id,
+        encounterId: card.encounterId || null,
+        label: card.name || card.id,
+        rewardOps: card.rewardOps || [],
+        ...battleDefeatFields(card),
+        objective: card.objective || "",
+        notes: card.gimmick || "",
+        battleMap: battleMapForCard(card),
+        tags: card.tags || [],
+        contextTags: card.tags || [],
+        monsterTags: card.tags || []
+      }
+    });
+  }
+  const world = cs().getState()?.currentWorld;
+  for (const enc of (ds()?.getAllAsArray("encounters") as BattleLike[] | undefined) || []) {
+    if (!enc.id || seen.has(enc.id)) continue;
+    if (enc._world && enc._world !== world) continue;
+    seen.set(enc.id, { value: enc.id, label: enc.name || enc.id, sub: enc._world || "all" });
+  }
+  const options = Array.from(seen.values()).sort((a, b) => String(a.label).localeCompare(String(b.label)));
+  if (!options.length) {
+    toast("No encounters available", "info");
+    return;
+  }
+  modals()?.opPickerModal({
+    title: "Pick Battle",
+    options,
+    placeholder: "Search encounters…",
+    primaryLabel: "Queue Battle",
+    onSubmit: ({ value }) => {
+      const opt = seen.get(value);
+      const battle = opt?._battle || {};
+      const context = battleContextFor(battle);
+      const pending = {
+        encounterId: battle.battleSetId ? battle.encounterId || null : battle.encounterId || value,
+        battleSetId: battle.battleSetId || null,
+        label: battle.label || opt?.label || value,
+        source: "manual_pick",
+        rewardOps: battle.rewardOps || [],
+        ...battleDefeatFields(battle),
+        objective: battle.objective || "",
+        notes: battle.notes || "",
+        battleMap: battle.battleMap || null,
+        tags: battle.tags || [],
+        contextTags: context?.contextTags || [],
+        monsterTags: context?.monsterTags || battle.monsterTags || [],
+        questContext: context
+      };
+      cs().mutate((state) => {
+        state.pendingBattle = pending;
+      }, { source: "run_pick_battle" });
+      ops().apply({ op: "log", text: `Battle queued (manual pick): ${pending.label}.` }, { source: "run" });
+    }
+  });
+}
+
+export function runQueueSetBattle(battleId: string): void {
+  const scenario = activeScenario();
+  const battle = (scenario?.setBattles || []).find(
+    (b) => b.id === battleId || b.encounterId === battleId || b.battleSetId === battleId
+  );
+  if (!battle) {
+    toast("Set battle not found", "error");
+    return;
+  }
+  const context = battleContextFor(battle);
+  const pending = {
+    encounterId: battle.encounterId || null,
+    battleSetId: battle.battleSetId || null,
+    label: battle.label || battle.name || battle.encounterId || battle.battleSetId,
+    source: "set",
+    rewardOps: battle.rewardOps || [],
+    ...battleDefeatFields(battle),
+    objective: battle.objective || "",
+    notes: battle.notes || "",
+    battleMap: battle.battleMap || null,
+    tags: battle.tags || [],
+    contextTags: context?.contextTags || [],
+    monsterTags: context?.monsterTags || battle.monsterTags || [],
+    questContext: context
+  };
+  cs().mutate((state) => {
+    state.pendingBattle = pending;
+  }, { source: "run_set_battle" });
+  ops().apply({ op: "log", text: `Set battle queued: ${pending.label}.` }, { source: "run" });
+}
+
+export function battleReroll(): void {
+  const battle = (cs().getState() as { pendingBattle?: { source?: string; tableId?: string } } | null)?.pendingBattle;
+  if (!battle || battle.source !== "random") {
+    toast("Only random battles can be rerolled", "info");
+    return;
+  }
+  const tables = (activeScenario()?.randomBattleTables) || [];
+  const tableId = battle.tableId || tables[0]?.id;
+  if (!tableId) {
+    toast("No random table to reroll from", "info");
+    return;
+  }
+  runner()?.rollRandomBattle?.(tableId);
+}
+
+export function battleOverride(): void {
+  const battle = (cs().getState() as { pendingBattle?: unknown } | null)?.pendingBattle;
+  if (!battle) return;
+  runPickBattle();
 }
