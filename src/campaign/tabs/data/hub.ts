@@ -83,10 +83,25 @@ interface HubTabSurface {
     ops: readonly unknown[],
     options?: { hasText?: boolean }
   ) => { tone?: string; label?: string };
+  readonly openRumors?: (hubState: unknown) => readonly RumorInput[];
 }
 
 interface CampaignHubSurface {
   readonly getCurrentHubId?: () => string;
+  readonly getCurrentHubDefinition?: () => {
+    readonly id?: string;
+    readonly name?: string;
+    readonly description?: string;
+  } | null | undefined;
+  readonly getCurrentHubState?: () => {
+    readonly mood?: string;
+    readonly security?: number;
+    readonly prosperity?: number;
+    readonly warmth?: number;
+    readonly weirdness?: number;
+    readonly activeProblems?: readonly string[];
+    readonly [key: string]: unknown;
+  } | null | undefined;
 }
 
 function hubTab(): HubTabSurface | undefined {
@@ -350,7 +365,6 @@ export interface MapSeedsData {
 }
 
 interface Bridge {
-  readonly getSideForgeData: (state?: CampaignStateSnapshot) => SideForgeData | null;
   readonly getQuestChainsData: () => QuestChainsData | null;
 }
 
@@ -362,8 +376,81 @@ function cjs(): Cjs {
   return (window as unknown as { CJS?: Cjs }).CJS ?? {};
 }
 
+// Phase H.4 inline port — Living Hub side-content view. Reads
+// CampaignHub state + side-content slot + the shared sideCardData /
+// rumorRowData helpers above.
+interface SideContentSlotInput extends SideCardInput {
+  readonly type?: string;
+  readonly status?: string;
+}
+
+interface CampaignStateForSideForge {
+  readonly lastSideContentCard?: SideContentSlotInput;
+  readonly sideContent?: {
+    readonly generatedIdeas?: Record<string, SideContentSlotInput>;
+    readonly reviewQueue?: ReadonlyArray<{
+      id?: string;
+      contentId?: string;
+      reason?: string;
+      canonRisk?: string;
+    }>;
+    readonly contentHistory?: ReadonlyArray<{
+      title?: string;
+      type?: string;
+      result?: string;
+      phase?: number | string;
+    }>;
+  };
+}
+
 export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | null {
-  return cjs().CampaignUI?.getSideForgeData(state) ?? null;
+  if (!state) return null;
+  const c = cjs();
+  const hub = campaignHub()?.getCurrentHubDefinition?.() || {};
+  const hubState = campaignHub()?.getCurrentHubState?.() || {};
+  const typed = state as CampaignStateForSideForge;
+  const last = typed.lastSideContentCard;
+  const ideas = Object.values(typed.sideContent?.generatedIdeas || {});
+  const saved = ideas.filter((idea) => idea.status === "saved" || idea.status === "active");
+  const review = typed.sideContent?.reviewQueue || [];
+  const history = typed.sideContent?.contentHistory || [];
+  const sx = side();
+  const rumors = hubTab()?.openRumors?.(hubState) || [];
+  // Reference cjs() to silence unused warning when only typed reads are
+  // exercised (every other consumer reaches through cjs()).
+  void c;
+  return {
+    hubName: String(hub.name || "Living Hub"),
+    hubDescription: String(hub.description || "Town pulse, rumors, problems, and content review queue."),
+    hubId: String(hub.id || ""),
+    moodLabel: label(hubState.mood || "neutral"),
+    stats: {
+      security: Number(hubState.security ?? 0),
+      prosperity: Number(hubState.prosperity ?? 0),
+      warmth: Number(hubState.warmth ?? 0),
+      weirdness: Number(hubState.weirdness ?? 0)
+    },
+    problemPurposeHtml: renderInlinePurpose("problem"),
+    problems: (hubState.activeProblems || []).map((problem) => ({
+      id: String(problem),
+      label: label(problem)
+    })),
+    lastCard: last ? sideCardData(last, { mode: "last" }) : null,
+    rumors: rumors.slice(0, 6).map((rumor) => rumorRowData(rumor)),
+    savedIdeas: saved.slice(0, 8).map((idea) => sideCardData(idea, { compact: true })),
+    review: review.slice(0, 8).map((item) => ({
+      id: String(item.id || ""),
+      contentId: String(item.contentId || ""),
+      reason: String(item.reason || ""),
+      canonRisk: String(item.canonRisk || "red"),
+      canonRiskClass: sx?.riskClass?.(item.canonRisk) ?? ""
+    })),
+    history: history.slice(0, 10).map((line) => ({
+      title: String(line.title || line.type || ""),
+      result: String(line.result || ""),
+      phaseLabel: String(line.phase ?? "")
+    }))
+  };
 }
 
 // Phase H.4 inline port — pure read of state + DataLoader + sideCardData.

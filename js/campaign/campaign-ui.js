@@ -6159,49 +6159,9 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getSideForgeData(state = CS().getState()) {
-    if (!state) return null;
-    const Hub = window.CJS.CampaignHub;
-    const hub = Hub?.getCurrentHubDefinition?.() || {};
-    const hubState = Hub?.getCurrentHubState?.() || {};
-    const last = state.lastSideContentCard;
-    const ideas = Object.values(state.sideContent?.generatedIdeas || {});
-    const saved = ideas.filter((idea) => idea.status === 'saved' || idea.status === 'active');
-    const review = state.sideContent?.reviewQueue || [];
-    const history = state.sideContent?.contentHistory || [];
-    return {
-      hubName: String(hub.name || 'Living Hub'),
-      hubDescription: String(hub.description || 'Town pulse, rumors, problems, and content review queue.'),
-      hubId: String(hub.id || ''),
-      moodLabel: _label(hubState.mood || 'neutral'),
-      stats: {
-        security: Number(hubState.security ?? 0),
-        prosperity: Number(hubState.prosperity ?? 0),
-        warmth: Number(hubState.warmth ?? 0),
-        weirdness: Number(hubState.weirdness ?? 0)
-      },
-      problemPurposeHtml: _renderInlinePurpose('problem'),
-      problems: (hubState.activeProblems || []).map((problem) => ({
-        id: String(problem),
-        label: _label(problem)
-      })),
-      lastCard: last ? _sideCardData(last, { mode: 'last' }) : null,
-      rumors: _openRumors(hubState).slice(0, 6).map((rumor) => _rumorRowData(rumor)),
-      savedIdeas: saved.slice(0, 8).map((idea) => _sideCardData(idea, { compact: true })),
-      review: review.slice(0, 8).map((item) => ({
-        id: String(item.id || ''),
-        contentId: String(item.contentId || ''),
-        reason: String(item.reason || ''),
-        canonRisk: String(item.canonRisk || 'red'),
-        canonRiskClass: Side().riskClass(item.canonRisk)
-      })),
-      history: history.slice(0, 10).map((line) => ({
-        title: String(line.title || line.type || ''),
-        result: String(line.result || ''),
-        phaseLabel: String(line.phase ?? '')
-      }))
-    };
-  }
+  // `getSideForgeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
+  // `_rumorRowData` helpers ported earlier in the same phase.
 
   // `getOracleForgeData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
@@ -6432,7 +6392,6 @@ window.CJS.CampaignUI = (() => {
     getChromeData,
     getMinigameTestData,
     getRosterData,
-    getSideForgeData,
     getQuestChainsData,
     getAdventureLegendVisible,
     getStorySummaryData,
