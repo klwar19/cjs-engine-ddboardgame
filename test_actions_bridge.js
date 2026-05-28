@@ -146,6 +146,15 @@ ok('registry installs CampaignActionsRuntime',
 ok('_handleAction consults the action runtime first',
    /CampaignActionsRuntime[\s\S]{0,240}runtime\.run\(/.test(uiSrc));
 
+// Phase H.3 complete — every CampaignActionName resolves through the
+// TS registry on its own. The switch is defensively kept (as an
+// always-skipped no-op + the port history in comments), but it should
+// not be needed to cover the union.
+const registryUncovered = unionNames.filter((n) => !registryKeys.has(n));
+ok('registry alone covers every CampaignActionName (Phase H.3 done)',
+   registryUncovered.length === 0,
+   registryUncovered.length ? 'registry-uncovered: ' + registryUncovered.join(', ') : '246/246');
+
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);
