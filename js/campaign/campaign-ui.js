@@ -2709,28 +2709,11 @@ window.CJS.CampaignUI = (() => {
       // action-handlers/economy.ts (H.3).
       // haven-build-facility/haven-upgrade-facility/haven-ranch-collect
       // ported to action-handlers/haven.ts (H.3).
-      case 'haven-train-skill': return _havenTrainSkill(data.facility);
-      case 'haven-ranch-assign': return _havenRanchAssign(data.facility);
-      case 'haven-open-trivia': return _openGuildTrivia(data.world);
-      case 'haven-open-cooking': return _openCookingMinigame(data.foodId);
+      // haven-train-skill / haven-ranch-assign / haven-open-trivia ported
+      // to action-handlers/haven.ts; haven-open-cooking / cook-food ported
+      // to action-handlers/cooking.ts (H.3). haven-play-minigame stays
+      // (mini-game session machinery).
       case 'haven-play-minigame': return _havenPlayMinigame(data.game);
-      case 'cook-food': {
-        // If the cooking minigame is loaded, route through it so timing
-        // affects buff potency and recipes can be discovered. Falls back
-        // to the immediate cook op when the minigame isn't available.
-        if (window.CJS.CookingMinigame?.open) {
-          return _openCookingMinigame(data.foodId);
-        }
-        const food = DS().get('food', data.foodId);
-        const inputs = food?.inputs || {};
-        return Ops().apply({
-          op: 'cook_basic',
-          id: data.foodId,
-          label: food?.name || data.foodId,
-          inputs,
-          outputs: { food: { [data.foodId]: 1 } }
-        }, { source: 'ui' });
-      }
       case 'quest-progress': return _questProgress(data.id);
       case 'quest-scenario': return _questScenario(data.id);
       case 'quest-battle': return _questBattle(data.id);
@@ -6140,81 +6123,9 @@ window.CJS.CampaignUI = (() => {
   // _havenBuildFacility / _havenUpgradeFacility / _havenRanchCollect
   // ported to action-handlers/haven.ts (H.3).
 
-  function _havenTrainSkill(facilityId) {
-    const state = CS().getState();
-    // Build a list of [member, skill] candidates from the active party.
-    const memberOptions = Object.entries(state.party || {})
-      .filter(([id, m]) => (m.rosterRole || 'active') !== 'bench')
-      .map(([id, m]) => ({ id, name: m.name || id, member: m }));
-    if (!memberOptions.length) return UI().toast('No active party members', 'info');
-
-    // First pick a member, then pick a skill, then commit.
-    _opPickerModal({
-      title: 'Pick member to train',
-      options: memberOptions.map((m) => ({ value: m.id, label: `${m.name}` })),
-      primaryLabel: 'Next',
-      onSubmit: ({ value: memberId }) => {
-        const member = memberOptions.find((m) => m.id === memberId)?.member;
-        if (!member) return;
-        const skillIds = Array.from(new Set([
-          ...(member.learnedSkills || []),
-          ...((DS().get('characters', member.baseCharacterId || memberId) || {}).skills || []).map((s) => typeof s === 'string' ? s : s.skillId).filter(Boolean)
-        ]));
-        if (!skillIds.length) return UI().toast(`${member.name || memberId} has no trainable skills`, 'info');
-        const skillOpts = skillIds.map((sid) => {
-          const def = DS().get('skills', sid);
-          const prog = member.skillProgress?.[sid] || { ap: 0, level: 1 };
-          return { value: sid, label: `${def?.name || sid} (L${prog.level || 1} · ${prog.ap || 0} AP)` };
-        });
-        _opPickerModal({
-          title: 'Pick skill to train',
-          options: skillOpts,
-          primaryLabel: 'Train',
-          onSubmit: ({ value: skillId }) => {
-            Ops().apply({ op: 'train_skill', facilityId, memberId, skillId }, { source: 'pocket_haven_ui' });
-          }
-        });
-      }
-    });
-  }
-
-  function _havenRanchAssign(facilityId) {
-    // List known monsters whose data declares ranchOutputs OR tag them
-    // as "tameable", plus a fallback that includes all monster ids.
-    const tameable = DS().getAllAsArray('monsters')
-      .filter((m) => m?.tameable || (m?.tags || []).includes('tameable') || m?.ranchOutputs)
-      .slice(0, 50);
-    const pool = tameable.length ? tameable : DS().getAllAsArray('monsters').slice(0, 30);
-    const options = pool.map((m) => ({ value: m.id, label: `${m.icon || '🐾'} ${m.name || m.id}` }));
-    if (!options.length) return UI().toast('No tameable beasts in this world', 'info');
-    _opPickerModal({
-      title: 'Assign beast to ranch',
-      options,
-      primaryLabel: 'Assign',
-      onSubmit: ({ value: beastId }) => {
-        Ops().apply({ op: 'ranch_assign', facilityId, beastId }, { source: 'pocket_haven_ui' });
-      }
-    });
-  }
-
-  async function _openCookingMinigame(foodId) {
-    if (!foodId) return;
-    const food = DS().get('food', foodId);
-    if (!food) return UI().toast('Unknown recipe', 'error');
-    // The minigame handles cook_basic op itself; we just need to react
-    // to the result so the UI refreshes and we apply the bonus stat
-    // when perfect grade landed.
-    const result = await window.CJS.CookingMinigame.open({ foodId, inputs: food.inputs || {} });
-    if (!result?.ok) return;
-    if (result.grade === 'perfect') {
-      UI().toast(`Perfect cook! ${food.name} buff potency boosted`, 'success');
-    } else if (result.grade === 'burnt') {
-      UI().toast(`Burnt the ${food.name}…`, 'info');
-    } else {
-      UI().toast(`Cooked ${food.name} (${result.grade})`, 'success');
-    }
-    render();
-  }
+  // _havenTrainSkill / _havenRanchAssign ported to
+  // action-handlers/haven.ts (H.3). _openCookingMinigame ported to
+  // action-handlers/cooking.ts (H.3).
 
   // ── POCKET HAVEN MINI-GAMES ─────────────────────────────────────
   // Launches a registered mini-game from the Pocket Haven tile. The
@@ -6247,19 +6158,7 @@ window.CJS.CampaignUI = (() => {
     }
   }
 
-  // ── GUILD TRIVIA ────────────────────────────────────────────────
-  async function _openGuildTrivia(worldHint) {
-    if (!window.CJS.GuildTrivia?.run) return UI().toast('Trivia module not loaded', 'error');
-    const state = CS().getState();
-    const result = await window.CJS.GuildTrivia.run({
-      world: worldHint || state.currentWorld,
-      questionCount: 5
-    });
-    render();
-    if (result?.ok) {
-      UI().toast(`Trivia: ${result.correct}/${result.total} correct · +${result.jp} JP`, 'success');
-    }
-  }
+  // _openGuildTrivia ported to action-handlers/haven.ts (H.3).
 
   function _questProgress(questId, objectiveId = null, amount = 1) {
     const quest = CS().getState().quests[questId];

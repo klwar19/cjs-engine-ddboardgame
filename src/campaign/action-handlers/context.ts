@@ -69,6 +69,7 @@ export function ops(): CampaignOpsModule {
 
 interface DataStoreModule {
   get: (type: string, id: string) => Record<string, unknown> | undefined;
+  getAllAsArray: (type: string) => Array<Record<string, unknown>>;
 }
 
 export function ds(): DataStoreModule | undefined {

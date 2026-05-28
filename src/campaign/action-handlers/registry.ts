@@ -36,6 +36,7 @@ import * as Haven from "./haven";
 import * as Side from "./side";
 import * as Rumor from "./rumor";
 import * as Economy from "./economy";
+import * as Cooking from "./cooking";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -182,10 +183,16 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "move-cell": (d) => MapActions.moveCell(d.x, d.y),
   "map-layer": (d) => MapActions.setMapLayer(str(d.layer)),
   "clear-node": (d) => MapActions.clearNode(str(d.nodeId)),
-  // ── Pocket Haven facility ops ─────────────────────────────────────
+  // ── Pocket Haven facility ops + activities ────────────────────────
   "haven-build-facility": (d) => Haven.buildFacility(str(d.facility)),
   "haven-upgrade-facility": (d) => Haven.upgradeFacility(str(d.facility)),
   "haven-ranch-collect": (d) => Haven.ranchCollect(str(d.facility)),
+  "haven-train-skill": (d) => Haven.havenTrainSkill(str(d.facility)),
+  "haven-ranch-assign": (d) => Haven.havenRanchAssign(str(d.facility)),
+  "haven-open-trivia": (d) => Haven.openGuildTrivia(str(d.world)),
+  // ── Cooking (cook tab + haven tile) ───────────────────────────────
+  "haven-open-cooking": (d) => Cooking.openCookingMinigame(str(d.foodId)),
+  "cook-food": (d) => Cooking.cookFood(str(d.foodId)),
   // ── Side content (Hub Pulse cards + packs) ────────────────────────
   "apply-side-choice": (d) => Side.applySideChoice(str(d.id), Number(d.choice || 0)),
   "save-side-idea": (d) => Side.saveSideIdea(str(d.id)),
