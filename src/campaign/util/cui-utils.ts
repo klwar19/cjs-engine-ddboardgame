@@ -109,6 +109,18 @@ export function formatBundleText(bundle: RewardBundle | null | undefined): strin
   return parts.join(", ");
 }
 
+// ── Asset path resolution ────────────────────────────────────────────
+// Asset paths in `data/*.json` are stored relative to the project root.
+// The campaign page lives one directory deep, so naked paths need the
+// `../` prefix to resolve correctly. URLs, absolute paths, and
+// data-URLs pass through untouched.
+export function cssVarAssetUrl(path: unknown): string {
+  const value = String(path || "").trim();
+  if (!value) return "";
+  if (/^(data:|https?:|\/|\.\/|\.\.)/i.test(value)) return value;
+  return `../${value}`;
+}
+
 // ── Legacy namespace install ─────────────────────────────────────────
 // `js/campaign/campaign-ui.js` reads these via
 // `window.CJS.CampaignUIInternal.Utils` and binds short aliases (`_esc`,
@@ -124,6 +136,7 @@ export interface CuiUtils {
   readonly recordName: typeof recordName;
   readonly lootLine: typeof lootLine;
   readonly formatBundleText: typeof formatBundleText;
+  readonly cssVarAssetUrl: typeof cssVarAssetUrl;
 }
 
 const NAMESPACE: CuiUtils = Object.freeze({
@@ -135,7 +148,8 @@ const NAMESPACE: CuiUtils = Object.freeze({
   currencyLabel,
   recordName,
   lootLine,
-  formatBundleText
+  formatBundleText,
+  cssVarAssetUrl
 });
 
 interface CuiInternalWindow {

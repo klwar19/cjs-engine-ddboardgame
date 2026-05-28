@@ -35,6 +35,7 @@ window.CJS.CampaignUI = (() => {
   const _recordName = _CUIUtils.recordName;
   const _lootLine = _CUIUtils.lootLine;
   const _formatBundleText = _CUIUtils.formatBundleText;
+  const _cssVarAssetUrl = _CUIUtils.cssVarAssetUrl;
 
   // Portrait + icon helpers live in `src/campaign/util/cui-portraits.ts`.
   const _CUIPortraits = window.CJS.CampaignUIInternal.Portraits;
@@ -720,7 +721,14 @@ window.CJS.CampaignUI = (() => {
       buildCount: build.length,
       pressureCount: pressures.length,
       hasRun: !!state.activeScenarioRun,
-      heroBackdropUrl: _worldHomeBackdropUrl(),
+      heroBackdropUrl: (() => {
+        // Inlined `_worldHomeBackdropUrl` (the TS port lives in
+        // resultPanels/eventLog data files; one remaining JS caller).
+        const world = CS().getCurrentWorld?.() || {};
+        const theme = world.storyModeTheme || {};
+        const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
+        return backdrop ? _cssVarAssetUrl(backdrop) : null;
+      })(),
       scavenge: scavenge.map((activity) => _worldActivityPreviewData(activity, 'Scavenge route')),
       build: build.map((activity) => _worldActivityPreviewData(activity, 'Build project')),
       pressures: pressures.map((pressure) => ({
@@ -2095,12 +2103,8 @@ window.CJS.CampaignUI = (() => {
   // backdrop URL via `_worldHomeBackdropUrl()` and set the CSS var
   // through a typed style prop.
 
-  function _cssVarAssetUrl(path = '') {
-    const value = String(path || '').trim();
-    if (!value) return '';
-    if (/^(data:|https?:|\/|\.\/|\.\.)/i.test(value)) return value;
-    return `../${value}`;
-  }
+  // `_cssVarAssetUrl` moved to `src/campaign/util/cui-utils.ts` and
+  // bound as an alias at the top of this IIFE (Phase H.4).
 
   // _renderZombieScavengeTracker removed in Phase G.17. The zombie
   // Quests tracker now reads typed `getQuestPanelData(state).zombie`
@@ -5357,39 +5361,10 @@ window.CJS.CampaignUI = (() => {
   // ported produce HTML fragments via closure-private helpers; the
   // React component embeds them via dangerouslySetInnerHTML chunks.
 
-  function getEventLogData(state = CS().getState()) {
-    if (!state) return null;
-    const entries = (state.eventLog?.entries || []).map((entry) => ({
-      title: entry.title || 'Event',
-      summary: entry.summary || '',
-      scopeLabel: _label(entry.scope || entry.source || 'event'),
-      phase: entry.phase || null,
-      at: entry.at ? _formatLogTime(entry.at) : '',
-      consequences: Array.isArray(entry.consequences) ? entry.consequences.slice(0) : [],
-      tags: Array.isArray(entry.tags) ? entry.tags.slice(0, 8).map((tag) => _label(tag)) : []
-    }));
-    const rawEntries = state.eventLog?.entries || [];
-    const oracleCount = rawEntries.filter((entry) => String(entry.source || '').includes('oracle') || (entry.tags || []).includes('oracle')).length;
-    const manualCount = rawEntries.filter((entry) => String(entry.source || '').includes('manual') || (entry.tags || []).includes('manual_event')).length;
-    return {
-      entries,
-      totalCount: rawEntries.length,
-      oracleCount,
-      manualCount,
-      heroBackdropUrl: _worldHomeBackdropUrl()
-    };
-  }
-
-  // Returns just the resolved backdrop URL (or null) the React hero uses
-  // for its CSS custom property. The vanilla _worldHomeHeroStyle wraps
-  // this in `style="..."`; JSX needs only the URL.
-  function _worldHomeBackdropUrl() {
-    const world = CS().getCurrentWorld?.() || {};
-    const theme = world.storyModeTheme || {};
-    const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
-    if (!backdrop) return null;
-    return _cssVarAssetUrl(backdrop);
-  }
+  // `getEventLogData` and `_worldHomeBackdropUrl` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/eventLog.ts`). The data builder
+  // reads `state.eventLog.entries` directly + the world's storyModeTheme
+  // backdrop, same shape the JSX consumes.
 
   // HTML-string sub-panel bridges. Shared with the event{Character,
   // Special,Side} tabs that haven't migrated yet. When those tabs port,
@@ -6598,7 +6573,6 @@ window.CJS.CampaignUI = (() => {
     // re-render against.
     enableReactShell,
     getChromeData,
-    getEventLogData,
     getMinigameTestData,
     getTownSnapshotData,
     getTownRollFloatData,
