@@ -73,7 +73,7 @@ window.CJS.CampaignUI = (() => {
   const _actionBtn = _CUIControls.actionBtn;
   const _renderTownActionButton = _CUIControls.renderTownActionButton;
 
-  // Log rendering helpers live in `js/campaign/ui/cui-log.js`.
+  // Log rendering helpers live in `src/campaign/util/cui-log.ts`.
   const _CUILog = window.CJS.CampaignUIInternal.Log;
   const _logKind = _CUILog.logKind;
   const _formatLogTime = _CUILog.formatLogTime;
@@ -2364,9 +2364,9 @@ window.CJS.CampaignUI = (() => {
   // React bridge in `js/campaign/ui/tabs/cui-react-bridge.js` populates
   // with mount-point placeholders for each migrated tab.
   //
-  // `_renderLogEntry`, `_logKind`, `_logMeta`, `_formatLogTime` still
-  // live in `js/campaign/ui/cui-log.js`; the React side reuses them so
-  // categorisation stays consistent with the recent-log strip in the
+  // `_renderLogEntry`, `_logKind`, `_logMeta`, `_formatLogTime` live in
+  // `src/campaign/util/cui-log.ts` (Phase H.4); the React side reuses them
+  // so categorisation stays consistent with the recent-log strip in the
   // header (which is still vanilla-rendered).
   // _bindEvents removed in Phase H.2. The campaign-root click/change
   // delegation moved into the React shell: `CampaignShell.tsx` forwards

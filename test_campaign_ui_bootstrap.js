@@ -82,6 +82,13 @@ sandbox.window.CJS.CampaignUIInternal.Portraits = {
   memberPortraitFocus: () => null,
   focusAttrStyle: () => 'object-fit:cover'
 };
+// Log: ported to src/campaign/util/cui-log.ts.
+sandbox.window.CJS.CampaignUIInternal.Log = {
+  logKind: () => ({ key: 'system', label: 'Log' }),
+  formatLogTime: () => '',
+  logMeta: () => '',
+  renderLogEntry: () => ''
+};
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
@@ -91,7 +98,6 @@ const loadOrder = [
   'campaign/ui/cui-options.js',
   'campaign/ui/cui-controls.js',
   'campaign/ui/cui-equipment.js',
-  'campaign/ui/cui-log.js',
   'campaign/ui/tabs/cui-tabs-registry.js',
   'campaign/ui/tabs/cui-party-tab.js',
   'campaign/ui/tabs/cui-hub-tab.js',
