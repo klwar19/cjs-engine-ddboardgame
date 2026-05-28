@@ -6026,38 +6026,10 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getStorySummaryData(state = CS().getState()) {
-    if (!state) return null;
-    const storyParts = _storySummaryEntries(state).map((entry) => ({
-      title: entry.title || entry.sequenceId || 'Story Part',
-      chapterLabel: entry.chapterLabel || '',
-      partLabel: entry.partLabel || '',
-      modeLabel: _label(entry.mode || 'played'),
-      result: entry.result || 'complete',
-      timestamp: entry.completedAt || entry.startedAt || '',
-      summaryText: entry.summaryText || '',
-      routeText: (entry.routeChoices || [])
-        .map((choice) => choice.label || choice.choiceId)
-        .filter(Boolean)
-        .join(' → '),
-      syncSummary: Array.isArray(entry.syncSummary) ? entry.syncSummary.slice(0) : []
-    }));
-    const manual = (state.storyMode?.manualSummaryEntries || []).map((entry) => ({
-      title: entry.title || 'Manual Note',
-      timestamp: entry.at || '',
-      text: entry.text || ''
-    }));
-    const facts = Object.values(state.storyDirector?.revealedFacts || {}).slice(0, 8).map((fact) => ({
-      title: fact.title || fact.id || 'Fact',
-      text: fact.text || fact.note || ''
-    }));
-    const queue = Object.values(state.storyDirector?.storyQueue || {}).slice(0, 8).map((beat) => ({
-      title: beat.title || beat.id || 'Beat',
-      status: beat.status || 'held',
-      text: beat.prompt || beat.summary || ''
-    }));
-    return { storyParts, manual, facts, queue };
-  }
+  // `getStorySummaryData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storySummary.ts`). The TS port duplicates
+  // the closure-private `_storySummaryEntries` builder (still used by
+  // JS data builders that haven't ported yet).
 
   // Phase G.16 — typed Town Snapshot + Roll Float data for the
   // Overview tab. The HubTab still owns the underlying hub state
@@ -6373,7 +6345,6 @@ window.CJS.CampaignUI = (() => {
     getChromeData,
     getMinigameTestData,
     getQuestChainsData,
-    getStorySummaryData,
     getQuestHomeData,
     getEventTabData,
     getScenariosData,
