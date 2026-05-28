@@ -36,7 +36,7 @@ window.CJS.CampaignUI = (() => {
   const _lootLine = _CUIUtils.lootLine;
   const _formatBundleText = _CUIUtils.formatBundleText;
 
-  // Portrait + icon helpers live in `js/campaign/ui/cui-portraits.js`.
+  // Portrait + icon helpers live in `src/campaign/util/cui-portraits.ts`.
   const _CUIPortraits = window.CJS.CampaignUIInternal.Portraits;
   const _icon = _CUIPortraits.icon;
   const _memberPortrait = _CUIPortraits.memberPortrait;

@@ -68,11 +68,12 @@ import "../../js/minigames/fishing-minigame.js";
 import "../../js/minigames/cooking-minigame.js";
 import "../../js/minigames/minigame-host.js";
 import "../../js/ui/relationships-tab.js";
-// Phase H.4 — leaf util helpers ported to TS. The TS module installs
-// the same `window.CJS.CampaignUIInternal.Utils` surface so vanilla JS
-// callers (campaign-ui.js + the other cui-*.js helpers) keep working.
+// Phase H.4 — leaf util helpers ported to TS. The TS modules install
+// the same `window.CJS.CampaignUIInternal.<Namespace>` surface so
+// vanilla JS callers (campaign-ui.js + the other cui-*.js helpers)
+// keep working without changes.
 import "./util/cui-utils";
-import "../../js/campaign/ui/cui-portraits.js";
+import "./util/cui-portraits";
 import "../../js/campaign/ui/cui-modals.js";
 import "../../js/campaign/ui/cui-options.js";
 import "../../js/campaign/ui/cui-controls.js";

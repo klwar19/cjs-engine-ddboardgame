@@ -74,12 +74,19 @@ sandbox.window.CJS.CampaignUIInternal.Utils = {
   lootLine: () => '',
   formatBundleText: () => ''
 };
+// Portraits: ported to src/campaign/util/cui-portraits.ts. Same lazy
+// access pattern as Utils — the stub only needs to satisfy aliasing.
+sandbox.window.CJS.CampaignUIInternal.Portraits = {
+  icon: () => '',
+  memberPortrait: () => '',
+  memberPortraitFocus: () => null,
+  focusAttrStyle: () => 'object-fit:cover'
+};
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
 // via IIFE on load.
 const loadOrder = [
-  'campaign/ui/cui-portraits.js',
   'campaign/ui/cui-modals.js',
   'campaign/ui/cui-options.js',
   'campaign/ui/cui-controls.js',
