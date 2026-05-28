@@ -2507,17 +2507,24 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _handleAction(data) {
-    // Phase H.3 — ported handlers live in TS modules registered on
-    // window.CJS.CampaignActionsRuntime. Consult that registry first; it
-    // is the single seam for every dispatch path (React onClick →
-    // dispatchCampaignAction → handleAction, the shell/drawer
-    // forwarders, and internal delegated callers like the party-sheet
-    // modal). Any name not registered there falls through to the switch
-    // below, which holds the not-yet-ported cases.
+    // Phase H.3 complete — every CampaignActionName resolves through
+    // the TS registry installed on window.CJS.CampaignActionsRuntime.
+    // This function stays as the single dispatch seam for every
+    // codepath: React onClick → dispatchCampaignAction → handleAction,
+    // the shell/drawer click forwarders, and internal delegated
+    // callers like the party-sheet modal. (H.4 may collapse this into
+    // the runtime call site directly.)
     const runtime = window.CJS.CampaignActionsRuntime;
     if (runtime && runtime.has(data.campaignAction)) {
       return runtime.run(data.campaignAction, data);
     }
+    // Empty switch retained as a defensive no-op so the unrecognized-
+    // action path stays explicit (the registry covers all 246 names —
+    // see test_actions_bridge.js — but future names land here until
+    // they're registered). Switch body intentionally empty.
+    // Comments below capture the ports done in H.3 so the closure-level
+    // history stays browsable; each comment matches a real registry
+    // entry in src/campaign/action-handlers/registry.ts.
     switch (data.campaignAction) {
       // travel-world-card ported to action-handlers/travel.ts (H.3).
       // rel-activity / camp-rest ported to action-handlers/downtime.ts (H.3).
@@ -2528,7 +2535,8 @@ window.CJS.CampaignUI = (() => {
       //   pass-phase + thin engine ops -> action-handlers/ops.ts
       //   farm/haven -> action-handlers/farm.ts ; forge -> action-handlers/forge.ts
       // roll-event / pick-event ported to action-handlers/events.ts (H.3).
-      case 'custom-event': return _customEvent();
+      // custom-event ported to action-handlers/manual-builders.ts (H.3 —
+      // bridge-wrapped, the manual event builder body stays in JS).
       // roll-oracle / pick-oracle / custom-oracle ported to
       // action-handlers/oracle.ts (H.3).
       // battle-reroll / battle-override ported to action-handlers/combat.ts (H.3).
@@ -2554,22 +2562,25 @@ window.CJS.CampaignUI = (() => {
       // ported to action-handlers/story-director-modals.ts (H.3).
       // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
       // ported to action-handlers/story-director.ts (H.3).
-      // story-copy-prompt / story-help ported to action-handlers/story-tools.ts (H.3).
-      // story-manual-note stays — opens _openManualSceneBuilder (127
-      // lines) which still depends on closure helpers (Sequences.storyMeta /
-      // StoryBranch.append). Ports alongside the manual scene builder.
-      case 'story-manual-note': return _manualStoryNote();
+      // story-copy-prompt / story-help / story-manual-note ported to
+      // action-handlers/story-tools.ts + manual-builders.ts (H.3).
+      // story-manual-note is bridge-wrapped — the manual scene builder
+      // body stays in JS until H.4 ports it alongside its data builders.
       // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
       // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
       // sequence-play-minigame ported to action-handlers/minigame.ts (H.3).
       // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
       // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
-      case 'oracle-to-event-builder': return _oracleToEventBuilder();
+      // oracle-to-event-builder ported to action-handlers/manual-builders.ts
+      // (H.3 — bridge-wrapped, seeds the manual event builder from
+      // state.lastOracle).
       // oracle-to-quest / oracle-add-tags + apply-event / edit-event /
       // event-to-quest / event-log-only / event-add-tags / copy-event-summary /
       // note-event / ignore-event / pin-plot-seed / event-to-oracle ported to
       // action-handlers/events.ts (H.3).
-      case 'add-quest': return _openQuestModal();
+      // add-quest ported to action-handlers/manual-builders.ts (H.3 —
+      // bridge-wrapped, the 475-line manual quest builder body stays
+      // in JS until H.4).
       // travel-world ported to action-handlers/registry.ts (H.3).
       // open-* navigation cases ported to action-handlers/nav.ts (H.3).
       // run-roll-battle / run-pick-battle / run-queue-set-battle / run-battle /
@@ -2634,8 +2645,9 @@ window.CJS.CampaignUI = (() => {
       // src/campaign/action-handlers/roster-pickers.ts (H.3).
       // show-skill-detail ported to action-handlers/roster-modal-pickers.ts (H.3).
       // party-availability ported to action-handlers/roster-pickers.ts (H.3).
-      case 'gm-override': return _gmOverride();
-      case 'gm-member-override': return _gmOverride(data.id);
+      // gm-override / gm-member-override ported to
+      // action-handlers/manual-builders.ts (H.3 — bridge-wrapped, the
+      // 174-line GM override form body stays in JS until H.4).
       // load-slot / delete-slot / delete-all-saves / export-slot /
       // export-log / clear-log / export-event-log / clear-event-log
       // ported to src/campaign/action-handlers/registry.ts (H.3 save + log).
@@ -2651,9 +2663,8 @@ window.CJS.CampaignUI = (() => {
 
   // _eventChoices / _pickEvent ported to action-handlers/events.ts (H.3).
 
-  function _customEvent() {
-    _openManualEventBuilder();
-  }
+  // _customEvent ported to action-handlers/manual-builders.ts (H.3 —
+  // bridge-wrapped). The TS handler calls CampaignUI.openManualEventBuilder.
 
   // _doRelActivity / _relationshipNarrativeModal ported to
   // action-handlers/downtime.ts (H.3).
@@ -3525,11 +3536,9 @@ window.CJS.CampaignUI = (() => {
   // comes from _renderStoryDirectorCard via the CampaignUI bridge method
   // renderStoryDirectorCardHtml (G.11b keeps the renderer in JS).
 
-  function _manualStoryNote() {
-    const snap = SD()?.snapshot?.();
-    const stage = snap?.stage || {};
-    _openManualSceneBuilder({ stage });
-  }
+  // _manualStoryNote ported to action-handlers/manual-builders.ts
+  // (H.3 — bridge-wrapped). The TS handler reads the current Story
+  // Director stage then calls CampaignUI.openManualSceneBuilder.
 
   // Manual Scene builder — also creates branching chapters like 1.4.a /
   // 1.4.b that slot into the auto-generated chapter tree.
@@ -3975,18 +3984,9 @@ window.CJS.CampaignUI = (() => {
 
   // _oracleToQuest ported to action-handlers/events.ts (H.3).
 
-  function _oracleToEventBuilder() {
-    const oracle = CS().getState().lastOracle;
-    if (!oracle) return;
-    _openManualEventBuilder({
-      title: 'Oracle Event',
-      source: 'oracle',
-      scope: 'event',
-      seed: oracle.text || oracle.prompt || '',
-      short: _truncate(oracle.text || oracle.prompt || '', 160),
-      tags: ['oracle', ...(oracle.tags || [])]
-    });
-  }
+  // _oracleToEventBuilder ported to action-handlers/manual-builders.ts
+  // (H.3 — bridge-wrapped). The TS handler seeds the manual event
+  // builder from state.lastOracle and calls CampaignUI.openManualEventBuilder.
 
   // _oracleAddTags / _applyEvent / _editEvent / _eventToQuest / _eventLogOnly /
   // _eventAddTags / _noteEvent / _ignoreEvent / _pinPlotSeed / _eventToOracle /
@@ -6998,6 +6998,17 @@ window.CJS.CampaignUI = (() => {
     // JSON used by the prompt — return its promise so callers can await.
     computeStoryPromptText: () => _storyPromptText(),
     ensureStoryContext: (world) => _ensureStoryContext(world),
+    // Big modal builders that still live in JS (each is 100–500 lines
+    // with many closure-private sub-helpers — render-side data builders
+    // also depend on them). The TS action handlers in
+    // action-handlers/manual-builders.ts wrap these as thin dispatchers
+    // so the action contract is registry-backed even while the modal
+    // implementation stays JS. H.4 ports the bodies + their data
+    // builders together.
+    openManualEventBuilder: (prefill) => _openManualEventBuilder(prefill || {}),
+    openQuestModal: (prefill) => _openQuestModal(prefill || {}),
+    openGmOverride: (defaultTarget) => _gmOverride(defaultTarget || ''),
+    openManualSceneBuilder: (opts) => _openManualSceneBuilder(opts || {}),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to

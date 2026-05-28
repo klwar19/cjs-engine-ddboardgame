@@ -46,6 +46,7 @@ import * as Solo from "./solo";
 import * as Travel from "./travel";
 import * as StoryRolls from "./story-director-modals";
 import * as StoryTools from "./story-tools";
+import * as ManualBuilders from "./manual-builders";
 import * as Quest from "./quest";
 import * as QuestLauncher from "./quest-launcher";
 import * as Minigame from "./minigame";
@@ -314,6 +315,15 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "story-open-last": () => StoryRolls.openLastStoryBeatModal(),
   "story-help": () => StoryTools.openStoryHelpModal(),
   "story-copy-prompt": () => StoryTools.copyStoryPrompt(),
+  "story-manual-note": () => ManualBuilders.manualStoryNote(),
+  // ── Manual builders (event / quest / GM override) ─────────────────
+  // Action contract is registry-backed; the modal implementations
+  // stay in JS until H.4 ports them alongside their data builders.
+  "custom-event": () => ManualBuilders.customEvent(),
+  "oracle-to-event-builder": () => ManualBuilders.oracleToEventBuilder(),
+  "add-quest": () => ManualBuilders.addQuest(),
+  "gm-override": () => ManualBuilders.gmOverride(),
+  "gm-member-override": (d) => ManualBuilders.gmOverride(str(d.id)),
   // ── Quest pure-ops + scenario/battle launchers ────────────────────
   "quest-progress": (d) => Quest.questProgress(str(d.id)),
   "quest-hub-event": (d) => Quest.questHubEvent(str(d.id)),
