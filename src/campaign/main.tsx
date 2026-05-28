@@ -80,6 +80,10 @@ import "../../js/campaign/ui/tabs/cui-party-tab.js";
 import "../../js/campaign/ui/tabs/cui-hub-tab.js";
 import "../../js/campaign/ui/tabs/cui-world-map-tab.js";
 import "../../js/campaign/ui/tabs/cui-react-bridge.js";
+// Phase H.4 — install window.CJS.CampaignChrome BEFORE campaign-ui.js so
+// the IIFE's bridge wrappers can read/write chrome state through the TS
+// canonical slice from the moment they run.
+import "./chrome-state";
 import "../../js/campaign/campaign-ui.js";
 import "../../js/ui/audio-manager.js";
 import "../../js/ui/l2d-avatar.js";

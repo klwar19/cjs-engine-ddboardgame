@@ -102,6 +102,14 @@ window.CJS.CampaignUI = (() => {
   const _equipmentOptions = _CUIEquipment.equipmentOptions;
   const _equipmentPickerItem = _CUIEquipment.equipmentPickerItem;
 
+  // Phase H.4 — canonical chrome state lives in `src/campaign/chrome-state.ts`
+  // (installed on window.CJS.CampaignChrome before this IIFE runs). The
+  // closure-private `_activeMode` / `_activeTab` / `_activePanel` below are
+  // **read-only mirrors** kept in sync via the bridge's subscribe callback;
+  // every write goes through `_Chrome.set*` so the TS slice stays the single
+  // source of truth. Direct assignments to these three variables are not
+  // allowed — the bridge wrappers + helper writes preserve the invariant.
+  const _Chrome = () => window.CJS.CampaignChrome;
   let _root = null;
   let _activeMode = 'story';
   let _activeTab = 'storyHome';
@@ -116,6 +124,22 @@ window.CJS.CampaignUI = (() => {
   let _combatReturnEventsBound = false;
   let _lastCombatResultKey = '';
   let _activePanel = null;
+
+  // Sync local mirrors from the TS slice. Initial snapshot first so any
+  // pre-IIFE writes are picked up; then subscribe for ongoing changes.
+  (() => {
+    const ch = _Chrome();
+    if (!ch) return;
+    const snap = ch.getSnapshot();
+    _activeMode = snap.mode;
+    _activeTab = snap.tab;
+    _activePanel = snap.panel;
+    ch.subscribe((next) => {
+      _activeMode = next.mode;
+      _activeTab = next.tab;
+      _activePanel = next.panel;
+    });
+  })();
   let _lastFocus = null;
   let _escBound = false;
   let _lastPendingBattleKey = '';
@@ -130,180 +154,37 @@ window.CJS.CampaignUI = (() => {
     structuredWorlds: {}
   };
 
-  const MODES = [
-    ['town', 'Town', '🏠'],
-    ['workshop', 'Workshop', '🛠'],
-    ['scenario', 'Scenario', '⚔']
-  ];
+  // Chrome constants moved to `src/campaign/chrome-state.ts`. Read through
+  // the bridge so there's exactly one source of truth between TS and JS.
+  // (The pre-Phase H `MODES`/`MODE_TABS`/`UTILITY_TABS`/`TAB_TO_MODE`
+  // constants were dead code from before the `APP_*` rename and have been
+  // removed.)
+  const APP_MODES = _Chrome().APP_MODES;
+  const APP_MODE_TABS = _Chrome().APP_MODE_TABS;
+  const APP_UTILITY_TABS = _Chrome().APP_UTILITY_TABS;
 
-  const MODE_TABS = {
-    town: [
-      ['overview', 'Overview'],
-      ['roster', 'Roster'],
-      ['oracleForge', 'Events & Oracle'],
-      ['sideForge', 'Hub Pulse'],
-      ['shops', 'Shops & Rest']
-    ],
-    workshop: [
-      ['cook', 'Cook'],
-      ['craft', 'Forge'],
-      ['farm', 'Farm'],
-      ['inventory', 'Inventory']
-    ],
-    scenario: [
-      ['scenarios', 'Briefing'],
-      ['maps', 'Run']
-    ]
-  };
-
-  const UTILITY_TABS = [
-    ['quests', 'Quests'],
-    ['logs', 'Logs'],
-    ['settings', 'Settings']
-  ];
-
-  const TAB_TO_MODE = (() => {
-    const out = {};
-    for (const [mode, tabs] of Object.entries(MODE_TABS)) {
-      for (const [id] of tabs) out[id] = mode;
-    }
-    return out;
-  })();
-
-  const APP_MODES = [
-    ['world', 'World', 'WD'],
-    ['story', 'Story', 'ST'],
-    ['quest', 'Quest', 'QT'],
-    ['event', 'Event', 'EV'],
-    ['activities', 'Activities', 'AC']
-  ];
-
-  const APP_MODE_TABS = {
-    world: [
-      ['worldGate', 'World Gate']
-    ],
-    story: [
-      ['storyHome', 'Story'],
-      ['storySummary', 'Story Log']
-    ],
-    quest: [
-      ['questHome', 'Quest'],
-      ['quests', 'Tracker']
-    ],
-    event: [
-      ['eventCharacter', 'Character'],
-      ['eventSpecial', 'Special'],
-      ['eventSide', 'Side Stories'],
-      ['eventLog', 'Event Log']
-    ],
-    activities: [
-      ['worldMap', 'World Map'],
-      ['worldActivities', 'World Activities'],
-      ['sideForge', 'Hub'],
-      ['oracleForge', 'Oracle / Manual'],
-      ['farm', 'Farm'],
-      ['craft', 'Forge'],
-      ['cook', 'Cook'],
-      ['shops', 'Shops & Rest'],
-      ['inventory', 'Inventory'],
-      ['minigameTest', 'Mini-Game Test']
-    ]
-  };
-
-  const APP_UTILITY_TABS = [
-    ['maps', 'Current Run'],
-    ['roster', 'Party'],
-    ['relationships', 'Relationships'],
-    ['logs', 'Logs'],
-    ['settings', 'Settings']
-  ];
-
-  const APP_TAB_TO_MODE = (() => {
-    const out = {};
-    for (const [mode, tabs] of Object.entries(APP_MODE_TABS)) {
-      for (const [id] of tabs) out[id] = mode;
-    }
-    return out;
-  })();
-
+  // World UI profile + chrome tab/mode resolution moved to
+  // `src/campaign/chrome-state.ts`. These thin wrappers keep the closure
+  // call sites (chrome data builder, panel defs) unchanged so the move
+  // stays minimal — drop them once those callers are ported to TS.
   function _worldUiProfile(worldId = CS().getState()?.currentWorld) {
-    const id = worldId || 'haven';
-    const profiles = {
-      earth: {
-        hiddenModes: ['quest'],
-        hiddenPanels: ['quests'],
-        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
-        defaultMode: 'activities',
-        defaultTab: 'worldMap'
-      },
-      bazaar: {
-        hiddenModes: ['quest'],
-        hiddenPanels: ['quests'],
-        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
-        defaultMode: 'activities',
-        defaultTab: 'worldMap'
-      },
-      zombie: {
-        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
-        modeLabels: {
-          quest: ['quest', 'Scavenge', 'SC']
-        },
-        tabLabels: {
-          questHome: 'Scavenge Board',
-          quests: 'Run Log'
-        },
-        panelLabels: {
-          quests: { icon: 'SC', label: 'Scavenge', title: 'Scavenge Log' }
-        }
-      },
-      haven: {
-        // Haven has no travel map, so the global worldMap-first default
-        // for the activities mode shows a dead "No travel map for this
-        // world yet" panel. Land on the Hub Pulse instead — it's the
-        // Living Hub dashboard, which matches Pocket Haven's role.
-        modeDefaults: { activities: 'sideForge' }
-      }
-    };
-    return profiles[id] || {};
+    return _Chrome().worldUiProfile(worldId);
   }
 
   function _defaultTabForMode(mode, state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const tabs = _tabsForMode(mode, state);
-    const preferred = profile.modeDefaults?.[mode];
-    if (preferred && tabs.some(([id]) => id === preferred)) return preferred;
-    return tabs[0]?.[0] || null;
+    return _Chrome().defaultTabForMode(mode, state?.currentWorld);
   }
 
   function _appModesForState(state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const hidden = new Set(profile.hiddenModes || []);
-    return APP_MODES
-      .filter(([id]) => !hidden.has(id))
-      .map((entry) => profile.modeLabels?.[entry[0]] || entry);
+    return _Chrome().appModesForWorld(state?.currentWorld);
   }
 
   function _tabsForMode(mode, state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const hiddenTabs = new Set(profile.hiddenTabs || []);
-    return (APP_MODE_TABS[mode] || [])
-      .filter(([id]) => !hiddenTabs.has(id))
-      .map(([id, label]) => [id, profile.tabLabels?.[id] || label]);
+    return _Chrome().tabsForMode(mode, state?.currentWorld);
   }
 
   function _normalizeActiveWorldUi(state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const hiddenModes = new Set(profile.hiddenModes || []);
-    const hiddenTabs = new Set(profile.hiddenTabs || []);
-    const hiddenPanels = new Set(profile.hiddenPanels || []);
-    const activeOwner = APP_TAB_TO_MODE[_activeTab];
-    if (hiddenModes.has(_activeMode) || hiddenModes.has(activeOwner) || hiddenTabs.has(_activeTab)) {
-      _activeMode = profile.defaultMode || 'activities';
-      _activeTab = profile.defaultTab || _tabsForMode(_activeMode, state)[0]?.[0] || 'worldGate';
-    }
-    if (hiddenPanels.has(_activePanel)) {
-      _activePanel = null;
-    }
+    _Chrome().normalizeForWorld(state?.currentWorld);
   }
 
   async function init(root) {
@@ -482,8 +363,8 @@ window.CJS.CampaignUI = (() => {
     const key = _combatResultKey(result);
     if (key && (key === _lastCombatResultKey || key === state?.lastCombatResultKey)) return true;
     _lastCombatResultKey = key;
-    _activeMode = 'quest';
-    _activeTab = 'maps';
+    _Chrome().setActiveModeRaw('quest');
+    _Chrome().setActiveTabRaw('maps');
     Bridge().applyResult(result);
     UI()?.toast?.(`Combat ${result.result || 'result'} applied to campaign.`, 'success');
     return true;
@@ -680,12 +561,12 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _modeForTab(tabId) {
-    return APP_TAB_TO_MODE[tabId] || 'story';
+    return _Chrome().modeForTab(tabId);
   }
 
   function _goto(mode, tab) {
-    if (mode) _activeMode = mode;
-    if (tab) _activeTab = tab;
+    _Chrome().setActiveModeRaw(mode);
+    _Chrome().setActiveTabRaw(tab);
     render();
   }
 
@@ -1981,7 +1862,7 @@ window.CJS.CampaignUI = (() => {
       return;
     }
     _lastFocus = document.activeElement;
-    _activePanel = panelId;
+    _Chrome().setActivePanelRaw(panelId);
     if (_reactShellEnabled) {
       // React owns the drawer + chrome class. Just trigger a state-tick;
       // the shell will render the drawer portal and add the has-drawer-open
@@ -2007,7 +1888,7 @@ window.CJS.CampaignUI = (() => {
 
   function _closePanel() {
     if (!_activePanel) return;
-    _activePanel = null;
+    _Chrome().setActivePanelRaw(null);
     if (_reactShellEnabled) {
       render();
       if (_lastFocus && document.contains(_lastFocus)) {
@@ -6734,45 +6615,36 @@ window.CJS.CampaignUI = (() => {
     return _renderDrawerBody(panelId, state);
   }
 
+  // Public chrome setters — thin wrappers around the canonical TS slice
+  // (Phase H.4). They keep the JS bridge contract intact (render() after
+  // every write) so the React shell + drawer focus management still fire.
+  // The TS slice handles the mode/tab partner-derivation and the panel
+  // toggle semantics; we only own the render side-effect here.
   function setActiveMode(mode, opts = {}) {
     if (!mode) return;
-    _activeMode = mode;
-    if (!opts.keepTab) {
-      const next = _defaultTabForMode(mode, CS().getState());
-      if (next) _activeTab = next;
-    }
+    _Chrome().setActiveMode(mode, {
+      keepTab: !!opts.keepTab,
+      worldId: CS().getState()?.currentWorld
+    });
     render();
   }
 
   function setActiveTab(tab, opts = {}) {
     if (!tab) return;
-    _activeTab = tab;
-    const owningMode = APP_TAB_TO_MODE[tab];
-    if (owningMode && !opts.keepMode) _activeMode = owningMode;
+    _Chrome().setActiveTab(tab, { keepMode: !!opts.keepMode });
     render();
   }
 
-  // Phase H.3 — render-free chrome setters for ported TS action handlers.
-  // The legacy `_goto` (still used by many unported closures) assigns
-  // _activeMode / _activeTab directly with no derivation, then calls
-  // render() once. Ported handlers replicate that exactly: call these
-  // (no derive, no render) at the points the closure assigned, then
-  // `render()` where the closure rendered. Distinct from
-  // setActiveMode/setActiveTab, which derive the partner dimension +
-  // render (the chrome-forwarder contract). These collapse into a TS
-  // chrome-state slice in H.4 when _activeMode/_activeTab move off the
-  // closure.
-  function setActiveModeRaw(mode) { if (mode) _activeMode = mode; }
-  function setActiveTabRaw(tab) { if (tab) _activeTab = tab; }
+  // Render-free chrome setters (Phase H.3 contract preserved). The
+  // legacy `_goto` and the ported nav handlers call these with no
+  // derivation, then call render() themselves at the point the closure
+  // rendered. Distinct from setActiveMode/setActiveTab above, which
+  // derive the partner dimension + render (the chrome-forwarder contract).
+  function setActiveModeRaw(mode) { _Chrome().setActiveModeRaw(mode); }
+  function setActiveTabRaw(tab) { _Chrome().setActiveTabRaw(tab); }
 
   function setActivePanel(panelId) {
-    if (panelId == null) {
-      _activePanel = null;
-    } else {
-      // Toggle: clicking the active panel again closes it (mirrors the
-      // vanilla _openPanel behaviour).
-      _activePanel = _activePanel === panelId ? null : panelId;
-    }
+    _Chrome().setActivePanel(panelId);
     render();
   }
 

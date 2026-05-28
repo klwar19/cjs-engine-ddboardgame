@@ -39,12 +39,9 @@ interface UiModule {
 
 interface CampaignUIModule {
   render: () => void;
-  // Phase H.3 render-free chrome setters + tab→mode lookup (see the
-  // bridge in campaign-ui.js). Optional so a stale bridge degrades to a
-  // no-op rather than throwing.
-  setActiveModeRaw?: (mode: string) => void;
-  setActiveTabRaw?: (tab: string) => void;
-  modeForTab?: (tab: string) => string;
+  // The Phase H.3 render-free chrome setters (`setActiveModeRaw` /
+  // `setActiveTabRaw` / `modeForTab`) moved off this surface in H.4
+  // — TS handlers reach the slice directly via `src/campaign/chrome-state.ts`.
 }
 
 interface ContextCjs {
@@ -123,19 +120,25 @@ export function applyOp(op: OpInput, source = "ui"): unknown {
   return ops().apply(op, { source });
 }
 
-// ── Render-free chrome setters (Phase H.3) ────────────────────────
-// Mirror the closure-private `_activeMode`/`_activeTab` assignment in
-// campaign-ui.js: set the dimension with no partner-derivation and no
-// render. Ported handlers call render()/rerender() themselves at the
+// ── Render-free chrome setters (Phase H.4) ────────────────────────
+// Originally these went through `CampaignUI.setActiveModeRaw` etc. so
+// the JS closure owned mode/tab state. Phase H.4 moved that state to
+// `src/campaign/chrome-state.ts`; the JS bridge wrappers now delegate
+// to the same slice. Bypass the JS roundtrip and call the TS slice
+// directly — both paths reach the same setter, but skipping the hop
+// keeps the TS action handlers honest about who owns chrome state.
+// Ported handlers still call render()/rerender() themselves at the
 // point the original closure did.
+import * as Chrome from "../chrome-state";
+
 export function setActiveModeRaw(mode: string | null | undefined): void {
-  if (mode) cjs().CampaignUI?.setActiveModeRaw?.(mode);
+  Chrome.setActiveModeRaw(mode);
 }
 
 export function setActiveTabRaw(tab: string | null | undefined): void {
-  if (tab) cjs().CampaignUI?.setActiveTabRaw?.(tab);
+  Chrome.setActiveTabRaw(tab);
 }
 
 export function modeForTab(tab: string): string {
-  return cjs().CampaignUI?.modeForTab?.(tab) ?? "story";
+  return Chrome.modeForTab(tab);
 }
