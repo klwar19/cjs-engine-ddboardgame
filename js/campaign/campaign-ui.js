@@ -5549,43 +5549,10 @@ window.CJS.CampaignUI = (() => {
   // getCombatResultData / getLastCombatResultData / getPendingBattleData
   // moved to TS in Phase H.4 — see resultPanels.ts.
 
-  // Typed snapshot for the React SoloNotice panel. Returns null when
-  // there's no pending solo hook card. Shared by Overview / EventTab /
-  // QuestHome / QuestsPanel / StoryHome.
-  function getSoloNoticeData(state = CS().getState()) {
-    if (!state) return null;
-    const card = _pendingSoloHookCard(state);
-    if (!card) return null;
-    const kind = state.pendingSoloHook?.kind || card.type || 'hook';
-    const risk = Side().risk(card.canonRisk);
-    const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
-    const ops = _cardChoiceOps(card);
-    const summary = _consequenceSummary(ops, { hasText: !!prompt });
-    const firstChoice = card.suggestedChoices?.[0];
-    const choiceLabel = firstChoice?.label || 'Apply the first suggested choice';
-    const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer');
-    const acceptHint = isQuestOffer
-      ? 'Add quest to tracker and auto-start its map run'
-      : (ops.length ? `Apply: ${Ops().describe(ops).join('; ')}` : 'Create a quest from this story-only hook');
-    return {
-      tone: summary.tone,
-      summaryLabel: summary.label,
-      kindLabel: _label(kind),
-      choiceLabel,
-      risk,
-      riskClass: Side().riskClass(risk),
-      title: card.title || card.name || card.id || '',
-      prompt,
-      inlinePurposeHtml: _renderInlinePurpose(kind === 'rumor_offer' ? 'rumor' : _purposeKeyForCard(card)),
-      consequencePreviewHtml: _renderConsequencePreview(ops, {
-        emptyTitle: 'Flavor only',
-        emptyText: 'No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest.'
-      }),
-      flavorTrailHtml: _renderFlavorTrail(card),
-      acceptLabel: ops.length ? 'Accept & Apply' : 'Accept as Quest',
-      acceptHint
-    };
-  }
+  // `getSoloNoticeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). The shared TS slice
+  // reads pending solo hook + side-content consequence preview via the
+  // same HubTab module bridge.
 
   // Typed snapshot of state.lastEvent for the React EventResult panel.
   // Returns null when no event has been rolled. Used by EventLog,
@@ -6479,7 +6446,6 @@ window.CJS.CampaignUI = (() => {
     getStoryDirectorData,
     getQuestRowData,
     getEventResultData,
-    getSoloNoticeData,
     getScenarioSummaryData,
     getActiveSequenceData,
     getSequenceShelfData,

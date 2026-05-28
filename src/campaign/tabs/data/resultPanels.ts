@@ -8,7 +8,8 @@
 // "HTML helpers" section below.
 
 import { esc, lootLine, label } from "../../util/cui-utils";
-import { renderInlinePurpose } from "../../util/cui-controls";
+import { renderInlinePurpose, purposeKeyForCard, type CardLike } from "../../util/cui-controls";
+import { pendingSoloHookCard, type SoloHookStateShape } from "../../util/state-helpers";
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestPillData } from "./scenarioShared";
 
@@ -19,11 +20,37 @@ interface HubTabSurface {
     ops: readonly unknown[],
     options?: { title?: string; emptyTitle?: string; emptyText?: string }
   ) => string;
+  readonly renderFlavorTrail?: (entry: unknown) => string;
+  readonly cardChoiceOps?: (card: unknown) => readonly unknown[];
+  readonly consequenceSummary?: (
+    ops: readonly unknown[],
+    options?: { hasText?: boolean }
+  ) => { tone?: string; label?: string; short?: string };
 }
 
 function hubTab(): HubTabSurface | undefined {
   return (window as unknown as { CJS?: { CampaignUIInternal?: { HubTab?: HubTabSurface } } })
     .CJS?.CampaignUIInternal?.HubTab;
+}
+
+// CampaignSideContent — risk classification + label.
+interface SideContentSurface {
+  readonly risk?: (canonRisk: unknown) => string;
+  readonly riskClass?: (risk: string) => string;
+}
+
+function side(): SideContentSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignSideContent?: SideContentSurface } })
+    .CJS?.CampaignSideContent;
+}
+
+// CampaignOps.describe — humanizes an op[] for the action hint.
+interface OpsSurface {
+  readonly describe?: (ops: readonly unknown[]) => readonly string[];
+}
+
+function ops(): OpsSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignOps?: OpsSurface } }).CJS?.CampaignOps;
 }
 
 // ── HTML helpers (Phase H.4 — ported from campaign-ui.js) ────────────
@@ -433,7 +460,6 @@ export interface SoloNoticeData {
 
 interface Bridge {
   readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
-  readonly getSoloNoticeData: (state?: CampaignStateSnapshot) => SoloNoticeData | null;
   readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
   readonly getActiveSequenceData: (
     state?: CampaignStateSnapshot,
@@ -474,8 +500,69 @@ export function getOracleData(state: CampaignStateSnapshot): OracleData | null {
   };
 }
 
+// Phase H.4 inline port — pending solo hook card + side-content
+// consequence/preview HTML. Five consumers (Overview, EventTab,
+// QuestHome, QuestsPanel, StoryHome). Returns null when no card is
+// pending; the consumer panel doesn't render.
+interface SoloHookCard {
+  readonly id?: string;
+  readonly type?: string;
+  readonly title?: string;
+  readonly name?: string;
+  readonly prompt?: string;
+  readonly summary?: string;
+  readonly gmHook?: string;
+  readonly notes?: string;
+  readonly canonRisk?: string;
+  readonly questTemplate?: unknown;
+  readonly questChainTemplateId?: string;
+  readonly suggestedChoices?: ReadonlyArray<{ label?: string }>;
+  readonly [key: string]: unknown;
+}
+
+interface CampaignStateForSoloNotice extends SoloHookStateShape {
+  readonly pendingSoloHook?: { readonly cardId?: string; readonly kind?: string };
+}
+
 export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData | null {
-  return cjs().CampaignUI?.getSoloNoticeData(state) ?? null;
+  if (!state) return null;
+  const typedState = state as CampaignStateForSoloNotice;
+  const card = pendingSoloHookCard(typedState) as SoloHookCard | null;
+  if (!card) return null;
+  const kind = typedState.pendingSoloHook?.kind || card.type || "hook";
+  const sx = side();
+  const risk = sx?.risk?.(card.canonRisk) ?? "";
+  const prompt = card.prompt || card.summary || card.gmHook || card.notes || "";
+  const hub = hubTab();
+  const choiceOps = hub?.cardChoiceOps?.(card) || [];
+  const summary = hub?.consequenceSummary?.(choiceOps, { hasText: !!prompt }) || {};
+  const firstChoice = card.suggestedChoices?.[0];
+  const choiceLabel = firstChoice?.label || "Apply the first suggested choice";
+  const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === "quest_offer");
+  const opsModule = ops();
+  const acceptHint = isQuestOffer
+    ? "Add quest to tracker and auto-start its map run"
+    : (choiceOps.length
+      ? `Apply: ${(opsModule?.describe?.(choiceOps) ?? []).join("; ")}`
+      : "Create a quest from this story-only hook");
+  return {
+    tone: String(summary.tone || ""),
+    summaryLabel: String(summary.label || ""),
+    kindLabel: label(kind),
+    choiceLabel,
+    risk,
+    riskClass: sx?.riskClass?.(risk) ?? "",
+    title: String(card.title || card.name || card.id || ""),
+    prompt,
+    inlinePurposeHtml: renderInlinePurpose(kind === "rumor_offer" ? "rumor" : purposeKeyForCard(card as CardLike)),
+    consequencePreviewHtml: hub?.renderConsequencePreview?.(choiceOps, {
+      emptyTitle: "Flavor only",
+      emptyText: "No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest."
+    }) ?? "",
+    flavorTrailHtml: hub?.renderFlavorTrail?.(card) ?? "",
+    acceptLabel: choiceOps.length ? "Accept & Apply" : "Accept as Quest",
+    acceptHint
+  };
 }
 
 // Phase H.4 inline port — pure state read, no closure-private deps.
