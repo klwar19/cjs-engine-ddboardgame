@@ -43,7 +43,7 @@ window.CJS.CampaignUI = (() => {
   const _memberPortraitFocus = _CUIPortraits.memberPortraitFocus;
   const _focusAttrStyle = _CUIPortraits.focusAttrStyle;
 
-  // Modal + picker primitives live in `js/campaign/ui/cui-modals.js`.
+  // Modal + picker primitives live in `src/campaign/util/cui-modals.ts`.
   const _CUIModals = window.CJS.CampaignUIInternal.Modals;
   const _desc = _CUIModals.desc;
   const _pickerItem = _CUIModals.pickerItem;
@@ -5252,13 +5252,13 @@ window.CJS.CampaignUI = (() => {
   }
 
   // _desc, _pickerItem, _sortOptionLabel, _formLabel, _formModal live in
-  // js/campaign/ui/cui-modals.js (bound as aliases at the top of this IIFE).
+  // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
 
   // _bucketOptions, _statusOptions, _seedOptions, _worldOptions, _tentOptions
   // live in js/campaign/ui/cui-options.js (bound as aliases at the top of this IIFE).
 
   // _opPickerModal, _textareaModal, _numberModal live in
-  // js/campaign/ui/cui-modals.js (bound as aliases at the top of this IIFE).
+  // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
 
   // Leaf utilities (_esc, _escAttr, _label, _safe, _truncate, _lootLine,
   // _currencyLabel, _recordName, _formatBundleText) live in

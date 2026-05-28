@@ -100,12 +100,22 @@ sandbox.window.CJS.CampaignUIInternal.Controls = {
   actionBtn: () => '',
   renderTownActionButton: () => ''
 };
+// Modals: ported to src/campaign/util/cui-modals.ts.
+sandbox.window.CJS.CampaignUIInternal.Modals = {
+  desc: () => '',
+  pickerItem: () => '',
+  sortOptionLabel: () => 0,
+  formLabel: () => ({}),
+  formModal: () => null,
+  opPickerModal: () => null,
+  textareaModal: () => null,
+  numberModal: () => null
+};
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
 // via IIFE on load.
 const loadOrder = [
-  'campaign/ui/cui-modals.js',
   'campaign/ui/cui-options.js',
   'campaign/ui/cui-equipment.js',
   'campaign/ui/tabs/cui-tabs-registry.js',

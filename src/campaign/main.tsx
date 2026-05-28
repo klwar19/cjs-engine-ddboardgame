@@ -74,7 +74,7 @@ import "../../js/ui/relationships-tab.js";
 // keep working without changes.
 import "./util/cui-utils";
 import "./util/cui-portraits";
-import "../../js/campaign/ui/cui-modals.js";
+import "./util/cui-modals";
 import "../../js/campaign/ui/cui-options.js";
 import "./util/cui-controls";
 import "../../js/campaign/ui/cui-equipment.js";
