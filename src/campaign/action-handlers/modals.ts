@@ -5,8 +5,8 @@
 // reach those primitives through the typed accessors here.
 //
 // The shapes mirror the actual implementations:
-//   • Modals  — js/campaign/ui/cui-modals.js
-//   • Options — js/campaign/ui/cui-options.js
+//   • Modals  — src/campaign/util/cui-modals.ts
+//   • Options — src/campaign/util/cui-options.ts
 //   • widgets — js/ui/ui-helpers.js (window.CJS.UI)
 // They are accessible (frozen public namespaces), so a missing module
 // degrades to `undefined` (callers use `?.`) instead of throwing — the
@@ -23,7 +23,7 @@ export interface PickerOption {
 }
 
 // Widget elements expose imperative getters the modal builders read on
-// submit (see cui-modals.js / ui-helpers.js).
+// submit (see src/campaign/util/cui-modals.ts / ui-helpers.js).
 export type SliderEl = HTMLElement & { _getValue: () => number; _setValue?: (v: number) => void };
 export type SearchableSelectEl = HTMLElement & { _getValue: () => string; _setValue?: (v: string) => void };
 export type TagInputEl = HTMLElement & { _getTags: () => string[]; _setTags?: (t: string[]) => void };

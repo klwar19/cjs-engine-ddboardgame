@@ -22,8 +22,9 @@ window.CJS.CampaignUI = (() => {
   const C = () => window.CJS.CONST;
   const Icons = () => window.CJS.UIIcons;
 
-  // Leaf utilities live in `js/campaign/ui/cui-utils.js`; bind short
-  // aliases so the rest of this file reads the same as before.
+  // Leaf utilities live in `src/campaign/util/cui-utils.ts` (Phase H.4).
+  // The TS module installs `window.CJS.CampaignUIInternal.Utils` so the
+  // rest of this IIFE reads the same surface as before.
   const _CUIUtils = window.CJS.CampaignUIInternal.Utils;
   const _esc = _CUIUtils.esc;
   const _escAttr = _CUIUtils.escAttr;
@@ -34,15 +35,16 @@ window.CJS.CampaignUI = (() => {
   const _recordName = _CUIUtils.recordName;
   const _lootLine = _CUIUtils.lootLine;
   const _formatBundleText = _CUIUtils.formatBundleText;
+  const _cssVarAssetUrl = _CUIUtils.cssVarAssetUrl;
 
-  // Portrait + icon helpers live in `js/campaign/ui/cui-portraits.js`.
+  // Portrait + icon helpers live in `src/campaign/util/cui-portraits.ts`.
   const _CUIPortraits = window.CJS.CampaignUIInternal.Portraits;
   const _icon = _CUIPortraits.icon;
   const _memberPortrait = _CUIPortraits.memberPortrait;
   const _memberPortraitFocus = _CUIPortraits.memberPortraitFocus;
   const _focusAttrStyle = _CUIPortraits.focusAttrStyle;
 
-  // Modal + picker primitives live in `js/campaign/ui/cui-modals.js`.
+  // Modal + picker primitives live in `src/campaign/util/cui-modals.ts`.
   const _CUIModals = window.CJS.CampaignUIInternal.Modals;
   const _desc = _CUIModals.desc;
   const _pickerItem = _CUIModals.pickerItem;
@@ -53,7 +55,7 @@ window.CJS.CampaignUI = (() => {
   const _textareaModal = _CUIModals.textareaModal;
   const _numberModal = _CUIModals.numberModal;
 
-  // Option builders live in `js/campaign/ui/cui-options.js`.
+  // Option builders live in `src/campaign/util/cui-options.ts`.
   const _CUIOptions = window.CJS.CampaignUIInternal.Options;
   const _bucketOptions = _CUIOptions.bucketOptions;
   const _statusOptions = _CUIOptions.statusOptions;
@@ -61,7 +63,7 @@ window.CJS.CampaignUI = (() => {
   const _worldOptions = _CUIOptions.worldOptions;
   const _tentOptions = _CUIOptions.tentOptions;
 
-  // HTML control builders live in `js/campaign/ui/cui-controls.js`.
+  // HTML control builders live in `src/campaign/util/cui-controls.ts`.
   const _CUIControls = window.CJS.CampaignUIInternal.Controls;
   const _purposeTone = _CUIControls.purposeTone;
   const _purposeKeyForCard = _CUIControls.purposeKeyForCard;
@@ -72,14 +74,14 @@ window.CJS.CampaignUI = (() => {
   const _actionBtn = _CUIControls.actionBtn;
   const _renderTownActionButton = _CUIControls.renderTownActionButton;
 
-  // Log rendering helpers live in `js/campaign/ui/cui-log.js`.
+  // Log rendering helpers live in `src/campaign/util/cui-log.ts`.
   const _CUILog = window.CJS.CampaignUIInternal.Log;
   const _logKind = _CUILog.logKind;
   const _formatLogTime = _CUILog.formatLogTime;
   const _logMeta = _CUILog.logMeta;
   const _renderLogEntry = _CUILog.renderLogEntry;
 
-  // Equipment helpers live in `js/campaign/ui/cui-equipment.js`.
+  // Equipment helpers live in `src/campaign/util/cui-equipment.ts`.
   const _CUIEquipment = window.CJS.CampaignUIInternal.Equipment;
   const _cleanType = _CUIEquipment.cleanType;
   const _inferType = _CUIEquipment.inferType;
@@ -102,6 +104,14 @@ window.CJS.CampaignUI = (() => {
   const _equipmentOptions = _CUIEquipment.equipmentOptions;
   const _equipmentPickerItem = _CUIEquipment.equipmentPickerItem;
 
+  // Phase H.4 — canonical chrome state lives in `src/campaign/chrome-state.ts`
+  // (installed on window.CJS.CampaignChrome before this IIFE runs). The
+  // closure-private `_activeMode` / `_activeTab` / `_activePanel` below are
+  // **read-only mirrors** kept in sync via the bridge's subscribe callback;
+  // every write goes through `_Chrome.set*` so the TS slice stays the single
+  // source of truth. Direct assignments to these three variables are not
+  // allowed — the bridge wrappers + helper writes preserve the invariant.
+  const _Chrome = () => window.CJS.CampaignChrome;
   let _root = null;
   let _activeMode = 'story';
   let _activeTab = 'storyHome';
@@ -116,6 +126,22 @@ window.CJS.CampaignUI = (() => {
   let _combatReturnEventsBound = false;
   let _lastCombatResultKey = '';
   let _activePanel = null;
+
+  // Sync local mirrors from the TS slice. Initial snapshot first so any
+  // pre-IIFE writes are picked up; then subscribe for ongoing changes.
+  (() => {
+    const ch = _Chrome();
+    if (!ch) return;
+    const snap = ch.getSnapshot();
+    _activeMode = snap.mode;
+    _activeTab = snap.tab;
+    _activePanel = snap.panel;
+    ch.subscribe((next) => {
+      _activeMode = next.mode;
+      _activeTab = next.tab;
+      _activePanel = next.panel;
+    });
+  })();
   let _lastFocus = null;
   let _escBound = false;
   let _lastPendingBattleKey = '';
@@ -130,180 +156,37 @@ window.CJS.CampaignUI = (() => {
     structuredWorlds: {}
   };
 
-  const MODES = [
-    ['town', 'Town', '🏠'],
-    ['workshop', 'Workshop', '🛠'],
-    ['scenario', 'Scenario', '⚔']
-  ];
+  // Chrome constants moved to `src/campaign/chrome-state.ts`. Read through
+  // the bridge so there's exactly one source of truth between TS and JS.
+  // (The pre-Phase H `MODES`/`MODE_TABS`/`UTILITY_TABS`/`TAB_TO_MODE`
+  // constants were dead code from before the `APP_*` rename and have been
+  // removed.)
+  const APP_MODES = _Chrome().APP_MODES;
+  const APP_MODE_TABS = _Chrome().APP_MODE_TABS;
+  const APP_UTILITY_TABS = _Chrome().APP_UTILITY_TABS;
 
-  const MODE_TABS = {
-    town: [
-      ['overview', 'Overview'],
-      ['roster', 'Roster'],
-      ['oracleForge', 'Events & Oracle'],
-      ['sideForge', 'Hub Pulse'],
-      ['shops', 'Shops & Rest']
-    ],
-    workshop: [
-      ['cook', 'Cook'],
-      ['craft', 'Forge'],
-      ['farm', 'Farm'],
-      ['inventory', 'Inventory']
-    ],
-    scenario: [
-      ['scenarios', 'Briefing'],
-      ['maps', 'Run']
-    ]
-  };
-
-  const UTILITY_TABS = [
-    ['quests', 'Quests'],
-    ['logs', 'Logs'],
-    ['settings', 'Settings']
-  ];
-
-  const TAB_TO_MODE = (() => {
-    const out = {};
-    for (const [mode, tabs] of Object.entries(MODE_TABS)) {
-      for (const [id] of tabs) out[id] = mode;
-    }
-    return out;
-  })();
-
-  const APP_MODES = [
-    ['world', 'World', 'WD'],
-    ['story', 'Story', 'ST'],
-    ['quest', 'Quest', 'QT'],
-    ['event', 'Event', 'EV'],
-    ['activities', 'Activities', 'AC']
-  ];
-
-  const APP_MODE_TABS = {
-    world: [
-      ['worldGate', 'World Gate']
-    ],
-    story: [
-      ['storyHome', 'Story'],
-      ['storySummary', 'Story Log']
-    ],
-    quest: [
-      ['questHome', 'Quest'],
-      ['quests', 'Tracker']
-    ],
-    event: [
-      ['eventCharacter', 'Character'],
-      ['eventSpecial', 'Special'],
-      ['eventSide', 'Side Stories'],
-      ['eventLog', 'Event Log']
-    ],
-    activities: [
-      ['worldMap', 'World Map'],
-      ['worldActivities', 'World Activities'],
-      ['sideForge', 'Hub'],
-      ['oracleForge', 'Oracle / Manual'],
-      ['farm', 'Farm'],
-      ['craft', 'Forge'],
-      ['cook', 'Cook'],
-      ['shops', 'Shops & Rest'],
-      ['inventory', 'Inventory'],
-      ['minigameTest', 'Mini-Game Test']
-    ]
-  };
-
-  const APP_UTILITY_TABS = [
-    ['maps', 'Current Run'],
-    ['roster', 'Party'],
-    ['relationships', 'Relationships'],
-    ['logs', 'Logs'],
-    ['settings', 'Settings']
-  ];
-
-  const APP_TAB_TO_MODE = (() => {
-    const out = {};
-    for (const [mode, tabs] of Object.entries(APP_MODE_TABS)) {
-      for (const [id] of tabs) out[id] = mode;
-    }
-    return out;
-  })();
-
+  // World UI profile + chrome tab/mode resolution moved to
+  // `src/campaign/chrome-state.ts`. These thin wrappers keep the closure
+  // call sites (chrome data builder, panel defs) unchanged so the move
+  // stays minimal — drop them once those callers are ported to TS.
   function _worldUiProfile(worldId = CS().getState()?.currentWorld) {
-    const id = worldId || 'haven';
-    const profiles = {
-      earth: {
-        hiddenModes: ['quest'],
-        hiddenPanels: ['quests'],
-        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
-        defaultMode: 'activities',
-        defaultTab: 'worldMap'
-      },
-      bazaar: {
-        hiddenModes: ['quest'],
-        hiddenPanels: ['quests'],
-        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
-        defaultMode: 'activities',
-        defaultTab: 'worldMap'
-      },
-      zombie: {
-        hiddenTabs: ['sideForge', 'oracleForge', 'farm', 'craft', 'cook', 'shops', 'minigameTest'],
-        modeLabels: {
-          quest: ['quest', 'Scavenge', 'SC']
-        },
-        tabLabels: {
-          questHome: 'Scavenge Board',
-          quests: 'Run Log'
-        },
-        panelLabels: {
-          quests: { icon: 'SC', label: 'Scavenge', title: 'Scavenge Log' }
-        }
-      },
-      haven: {
-        // Haven has no travel map, so the global worldMap-first default
-        // for the activities mode shows a dead "No travel map for this
-        // world yet" panel. Land on the Hub Pulse instead — it's the
-        // Living Hub dashboard, which matches Pocket Haven's role.
-        modeDefaults: { activities: 'sideForge' }
-      }
-    };
-    return profiles[id] || {};
+    return _Chrome().worldUiProfile(worldId);
   }
 
   function _defaultTabForMode(mode, state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const tabs = _tabsForMode(mode, state);
-    const preferred = profile.modeDefaults?.[mode];
-    if (preferred && tabs.some(([id]) => id === preferred)) return preferred;
-    return tabs[0]?.[0] || null;
+    return _Chrome().defaultTabForMode(mode, state?.currentWorld);
   }
 
   function _appModesForState(state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const hidden = new Set(profile.hiddenModes || []);
-    return APP_MODES
-      .filter(([id]) => !hidden.has(id))
-      .map((entry) => profile.modeLabels?.[entry[0]] || entry);
+    return _Chrome().appModesForWorld(state?.currentWorld);
   }
 
   function _tabsForMode(mode, state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const hiddenTabs = new Set(profile.hiddenTabs || []);
-    return (APP_MODE_TABS[mode] || [])
-      .filter(([id]) => !hiddenTabs.has(id))
-      .map(([id, label]) => [id, profile.tabLabels?.[id] || label]);
+    return _Chrome().tabsForMode(mode, state?.currentWorld);
   }
 
   function _normalizeActiveWorldUi(state = CS().getState()) {
-    const profile = _worldUiProfile(state?.currentWorld);
-    const hiddenModes = new Set(profile.hiddenModes || []);
-    const hiddenTabs = new Set(profile.hiddenTabs || []);
-    const hiddenPanels = new Set(profile.hiddenPanels || []);
-    const activeOwner = APP_TAB_TO_MODE[_activeTab];
-    if (hiddenModes.has(_activeMode) || hiddenModes.has(activeOwner) || hiddenTabs.has(_activeTab)) {
-      _activeMode = profile.defaultMode || 'activities';
-      _activeTab = profile.defaultTab || _tabsForMode(_activeMode, state)[0]?.[0] || 'worldGate';
-    }
-    if (hiddenPanels.has(_activePanel)) {
-      _activePanel = null;
-    }
+    _Chrome().normalizeForWorld(state?.currentWorld);
   }
 
   async function init(root) {
@@ -482,8 +365,8 @@ window.CJS.CampaignUI = (() => {
     const key = _combatResultKey(result);
     if (key && (key === _lastCombatResultKey || key === state?.lastCombatResultKey)) return true;
     _lastCombatResultKey = key;
-    _activeMode = 'quest';
-    _activeTab = 'maps';
+    _Chrome().setActiveModeRaw('quest');
+    _Chrome().setActiveTabRaw('maps');
     Bridge().applyResult(result);
     UI()?.toast?.(`Combat ${result.result || 'result'} applied to campaign.`, 'success');
     return true;
@@ -680,12 +563,12 @@ window.CJS.CampaignUI = (() => {
   }
 
   function _modeForTab(tabId) {
-    return APP_TAB_TO_MODE[tabId] || 'story';
+    return _Chrome().modeForTab(tabId);
   }
 
   function _goto(mode, tab) {
-    if (mode) _activeMode = mode;
-    if (tab) _activeTab = tab;
+    _Chrome().setActiveModeRaw(mode);
+    _Chrome().setActiveTabRaw(tab);
     render();
   }
 
@@ -838,7 +721,14 @@ window.CJS.CampaignUI = (() => {
       buildCount: build.length,
       pressureCount: pressures.length,
       hasRun: !!state.activeScenarioRun,
-      heroBackdropUrl: _worldHomeBackdropUrl(),
+      heroBackdropUrl: (() => {
+        // Inlined `_worldHomeBackdropUrl` (the TS port lives in
+        // resultPanels/eventLog data files; one remaining JS caller).
+        const world = CS().getCurrentWorld?.() || {};
+        const theme = world.storyModeTheme || {};
+        const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
+        return backdrop ? _cssVarAssetUrl(backdrop) : null;
+      })(),
       scavenge: scavenge.map((activity) => _worldActivityPreviewData(activity, 'Scavenge route')),
       build: build.map((activity) => _worldActivityPreviewData(activity, 'Build project')),
       pressures: pressures.map((pressure) => ({
@@ -1178,7 +1068,7 @@ window.CJS.CampaignUI = (() => {
   // heroes (Quest Home, Event tabs) were already inline JSX.
 
   // TOOL_PURPOSES, _renderInlinePurpose, _purposeTone, _purposeKeyForCard
-  // live in js/campaign/ui/cui-controls.js (bound as aliases at the top).
+  // live in src/campaign/util/cui-controls.ts (bound as aliases at the top).
 
   // _renderOverview — Phase F.4 port. Body moved to
   // `src/campaign/tabs/CampaignOverviewTab.tsx`. The outer dashboard
@@ -1551,15 +1441,8 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // _renderAdventureLegend — Phase G.6 port. The legend body moved to
-  // JSX in `src/campaign/tabs/CampaignOverviewTab.tsx`; only the
-  // visibility check (hide when there's any active result card) lives
-  // here as the typed `getAdventureLegendVisible(state)` bridge.
-  function getAdventureLegendVisible(state = CS().getState()) {
-    if (!state) return false;
-    const hasResult = state.lastEvent || state.lastOracle || state.pendingSoloHook || state.pendingBattle;
-    return !hasResult;
-  }
+  // `getAdventureLegendVisible` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/overview.ts`).
 
   // Hub tab body renderers (`sideForge`, `questChains`, `oracleForge`,
   // `battleSets`, `mapSeeds`) live in `js/campaign/ui/tabs/cui-hub-tab.js`.
@@ -1747,7 +1630,7 @@ window.CJS.CampaignUI = (() => {
   }
 
   // _impactLegendItem, _controlGroup, _actionMenu, _actionBtn live in
-  // js/campaign/ui/cui-controls.js (bound as aliases at the top).
+  // src/campaign/util/cui-controls.ts (bound as aliases at the top).
 
   function _renderSoloNotice(state) {
     const card = _pendingSoloHookCard(state);
@@ -1834,72 +1717,14 @@ window.CJS.CampaignUI = (() => {
   // produce the data. `_battleSourceLabel`, `_renderBattlePartySummary`,
   // `_renderPendingBattleContext` stay because they're sub-renderers.
 
-  function _battleSourceLabel(battle) {
-    const map = { random: '🎲 Random Roll', set: '📌 Set Battle', manual_pick: '📋 Picked', beat: '📜 Beat', manual: 'Manual' };
-    if (battle.source === 'travel_surprise') return 'Travel Surprise';
-    if (battle.source === 'moving_threat') return 'Moving Threat';
-    if (battle.source === 'random_monster_pool') return 'Monster Pool';
-    return map[battle.source] || battle.source || 'manual';
-  }
-
-  function _renderBattlePartySummary(state) {
-    const ready = [];
-    const blocked = [];
-    for (const [id, member] of Object.entries(state.party || {})) {
-      if (Bridge()?.isMemberBattleReady?.(member)) ready.push(member.name || id);
-      else blocked.push(`${member.name || id}: ${Bridge()?.availabilityLabel?.(member) || 'Unavailable'}`);
-    }
-    return `
-      <div class="campaign-preview">
-        <b>Battle Party</b><br>
-        Ready: ${_esc(ready.join(', ') || 'none')}<br>
-        ${blocked.length ? `Unavailable: ${_esc(blocked.join('; '))}` : 'Unavailable: none'}
-      </div>
-    `;
-  }
-
-  // _renderCombatResult / _renderLastCombatResult — Phase G.4 port.
-  // Bodies moved to `src/campaign/tabs/ResultPanels.tsx`. Typed
-  // bridges `getCombatResultData(state)` / `getLastCombatResultData(state)`
-  // produce the data.
-
-  function _renderCombatConsequenceNotice(result, state) {
-    const outcome = String(result?.result || '').toLowerCase();
-    if (!['defeat', 'draw'].includes(outcome)) return '';
-    const battle = state.pendingBattle || {};
-    const hasCustom = outcome === 'defeat'
-      ? !!((result.defeatOps || battle.defeatOps || battle.lossOps || result.badEndingOps || battle.badEndingOps || []).length)
-      : !!((result.drawOps || battle.drawOps || []).length);
-    const badEnding = outcome === 'defeat' && !!(
-      result.badEndingOnDefeat ||
-      battle.badEndingOnDefeat ||
-      result.defeatOutcome === 'bad_ending' ||
-      battle.defeatOutcome === 'bad_ending' ||
-      result.defeatMode === 'bad_ending' ||
-      battle.defeatMode === 'bad_ending'
-    );
-    const lines = [];
-    if (badEnding) lines.push('Defeat can branch into a bad-ending route for this battle.');
-    if (hasCustom) lines.push('This battle has authored defeat consequences.');
-    if (!hasCustom) lines.push(outcome === 'draw' ? 'Default draw penalty: danger +1 and 5% currency loss.' : 'Default defeat penalty: danger +2 and 10% currency loss.');
-    if (!(result.defeatNoRecovery || battle.defeatNoRecovery || battle.noDefeatRecovery)) lines.push('KO party members recover to low HP instead of an instant wipeout.');
-    return `
-      <div class="campaign-preview">
-        <b>Campaign Consequence</b><br>
-        ${lines.map((line) => _esc(line)).join('<br>')}
-      </div>
-    `;
-  }
-
-  function _renderLootSummary(drops) {
-    if (!drops.length) return '<div class="campaign-empty">No loot in this result.</div>';
-    return `
-      <div class="campaign-preview">
-        <b>Loot</b><br>
-        ${drops.map((drop) => _esc(_lootLine(drop))).join('<br>')}
-      </div>
-    `;
-  }
+  // `_battleSourceLabel`, `_renderBattlePartySummary`,
+  // `_renderCombatConsequenceNotice`, `_renderLootSummary`,
+  // `_renderCombatPulseSummary`, `_renderPendingBattleContext` and the
+  // matching `getCombatResultData` / `getLastCombatResultData` /
+  // `getPendingBattleData` data builders ported to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). The pure-state-read
+  // versions read CampaignCombatBridge + CampaignQuestPulse directly,
+  // matching the JS originals exactly.
 
   // _renderEventResult / _renderManualEventSummary / _renderOracle —
   // Phase G.2 port. Bodies moved to
@@ -1981,7 +1806,7 @@ window.CJS.CampaignUI = (() => {
       return;
     }
     _lastFocus = document.activeElement;
-    _activePanel = panelId;
+    _Chrome().setActivePanelRaw(panelId);
     if (_reactShellEnabled) {
       // React owns the drawer + chrome class. Just trigger a state-tick;
       // the shell will render the drawer portal and add the has-drawer-open
@@ -2007,7 +1832,7 @@ window.CJS.CampaignUI = (() => {
 
   function _closePanel() {
     if (!_activePanel) return;
-    _activePanel = null;
+    _Chrome().setActivePanelRaw(null);
     if (_reactShellEnabled) {
       render();
       if (_lastFocus && document.contains(_lastFocus)) {
@@ -2271,12 +2096,8 @@ window.CJS.CampaignUI = (() => {
   // backdrop URL via `_worldHomeBackdropUrl()` and set the CSS var
   // through a typed style prop.
 
-  function _cssVarAssetUrl(path = '') {
-    const value = String(path || '').trim();
-    if (!value) return '';
-    if (/^(data:|https?:|\/|\.\/|\.\.)/i.test(value)) return value;
-    return `../${value}`;
-  }
+  // `_cssVarAssetUrl` moved to `src/campaign/util/cui-utils.ts` and
+  // bound as an alias at the top of this IIFE (Phase H.4).
 
   // _renderZombieScavengeTracker removed in Phase G.17. The zombie
   // Quests tracker now reads typed `getQuestPanelData(state).zombie`
@@ -2302,15 +2123,9 @@ window.CJS.CampaignUI = (() => {
   // (`src/campaign/tabs/QuestRow.tsx` + typed `getQuestRowData`); the
   // zombie scavenge tracker (its last HTML caller) ported in G.17.
 
-  function _renderContextTags(tags = []) {
-    const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
-    if (!list.length) return '';
-    return `
-      <div class="campaign-chip-row campaign-context-tags">
-        ${list.map((tag) => `<span class="campaign-chip">${_esc(_label(tag))}</span>`).join('')}
-      </div>
-    `;
-  }
+  // `_renderContextTags` moved to `resultPanels.ts` in Phase H.4 as a
+  // private helper shared by the combat pulse / pending battle data
+  // builders.
 
   // _renderObjectivePulseHint removed in Phase G.17 (its only caller,
   // the HTML _renderQuestObjective, is gone). The JSX QuestRow renders
@@ -2329,31 +2144,9 @@ window.CJS.CampaignUI = (() => {
     return bits.length ? `Auto: ${bits.join(' + ')}` : 'Auto progress available';
   }
 
-  function _renderPendingBattleContext(state, battle = {}) {
-    const ctx = QP()?.battleContextForPending?.(state, battle);
-    const tags = [
-      ...(ctx?.contextTags || []),
-      ...(ctx?.monsterTags || [])
-    ];
-    if (!ctx?.questId && !tags.length) return '';
-    return `
-      <div class="campaign-battle-context">
-        ${ctx?.questTitle ? `<strong>${_esc(ctx.questTitle)}</strong>` : ''}
-        ${_renderContextTags(tags)}
-      </div>
-    `;
-  }
-
-  function _renderCombatPulseSummary(pulse = null) {
-    if (!pulse) return '';
-    const tags = (pulse.tags || []).filter((tag) => /^(behavior|defeated_tag|status|skill):/.test(tag)).slice(0, 8);
-    return `
-      <div class="campaign-combat-pulse">
-        ${pulse.summary ? `<span>${_esc(pulse.summary)}</span>` : ''}
-        ${_renderContextTags(tags.map((tag) => tag.replace(/^[^:]+:/, '')))}
-      </div>
-    `;
-  }
+  // `_renderPendingBattleContext` and `_renderCombatPulseSummary`
+  // moved to `resultPanels.ts` in Phase H.4 alongside the data builders
+  // that consume them.
 
   function _questNextObjective(quest = {}) {
     const objectives = quest.objectives || [];
@@ -2482,9 +2275,9 @@ window.CJS.CampaignUI = (() => {
   // React bridge in `js/campaign/ui/tabs/cui-react-bridge.js` populates
   // with mount-point placeholders for each migrated tab.
   //
-  // `_renderLogEntry`, `_logKind`, `_logMeta`, `_formatLogTime` still
-  // live in `js/campaign/ui/cui-log.js`; the React side reuses them so
-  // categorisation stays consistent with the recent-log strip in the
+  // `_renderLogEntry`, `_logKind`, `_logMeta`, `_formatLogTime` live in
+  // `src/campaign/util/cui-log.ts` (Phase H.4); the React side reuses them
+  // so categorisation stays consistent with the recent-log strip in the
   // header (which is still vanilla-rendered).
   // _bindEvents removed in Phase H.2. The campaign-root click/change
   // delegation moved into the React shell: `CampaignShell.tsx` forwards
@@ -5204,7 +4997,7 @@ window.CJS.CampaignUI = (() => {
   // _equipmentKind, _equipmentType, _weaponSummary, _effectSummary,
   // _equipmentDesc, _delta, _slotKind, _slotLabel, _normalizeEquipmentSlots,
   // _equipmentChangeDescription, _equipmentOptions, _equipmentPickerItem)
-  // live in js/campaign/ui/cui-equipment.js (bound as aliases at the top).
+  // live in src/campaign/util/cui-equipment.ts (bound as aliases at the top).
 
   function _memberSkillEntries(id, member = CS().getState()?.party?.[id] || {}) {
     const base = _memberBase(id, member);
@@ -5370,18 +5163,18 @@ window.CJS.CampaignUI = (() => {
   }
 
   // _desc, _pickerItem, _sortOptionLabel, _formLabel, _formModal live in
-  // js/campaign/ui/cui-modals.js (bound as aliases at the top of this IIFE).
+  // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
 
   // _bucketOptions, _statusOptions, _seedOptions, _worldOptions, _tentOptions
-  // live in js/campaign/ui/cui-options.js (bound as aliases at the top of this IIFE).
+  // live in src/campaign/util/cui-options.ts (bound as aliases at the top of this IIFE).
 
   // _opPickerModal, _textareaModal, _numberModal live in
-  // js/campaign/ui/cui-modals.js (bound as aliases at the top of this IIFE).
+  // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
 
   // Leaf utilities (_esc, _escAttr, _label, _safe, _truncate, _lootLine,
   // _currencyLabel, _recordName, _formatBundleText) live in
-  // js/campaign/ui/cui-utils.js and are bound as aliases at the top of
-  // this IIFE.
+  // src/campaign/util/cui-utils.ts (Phase H.4) and are bound as aliases
+  // at the top of this IIFE via window.CJS.CampaignUIInternal.Utils.
 
   // Lightweight begin/end narrative modal used by generated and user-built
   // quests. Replaces the heavyweight fullscreen visual novel for those runs;
@@ -5561,39 +5354,10 @@ window.CJS.CampaignUI = (() => {
   // ported produce HTML fragments via closure-private helpers; the
   // React component embeds them via dangerouslySetInnerHTML chunks.
 
-  function getEventLogData(state = CS().getState()) {
-    if (!state) return null;
-    const entries = (state.eventLog?.entries || []).map((entry) => ({
-      title: entry.title || 'Event',
-      summary: entry.summary || '',
-      scopeLabel: _label(entry.scope || entry.source || 'event'),
-      phase: entry.phase || null,
-      at: entry.at ? _formatLogTime(entry.at) : '',
-      consequences: Array.isArray(entry.consequences) ? entry.consequences.slice(0) : [],
-      tags: Array.isArray(entry.tags) ? entry.tags.slice(0, 8).map((tag) => _label(tag)) : []
-    }));
-    const rawEntries = state.eventLog?.entries || [];
-    const oracleCount = rawEntries.filter((entry) => String(entry.source || '').includes('oracle') || (entry.tags || []).includes('oracle')).length;
-    const manualCount = rawEntries.filter((entry) => String(entry.source || '').includes('manual') || (entry.tags || []).includes('manual_event')).length;
-    return {
-      entries,
-      totalCount: rawEntries.length,
-      oracleCount,
-      manualCount,
-      heroBackdropUrl: _worldHomeBackdropUrl()
-    };
-  }
-
-  // Returns just the resolved backdrop URL (or null) the React hero uses
-  // for its CSS custom property. The vanilla _worldHomeHeroStyle wraps
-  // this in `style="..."`; JSX needs only the URL.
-  function _worldHomeBackdropUrl() {
-    const world = CS().getCurrentWorld?.() || {};
-    const theme = world.storyModeTheme || {};
-    const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
-    if (!backdrop) return null;
-    return _cssVarAssetUrl(backdrop);
-  }
+  // `getEventLogData` and `_worldHomeBackdropUrl` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/eventLog.ts`). The data builder
+  // reads `state.eventLog.entries` directly + the world's storyModeTheme
+  // backdrop, same shape the JSX consumes.
 
   // HTML-string sub-panel bridges. Shared with the event{Character,
   // Special,Side} tabs that haven't migrated yet. When those tabs port,
@@ -5771,116 +5535,17 @@ window.CJS.CampaignUI = (() => {
   }
 
   // Typed snapshots for small shared panels used across tabs.
-  function getTravelSurpriseData(state = CS().getState()) {
-    if (!state) return null;
-    const notice = state.lastTravelSurprise;
-    if (!notice || !state.activeScenarioRun) return null;
-    return {
-      title: notice.title || 'Travel Surprise',
-      categoryLabel: _label(notice.category || 'surprise'),
-      prompt: notice.prompt || '',
-      areaLabel: notice.area || 'Area',
-      repeatLabel: notice.repeated ? `Revisit ${notice.visitCount || 2}` : 'New route',
-      locationLabel: notice.location || ''
-    };
-  }
+  // `getTravelSurpriseData` and `getLastReportData` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/resultPanels.ts` — pure state
+  // reads, no closure deps).
 
-  function getCombatResultData(state = CS().getState()) {
-    if (!state) return null;
-    const result = state.pendingBattleResult;
-    if (!result) return null;
-    return {
-      resultLabel: result.result || 'resolved',
-      encounterId: result.encounterId || '',
-      rounds: result.rounds || 0,
-      lootHtml: _renderLootSummary(result.loot || []),
-      consequenceNoticeHtml: _renderCombatConsequenceNotice(result, state)
-    };
-  }
+  // getCombatResultData / getLastCombatResultData / getPendingBattleData
+  // moved to TS in Phase H.4 — see resultPanels.ts.
 
-  function getLastCombatResultData(state = CS().getState()) {
-    if (!state) return null;
-    const result = state.lastCombatResult;
-    if (!result) return null;
-    return {
-      resultLabel: result.result || 'resolved',
-      label: result.encounterId || result.label || 'Campaign battle',
-      rounds: result.rounds || 0,
-      summary: result.summary || '',
-      pulseHtml: _renderCombatPulseSummary(result.combatPulse) || '',
-      lootHtml: _renderLootSummary(result.loot || [])
-    };
-  }
-
-  function getLastReportData(state = CS().getState()) {
-    if (!state) return null;
-    const report = state.lastScenarioReport;
-    if (!report) return null;
-    return {
-      outcome: report.outcome || '',
-      danger: report.danger || 0,
-      campsUsed: report.usedCampRests || 0,
-      eventsUsed: report.eventsUsed || 0,
-      battlesCount: (report.completedBattles || []).length,
-      diffJson: JSON.stringify(report.diff, null, 2)
-    };
-  }
-
-  function getPendingBattleData(state = CS().getState()) {
-    if (!state) return null;
-    const battle = state.pendingBattle;
-    if (!battle) return null;
-    const isRandom = battle.source === 'random';
-    const canRun = !!(battle.encounterId || battle.battleSetId || (battle.monsterIds || []).length);
-    return {
-      sourceLabel: _battleSourceLabel(battle),
-      label: battle.label || battle.encounterId || '',
-      subLabel: battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(', ') || '',
-      autoMapLabel: battle.battleMap?.theme ? _label(battle.battleMap.theme) : '',
-      contextHtml: _renderPendingBattleContext(state, battle) || '',
-      partySummaryHtml: _renderBattlePartySummary(state) || '',
-      canRun,
-      isRandom
-    };
-  }
-
-  // Typed snapshot for the React SoloNotice panel. Returns null when
-  // there's no pending solo hook card. Shared by Overview / EventTab /
-  // QuestHome / QuestsPanel / StoryHome.
-  function getSoloNoticeData(state = CS().getState()) {
-    if (!state) return null;
-    const card = _pendingSoloHookCard(state);
-    if (!card) return null;
-    const kind = state.pendingSoloHook?.kind || card.type || 'hook';
-    const risk = Side().risk(card.canonRisk);
-    const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
-    const ops = _cardChoiceOps(card);
-    const summary = _consequenceSummary(ops, { hasText: !!prompt });
-    const firstChoice = card.suggestedChoices?.[0];
-    const choiceLabel = firstChoice?.label || 'Apply the first suggested choice';
-    const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer');
-    const acceptHint = isQuestOffer
-      ? 'Add quest to tracker and auto-start its map run'
-      : (ops.length ? `Apply: ${Ops().describe(ops).join('; ')}` : 'Create a quest from this story-only hook');
-    return {
-      tone: summary.tone,
-      summaryLabel: summary.label,
-      kindLabel: _label(kind),
-      choiceLabel,
-      risk,
-      riskClass: Side().riskClass(risk),
-      title: card.title || card.name || card.id || '',
-      prompt,
-      inlinePurposeHtml: _renderInlinePurpose(kind === 'rumor_offer' ? 'rumor' : _purposeKeyForCard(card)),
-      consequencePreviewHtml: _renderConsequencePreview(ops, {
-        emptyTitle: 'Flavor only',
-        emptyText: 'No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest.'
-      }),
-      flavorTrailHtml: _renderFlavorTrail(card),
-      acceptLabel: ops.length ? 'Accept & Apply' : 'Accept as Quest',
-      acceptHint
-    };
-  }
+  // `getSoloNoticeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). The shared TS slice
+  // reads pending solo hook + side-content consequence preview via the
+  // same HubTab module bridge.
 
   // Typed snapshot of state.lastEvent for the React EventResult panel.
   // Returns null when no event has been rolled. Used by EventLog,
@@ -5932,20 +5597,8 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // Typed snapshot of state.lastOracle for the React Oracle panel.
-  function getOracleData(state = CS().getState()) {
-    if (!state) return null;
-    const oracle = state.lastOracle;
-    if (!oracle) return null;
-    return {
-      text: oracle.text || '',
-      inlinePurposeHtml: _renderInlinePurpose('oracle'),
-      consequencePreviewHtml: _renderConsequencePreview([], {
-        emptyTitle: 'Flavor prompt',
-        emptyText: 'Use as narration now, save it as a note, or reroll for a sharper prompt.'
-      })
-    };
-  }
+  // `getOracleData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`).
 
   // Typed snapshot of one quest for the React QuestRow component.
   // Used by QuestHome (active rows, capped) and QuestsPanel (active +
@@ -6373,130 +6026,25 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getStorySummaryData(state = CS().getState()) {
-    if (!state) return null;
-    const storyParts = _storySummaryEntries(state).map((entry) => ({
-      title: entry.title || entry.sequenceId || 'Story Part',
-      chapterLabel: entry.chapterLabel || '',
-      partLabel: entry.partLabel || '',
-      modeLabel: _label(entry.mode || 'played'),
-      result: entry.result || 'complete',
-      timestamp: entry.completedAt || entry.startedAt || '',
-      summaryText: entry.summaryText || '',
-      routeText: (entry.routeChoices || [])
-        .map((choice) => choice.label || choice.choiceId)
-        .filter(Boolean)
-        .join(' → '),
-      syncSummary: Array.isArray(entry.syncSummary) ? entry.syncSummary.slice(0) : []
-    }));
-    const manual = (state.storyMode?.manualSummaryEntries || []).map((entry) => ({
-      title: entry.title || 'Manual Note',
-      timestamp: entry.at || '',
-      text: entry.text || ''
-    }));
-    const facts = Object.values(state.storyDirector?.revealedFacts || {}).slice(0, 8).map((fact) => ({
-      title: fact.title || fact.id || 'Fact',
-      text: fact.text || fact.note || ''
-    }));
-    const queue = Object.values(state.storyDirector?.storyQueue || {}).slice(0, 8).map((beat) => ({
-      title: beat.title || beat.id || 'Beat',
-      status: beat.status || 'held',
-      text: beat.prompt || beat.summary || ''
-    }));
-    return { storyParts, manual, facts, queue };
-  }
+  // `getStorySummaryData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storySummary.ts`). The TS port duplicates
+  // the closure-private `_storySummaryEntries` builder (still used by
+  // JS data builders that haven't ported yet).
 
   // Phase G.16 — typed Town Snapshot + Roll Float data for the
   // Overview tab. The HubTab still owns the underlying hub state
   // (CampaignHub.getCurrentHubDefinition / getCurrentHubState); the
   // rumor row markup stays as an HTML bridge until HubTab itself
   // ports (K.3).
-  function getTownSnapshotData(state = CS().getState()) {
-    if (!state) return null;
-    const Hub = window.CJS.CampaignHub;
-    const HubTab = window.CJS.CampaignUIInternal.HubTab;
-    const hub = Hub?.getCurrentHubDefinition?.() || {};
-    const hubState = Hub?.getCurrentHubState?.() || {};
-    const activeQuests = Object.values(state.quests || {}).filter((quest) => !_isQuestResolved(quest));
-    const activeChains = CS().getActiveQuestChains?.() || [];
-    const problems = hubState.activeProblems || [];
-    const rumors = HubTab?.openRumors?.(hubState) || [];
-    const stats = ['security', 'prosperity', 'warmth', 'weirdness'].map((stat) => ({
-      id: stat,
-      label: _label(stat),
-      value: Number(hubState[stat] ?? 0)
-    }));
-    return {
-      hubName: String(hub.name || 'Town Overview'),
-      hubDescription: String(hub.description || 'Town phase command view.'),
-      moodLabel: _label(hubState.mood || 'neutral'),
-      stats,
-      kpis: [
-        { count: activeQuests.length, label: 'Open quests', tone: '' },
-        { count: activeChains.length, label: 'Quest arcs', tone: '' },
-        { count: problems.length, label: 'Problems', tone: problems.length ? 'is-risk' : '' },
-        { count: rumors.length, label: 'Rumors', tone: rumors.length ? 'is-plot' : '' }
-      ],
-      problems: problems.slice(0, 4).map((problem) => ({
-        id: String(problem),
-        label: _label(problem)
-      })),
-      rumors: rumors.slice(0, 3).map((rumor) => _rumorRowData(rumor, { compact: true })),
-      locations: (hub.locations || []).slice(0, 5).map((loc) => ({
-        id: String(loc.id || ''),
-        name: String(loc.name || loc.id || ''),
-        detail: String(loc.notes || _label(loc.type || 'location'))
-      }))
-    };
-  }
-
-  function getTownRollFloatData(state = CS().getState()) {
-    if (!state) return null;
-    const pending = _pendingSoloHookCard(state);
-    if (!pending) {
-      return { pending: null };
-    }
-    const ops = _cardChoiceOps(pending);
-    const hasOps = ops.length > 0;
-    const HubTab = window.CJS.CampaignUIInternal.HubTab;
-    const summary = HubTab?.consequenceSummary?.(ops, {
-      hasText: !!(pending.prompt || pending.summary || pending.text)
-    }) || { tone: 'flavor', label: 'flavor', short: '' };
-    return {
-      pending: {
-        title: String(pending.title || pending.name || pending.id || ''),
-        toneLabel: String(summary.label || ''),
-        toneClass: `is-${summary.tone}`,
-        short: String(summary.short || ''),
-        hasOps
-      }
-    };
-  }
+  // `getTownSnapshotData` and `getTownRollFloatData` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/overview.ts`).
 
   // K.3 — typed bridges for the Battle Sets / Map Seeds forge tabs.
   // Replaces HubTab.renderBattleSets / renderMapSeeds (HTML strings with
   // data-campaign-action) with structured data the React tree renders as
   // JSX (src/campaign/tabs/CampaignHubTabs.tsx).
-  function getBattleSetsData() {
-    const cards = window.CJS.CampaignBattleSetForge?.getCards?.() || [];
-    return {
-      cards: cards.map((card) => ({
-        id: String(card.id || ''),
-        name: String(card.name || card.id || ''),
-        canonRisk: String(card.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(card.canonRisk),
-        rank: String(card.rank || '-'),
-        objective: String(card.objective || ''),
-        tags: Array.isArray(card.tags) ? card.tags.map(String) : [],
-        enemyMix: (card.enemyMix || []).map((enemy) => ({
-          qty: Number(enemy.qty || 1),
-          label: String(enemy.label || enemy.name || enemy.id || 'unit')
-        })),
-        gimmick: String(card.gimmick || ''),
-        queueLabel: card.encounterId ? 'Queue Combat' : 'Queue Manual'
-      }))
-    };
-  }
+  // `getBattleSetsData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`).
 
   function getQuestChainsData() {
     const QC = window.CJS.CampaignQuestChains;
@@ -6517,23 +6065,8 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getMapSeedsData() {
-    const seeds = window.CJS.CampaignMapSeedForge?.getSeeds?.() || [];
-    return {
-      seeds: seeds.map((seed) => ({
-        id: String(seed.id || ''),
-        name: String(seed.name || seed.id || ''),
-        canonRisk: String(seed.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(seed.canonRisk),
-        purpose: (Array.isArray(seed.purpose) ? seed.purpose : [seed.purpose].filter(Boolean))
-          .map(String).join(', '),
-        nodes: (seed.nodes || []).map((node) => ({
-          name: String(node.name || node.id || ''),
-          detail: String(node.role || node.notes || '')
-        }))
-      }))
-    };
-  }
+  // `getMapSeedsData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`).
 
   // K.3 — typed side-content card + rumor-row data for the Side Forge /
   // Oracle Forge tabs (and the Town snapshot rumor rows). Display-only
@@ -6591,77 +6124,19 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getSideForgeData(state = CS().getState()) {
-    if (!state) return null;
-    const Hub = window.CJS.CampaignHub;
-    const hub = Hub?.getCurrentHubDefinition?.() || {};
-    const hubState = Hub?.getCurrentHubState?.() || {};
-    const last = state.lastSideContentCard;
-    const ideas = Object.values(state.sideContent?.generatedIdeas || {});
-    const saved = ideas.filter((idea) => idea.status === 'saved' || idea.status === 'active');
-    const review = state.sideContent?.reviewQueue || [];
-    const history = state.sideContent?.contentHistory || [];
-    return {
-      hubName: String(hub.name || 'Living Hub'),
-      hubDescription: String(hub.description || 'Town pulse, rumors, problems, and content review queue.'),
-      hubId: String(hub.id || ''),
-      moodLabel: _label(hubState.mood || 'neutral'),
-      stats: {
-        security: Number(hubState.security ?? 0),
-        prosperity: Number(hubState.prosperity ?? 0),
-        warmth: Number(hubState.warmth ?? 0),
-        weirdness: Number(hubState.weirdness ?? 0)
-      },
-      problemPurposeHtml: _renderInlinePurpose('problem'),
-      problems: (hubState.activeProblems || []).map((problem) => ({
-        id: String(problem),
-        label: _label(problem)
-      })),
-      lastCard: last ? _sideCardData(last, { mode: 'last' }) : null,
-      rumors: _openRumors(hubState).slice(0, 6).map((rumor) => _rumorRowData(rumor)),
-      savedIdeas: saved.slice(0, 8).map((idea) => _sideCardData(idea, { compact: true })),
-      review: review.slice(0, 8).map((item) => ({
-        id: String(item.id || ''),
-        contentId: String(item.contentId || ''),
-        reason: String(item.reason || ''),
-        canonRisk: String(item.canonRisk || 'red'),
-        canonRiskClass: Side().riskClass(item.canonRisk)
-      })),
-      history: history.slice(0, 10).map((line) => ({
-        title: String(line.title || line.type || ''),
-        result: String(line.result || ''),
-        phaseLabel: String(line.phase ?? '')
-      }))
-    };
-  }
+  // `getSideForgeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
+  // `_rumorRowData` helpers ported earlier in the same phase.
 
-  function getOracleForgeData(state = CS().getState()) {
-    if (!state) return null;
-    const last = state.lastSideContentCard?.type === 'oracle_prompt' ? state.lastSideContentCard : null;
-    const tables = window.CJS.CampaignDataLoader?.getOracleTables?.() || [];
-    return {
-      purposeHtml: _renderInlinePurpose('oracle'),
-      tableNames: tables.map((table) => String(table.name || table.id || '')).join(', ') || 'No oracle tables loaded.',
-      lastCard: last ? _sideCardData(last, { mode: 'oracle' }) : null
-    };
-  }
+  // `getOracleForgeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
+  // `_rumorRowData` helpers also moved alongside; `getSideForgeData` +
+  // `getTownSnapshotData` still call the JS originals until they port.
 
-  // K.3 — typed roster-tab data. Delegates the per-member breakdown to
-  // PartyTab.rosterMemberData (hero + vitals + stats + affinities typed;
-  // the skills/passives/statuses/equipment detail row stays one HTML
-  // island until its own K.3 step). React renders CampaignRosterTab.tsx.
-  function getRosterData(state = CS().getState()) {
-    if (!state) return null;
-    const PartyTab = window.CJS.CampaignUIInternal.PartyTab;
-    if (!PartyTab?.rosterMemberData) return null;
-    const h = _tabHelpers();
-    const entries = Object.entries(state.party || {});
-    const toData = ([id, member]) => PartyTab.rosterMemberData(id, member, h);
-    return {
-      active: entries.filter(([, m]) => (m.rosterRole || 'active') !== 'bench').map(toData),
-      bench: entries.filter(([, m]) => (m.rosterRole || 'active') === 'bench').map(toData)
-    };
-  }
+  // `getRosterData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/roster.ts`). The per-member breakdown
+  // still comes through PartyTab.rosterMemberData; the typed
+  // tab-helpers bundle is threaded via `CampaignUI.getTabHelpers`.
 
   function getMinigameTestData(state = CS().getState()) {
     if (!state) return null;
@@ -6734,45 +6209,36 @@ window.CJS.CampaignUI = (() => {
     return _renderDrawerBody(panelId, state);
   }
 
+  // Public chrome setters — thin wrappers around the canonical TS slice
+  // (Phase H.4). They keep the JS bridge contract intact (render() after
+  // every write) so the React shell + drawer focus management still fire.
+  // The TS slice handles the mode/tab partner-derivation and the panel
+  // toggle semantics; we only own the render side-effect here.
   function setActiveMode(mode, opts = {}) {
     if (!mode) return;
-    _activeMode = mode;
-    if (!opts.keepTab) {
-      const next = _defaultTabForMode(mode, CS().getState());
-      if (next) _activeTab = next;
-    }
+    _Chrome().setActiveMode(mode, {
+      keepTab: !!opts.keepTab,
+      worldId: CS().getState()?.currentWorld
+    });
     render();
   }
 
   function setActiveTab(tab, opts = {}) {
     if (!tab) return;
-    _activeTab = tab;
-    const owningMode = APP_TAB_TO_MODE[tab];
-    if (owningMode && !opts.keepMode) _activeMode = owningMode;
+    _Chrome().setActiveTab(tab, { keepMode: !!opts.keepMode });
     render();
   }
 
-  // Phase H.3 — render-free chrome setters for ported TS action handlers.
-  // The legacy `_goto` (still used by many unported closures) assigns
-  // _activeMode / _activeTab directly with no derivation, then calls
-  // render() once. Ported handlers replicate that exactly: call these
-  // (no derive, no render) at the points the closure assigned, then
-  // `render()` where the closure rendered. Distinct from
-  // setActiveMode/setActiveTab, which derive the partner dimension +
-  // render (the chrome-forwarder contract). These collapse into a TS
-  // chrome-state slice in H.4 when _activeMode/_activeTab move off the
-  // closure.
-  function setActiveModeRaw(mode) { if (mode) _activeMode = mode; }
-  function setActiveTabRaw(tab) { if (tab) _activeTab = tab; }
+  // Render-free chrome setters (Phase H.3 contract preserved). The
+  // legacy `_goto` and the ported nav handlers call these with no
+  // derivation, then call render() themselves at the point the closure
+  // rendered. Distinct from setActiveMode/setActiveTab above, which
+  // derive the partner dimension + render (the chrome-forwarder contract).
+  function setActiveModeRaw(mode) { _Chrome().setActiveModeRaw(mode); }
+  function setActiveTabRaw(tab) { _Chrome().setActiveTabRaw(tab); }
 
   function setActivePanel(panelId) {
-    if (panelId == null) {
-      _activePanel = null;
-    } else {
-      // Toggle: clicking the active panel again closes it (mirrors the
-      // vanilla _openPanel behaviour).
-      _activePanel = _activePanel === panelId ? null : panelId;
-    }
+    _Chrome().setActivePanel(panelId);
     render();
   }
 
@@ -6877,18 +6343,8 @@ window.CJS.CampaignUI = (() => {
     // re-render against.
     enableReactShell,
     getChromeData,
-    getEventLogData,
     getMinigameTestData,
-    getTownSnapshotData,
-    getTownRollFloatData,
-    getRosterData,
-    getSideForgeData,
-    getOracleForgeData,
-    getBattleSetsData,
-    getMapSeedsData,
     getQuestChainsData,
-    getAdventureLegendVisible,
-    getStorySummaryData,
     getQuestHomeData,
     getEventTabData,
     getScenariosData,
@@ -6899,13 +6355,6 @@ window.CJS.CampaignUI = (() => {
     getStoryDirectorData,
     getQuestRowData,
     getEventResultData,
-    getOracleData,
-    getSoloNoticeData,
-    getTravelSurpriseData,
-    getCombatResultData,
-    getLastCombatResultData,
-    getLastReportData,
-    getPendingBattleData,
     getScenarioSummaryData,
     getActiveSequenceData,
     getSequenceShelfData,

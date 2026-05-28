@@ -668,16 +668,59 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
      contract is registry-backed even while the implementation
      stays JS — same pattern as `renderStoryDirectorCardHtml`,
      `renderPartySheetHtml`, etc.
-- [ ] **H.4 — Migrate `get*Data` bridges to TS** under
+- [~] **H.4 — Migrate `get*Data` bridges to TS** under
   `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
   CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
   `js/campaign/ui/`**. Stable leaf helpers (`Utils.esc`, `Log.logKind`,
   `Controls.actionBtn`, etc.) move to TS util modules first.
-  **Blocked on finishing H.3** — campaign-ui.js still owns the unported
-  `_handleAction` cluster + every `get*Data` bridge. The roster detail
-  row and external-module tabs stay bridged HTML islands across the
-  deletion (forwarded, like today). The mode/tab state migration noted
-  in H.3's "Remaining" is the natural first H.4 step.
+  The roster detail row and external-module tabs stay bridged HTML
+  islands across the deletion (forwarded, like today).
+
+  **Step 1 — Chrome state migration (done).** The closure-private
+  `_activeMode` / `_activeTab` / `_activePanel` move to
+  `src/campaign/chrome-state.ts` as the canonical TypeScript source of
+  truth. The JS file keeps the variables as read-only mirrors synced
+  via `subscribe`; every write goes through `_Chrome().set*`. Constants
+  `APP_MODES` / `APP_MODE_TABS` / `APP_UTILITY_TABS`, the world-UI
+  profile lookup, and the helpers `worldUiProfile` / `tabsForMode` /
+  `defaultTabForMode` / `appModesForWorld` / `normalizeForWorld` /
+  `modeForTab` are exported from the TS module; the vanilla helpers
+  become thin delegates. Dead pre-H constants `MODES` / `MODE_TABS` /
+  `UTILITY_TABS` / `TAB_TO_MODE` removed. TS context layer
+  (`action-handlers/context.ts`) now reaches the chrome slice directly
+  instead of round-tripping through `window.CJS.CampaignUI`.
+
+  **Step 2 — Leaf util helpers ported to TS (done).** The seven
+  closure-internal util modules under `js/campaign/ui/` (cui-utils,
+  cui-portraits, cui-log, cui-controls, cui-modals, cui-options,
+  cui-equipment) move to `src/campaign/util/*.ts`. Each TS module
+  installs the same `window.CJS.CampaignUIInternal.<Namespace>` surface
+  so the still-JS callers (campaign-ui.js + cui-hub-tab + cui-party-tab
+  + the action handlers + the React tabs) see no observable change.
+  All seven JS files deleted.
+
+  **Step 3 — Tab registry + React-bridge + world-map-tab stub ported
+  to TS (done).** The three thin tabs files under `js/campaign/ui/tabs/`
+  move to TS: `cui-tabs-registry.ts` (the Map-backed registry installed
+  on `CampaignUIInternal.Tabs`), `cui-world-map-tab.ts` (empty
+  namespace stub for the bootstrap test's `WorldMapTab namespace
+  exposed` assertion), and `cui-react-bridge.ts` (registers placeholder
+  mount points for every React-owned tab). The master list of React
+  tab ids now lives in `cui-react-bridge.ts` (paired with
+  `CampaignShell.tsx::REACT_TAB_COMPONENTS`).
+
+  **Still in JS under js/campaign/ui/tabs/:** `cui-party-tab.js` (742
+  lines — the roster detail row's icon-heavy HTML body; the action
+  surface is already registry-backed) and `cui-hub-tab.js` (162 lines
+  — shared side-content primitives). Both stay as bridged HTML islands
+  across the campaign-ui.js deletion per the plan note above.
+
+  **Remaining H.4 work:** port the ~30 `get*Data` bridges in
+  campaign-ui.js to TS modules under `src/campaign/bridge/` (chrome,
+  panel defs, per-tab data), then delete campaign-ui.js. The big modal
+  builder bodies (`_openManualEventBuilder`, `_openQuestModal`,
+  `_gmOverride`, `_openManualSceneBuilder`) port alongside their data
+  builders.
 - [ ] **H.5 — Rewrite `test_campaign_ui_bootstrap.js`** against the
   React tree; fold `test_campaign_shell_bridge.js` into a TS unit test.
   **Blocked on H.4** (the bootstrap test loads `js/campaign/ui/`, which
@@ -851,29 +894,65 @@ finishes the authoring loop:
 | After H.3 mg-test-pick | 451 |
 | After H.3 story-help + copy-prompt | 449 |
 | After H.3 manual builders (complete 246/246) | 449 |
+| After H.4 chrome state to TS | 447 |
+| After H.4 leaf helpers (utils + portraits + log) to TS | 443 |
+| After H.4 cui-controls + cui-modals to TS | 435 |
+| After H.4 cui-options + cui-equipment to TS | 427 |
+| After H.4 tabs-registry + react-bridge + world-map stub to TS | 424 |
+| After H.4 travelSurprise + lastReport data builders to TS | 424 |
+| After H.4 combat / battle / pendingBattle data builders to TS | 420 |
+| After H.4 getEventLogData + cssVarAssetUrl to TS | 419 |
+| After H.4 battleSets + mapSeeds data builders to TS | 418 |
+| After H.4 oracleForge + side-card / rumor-row helpers to TS | 418 |
+| After H.4 town snapshot + roll float data builders to TS | 416 |
+| After H.4 getOracleData to TS | 416 |
+| After H.4 getSoloNoticeData to TS | 415 |
+| After H.4 getSideForgeData to TS | 412 |
+| After H.4 getAdventureLegendVisible to TS | 412 |
+| After H.4 getRosterData to TS | 412 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 449 KB. **Phase H.3 is
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 412 KB. **Phase H.3 is
 complete**: 246/246 actions live in the TS registry, and the
 `_handleAction` switch is empty (kept as a defensive no-op with
-the port history in comments). Every closure-private `_render*`
-sub-renderer in campaign-ui.js is JSX, the hub-family tab bodies +
-roster hero are JSX, and the action contract is now fully
-registry-backed for every dispatch path (React onClick, the shell
-`<main>` + drawer click forwarders, modal-local click delegates).
-Still bridged HTML: the roster detail row (icon-heavy, action
-surface registry-backed), the world map SVG, the intentionally-
+the port history in comments). **Phase H.4 in progress** —
+chrome state, every leaf util helper, the tab registry, the
+React-bridge tab list, the world-map stub, and 16 of the ~30
+`get*Data` bridges are all TS. The seven
+`js/campaign/ui/cui-*.js` files and three `js/campaign/ui/tabs/cui-*`
+small files were deleted (cui-utils, cui-portraits, cui-log,
+cui-controls, cui-modals, cui-options, cui-equipment,
+cui-tabs-registry, cui-world-map-tab, cui-react-bridge — 10 files
+deleted, 11 TS modules created under `src/campaign/util/` + 1 under
+`src/campaign/`). Data builders ported to TS: travelSurprise,
+lastReport, combatResult, lastCombatResult, pendingBattle,
+eventLog, battleSets, mapSeeds, oracleForge, townSnapshot,
+townRollFloat, oracle, soloNotice, sideForge, adventureLegendVisible,
+roster (+ shared `sideCardData`, `rumorRowData`, `pendingSoloHookCard`,
+`isQuestResolved`, `questObjectiveDone`, `questNextObjective`,
+`cssVarAssetUrl` helpers).
+Every closure-private `_render*` sub-renderer in
+campaign-ui.js is JSX, the hub-family tab bodies + roster hero are
+JSX, and the action contract is fully registry-backed for every
+dispatch path. Still bridged HTML: the roster detail row
+(`cui-party-tab.js`, 742 lines — icon-heavy, action surface
+registry-backed), the shared side-content primitives
+(`cui-hub-tab.js`, 162 lines), the world map SVG, the intentionally-
 vanilla external-module tabs + maps tab. Still in JS: the big
 modal builder bodies (`_openManualEventBuilder` 266 lines,
 `_openQuestModal` 475 lines, `_gmOverride` 174 lines,
 `_openManualSceneBuilder` 127 lines) — bridge-wrapped from TS so
 the action contract is registry-backed even though the bodies
 share many sub-helpers with the still-JS data builders. **Next:
-H.4** ports the `get*Data` bridges to TS (chrome, tabs, panels)
-and deletes `js/campaign/campaign-ui.js` + `js/campaign/ui/`,
-folding the bridge-wrapped modal bodies into TS alongside their
-data builders. Then H.5 (test rewrite). Phases I/J pivot from
-"remove HTML strings" to "optimize the React tree + open the
-authoring loop for AI generators."
+H.4 continues** — port the remaining ~16 `get*Data` bridges to TS
+modules (chrome data builder, roster, quest chains, story summary,
+quest home, event tab, scenarios, run, quest panel, story home,
+world gate, story director, quest row, event result, scenario
+summary, active sequence, sequence shelf, minigame test) backed
+by the typed CampaignState surface, fold the bridge-wrapped modal
+bodies into TS alongside their data builders, then delete
+`js/campaign/campaign-ui.js`. Then H.5 (test rewrite). Phases I/J
+pivot from "remove HTML strings" to "optimize the React tree +
+open the authoring loop for AI generators."
 
 ## Done-when gate
 

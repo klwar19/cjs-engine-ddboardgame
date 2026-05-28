@@ -68,18 +68,26 @@ import "../../js/minigames/fishing-minigame.js";
 import "../../js/minigames/cooking-minigame.js";
 import "../../js/minigames/minigame-host.js";
 import "../../js/ui/relationships-tab.js";
-import "../../js/campaign/ui/cui-utils.js";
-import "../../js/campaign/ui/cui-portraits.js";
-import "../../js/campaign/ui/cui-modals.js";
-import "../../js/campaign/ui/cui-options.js";
-import "../../js/campaign/ui/cui-controls.js";
-import "../../js/campaign/ui/cui-equipment.js";
-import "../../js/campaign/ui/cui-log.js";
-import "../../js/campaign/ui/tabs/cui-tabs-registry.js";
+// Phase H.4 — leaf util helpers ported to TS. The TS modules install
+// the same `window.CJS.CampaignUIInternal.<Namespace>` surface so
+// vanilla JS callers (campaign-ui.js + the other cui-*.js helpers)
+// keep working without changes.
+import "./util/cui-utils";
+import "./util/cui-portraits";
+import "./util/cui-modals";
+import "./util/cui-options";
+import "./util/cui-controls";
+import "./util/cui-equipment";
+import "./util/cui-log";
+import "./util/cui-tabs-registry";
 import "../../js/campaign/ui/tabs/cui-party-tab.js";
 import "../../js/campaign/ui/tabs/cui-hub-tab.js";
-import "../../js/campaign/ui/tabs/cui-world-map-tab.js";
-import "../../js/campaign/ui/tabs/cui-react-bridge.js";
+import "./util/cui-world-map-tab";
+import "./util/cui-react-bridge";
+// Phase H.4 — install window.CJS.CampaignChrome BEFORE campaign-ui.js so
+// the IIFE's bridge wrappers can read/write chrome state through the TS
+// canonical slice from the moment they run.
+import "./chrome-state";
 import "../../js/campaign/campaign-ui.js";
 import "../../js/ui/audio-manager.js";
 import "../../js/ui/l2d-avatar.js";
