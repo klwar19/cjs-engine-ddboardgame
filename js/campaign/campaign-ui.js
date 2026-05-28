@@ -2496,163 +2496,25 @@ window.CJS.CampaignUI = (() => {
 
   // Phase H.1 — public typed action boundary. React components call
   // `CampaignActions.dispatchCampaignAction(name, data)` which routes
-  // here directly (no synthetic DOM-button click). The delegated
-  // `_bindEvents` listener still feeds `_handleAction` for buttons
-  // inside the remaining HTML-bridge tabs (HubTab / PartyTab /
-  // WorldMapTab, ported in K.3). `data` carries camelCase keys that
-  // mirror the dataset names each case reads (id, choice, worldId,
+  // here directly (no synthetic DOM-button click). The shell `<main>`
+  // + drawer click forwarders and modal-local click delegates also
+  // funnel through this entry. `data` carries camelCase keys that
+  // mirror the dataset names each handler reads (id, choice, worldId,
   // targetTab, tab, mode, table, bucket, dir, tool, x, y, ...).
   function handleAction(name, data = {}) {
     return _handleAction({ campaignAction: String(name), ...data });
   }
 
+  // Phase H.3 complete — every CampaignActionName resolves through the
+  // TS registry on window.CJS.CampaignActionsRuntime. The full port
+  // map (closure helper → action-handlers/<module>.ts) lives in the
+  // registry source + MIGRATION_PHASE_D_PLAN.md; this function is
+  // intentionally tiny. (H.4 may move it into the runtime itself.)
   function _handleAction(data) {
-    // Phase H.3 complete — every CampaignActionName resolves through
-    // the TS registry installed on window.CJS.CampaignActionsRuntime.
-    // This function stays as the single dispatch seam for every
-    // codepath: React onClick → dispatchCampaignAction → handleAction,
-    // the shell/drawer click forwarders, and internal delegated
-    // callers like the party-sheet modal. (H.4 may collapse this into
-    // the runtime call site directly.)
     const runtime = window.CJS.CampaignActionsRuntime;
-    if (runtime && runtime.has(data.campaignAction)) {
-      return runtime.run(data.campaignAction, data);
-    }
-    // Empty switch retained as a defensive no-op so the unrecognized-
-    // action path stays explicit (the registry covers all 246 names —
-    // see test_actions_bridge.js — but future names land here until
-    // they're registered). Switch body intentionally empty.
-    // Comments below capture the ports done in H.3 so the closure-level
-    // history stays browsable; each comment matches a real registry
-    // entry in src/campaign/action-handlers/registry.ts.
-    switch (data.campaignAction) {
-      // travel-world-card ported to action-handlers/travel.ts (H.3).
-      // rel-activity / camp-rest ported to action-handlers/downtime.ts (H.3).
-      // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
-      //   navigation (open-* / _goto) -> action-handlers/nav.ts
-      //   world-map-* / world-activity-use -> action-handlers/worldmap.ts
-      //   save + log -> actions.ts ; roster ops -> action-handlers/roster.ts
-      //   pass-phase + thin engine ops -> action-handlers/ops.ts
-      //   farm/haven -> action-handlers/farm.ts ; forge -> action-handlers/forge.ts
-      // roll-event / pick-event ported to action-handlers/events.ts (H.3).
-      // custom-event ported to action-handlers/manual-builders.ts (H.3 —
-      // bridge-wrapped, the manual event builder body stays in JS).
-      // roll-oracle / pick-oracle / custom-oracle ported to
-      // action-handlers/oracle.ts (H.3).
-      // battle-reroll / battle-override ported to action-handlers/combat.ts (H.3).
-      // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
-      // random-quest-offer / accept-solo-hook / solo-hook-quest /
-      // solo-hook-rumor ported to action-handlers/solo.ts (H.3).
-      // solo-surprise / random-rumor-offer / manual-rumor / save-solo-hook /
-      // ignore-solo-hook ported to action-handlers/solo.ts (H.3).
-      // apply/save/reject/dismiss/copy side-card ported to
-      // action-handlers/side.ts (H.3).
-      // resolve-rumor / rumor-to-quest / rumor-to-problem ported to
-      // action-handlers/rumor.ts (H.3).
-      // start-chain / chain-scenario / chain-battle ported to
-      // action-handlers/quest-chain.ts (H.3). Internal callers of
-      // _startQuestChainRun (e.g. the `_startQuestRunFromOffer` path
-      // for cards carrying questChainTemplateId) now go through the
-      // TS solo.ts handlers; the still-JS card path is gone.
-      // advance-chain/complete-chain/fail-chain/promote-chain ported to
-      // action-handlers/quest-chain.ts (H.3).
-      // copy-battle-card/copy-map-seed + roll-forge-oracle ported to
-      // action-handlers/{forge,oracle}.ts (H.3).
-      // story-roll-scene / -peri / -memory / story-pressure-tick / story-open-last
-      // ported to action-handlers/story-director-modals.ts (H.3).
-      // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
-      // ported to action-handlers/story-director.ts (H.3).
-      // story-copy-prompt / story-help / story-manual-note ported to
-      // action-handlers/story-tools.ts + manual-builders.ts (H.3).
-      // story-manual-note is bridge-wrapped — the manual scene builder
-      // body stays in JS until H.4 ports it alongside its data builders.
-      // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
-      // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
-      // sequence-play-minigame ported to action-handlers/minigame.ts (H.3).
-      // import-side-pack / export-side-pack ported to action-handlers/side.ts (H.3).
-      // oracle-note / oracle-event-log ported to action-handlers/oracle.ts (H.3).
-      // oracle-to-event-builder ported to action-handlers/manual-builders.ts
-      // (H.3 — bridge-wrapped, seeds the manual event builder from
-      // state.lastOracle).
-      // oracle-to-quest / oracle-add-tags + apply-event / edit-event /
-      // event-to-quest / event-log-only / event-add-tags / copy-event-summary /
-      // note-event / ignore-event / pin-plot-seed / event-to-oracle ported to
-      // action-handlers/events.ts (H.3).
-      // add-quest ported to action-handlers/manual-builders.ts (H.3 —
-      // bridge-wrapped, the 475-line manual quest builder body stays
-      // in JS until H.4).
-      // travel-world ported to action-handlers/registry.ts (H.3).
-      // open-* navigation cases ported to action-handlers/nav.ts (H.3).
-      // run-roll-battle / run-pick-battle / run-queue-set-battle / run-battle /
-      // apply-combat-result / manual-battle / run-next-beat /
-      // roll-travel-surprise ported to action-handlers/combat.ts (H.3).
-      // generate-scenario + generate-quest-scenario + the static
-      // generate-*-run cluster + inspect-scenario ported to
-      // action-handlers/scenario.ts (H.3). The React `CampaignScenariosTab`
-      // now passes the form state (source/mapForm/mapType/size/layers) in
-      // the dispatch payload — no more `_root.querySelector` form reads.
-      // inspect-scenario reuses `_shapePillsData` via the new
-      // `CampaignUI.getShapePillsData` bridge for the pill row.
-      // start-scenario / cancel-scenario / discard-scenario ported to
-      // action-handlers/scenario.ts (H.3).
-      // end-scenario ported to action-handlers/ops.ts (H.3).
-      // move-node/move-cell/map-layer/clear-node ported to
-      // action-handlers/map.ts (H.3).
-      // inventory-delta / quick-add-inventory / shop-buy / plant-seed /
-      // craft-recipe / add-pocket-note / add-note ported to
-      // action-handlers/economy.ts (H.3).
-      // haven-build-facility/haven-upgrade-facility/haven-ranch-collect
-      // ported to action-handlers/haven.ts (H.3).
-      // haven-train-skill / haven-ranch-assign / haven-open-trivia ported
-      // to action-handlers/haven.ts; haven-open-cooking / cook-food ported
-      // to action-handlers/cooking.ts (H.3). haven-play-minigame stays
-      // (mini-game session machinery).
-      // haven-play-minigame ported to action-handlers/minigame.ts (H.3).
-      // quest-scenario / quest-battle ported to
-      // action-handlers/quest-launcher.ts (H.3). Internal JS callers
-      // (`_startQuestChainScenario`, `_startQuestRunFromOffer`, the
-      // `add-quest` "starting run" branch) route through
-      // window.CJS.CampaignQuestLauncher for the same TS path.
-      // quest-minigame ported to action-handlers/minigame.ts (H.3).
-      // quest-progress / quest-hub-event / quest-harvest / quest-check /
-      // quest-hand-in / quest-answer ported to action-handlers/quest.ts (H.3).
-      // mg-test-pick ported to action-handlers/mg-test.ts (H.3). The
-      // TS handler writes the selection via CampaignUI.setMinigameTestGame.
-      // mg-test-play / mg-test-random / mg-test-random-any ported to
-      // action-handlers/mg-test.ts (H.3).
-      // party-sheet ported to action-handlers/roster-modal-pickers.ts (H.3).
-      // recruit-character / learn-skill / learn-passive ported to
-      // action-handlers/roster-modal-pickers.ts (H.3). The TS handlers
-      // read the still-JS option builders via the new
-      // CampaignUI.rosterCharacterOptions / SkillOptions / PassiveOptions
-      // bridges (the GM override modal also reads them).
-      // equip-item / stat-boost ported to
-      // action-handlers/roster-modal-pickers.ts (H.3). Equipment helpers
-      // come from window.CJS.CampaignUIInternal.Equipment; stat names
-      // come from window.CJS.CONST.STAT_NAMES.
-      // change-job / change-persona / show-job-tree ported to
-      // action-handlers/roster-modal-pickers.ts (H.3). show-job-tree
-      // now uses a local click delegate to route its per-card unlock /
-      // switch buttons through the action runtime (fixes a pre-existing
-      // bug where the closure modal had no delegate at all).
-      // rank-up-apply ported to action-handlers/roster-modal-pickers.ts (H.3).
-      // Roster pure-ops (bench/activate-character, unlearn/equip/unequip
-      // skill + passive, unequip-item, party-available) ported to
-      // src/campaign/action-handlers/roster.ts + actions.ts (H.3 roster).
-      // remove-character / level-up-skill / rank-up-passive /
-      // unlock-job-from-tree / switch-job-from-tree / grant-skill-ap /
-      // pick-equip-skill / pick-equip-passive ported to
-      // src/campaign/action-handlers/roster-pickers.ts (H.3).
-      // show-skill-detail ported to action-handlers/roster-modal-pickers.ts (H.3).
-      // party-availability ported to action-handlers/roster-pickers.ts (H.3).
-      // gm-override / gm-member-override ported to
-      // action-handlers/manual-builders.ts (H.3 — bridge-wrapped, the
-      // 174-line GM override form body stays in JS until H.4).
-      // load-slot / delete-slot / delete-all-saves / export-slot /
-      // export-log / clear-log / export-event-log / clear-event-log
-      // ported to src/campaign/action-handlers/registry.ts (H.3 save + log).
-      default: break;
-    }
+    return runtime?.has?.(data.campaignAction)
+      ? runtime.run(data.campaignAction, data)
+      : undefined;
   }
 
   // Save-management handlers (_newSave / _loadSlot / _deleteSlot /
