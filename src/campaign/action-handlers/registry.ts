@@ -290,7 +290,8 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "generate-training-run": () =>
     Scenario.generateScenario({ source: "random", mapType: "arena", size: "tiny", mapForm: "grid_map" }),
   "inspect-scenario": (d) => Scenario.inspectScenario(str(d.id)),
-  // ── Mini-game test (mg-test-pick stays — _root.dataset coupling) ──
+  // ── Mini-game test (selection + play / random / random-any) ──────
+  "mg-test-pick": (d) => MgTest.mgTestPick(str(d.game)),
   "mg-test-play": (d) => MgTest.mgTestPlay({ gameId: str(d.game), levelId: str(d.level) }),
   "mg-test-random": (d) => MgTest.mgTestPlay({ gameId: str(d.game), difficulty: Number(d.difficulty || 1) }),
   "mg-test-random-any": (d) => MgTest.mgTestPlay({ gameId: str(d.game) }),

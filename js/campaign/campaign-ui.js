@@ -871,11 +871,9 @@ window.CJS.CampaignUI = (() => {
   // selected-game state (kept on `_root.dataset.mgTestGame`) still
   // live here so the legacy `mg-test-*` actions stay unchanged.
 
-  function _mgTestPick(gameId) {
-    if (!_root) return;
-    _root.dataset.mgTestGame = String(gameId || '');
-    render();
-  }
+  // _mgTestPick ported to action-handlers/mg-test.ts (H.3). The TS
+  // handler writes _root.dataset.mgTestGame via the new
+  // CampaignUI.setMinigameTestGame bridge then rerenders.
 
   // _mgTestPlay ported to action-handlers/mg-test.ts (H.3).
 
@@ -2605,7 +2603,8 @@ window.CJS.CampaignUI = (() => {
       // quest-minigame ported to action-handlers/minigame.ts (H.3).
       // quest-progress / quest-hub-event / quest-harvest / quest-check /
       // quest-hand-in / quest-answer ported to action-handlers/quest.ts (H.3).
-      case 'mg-test-pick': return _mgTestPick(data.game);
+      // mg-test-pick ported to action-handlers/mg-test.ts (H.3). The
+      // TS handler writes the selection via CampaignUI.setMinigameTestGame.
       // mg-test-play / mg-test-random / mg-test-random-any ported to
       // action-handlers/mg-test.ts (H.3).
       // party-sheet ported to action-handlers/roster-modal-pickers.ts (H.3).
@@ -7013,6 +7012,13 @@ window.CJS.CampaignUI = (() => {
     // stay private — the modal handler only knows the HTML body shape.
     renderPartySheetHtml: (id, member) =>
       _renderPortraitHero(id, member) + _renderRosterMember(id, member),
+    // Mini-game test selection. The selected game lives on
+    // `_root.dataset.mgTestGame` (read by getMinigameTestData); the TS
+    // mg-test-pick handler calls this to update it + trigger render.
+    // The state moves into CampaignState in H.4 (per the plan).
+    setMinigameTestGame: (gameId) => {
+      if (_root) _root.dataset.mgTestGame = String(gameId || '');
+    },
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to

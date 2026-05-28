@@ -4,14 +4,15 @@
 // mg-test-random-any (any level) all funnel through MinigameModule.openMiniGame
 // with the `minigame_test_lab` source. The onComplete writes the result to
 // `state.lastMiniGameTestResult` + the campaign log and toasts the outcome.
-// Game id, level id, difficulty, payload keys, log format and toast strings
-// mirror the deleted `_mgTestPlay` closure.
+// mg-test-pick updates the selected-game state on `_root.dataset.mgTestGame`
+// via the CampaignUI.setMinigameTestGame bridge, then rerenders so
+// getMinigameTestData picks up the new selection. The selection state
+// moves into CampaignState in H.4 (per the plan).
 //
-// mg-test-pick stays in the switch — it writes to `_root.dataset.mgTestGame`
-// which the `getMinigameTestData` bridge reads, and porting it requires
-// moving the selection state out of `_root`. H.4 (data-bridge port) does that.
+// Game id, level id, difficulty, payload keys, log format and toast strings
+// mirror the deleted `_mgTestPlay` and `_mgTestPick` closures.
 
-import { cs, mod, toast } from "./context";
+import { cs, mod, rerender, toast } from "./context";
 
 interface MinigameResult {
   gameId?: string;
@@ -31,8 +32,20 @@ interface MinigamesModule {
   }) => unknown;
 }
 
+interface MgTestBridge {
+  setMinigameTestGame?: (gameId: string) => void;
+}
+
 function minigames(): MinigamesModule | undefined {
   return mod<MinigamesModule>("Minigames");
+}
+
+// Mirrors `_mgTestPick`. Writes the selected mini-game id to the
+// closure-private `_root.dataset.mgTestGame` (via bridge) so the
+// next render picks it up as the current selection.
+export function mgTestPick(gameId: string): void {
+  mod<MgTestBridge>("CampaignUI")?.setMinigameTestGame?.(gameId || "");
+  rerender();
 }
 
 export interface MgTestPlayInput {
