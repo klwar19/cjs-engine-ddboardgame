@@ -2594,15 +2594,12 @@ window.CJS.CampaignUI = (() => {
       // action-handlers/oracle.ts (H.3).
       // battle-reroll / battle-override ported to action-handlers/combat.ts (H.3).
       // roll-hub-pulse ported to action-handlers/rumor.ts (H.3).
-      case 'solo-surprise': return _rollSoloSurprise();
       case 'random-quest-offer': return _offerRandomQuest();
-      case 'random-rumor-offer': return _offerRandomRumor();
-      case 'manual-rumor': return _manualRumorModal();
       case 'accept-solo-hook': return _acceptSoloHook();
       case 'solo-hook-quest': return _soloHookToQuest();
       case 'solo-hook-rumor': return _soloHookToRumor();
-      case 'save-solo-hook': return _saveSoloHook();
-      case 'ignore-solo-hook': return _ignoreSoloHook();
+      // solo-surprise / random-rumor-offer / manual-rumor / save-solo-hook /
+      // ignore-solo-hook ported to action-handlers/solo.ts (H.3).
       // apply/save/reject/dismiss/copy side-card ported to
       // action-handlers/side.ts (H.3).
       // resolve-rumor / rumor-to-quest / rumor-to-problem ported to
@@ -3525,26 +3522,7 @@ window.CJS.CampaignUI = (() => {
 
   // _rollHubPulse ported to action-handlers/rumor.ts (H.3).
 
-  function _rollSoloSurprise() {
-    const tables = ['town', 'guild', 'tavern', 'forge', 'weird'];
-    const table = tables[Math.floor(Math.random() * tables.length)];
-    const card = window.CJS.CampaignHub.rollHubPulse(table);
-    if (!card) return UI().toast('No solo hooks available', 'info');
-    _setPendingSoloHook(card, 'surprise');
-    _activeMode = 'story';
-    _activeTab = 'storyHome';
-    render();
-    UI().toast('Story offer ready', 'success');
-  }
-
-  function _offerRandomRumor() {
-    const tables = ['tavern', 'town', 'weird'];
-    const table = tables[Math.floor(Math.random() * tables.length)];
-    const card = window.CJS.CampaignHub.rollHubPulse(table);
-    if (!card) return UI().toast('No rumor hooks available', 'info');
-    _setPendingSoloHook({ ...card, type: 'rumor_offer' }, 'rumor_offer');
-    render();
-  }
+  // _rollSoloSurprise / _offerRandomRumor ported to action-handlers/solo.ts (H.3).
 
   function _offerRandomQuest() {
     if (CS().getState()?.activeScenarioRun) {
@@ -3668,17 +3646,7 @@ window.CJS.CampaignUI = (() => {
     return base;
   }
 
-  function _setPendingSoloHook(card, kind) {
-    const id = card?.id;
-    if (!id) return;
-    CS().mutate((state) => {
-      state.pendingSoloHook = {
-        cardId: id,
-        kind: kind || card.type || 'hook',
-        at: new Date().toISOString()
-      };
-    }, { source: 'solo_hook' });
-  }
+  // _setPendingSoloHook ported to action-handlers/solo.ts (H.3).
 
   function _pendingSoloHookCard(state = CS().getState()) {
     const id = state?.pendingSoloHook?.cardId;
@@ -3772,18 +3740,7 @@ window.CJS.CampaignUI = (() => {
     _clearPendingSoloHook();
   }
 
-  function _saveSoloHook() {
-    const card = _pendingSoloHookCard();
-    if (!card) return;
-    Side().saveCard(card, { status: 'saved', source: 'solo_hook' });
-    _clearPendingSoloHook();
-  }
-
-  function _ignoreSoloHook() {
-    const card = _pendingSoloHookCard();
-    if (card) Side().rejectCard(card.id, 'Ignored from story offer.');
-    _clearPendingSoloHook();
-  }
+  // _saveSoloHook / _ignoreSoloHook ported to action-handlers/solo.ts (H.3).
 
   // _applySideChoice / _saveSideIdea / _rejectSideIdea / _dismissSideCard
   // / _clearCurrentSideCard ported to action-handlers/side.ts (H.3).
@@ -5253,50 +5210,7 @@ window.CJS.CampaignUI = (() => {
     return 'custom';
   }
 
-  function _manualRumorModal() {
-    const body = document.createElement('div');
-    const hint = document.createElement('div');
-    hint.className = 'campaign-muted';
-    hint.style.marginBottom = '8px';
-    hint.textContent = 'Rumors are stored leads. They do not change mechanics until you promote or apply them later.';
-    body.appendChild(hint);
-    body.appendChild(_formLabel('Rumor'));
-    const text = document.createElement('textarea');
-    text.style.width = '100%';
-    text.style.minHeight = '90px';
-    text.placeholder = 'What are people whispering about?';
-    body.appendChild(text);
-    body.appendChild(_formLabel('Canon risk'));
-    const risk = UI().createSelect({
-      options: [
-        { value: 'green', label: 'Green' },
-        { value: 'yellow', label: 'Yellow' },
-        { value: 'red', label: 'Red' }
-      ],
-      value: 'green'
-    });
-    body.appendChild(risk);
-    _formModal({
-      title: 'Add Rumor',
-      body,
-      width: '520px',
-      primaryLabel: 'Add Rumor',
-      onSubmit: () => {
-        const value = text.value.trim();
-        if (!value) {
-          UI().toast('Rumor text required', 'error');
-          return false;
-        }
-        Ops().apply({
-          op: 'add_rumor',
-          hubId: window.CJS.CampaignHub.getCurrentHubId(),
-          text: value,
-          canonRisk: risk.value,
-          source: 'manual'
-        }, { source: 'ui' });
-      }
-    });
-  }
+  // _manualRumorModal ported to action-handlers/solo.ts (H.3).
 
   function _generateScenario(overrides = {}) {
     if (CS().getState()?.activeScenarioRun) return UI().toast('End the active scenario before generating another', 'info');

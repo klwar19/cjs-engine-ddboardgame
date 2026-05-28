@@ -42,6 +42,7 @@ import * as Downtime from "./downtime";
 import * as Events from "./events";
 import * as Scenario from "./scenario";
 import * as MgTest from "./mg-test";
+import * as Solo from "./solo";
 import { worldMapAction } from "./worldmap";
 
 export type ActionData = Record<string, string | number | undefined>;
@@ -263,7 +264,13 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   // ── Mini-game test (mg-test-pick stays — _root.dataset coupling) ──
   "mg-test-play": (d) => MgTest.mgTestPlay({ gameId: str(d.game), levelId: str(d.level) }),
   "mg-test-random": (d) => MgTest.mgTestPlay({ gameId: str(d.game), difficulty: Number(d.difficulty || 1) }),
-  "mg-test-random-any": (d) => MgTest.mgTestPlay({ gameId: str(d.game) })
+  "mg-test-random-any": (d) => MgTest.mgTestPlay({ gameId: str(d.game) }),
+  // ── Solo-hook offers + dismiss (accept/quest/rumor stay) ──────────
+  "solo-surprise": () => Solo.rollSoloSurprise(),
+  "random-rumor-offer": () => Solo.offerRandomRumor(),
+  "manual-rumor": () => Solo.manualRumorModal(),
+  "save-solo-hook": () => Solo.saveSoloHook(),
+  "ignore-solo-hook": () => Solo.ignoreSoloHook()
 };
 
 export function hasHandler(name: string): boolean {
