@@ -2554,9 +2554,11 @@ window.CJS.CampaignUI = (() => {
       // ported to action-handlers/story-director-modals.ts (H.3).
       // story-save-beat/reject-beat/apply-choice/set-stage/sync-sidequests
       // ported to action-handlers/story-director.ts (H.3).
+      // story-copy-prompt / story-help ported to action-handlers/story-tools.ts (H.3).
+      // story-manual-note stays — opens _openManualSceneBuilder (127
+      // lines) which still depends on closure helpers (Sequences.storyMeta /
+      // StoryBranch.append). Ports alongside the manual scene builder.
       case 'story-manual-note': return _manualStoryNote();
-      case 'story-copy-prompt': return _copyStoryPrompt();
-      case 'story-help': return _openStoryHelpModal();
       // sequence-start/next/resolve/choice/pass/fail/queue-battle/win/lose/
       // abort/complete/open-vn ported to action-handlers/sequence.ts (H.3).
       // sequence-play-minigame ported to action-handlers/minigame.ts (H.3).
@@ -3692,19 +3694,10 @@ window.CJS.CampaignUI = (() => {
     }, { source: 'story_manual_summary' });
   }
 
-  async function _copyStoryPrompt() {
-    await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
-    const text = _storyPromptText();
-    // _openCopyTextModal ported to action-handlers/copy.ts; reached via the
-    // shared runtime export until _copyStoryPrompt itself ports to TS.
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(() => UI().toast('Story prompt copied', 'success'))
-        .catch(() => window.CJS.CampaignCopy.openCopyTextModal('Story Prompt', text));
-      return;
-    }
-    window.CJS.CampaignCopy.openCopyTextModal('Story Prompt', text);
-  }
+  // _copyStoryPrompt ported to action-handlers/story-tools.ts (H.3).
+  // The TS handler reads _storyPromptText + _ensureStoryContext via
+  // the new CampaignUI.computeStoryPromptText / .ensureStoryContext
+  // bridges so the prompt assembly stays in JS until H.4.
 
   function _storyContextPromptText(state = {}) {
     const ctx = _storyContextFor(state.currentWorld || 'haven');
@@ -3967,31 +3960,9 @@ window.CJS.CampaignUI = (() => {
   // _openCopyTextModal ported to action-handlers/copy.ts (H.3), exposed on
   // window.CJS.CampaignCopy for _copyStoryPrompt until the story tools port.
 
-  function _openStoryHelpModal() {
-    const body = document.createElement('div');
-    body.className = 'campaign-story-help';
-    body.innerHTML = `
-      <div class="campaign-story-help-grid">
-        <div>
-          <strong>Solo default</strong>
-          <p>Pick the current episode, roll Next Scene, read the popup, then choose one route. The app handles clocks, rumors, clues, and queue changes only after you choose.</p>
-        </div>
-        <div>
-          <strong>Manual GM control</strong>
-          <p>Use the episode rail to jump anywhere, Write Scene to author your own beat, Hold For Later to keep an idea, and Skip Roll when the random result is being dramatic for attention.</p>
-        </div>
-        <div>
-          <strong>Random flavor</strong>
-          <p>Peri Interrupt is for system comedy, Memory / Clue is for mystery pressure, and Offscreen Trouble is for consequences when time passes or the table gets too comfortable.</p>
-        </div>
-        <div>
-          <strong>Tabletop flow</strong>
-          <p>Use Story for scenes and route choices, then switch to Current Run for tactical movement and encounters. Side Routes tells you what content should stay, rise, or pause.</p>
-        </div>
-      </div>
-    `;
-    UI().openModal({ title: 'Story Mode Flow', content: body, width: '720px' });
-  }
+  // _openStoryHelpModal ported to action-handlers/story-tools.ts (H.3).
+  // Static info modal — no closure dependencies, so the TS port is
+  // a direct copy of the HTML body + UI.openModal call.
 
   // _setStoryDirectorStage / _syncStoryDirectorSideQuests ported to
   // action-handlers/story-director.ts (H.3).
@@ -7019,6 +6990,14 @@ window.CJS.CampaignUI = (() => {
     setMinigameTestGame: (gameId) => {
       if (_root) _root.dataset.mgTestGame = String(gameId || '');
     },
+    // Story-tools bridges (story-copy-prompt). _storyPromptText reads
+    // closure-private state (SD.snapshot, Seq.currentRouteChoices,
+    // chapter tree, alignment, story context cache) so the closure
+    // stays JS; the TS handler reads the assembled prompt text here.
+    // _ensureStoryContext lazy-loads world story summary + AI context
+    // JSON used by the prompt — return its promise so callers can await.
+    computeStoryPromptText: () => _storyPromptText(),
+    ensureStoryContext: (world) => _ensureStoryContext(world),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to

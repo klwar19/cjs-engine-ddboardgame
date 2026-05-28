@@ -45,6 +45,7 @@ import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
 import * as Travel from "./travel";
 import * as StoryRolls from "./story-director-modals";
+import * as StoryTools from "./story-tools";
 import * as Quest from "./quest";
 import * as QuestLauncher from "./quest-launcher";
 import * as Minigame from "./minigame";
@@ -311,6 +312,8 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   "story-roll-memory": () => StoryRolls.rollStoryDirector("memory"),
   "story-pressure-tick": () => StoryRolls.rollStoryDirector("pressure"),
   "story-open-last": () => StoryRolls.openLastStoryBeatModal(),
+  "story-help": () => StoryTools.openStoryHelpModal(),
+  "story-copy-prompt": () => StoryTools.copyStoryPrompt(),
   // ── Quest pure-ops + scenario/battle launchers ────────────────────
   "quest-progress": (d) => Quest.questProgress(str(d.id)),
   "quest-hub-event": (d) => Quest.questHubEvent(str(d.id)),
