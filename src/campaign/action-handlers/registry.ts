@@ -43,6 +43,7 @@ import * as Events from "./events";
 import * as Scenario from "./scenario";
 import * as MgTest from "./mg-test";
 import * as Solo from "./solo";
+import * as Travel from "./travel";
 import * as StoryRolls from "./story-director-modals";
 import * as Quest from "./quest";
 import * as QuestLauncher from "./quest-launcher";
@@ -334,7 +335,11 @@ const HANDLERS: Partial<Record<CampaignActionName, ActionHandler>> = {
   // ── Travel ────────────────────────────────────────────────────────
   // travel-world is the world-gate jump (identical to open-world-gate;
   // the closure had dead code after the unconditional return).
-  "travel-world": () => Nav.goto("world", "worldGate")
+  "travel-world": () => Nav.goto("world", "worldGate"),
+  // travel-world-card: cross-world travel with rank-gate + persona
+  // picker. data carries `worldId`/`world` (both names — internal JS
+  // callers used the kebab-case key) and `targetTab`.
+  "travel-world-card": (d) => Travel.travelWorldCard(str(d.worldId || d.world), str(d.targetTab) || null)
 };
 
 export function hasHandler(name: string): boolean {

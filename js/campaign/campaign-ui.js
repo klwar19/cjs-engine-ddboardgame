@@ -2521,7 +2521,7 @@ window.CJS.CampaignUI = (() => {
       return runtime.run(data.campaignAction, data);
     }
     switch (data.campaignAction) {
-      case 'travel-world-card': return _travelWorldCard(data.worldId || data.world, data.targetTab);
+      // travel-world-card ported to action-handlers/travel.ts (H.3).
       // rel-activity / camp-rest ported to action-handlers/downtime.ts (H.3).
       // Ported to TS handlers (H.3) registered in action-handlers/registry.ts:
       //   navigation (open-* / _goto) -> action-handlers/nav.ts
@@ -5391,208 +5391,13 @@ window.CJS.CampaignUI = (() => {
   // _partyAvailabilityModal ported to action-handlers/roster-pickers.ts (H.3).
   // _travelWorld ported to action-handlers/registry.ts (travel-world).
 
-  function _travelWorldCard(worldId, targetTab = null) {
-    if (!worldId) return;
-    if (worldId === CS().getState()?.currentWorld) {
-      const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'worldGate';
-      return _goto(_modeForTab(tab), tab);
-    }
-    const gate = _evaluateTravelRankGate(worldId);
-    if (!gate.allowed) {
-      UI().toast(gate.message, 'warn');
-      return;
-    }
-    const proceed = () => {
-      const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'storyHome';
-      if (_hasMeaningfulPersonaChoice(worldId)) {
-        _openPreTravelPersonaPicker(worldId, tab);
-      } else {
-        _completeWorldTravel(worldId, tab);
-      }
-    };
-    if (gate.softWarning) {
-      const ok = window.confirm(gate.softWarning + '\n\nTravel anyway?');
-      if (!ok) return;
-    }
-    proceed();
-  }
-
-  function _completeWorldTravel(worldId, targetTab = null, preOps = []) {
-    const tab = targetTab || _worldMenuDef(worldId).defaultTab || 'storyHome';
-    const ops = [
-      ...preOps,
-      { op: 'world_transition', toWorld: worldId, carryoverProfile: 'carryover_new_world_default' }
-    ];
-    const landing = _defaultTravelLanding(worldId);
-    if (landing) ops.push(landing);
-    Ops().apply(ops, { source: 'world_gate' });
-    const finish = () => {
-      _activeMode = _modeForTab(tab);
-      _activeTab = tab;
-      UI()?.toast?.(`Loaded ${DS().get('worlds', worldId)?.displayName || worldId}.`, 'success');
-      render();
-    };
-    const load = window.CJS.CampaignSequences?.loadWorld?.(worldId);
-    if (load && typeof load.then === 'function') load.then(finish).catch((error) => {
-      console.warn('World story load failed:', error);
-      finish();
-    });
-    else finish();
-  }
-
-  function _defaultTravelLanding(worldId) {
-    const existing = CS().getState()?.worldProgress?.[worldId];
-    if (existing?.currentLocation && existing?.currentTravelMap) return null;
-    const map = DS().getAllAsArray('travelMaps').find((entry) => entry.world === worldId);
-    if (!map?.defaultLocationId) return null;
-    const node = (map.nodes || []).find((entry) => entry.id === map.defaultLocationId) || {};
-    return {
-      op: 'travel_location',
-      world: worldId,
-      mapId: map.id,
-      locationId: map.defaultLocationId,
-      title: node.name || map.defaultLocationId,
-      zone: node.zone || map.zone,
-      hubId: node.hubId || map.hubId
-    };
-  }
-
-  // Build a travel decision for a destination world by looking up its
-  // requiredRank (hard), recommendedRank (soft), and ceiling. Hard gate
-  // returns allowed=false with a toast message; soft gate sets
-  // softWarning so we can confirm before proceeding.
-  function _evaluateTravelRankGate(toWorld) {
-    const F = window.CJS.Formulas;
-    const dest = DS().get('worlds', toWorld) || {};
-    const state = CS().getState() || {};
-    const active = Object.values(state.party || {})
-      .filter((m) => (m.rosterRole || 'active') !== 'bench');
-    const topRank = active.reduce((best, m) => {
-      const r = m.adventurer?.rank || m.rank || 'F';
-      if (!best) return r;
-      return F?.rankIndex?.(r) > F?.rankIndex?.(best) ? r : best;
-    }, null);
-
-    if (dest.requiredRank && !F?.meetsRank?.(topRank, dest.requiredRank)) {
-      return {
-        allowed: false,
-        message: `${dest.displayName || toWorld} requires rank ${dest.requiredRank}. Party top: ${topRank || 'F'}.`
-      };
-    }
-    const warnings = [];
-    if (dest.recommendedRank && !F?.meetsRank?.(topRank, dest.recommendedRank)) {
-      warnings.push(`Underranked: ${dest.displayName || toWorld} recommends ${dest.recommendedRank} (party top: ${topRank || 'F'}). Monsters will spawn tougher.`);
-    }
-    if (dest.ceiling && F?.rankIndex?.(topRank) > F?.rankIndex?.(dest.ceiling)) {
-      warnings.push(`This world caps ranks at ${dest.ceiling}. Higher-rank members are treated as ${dest.ceiling} here; RP rewards taper out.`);
-    }
-    return {
-      allowed: true,
-      softWarning: warnings.length ? warnings.join('\n\n') : null
-    };
-  }
-
-  function _hasMeaningfulPersonaChoice(targetWorld) {
-    const PS = window.CJS.PersonaService;
-    if (!PS) return false;
-    const state = CS().getState();
-    if (!state?.party) return false;
-    for (const [id, member] of Object.entries(state.party)) {
-      const charId = member.baseCharacterId || id;
-      const choices = PS.personasForCharacterInWorld(charId, targetWorld);
-      if (!choices.length) continue;
-      // Meaningful = at least two unlocked-or-default personas for that world,
-      // OR exactly one persona that is NOT the currently active one.
-      const unlocked = new Set(member.unlockedPersonas || []);
-      const eligible = choices.filter((p) => unlocked.has(p.id) || p.unlock?.default);
-      if (eligible.length >= 2) return true;
-      if (eligible.length === 1 && eligible[0].id !== member.activePersona) return true;
-    }
-    return false;
-  }
-
-  function _openPreTravelPersonaPicker(targetWorld, targetTab = null) {
-    const PS = window.CJS.PersonaService;
-    const state = CS().getState();
-    const worldName = DS().get('worlds', targetWorld)?.displayName || targetWorld;
-    const body = document.createElement('div');
-    body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
-      Heading to <b>${_esc(worldName)}</b>. Pick a persona for each member who has one — out-of-world personas keep their loadout but pay penalties in combat and with the locals. Unset members will auto-switch on arrival.
-    </div>`;
-    const choicesArea = document.createElement('div');
-    choicesArea.style.display = 'grid';
-    choicesArea.style.gridTemplateColumns = '1fr';
-    choicesArea.style.gap = '10px';
-    body.appendChild(choicesArea);
-
-    const memberChoices = new Map();
-    for (const [id, member] of Object.entries(state.party || {})) {
-      const charId = member.baseCharacterId || id;
-      const choices = PS ? PS.personasForCharacterInWorld(charId, targetWorld) : [];
-      const otherWorlds = PS ? PS.personasForCharacter(charId).filter((p) => p.world !== targetWorld) : [];
-      if (!choices.length && !otherWorlds.length) continue;
-      const unlocked = new Set(member.unlockedPersonas || []);
-      const eligibleWorld = choices.filter((p) => unlocked.has(p.id) || p.unlock?.default);
-      const eligibleOther = otherWorlds.filter((p) => unlocked.has(p.id));
-
-      const options = [
-        { value: '__keep__', label: '— Keep current persona (out-of-world penalty if any) —' },
-        ...eligibleWorld.map((p) => ({
-          value: p.id,
-          label: `${p.icon || '🎭'} ${p.name} ${p.id === member.activePersona ? '(current)' : ''}`
-        })),
-        ...(eligibleOther.length ? [{ value: '__hr__', label: '── Out-of-world (penalty applies) ──', disabled: true }] : []),
-        ...eligibleOther.map((p) => ({
-          value: p.id,
-          label: `${p.icon || '🎭'} ${p.name} — ${p.world} (penalty)`
-        }))
-      ];
-
-      const sel = UI().createSelect({
-        options,
-        value: eligibleWorld.find((p) => p.id === member.activePersona)?.id || (eligibleWorld[0]?.id || '__keep__')
-      });
-
-      const card = document.createElement('div');
-      card.style.padding = '10px';
-      card.style.border = '1px solid rgba(255,255,255,0.1)';
-      card.style.borderRadius = '8px';
-      card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <b>${_esc(member.name || id)}</b>
-          <span class="campaign-muted" style="font-size:0.78rem">${_esc(charId)}</span>
-        </div>`;
-      const label = document.createElement('div');
-      label.innerHTML = '<div class="form-label" style="font-size:0.78rem">Persona for ' + _esc(worldName) + '</div>';
-      card.appendChild(label);
-      card.appendChild(sel);
-      choicesArea.appendChild(card);
-      memberChoices.set(id, sel);
-    }
-
-    if (!memberChoices.size) {
-      // Nothing meaningful after all — skip the modal.
-      _completeWorldTravel(targetWorld, targetTab || _worldMenuDef(targetWorld).defaultTab);
-      return;
-    }
-
-    _formModal({
-      title: `Travel: → ${worldName}`,
-      body,
-      primaryLabel: 'Travel',
-      onSubmit: () => {
-        // Apply the persona picks BEFORE transition so the autoSwitch step in
-        // world_transition doesn't overwrite the player's chosen personas.
-        const ops = [];
-        for (const [id, sel] of memberChoices) {
-          const value = sel.value;
-          if (!value || value === '__keep__' || value === '__hr__') continue;
-          ops.push({ op: 'unlock_persona', target: id, personaId: value });
-          ops.push({ op: 'set_persona', target: id, personaId: value });
-        }
-        _completeWorldTravel(targetWorld, targetTab || _worldMenuDef(targetWorld).defaultTab, ops);
-      }
-    });
-  }
+  // _travelWorldCard / _completeWorldTravel / _defaultTravelLanding /
+  // _evaluateTravelRankGate / _hasMeaningfulPersonaChoice /
+  // _openPreTravelPersonaPicker ported to action-handlers/travel.ts
+  // (H.3 — travel-world-card). `_worldMenuDef` stays in JS (chrome
+  // data builders also read it); the TS handler resolves the
+  // destination's default tab through the new `CampaignUI.getWorldMenuDef`
+  // bridge.
 
   // _campRestModal ported to action-handlers/downtime.ts (H.3).
 
@@ -7640,6 +7445,12 @@ window.CJS.CampaignUI = (() => {
     // TS handler doesn't re-declare the SHAPE_*_LABELS tables. Goes away
     // when the data builders themselves port (H.4).
     getShapePillsData: (scenario) => _shapePillsData(scenario || {}),
+    // World menu definitions (title / kicker / summary / defaultTab /
+    // bannerImage / etc.) live in the closure-private `_worldMenuDef`
+    // (also reads by chrome data builders). Exposed for
+    // action-handlers/travel.ts (travel-world-card) so the TS handler
+    // can resolve a world's default tab without re-declaring the table.
+    getWorldMenuDef: (worldId) => _worldMenuDef(worldId),
     // Phase E React Shell bridge. See enableReactShell() above for the
     // contract — when this is set, render() no longer clobbers _root
     // and instead emits `campaign:state-tick` events for the shell to
