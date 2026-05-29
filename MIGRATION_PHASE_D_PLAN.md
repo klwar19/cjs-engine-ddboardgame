@@ -1043,14 +1043,75 @@ thin TS dispatchers — no CampaignUI modal bridge remains.
      calls `openQuestModal` directly; the bridge entry is gone. Imports
      `questMapForm` / `questMapType` from `quest.ts` (the canonical TS
      copies); the dead JS `_questMapForm` / `_questMapType` were removed.
-3. Port the still-JS bridges that wrap legacy render code:
-   `renderStoryDirectorCardHtml`, `renderQuestRunTaskHtml`,
-   `renderPartySheetHtml`, `getMainBody`, `renderDrawerBody`. Each
-   either ports its renderer to JSX or stays as a permanent island.
-4. Delete `js/campaign/campaign-ui.js` once all the above lands.
-   Then H.5 (test rewrite). Phases I/J
-pivot from "remove HTML strings" to "optimize the React tree +
-open the authoring loop for AI generators."
+After items 1+2, `campaign-ui.js` is down to ~2.4k lines (from 4.6k at
+the start of this pass; 10.8k originally). What remains is the hard core,
+in three clusters — these are the item-3/4 work:
+
+3. **Render-bridge cluster (HTML islands).** Each is a typed bridge the
+   React tree consumes via `dangerouslySetInnerHTML` or an imperative
+   modal. Port the renderer to JSX (Phase-G style: typed `get*Data` +
+   JSX component) OR keep as a permanent island moved into a TS module
+   that still emits the HTML string. Inventory:
+   - `renderStoryDirectorCardHtml` → `_renderStoryDirectorCard` +
+     `_renderStoryRouteChoices` (+ the `_cardChoiceOps` /
+     `_renderConsequencePreview` / `_renderFlavorTrail` /
+     `_consequenceSummary` delegators to `CampaignUIInternal.HubTab`).
+     Consumer: `action-handlers/story-director-modals.ts` (beat modal).
+   - `renderQuestRunTaskHtml` → `_renderQuestRunTask` +
+     `_questTaskDescriptor` / `_questCellFromRef` / `_questObjectiveByKinds`
+     / `_renderQuestMini` / `_triggerLabel` / `_questNextObjective` /
+     `_questObjectiveDone` / `_isQuestResolved` / `_activeQuestById` /
+     `_activeRunQuestId`. Consumer: `tabs/data/resultPanels.ts`
+     (ScenarioSummary task strip).
+   - `renderPartySheetHtml` → `_renderPortraitHero` + `_renderRosterMember`
+     — **permanent island** (icon-heavy, shares the roster cluster with
+     `cui-party-tab.js`). Consumer: `roster-modal-pickers.ts` (party-sheet
+     modal).
+   - `getMainBody` → `_renderMain` (defensive fallback for an
+     unregistered tab id) and `renderDrawerBody` → `_renderDrawerBody`
+     (+ `_renderQuestsFallback` / `_renderLogFallback` / `_renderSoloNotice`
+     / `_renderInventorySnapshot` / `_renderNotesPanel`). Mostly
+     defensive/drawer bodies — likely stay as TS islands.
+   - Roster shared cluster (backs `renderPartySheetHtml`, the
+     `getTabHelpers` bundle, and `cui-party-tab.js`): `_tabHelpers`,
+     `_renderParty`, `_renderRankBar`, `_renderResistances`,
+     `_renderEquipmentLoadout`, `_renderJobChip` / `_renderPersonaChip` /
+     `_renderPersonaPill`, `_memberBase`, `_memberRankInfo`, `_memberStats`,
+     `_memberSkillEntries`, `_memberLearnedSkillIds`, `_skillEntryId`,
+     `_memberPassives`, `_characterOptions`, `_skillOptions`,
+     `_passiveOptions`, `_statusDef`, `_skillMeta`, `_statName`,
+     `_skillWeaponTypes`. Stays bridged with the `cui-party-tab.js` island
+     until an icon-as-data path exists (see the K.3 note above).
+
+4. **Shell-orchestration cluster + delete `campaign-ui.js`.** This is the
+   real blocker for deleting the file — it must move to a TS shell owner
+   (e.g. `src/campaign/shell/boot.ts`) that `CampaignPage`/`CampaignShell`
+   call instead of `CampaignUI.init` / `.render`:
+   - boot + render loop: `init`, `render`, `enableReactShell`,
+     `_normalizeActiveWorldUi` + the world-UI helpers (`_worldUiProfile` /
+     `_defaultTabForMode` / `_appModesForState` / `_tabsForMode` — thin
+     `CampaignChrome` delegates), the `CampaignState.subscribe` wiring,
+     and the `campaign:state-tick` emit.
+   - combat-result return flow: `_flashOnNewEncounter`, `_bindRunPanel`,
+     `_bindCombatResultListener`, `_storeCombatResult`,
+     `_bindCombatReturnEvents`, `_combatResultKey`, `_consumeCombatResult`.
+   - panel/drawer layer: `_bindEscapeForPanels`, `_openPanel`,
+     `_closePanel`, `_tearDownDrawer`, `_renderPanelLayer`,
+     `_panelDefsForState` (most are flag-guarded no-ops in shell mode).
+   - chrome setters + dispatch seam: `setActiveMode/Tab/Panel`,
+     `setActiveModeRaw/TabRaw`, `_modeForTab`, `_goto`, `handleAction`
+     (→ the now-empty `_handleAction` switch, deletable once `handleAction`
+     just forwards to `CampaignActionsRuntime`).
+   - leftover data: `showQuestNarrative`, `_pendingSoloHookCard`,
+     `_clearPendingSoloHook`.
+
+   Once the shell owner + the render-bridge islands have TS homes and
+   nothing imports `window.CJS.CampaignUI`, delete `campaign-ui.js` and the
+   `getTabHelpers` / `renderTabBody` bridges. Then **H.5** (rewrite
+   `test_campaign_ui_bootstrap.js` against the React tree; fold
+   `test_campaign_shell_bridge.js` into a TS unit test). Phases I/J pivot
+   from "remove HTML strings" to "optimize the React tree + open the
+   authoring loop for AI generators."
 
 ## Done-when gate
 
