@@ -742,17 +742,47 @@ With campaign-ui.js gone, the React tree owns every render path.
 Now optimizations that were impossible while HTML strings ran the
 show become tractable:
 
-- [ ] **I.1 — `React.memo` boundaries.** Every shared sub-panel
-  (QuestRow, EventResultPanel, SoloNoticePanel, etc.) takes its
-  typed snapshot as a prop. Wrap them in `memo` so a tab re-render
-  doesn't re-render unrelated cards. The shell's `tick` re-render
-  already passes the same panel data when nothing changed, so memo
-  is a clean win.
-- [ ] **I.2 — Selector hooks.** `useCampaignState()` currently
-  returns the entire snapshot. Replace consumers with selector
-  hooks (`useCampaignSelector(s => s.eventLog.entries)`) backed by
-  `useSyncExternalStore` so only components whose slice actually
-  changed re-render.
+> **Equality reality (informs all of Phase I).** `js/core/state-tools.js`
+> `produce` does a full deep clone (`structuredClone` / JSON) on every
+> mutation — NOT Immer-style structural sharing. So no slice of the engine
+> state keeps a stable identity across a change; reference equality is
+> useless for "did this slice change?". Every Phase I memo/selector decision
+> therefore compares by VALUE (`deepEqual` / `shallowEqual`,
+> `src/campaign/util/equality.ts`) on the SELECTED slice, never on raw state.
+
+- [x] **I.2 — Selector store + hooks.** `src/campaign/store.ts` is now a
+  single `CampaignStore` mirroring `src/combat/store.ts`: a stable
+  `subscribe` / `getSnapshot` pair, a `queueMicrotask` commit that
+  coalesces a burst of signals (a mutation's direct `CampaignState` emit +
+  the `render()`-driven `state-tick` that follows) into one notification,
+  and `useSyncExternalStore` hooks. `useCampaignState()` keeps its exact
+  `{ state, tick }` contract; the new `useCampaignSelector(selector,
+  isEqual = shallowEqual)` adds value-equality slice subscriptions — the
+  campaign variant of `useCombatStore`, with equality added because the
+  snapshot carries the deep-cloned engine state (reference equality never
+  reports a slice unchanged). The store listens to `campaign:state-tick` /
+  `:rendered` on document in the CAPTURE phase (the superset signal: data
+  AND chrome changes) plus `CampaignState.subscribe` (bounded retry, parity
+  + seed). `CampaignShell` dropped its redundant `renderTick` listener (the
+  store covers it). `test_selector_store.js` exercises the equality helpers
+  with real transpiled logic + the store/shell/memo contracts (63
+  assertions; wired into `npm test`, now 13 files / 967 assertions).
+- [x] **I.1 — `React.memo` boundaries.** `memoDeep` (`util/memo.ts`) wraps a
+  component in `React.memo` with the `deepEqual` comparator — plain
+  `React.memo` never skips here (fresh prop objects every render, per the
+  equality reality above). `CampaignShell` reads chrome via
+  `useCampaignSelector(selectChrome, deepEqual)`, so a body-only change
+  returns the SAME `ChromeData` reference and every memoized chrome strip
+  skips via its `Object.is` fast path; a chrome change re-renders only the
+  strips whose slice differs. Wrapped: the 5 always-mounted chrome strips
+  (Header, ModeBar, SubTabs, RecentLog, CommandRail) and the list-item /
+  panel components rendered many times (QuestRow, WorldGateCard,
+  SequenceNodePanel, SequenceShelfPanel). **Deliberately deferred:** the
+  `ResultPanels` family takes the whole `state` and derives internally;
+  memoizing on `state` would deep-compare the full tree every render (pure
+  cost). Those convert to self-subscribing `useCampaignSelector` components
+  in a follow-up (call it I.2b) — that is also where `useCampaignSelector`
+  gets its per-slice consumers beyond the chrome.
 - [ ] **I.3 — Virtualize long lists.** Quest list, event ledger,
   log entries panel, save slots — each can pass 100+ rows. Add
   `react-window` or a tiny custom virtualizer.
