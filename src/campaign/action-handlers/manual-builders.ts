@@ -2,8 +2,8 @@
 // builders that still live in JS (manual event builder, manual quest
 // builder, GM override, manual scene builder).
 //
-// The three remaining closures are large (266 / 475 / 174 lines) with
-// many sub-helpers, and the render-side data builders still consume them
+// The two remaining closures are large (266 / 475 lines) with many
+// sub-helpers, and the render-side data builders still consume them
 // (e.g. _openQuestModal shares `_randomizedQuestTemplate` +
 // `_inferObjectiveKind` + `_questBuilderMiniGame` with quest data
 // flows; `_openManualEventBuilder` shares the manual-event sub-
@@ -11,10 +11,11 @@
 // with event-builder data flows). Porting them in H.3 would
 // duplicate that surface; instead, each action handler is a thin
 // dispatcher that calls the closure through the CampaignUI bridge
-// (openManualEventBuilder / openQuestModal / openGmOverride). H.4 ports
-// the closure + its data builders together, and the bridge entries
-// become redundant. The manual scene builder already ported to TS
-// (`scene-builder.ts`), so story-manual-note calls it directly.
+// (openManualEventBuilder / openQuestModal). H.4 ports the closure +
+// its data builders together, and the bridge entries become redundant.
+// The manual scene builder ported to TS (`scene-builder.ts`) and the
+// GM override modal ported to TS (`gm-override.ts`), so story-manual-note
+// and gm-override / gm-member-override call them directly.
 //
 // custom-event → manual event builder (no prefill).
 // oracle-to-event-builder → manual event builder seeded from the
@@ -28,6 +29,7 @@
 
 import { cs, mod, toast } from "./context";
 import { openManualSceneBuilder, type SceneBuilderStage } from "./scene-builder";
+import { openGmOverride } from "./gm-override";
 
 interface StoryDirectorModule {
   snapshot?: () => { stage?: SceneBuilderStage } | null | undefined;
@@ -36,7 +38,6 @@ interface StoryDirectorModule {
 interface CampaignUiBridge {
   openManualEventBuilder?: (prefill?: Record<string, unknown>) => void;
   openQuestModal?: (prefill?: Record<string, unknown>) => void;
-  openGmOverride?: (defaultTarget?: string) => void;
 }
 
 interface UtilsModule {
@@ -92,7 +93,7 @@ export function addQuest(): void {
 // ── gm-override / gm-member-override ───────────────────────────────
 
 export function gmOverride(memberId?: string): void {
-  bridge()?.openGmOverride?.(memberId || "");
+  openGmOverride(memberId || "");
 }
 
 // ── story-manual-note (manual scene builder) ───────────────────────

@@ -922,8 +922,9 @@ finishes the authoring loop:
 | After H.4 getStoryHomeData + getStoryDirectorData + story helpers to TS | 366 |
 | After H.4 story-context cache + AI story-prompt cluster to TS | 354 |
 | After H.4 manual scene + branch builder to TS | 348 |
+| After H.4 GM override modal to TS | 338 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 348 KB. **Phase H.3 is
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 338 KB. **Phase H.3 is
 complete**: 246/246 actions live in the TS registry, and the
 `_handleAction` switch is empty (kept as a defensive no-op with
 the port history in comments). **Phase H.4 in progress** —
@@ -982,12 +983,13 @@ dispatch path. Still bridged HTML: the roster detail row
 (`cui-party-tab.js`, 742 lines — icon-heavy, action surface
 registry-backed), the shared side-content primitives
 (`cui-hub-tab.js`, 162 lines), the world map SVG, the intentionally-
-vanilla external-module tabs + maps tab. Still in JS: three big
+vanilla external-module tabs + maps tab. Still in JS: two big
 modal builder bodies (`_openManualEventBuilder` 266 lines,
-`_openQuestModal` 475 lines, `_gmOverride` 174 lines) — bridge-wrapped
-from TS so the action contract is registry-backed even though the bodies
-share many sub-helpers with the still-JS data builders. (The manual
-scene builder ported to `action-handlers/scene-builder.ts` in H.4.)
+`_openQuestModal` 475 lines) — bridge-wrapped from TS so the action
+contract is registry-backed even though the bodies share many
+sub-helpers with the still-JS data builders. (The manual scene builder
+ported to `action-handlers/scene-builder.ts` and the GM override modal
+to `action-handlers/gm-override.ts` in H.4.)
 
 **Remaining H.4 work:**
 1. [x] **Story-context cache + AI story-prompt cluster → TS (done).**
@@ -1014,7 +1016,14 @@ scene builder ported to `action-handlers/scene-builder.ts` in H.4.)
      `_openManualSceneBuilder` (127) + `_saveAsManualNote` →
      `src/campaign/action-handlers/scene-builder.ts`. `story-manual-note`
      calls `openManualSceneBuilder` directly; the bridge entry is gone.
-   - [ ] `_gmOverride` (174 lines).
+   - [x] **GM override modal (done).** `_gmOverride` (174) →
+     `src/campaign/action-handlers/gm-override.ts`. `gm-override` /
+     `gm-member-override` call `openGmOverride` directly; the bridge entry
+     is gone. Still reads the shared roster option builders
+     (`_characterOptions` / `_skillOptions` / `_passiveOptions`) through
+     the `CampaignUI.rosterCharacterOptions/SkillOptions/PassiveOptions`
+     bridges; `statName` is the small local copy (same as
+     roster-modal-pickers.ts).
    - [ ] `_openManualEventBuilder` (266 lines) + manual-event sub-helpers.
    - [ ] `_openQuestModal` (475 lines) + quest-builder sub-helpers.
 3. Port the still-JS bridges that wrap legacy render code:
