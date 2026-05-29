@@ -6,9 +6,8 @@
 //
 // Phase H.4 — `getRosterData` ported inline. Reads
 // `window.CJS.CampaignUIInternal.PartyTab.rosterMemberData` (still-JS
-// bridged island) + the tab-helpers bundle via the existing
-// `CampaignUI.getTabHelpers` bridge — same surfaces the JS original
-// consumed.
+// bridged island), which now owns the member-math helper bundle itself
+// (defaulted internally), so no `getTabHelpers` bridge hop is needed.
 
 import type { CampaignStateSnapshot } from "../../store";
 
@@ -74,16 +73,13 @@ interface PartyMemberInput {
 }
 
 interface PartyTabSurface {
-  readonly rosterMemberData?: (id: string, member: PartyMemberInput, helpers: unknown) => RosterMemberData;
-}
-
-interface CampaignUIBridge {
-  readonly getTabHelpers?: () => unknown;
+  // Phase H.4 — the helper bundle now lives inside cui-party-tab.js and is
+  // the default for the 3rd arg, so callers omit it.
+  readonly rosterMemberData?: (id: string, member: PartyMemberInput) => RosterMemberData;
 }
 
 interface RosterCjs {
   readonly CampaignUIInternal?: { PartyTab?: PartyTabSurface };
-  readonly CampaignUI?: CampaignUIBridge;
 }
 
 function cjs(): RosterCjs {
@@ -99,10 +95,9 @@ export function getRosterData(state: CampaignStateSnapshot): RosterData | null {
   const c = cjs();
   const partyTab = c.CampaignUIInternal?.PartyTab;
   if (!partyTab?.rosterMemberData) return null;
-  const helpers = c.CampaignUI?.getTabHelpers?.();
   const entries = Object.entries((state as CampaignStateForRoster).party || {});
   const toData = ([id, member]: [string, PartyMemberInput]): RosterMemberData =>
-    partyTab.rosterMemberData!(id, member, helpers);
+    partyTab.rosterMemberData!(id, member);
   return {
     active: entries.filter(([, m]) => (m.rosterRole || "active") !== "bench").map(toData),
     bench: entries.filter(([, m]) => (m.rosterRole || "active") === "bench").map(toData)

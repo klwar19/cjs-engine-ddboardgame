@@ -7,23 +7,23 @@
 // Apply it builds the op payload and runs it through CampaignOps with the
 // `gm_override` source.
 //
-// Shares the roster option builders (`_characterOptions` / `_skillOptions`
-// / `_passiveOptions`) with the still-JS roster cluster, read through the
-// CampaignUI.rosterCharacterOptions/SkillOptions/PassiveOptions bridges
-// (same as roster-modal-pickers.ts). Behaviour parity with the closure —
-// same op list, same widgets, same validation toasts + op payloads.
+// Shares the roster option builders (`characterOptions` / `skillOptions`
+// / `passiveOptions`) with the roster island, read through
+// `CampaignUIInternal.PartyTab` (same as roster-modal-pickers.ts).
+// Behaviour parity with the closure — same op list, same widgets, same
+// validation toasts + op payloads.
 
 import { cs, ds, ops, mod } from "./context";
 import { modals, options, widgets, type PickerOption, type SliderEl, type SearchableSelectEl } from "./modals";
 
-interface RosterBridge {
-  rosterCharacterOptions?: () => PickerOption[];
-  rosterSkillOptions?: (memberId: string) => PickerOption[];
-  rosterPassiveOptions?: (memberId: string) => PickerOption[];
+interface PartyTabBridge {
+  characterOptions?: () => PickerOption[];
+  skillOptions?: (memberId: string) => PickerOption[];
+  passiveOptions?: (memberId: string) => PickerOption[];
 }
 
-function bridge(): RosterBridge | undefined {
-  return mod<RosterBridge>("CampaignUI");
+function partyTab(): PartyTabBridge | undefined {
+  return mod<{ PartyTab?: PartyTabBridge }>("CampaignUIInternal")?.PartyTab;
 }
 
 interface ConstModule {
@@ -233,7 +233,7 @@ export function openGmOverride(defaultTarget = ""): void {
       fields.appendChild(active.amount);
     } else if (def.kind === "recruit") {
       active.character = ui!.createSearchableSelect({
-        options: bridge()?.rosterCharacterOptions?.() || [],
+        options: partyTab()?.characterOptions?.() || [],
         placeholder: "Search characters...",
         renderItem: m!.pickerItem
       });
@@ -256,7 +256,7 @@ export function openGmOverride(defaultTarget = ""): void {
       fields.appendChild(active.target);
       fields.appendChild(m!.formLabel("Skill"));
       active.skill = ui!.createSearchableSelect({
-        options: bridge()?.rosterSkillOptions?.(active.target.value) || [],
+        options: partyTab()?.skillOptions?.(active.target.value) || [],
         placeholder: "Search skills...",
         renderItem: m!.pickerItem
       });
@@ -267,7 +267,7 @@ export function openGmOverride(defaultTarget = ""): void {
       fields.appendChild(active.target);
       fields.appendChild(m!.formLabel("Passive"));
       active.passive = ui!.createSearchableSelect({
-        options: bridge()?.rosterPassiveOptions?.(active.target.value) || [],
+        options: partyTab()?.passiveOptions?.(active.target.value) || [],
         placeholder: "Search passives...",
         renderItem: m!.pickerItem
       });

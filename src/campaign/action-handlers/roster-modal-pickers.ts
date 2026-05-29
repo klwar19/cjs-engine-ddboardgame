@@ -1,12 +1,13 @@
 // roster-modal-pickers.ts — Phase H.3 roster modal picker handlers.
 //
 // recruit-character / learn-skill / learn-passive are op-picker modals
-// over option lists the still-JS closures (`_characterOptions` /
-// `_skillOptions` / `_passiveOptions`) build. The option builders stay
-// in JS because the still-JS GM override modal (`_gmOverride`) also
-// reads them; they reach the TS handlers through the new
-// `CampaignUI.rosterCharacterOptions/SkillOptions/PassiveOptions`
-// bridges. show-skill-detail opens a small skill perk-list info modal.
+// over option lists the roster island builds. Phase H.4 — the option
+// builders + member math moved into `cui-party-tab.js` (the roster
+// island), exposed on `CampaignUIInternal.PartyTab`
+// (characterOptions / skillOptions / passiveOptions / skillMetaText /
+// memberRankInfo / renderPartySheetHtml). The record-icon HTML comes
+// from `CampaignUIInternal.Portraits.icon`. show-skill-detail opens a
+// small skill perk-list info modal.
 //
 // Modal copy, op names, payload keys and the `ui` source mirror the
 // deleted closures (`_recruitCharacterModal`, `_learnSkillModal`,
@@ -14,16 +15,6 @@
 
 import { applyOp, cs, ds, mod, toast } from "./context";
 import { esc, modals, widgets, type PickerOption } from "./modals";
-
-interface RosterBridge {
-  rosterCharacterOptions?: () => PickerOption[];
-  rosterSkillOptions?: (memberId: string) => PickerOption[];
-  rosterPassiveOptions?: (memberId: string) => PickerOption[];
-  skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
-  recordIconHtml?: (record: unknown, opts: { kind?: string; size?: string }) => string;
-  memberRankInfo?: (member: unknown) => MemberRankInfo;
-  renderPartySheetHtml?: (id: string, member: unknown) => string;
-}
 
 export interface MemberRankInfo {
   rank: string;
@@ -38,23 +29,41 @@ export interface MemberRankInfo {
   atMax: boolean;
 }
 
-function bridge(): RosterBridge | undefined {
-  return mod<RosterBridge>("CampaignUI");
-}
-
-// Equipment helpers live in window.CJS.CampaignUIInternal.Equipment — a
-// stable shared module. Typed accessor here so the handlers don't
-// re-declare it.
+// Equipment / PartyTab / Portraits helpers live on
+// `window.CJS.CampaignUIInternal` — stable shared islands. Typed
+// accessors here so the handlers don't re-declare them.
 interface EquipmentApi {
   slotLabel: (slot: string) => string;
   equipmentOptions: (member: Record<string, unknown>, slot: string) => PickerOption[];
   equipmentPickerItem: (option: PickerOption) => string;
 }
-interface CuiInternalEquipment {
+interface PartyTabBridge {
+  characterOptions?: () => PickerOption[];
+  skillOptions?: (memberId: string) => PickerOption[];
+  passiveOptions?: (memberId: string) => PickerOption[];
+  skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
+  memberRankInfo?: (member: unknown) => MemberRankInfo;
+  renderPartySheetHtml?: (id: string, member: unknown) => string;
+}
+interface PortraitsBridge {
+  icon?: (record: unknown, opts: { kind?: string; size?: string }) => string;
+}
+interface CuiInternal {
   Equipment?: EquipmentApi;
+  PartyTab?: PartyTabBridge;
+  Portraits?: PortraitsBridge;
+}
+function cuiInternal(): CuiInternal | undefined {
+  return mod<CuiInternal>("CampaignUIInternal");
 }
 function equipmentApi(): EquipmentApi | undefined {
-  return mod<CuiInternalEquipment>("CampaignUIInternal")?.Equipment;
+  return cuiInternal()?.Equipment;
+}
+function partyTab(): PartyTabBridge | undefined {
+  return cuiInternal()?.PartyTab;
+}
+function portraits(): PortraitsBridge | undefined {
+  return cuiInternal()?.Portraits;
 }
 
 interface ConstModule {
@@ -69,7 +78,7 @@ function statName(stat: string): string {
 }
 
 export function recruitCharacterModal(): void {
-  const options = bridge()?.rosterCharacterOptions?.() ?? [];
+  const options = partyTab()?.characterOptions?.() ?? [];
   if (!options.length) {
     toast("No unrecruited characters found in Edit Mode", "info");
     return;
@@ -87,7 +96,7 @@ export function recruitCharacterModal(): void {
 
 export function learnSkillModal(memberId: string): void {
   if (!memberId) return;
-  const options = bridge()?.rosterSkillOptions?.(memberId) ?? [];
+  const options = partyTab()?.skillOptions?.(memberId) ?? [];
   if (!options.length) {
     toast("No unlearned skills found in Edit Mode", "info");
     return;
@@ -105,7 +114,7 @@ export function learnSkillModal(memberId: string): void {
 
 export function learnPassiveModal(memberId: string): void {
   if (!memberId) return;
-  const options = bridge()?.rosterPassiveOptions?.(memberId) ?? [];
+  const options = partyTab()?.passiveOptions?.(memberId) ?? [];
   if (!options.length) {
     toast("No unlearned passives found in Edit Mode", "info");
     return;
@@ -153,17 +162,12 @@ interface UiSimpleModal {
   openModal: (cfg: { title: string; content: HTMLElement; width?: string }) => unknown;
 }
 
-interface SkillMetaBridge {
-  skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
-  recordIconHtml?: (record: unknown, opts: { kind?: string; size?: string }) => string;
-}
-
 // Mirrors `_showSkillDetailModal`. Renders the same header (icon, name,
 // description, skill meta line + Lv X/cap + AbP X (Y to next)) and
 // per-level perk rows (earned ✔ or unlocks-at hint, modifiers, added
-// effects). The skill meta + icon HTML come from the still-JS render
-// helpers via the new bridges so the modal stays in sync with the
-// roster card.
+// effects). The skill meta + icon HTML come from the roster island
+// (PartyTab.skillMetaText + Portraits.icon) so the modal stays in sync
+// with the roster card.
 export function showSkillDetailModal(memberId: string, skillId: string): void {
   if (!memberId || !skillId) return;
   const ui = mod<UiSimpleModal>("UI");
@@ -181,9 +185,8 @@ export function showSkillDetailModal(memberId: string, skillId: string): void {
   const ap = Number(prog.ap || 0);
   const apToNext = F?.calcSkillApToNextLevel?.(skill, ap, level) ?? null;
 
-  const bridgeApi = mod<SkillMetaBridge>("CampaignUI");
-  const iconHtml = bridgeApi?.recordIconHtml?.(skill, { kind: "skill", size: "sm" }) ?? "";
-  const metaText = bridgeApi?.skillMetaText?.(skill, { level }) ?? "";
+  const iconHtml = portraits()?.icon?.(skill, { kind: "skill", size: "sm" }) ?? "";
+  const metaText = partyTab()?.skillMetaText?.(skill, { level }) ?? "";
 
   const body = document.createElement("div");
   body.innerHTML = `
@@ -603,7 +606,7 @@ function renderBranchColumn(
   F: FormulasModuleJobs | undefined
 ): string {
   const header = `<div class="campaign-section-title" style="margin-top:8px">${esc(branchId)} branch</div>`;
-  const iconBridge = bridge();
+  const iconBridge = portraits();
   const cards = jobs.map((job) => {
     const unlocked = (member.unlockedJobs || []).includes(job.id || "");
     const isCurrent = member.currentJob === job.id;
@@ -648,7 +651,7 @@ function renderBranchColumn(
         return `<div style="opacity:${earned ? 1 : 0.65};font-size:0.85em">${star} <b>Lv ${tier.level}</b> — ${esc(desc || "...")}</div>`;
       })
       .join("");
-    const iconHtml = iconBridge?.recordIconHtml?.(job, { kind: "job", size: "sm" }) ?? "";
+    const iconHtml = iconBridge?.icon?.(job, { kind: "job", size: "sm" }) ?? "";
     return `
         <div class="campaign-record-line" style="margin-bottom:8px">
           <div>
@@ -776,7 +779,7 @@ export function rankUpApplyModal(): void {
   const state = (cs().getState() as Record<string, unknown>) || {};
   const F = mod<FormulasModuleRank>("Formulas");
   const world = (ds()?.get("worlds", (state as { currentWorld?: string }).currentWorld || "") as WorldDef | undefined) || {};
-  const rankInfo = bridge()?.memberRankInfo;
+  const rankInfo = partyTab()?.memberRankInfo;
 
   const body = document.createElement("div");
   body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
@@ -866,16 +869,16 @@ interface ActionsRuntime {
 }
 
 // Mirrors `_partySheetModal`. Body = portrait hero + full roster card
-// (built by the closure-private renderers and exposed as one HTML
-// string via the new CampaignUI.renderPartySheetHtml bridge). Local
-// click delegate routes every `data-campaign-action` button inside
-// the modal through the action runtime (matches the closure's
+// (built by the roster island and exposed as one HTML string via
+// `CampaignUIInternal.PartyTab.renderPartySheetHtml`). Local click
+// delegate routes every `data-campaign-action` button inside the modal
+// through the action runtime (matches the closure's
 // `_handleAction(action.dataset, action)` call).
 export function partySheetModal(memberId: string): void {
   if (!memberId) return;
   const member = (cs().getState() as { party?: Record<string, Member & Record<string, unknown>> } | null)?.party?.[memberId];
   if (!member) return;
-  const html = bridge()?.renderPartySheetHtml?.(memberId, member);
+  const html = partyTab()?.renderPartySheetHtml?.(memberId, member);
   if (typeof html !== "string") return;
   const m = modals();
   if (!m) return;

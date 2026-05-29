@@ -25,8 +25,12 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
   // time. `cui-utils` etc. always exist by the time render fires.
   const _U = () => window.CJS.CampaignUIInternal.Utils;
   const _P = () => window.CJS.CampaignUIInternal.Portraits;
+  const _E = () => window.CJS.CampaignUIInternal.Equipment;
+  const _M = () => window.CJS.CampaignUIInternal.Modals;
   const _DS = () => window.CJS.DataStore;
   const _CS = () => window.CJS.CampaignState;
+  const _CM = () => window.CJS.ContentManager;
+  const _C = () => window.CJS.CONST;
   const _UI = () => window.CJS.UI;
   const _Ops = () => window.CJS.CampaignOps;
   const _Bridge = () => window.CJS.CampaignCombatBridge;
@@ -52,9 +56,364 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     return _U().formatBundleText(cost);
   }
 
+  // ── Member math + sheet sub-renderers ──────────────────────────────
+  // Phase H.4 — these were the `_tabHelpers` cluster threaded into this
+  // module from campaign-ui.js. They now live here (the roster island is
+  // their only consumer) and are bundled by `_tabHelpers()` below, which
+  // the render functions default their `h` argument to. The party-sheet
+  // modal + GM-override / roster modals read the exposed surface on
+  // `CampaignUIInternal.PartyTab` (skillMetaText / memberRankInfo /
+  // characterOptions / skillOptions / passiveOptions / renderPartySheetHtml).
+
+  function _memberBase(id, member = {}) {
+    return _DS().get('characters', member.baseCharacterId || id) || {};
+  }
+
+  // Adventurer rank summary for a member. Effective rank reflects the
+  // current world's ceiling cap so the player sees the cap at a glance.
+  // RP progress shows the gap to the next-rank threshold.
+  function _memberRankInfo(member = {}) {
+    const F = _F();
+    const adv = member.adventurer || { rank: member.rank || 'F', rankPoints: 0, trialPending: false };
+    const rank = adv.rank || 'F';
+    const world = _DS().get('worlds', _CS().getState()?.currentWorld) || {};
+    const ceiling = world.ceiling || null;
+    const effective = F?.effectiveRank ? F.effectiveRank(rank, ceiling) : rank;
+    const capped = ceiling && effective !== rank;
+    const next = F?.nextRank ? F.nextRank(rank) : null;
+    const threshold = next && F?.rpThresholdFor ? F.rpThresholdFor(next) : 0;
+    const rp = Math.max(0, Number(adv.rankPoints || 0));
+    const pct = threshold > 0 ? Math.max(0, Math.min(100, Math.round((rp / threshold) * 100))) : 0;
+    return {
+      rank,
+      effective,
+      capped,
+      ceiling,
+      label: capped ? `${rank} (eff ${effective})` : rank,
+      next,
+      threshold,
+      rp,
+      pct,
+      atMax: !next,
+      trialPending: !!adv.trialPending
+    };
+  }
+
+  function _renderRankBar(info) {
+    if (!info || info.atMax) {
+      return '<div class="campaign-muted" style="font-size:0.72rem">Rank maxed (SSR)</div>';
+    }
+    if (info.threshold <= 0) return '';
+    return `<div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold} → ${_U().esc(info.next)}</b></div>`;
+  }
+
+  function _memberStats(id, member = {}) {
+    const base = _memberBase(id, member);
+    const stats = { ...(base.stats || {}) };
+    for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
+      stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
+    }
+    const ordered = {};
+    for (const stat of _C()?.STATS || Object.keys(stats)) ordered[stat] = stats[stat] || 0;
+    return ordered;
+  }
+
+  function _renderResistances(base, member, stats) {
+    const F = _F();
+    const esc = _U().esc;
+    const escAttr = _U().escAttr;
+    const weak = [...(base.weak || []), ...(member.weak || [])].filter((v, i, a) => a.indexOf(v) === i);
+    const resist = [...(base.resist || []), ...(member.resist || [])].filter((v, i, a) => a.indexOf(v) === i);
+    const immune = [...(base.immune || []), ...(member.immune || [])].filter((v, i, a) => a.indexOf(v) === i);
+
+    const elements = _C()?.ELEMENTS || ['Physical', 'Fire', 'Water', 'Lightning', 'Earth', 'Wind', 'Nature', 'Light', 'Dark', 'Chaos'];
+
+    let html = '<div class="campaign-affinity-grid">';
+
+    for (const el of elements) {
+      const slug = String(el).toLowerCase();
+      let stateClass = 'is-neutral';
+      let stateText = '<span class="campaign-affinity-state">--</span>';
+      if (immune.includes(el)) { stateClass = 'is-immune'; stateText = '<strong class="campaign-affinity-state">Nu</strong>'; }
+      else if (resist.includes(el)) { stateClass = 'is-resist'; stateText = '<strong class="campaign-affinity-state">Rs</strong>'; }
+      else if (weak.includes(el)) { stateClass = 'is-weak'; stateText = '<strong class="campaign-affinity-state">Wk</strong>'; }
+
+      html += `<div class="campaign-affinity-pill el-${slug} ${stateClass}" data-element="${slug}" title="${escAttr(el + ': ' + (immune.includes(el) ? 'Immune (Nu)' : resist.includes(el) ? 'Resists (Rs)' : weak.includes(el) ? 'Weak (Wk)' : 'Neutral'))}">
+        <span class="campaign-affinity-name">${esc(el)}</span>
+        ${stateText}
+      </div>`;
+    }
+    html += '</div>';
+
+    const physDR = F?.calcPhysicalDR ? F.calcPhysicalDR(stats) : 0;
+    const magDR = F?.calcMagicDR ? F.calcMagicDR(stats) : 0;
+    const chaosDR = F?.calcChaosDR ? F.calcChaosDR(stats) : 0;
+
+    html += '<div class="campaign-affinity-subheading">Damage Reduction</div>';
+    html += `<div class="campaign-dr-row">
+      <span class="campaign-dr-chip" title="Reduces incoming Physical damage"><b class="campaign-dr-icon">🗡</b><span class="campaign-dr-label">Phys</span><b class="campaign-dr-value">${physDR}</b></span>
+      <span class="campaign-dr-chip" title="Reduces incoming Magical damage"><b class="campaign-dr-icon">✨</b><span class="campaign-dr-label">Magic</span><b class="campaign-dr-value">${magDR}</b></span>
+      <span class="campaign-dr-chip" title="Reduces incoming Chaos damage"><b class="campaign-dr-icon">🌀</b><span class="campaign-dr-label">Chaos</span><b class="campaign-dr-value">${chaosDR}</b></span>
+    </div>`;
+
+    return html;
+  }
+
+  function _renderEquipmentLoadout(memberId, member = {}) {
+    const E = _E();
+    const P = _P();
+    const DS = _DS();
+    const esc = _U().esc;
+    const escAttr = _U().escAttr;
+    const label = _U().label;
+    const slots = E.normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
+    const weaponTypes = E.allowedTypes(member, 'allowedWeaponTypes').map(label).join(', ') || 'Any';
+    const armorTypes = E.allowedTypes(member, 'allowedArmorTypes').map(label).join(', ') || 'Any';
+    const rows = ['weapon', 'armor', 'accessory1', 'accessory2'].map((slot) => {
+      const itemId = slots[slot];
+      const item = DS.get('items', itemId);
+      const itemName = item?.name || itemId || 'Empty';
+      const type = item ? E.equipmentType(item) : '';
+      const meta = item ? [type, item.rarity].filter(Boolean).join(' | ') : 'Empty';
+      const slotKind = E.slotKind(slot) || 'item';
+      const iconHtml = item
+        ? P.icon(item, { kind: slotKind, size: 'md', alt: itemName })
+        : `<span class="cjs-icon cjs-icon-md cjs-icon-${slotKind}" style="opacity:.4">+</span>`;
+      return `
+        <div class="campaign-equipment-line">
+          <div class="campaign-equipment-icon">${iconHtml}</div>
+          <div>
+            <strong>${esc(E.slotLabel(slot))}</strong>
+            <small>${esc(itemName)}${meta ? ` | ${esc(meta)}` : ''}</small>
+            ${item ? `<p>${esc(E.equipmentDesc(item))}</p>` : ''}
+          </div>
+          <div class="campaign-row-actions">
+            <button class="campaign-icon-btn" data-campaign-action="equip-item" data-id="${escAttr(memberId)}" data-slot="${escAttr(slot)}">Equip</button>
+            ${item ? `<button class="campaign-icon-btn danger" data-campaign-action="unequip-item" data-id="${escAttr(memberId)}" data-slot="${escAttr(slot)}">-</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="campaign-equipment-proficiency">Weapons: ${esc(weaponTypes)} | Armor: ${esc(armorTypes)} | Accessories: any two different types</div>
+      ${rows}
+    `;
+  }
+
+  function _memberSkillEntries(id, member = _CS().getState()?.party?.[id] || {}) {
+    const base = _memberBase(id, member);
+    const out = [];
+    const seen = new Set();
+    for (const entry of [...(base.skills || []), ...(member.learnedSkills || [])]) {
+      const skillId = _skillEntryId(entry);
+      if (!skillId || seen.has(skillId)) continue;
+      seen.add(skillId);
+      out.push(typeof entry === 'string' ? { skillId } : entry);
+    }
+    return out;
+  }
+
+  function _memberLearnedSkillIds(id) {
+    const member = _CS().getState()?.party?.[id] || {};
+    return (member.learnedSkills || []).map(_skillEntryId).filter(Boolean);
+  }
+
+  function _skillEntryId(entry) {
+    return typeof entry === 'string' ? entry : entry?.skillId || null;
+  }
+
+  function _memberPassives(id, member = {}) {
+    const base = _memberBase(id, member);
+    return Array.from(new Set([...(base.innatePassives || []), ...(member.learnedPassives || [])].filter(Boolean)));
+  }
+
+  function _characterOptions() {
+    const state = _CS().getState();
+    const current = new Set(Object.keys(state?.party || {}));
+    const source = _CM()?.getVisibleItems?.('characters') || _DS().getAllAsArray('characters');
+    return source
+      .filter((entry) => entry?.id && !current.has(entry.id) && (entry.team || 'player') !== 'enemy')
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: `${entry.rank || 'F'} | ${(entry.skills || []).length} skills`,
+        description: _M().desc(entry),
+        tags: entry.tags || []
+      }))
+      .sort(_M().sortOptionLabel);
+  }
+
+  function _skillOptions(memberId) {
+    const known = new Set(_memberSkillEntries(memberId).map(_skillEntryId));
+    const source = _CM()?.getVisibleItems?.('skills') || _DS().getAllAsArray('skills');
+    return source
+      .filter((entry) => entry?.id && !known.has(entry.id))
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: _skillMeta(entry),
+        description: _M().desc(entry),
+        tags: entry.tags || []
+      }))
+      .sort(_M().sortOptionLabel);
+  }
+
+  function _passiveOptions(memberId) {
+    const member = _CS().getState()?.party?.[memberId] || {};
+    const known = new Set(_memberPassives(memberId, member));
+    const passiveSource = _CM()?.getVisibleItems?.('passives') || _DS().getAllAsArray('passives');
+    const passiveOptions = passiveSource.map((entry) => ({
+      value: entry.id,
+      label: entry.name || entry.id,
+      sub: 'Passive',
+      description: _M().desc(entry),
+      tags: entry.tags || []
+    }));
+    const passiveTriggers = new Set(['stat_mod', 'dr_mod', 'element_mod', 'crit_mod', 'evasion_mod', 'accuracy_mod', 'ap_mod', 'movement_mod', 'range_mod', 'cost_mod', 'cooldown_mod', 'damage_mod', 'hp_mod', 'mp_mod', 'status_resist_mod', 'double_action', 'triple_action']);
+    const effectOptions = _DS().getAllAsArray('effects')
+      .filter((entry) => passiveTriggers.has(entry.trigger))
+      .map((entry) => ({
+        value: entry.id,
+        label: entry.name || entry.id,
+        sub: `Effect | ${entry.trigger || ''}`,
+        description: _M().desc(entry),
+        tags: entry.tags || []
+      }));
+    return [...passiveOptions, ...effectOptions]
+      .filter((entry) => entry.value && !known.has(entry.value))
+      .sort(_M().sortOptionLabel);
+  }
+
+  function _statusDef(statusId) {
+    const custom = _DS().get('statuses', statusId);
+    if (custom) return custom;
+    const builtins = _C()?.STATUS_DEFINITIONS || {};
+    return builtins[statusId] ? { id: statusId, ...builtins[statusId] } : null;
+  }
+
+  function _renderJobChip(memberId, member = {}) {
+    const F = _F();
+    const DS = _DS();
+    const esc = _U().esc;
+    const jobId = member.currentJob || null;
+    if (!jobId) return `<span class="campaign-muted">No job</span>`;
+    const job = DS.get('jobs', jobId);
+    if (!job) return `<span class="campaign-muted">Unknown job: ${esc(jobId)}</span>`;
+    const prog = member.jobProgress?.[jobId] || { xp: 0, level: 1 };
+    const cap = F?.getJobMaxLevel ? F.getJobMaxLevel(job) : 10;
+    const level = Math.max(1, Number(prog.level || 1));
+    const xp = Number(prog.xp || 0);
+    const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
+    const meta = level >= cap ? `(max)` : (xpToNext != null ? `(${xpToNext} XP to next)` : '');
+    const personaChip = _renderPersonaChip(memberId, member);
+    const personaSuffix = personaChip ? ` <span class="campaign-muted">·</span> ${personaChip}` : '';
+    return `${_P().icon(job, { kind: 'job', size: 'xs' })} ${esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}${personaSuffix}`;
+  }
+
+  function _renderPersonaChip(memberId, member = {}) {
+    const DS = _DS();
+    const esc = _U().esc;
+    const escAttr = _U().escAttr;
+    const personaId = member.activePersona || null;
+    if (!personaId) return '';
+    const persona = DS.get('personas', personaId);
+    if (!persona) return `<span class="campaign-muted" title="Unknown persona">${esc(personaId)}</span>`;
+    const state = _CS().getState();
+    const outOfWorld = persona.world && state?.currentWorld && persona.world !== state.currentWorld;
+    const worldChip = persona.world ? (DS.get('worlds', persona.world)?.displayName || persona.world) : '';
+    const tooltip = outOfWorld
+      ? `${persona.name} (${worldChip}) — out of world. Damage dealt ×${Number(persona.crossWorldPenalty?.damageDealtMultiplier ?? 1)}, taken ×${Number(persona.crossWorldPenalty?.damageTakenMultiplier ?? 1)}.`
+      : `${persona.name}${worldChip ? ` (${worldChip})` : ''}`;
+    const style = outOfWorld ? ' style="color:#f59e0b"' : '';
+    return `<span title="${escAttr(tooltip)}"${style}>${esc(persona.icon || '🎭')} ${esc(persona.name)}${outOfWorld ? ' ⚠' : ''}</span>`;
+  }
+
+  function _skillMeta(skill = {}, entry = {}) {
+    const label = _U().label;
+    const parts = [];
+    if (skill.ap != null) parts.push(`${skill.ap} AP`);
+    if (skill.mp != null) parts.push(`${skill.mp} MP`);
+    if (skill.range != null) parts.push(`Range ${skill.range}`);
+    if (skill.power != null) parts.push(`Power ${skill.power}`);
+    const requiredWeapons = _skillWeaponTypes(skill);
+    if (requiredWeapons.length) parts.push(`Weapon ${requiredWeapons.map(label).join('/')}`);
+    if (entry.level) parts.push(`Lv ${entry.level}`);
+    return parts.join(' | ') || skill.category || skill.type || '';
+  }
+
+  function _statName(stat) {
+    return _C()?.STAT_NAMES?.[stat] || stat;
+  }
+
+  function _skillWeaponTypes(skill = {}) {
+    const raw = skill.requiredWeaponTypes || skill.requiredWeaponType || skill.weaponTypeRequired || [];
+    return (Array.isArray(raw) ? raw : [raw]).map(_E().cleanType).filter(Boolean);
+  }
+
+  // Portrait hero block for the party-sheet modal header. Pairs with
+  // `renderRosterMember` in `renderPartySheetHtml` below.
+  function _renderPortraitHero(id, member) {
+    const P = _P();
+    const esc = _U().esc;
+    const escAttr = _U().escAttr;
+    const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
+    const portraitSrc = P.memberPortrait(member, id);
+    const portraitFocus = P.memberPortraitFocus(member, id);
+    const portrait = portraitSrc
+      ? `<img src="${escAttr(portraitSrc)}" alt="${escAttr(member.name || id)}" style="${escAttr(P.focusAttrStyle(portraitFocus))}">`
+      : `<div class="fallback">${esc(initial)}</div>`;
+    const lvl = member.level || 1;
+    const rank = member.rank || 'F';
+    const klass = member.class || member.archetype || '';
+    return `
+      <div class="campaign-portrait-hero">
+        <div class="campaign-portrait-frame is-large">${portrait}</div>
+        <div class="campaign-portrait-meta">
+          <h2>${esc(member.name || id)}</h2>
+          <div class="campaign-portrait-sub">${esc(klass || 'Adventurer')} · Lv ${lvl} · Rank ${esc(rank)}</div>
+          <div class="campaign-chip-row">
+            ${(member.tags || []).slice(0, 6).map((t) => `<span class="campaign-chip">${esc(t)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Frozen helper bundle the render functions default their `h` arg to.
+  // Mirrors the old `CampaignUI._tabHelpers()` shape (minus the dead
+  // renderPersonaPill / renderSoloNotice / pendingSoloHookCard entries).
+  let _tabHelpersCache = null;
+  function _tabHelpers() {
+    if (_tabHelpersCache) return _tabHelpersCache;
+    _tabHelpersCache = Object.freeze({
+      memberBase: _memberBase,
+      memberRankInfo: _memberRankInfo,
+      renderRankBar: _renderRankBar,
+      memberStats: _memberStats,
+      renderResistances: _renderResistances,
+      renderEquipmentLoadout: _renderEquipmentLoadout,
+      memberSkillEntries: _memberSkillEntries,
+      memberPassives: _memberPassives,
+      memberLearnedSkillIds: _memberLearnedSkillIds,
+      renderJobChip: _renderJobChip,
+      statName: _statName,
+      skillMeta: _skillMeta,
+      skillEntryId: _skillEntryId,
+      statusDef: _statusDef
+    });
+    return _tabHelpersCache;
+  }
+
+  // Party-sheet modal body (portrait hero + full roster member sheet).
+  // The party-sheet modal (roster-modal-pickers.ts) has its own click
+  // delegate; it just needs the HTML body for both pieces.
+  function renderPartySheetHtml(id, member) {
+    return _renderPortraitHero(id, member) + renderRosterMember(id, member);
+  }
+
   // ── Renderers ──────────────────────────────────────────────────────
 
-  function renderParty(state, h) {
+  function renderParty(state, h = _tabHelpers()) {
     const esc = _U().esc;
     const active = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
     const bench = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') === 'bench');
@@ -68,7 +427,7 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     `;
   }
 
-  function renderPartyCard(id, member, h) {
+  function renderPartyCard(id, member, h = _tabHelpers()) {
     const U = _U();
     const P = _P();
     const esc = U.esc;
@@ -180,7 +539,7 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     `;
   }
 
-  function rosterMemberData(id, member, h) {
+  function rosterMemberData(id, member, h = _tabHelpers()) {
     const base = h.memberBase(id, member);
     const stats = h.memberStats(id, member);
     const isBench = (member.rosterRole || 'active') === 'bench';
@@ -240,7 +599,7 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
   // (`_partySheetModal`, which has its own click delegation). The roster
   // TAB renders JSX from `rosterMemberData`; this formatter derives from
   // the same typed data so there is one source of truth.
-  function renderRosterMember(id, member, h) {
+  function renderRosterMember(id, member, h = _tabHelpers()) {
     const esc = _U().esc;
     const escAttr = _U().escAttr;
     const d = rosterMemberData(id, member, h);
@@ -716,8 +1075,19 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     renderParty,
     renderPartyCard,
     renderRosterMember,
+    // Party-sheet modal body (portrait hero + roster member sheet).
+    renderPartySheetHtml,
     // Typed roster-tab data (K.3).
     rosterMemberData,
+    // Member math + sheet helpers (Phase H.4 — moved here from
+    // campaign-ui.js's _tabHelpers cluster). The roster / GM modals read
+    // these instead of the old CampaignUI bridges.
+    getTabHelpers: _tabHelpers,
+    memberRankInfo: _memberRankInfo,
+    skillMetaText: _skillMeta,
+    characterOptions: _characterOptions,
+    skillOptions: _skillOptions,
+    passiveOptions: _passiveOptions,
     // Row renderers
     renderKnownSkill,
     renderKnownPassive,
