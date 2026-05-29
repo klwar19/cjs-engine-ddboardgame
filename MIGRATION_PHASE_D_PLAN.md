@@ -919,14 +919,15 @@ finishes the authoring loop:
 | After H.4 getWorldGateData + worldMenuDef to TS | 383 |
 | After H.4 getMinigameTestData to TS | 382 |
 | After H.4 getChromeData + panel defs to TS | 379 |
+| After H.4 getStoryHomeData + getStoryDirectorData + story helpers to TS | 366 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 379 KB. **Phase H.3 is
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 366 KB. **Phase H.3 is
 complete**: 246/246 actions live in the TS registry, and the
 `_handleAction` switch is empty (kept as a defensive no-op with
 the port history in comments). **Phase H.4 in progress** —
 chrome state, every leaf util helper, the tab registry, the
 React-bridge tab list, the world-map stub, the chrome data builder,
-and ~26 of the ~30 `get*Data` bridges are all TS. The seven
+and **every `get*Data` bridge** are all TS. The seven
 `js/campaign/ui/cui-*.js` files and three `js/campaign/ui/tabs/cui-*`
 small files were deleted (cui-utils, cui-portraits, cui-log,
 cui-controls, cui-modals, cui-options, cui-equipment,
@@ -943,7 +944,13 @@ run, scenarios, sequence (shelf + delivery + per-entry), eventTab,
 questChain (active/template/resolved + side story flow guide),
 activeSequence (with discriminated node snapshot), worldGate (with
 worldMenuDef + per-card data), minigameTest, chrome (header / mode bar
-/ scenario hud / recent log / command rail / currency / panel defs).
+/ scenario hud / recent log / command rail / currency / panel defs),
+storyHome (chapter tree, story pipeline, sync summary, choice
+consequence), storyDirector (stage rail, director card, pressure
+board, clues panel, queue panel, truths panel, side flow). Only
+`getMainBody` + `renderDrawerBody` stay as JS bridges (they wrap
+still-JS render-side helpers — `_renderMain`'s defensive fallback +
+the drawer body).
 
 **Shared helpers ported to TS:** `sideCardData`, `rumorRowData`,
 `pendingSoloHookCard`, `isQuestResolved`, `questObjectiveDone`,
@@ -955,7 +962,14 @@ worldMenuDef + per-card data), minigameTest, chrome (header / mode bar
 `questChainStakesData`, `questChainVnPanelData`, `questChainActiveData`,
 `questChainTemplateData`, `sideStoryFlowGuideData`, `questChainResolvedData`,
 `worldMenuDef`, `panelDefsForState`, `panelOrder`, `currencyAmounts`,
-`setMinigameTestGame`.
+`setMinigameTestGame`, `storyTheme`, `storyVnHeroData`,
+`storyActionBtnData`, `storyNextStepData`, `videoTypeFromPath`,
+`storyNextStep`, `storyStageRailData`, `storyDirectorCardData`,
+`storyPressureBoardData`, `storyCluesPanelData`, `storyQueuePanelData`,
+`storyTruthsPanelData`, `storySideFlowData`, `chapterTreeData`,
+`chapterTreeNodeData`, `storyPipelineSnapshot`, `storyPipelinePanelData`,
+`syncSummaryData`, `shortenPanelLabel`, `choiceConsequenceData`,
+`storySummaryEntries`.
 
 Every closure-private `_render*` sub-renderer in
 campaign-ui.js is JSX, the hub-family tab bodies + roster hero are
@@ -971,19 +985,23 @@ modal builder bodies (`_openManualEventBuilder` 266 lines,
 the action contract is registry-backed even though the bodies
 share many sub-helpers with the still-JS data builders.
 
-**Remaining H.4 work:** port `getStoryHomeData` + `getStoryDirectorData`
-(plus their many shared helpers: `_storyTheme`, `_storyVnHeroData`,
-`_storyNextStep`, `_storyStageRailData`, `_storyDirectorCardData`,
-`_storyPressureBoardData`, `_storyCluesPanelData`, `_storyQueuePanelData`,
-`_storyTruthsPanelData`, `_storySideFlowData`, `_chapterTreeData`,
-`_chapterTreeNodeData`, `_storyPipelineSnapshot`, `_storyPipelinePanelData`,
-`_syncSummaryData`, `_choiceConsequenceData`, `_aiStoryContextData`,
-`_storyContextFor`, `_storyContextCache`). The render-side
-`_renderStoryDirectorCard` HTML helper stays as a JS bridge
-(consumed by the story-director-modal handler) until G.11b's HTML
-emit fully ports. After these, fold the bridge-wrapped modal bodies
-into TS alongside their data builders, then delete
-`js/campaign/campaign-ui.js`. Then H.5 (test rewrite). Phases I/J
+**Remaining H.4 work:**
+1. Port the story-context cache cluster (`_storyContextCache`,
+   `_ensureStoryContext`, `_storyContextFor`, `_aiStoryContextData`,
+   `_loadStoryContextFile`, `_loadStoryContextJson`) to TS — currently
+   bridged via `renderAiStoryContextData` + `ensureStoryContext`. This
+   cache is shared with the still-JS `_storyPromptText` (manual story
+   prompt builder), so the prompt cluster ports alongside.
+2. Port the big modal builder bodies (`_openManualEventBuilder` 266
+   lines, `_openQuestModal` 475 lines, `_gmOverride` 174 lines,
+   `_openManualSceneBuilder` 127 lines) and their shared helpers —
+   currently bridge-wrapped from TS.
+3. Port the still-JS bridges that wrap legacy render code:
+   `renderStoryDirectorCardHtml`, `renderQuestRunTaskHtml`,
+   `renderPartySheetHtml`, `getMainBody`, `renderDrawerBody`. Each
+   either ports its renderer to JSX or stays as a permanent island.
+4. Delete `js/campaign/campaign-ui.js` once all the above lands.
+   Then H.5 (test rewrite). Phases I/J
 pivot from "remove HTML strings" to "optimize the React tree +
 open the authoring loop for AI generators."
 
