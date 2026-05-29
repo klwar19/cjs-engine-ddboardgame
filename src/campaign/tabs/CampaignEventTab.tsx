@@ -47,10 +47,10 @@ export function CampaignEventTab({ state, kind }: Props) {
       {data.questChains && (
         <SideStoryChainsPanel chains={data.questChains} />
       )}
-      <SoloNoticePanel state={state} />
-      <PendingBattlePanel state={state} />
-      <CombatResultPanel state={state} />
-      <EventResultPanel state={state} />
+      <SoloNoticePanel />
+      <PendingBattlePanel />
+      <CombatResultPanel />
+      <EventResultPanel />
     </div>
   );
 }

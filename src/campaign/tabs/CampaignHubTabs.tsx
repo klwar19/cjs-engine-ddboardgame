@@ -71,7 +71,7 @@ export function CampaignSideForgeTab({ state }: Props) {
         </div>
       </section>
 
-      <SoloNoticePanel state={state} />
+      <SoloNoticePanel />
       {data.lastCard && <SideCard card={data.lastCard} />}
 
       <section className="campaign-panel">

@@ -742,37 +742,114 @@ With campaign-ui.js gone, the React tree owns every render path.
 Now optimizations that were impossible while HTML strings ran the
 show become tractable:
 
-- [ ] **I.1 — `React.memo` boundaries.** Every shared sub-panel
-  (QuestRow, EventResultPanel, SoloNoticePanel, etc.) takes its
-  typed snapshot as a prop. Wrap them in `memo` so a tab re-render
-  doesn't re-render unrelated cards. The shell's `tick` re-render
-  already passes the same panel data when nothing changed, so memo
-  is a clean win.
-- [ ] **I.2 — Selector hooks.** `useCampaignState()` currently
-  returns the entire snapshot. Replace consumers with selector
-  hooks (`useCampaignSelector(s => s.eventLog.entries)`) backed by
-  `useSyncExternalStore` so only components whose slice actually
-  changed re-render.
+> **Equality reality (informs all of Phase I).** `js/core/state-tools.js`
+> `produce` does a full deep clone (`structuredClone` / JSON) on every
+> mutation — NOT Immer-style structural sharing. So no slice of the engine
+> state keeps a stable identity across a change; reference equality is
+> useless for "did this slice change?". Every Phase I memo/selector decision
+> therefore compares by VALUE (`deepEqual` / `shallowEqual`,
+> `src/campaign/util/equality.ts`) on the SELECTED slice, never on raw state.
+
+- [x] **I.2 — Selector store + hooks.** `src/campaign/store.ts` is now a
+  single `CampaignStore` mirroring `src/combat/store.ts`: a stable
+  `subscribe` / `getSnapshot` pair, a `queueMicrotask` commit that
+  coalesces a burst of signals (a mutation's direct `CampaignState` emit +
+  the `render()`-driven `state-tick` that follows) into one notification,
+  and `useSyncExternalStore` hooks. `useCampaignState()` keeps its exact
+  `{ state, tick }` contract; the new `useCampaignSelector(selector,
+  isEqual = shallowEqual)` adds value-equality slice subscriptions — the
+  campaign variant of `useCombatStore`, with equality added because the
+  snapshot carries the deep-cloned engine state (reference equality never
+  reports a slice unchanged). The store listens to `campaign:state-tick` /
+  `:rendered` on document in the CAPTURE phase (the superset signal: data
+  AND chrome changes) plus `CampaignState.subscribe` (bounded retry, parity
+  + seed). `CampaignShell` dropped its redundant `renderTick` listener (the
+  store covers it). `test_selector_store.js` exercises the equality helpers
+  with real transpiled logic + the store/shell/memo contracts (63
+  assertions; wired into `npm test`, now 13 files / 967 assertions).
+- [x] **I.1 — `React.memo` boundaries.** `memoDeep` (`util/memo.ts`) wraps a
+  component in `React.memo` with the `deepEqual` comparator — plain
+  `React.memo` never skips here (fresh prop objects every render, per the
+  equality reality above). `CampaignShell` reads chrome via
+  `useCampaignSelector(selectChrome, deepEqual)`, so a body-only change
+  returns the SAME `ChromeData` reference and every memoized chrome strip
+  skips via its `Object.is` fast path; a chrome change re-renders only the
+  strips whose slice differs. Wrapped: the 5 always-mounted chrome strips
+  (Header, ModeBar, SubTabs, RecentLog, CommandRail) and the list-item /
+  panel components rendered many times (QuestRow, WorldGateCard,
+  SequenceNodePanel, SequenceShelfPanel). The `ResultPanels` family was
+  handled separately in I.2b (it takes the whole `state`, so memoizing on
+  `state` would deep-compare the full tree — it self-subscribes instead).
+- [x] **I.2b — Self-subscribing shared panels.** The nine `ResultPanels`
+  that derive from a state slice (EventResult, Oracle, SoloNotice,
+  TravelSurprise, CombatResult, LastCombatResult, LastReport, PendingBattle,
+  ScenarioSummary) now read their data via
+  `useCampaignSelector(selX, deepEqual)` and are wrapped in `memo`, so a
+  parent tab re-render keeps the previous reference and skips the panel
+  unless its own slice changed by value — a real win for the panel-dense
+  Overview tab. This gives `useCampaignSelector` its per-slice consumers
+  beyond the chrome (the I.2 goal). `ActiveSequencePanel` stays prop-driven
+  on purpose: its selector depends on the `scopes` prop, which the
+  version-keyed cache can't memoize safely. All 31 call sites dropped the
+  `state=` prop (typecheck-enumerated; JSX bodies untouched, verified by
+  diff). `test_selector_store.js` +23 assertions (86 total).
 - [ ] **I.3 — Virtualize long lists.** Quest list, event ledger,
   log entries panel, save slots — each can pass 100+ rows. Add
   `react-window` or a tiny custom virtualizer.
-- [ ] **I.4 — Defer heavy panels.** The Story Director support
-  grid (clues / queue / truths / pressure board) and the Hub
-  family's inner grids are not visible on first paint. Wrap with
-  `Suspense` + `React.lazy` so each panel ships only when active.
+- [x] **I.4 — Lazy tab bodies (defer off-screen panels).** Every entry in
+  `CampaignShell`'s `REACT_TAB_COMPONENTS` map is now `React.lazy(() =>
+  import("./tabs/X"))` instead of an eager import, wrapped in a single
+  `<Suspense fallback>` + an `ErrorBoundary` (keyed by active tab) in the
+  `<main>` body. This realizes the vite config's stated "campaign tab
+  families via React.lazy" intent and mirrors the editor's lazy-builder
+  split (Phase E). Result: the campaign **entry chunk 457 KB → 263 KB
+  (−42%)**; each tab is its own chunk and the four multi-export files
+  (WorldMap / Hub / External / Event) resolve to ONE shared family chunk
+  each; vite further hoisted shared async deps (ResultPanels, ZombieScavenge,
+  StoryVn, QuestChain, SequenceCard) into their own on-demand chunks. Total
+  bundle +0.4% (chunk-boundary overhead, within the I.7 budget). The new
+  `ErrorBoundary` (`util/ErrorBoundary.tsx`) keeps a failed chunk (stale hash
+  after a deploy, or a throwing tab) from blanking the whole shell — the new
+  failure mode lazy loading introduces — showing Retry / Reload instead.
+  The Story Director support grid + Hub inner grids ride along inside their
+  now-lazy tab chunks; a finer per-panel `Suspense` split can follow if a
+  single tab chunk ever gets too big.
 - [ ] **I.5 — Service worker fine-tune.** Today the PWA precaches
   every chunk on first visit. With domain-split chunks (combat /
   campaign / minigames / qte / media), shift to a runtime-cache
   policy keyed by mode so a Story-Mode-only player never downloads
   the combat chunk's grid renderer.
-- [ ] **I.6 — Image / asset budget.** Audit the `assets/` and
-  `images/` trees against bundle size. Move large story-mode VN
-  art behind a per-world dynamic import; cap thumbnail sizes;
-  expose a build-time check in `tools/` that fails CI on regressions.
-- [ ] **I.7 — Re-baseline build sizes.** Add `tools/build-size-check.mjs`
-  that compares `dist/assets/*.js` chunks to a committed baseline and
-  fails CI when any chunk grows >5% without an explicit baseline
-  bump. Run on every PR.
+- [~] **I.6 — Image / asset budget.**
+  - [x] **Build-time guard (done).** `build-size-check.mjs` now covers a
+    second domain: the copied media payload (`dist/images`, `dist/audio`,
+    `dist/assets/live2d`, `dist/data` — **239.71 MB / 1,908 files** vs.
+    2.84 MB of code). It enforces a total-asset budget (5%), reports the
+    per-group breakdown, and lists every asset ≥ 2 MB so outliers are
+    visible in CI. The audit it surfaces is stark: a **23 MB** 8192px
+    live2d texture, a **22 MB** moc3, and ~9 MB character PNGs
+    (`haven_mitia.png` 9.4 MB, etc.). Same baseline / re-baseline / CI
+    wiring as I.7.
+  - [ ] **Art optimization (remaining — needs domain input + image
+    tooling).** Downscale the oversized textures/PNGs (an 8192px texture
+    and 9 MB character art are almost certainly mistakes), cap thumbnail
+    sizes, and move large story-mode VN art behind a per-world dynamic
+    import so a player only downloads the art for the world they're in.
+    Deliberately not done blind: re-encoding/removing game art needs the
+    author's call on quality, and the loaders (`<img>` / CSS / live2d)
+    need restructuring per world. The guard above makes the targets
+    concrete and stops the payload growing further meanwhile.
+- [x] **I.7 — Build-size budget guard.** `tools/build-size-check.mjs`
+  compares every `dist/assets/*.{js,css}` chunk (hash stripped to a stable
+  logical key) to the committed `tools/build-size-baseline.json` and exits
+  non-zero when a chunk grows past 5% + a 1 KB floor, or the total grows
+  past 5%, without an explicit baseline bump. New / removed chunks are
+  reported (not failed). `npm run size:check` verifies; `npm run
+  size:baseline` re-baselines after an intended change. Wired into CI:
+  `deploy.yml` runs it after `npm run build` (main), and a new
+  `.github/workflows/ci.yml` runs the full gate (typecheck + test + build
+  + size:check) on every pull request — previously PRs had no CI at all.
+  Baseline captured post-I.1/I.2 (52 chunks, ~2.85 MB; campaign entry
+  457 KB).
 
 ## Phase J — AI-friendly authoring (after H, parallel with I)
 

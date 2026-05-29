@@ -2,6 +2,7 @@
 // plus the cross-world pressure-strip mini.
 
 import { dispatchCampaignAction } from "../actions";
+import { memoDeep } from "../util/memo";
 import type {
   WorldGateCardEntry,
   WorldGateAction,
@@ -25,7 +26,7 @@ export function WorldGatePressureStrip({
   );
 }
 
-export function WorldGateCard({ card }: { card: WorldGateCardEntry }) {
+function WorldGateCardView({ card }: { card: WorldGateCardEntry }) {
   const cls = ["campaign-world-gate-card", `theme-${card.worldId}`];
   if (card.isCurrent) cls.push("is-current");
   if (card.bannerImageUrl) cls.push("has-banner");
@@ -71,6 +72,10 @@ export function WorldGateCard({ card }: { card: WorldGateCardEntry }) {
     </article>
   );
 }
+
+// One card per world in the World Gate grid. Memoized by value so a state
+// change re-renders only the world card whose data actually moved.
+export const WorldGateCard = memoDeep(WorldGateCardView);
 
 function WorldGateActionBtn({ action }: { action: WorldGateAction }) {
   const cls = ["campaign-action"];

@@ -6,6 +6,7 @@
 // typed clearLog wrapper.
 
 import { clearLog } from "../actions";
+import { memoDeep } from "../util/memo";
 import { setActivePanel } from "./bridge";
 import type { RecentLogData, RecentLogEntry } from "./types";
 
@@ -13,7 +14,7 @@ interface Props {
   readonly data: RecentLogData;
 }
 
-export function CampaignRecentLog({ data }: Props) {
+function CampaignRecentLogView({ data }: Props) {
   return (
     <section className="campaign-log-strip">
       <div className="campaign-panel-head">
@@ -43,6 +44,10 @@ export function CampaignRecentLog({ data }: Props) {
     </section>
   );
 }
+
+// Always-mounted chrome: memoized so it skips unless a log entry is added or
+// cleared (the recent-log slice changes).
+export const CampaignRecentLog = memoDeep(CampaignRecentLogView);
 
 function LogLine({ entry }: { entry: RecentLogEntry }) {
   return (

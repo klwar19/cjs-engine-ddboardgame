@@ -58,10 +58,10 @@ export function CampaignStoryHomeTab({ state }: Props) {
       <CurrentArcPanel data={data} />
       <StoryPipelinePanel data={data.storyPipeline} />
       <SyncSummaryPanel data={data.syncSummary} />
-      <SoloNoticePanel state={state} />
-      <ScenarioSummaryPanel state={state} />
-      <PendingBattlePanel state={state} />
-      <CombatResultPanel state={state} />
+      <SoloNoticePanel />
+      <ScenarioSummaryPanel />
+      <PendingBattlePanel />
+      <CombatResultPanel />
     </div>
   );
 }

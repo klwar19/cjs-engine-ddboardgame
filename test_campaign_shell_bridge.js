@@ -176,6 +176,22 @@ for (const id of REGISTERED_IDS) {
      reBare.test(shell) || reQuoted.test(shell));
 }
 
+// Phase I.4 — tab bodies are React.lazy'd so the campaign entry chunk ships
+// only the chrome + active tab. The map must use lazy(import(...)) (not eager
+// imports), the body must be wrapped in <Suspense>, and an ErrorBoundary must
+// catch a failed chunk so a stale hash doesn't blank the whole shell.
+ok('CampaignShell lazy-loads tab components',
+   /lazy\(\(\) => import\("\.\/tabs\//.test(shell));
+ok('CampaignShell no longer eagerly imports tab components',
+   !/^import \{[^}]*\} from "\.\/tabs\//m.test(shell));
+ok('CampaignShell wraps the tab body in <Suspense>', /<Suspense fallback=/.test(shell));
+ok('CampaignShell wraps the tab body in an ErrorBoundary keyed by tab',
+   /<ErrorBoundary key=\{activeTab\}>/.test(shell));
+const ebPath = path.join(__dirname, 'src/campaign/util/ErrorBoundary.tsx');
+ok('ErrorBoundary component exists', fs.existsSync(ebPath));
+ok('ErrorBoundary implements getDerivedStateFromError',
+   /getDerivedStateFromError/.test(fs.readFileSync(ebPath, 'utf8')));
+
 // Phase H.4 — chrome state lives in `src/campaign/chrome-state.ts` and is
 // the single source of truth. boot.ts reads/writes through it.
 const chromePath = path.join(__dirname, 'src/campaign/chrome-state.ts');

@@ -1,6 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type LazyExoticComponent
+} from "react";
 import { createPortal } from "react-dom";
-import { useCampaignState, type CampaignStateSnapshot } from "./store";
+import { useCampaignState, useCampaignSelector, type CampaignStateSnapshot } from "./store";
+import { deepEqual } from "./util/equality";
+import { ErrorBoundary } from "./util/ErrorBoundary";
 import { CampaignHelpPopover } from "./HelpPopover";
 import { dispatchCampaignAction, importSaveFile, type CampaignActionName } from "./actions";
 import { CampaignHeader } from "./shell/Header";
@@ -9,42 +19,13 @@ import { CampaignSubTabs } from "./shell/SubTabs";
 import { CampaignRecentLog } from "./shell/RecentLog";
 import { CampaignCommandRail } from "./shell/CommandRail";
 import { getChromeData, setActiveMode, setActiveTab, setActivePanel } from "./shell/bridge";
-import { CampaignSettingsTab } from "./tabs/CampaignSettingsTab";
-import { CampaignLogsTab } from "./tabs/CampaignLogsTab";
-import { CampaignRosterTab } from "./tabs/CampaignRosterTab";
-import { CampaignWorldMapTab, CampaignWorldActivitiesTab } from "./tabs/CampaignWorldMapTab";
-import {
-  CampaignSideForgeTab,
-  CampaignQuestChainsTab,
-  CampaignOracleForgeTab,
-  CampaignBattleSetsTab,
-  CampaignMapSeedsTab
-} from "./tabs/CampaignHubTabs";
-import {
-  CampaignInventoryTab,
-  CampaignShopsTab,
-  CampaignCraftTab,
-  CampaignCookTab,
-  CampaignFarmTab,
-  CampaignRelationshipsTab
-} from "./tabs/CampaignExternalTabs";
-import { CampaignStoryHomeTab } from "./tabs/CampaignStoryHomeTab";
-import { CampaignWorldGateTab } from "./tabs/CampaignWorldGateTab";
-import { CampaignStoryDirectorTab } from "./tabs/CampaignStoryDirectorTab";
-import { CampaignQuestsPanelTab } from "./tabs/CampaignQuestsPanelTab";
-import { CampaignEventLogTab } from "./tabs/CampaignEventLogTab";
-import { CampaignMinigameTestTab } from "./tabs/CampaignMinigameTestTab";
-import { CampaignOverviewTab } from "./tabs/CampaignOverviewTab";
-import { CampaignStorySummaryTab } from "./tabs/CampaignStorySummaryTab";
-import { CampaignQuestHomeTab } from "./tabs/CampaignQuestHomeTab";
-import {
-  CampaignEventHomeTab,
-  CampaignEventCharacterTab,
-  CampaignEventSpecialTab,
-  CampaignEventSideTab
-} from "./tabs/CampaignEventTab";
-import { CampaignScenariosTab } from "./tabs/CampaignScenariosTab";
-import { CampaignMapsTab } from "./tabs/CampaignMapsTab";
+// Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
+// only the chrome + the active tab; the rest download on first visit (and the
+// PWA precaches them in the background). Multi-export files
+// (CampaignWorldMapTab / CampaignHubTabs / CampaignExternalTabs /
+// CampaignEventTab) are imported via the SAME specifier per export, so each
+// resolves to ONE shared "tab family" chunk. This realizes the vite config's
+// stated intent and mirrors the editor's lazy-builder split (Phase E).
 
 // React Shell: this component owns the campaign chrome
 // (header, mode bar, sub-tabs, recent log strip, command rail, drawer)
@@ -155,48 +136,63 @@ function forwardBridgedChange(e: React.ChangeEvent<HTMLElement>) {
 // Registry of React-owned tabs. Mirrors the vanilla
 // `cui-react-bridge.js` registrations, but instead of a mount-point div
 // and a portal we render the component directly inline.
-const REACT_TAB_COMPONENTS: Readonly<
-  Record<string, (props: { state: CampaignStateSnapshot }) => React.ReactNode>
-> = {
-  settings: (props) => <CampaignSettingsTab {...props} />,
-  logs: (props) => <CampaignLogsTab {...props} />,
-  roster: (props) => <CampaignRosterTab {...props} />,
-  worldMap: (props) => <CampaignWorldMapTab {...props} />,
-  worldActivities: (props) => <CampaignWorldActivitiesTab {...props} />,
-  sideForge: (props) => <CampaignSideForgeTab {...props} />,
-  questChains: (props) => <CampaignQuestChainsTab {...props} />,
-  oracleForge: (props) => <CampaignOracleForgeTab {...props} />,
-  battleSets: (props) => <CampaignBattleSetsTab {...props} />,
-  mapSeeds: (props) => <CampaignMapSeedsTab {...props} />,
-  inventory: (props) => <CampaignInventoryTab {...props} />,
-  shops: (props) => <CampaignShopsTab {...props} />,
-  craft: (props) => <CampaignCraftTab {...props} />,
-  cook: (props) => <CampaignCookTab {...props} />,
-  farm: (props) => <CampaignFarmTab {...props} />,
-  relationships: (props) => <CampaignRelationshipsTab {...props} />,
-  worldGate: (props) => <CampaignWorldGateTab {...props} />,
-  storyHome: (props) => <CampaignStoryHomeTab {...props} />,
-  storySummary: (props) => <CampaignStorySummaryTab {...props} />,
-  storyDirector: (props) => <CampaignStoryDirectorTab {...props} />,
-  questHome: (props) => <CampaignQuestHomeTab {...props} />,
-  quests: (props) => <CampaignQuestsPanelTab {...props} />,
-  eventHome: (props) => <CampaignEventHomeTab {...props} />,
-  eventCharacter: (props) => <CampaignEventCharacterTab {...props} />,
-  eventSpecial: (props) => <CampaignEventSpecialTab {...props} />,
-  eventSide: (props) => <CampaignEventSideTab {...props} />,
-  eventLog: (props) => <CampaignEventLogTab {...props} />,
-  scenarios: (props) => <CampaignScenariosTab {...props} />,
-  maps: (props) => <CampaignMapsTab {...props} />,
-  minigameTest: (props) => <CampaignMinigameTestTab {...props} />,
-  overview: (props) => <CampaignOverviewTab {...props} />
+type TabComponent = LazyExoticComponent<ComponentType<{ state: CampaignStateSnapshot }>>;
+
+const REACT_TAB_COMPONENTS: Readonly<Record<string, TabComponent>> = {
+  settings: lazy(() => import("./tabs/CampaignSettingsTab").then((m) => ({ default: m.CampaignSettingsTab }))),
+  logs: lazy(() => import("./tabs/CampaignLogsTab").then((m) => ({ default: m.CampaignLogsTab }))),
+  roster: lazy(() => import("./tabs/CampaignRosterTab").then((m) => ({ default: m.CampaignRosterTab }))),
+  worldMap: lazy(() => import("./tabs/CampaignWorldMapTab").then((m) => ({ default: m.CampaignWorldMapTab }))),
+  worldActivities: lazy(() => import("./tabs/CampaignWorldMapTab").then((m) => ({ default: m.CampaignWorldActivitiesTab }))),
+  sideForge: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignSideForgeTab }))),
+  questChains: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignQuestChainsTab }))),
+  oracleForge: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignOracleForgeTab }))),
+  battleSets: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignBattleSetsTab }))),
+  mapSeeds: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignMapSeedsTab }))),
+  inventory: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignInventoryTab }))),
+  shops: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignShopsTab }))),
+  craft: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCraftTab }))),
+  cook: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCookTab }))),
+  farm: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignFarmTab }))),
+  relationships: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignRelationshipsTab }))),
+  worldGate: lazy(() => import("./tabs/CampaignWorldGateTab").then((m) => ({ default: m.CampaignWorldGateTab }))),
+  storyHome: lazy(() => import("./tabs/CampaignStoryHomeTab").then((m) => ({ default: m.CampaignStoryHomeTab }))),
+  storySummary: lazy(() => import("./tabs/CampaignStorySummaryTab").then((m) => ({ default: m.CampaignStorySummaryTab }))),
+  storyDirector: lazy(() => import("./tabs/CampaignStoryDirectorTab").then((m) => ({ default: m.CampaignStoryDirectorTab }))),
+  questHome: lazy(() => import("./tabs/CampaignQuestHomeTab").then((m) => ({ default: m.CampaignQuestHomeTab }))),
+  quests: lazy(() => import("./tabs/CampaignQuestsPanelTab").then((m) => ({ default: m.CampaignQuestsPanelTab }))),
+  eventHome: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventHomeTab }))),
+  eventCharacter: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventCharacterTab }))),
+  eventSpecial: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventSpecialTab }))),
+  eventSide: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventSideTab }))),
+  eventLog: lazy(() => import("./tabs/CampaignEventLogTab").then((m) => ({ default: m.CampaignEventLogTab }))),
+  scenarios: lazy(() => import("./tabs/CampaignScenariosTab").then((m) => ({ default: m.CampaignScenariosTab }))),
+  maps: lazy(() => import("./tabs/CampaignMapsTab").then((m) => ({ default: m.CampaignMapsTab }))),
+  minigameTest: lazy(() => import("./tabs/CampaignMinigameTestTab").then((m) => ({ default: m.CampaignMinigameTestTab }))),
+  overview: lazy(() => import("./tabs/CampaignOverviewTab").then((m) => ({ default: m.CampaignOverviewTab })))
 };
+
+// Stable selector identity (module-level) so useCampaignSelector keeps a
+// steady getSnapshot and never re-subscribes. Returns the typed chrome slice,
+// or null before a save is loaded.
+function selectChrome(state: CampaignStateSnapshot | null) {
+  return state ? getChromeData(state) : null;
+}
 
 // ── Shell ─────────────────────────────────────────────────────────
 export function CampaignShell() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
-  const [renderTick, setRenderTick] = useState(0);
+  // `useCampaignState()` re-renders the shell on every committed change —
+  // chrome (tab/mode/panel switches) AND data — because the store listens to
+  // the `campaign:state-tick` / `campaign:rendered` superset signal. The
+  // shell no longer needs its own state-tick listener (removed below).
   const { state } = useCampaignState();
+  // Chrome via a value-equality selector: when only body data changes, this
+  // returns the SAME ChromeData reference, so the memoized chrome strips skip
+  // re-render via their Object.is fast path. When chrome changes, a fresh
+  // object flows and each strip re-renders only if its own slice differs.
+  const chrome = useCampaignSelector(selectChrome, deepEqual);
 
   // One-time boot: enable the React-shell flag BEFORE init() so the
   // vanilla render() doesn't clobber our DOM. After init, subscribe to
@@ -247,22 +243,6 @@ export function CampaignShell() {
     };
   }, []);
 
-  // Bump the tick whenever the engine emits a state change. We listen
-  // for both events: the new `state-tick` (React-shell mode) and the
-  // legacy `rendered` (in case the engine ever falls back).
-  useEffect(() => {
-    const onTick = () => setRenderTick((t) => t + 1);
-    document.addEventListener("campaign:state-tick", onTick, true);
-    document.addEventListener("campaign:rendered", onTick, true);
-    return () => {
-      document.removeEventListener("campaign:state-tick", onTick, true);
-      document.removeEventListener("campaign:rendered", onTick, true);
-    };
-  }, []);
-
-  // Reference the tick so React keeps it as a dep of the read below.
-  void renderTick;
-
   if (bootError) {
     return (
       <div ref={rootRef} id="campaign-root" className="campaign-root">
@@ -279,7 +259,6 @@ export function CampaignShell() {
     );
   }
 
-  const chrome = getChromeData(state);
   if (!chrome) {
     return (
       <div ref={rootRef} id="campaign-root" className="campaign-root">
@@ -313,7 +292,14 @@ export function CampaignShell() {
             onClick={forwardBridgedClick}
             onChange={forwardBridgedChange}
           >
-            {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
+            {/* ErrorBoundary (keyed by tab so a switch clears a stale error)
+                catches a failed lazy chunk; Suspense covers the chunk fetch so
+                the chrome stays painted while a not-yet-loaded tab streams in. */}
+            <ErrorBoundary key={activeTab}>
+              <Suspense fallback={<div className="campaign-loading">Loading…</div>}>
+                {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
+              </Suspense>
+            </ErrorBoundary>
           </main>
           <aside className="campaign-rail">
             <CampaignCommandRail data={chrome.commandRail} />

@@ -69,11 +69,11 @@ export function CampaignMapsTab({ state }: Props) {
         // node_map / grid_map / anything else: CampaignMap renders here.
         <div id="campaign-map-region" />
       )}
-      <TravelSurprisePanel state={state} />
-      <PendingBattlePanel state={state} />
-      <CombatResultPanel state={state} />
-      <LastCombatResultPanel state={state} />
-      <EventResultPanel state={state} />
+      <TravelSurprisePanel />
+      <PendingBattlePanel />
+      <CombatResultPanel />
+      <LastCombatResultPanel />
+      <EventResultPanel />
     </div>
   );
 }

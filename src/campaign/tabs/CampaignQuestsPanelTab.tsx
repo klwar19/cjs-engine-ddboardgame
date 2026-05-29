@@ -61,7 +61,7 @@ function NormalQuestPanel({
           </button>
         </div>
       </div>
-      <SoloNoticePanel state={state} />
+      <SoloNoticePanel />
       <div className="campaign-quest-list">
         {data.activeQuestRows.length ? (
           data.activeQuestRows.map((row) => <QuestRow key={row.id} row={row} />)

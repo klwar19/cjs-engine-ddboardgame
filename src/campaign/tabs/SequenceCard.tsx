@@ -15,6 +15,7 @@
 // tree doesn't reach back into CJS.CampaignSequences for status.
 
 import { dispatchCampaignAction } from "../actions";
+import { memoDeep } from "../util/memo";
 import type {
   SequenceDelivery,
   SequenceAction,
@@ -54,7 +55,7 @@ export function SequenceActionButton({ action }: { action: SequenceAction }) {
 // entries get the chapter-meta chip row, an always-shown summary
 // paragraph, and an additional status chip-row after the delivery
 // state.
-export function SequenceShelfPanel({ shelf }: { shelf: SequenceShelfData }) {
+function SequenceShelfPanelView({ shelf }: { shelf: SequenceShelfData }) {
   const sectionCls = `campaign-panel${shelf.wide ? " campaign-wide-panel" : ""} campaign-sequence-shelf`;
   return (
     <section className={sectionCls}>
@@ -107,3 +108,7 @@ function SequenceShelfCard({ entry }: { entry: SequenceShelfEntry }) {
     </article>
   );
 }
+
+// The chapter/quest/event shelf panel (one card per entry). Memoized by value
+// so it skips re-render unless the shelf data itself changes.
+export const SequenceShelfPanel = memoDeep(SequenceShelfPanelView);

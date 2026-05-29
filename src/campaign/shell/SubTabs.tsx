@@ -5,6 +5,7 @@
 // (maps/roster/relationships/logs/settings), otherwise the tabs for
 // the active mode. onClick routes through `setActiveTab`.
 
+import { memoDeep } from "../util/memo";
 import { setActiveTab } from "./bridge";
 import type { SubTabButton } from "./types";
 
@@ -14,7 +15,7 @@ interface Props {
   readonly isUtility: boolean;
 }
 
-export function CampaignSubTabs({ tabs, activeTab, isUtility }: Props) {
+function CampaignSubTabsView({ tabs, activeTab, isUtility }: Props) {
   if (!tabs.length) return null;
   return (
     <nav className={`campaign-subtabs ${isUtility ? "is-utility" : ""}`}>
@@ -30,3 +31,7 @@ export function CampaignSubTabs({ tabs, activeTab, isUtility }: Props) {
     </nav>
   );
 }
+
+// Always-mounted chrome: memoized over all three props (tabs list + active id
+// + utility flag) so it skips re-render unless the sub-tab strip changes.
+export const CampaignSubTabs = memoDeep(CampaignSubTabsView);
