@@ -1057,12 +1057,16 @@ in three clusters — these are the item-3/4 work:
      `_renderConsequencePreview` / `_renderFlavorTrail` /
      `_consequenceSummary` delegators to `CampaignUIInternal.HubTab`).
      Consumer: `action-handlers/story-director-modals.ts` (beat modal).
-   - `renderQuestRunTaskHtml` → `_renderQuestRunTask` +
-     `_questTaskDescriptor` / `_questCellFromRef` / `_questObjectiveByKinds`
-     / `_renderQuestMini` / `_triggerLabel` / `_questNextObjective` /
-     `_questObjectiveDone` / `_isQuestResolved` / `_activeQuestById` /
-     `_activeRunQuestId`. Consumer: `tabs/data/resultPanels.ts`
-     (ScenarioSummary task strip).
+   - [x] `renderQuestRunTaskHtml` → **ported to TS** (Phase H.4). The
+     `_renderQuestRunTask` HTML emitter + `_questTaskDescriptor` /
+     `_questCellFromRef` became `buildQuestRunTask` / `questTaskDescriptor`
+     / `questCellFromRef` in `tabs/data/resultPanels.ts`; the
+     ScenarioSummary panel renders the typed `questRunTask` discriminated
+     union as JSX (no more `dangerouslySetInnerHTML` for it). The shared
+     predicates reuse `state-helpers.ts` (`activeRunQuestId` /
+     `isQuestResolved` / `questNextObjective` / `questObjectiveDone`). Dead
+     orphans removed alongside: `_questObjectiveByKinds`, `_activeQuestById`,
+     `_triggerLabel`. (`_renderQuestMini` belongs to the drawer cluster.)
    - `renderPartySheetHtml` → `_renderPortraitHero` + `_renderRosterMember`
      — **permanent island** (icon-heavy, shares the roster cluster with
      `cui-party-tab.js`). Consumer: `roster-modal-pickers.ts` (party-sheet

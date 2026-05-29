@@ -834,32 +834,8 @@ window.CJS.CampaignUI = (() => {
   // `_renderQuestRunTask`, and `_scenarioObjectiveMeta` stay (the
   // bridge calls them).
 
-  function _renderQuestRunTask(state, run, scenario) {
-    const questId = _activeRunQuestId(run, scenario);
-    const quest = questId ? state.quests?.[questId] : null;
-    if (!quest) return '';
-    if (_isQuestResolved(quest)) {
-      return `
-        <div class="campaign-quest-phase campaign-scenario-task">
-          <span>Quest Resolved</span>
-          <strong>${_esc(quest.title || quest.id)}</strong>
-          <small>End scenario when ready</small>
-        </div>
-      `;
-    }
-    const objectives = quest.objectives || [];
-    const nextObjective = _questNextObjective(quest);
-    const idx = Math.max(0, objectives.findIndex((entry) => entry.id === nextObjective?.id));
-    const phase = objectives.length ? `Phase ${idx + 1}/${objectives.length}` : 'Quest Task';
-    const task = _questTaskDescriptor(quest, scenario);
-    return `
-      <div class="campaign-quest-phase campaign-scenario-task">
-        <span>${_esc(phase)}</span>
-        <strong>${_esc(nextObjective?.label || task.label || 'Follow the quest route')}</strong>
-        <small>${_esc(task.location || 'Use the map branches to resolve it')}</small>
-      </div>
-    `;
-  }
+  // `_renderQuestRunTask` ported to TS in Phase H.4 — see
+  // `buildQuestRunTask` in `src/campaign/tabs/data/resultPanels.ts`.
 
   // _renderPendingBattle / _renderTravelSurprise — Phase G.4 port.
   // Bodies moved to `src/campaign/tabs/ResultPanels.tsx`. Typed
@@ -1188,27 +1164,19 @@ window.CJS.CampaignUI = (() => {
   // the HTML _renderQuestObjective, is gone). The JSX QuestRow renders
   // objective pulse hints from `getQuestRowData`'s typed pulseHints.
 
-  function _triggerLabel(trigger = {}) {
-    const bits = [];
-    if (trigger.outcome) bits.push(_label(trigger.outcome));
-    if (trigger.skillIds?.length) bits.push(trigger.skillIds.map(_label).join(' / '));
-    if (trigger.statusIds?.length) bits.push(`Status ${trigger.statusIds.map(_label).join(' / ')}`);
-    if (trigger.defeatedTypes?.length) bits.push(`Defeat ${trigger.defeatedTypes.map(_label).join(' / ')}`);
-    if (trigger.defeatedMonsterIds?.length) bits.push(`Defeat ${trigger.defeatedMonsterIds.map(_label).join(' / ')}`);
-    const tags = trigger.requiresTags || trigger.requiresAnyTags || trigger.anyTags || [];
-    if (tags.length) bits.push((Array.isArray(tags) ? tags : [tags]).map(_label).join(' / '));
-    if (trigger.onlyPlayerActionTags?.length) bits.push(`Only ${trigger.onlyPlayerActionTags.map(_label).join(' / ')}`);
-    return bits.length ? `Auto: ${bits.join(' + ')}` : 'Auto progress available';
-  }
+  // `_triggerLabel` removed in Phase H.4 — it was orphaned once the HTML
+  // quest-objective renderer ported in G.17. The TS copy is `triggerLabel`
+  // in `src/campaign/tabs/data/questRow.ts` (+ `questChain.ts`).
 
   // `_renderPendingBattleContext` and `_renderCombatPulseSummary`
   // moved to `resultPanels.ts` in Phase H.4 alongside the data builders
   // that consume them.
 
-  function _questNextObjective(quest = {}) {
-    const objectives = quest.objectives || [];
-    return objectives.find((entry) => !_questObjectiveDone(entry)) || objectives[0] || null;
-  }
+  // `_questNextObjective` / `_questObjectiveDone` / `_isQuestResolved`
+  // ported to TS in Phase H.4 (`src/campaign/util/state-helpers.ts` as
+  // `questNextObjective` / `questObjectiveDone` / `isQuestResolved`).
+  // Their last JS callers (`_renderQuestRunTask`, the dead
+  // `_questObjectiveByKinds` / `_activeQuestById`) are gone too.
 
   // `_scenarioObjectiveMeta` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/scenarioShared.ts`).
@@ -1216,14 +1184,6 @@ window.CJS.CampaignUI = (() => {
   // `_questMiniGameObjective` and `_questStatusClass` moved to TS in
   // Phase H.4 (`src/campaign/util/state-helpers.ts`). No remaining JS
   // callers (the only one was JS `getQuestRowData`, also ported).
-
-  function _questObjectiveDone(obj = {}) {
-    return Number(obj.current || 0) >= Math.max(1, Number(obj.required || 1));
-  }
-
-  function _isQuestResolved(quest = {}) {
-    return ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'));
-  }
 
   // `_runQuestPill` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/scenarioShared.ts`). Shared by the TS
@@ -1476,101 +1436,23 @@ window.CJS.CampaignUI = (() => {
   // launcher's helpers; the module installs window.CJS.CampaignQuestLauncher
   // for the still-in-JS callers (`_startQuestChainScenario`,
   // `_startQuestRunFromOffer`, `_openQuestModal`'s "starting run" branch).
-  // _questTaskDescriptor / _questCellFromRef stay in JS (render-side):
-  // the launcher has its own TS copies, but `_renderQuestRunTask` (the
-  // still-in-JS scenario task strip) reads the same shape for display.
-  // These collapse into the launcher's TS module when the renderer
-  // ports (H.4).
-
-  function _questTaskDescriptor(quest = {}, scenario = null) {
-    const objectives = quest.objectives || [];
-    const objective = _questNextObjective(quest);
-    const objectiveIndex = Math.max(0, objectives.findIndex((entry) => entry.id === objective?.id));
-    const map = (scenario?.mapId && CS().getScenarioMapById?.(scenario.mapId)) || CS().getActiveMap?.();
-    const nodeId = Array.isArray(quest.linkedMapNodes)
-      ? (quest.linkedMapNodes[objectiveIndex] || quest.linkedMapNodes[quest.linkedMapNodes.length - 1])
-      : null;
-    if (nodeId) {
-      const node = Runner().findNode?.(map, nodeId);
-      return {
-        label: objective?.label || quest.title || 'Quest task',
-        objectiveId: objective?.id || null,
-        nodeId,
-        location: node?.title || _label(nodeId)
-      };
-    }
-
-    const linkedCells = Array.isArray(quest.linkedMapCells) ? quest.linkedMapCells : [];
-    const cellRef = linkedCells[objectiveIndex] || linkedCells[linkedCells.length - 1] || null;
-    const cell = _questCellFromRef(map, cellRef);
-    if (cell) {
-      return {
-        label: objective?.label || quest.title || 'Quest task',
-        objectiveId: objective?.id || null,
-        cell: { x: Number(cell.x), y: Number(cell.y) },
-        location: cell.title || `${cell.x},${cell.y}`
-      };
-    }
-
-    const success = (scenario?.successConditions || [])[0];
-    if (success?.type === 'reach_node') {
-      const node = Runner().findNode?.(map, success.nodeId);
-      return {
-        label: objective?.label || quest.title || 'Quest task',
-        objectiveId: objective?.id || null,
-        nodeId: success.nodeId,
-        location: node?.title || _label(success.nodeId)
-      };
-    }
-    if (success?.type === 'reach_cell') {
-      const found = Runner().findCell?.(map, success.x, success.y);
-      return {
-        label: objective?.label || quest.title || 'Quest task',
-        objectiveId: objective?.id || null,
-        cell: { x: Number(success.x), y: Number(success.y) },
-        location: found?.title || `${success.x},${success.y}`
-      };
-    }
-    return {
-      label: objective?.label || quest.title || 'Quest task',
-      objectiveId: objective?.id || null,
-      location: ''
-    };
-  }
-
-  function _questCellFromRef(map, ref) {
-    if (!map || ref == null) return null;
-    if (Array.isArray(ref)) return Runner().findCell?.(map, ref[0], ref[1]) || { x: ref[0], y: ref[1] };
-    if (typeof ref === 'object') {
-      if (ref.id) return (map.cells || []).find((cell) => cell.id === ref.id) || null;
-      if (ref.x != null && ref.y != null) return Runner().findCell?.(map, ref.x, ref.y) || ref;
-    }
-    if (typeof ref === 'string') return (map.cells || []).find((cell) => cell.id === ref) || null;
-    return null;
-  }
+  // `_questTaskDescriptor` / `_questCellFromRef` ported to TS in Phase H.4
+  // as `questTaskDescriptor` / `questCellFromRef` in
+  // `src/campaign/tabs/data/resultPanels.ts` (alongside `buildQuestRunTask`).
 
   // _questHubEvent / _questHarvest ported to action-handlers/quest.ts (H.3).
 
   // _questMiniGame ported to action-handlers/minigame.ts (H.3).
 
-  function _questObjectiveByKinds(quest = {}, kinds = []) {
-    const set = new Set(kinds);
-    return (quest.objectives || []).find((objective) => !_questObjectiveDone(objective) && set.has(objective.kind)) || null;
-  }
-
-  // _questHarvestLoot ported to action-handlers/quest.ts (H.3).
+  // `_questObjectiveByKinds` removed in Phase H.4 — orphaned (its last
+  // caller ported long ago). `_questHarvestLoot` ported to quest.ts (H.3).
 
   // _questCheck / _questHandIn / _questAnswer ported to
   // action-handlers/quest.ts (H.3).
 
-  function _activeQuestById(questId) {
-    const quest = CS().getState()?.quests?.[questId];
-    return quest && !_isQuestResolved(quest) ? quest : null;
-  }
-
-  function _activeRunQuestId(run, scenario) {
-    return run?.questId || scenario?.source?.questId || null;
-  }
+  // `_activeQuestById` removed in Phase H.4 — orphaned. `_activeRunQuestId`
+  // ported to TS (`src/campaign/util/state-helpers.ts::activeRunQuestId`),
+  // consumed by `buildQuestRunTask` + the scenario-shared run-pill builder.
 
   // `_questMapForm` / `_questMapType` removed in Phase H.4 — their only
   // callers (the manual quest builder) moved to TS; the canonical copies
@@ -2320,12 +2202,10 @@ window.CJS.CampaignUI = (() => {
     // (G.11b kept this renderer as HTML). Exposed for action-handlers/
     // story-director-modals.ts; goes away when the renderer ports.
     renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
-    // ScenarioSummary's questRunTask uses _questTaskDescriptor (still in JS —
-    // reads CampaignState.getScenarioMapById + ScenarioRunner.findNode/findCell
-    // against the active scenario map) to produce one HTML block per active
-    // run. The TS data builder (`src/campaign/tabs/data/resultPanels.ts`)
-    // embeds it via this bridge; goes away when the descriptor ports.
-    renderQuestRunTaskHtml: (state, run, scenario) => _renderQuestRunTask(state, run, scenario) || '',
+    // `renderQuestRunTaskHtml` removed in Phase H.4 — `_renderQuestRunTask`
+    // + `_questTaskDescriptor` + `_questCellFromRef` ported to TS as
+    // `buildQuestRunTask` in `src/campaign/tabs/data/resultPanels.ts`. The
+    // ScenarioSummary panel renders the typed `questRunTask` data as JSX.
     // `getShapePillsData` removed in Phase H.4 — the TS port at
     // `src/campaign/tabs/data/scenarioShared.ts::shapePillsData` is now
     // the single source of truth. The inspect-scenario action handler

@@ -9,7 +9,14 @@
 
 import { esc, lootLine, label } from "../../util/cui-utils";
 import { renderInlinePurpose, purposeKeyForCard, type CardLike } from "../../util/cui-controls";
-import { pendingSoloHookCard, type SoloHookStateShape } from "../../util/state-helpers";
+import {
+  pendingSoloHookCard,
+  activeRunQuestId,
+  isQuestResolved,
+  questNextObjective,
+  type SoloHookStateShape,
+  type QuestObjective
+} from "../../util/state-helpers";
 import type { CampaignStateSnapshot } from "../../store";
 import {
   runQuestPill,
@@ -354,9 +361,18 @@ export interface ScenarioSummaryRun {
   readonly battlesMax: number;
   readonly roamerCount: number;
   readonly objective: ScenarioObjective | null;
-  readonly questRunTaskHtml: string;
+  readonly questRunTask: QuestRunTaskData | null;
   readonly hasGeneratedScenario: boolean;
 }
+
+// Phase H.4 — typed replacement for the old `renderQuestRunTaskHtml`
+// bridge. The ScenarioSummary panel renders this directly as JSX
+// (`ResultPanels.tsx`), so the closure-private `_renderQuestRunTask`
+// HTML emitter + its `_questTaskDescriptor` / `_questCellFromRef`
+// sub-helpers in campaign-ui.js are gone.
+export type QuestRunTaskData =
+  | { readonly kind: "resolved"; readonly title: string }
+  | { readonly kind: "task"; readonly phase: string; readonly label: string; readonly location: string };
 
 interface ScenarioSummaryNoRun {
   readonly hasRun: false;
@@ -746,11 +762,10 @@ export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattl
 }
 
 // Phase H.4 inline port — pure state + scenario read. The questRunTask
-// HTML chunk still comes from a JS-side bridge (`renderQuestRunTaskHtml`)
-// because its sub-renderer `_questTaskDescriptor` reads
-// `ScenarioRunner.findNode/findCell` + `CampaignState.getScenarioMapById`
-// against the active scenario map — those stay in JS as the render-side
-// descriptor.
+// data builder (`buildQuestRunTask`) reads `ScenarioRunner.findNode/findCell`
+// + `CampaignState.getScenarioMapById/getActiveMap` against the active
+// scenario map. This is the TS home of the old closure-private
+// `_renderQuestRunTask` / `_questTaskDescriptor` / `_questCellFromRef`.
 interface ScenarioSummaryRunInput {
   readonly scenarioId?: string;
   readonly questId?: string;
@@ -777,17 +792,149 @@ interface ScenarioRecord {
   readonly generated?: boolean;
 }
 
+// The scenario fields the quest-run-task descriptor reads, beyond the
+// `ScenarioRecord` display fields above. `getScenarioById` returns a
+// record carrying these too (mapId / successConditions / source.questId).
+interface ScenarioForTask {
+  readonly mapId?: string;
+  readonly source?: { readonly questId?: string };
+  readonly successConditions?: ReadonlyArray<{
+    readonly type?: string;
+    readonly nodeId?: string;
+    readonly x?: number;
+    readonly y?: number;
+  }>;
+}
+
+interface MapCellLike {
+  readonly id?: string;
+  readonly x?: number;
+  readonly y?: number;
+  readonly title?: string;
+}
+interface ScenarioMapLike {
+  readonly cells?: ReadonlyArray<MapCellLike>;
+}
+interface MapNodeLike {
+  readonly title?: string;
+}
+
+interface QuestForTask {
+  readonly title?: string;
+  readonly id?: string;
+  readonly status?: string;
+  readonly objectives?: readonly QuestObjective[];
+  readonly linkedMapNodes?: readonly string[];
+  readonly linkedMapCells?: readonly unknown[];
+  readonly [key: string]: unknown;
+}
+
 interface CampaignStateSurface {
   readonly getScenarioById?: (id: string) => ScenarioRecord | null | undefined;
+  readonly getScenarioMapById?: (id: string) => ScenarioMapLike | null | undefined;
+  readonly getActiveMap?: () => ScenarioMapLike | null | undefined;
+}
+
+interface ScenarioRunnerSurface {
+  readonly findNode?: (map: unknown, nodeId: string) => MapNodeLike | null | undefined;
+  readonly findCell?: (map: unknown, x: number, y: number) => MapCellLike | null | undefined;
 }
 
 interface SummaryCjs {
   readonly CampaignState?: CampaignStateSurface;
-  readonly CampaignUI?: { readonly renderQuestRunTaskHtml?: (state: unknown, run: unknown, scenario: unknown) => string };
+  readonly ScenarioRunner?: ScenarioRunnerSurface;
 }
 
 function summaryCjs(): SummaryCjs {
   return (window as unknown as { CJS?: SummaryCjs }).CJS ?? {};
+}
+
+// `_questCellFromRef` — resolves a linked-cell reference (array pair,
+// `{id}` / `{x,y}` object, or cell id string) against the scenario map.
+function questCellFromRef(map: ScenarioMapLike | null, ref: unknown): MapCellLike | null {
+  if (!map || ref == null) return null;
+  const Runner = summaryCjs().ScenarioRunner;
+  if (Array.isArray(ref)) {
+    return Runner?.findCell?.(map, Number(ref[0]), Number(ref[1])) || { x: Number(ref[0]), y: Number(ref[1]) };
+  }
+  if (typeof ref === "object") {
+    const r = ref as { id?: string; x?: number; y?: number };
+    if (r.id) return (map.cells || []).find((c) => c.id === r.id) || null;
+    if (r.x != null && r.y != null) return Runner?.findCell?.(map, r.x, r.y) || r;
+  }
+  if (typeof ref === "string") return (map.cells || []).find((c) => c.id === ref) || null;
+  return null;
+}
+
+// `_questTaskDescriptor` — the next objective's display label + the map
+// location (node title / cell coords) it routes to. Only `label` +
+// `location` are consumed by the render path (the launcher keeps its own
+// fuller copy in `action-handlers/quest-launcher.ts`).
+function questTaskDescriptor(
+  quest: QuestForTask,
+  scenario: ScenarioForTask | null
+): { readonly label: string; readonly location: string } {
+  const c = summaryCjs();
+  const CS = c.CampaignState;
+  const Runner = c.ScenarioRunner;
+  const objectives = quest.objectives || [];
+  const objective = questNextObjective(quest);
+  const objectiveIndex = Math.max(0, objectives.findIndex((entry) => entry.id === objective?.id));
+  const map = (scenario?.mapId && CS?.getScenarioMapById?.(scenario.mapId)) || CS?.getActiveMap?.() || null;
+  const baseLabel = objective?.label || quest.title || "Quest task";
+
+  const linkedNodes = Array.isArray(quest.linkedMapNodes) ? quest.linkedMapNodes : null;
+  const nodeId = linkedNodes ? (linkedNodes[objectiveIndex] || linkedNodes[linkedNodes.length - 1]) : null;
+  if (nodeId) {
+    const node = Runner?.findNode?.(map, nodeId);
+    return { label: baseLabel, location: node?.title || label(nodeId) };
+  }
+
+  const linkedCells = Array.isArray(quest.linkedMapCells) ? quest.linkedMapCells : [];
+  const cellRef = linkedCells[objectiveIndex] || linkedCells[linkedCells.length - 1] || null;
+  const cell = questCellFromRef(map, cellRef);
+  if (cell) {
+    return { label: baseLabel, location: cell.title || `${cell.x},${cell.y}` };
+  }
+
+  const success = (scenario?.successConditions || [])[0];
+  if (success?.type === "reach_node") {
+    const node = Runner?.findNode?.(map, String(success.nodeId));
+    return { label: baseLabel, location: node?.title || label(String(success.nodeId)) };
+  }
+  if (success?.type === "reach_cell") {
+    const found = Runner?.findCell?.(map, Number(success.x), Number(success.y));
+    return { label: baseLabel, location: found?.title || `${success.x},${success.y}` };
+  }
+  return { label: baseLabel, location: "" };
+}
+
+// `_renderQuestRunTask` — the scenario-task strip in the ScenarioSummary
+// panel. Returns null when the run isn't quest-bound or the quest is
+// missing; resolved quests get a "Quest Resolved" card.
+function buildQuestRunTask(
+  state: CampaignStateSnapshot,
+  run: ScenarioSummaryRunInput,
+  scenario: (ScenarioForTask & ScenarioRecord) | null
+): QuestRunTaskData | null {
+  const questId = activeRunQuestId(run, scenario);
+  const quests = (state as { quests?: Record<string, QuestForTask> }).quests;
+  const quest = questId ? quests?.[questId] : null;
+  if (!quest) return null;
+  if (isQuestResolved(quest)) {
+    return { kind: "resolved", title: String(quest.title || quest.id || "") };
+  }
+  const objectives = quest.objectives || [];
+  const nextObjective = questNextObjective(quest);
+  const idx = Math.max(0, objectives.findIndex((entry) => entry.id === nextObjective?.id));
+  const phase = objectives.length ? `Phase ${idx + 1}/${objectives.length}` : "Quest Task";
+  const task = questTaskDescriptor(quest, scenario);
+  return {
+    kind: "task",
+    phase,
+    label: nextObjective?.label || task.label || "Follow the quest route",
+    location: task.location || "Use the map branches to resolve it"
+  };
 }
 
 export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSummaryData | null {
@@ -825,7 +972,7 @@ export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSu
           meta: scenarioObjectiveMeta(run, objective)
         }
       : null,
-    questRunTaskHtml: c.CampaignUI?.renderQuestRunTaskHtml?.(state, run, scenario) || "",
+    questRunTask: buildQuestRunTask(state, run, scenario as (ScenarioForTask & ScenarioRecord) | null),
     hasGeneratedScenario: !!scenario?.generated
   };
 }

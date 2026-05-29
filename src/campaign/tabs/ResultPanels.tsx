@@ -367,6 +367,7 @@ export function ScenarioSummaryPanel({
 }
 
 function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
+  const task = data.questRunTask;
   return (
     <section className="campaign-panel">
       <div className="campaign-panel-head">
@@ -392,7 +393,23 @@ function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
           <small>{data.objective.meta}</small>
         </div>
       )}
-      <HtmlBridge html={data.questRunTaskHtml} className="campaign-quest-run-task-bridge" />
+      {task && (
+        <div className="campaign-quest-phase campaign-scenario-task">
+          {task.kind === "resolved" ? (
+            <>
+              <span>Quest Resolved</span>
+              <strong>{task.title}</strong>
+              <small>End scenario when ready</small>
+            </>
+          ) : (
+            <>
+              <span>{task.phase}</span>
+              <strong>{task.label}</strong>
+              <small>{task.location}</small>
+            </>
+          )}
+        </div>
+      )}
       <div className="campaign-control-stack">
         <div className="campaign-control-group">
           <div className="campaign-control-title">Run Tools</div>
