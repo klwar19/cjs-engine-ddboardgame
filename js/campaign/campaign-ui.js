@@ -5600,10 +5600,13 @@ window.CJS.CampaignUI = (() => {
   // `getOracleData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/resultPanels.ts`).
 
-  // Typed snapshot of one quest for the React QuestRow component.
-  // Used by QuestHome (active rows, capped) and QuestsPanel (active +
-  // resolved rows). Replaces the per-row HTML bridge with structured
-  // data so the row body can render as JSX.
+  // `getQuestRowData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questRow.ts`). The closure-private helpers
+  // (`_questStatusClass`, `_questMiniGameObjective`, `_activeRunQuestId`,
+  // `_triggerLabel`, `_questScenarioPill`) stay because the still-JS
+  // quest data builders (`_zombieScavengeTrackerData`, `getQuestPanelData`,
+  // `getQuestHomeData`) still call the JS row builder for now; their
+  // own ports swap to the typed TS version.
   function getQuestRowData(quest = {}, opts = {}) {
     const objectives = quest.objectives || [];
     const nextObjective = opts.resolved ? null : _questNextObjective(quest);
@@ -6353,7 +6356,6 @@ window.CJS.CampaignUI = (() => {
     getStoryHomeData,
     getWorldGateData,
     getStoryDirectorData,
-    getQuestRowData,
     getEventResultData,
     getScenarioSummaryData,
     getActiveSequenceData,
