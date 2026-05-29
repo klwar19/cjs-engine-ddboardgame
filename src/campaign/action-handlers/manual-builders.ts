@@ -1,21 +1,15 @@
-// manual-builders.ts — Phase H.3 action handlers for the big modal
-// builders that still live in JS (manual event builder, manual quest
-// builder, GM override, manual scene builder).
+// manual-builders.ts — action handlers for the big modal builders.
 //
-// The two remaining closures are large (266 / 475 lines) with many
-// sub-helpers, and the render-side data builders still consume them
-// (e.g. _openQuestModal shares `_randomizedQuestTemplate` +
-// `_inferObjectiveKind` + `_questBuilderMiniGame` with quest data
-// flows; `_openManualEventBuilder` shares the manual-event sub-
-// helpers — keyword / battle / rumor / character / layer / tags —
-// with event-builder data flows). Porting them in H.3 would
-// duplicate that surface; instead, each action handler is a thin
-// dispatcher that calls the closure through the CampaignUI bridge
-// (openManualEventBuilder / openQuestModal). H.4 ports the closure +
-// its data builders together, and the bridge entries become redundant.
-// The manual scene builder ported to TS (`scene-builder.ts`) and the
-// GM override modal ported to TS (`gm-override.ts`), so story-manual-note
-// and gm-override / gm-member-override call them directly.
+// One closure still lives in JS: the manual quest builder
+// (`_openQuestModal`, 475 lines). It shares `_randomizedQuestTemplate` +
+// `_inferObjectiveKind` + `_questBuilderMiniGame` with quest data flows,
+// so add-quest stays a thin dispatcher that calls it through the
+// CampaignUI.openQuestModal bridge until H.4 ports the closure + its data
+// builders together. The other three modals ported to TS in H.4:
+//   • manual event builder → `event-builder.ts` (custom-event /
+//     oracle-to-event-builder call openManualEventBuilder directly)
+//   • GM override → `gm-override.ts` (gm-override / gm-member-override)
+//   • manual scene builder → `scene-builder.ts` (story-manual-note)
 //
 // custom-event → manual event builder (no prefill).
 // oracle-to-event-builder → manual event builder seeded from the
@@ -30,13 +24,13 @@
 import { cs, mod, toast } from "./context";
 import { openManualSceneBuilder, type SceneBuilderStage } from "./scene-builder";
 import { openGmOverride } from "./gm-override";
+import { openManualEventBuilder } from "./event-builder";
 
 interface StoryDirectorModule {
   snapshot?: () => { stage?: SceneBuilderStage } | null | undefined;
 }
 
 interface CampaignUiBridge {
-  openManualEventBuilder?: (prefill?: Record<string, unknown>) => void;
   openQuestModal?: (prefill?: Record<string, unknown>) => void;
 }
 
@@ -61,7 +55,7 @@ function truncate(text: string, max = 160): string {
 // ── custom-event / oracle-to-event-builder ─────────────────────────
 
 export function customEvent(): void {
-  bridge()?.openManualEventBuilder?.();
+  openManualEventBuilder();
 }
 
 // Mirrors `_oracleToEventBuilder`. Seeds the manual event builder
@@ -74,7 +68,7 @@ export function oracleToEventBuilder(): void {
     return;
   }
   const seed = oracle.text || oracle.prompt || "";
-  bridge()?.openManualEventBuilder?.({
+  openManualEventBuilder({
     title: "Oracle Event",
     source: "oracle",
     scope: "event",
