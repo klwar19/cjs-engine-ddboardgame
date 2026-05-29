@@ -924,8 +924,9 @@ finishes the authoring loop:
 | After H.4 manual scene + branch builder to TS | 348 |
 | After H.4 GM override modal to TS | 338 |
 | After H.4 manual event builder to TS | 316 |
+| After H.4 manual quest builder to TS | 293 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 316 KB. **Phase H.3 is
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 293 KB. **Phase H.3 is
 complete**: 246/246 actions live in the TS registry, and the
 `_handleAction` switch is empty (kept as a defensive no-op with
 the port history in comments). **Phase H.4 in progress** —
@@ -984,14 +985,12 @@ dispatch path. Still bridged HTML: the roster detail row
 (`cui-party-tab.js`, 742 lines — icon-heavy, action surface
 registry-backed), the shared side-content primitives
 (`cui-hub-tab.js`, 162 lines), the world map SVG, the intentionally-
-vanilla external-module tabs + maps tab. Still in JS: one big
-modal builder body (`_openQuestModal` 475 lines) — bridge-wrapped from
-TS so the action contract is registry-backed even though the body shares
-sub-helpers (`_randomizedQuestTemplate` / `_inferObjectiveKind` /
-`_questBuilderMiniGame`) with the still-JS quest data flows. (The manual
-scene builder ported to `action-handlers/scene-builder.ts`, the GM
-override modal to `action-handlers/gm-override.ts`, and the manual event
-builder to `action-handlers/event-builder.ts` in H.4.)
+vanilla external-module tabs + maps tab. **All four big modal builders
+are now TS** (Phase H.4): the manual event builder
+(`action-handlers/event-builder.ts`), manual quest builder
+(`quest-builder.ts`), GM override (`gm-override.ts`), and manual scene
+builder (`scene-builder.ts`). `manual-builders.ts` is now a pure set of
+thin TS dispatchers — no CampaignUI modal bridge remains.
 
 **Remaining H.4 work:**
 1. [x] **Story-context cache + AI story-prompt cluster → TS (done).**
@@ -1012,8 +1011,9 @@ builder to `action-handlers/event-builder.ts` in H.4.)
    `renderAiStoryContextData` bridges are gone. Also removed the
    orphaned `_storySummaryEntries` / `_storySummaryTextFromRecord`
    (dead since `getStorySummaryData` ported).
-2. Port the big modal builder bodies and their shared helpers —
-   currently bridge-wrapped from TS.
+2. [x] **Port the big modal builder bodies and their shared helpers
+   (done).** All four moved to `src/campaign/action-handlers/` and call
+   directly from `manual-builders.ts` (no CampaignUI bridge remains).
    - [x] **Manual scene + branch builder (done).**
      `_openManualSceneBuilder` (127) + `_saveAsManualNote` →
      `src/campaign/action-handlers/scene-builder.ts`. `story-manual-note`
@@ -1036,7 +1036,13 @@ builder to `action-handlers/event-builder.ts` in H.4.)
      (`battle-pool.ts`) + clipboard (`copy.ts`) directly; rumor list via
      `CampaignUIInternal.HubTab.openRumors`. The dead `_openRumors`
      wrapper was removed too.
-   - [ ] `_openQuestModal` (475 lines) + quest-builder sub-helpers.
+   - [x] **Manual quest builder (done).** `_openQuestModal` (475) + its
+     4 helpers (`_questBuilderMiniGame`, `_parseMiniGameConversation`,
+     `_randomizedQuestTemplate`, `_inferObjectiveKind`) + the preset
+     tables → `src/campaign/action-handlers/quest-builder.ts`. `add-quest`
+     calls `openQuestModal` directly; the bridge entry is gone. Imports
+     `questMapForm` / `questMapType` from `quest.ts` (the canonical TS
+     copies); the dead JS `_questMapForm` / `_questMapType` were removed.
 3. Port the still-JS bridges that wrap legacy render code:
    `renderStoryDirectorCardHtml`, `renderQuestRunTaskHtml`,
    `renderPartySheetHtml`, `getMainBody`, `renderDrawerBody`. Each

@@ -1,15 +1,16 @@
-// manual-builders.ts — action handlers for the big modal builders.
-//
-// One closure still lives in JS: the manual quest builder
-// (`_openQuestModal`, 475 lines). It shares `_randomizedQuestTemplate` +
-// `_inferObjectiveKind` + `_questBuilderMiniGame` with quest data flows,
-// so add-quest stays a thin dispatcher that calls it through the
-// CampaignUI.openQuestModal bridge until H.4 ports the closure + its data
-// builders together. The other three modals ported to TS in H.4:
+// manual-builders.ts — thin action-handler dispatchers for the four big
+// modal builders. As of Phase H.4 all four modal bodies live in TS, so
+// these handlers call them directly (no CampaignUI bridge hop remains):
 //   • manual event builder → `event-builder.ts` (custom-event /
-//     oracle-to-event-builder call openManualEventBuilder directly)
+//     oracle-to-event-builder)
+//   • manual quest builder → `quest-builder.ts` (add-quest)
 //   • GM override → `gm-override.ts` (gm-override / gm-member-override)
 //   • manual scene builder → `scene-builder.ts` (story-manual-note)
+//
+// This module survives as the seam between the action names and those
+// modal entry points (e.g. oracle-to-event-builder seeds the event
+// builder from state.lastOracle; story-manual-note reads the current
+// Story Director stage first).
 //
 // custom-event → manual event builder (no prefill).
 // oracle-to-event-builder → manual event builder seeded from the
@@ -25,13 +26,10 @@ import { cs, mod, toast } from "./context";
 import { openManualSceneBuilder, type SceneBuilderStage } from "./scene-builder";
 import { openGmOverride } from "./gm-override";
 import { openManualEventBuilder } from "./event-builder";
+import { openQuestModal } from "./quest-builder";
 
 interface StoryDirectorModule {
   snapshot?: () => { stage?: SceneBuilderStage } | null | undefined;
-}
-
-interface CampaignUiBridge {
-  openQuestModal?: (prefill?: Record<string, unknown>) => void;
 }
 
 interface UtilsModule {
@@ -40,10 +38,6 @@ interface UtilsModule {
 
 interface CuiInternal {
   Utils?: UtilsModule;
-}
-
-function bridge(): CampaignUiBridge | undefined {
-  return mod<CampaignUiBridge>("CampaignUI");
 }
 
 function truncate(text: string, max = 160): string {
@@ -81,7 +75,7 @@ export function oracleToEventBuilder(): void {
 // ── add-quest ──────────────────────────────────────────────────────
 
 export function addQuest(): void {
-  bridge()?.openQuestModal?.();
+  openQuestModal();
 }
 
 // ── gm-override / gm-member-override ───────────────────────────────
