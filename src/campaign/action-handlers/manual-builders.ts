@@ -2,18 +2,19 @@
 // builders that still live in JS (manual event builder, manual quest
 // builder, GM override, manual scene builder).
 //
-// Each closure is large (266 / 475 / 174 / 127 lines) with many
-// sub-helpers, and the render-side data builders still consume them
+// The three remaining closures are large (266 / 475 / 174 lines) with
+// many sub-helpers, and the render-side data builders still consume them
 // (e.g. _openQuestModal shares `_randomizedQuestTemplate` +
 // `_inferObjectiveKind` + `_questBuilderMiniGame` with quest data
 // flows; `_openManualEventBuilder` shares the manual-event sub-
 // helpers — keyword / battle / rumor / character / layer / tags —
 // with event-builder data flows). Porting them in H.3 would
 // duplicate that surface; instead, each action handler is a thin
-// dispatcher that calls the closure through the new CampaignUI
-// bridge (openManualEventBuilder / openQuestModal / openGmOverride /
-// openManualSceneBuilder). H.4 ports the closure + its data
-// builders together, and the bridge entries become redundant.
+// dispatcher that calls the closure through the CampaignUI bridge
+// (openManualEventBuilder / openQuestModal / openGmOverride). H.4 ports
+// the closure + its data builders together, and the bridge entries
+// become redundant. The manual scene builder already ported to TS
+// (`scene-builder.ts`), so story-manual-note calls it directly.
 //
 // custom-event → manual event builder (no prefill).
 // oracle-to-event-builder → manual event builder seeded from the
@@ -26,16 +27,16 @@
 //   Director stage as the default chapter slot).
 
 import { cs, mod, toast } from "./context";
+import { openManualSceneBuilder, type SceneBuilderStage } from "./scene-builder";
 
 interface StoryDirectorModule {
-  snapshot?: () => { stage?: { id?: string } } | null | undefined;
+  snapshot?: () => { stage?: SceneBuilderStage } | null | undefined;
 }
 
 interface CampaignUiBridge {
   openManualEventBuilder?: (prefill?: Record<string, unknown>) => void;
   openQuestModal?: (prefill?: Record<string, unknown>) => void;
   openGmOverride?: (defaultTarget?: string) => void;
-  openManualSceneBuilder?: (opts?: { stage?: Record<string, unknown> }) => void;
 }
 
 interface UtilsModule {
@@ -98,8 +99,8 @@ export function gmOverride(memberId?: string): void {
 
 // Mirrors `_manualStoryNote`. Reads the current Story Director stage
 // (so the new manual scene defaults to the right chapter slot) and
-// opens the scene builder.
+// opens the scene builder (ported to TS in Phase H.4 — direct call).
 export function manualStoryNote(): void {
   const stage = mod<StoryDirectorModule>("CampaignStoryDirector")?.snapshot?.()?.stage || {};
-  bridge()?.openManualSceneBuilder?.({ stage });
+  openManualSceneBuilder({ stage });
 }
