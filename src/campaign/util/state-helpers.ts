@@ -21,10 +21,37 @@ export function isQuestResolved(quest: QuestLike = {}): boolean {
   return status === "complete" || status === "completed" || status === "failed";
 }
 
+// `_questStatusClass` — CSS class for the quest status pill.
+export function questStatusClass(quest: QuestLike = {}): string {
+  const status = String(quest.status || "active");
+  if (status === "failed") return "is-failed";
+  if (isQuestResolved(quest)) return "is-complete";
+  return "is-active";
+}
+
 export interface QuestObjective {
+  readonly id?: string;
+  readonly label?: string;
+  readonly kind?: string;
   readonly current?: number;
   readonly required?: number;
+  readonly minigame?: unknown;
+  readonly miniGame?: unknown;
+  readonly minigameId?: string;
+  readonly progressTriggers?: ReadonlyArray<QuestObjectiveTrigger>;
   readonly [key: string]: unknown;
+}
+
+export interface QuestObjectiveTrigger {
+  readonly outcome?: string;
+  readonly skillIds?: readonly string[];
+  readonly statusIds?: readonly string[];
+  readonly defeatedTypes?: readonly string[];
+  readonly defeatedMonsterIds?: readonly string[];
+  readonly requiresTags?: readonly string[] | string;
+  readonly requiresAnyTags?: readonly string[] | string;
+  readonly anyTags?: readonly string[] | string;
+  readonly onlyPlayerActionTags?: readonly string[];
 }
 
 // `_questObjectiveDone` — required defaults to 1 so a zero/missing
@@ -39,6 +66,38 @@ export function questObjectiveDone(obj: QuestObjective = {}): boolean {
 export function questNextObjective(quest: { objectives?: readonly QuestObjective[] } = {}): QuestObjective | null {
   const objectives = quest.objectives || [];
   return objectives.find((entry) => !questObjectiveDone(entry)) || objectives[0] || null;
+}
+
+// `_questMiniGameObjective` — first incomplete objective with a
+// mini-game / puzzle binding (or `kind === 'minigame'/'puzzle'`).
+export function questMiniGameObjective(quest: { objectives?: readonly QuestObjective[] } = {}): QuestObjective | null {
+  return (quest.objectives || []).find((objective) => {
+    if (questObjectiveDone(objective)) return false;
+    const kind = String(objective.kind || "").toLowerCase();
+    return !!(
+      objective.minigame ||
+      objective.miniGame ||
+      objective.minigameId ||
+      kind === "minigame" ||
+      kind === "puzzle"
+    );
+  }) || null;
+}
+
+// `_activeRunQuestId` — derives the quest id bound to an active scenario
+// run (or its template scenario `source.questId`). Returns null when
+// the run isn't quest-bound.
+export interface ActiveRunLike {
+  readonly questId?: string;
+}
+export interface ActiveScenarioLike {
+  readonly source?: { readonly questId?: string };
+}
+export function activeRunQuestId(
+  run: ActiveRunLike | null | undefined,
+  scenario: ActiveScenarioLike | null | undefined
+): string | null {
+  return run?.questId || scenario?.source?.questId || null;
 }
 
 // `_pendingSoloHookCard` — resolves the pending solo-hook card from

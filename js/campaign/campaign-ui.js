@@ -148,7 +148,8 @@ window.CJS.CampaignUI = (() => {
   let _drawerEl = null;
   let _drawerBackdropEl = null;
   let _bootIncompatibleNotice = null;
-  let _mgTestLevels = {};
+  // _mgTestLevels moved to TS module-level state in
+  // src/campaign/tabs/data/minigameTest.ts (Phase H.4).
   const _storyContextCache = {
     globalIndex: { status: 'idle', data: null, promise: null },
     allWorld: { status: 'idle', text: '', promise: null },
@@ -398,16 +399,8 @@ window.CJS.CampaignUI = (() => {
     ].filter(Boolean).join('|');
   }
 
-  function _currencyAmounts(state) {
-    const currencies = state.currencies || {};
-    const worldGold = `${state.currentWorld || 'haven'}_gold`;
-    const goldId = currencies[worldGold] != null ? worldGold
-      : Object.keys(currencies).find((id) => String(id).toLowerCase().endsWith('_gold') || String(id).toLowerCase() === 'gold');
-    return {
-      gold: goldId ? Number(currencies[goldId] || 0) : 0,
-      jp: Number(currencies.jp || currencies.jester_points || 0)
-    };
-  }
+  // `_currencyAmounts` moved to TS in Phase H.4
+  // (`src/campaign/shell/chromeData.ts`). No remaining JS callers.
 
   // _renderWorldGate — Phase F.12 port. Body moved to
   // `src/campaign/tabs/CampaignWorldGateTab.tsx`. Typed data flows
@@ -415,152 +408,12 @@ window.CJS.CampaignUI = (() => {
   // through `_renderWorldGateCard` (kept here because the bridge calls
   // it) until the per-card banner / button logic ports.
 
-  // _renderWorldGateCard / _renderPressureStripMini removed in Phase
-  // G.13. The React `WorldGateCard` + `WorldGatePressureStrip`
-  // (`src/campaign/tabs/WorldGateCard.tsx`) render from the typed
-  // data produced below.
-  function _worldGateCardData(worldId, world, state) {
-    const def = _worldMenuDef(worldId);
-    const isCurrent = worldId === state.currentWorld;
-    const bannerImage = def.bannerImage || world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || '';
-    const bannerImageUrl = bannerImage ? String(_cssVarAssetUrl(bannerImage) || bannerImage) : '';
-    const mapCount = DS().getAllAsArray('travelMaps').filter((map) => map.world === worldId).length;
-    const activityPacks = DS().getAllAsArray('worldActivityPacks').filter((pack) => pack.world === worldId);
-    const activities = activityPacks.flatMap((pack) => pack.activities || []);
-    const activityTypes = Array.from(new Set(activities.map((activity) => activity.type || 'activity'))).slice(0, 4);
-    const status = isCurrent ? 'Loaded' : (def.status || 'Available');
-    const targetTab = def.defaultTab || (mapCount ? 'worldMap' : 'storyHome');
-    const primary = isCurrent
-      ? _worldGateActionData({
-          action: 'open-world-content',
-          label: def.openLabel || 'Open Content',
-          hint: def.openHint || 'Open this world content',
-          kind: 'primary',
-          data: { tab: targetTab, mode: def.defaultMode || _modeForTab(targetTab) }
-        })
-      : _worldGateActionData({
-          action: 'travel-world-card',
-          label: def.enterLabel || `Enter ${world.displayName || worldId}`,
-          hint: def.enterHint || 'Switch world and load its content menu',
-          kind: 'primary',
-          data: { worldId, targetTab }
-        });
-    const secondary = [];
-    if (isCurrent) {
-      if (mapCount) {
-        secondary.push(_worldGateActionData({
-          action: 'open-world-content', label: 'Map Movement', hint: 'Open this world travel map',
-          data: { tab: 'worldMap', mode: 'activities' }
-        }));
-      }
-      if (activities.length) {
-        secondary.push(_worldGateActionData({
-          action: 'open-world-content', label: 'Activities', hint: 'Open this world activities',
-          data: { tab: 'worldActivities', mode: 'activities' }
-        }));
-      }
-      if (worldId === 'bazaar') {
-        secondary.push(_worldGateActionData({
-          action: 'open-world-content', label: 'Arena / Auction', hint: 'Open Bazaar activities',
-          data: { tab: 'worldActivities', mode: 'activities' }
-        }));
-      }
-    }
-    return {
-      worldId: String(worldId),
-      title: String(def.title || world.displayName || worldId),
-      kicker: String(def.kicker || world.tone || worldId),
-      summary: String(def.summary || 'World content placeholder.'),
-      features: Array.isArray(def.features) ? def.features.map(String) : [],
-      bannerImageUrl,
-      isCurrent,
-      status: String(status),
-      mapCount,
-      activitiesCount: activities.length,
-      activityTypeLabels: activityTypes.map(_label),
-      devNote: String(def.devNote || ''),
-      primaryAction: primary,
-      secondaryActions: secondary
-    };
-  }
-
-  function _worldGateActionData(opts = {}) {
-    return {
-      action: String(opts.action || ''),
-      label: String(opts.label || ''),
-      hint: String(opts.hint || ''),
-      kind: String(opts.kind || ''),
-      data: Object.freeze(Object.fromEntries(Object.entries(opts.data || {}).map(([k, v]) => [k, String(v)])))
-    };
-  }
-
-  function _pressureStripChips(state) {
-    const pressures = Object.values(state.crossWorld?.pressures || {});
-    return pressures.slice(0, 3).map((p) => ({
-      id: String(p.id || ''),
-      title: String(p.title || p.id || ''),
-      value: Number(p.value || 0)
-    }));
-  }
-
-  function _worldMenuDef(worldId) {
-    const defs = {
-      earth: {
-        title: 'Earth',
-        kicker: 'Daily life / emotional anchor',
-        summary: 'Earth loads ordinary-life story scenes, the Zhonghai visual city map, hospital support item pumping, diary/recap memories, and social scenes.',
-        features: ['Story', 'VN city map', 'Hospital', 'Diaries'],
-        bannerImage: 'images/story-mode/earth/earth-theme.webp',
-        defaultMode: 'activities',
-        defaultTab: 'worldMap',
-        openLabel: 'Open Earth Map',
-        enterLabel: 'Enter Earth',
-        devNote: 'Future buttons can add Riverside, Research Block, and Old Town without changing the renderer.'
-      },
-      haven: {
-        title: 'Haven',
-        kicker: 'Main fantasy campaign',
-        summary: 'Haven keeps the existing story, quests, Pocket Haven, and scenario/node-map flow. This does not use the new Earth/Zombie visual map style.',
-        features: ['Main story', 'Quests', 'Pocket Haven', 'Scenario maps'],
-        defaultMode: 'story',
-        defaultTab: 'storyHome',
-        openLabel: 'Open Haven Story',
-        enterLabel: 'Return to Haven'
-      },
-      zombie: {
-        title: 'Zombie World',
-        kicker: 'Scavenge / build pressure loop',
-        summary: 'Zombie world loads the Last Light visual ruined-city map, scavenging tasks, safehouse building, medical salvage, and future survival pressure events.',
-        features: ['Story', 'Ruined city map', 'Scavenge', 'Build'],
-        bannerImage: 'images/story-mode/zombie/zombie-bin-burnice-horizontal.png',
-        defaultMode: 'activities',
-        defaultTab: 'worldMap',
-        openLabel: 'Open Zombie Map',
-        enterLabel: 'Enter Zombie World',
-        devNote: 'Future areas are already stubbed: Harbor Quarantine, Farm Belt, and Military Shelter.'
-      },
-      bazaar: {
-        title: 'Bazaar',
-        kicker: 'Arena / auction testbed',
-        summary: 'Bazaar loads optional activity systems first: arena matches, auction lots, prize boards, and future economy experiments.',
-        features: ['Arena', 'Auction House', 'Prize Board', 'Rewards'],
-        bannerImage: 'images/story-mode/bazaar/bazaar-theme.png',
-        defaultMode: 'activities',
-        defaultTab: 'worldMap',
-        openLabel: 'Open Bazaar',
-        enterLabel: 'Enter Bazaar',
-        devNote: 'Use Lantern Arena and Glass Gavel House as the first test locations.'
-      }
-    };
-    return defs[worldId] || {
-      title: DS().get('worlds', worldId)?.displayName || worldId,
-      kicker: 'World content',
-      summary: 'Custom world content. Add a travel map, activity pack, or story sequence to expand this card.',
-      features: ['Custom'],
-      defaultMode: 'story',
-      defaultTab: 'storyHome'
-    };
-  }
+  // `_worldGateCardData`, `_worldGateActionData`, `_pressureStripChips`,
+  // and `_worldMenuDef` (with the per-world card table) moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/worldGate.ts`). The TS port owns
+  // the canonical world card config; `action-handlers/travel.ts`
+  // imports `worldMenuDef` directly so the `travel-world-card` handler
+  // can resolve a world's default tab without going through CampaignUI.
 
   function _modeForTab(tabId) {
     return _Chrome().modeForTab(tabId);
@@ -659,41 +512,8 @@ window.CJS.CampaignUI = (() => {
   // HTML strings via that bridge until each helper ports.
 
   // _renderChoiceConsequencePanel removed in Phase G.12. Typed
-  // `_choiceConsequenceData(state)` returns the alignment snapshot
-  // for the React `ChoiceConsequencePanel` component
-  // (`src/campaign/tabs/StoryHomePanels.tsx`).
-  function _choiceConsequenceData(state) {
-    const Align = window.CJS.CampaignAlignment;
-    if (!Align?.snapshot) return null;
-    const snap = Align.snapshot(state, { actor: 'bin', world: state.currentWorld });
-    const axes = Object.entries(Align.AXES || {});
-    return {
-      axes: axes.map(([axis, meta]) => {
-        const current = Number(snap.axes?.[axis] || 0);
-        const world = Number(snap.worldAxes?.[axis] || 0);
-        const range = snap.range?.[axis] || { min: current, max: current };
-        return {
-          id: String(axis),
-          label: String(meta.label || axis),
-          currentValue: current,
-          worldValue: world,
-          rangeMin: Number(range.min || 0),
-          rangeMax: Number(range.max || 0)
-        };
-      }),
-      recent: (snap.recent || []).slice(0, 3).map((entry) => ({
-        label: String(entry.label || entry.choiceId || 'Choice'),
-        description: String(Align.describeDeltas?.(entry.deltas) || 'Tracked')
-      })),
-      potential: (snap.potential || []).slice(0, 4).map((entry) => ({
-        label: String(entry.label || entry.choiceId || 'Future'),
-        description: String(Align.describeDeltas?.(entry.deltas) || ''),
-        summary: String(entry.summary || entry.sequenceId || ''),
-        reachable: entry.reachable !== false
-      })),
-      potentialCount: (snap.potential || []).length
-    };
-  }
+  // `_choiceConsequenceData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyHome.ts`).
 
   // _renderStorySummary — Phase F.5 port. Body moved to
   // `src/campaign/tabs/CampaignStorySummaryTab.tsx`. Typed data flows
@@ -706,54 +526,12 @@ window.CJS.CampaignUI = (() => {
   // renders via `_renderZombieScavengeHome` (returned as one HTML
   // string in the bridge data) until its own JSX port.
 
-  // _renderZombieScavengeHome / _renderGachaHomeHero /
-  // _renderWorldActivityPreviewCard removed in Phase G.17. The
-  // zombie Quest Home now reads typed `getQuestHomeData(state).zombie`
-  // and renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`.
-  function _zombieScavengeHomeData(state) {
-    const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
-    const scavenge = activities.filter((activity) => activity.type === 'scavenge');
-    const build = activities.filter((activity) => activity.type === 'build');
-    const pressures = Object.values(state.crossWorld?.pressures || {})
-      .filter((pressure) => String(pressure.id || '').startsWith('zombie_'));
-    return {
-      scavengeCount: scavenge.length,
-      buildCount: build.length,
-      pressureCount: pressures.length,
-      hasRun: !!state.activeScenarioRun,
-      heroBackdropUrl: (() => {
-        // Inlined `_worldHomeBackdropUrl` (the TS port lives in
-        // resultPanels/eventLog data files; one remaining JS caller).
-        const world = CS().getCurrentWorld?.() || {};
-        const theme = world.storyModeTheme || {};
-        const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
-        return backdrop ? _cssVarAssetUrl(backdrop) : null;
-      })(),
-      scavenge: scavenge.map((activity) => _worldActivityPreviewData(activity, 'Scavenge route')),
-      build: build.map((activity) => _worldActivityPreviewData(activity, 'Build project')),
-      pressures: pressures.map((pressure) => ({
-        id: String(pressure.id || ''),
-        title: String(pressure.title || pressure.id || ''),
-        value: Number(pressure.value || 0)
-      }))
-    };
-  }
-
-  function _worldActivitiesFor(worldId) {
-    return DS().getAllAsArray('worldActivityPacks')
-      .filter((pack) => pack.world === worldId)
-      .flatMap((pack) => pack.activities || []);
-  }
-
-  function _worldActivityPreviewData(activity = {}, kicker = 'Activity') {
-    return {
-      id: String(activity.id || activity.name || activity.title || ''),
-      kicker: String(kicker),
-      title: String(activity.title || activity.name || activity.id || ''),
-      summary: String(activity.summary || activity.description || ''),
-      rewardText: String(activity.rewardText || 'No reward text yet.')
-    };
-  }
+  // _zombieScavengeHomeData / _zombieScavengeTrackerData /
+  // _worldActivitiesFor / _worldActivityPreviewData / _questPaperKind
+  // moved to TS in Phase H.4 (`src/campaign/tabs/data/zombie.ts` +
+  // `src/campaign/tabs/data/questHome.ts`). The zombie Quest Home + Quests
+  // tracker now read their typed data directly from
+  // `getQuestHomeData(state).zombie` / `getQuestPanelData(state).zombie`.
 
   // _renderMiniGameTest — Phase F.3 port. Body moved to
   // `src/campaign/tabs/CampaignMinigameTestTab.tsx`. Typed data flows
@@ -767,26 +545,13 @@ window.CJS.CampaignUI = (() => {
 
   // _mgTestPlay ported to action-handlers/mg-test.ts (H.3).
 
-  function _questPaperKind(entry = {}) {
-    const kind = String(entry.kind || '').toLowerCase();
-    const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
-    if (kind.includes('daily') || tags.includes('daily')) return 'daily';
-    if (kind.includes('story') || kind.includes('chapter') || kind.includes('one_time') || tags.includes('story_quest') || tags.includes('chapter_repeat')) return 'story';
-    return 'normal';
-  }
-
   // _renderEventTypeTab — Phase F.7 port. Body moved to
   // `src/campaign/tabs/CampaignEventTab.tsx`. Typed data flows through
   // `getEventTabData(kind, state)`. `_renderEventHome`,
   // `_renderEventHomeClean`, and `_renderEventFileButtons` were dead
   // (only used by `_renderEventTypeTab`) and have been removed.
-  function _eventFileKind(entry = {}) {
-    const kind = String(entry.kind || '').toLowerCase();
-    const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
-    if (kind.includes('special') || tags.includes('special_event')) return 'special';
-    if (kind.includes('side') || tags.includes('side_story')) return 'side';
-    return 'character';
-  }
+  // `_eventFileKind` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/eventTab.ts`).
 
   // _renderEventLog / _renderEventLogEntry — Phase F.2 port. The body
   // moved to `src/campaign/tabs/CampaignEventLogTab.tsx` (JSX). Typed
@@ -808,219 +573,19 @@ window.CJS.CampaignUI = (() => {
     return _esc(state.storyMode?.currentChapterLabel || state.currentChapter || 1);
   }
 
-  function _storySequenceSummary(entry = {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    const meta = Seq?.storyMeta?.(entry, state.currentWorld) || {};
-    return meta.summary?.short || meta.summary?.default || entry.description || '';
-  }
+  // `_storySequenceSummary`, `_storySequenceActionLabel`,
+  // `_storySequenceMetaChips`, `_storySequenceStatusLabel`,
+  // `_sequenceDeliveryData`, `_sequenceActionData`,
+  // `_sequenceShelfEntryData`, `getSequenceShelfData`,
+  // `_sequenceDeliveryStatus`, `_sequenceDeliveryBlocked`,
+  // `_sequenceDeliveryNote` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/sequence.ts`). The shelf + per-entry data
+  // builders are now consumed directly by the React tabs (storyHome,
+  // event tab) — no remaining JS callers.
 
-  function _storySequenceActionLabel(entry = {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    const status = Seq?.storyStatus?.(entry.id, state, state.currentWorld);
-    if (status?.deliveryBlocked) return 'In Update';
-    return status?.replayOnly ? 'Read' : 'Start';
-  }
-
-  function _storySequenceMetaChips(entry = {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    const meta = Seq?.storyMeta?.(entry, state.currentWorld) || {};
-    const bits = [];
-    if (meta.chapterLabel) bits.push(`Chapter ${meta.chapterLabel}`);
-    if (meta.partLabel) bits.push(meta.partLabel);
-    return bits;
-  }
-
-  function _storySequenceStatusLabel(entry = {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    const status = Seq?.storyStatus?.(entry.id, state, state.currentWorld);
-    if (!status?.record) return '';
-    return status.defaulted ? 'Defaulted' : (status.completed ? 'Played' : 'Read');
-  }
-
-  function _sequenceDeliveryData(entry = {}, scope = 'story') {
-    const status = _sequenceDeliveryStatus(entry, scope);
-    const note = _sequenceDeliveryNote(entry, scope);
-    if (!status || status === 'ready') {
-      return note ? { statusLabel: null, note: String(note) } : null;
-    }
-    return {
-      statusLabel: _label(status),
-      note: String(note || '')
-    };
-  }
-
-  function _sequenceActionData(entry = {}, scope = 'story') {
-    const blocked = _sequenceDeliveryBlocked(entry, scope);
-    const label = scope === 'story' ? _storySequenceActionLabel(entry) : (blocked ? 'In Update' : 'Start');
-    return {
-      entryId: String(entry.id || ''),
-      label: String(label),
-      blocked: !!blocked
-    };
-  }
-
-  function _sequenceShelfEntryData(entry = {}, scope = 'story') {
-    const isStory = scope === 'story';
-    const hasNativeSummary = entry.summary?.short || entry.summary?.default || entry.description;
-    const summary = isStory ? _storySequenceSummary(entry) : (hasNativeSummary ? String(entry.summary?.short || entry.summary?.default || entry.description) : '');
-    return {
-      id: String(entry.id || ''),
-      scope,
-      kindLabel: _label(entry.kind || scope),
-      title: String(entry.title || entry.id || ''),
-      summary: String(summary),
-      storyMetaChips: isStory ? _storySequenceMetaChips(entry) : [],
-      storyStatusLabel: isStory ? _storySequenceStatusLabel(entry) : '',
-      tags: (entry.tags || []).slice(0, 4).map((tag) => _label(tag)),
-      delivery: _sequenceDeliveryData(entry, scope),
-      action: _sequenceActionData(entry, scope)
-    };
-  }
-
-  function getSequenceShelfData(scope, options = {}, state = CS().getState()) {
-    if (!state) return null;
-    const Seq = window.CJS.CampaignSequences;
-    const entries = Seq?.list?.(scope) || [];
-    const title = options.title || (scope === 'story' ? 'Story Files' : scope === 'event' ? 'Event Files' : 'Quest Papers');
-    const note = options.note || 'Small authored files that can be played one node at a time.';
-    return {
-      scope,
-      wide: !!options.wide,
-      title: String(title),
-      note: String(note),
-      entries: entries.map((entry) => _sequenceShelfEntryData(entry, scope))
-    };
-  }
-
-  function _sequenceDeliveryStatus(entry = {}, scope = 'story') {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    if (scope === 'story') {
-      return Seq?.storyStatus?.(entry.id, state, state.currentWorld)?.deliveryStatus
-        || Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryStatus
-        || 'ready';
-    }
-    return Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryStatus || 'ready';
-  }
-
-  function _sequenceDeliveryBlocked(entry = {}, scope = 'story') {
-    return _sequenceDeliveryStatus(entry, scope) === 'in_update' || _sequenceDeliveryStatus(entry, scope) === 'blocked';
-  }
-
-  function _sequenceDeliveryNote(entry = {}, scope = 'story') {
-    const Seq = window.CJS.CampaignSequences;
-    const state = CS().getState() || {};
-    if (scope === 'story') {
-      return Seq?.storyStatus?.(entry.id, state, state.currentWorld)?.deliveryNote
-        || Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryNote
-        || '';
-    }
-    return Seq?.storyMeta?.(entry, state.currentWorld)?.deliveryNote || '';
-  }
-
-  function _storyPipelineSnapshot(state = CS().getState() || {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const active = Seq?.active?.(state);
-    const summary = _storySummaryEntries(state);
-    const anchorId = active?.scope === 'story'
-      ? active.sequenceId
-      : (summary[summary.length - 1]?.sequenceId || (Seq?.list?.('story', state.currentWorld) || [])[0]?.id || null);
-    const meta = anchorId ? (Seq?.storyMeta?.(anchorId, state.currentWorld) || {}) : {};
-    return {
-      anchorId,
-      anchorTitle: meta.title || '',
-      nextCandidates: meta.nextCandidates || [],
-      syncSummary: meta.syncSummary || [],
-      syncTitle: meta.title || meta.partLabel || meta.sequenceId || ''
-    };
-  }
-
-  // _renderChapterTreePanel / _renderChapterTreeNode removed in
-  // Phase G.12. The React `ChapterTreePanel`
-  // (`src/campaign/tabs/StoryHomePanels.tsx`) renders the tree from
-  // typed `chapterTree` data produced by `_chapterTreeData(state)`.
-  function _chapterTreeData(state) {
-    const Seq = window.CJS.CampaignSequences;
-    if (!Seq?.chapterTree) return null;
-    let tree = Seq.chapterTree(state.currentWorld, state);
-    if (!tree) tree = { roots: [], byPartId: {}, nodes: [] };
-    const Branch = window.CJS.CampaignStoryBranch;
-    if (Branch?.applyToTree) tree = Branch.applyToTree(tree, state.currentWorld);
-    if (!tree.roots?.length) return null;
-    const route = Seq.currentRouteChoices(state, state.currentWorld) || [];
-    const routeText = route.length
-      ? route.map((entry) => entry.partLabel || entry.title || entry.sequenceId).join(' → ')
-      : 'No story parts played yet.';
-    return {
-      routeText: String(routeText),
-      routeCount: route.length,
-      roots: tree.roots.map((node) => _chapterTreeNodeData(node, 0))
-    };
-  }
-
-  function _chapterTreeNodeData(node = {}, depth = 0) {
-    const status = node.status || {};
-    const eligibility = node.eligibility || { eligible: true, reasons: [] };
-    const blocked = !!status.deliveryBlocked;
-    const completed = !!status.completed;
-    const defaulted = !!status.defaulted;
-    const replayOnly = !!status.replayOnly;
-    const locked = !eligibility.eligible && !replayOnly;
-    let stateLabel = 'Ready';
-    let stateClass = 'is-ready';
-    if (blocked) { stateLabel = 'In Update'; stateClass = 'is-update'; }
-    else if (completed) { stateLabel = 'Played'; stateClass = 'is-played'; }
-    else if (defaulted) { stateLabel = 'Defaulted'; stateClass = 'is-defaulted'; }
-    else if (locked) { stateLabel = 'Locked'; stateClass = 'is-locked'; }
-    return {
-      id: String(node.id || ''),
-      partLabel: String(node.partLabel || node.orderKey || node.id || ''),
-      title: String(node.title || ''),
-      routeLabel: String(node.routeLabel || (node.routeKey ? _label(node.routeKey) : '')),
-      stateLabel,
-      stateClass,
-      summaryShort: String(node.meta?.summary?.short || ''),
-      lockReasons: locked ? (eligibility.reasons || []).join(' | ') : '',
-      nextCandidates: Array.isArray(node.nextCandidates) ? node.nextCandidates.map(String) : [],
-      blocked,
-      locked,
-      replayOnly,
-      depth,
-      children: Array.isArray(node.children)
-        ? node.children.map((child) => _chapterTreeNodeData(child, depth + 1))
-        : []
-    };
-  }
-
-  // _renderStoryPipelinePanel / _renderSyncSummaryPanel removed in
-  // Phase G.12. The React `StoryPipelinePanel` / `SyncSummaryPanel`
-  // (`src/campaign/tabs/StoryHomePanels.tsx`) render from typed
-  // data produced by the helpers below.
-  function _storyPipelinePanelData(pipeline = {}) {
-    return {
-      anchorTitle: String(pipeline.anchorTitle || ''),
-      nextCandidates: (Array.isArray(pipeline.nextCandidates) ? pipeline.nextCandidates : [])
-        .filter(Boolean)
-        .map(String)
-    };
-  }
-
-  function _syncSummaryData(title = 'State Sync', lines = [], sourceTitle = '') {
-    return {
-      title: String(title),
-      sourcePill: sourceTitle ? _shortenPanelLabel(sourceTitle) : '',
-      lines: (Array.isArray(lines) ? lines : []).filter(Boolean).map(String)
-    };
-  }
-
-  function _shortenPanelLabel(value = '') {
-    const text = String(value || '');
-    return text.length > 24 ? `${text.slice(0, 22)}..` : text;
-  }
+  // `_storyPipelineSnapshot`, `_chapterTreeData`, `_chapterTreeNodeData`,
+  // `_storyPipelinePanelData`, `_syncSummaryData`, `_shortenPanelLabel`
+  // moved to TS in Phase H.4 (`src/campaign/tabs/data/storyHome.ts`).
 
   function _storySummaryEntries(state = CS().getState() || {}) {
     const Seq = window.CJS.CampaignSequences;
@@ -1084,22 +649,11 @@ window.CJS.CampaignUI = (() => {
   // board, side flow, clues, queue, truths) still render as HTML
   // strings via that bridge until each helper ports.
 
-  function _storyTheme(state = {}) {
-    const world = CS().getCurrentWorld?.() || {};
-    const cfg = world.storyModeTheme || {};
-    const currentWorld = state.currentWorld || world.id || '';
-    return {
-      id: cfg.id || 'default',
-      className: cfg.className || '',
-      backdrop: cfg.backdrop || '',
-      bannerImage: cfg.bannerImage || cfg.backdrop || '',
-      bannerVideo: cfg.bannerVideo || (currentWorld === 'haven' ? 'assets/videos/story-mode/banners/3%20f%C3%ACght%20chimera_reduced.mp4' : ''),
-      accent: cfg.accent || world.color || '#76d3b1',
-      danger: cfg.danger || '#ef6666',
-      motif: cfg.motif || world.tone || 'story',
-      worldName: world.displayName || state.currentWorld || 'World'
-    };
-  }
+  // `_storyTheme`, `_storyVnHeroData`, `_storyActionBtnData`,
+  // `_storyNextStepData`, `_videoTypeFromPath`, `_storyNextStep`,
+  // `_storyStageRailData`, `_storyDirectorCardData` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/storyShared.ts` +
+  // `src/campaign/tabs/data/storyDirector.ts`).
 
   // _storyThemeStyle removed in Phase G — the React story tabs set the
   // theme CSS vars (`--story-backdrop/accent/danger`) via typed
@@ -1107,50 +661,8 @@ window.CJS.CampaignUI = (() => {
 
   // _renderStoryVnHero removed in Phase G.11a. The React
   // `StoryVnHero` (`src/campaign/tabs/StoryDirector.tsx`) renders
-  // the hero from the typed `vnHero` data produced by
-  // `_storyVnHeroData` below.
-  function _storyVnHeroData({ state = {}, pack = null, stage = null, next = {}, theme = {} }) {
-    const phase = state.phase || {};
-    const video = theme.bannerVideo || '';
-    return {
-      worldName: String(theme.worldName || state.currentWorld || 'World'),
-      chapterLabel: String(state.storyMode?.currentChapterLabel || state.currentChapter || 1),
-      phaseLabel: String(phase.number || 1),
-      motif: String(theme.motif || 'story'),
-      title: String(pack?.name || `${theme.worldName || 'World'} Story Mode`),
-      summary: String(pack?.summary || 'Story Mode is ready for this world theme, but no authored story pack is loaded yet.'),
-      bannerVideoUrl: video ? String(_cssVarAssetUrl(video) || video) : '',
-      bannerVideoType: video ? _videoTypeFromPath(video) : '',
-      next: _storyNextStepData(next)
-    };
-  }
-
-  function _storyActionBtnData(opts = {}) {
-    return {
-      action: String(opts.action || ''),
-      label: String(opts.label || ''),
-      hint: String(opts.hint || ''),
-      kind: String(opts.kind || ''),
-      disabled: !!opts.disabled,
-      data: Object.freeze(Object.fromEntries(Object.entries(opts.data || {}).map(([k, v]) => [k, String(v)])))
-    };
-  }
-
-  function _storyNextStepData(next = {}) {
-    return {
-      index: Number(next.index || 0),
-      title: String(next.title || ''),
-      text: String(next.text || ''),
-      actions: Array.isArray(next.actions) ? next.actions.map(_storyActionBtnData) : []
-    };
-  }
-
-  function _videoTypeFromPath(path = '') {
-    const lower = String(path).toLowerCase();
-    if (lower.endsWith('.webm')) return 'video/webm';
-    if (lower.endsWith('.ogg') || lower.endsWith('.ogv')) return 'video/ogg';
-    return 'video/mp4';
-  }
+  // the hero from the typed `vnHero` data produced by the TS
+  // `storyVnHeroData` helper.
 
   // _renderStoryDirectorEmptyCard removed in Phase G.11b. The
   // React `StoryDirectorCard` falls back to an empty-card JSX
@@ -1160,128 +672,6 @@ window.CJS.CampaignUI = (() => {
   // G.11a. The React `StorySoloGuide` and `StoryActionDeck`
   // components (`src/campaign/tabs/StoryDirector.tsx`) render their
   // bodies from the typed data on `StoryDirectorData`.
-
-  function _storyNextStep(snap, state, flowSynced) {
-    const last = snap?.last;
-    const choices = last?.suggestedChoices || [];
-    if (!snap?.stage) {
-      return {
-        index: 0,
-        title: 'Pick an arc stage',
-        text: 'Choose the part of the story you are actually playing now. This only guides tables; it does not lock the plot.',
-        actions: []
-      };
-    }
-    if (!last) {
-      return {
-        index: 1,
-        title: 'Roll or write the next scene',
-        text: 'Use Next Scene for normal story flow, Peri Interrupt for comedy, Memory / Clue for mystery, or Write Scene when you want GM control.',
-        actions: [
-          { action: 'story-roll-scene', label: 'Next Scene', hint: 'Best default for solo play', kind: 'primary story' },
-          { action: 'story-manual-note', label: 'Write Scene', hint: 'Save your own beat', kind: 'manual' }
-        ]
-      };
-    }
-    if (!['resolved', 'rejected', 'saved', 'manual', 'review'].includes(last.status || '')) {
-      return {
-        index: 2,
-        title: 'Choose a route',
-        text: 'Read the route cards below. Choose one if it fits, hold it for later, or skip the roll with no guilt.',
-        actions: [
-          { action: 'story-open-last', label: 'Open Popup', hint: 'Reopen the current beat window', kind: 'primary story' },
-          { action: 'story-save-beat', label: 'Hold For Later', hint: 'Keep it in the queue without applying consequences', kind: 'manual' },
-          {
-            action: 'story-apply-choice',
-            label: choices[0]?.label ? `Choose: ${choices[0].label}` : 'Accept Note',
-            hint: 'Apply the first route',
-            kind: 'quest',
-            data: { id: last.id, choice: 0 }
-          }
-        ]
-      };
-    }
-    if (snap.flow && !flowSynced) {
-      return {
-        index: 4,
-        title: 'Update side routes',
-        text: 'This episode has advice for which side routes should stay available, get promoted, or politely leave the room.',
-        actions: [
-          { action: 'story-sync-sidequests', label: 'Update Side Routes', hint: 'Applies this episode side-flow once', kind: 'quest' }
-        ]
-      };
-    }
-    if (state?.activeScenarioRun) {
-      return {
-        index: 4,
-        title: 'Continue the tabletop run',
-        text: 'A scenario is active. Use the story beat as table color, then continue moving pieces and resolving encounters on the map.',
-        actions: [
-          { action: 'open-maps-tab', label: 'Open Run Map', hint: 'Return to the tactical board', kind: 'primary' }
-        ]
-      };
-    }
-    return {
-      index: 1,
-      title: 'Ready for the next scene',
-      text: 'The last beat is handled. Roll again, write a scene, or just let the table breathe for a moment.',
-      actions: [
-        { action: 'story-roll-scene', label: 'Next Scene', hint: 'Continue the story flow', kind: 'primary story' }
-      ]
-    };
-  }
-
-  // _renderStoryStageRail removed in Phase G.11b. The React
-  // `StoryStageRail` (`src/campaign/tabs/StoryDirectorPanels.tsx`)
-  // renders the rail directly from `stageRailEntries`.
-  function _storyStageRailData(stages, stage = {}) {
-    if (!stages.length) return [];
-    const activeIndex = Math.max(0, stages.findIndex((entry) => entry.id === stage.id));
-    return stages.map((entry, index) => ({
-      id: String(entry.id || ''),
-      name: String(entry.name || entry.id || ''),
-      summary: String(entry.summary || ''),
-      index: index + 1,
-      isActive: entry.id === stage.id,
-      isPast: index < activeIndex && entry.id !== stage.id
-    }));
-  }
-
-  function _storyDirectorCardData(card) {
-    if (!card) return null;
-    const kindLabel = _label(card.kind || 'story');
-    const stageLabel = card.stageName || card.stageId || '';
-    const choices = card.suggestedChoices || [];
-    const branchChoices = choices.length ? choices : [{
-      label: 'Accept as story note',
-      ops: [{ op: 'log', text: card.prompt || card.text || card.summary || card.title || 'Story beat accepted.' }]
-    }];
-    const routes = branchChoices.map((choice, index) => ({
-      index,
-      label: String(choice.label || `Choice ${index + 1}`),
-      cardId: String(card.id || ''),
-      isRecommended: index === 0,
-      consequencePreviewHtml: _renderConsequencePreview(choice.ops || [], {
-        title: choice.label || `Choice ${index + 1}`,
-        emptyTitle: choice.label || `Choice ${index + 1}`,
-        emptyText: 'Story-only route. Choose it if it fits the current scene.'
-      })
-    }));
-    return {
-      id: String(card.id || ''),
-      title: String(card.title || card.id || ''),
-      stageLabel: String(stageLabel),
-      kindLabel: String(kindLabel),
-      canonRisk: String(card.canonRisk || 'green'),
-      canonRiskClass: Side().riskClass(card.canonRisk),
-      prompt: String(card.prompt || ''),
-      text: String(card.text || ''),
-      summary: String(card.summary || ''),
-      gmNote: String(card.gmNote || ''),
-      tags: Array.isArray(card.tags) ? card.tags.map((tag) => String(tag)) : [],
-      routes
-    };
-  }
 
   function _renderStoryDirectorCard(card, options = {}) {
     const cardClass = ['campaign-panel', 'campaign-side-card', 'campaign-result-card', 'campaign-story-card'];
@@ -1355,91 +745,10 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  // _renderStoryPressureBoard / _renderStoryCluesPanel /
-  // _renderStoryQueuePanel / _renderStoryTruthsPanel /
-  // _renderStorySideFlow removed in Phase G.11c. The React
-  // support-grid components in
-  // `src/campaign/tabs/StoryDirectorPanels.tsx` render these
-  // panels from typed bridge data.
-  function _storyPressureBoardData(metrics, snap, pack) {
-    return {
-      metrics: (metrics || []).map((metric) => ({
-        id: String(metric.id || ''),
-        label: String(metric.label || _label(metric.id || '')),
-        value: snap?.metrics?.[metric.id] != null ? snap.metrics[metric.id] : 0
-      })),
-      rule: String(pack?.pressureRule || 'Offscreen trouble suggests consequences. Apply only what fits the session.')
-    };
-  }
-
-  function _storyCluesPanelData(clues, facts) {
-    return {
-      clues: (clues || []).map((clue) => ({
-        id: String(clue.id || ''),
-        title: String(clue.title || clue.id || ''),
-        text: String(clue.text || ''),
-        canonRisk: String(clue.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(clue.canonRisk)
-      })),
-      facts: (facts || []).map((fact) => ({
-        id: String(fact.id || ''),
-        title: String(fact.title || fact.id || ''),
-        text: String(fact.text || '')
-      }))
-    };
-  }
-
-  function _storyQueuePanelData(queue) {
-    return {
-      beats: (queue || []).map((beat) => ({
-        id: String(beat.id || ''),
-        title: String(beat.title || beat.id || ''),
-        statusLabel: String(beat.status || 'saved'),
-        stageLabel: String(beat.stageName || beat.stageId || ''),
-        canonRisk: String(beat.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(beat.canonRisk)
-      }))
-    };
-  }
-
-  function _storyTruthsPanelData(pack) {
-    return {
-      truths: (pack?.protectedTruths || []).slice(0, 10).map((truth) => ({
-        id: String(truth.id || ''),
-        title: String(truth.title || truth.id || ''),
-        rule: String(truth.rule || 'Red-risk until the GM promotes it.')
-      }))
-    };
-  }
-
-  function _storySideFlowData(flow, flowSynced = false) {
-    if (!flow) {
-      return {
-        hasFlow: false,
-        summary: '',
-        flowSynced: !!flowSynced,
-        columns: []
-      };
-    }
-    const column = (label, list, tone) => ({
-      label,
-      tone,
-      items: (list || []).map((item) => ({
-        title: String(item.title || item.id || item || ''),
-        reason: String(item.reason || item.note || '')
-      }))
-    });
-    return {
-      hasFlow: true,
-      summary: String(flow.summary || 'Keep, promote, or retire optional content as the main arc moves.'),
-      flowSynced: !!flowSynced,
-      columns: [
-        column('Keep Available', flow.keep, 'flavor'),
-        column('Promote Soon', flow.promote, 'plot'),
-        column('Retire / Downgrade', flow.retire, 'risk')
-      ]
-    };
-  }
+  // `_storyPressureBoardData`, `_storyCluesPanelData`,
+  // `_storyQueuePanelData`, `_storyTruthsPanelData`,
+  // `_storySideFlowData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyDirector.ts`).
 
   // `getAdventureLegendVisible` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/overview.ts`).
@@ -1465,138 +774,12 @@ window.CJS.CampaignUI = (() => {
   // questChains tab body; that path ports later (K.3). Until then,
   // these typed builders read the same chain shape and produce
   // structured data the React tree consumes.
-  function _questChainStepData(step = {}, index = 0) {
-    const meta = [
-      step.chapterLabel ? `Chapter ${step.chapterLabel}` : '',
-      step.phaseType ? _label(step.phaseType) : '',
-      step.kind ? _label(step.kind) : ''
-    ].filter(Boolean);
-    const detail = [
-      step.vn?.prompt || step.visualNovel?.prompt,
-      step.character?.beat,
-      step.event?.prompt,
-      step.map?.objective,
-      step.combat?.objective,
-      step.minigame?.objective
-    ].filter(Boolean).slice(0, 2);
-    return {
-      id: String(step.id || ''),
-      label: String(step.label || step.id || `Step ${index + 1}`),
-      text: String(step.text || ''),
-      meta: meta.map(String),
-      systems: _questChainStepSystems(step),
-      detailLines: detail.map(String),
-      pulseHints: (step.progressTriggers || []).slice(0, 2).map((trigger) => _triggerLabel(trigger))
-    };
-  }
-
-  function _questChainStepSystems(step = {}) {
-    const systems = [];
-    if (step.vn || step.visualNovel) systems.push('VN');
-    if (step.character) systems.push('Character');
-    if (step.event) systems.push('Event');
-    if (step.map) systems.push('Map');
-    if (step.combat) systems.push('Combat');
-    if (step.minigame) systems.push('Mini-Game');
-    return systems;
-  }
-
-  function _questChainStakesData(chain = {}) {
-    const rewards = Ops().describe(chain.rewardOps || chain.rewards || []);
-    const failures = Ops().describe(chain.failureOps || chain.failureConsequences || []);
-    const battleCount = (chain.battleSetIds || []).length;
-    const mapCount = (chain.mapSeedIds || []).length + (chain.linkedScenario ? 1 : 0);
-    const runBits = [mapCount ? `${mapCount} map hook${mapCount === 1 ? '' : 's'}` : 'generated map'];
-    if (battleCount) runBits.push(`${battleCount} battle hook${battleCount === 1 ? '' : 's'}`);
-    return {
-      runLine: runBits.join(' · '),
-      rewardLine: rewards.length ? rewards.join('; ') : '',
-      failureLine: failures.length ? failures.join('; ') : 'GM consequence or mark failed'
-    };
-  }
-
-  function _questChainVnPanelData(chain = {}, options = {}) {
-    const template = chain.template || chain || {};
-    const steps = template.steps || [];
-    const currentId = options.active ? chain.currentStepId : steps[0]?.id;
-    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === currentId));
-    const current = steps[currentIndex] || steps[0] || {};
-    const npcs = (template.mainNpcs || []).slice(0, 4);
-    return {
-      badgeLabel: options.active ? 'Current Scene' : 'Opening Scene',
-      title: String(current.label || template.title || template.id || 'Side Story'),
-      text: String(current.text || template.summary || 'Pick a scene, run it as VN/table narration, then decide whether it becomes a map, battle, quest progress, or a parked lead.'),
-      systems: _questChainStepSystems(current),
-      plot: String(template.flowSummary || template.type || 'side story'),
-      characters: npcs.length ? npcs.join(', ') : 'GM choice',
-      steps: steps.map((step, index) => ({
-        index: index + 1,
-        label: String(step.label || step.id || `Step ${index + 1}`),
-        state: index === currentIndex ? 'current' : (index < currentIndex ? 'done' : 'upcoming')
-      }))
-    };
-  }
-
-  function _questChainActiveData(chain = {}) {
-    const template = chain.template || {};
-    const steps = template.steps || [];
-    const currentIndex = Math.max(0, steps.findIndex((entry) => entry.id === chain.currentStepId));
-    const step = steps.find((entry) => entry.id === chain.currentStepId) || null;
-    const tags = Array.from(new Set([
-      ...(template.tags || []),
-      ...(template.contextTags || []),
-      ...(template.monsterTags || [])
-    ].filter(Boolean))).slice(0, 8);
-    return {
-      templateId: String(chain.templateId || ''),
-      title: String(chain.title || template.title || chain.templateId || ''),
-      status: String(chain.status || ''),
-      stepIndex: currentIndex + 1,
-      stepCount: steps.length || 1,
-      stepLabel: String(step?.label || chain.currentStepId || '-'),
-      currentStepDetail: step ? _questChainStepData(step, currentIndex) : null,
-      contextTags: tags.map((tag) => _label(tag)),
-      vnPanel: _questChainVnPanelData(chain, { active: true }),
-      stakes: _questChainStakesData(template)
-    };
-  }
-
-  function _questChainTemplateData(chain = {}) {
-    return {
-      id: String(chain.id || ''),
-      title: String(chain.title || chain.name || chain.id || ''),
-      summary: String(chain.summary || ''),
-      canonRisk: String(chain.canonRisk || 'green'),
-      canonRiskClass: Side().riskClass(chain.canonRisk),
-      tags: Array.isArray(chain.tags) ? chain.tags.map(String) : [],
-      vnPanel: _questChainVnPanelData(chain, { active: false }),
-      stakes: _questChainStakesData(chain),
-      steps: (chain.steps || []).map((step, index) => _questChainStepData(step, index))
-    };
-  }
-
-  // K.3 — typed builders for the questChains tab body (flow guide +
-  // resolved rows). The active/template card data reuses the builders
-  // above; these two cover the parts the EventTab side panel didn't need.
-  function _sideStoryFlowGuideData(chain = {}) {
-    const phases = (chain.phasePlan || []).slice(0, 4)
-      .map((phase) => `${phase.chapterLabel || phase.id || ''} ${phase.title || phase.phaseType || ''}`.trim())
-      .filter(Boolean);
-    return {
-      title: String(chain.title || chain.name || 'Side Story'),
-      summary: String(chain.flowSummary || chain.summary || 'Side stories have their own plot rail, scene beats, optional map run, and manual resolve controls.'),
-      phases: phases.map(String)
-    };
-  }
-
-  function _questChainResolvedData(chain = {}) {
-    const template = chain.template || {};
-    return {
-      title: String(chain.title || template.title || chain.templateId || ''),
-      statusLabel: _label(chain.status || 'resolved'),
-      phaseLabel: String(chain.completedAtPhase || chain.failedAtPhase || '-')
-    };
-  }
+  // `_questChainStepData`, `_questChainStepSystems`, `_questChainStakesData`,
+  // `_questChainVnPanelData`, `_questChainActiveData`,
+  // `_questChainTemplateData`, `_sideStoryFlowGuideData`,
+  // `_questChainResolvedData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questChain.ts`). Shared between the
+  // EventTab side variant and the questChains hub tab.
 
   // _startQuestChainRun / _startQuestChainScenario / _questChainBattle /
   // _ensureQuestChainQuest ported to action-handlers/quest-chain.ts (H.3 —
@@ -2000,90 +1183,10 @@ window.CJS.CampaignUI = (() => {
   // `_scenarioQuestPill`); the JSX embeds them via dangerouslySetInnerHTML
   // until those helpers themselves port to typed renderers.
 
-  // Phase G.15 — typed scenario chips + per-card run actions. The
-  // HTML siblings (`_renderScenarioRunActions`, `_renderShapePills`,
-  // `_scenarioQuestPill`) are removed; the React components in
-  // `src/campaign/tabs/ScenarioChips.tsx` consume these shapes.
-  function _scenarioRunActionsData(scenario, state) {
-    const activeRun = state.activeScenarioRun;
-    const isCurrent = activeRun?.scenarioId === scenario.id;
-    let startState = 'start';
-    if (activeRun) startState = isCurrent ? 'continue' : 'other_active';
-    return {
-      scenarioId: String(scenario.id || ''),
-      startState
-    };
-  }
-
-  function _scenarioQuestPillData(scenario = {}, state = CS().getState()) {
-    const src = scenario.source || {};
-    const questId = src.questId;
-    if (questId) {
-      const quest = state?.quests?.[questId];
-      const title = quest?.title || src.title || questId;
-      return {
-        variant: 'quest',
-        label: `📌 Quest: ${title}`,
-        title: 'Generated for this quest',
-        linkable: false,
-        muted: false
-      };
-    }
-    if (src.questChainId) {
-      return {
-        variant: 'arc',
-        label: `📌 Arc: ${src.title || src.questChainId}`,
-        title: 'Generated for this quest arc',
-        linkable: false,
-        muted: false
-      };
-    }
-    return null;
-  }
-
-  const SHAPE_MODE_LABELS = {
-    node_map: 'Movement: Node Map',
-    grid_map: 'Movement: Grid Map',
-    procedural: 'Movement: Procedural',
-    linear: 'Movement: Linear',
-    freeform: 'Movement: Freeform'
-  };
-  const SHAPE_SETTING_LABELS = {
-    outdoor: 'Setting: Outdoor',
-    dungeon: 'Setting: Dungeon',
-    urban: 'Setting: Urban',
-    forest: 'Setting: Forest',
-    cave: 'Setting: Cave',
-    sewer: 'Setting: Sewer',
-    ruins: 'Setting: Ruins',
-    temple: 'Setting: Temple',
-    house: 'Setting: House',
-    tavern: 'Setting: Tavern',
-    castle: 'Setting: Castle',
-    mountain: 'Setting: Mountain',
-    arena: 'Setting: Arena',
-    abstract: 'Setting: Abstract'
-  };
-  const SHAPE_SIZE_LABELS = { tiny: 'XS', small: 'S', medium: 'M', large: 'L' };
-
-  function _shapePillsData(scenario = {}) {
-    const mode = scenario.travelMode || scenario.mapForm || (scenario.mapId ? 'node_map' : 'freeform');
-    const pills = [];
-    pills.push({ label: SHAPE_MODE_LABELS[mode] || `Movement: ${mode}` });
-    const setting = scenario.mapSetting || scenario.setting;
-    if (setting) pills.push({ label: SHAPE_SETTING_LABELS[setting] || `Setting: ${setting}` });
-    if (scenario.size) pills.push({ label: `Size: ${SHAPE_SIZE_LABELS[scenario.size] || scenario.size}` });
-    return { pills };
-  }
-  // _renderRun / _renderRunFreeform / _renderRunLinear — Phase F.9 port.
-  // Body moved to `src/campaign/tabs/CampaignMapsTab.tsx`. Typed data
-  // flows through `getRunData(state)`. `_beatIcon` stays because the
-  // bridge calls it for the linear-beat icon character.
-
-  function _beatIcon(kind) {
-    const map = { battle: '⚔', event: '🎴', trap: '🪤', rest: '🏕', reward: '🎁', boss: '👹', exit: '🚪' };
-    return map[kind] || '·';
-  }
+  // `_scenarioRunActionsData`, `_scenarioQuestPillData`, `_shapePillsData`,
+  // `_beatIcon`, and the `SHAPE_*_LABELS` tables moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarioShared.ts`). The `getShapePillsData`
+  // JS export also went away — TS callers now import the helper directly.
 
   // _renderQuestPanel — Phase F.10 port. Body moved to
   // `src/campaign/tabs/CampaignQuestsPanelTab.tsx`. Typed data flows
@@ -2099,24 +1202,11 @@ window.CJS.CampaignUI = (() => {
   // `_cssVarAssetUrl` moved to `src/campaign/util/cui-utils.ts` and
   // bound as an alias at the top of this IIFE (Phase H.4).
 
-  // _renderZombieScavengeTracker removed in Phase G.17. The zombie
-  // Quests tracker now reads typed `getQuestPanelData(state).zombie`
-  // and renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`. The
-  // legacy quest rows reuse the shared typed `getQuestRowData` +
-  // `<QuestRow>` component.
-  function _zombieScavengeTrackerData(state) {
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
-    return {
-      activeCount: active.length,
-      finishedCount: finished.length,
-      activities: activities.map((activity) => _worldActivityPreviewData(activity, activity.type === 'build' ? 'Build project' : 'Scavenge route')),
-      activeQuestRows: active.map((quest) => getQuestRowData(quest)),
-      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true }))
-    };
-  }
+  // _renderZombieScavengeTracker + `_zombieScavengeTrackerData` moved
+  // to TS in Phase H.4 (`src/campaign/tabs/data/zombie.ts`). The zombie
+  // Quests tracker reads typed `getQuestPanelData(state).zombie` and
+  // renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`. The legacy
+  // quest rows reuse the shared typed `getQuestRowData` + `<QuestRow>`.
 
   // _renderQuestRow / _renderQuestObjective / _renderQuestVariant
   // removed in Phase G.17. The shared QuestRow ported to JSX in G.1
@@ -2153,25 +1243,12 @@ window.CJS.CampaignUI = (() => {
     return objectives.find((entry) => !_questObjectiveDone(entry)) || objectives[0] || null;
   }
 
-  function _scenarioObjectiveMeta(run = {}, objective = {}) {
-    const bits = [];
-    if (objective.visible === false && objective.revealHint) bits.push(objective.revealHint);
-    if (run.travelMode === 'grid_map' && objective.levelId) bits.push(objective.levelId.replace(/_/g, ' '));
-    if (objective.nodeId) bits.push(objective.nodeId);
-    if (objective.cell) bits.push(`${objective.cell.x},${objective.cell.y}`);
-    if (objective.completedAt) bits.push('resolved');
-    else if (objective.visible === false) bits.push('hidden');
-    else bits.push(`${window.CJS.ScenarioRunner?.explorationPercent?.(CS().getState(), CS().getActiveMap()) || 0}% explored`);
-    return bits.join(' | ');
-  }
+  // `_scenarioObjectiveMeta` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarioShared.ts`).
 
-  function _questMiniGameObjective(quest = {}) {
-    return (quest.objectives || []).find((objective) => {
-      if (_questObjectiveDone(objective)) return false;
-      const kind = String(objective.kind || '').toLowerCase();
-      return !!(objective.minigame || objective.miniGame || objective.minigameId || kind === 'minigame' || kind === 'puzzle');
-    }) || null;
-  }
+  // `_questMiniGameObjective` and `_questStatusClass` moved to TS in
+  // Phase H.4 (`src/campaign/util/state-helpers.ts`). No remaining JS
+  // callers (the only one was JS `getQuestRowData`, also ported).
 
   function _questObjectiveDone(obj = {}) {
     return Number(obj.current || 0) >= Math.max(1, Number(obj.required || 1));
@@ -2181,91 +1258,13 @@ window.CJS.CampaignUI = (() => {
     return ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'));
   }
 
-  function _questStatusClass(quest = {}) {
-    const status = String(quest.status || 'active');
-    if (status === 'failed') return 'is-failed';
-    if (_isQuestResolved(quest)) return 'is-complete';
-    return 'is-active';
-  }
+  // `_runQuestPill` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarioShared.ts`). Shared by the TS
+  // `getRunData` and `getScenarioSummaryData` builders.
 
-  // Phase G.15 — typed quest-pill data for the active run (consumed
-  // by getScenarioSummaryData and getRunData). The React
-  // `QuestPill` component (`src/campaign/tabs/ScenarioChips.tsx`)
-  // renders the pill from this shape.
-  function _runQuestPill(state, run, scenario) {
-    const questId = _activeRunQuestId(run, scenario);
-    if (questId) {
-      const quest = state?.quests?.[questId];
-      const title = quest?.title || run?.questTitle || questId;
-      return {
-        variant: 'quest',
-        label: `📌 Quest: ${title}`,
-        title: 'This run is linked to a quest',
-        linkable: true,
-        muted: false
-      };
-    }
-    if (scenario?.source?.questChainId) {
-      return {
-        variant: 'arc',
-        label: `📌 Arc: ${scenario.source.title || scenario.source.questChainId}`,
-        title: 'This run is part of a quest arc',
-        linkable: false,
-        muted: false
-      };
-    }
-    return {
-      variant: 'noBinding',
-      label: 'no quest binding',
-      title: 'Standalone run, not bound to a quest',
-      linkable: false,
-      muted: true
-    };
-  }
-
-  // Phase G — typed scenario pill for the quest row. Returns a
-  // QuestPillData shape (or null) the React `QuestPill` renders.
-  function _questScenarioPill(quest = {}, activeRun = null, activeScenario = null) {
-    if (!quest?.id) return null;
-    if (_activeRunQuestId(activeRun, activeScenario) === quest.id) {
-      return {
-        variant: 'running',
-        label: `▶ Running: ${activeScenario?.name || activeRun?.scenarioId || 'scenario'}`,
-        title: 'A scenario for this quest is currently running',
-        linkable: true,
-        muted: false
-      };
-    }
-    const linkedId = quest.linkedScenario || quest.scenarioId || quest.scenario;
-    if (linkedId) {
-      const sc = CS().getScenarioById?.(linkedId);
-      return {
-        variant: 'linked',
-        label: `📜 Linked: ${sc?.name || linkedId}`,
-        title: 'This quest has a pre-built scenario linked to it',
-        linkable: false,
-        muted: false
-      };
-    }
-    const generated = Object.values(CS().getState()?.sideContent?.generatedScenarios || {})
-      .find((sc) => sc?.source?.questId === quest.id);
-    if (generated) {
-      return {
-        variant: 'generated',
-        label: `🗺 Generated: ${generated.name || generated.id}`,
-        title: 'A scenario was previously generated for this quest',
-        linkable: false,
-        muted: false
-      };
-    }
-    return {
-      variant: 'noMap',
-      label: 'no map yet',
-      title: 'No scenario yet — Map Run will generate one',
-      linkable: false,
-      muted: true
-    };
-  }
+  // `_questScenarioPill` moved to TS in Phase H.4 (alongside
+  // `getQuestRowData` in `src/campaign/tabs/data/questRow.ts` — it was
+  // the only caller).
 
   // The Session Log panel (`tab: logs`) and the Save Manager / Settings
   // panel (`tab: settings`) are owned by React — see
@@ -5235,118 +4234,12 @@ window.CJS.CampaignUI = (() => {
   // only chrome renderer now; the vanilla `_render{Header,ModeBar,
   // SubTabs,RecentLogStrip,CommandRail}` helpers were removed with the
   // render() fallback (the React shell is always enabled).
-  function getChromeData(state = CS().getState()) {
-    if (!state) return null;
-    const campaign = CS().getCurrentCampaign();
-    const world = CS().getCurrentWorld();
-    const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
-    const subTabsRaw = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
-    return {
-      activeMode: _activeMode,
-      activeTab: _activeTab,
-      activePanel: _activePanel,
-      isUtility,
-      header: _chromeHeaderData(state, campaign, world),
-      modeBar: _chromeModeBarData(state, isUtility),
-      subTabs: subTabsRaw.map(([id, label]) => ({ id, label })),
-      recentLog: _chromeRecentLogData(state),
-      commandRail: _chromeCommandRailData(state)
-    };
-  }
-
-  function _chromeHeaderData(state, campaign, world) {
-    const phase = state.phase || { number: 1, type: 'unknown', name: '' };
-    const WE = window.CJS.CampaignWorldEvents;
-    const events = WE?.getActive ? WE.getActive() : [];
-    return {
-      campaignName: campaign?.name || 'Campaign',
-      worldName: world?.displayName || state.currentWorld || '',
-      chapter: state.storyMode?.currentChapterLabel || state.currentChapter || 1,
-      phaseNumber: phase.number,
-      phaseLabel: phase.name || phase.type,
-      worldEvents: events.map((ev) => ({
-        id: ev.id,
-        name: ev.name || ev.id,
-        icon: ev.icon || '✨',
-        summary: ev.summary || '',
-        category: ev.category || 'boon',
-        remainingPhases: ev.remainingPhases
-      })),
-      currencies: _currencyAmounts(state)
-    };
-  }
-
-  function _chromeModeBarData(state, isUtility) {
-    const modes = _appModesForState(state).map(([id, label, icon]) => ({ id, label, icon }));
-    const utilityTabs = APP_UTILITY_TABS.map(([id, label]) => ({ id, label }));
-    return {
-      modes,
-      activeMode: isUtility ? null : _activeMode,
-      utilityTabs,
-      activeTab: _activeTab,
-      scenarioHud: _chromeScenarioHudData(state)
-    };
-  }
-
-  function _chromeScenarioHudData(state) {
-    const run = state.activeScenarioRun;
-    if (!run) return null;
-    const scenario = CS().getScenarioById(run.scenarioId);
-    return {
-      scenarioName: scenario?.name || run.scenarioId,
-      danger: run.danger,
-      dangerMax: run.dangerMax,
-      campsUsed: run.usedCampRests,
-      campsMax: run.limits?.campRests ?? 0,
-      battlesUsed: run.randomBattlesUsed,
-      battlesMax: run.limits?.randomBattles ?? 0,
-      generated: !!scenario?.generated
-    };
-  }
-
-  function _chromeRecentLogData(state) {
-    const entries = (state.log || []).slice(0, 3).map((line) => ({
-      kind: _CUILog.logKind(line),
-      text: line.text || '',
-      meta: _CUILog.logMeta(line, true)
-    }));
-    return {
-      entries,
-      hasLog: (state.log || []).length > 0
-    };
-  }
-
-  function _chromeCommandRailData(state) {
-    const panelDefs = _panelDefsForState(state);
-    const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
-    const logCount = (state.log || []).length;
-    const notesCount = (state.pinnedNotes || []).length;
-    const inventoryCount = ['items', 'materials', 'food', 'questItems']
-      .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
-    const partyCount = Object.keys(state.party || {}).length;
-    const counts = {
-      party: partyCount,
-      inventory: inventoryCount,
-      quests: activeQuests,
-      log: logCount,
-      notes: notesCount
-    };
-    const panels = RAIL_ORDER.filter((id) => panelDefs[id]).map((id) => {
-      const def = panelDefs[id];
-      return {
-        id,
-        icon: def.icon,
-        label: def.label,
-        title: def.title,
-        count: counts[id] || 0
-      };
-    });
-    return {
-      panels,
-      activePanel: _activePanel,
-      currency: _currencyAmounts(state)
-    };
-  }
+  // `getChromeData` and its five sub-helpers (`_chromeHeaderData`,
+  // `_chromeModeBarData`, `_chromeScenarioHudData`, `_chromeRecentLogData`,
+  // `_chromeCommandRailData`) moved to TS in Phase H.4
+  // (`src/campaign/shell/chromeData.ts`). The TS port reads the chrome
+  // slice from `src/campaign/chrome-state.ts` and the panel definitions
+  // from the same module — both are the single source of truth now.
 
   // ── Typed tab data for Phase F/G per-tab ports ─────────────────────
   // Each `get<Tab>Data` returns a JSON-friendly snapshot the matching
@@ -5372,167 +4265,18 @@ window.CJS.CampaignUI = (() => {
   // tools render in JSX from this typed snapshot; the active-quest
   // cards and the optional active-sequence panel still go through
   // HTML bridges (renderQuestRowHtml, renderActiveSequenceHtml).
-  // Typed snapshot for the React ActiveSequencePanel. Accepts an
-  // optional `scopes` filter so each tab only shows its own scope
-  // (story / quest / event). Returns null when no sequence matches.
-  function getActiveSequenceData(state = CS().getState(), scopes = null) {
-    if (!state) return null;
-    const Seq = window.CJS.CampaignSequences;
-    const active = Seq?.active?.(state);
-    if (!active || (scopes && !scopes.includes(active.scope))) return null;
-    const sequence = Seq.cachedSequence?.(active.sequenceId, state.currentWorld) || null;
-    const meta = Seq?.storyMeta?.(sequence || active.sequenceId, state.currentWorld) || {};
-    const node = sequence ? Seq.findNode?.(sequence, active.nodeId) : null;
-    const vnActive = !!(window.CJS.CampaignSequenceVN?.isEnabled?.() && active);
-    return {
-      title: active.title || active.sequenceId || '',
-      scopeLabel: _label(active.scope || 'sequence'),
-      chapterLabel: meta.chapterLabel || '',
-      nodeId: active.nodeId || '',
-      replayMode: active.applyConsequences === false,
-      vnActive,
-      node: node ? _sequenceNodeSnapshot(node, active, state) : null
-    };
-  }
+  // `getActiveSequenceData` + `_sequenceNodeSnapshot` + `_sequenceNodeMetaBits`
+  // moved to TS in Phase H.4 (`src/campaign/tabs/data/resultPanels.ts`).
+  // The discriminated `SequenceNodeData` union and the per-variant
+  // builders consume CampaignSequences / CampaignSequenceVN /
+  // CampaignAlignment directly through the typed module accessors.
 
-  // Typed snapshot for one sequence node. The React `SequenceNodePanel`
-  // (`src/campaign/tabs/SequenceNode.tsx`) consumes this directly —
-  // it replaces the closure-private `_renderSequenceNode` HTML helper
-  // (deleted in Phase G.8). Discriminated by `type`. The choice variant
-  // pre-resolves eligibility + alignment hint per choice so the React
-  // tree doesn't need to reach back into CJS.CampaignSequences /
-  // CampaignAlignment.
-  function _sequenceNodeSnapshot(node = {}, active = {}, state = CS().getState() || {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const type = String(node.type || 'narration').toLowerCase();
-    const replay = active?.applyConsequences === false;
-    const speaker = node.speaker || '';
-    const text = node.text || node.prompt || node.summary || node.title || '';
-    const meta = _sequenceNodeMetaBits(node);
-    if (type === 'choice') {
-      const choices = (node.choices || []).map((choice) => {
-        const eligibility = Seq?.choiceEligibility?.(choice, node, state, { active }) || { ok: true, blockers: [], hidden: false };
-        if (eligibility.hidden) return null;
-        const locked = !eligibility.ok;
-        const alignmentHint = window.CJS.CampaignAlignment?.describeDeltas?.(
-          choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta
-        );
-        const hint = locked
-          ? (eligibility.blockers || []).join(' | ')
-          : (choice.summary || alignmentHint || choice.next || '');
-        return {
-          id: String(choice.id || ''),
-          label: String(choice.label || choice.id || ''),
-          hint: String(hint || ''),
-          locked
-        };
-      }).filter(Boolean);
-      return { type: 'choice', speaker, text: text || 'Choose a path.', choices };
-    }
-    if (type === 'stat_check') {
-      return {
-        type: 'stat_check',
-        text: text || `${node.actor || 'Party'} checks ${node.stat || '?'} vs ${node.difficulty || node.dc || '?'}.`,
-        meta
-      };
-    }
-    if (type === 'combat') {
-      return {
-        type: 'combat',
-        text: text || node.label || 'Combat encounter',
-        meta,
-        replay,
-        encounterId: String(node.encounterId || ''),
-        battleSetId: String(node.battleSetId || '')
-      };
-    }
-    if (type === 'minigame') {
-      const gameId = node.minigame?.gameId || node.minigameId || node.gameId || '';
-      return {
-        type: 'minigame',
-        text: text || `${_label(gameId || 'Mini-game')} challenge`,
-        meta,
-        replay,
-        gameId: String(gameId),
-        gameLabel: gameId ? _label(gameId) : ''
-      };
-    }
-    if (type === 'scenario') {
-      const activeRun = state.activeScenarioRun;
-      const scenarioId = String(node.scenarioId || '');
-      const scenarioOpen = !!(activeRun && activeRun.scenarioId === scenarioId);
-      return {
-        type: 'scenario',
-        text: text || node.label || node.title || 'Exploration run',
-        meta,
-        replay,
-        scenarioId,
-        scenarioOpen
-      };
-    }
-    if (type === 'end') {
-      return { type: 'end', text: text || 'This sequence is ready to close.' };
-    }
-    return {
-      type: 'default',
-      kind: type,
-      speaker,
-      text,
-      meta,
-      replay,
-      next: String(node.next || '')
-    };
-  }
-
-  function _sequenceNodeMetaBits(node = {}) {
-    const bits = [];
-    if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || '?'}`);
-    if (node.encounterId) bits.push(String(node.encounterId));
-    if (node.battleSetId) bits.push(String(node.battleSetId));
-    if (node.scenarioId) bits.push(`Scenario: ${_label(node.scenarioId)}`);
-    const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
-    const difficulty = node.minigame?.difficulty || node.difficulty;
-    if (gameId) bits.push(`Mini-Game: ${_label(gameId)} Lv ${difficulty || 1}`);
-    if (node.tags?.length) bits.push((node.tags || []).map(_label).join(', '));
-    return bits;
-  }
-
-  function getScenarioSummaryData(state = CS().getState()) {
-    if (!state) return null;
-    const run = state.activeScenarioRun;
-    if (!run) {
-      return { hasRun: false };
-    }
-    const scenario = CS().getScenarioById(run.scenarioId);
-    const location = run.travelMode === 'grid_map' && run.currentCell
-      ? `${run.currentCell.x},${run.currentCell.y}`
-      : (run.currentNode || '-');
-    const objective = run.objectiveState || null;
-    return {
-      hasRun: true,
-      name: scenario?.name || run.scenarioId || 'Run',
-      questPill: _runQuestPill(state, run, scenario),
-      isGrid: run.travelMode === 'grid_map',
-      location,
-      danger: run.danger,
-      dangerMax: run.dangerMax,
-      campsUsed: run.usedCampRests,
-      campsMax: run.limits?.campRests ?? 0,
-      eventsUsed: run.eventsUsed,
-      eventsMax: run.limits?.events ?? 0,
-      battlesUsed: run.randomBattlesUsed,
-      battlesMax: run.limits?.randomBattles ?? 0,
-      roamerCount: (run.movingThreats || []).length,
-      objective: objective ? {
-        completed: !!objective.completed,
-        visible: objective.visible !== false,
-        label: objective.label || 'Reach the target',
-        meta: _scenarioObjectiveMeta(run, objective)
-      } : null,
-      questRunTaskHtml: _renderQuestRunTask(state, run, scenario) || '',
-      hasGeneratedScenario: !!scenario?.generated
-    };
-  }
+  // `getScenarioSummaryData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). The runQuestPill +
+  // scenarioObjectiveMeta helpers ported alongside to `data/scenarioShared.ts`
+  // (also consumed by `getRunData` / `getScenariosData`). The render-side
+  // questRunTask HTML chunk still comes from a JS bridge — see the
+  // `renderQuestRunTaskHtml` export below.
 
   // Typed snapshots for small shared panels used across tabs.
   // `getTravelSurpriseData` and `getLastReportData` moved to TS in
@@ -5547,484 +4291,70 @@ window.CJS.CampaignUI = (() => {
   // reads pending solo hook + side-content consequence preview via the
   // same HubTab module bridge.
 
-  // Typed snapshot of state.lastEvent for the React EventResult panel.
-  // Returns null when no event has been rolled. Used by EventLog,
-  // EventTab, Overview, and Maps. Embedded sub-fragments (inline
-  // purpose, consequence preview, flavor trail) still come through
-  // closure-private helpers because their inner data shapes live in
-  // sibling modules (HubTab, Controls).
-  function getEventResultData(state = CS().getState()) {
-    if (!state) return null;
-    const event = state.lastEvent;
-    if (!event) return null;
-    const suggested = event.suggested || [];
-    const summary = _consequenceSummary(suggested, { hasText: !!(event.prompt || event.gmHook) });
-    const ideaLabels = {
-      new_char: '👤 New Character',
-      new_item: '🎁 Item idea',
-      weapon: '⚔ Weapon idea',
-      back_story: '📖 Backstory beat',
-      main_plot: '🌌 Main plot thread',
-      development: '✨ Character development',
-      faction: '🏛 Faction hook',
-      mystery: '🔮 Mystery hook'
-    };
-    const opsDesc = suggested.length ? Ops().describe(suggested).filter(Boolean) : [];
-    return {
-      title: event.title || event.id || 'Event',
-      subLabel: event.tableName || event.type || 'event',
-      tone: summary.tone,
-      summaryLabel: summary.label,
-      ideaPillLabel: event.gmIdea ? (ideaLabels[event.gmIdea] || event.gmIdea) : '',
-      prompt: event.prompt || '',
-      gmHook: event.gmHook || '',
-      inlinePurposeHtml: _renderInlinePurpose('event'),
-      manualSummary: event.manualSummary ? {
-        short: event.manualSummary.short || 'No short result written yet.',
-        main: event.manualSummary.main || '',
-        tags: (event.manualSummary.tags || []).filter(Boolean)
-      } : null,
-      consequencePreviewHtml: _renderConsequencePreview(suggested, {
-        emptyTitle: 'Flavor or plot text only',
-        emptyText: 'No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.'
-      }),
-      flavorTrailHtml: _renderFlavorTrail(event),
-      applyLabel: suggested.length ? 'Apply Listed Changes' : 'Log Flavor',
-      applyHint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes',
-      hasManualSummary: !!event.manualSummary,
-      hasPlotSeedTrigger: !!(event.gmHook || event.gmIdea),
-      hasOracleTableId: !!event.oracleTableId
-    };
-  }
+  // `getEventResultData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). Same shape, same HubTab
+  // module reads — the inline-purpose / consequence-preview / flavor-trail
+  // HTML fragments come from the typed HubTab bridge there.
 
   // `getOracleData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/resultPanels.ts`).
 
-  // Typed snapshot of one quest for the React QuestRow component.
-  // Used by QuestHome (active rows, capped) and QuestsPanel (active +
-  // resolved rows). Replaces the per-row HTML bridge with structured
-  // data so the row body can render as JSX.
-  function getQuestRowData(quest = {}, opts = {}) {
-    const objectives = quest.objectives || [];
-    const nextObjective = opts.resolved ? null : _questNextObjective(quest);
-    const done = objectives.filter((obj) => _questObjectiveDone(obj)).length;
-    const total = objectives.length || 1;
-    const meta = [
-      _label(quest.status || 'active'),
-      quest.giver ? `Giver: ${quest.giver}` : '',
-      quest.timer?.phasesRemaining ? `${quest.timer.phasesRemaining} phases left` : ''
-    ].filter(Boolean).join(' | ');
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    const isRunQuest = _activeRunQuestId(activeRun, activeScenario) === quest.id;
-    const scenarioDisabled = !!(activeRun && !isRunQuest);
-    const tags = Array.from(new Set([
-      ...(quest.tags || []),
-      ...(quest.contextTags || []),
-      ...(quest.monsterTags || [])
-    ].filter(Boolean))).slice(0, 8).map((t) => _label(t));
-    const variant = quest.activeVariant || null;
-    const variantLabel = variant?.label || quest.variantLabel || '';
-    const variantText = quest.variantDialogue || quest.variantSummary || variant?.dialogue || variant?.summary || '';
-    const variantRepeat = quest.repeatCycle ? `Cycle ${quest.repeatCycle + 1}` : '';
-    return {
-      id: String(quest.id || ''),
-      title: quest.title || quest.id || 'Quest',
-      summary: quest.summary || '',
-      statusLabel: _label(quest.status || 'active'),
-      statusClass: _questStatusClass(quest),
-      metaLine: meta,
-      resolved: !!opts.resolved,
-      isRunQuest,
-      scenarioDisabled,
-      scenarioLabel: isRunQuest ? 'Open Map' : 'Map Run',
-      scenarioHint: isRunQuest
-        ? 'Jump to the active map for this quest'
-        : 'Start (or generate) the map run for this quest',
-      scenarioPill: _questScenarioPill(quest, activeRun, activeScenario),
-      hasMiniGame: !!_questMiniGameObjective(quest),
-      tagChips: tags,
-      variant: (variantLabel || variantText || variantRepeat)
-        ? { label: variantLabel, text: variantText, repeat: variantRepeat }
-        : null,
-      phaseLabel: opts.resolved ? 'Resolved' : (nextObjective?.label || 'Open'),
-      doneCount: done,
-      totalCount: total,
-      objectives: objectives.map((obj) => {
-        const cur = Number(obj.current || 0);
-        const req = Math.max(1, Number(obj.required || 1));
-        const pct = Math.max(0, Math.min(100, Math.round((cur / req) * 100)));
-        return {
-          id: String(obj.id || obj.label || ''),
-          label: obj.label || obj.id || 'Objective',
-          current: cur,
-          required: req,
-          pct,
-          done: cur >= req,
-          pulseHints: (obj.progressTriggers || []).slice(0, 2).map((trigger) => _triggerLabel(trigger))
-        };
-      })
-    };
-  }
+  // `getQuestRowData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questRow.ts`). The closure-private
+  // helpers it depended on (`_questStatusClass`, `_questMiniGameObjective`,
+  // `_activeRunQuestId`, `_triggerLabel`, `_questScenarioPill`) are
+  // deleted alongside the JS getQuestPanelData / getQuestHomeData /
+  // _zombieScavengeTrackerData callers (Phase H.4) — every consumer
+  // now imports the typed builder directly.
 
-  function getStoryDirectorData(state = CS().getState()) {
-    if (!state) return null;
-    const theme = _storyTheme(state);
-    const themeStyleVars = {};
-    if (theme.backdrop) themeStyleVars['--story-backdrop'] = `url('${_cssVarAssetUrl(theme.backdrop)}')`;
-    if (theme.accent) themeStyleVars['--story-accent'] = theme.accent;
-    if (theme.danger) themeStyleVars['--story-danger'] = theme.danger;
-    const director = SD();
-    if (!director) {
-      return {
-        moduleAvailable: false,
-        themeClassName: theme.className || '',
-        themeStyleVars
-      };
-    }
-    const snap = director.snapshot();
-    const pack = snap.pack;
-    if (!pack) {
-      const next = {
-        index: 0,
-        title: 'No story pack loaded',
-        text: 'This world has a visual theme, but no Story Director pack yet. Add one later to unlock scene rolls, routes, clues, and side route guidance.',
-        actions: []
-      };
-      return {
-        moduleAvailable: true,
-        hasPack: false,
-        themeClassName: theme.className || '',
-        themeStyleVars,
-        vnHero: _storyVnHeroData({ state, pack: null, stage: null, next, theme })
-      };
-    }
-    const stage = snap.stage || {};
-    const stages = pack.stages || [];
-    const metrics = pack.metrics || [];
-    const flow = snap.flow;
-    const queue = snap.queue.slice(0, 8);
-    const clues = snap.clues.slice(0, 8);
-    const facts = snap.facts.slice(0, 8);
-    const syncKey = pack.id && flow?.stageId ? `${pack.id}:${flow.stageId}` : '';
-    const flowSynced = !!(syncKey && state.storyDirector?.sideQuestSync?.[syncKey]);
-    const next = _storyNextStep(snap, state, flowSynced);
-    return {
-      moduleAvailable: true,
-      hasPack: true,
-      themeClassName: theme.className || '',
-      themeStyleVars,
-      stageName: stage.name || stage.id || 'No stage',
-      stageSummary: stage.summary || '',
-      vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
-      soloGuideActiveIndex: Number(next.index || 0),
-      actionDeckFlowSynced: !!flowSynced,
-      actionDeckHasFlow: !!flow,
-      stageRailEntries: _storyStageRailData(stages, stage),
-      lastCard: _storyDirectorCardData(snap.last),
-      pressureBoard: _storyPressureBoardData(metrics, snap, pack),
-      sideFlow: _storySideFlowData(flow, flowSynced),
-      clues: _storyCluesPanelData(clues, facts),
-      queue: _storyQueuePanelData(queue),
-      truths: _storyTruthsPanelData(pack)
-    };
-  }
+  // `getStoryDirectorData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyDirector.ts`). All sub-helpers
+  // (`storyNextStep`, `storyStageRailData`, `storyDirectorCardData`,
+  // `storyPressureBoardData`, `storyCluesPanelData`,
+  // `storyQueuePanelData`, `storyTruthsPanelData`, `storySideFlowData`)
+  // ported alongside; the consequence-preview HTML still comes from the
+  // HubTab module bridge.
 
-  function getWorldGateData(state = CS().getState()) {
-    if (!state) return null;
-    const worlds = CS().getContent().worlds || {};
-    const options = _worldOptions();
-    const current = state.currentWorld || 'haven';
-    return {
-      currentWorldName: worlds[current]?.displayName || current,
-      pressures: _pressureStripChips(state),
-      cards: options.map((option) => _worldGateCardData(option.value, worlds[option.value] || {}, state))
-    };
-  }
+  // `getWorldGateData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/worldGate.ts`). The sub-helpers + the
+  // worldMenuDef config table ported alongside.
 
-  function getStoryHomeData(state = CS().getState()) {
-    if (!state) return null;
-    const theme = _storyTheme(state);
-    const director = SD();
-    const snap = director?.snapshot?.() || {};
-    const pack = snap.pack || null;
-    const stage = snap.stage || {};
-    const Seq = window.CJS.CampaignSequences;
-    const storyFiles = Seq?.list?.('story') || [];
-    const activeSequence = Seq?.active?.(state);
-    const storyParts = _storySummaryEntries(state);
-    const manualCount = state.storyMode?.manualSummaryEntries?.length || 0;
-    const defaultedCount = Object.keys(state.storyMode?.defaultedParts || {}).length;
-    const activeRun = state.activeScenarioRun;
-    const pipeline = _storyPipelineSnapshot(state);
-    const next = {
-      index: activeSequence?.scope === 'story' ? 1 : 0,
-      title: activeSequence?.scope === 'story' ? 'Continue Current Story Part' : 'Choose a Chapter Part',
-      text: activeSequence?.scope === 'story'
-        ? 'The current story file is open below. Continue node by node, then complete it when the conclusion is reached.'
-        : 'Start a story file when you are ready. Starting ahead should be treated as revealing earlier parts with the default path.',
-      actions: [
-        { action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' },
-        { action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' },
-        { action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' }
-      ]
-    };
-    // CSS-vars derived from theme; React will set them as style props.
-    const themeStyleVars = {};
-    if (theme.backdrop) themeStyleVars['--story-backdrop'] = `url('${_cssVarAssetUrl(theme.backdrop)}')`;
-    if (theme.accent) themeStyleVars['--story-accent'] = theme.accent;
-    if (theme.danger) themeStyleVars['--story-danger'] = theme.danger;
-    return {
-      themeClassName: theme.className || '',
-      themeStyleVars,
-      chapterPartsCount: storyFiles.length,
-      currentChapter: state.storyMode?.currentChapterLabel || state.currentChapter || 1,
-      currentArc: {
-        completed: storyParts.length,
-        defaulted: defaultedCount,
-        manualNotes: manualCount,
-        phase: state.phase?.number || 1
-      },
-      hasActiveRun: !!activeRun,
-      vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
-      chapterTree: _chapterTreeData(state),
-      choiceConsequence: _choiceConsequenceData(state),
-      aiStoryContext: _aiStoryContextData(state),
-      storyPipeline: _storyPipelinePanelData(pipeline),
-      syncSummary: _syncSummaryData('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle)
-    };
-  }
+  // `getStoryHomeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyHome.ts`). The chapter tree, story
+  // pipeline, sync summary, and choice consequence panels all ported
+  // inline. The AI story context panel still reads through the
+  // `renderAiStoryContextData` JS bridge because the four async caches
+  // live in the closure-private `_storyContextCache` (shared with the
+  // story-copy-prompt builder). That cache + `_ensureStoryContext`
+  // port together with the prompt machinery in a later step.
 
-  function getQuestPanelData(state = CS().getState()) {
-    if (!state) return null;
-    if (state.currentWorld === 'zombie') {
-      return { isZombie: true, zombie: _zombieScavengeTrackerData(state) };
-    }
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    return {
-      isZombie: false,
-      activeCount: active.length,
-      finishedCount: finished.length,
-      templateCount,
-      activeQuestRows: active.map((quest) => getQuestRowData(quest)),
-      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true }))
-    };
-  }
+  // `getQuestPanelData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questPanel.ts`). The TS port reads the same
+  // CampaignState + content surface; the zombie variant routes through
+  // the shared TS `getZombieScavengeTrackerData`.
 
-  function getRunData(state = CS().getState()) {
-    if (!state) return null;
-    const run = state.activeScenarioRun;
-    if (!run) {
-      return {
-        hasRun: false,
-        mode: null,
-        scenarioName: '',
-        scenarioNotes: '',
-        questPill: null,
-        shapePills: { pills: [] },
-        run: null,
-        freeform: null,
-        linear: null
-      };
-    }
-    const mode = run.travelMode || (run.mapId ? 'node_map' : 'freeform');
-    const scenario = CS().getActiveScenario();
-    const shared = {
-      hasRun: true,
-      mode,
-      scenarioName: scenario?.name || 'Run',
-      scenarioNotes: scenario?.notes || '',
-      questPill: _runQuestPill(state, run, scenario),
-      shapePills: _shapePillsData(scenario || {}),
-      run: {
-        danger: run.danger,
-        dangerMax: run.dangerMax,
-        campsUsed: run.usedCampRests,
-        campsMax: run.limits?.campRests ?? 0,
-        battlesUsed: run.randomBattlesUsed,
-        battlesMax: run.limits?.randomBattles ?? 0,
-        eventsUsed: run.eventsUsed,
-        eventsMax: run.limits?.events ?? 0
-      }
-    };
-    if (mode === 'freeform') {
-      const setBattles = scenario?.setBattles || [];
-      return {
-        ...shared,
-        freeform: {
-          setBattles: setBattles.map((b) => ({
-            id: b.id || b.battleSetId || b.encounterId || '',
-            label: b.label || b.name || b.encounterId || b.battleSetId || '',
-            sub: b.encounterId || b.battleSetId || ''
-          }))
-        },
-        linear: null
-      };
-    }
-    if (mode === 'linear') {
-      const beats = scenario?.beats || [];
-      const idx = run.currentBeatIndex ?? 0;
-      return {
-        ...shared,
-        freeform: null,
-        linear: {
-          beats: beats.map((b, i) => ({
-            id: String(b.id || ''),
-            number: i + 1,
-            label: b.label || b.id || '',
-            kind: b.kind || '',
-            iconChar: _beatIcon(b.kind),
-            encounterId: b.encounterId || '',
-            prompt: b.prompt || '',
-            isCurrent: i === idx,
-            isDone: i < idx
-          })),
-          currentIndex: idx,
-          totalBeats: beats.length,
-          allDone: idx >= beats.length
-        }
-      };
-    }
-    // node_map / grid_map render into #campaign-map-region via CampaignMap.render
-    return { ...shared, freeform: null, linear: null };
-  }
+  // `getRunData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/run.ts`). Uses the shared TS
+  // `runQuestPill` / `shapePillsData` / `beatIcon` helpers from
+  // `data/scenarioShared.ts`.
 
-  function getScenariosData(state = CS().getState()) {
-    if (!state) return null;
-    const campaign = CS().getCurrentCampaign();
-    const authored = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
-    const generated = CS().getGeneratedScenarios
-      ? CS().getGeneratedScenarios()
-      : Object.values(state.sideContent?.generatedScenarios || {});
-    const scenarios = [...generated, ...authored];
-    const mapTypeOptions = Gen()?.options?.().mapSettings || Gen()?.options?.().mapTypes
-      || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
-    const activeRun = state.activeScenarioRun;
-    return {
-      hasActiveRun: !!activeRun,
-      activeRunScenarioId: activeRun?.scenarioId || null,
-      mapTypeOptions: mapTypeOptions.map((id) => ({ id, label: _label(id) })),
-      sizeOptions: [
-        { id: 'tiny', label: 'Tiny' },
-        { id: 'small', label: 'Small' },
-        { id: 'medium', label: 'Medium' },
-        { id: 'large', label: 'Large' },
-        { id: 'huge', label: 'Huge' },
-        { id: 'massive', label: 'Massive' }
-      ],
-      scenarios: scenarios.map((scenario) => ({
-        id: String(scenario.id || ''),
-        name: scenario.name || scenario.id || '',
-        notes: scenario.notes || '',
-        generated: !!scenario.generated,
-        pillLabel: scenario.generated
-          ? `generated | ${scenario.source?.kind || 'random'}`
-          : (scenario.type || 'scenario'),
-        questPill: _scenarioQuestPillData(scenario, state),
-        shapePills: _shapePillsData(scenario),
-        runActions: _scenarioRunActionsData(scenario, state)
-      }))
-    };
-  }
+  // `getScenariosData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarios.ts`). Uses the shared TS
+  // `scenarioQuestPillData` / `shapePillsData` / `scenarioRunActionsData`
+  // helpers from `data/scenarioShared.ts`.
 
-  function getEventTabData(kind, state = CS().getState()) {
-    if (!state) return null;
-    const Seq = window.CJS.CampaignSequences;
-    const entries = (Seq?.list?.('event') || []).filter((entry) => _eventFileKind(entry) === kind);
-    const labels = {
-      character: {
-        kicker: 'Character Event',
-        title: 'Relationship / Persona Scenes',
-        text: 'Focused authored scenes for party members, dialogue, relationship flags, and small consequences.',
-        empty: 'No character events loaded yet.'
-      },
-      special: {
-        kicker: 'Special Event',
-        title: 'Limited or Plot-Timed',
-        text: 'Rank-up, holiday, unlock, or story-progression events with proper authored flow.',
-        empty: 'No special events loaded yet.'
-      },
-      side: {
-        kicker: 'Side Stories',
-        title: 'Optional Story Content',
-        text: 'Side-story files and existing side-story chains. Battles and map runs should be attached through Quest.',
-        empty: 'No side stories loaded yet.'
-      }
-    };
-    const info = labels[kind] || labels.character;
-    const activeChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getActive?.() || []) : [];
-    const availableChains = kind === 'side' ? (window.CJS.CampaignQuestChains?.getAvailable?.() || []) : [];
-    return {
-      kind,
-      kicker: info.kicker,
-      title: info.title,
-      text: info.text,
-      empty: info.empty,
-      meta: kind === 'side'
-        ? [`${entries.length} files`, `${activeChains.length} active`, `${availableChains.length} available`]
-        : [`${entries.length} files`, 'authored flow', 'event log ready'],
-      entryCount: entries.length,
-      entries: entries.map((entry) => ({
-        id: String(entry.id || ''),
-        title: entry.title || entry.id || '',
-        kindLabel: _label(entry.kind || kind),
-        summary: entry.summary?.short || entry.summary?.default || entry.description || '',
-        tagLabels: (entry.tags || []).slice(0, 4).map((tag) => _label(tag)),
-        delivery: _sequenceDeliveryData(entry, 'event'),
-        action: _sequenceActionData(entry, 'event')
-      })),
-      questChains: kind === 'side' ? {
-        activeCount: activeChains.length,
-        availableCount: availableChains.length,
-        active: activeChains.map((chain) => _questChainActiveData(chain)),
-        available: availableChains.map((chain) => _questChainTemplateData(chain))
-      } : null
-    };
-  }
+  // `getEventTabData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/eventTab.ts`). The `_eventFileKind`
+  // classifier ported alongside; sequence delivery/action data flows
+  // through `data/sequence.ts`; quest-chain data through `data/questChain.ts`.
 
-  function getQuestHomeData(state = CS().getState()) {
-    if (!state) return null;
-    const isZombie = state.currentWorld === 'zombie';
-    if (isZombie) {
-      return { isZombie: true, zombie: _zombieScavengeHomeData(state) };
-    }
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const nextQuest = active[0] || null;
-    const Seq = window.CJS.CampaignSequences;
-    const questEntries = Seq?.list?.('quest') || [];
-    const dailyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'daily');
-    const storyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'story');
-    const normalPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'normal');
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    const run = state.activeScenarioRun;
-    const paperLite = (entries) => entries.slice(0, 2).map((entry) => ({
-      id: entry.id,
-      title: entry.title || entry.id,
-      kindLabel: _label(entry.kind || 'quest paper')
-    }));
-    return {
-      isZombie: false,
-      activeCount: active.length,
-      finishedCount: finished.length,
-      templateCount,
-      hasRun: !!run,
-      hasNextQuest: !!nextQuest,
-      nextQuestTitle: nextQuest ? (nextQuest.title || nextQuest.id) : '',
-      nextQuestSummary: nextQuest ? (nextQuest.summary || '') : '',
-      paperCount: questEntries.length,
-      dailyPapers: paperLite(dailyPapers),
-      normalPapers: paperLite(normalPapers).slice(0, 1),
-      storyPapers: paperLite(storyPapers),
-      activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest))
-    };
-  }
+  // `getQuestHomeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questHome.ts`). The zombie variant routes
+  // through the shared TS `getZombieScavengeHomeData`. The
+  // closure-private helpers `_zombieScavengeHomeData`,
+  // `_zombieScavengeTrackerData`, `_worldActivitiesFor`,
+  // `_worldActivityPreviewData`, `_questPaperKind` are deleted alongside
+  // (no remaining JS callers).
 
   // `getStorySummaryData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/storySummary.ts`). The TS port duplicates
@@ -6046,24 +4376,10 @@ window.CJS.CampaignUI = (() => {
   // `getBattleSetsData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/hub.ts`).
 
-  function getQuestChainsData() {
-    const QC = window.CJS.CampaignQuestChains;
-    if (!QC) {
-      return { activeCount: 0, availableCount: 0, flowGuide: null, active: [], finished: [], available: [] };
-    }
-    const available = QC.getAvailable?.() || [];
-    const active = QC.getActive?.() || [];
-    const finished = QC.getFinished?.() || [];
-    const guideSource = active[0]?.template || available[0] || null;
-    return {
-      activeCount: active.length,
-      availableCount: available.length,
-      flowGuide: guideSource ? _sideStoryFlowGuideData(guideSource) : null,
-      active: active.map((chain) => _questChainActiveData(chain)),
-      finished: finished.map((chain) => _questChainResolvedData(chain)),
-      available: available.map((chain) => _questChainTemplateData(chain))
-    };
-  }
+  // `getQuestChainsData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`). The chain card data builders +
+  // flow guide helper ported to `src/campaign/tabs/data/questChain.ts`
+  // and are now shared with the EventTab side variant.
 
   // `getMapSeedsData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/hub.ts`).
@@ -6138,48 +4454,11 @@ window.CJS.CampaignUI = (() => {
   // still comes through PartyTab.rosterMemberData; the typed
   // tab-helpers bundle is threaded via `CampaignUI.getTabHelpers`.
 
-  function getMinigameTestData(state = CS().getState()) {
-    if (!state) return null;
-    const MG = window.CJS.Minigames;
-    const games = MG?.listGames?.() || [];
-    const selected = _root?.dataset?.mgTestGame || (games[0]?.id || '');
-    const levelCache = _mgTestLevels;
-    const ensureLevels = async () => {
-      if (!selected || levelCache[selected]) return;
-      try {
-        const res = await fetch(`data/minigames/${selected}_levels.json?v=grid-regression-20260517c`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        levelCache[selected] = Array.isArray(data.levels) ? data.levels : [];
-        render();
-      } catch (err) {
-        console.warn('Minigame test: failed to load levels for', selected, err);
-        levelCache[selected] = [];
-        render();
-      }
-    };
-    if (selected && !levelCache[selected]) void ensureLevels();
-    const levels = (levelCache[selected] || []).map((lvl) => ({
-      id: String(lvl.id || ''),
-      title: lvl.title || lvl.id || '',
-      difficulty: lvl.difficulty || 1,
-      theme: lvl.theme || 'any',
-      width: lvl.width || null,
-      height: lvl.height || null,
-      optimalTurns: lvl.optimalTurns || lvl.optimalMoves || null,
-      hint: lvl.hint || lvl.description || '',
-      tags: Array.isArray(lvl.tags) ? lvl.tags.slice(0) : []
-    }));
-    const lastResult = state.lastMiniGameTestResult || null;
-    return {
-      games: games.map((g) => ({ id: String(g.id || ''), title: g.title || g.id || '' })),
-      selectedGameId: selected || null,
-      levels,
-      levelsLoaded: !!levelCache[selected],
-      lastResultStatus: lastResult?.status || null,
-      lastResultJson: lastResult ? JSON.stringify(lastResult, null, 2) : null
-    };
-  }
+  // `getMinigameTestData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/minigameTest.ts`). The selection state
+  // (previously `_root.dataset.mgTestGame`) + level cache also moved
+  // to module-level variables in that file; the `mg-test-pick` action
+  // handler imports `setMinigameTestGame` directly.
 
   // Renders the main-area body. Returns a string for vanilla tabs;
   // returns `null` if the tab is owned by a React component (the shell
@@ -6196,13 +4475,11 @@ window.CJS.CampaignUI = (() => {
     return _renderMain(state);
   }
 
-  function getPanelDefs(state = CS().getState()) {
-    return _panelDefsForState(state);
-  }
-
-  function getPanelOrder() {
-    return RAIL_ORDER.slice();
-  }
+  // `getPanelDefs` + `getPanelOrder` moved to TS in Phase H.4
+  // (`src/campaign/shell/chromeData.ts`). The JS closures
+  // `_panelDefsForState` + `PANEL_DEFS` + `RAIL_ORDER` stay because the
+  // still-JS `_openPanel`/`_closePanel`/`_renderPanelLayer` no-ops still
+  // read them. Both sides hold the same values.
 
   function renderDrawerBody(panelId, state = CS().getState()) {
     if (!state || !panelId) return '';
@@ -6270,19 +4547,19 @@ window.CJS.CampaignUI = (() => {
     // (G.11b kept this renderer as HTML). Exposed for action-handlers/
     // story-director-modals.ts; goes away when the renderer ports.
     renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
-    // Run-inspect modal's pill row reuses the closure-private
-    // `_shapePillsData` (the shared source of truth for Movement / Setting
-    // / Size pill labels — also feeds `getScenariosData` / `getRunData`).
-    // Exposed for action-handlers/scenario.ts (inspect-scenario) so the
-    // TS handler doesn't re-declare the SHAPE_*_LABELS tables. Goes away
-    // when the data builders themselves port (H.4).
-    getShapePillsData: (scenario) => _shapePillsData(scenario || {}),
-    // World menu definitions (title / kicker / summary / defaultTab /
-    // bannerImage / etc.) live in the closure-private `_worldMenuDef`
-    // (also reads by chrome data builders). Exposed for
-    // action-handlers/travel.ts (travel-world-card) so the TS handler
-    // can resolve a world's default tab without re-declaring the table.
-    getWorldMenuDef: (worldId) => _worldMenuDef(worldId),
+    // ScenarioSummary's questRunTask uses _questTaskDescriptor (still in JS —
+    // reads CampaignState.getScenarioMapById + ScenarioRunner.findNode/findCell
+    // against the active scenario map) to produce one HTML block per active
+    // run. The TS data builder (`src/campaign/tabs/data/resultPanels.ts`)
+    // embeds it via this bridge; goes away when the descriptor ports.
+    renderQuestRunTaskHtml: (state, run, scenario) => _renderQuestRunTask(state, run, scenario) || '',
+    // `getShapePillsData` removed in Phase H.4 — the TS port at
+    // `src/campaign/tabs/data/scenarioShared.ts::shapePillsData` is now
+    // the single source of truth. The inspect-scenario action handler
+    // imports it directly.
+    // `getWorldMenuDef` removed in Phase H.4 — `worldMenuDef` ported to
+    // `src/campaign/tabs/data/worldGate.ts`; the travel-world-card TS
+    // action handler imports it directly.
     // Roster option builders (still-JS closures shared between modal
     // handlers + the still-JS GM override modal). Exposed for
     // action-handlers/roster-modal-pickers.ts (recruit-character,
@@ -6311,13 +4588,10 @@ window.CJS.CampaignUI = (() => {
     // stay private — the modal handler only knows the HTML body shape.
     renderPartySheetHtml: (id, member) =>
       _renderPortraitHero(id, member) + _renderRosterMember(id, member),
-    // Mini-game test selection. The selected game lives on
-    // `_root.dataset.mgTestGame` (read by getMinigameTestData); the TS
-    // mg-test-pick handler calls this to update it + trigger render.
-    // The state moves into CampaignState in H.4 (per the plan).
-    setMinigameTestGame: (gameId) => {
-      if (_root) _root.dataset.mgTestGame = String(gameId || '');
-    },
+    // `setMinigameTestGame` removed in Phase H.4 — the selection state
+    // moved to a module-level variable in
+    // `src/campaign/tabs/data/minigameTest.ts`; the TS mg-test-pick
+    // handler imports the setter directly.
     // Story-tools bridges (story-copy-prompt). _storyPromptText reads
     // closure-private state (SD.snapshot, Seq.currentRouteChoices,
     // chapter tree, alignment, story context cache) so the closure
@@ -6326,6 +4600,11 @@ window.CJS.CampaignUI = (() => {
     // JSON used by the prompt — return its promise so callers can await.
     computeStoryPromptText: () => _storyPromptText(),
     ensureStoryContext: (world) => _ensureStoryContext(world),
+    // AI story context snapshot for the Story Home tab's "AI Story
+    // Context" panel. The four async caches live in this closure
+    // (`_storyContextCache`); the TS data builder reads the same
+    // surface through this bridge so the panel stays in sync.
+    renderAiStoryContextData: (state) => _aiStoryContextData(state || CS().getState() || {}),
     // Big modal builders that still live in JS (each is 100–500 lines
     // with many closure-private sub-helpers — render-side data builders
     // also depend on them). The TS action handlers in
@@ -6342,25 +4621,7 @@ window.CJS.CampaignUI = (() => {
     // and instead emits `campaign:state-tick` events for the shell to
     // re-render against.
     enableReactShell,
-    getChromeData,
-    getMinigameTestData,
-    getQuestChainsData,
-    getQuestHomeData,
-    getEventTabData,
-    getScenariosData,
-    getRunData,
-    getQuestPanelData,
-    getStoryHomeData,
-    getWorldGateData,
-    getStoryDirectorData,
-    getQuestRowData,
-    getEventResultData,
-    getScenarioSummaryData,
-    getActiveSequenceData,
-    getSequenceShelfData,
     getMainBody,
-    getPanelDefs,
-    getPanelOrder,
     renderDrawerBody,
     handleAction,
     setActiveMode,

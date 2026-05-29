@@ -58,25 +58,19 @@ import { CampaignMapsTab } from "./tabs/CampaignMapsTab";
 // imperative `_drawerEl`/`_drawerBackdropEl` flow in campaign-ui.js.
 
 // ── Bridge surface (mirror of campaign-ui.js bridge) ───────────────
-interface PanelDef {
-  readonly icon: string;
-  readonly label: string;
-  readonly title: string;
-}
+// Panel defs + order come from the TS chrome data builder (Phase H.4).
+// `getMainBody` + `renderDrawerBody` still return HTML strings from
+// the still-JS render paths (the registered React tabs are rendered
+// inline above via `REACT_TAB_COMPONENTS`; getMainBody is only reached
+// when a tab id has no registered React component).
+import { panelDefsForState } from "./shell/chromeData";
 
 interface CampaignUIShell {
   readonly enableReactShell: () => void;
   readonly init: (root: HTMLElement) => Promise<void> | void;
   readonly getMainBody: (state?: CampaignStateSnapshot) => string;
-  readonly getPanelDefs: (state?: CampaignStateSnapshot) => Record<string, PanelDef>;
-  readonly getPanelOrder: () => readonly string[];
   readonly renderDrawerBody: (panelId: string, state?: CampaignStateSnapshot) => string;
-  readonly setActiveMode: (mode: string, opts?: { keepTab?: boolean }) => void;
-  readonly setActiveTab: (tab: string, opts?: { keepMode?: boolean }) => void;
   readonly setActivePanel: (panelId: string | null) => void;
-  readonly getActiveTab: () => string;
-  readonly getActiveMode: () => string;
-  readonly getActivePanel: () => string | null;
   readonly getBootIncompatibleNotice?: () => { readonly slotName: string; readonly reason: string; readonly slotId: string } | null;
 }
 
@@ -369,7 +363,7 @@ function VanillaBody({ state, tab }: { state: CampaignStateSnapshot; tab: string
 function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignStateSnapshot }) {
   const UI = cjs().CampaignUI;
   if (!UI) return null;
-  const defs = UI.getPanelDefs(state);
+  const defs = panelDefsForState(state);
   const def = defs[panelId];
   if (!def) return null;
 

@@ -11,7 +11,12 @@ import { esc, lootLine, label } from "../../util/cui-utils";
 import { renderInlinePurpose, purposeKeyForCard, type CardLike } from "../../util/cui-controls";
 import { pendingSoloHookCard, type SoloHookStateShape } from "../../util/state-helpers";
 import type { CampaignStateSnapshot } from "../../store";
-import type { QuestPillData } from "./scenarioShared";
+import {
+  runQuestPill,
+  scenarioObjectiveMeta,
+  type QuestPillData,
+  type ObjectiveLike
+} from "./scenarioShared";
 
 // HubTab module (still-JS bridged island) renders the consequence
 // preview / flavor trail HTML the side panels embed.
@@ -458,25 +463,78 @@ export interface SoloNoticeData {
   readonly acceptHint: string;
 }
 
-interface Bridge {
-  readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
-  readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
-  readonly getActiveSequenceData: (
-    state?: CampaignStateSnapshot,
-    scopes?: readonly SequenceScope[] | null
-  ) => ActiveSequenceData | null;
+// (No remaining CampaignUI bridge consumers — every data builder in
+// this file is now inline TS.)
+
+// Phase H.4 inline port — typed snapshot of `state.lastEvent`. The HTML
+// fragments (inline purpose, consequence preview, flavor trail) still
+// come through the helpers above + the HubTab module bridge; the data
+// shape is fully typed for the JSX consumers.
+interface EventInput {
+  readonly id?: string;
+  readonly title?: string;
+  readonly type?: string;
+  readonly tableName?: string;
+  readonly prompt?: string;
+  readonly gmHook?: string;
+  readonly gmIdea?: string;
+  readonly oracleTableId?: string;
+  readonly suggested?: readonly unknown[];
+  readonly manualSummary?: { short?: string; main?: string; tags?: readonly string[] };
 }
 
-interface Cjs {
-  readonly CampaignUI?: Bridge;
-}
-
-function cjs(): Cjs {
-  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
-}
+const EVENT_IDEA_LABELS: Readonly<Record<string, string>> = {
+  new_char: "👤 New Character",
+  new_item: "🎁 Item idea",
+  weapon: "⚔ Weapon idea",
+  back_story: "📖 Backstory beat",
+  main_plot: "🌌 Main plot thread",
+  development: "✨ Character development",
+  faction: "🏛 Faction hook",
+  mystery: "🔮 Mystery hook"
+};
 
 export function getEventResultData(state: CampaignStateSnapshot): EventResultData | null {
-  return cjs().CampaignUI?.getEventResultData(state) ?? null;
+  if (!state) return null;
+  const event = (state as { lastEvent?: EventInput }).lastEvent;
+  if (!event) return null;
+  const suggested = event.suggested || [];
+  const hub = hubTab();
+  const summary = hub?.consequenceSummary?.(suggested, {
+    hasText: !!(event.prompt || event.gmHook)
+  }) || { tone: "", label: "", short: "" };
+  const opsModule = ops();
+  const opsDesc = suggested.length
+    ? (opsModule?.describe?.(suggested) ?? []).filter(Boolean)
+    : [];
+  return {
+    title: event.title || event.id || "Event",
+    subLabel: event.tableName || event.type || "event",
+    tone: String(summary.tone || ""),
+    summaryLabel: String(summary.label || ""),
+    ideaPillLabel: event.gmIdea ? EVENT_IDEA_LABELS[event.gmIdea] || event.gmIdea : "",
+    prompt: event.prompt || "",
+    gmHook: event.gmHook || "",
+    inlinePurposeHtml: renderInlinePurpose("event"),
+    manualSummary: event.manualSummary
+      ? {
+          short: event.manualSummary.short || "No short result written yet.",
+          main: event.manualSummary.main || "",
+          tags: (event.manualSummary.tags || []).filter((tag): tag is string => Boolean(tag))
+        }
+      : null,
+    consequencePreviewHtml:
+      hub?.renderConsequencePreview?.(suggested, {
+        emptyTitle: "Flavor or plot text only",
+        emptyText: "No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it."
+      }) ?? "",
+    flavorTrailHtml: hub?.renderFlavorTrail?.(event) ?? "",
+    applyLabel: suggested.length ? "Apply Listed Changes" : "Log Flavor",
+    applyHint: opsDesc.length ? "Commit: " + opsDesc.join("; ") : "Log the event with no stat changes",
+    hasManualSummary: !!event.manualSummary,
+    hasPlotSeedTrigger: !!(event.gmHook || event.gmIdea),
+    hasOracleTableId: !!event.oracleTableId
+  };
 }
 
 // Phase H.4 inline port — `state.lastOracle` + the HubTab
@@ -687,13 +745,300 @@ export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattl
   };
 }
 
+// Phase H.4 inline port — pure state + scenario read. The questRunTask
+// HTML chunk still comes from a JS-side bridge (`renderQuestRunTaskHtml`)
+// because its sub-renderer `_questTaskDescriptor` reads
+// `ScenarioRunner.findNode/findCell` + `CampaignState.getScenarioMapById`
+// against the active scenario map — those stay in JS as the render-side
+// descriptor.
+interface ScenarioSummaryRunInput {
+  readonly scenarioId?: string;
+  readonly questId?: string;
+  readonly travelMode?: string;
+  readonly currentCell?: { readonly x?: number; readonly y?: number };
+  readonly currentNode?: string;
+  readonly danger?: number;
+  readonly dangerMax?: number;
+  readonly usedCampRests?: number;
+  readonly eventsUsed?: number;
+  readonly randomBattlesUsed?: number;
+  readonly limits?: { readonly campRests?: number; readonly events?: number; readonly randomBattles?: number };
+  readonly movingThreats?: readonly unknown[];
+  readonly objectiveState?: ObjectiveStateInput | null;
+}
+
+interface ObjectiveStateInput extends ObjectiveLike {
+  readonly completed?: boolean;
+  readonly label?: string;
+}
+
+interface ScenarioRecord {
+  readonly name?: string;
+  readonly generated?: boolean;
+}
+
+interface CampaignStateSurface {
+  readonly getScenarioById?: (id: string) => ScenarioRecord | null | undefined;
+}
+
+interface SummaryCjs {
+  readonly CampaignState?: CampaignStateSurface;
+  readonly CampaignUI?: { readonly renderQuestRunTaskHtml?: (state: unknown, run: unknown, scenario: unknown) => string };
+}
+
+function summaryCjs(): SummaryCjs {
+  return (window as unknown as { CJS?: SummaryCjs }).CJS ?? {};
+}
+
 export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSummaryData | null {
-  return cjs().CampaignUI?.getScenarioSummaryData(state) ?? null;
+  if (!state) return null;
+  const typed = state as { activeScenarioRun?: ScenarioSummaryRunInput };
+  const run = typed.activeScenarioRun;
+  if (!run) return { hasRun: false };
+  const c = summaryCjs();
+  const scenario = run.scenarioId ? c.CampaignState?.getScenarioById?.(run.scenarioId) ?? null : null;
+  const location =
+    run.travelMode === "grid_map" && run.currentCell
+      ? `${run.currentCell.x},${run.currentCell.y}`
+      : run.currentNode || "-";
+  const objective = run.objectiveState || null;
+  return {
+    hasRun: true,
+    name: scenario?.name || run.scenarioId || "Run",
+    questPill: runQuestPill(state as Parameters<typeof runQuestPill>[0], run, scenario as Parameters<typeof runQuestPill>[2]),
+    isGrid: run.travelMode === "grid_map",
+    location,
+    danger: run.danger ?? 0,
+    dangerMax: run.dangerMax ?? 0,
+    campsUsed: run.usedCampRests ?? 0,
+    campsMax: run.limits?.campRests ?? 0,
+    eventsUsed: run.eventsUsed ?? 0,
+    eventsMax: run.limits?.events ?? 0,
+    battlesUsed: run.randomBattlesUsed ?? 0,
+    battlesMax: run.limits?.randomBattles ?? 0,
+    roamerCount: (run.movingThreats || []).length,
+    objective: objective
+      ? {
+          completed: !!objective.completed,
+          visible: objective.visible !== false,
+          label: objective.label || "Reach the target",
+          meta: scenarioObjectiveMeta(run, objective)
+        }
+      : null,
+    questRunTaskHtml: c.CampaignUI?.renderQuestRunTaskHtml?.(state, run, scenario) || "",
+    hasGeneratedScenario: !!scenario?.generated
+  };
+}
+
+// Phase H.4 inline port — typed snapshot for the active sequence panel.
+// Discriminated by node type so the JSX `SequenceNodePanel` doesn't
+// need to reach back into CampaignSequences / CampaignAlignment.
+interface SequenceActiveInput {
+  readonly scope?: SequenceScope;
+  readonly sequenceId?: string;
+  readonly title?: string;
+  readonly nodeId?: string;
+  readonly applyConsequences?: boolean;
+}
+
+interface SequenceNodeInput {
+  readonly type?: string;
+  readonly speaker?: string;
+  readonly text?: string;
+  readonly prompt?: string;
+  readonly summary?: string;
+  readonly title?: string;
+  readonly label?: string;
+  readonly next?: string;
+  readonly stat?: string;
+  readonly difficulty?: number | string;
+  readonly dc?: number | string;
+  readonly encounterId?: string;
+  readonly battleSetId?: string;
+  readonly scenarioId?: string;
+  readonly actor?: string;
+  readonly minigame?: { readonly gameId?: string; readonly difficulty?: number | string };
+  readonly minigameId?: string;
+  readonly gameId?: string;
+  readonly tags?: readonly string[];
+  readonly choices?: readonly SequenceChoiceInput[];
+}
+
+interface SequenceChoiceInput {
+  readonly id?: string;
+  readonly label?: string;
+  readonly summary?: string;
+  readonly next?: string;
+  readonly alignment?: unknown;
+  readonly karma?: unknown;
+  readonly consequencePoints?: unknown;
+  readonly alignmentDelta?: unknown;
+}
+
+interface ChoiceEligibility {
+  readonly ok?: boolean;
+  readonly hidden?: boolean;
+  readonly blockers?: readonly string[];
+}
+
+interface CampaignSequencesSurface {
+  readonly active?: (state: unknown) => SequenceActiveInput | null | undefined;
+  readonly cachedSequence?: (sequenceId: string, world: string | undefined) => unknown;
+  readonly storyMeta?: (entry: unknown, world: string | undefined) => { chapterLabel?: string } | null | undefined;
+  readonly findNode?: (sequence: unknown, nodeId: string) => SequenceNodeInput | null | undefined;
+  readonly choiceEligibility?: (
+    choice: unknown,
+    node: unknown,
+    state: unknown,
+    options: { active?: unknown }
+  ) => ChoiceEligibility | null | undefined;
+}
+
+interface SequenceVnSurface {
+  readonly isEnabled?: () => boolean;
+}
+
+interface AlignmentSurface {
+  readonly describeDeltas?: (delta: unknown) => string;
+}
+
+interface SequenceCjs {
+  readonly CampaignSequences?: CampaignSequencesSurface;
+  readonly CampaignSequenceVN?: SequenceVnSurface;
+  readonly CampaignAlignment?: AlignmentSurface;
+}
+
+function sequenceCjs(): SequenceCjs {
+  return (window as unknown as { CJS?: SequenceCjs }).CJS ?? {};
+}
+
+function sequenceNodeMetaBits(node: SequenceNodeInput = {}): readonly string[] {
+  const bits: string[] = [];
+  if (node.stat) bits.push(`${node.stat} DC ${node.difficulty || node.dc || "?"}`);
+  if (node.encounterId) bits.push(String(node.encounterId));
+  if (node.battleSetId) bits.push(String(node.battleSetId));
+  if (node.scenarioId) bits.push(`Scenario: ${label(node.scenarioId)}`);
+  const gameId = node.minigame?.gameId || node.minigameId || node.gameId;
+  const difficulty = node.minigame?.difficulty || node.difficulty;
+  if (gameId) bits.push(`Mini-Game: ${label(gameId)} Lv ${difficulty || 1}`);
+  if (node.tags?.length) bits.push(node.tags.map((t) => label(t)).join(", "));
+  return bits;
+}
+
+function sequenceNodeSnapshot(
+  node: SequenceNodeInput,
+  active: SequenceActiveInput,
+  state: CampaignStateSnapshot
+): SequenceNodeData {
+  const Seq = sequenceCjs().CampaignSequences;
+  const type = String(node.type || "narration").toLowerCase();
+  const replay = active.applyConsequences === false;
+  const speaker = node.speaker || "";
+  const text = node.text || node.prompt || node.summary || node.title || "";
+  const meta = sequenceNodeMetaBits(node);
+  if (type === "choice") {
+    const choices = (node.choices || [])
+      .map((choice) => {
+        const eligibility = Seq?.choiceEligibility?.(choice, node, state, { active }) || {
+          ok: true,
+          blockers: [],
+          hidden: false
+        };
+        if (eligibility.hidden) return null;
+        const locked = !eligibility.ok;
+        const alignmentHint = sequenceCjs().CampaignAlignment?.describeDeltas?.(
+          choice.alignment ?? choice.karma ?? choice.consequencePoints ?? choice.alignmentDelta
+        );
+        const hint = locked
+          ? (eligibility.blockers || []).join(" | ")
+          : choice.summary || alignmentHint || choice.next || "";
+        return {
+          id: String(choice.id || ""),
+          label: String(choice.label || choice.id || ""),
+          hint: String(hint || ""),
+          locked
+        };
+      })
+      .filter((entry): entry is { id: string; label: string; hint: string; locked: boolean } => entry !== null);
+    return { type: "choice", speaker, text: text || "Choose a path.", choices };
+  }
+  if (type === "stat_check") {
+    return {
+      type: "stat_check",
+      text: text || `${node.actor || "Party"} checks ${node.stat || "?"} vs ${node.difficulty || node.dc || "?"}.`,
+      meta
+    };
+  }
+  if (type === "combat") {
+    return {
+      type: "combat",
+      text: text || node.label || "Combat encounter",
+      meta,
+      replay,
+      encounterId: String(node.encounterId || ""),
+      battleSetId: String(node.battleSetId || "")
+    };
+  }
+  if (type === "minigame") {
+    const gameId = node.minigame?.gameId || node.minigameId || node.gameId || "";
+    return {
+      type: "minigame",
+      text: text || `${label(gameId || "Mini-game")} challenge`,
+      meta,
+      replay,
+      gameId: String(gameId),
+      gameLabel: gameId ? label(gameId) : ""
+    };
+  }
+  if (type === "scenario") {
+    const activeRun = (state as { activeScenarioRun?: { scenarioId?: string } } | null | undefined)?.activeScenarioRun;
+    const scenarioId = String(node.scenarioId || "");
+    const scenarioOpen = !!(activeRun && activeRun.scenarioId === scenarioId);
+    return {
+      type: "scenario",
+      text: text || node.label || node.title || "Exploration run",
+      meta,
+      replay,
+      scenarioId,
+      scenarioOpen
+    };
+  }
+  if (type === "end") {
+    return { type: "end", text: text || "This sequence is ready to close." };
+  }
+  return {
+    type: "default",
+    kind: type,
+    speaker,
+    text,
+    meta,
+    replay,
+    next: String(node.next || "")
+  };
 }
 
 export function getActiveSequenceData(
   state: CampaignStateSnapshot,
   scopes?: readonly SequenceScope[]
 ): ActiveSequenceData | null {
-  return cjs().CampaignUI?.getActiveSequenceData(state, scopes ?? null) ?? null;
+  if (!state) return null;
+  const c = sequenceCjs();
+  const Seq = c.CampaignSequences;
+  const active = Seq?.active?.(state);
+  if (!active) return null;
+  if (scopes && active.scope && !scopes.includes(active.scope)) return null;
+  const world = (state as { currentWorld?: string }).currentWorld;
+  const sequence = active.sequenceId ? Seq?.cachedSequence?.(active.sequenceId, world) || null : null;
+  const meta = Seq?.storyMeta?.(sequence || active.sequenceId, world) || {};
+  const node = sequence ? Seq?.findNode?.(sequence, active.nodeId || "") : null;
+  const vnActive = !!(c.CampaignSequenceVN?.isEnabled?.() && active);
+  return {
+    title: active.title || active.sequenceId || "",
+    scopeLabel: label(active.scope || "sequence"),
+    chapterLabel: meta.chapterLabel || "",
+    nodeId: active.nodeId || "",
+    replayMode: active.applyConsequences === false,
+    vnActive,
+    node: node ? sequenceNodeSnapshot(node, active, state) : null
+  };
 }

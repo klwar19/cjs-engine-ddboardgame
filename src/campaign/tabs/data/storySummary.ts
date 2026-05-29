@@ -60,7 +60,7 @@ interface SequenceLogLine {
   readonly summary?: string;
 }
 
-interface StoryPartRecord {
+export interface StoryPartRecord {
   readonly sequenceId?: string;
   readonly title?: string;
   readonly chapterLabel?: string;
@@ -115,7 +115,7 @@ function storySummaryTextFromRecord(record: StoryPartRecord): string {
 
 // `_storySummaryEntries` — builds the story-summary entry list,
 // ordered by Sequences.list() with un-ordered records appended.
-function storySummaryEntries(state: CampaignStateForStorySummary): readonly StoryPartRecord[] {
+export function storySummaryEntries(state: CampaignStateForStorySummary): readonly StoryPartRecord[] {
   const Seq = cjs().CampaignSequences;
   const ordered = Seq?.list?.("story", state.currentWorld) || [];
   const records = state.storyMode?.partResults || {};
