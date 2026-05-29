@@ -21,6 +21,10 @@ window.CJS.CampaignUI = (() => {
   const Chat = () => window.CJS.CampaignPartyChat;
   const C = () => window.CJS.CONST;
   const Icons = () => window.CJS.UIIcons;
+  // Phase H.4 — the story-context cache + AI story-prompt builder moved to
+  // `src/campaign/story-context.ts`. init/render/subscribe prime the async
+  // cache through this surface; TS consumers import the readers directly.
+  const StoryCtx = () => window.CJS.CampaignStoryContext;
 
   // Leaf utilities live in `src/campaign/util/cui-utils.ts` (Phase H.4).
   // The TS module installs `window.CJS.CampaignUIInternal.Utils` so the
@@ -150,12 +154,9 @@ window.CJS.CampaignUI = (() => {
   let _bootIncompatibleNotice = null;
   // _mgTestLevels moved to TS module-level state in
   // src/campaign/tabs/data/minigameTest.ts (Phase H.4).
-  const _storyContextCache = {
-    globalIndex: { status: 'idle', data: null, promise: null },
-    allWorld: { status: 'idle', text: '', promise: null },
-    worlds: {},
-    structuredWorlds: {}
-  };
+  // `_storyContextCache` + the `_ensureStoryContext` async loader cluster
+  // moved to `src/campaign/story-context.ts` (Phase H.4); primed below via
+  // StoryCtx().ensureStoryContext.
 
   // Chrome constants moved to `src/campaign/chrome-state.ts`. Read through
   // the bridge so there's exactly one source of truth between TS and JS.
@@ -216,7 +217,7 @@ window.CJS.CampaignUI = (() => {
         Save().saveCurrent();
       }
       await window.CJS.CampaignSequences?.loadWorld?.(CS().getState()?.currentWorld || 'haven');
-      await _ensureStoryContext(CS().getState()?.currentWorld || 'haven');
+      await StoryCtx()?.ensureStoryContext?.(CS().getState()?.currentWorld || 'haven');
       // _bindEvents() removed (Phase H.2): the React shell forwards every
       // bridged-body data-campaign-action / -mode / -tab / -panel through
       // its <main> click/change forwarder (and the drawer's own forwarder),
@@ -227,7 +228,7 @@ window.CJS.CampaignUI = (() => {
       window.CJS.CampaignObjectiveBanner?.init?.();
       CS().subscribe(() => {
         Save().saveCurrent();
-        _ensureStoryContext(CS().getState()?.currentWorld || 'haven').catch(() => {});
+        StoryCtx()?.ensureStoryContext?.(CS().getState()?.currentWorld || 'haven').catch(() => {});
         render();
       });
       _booted = true;
@@ -261,7 +262,7 @@ window.CJS.CampaignUI = (() => {
     if (!_root || !CS().getState()) return;
     const state = CS().getState();
     const campaign = CS().getCurrentCampaign();
-    _ensureStoryContext(state.currentWorld || 'haven').catch(() => {});
+    StoryCtx()?.ensureStoryContext?.(state.currentWorld || 'haven').catch(() => {});
     _normalizeActiveWorldUi(state);
 
     if (_reactShellEnabled) {
@@ -569,9 +570,9 @@ window.CJS.CampaignUI = (() => {
   // The bridge `getSequenceShelfData` returns typed shelf data; the
   // bridge `_sequenceShelfEntryData` produces per-entry typed records.
 
-  function _storyChapterText(state = CS().getState() || {}) {
-    return _esc(state.storyMode?.currentChapterLabel || state.currentChapter || 1);
-  }
+  // `_storyChapterText` moved to `src/campaign/story-context.ts` in Phase
+  // H.4 — it was used only by the AI story-prompt builder, which now lives
+  // there alongside the story-context cache.
 
   // `_storySequenceSummary`, `_storySequenceActionLabel`,
   // `_storySequenceMetaChips`, `_storySequenceStatusLabel`,
@@ -587,45 +588,10 @@ window.CJS.CampaignUI = (() => {
   // `_storyPipelinePanelData`, `_syncSummaryData`, `_shortenPanelLabel`
   // moved to TS in Phase H.4 (`src/campaign/tabs/data/storyHome.ts`).
 
-  function _storySummaryEntries(state = CS().getState() || {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const ordered = Seq?.list?.('story', state.currentWorld) || [];
-    const records = state.storyMode?.partResults || {};
-    const seen = new Set();
-    const out = ordered.map((storyEntry) => {
-      const record = records[storyEntry.id];
-      if (!record) return null;
-      seen.add(storyEntry.id);
-      const meta = Seq?.storyMeta?.(storyEntry, state.currentWorld) || {};
-      return {
-        ...record,
-        title: record.title || storyEntry.title || storyEntry.id,
-        chapterLabel: record.chapterLabel || meta.chapterLabel || '',
-        partLabel: meta.partLabel || '',
-        summaryText: record.summaryText || _storySummaryTextFromRecord(record),
-        syncSummary: record.syncSummary || meta.syncSummary || []
-      };
-    }).filter(Boolean);
-    for (const record of Object.values(records)) {
-      if (!record?.sequenceId || seen.has(record.sequenceId)) continue;
-      out.push({
-        ...record,
-        title: record.title || record.sequenceId,
-        chapterLabel: record.chapterLabel || '',
-        partLabel: '',
-        summaryText: record.summaryText || _storySummaryTextFromRecord(record),
-        syncSummary: record.syncSummary || []
-      });
-    }
-    return out;
-  }
-
-  function _storySummaryTextFromRecord(record = {}) {
-    return record.summaryText
-      || (record.log || []).map((line) => line.summary).filter(Boolean).slice(-3).join(' | ')
-      || record.result
-      || 'Story part recorded.';
-  }
+  // `_storySummaryEntries` + `_storySummaryTextFromRecord` removed in Phase
+  // H.4 — they were orphaned when `getStorySummaryData` ported to TS
+  // (`src/campaign/tabs/data/storySummary.ts`, which carries its own
+  // `storySummaryEntries`). No remaining JS callers.
 
   // _renderGachaHomeHero removed in Phase G.17 — its only caller, the
   // HTML _renderZombieScavengeHome, is gone. The zombie scavenge hero
@@ -1323,136 +1289,12 @@ window.CJS.CampaignUI = (() => {
   // _doRelActivity / _relationshipNarrativeModal ported to
   // action-handlers/downtime.ts (H.3).
 
-  async function _ensureStoryContext(world = 'haven') {
-    const worldId = world || 'haven';
-    const jobs = [];
-    if (_storyContextCache.globalIndex.status === 'idle') {
-      _storyContextCache.globalIndex.status = 'loading';
-      _storyContextCache.globalIndex.promise = _loadStoryContextJson('data/worlds/_ai_story_context_index.json')
-        .then((data) => {
-          _storyContextCache.globalIndex.data = data;
-          _storyContextCache.globalIndex.status = data ? 'loaded' : 'missing';
-        })
-        .catch((error) => {
-          console.warn('AI story context index unavailable:', error);
-          _storyContextCache.globalIndex.status = 'missing';
-        });
-    }
-    if (_storyContextCache.globalIndex.promise) jobs.push(_storyContextCache.globalIndex.promise);
-
-    if (_storyContextCache.allWorld.status === 'idle') {
-      _storyContextCache.allWorld.status = 'loading';
-      _storyContextCache.allWorld.promise = _loadStoryContextFile('data/worlds/_all_world_story_flow_summary.md')
-        .then((text) => {
-          _storyContextCache.allWorld.text = text;
-          _storyContextCache.allWorld.status = text ? 'loaded' : 'missing';
-        })
-        .catch((error) => {
-          console.warn('All-world story summary unavailable:', error);
-          _storyContextCache.allWorld.status = 'missing';
-        });
-    }
-    if (_storyContextCache.allWorld.promise) jobs.push(_storyContextCache.allWorld.promise);
-
-    const entry = _storyContextCache.worlds[worldId] = _storyContextCache.worlds[worldId] || { status: 'idle', text: '', promise: null };
-    if (entry.status === 'idle') {
-      entry.status = 'loading';
-      entry.promise = _loadStoryContextFile(`data/worlds/${worldId}/story_summary.md`)
-        .then((text) => {
-          entry.text = text;
-          entry.status = text ? 'loaded' : 'missing';
-          if (_root && CS().getState()?.currentWorld === worldId) setTimeout(render, 0);
-        })
-        .catch((error) => {
-          console.warn('World story summary unavailable:', worldId, error);
-          entry.status = 'missing';
-        });
-    }
-    if (entry.promise) jobs.push(entry.promise);
-
-    const structured = _storyContextCache.structuredWorlds[worldId] = _storyContextCache.structuredWorlds[worldId] || { status: 'idle', data: null, promise: null };
-    if (structured.status === 'idle') {
-      structured.status = 'loading';
-      structured.promise = _loadStoryContextJson(`data/worlds/${worldId}/story_context/index.json`)
-        .then((data) => {
-          structured.data = data;
-          structured.status = data ? 'loaded' : 'missing';
-          if (_root && CS().getState()?.currentWorld === worldId) setTimeout(render, 0);
-        })
-        .catch((error) => {
-          console.warn('World AI story context unavailable:', worldId, error);
-          structured.status = 'missing';
-        });
-    }
-    if (structured.promise) jobs.push(structured.promise);
-    await Promise.allSettled(jobs);
-    return _storyContextFor(worldId);
-  }
-
-  async function _loadStoryContextFile(path) {
-    if (typeof fetch !== 'function') return '';
-    const response = await fetch(path, { cache: 'no-store' });
-    if (!response.ok) return '';
-    return (await response.text()).trim();
-  }
-
-  async function _loadStoryContextJson(path) {
-    if (typeof fetch !== 'function') return null;
-    const response = await fetch(path, { cache: 'no-store' });
-    if (!response.ok) return null;
-    const text = (await response.text()).trim();
-    if (!text) return null;
-    return JSON.parse(text);
-  }
-
-  function _storyContextFor(world = 'haven') {
-    const worldId = world || 'haven';
-    const worldEntry = _storyContextCache.worlds[worldId] || { status: 'idle', text: '' };
-    const structuredEntry = _storyContextCache.structuredWorlds[worldId] || { status: 'idle', data: null };
-    return {
-      world: worldId,
-      indexPath: 'data/worlds/_ai_story_context_index.json',
-      allWorldPath: 'data/worlds/_all_world_story_flow_summary.md',
-      worldPath: `data/worlds/${worldId}/story_summary.md`,
-      structuredWorldPath: `data/worlds/${worldId}/story_context/index.json`,
-      indexStatus: _storyContextCache.globalIndex.status,
-      allWorldStatus: _storyContextCache.allWorld.status,
-      worldStatus: worldEntry.status,
-      structuredWorldStatus: structuredEntry.status,
-      indexData: _storyContextCache.globalIndex.data || null,
-      allWorldText: _storyContextCache.allWorld.text || '',
-      worldText: worldEntry.text || '',
-      structuredWorldData: structuredEntry.data || null
-    };
-  }
-
-  // _renderAiStoryContextPanel removed in Phase G.12. The React
-  // `AiStoryContextPanel` (`src/campaign/tabs/StoryHomePanels.tsx`)
-  // renders from typed data produced by `_aiStoryContextData`.
-  function _aiStoryContextData(state) {
-    const ctx = _storyContextFor(state.currentWorld || 'haven');
-    const manual = state.storyMode?.manualSummaryEntries || [];
-    const branches = window.CJS.CampaignStoryBranch?.getBranches?.(state.currentWorld)
-      || state.storyMode?.manualBranches || [];
-    const loaded = [ctx.indexData ? 1 : 0, ctx.allWorldText ? 1 : 0, ctx.worldText ? 1 : 0, ctx.structuredWorldData ? 1 : 0].reduce((a, b) => a + b, 0);
-    const arcs = Array.isArray(ctx.structuredWorldData?.arcs) ? ctx.structuredWorldData.arcs : [];
-    return {
-      loaded,
-      total: 4,
-      staticLines: [
-        { path: String(ctx.allWorldPath), statusLabel: _label(ctx.allWorldStatus) },
-        { path: String(ctx.worldPath), statusLabel: _label(ctx.worldStatus) }
-      ],
-      indexLines: [
-        { path: String(ctx.indexPath), statusLabel: _label(ctx.indexStatus) },
-        { path: String(ctx.structuredWorldPath), statusLabel: _label(ctx.structuredWorldStatus) }
-      ],
-      arcsCount: arcs.length,
-      manualCount: manual.length,
-      branchCount: branches.length
-    };
-  }
-
+  // `_ensureStoryContext`, `_loadStoryContextFile`, `_loadStoryContextJson`,
+  // `_storyContextFor`, and `_aiStoryContextData` (+ the `_renderAiStory-
+  // ContextPanel` removed back in G.12) moved to
+  // `src/campaign/story-context.ts` in Phase H.4. The async cache primes
+  // through `StoryCtx().ensureStoryContext` (init/render/subscribe); the
+  // Story Home panel reads `aiStoryContextData` directly from the TS port.
 
   function _openManualEventBuilder(prefill = {}) {
     const state = CS().getState() || {};
@@ -2358,267 +2200,13 @@ window.CJS.CampaignUI = (() => {
   }
 
   // _copyStoryPrompt ported to action-handlers/story-tools.ts (H.3).
-  // The TS handler reads _storyPromptText + _ensureStoryContext via
-  // the new CampaignUI.computeStoryPromptText / .ensureStoryContext
-  // bridges so the prompt assembly stays in JS until H.4.
-
-  function _storyContextPromptText(state = {}) {
-    const ctx = _storyContextFor(state.currentWorld || 'haven');
-    const allWorld = _markdownPromptExcerpt(ctx.allWorldText, 2200);
-    const world = _markdownPromptExcerpt(ctx.worldText, 3200);
-    const globalIndex = _storyContextIndexPromptText(ctx.indexData);
-    const structuredWorld = _worldStoryContextPromptText(ctx.structuredWorldData);
-    return [
-      'AI-readable story context files:',
-      `- ${ctx.indexPath} (${ctx.indexStatus})`,
-      `- ${ctx.allWorldPath} (${ctx.allWorldStatus})`,
-      `- ${ctx.worldPath} (${ctx.worldStatus})`,
-      `- ${ctx.structuredWorldPath} (${ctx.structuredWorldStatus})`,
-      '',
-      'How to use the context:',
-      '- First read the structured arc/event/quest context for the chosen world.',
-      '- Use full markdown summaries only when the compact context does not answer a story continuity question.',
-      '- After drafting a story, event, or quest, return a story_context_update block so the matching world story_context/index.json can be updated for future AI runs.',
-      '- Check possible consequence points, not just current points: alignment, world alignment, relationships, flags, world pressure, reputation, heat, debt, noise, infection, and route identity.',
-      '',
-      'Global AI story context index:',
-      globalIndex,
-      '',
-      `${_label(state.currentWorld || 'world')} compact arc/event/quest context:`,
-      structuredWorld,
-      '',
-      'All-world story flow summary:',
-      allWorld || '- Summary file not loaded or not present.',
-      '',
-      `${_label(state.currentWorld || 'world')} story summary:`,
-      world || '- Summary file not loaded or not present.'
-    ].join('\n');
-  }
-
-  function _storyContextIndexPromptText(data) {
-    if (!data) return '- Global AI story context index not loaded.';
-    const lines = [];
-    if (data.purpose) lines.push(`Purpose: ${_compactPromptLine(data.purpose, 500)}`);
-    if (Array.isArray(data.readOrder) && data.readOrder.length) {
-      lines.push('Read order:');
-      data.readOrder.slice(0, 7).forEach((item) => lines.push(`- ${_compactPromptLine(item, 240)}`));
-    }
-    const contract = data.authoringContract || {};
-    if (Array.isArray(contract.afterDrafting) && contract.afterDrafting.length) {
-      lines.push('After each AI delivery:');
-      contract.afterDrafting.slice(0, 7).forEach((item) => lines.push(`- ${_compactPromptLine(item, 260)}`));
-    }
-    const consequence = data.sharedConsequenceModel || {};
-    if (Array.isArray(consequence.choiceAxes) && consequence.choiceAxes.length) {
-      lines.push('Shared choice axes:');
-      consequence.choiceAxes.forEach((axis) => lines.push(`- ${axis.id}: ${_compactPromptLine(axis.use || '', 220)}`));
-    }
-    if (Array.isArray(consequence.additionalTrackers) && consequence.additionalTrackers.length) {
-      lines.push(`Other trackers to consider: ${consequence.additionalTrackers.slice(0, 12).join(', ')}`);
-    }
-    return lines.join('\n') || '- Global AI story context index is empty.';
-  }
-
-  function _worldStoryContextPromptText(data) {
-    if (!data) return '- World structured story context not loaded.';
-    const lines = [];
-    const title = data.displayName || data.world || 'World';
-    lines.push(`World: ${title}`);
-    if (data.purpose) lines.push(`Purpose: ${_compactPromptLine(data.purpose, 420)}`);
-    const tiers = data.summaryTiers || {};
-    if (tiers.always) lines.push(`Always remember: ${_compactPromptLine(tiers.always, 420)}`);
-    if (tiers.previousArcCarryForward) lines.push(`Carryover: ${_compactPromptLine(tiers.previousArcCarryForward, 520)}`);
-    const readFiles = [
-      ...(Array.isArray(data.readOrder?.skim) ? data.readOrder.skim : []),
-      ...(Array.isArray(data.readOrder?.openWhenWriting) ? data.readOrder.openWhenWriting : [])
-    ];
-    if (readFiles.length) {
-      lines.push('Read/develop from:');
-      readFiles.slice(0, 8).forEach((file) => lines.push(`- ${_compactPromptLine(file, 260)}`));
-    }
-    const inputs = data.consequenceInputs || {};
-    const trackers = [
-      ...(Array.isArray(inputs.alignmentAxes) ? [`axes=${inputs.alignmentAxes.join('/')}`] : []),
-      ...(Array.isArray(inputs.relationships) ? [`relationships=${inputs.relationships.slice(0, 8).join(', ')}`] : []),
-      ...(Array.isArray(inputs.worldPressure) ? [`worldPressure=${inputs.worldPressure.slice(0, 8).join(', ')}`] : [])
-    ];
-    if (trackers.length) lines.push(`Consequence inputs: ${trackers.join('; ')}`);
-    const arcs = Array.isArray(data.arcs) ? data.arcs.slice(0, 5) : [];
-    if (arcs.length) {
-      lines.push('Arc plan:');
-      arcs.forEach((arc) => {
-        lines.push(`- ${arc.id || arc.title} [${arc.status || 'draft'}]: ${_compactPromptLine(arc.arcSummary || '', 520)}`);
-        if (arc.previousArcCarryover) lines.push(`  Previous carryover: ${_compactPromptLine(arc.previousArcCarryover, 360)}`);
-        if (arc.currentDevelopmentTarget) lines.push(`  Develop next: ${_compactPromptLine(arc.currentDevelopmentTarget, 360)}`);
-        if (Array.isArray(arc.potentialChoicePoints) && arc.potentialChoicePoints.length) {
-          const points = arc.potentialChoicePoints.slice(0, 3).map((point) => {
-            const axes = point.potentialAxes ? ` axes=${Object.entries(point.potentialAxes).map(([key, value]) => `${key}${value}`).join('/')}` : '';
-            return `${point.id || point.where}${axes}: ${_compactPromptLine(point.futureUse || '', 220)}`;
-          }).join(' | ');
-          lines.push(`  Potential points: ${points}`);
-        }
-        if (Array.isArray(arc.eventSuitability) && arc.eventSuitability.length) {
-          const events = arc.eventSuitability.slice(0, 3).map((entry) => `${entry.bucket}: ${_compactPromptLine(entry.summary || '', 220)}`).join(' | ');
-          lines.push(`  Event fit: ${events}`);
-        }
-        if (Array.isArray(arc.questSuitability) && arc.questSuitability.length) {
-          const quests = arc.questSuitability.slice(0, 3).map((entry) => `${entry.bucket}: ${_compactPromptLine(entry.summary || '', 220)}`).join(' | ');
-          lines.push(`  Quest fit: ${quests}`);
-        }
-      });
-    }
-    if (Array.isArray(data.futureEditSlots) && data.futureEditSlots.length) {
-      lines.push('Future edit slots:');
-      data.futureEditSlots.slice(0, 5).forEach((slot) => lines.push(`- ${_compactPromptLine(slot, 260)}`));
-    }
-    return lines.join('\n') || '- World structured story context is empty.';
-  }
-
-  function _liveGmStoryPromptText(state = {}) {
-    const manual = Array.isArray(state.storyMode?.manualSummaryEntries)
-      ? state.storyMode.manualSummaryEntries
-      : [];
-    const branches = window.CJS.CampaignStoryBranch?.getBranches?.(state.currentWorld) || state.storyMode?.manualBranches || [];
-    const manualText = manual.length
-      ? manual.slice(0, 8).map((entry) => {
-        const meta = [
-          entry.branchLabel ? `branch ${entry.branchLabel}` : '',
-          entry.stageId ? `stage ${entry.stageId}` : '',
-          entry.at || ''
-        ].filter(Boolean).join(', ');
-        return `- ${entry.title || 'GM note'}${meta ? ` (${meta})` : ''}: ${_compactPromptLine(entry.text || '', 700)}`;
-      }).join('\n')
-      : '- No GM-added manual notes yet.';
-    const branchText = branches.length
-      ? branches.slice(0, 8).map((branch) => {
-        const parent = branch.parentLabel || branch.parentTitle || branch.parentSequenceId || 'parent chapter';
-        return `- ${branch.chapterLabel || branch.partLabel || branch.id}: ${branch.title || 'Manual branch'} from ${parent}. ${_compactPromptLine(branch.summary || branch.scene?.lines?.map((line) => line.text).join(' ') || '', 500)}`;
-      }).join('\n')
-      : '- No runtime manual branch chapters yet.';
-    return [
-      'Live GM-added story overlay from the current save:',
-      'These notes and branches are newer than static markdown. If they conflict, treat this live overlay as table truth unless the GM says otherwise.',
-      '',
-      'GM manual notes:',
-      manualText,
-      '',
-      'Runtime manual branch chapters:',
-      branchText
-    ].join('\n');
-  }
-
-  function _storyPromptText() {
-    const state = CS().getState() || {};
-    const snap = SD()?.snapshot?.() || {};
-    const pack = snap.pack || {};
-    const stage = snap.stage || {};
-    const last = snap.last || {};
-    const party = Object.entries(state.party || {})
-      .filter(([, member]) => (member.rosterRole || 'active') !== 'bench')
-      .map(([id, member]) => member.name || DS().get('characters', member.baseCharacterId || id)?.name || id)
-      .join(', ') || 'Current party';
-    const queue = (snap.queue || []).slice(0, 5).map((beat) => `- ${beat.title || beat.id} (${beat.status || 'saved'})`).join('\n') || '- None';
-    const clues = (snap.clues || []).slice(0, 5).map((clue) => `- ${clue.title || clue.id}: ${clue.text || ''}`).join('\n') || '- None';
-    const facts = (snap.facts || []).slice(0, 5).map((fact) => `- ${fact.title || fact.id}: ${fact.text || ''}`).join('\n') || '- None';
-    const choices = (last.suggestedChoices || []).map((choice, index) => {
-      const ops = (choice.ops || []).map((op) => `    - ${Ops().describe([op])[0] || op.op}`).join('\n') || '    - Story only';
-      return `${index + 1}. ${choice.label || `Choice ${index + 1}`}\n${ops}`;
-    }).join('\n') || 'No current branch choices.';
-    const Seq = window.CJS.CampaignSequences;
-    const route = Seq?.currentRouteChoices?.(state, state.currentWorld) || [];
-    const routePath = route.length
-      ? route.map((entry) => `${entry.partLabel || entry.title || entry.sequenceId}${entry.routeLabel ? ` (${entry.routeLabel})` : ''}`).join(' → ')
-      : 'No story parts played yet.';
-    const routeDetail = route.length
-      ? route.map((entry) => {
-        const choiceText = (entry.choices || [])
-          .map((choice) => `${choice.nodeId}=${choice.choiceId || choice.label || '?'}`)
-          .join(', ');
-        return `- ${entry.partLabel || entry.title || entry.sequenceId} [${entry.mode}]${choiceText ? `: ${choiceText}` : ''}`;
-      }).join('\n')
-      : '- None yet';
-    const tree = Seq?.chapterTree?.(state.currentWorld, state) || { nodes: [] };
-    const upcoming = (tree.nodes || []).filter((node) => {
-      const eligible = node.eligibility?.eligible;
-      const replayed = node.status?.replayOnly;
-      const blocked = node.status?.deliveryBlocked;
-      return eligible && !replayed && !blocked;
-    }).slice(0, 6);
-    const upcomingText = upcoming.length
-      ? upcoming.map((node) => `- ${node.partLabel || node.partId || node.id}${node.routeLabel ? ` (${node.routeLabel})` : ''}: ${node.title}`).join('\n')
-      : '- Nothing currently unlocked beyond the trunk.';
-    const lockedHints = (tree.nodes || []).filter((node) => {
-      const blocked = node.status?.deliveryBlocked;
-      return !node.eligibility?.eligible && !node.status?.replayOnly && !blocked && node.eligibility?.reasons?.length;
-    }).slice(0, 5);
-    const lockedText = lockedHints.length
-      ? lockedHints.map((node) => `- ${node.partLabel || node.partId || node.id}: ${(node.eligibility.reasons || []).join(' | ')}`).join('\n')
-      : '- No locked branches with clear unlock hints.';
-    const alignmentText = window.CJS.CampaignAlignment?.formatForPrompt?.(state, {
-      actor: 'bin',
-      world: state.currentWorld
-    }) || 'Choice consequence tracker unavailable.';
-    const staticStoryContext = _storyContextPromptText(state);
-    const liveGmContext = _liveGmStoryPromptText(state);
-    return [
-      'CJS Story Mode GM Prompt',
-      '',
-      `Tone: ${(pack.tonePillars || []).join(', ') || 'light, human, funny, hopeful, slightly snarky'}`,
-      `Campaign: ${pack.name || 'Campaign story'}`,
-      `Current stage: ${stage.name || stage.id || 'No stage'} - ${stage.summary || ''}`,
-      `Party: ${party}`,
-      `Chapter/phase: chapter ${_storyChapterText(state)}, phase ${state.phase?.number || 1} (${state.phase?.type || 'unknown'})`,
-      '',
-      staticStoryContext,
-      '',
-      liveGmContext,
-      '',
-      'Route taken so far:',
-      `Path: ${routePath}`,
-      routeDetail,
-      '',
-      'Currently unlocked next chapter parts:',
-      upcomingText,
-      '',
-      'Locked branches (and what unlocks them):',
-      lockedText,
-      '',
-      alignmentText,
-      '',
-      'Current beat:',
-      last.title ? `${last.title}\n${last.prompt || last.text || last.summary || ''}` : 'No current beat rolled.',
-      '',
-      'Branch choices and consequences:',
-      choices,
-      '',
-      'Saved/queued beats:',
-      queue,
-      '',
-      'Known clues:',
-      clues,
-      '',
-      'Revealed facts:',
-      facts,
-      '',
-      'Request:',
-      'Continue the chapter that follows the route the player has taken. Respect the branch flags (e.g. gate vs tavern, hunt vs fortify vs compromise). When you write the next scene, begin with VN narration + dialogue + at least one stat/choice/QTE hook, then progress into either a map step or a battle that pops up directly in the player\'s face on contact. Resolve combat with consequences: losing should imply a penalty or retry, not a soft reset. Keep authored content concrete, no decorative filler, and end each scene with a clear next action or unlock signal.'
-    ].join('\n');
-  }
-
-  function _markdownPromptExcerpt(text = '', maxChars = 2800) {
-    const clean = String(text || '').replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
-    if (!clean) return '';
-    if (clean.length <= maxChars) return clean;
-    const slice = clean.slice(0, maxChars);
-    const cut = Math.max(slice.lastIndexOf('\n## '), slice.lastIndexOf('\n- '), slice.lastIndexOf('\n'));
-    return `${slice.slice(0, cut > 900 ? cut : maxChars).trim()}\n...`;
-  }
-
-  function _compactPromptLine(text = '', maxChars = 600) {
-    const clean = String(text || '').replace(/\s+/g, ' ').trim();
-    if (clean.length <= maxChars) return clean;
-    return `${clean.slice(0, maxChars - 3).trim()}...`;
-  }
+  // The AI story-prompt builder cluster moved to
+  // `src/campaign/story-context.ts` in Phase H.4:
+  // `_storyContextPromptText`, `_storyContextIndexPromptText`,
+  // `_worldStoryContextPromptText`, `_liveGmStoryPromptText`,
+  // `_storyPromptText`, `_markdownPromptExcerpt`, `_compactPromptLine`.
+  // The `story-copy-prompt` action handler imports `storyPromptText` +
+  // `ensureStoryContext` directly from that module (no bridge hop).
 
   // _openCopyTextModal ported to action-handlers/copy.ts (H.3), exposed on
   // window.CJS.CampaignCopy for _copyStoryPrompt until the story tools port.
@@ -4322,11 +3910,9 @@ window.CJS.CampaignUI = (() => {
   // `getStoryHomeData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/storyHome.ts`). The chapter tree, story
   // pipeline, sync summary, and choice consequence panels all ported
-  // inline. The AI story context panel still reads through the
-  // `renderAiStoryContextData` JS bridge because the four async caches
-  // live in the closure-private `_storyContextCache` (shared with the
-  // story-copy-prompt builder). That cache + `_ensureStoryContext`
-  // port together with the prompt machinery in a later step.
+  // inline. The AI story context panel reads `aiStoryContextData` from
+  // `src/campaign/story-context.ts` (the async cache + prompt machinery
+  // ported there in Phase H.4 too).
 
   // `getQuestPanelData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/questPanel.ts`). The TS port reads the same
@@ -4592,19 +4178,13 @@ window.CJS.CampaignUI = (() => {
     // moved to a module-level variable in
     // `src/campaign/tabs/data/minigameTest.ts`; the TS mg-test-pick
     // handler imports the setter directly.
-    // Story-tools bridges (story-copy-prompt). _storyPromptText reads
-    // closure-private state (SD.snapshot, Seq.currentRouteChoices,
-    // chapter tree, alignment, story context cache) so the closure
-    // stays JS; the TS handler reads the assembled prompt text here.
-    // _ensureStoryContext lazy-loads world story summary + AI context
-    // JSON used by the prompt — return its promise so callers can await.
-    computeStoryPromptText: () => _storyPromptText(),
-    ensureStoryContext: (world) => _ensureStoryContext(world),
-    // AI story context snapshot for the Story Home tab's "AI Story
-    // Context" panel. The four async caches live in this closure
-    // (`_storyContextCache`); the TS data builder reads the same
-    // surface through this bridge so the panel stays in sync.
-    renderAiStoryContextData: (state) => _aiStoryContextData(state || CS().getState() || {}),
+    // `computeStoryPromptText` / `ensureStoryContext` /
+    // `renderAiStoryContextData` bridges removed in Phase H.4 — the
+    // story-context cache + AI story-prompt builder moved to
+    // `src/campaign/story-context.ts`. TS consumers (story-tools handler,
+    // Story Home data builder) import `storyPromptText` / `ensureStoryContext`
+    // / `aiStoryContextData` directly; the JS init/render/subscribe prime the
+    // cache via `StoryCtx().ensureStoryContext`.
     // Big modal builders that still live in JS (each is 100–500 lines
     // with many closure-private sub-helpers — render-side data builders
     // also depend on them). The TS action handlers in

@@ -1,9 +1,10 @@
 // story-tools.ts — Phase H.3 story-tool action handlers.
 //
 // story-help opens a static "Story Mode Flow" info modal. story-copy-prompt
-// assembles the AI story-prompt text (via the CampaignUI.computeStoryPromptText
-// bridge), waits on the world story-context cache (CampaignUI.ensureStoryContext),
-// then copies to clipboard or falls back to the openCopyTextModal pane.
+// assembles the AI story-prompt text (`storyPromptText`), waits on the world
+// story-context cache (`ensureStoryContext`), then copies to clipboard or
+// falls back to the openCopyTextModal pane. Both come from the TS
+// `story-context.ts` port (Phase H.4) — no CampaignUI bridge hop.
 // story-manual-note stays in the switch — it opens _openManualSceneBuilder
 // (127 lines, closure-private branching-chapter authoring tool) which still
 // depends on a handful of closure helpers (CampaignSequences.storyMeta /
@@ -12,11 +13,7 @@
 // All copy + the clipboard fallback mirror the deleted closures.
 
 import { cs, mod, toast } from "./context";
-
-interface CampaignUiBridge {
-  computeStoryPromptText?: () => string;
-  ensureStoryContext?: (world: string) => Promise<unknown>;
-}
+import { ensureStoryContext, storyPromptText } from "../story-context";
 
 interface UiOpen {
   openModal: (cfg: { title: string; content: HTMLElement; width?: string }) => unknown;
@@ -24,10 +21,6 @@ interface UiOpen {
 
 interface CampaignCopy {
   openCopyTextModal?: (title: string, text: string) => void;
-}
-
-function bridge(): CampaignUiBridge | undefined {
-  return mod<CampaignUiBridge>("CampaignUI");
 }
 
 // Mirrors `_openStoryHelpModal`. Static four-section "Story Mode Flow"
@@ -67,9 +60,8 @@ export function openStoryHelpModal(): void {
 // when navigator.clipboard is unavailable.
 export async function copyStoryPrompt(): Promise<void> {
   const world = (cs().getState() as { currentWorld?: string } | null)?.currentWorld || "haven";
-  const ui = bridge();
-  await ui?.ensureStoryContext?.(world);
-  const text = ui?.computeStoryPromptText?.() || "";
+  await ensureStoryContext(world);
+  const text = storyPromptText() || "";
   if (!text) {
     toast("Story prompt unavailable", "info");
     return;
