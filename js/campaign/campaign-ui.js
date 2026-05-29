@@ -2213,64 +2213,14 @@ window.CJS.CampaignUI = (() => {
   // stay as pre-rendered HTML the JSX inserts via a <HtmlBridge> div —
   // the same display-bridge pattern ResultPanels uses; none carry
   // data-campaign-action. Only the action buttons move to JSX onClick.
-  function _sideCardData(card = {}, options = {}) {
-    const compact = !!options.compact;
-    const choices = card.suggestedChoices || [];
-    const primaryOps = _cardChoiceOps(card);
-    const summary = _consequenceSummary(primaryOps, { hasText: !!(card.prompt || card.text || card.summary) });
-    return {
-      id: String(card.id || ''),
-      title: String(card.title || card.name || card.id || ''),
-      subtitle: `${card.type || 'side content'} | ${card.source || ''} | ${card.status || 'idea'}`,
-      tone: String(summary.tone || 'flavor'),
-      toneLabel: String(summary.label || ''),
-      canonRisk: String(card.canonRisk || 'green'),
-      canonRiskClass: Side().riskClass(card.canonRisk),
-      compact,
-      purposeHtml: compact ? '' : _renderInlinePurpose(_purposeKeyForCard(card)),
-      prompt: String(card.prompt || ''),
-      text: String(card.text || ''),
-      summary: (!compact && card.summary) ? String(card.summary) : '',
-      flavorTrailHtml: compact ? '' : _renderFlavorTrail(card),
-      gmKeywords: (!compact && Array.isArray(card.gmKeywords)) ? card.gmKeywords.map(String) : [],
-      gmNote: compact ? '' : String(card.gmNote || ''),
-      choiceStackHtml: (!compact && choices.length)
-        ? choices.map((choice, index) => _renderConsequencePreview(choice.ops || [], {
-            title: choice.label || `Choice ${index + 1}`,
-            emptyTitle: choice.label || `Choice ${index + 1}`,
-            emptyText: 'Flavor choice only. Save it as text or use it to steer the next scene.'
-          })).join('')
-        : '',
-      choiceButtons: choices.map((choice, index) => ({
-        index,
-        label: String(choice.label || `Choice ${index + 1}`)
-      })),
-      showDismiss: !compact
-    };
-  }
+  // `_sideCardData` / `_rumorRowData` removed in Phase H.4 — they were
+  // orphaned when the side-content data builders ported to TS
+  // (`src/campaign/tabs/data/hub.ts`, which carries the canonical
+  // `sideCardData` / `rumorRowData`). No remaining JS callers.
 
-  function _rumorRowData(rumor = {}, options = {}) {
-    const hubId = window.CJS.CampaignHub?.getCurrentHubId?.() || '';
-    return {
-      id: String(rumor.id || ''),
-      hubId: String(hubId),
-      text: String(rumor.text || rumor.id || ''),
-      statusLabel: String(rumor.status || 'active'),
-      riskLabel: _label(rumor.canonRisk || 'green'),
-      canonRisk: String(rumor.canonRisk || 'green'),
-      canonRiskClass: Side().riskClass(rumor.canonRisk),
-      compact: !!options.compact
-    };
-  }
-
-  // `getSideForgeData` moved to TS in Phase H.4
-  // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
-  // `_rumorRowData` helpers ported earlier in the same phase.
-
-  // `getOracleForgeData` moved to TS in Phase H.4
-  // (`src/campaign/tabs/data/hub.ts`). The shared `_sideCardData` and
-  // `_rumorRowData` helpers also moved alongside; `getSideForgeData` +
-  // `getTownSnapshotData` still call the JS originals until they port.
+  // `getSideForgeData` / `getOracleForgeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/hub.ts`), along with the shared
+  // `sideCardData` / `rumorRowData` helpers.
 
   // `getRosterData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/roster.ts`). The per-member breakdown
