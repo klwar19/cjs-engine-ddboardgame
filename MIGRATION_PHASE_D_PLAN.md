@@ -1077,10 +1077,23 @@ in three clusters — these are the item-3/4 work:
      `isQuestResolved` / `questNextObjective` / `questObjectiveDone`). Dead
      orphans removed alongside: `_questObjectiveByKinds`, `_activeQuestById`,
      `_triggerLabel`. (`_renderQuestMini` belongs to the drawer cluster.)
-   - `renderPartySheetHtml` → `_renderPortraitHero` + `_renderRosterMember`
-     — **permanent island** (icon-heavy, shares the roster cluster with
-     `cui-party-tab.js`). Consumer: `roster-modal-pickers.ts` (party-sheet
-     modal).
+   - [x] `renderPartySheetHtml` + the whole **roster shared cluster** →
+     **consolidated into `cui-party-tab.js`** (Phase H.4). The 14
+     member-math helpers (`_memberBase` / `_memberRankInfo` /
+     `_renderRankBar` / `_memberStats` / `_renderResistances` /
+     `_renderEquipmentLoadout` / `_memberSkillEntries` / `_memberPassives` /
+     `_memberLearnedSkillIds` / `_renderJobChip` / `_statName` /
+     `_skillMeta` / `_skillEntryId` / `_statusDef`) + `_renderPersonaChip` +
+     `_skillWeaponTypes` + `_renderPortraitHero` + the option builders
+     (`_characterOptions` / `_skillOptions` / `_passiveOptions`) moved into
+     the roster island that consumes them. It now owns its `_tabHelpers()`
+     bundle (defaulted on every render entry point) and exposes
+     `PartyTab.{getTabHelpers, memberRankInfo, skillMetaText,
+     characterOptions, skillOptions, passiveOptions, renderPartySheetHtml}`.
+     TS consumers (`roster.ts`, `roster-modal-pickers.ts`, `gm-override.ts`)
+     read `CampaignUIInternal.PartyTab` / `.Portraits.icon` directly — the
+     8 CampaignUI roster bridges + the whole portrait/modal/option/equipment
+     alias block are gone from campaign-ui.js (2146 → 1719 lines).
    - `getMainBody` → `_renderMain` (defensive fallback for an
      unregistered tab id) and `renderDrawerBody` → `_renderDrawerBody`
      (+ `_renderQuestsFallback` / `_renderLogFallback` / `_renderSoloNotice`

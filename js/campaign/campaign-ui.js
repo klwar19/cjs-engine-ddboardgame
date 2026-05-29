@@ -24,80 +24,21 @@ window.CJS.CampaignUI = (() => {
   const StoryCtx = () => window.CJS.CampaignStoryContext;
 
   // Leaf utilities live in `src/campaign/util/cui-utils.ts` (Phase H.4).
-  // The TS module installs `window.CJS.CampaignUIInternal.Utils` so the
-  // rest of this IIFE reads the same surface as before.
+  // The TS module installs `window.CJS.CampaignUIInternal.Utils`. Only the
+  // two still used by the remaining shell/drawer code are aliased now (the
+  // roster + result/story HTML clusters that used the rest have ported).
   const _CUIUtils = window.CJS.CampaignUIInternal.Utils;
   const _esc = _CUIUtils.esc;
-  const _escAttr = _CUIUtils.escAttr;
-  const _label = _CUIUtils.label;
-  const _safe = _CUIUtils.safe;
-  const _truncate = _CUIUtils.truncate;
-  const _currencyLabel = _CUIUtils.currencyLabel;
   const _recordName = _CUIUtils.recordName;
-  const _lootLine = _CUIUtils.lootLine;
-  const _formatBundleText = _CUIUtils.formatBundleText;
-  const _cssVarAssetUrl = _CUIUtils.cssVarAssetUrl;
 
-  // Portrait + icon helpers live in `src/campaign/util/cui-portraits.ts`.
-  const _CUIPortraits = window.CJS.CampaignUIInternal.Portraits;
-  const _icon = _CUIPortraits.icon;
-  const _memberPortrait = _CUIPortraits.memberPortrait;
-  const _memberPortraitFocus = _CUIPortraits.memberPortraitFocus;
-  const _focusAttrStyle = _CUIPortraits.focusAttrStyle;
+  // Portrait / Modal / Option / Equipment alias blocks removed in Phase
+  // H.4 — their consumers (the roster member-math cluster) moved into the
+  // cui-party-tab.js island. TS callers import those leaf modules directly.
 
-  // Modal + picker primitives live in `src/campaign/util/cui-modals.ts`.
-  const _CUIModals = window.CJS.CampaignUIInternal.Modals;
-  const _desc = _CUIModals.desc;
-  const _pickerItem = _CUIModals.pickerItem;
-  const _sortOptionLabel = _CUIModals.sortOptionLabel;
-  const _formLabel = _CUIModals.formLabel;
-  const _formModal = _CUIModals.formModal;
-  const _opPickerModal = _CUIModals.opPickerModal;
-  const _textareaModal = _CUIModals.textareaModal;
-  const _numberModal = _CUIModals.numberModal;
-
-  // Option builders live in `src/campaign/util/cui-options.ts`.
-  const _CUIOptions = window.CJS.CampaignUIInternal.Options;
-  const _bucketOptions = _CUIOptions.bucketOptions;
-  const _statusOptions = _CUIOptions.statusOptions;
-  const _seedOptions = _CUIOptions.seedOptions;
-  const _worldOptions = _CUIOptions.worldOptions;
-  const _tentOptions = _CUIOptions.tentOptions;
-
-  // HTML control builders live in `src/campaign/util/cui-controls.ts`.
-  // The closure no longer aliases any of them — the last consumers
-  // (the story-director card + solo-notice HTML) ported / went dead in
-  // Phase H.4. TS callers import from `cui-controls` directly.
-
-  // Log rendering helpers live in `src/campaign/util/cui-log.ts`.
+  // Log rendering helpers live in `src/campaign/util/cui-log.ts`. Only
+  // `renderLogEntry` (the drawer log fallback) is still used here.
   const _CUILog = window.CJS.CampaignUIInternal.Log;
-  const _logKind = _CUILog.logKind;
-  const _formatLogTime = _CUILog.formatLogTime;
-  const _logMeta = _CUILog.logMeta;
   const _renderLogEntry = _CUILog.renderLogEntry;
-
-  // Equipment helpers live in `src/campaign/util/cui-equipment.ts`.
-  const _CUIEquipment = window.CJS.CampaignUIInternal.Equipment;
-  const _cleanType = _CUIEquipment.cleanType;
-  const _inferType = _CUIEquipment.inferType;
-  const _weaponType = _CUIEquipment.weaponType;
-  const _armorType = _CUIEquipment.armorType;
-  const _accessoryType = _CUIEquipment.accessoryType;
-  const _allowedTypes = _CUIEquipment.allowedTypes;
-  const _memberCanUseWeapon = _CUIEquipment.memberCanUseWeapon;
-  const _memberCanUseArmor = _CUIEquipment.memberCanUseArmor;
-  const _equipmentKind = _CUIEquipment.equipmentKind;
-  const _equipmentType = _CUIEquipment.equipmentType;
-  const _weaponSummary = _CUIEquipment.weaponSummary;
-  const _effectSummary = _CUIEquipment.effectSummary;
-  const _equipmentDesc = _CUIEquipment.equipmentDesc;
-  const _delta = _CUIEquipment.delta;
-  const _slotKind = _CUIEquipment.slotKind;
-  const _slotLabel = _CUIEquipment.slotLabel;
-  const _normalizeEquipmentSlots = _CUIEquipment.normalizeEquipmentSlots;
-  const _equipmentChangeDescription = _CUIEquipment.equipmentChangeDescription;
-  const _equipmentOptions = _CUIEquipment.equipmentOptions;
-  const _equipmentPickerItem = _CUIEquipment.equipmentPickerItem;
 
   // Phase H.4 — canonical chrome state lives in `src/campaign/chrome-state.ts`
   // (installed on window.CJS.CampaignChrome before this IIFE runs). The
@@ -418,15 +359,12 @@ window.CJS.CampaignUI = (() => {
   }
 
   // Party / roster rendering lives in
-  // `js/campaign/ui/tabs/cui-party-tab.js`. These delegators keep the
-  // shell's existing closure callers (command rail panel, party sheet
-  // modal) working with a single import.
+  // `js/campaign/ui/tabs/cui-party-tab.js`, which now owns its member-math
+  // helper bundle (defaulted internally). `_renderParty` is the only
+  // remaining shell caller (the command-rail drawer 'party' panel). The
+  // party-sheet modal reads `PartyTab.renderPartySheetHtml` directly.
   function _renderParty(state) {
-    return window.CJS.CampaignUIInternal.PartyTab.renderParty(state, _tabHelpers());
-  }
-
-  function _renderRosterMember(id, member) {
-    return window.CJS.CampaignUIInternal.PartyTab.renderRosterMember(id, member, _tabHelpers());
+    return window.CJS.CampaignUIInternal.PartyTab.renderParty(state);
   }
 
   // Pool pickers + passive rank math live in
@@ -457,44 +395,16 @@ window.CJS.CampaignUI = (() => {
     // a registry entry exists, or an empty notice otherwise.
     const Tabs = window.CJS.CampaignUIInternal.Tabs;
     if (Tabs?.has?.(_activeTab)) {
-      const html = Tabs.render(_activeTab, state, _tabHelpers());
+      const html = Tabs.render(_activeTab, state);
       if (html != null) return html;
     }
     return '<div class="campaign-empty">Tab body is JSX-only. Run with the React shell enabled.</div>';
   }
 
-  // Frozen helper bundle passed to every registered tab. Built lazily
-  // on first render so all the closure-private helpers below have been
-  // defined by the time we capture them. Tab modules call into this
-  // bundle for shell-only math (member rank, equipment loadout, persona
-  // pill, etc.) and for cross-tab interactions like rendering the solo
-  // hook notice on the hub.
-  let _tabHelpersCache = null;
-  function _tabHelpers() {
-    if (_tabHelpersCache) return _tabHelpersCache;
-    _tabHelpersCache = Object.freeze({
-      // Member math + sheet helpers (party tab)
-      memberBase: _memberBase,
-      memberRankInfo: _memberRankInfo,
-      renderRankBar: _renderRankBar,
-      memberStats: _memberStats,
-      renderResistances: _renderResistances,
-      renderEquipmentLoadout: _renderEquipmentLoadout,
-      memberSkillEntries: _memberSkillEntries,
-      memberPassives: _memberPassives,
-      memberLearnedSkillIds: _memberLearnedSkillIds,
-      renderJobChip: _renderJobChip,
-      renderPersonaPill: _renderPersonaPill,
-      statName: _statName,
-      skillMeta: _skillMeta,
-      skillEntryId: _skillEntryId,
-      statusDef: _statusDef
-      // (renderSoloNotice / pendingSoloHookCard bundle entries removed in
-      //  Phase H.4 — the solo-notice HTML cluster went dead with G.3's
-      //  JSX SoloNoticePanel; no consumer read these from the bundle.)
-    });
-    return _tabHelpersCache;
-  }
+  // The `_tabHelpers` member-math bundle moved into cui-party-tab.js in
+  // Phase H.4 (the roster island owns + defaults it). Registered tabs are
+  // React mount placeholders that ignore the old helpers arg, so
+  // `_renderMain` no longer threads one.
 
   // _renderStoryHome — Phase F.11 port. Body moved to
   // `src/campaign/tabs/CampaignStoryHomeTab.tsx`. Typed data flows
@@ -1332,35 +1242,20 @@ window.CJS.CampaignUI = (() => {
   // src/campaign/action-handlers/roster-modals.ts (H.3).
 
   // _partySheetModal ported to action-handlers/roster-modal-pickers.ts
-  // (H.3 — party-sheet). The TS handler reads
-  // _renderPortraitHero + _renderRosterMember via the new
-  // CampaignUI.renderPartySheetHtml bridge (one HTML body for both),
-  // and routes the body's data-campaign-action buttons through the
-  // action runtime via a local click delegate.
+  // (H.3 — party-sheet). The TS handler reads the body via
+  // `CampaignUIInternal.PartyTab.renderPartySheetHtml` (portrait hero +
+  // roster member sheet, Phase H.4) and routes the body's
+  // data-campaign-action buttons through the action runtime via a local
+  // click delegate.
 
-  function _renderPortraitHero(id, member) {
-    const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
-    const portraitSrc = _memberPortrait(member, id);
-    const portraitFocus = _memberPortraitFocus(member, id);
-    const portrait = portraitSrc
-      ? `<img src="${_escAttr(portraitSrc)}" alt="${_escAttr(member.name || id)}" style="${_escAttr(_focusAttrStyle(portraitFocus))}">`
-      : `<div class="fallback">${_esc(initial)}</div>`;
-    const lvl = member.level || 1;
-    const rank = member.rank || 'F';
-    const klass = member.class || member.archetype || '';
-    return `
-      <div class="campaign-portrait-hero">
-        <div class="campaign-portrait-frame is-large">${portrait}</div>
-        <div class="campaign-portrait-meta">
-          <h2>${_esc(member.name || id)}</h2>
-          <div class="campaign-portrait-sub">${_esc(klass || 'Adventurer')} · Lv ${lvl} · Rank ${_esc(rank)}</div>
-          <div class="campaign-chip-row">
-            ${(member.tags || []).slice(0, 6).map((t) => `<span class="campaign-chip">${_esc(t)}</span>`).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-  }
+  // `_renderPortraitHero` + the roster member-math cluster (_memberBase,
+  // _memberRankInfo, _renderRankBar, _memberStats, _renderResistances,
+  // _renderEquipmentLoadout, _memberSkillEntries, _memberLearnedSkillIds,
+  // _skillEntryId, _memberPassives, _characterOptions, _skillOptions,
+  // _passiveOptions, _statusDef, _renderJobChip, _renderPersonaChip,
+  // _renderPersonaPill, _skillMeta, _statName, _skillWeaponTypes) moved
+  // into the cui-party-tab.js roster island in Phase H.4. TS reads the
+  // exposed surface on CampaignUIInternal.PartyTab / .Portraits.
 
   // _recruitCharacterModal / _learnSkillModal / _learnPassiveModal
   // ported to action-handlers/roster-modal-pickers.ts (H.3 — recruit-
@@ -1437,316 +1332,20 @@ window.CJS.CampaignUI = (() => {
     return handled;
   }
 
-  function _memberBase(id, member = {}) {
-    return DS().get('characters', member.baseCharacterId || id) || {};
-  }
+  // The roster member-math + sheet sub-render cluster (_memberBase,
+  // _memberRankInfo, _renderRankBar, _memberStats, _renderResistances,
+  // _renderEquipmentLoadout, _memberSkillEntries, _memberLearnedSkillIds,
+  // _skillEntryId, _memberPassives, _characterOptions, _skillOptions,
+  // _passiveOptions, _statusDef, _renderJobChip, _renderPersonaChip,
+  // _renderPersonaPill, _skillMeta, _statName, _skillWeaponTypes) moved
+  // into the cui-party-tab.js roster island in Phase H.4. It owns its own
+  // helper bundle (defaulted internally); TS reads the exposed surface on
+  // CampaignUIInternal.PartyTab / .Portraits.
 
-  // Adventurer rank summary for a member. Effective rank reflects the
-  // current world's ceiling cap so the player sees the cap at a glance.
-  // RP progress shows the gap to the next-rank threshold.
-  function _memberRankInfo(member = {}) {
-    const F = window.CJS.Formulas;
-    const adv = member.adventurer || { rank: member.rank || 'F', rankPoints: 0, trialPending: false };
-    const rank = adv.rank || 'F';
-    const world = DS().get('worlds', CS().getState()?.currentWorld) || {};
-    const ceiling = world.ceiling || null;
-    const effective = F?.effectiveRank ? F.effectiveRank(rank, ceiling) : rank;
-    const capped = ceiling && effective !== rank;
-    const next = F?.nextRank ? F.nextRank(rank) : null;
-    const threshold = next && F?.rpThresholdFor ? F.rpThresholdFor(next) : 0;
-    const rp = Math.max(0, Number(adv.rankPoints || 0));
-    const pct = threshold > 0 ? Math.max(0, Math.min(100, Math.round((rp / threshold) * 100))) : 0;
-    return {
-      rank,
-      effective,
-      capped,
-      ceiling,
-      label: capped ? `${rank} (eff ${effective})` : rank,
-      next,
-      threshold,
-      rp,
-      pct,
-      atMax: !next,
-      trialPending: !!adv.trialPending
-    };
-  }
-
-  function _renderRankBar(info) {
-    if (!info || info.atMax) {
-      return '<div class="campaign-muted" style="font-size:0.72rem">Rank maxed (SSR)</div>';
-    }
-    if (info.threshold <= 0) return '';
-    return `<div class="campaign-bar" style="margin-top:4px"><span class="mp" style="width:${info.pct}%"></span><b>RP ${info.rp}/${info.threshold} → ${_esc(info.next)}</b></div>`;
-  }
-
-  function _memberStats(id, member = {}) {
-    const base = _memberBase(id, member);
-    const stats = { ...(base.stats || {}) };
-    for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
-      stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
-    }
-    const ordered = {};
-    for (const stat of C()?.STATS || Object.keys(stats)) ordered[stat] = stats[stat] || 0;
-    return ordered;
-  }
-
-  function _renderResistances(base, member, stats) {
-    const F = window.CJS.Formulas;
-    const weak = [...(base.weak || []), ...(member.weak || [])].filter((v, i, a) => a.indexOf(v) === i);
-    const resist = [...(base.resist || []), ...(member.resist || [])].filter((v, i, a) => a.indexOf(v) === i);
-    const immune = [...(base.immune || []), ...(member.immune || [])].filter((v, i, a) => a.indexOf(v) === i);
-
-    const elements = C()?.ELEMENTS || ['Physical', 'Fire', 'Water', 'Lightning', 'Earth', 'Wind', 'Nature', 'Light', 'Dark', 'Chaos'];
-
-    let html = '<div class="campaign-affinity-grid">';
-
-    for (const el of elements) {
-      const slug = String(el).toLowerCase();
-      let stateClass = 'is-neutral';
-      let stateText = '<span class="campaign-affinity-state">--</span>';
-      if (immune.includes(el)) { stateClass = 'is-immune'; stateText = '<strong class="campaign-affinity-state">Nu</strong>'; }
-      else if (resist.includes(el)) { stateClass = 'is-resist'; stateText = '<strong class="campaign-affinity-state">Rs</strong>'; }
-      else if (weak.includes(el)) { stateClass = 'is-weak'; stateText = '<strong class="campaign-affinity-state">Wk</strong>'; }
-
-      html += `<div class="campaign-affinity-pill el-${slug} ${stateClass}" data-element="${slug}" title="${_escAttr(el + ': ' + (immune.includes(el) ? 'Immune (Nu)' : resist.includes(el) ? 'Resists (Rs)' : weak.includes(el) ? 'Weak (Wk)' : 'Neutral'))}">
-        <span class="campaign-affinity-name">${_esc(el)}</span>
-        ${stateText}
-      </div>`;
-    }
-    html += '</div>';
-
-    const physDR = F?.calcPhysicalDR ? F.calcPhysicalDR(stats) : 0;
-    const magDR = F?.calcMagicDR ? F.calcMagicDR(stats) : 0;
-    const chaosDR = F?.calcChaosDR ? F.calcChaosDR(stats) : 0;
-
-    html += '<div class="campaign-affinity-subheading">Damage Reduction</div>';
-    html += `<div class="campaign-dr-row">
-      <span class="campaign-dr-chip" title="Reduces incoming Physical damage"><b class="campaign-dr-icon">🗡</b><span class="campaign-dr-label">Phys</span><b class="campaign-dr-value">${physDR}</b></span>
-      <span class="campaign-dr-chip" title="Reduces incoming Magical damage"><b class="campaign-dr-icon">✨</b><span class="campaign-dr-label">Magic</span><b class="campaign-dr-value">${magDR}</b></span>
-      <span class="campaign-dr-chip" title="Reduces incoming Chaos damage"><b class="campaign-dr-icon">🌀</b><span class="campaign-dr-label">Chaos</span><b class="campaign-dr-value">${chaosDR}</b></span>
-    </div>`;
-
-    return html;
-  }
-
-  function _renderEquipmentLoadout(memberId, member = {}) {
-    const slots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
-    const weaponTypes = _allowedTypes(member, 'allowedWeaponTypes').map(_label).join(', ') || 'Any';
-    const armorTypes = _allowedTypes(member, 'allowedArmorTypes').map(_label).join(', ') || 'Any';
-    const rows = ['weapon', 'armor', 'accessory1', 'accessory2'].map((slot) => {
-      const itemId = slots[slot];
-      const item = DS().get('items', itemId);
-      const itemName = item?.name || itemId || 'Empty';
-      const type = item ? _equipmentType(item) : '';
-      const meta = item ? [type, item.rarity].filter(Boolean).join(' | ') : 'Empty';
-      const slotKind = _slotKind(slot) || 'item';
-      const iconHtml = item
-        ? _icon(item, { kind: slotKind, size: 'md', alt: itemName })
-        : `<span class="cjs-icon cjs-icon-md cjs-icon-${slotKind}" style="opacity:.4">+</span>`;
-      return `
-        <div class="campaign-equipment-line">
-          <div class="campaign-equipment-icon">${iconHtml}</div>
-          <div>
-            <strong>${_esc(_slotLabel(slot))}</strong>
-            <small>${_esc(itemName)}${meta ? ` | ${_esc(meta)}` : ''}</small>
-            ${item ? `<p>${_esc(_equipmentDesc(item))}</p>` : ''}
-          </div>
-          <div class="campaign-row-actions">
-            <button class="campaign-icon-btn" data-campaign-action="equip-item" data-id="${_escAttr(memberId)}" data-slot="${_escAttr(slot)}">Equip</button>
-            ${item ? `<button class="campaign-icon-btn danger" data-campaign-action="unequip-item" data-id="${_escAttr(memberId)}" data-slot="${_escAttr(slot)}">-</button>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-    return `
-      <div class="campaign-equipment-proficiency">Weapons: ${_esc(weaponTypes)} | Armor: ${_esc(armorTypes)} | Accessories: any two different types</div>
-      ${rows}
-    `;
-  }
-
-  // Equipment helpers (_cleanType, _inferType, _weaponType, _armorType,
-  // _accessoryType, _allowedTypes, _memberCanUseWeapon, _memberCanUseArmor,
-  // _equipmentKind, _equipmentType, _weaponSummary, _effectSummary,
-  // _equipmentDesc, _delta, _slotKind, _slotLabel, _normalizeEquipmentSlots,
-  // _equipmentChangeDescription, _equipmentOptions, _equipmentPickerItem)
-  // live in src/campaign/util/cui-equipment.ts (bound as aliases at the top).
-
-  function _memberSkillEntries(id, member = CS().getState()?.party?.[id] || {}) {
-    const base = _memberBase(id, member);
-    const out = [];
-    const seen = new Set();
-    for (const entry of [...(base.skills || []), ...(member.learnedSkills || [])]) {
-      const skillId = _skillEntryId(entry);
-      if (!skillId || seen.has(skillId)) continue;
-      seen.add(skillId);
-      out.push(typeof entry === 'string' ? { skillId } : entry);
-    }
-    return out;
-  }
-
-  function _memberLearnedSkillIds(id) {
-    const member = CS().getState()?.party?.[id] || {};
-    return (member.learnedSkills || []).map(_skillEntryId).filter(Boolean);
-  }
-
-  function _skillEntryId(entry) {
-    return typeof entry === 'string' ? entry : entry?.skillId || null;
-  }
-
-  function _memberPassives(id, member = {}) {
-    const base = _memberBase(id, member);
-    return Array.from(new Set([...(base.innatePassives || []), ...(member.learnedPassives || [])].filter(Boolean)));
-  }
-
-  function _characterOptions() {
-    const state = CS().getState();
-    const current = new Set(Object.keys(state?.party || {}));
-    const source = CM()?.getVisibleItems?.('characters') || DS().getAllAsArray('characters');
-    return source
-      .filter((entry) => entry?.id && !current.has(entry.id) && (entry.team || 'player') !== 'enemy')
-      .map((entry) => ({
-        value: entry.id,
-        label: entry.name || entry.id,
-        sub: `${entry.rank || 'F'} | ${(entry.skills || []).length} skills`,
-        description: _desc(entry),
-        tags: entry.tags || []
-      }))
-      .sort(_sortOptionLabel);
-  }
-
-  function _skillOptions(memberId) {
-    const known = new Set(_memberSkillEntries(memberId).map(_skillEntryId));
-    const source = CM()?.getVisibleItems?.('skills') || DS().getAllAsArray('skills');
-    return source
-      .filter((entry) => entry?.id && !known.has(entry.id))
-      .map((entry) => ({
-        value: entry.id,
-        label: entry.name || entry.id,
-        sub: _skillMeta(entry),
-        description: _desc(entry),
-        tags: entry.tags || []
-      }))
-      .sort(_sortOptionLabel);
-  }
-
-  function _passiveOptions(memberId) {
-    const member = CS().getState()?.party?.[memberId] || {};
-    const known = new Set(_memberPassives(memberId, member));
-    const passiveSource = CM()?.getVisibleItems?.('passives') || DS().getAllAsArray('passives');
-    const passiveOptions = passiveSource.map((entry) => ({
-      value: entry.id,
-      label: entry.name || entry.id,
-      sub: 'Passive',
-      description: _desc(entry),
-      tags: entry.tags || []
-    }));
-    const passiveTriggers = new Set(['stat_mod', 'dr_mod', 'element_mod', 'crit_mod', 'evasion_mod', 'accuracy_mod', 'ap_mod', 'movement_mod', 'range_mod', 'cost_mod', 'cooldown_mod', 'damage_mod', 'hp_mod', 'mp_mod', 'status_resist_mod', 'double_action', 'triple_action']);
-    const effectOptions = DS().getAllAsArray('effects')
-      .filter((entry) => passiveTriggers.has(entry.trigger))
-      .map((entry) => ({
-        value: entry.id,
-        label: entry.name || entry.id,
-        sub: `Effect | ${entry.trigger || ''}`,
-        description: _desc(entry),
-        tags: entry.tags || []
-      }));
-    return [...passiveOptions, ...effectOptions]
-      .filter((entry) => entry.value && !known.has(entry.value))
-      .sort(_sortOptionLabel);
-  }
-
-  function _statusDef(statusId) {
-    const custom = DS().get('statuses', statusId);
-    if (custom) return custom;
-    const builtins = C()?.STATUS_DEFINITIONS || {};
-    return builtins[statusId] ? { id: statusId, ...builtins[statusId] } : null;
-  }
-
-  function _renderJobChip(memberId, member = {}) {
-    const F = window.CJS.Formulas;
-    const jobId = member.currentJob || null;
-    if (!jobId) return `<span class="campaign-muted">No job</span>`;
-    const job = DS().get('jobs', jobId);
-    if (!job) return `<span class="campaign-muted">Unknown job: ${_esc(jobId)}</span>`;
-    const prog = member.jobProgress?.[jobId] || { xp: 0, level: 1 };
-    const cap = F?.getJobMaxLevel ? F.getJobMaxLevel(job) : 10;
-    const level = Math.max(1, Number(prog.level || 1));
-    const xp = Number(prog.xp || 0);
-    const xpToNext = F?.calcJobXpToNextLevel ? F.calcJobXpToNextLevel(job, xp, level) : null;
-    const meta = level >= cap ? `(max)` : (xpToNext != null ? `(${xpToNext} XP to next)` : '');
-    const personaChip = _renderPersonaChip(memberId, member);
-    const personaSuffix = personaChip ? ` <span class="campaign-muted">·</span> ${personaChip}` : '';
-    return `${_icon(job, { kind: 'job', size: 'xs' })} ${_esc(job.name || jobId)} Lv ${level}/${cap} | XP ${xp} ${meta}${personaSuffix}`;
-  }
-
-  function _renderPersonaChip(memberId, member = {}) {
-    const personaId = member.activePersona || null;
-    if (!personaId) return '';
-    const persona = DS().get('personas', personaId);
-    if (!persona) return `<span class="campaign-muted" title="Unknown persona">${_esc(personaId)}</span>`;
-    const state = CS().getState();
-    const outOfWorld = persona.world && state?.currentWorld && persona.world !== state.currentWorld;
-    const worldChip = persona.world ? (DS().get('worlds', persona.world)?.displayName || persona.world) : '';
-    const tooltip = outOfWorld
-      ? `${persona.name} (${worldChip}) — out of world. Damage dealt ×${Number(persona.crossWorldPenalty?.damageDealtMultiplier ?? 1)}, taken ×${Number(persona.crossWorldPenalty?.damageTakenMultiplier ?? 1)}.`
-      : `${persona.name}${worldChip ? ` (${worldChip})` : ''}`;
-    const style = outOfWorld ? ' style="color:#f59e0b"' : '';
-    return `<span title="${_escAttr(tooltip)}"${style}>${_esc(persona.icon || '🎭')} ${_esc(persona.name)}${outOfWorld ? ' ⚠' : ''}</span>`;
-  }
-
-  // Compact pill next to the name. Shows "<world> <PersonaName> | Job/Branch"
-  // when meaningful, or "Out of world ⚠" when the persona doesn't match.
-  function _renderPersonaPill(memberId, member = {}) {
-    const personaId = member.activePersona || null;
-    if (!personaId) return '';
-    const persona = DS().get('personas', personaId);
-    if (!persona) return '';
-    const state = CS().getState();
-    const outOfWorld = persona.world && state?.currentWorld && persona.world !== state.currentWorld;
-    const worldName = persona.world ? (DS().get('worlds', persona.world)?.displayName || persona.world) : '';
-    const jobShort = member.currentJob ? (DS().get('jobs', member.currentJob)?.name || member.currentJob) : '';
-    const tooltip = outOfWorld
-      ? `${persona.name} (${worldName}) — out of world. ⚠`
-      : `${persona.name} (${worldName})`;
-    const cls = outOfWorld ? 'campaign-pill is-blocked' : 'campaign-pill';
-    const label = jobShort ? `${persona.name} · ${jobShort}` : persona.name;
-    return `<span class="${cls}" title="${_escAttr(tooltip)}" data-campaign-action="change-persona" data-id="${_escAttr(memberId)}" style="cursor:pointer">${_esc(persona.icon || '🎭')} ${_esc(label)}${outOfWorld ? ' ⚠' : ''}</span>`;
-  }
-
-  function _skillMeta(skill = {}, entry = {}) {
-    const parts = [];
-    if (skill.ap != null) parts.push(`${skill.ap} AP`);
-    if (skill.mp != null) parts.push(`${skill.mp} MP`);
-    if (skill.range != null) parts.push(`Range ${skill.range}`);
-    if (skill.power != null) parts.push(`Power ${skill.power}`);
-    const requiredWeapons = _skillWeaponTypes(skill);
-    if (requiredWeapons.length) parts.push(`Weapon ${requiredWeapons.map(_label).join('/')}`);
-    if (entry.level) parts.push(`Lv ${entry.level}`);
-    return parts.join(' | ') || skill.category || skill.type || '';
-  }
-
-  function _statName(stat) {
-    return C()?.STAT_NAMES?.[stat] || stat;
-  }
-
-  function _skillWeaponTypes(skill = {}) {
-    const raw = skill.requiredWeaponTypes || skill.requiredWeaponType || skill.weaponTypeRequired || [];
-    return (Array.isArray(raw) ? raw : [raw]).map(_cleanType).filter(Boolean);
-  }
-
-  // _desc, _pickerItem, _sortOptionLabel, _formLabel, _formModal live in
-  // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
-
-  // _bucketOptions, _statusOptions, _seedOptions, _worldOptions, _tentOptions
-  // live in src/campaign/util/cui-options.ts (bound as aliases at the top of this IIFE).
-
-  // _opPickerModal, _textareaModal, _numberModal live in
-  // src/campaign/util/cui-modals.ts (bound as aliases at the top of this IIFE).
-
-  // Leaf utilities (_esc, _escAttr, _label, _safe, _truncate, _lootLine,
-  // _currencyLabel, _recordName, _formatBundleText) live in
-  // src/campaign/util/cui-utils.ts (Phase H.4) and are bound as aliases
-  // at the top of this IIFE via window.CJS.CampaignUIInternal.Utils.
+  // The cui-modals / cui-options / cui-equipment / cui-portraits leaf
+  // helpers are no longer aliased here (Phase H.4 — their last consumers,
+  // the roster cluster + modal builders, ported to TS). They remain on
+  // `window.CJS.CampaignUIInternal.*`; TS modules import them directly.
 
   // Lightweight begin/end narrative modal used by generated and user-built
   // quests. Replaces the heavyweight fullscreen visual novel for those runs;
@@ -2056,11 +1655,13 @@ window.CJS.CampaignUI = (() => {
     // banner after the user starts fresh / loads a slot, matching the old
     // closures that reset `_bootIncompatibleNotice` inline.
     clearBootIncompatibleNotice: () => { _bootIncompatibleNotice = null; },
-    // Exposes the frozen helper bundle that vanilla tab modules consume
-    // (memberBase, memberStats, renderEquipmentLoadout, etc.). React tabs
-    // call into these for the closure-private math + sub-renderers that
-    // would be invasive to port one-by-one to TypeScript right now.
-    getTabHelpers: () => _tabHelpers(),
+    // The roster member-math bundle + option builders + party-sheet body
+    // + skill-meta / icon / rank-info bridges (getTabHelpers,
+    // rosterCharacterOptions/SkillOptions/PassiveOptions, skillMetaText,
+    // recordIconHtml, memberRankInfo, renderPartySheetHtml) were removed in
+    // Phase H.4 — the roster island (cui-party-tab.js) owns them now and
+    // exposes them on CampaignUIInternal.PartyTab / .Portraits, which the
+    // TS roster / GM modals read directly.
     // Returns the HTML body string for any closure-private vanilla
     // renderer the React-tab bridge wraps.
     renderTabBody,
@@ -2079,34 +1680,6 @@ window.CJS.CampaignUI = (() => {
     // `getWorldMenuDef` removed in Phase H.4 — `worldMenuDef` ported to
     // `src/campaign/tabs/data/worldGate.ts`; the travel-world-card TS
     // action handler imports it directly.
-    // Roster option builders (still-JS closures shared between modal
-    // handlers + the still-JS GM override modal). Exposed for
-    // action-handlers/roster-modal-pickers.ts (recruit-character,
-    // learn-skill, learn-passive). The H.4 data builders take these.
-    rosterCharacterOptions: () => _characterOptions(),
-    rosterSkillOptions: (memberId) => _skillOptions(memberId),
-    rosterPassiveOptions: (memberId) => _passiveOptions(memberId),
-    // Skill meta text generator (used by the skill-detail modal's
-    // header line). Reads the same fields the still-JS render code
-    // does so the modal stays in sync.
-    skillMetaText: (skill, entry) => _skillMeta(skill, entry),
-    // Generic icon HTML emitter (Portraits.icon). Used by the skill-
-    // detail modal header inline icon. The still-JS roster renders
-    // also use this — keeping a single bridge entry point keeps the
-    // icon styling consistent.
-    recordIconHtml: (record, opts) => _icon(record, opts),
-    // Member rank info (effective rank, RP, threshold, %, gates).
-    // Also read by cui-party-tab.js render code — keeping a single
-    // source of truth lets the rank-up-apply modal show the exact
-    // same numbers the party tab does.
-    memberRankInfo: (member) => _memberRankInfo(member),
-    // Party sheet body HTML — portrait hero + full roster member card.
-    // Used by the party-sheet modal in TS. Built here so the portrait
-    // helpers (Portraits.memberPortrait / .memberPortraitFocus /
-    // .focusAttrStyle) and the still-JS PartyTab.renderRosterMember
-    // stay private — the modal handler only knows the HTML body shape.
-    renderPartySheetHtml: (id, member) =>
-      _renderPortraitHero(id, member) + _renderRosterMember(id, member),
     // `setMinigameTestGame` removed in Phase H.4 — the selection state
     // moved to a module-level variable in
     // `src/campaign/tabs/data/minigameTest.ts`; the TS mg-test-pick
