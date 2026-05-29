@@ -415,152 +415,12 @@ window.CJS.CampaignUI = (() => {
   // through `_renderWorldGateCard` (kept here because the bridge calls
   // it) until the per-card banner / button logic ports.
 
-  // _renderWorldGateCard / _renderPressureStripMini removed in Phase
-  // G.13. The React `WorldGateCard` + `WorldGatePressureStrip`
-  // (`src/campaign/tabs/WorldGateCard.tsx`) render from the typed
-  // data produced below.
-  function _worldGateCardData(worldId, world, state) {
-    const def = _worldMenuDef(worldId);
-    const isCurrent = worldId === state.currentWorld;
-    const bannerImage = def.bannerImage || world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || '';
-    const bannerImageUrl = bannerImage ? String(_cssVarAssetUrl(bannerImage) || bannerImage) : '';
-    const mapCount = DS().getAllAsArray('travelMaps').filter((map) => map.world === worldId).length;
-    const activityPacks = DS().getAllAsArray('worldActivityPacks').filter((pack) => pack.world === worldId);
-    const activities = activityPacks.flatMap((pack) => pack.activities || []);
-    const activityTypes = Array.from(new Set(activities.map((activity) => activity.type || 'activity'))).slice(0, 4);
-    const status = isCurrent ? 'Loaded' : (def.status || 'Available');
-    const targetTab = def.defaultTab || (mapCount ? 'worldMap' : 'storyHome');
-    const primary = isCurrent
-      ? _worldGateActionData({
-          action: 'open-world-content',
-          label: def.openLabel || 'Open Content',
-          hint: def.openHint || 'Open this world content',
-          kind: 'primary',
-          data: { tab: targetTab, mode: def.defaultMode || _modeForTab(targetTab) }
-        })
-      : _worldGateActionData({
-          action: 'travel-world-card',
-          label: def.enterLabel || `Enter ${world.displayName || worldId}`,
-          hint: def.enterHint || 'Switch world and load its content menu',
-          kind: 'primary',
-          data: { worldId, targetTab }
-        });
-    const secondary = [];
-    if (isCurrent) {
-      if (mapCount) {
-        secondary.push(_worldGateActionData({
-          action: 'open-world-content', label: 'Map Movement', hint: 'Open this world travel map',
-          data: { tab: 'worldMap', mode: 'activities' }
-        }));
-      }
-      if (activities.length) {
-        secondary.push(_worldGateActionData({
-          action: 'open-world-content', label: 'Activities', hint: 'Open this world activities',
-          data: { tab: 'worldActivities', mode: 'activities' }
-        }));
-      }
-      if (worldId === 'bazaar') {
-        secondary.push(_worldGateActionData({
-          action: 'open-world-content', label: 'Arena / Auction', hint: 'Open Bazaar activities',
-          data: { tab: 'worldActivities', mode: 'activities' }
-        }));
-      }
-    }
-    return {
-      worldId: String(worldId),
-      title: String(def.title || world.displayName || worldId),
-      kicker: String(def.kicker || world.tone || worldId),
-      summary: String(def.summary || 'World content placeholder.'),
-      features: Array.isArray(def.features) ? def.features.map(String) : [],
-      bannerImageUrl,
-      isCurrent,
-      status: String(status),
-      mapCount,
-      activitiesCount: activities.length,
-      activityTypeLabels: activityTypes.map(_label),
-      devNote: String(def.devNote || ''),
-      primaryAction: primary,
-      secondaryActions: secondary
-    };
-  }
-
-  function _worldGateActionData(opts = {}) {
-    return {
-      action: String(opts.action || ''),
-      label: String(opts.label || ''),
-      hint: String(opts.hint || ''),
-      kind: String(opts.kind || ''),
-      data: Object.freeze(Object.fromEntries(Object.entries(opts.data || {}).map(([k, v]) => [k, String(v)])))
-    };
-  }
-
-  function _pressureStripChips(state) {
-    const pressures = Object.values(state.crossWorld?.pressures || {});
-    return pressures.slice(0, 3).map((p) => ({
-      id: String(p.id || ''),
-      title: String(p.title || p.id || ''),
-      value: Number(p.value || 0)
-    }));
-  }
-
-  function _worldMenuDef(worldId) {
-    const defs = {
-      earth: {
-        title: 'Earth',
-        kicker: 'Daily life / emotional anchor',
-        summary: 'Earth loads ordinary-life story scenes, the Zhonghai visual city map, hospital support item pumping, diary/recap memories, and social scenes.',
-        features: ['Story', 'VN city map', 'Hospital', 'Diaries'],
-        bannerImage: 'images/story-mode/earth/earth-theme.webp',
-        defaultMode: 'activities',
-        defaultTab: 'worldMap',
-        openLabel: 'Open Earth Map',
-        enterLabel: 'Enter Earth',
-        devNote: 'Future buttons can add Riverside, Research Block, and Old Town without changing the renderer.'
-      },
-      haven: {
-        title: 'Haven',
-        kicker: 'Main fantasy campaign',
-        summary: 'Haven keeps the existing story, quests, Pocket Haven, and scenario/node-map flow. This does not use the new Earth/Zombie visual map style.',
-        features: ['Main story', 'Quests', 'Pocket Haven', 'Scenario maps'],
-        defaultMode: 'story',
-        defaultTab: 'storyHome',
-        openLabel: 'Open Haven Story',
-        enterLabel: 'Return to Haven'
-      },
-      zombie: {
-        title: 'Zombie World',
-        kicker: 'Scavenge / build pressure loop',
-        summary: 'Zombie world loads the Last Light visual ruined-city map, scavenging tasks, safehouse building, medical salvage, and future survival pressure events.',
-        features: ['Story', 'Ruined city map', 'Scavenge', 'Build'],
-        bannerImage: 'images/story-mode/zombie/zombie-bin-burnice-horizontal.png',
-        defaultMode: 'activities',
-        defaultTab: 'worldMap',
-        openLabel: 'Open Zombie Map',
-        enterLabel: 'Enter Zombie World',
-        devNote: 'Future areas are already stubbed: Harbor Quarantine, Farm Belt, and Military Shelter.'
-      },
-      bazaar: {
-        title: 'Bazaar',
-        kicker: 'Arena / auction testbed',
-        summary: 'Bazaar loads optional activity systems first: arena matches, auction lots, prize boards, and future economy experiments.',
-        features: ['Arena', 'Auction House', 'Prize Board', 'Rewards'],
-        bannerImage: 'images/story-mode/bazaar/bazaar-theme.png',
-        defaultMode: 'activities',
-        defaultTab: 'worldMap',
-        openLabel: 'Open Bazaar',
-        enterLabel: 'Enter Bazaar',
-        devNote: 'Use Lantern Arena and Glass Gavel House as the first test locations.'
-      }
-    };
-    return defs[worldId] || {
-      title: DS().get('worlds', worldId)?.displayName || worldId,
-      kicker: 'World content',
-      summary: 'Custom world content. Add a travel map, activity pack, or story sequence to expand this card.',
-      features: ['Custom'],
-      defaultMode: 'story',
-      defaultTab: 'storyHome'
-    };
-  }
+  // `_worldGateCardData`, `_worldGateActionData`, `_pressureStripChips`,
+  // and `_worldMenuDef` (with the per-world card table) moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/worldGate.ts`). The TS port owns
+  // the canonical world card config; `action-handlers/travel.ts`
+  // imports `worldMenuDef` directly so the `travel-world-card` handler
+  // can resolve a world's default tab without going through CampaignUI.
 
   function _modeForTab(tabId) {
     return _Chrome().modeForTab(tabId);
@@ -5008,17 +4868,9 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getWorldGateData(state = CS().getState()) {
-    if (!state) return null;
-    const worlds = CS().getContent().worlds || {};
-    const options = _worldOptions();
-    const current = state.currentWorld || 'haven';
-    return {
-      currentWorldName: worlds[current]?.displayName || current,
-      pressures: _pressureStripChips(state),
-      cards: options.map((option) => _worldGateCardData(option.value, worlds[option.value] || {}, state))
-    };
-  }
+  // `getWorldGateData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/worldGate.ts`). The sub-helpers + the
+  // worldMenuDef config table ported alongside.
 
   function getStoryHomeData(state = CS().getState()) {
     if (!state) return null;
@@ -5341,12 +5193,9 @@ window.CJS.CampaignUI = (() => {
     // `src/campaign/tabs/data/scenarioShared.ts::shapePillsData` is now
     // the single source of truth. The inspect-scenario action handler
     // imports it directly.
-    // World menu definitions (title / kicker / summary / defaultTab /
-    // bannerImage / etc.) live in the closure-private `_worldMenuDef`
-    // (also reads by chrome data builders). Exposed for
-    // action-handlers/travel.ts (travel-world-card) so the TS handler
-    // can resolve a world's default tab without re-declaring the table.
-    getWorldMenuDef: (worldId) => _worldMenuDef(worldId),
+    // `getWorldMenuDef` removed in Phase H.4 — `worldMenuDef` ported to
+    // `src/campaign/tabs/data/worldGate.ts`; the travel-world-card TS
+    // action handler imports it directly.
     // Roster option builders (still-JS closures shared between modal
     // handlers + the still-JS GM override modal). Exposed for
     // action-handlers/roster-modal-pickers.ts (recruit-character,
@@ -5409,7 +5258,6 @@ window.CJS.CampaignUI = (() => {
     getChromeData,
     getMinigameTestData,
     getStoryHomeData,
-    getWorldGateData,
     getStoryDirectorData,
     getMainBody,
     getPanelDefs,

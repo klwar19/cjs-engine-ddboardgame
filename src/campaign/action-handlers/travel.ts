@@ -21,6 +21,7 @@
 import { cs, ds, mod, ops, rerender, setActiveModeRaw, setActiveTabRaw, toast } from "./context";
 import { esc, modals, widgets, type UiWidgetsApi } from "./modals";
 import { goto } from "./nav";
+import { worldMenuDef } from "../tabs/data/worldGate";
 
 interface FormulasModule {
   rankIndex?: (rank: string) => number;
@@ -73,14 +74,7 @@ interface SequencesModule {
   loadWorld?: (worldId: string) => Promise<unknown> | unknown;
 }
 
-interface WorldMenuDef {
-  defaultTab?: string;
-  defaultMode?: string;
-  [key: string]: unknown;
-}
-
 interface CampaignUiBridge {
-  getWorldMenuDef?: (worldId: string) => WorldMenuDef;
   modeForTab?: (tab: string) => string;
 }
 
@@ -96,9 +90,8 @@ function sequences(): SequencesModule | undefined {
   return mod<SequencesModule>("CampaignSequences");
 }
 
-function worldMenuDef(worldId: string): WorldMenuDef {
-  return mod<CampaignUiBridge>("CampaignUI")?.getWorldMenuDef?.(worldId) || {};
-}
+// `worldMenuDef` moved to TS in Phase H.4 — imported below from the
+// world-gate data builder which owns the canonical per-world def table.
 
 interface TravelRankDecision {
   allowed: boolean;
