@@ -10,17 +10,14 @@ window.CJS.CampaignUI = (() => {
   const CM = () => window.CJS.ContentManager;
   const UI = () => window.CJS.UI;
   const CS = () => window.CJS.CampaignState;
-  const Ops = () => window.CJS.CampaignOps;
   const Save = () => window.CJS.CampaignSave;
-  const Runner = () => window.CJS.ScenarioRunner;
   const Bridge = () => window.CJS.CampaignCombatBridge;
-  const Side = () => window.CJS.CampaignSideContent;
-  const SD = () => window.CJS.CampaignStoryDirector;
-  const QP = () => window.CJS.CampaignQuestPulse;
-  const Gen = () => window.CJS.CampaignScenarioGenerator;
   const Chat = () => window.CJS.CampaignPartyChat;
   const C = () => window.CJS.CONST;
-  const Icons = () => window.CJS.UIIcons;
+  // (Ops / Runner / Side / SD / QP / Gen / Icons accessors removed in
+  //  Phase H.4 — their last closure consumers ported to TS. The engine
+  //  modules are still installed on window.CJS; TS callers reach them
+  //  through their own typed accessors.)
   // Phase H.4 — the story-context cache + AI story-prompt builder moved to
   // `src/campaign/story-context.ts`. init/render/subscribe prime the async
   // cache through this surface; TS consumers import the readers directly.
@@ -68,15 +65,9 @@ window.CJS.CampaignUI = (() => {
   const _tentOptions = _CUIOptions.tentOptions;
 
   // HTML control builders live in `src/campaign/util/cui-controls.ts`.
-  const _CUIControls = window.CJS.CampaignUIInternal.Controls;
-  const _purposeTone = _CUIControls.purposeTone;
-  const _purposeKeyForCard = _CUIControls.purposeKeyForCard;
-  const _renderInlinePurpose = _CUIControls.renderInlinePurpose;
-  const _impactLegendItem = _CUIControls.impactLegendItem;
-  const _controlGroup = _CUIControls.controlGroup;
-  const _actionMenu = _CUIControls.actionMenu;
-  const _actionBtn = _CUIControls.actionBtn;
-  const _renderTownActionButton = _CUIControls.renderTownActionButton;
+  // The closure no longer aliases any of them — the last consumers
+  // (the story-director card + solo-notice HTML) ported / went dead in
+  // Phase H.4. TS callers import from `cui-controls` directly.
 
   // Log rendering helpers live in `src/campaign/util/cui-log.ts`.
   const _CUILog = window.CJS.CampaignUIInternal.Log;
@@ -497,10 +488,10 @@ window.CJS.CampaignUI = (() => {
       statName: _statName,
       skillMeta: _skillMeta,
       skillEntryId: _skillEntryId,
-      statusDef: _statusDef,
-      // Hub tab — solo hook notice + pending card
-      renderSoloNotice: _renderSoloNotice,
-      pendingSoloHookCard: _pendingSoloHookCard
+      statusDef: _statusDef
+      // (renderSoloNotice / pendingSoloHookCard bundle entries removed in
+      //  Phase H.4 — the solo-notice HTML cluster went dead with G.3's
+      //  JSX SoloNoticePanel; no consumer read these from the bundle.)
     });
     return _tabHelpersCache;
   }
@@ -639,77 +630,11 @@ window.CJS.CampaignUI = (() => {
   // components (`src/campaign/tabs/StoryDirector.tsx`) render their
   // bodies from the typed data on `StoryDirectorData`.
 
-  function _renderStoryDirectorCard(card, options = {}) {
-    const cardClass = ['campaign-panel', 'campaign-side-card', 'campaign-result-card', 'campaign-story-card'];
-    cardClass.push('campaign-story-dialogue');
-    if (options.modal) cardClass.push('is-modal');
-    const kind = _label(card.kind || 'story');
-    return `
-      <section class="${cardClass.join(' ')}">
-        <div class="campaign-story-dialogue-head">
-          <div>
-            <h3>${_esc(card.title || card.id)}</h3>
-            <div class="campaign-muted">${_esc(card.stageName || card.stageId || '')} | ${_esc(kind)}</div>
-          </div>
-          <span class="campaign-risk ${Side().riskClass(card.canonRisk)}">${_esc(card.canonRisk || 'green')}</span>
-        </div>
-        <div class="campaign-story-dialogue-box">
-          <div class="campaign-story-speaker">${_esc(kind)}</div>
-          ${card.prompt ? `<p>${_esc(card.prompt)}</p>` : ''}
-          ${card.text ? `<p>${_esc(card.text)}</p>` : ''}
-          ${card.summary ? `<p class="campaign-muted">${_esc(card.summary)}</p>` : ''}
-        </div>
-        ${card.gmNote ? `<div class="campaign-warning">${_esc(card.gmNote)}</div>` : ''}
-        ${card.tags?.length ? `<div class="campaign-chip-row">${card.tags.map((tag) => `<span class="campaign-chip">${_esc(tag)}</span>`).join('')}</div>` : ''}
-        ${_renderStoryRouteChoices(card, options)}
-        ${options.modal ? '' : `
-          <div class="campaign-action-grid">
-            ${_actionBtn({ action: 'story-open-last', label: 'Open Popup', hint: 'Show this beat in a decision window again', kind: 'story' })}
-            ${_actionMenu('Beat Options', `
-              ${_actionBtn({ action: 'story-save-beat', label: 'Hold For Later', hint: 'Queue this for later without applying it', kind: 'manual' })}
-              ${_actionBtn({ action: 'story-copy-prompt', label: 'Copy GM Prompt', hint: 'Copy this beat and current context', kind: 'manual' })}
-              ${_actionBtn({ action: 'story-reject-beat', label: 'Skip Roll', hint: 'Save as skipped and clear it', kind: 'danger' })}
-            `)}
-          </div>
-        `}
-      </section>
-    `;
-  }
-
-  function _renderStoryRouteChoices(card, options = {}) {
-    const choices = card.suggestedChoices || [];
-    const branchChoices = choices.length ? choices : [{
-      label: 'Accept as story note',
-      ops: [{ op: 'log', text: card.prompt || card.text || card.summary || card.title || 'Story beat accepted.' }]
-    }];
-    return `
-      <div class="campaign-story-route-map">
-        <div class="campaign-section-title">Route Choices</div>
-        ${branchChoices.map((choice, index) => {
-          const buttonAttrs = options.modal
-            ? `data-story-modal-choice="${index}"`
-            : `data-campaign-action="story-apply-choice" data-id="${_escAttr(card.id)}" data-choice="${index}"`;
-          return `
-            <div class="campaign-story-route ${index === 0 ? 'is-recommended' : ''}">
-              <div class="campaign-story-route-head">
-                <span>Route ${String(index + 1).padStart(2, '0')}</span>
-                <strong>${_esc(choice.label || `Choice ${index + 1}`)}</strong>
-                ${index === 0 ? '<small>Suggested</small>' : ''}
-              </div>
-              ${_renderConsequencePreview(choice.ops || [], {
-                title: choice.label || `Choice ${index + 1}`,
-                emptyTitle: choice.label || `Choice ${index + 1}`,
-                emptyText: 'Story-only route. Choose it if it fits the current scene.'
-              })}
-              <button class="campaign-action ${index === 0 ? 'primary' : 'quest'}" ${buttonAttrs} title="Choose this route and commit its listed consequences">
-                Choose Route ${index + 1}
-              </button>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-  }
+  // `_renderStoryDirectorCard` + `_renderStoryRouteChoices` ported to TS in
+  // Phase H.4 — see `renderStoryDirectorCardHtml` in
+  // `src/campaign/action-handlers/story-director-card.ts`. The beat modal
+  // (`story-director-modals.ts`) calls it directly; only the modal render
+  // path survived (the non-modal action-grid branch was dead).
 
   // `_storyPressureBoardData`, `_storyCluesPanelData`,
   // `_storyQueuePanelData`, `_storyTruthsPanelData`,
@@ -763,76 +688,28 @@ window.CJS.CampaignUI = (() => {
   // these thin closure delegators. (renderSideCard / renderChoiceConsequence
   // / operationTone delegators were removed once their last campaign-ui
   // callers ported to JSX — HubTab still owns the implementations.)
-  function _cardChoiceOps(card = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.cardChoiceOps(card);
-  }
-
-  function _renderConsequencePreview(ops = [], options = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.renderConsequencePreview(ops, options);
-  }
-
-  function _renderFlavorTrail(entry = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.renderFlavorTrail(entry);
-  }
-
-  function _consequenceSummary(ops = [], options = {}) {
-    return window.CJS.CampaignUIInternal.HubTab.consequenceSummary(ops, options);
-  }
+  // The consequence-preview / flavor-trail / card-choice-ops /
+  // consequence-summary delegators to CampaignUIInternal.HubTab were
+  // removed in Phase H.4 — their last JS consumers (`_renderStoryRouteChoices`
+  // and `_renderSoloNotice`) ported / went dead. TS consumers call HubTab
+  // directly (the story-director card + result/side panels in
+  // `src/campaign/tabs/data/*`).
 
   // _impactLegendItem, _controlGroup, _actionMenu, _actionBtn live in
   // src/campaign/util/cui-controls.ts (bound as aliases at the top).
 
-  function _renderSoloNotice(state) {
-    const card = _pendingSoloHookCard(state);
-    if (!card) return '';
-    const kind = state.pendingSoloHook?.kind || card.type || 'hook';
-    const risk = Side().risk(card.canonRisk);
-    const prompt = card.prompt || card.summary || card.gmHook || card.notes || '';
-    const ops = _cardChoiceOps(card);
-    const summary = _consequenceSummary(ops, { hasText: !!prompt });
-    const firstChoice = card.suggestedChoices?.[0];
-    const choiceLabel = firstChoice?.label || 'Apply the first suggested choice';
-    const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === 'quest_offer');
-    const acceptHint = isQuestOffer
-      ? 'Add quest to tracker and auto-start its map run'
-      : (ops.length ? `Apply: ${Ops().describe(ops).join('; ')}` : 'Create a quest from this story-only hook');
-    return `
-      <section class="campaign-panel campaign-solo-notice campaign-result-card is-${_escAttr(summary.tone)} ${risk === 'red' ? 'risk-red' : ''}">
-        <div class="campaign-panel-head">
-          <div>
-            <h2>Immediate Roll Result</h2>
-            <div class="campaign-muted">${_esc(_label(kind))} | Suggested: ${_esc(choiceLabel)}</div>
-          </div>
-          <div class="campaign-impact-row">
-            <span class="campaign-impact-badge is-${_escAttr(summary.tone)}">${_esc(summary.label)}</span>
-            <span class="campaign-risk ${Side().riskClass(risk)}">${_esc(risk)}</span>
-          </div>
-        </div>
-        ${_renderInlinePurpose(kind === 'rumor_offer' ? 'rumor' : _purposeKeyForCard(card))}
-        <strong>${_esc(card.title || card.name || card.id)}</strong>
-        ${prompt ? `<p>${_esc(prompt)}</p>` : ''}
-        ${_renderConsequencePreview(ops, {
-          emptyTitle: 'Flavor only',
-          emptyText: 'No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest.'
-        })}
-        ${_renderFlavorTrail(card)}
-        <div class="campaign-control-help">Pick one: <b>Accept</b> commits the suggested choice. <b>Make Quest</b> only adds it to the Quest Tracker when possible. <b>Make Rumor</b> plants it in the hub lead bank. <b>Save</b> stores the card as a saved idea. <b>Ignore</b> drops it.</div>
-        <div class="campaign-action-grid">
-          ${_actionBtn({ action: 'accept-solo-hook', label: ops.length ? 'Accept & Apply' : 'Accept as Quest', hint: acceptHint, kind: 'primary' })}
-          ${_actionBtn({ action: 'solo-hook-quest', label: 'Make Quest', hint: 'Add to Quest Tracker, no map run yet' })}
-          ${_actionBtn({ action: 'solo-hook-rumor', label: 'Make Rumor', hint: 'Add as a hub rumor / lead bank item' })}
-          ${_actionBtn({ action: 'save-solo-hook', label: 'Save Text', hint: 'Store in Saved Ideas to use later' })}
-          ${_actionBtn({ action: 'ignore-solo-hook', label: 'Ignore', hint: 'Discard this hook', kind: 'danger' })}
-        </div>
-      </section>
-    `;
-  }
+  // `_renderSoloNotice` removed in Phase H.4 — it was dead since G.3
+  // replaced it with the JSX `SoloNoticePanel`
+  // (`src/campaign/tabs/ResultPanels.tsx`, fed by `getSoloNoticeData`).
+  // The only remaining reference was the (also-dead) `_tabHelpers` bundle
+  // entry. Its `_pendingSoloHookCard` / `_clearPendingSoloHook` helpers
+  // went with it; TS callers use the copies in
+  // `src/campaign/util/state-helpers.ts` + `action-handlers/solo.ts`.
 
   // _renderScenarioSummary — Phase G.5 port. Body moved to
   // `src/campaign/tabs/ResultPanels.tsx`. Typed bridge
-  // `getScenarioSummaryData(state)` produces the data. `_runQuestPill`,
-  // `_renderQuestRunTask`, and `_scenarioObjectiveMeta` stay (the
-  // bridge calls them).
+  // `getScenarioSummaryData(state)` produces the data (incl. the typed
+  // `questRunTask`).
 
   // `_renderQuestRunTask` ported to TS in Phase H.4 — see
   // `buildQuestRunTask` in `src/campaign/tabs/data/resultPanels.ts`.
@@ -1284,22 +1161,11 @@ window.CJS.CampaignUI = (() => {
 
   // _setPendingSoloHook ported to action-handlers/solo.ts (H.3).
 
-  // _pendingSoloHookCard stays — the data builders (Story / Quest /
-  // Overview render code) still read this shape inline.
-  function _pendingSoloHookCard(state = CS().getState()) {
-    const id = state?.pendingSoloHook?.cardId;
-    if (!id) return null;
-    return state.sideContent?.generatedIdeas?.[id]
-      || (state.lastSideContentCard?.id === id ? state.lastSideContentCard : null);
-  }
-
-  // _clearPendingSoloHook stays — still-JS handlers (the manual quest
-  // builder, scenario discard) call it; the TS solo handlers duplicate
-  // the one-line mutation rather than depend on this closure (matches
-  // the established H.3 pattern for tiny mutators).
-  function _clearPendingSoloHook() {
-    CS().mutate((state) => { state.pendingSoloHook = null; }, { source: 'solo_hook' });
-  }
+  // `_pendingSoloHookCard` / `_clearPendingSoloHook` removed in Phase H.4 —
+  // their last JS caller (`_renderSoloNotice`) went dead with G.3's JSX
+  // SoloNoticePanel. TS consumers use `pendingSoloHookCard` in
+  // `src/campaign/util/state-helpers.ts` and the mutation copy in
+  // `action-handlers/solo.ts`.
 
   // _acceptSoloHook / _soloHookToQuest / _soloHookToRumor ported to
   // action-handlers/solo.ts (H.3). Red-risk confirm copy, op payloads,
@@ -2198,10 +2064,10 @@ window.CJS.CampaignUI = (() => {
     // Returns the HTML body string for any closure-private vanilla
     // renderer the React-tab bridge wraps.
     renderTabBody,
-    // Story-director beat modal still needs the closure-private card HTML
-    // (G.11b kept this renderer as HTML). Exposed for action-handlers/
-    // story-director-modals.ts; goes away when the renderer ports.
-    renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
+    // `renderStoryDirectorCardHtml` removed in Phase H.4 — the beat-modal
+    // card renderer (`_renderStoryDirectorCard` + `_renderStoryRouteChoices`)
+    // ported to TS at `src/campaign/action-handlers/story-director-card.ts`.
+    // `story-director-modals.ts` calls it directly.
     // `renderQuestRunTaskHtml` removed in Phase H.4 — `_renderQuestRunTask`
     // + `_questTaskDescriptor` + `_questCellFromRef` ported to TS as
     // `buildQuestRunTask` in `src/campaign/tabs/data/resultPanels.ts`. The

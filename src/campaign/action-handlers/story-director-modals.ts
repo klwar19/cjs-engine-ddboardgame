@@ -3,12 +3,12 @@
 // `rollStoryDirector(kind)` jumps to story / storyDirector, rolls a beat
 // through CampaignStoryDirector, and opens the beat modal on the result.
 // `openLastStoryBeatModal` re-opens the last rolled beat. `openStoryBeatModal`
-// builds the modal whose card body comes from the closure-private
-// `_renderStoryDirectorCard` HTML — reached through the new
-// `CampaignUI.renderStoryDirectorCardHtml` bridge (G.11b keeps the renderer
-// itself in JS until H.4). The route / save / reject / close buttons route
-// through the action runtime (story-apply-choice / story-save-beat /
-// story-reject-beat) to the already-ported handlers in story-director.ts.
+// builds the modal whose card body comes from `renderStoryDirectorCardHtml`
+// (Phase H.4 — ported to TS in `./story-director-card.ts`; was the
+// closure-private `_renderStoryDirectorCard` HTML reached via a CampaignUI
+// bridge). The route / save / reject / close buttons route through the
+// action runtime (story-apply-choice / story-save-beat / story-reject-beat)
+// to the already-ported handlers in story-director.ts.
 //
 // story-manual-note / story-copy-prompt / story-help stay in the switch —
 // they need `_openManualSceneBuilder` (127 lines) and the prompt / help
@@ -16,20 +16,12 @@
 
 import { cs, mod, rerender, setActiveModeRaw, setActiveTabRaw, toast } from "./context";
 import { utils } from "./modals";
+import { renderStoryDirectorCardHtml, type StoryDirectorCard } from "./story-director-card";
 
-interface StoryBeatCard {
-  id?: string;
-  title?: string;
-  kind?: string;
-  [key: string]: unknown;
-}
+type StoryBeatCard = StoryDirectorCard;
 
 interface StoryDirectorModule {
   roll?: (kind: string) => StoryBeatCard | null | undefined;
-}
-
-interface CampaignUiBridge {
-  renderStoryDirectorCardHtml?: (card: StoryBeatCard, options: { modal?: boolean }) => string;
 }
 
 interface ActionsRuntime {
@@ -49,7 +41,7 @@ export function openStoryBeatModal(card: StoryBeatCard | null | undefined): void
   if (!card) return;
   const ui = mod<UiModalApi>("UI");
   if (!ui?.openModal) return;
-  const cardHtml = mod<CampaignUiBridge>("CampaignUI")?.renderStoryDirectorCardHtml?.(card, { modal: true }) || "";
+  const cardHtml = renderStoryDirectorCardHtml(card);
   const label = utils()?.label ?? ((v: unknown) => String(v ?? ""));
   const body = document.createElement("div");
   body.className = "campaign-story-modal-body";

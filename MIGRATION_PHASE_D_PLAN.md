@@ -1052,11 +1052,21 @@ in three clusters — these are the item-3/4 work:
    modal. Port the renderer to JSX (Phase-G style: typed `get*Data` +
    JSX component) OR keep as a permanent island moved into a TS module
    that still emits the HTML string. Inventory:
-   - `renderStoryDirectorCardHtml` → `_renderStoryDirectorCard` +
-     `_renderStoryRouteChoices` (+ the `_cardChoiceOps` /
-     `_renderConsequencePreview` / `_renderFlavorTrail` /
-     `_consequenceSummary` delegators to `CampaignUIInternal.HubTab`).
-     Consumer: `action-handlers/story-director-modals.ts` (beat modal).
+   - [x] `renderStoryDirectorCardHtml` → **ported to TS** (Phase H.4).
+     `_renderStoryDirectorCard` + `_renderStoryRouteChoices` became
+     `renderStoryDirectorCardHtml` in
+     `src/campaign/action-handlers/story-director-card.ts` (HTML-string
+     island — the beat modal in `story-director-modals.ts` wires the
+     `data-story-modal-choice` buttons imperatively). Only the modal
+     render path survived (the non-modal action-grid branch was dead).
+     The shared HubTab consequence/flavor/summary delegators
+     (`_cardChoiceOps` / `_renderConsequencePreview` / `_renderFlavorTrail` /
+     `_consequenceSummary`) were removed too — their only other consumer
+     was the now-deleted dead `_renderSoloNotice` (G.3's JSX
+     `SoloNoticePanel` replaced it). `_pendingSoloHookCard` /
+     `_clearPendingSoloHook` + the orphaned `Side`/`Ops`/`Runner`/`SD`/`QP`/
+     `Gen`/`Icons` accessors + the whole `cui-controls` alias block went
+     with them.
    - [x] `renderQuestRunTaskHtml` → **ported to TS** (Phase H.4). The
      `_renderQuestRunTask` HTML emitter + `_questTaskDescriptor` /
      `_questCellFromRef` became `buildQuestRunTask` / `questTaskDescriptor`
