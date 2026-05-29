@@ -706,54 +706,12 @@ window.CJS.CampaignUI = (() => {
   // renders via `_renderZombieScavengeHome` (returned as one HTML
   // string in the bridge data) until its own JSX port.
 
-  // _renderZombieScavengeHome / _renderGachaHomeHero /
-  // _renderWorldActivityPreviewCard removed in Phase G.17. The
-  // zombie Quest Home now reads typed `getQuestHomeData(state).zombie`
-  // and renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`.
-  function _zombieScavengeHomeData(state) {
-    const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
-    const scavenge = activities.filter((activity) => activity.type === 'scavenge');
-    const build = activities.filter((activity) => activity.type === 'build');
-    const pressures = Object.values(state.crossWorld?.pressures || {})
-      .filter((pressure) => String(pressure.id || '').startsWith('zombie_'));
-    return {
-      scavengeCount: scavenge.length,
-      buildCount: build.length,
-      pressureCount: pressures.length,
-      hasRun: !!state.activeScenarioRun,
-      heroBackdropUrl: (() => {
-        // Inlined `_worldHomeBackdropUrl` (the TS port lives in
-        // resultPanels/eventLog data files; one remaining JS caller).
-        const world = CS().getCurrentWorld?.() || {};
-        const theme = world.storyModeTheme || {};
-        const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
-        return backdrop ? _cssVarAssetUrl(backdrop) : null;
-      })(),
-      scavenge: scavenge.map((activity) => _worldActivityPreviewData(activity, 'Scavenge route')),
-      build: build.map((activity) => _worldActivityPreviewData(activity, 'Build project')),
-      pressures: pressures.map((pressure) => ({
-        id: String(pressure.id || ''),
-        title: String(pressure.title || pressure.id || ''),
-        value: Number(pressure.value || 0)
-      }))
-    };
-  }
-
-  function _worldActivitiesFor(worldId) {
-    return DS().getAllAsArray('worldActivityPacks')
-      .filter((pack) => pack.world === worldId)
-      .flatMap((pack) => pack.activities || []);
-  }
-
-  function _worldActivityPreviewData(activity = {}, kicker = 'Activity') {
-    return {
-      id: String(activity.id || activity.name || activity.title || ''),
-      kicker: String(kicker),
-      title: String(activity.title || activity.name || activity.id || ''),
-      summary: String(activity.summary || activity.description || ''),
-      rewardText: String(activity.rewardText || 'No reward text yet.')
-    };
-  }
+  // _zombieScavengeHomeData / _zombieScavengeTrackerData /
+  // _worldActivitiesFor / _worldActivityPreviewData / _questPaperKind
+  // moved to TS in Phase H.4 (`src/campaign/tabs/data/zombie.ts` +
+  // `src/campaign/tabs/data/questHome.ts`). The zombie Quest Home + Quests
+  // tracker now read their typed data directly from
+  // `getQuestHomeData(state).zombie` / `getQuestPanelData(state).zombie`.
 
   // _renderMiniGameTest — Phase F.3 port. Body moved to
   // `src/campaign/tabs/CampaignMinigameTestTab.tsx`. Typed data flows
@@ -766,14 +724,6 @@ window.CJS.CampaignUI = (() => {
   // CampaignUI.setMinigameTestGame bridge then rerenders.
 
   // _mgTestPlay ported to action-handlers/mg-test.ts (H.3).
-
-  function _questPaperKind(entry = {}) {
-    const kind = String(entry.kind || '').toLowerCase();
-    const tags = (entry.tags || []).map((tag) => String(tag).toLowerCase());
-    if (kind.includes('daily') || tags.includes('daily')) return 'daily';
-    if (kind.includes('story') || kind.includes('chapter') || kind.includes('one_time') || tags.includes('story_quest') || tags.includes('chapter_repeat')) return 'story';
-    return 'normal';
-  }
 
   // _renderEventTypeTab — Phase F.7 port. Body moved to
   // `src/campaign/tabs/CampaignEventTab.tsx`. Typed data flows through
@@ -2099,24 +2049,11 @@ window.CJS.CampaignUI = (() => {
   // `_cssVarAssetUrl` moved to `src/campaign/util/cui-utils.ts` and
   // bound as an alias at the top of this IIFE (Phase H.4).
 
-  // _renderZombieScavengeTracker removed in Phase G.17. The zombie
-  // Quests tracker now reads typed `getQuestPanelData(state).zombie`
-  // and renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`. The
-  // legacy quest rows reuse the shared typed `getQuestRowData` +
-  // `<QuestRow>` component.
-  function _zombieScavengeTrackerData(state) {
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const activities = _worldActivitiesFor('zombie').filter((activity) => activity.type !== 'journal');
-    return {
-      activeCount: active.length,
-      finishedCount: finished.length,
-      activities: activities.map((activity) => _worldActivityPreviewData(activity, activity.type === 'build' ? 'Build project' : 'Scavenge route')),
-      activeQuestRows: active.map((quest) => getQuestRowData(quest)),
-      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true }))
-    };
-  }
+  // _renderZombieScavengeTracker + `_zombieScavengeTrackerData` moved
+  // to TS in Phase H.4 (`src/campaign/tabs/data/zombie.ts`). The zombie
+  // Quests tracker reads typed `getQuestPanelData(state).zombie` and
+  // renders JSX via `src/campaign/tabs/ZombieScavenge.tsx`. The legacy
+  // quest rows reuse the shared typed `getQuestRowData` + `<QuestRow>`.
 
   // _renderQuestRow / _renderQuestObjective / _renderQuestVariant
   // removed in Phase G.17. The shared QuestRow ported to JSX in G.1
@@ -2165,13 +2102,9 @@ window.CJS.CampaignUI = (() => {
     return bits.join(' | ');
   }
 
-  function _questMiniGameObjective(quest = {}) {
-    return (quest.objectives || []).find((objective) => {
-      if (_questObjectiveDone(objective)) return false;
-      const kind = String(objective.kind || '').toLowerCase();
-      return !!(objective.minigame || objective.miniGame || objective.minigameId || kind === 'minigame' || kind === 'puzzle');
-    }) || null;
-  }
+  // `_questMiniGameObjective` and `_questStatusClass` moved to TS in
+  // Phase H.4 (`src/campaign/util/state-helpers.ts`). No remaining JS
+  // callers (the only one was JS `getQuestRowData`, also ported).
 
   function _questObjectiveDone(obj = {}) {
     return Number(obj.current || 0) >= Math.max(1, Number(obj.required || 1));
@@ -2179,13 +2112,6 @@ window.CJS.CampaignUI = (() => {
 
   function _isQuestResolved(quest = {}) {
     return ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'));
-  }
-
-  function _questStatusClass(quest = {}) {
-    const status = String(quest.status || 'active');
-    if (status === 'failed') return 'is-failed';
-    if (_isQuestResolved(quest)) return 'is-complete';
-    return 'is-active';
   }
 
   // Phase G.15 — typed quest-pill data for the active run (consumed
@@ -2223,49 +2149,9 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  // Phase G — typed scenario pill for the quest row. Returns a
-  // QuestPillData shape (or null) the React `QuestPill` renders.
-  function _questScenarioPill(quest = {}, activeRun = null, activeScenario = null) {
-    if (!quest?.id) return null;
-    if (_activeRunQuestId(activeRun, activeScenario) === quest.id) {
-      return {
-        variant: 'running',
-        label: `▶ Running: ${activeScenario?.name || activeRun?.scenarioId || 'scenario'}`,
-        title: 'A scenario for this quest is currently running',
-        linkable: true,
-        muted: false
-      };
-    }
-    const linkedId = quest.linkedScenario || quest.scenarioId || quest.scenario;
-    if (linkedId) {
-      const sc = CS().getScenarioById?.(linkedId);
-      return {
-        variant: 'linked',
-        label: `📜 Linked: ${sc?.name || linkedId}`,
-        title: 'This quest has a pre-built scenario linked to it',
-        linkable: false,
-        muted: false
-      };
-    }
-    const generated = Object.values(CS().getState()?.sideContent?.generatedScenarios || {})
-      .find((sc) => sc?.source?.questId === quest.id);
-    if (generated) {
-      return {
-        variant: 'generated',
-        label: `🗺 Generated: ${generated.name || generated.id}`,
-        title: 'A scenario was previously generated for this quest',
-        linkable: false,
-        muted: false
-      };
-    }
-    return {
-      variant: 'noMap',
-      label: 'no map yet',
-      title: 'No scenario yet — Map Run will generate one',
-      linkable: false,
-      muted: true
-    };
-  }
+  // `_questScenarioPill` moved to TS in Phase H.4 (alongside
+  // `getQuestRowData` in `src/campaign/tabs/data/questRow.ts` — it was
+  // the only caller).
 
   // The Session Log panel (`tab: logs`) and the Save Manager / Settings
   // panel (`tab: settings`) are owned by React — see
@@ -5601,74 +5487,12 @@ window.CJS.CampaignUI = (() => {
   // (`src/campaign/tabs/data/resultPanels.ts`).
 
   // `getQuestRowData` moved to TS in Phase H.4
-  // (`src/campaign/tabs/data/questRow.ts`). The closure-private helpers
-  // (`_questStatusClass`, `_questMiniGameObjective`, `_activeRunQuestId`,
-  // `_triggerLabel`, `_questScenarioPill`) stay because the still-JS
-  // quest data builders (`_zombieScavengeTrackerData`, `getQuestPanelData`,
-  // `getQuestHomeData`) still call the JS row builder for now; their
-  // own ports swap to the typed TS version.
-  function getQuestRowData(quest = {}, opts = {}) {
-    const objectives = quest.objectives || [];
-    const nextObjective = opts.resolved ? null : _questNextObjective(quest);
-    const done = objectives.filter((obj) => _questObjectiveDone(obj)).length;
-    const total = objectives.length || 1;
-    const meta = [
-      _label(quest.status || 'active'),
-      quest.giver ? `Giver: ${quest.giver}` : '',
-      quest.timer?.phasesRemaining ? `${quest.timer.phasesRemaining} phases left` : ''
-    ].filter(Boolean).join(' | ');
-    const activeRun = CS().getState()?.activeScenarioRun;
-    const activeScenario = CS().getActiveScenario?.();
-    const isRunQuest = _activeRunQuestId(activeRun, activeScenario) === quest.id;
-    const scenarioDisabled = !!(activeRun && !isRunQuest);
-    const tags = Array.from(new Set([
-      ...(quest.tags || []),
-      ...(quest.contextTags || []),
-      ...(quest.monsterTags || [])
-    ].filter(Boolean))).slice(0, 8).map((t) => _label(t));
-    const variant = quest.activeVariant || null;
-    const variantLabel = variant?.label || quest.variantLabel || '';
-    const variantText = quest.variantDialogue || quest.variantSummary || variant?.dialogue || variant?.summary || '';
-    const variantRepeat = quest.repeatCycle ? `Cycle ${quest.repeatCycle + 1}` : '';
-    return {
-      id: String(quest.id || ''),
-      title: quest.title || quest.id || 'Quest',
-      summary: quest.summary || '',
-      statusLabel: _label(quest.status || 'active'),
-      statusClass: _questStatusClass(quest),
-      metaLine: meta,
-      resolved: !!opts.resolved,
-      isRunQuest,
-      scenarioDisabled,
-      scenarioLabel: isRunQuest ? 'Open Map' : 'Map Run',
-      scenarioHint: isRunQuest
-        ? 'Jump to the active map for this quest'
-        : 'Start (or generate) the map run for this quest',
-      scenarioPill: _questScenarioPill(quest, activeRun, activeScenario),
-      hasMiniGame: !!_questMiniGameObjective(quest),
-      tagChips: tags,
-      variant: (variantLabel || variantText || variantRepeat)
-        ? { label: variantLabel, text: variantText, repeat: variantRepeat }
-        : null,
-      phaseLabel: opts.resolved ? 'Resolved' : (nextObjective?.label || 'Open'),
-      doneCount: done,
-      totalCount: total,
-      objectives: objectives.map((obj) => {
-        const cur = Number(obj.current || 0);
-        const req = Math.max(1, Number(obj.required || 1));
-        const pct = Math.max(0, Math.min(100, Math.round((cur / req) * 100)));
-        return {
-          id: String(obj.id || obj.label || ''),
-          label: obj.label || obj.id || 'Objective',
-          current: cur,
-          required: req,
-          pct,
-          done: cur >= req,
-          pulseHints: (obj.progressTriggers || []).slice(0, 2).map((trigger) => _triggerLabel(trigger))
-        };
-      })
-    };
-  }
+  // (`src/campaign/tabs/data/questRow.ts`). The closure-private
+  // helpers it depended on (`_questStatusClass`, `_questMiniGameObjective`,
+  // `_activeRunQuestId`, `_triggerLabel`, `_questScenarioPill`) are
+  // deleted alongside the JS getQuestPanelData / getQuestHomeData /
+  // _zombieScavengeTrackerData callers (Phase H.4) — every consumer
+  // now imports the typed builder directly.
 
   function getStoryDirectorData(state = CS().getState()) {
     if (!state) return null;
@@ -5798,25 +5622,10 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getQuestPanelData(state = CS().getState()) {
-    if (!state) return null;
-    if (state.currentWorld === 'zombie') {
-      return { isZombie: true, zombie: _zombieScavengeTrackerData(state) };
-    }
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    return {
-      isZombie: false,
-      activeCount: active.length,
-      finishedCount: finished.length,
-      templateCount,
-      activeQuestRows: active.map((quest) => getQuestRowData(quest)),
-      finishedQuestRows: finished.map((quest) => getQuestRowData(quest, { resolved: true }))
-    };
-  }
+  // `getQuestPanelData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questPanel.ts`). The TS port reads the same
+  // CampaignState + content surface; the zombie variant routes through
+  // the shared TS `getZombieScavengeTrackerData`.
 
   function getRunData(state = CS().getState()) {
     if (!state) return null;
@@ -5989,45 +5798,13 @@ window.CJS.CampaignUI = (() => {
     };
   }
 
-  function getQuestHomeData(state = CS().getState()) {
-    if (!state) return null;
-    const isZombie = state.currentWorld === 'zombie';
-    if (isZombie) {
-      return { isZombie: true, zombie: _zombieScavengeHomeData(state) };
-    }
-    const quests = Object.values(state.quests || {});
-    const active = quests.filter((q) => !q.chainTemplateId && !_isQuestResolved(q));
-    const finished = quests.filter((q) => !q.chainTemplateId && _isQuestResolved(q));
-    const nextQuest = active[0] || null;
-    const Seq = window.CJS.CampaignSequences;
-    const questEntries = Seq?.list?.('quest') || [];
-    const dailyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'daily');
-    const storyPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'story');
-    const normalPapers = questEntries.filter((entry) => _questPaperKind(entry) === 'normal');
-    const templateCount = Object.values(CS().getContent().campaignQuests || {})
-      .reduce((sum, record) => sum + (record.templates?.length || 0), 0);
-    const run = state.activeScenarioRun;
-    const paperLite = (entries) => entries.slice(0, 2).map((entry) => ({
-      id: entry.id,
-      title: entry.title || entry.id,
-      kindLabel: _label(entry.kind || 'quest paper')
-    }));
-    return {
-      isZombie: false,
-      activeCount: active.length,
-      finishedCount: finished.length,
-      templateCount,
-      hasRun: !!run,
-      hasNextQuest: !!nextQuest,
-      nextQuestTitle: nextQuest ? (nextQuest.title || nextQuest.id) : '',
-      nextQuestSummary: nextQuest ? (nextQuest.summary || '') : '',
-      paperCount: questEntries.length,
-      dailyPapers: paperLite(dailyPapers),
-      normalPapers: paperLite(normalPapers).slice(0, 1),
-      storyPapers: paperLite(storyPapers),
-      activeQuestRows: active.slice(0, 4).map((quest) => getQuestRowData(quest))
-    };
-  }
+  // `getQuestHomeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/questHome.ts`). The zombie variant routes
+  // through the shared TS `getZombieScavengeHomeData`. The
+  // closure-private helpers `_zombieScavengeHomeData`,
+  // `_zombieScavengeTrackerData`, `_worldActivitiesFor`,
+  // `_worldActivityPreviewData`, `_questPaperKind` are deleted alongside
+  // (no remaining JS callers).
 
   // `getStorySummaryData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/storySummary.ts`). The TS port duplicates
@@ -6348,11 +6125,9 @@ window.CJS.CampaignUI = (() => {
     getChromeData,
     getMinigameTestData,
     getQuestChainsData,
-    getQuestHomeData,
     getEventTabData,
     getScenariosData,
     getRunData,
-    getQuestPanelData,
     getStoryHomeData,
     getWorldGateData,
     getStoryDirectorData,
