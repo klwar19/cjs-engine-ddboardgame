@@ -43,8 +43,8 @@ export function CampaignEventLogTab({ state }: Props) {
     <div className="campaign-dashboard campaign-event-log">
       <EventLogHero data={data} style={heroStyle} />
       <EventLedger data={data} />
-      <EventResultPanel state={state} />
-      <OraclePanel state={state} />
+      <EventResultPanel />
+      <OraclePanel />
     </div>
   );
 }

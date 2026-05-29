@@ -1,14 +1,23 @@
 // ResultPanels.tsx — Phase G JSX port of `_renderEventResult` and
 // `_renderOracle`.
 //
-// Two shared panels used by EventLog, EventTab, Overview, and Maps.
-// Each reads typed data via `getEventResultData(state)` /
-// `getOracleData(state)` and renders JSX. Sub-fragments that depend
-// on cross-module renderers (inline purpose chip, consequence
-// preview, flavor trail) still come through HTML bridges because
+// Shared result panels used by EventLog, EventTab, Overview, Maps, etc.
+// Phase I.2b: each panel SELF-SUBSCRIBES to its slice via
+// `useCampaignSelector(selector, deepEqual)` and is wrapped in `memo`, so
+// when its parent tab re-renders for an unrelated reason the panel keeps the
+// previous reference and skips — only re-rendering when its own data slice
+// changes by value. (The campaign state is deep-cloned every mutation, so
+// the value comparison, not reference identity, is what makes this work.)
+// `ActiveSequencePanel` stays prop-driven because its selector depends on the
+// `scopes` prop, which the version-keyed selector cache can't memoize safely.
+//
+// Sub-fragments that depend on cross-module renderers (inline purpose chip,
+// consequence preview, flavor trail) still come through HTML bridges because
 // their inner data shapes live in sibling modules (HubTab / Controls).
 
-import type { CampaignStateSnapshot } from "../store";
+import { memo } from "react";
+import { useCampaignSelector, type CampaignStateSnapshot } from "../store";
+import { deepEqual } from "../util/equality";
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {
   getEventResultData,
@@ -31,9 +40,21 @@ import {
 import { SequenceNodePanel } from "./SequenceNode";
 import { QuestPill } from "./ScenarioChips";
 
+// Module-level stable selectors so `useCampaignSelector` keeps a steady
+// getSnapshot and never re-subscribes. Each is a pure function of state.
+const selEventResult = (s: CampaignStateSnapshot | null) => (s ? getEventResultData(s) : null);
+const selOracle = (s: CampaignStateSnapshot | null) => (s ? getOracleData(s) : null);
+const selSoloNotice = (s: CampaignStateSnapshot | null) => (s ? getSoloNoticeData(s) : null);
+const selTravelSurprise = (s: CampaignStateSnapshot | null) => (s ? getTravelSurpriseData(s) : null);
+const selCombatResult = (s: CampaignStateSnapshot | null) => (s ? getCombatResultData(s) : null);
+const selLastCombatResult = (s: CampaignStateSnapshot | null) => (s ? getLastCombatResultData(s) : null);
+const selLastReport = (s: CampaignStateSnapshot | null) => (s ? getLastReportData(s) : null);
+const selPendingBattle = (s: CampaignStateSnapshot | null) => (s ? getPendingBattleData(s) : null);
+const selScenarioSummary = (s: CampaignStateSnapshot | null) => (s ? getScenarioSummaryData(s) : null);
+
 // ── EventResult ───────────────────────────────────────────────────
-export function EventResultPanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getEventResultData(state);
+export const EventResultPanel = memo(function EventResultPanel() {
+  const data = useCampaignSelector(selEventResult, deepEqual);
   if (!data) return null;
   return (
     <section className={`campaign-panel campaign-event-result campaign-result-card is-${data.tone}`}>
@@ -61,7 +82,7 @@ export function EventResultPanel({ state }: { state: CampaignStateSnapshot }) {
       <EventResultActions data={data} />
     </section>
   );
-}
+});
 
 function ManualSummaryBlock({ summary }: { summary: ManualSummary }) {
   return (
@@ -114,8 +135,8 @@ function EventResultActions({ data }: { data: EventResultData }) {
 }
 
 // ── Oracle ────────────────────────────────────────────────────────
-export function OraclePanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getOracleData(state);
+export const OraclePanel = memo(function OraclePanel() {
+  const data = useCampaignSelector(selOracle, deepEqual);
   if (!data) return null;
   return (
     <section className="campaign-panel oracle campaign-result-card is-flavor">
@@ -139,11 +160,11 @@ export function OraclePanel({ state }: { state: CampaignStateSnapshot }) {
       </div>
     </section>
   );
-}
+});
 
 // ── SoloNotice ────────────────────────────────────────────────────
-export function SoloNoticePanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getSoloNoticeData(state);
+export const SoloNoticePanel = memo(function SoloNoticePanel() {
+  const data = useCampaignSelector(selSoloNotice, deepEqual);
   if (!data) return null;
   const cls = ["campaign-panel", "campaign-solo-notice", "campaign-result-card", `is-${data.tone}`];
   if (data.risk === "red") cls.push("risk-red");
@@ -170,7 +191,7 @@ export function SoloNoticePanel({ state }: { state: CampaignStateSnapshot }) {
       <SoloNoticeActions data={data} />
     </section>
   );
-}
+});
 
 function SoloNoticeActions({ data }: { data: SoloNoticeData }) {
   return (
@@ -185,8 +206,8 @@ function SoloNoticeActions({ data }: { data: SoloNoticeData }) {
 }
 
 // ── Travel Surprise ───────────────────────────────────────────────
-export function TravelSurprisePanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getTravelSurpriseData(state);
+export const TravelSurprisePanel = memo(function TravelSurprisePanel() {
+  const data = useCampaignSelector(selTravelSurprise, deepEqual);
   if (!data) return null;
   return (
     <section className="campaign-panel campaign-travel-notice">
@@ -210,11 +231,11 @@ export function TravelSurprisePanel({ state }: { state: CampaignStateSnapshot })
       </div>
     </section>
   );
-}
+});
 
 // ── Combat Result (pending) ───────────────────────────────────────
-export function CombatResultPanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getCombatResultData(state);
+export const CombatResultPanel = memo(function CombatResultPanel() {
+  const data = useCampaignSelector(selCombatResult, deepEqual);
   if (!data) return null;
   return (
     <section className="campaign-panel battle-result">
@@ -241,11 +262,11 @@ export function CombatResultPanel({ state }: { state: CampaignStateSnapshot }) {
       </div>
     </section>
   );
-}
+});
 
 // ── Last Combat Result (applied) ──────────────────────────────────
-export function LastCombatResultPanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getLastCombatResultData(state);
+export const LastCombatResultPanel = memo(function LastCombatResultPanel() {
+  const data = useCampaignSelector(selLastCombatResult, deepEqual);
   if (!data) return null;
   return (
     <section className="campaign-panel battle-result applied">
@@ -259,11 +280,11 @@ export function LastCombatResultPanel({ state }: { state: CampaignStateSnapshot 
       <HtmlBridge html={data.lootHtml} className="campaign-loot-summary-bridge" />
     </section>
   );
-}
+});
 
 // ── Last Scenario Report ──────────────────────────────────────────
-export function LastReportPanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getLastReportData(state);
+export const LastReportPanel = memo(function LastReportPanel() {
+  const data = useCampaignSelector(selLastReport, deepEqual);
   if (!data) return null;
   return (
     <section className="campaign-panel">
@@ -280,11 +301,11 @@ export function LastReportPanel({ state }: { state: CampaignStateSnapshot }) {
       <pre className="campaign-report">{data.diffJson}</pre>
     </section>
   );
-}
+});
 
 // ── Pending Battle ────────────────────────────────────────────────
-export function PendingBattlePanel({ state }: { state: CampaignStateSnapshot }) {
-  const data = getPendingBattleData(state);
+export const PendingBattlePanel = memo(function PendingBattlePanel() {
+  const data = useCampaignSelector(selPendingBattle, deepEqual);
   if (!data) return null;
   return (
     <section className="campaign-panel battle-ready">
@@ -305,7 +326,7 @@ export function PendingBattlePanel({ state }: { state: CampaignStateSnapshot }) 
       <PendingBattleActions data={data} />
     </section>
   );
-}
+});
 
 function PendingBattleActions({ data }: { data: PendingBattleData }) {
   return (
@@ -339,14 +360,12 @@ function PendingBattleActions({ data }: { data: PendingBattleData }) {
 }
 
 // ── Scenario Summary ──────────────────────────────────────────────
-export function ScenarioSummaryPanel({
-  state,
+export const ScenarioSummaryPanel = memo(function ScenarioSummaryPanel({
   showWhenNoRun = false
 }: {
-  state: CampaignStateSnapshot;
   showWhenNoRun?: boolean;
 }) {
-  const data = getScenarioSummaryData(state);
+  const data = useCampaignSelector(selScenarioSummary, deepEqual);
   if (!data) return null;
   if (!data.hasRun) {
     if (!showWhenNoRun) return null;
@@ -364,7 +383,7 @@ export function ScenarioSummaryPanel({
     );
   }
   return <ScenarioSummaryActive data={data} />;
-}
+});
 
 function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
   const task = data.questRunTask;
@@ -442,9 +461,9 @@ function ScenarioSummaryActive({ data }: { data: ScenarioSummaryRun }) {
 
 // ── Active Sequence ───────────────────────────────────────────────
 // Shared by StoryHome (scope='story'), QuestHome (scope='quest'),
-// and EventTab (scope='event'). The wrapper + node body are now full
-// JSX. The bridge returns a typed `node` discriminated union; the
-// `SequenceNodePanel` JSX component handles each of the 7 variants.
+// and EventTab (scope='event'). Stays prop-driven (state + scopes): its
+// selector depends on the `scopes` prop, which the version-keyed
+// useCampaignSelector cache can't memoize safely.
 export function ActiveSequencePanel({
   state,
   scopes

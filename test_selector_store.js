@@ -172,6 +172,44 @@ for (const [rel, name] of listItems) {
      new RegExp(`export const ${name} = memoDeep\\(${name}View\\)`).test(src));
 }
 
+// ── Layer 4: self-subscribing shared panels (I.2b) ─────────────────────────
+// The ResultPanels family self-subscribes to its slice via useCampaignSelector
+// + memo, so a parent tab re-render no longer re-renders an unchanged panel.
+const rp = fs.readFileSync(path.join(__dirname, 'src/campaign/tabs/ResultPanels.tsx'), 'utf8');
+ok('ResultPanels imports useCampaignSelector', /import \{ useCampaignSelector,/.test(rp));
+ok('ResultPanels imports deepEqual + memo',
+   /import \{ deepEqual \}/.test(rp) && /import \{ memo \} from "react"/.test(rp));
+const SELF_SUB_PANELS = [
+  'EventResultPanel', 'OraclePanel', 'SoloNoticePanel', 'TravelSurprisePanel',
+  'CombatResultPanel', 'LastCombatResultPanel', 'LastReportPanel',
+  'PendingBattlePanel', 'ScenarioSummaryPanel'
+];
+for (const name of SELF_SUB_PANELS) {
+  ok(`${name} is a memo() self-subscribing panel`,
+     new RegExp(`export const ${name} = memo\\(function ${name}`).test(rp));
+  ok(`${name} no longer takes a state prop (it self-subscribes)`,
+     !new RegExp(`function ${name}\\(\\{ state`).test(rp));
+}
+// useCampaignSelector must be the data source for the converted panels.
+ok('converted panels read data via useCampaignSelector',
+   (rp.match(/useCampaignSelector\(sel/g) || []).length >= SELF_SUB_PANELS.length);
+// ActiveSequencePanel intentionally stays prop-driven (selector depends on scopes).
+ok('ActiveSequencePanel stays prop-driven (state + scopes)',
+   /export function ActiveSequencePanel\(\{\s*state,\s*scopes/.test(rp));
+// No consumer tab passes state= to a converted panel anymore.
+const CONSUMER_TABS = [
+  'CampaignEventLogTab', 'CampaignEventTab', 'CampaignQuestHomeTab', 'CampaignHubTabs',
+  'CampaignMapsTab', 'CampaignQuestsPanelTab', 'CampaignOverviewTab', 'CampaignStoryHomeTab'
+];
+let strayStateProp = 0;
+for (const tab of CONSUMER_TABS) {
+  const src = fs.readFileSync(path.join(__dirname, `src/campaign/tabs/${tab}.tsx`), 'utf8');
+  for (const name of SELF_SUB_PANELS) {
+    if (new RegExp(`<${name} state=`).test(src)) strayStateProp += 1;
+  }
+}
+ok('no consumer passes state= to a self-subscribing panel', strayStateProp === 0);
+
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);

@@ -60,11 +60,11 @@ function NormalQuestHome({
       <QuestTypesPanel data={data} />
       <ActiveQuestsPanel rows={data.activeQuestRows} activeCount={data.activeCount} />
       <QuestRunTools data={data} />
-      <SoloNoticePanel state={state} />
-      <ScenarioSummaryPanel state={state} />
-      <PendingBattlePanel state={state} />
-      <CombatResultPanel state={state} />
-      <LastReportPanel state={state} />
+      <SoloNoticePanel />
+      <ScenarioSummaryPanel />
+      <PendingBattlePanel />
+      <CombatResultPanel />
+      <LastReportPanel />
     </div>
   );
 }

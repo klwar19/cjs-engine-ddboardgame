@@ -38,18 +38,18 @@ export function CampaignOverviewTab({ state }: Props) {
       {snapshot && <TownSnapshotPanel data={snapshot} />}
       <div className="campaign-town-float-stack">
         {rollFloat && <TownRollFloatPanel data={rollFloat} />}
-        <SoloNoticePanel state={state} />
+        <SoloNoticePanel />
       </div>
       <AdventureDesk />
       <AdventureLegend state={state} />
-      <ScenarioSummaryPanel state={state} />
-      <TravelSurprisePanel state={state} />
-      <PendingBattlePanel state={state} />
-      <CombatResultPanel state={state} />
-      <LastCombatResultPanel state={state} />
-      <EventResultPanel state={state} />
-      <OraclePanel state={state} />
-      <LastReportPanel state={state} />
+      <ScenarioSummaryPanel />
+      <TravelSurprisePanel />
+      <PendingBattlePanel />
+      <CombatResultPanel />
+      <LastCombatResultPanel />
+      <EventResultPanel />
+      <OraclePanel />
+      <LastReportPanel />
     </div>
   );
 }

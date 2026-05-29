@@ -777,12 +777,22 @@ show become tractable:
   strips whose slice differs. Wrapped: the 5 always-mounted chrome strips
   (Header, ModeBar, SubTabs, RecentLog, CommandRail) and the list-item /
   panel components rendered many times (QuestRow, WorldGateCard,
-  SequenceNodePanel, SequenceShelfPanel). **Deliberately deferred:** the
-  `ResultPanels` family takes the whole `state` and derives internally;
-  memoizing on `state` would deep-compare the full tree every render (pure
-  cost). Those convert to self-subscribing `useCampaignSelector` components
-  in a follow-up (call it I.2b) — that is also where `useCampaignSelector`
-  gets its per-slice consumers beyond the chrome.
+  SequenceNodePanel, SequenceShelfPanel). The `ResultPanels` family was
+  handled separately in I.2b (it takes the whole `state`, so memoizing on
+  `state` would deep-compare the full tree — it self-subscribes instead).
+- [x] **I.2b — Self-subscribing shared panels.** The nine `ResultPanels`
+  that derive from a state slice (EventResult, Oracle, SoloNotice,
+  TravelSurprise, CombatResult, LastCombatResult, LastReport, PendingBattle,
+  ScenarioSummary) now read their data via
+  `useCampaignSelector(selX, deepEqual)` and are wrapped in `memo`, so a
+  parent tab re-render keeps the previous reference and skips the panel
+  unless its own slice changed by value — a real win for the panel-dense
+  Overview tab. This gives `useCampaignSelector` its per-slice consumers
+  beyond the chrome (the I.2 goal). `ActiveSequencePanel` stays prop-driven
+  on purpose: its selector depends on the `scopes` prop, which the
+  version-keyed cache can't memoize safely. All 31 call sites dropped the
+  `state=` prop (typecheck-enumerated; JSX bodies untouched, verified by
+  diff). `test_selector_store.js` +23 assertions (86 total).
 - [ ] **I.3 — Virtualize long lists.** Quest list, event ledger,
   log entries panel, save slots — each can pass 100+ rows. Add
   `react-window` or a tiny custom virtualizer.
