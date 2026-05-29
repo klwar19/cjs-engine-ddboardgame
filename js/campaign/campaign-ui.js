@@ -512,41 +512,8 @@ window.CJS.CampaignUI = (() => {
   // HTML strings via that bridge until each helper ports.
 
   // _renderChoiceConsequencePanel removed in Phase G.12. Typed
-  // `_choiceConsequenceData(state)` returns the alignment snapshot
-  // for the React `ChoiceConsequencePanel` component
-  // (`src/campaign/tabs/StoryHomePanels.tsx`).
-  function _choiceConsequenceData(state) {
-    const Align = window.CJS.CampaignAlignment;
-    if (!Align?.snapshot) return null;
-    const snap = Align.snapshot(state, { actor: 'bin', world: state.currentWorld });
-    const axes = Object.entries(Align.AXES || {});
-    return {
-      axes: axes.map(([axis, meta]) => {
-        const current = Number(snap.axes?.[axis] || 0);
-        const world = Number(snap.worldAxes?.[axis] || 0);
-        const range = snap.range?.[axis] || { min: current, max: current };
-        return {
-          id: String(axis),
-          label: String(meta.label || axis),
-          currentValue: current,
-          worldValue: world,
-          rangeMin: Number(range.min || 0),
-          rangeMax: Number(range.max || 0)
-        };
-      }),
-      recent: (snap.recent || []).slice(0, 3).map((entry) => ({
-        label: String(entry.label || entry.choiceId || 'Choice'),
-        description: String(Align.describeDeltas?.(entry.deltas) || 'Tracked')
-      })),
-      potential: (snap.potential || []).slice(0, 4).map((entry) => ({
-        label: String(entry.label || entry.choiceId || 'Future'),
-        description: String(Align.describeDeltas?.(entry.deltas) || ''),
-        summary: String(entry.summary || entry.sequenceId || ''),
-        reachable: entry.reachable !== false
-      })),
-      potentialCount: (snap.potential || []).length
-    };
-  }
+  // `_choiceConsequenceData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyHome.ts`).
 
   // _renderStorySummary — Phase F.5 port. Body moved to
   // `src/campaign/tabs/CampaignStorySummaryTab.tsx`. Typed data flows
@@ -616,105 +583,9 @@ window.CJS.CampaignUI = (() => {
   // builders are now consumed directly by the React tabs (storyHome,
   // event tab) — no remaining JS callers.
 
-  function _storyPipelineSnapshot(state = CS().getState() || {}) {
-    const Seq = window.CJS.CampaignSequences;
-    const active = Seq?.active?.(state);
-    const summary = _storySummaryEntries(state);
-    const anchorId = active?.scope === 'story'
-      ? active.sequenceId
-      : (summary[summary.length - 1]?.sequenceId || (Seq?.list?.('story', state.currentWorld) || [])[0]?.id || null);
-    const meta = anchorId ? (Seq?.storyMeta?.(anchorId, state.currentWorld) || {}) : {};
-    return {
-      anchorId,
-      anchorTitle: meta.title || '',
-      nextCandidates: meta.nextCandidates || [],
-      syncSummary: meta.syncSummary || [],
-      syncTitle: meta.title || meta.partLabel || meta.sequenceId || ''
-    };
-  }
-
-  // _renderChapterTreePanel / _renderChapterTreeNode removed in
-  // Phase G.12. The React `ChapterTreePanel`
-  // (`src/campaign/tabs/StoryHomePanels.tsx`) renders the tree from
-  // typed `chapterTree` data produced by `_chapterTreeData(state)`.
-  function _chapterTreeData(state) {
-    const Seq = window.CJS.CampaignSequences;
-    if (!Seq?.chapterTree) return null;
-    let tree = Seq.chapterTree(state.currentWorld, state);
-    if (!tree) tree = { roots: [], byPartId: {}, nodes: [] };
-    const Branch = window.CJS.CampaignStoryBranch;
-    if (Branch?.applyToTree) tree = Branch.applyToTree(tree, state.currentWorld);
-    if (!tree.roots?.length) return null;
-    const route = Seq.currentRouteChoices(state, state.currentWorld) || [];
-    const routeText = route.length
-      ? route.map((entry) => entry.partLabel || entry.title || entry.sequenceId).join(' → ')
-      : 'No story parts played yet.';
-    return {
-      routeText: String(routeText),
-      routeCount: route.length,
-      roots: tree.roots.map((node) => _chapterTreeNodeData(node, 0))
-    };
-  }
-
-  function _chapterTreeNodeData(node = {}, depth = 0) {
-    const status = node.status || {};
-    const eligibility = node.eligibility || { eligible: true, reasons: [] };
-    const blocked = !!status.deliveryBlocked;
-    const completed = !!status.completed;
-    const defaulted = !!status.defaulted;
-    const replayOnly = !!status.replayOnly;
-    const locked = !eligibility.eligible && !replayOnly;
-    let stateLabel = 'Ready';
-    let stateClass = 'is-ready';
-    if (blocked) { stateLabel = 'In Update'; stateClass = 'is-update'; }
-    else if (completed) { stateLabel = 'Played'; stateClass = 'is-played'; }
-    else if (defaulted) { stateLabel = 'Defaulted'; stateClass = 'is-defaulted'; }
-    else if (locked) { stateLabel = 'Locked'; stateClass = 'is-locked'; }
-    return {
-      id: String(node.id || ''),
-      partLabel: String(node.partLabel || node.orderKey || node.id || ''),
-      title: String(node.title || ''),
-      routeLabel: String(node.routeLabel || (node.routeKey ? _label(node.routeKey) : '')),
-      stateLabel,
-      stateClass,
-      summaryShort: String(node.meta?.summary?.short || ''),
-      lockReasons: locked ? (eligibility.reasons || []).join(' | ') : '',
-      nextCandidates: Array.isArray(node.nextCandidates) ? node.nextCandidates.map(String) : [],
-      blocked,
-      locked,
-      replayOnly,
-      depth,
-      children: Array.isArray(node.children)
-        ? node.children.map((child) => _chapterTreeNodeData(child, depth + 1))
-        : []
-    };
-  }
-
-  // _renderStoryPipelinePanel / _renderSyncSummaryPanel removed in
-  // Phase G.12. The React `StoryPipelinePanel` / `SyncSummaryPanel`
-  // (`src/campaign/tabs/StoryHomePanels.tsx`) render from typed
-  // data produced by the helpers below.
-  function _storyPipelinePanelData(pipeline = {}) {
-    return {
-      anchorTitle: String(pipeline.anchorTitle || ''),
-      nextCandidates: (Array.isArray(pipeline.nextCandidates) ? pipeline.nextCandidates : [])
-        .filter(Boolean)
-        .map(String)
-    };
-  }
-
-  function _syncSummaryData(title = 'State Sync', lines = [], sourceTitle = '') {
-    return {
-      title: String(title),
-      sourcePill: sourceTitle ? _shortenPanelLabel(sourceTitle) : '',
-      lines: (Array.isArray(lines) ? lines : []).filter(Boolean).map(String)
-    };
-  }
-
-  function _shortenPanelLabel(value = '') {
-    const text = String(value || '');
-    return text.length > 24 ? `${text.slice(0, 22)}..` : text;
-  }
+  // `_storyPipelineSnapshot`, `_chapterTreeData`, `_chapterTreeNodeData`,
+  // `_storyPipelinePanelData`, `_syncSummaryData`, `_shortenPanelLabel`
+  // moved to TS in Phase H.4 (`src/campaign/tabs/data/storyHome.ts`).
 
   function _storySummaryEntries(state = CS().getState() || {}) {
     const Seq = window.CJS.CampaignSequences;
@@ -778,22 +649,11 @@ window.CJS.CampaignUI = (() => {
   // board, side flow, clues, queue, truths) still render as HTML
   // strings via that bridge until each helper ports.
 
-  function _storyTheme(state = {}) {
-    const world = CS().getCurrentWorld?.() || {};
-    const cfg = world.storyModeTheme || {};
-    const currentWorld = state.currentWorld || world.id || '';
-    return {
-      id: cfg.id || 'default',
-      className: cfg.className || '',
-      backdrop: cfg.backdrop || '',
-      bannerImage: cfg.bannerImage || cfg.backdrop || '',
-      bannerVideo: cfg.bannerVideo || (currentWorld === 'haven' ? 'assets/videos/story-mode/banners/3%20f%C3%ACght%20chimera_reduced.mp4' : ''),
-      accent: cfg.accent || world.color || '#76d3b1',
-      danger: cfg.danger || '#ef6666',
-      motif: cfg.motif || world.tone || 'story',
-      worldName: world.displayName || state.currentWorld || 'World'
-    };
-  }
+  // `_storyTheme`, `_storyVnHeroData`, `_storyActionBtnData`,
+  // `_storyNextStepData`, `_videoTypeFromPath`, `_storyNextStep`,
+  // `_storyStageRailData`, `_storyDirectorCardData` moved to TS in
+  // Phase H.4 (`src/campaign/tabs/data/storyShared.ts` +
+  // `src/campaign/tabs/data/storyDirector.ts`).
 
   // _storyThemeStyle removed in Phase G — the React story tabs set the
   // theme CSS vars (`--story-backdrop/accent/danger`) via typed
@@ -801,50 +661,8 @@ window.CJS.CampaignUI = (() => {
 
   // _renderStoryVnHero removed in Phase G.11a. The React
   // `StoryVnHero` (`src/campaign/tabs/StoryDirector.tsx`) renders
-  // the hero from the typed `vnHero` data produced by
-  // `_storyVnHeroData` below.
-  function _storyVnHeroData({ state = {}, pack = null, stage = null, next = {}, theme = {} }) {
-    const phase = state.phase || {};
-    const video = theme.bannerVideo || '';
-    return {
-      worldName: String(theme.worldName || state.currentWorld || 'World'),
-      chapterLabel: String(state.storyMode?.currentChapterLabel || state.currentChapter || 1),
-      phaseLabel: String(phase.number || 1),
-      motif: String(theme.motif || 'story'),
-      title: String(pack?.name || `${theme.worldName || 'World'} Story Mode`),
-      summary: String(pack?.summary || 'Story Mode is ready for this world theme, but no authored story pack is loaded yet.'),
-      bannerVideoUrl: video ? String(_cssVarAssetUrl(video) || video) : '',
-      bannerVideoType: video ? _videoTypeFromPath(video) : '',
-      next: _storyNextStepData(next)
-    };
-  }
-
-  function _storyActionBtnData(opts = {}) {
-    return {
-      action: String(opts.action || ''),
-      label: String(opts.label || ''),
-      hint: String(opts.hint || ''),
-      kind: String(opts.kind || ''),
-      disabled: !!opts.disabled,
-      data: Object.freeze(Object.fromEntries(Object.entries(opts.data || {}).map(([k, v]) => [k, String(v)])))
-    };
-  }
-
-  function _storyNextStepData(next = {}) {
-    return {
-      index: Number(next.index || 0),
-      title: String(next.title || ''),
-      text: String(next.text || ''),
-      actions: Array.isArray(next.actions) ? next.actions.map(_storyActionBtnData) : []
-    };
-  }
-
-  function _videoTypeFromPath(path = '') {
-    const lower = String(path).toLowerCase();
-    if (lower.endsWith('.webm')) return 'video/webm';
-    if (lower.endsWith('.ogg') || lower.endsWith('.ogv')) return 'video/ogg';
-    return 'video/mp4';
-  }
+  // the hero from the typed `vnHero` data produced by the TS
+  // `storyVnHeroData` helper.
 
   // _renderStoryDirectorEmptyCard removed in Phase G.11b. The
   // React `StoryDirectorCard` falls back to an empty-card JSX
@@ -854,128 +672,6 @@ window.CJS.CampaignUI = (() => {
   // G.11a. The React `StorySoloGuide` and `StoryActionDeck`
   // components (`src/campaign/tabs/StoryDirector.tsx`) render their
   // bodies from the typed data on `StoryDirectorData`.
-
-  function _storyNextStep(snap, state, flowSynced) {
-    const last = snap?.last;
-    const choices = last?.suggestedChoices || [];
-    if (!snap?.stage) {
-      return {
-        index: 0,
-        title: 'Pick an arc stage',
-        text: 'Choose the part of the story you are actually playing now. This only guides tables; it does not lock the plot.',
-        actions: []
-      };
-    }
-    if (!last) {
-      return {
-        index: 1,
-        title: 'Roll or write the next scene',
-        text: 'Use Next Scene for normal story flow, Peri Interrupt for comedy, Memory / Clue for mystery, or Write Scene when you want GM control.',
-        actions: [
-          { action: 'story-roll-scene', label: 'Next Scene', hint: 'Best default for solo play', kind: 'primary story' },
-          { action: 'story-manual-note', label: 'Write Scene', hint: 'Save your own beat', kind: 'manual' }
-        ]
-      };
-    }
-    if (!['resolved', 'rejected', 'saved', 'manual', 'review'].includes(last.status || '')) {
-      return {
-        index: 2,
-        title: 'Choose a route',
-        text: 'Read the route cards below. Choose one if it fits, hold it for later, or skip the roll with no guilt.',
-        actions: [
-          { action: 'story-open-last', label: 'Open Popup', hint: 'Reopen the current beat window', kind: 'primary story' },
-          { action: 'story-save-beat', label: 'Hold For Later', hint: 'Keep it in the queue without applying consequences', kind: 'manual' },
-          {
-            action: 'story-apply-choice',
-            label: choices[0]?.label ? `Choose: ${choices[0].label}` : 'Accept Note',
-            hint: 'Apply the first route',
-            kind: 'quest',
-            data: { id: last.id, choice: 0 }
-          }
-        ]
-      };
-    }
-    if (snap.flow && !flowSynced) {
-      return {
-        index: 4,
-        title: 'Update side routes',
-        text: 'This episode has advice for which side routes should stay available, get promoted, or politely leave the room.',
-        actions: [
-          { action: 'story-sync-sidequests', label: 'Update Side Routes', hint: 'Applies this episode side-flow once', kind: 'quest' }
-        ]
-      };
-    }
-    if (state?.activeScenarioRun) {
-      return {
-        index: 4,
-        title: 'Continue the tabletop run',
-        text: 'A scenario is active. Use the story beat as table color, then continue moving pieces and resolving encounters on the map.',
-        actions: [
-          { action: 'open-maps-tab', label: 'Open Run Map', hint: 'Return to the tactical board', kind: 'primary' }
-        ]
-      };
-    }
-    return {
-      index: 1,
-      title: 'Ready for the next scene',
-      text: 'The last beat is handled. Roll again, write a scene, or just let the table breathe for a moment.',
-      actions: [
-        { action: 'story-roll-scene', label: 'Next Scene', hint: 'Continue the story flow', kind: 'primary story' }
-      ]
-    };
-  }
-
-  // _renderStoryStageRail removed in Phase G.11b. The React
-  // `StoryStageRail` (`src/campaign/tabs/StoryDirectorPanels.tsx`)
-  // renders the rail directly from `stageRailEntries`.
-  function _storyStageRailData(stages, stage = {}) {
-    if (!stages.length) return [];
-    const activeIndex = Math.max(0, stages.findIndex((entry) => entry.id === stage.id));
-    return stages.map((entry, index) => ({
-      id: String(entry.id || ''),
-      name: String(entry.name || entry.id || ''),
-      summary: String(entry.summary || ''),
-      index: index + 1,
-      isActive: entry.id === stage.id,
-      isPast: index < activeIndex && entry.id !== stage.id
-    }));
-  }
-
-  function _storyDirectorCardData(card) {
-    if (!card) return null;
-    const kindLabel = _label(card.kind || 'story');
-    const stageLabel = card.stageName || card.stageId || '';
-    const choices = card.suggestedChoices || [];
-    const branchChoices = choices.length ? choices : [{
-      label: 'Accept as story note',
-      ops: [{ op: 'log', text: card.prompt || card.text || card.summary || card.title || 'Story beat accepted.' }]
-    }];
-    const routes = branchChoices.map((choice, index) => ({
-      index,
-      label: String(choice.label || `Choice ${index + 1}`),
-      cardId: String(card.id || ''),
-      isRecommended: index === 0,
-      consequencePreviewHtml: _renderConsequencePreview(choice.ops || [], {
-        title: choice.label || `Choice ${index + 1}`,
-        emptyTitle: choice.label || `Choice ${index + 1}`,
-        emptyText: 'Story-only route. Choose it if it fits the current scene.'
-      })
-    }));
-    return {
-      id: String(card.id || ''),
-      title: String(card.title || card.id || ''),
-      stageLabel: String(stageLabel),
-      kindLabel: String(kindLabel),
-      canonRisk: String(card.canonRisk || 'green'),
-      canonRiskClass: Side().riskClass(card.canonRisk),
-      prompt: String(card.prompt || ''),
-      text: String(card.text || ''),
-      summary: String(card.summary || ''),
-      gmNote: String(card.gmNote || ''),
-      tags: Array.isArray(card.tags) ? card.tags.map((tag) => String(tag)) : [],
-      routes
-    };
-  }
 
   function _renderStoryDirectorCard(card, options = {}) {
     const cardClass = ['campaign-panel', 'campaign-side-card', 'campaign-result-card', 'campaign-story-card'];
@@ -1049,91 +745,10 @@ window.CJS.CampaignUI = (() => {
     `;
   }
 
-  // _renderStoryPressureBoard / _renderStoryCluesPanel /
-  // _renderStoryQueuePanel / _renderStoryTruthsPanel /
-  // _renderStorySideFlow removed in Phase G.11c. The React
-  // support-grid components in
-  // `src/campaign/tabs/StoryDirectorPanels.tsx` render these
-  // panels from typed bridge data.
-  function _storyPressureBoardData(metrics, snap, pack) {
-    return {
-      metrics: (metrics || []).map((metric) => ({
-        id: String(metric.id || ''),
-        label: String(metric.label || _label(metric.id || '')),
-        value: snap?.metrics?.[metric.id] != null ? snap.metrics[metric.id] : 0
-      })),
-      rule: String(pack?.pressureRule || 'Offscreen trouble suggests consequences. Apply only what fits the session.')
-    };
-  }
-
-  function _storyCluesPanelData(clues, facts) {
-    return {
-      clues: (clues || []).map((clue) => ({
-        id: String(clue.id || ''),
-        title: String(clue.title || clue.id || ''),
-        text: String(clue.text || ''),
-        canonRisk: String(clue.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(clue.canonRisk)
-      })),
-      facts: (facts || []).map((fact) => ({
-        id: String(fact.id || ''),
-        title: String(fact.title || fact.id || ''),
-        text: String(fact.text || '')
-      }))
-    };
-  }
-
-  function _storyQueuePanelData(queue) {
-    return {
-      beats: (queue || []).map((beat) => ({
-        id: String(beat.id || ''),
-        title: String(beat.title || beat.id || ''),
-        statusLabel: String(beat.status || 'saved'),
-        stageLabel: String(beat.stageName || beat.stageId || ''),
-        canonRisk: String(beat.canonRisk || 'green'),
-        canonRiskClass: Side().riskClass(beat.canonRisk)
-      }))
-    };
-  }
-
-  function _storyTruthsPanelData(pack) {
-    return {
-      truths: (pack?.protectedTruths || []).slice(0, 10).map((truth) => ({
-        id: String(truth.id || ''),
-        title: String(truth.title || truth.id || ''),
-        rule: String(truth.rule || 'Red-risk until the GM promotes it.')
-      }))
-    };
-  }
-
-  function _storySideFlowData(flow, flowSynced = false) {
-    if (!flow) {
-      return {
-        hasFlow: false,
-        summary: '',
-        flowSynced: !!flowSynced,
-        columns: []
-      };
-    }
-    const column = (label, list, tone) => ({
-      label,
-      tone,
-      items: (list || []).map((item) => ({
-        title: String(item.title || item.id || item || ''),
-        reason: String(item.reason || item.note || '')
-      }))
-    });
-    return {
-      hasFlow: true,
-      summary: String(flow.summary || 'Keep, promote, or retire optional content as the main arc moves.'),
-      flowSynced: !!flowSynced,
-      columns: [
-        column('Keep Available', flow.keep, 'flavor'),
-        column('Promote Soon', flow.promote, 'plot'),
-        column('Retire / Downgrade', flow.retire, 'risk')
-      ]
-    };
-  }
+  // `_storyPressureBoardData`, `_storyCluesPanelData`,
+  // `_storyQueuePanelData`, `_storyTruthsPanelData`,
+  // `_storySideFlowData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyDirector.ts`).
 
   // `getAdventureLegendVisible` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/overview.ts`).
@@ -4692,125 +4307,26 @@ window.CJS.CampaignUI = (() => {
   // _zombieScavengeTrackerData callers (Phase H.4) — every consumer
   // now imports the typed builder directly.
 
-  function getStoryDirectorData(state = CS().getState()) {
-    if (!state) return null;
-    const theme = _storyTheme(state);
-    const themeStyleVars = {};
-    if (theme.backdrop) themeStyleVars['--story-backdrop'] = `url('${_cssVarAssetUrl(theme.backdrop)}')`;
-    if (theme.accent) themeStyleVars['--story-accent'] = theme.accent;
-    if (theme.danger) themeStyleVars['--story-danger'] = theme.danger;
-    const director = SD();
-    if (!director) {
-      return {
-        moduleAvailable: false,
-        themeClassName: theme.className || '',
-        themeStyleVars
-      };
-    }
-    const snap = director.snapshot();
-    const pack = snap.pack;
-    if (!pack) {
-      const next = {
-        index: 0,
-        title: 'No story pack loaded',
-        text: 'This world has a visual theme, but no Story Director pack yet. Add one later to unlock scene rolls, routes, clues, and side route guidance.',
-        actions: []
-      };
-      return {
-        moduleAvailable: true,
-        hasPack: false,
-        themeClassName: theme.className || '',
-        themeStyleVars,
-        vnHero: _storyVnHeroData({ state, pack: null, stage: null, next, theme })
-      };
-    }
-    const stage = snap.stage || {};
-    const stages = pack.stages || [];
-    const metrics = pack.metrics || [];
-    const flow = snap.flow;
-    const queue = snap.queue.slice(0, 8);
-    const clues = snap.clues.slice(0, 8);
-    const facts = snap.facts.slice(0, 8);
-    const syncKey = pack.id && flow?.stageId ? `${pack.id}:${flow.stageId}` : '';
-    const flowSynced = !!(syncKey && state.storyDirector?.sideQuestSync?.[syncKey]);
-    const next = _storyNextStep(snap, state, flowSynced);
-    return {
-      moduleAvailable: true,
-      hasPack: true,
-      themeClassName: theme.className || '',
-      themeStyleVars,
-      stageName: stage.name || stage.id || 'No stage',
-      stageSummary: stage.summary || '',
-      vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
-      soloGuideActiveIndex: Number(next.index || 0),
-      actionDeckFlowSynced: !!flowSynced,
-      actionDeckHasFlow: !!flow,
-      stageRailEntries: _storyStageRailData(stages, stage),
-      lastCard: _storyDirectorCardData(snap.last),
-      pressureBoard: _storyPressureBoardData(metrics, snap, pack),
-      sideFlow: _storySideFlowData(flow, flowSynced),
-      clues: _storyCluesPanelData(clues, facts),
-      queue: _storyQueuePanelData(queue),
-      truths: _storyTruthsPanelData(pack)
-    };
-  }
+  // `getStoryDirectorData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyDirector.ts`). All sub-helpers
+  // (`storyNextStep`, `storyStageRailData`, `storyDirectorCardData`,
+  // `storyPressureBoardData`, `storyCluesPanelData`,
+  // `storyQueuePanelData`, `storyTruthsPanelData`, `storySideFlowData`)
+  // ported alongside; the consequence-preview HTML still comes from the
+  // HubTab module bridge.
 
   // `getWorldGateData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/worldGate.ts`). The sub-helpers + the
   // worldMenuDef config table ported alongside.
 
-  function getStoryHomeData(state = CS().getState()) {
-    if (!state) return null;
-    const theme = _storyTheme(state);
-    const director = SD();
-    const snap = director?.snapshot?.() || {};
-    const pack = snap.pack || null;
-    const stage = snap.stage || {};
-    const Seq = window.CJS.CampaignSequences;
-    const storyFiles = Seq?.list?.('story') || [];
-    const activeSequence = Seq?.active?.(state);
-    const storyParts = _storySummaryEntries(state);
-    const manualCount = state.storyMode?.manualSummaryEntries?.length || 0;
-    const defaultedCount = Object.keys(state.storyMode?.defaultedParts || {}).length;
-    const activeRun = state.activeScenarioRun;
-    const pipeline = _storyPipelineSnapshot(state);
-    const next = {
-      index: activeSequence?.scope === 'story' ? 1 : 0,
-      title: activeSequence?.scope === 'story' ? 'Continue Current Story Part' : 'Choose a Chapter Part',
-      text: activeSequence?.scope === 'story'
-        ? 'The current story file is open below. Continue node by node, then complete it when the conclusion is reached.'
-        : 'Start a story file when you are ready. Starting ahead should be treated as revealing earlier parts with the default path.',
-      actions: [
-        { action: 'story-manual-note', label: 'Manual Note', hint: 'Add a GM-written scene to the story summary', kind: 'manual' },
-        { action: 'open-story-summary', label: 'Summary', hint: 'Read what has happened so far' },
-        { action: 'story-copy-prompt', label: 'Copy AI Context', hint: 'Copy static summaries, live GM notes, branches, and current route state for AI drafting', kind: 'manual' }
-      ]
-    };
-    // CSS-vars derived from theme; React will set them as style props.
-    const themeStyleVars = {};
-    if (theme.backdrop) themeStyleVars['--story-backdrop'] = `url('${_cssVarAssetUrl(theme.backdrop)}')`;
-    if (theme.accent) themeStyleVars['--story-accent'] = theme.accent;
-    if (theme.danger) themeStyleVars['--story-danger'] = theme.danger;
-    return {
-      themeClassName: theme.className || '',
-      themeStyleVars,
-      chapterPartsCount: storyFiles.length,
-      currentChapter: state.storyMode?.currentChapterLabel || state.currentChapter || 1,
-      currentArc: {
-        completed: storyParts.length,
-        defaulted: defaultedCount,
-        manualNotes: manualCount,
-        phase: state.phase?.number || 1
-      },
-      hasActiveRun: !!activeRun,
-      vnHero: _storyVnHeroData({ state, pack, stage, next, theme }),
-      chapterTree: _chapterTreeData(state),
-      choiceConsequence: _choiceConsequenceData(state),
-      aiStoryContext: _aiStoryContextData(state),
-      storyPipeline: _storyPipelinePanelData(pipeline),
-      syncSummary: _syncSummaryData('After This Part Changes', pipeline.syncSummary, pipeline.syncTitle)
-    };
-  }
+  // `getStoryHomeData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/storyHome.ts`). The chapter tree, story
+  // pipeline, sync summary, and choice consequence panels all ported
+  // inline. The AI story context panel still reads through the
+  // `renderAiStoryContextData` JS bridge because the four async caches
+  // live in the closure-private `_storyContextCache` (shared with the
+  // story-copy-prompt builder). That cache + `_ensureStoryContext`
+  // port together with the prompt machinery in a later step.
 
   // `getQuestPanelData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/questPanel.ts`). The TS port reads the same
@@ -5084,6 +4600,11 @@ window.CJS.CampaignUI = (() => {
     // JSON used by the prompt — return its promise so callers can await.
     computeStoryPromptText: () => _storyPromptText(),
     ensureStoryContext: (world) => _ensureStoryContext(world),
+    // AI story context snapshot for the Story Home tab's "AI Story
+    // Context" panel. The four async caches live in this closure
+    // (`_storyContextCache`); the TS data builder reads the same
+    // surface through this bridge so the panel stays in sync.
+    renderAiStoryContextData: (state) => _aiStoryContextData(state || CS().getState() || {}),
     // Big modal builders that still live in JS (each is 100–500 lines
     // with many closure-private sub-helpers — render-side data builders
     // also depend on them). The TS action handlers in
@@ -5100,8 +4621,6 @@ window.CJS.CampaignUI = (() => {
     // and instead emits `campaign:state-tick` events for the shell to
     // re-render against.
     enableReactShell,
-    getStoryHomeData,
-    getStoryDirectorData,
     getMainBody,
     renderDrawerBody,
     handleAction,
