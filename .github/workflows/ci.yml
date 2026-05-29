@@ -1,0 +1,33 @@
+name: CI
+
+# Runs the full gate on every pull request — the same checks the deploy
+# workflow runs on main (typecheck, tests, build) plus the bundle size
+# budget (Phase I.7). main itself is covered by deploy.yml.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - run: npm run build
+
+      - run: npm run size:check

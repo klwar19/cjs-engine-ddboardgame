@@ -799,10 +799,18 @@ show become tractable:
   `images/` trees against bundle size. Move large story-mode VN
   art behind a per-world dynamic import; cap thumbnail sizes;
   expose a build-time check in `tools/` that fails CI on regressions.
-- [ ] **I.7 — Re-baseline build sizes.** Add `tools/build-size-check.mjs`
-  that compares `dist/assets/*.js` chunks to a committed baseline and
-  fails CI when any chunk grows >5% without an explicit baseline
-  bump. Run on every PR.
+- [x] **I.7 — Build-size budget guard.** `tools/build-size-check.mjs`
+  compares every `dist/assets/*.{js,css}` chunk (hash stripped to a stable
+  logical key) to the committed `tools/build-size-baseline.json` and exits
+  non-zero when a chunk grows past 5% + a 1 KB floor, or the total grows
+  past 5%, without an explicit baseline bump. New / removed chunks are
+  reported (not failed). `npm run size:check` verifies; `npm run
+  size:baseline` re-baselines after an intended change. Wired into CI:
+  `deploy.yml` runs it after `npm run build` (main), and a new
+  `.github/workflows/ci.yml` runs the full gate (typecheck + test + build
+  + size:check) on every pull request — previously PRs had no CI at all.
+  Baseline captured post-I.1/I.2 (52 chunks, ~2.85 MB; campaign entry
+  457 KB).
 
 ## Phase J — AI-friendly authoring (after H, parallel with I)
 

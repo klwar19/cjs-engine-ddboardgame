@@ -8,7 +8,9 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "content:lint": "node tools/content-lint.mjs",
-    "content:index": "node tools/build-ai-index.mjs"
+    "content:index": "node tools/build-ai-index.mjs",
+    "size:check": "node tools/build-size-check.mjs",
+    "size:baseline": "node tools/build-size-check.mjs --update"
   },
   "devDependencies": {
     "@types/react": "^19.2.15",
