@@ -4,16 +4,19 @@
 // (`chapterTreeData`, `chapterTreeNodeData`, `storyPipelineSnapshot`,
 // `storyPipelinePanelData`, `syncSummaryData`, `shortenPanelLabel`,
 // `storySummaryEntriesForHome`, `choiceConsequenceData`) ported here.
-// The AI story context section reads through a thin JS bridge
-// (`renderAiStoryContextData`) because its data sits in a closure-private
-// async cache (`_storyContextCache`) shared with `_ensureStoryContext`
-// and the still-JS story-prompt builder — moving the cache requires
-// migrating the whole prompt-builder cluster.
+// The AI story context section reads `aiStoryContextData` directly from
+// the TS `story-context.ts` port (Phase H.4) — the async cache moved out
+// of the closure, so no CampaignUI bridge hop remains.
 
 import { cssVarAssetUrl, label } from "../../util/cui-utils";
 import { storyTheme, storyVnHeroData, type StoryVnHeroData } from "./storyShared";
 import { storySummaryEntries, type StoryPartRecord } from "./storySummary";
+import { aiStoryContextData, type AiStoryContextData, type AiStoryContextLine } from "../../story-context";
 import type { CampaignStateSnapshot } from "../../store";
+
+// Re-export so consumers that import the AI-story-context shapes from
+// this data module (e.g. StoryHomePanels.tsx) keep their import path.
+export type { AiStoryContextData, AiStoryContextLine };
 
 export interface StoryArcStats {
   readonly completed: number;
@@ -72,21 +75,6 @@ export interface ChoiceConsequenceData {
   readonly recent: readonly AlignmentRecentEntry[];
   readonly potential: readonly AlignmentPotentialEntry[];
   readonly potentialCount: number;
-}
-
-export interface AiStoryContextLine {
-  readonly path: string;
-  readonly statusLabel: string;
-}
-
-export interface AiStoryContextData {
-  readonly loaded: number;
-  readonly total: number;
-  readonly staticLines: readonly AiStoryContextLine[];
-  readonly indexLines: readonly AiStoryContextLine[];
-  readonly arcsCount: number;
-  readonly manualCount: number;
-  readonly branchCount: number;
 }
 
 export interface StoryPipelineData {
@@ -179,15 +167,10 @@ interface AlignmentSurface {
   readonly describeDeltas?: (delta: unknown) => string;
 }
 
-interface CampaignUiSurface {
-  readonly renderAiStoryContextData?: (state: unknown) => AiStoryContextData;
-}
-
 interface StoryHomeCjs {
   readonly CampaignSequences?: SequencesSurface;
   readonly CampaignStoryBranch?: StoryBranchSurface;
   readonly CampaignAlignment?: AlignmentSurface;
-  readonly CampaignUI?: CampaignUiSurface;
   readonly CampaignStoryDirector?: { readonly snapshot?: () => unknown };
 }
 
@@ -384,33 +367,6 @@ function choiceConsequenceData(state: CampaignStateForHome): ChoiceConsequenceDa
   };
 }
 
-// ── AI story context (bridges to JS; cache stays in JS) ────────────
-function aiStoryContextDataFallback(state: CampaignStateForHome): AiStoryContextData {
-  // The closure-private `_storyContextCache` in campaign-ui.js owns the
-  // four async loads (global index, all-world summary, world summary,
-  // structured world data). Until that cache ports to TS, the JS bridge
-  // exposes the snapshot through `CampaignUI.renderAiStoryContextData`;
-  // this fallback runs only if the bridge isn't installed (older JS),
-  // returning a zeroed shape so the panel renders without throwing.
-  const branches = cjs().CampaignStoryBranch?.getBranches?.(state.currentWorld) || [];
-  const manual = state.storyMode?.manualSummaryEntries || [];
-  return {
-    loaded: 0,
-    total: 4,
-    staticLines: [],
-    indexLines: [],
-    arcsCount: 0,
-    manualCount: manual.length,
-    branchCount: branches.length
-  };
-}
-
-function aiStoryContextData(state: CampaignStateForHome): AiStoryContextData {
-  const bridge = cjs().CampaignUI?.renderAiStoryContextData;
-  if (bridge) return bridge(state);
-  return aiStoryContextDataFallback(state);
-}
-
 // ── Entry ──────────────────────────────────────────────────────────
 export function getStoryHomeData(state: CampaignStateSnapshot): StoryHomeData | null {
   if (!state) return null;
@@ -475,7 +431,7 @@ export function getStoryHomeData(state: CampaignStateSnapshot): StoryHomeData | 
     vnHero: storyVnHeroData({ state: typed, pack, stage, next, theme }),
     chapterTree: chapterTreeData(typed),
     choiceConsequence: choiceConsequenceData(typed),
-    aiStoryContext: aiStoryContextData(typed),
+    aiStoryContext: aiStoryContextData(typed as Parameters<typeof aiStoryContextData>[0]),
     storyPipeline: storyPipelinePanelData(pipeline),
     syncSummary: syncSummaryData("After This Part Changes", pipeline.syncSummary, pipeline.syncTitle)
   };

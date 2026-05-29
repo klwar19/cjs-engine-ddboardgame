@@ -1,19 +1,16 @@
-// manual-builders.ts — Phase H.3 action handlers for the big modal
-// builders that still live in JS (manual event builder, manual quest
-// builder, GM override, manual scene builder).
+// manual-builders.ts — thin action-handler dispatchers for the four big
+// modal builders. As of Phase H.4 all four modal bodies live in TS, so
+// these handlers call them directly (no CampaignUI bridge hop remains):
+//   • manual event builder → `event-builder.ts` (custom-event /
+//     oracle-to-event-builder)
+//   • manual quest builder → `quest-builder.ts` (add-quest)
+//   • GM override → `gm-override.ts` (gm-override / gm-member-override)
+//   • manual scene builder → `scene-builder.ts` (story-manual-note)
 //
-// Each closure is large (266 / 475 / 174 / 127 lines) with many
-// sub-helpers, and the render-side data builders still consume them
-// (e.g. _openQuestModal shares `_randomizedQuestTemplate` +
-// `_inferObjectiveKind` + `_questBuilderMiniGame` with quest data
-// flows; `_openManualEventBuilder` shares the manual-event sub-
-// helpers — keyword / battle / rumor / character / layer / tags —
-// with event-builder data flows). Porting them in H.3 would
-// duplicate that surface; instead, each action handler is a thin
-// dispatcher that calls the closure through the new CampaignUI
-// bridge (openManualEventBuilder / openQuestModal / openGmOverride /
-// openManualSceneBuilder). H.4 ports the closure + its data
-// builders together, and the bridge entries become redundant.
+// This module survives as the seam between the action names and those
+// modal entry points (e.g. oracle-to-event-builder seeds the event
+// builder from state.lastOracle; story-manual-note reads the current
+// Story Director stage first).
 //
 // custom-event → manual event builder (no prefill).
 // oracle-to-event-builder → manual event builder seeded from the
@@ -26,16 +23,13 @@
 //   Director stage as the default chapter slot).
 
 import { cs, mod, toast } from "./context";
+import { openManualSceneBuilder, type SceneBuilderStage } from "./scene-builder";
+import { openGmOverride } from "./gm-override";
+import { openManualEventBuilder } from "./event-builder";
+import { openQuestModal } from "./quest-builder";
 
 interface StoryDirectorModule {
-  snapshot?: () => { stage?: { id?: string } } | null | undefined;
-}
-
-interface CampaignUiBridge {
-  openManualEventBuilder?: (prefill?: Record<string, unknown>) => void;
-  openQuestModal?: (prefill?: Record<string, unknown>) => void;
-  openGmOverride?: (defaultTarget?: string) => void;
-  openManualSceneBuilder?: (opts?: { stage?: Record<string, unknown> }) => void;
+  snapshot?: () => { stage?: SceneBuilderStage } | null | undefined;
 }
 
 interface UtilsModule {
@@ -44,10 +38,6 @@ interface UtilsModule {
 
 interface CuiInternal {
   Utils?: UtilsModule;
-}
-
-function bridge(): CampaignUiBridge | undefined {
-  return mod<CampaignUiBridge>("CampaignUI");
 }
 
 function truncate(text: string, max = 160): string {
@@ -59,7 +49,7 @@ function truncate(text: string, max = 160): string {
 // ── custom-event / oracle-to-event-builder ─────────────────────────
 
 export function customEvent(): void {
-  bridge()?.openManualEventBuilder?.();
+  openManualEventBuilder();
 }
 
 // Mirrors `_oracleToEventBuilder`. Seeds the manual event builder
@@ -72,7 +62,7 @@ export function oracleToEventBuilder(): void {
     return;
   }
   const seed = oracle.text || oracle.prompt || "";
-  bridge()?.openManualEventBuilder?.({
+  openManualEventBuilder({
     title: "Oracle Event",
     source: "oracle",
     scope: "event",
@@ -85,21 +75,21 @@ export function oracleToEventBuilder(): void {
 // ── add-quest ──────────────────────────────────────────────────────
 
 export function addQuest(): void {
-  bridge()?.openQuestModal?.();
+  openQuestModal();
 }
 
 // ── gm-override / gm-member-override ───────────────────────────────
 
 export function gmOverride(memberId?: string): void {
-  bridge()?.openGmOverride?.(memberId || "");
+  openGmOverride(memberId || "");
 }
 
 // ── story-manual-note (manual scene builder) ───────────────────────
 
 // Mirrors `_manualStoryNote`. Reads the current Story Director stage
 // (so the new manual scene defaults to the right chapter slot) and
-// opens the scene builder.
+// opens the scene builder (ported to TS in Phase H.4 — direct call).
 export function manualStoryNote(): void {
   const stage = mod<StoryDirectorModule>("CampaignStoryDirector")?.snapshot?.()?.stage || {};
-  bridge()?.openManualSceneBuilder?.({ stage });
+  openManualSceneBuilder({ stage });
 }

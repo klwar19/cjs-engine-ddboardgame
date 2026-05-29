@@ -88,6 +88,10 @@ import "./util/cui-react-bridge";
 // the IIFE's bridge wrappers can read/write chrome state through the TS
 // canonical slice from the moment they run.
 import "./chrome-state";
+// Phase H.4 — install window.CJS.CampaignStoryContext BEFORE campaign-ui.js
+// so the IIFE's init/render/subscribe can prime the async story-context
+// cache through the TS port (the JS `_ensureStoryContext` cluster moved here).
+import "./story-context";
 import "../../js/campaign/campaign-ui.js";
 import "../../js/ui/audio-manager.js";
 import "../../js/ui/l2d-avatar.js";

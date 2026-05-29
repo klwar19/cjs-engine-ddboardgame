@@ -920,8 +920,13 @@ finishes the authoring loop:
 | After H.4 getMinigameTestData to TS | 382 |
 | After H.4 getChromeData + panel defs to TS | 379 |
 | After H.4 getStoryHomeData + getStoryDirectorData + story helpers to TS | 366 |
+| After H.4 story-context cache + AI story-prompt cluster to TS | 354 |
+| After H.4 manual scene + branch builder to TS | 348 |
+| After H.4 GM override modal to TS | 338 |
+| After H.4 manual event builder to TS | 316 |
+| After H.4 manual quest builder to TS | 293 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 366 KB. **Phase H.3 is
+Cumulative Phase F+G+K.3+H-so-far: 641 KB → 293 KB. **Phase H.3 is
 complete**: 246/246 actions live in the TS registry, and the
 `_handleAction` switch is empty (kept as a defensive no-op with
 the port history in comments). **Phase H.4 in progress** —
@@ -947,10 +952,12 @@ worldMenuDef + per-card data), minigameTest, chrome (header / mode bar
 / scenario hud / recent log / command rail / currency / panel defs),
 storyHome (chapter tree, story pipeline, sync summary, choice
 consequence), storyDirector (stage rail, director card, pressure
-board, clues panel, queue panel, truths panel, side flow). Only
-`getMainBody` + `renderDrawerBody` stay as JS bridges (they wrap
-still-JS render-side helpers — `_renderMain`'s defensive fallback +
-the drawer body).
+board, clues panel, queue panel, truths panel, side flow),
+storyContext (`aiStoryContextData` AI-context panel snapshot +
+`storyPromptText` full AI story-prompt builder, both reading the
+async `story-context.ts` cache). Only `getMainBody` +
+`renderDrawerBody` stay as JS bridges (they wrap still-JS render-side
+helpers — `_renderMain`'s defensive fallback + the drawer body).
 
 **Shared helpers ported to TS:** `sideCardData`, `rumorRowData`,
 `pendingSoloHookCard`, `isQuestResolved`, `questObjectiveDone`,
@@ -978,32 +985,133 @@ dispatch path. Still bridged HTML: the roster detail row
 (`cui-party-tab.js`, 742 lines — icon-heavy, action surface
 registry-backed), the shared side-content primitives
 (`cui-hub-tab.js`, 162 lines), the world map SVG, the intentionally-
-vanilla external-module tabs + maps tab. Still in JS: the big
-modal builder bodies (`_openManualEventBuilder` 266 lines,
-`_openQuestModal` 475 lines, `_gmOverride` 174 lines,
-`_openManualSceneBuilder` 127 lines) — bridge-wrapped from TS so
-the action contract is registry-backed even though the bodies
-share many sub-helpers with the still-JS data builders.
+vanilla external-module tabs + maps tab. **All four big modal builders
+are now TS** (Phase H.4): the manual event builder
+(`action-handlers/event-builder.ts`), manual quest builder
+(`quest-builder.ts`), GM override (`gm-override.ts`), and manual scene
+builder (`scene-builder.ts`). `manual-builders.ts` is now a pure set of
+thin TS dispatchers — no CampaignUI modal bridge remains.
 
 **Remaining H.4 work:**
-1. Port the story-context cache cluster (`_storyContextCache`,
-   `_ensureStoryContext`, `_storyContextFor`, `_aiStoryContextData`,
-   `_loadStoryContextFile`, `_loadStoryContextJson`) to TS — currently
-   bridged via `renderAiStoryContextData` + `ensureStoryContext`. This
-   cache is shared with the still-JS `_storyPromptText` (manual story
-   prompt builder), so the prompt cluster ports alongside.
-2. Port the big modal builder bodies (`_openManualEventBuilder` 266
-   lines, `_openQuestModal` 475 lines, `_gmOverride` 174 lines,
-   `_openManualSceneBuilder` 127 lines) and their shared helpers —
-   currently bridge-wrapped from TS.
-3. Port the still-JS bridges that wrap legacy render code:
-   `renderStoryDirectorCardHtml`, `renderQuestRunTaskHtml`,
-   `renderPartySheetHtml`, `getMainBody`, `renderDrawerBody`. Each
-   either ports its renderer to JSX or stays as a permanent island.
-4. Delete `js/campaign/campaign-ui.js` once all the above lands.
-   Then H.5 (test rewrite). Phases I/J
-pivot from "remove HTML strings" to "optimize the React tree +
-open the authoring loop for AI generators."
+1. [x] **Story-context cache + AI story-prompt cluster → TS (done).**
+   `src/campaign/story-context.ts` owns the four async loads
+   (`_storyContextCache`, `_ensureStoryContext`, `_loadStoryContextFile`,
+   `_loadStoryContextJson`), the snapshot reader (`_storyContextFor`),
+   the AI-story-context panel data (`_aiStoryContextData`), and the full
+   AI story-prompt builder (`_storyContextPromptText`,
+   `_storyContextIndexPromptText`, `_worldStoryContextPromptText`,
+   `_liveGmStoryPromptText`, `_storyPromptText`, `_markdownPromptExcerpt`,
+   `_compactPromptLine`, `_storyChapterText`). The module installs
+   `window.CJS.CampaignStoryContext.ensureStoryContext` so the still-JS
+   init/render/subscribe prime the cache; TS consumers
+   (`action-handlers/story-tools.ts`, `tabs/data/storyHome.ts`) import
+   `storyPromptText` / `ensureStoryContext` / `aiStoryContextData`
+   directly (no CampaignUI bridge hop). The three
+   `computeStoryPromptText` / `ensureStoryContext` /
+   `renderAiStoryContextData` bridges are gone. Also removed the
+   orphaned `_storySummaryEntries` / `_storySummaryTextFromRecord`
+   (dead since `getStorySummaryData` ported).
+2. [x] **Port the big modal builder bodies and their shared helpers
+   (done).** All four moved to `src/campaign/action-handlers/` and call
+   directly from `manual-builders.ts` (no CampaignUI bridge remains).
+   - [x] **Manual scene + branch builder (done).**
+     `_openManualSceneBuilder` (127) + `_saveAsManualNote` →
+     `src/campaign/action-handlers/scene-builder.ts`. `story-manual-note`
+     calls `openManualSceneBuilder` directly; the bridge entry is gone.
+   - [x] **GM override modal (done).** `_gmOverride` (174) →
+     `src/campaign/action-handlers/gm-override.ts`. `gm-override` /
+     `gm-member-override` call `openGmOverride` directly; the bridge entry
+     is gone. Still reads the shared roster option builders
+     (`_characterOptions` / `_skillOptions` / `_passiveOptions`) through
+     the `CampaignUI.rosterCharacterOptions/SkillOptions/PassiveOptions`
+     bridges; `statName` is the small local copy (same as
+     roster-modal-pickers.ts).
+   - [x] **Manual event builder (done).** `_openManualEventBuilder`
+     (266) + its 14 sub-helpers (draft/from-body, ops, reward ops,
+     summary text, short summary, keyword bank/prompt,
+     rumor/battle/layer/character options, tag list, event tags) →
+     `src/campaign/action-handlers/event-builder.ts`. `custom-event` /
+     `oracle-to-event-builder` call `openManualEventBuilder` directly;
+     the bridge entry is gone. Imports the already-TS battle pool
+     (`battle-pool.ts`) + clipboard (`copy.ts`) directly; rumor list via
+     `CampaignUIInternal.HubTab.openRumors`. The dead `_openRumors`
+     wrapper was removed too.
+   - [x] **Manual quest builder (done).** `_openQuestModal` (475) + its
+     4 helpers (`_questBuilderMiniGame`, `_parseMiniGameConversation`,
+     `_randomizedQuestTemplate`, `_inferObjectiveKind`) + the preset
+     tables → `src/campaign/action-handlers/quest-builder.ts`. `add-quest`
+     calls `openQuestModal` directly; the bridge entry is gone. Imports
+     `questMapForm` / `questMapType` from `quest.ts` (the canonical TS
+     copies); the dead JS `_questMapForm` / `_questMapType` were removed.
+After items 1+2, `campaign-ui.js` is down to ~2.4k lines (from 4.6k at
+the start of this pass; 10.8k originally). What remains is the hard core,
+in three clusters — these are the item-3/4 work:
+
+3. **Render-bridge cluster (HTML islands).** Each is a typed bridge the
+   React tree consumes via `dangerouslySetInnerHTML` or an imperative
+   modal. Port the renderer to JSX (Phase-G style: typed `get*Data` +
+   JSX component) OR keep as a permanent island moved into a TS module
+   that still emits the HTML string. Inventory:
+   - `renderStoryDirectorCardHtml` → `_renderStoryDirectorCard` +
+     `_renderStoryRouteChoices` (+ the `_cardChoiceOps` /
+     `_renderConsequencePreview` / `_renderFlavorTrail` /
+     `_consequenceSummary` delegators to `CampaignUIInternal.HubTab`).
+     Consumer: `action-handlers/story-director-modals.ts` (beat modal).
+   - `renderQuestRunTaskHtml` → `_renderQuestRunTask` +
+     `_questTaskDescriptor` / `_questCellFromRef` / `_questObjectiveByKinds`
+     / `_renderQuestMini` / `_triggerLabel` / `_questNextObjective` /
+     `_questObjectiveDone` / `_isQuestResolved` / `_activeQuestById` /
+     `_activeRunQuestId`. Consumer: `tabs/data/resultPanels.ts`
+     (ScenarioSummary task strip).
+   - `renderPartySheetHtml` → `_renderPortraitHero` + `_renderRosterMember`
+     — **permanent island** (icon-heavy, shares the roster cluster with
+     `cui-party-tab.js`). Consumer: `roster-modal-pickers.ts` (party-sheet
+     modal).
+   - `getMainBody` → `_renderMain` (defensive fallback for an
+     unregistered tab id) and `renderDrawerBody` → `_renderDrawerBody`
+     (+ `_renderQuestsFallback` / `_renderLogFallback` / `_renderSoloNotice`
+     / `_renderInventorySnapshot` / `_renderNotesPanel`). Mostly
+     defensive/drawer bodies — likely stay as TS islands.
+   - Roster shared cluster (backs `renderPartySheetHtml`, the
+     `getTabHelpers` bundle, and `cui-party-tab.js`): `_tabHelpers`,
+     `_renderParty`, `_renderRankBar`, `_renderResistances`,
+     `_renderEquipmentLoadout`, `_renderJobChip` / `_renderPersonaChip` /
+     `_renderPersonaPill`, `_memberBase`, `_memberRankInfo`, `_memberStats`,
+     `_memberSkillEntries`, `_memberLearnedSkillIds`, `_skillEntryId`,
+     `_memberPassives`, `_characterOptions`, `_skillOptions`,
+     `_passiveOptions`, `_statusDef`, `_skillMeta`, `_statName`,
+     `_skillWeaponTypes`. Stays bridged with the `cui-party-tab.js` island
+     until an icon-as-data path exists (see the K.3 note above).
+
+4. **Shell-orchestration cluster + delete `campaign-ui.js`.** This is the
+   real blocker for deleting the file — it must move to a TS shell owner
+   (e.g. `src/campaign/shell/boot.ts`) that `CampaignPage`/`CampaignShell`
+   call instead of `CampaignUI.init` / `.render`:
+   - boot + render loop: `init`, `render`, `enableReactShell`,
+     `_normalizeActiveWorldUi` + the world-UI helpers (`_worldUiProfile` /
+     `_defaultTabForMode` / `_appModesForState` / `_tabsForMode` — thin
+     `CampaignChrome` delegates), the `CampaignState.subscribe` wiring,
+     and the `campaign:state-tick` emit.
+   - combat-result return flow: `_flashOnNewEncounter`, `_bindRunPanel`,
+     `_bindCombatResultListener`, `_storeCombatResult`,
+     `_bindCombatReturnEvents`, `_combatResultKey`, `_consumeCombatResult`.
+   - panel/drawer layer: `_bindEscapeForPanels`, `_openPanel`,
+     `_closePanel`, `_tearDownDrawer`, `_renderPanelLayer`,
+     `_panelDefsForState` (most are flag-guarded no-ops in shell mode).
+   - chrome setters + dispatch seam: `setActiveMode/Tab/Panel`,
+     `setActiveModeRaw/TabRaw`, `_modeForTab`, `_goto`, `handleAction`
+     (→ the now-empty `_handleAction` switch, deletable once `handleAction`
+     just forwards to `CampaignActionsRuntime`).
+   - leftover data: `showQuestNarrative`, `_pendingSoloHookCard`,
+     `_clearPendingSoloHook`.
+
+   Once the shell owner + the render-bridge islands have TS homes and
+   nothing imports `window.CJS.CampaignUI`, delete `campaign-ui.js` and the
+   `getTabHelpers` / `renderTabBody` bridges. Then **H.5** (rewrite
+   `test_campaign_ui_bootstrap.js` against the React tree; fold
+   `test_campaign_shell_bridge.js` into a TS unit test). Phases I/J pivot
+   from "remove HTML strings" to "optimize the React tree + open the
+   authoring loop for AI generators."
 
 ## Done-when gate
 
