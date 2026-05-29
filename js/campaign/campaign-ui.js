@@ -148,7 +148,8 @@ window.CJS.CampaignUI = (() => {
   let _drawerEl = null;
   let _drawerBackdropEl = null;
   let _bootIncompatibleNotice = null;
-  let _mgTestLevels = {};
+  // _mgTestLevels moved to TS module-level state in
+  // src/campaign/tabs/data/minigameTest.ts (Phase H.4).
   const _storyContextCache = {
     globalIndex: { status: 'idle', data: null, promise: null },
     allWorld: { status: 'idle', text: '', promise: null },
@@ -5051,48 +5052,11 @@ window.CJS.CampaignUI = (() => {
   // still comes through PartyTab.rosterMemberData; the typed
   // tab-helpers bundle is threaded via `CampaignUI.getTabHelpers`.
 
-  function getMinigameTestData(state = CS().getState()) {
-    if (!state) return null;
-    const MG = window.CJS.Minigames;
-    const games = MG?.listGames?.() || [];
-    const selected = _root?.dataset?.mgTestGame || (games[0]?.id || '');
-    const levelCache = _mgTestLevels;
-    const ensureLevels = async () => {
-      if (!selected || levelCache[selected]) return;
-      try {
-        const res = await fetch(`data/minigames/${selected}_levels.json?v=grid-regression-20260517c`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        levelCache[selected] = Array.isArray(data.levels) ? data.levels : [];
-        render();
-      } catch (err) {
-        console.warn('Minigame test: failed to load levels for', selected, err);
-        levelCache[selected] = [];
-        render();
-      }
-    };
-    if (selected && !levelCache[selected]) void ensureLevels();
-    const levels = (levelCache[selected] || []).map((lvl) => ({
-      id: String(lvl.id || ''),
-      title: lvl.title || lvl.id || '',
-      difficulty: lvl.difficulty || 1,
-      theme: lvl.theme || 'any',
-      width: lvl.width || null,
-      height: lvl.height || null,
-      optimalTurns: lvl.optimalTurns || lvl.optimalMoves || null,
-      hint: lvl.hint || lvl.description || '',
-      tags: Array.isArray(lvl.tags) ? lvl.tags.slice(0) : []
-    }));
-    const lastResult = state.lastMiniGameTestResult || null;
-    return {
-      games: games.map((g) => ({ id: String(g.id || ''), title: g.title || g.id || '' })),
-      selectedGameId: selected || null,
-      levels,
-      levelsLoaded: !!levelCache[selected],
-      lastResultStatus: lastResult?.status || null,
-      lastResultJson: lastResult ? JSON.stringify(lastResult, null, 2) : null
-    };
-  }
+  // `getMinigameTestData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/minigameTest.ts`). The selection state
+  // (previously `_root.dataset.mgTestGame`) + level cache also moved
+  // to module-level variables in that file; the `mg-test-pick` action
+  // handler imports `setMinigameTestGame` directly.
 
   // Renders the main-area body. Returns a string for vanilla tabs;
   // returns `null` if the tab is owned by a React component (the shell
@@ -5224,13 +5188,10 @@ window.CJS.CampaignUI = (() => {
     // stay private — the modal handler only knows the HTML body shape.
     renderPartySheetHtml: (id, member) =>
       _renderPortraitHero(id, member) + _renderRosterMember(id, member),
-    // Mini-game test selection. The selected game lives on
-    // `_root.dataset.mgTestGame` (read by getMinigameTestData); the TS
-    // mg-test-pick handler calls this to update it + trigger render.
-    // The state moves into CampaignState in H.4 (per the plan).
-    setMinigameTestGame: (gameId) => {
-      if (_root) _root.dataset.mgTestGame = String(gameId || '');
-    },
+    // `setMinigameTestGame` removed in Phase H.4 — the selection state
+    // moved to a module-level variable in
+    // `src/campaign/tabs/data/minigameTest.ts`; the TS mg-test-pick
+    // handler imports the setter directly.
     // Story-tools bridges (story-copy-prompt). _storyPromptText reads
     // closure-private state (SD.snapshot, Seq.currentRouteChoices,
     // chapter tree, alignment, story context cache) so the closure
@@ -5256,7 +5217,6 @@ window.CJS.CampaignUI = (() => {
     // re-render against.
     enableReactShell,
     getChromeData,
-    getMinigameTestData,
     getStoryHomeData,
     getStoryDirectorData,
     getMainBody,
