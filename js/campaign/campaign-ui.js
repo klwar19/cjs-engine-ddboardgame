@@ -399,16 +399,8 @@ window.CJS.CampaignUI = (() => {
     ].filter(Boolean).join('|');
   }
 
-  function _currencyAmounts(state) {
-    const currencies = state.currencies || {};
-    const worldGold = `${state.currentWorld || 'haven'}_gold`;
-    const goldId = currencies[worldGold] != null ? worldGold
-      : Object.keys(currencies).find((id) => String(id).toLowerCase().endsWith('_gold') || String(id).toLowerCase() === 'gold');
-    return {
-      gold: goldId ? Number(currencies[goldId] || 0) : 0,
-      jp: Number(currencies.jp || currencies.jester_points || 0)
-    };
-  }
+  // `_currencyAmounts` moved to TS in Phase H.4
+  // (`src/campaign/shell/chromeData.ts`). No remaining JS callers.
 
   // _renderWorldGate — Phase F.12 port. Body moved to
   // `src/campaign/tabs/CampaignWorldGateTab.tsx`. Typed data flows
@@ -4627,118 +4619,12 @@ window.CJS.CampaignUI = (() => {
   // only chrome renderer now; the vanilla `_render{Header,ModeBar,
   // SubTabs,RecentLogStrip,CommandRail}` helpers were removed with the
   // render() fallback (the React shell is always enabled).
-  function getChromeData(state = CS().getState()) {
-    if (!state) return null;
-    const campaign = CS().getCurrentCampaign();
-    const world = CS().getCurrentWorld();
-    const isUtility = APP_UTILITY_TABS.some(([id]) => id === _activeTab);
-    const subTabsRaw = isUtility ? APP_UTILITY_TABS : _tabsForMode(_activeMode, state);
-    return {
-      activeMode: _activeMode,
-      activeTab: _activeTab,
-      activePanel: _activePanel,
-      isUtility,
-      header: _chromeHeaderData(state, campaign, world),
-      modeBar: _chromeModeBarData(state, isUtility),
-      subTabs: subTabsRaw.map(([id, label]) => ({ id, label })),
-      recentLog: _chromeRecentLogData(state),
-      commandRail: _chromeCommandRailData(state)
-    };
-  }
-
-  function _chromeHeaderData(state, campaign, world) {
-    const phase = state.phase || { number: 1, type: 'unknown', name: '' };
-    const WE = window.CJS.CampaignWorldEvents;
-    const events = WE?.getActive ? WE.getActive() : [];
-    return {
-      campaignName: campaign?.name || 'Campaign',
-      worldName: world?.displayName || state.currentWorld || '',
-      chapter: state.storyMode?.currentChapterLabel || state.currentChapter || 1,
-      phaseNumber: phase.number,
-      phaseLabel: phase.name || phase.type,
-      worldEvents: events.map((ev) => ({
-        id: ev.id,
-        name: ev.name || ev.id,
-        icon: ev.icon || '✨',
-        summary: ev.summary || '',
-        category: ev.category || 'boon',
-        remainingPhases: ev.remainingPhases
-      })),
-      currencies: _currencyAmounts(state)
-    };
-  }
-
-  function _chromeModeBarData(state, isUtility) {
-    const modes = _appModesForState(state).map(([id, label, icon]) => ({ id, label, icon }));
-    const utilityTabs = APP_UTILITY_TABS.map(([id, label]) => ({ id, label }));
-    return {
-      modes,
-      activeMode: isUtility ? null : _activeMode,
-      utilityTabs,
-      activeTab: _activeTab,
-      scenarioHud: _chromeScenarioHudData(state)
-    };
-  }
-
-  function _chromeScenarioHudData(state) {
-    const run = state.activeScenarioRun;
-    if (!run) return null;
-    const scenario = CS().getScenarioById(run.scenarioId);
-    return {
-      scenarioName: scenario?.name || run.scenarioId,
-      danger: run.danger,
-      dangerMax: run.dangerMax,
-      campsUsed: run.usedCampRests,
-      campsMax: run.limits?.campRests ?? 0,
-      battlesUsed: run.randomBattlesUsed,
-      battlesMax: run.limits?.randomBattles ?? 0,
-      generated: !!scenario?.generated
-    };
-  }
-
-  function _chromeRecentLogData(state) {
-    const entries = (state.log || []).slice(0, 3).map((line) => ({
-      kind: _CUILog.logKind(line),
-      text: line.text || '',
-      meta: _CUILog.logMeta(line, true)
-    }));
-    return {
-      entries,
-      hasLog: (state.log || []).length > 0
-    };
-  }
-
-  function _chromeCommandRailData(state) {
-    const panelDefs = _panelDefsForState(state);
-    const activeQuests = Object.values(state.quests || {}).filter((q) => q.status === 'active').length;
-    const logCount = (state.log || []).length;
-    const notesCount = (state.pinnedNotes || []).length;
-    const inventoryCount = ['items', 'materials', 'food', 'questItems']
-      .reduce((sum, b) => sum + Object.values(state.inventory?.[b] || {}).filter((q) => q > 0).length, 0);
-    const partyCount = Object.keys(state.party || {}).length;
-    const counts = {
-      party: partyCount,
-      inventory: inventoryCount,
-      quests: activeQuests,
-      log: logCount,
-      notes: notesCount
-    };
-    const panels = RAIL_ORDER.filter((id) => panelDefs[id]).map((id) => {
-      const def = panelDefs[id];
-      return {
-        id,
-        icon: def.icon,
-        label: def.label,
-        title: def.title,
-        count: counts[id] || 0
-      };
-    });
-    return {
-      panels,
-      activePanel: _activePanel,
-      currency: _currencyAmounts(state)
-    };
-  }
+  // `getChromeData` and its five sub-helpers (`_chromeHeaderData`,
+  // `_chromeModeBarData`, `_chromeScenarioHudData`, `_chromeRecentLogData`,
+  // `_chromeCommandRailData`) moved to TS in Phase H.4
+  // (`src/campaign/shell/chromeData.ts`). The TS port reads the chrome
+  // slice from `src/campaign/chrome-state.ts` and the panel definitions
+  // from the same module — both are the single source of truth now.
 
   // ── Typed tab data for Phase F/G per-tab ports ─────────────────────
   // Each `get<Tab>Data` returns a JSON-friendly snapshot the matching
@@ -5073,13 +4959,11 @@ window.CJS.CampaignUI = (() => {
     return _renderMain(state);
   }
 
-  function getPanelDefs(state = CS().getState()) {
-    return _panelDefsForState(state);
-  }
-
-  function getPanelOrder() {
-    return RAIL_ORDER.slice();
-  }
+  // `getPanelDefs` + `getPanelOrder` moved to TS in Phase H.4
+  // (`src/campaign/shell/chromeData.ts`). The JS closures
+  // `_panelDefsForState` + `PANEL_DEFS` + `RAIL_ORDER` stay because the
+  // still-JS `_openPanel`/`_closePanel`/`_renderPanelLayer` no-ops still
+  // read them. Both sides hold the same values.
 
   function renderDrawerBody(panelId, state = CS().getState()) {
     if (!state || !panelId) return '';
@@ -5216,12 +5100,9 @@ window.CJS.CampaignUI = (() => {
     // and instead emits `campaign:state-tick` events for the shell to
     // re-render against.
     enableReactShell,
-    getChromeData,
     getStoryHomeData,
     getStoryDirectorData,
     getMainBody,
-    getPanelDefs,
-    getPanelOrder,
     renderDrawerBody,
     handleAction,
     setActiveMode,

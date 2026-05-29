@@ -44,20 +44,18 @@ const page = fs.readFileSync(pagePath, 'utf8');
 // Bridge functions: every name listed here is read by the React shell
 // (directly or through the `src/campaign/shell/bridge.ts` wrapper).
 // Removing one without updating the shell will break the chrome.
+//
+// Phase H.4 — `getChromeData`, `getPanelDefs`, `getPanelOrder` moved to
+// TS (`src/campaign/shell/chromeData.ts`). They no longer ship as
+// CampaignUI methods; only the still-JS bodies remain in the bridge.
 const BRIDGE_FUNCS = [
   'enableReactShell',
-  'getChromeData',
   'getMainBody',
-  'getPanelDefs',
-  'getPanelOrder',
   'renderDrawerBody',
   'handleAction',
   'setActiveMode',
   'setActiveTab',
-  'setActivePanel',
-  'getActiveTab',
-  'getActiveMode',
-  'getActivePanel'
+  'setActivePanel'
 ];
 for (const name of BRIDGE_FUNCS) {
   // Either a `function name(` definition or a `name:` entry in the
@@ -69,8 +67,9 @@ for (const name of BRIDGE_FUNCS) {
 
 // The React shell must read these functions for the chrome to be wired
 // up correctly. `getChromeData` lives behind `src/campaign/shell/bridge.ts`
-// so we check that the wrapper imports it as well.
-const SHELL_USES = ['enableReactShell', 'getMainBody', 'getPanelDefs',
+// (and now resolves to the TS chromeData builder); `panelDefsForState`
+// comes from the same TS module.
+const SHELL_USES = ['enableReactShell', 'getMainBody', 'panelDefsForState',
   'renderDrawerBody', 'setActivePanel'];
 for (const name of SHELL_USES) {
   ok('CampaignShell.tsx uses ' + name, shell.indexOf(name) >= 0);
@@ -79,10 +78,18 @@ for (const name of SHELL_USES) {
 const bridgeShellPath = path.join(__dirname, 'src/campaign/shell/bridge.ts');
 ok('src/campaign/shell/bridge.ts exists', fs.existsSync(bridgeShellPath));
 const bridgeShell = fs.readFileSync(bridgeShellPath, 'utf8');
-ok('shell/bridge.ts uses getChromeData', bridgeShell.indexOf('getChromeData') >= 0);
+ok('shell/bridge.ts re-exports getChromeData', bridgeShell.indexOf('getChromeData') >= 0);
 ok('shell/bridge.ts uses setActiveMode', bridgeShell.indexOf('setActiveMode') >= 0);
 ok('shell/bridge.ts uses setActiveTab', bridgeShell.indexOf('setActiveTab') >= 0);
 ok('shell/bridge.ts uses setActivePanel', bridgeShell.indexOf('setActivePanel') >= 0);
+
+// Phase H.4 — TS chrome data builder is the canonical source.
+const chromeDataPath = path.join(__dirname, 'src/campaign/shell/chromeData.ts');
+ok('src/campaign/shell/chromeData.ts exists', fs.existsSync(chromeDataPath));
+const chromeData = fs.readFileSync(chromeDataPath, 'utf8');
+ok('chromeData.ts exports getChromeData', /export function getChromeData/.test(chromeData));
+ok('chromeData.ts exports panelDefsForState', /export function panelDefsForState/.test(chromeData));
+ok('chromeData.ts exports panelOrder', /export function panelOrder/.test(chromeData));
 
 // CampaignShell.tsx renders the new JSX chrome components instead of
 // dangerouslySetInnerHTML fragments. Asserting the imports is enough:

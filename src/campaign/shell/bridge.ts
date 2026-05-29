@@ -1,47 +1,48 @@
-// bridge.ts — Phase F chrome bridge to the legacy CampaignUI module.
+// bridge.ts — Phase F chrome bridge.
 //
-// Wraps the typed surface React chrome components consume:
-//   • read chrome data  — `getChromeData(state)`
-//   • change active mode/tab/panel — `setActiveMode/Tab/Panel`
-//
-// These all delegate to `window.CJS.CampaignUI`. Keeping the wrappers
-// in one file means a single import in the chrome components, and a
-// single edit site once the bridge moves entirely into TypeScript.
+// Re-exports the typed TS chrome data builder (`getChromeData` from
+// `./chromeData.ts`, Phase H.4 port) and the chrome state setters.
+// React chrome components import from here so the surface stays in
+// one place; the bridge module is the seam if either side ever moves
+// again.
 
-import type { ChromeData } from "./types";
-import type { CampaignStateSnapshot } from "../store";
+import { setActiveMode as setActiveModeRaw, setActiveTab as setActiveTabRaw, setActivePanel as setActivePanelRaw } from "../chrome-state";
 
-interface CampaignUIBridge {
-  readonly getChromeData: (state?: CampaignStateSnapshot) => ChromeData | null;
-  readonly setActiveMode: (mode: string, opts?: { keepTab?: boolean }) => void;
-  readonly setActiveTab: (tab: string, opts?: { keepMode?: boolean }) => void;
-  readonly setActivePanel: (panelId: string | null) => void;
+export { getChromeData } from "./chromeData";
+
+interface CampaignUiSurface {
+  readonly render?: () => void;
 }
 
 interface Cjs {
-  readonly CampaignUI?: CampaignUIBridge;
+  readonly CampaignUI?: CampaignUiSurface;
 }
 
 function cjs(): Cjs {
   return (window as unknown as { CJS?: Cjs }).CJS ?? {};
 }
 
-function ui(): CampaignUIBridge | null {
-  return cjs().CampaignUI ?? null;
+function rerender(): void {
+  cjs().CampaignUI?.render?.();
 }
 
-export function getChromeData(state: CampaignStateSnapshot): ChromeData | null {
-  return ui()?.getChromeData(state) ?? null;
-}
-
+// The Phase H.3 chrome wrappers in `campaign-ui.js` called
+// `setActiveMode/Tab/Panel` then `render()` to repaint. The TS chrome
+// state's `_emit` already notifies any React subscriber via
+// chrome-state.ts, but the still-JS vanilla render path observes the
+// CampaignUI.render() call — so we keep the explicit re-render to
+// preserve parity with the legacy click handlers.
 export function setActiveMode(mode: string): void {
-  ui()?.setActiveMode(mode);
+  setActiveModeRaw(mode);
+  rerender();
 }
 
 export function setActiveTab(tab: string): void {
-  ui()?.setActiveTab(tab);
+  setActiveTabRaw(tab);
+  rerender();
 }
 
 export function setActivePanel(panelId: string | null): void {
-  ui()?.setActivePanel(panelId);
+  setActivePanelRaw(panelId);
+  rerender();
 }
