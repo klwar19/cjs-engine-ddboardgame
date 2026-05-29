@@ -195,7 +195,10 @@ const REACT_TAB_COMPONENTS: Readonly<
 export function CampaignShell() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
-  const [renderTick, setRenderTick] = useState(0);
+  // `useCampaignState()` re-renders the shell on every committed change —
+  // chrome (tab/mode/panel switches) AND data — because the store listens to
+  // the `campaign:state-tick` / `campaign:rendered` superset signal. The
+  // shell no longer needs its own state-tick listener (removed below).
   const { state } = useCampaignState();
 
   // One-time boot: enable the React-shell flag BEFORE init() so the
@@ -246,22 +249,6 @@ export function CampaignShell() {
       cancelled = true;
     };
   }, []);
-
-  // Bump the tick whenever the engine emits a state change. We listen
-  // for both events: the new `state-tick` (React-shell mode) and the
-  // legacy `rendered` (in case the engine ever falls back).
-  useEffect(() => {
-    const onTick = () => setRenderTick((t) => t + 1);
-    document.addEventListener("campaign:state-tick", onTick, true);
-    document.addEventListener("campaign:rendered", onTick, true);
-    return () => {
-      document.removeEventListener("campaign:state-tick", onTick, true);
-      document.removeEventListener("campaign:rendered", onTick, true);
-    };
-  }, []);
-
-  // Reference the tick so React keeps it as a dep of the read below.
-  void renderTick;
 
   if (bootError) {
     return (
