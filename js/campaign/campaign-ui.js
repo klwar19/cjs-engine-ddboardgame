@@ -5383,42 +5383,12 @@ window.CJS.CampaignUI = (() => {
     return bits;
   }
 
-  function getScenarioSummaryData(state = CS().getState()) {
-    if (!state) return null;
-    const run = state.activeScenarioRun;
-    if (!run) {
-      return { hasRun: false };
-    }
-    const scenario = CS().getScenarioById(run.scenarioId);
-    const location = run.travelMode === 'grid_map' && run.currentCell
-      ? `${run.currentCell.x},${run.currentCell.y}`
-      : (run.currentNode || '-');
-    const objective = run.objectiveState || null;
-    return {
-      hasRun: true,
-      name: scenario?.name || run.scenarioId || 'Run',
-      questPill: _runQuestPill(state, run, scenario),
-      isGrid: run.travelMode === 'grid_map',
-      location,
-      danger: run.danger,
-      dangerMax: run.dangerMax,
-      campsUsed: run.usedCampRests,
-      campsMax: run.limits?.campRests ?? 0,
-      eventsUsed: run.eventsUsed,
-      eventsMax: run.limits?.events ?? 0,
-      battlesUsed: run.randomBattlesUsed,
-      battlesMax: run.limits?.randomBattles ?? 0,
-      roamerCount: (run.movingThreats || []).length,
-      objective: objective ? {
-        completed: !!objective.completed,
-        visible: objective.visible !== false,
-        label: objective.label || 'Reach the target',
-        meta: _scenarioObjectiveMeta(run, objective)
-      } : null,
-      questRunTaskHtml: _renderQuestRunTask(state, run, scenario) || '',
-      hasGeneratedScenario: !!scenario?.generated
-    };
-  }
+  // `getScenarioSummaryData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). The runQuestPill +
+  // scenarioObjectiveMeta helpers ported alongside to `data/scenarioShared.ts`
+  // (also consumed by `getRunData` / `getScenariosData`). The render-side
+  // questRunTask HTML chunk still comes from a JS bridge — see the
+  // `renderQuestRunTaskHtml` export below.
 
   // Typed snapshots for small shared panels used across tabs.
   // `getTravelSurpriseData` and `getLastReportData` moved to TS in
@@ -6005,6 +5975,12 @@ window.CJS.CampaignUI = (() => {
     // (G.11b kept this renderer as HTML). Exposed for action-handlers/
     // story-director-modals.ts; goes away when the renderer ports.
     renderStoryDirectorCardHtml: (card, options) => _renderStoryDirectorCard(card, options),
+    // ScenarioSummary's questRunTask uses _questTaskDescriptor (still in JS —
+    // reads CampaignState.getScenarioMapById + ScenarioRunner.findNode/findCell
+    // against the active scenario map) to produce one HTML block per active
+    // run. The TS data builder (`src/campaign/tabs/data/resultPanels.ts`)
+    // embeds it via this bridge; goes away when the descriptor ports.
+    renderQuestRunTaskHtml: (state, run, scenario) => _renderQuestRunTask(state, run, scenario) || '',
     // Run-inspect modal's pill row reuses the closure-private
     // `_shapePillsData` (the shared source of truth for Movement / Setting
     // / Size pill labels — also feeds `getScenariosData` / `getRunData`).
@@ -6086,7 +6062,6 @@ window.CJS.CampaignUI = (() => {
     getStoryHomeData,
     getWorldGateData,
     getStoryDirectorData,
-    getScenarioSummaryData,
     getActiveSequenceData,
     getSequenceShelfData,
     getMainBody,

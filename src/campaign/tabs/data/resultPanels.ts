@@ -11,7 +11,12 @@ import { esc, lootLine, label } from "../../util/cui-utils";
 import { renderInlinePurpose, purposeKeyForCard, type CardLike } from "../../util/cui-controls";
 import { pendingSoloHookCard, type SoloHookStateShape } from "../../util/state-helpers";
 import type { CampaignStateSnapshot } from "../../store";
-import type { QuestPillData } from "./scenarioShared";
+import {
+  runQuestPill,
+  scenarioObjectiveMeta,
+  type QuestPillData,
+  type ObjectiveLike
+} from "./scenarioShared";
 
 // HubTab module (still-JS bridged island) renders the consequence
 // preview / flavor trail HTML the side panels embed.
@@ -459,7 +464,6 @@ export interface SoloNoticeData {
 }
 
 interface Bridge {
-  readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
   readonly getActiveSequenceData: (
     state?: CampaignStateSnapshot,
     scopes?: readonly SequenceScope[] | null
@@ -753,8 +757,89 @@ export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattl
   };
 }
 
+// Phase H.4 inline port — pure state + scenario read. The questRunTask
+// HTML chunk still comes from a JS-side bridge (`renderQuestRunTaskHtml`)
+// because its sub-renderer `_questTaskDescriptor` reads
+// `ScenarioRunner.findNode/findCell` + `CampaignState.getScenarioMapById`
+// against the active scenario map — those stay in JS as the render-side
+// descriptor.
+interface ScenarioSummaryRunInput {
+  readonly scenarioId?: string;
+  readonly questId?: string;
+  readonly travelMode?: string;
+  readonly currentCell?: { readonly x?: number; readonly y?: number };
+  readonly currentNode?: string;
+  readonly danger?: number;
+  readonly dangerMax?: number;
+  readonly usedCampRests?: number;
+  readonly eventsUsed?: number;
+  readonly randomBattlesUsed?: number;
+  readonly limits?: { readonly campRests?: number; readonly events?: number; readonly randomBattles?: number };
+  readonly movingThreats?: readonly unknown[];
+  readonly objectiveState?: ObjectiveStateInput | null;
+}
+
+interface ObjectiveStateInput extends ObjectiveLike {
+  readonly completed?: boolean;
+  readonly label?: string;
+}
+
+interface ScenarioRecord {
+  readonly name?: string;
+  readonly generated?: boolean;
+}
+
+interface CampaignStateSurface {
+  readonly getScenarioById?: (id: string) => ScenarioRecord | null | undefined;
+}
+
+interface SummaryCjs {
+  readonly CampaignState?: CampaignStateSurface;
+  readonly CampaignUI?: { readonly renderQuestRunTaskHtml?: (state: unknown, run: unknown, scenario: unknown) => string };
+}
+
+function summaryCjs(): SummaryCjs {
+  return (window as unknown as { CJS?: SummaryCjs }).CJS ?? {};
+}
+
 export function getScenarioSummaryData(state: CampaignStateSnapshot): ScenarioSummaryData | null {
-  return cjs().CampaignUI?.getScenarioSummaryData(state) ?? null;
+  if (!state) return null;
+  const typed = state as { activeScenarioRun?: ScenarioSummaryRunInput };
+  const run = typed.activeScenarioRun;
+  if (!run) return { hasRun: false };
+  const c = summaryCjs();
+  const scenario = run.scenarioId ? c.CampaignState?.getScenarioById?.(run.scenarioId) ?? null : null;
+  const location =
+    run.travelMode === "grid_map" && run.currentCell
+      ? `${run.currentCell.x},${run.currentCell.y}`
+      : run.currentNode || "-";
+  const objective = run.objectiveState || null;
+  return {
+    hasRun: true,
+    name: scenario?.name || run.scenarioId || "Run",
+    questPill: runQuestPill(state as Parameters<typeof runQuestPill>[0], run, scenario as Parameters<typeof runQuestPill>[2]),
+    isGrid: run.travelMode === "grid_map",
+    location,
+    danger: run.danger ?? 0,
+    dangerMax: run.dangerMax ?? 0,
+    campsUsed: run.usedCampRests ?? 0,
+    campsMax: run.limits?.campRests ?? 0,
+    eventsUsed: run.eventsUsed ?? 0,
+    eventsMax: run.limits?.events ?? 0,
+    battlesUsed: run.randomBattlesUsed ?? 0,
+    battlesMax: run.limits?.randomBattles ?? 0,
+    roamerCount: (run.movingThreats || []).length,
+    objective: objective
+      ? {
+          completed: !!objective.completed,
+          visible: objective.visible !== false,
+          label: objective.label || "Reach the target",
+          meta: scenarioObjectiveMeta(run, objective)
+        }
+      : null,
+    questRunTaskHtml: c.CampaignUI?.renderQuestRunTaskHtml?.(state, run, scenario) || "",
+    hasGeneratedScenario: !!scenario?.generated
+  };
 }
 
 export function getActiveSequenceData(
