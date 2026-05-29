@@ -1,19 +1,22 @@
 #!/usr/bin/env node
-// build-size-check.mjs — Guard the bundle against silent size regressions.
+// build-size-check.mjs — Guard the build against silent size regressions, in
+// two domains:
 //
-// The React migration drove the campaign-core chunk from 641 KB to 271 KB
-// (see MIGRATION_PHASE_D_PLAN.md). This check keeps that ground: it compares
-// every emitted JS/CSS chunk in dist/assets to a committed baseline and fails
-// when a chunk — or the total — grows past the threshold without an explicit
-// baseline bump. Run it after a build (CI runs it after `npm run build`).
+//   • CODE — every emitted JS/CSS chunk in dist/assets (hash stripped to a
+//     stable logical key) is compared per-chunk to a committed baseline, plus
+//     a code total. This kept the React migration's win (campaign-core
+//     641 KB -> 271 KB; entry 457 KB -> 263 KB after lazy tabs).
+//   • ASSETS — the copied media payload (images, audio, live2d, data — the
+//     ~240 MB the build ships outside the JS bundle) is compared as a total
+//     (and per top-level group), and the largest files are listed so an
+//     oversized asset (e.g. an 8192px texture) is visible in CI.
+//
+// A domain fails when its total — or any tracked code chunk — grows past the
+// threshold (5%) without an explicit baseline bump. Growth must also clear a
+// small absolute floor so tiny chunks don't flap on sub-KB noise.
 //
 //   npm run build && npm run size:check     # verify against the baseline
 //   npm run build && npm run size:baseline  # re-baseline after an intended change
-//
-// Chunk filenames carry an 8-char content hash ([name]-[hash].js); we strip it
-// to a stable logical key ("campaign.js", "cjs-campaign-core.js", ...) so the
-// baseline survives every rebuild. Growth must clear BOTH a percentage and a
-// small absolute floor, so tiny chunks don't flap on sub-KB noise.
 //
 // Exit codes: 0 within budget · 1 a chunk/total exceeded the threshold ·
 // 2 no build present / usage error.
@@ -24,16 +27,32 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const distAssets = path.join(root, "dist", "assets");
+const dist = path.join(root, "dist");
+const distAssets = path.join(dist, "assets");
 const baselinePath = path.join(__dirname, "build-size-baseline.json");
 
-const THRESHOLD_PCT = 5; // a chunk may not grow more than this %
+const THRESHOLD_PCT = 5; // a chunk/total may not grow more than this %
 const FLOOR_BYTES = 1024; // ...and must also clear this absolute delta to fail
+const LARGE_ASSET_BYTES = 2 * 1024 * 1024; // assets above this are listed/noted
+const LARGEST_N = 15; // how many of the biggest assets to record/report
+
+const CODE_RE = /\.(js|css|html|map|webmanifest)$/;
+const HASH_RE = /^(.*)-[A-Za-z0-9_-]{8}\.(js|css)$/;
 
 const args = process.argv.slice(2);
 const update = args.includes("--update") || args.includes("--baseline");
 
-const HASH_RE = /^(.*)-[A-Za-z0-9_-]{8}\.(js|css)$/;
+// ── helpers ────────────────────────────────────────────────────────────────
+function fmtKB(bytes) {
+  return `${(bytes / 1024).toFixed(2)} KB`;
+}
+function fmtMB(bytes) {
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+function pct(delta, base) {
+  if (base === 0) return delta > 0 ? Infinity : 0;
+  return (delta / base) * 100;
+}
 
 // Strip the content hash to a stable logical key. Vite emits [name]-[hash].ext
 // with an 8-char hash that can itself contain '-' / '_'; the trailing
@@ -43,11 +62,7 @@ function logicalName(file) {
   return m ? `${m[1]}.${m[2]}` : file;
 }
 
-function fmtKB(bytes) {
-  return `${(bytes / 1024).toFixed(2)} KB`;
-}
-
-function collectSizes() {
+function ensureBuild() {
   if (!fs.existsSync(distAssets)) {
     console.error(
       `build-size-check: no build found at ${path.relative(root, distAssets)}.\n` +
@@ -55,46 +70,92 @@ function collectSizes() {
     );
     process.exit(2);
   }
+}
+
+// CODE: hash-stripped JS/CSS chunks in dist/assets.
+function collectChunks() {
   const chunks = {};
   for (const file of fs.readdirSync(distAssets)) {
     if (!/\.(js|css)$/.test(file)) continue;
     const bytes = fs.statSync(path.join(distAssets, file)).size;
     const key = logicalName(file);
-    // Defensive: if two hashes ever map to one logical name in a single build,
-    // sum them so the budget still reflects everything shipped under that name.
     chunks[key] = (chunks[key] || 0) + bytes;
   }
   return chunks;
 }
 
-function totalOf(chunks) {
-  return Object.values(chunks).reduce((a, b) => a + b, 0);
+// ASSETS: every non-code file under dist/, grouped by top-level segment, with
+// a running total and the N largest tracked for visibility.
+function collectAssets() {
+  const groups = {};
+  let total = 0;
+  const largest = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(abs);
+        continue;
+      }
+      const rel = path.relative(dist, abs);
+      if (CODE_RE.test(entry.name)) continue;
+      if (rel === "sw.js" || rel === "registerSW.js") continue;
+      const bytes = fs.statSync(abs).size;
+      total += bytes;
+      const group = rel.split(path.sep)[0];
+      groups[group] = (groups[group] || 0) + bytes;
+      largest.push({ path: rel.split(path.sep).join("/"), bytes });
+    }
+  };
+  walk(dist);
+  largest.sort((a, b) => b.bytes - a.bytes);
+  return { total, groups, largest: largest.slice(0, LARGEST_N) };
 }
 
-function writeBaseline(chunks) {
+function snapshot() {
+  ensureBuild();
+  const chunks = collectChunks();
+  const codeTotal = Object.values(chunks).reduce((a, b) => a + b, 0);
+  const assets = collectAssets();
+  return { chunks, codeTotal, assets };
+}
+
+function writeBaseline(snap) {
   const payload = {
     _note:
-      "Build size budget for tools/build-size-check.mjs. Keys are hash-stripped " +
-      "chunk names; values are bytes. Regenerate with `npm run size:baseline` " +
-      "after an intentional size change. Threshold: " +
-      `${THRESHOLD_PCT}% per chunk (and ${FLOOR_BYTES}B floor) + ${THRESHOLD_PCT}% total.`,
+      "Build size budget for tools/build-size-check.mjs. `code.chunks` keys are " +
+      "hash-stripped chunk names (bytes); `assets` is the copied media payload " +
+      "(bytes) grouped by top-level dir. Regenerate with `npm run size:baseline` " +
+      `after an intentional size change. Threshold: ${THRESHOLD_PCT}% per chunk ` +
+      `(and ${FLOOR_BYTES}B floor) and ${THRESHOLD_PCT}% per total.`,
     thresholdPct: THRESHOLD_PCT,
     floorBytes: FLOOR_BYTES,
     generated: new Date().toISOString().slice(0, 10),
-    total: totalOf(chunks),
-    chunks: Object.fromEntries(Object.entries(chunks).sort(([a], [b]) => a.localeCompare(b)))
+    code: {
+      total: snap.codeTotal,
+      chunks: Object.fromEntries(
+        Object.entries(snap.chunks).sort(([a], [b]) => a.localeCompare(b))
+      )
+    },
+    assets: {
+      total: snap.assets.total,
+      groups: Object.fromEntries(
+        Object.entries(snap.assets.groups).sort(([a], [b]) => a.localeCompare(b))
+      ),
+      largest: snap.assets.largest
+    }
   };
   fs.writeFileSync(baselinePath, JSON.stringify(payload, null, 2) + "\n");
   console.log(
-    `build-size-check: wrote baseline (${Object.keys(chunks).length} chunks, ` +
-      `${fmtKB(payload.total)}) to ${path.relative(root, baselinePath)}`
+    `build-size-check: wrote baseline — code ${fmtKB(snap.codeTotal)} ` +
+      `(${Object.keys(snap.chunks).length} chunks), assets ${fmtMB(snap.assets.total)}.`
   );
 }
 
-const current = collectSizes();
+const snap = snapshot();
 
 if (update) {
-  writeBaseline(current);
+  writeBaseline(snap);
   process.exit(0);
 }
 
@@ -106,69 +167,99 @@ if (!fs.existsSync(baselinePath)) {
 }
 
 const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
-const baseChunks = baseline.chunks || {};
+const baseCode = baseline.code || {};
+const baseChunks = baseCode.chunks || {};
+const baseAssets = baseline.assets || {};
 
-const regressions = [];
+let failed = false;
+
+// ── CODE: per-chunk + total ──────────────────────────────────────────────
+const chunkRegressions = [];
 const newChunks = [];
 const removedChunks = [];
-
-for (const [name, cur] of Object.entries(current)) {
+for (const [name, cur] of Object.entries(snap.chunks)) {
   const base = baseChunks[name];
   if (base == null) {
     newChunks.push([name, cur]);
     continue;
   }
   const delta = cur - base;
-  const pct = base === 0 ? (cur > 0 ? Infinity : 0) : (delta / base) * 100;
-  if (delta > FLOOR_BYTES && pct > THRESHOLD_PCT) {
-    regressions.push({ name, base, cur, delta, pct });
+  if (delta > FLOOR_BYTES && pct(delta, base) > THRESHOLD_PCT) {
+    chunkRegressions.push({ name, base, cur, delta, p: pct(delta, base) });
   }
 }
 for (const name of Object.keys(baseChunks)) {
-  if (current[name] == null) removedChunks.push(name);
+  if (snap.chunks[name] == null) removedChunks.push(name);
 }
-
-const curTotal = totalOf(current);
-const baseTotal = baseline.total ?? totalOf(baseChunks);
-const totalDelta = curTotal - baseTotal;
-const totalPct = baseTotal === 0 ? 0 : (totalDelta / baseTotal) * 100;
-const totalRegressed = totalDelta > FLOOR_BYTES && totalPct > THRESHOLD_PCT;
+const codeBaseTotal = baseCode.total ?? Object.values(baseChunks).reduce((a, b) => a + b, 0);
+const codeDelta = snap.codeTotal - codeBaseTotal;
+const codeTotalRegressed = codeDelta > FLOOR_BYTES && pct(codeDelta, codeBaseTotal) > THRESHOLD_PCT;
 
 console.log(
-  `build-size-check: total ${fmtKB(curTotal)} vs baseline ${fmtKB(baseTotal)} ` +
-    `(${totalDelta >= 0 ? "+" : ""}${fmtKB(totalDelta)}, ${totalPct >= 0 ? "+" : ""}${totalPct.toFixed(1)}%)`
+  `build-size-check: code ${fmtKB(snap.codeTotal)} vs ${fmtKB(codeBaseTotal)} ` +
+    `(${codeDelta >= 0 ? "+" : ""}${fmtKB(codeDelta)}, ${pct(codeDelta, codeBaseTotal) >= 0 ? "+" : ""}${pct(codeDelta, codeBaseTotal).toFixed(1)}%)`
 );
 
 if (newChunks.length) {
-  console.log("\nNew chunks (not in baseline — bump the baseline if intended):");
+  console.log("\nNew code chunks (not in baseline — bump if intended):");
   for (const [name, cur] of newChunks.sort((a, b) => b[1] - a[1])) {
     console.log(`  +  ${name}  ${fmtKB(cur)}`);
   }
 }
 if (removedChunks.length) {
-  console.log("\nRemoved chunks (in baseline, no longer emitted):");
+  console.log("\nRemoved code chunks (in baseline, no longer emitted):");
   for (const name of removedChunks.sort()) console.log(`  -  ${name}`);
 }
 
-if (regressions.length || totalRegressed) {
+// ── ASSETS: total + per-group + largest ────────────────────────────────────
+const assetBaseTotal = baseAssets.total ?? 0;
+const assetDelta = snap.assets.total - assetBaseTotal;
+const assetRegressed = assetDelta > FLOOR_BYTES && pct(assetDelta, assetBaseTotal) > THRESHOLD_PCT;
+
+console.log(
+  `\nbuild-size-check: assets ${fmtMB(snap.assets.total)} vs ${fmtMB(assetBaseTotal)} ` +
+    `(${assetDelta >= 0 ? "+" : ""}${fmtMB(assetDelta)}, ${pct(assetDelta, assetBaseTotal) >= 0 ? "+" : ""}${pct(assetDelta, assetBaseTotal).toFixed(1)}%)`
+);
+const groupNames = new Set([
+  ...Object.keys(snap.assets.groups),
+  ...Object.keys(baseAssets.groups || {})
+]);
+for (const g of [...groupNames].sort()) {
+  const cur = snap.assets.groups[g] || 0;
+  const base = (baseAssets.groups || {})[g] || 0;
+  const d = cur - base;
+  const flag = d > FLOOR_BYTES && pct(d, base) > THRESHOLD_PCT ? "  <= grew" : "";
+  console.log(`    ${g.padEnd(10)} ${fmtMB(cur).padStart(10)}  (${d >= 0 ? "+" : ""}${fmtMB(d)})${flag}`);
+}
+
+const oversized = snap.assets.largest.filter((a) => a.bytes >= LARGE_ASSET_BYTES);
+if (oversized.length) {
+  console.log(`\nLargest assets (>= ${fmtMB(LARGE_ASSET_BYTES)} — consider downscaling / lazy-loading):`);
+  for (const a of oversized) console.log(`  !  ${fmtMB(a.bytes).padStart(10)}  ${a.path}`);
+}
+
+// ── verdict ─────────────────────────────────────────────────────────────────
+if (chunkRegressions.length || codeTotalRegressed || assetRegressed) {
+  failed = true;
   console.log("\nSize budget EXCEEDED:");
-  for (const r of regressions.sort((a, b) => b.delta - a.delta)) {
+  for (const r of chunkRegressions.sort((a, b) => b.delta - a.delta)) {
     console.log(
       `  XX ${r.name}: ${fmtKB(r.base)} -> ${fmtKB(r.cur)} ` +
-        `(+${fmtKB(r.delta)}, +${r.pct.toFixed(1)}% > ${THRESHOLD_PCT}%)`
+        `(+${fmtKB(r.delta)}, +${r.p.toFixed(1)}% > ${THRESHOLD_PCT}%)`
     );
   }
-  if (totalRegressed) {
-    console.log(
-      `  XX total: +${fmtKB(totalDelta)} (+${totalPct.toFixed(1)}% > ${THRESHOLD_PCT}%)`
-    );
+  if (codeTotalRegressed) {
+    console.log(`  XX code total: +${fmtKB(codeDelta)} (+${pct(codeDelta, codeBaseTotal).toFixed(1)}% > ${THRESHOLD_PCT}%)`);
+  }
+  if (assetRegressed) {
+    console.log(`  XX assets total: +${fmtMB(assetDelta)} (+${pct(assetDelta, assetBaseTotal).toFixed(1)}% > ${THRESHOLD_PCT}%)`);
   }
   console.log(
     "\nIf this growth is intended, re-baseline with `npm run size:baseline` " +
       "and commit tools/build-size-baseline.json."
   );
-  process.exit(1);
 }
 
-console.log("\nbuild-size-check: OK — every chunk within budget.");
+if (failed) process.exit(1);
+console.log("\nbuild-size-check: OK — code + assets within budget.");
 process.exit(0);

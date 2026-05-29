@@ -809,10 +809,25 @@ show become tractable:
   campaign / minigames / qte / media), shift to a runtime-cache
   policy keyed by mode so a Story-Mode-only player never downloads
   the combat chunk's grid renderer.
-- [ ] **I.6 — Image / asset budget.** Audit the `assets/` and
-  `images/` trees against bundle size. Move large story-mode VN
-  art behind a per-world dynamic import; cap thumbnail sizes;
-  expose a build-time check in `tools/` that fails CI on regressions.
+- [~] **I.6 — Image / asset budget.**
+  - [x] **Build-time guard (done).** `build-size-check.mjs` now covers a
+    second domain: the copied media payload (`dist/images`, `dist/audio`,
+    `dist/assets/live2d`, `dist/data` — **239.71 MB / 1,908 files** vs.
+    2.84 MB of code). It enforces a total-asset budget (5%), reports the
+    per-group breakdown, and lists every asset ≥ 2 MB so outliers are
+    visible in CI. The audit it surfaces is stark: a **23 MB** 8192px
+    live2d texture, a **22 MB** moc3, and ~9 MB character PNGs
+    (`haven_mitia.png` 9.4 MB, etc.). Same baseline / re-baseline / CI
+    wiring as I.7.
+  - [ ] **Art optimization (remaining — needs domain input + image
+    tooling).** Downscale the oversized textures/PNGs (an 8192px texture
+    and 9 MB character art are almost certainly mistakes), cap thumbnail
+    sizes, and move large story-mode VN art behind a per-world dynamic
+    import so a player only downloads the art for the world they're in.
+    Deliberately not done blind: re-encoding/removing game art needs the
+    author's call on quality, and the loaders (`<img>` / CSS / live2d)
+    need restructuring per world. The guard above makes the targets
+    concrete and stops the payload growing further meanwhile.
 - [x] **I.7 — Build-size budget guard.** `tools/build-size-check.mjs`
   compares every `dist/assets/*.{js,css}` chunk (hash stripped to a stable
   logical key) to the committed `tools/build-size-baseline.json` and exits
