@@ -1,7 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type LazyExoticComponent
+} from "react";
 import { createPortal } from "react-dom";
 import { useCampaignState, useCampaignSelector, type CampaignStateSnapshot } from "./store";
 import { deepEqual } from "./util/equality";
+import { ErrorBoundary } from "./util/ErrorBoundary";
 import { CampaignHelpPopover } from "./HelpPopover";
 import { dispatchCampaignAction, importSaveFile, type CampaignActionName } from "./actions";
 import { CampaignHeader } from "./shell/Header";
@@ -10,42 +19,13 @@ import { CampaignSubTabs } from "./shell/SubTabs";
 import { CampaignRecentLog } from "./shell/RecentLog";
 import { CampaignCommandRail } from "./shell/CommandRail";
 import { getChromeData, setActiveMode, setActiveTab, setActivePanel } from "./shell/bridge";
-import { CampaignSettingsTab } from "./tabs/CampaignSettingsTab";
-import { CampaignLogsTab } from "./tabs/CampaignLogsTab";
-import { CampaignRosterTab } from "./tabs/CampaignRosterTab";
-import { CampaignWorldMapTab, CampaignWorldActivitiesTab } from "./tabs/CampaignWorldMapTab";
-import {
-  CampaignSideForgeTab,
-  CampaignQuestChainsTab,
-  CampaignOracleForgeTab,
-  CampaignBattleSetsTab,
-  CampaignMapSeedsTab
-} from "./tabs/CampaignHubTabs";
-import {
-  CampaignInventoryTab,
-  CampaignShopsTab,
-  CampaignCraftTab,
-  CampaignCookTab,
-  CampaignFarmTab,
-  CampaignRelationshipsTab
-} from "./tabs/CampaignExternalTabs";
-import { CampaignStoryHomeTab } from "./tabs/CampaignStoryHomeTab";
-import { CampaignWorldGateTab } from "./tabs/CampaignWorldGateTab";
-import { CampaignStoryDirectorTab } from "./tabs/CampaignStoryDirectorTab";
-import { CampaignQuestsPanelTab } from "./tabs/CampaignQuestsPanelTab";
-import { CampaignEventLogTab } from "./tabs/CampaignEventLogTab";
-import { CampaignMinigameTestTab } from "./tabs/CampaignMinigameTestTab";
-import { CampaignOverviewTab } from "./tabs/CampaignOverviewTab";
-import { CampaignStorySummaryTab } from "./tabs/CampaignStorySummaryTab";
-import { CampaignQuestHomeTab } from "./tabs/CampaignQuestHomeTab";
-import {
-  CampaignEventHomeTab,
-  CampaignEventCharacterTab,
-  CampaignEventSpecialTab,
-  CampaignEventSideTab
-} from "./tabs/CampaignEventTab";
-import { CampaignScenariosTab } from "./tabs/CampaignScenariosTab";
-import { CampaignMapsTab } from "./tabs/CampaignMapsTab";
+// Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
+// only the chrome + the active tab; the rest download on first visit (and the
+// PWA precaches them in the background). Multi-export files
+// (CampaignWorldMapTab / CampaignHubTabs / CampaignExternalTabs /
+// CampaignEventTab) are imported via the SAME specifier per export, so each
+// resolves to ONE shared "tab family" chunk. This realizes the vite config's
+// stated intent and mirrors the editor's lazy-builder split (Phase E).
 
 // React Shell: this component owns the campaign chrome
 // (header, mode bar, sub-tabs, recent log strip, command rail, drawer)
@@ -156,40 +136,40 @@ function forwardBridgedChange(e: React.ChangeEvent<HTMLElement>) {
 // Registry of React-owned tabs. Mirrors the vanilla
 // `cui-react-bridge.js` registrations, but instead of a mount-point div
 // and a portal we render the component directly inline.
-const REACT_TAB_COMPONENTS: Readonly<
-  Record<string, (props: { state: CampaignStateSnapshot }) => React.ReactNode>
-> = {
-  settings: (props) => <CampaignSettingsTab {...props} />,
-  logs: (props) => <CampaignLogsTab {...props} />,
-  roster: (props) => <CampaignRosterTab {...props} />,
-  worldMap: (props) => <CampaignWorldMapTab {...props} />,
-  worldActivities: (props) => <CampaignWorldActivitiesTab {...props} />,
-  sideForge: (props) => <CampaignSideForgeTab {...props} />,
-  questChains: (props) => <CampaignQuestChainsTab {...props} />,
-  oracleForge: (props) => <CampaignOracleForgeTab {...props} />,
-  battleSets: (props) => <CampaignBattleSetsTab {...props} />,
-  mapSeeds: (props) => <CampaignMapSeedsTab {...props} />,
-  inventory: (props) => <CampaignInventoryTab {...props} />,
-  shops: (props) => <CampaignShopsTab {...props} />,
-  craft: (props) => <CampaignCraftTab {...props} />,
-  cook: (props) => <CampaignCookTab {...props} />,
-  farm: (props) => <CampaignFarmTab {...props} />,
-  relationships: (props) => <CampaignRelationshipsTab {...props} />,
-  worldGate: (props) => <CampaignWorldGateTab {...props} />,
-  storyHome: (props) => <CampaignStoryHomeTab {...props} />,
-  storySummary: (props) => <CampaignStorySummaryTab {...props} />,
-  storyDirector: (props) => <CampaignStoryDirectorTab {...props} />,
-  questHome: (props) => <CampaignQuestHomeTab {...props} />,
-  quests: (props) => <CampaignQuestsPanelTab {...props} />,
-  eventHome: (props) => <CampaignEventHomeTab {...props} />,
-  eventCharacter: (props) => <CampaignEventCharacterTab {...props} />,
-  eventSpecial: (props) => <CampaignEventSpecialTab {...props} />,
-  eventSide: (props) => <CampaignEventSideTab {...props} />,
-  eventLog: (props) => <CampaignEventLogTab {...props} />,
-  scenarios: (props) => <CampaignScenariosTab {...props} />,
-  maps: (props) => <CampaignMapsTab {...props} />,
-  minigameTest: (props) => <CampaignMinigameTestTab {...props} />,
-  overview: (props) => <CampaignOverviewTab {...props} />
+type TabComponent = LazyExoticComponent<ComponentType<{ state: CampaignStateSnapshot }>>;
+
+const REACT_TAB_COMPONENTS: Readonly<Record<string, TabComponent>> = {
+  settings: lazy(() => import("./tabs/CampaignSettingsTab").then((m) => ({ default: m.CampaignSettingsTab }))),
+  logs: lazy(() => import("./tabs/CampaignLogsTab").then((m) => ({ default: m.CampaignLogsTab }))),
+  roster: lazy(() => import("./tabs/CampaignRosterTab").then((m) => ({ default: m.CampaignRosterTab }))),
+  worldMap: lazy(() => import("./tabs/CampaignWorldMapTab").then((m) => ({ default: m.CampaignWorldMapTab }))),
+  worldActivities: lazy(() => import("./tabs/CampaignWorldMapTab").then((m) => ({ default: m.CampaignWorldActivitiesTab }))),
+  sideForge: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignSideForgeTab }))),
+  questChains: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignQuestChainsTab }))),
+  oracleForge: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignOracleForgeTab }))),
+  battleSets: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignBattleSetsTab }))),
+  mapSeeds: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignMapSeedsTab }))),
+  inventory: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignInventoryTab }))),
+  shops: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignShopsTab }))),
+  craft: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCraftTab }))),
+  cook: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCookTab }))),
+  farm: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignFarmTab }))),
+  relationships: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignRelationshipsTab }))),
+  worldGate: lazy(() => import("./tabs/CampaignWorldGateTab").then((m) => ({ default: m.CampaignWorldGateTab }))),
+  storyHome: lazy(() => import("./tabs/CampaignStoryHomeTab").then((m) => ({ default: m.CampaignStoryHomeTab }))),
+  storySummary: lazy(() => import("./tabs/CampaignStorySummaryTab").then((m) => ({ default: m.CampaignStorySummaryTab }))),
+  storyDirector: lazy(() => import("./tabs/CampaignStoryDirectorTab").then((m) => ({ default: m.CampaignStoryDirectorTab }))),
+  questHome: lazy(() => import("./tabs/CampaignQuestHomeTab").then((m) => ({ default: m.CampaignQuestHomeTab }))),
+  quests: lazy(() => import("./tabs/CampaignQuestsPanelTab").then((m) => ({ default: m.CampaignQuestsPanelTab }))),
+  eventHome: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventHomeTab }))),
+  eventCharacter: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventCharacterTab }))),
+  eventSpecial: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventSpecialTab }))),
+  eventSide: lazy(() => import("./tabs/CampaignEventTab").then((m) => ({ default: m.CampaignEventSideTab }))),
+  eventLog: lazy(() => import("./tabs/CampaignEventLogTab").then((m) => ({ default: m.CampaignEventLogTab }))),
+  scenarios: lazy(() => import("./tabs/CampaignScenariosTab").then((m) => ({ default: m.CampaignScenariosTab }))),
+  maps: lazy(() => import("./tabs/CampaignMapsTab").then((m) => ({ default: m.CampaignMapsTab }))),
+  minigameTest: lazy(() => import("./tabs/CampaignMinigameTestTab").then((m) => ({ default: m.CampaignMinigameTestTab }))),
+  overview: lazy(() => import("./tabs/CampaignOverviewTab").then((m) => ({ default: m.CampaignOverviewTab })))
 };
 
 // Stable selector identity (module-level) so useCampaignSelector keeps a
@@ -312,7 +292,14 @@ export function CampaignShell() {
             onClick={forwardBridgedClick}
             onChange={forwardBridgedChange}
           >
-            {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
+            {/* ErrorBoundary (keyed by tab so a switch clears a stale error)
+                catches a failed lazy chunk; Suspense covers the chunk fetch so
+                the chrome stays painted while a not-yet-loaded tab streams in. */}
+            <ErrorBoundary key={activeTab}>
+              <Suspense fallback={<div className="campaign-loading">Loading…</div>}>
+                {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
+              </Suspense>
+            </ErrorBoundary>
           </main>
           <aside className="campaign-rail">
             <CampaignCommandRail data={chrome.commandRail} />

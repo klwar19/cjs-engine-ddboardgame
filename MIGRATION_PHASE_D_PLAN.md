@@ -786,10 +786,24 @@ show become tractable:
 - [ ] **I.3 — Virtualize long lists.** Quest list, event ledger,
   log entries panel, save slots — each can pass 100+ rows. Add
   `react-window` or a tiny custom virtualizer.
-- [ ] **I.4 — Defer heavy panels.** The Story Director support
-  grid (clues / queue / truths / pressure board) and the Hub
-  family's inner grids are not visible on first paint. Wrap with
-  `Suspense` + `React.lazy` so each panel ships only when active.
+- [x] **I.4 — Lazy tab bodies (defer off-screen panels).** Every entry in
+  `CampaignShell`'s `REACT_TAB_COMPONENTS` map is now `React.lazy(() =>
+  import("./tabs/X"))` instead of an eager import, wrapped in a single
+  `<Suspense fallback>` + an `ErrorBoundary` (keyed by active tab) in the
+  `<main>` body. This realizes the vite config's stated "campaign tab
+  families via React.lazy" intent and mirrors the editor's lazy-builder
+  split (Phase E). Result: the campaign **entry chunk 457 KB → 263 KB
+  (−42%)**; each tab is its own chunk and the four multi-export files
+  (WorldMap / Hub / External / Event) resolve to ONE shared family chunk
+  each; vite further hoisted shared async deps (ResultPanels, ZombieScavenge,
+  StoryVn, QuestChain, SequenceCard) into their own on-demand chunks. Total
+  bundle +0.4% (chunk-boundary overhead, within the I.7 budget). The new
+  `ErrorBoundary` (`util/ErrorBoundary.tsx`) keeps a failed chunk (stale hash
+  after a deploy, or a throwing tab) from blanking the whole shell — the new
+  failure mode lazy loading introduces — showing Retry / Reload instead.
+  The Story Director support grid + Hub inner grids ride along inside their
+  now-lazy tab chunks; a finer per-panel `Suspense` split can follow if a
+  single tab chunk ever gets too big.
 - [ ] **I.5 — Service worker fine-tune.** Today the PWA precaches
   every chunk on first visit. With domain-split chunks (combat /
   campaign / minigames / qte / media), shift to a runtime-cache
