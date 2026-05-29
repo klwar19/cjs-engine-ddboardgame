@@ -1950,90 +1950,10 @@ window.CJS.CampaignUI = (() => {
   // `_scenarioQuestPill`); the JSX embeds them via dangerouslySetInnerHTML
   // until those helpers themselves port to typed renderers.
 
-  // Phase G.15 — typed scenario chips + per-card run actions. The
-  // HTML siblings (`_renderScenarioRunActions`, `_renderShapePills`,
-  // `_scenarioQuestPill`) are removed; the React components in
-  // `src/campaign/tabs/ScenarioChips.tsx` consume these shapes.
-  function _scenarioRunActionsData(scenario, state) {
-    const activeRun = state.activeScenarioRun;
-    const isCurrent = activeRun?.scenarioId === scenario.id;
-    let startState = 'start';
-    if (activeRun) startState = isCurrent ? 'continue' : 'other_active';
-    return {
-      scenarioId: String(scenario.id || ''),
-      startState
-    };
-  }
-
-  function _scenarioQuestPillData(scenario = {}, state = CS().getState()) {
-    const src = scenario.source || {};
-    const questId = src.questId;
-    if (questId) {
-      const quest = state?.quests?.[questId];
-      const title = quest?.title || src.title || questId;
-      return {
-        variant: 'quest',
-        label: `📌 Quest: ${title}`,
-        title: 'Generated for this quest',
-        linkable: false,
-        muted: false
-      };
-    }
-    if (src.questChainId) {
-      return {
-        variant: 'arc',
-        label: `📌 Arc: ${src.title || src.questChainId}`,
-        title: 'Generated for this quest arc',
-        linkable: false,
-        muted: false
-      };
-    }
-    return null;
-  }
-
-  const SHAPE_MODE_LABELS = {
-    node_map: 'Movement: Node Map',
-    grid_map: 'Movement: Grid Map',
-    procedural: 'Movement: Procedural',
-    linear: 'Movement: Linear',
-    freeform: 'Movement: Freeform'
-  };
-  const SHAPE_SETTING_LABELS = {
-    outdoor: 'Setting: Outdoor',
-    dungeon: 'Setting: Dungeon',
-    urban: 'Setting: Urban',
-    forest: 'Setting: Forest',
-    cave: 'Setting: Cave',
-    sewer: 'Setting: Sewer',
-    ruins: 'Setting: Ruins',
-    temple: 'Setting: Temple',
-    house: 'Setting: House',
-    tavern: 'Setting: Tavern',
-    castle: 'Setting: Castle',
-    mountain: 'Setting: Mountain',
-    arena: 'Setting: Arena',
-    abstract: 'Setting: Abstract'
-  };
-  const SHAPE_SIZE_LABELS = { tiny: 'XS', small: 'S', medium: 'M', large: 'L' };
-
-  function _shapePillsData(scenario = {}) {
-    const mode = scenario.travelMode || scenario.mapForm || (scenario.mapId ? 'node_map' : 'freeform');
-    const pills = [];
-    pills.push({ label: SHAPE_MODE_LABELS[mode] || `Movement: ${mode}` });
-    const setting = scenario.mapSetting || scenario.setting;
-    if (setting) pills.push({ label: SHAPE_SETTING_LABELS[setting] || `Setting: ${setting}` });
-    if (scenario.size) pills.push({ label: `Size: ${SHAPE_SIZE_LABELS[scenario.size] || scenario.size}` });
-    return { pills };
-  }
-  // _renderRun / _renderRunFreeform / _renderRunLinear — Phase F.9 port.
-  // Body moved to `src/campaign/tabs/CampaignMapsTab.tsx`. Typed data
-  // flows through `getRunData(state)`. `_beatIcon` stays because the
-  // bridge calls it for the linear-beat icon character.
-
-  function _beatIcon(kind) {
-    const map = { battle: '⚔', event: '🎴', trap: '🪤', rest: '🏕', reward: '🎁', boss: '👹', exit: '🚪' };
-    return map[kind] || '·';
-  }
+  // `_scenarioRunActionsData`, `_scenarioQuestPillData`, `_shapePillsData`,
+  // `_beatIcon`, and the `SHAPE_*_LABELS` tables moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarioShared.ts`). The `getShapePillsData`
+  // JS export also went away — TS callers now import the helper directly.
 
   // _renderQuestPanel — Phase F.10 port. Body moved to
   // `src/campaign/tabs/CampaignQuestsPanelTab.tsx`. Typed data flows
@@ -2090,17 +2010,8 @@ window.CJS.CampaignUI = (() => {
     return objectives.find((entry) => !_questObjectiveDone(entry)) || objectives[0] || null;
   }
 
-  function _scenarioObjectiveMeta(run = {}, objective = {}) {
-    const bits = [];
-    if (objective.visible === false && objective.revealHint) bits.push(objective.revealHint);
-    if (run.travelMode === 'grid_map' && objective.levelId) bits.push(objective.levelId.replace(/_/g, ' '));
-    if (objective.nodeId) bits.push(objective.nodeId);
-    if (objective.cell) bits.push(`${objective.cell.x},${objective.cell.y}`);
-    if (objective.completedAt) bits.push('resolved');
-    else if (objective.visible === false) bits.push('hidden');
-    else bits.push(`${window.CJS.ScenarioRunner?.explorationPercent?.(CS().getState(), CS().getActiveMap()) || 0}% explored`);
-    return bits.join(' | ');
-  }
+  // `_scenarioObjectiveMeta` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarioShared.ts`).
 
   // `_questMiniGameObjective` and `_questStatusClass` moved to TS in
   // Phase H.4 (`src/campaign/util/state-helpers.ts`). No remaining JS
@@ -2114,40 +2025,9 @@ window.CJS.CampaignUI = (() => {
     return ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'));
   }
 
-  // Phase G.15 — typed quest-pill data for the active run (consumed
-  // by getScenarioSummaryData and getRunData). The React
-  // `QuestPill` component (`src/campaign/tabs/ScenarioChips.tsx`)
-  // renders the pill from this shape.
-  function _runQuestPill(state, run, scenario) {
-    const questId = _activeRunQuestId(run, scenario);
-    if (questId) {
-      const quest = state?.quests?.[questId];
-      const title = quest?.title || run?.questTitle || questId;
-      return {
-        variant: 'quest',
-        label: `📌 Quest: ${title}`,
-        title: 'This run is linked to a quest',
-        linkable: true,
-        muted: false
-      };
-    }
-    if (scenario?.source?.questChainId) {
-      return {
-        variant: 'arc',
-        label: `📌 Arc: ${scenario.source.title || scenario.source.questChainId}`,
-        title: 'This run is part of a quest arc',
-        linkable: false,
-        muted: false
-      };
-    }
-    return {
-      variant: 'noBinding',
-      label: 'no quest binding',
-      title: 'Standalone run, not bound to a quest',
-      linkable: false,
-      muted: true
-    };
-  }
+  // `_runQuestPill` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarioShared.ts`). Shared by the TS
+  // `getRunData` and `getScenarioSummaryData` builders.
 
   // `_questScenarioPill` moved to TS in Phase H.4 (alongside
   // `getQuestRowData` in `src/campaign/tabs/data/questRow.ts` — it was
@@ -5552,121 +5432,15 @@ window.CJS.CampaignUI = (() => {
   // CampaignState + content surface; the zombie variant routes through
   // the shared TS `getZombieScavengeTrackerData`.
 
-  function getRunData(state = CS().getState()) {
-    if (!state) return null;
-    const run = state.activeScenarioRun;
-    if (!run) {
-      return {
-        hasRun: false,
-        mode: null,
-        scenarioName: '',
-        scenarioNotes: '',
-        questPill: null,
-        shapePills: { pills: [] },
-        run: null,
-        freeform: null,
-        linear: null
-      };
-    }
-    const mode = run.travelMode || (run.mapId ? 'node_map' : 'freeform');
-    const scenario = CS().getActiveScenario();
-    const shared = {
-      hasRun: true,
-      mode,
-      scenarioName: scenario?.name || 'Run',
-      scenarioNotes: scenario?.notes || '',
-      questPill: _runQuestPill(state, run, scenario),
-      shapePills: _shapePillsData(scenario || {}),
-      run: {
-        danger: run.danger,
-        dangerMax: run.dangerMax,
-        campsUsed: run.usedCampRests,
-        campsMax: run.limits?.campRests ?? 0,
-        battlesUsed: run.randomBattlesUsed,
-        battlesMax: run.limits?.randomBattles ?? 0,
-        eventsUsed: run.eventsUsed,
-        eventsMax: run.limits?.events ?? 0
-      }
-    };
-    if (mode === 'freeform') {
-      const setBattles = scenario?.setBattles || [];
-      return {
-        ...shared,
-        freeform: {
-          setBattles: setBattles.map((b) => ({
-            id: b.id || b.battleSetId || b.encounterId || '',
-            label: b.label || b.name || b.encounterId || b.battleSetId || '',
-            sub: b.encounterId || b.battleSetId || ''
-          }))
-        },
-        linear: null
-      };
-    }
-    if (mode === 'linear') {
-      const beats = scenario?.beats || [];
-      const idx = run.currentBeatIndex ?? 0;
-      return {
-        ...shared,
-        freeform: null,
-        linear: {
-          beats: beats.map((b, i) => ({
-            id: String(b.id || ''),
-            number: i + 1,
-            label: b.label || b.id || '',
-            kind: b.kind || '',
-            iconChar: _beatIcon(b.kind),
-            encounterId: b.encounterId || '',
-            prompt: b.prompt || '',
-            isCurrent: i === idx,
-            isDone: i < idx
-          })),
-          currentIndex: idx,
-          totalBeats: beats.length,
-          allDone: idx >= beats.length
-        }
-      };
-    }
-    // node_map / grid_map render into #campaign-map-region via CampaignMap.render
-    return { ...shared, freeform: null, linear: null };
-  }
+  // `getRunData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/run.ts`). Uses the shared TS
+  // `runQuestPill` / `shapePillsData` / `beatIcon` helpers from
+  // `data/scenarioShared.ts`.
 
-  function getScenariosData(state = CS().getState()) {
-    if (!state) return null;
-    const campaign = CS().getCurrentCampaign();
-    const authored = (campaign?.scenarios || []).map((id) => CS().getContent().scenarios[id]).filter(Boolean);
-    const generated = CS().getGeneratedScenarios
-      ? CS().getGeneratedScenarios()
-      : Object.values(state.sideContent?.generatedScenarios || {});
-    const scenarios = [...generated, ...authored];
-    const mapTypeOptions = Gen()?.options?.().mapSettings || Gen()?.options?.().mapTypes
-      || ['any', 'urban', 'outdoor', 'forest', 'dungeon', 'cave', 'sewer', 'ruins', 'temple', 'house', 'tavern', 'castle', 'mountain', 'arena'];
-    const activeRun = state.activeScenarioRun;
-    return {
-      hasActiveRun: !!activeRun,
-      activeRunScenarioId: activeRun?.scenarioId || null,
-      mapTypeOptions: mapTypeOptions.map((id) => ({ id, label: _label(id) })),
-      sizeOptions: [
-        { id: 'tiny', label: 'Tiny' },
-        { id: 'small', label: 'Small' },
-        { id: 'medium', label: 'Medium' },
-        { id: 'large', label: 'Large' },
-        { id: 'huge', label: 'Huge' },
-        { id: 'massive', label: 'Massive' }
-      ],
-      scenarios: scenarios.map((scenario) => ({
-        id: String(scenario.id || ''),
-        name: scenario.name || scenario.id || '',
-        notes: scenario.notes || '',
-        generated: !!scenario.generated,
-        pillLabel: scenario.generated
-          ? `generated | ${scenario.source?.kind || 'random'}`
-          : (scenario.type || 'scenario'),
-        questPill: _scenarioQuestPillData(scenario, state),
-        shapePills: _shapePillsData(scenario),
-        runActions: _scenarioRunActionsData(scenario, state)
-      }))
-    };
-  }
+  // `getScenariosData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/scenarios.ts`). Uses the shared TS
+  // `scenarioQuestPillData` / `shapePillsData` / `scenarioRunActionsData`
+  // helpers from `data/scenarioShared.ts`.
 
   function getEventTabData(kind, state = CS().getState()) {
     if (!state) return null;
@@ -5981,13 +5755,10 @@ window.CJS.CampaignUI = (() => {
     // run. The TS data builder (`src/campaign/tabs/data/resultPanels.ts`)
     // embeds it via this bridge; goes away when the descriptor ports.
     renderQuestRunTaskHtml: (state, run, scenario) => _renderQuestRunTask(state, run, scenario) || '',
-    // Run-inspect modal's pill row reuses the closure-private
-    // `_shapePillsData` (the shared source of truth for Movement / Setting
-    // / Size pill labels — also feeds `getScenariosData` / `getRunData`).
-    // Exposed for action-handlers/scenario.ts (inspect-scenario) so the
-    // TS handler doesn't re-declare the SHAPE_*_LABELS tables. Goes away
-    // when the data builders themselves port (H.4).
-    getShapePillsData: (scenario) => _shapePillsData(scenario || {}),
+    // `getShapePillsData` removed in Phase H.4 — the TS port at
+    // `src/campaign/tabs/data/scenarioShared.ts::shapePillsData` is now
+    // the single source of truth. The inspect-scenario action handler
+    // imports it directly.
     // World menu definitions (title / kicker / summary / defaultTab /
     // bannerImage / etc.) live in the closure-private `_worldMenuDef`
     // (also reads by chrome data builders). Exposed for
@@ -6057,8 +5828,6 @@ window.CJS.CampaignUI = (() => {
     getMinigameTestData,
     getQuestChainsData,
     getEventTabData,
-    getScenariosData,
-    getRunData,
     getStoryHomeData,
     getWorldGateData,
     getStoryDirectorData,

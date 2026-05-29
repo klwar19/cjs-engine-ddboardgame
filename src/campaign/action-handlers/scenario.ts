@@ -9,14 +9,16 @@
 // CampaignScenarioGenerator with the payload-passed form values (the React
 // `CampaignScenariosTab` now passes the form state in the payload — no more
 // `_root.querySelector('#campaign-gen-*')` reads). inspect-scenario builds
-// the Run Inspect modal whose shape-pill row reuses the typed
-// `getShapePillsData` bridge in campaign-ui.js (same approach as
-// `renderStoryDirectorCardHtml`). Mode/tab jumps, mutation sources, op
+// the Run Inspect modal whose shape-pill row reuses the typed TS
+// `shapePillsData` helper from `tabs/data/scenarioShared.ts` (the JS
+// `getShapePillsData` bridge it used to consult ported alongside the
+// data builders in H.4). Mode/tab jumps, mutation sources, op
 // payloads, confirm copy and toast strings mirror the deleted closures.
 
 import { applyOp, confirmDialog, cs, mod, ops, rerender, setActiveModeRaw, setActiveTabRaw, toast } from "./context";
 import { esc, widgets } from "./modals";
 import { goto } from "./nav";
+import { shapePillsData, type ScenarioForShape } from "../tabs/data/scenarioShared";
 
 interface RunnerModule {
   startScenario?: (scenarioId: string) => unknown;
@@ -147,10 +149,6 @@ interface InspectScenario {
   limits?: { events?: number; randomBattles?: number; campRests?: number };
 }
 
-interface ShapePillsBridge {
-  getShapePillsData?: (scenario: unknown) => { pills: Array<{ label: string }> };
-}
-
 function inspectEntryLine(entry: Record<string, unknown>, index: number): string {
   const label = entry.label ?? entry.name ?? entry.id ?? "";
   const hint = entry.prompt ?? entry.notes ?? entry.kind ?? entry.role ?? "";
@@ -180,8 +178,7 @@ export function inspectScenario(scenarioId: string): void {
     scenario.limits?.randomBattles !== undefined ? `${scenario.limits.randomBattles} random battles` : "",
     scenario.limits?.campRests !== undefined ? `${scenario.limits.campRests} camp rests` : ""
   ].filter(Boolean) as string[];
-  const pillsBridge = mod<ShapePillsBridge>("CampaignUI");
-  const pills = pillsBridge?.getShapePillsData?.(scenario)?.pills ?? [];
+  const pills = shapePillsData(scenario as ScenarioForShape).pills;
   const shapePillsMarkup = `<div class="campaign-chip-row">${pills.map((p) => `<span class="campaign-chip">${esc(p.label)}</span>`).join("")}</div>`;
 
   const flowEntries = beats.length ? beats : nodes;
