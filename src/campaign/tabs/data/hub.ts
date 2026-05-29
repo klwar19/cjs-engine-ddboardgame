@@ -14,6 +14,14 @@
 
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestChainActiveData, QuestChainTemplateData } from "./eventTab";
+import {
+  questChainActiveData,
+  questChainTemplateData,
+  questChainResolvedData,
+  sideStoryFlowGuideData,
+  type ChainActiveInput,
+  type ChainTemplateInput
+} from "./questChain";
 
 // Side-content risk classifier surface (already implemented in
 // `js/campaign/campaign-side-content.js`). Lives on
@@ -364,16 +372,17 @@ export interface MapSeedsData {
   readonly seeds: readonly MapSeedCard[];
 }
 
-interface Bridge {
-  readonly getQuestChainsData: () => QuestChainsData | null;
+// (No remaining CampaignUI bridge consumers — getQuestChainsData is now
+// inline TS reading CampaignQuestChains directly.)
+interface CampaignQuestChainsSurface {
+  readonly getActive?: () => readonly ChainActiveInput[];
+  readonly getFinished?: () => readonly ChainActiveInput[];
+  readonly getAvailable?: () => readonly ChainTemplateInput[];
 }
 
-interface Cjs {
-  readonly CampaignUI?: Bridge;
-}
-
-function cjs(): Cjs {
-  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
+function questChainsModule(): CampaignQuestChainsSurface | undefined {
+  return (window as unknown as { CJS?: { CampaignQuestChains?: CampaignQuestChainsSurface } })
+    .CJS?.CampaignQuestChains;
 }
 
 // Phase H.4 inline port — Living Hub side-content view. Reads
@@ -405,7 +414,6 @@ interface CampaignStateForSideForge {
 
 export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | null {
   if (!state) return null;
-  const c = cjs();
   const hub = campaignHub()?.getCurrentHubDefinition?.() || {};
   const hubState = campaignHub()?.getCurrentHubState?.() || {};
   const typed = state as CampaignStateForSideForge;
@@ -416,9 +424,6 @@ export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | 
   const history = typed.sideContent?.contentHistory || [];
   const sx = side();
   const rumors = hubTab()?.openRumors?.(hubState) || [];
-  // Reference cjs() to silence unused warning when only typed reads are
-  // exercised (every other consumer reaches through cjs()).
-  void c;
   return {
     hubName: String(hub.name || "Living Hub"),
     hubDescription: String(hub.description || "Town pulse, rumors, problems, and content review queue."),
@@ -471,7 +476,22 @@ export function getOracleForgeData(state: CampaignStateSnapshot): OracleForgeDat
 }
 
 export function getQuestChainsData(_state: CampaignStateSnapshot): QuestChainsData | null {
-  return cjs().CampaignUI?.getQuestChainsData() ?? null;
+  const QC = questChainsModule();
+  if (!QC) {
+    return { activeCount: 0, availableCount: 0, flowGuide: null, active: [], finished: [], available: [] };
+  }
+  const available = QC.getAvailable?.() || [];
+  const active = QC.getActive?.() || [];
+  const finished = QC.getFinished?.() || [];
+  const guideSource = active[0]?.template || available[0] || null;
+  return {
+    activeCount: active.length,
+    availableCount: available.length,
+    flowGuide: guideSource ? sideStoryFlowGuideData(guideSource) : null,
+    active: active.map((chain) => questChainActiveData(chain)),
+    finished: finished.map((chain) => questChainResolvedData(chain)),
+    available: available.map((chain) => questChainTemplateData(chain))
+  };
 }
 
 // Phase H.4 inline port — pure read of CampaignBattleSetForge.
