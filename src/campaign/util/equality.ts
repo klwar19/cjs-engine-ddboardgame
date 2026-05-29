@@ -24,19 +24,26 @@
  * whose values are each `Object.is`. One level deep — nested objects/arrays
  * are compared by reference. Cheap; use it when the selected slice is flat
  * (primitive fields, or arrays/objects the producer keeps reference-stable).
+ *
+ * Generic over the two operands so it slots into `useCampaignSelector`'s
+ * `isEqual: (a: T, b: T) => boolean` and `React.memo`'s comparator without an
+ * explicit type argument at the call site; internally it treats them as the
+ * `unknown` plain data the precondition guarantees.
  */
-export function shallowEqual(a: unknown, b: unknown): boolean {
-  if (Object.is(a, b)) return true;
+export function shallowEqual<T>(a: T, b: T): boolean {
+  const x = a as unknown;
+  const y = b as unknown;
+  if (Object.is(x, y)) return true;
   if (
-    typeof a !== "object" ||
-    a === null ||
-    typeof b !== "object" ||
-    b === null
+    typeof x !== "object" ||
+    x === null ||
+    typeof y !== "object" ||
+    y === null
   ) {
     return false;
   }
-  const ao = a as Record<string, unknown>;
-  const bo = b as Record<string, unknown>;
+  const ao = x as Record<string, unknown>;
+  const bo = y as Record<string, unknown>;
   const ak = Object.keys(ao);
   const bk = Object.keys(bo);
   if (ak.length !== bk.length) return false;
@@ -53,8 +60,14 @@ export function shallowEqual(a: unknown, b: unknown): boolean {
  * equal arrays (an array is never equal to a non-array object). This is the
  * right tool for the deep-cloned `get*Data` / chrome slices, where the only
  * way to know a slice is unchanged is to compare its contents.
+ *
+ * Generic over the two operands for ergonomic inference (see `shallowEqual`).
  */
-export function deepEqual(a: unknown, b: unknown): boolean {
+export function deepEqual<T>(a: T, b: T): boolean {
+  return deepEqualUnknown(a as unknown, b as unknown);
+}
+
+function deepEqualUnknown(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (
     typeof a !== "object" ||
@@ -74,7 +87,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     const ba = b as unknown[];
     if (aa.length !== ba.length) return false;
     for (let i = 0; i < aa.length; i += 1) {
-      if (!deepEqual(aa[i], ba[i])) return false;
+      if (!deepEqualUnknown(aa[i], ba[i])) return false;
     }
     return true;
   }
@@ -85,7 +98,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   if (ak.length !== bk.length) return false;
   for (const k of ak) {
     if (!Object.prototype.hasOwnProperty.call(bo, k)) return false;
-    if (!deepEqual(ao[k], bo[k])) return false;
+    if (!deepEqualUnknown(ao[k], bo[k])) return false;
   }
   return true;
 }

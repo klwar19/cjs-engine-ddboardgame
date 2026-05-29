@@ -10,13 +10,14 @@
 // these actions directly through onClick.
 
 import { dispatchCampaignAction, quickSave, newSave, forkSave, exportSave, importSavePicker, pushToGitHub } from "../actions";
+import { memoDeep } from "../util/memo";
 import type { HeaderData, WorldEventChip } from "./types";
 
 interface Props {
   readonly data: HeaderData;
 }
 
-export function CampaignHeader({ data }: Props) {
+function CampaignHeaderView({ data }: Props) {
   return (
     <header className="campaign-header">
       <a className="campaign-back" href="index.html">Main Menu</a>
@@ -53,6 +54,11 @@ export function CampaignHeader({ data }: Props) {
     </header>
   );
 }
+
+// Always-mounted chrome: memoized so a body-only state change (header data
+// unchanged) skips it entirely, and a chrome change re-renders it only when
+// the header slice itself differs.
+export const CampaignHeader = memoDeep(CampaignHeaderView);
 
 function WorldEventsTicker({ events }: { events: readonly WorldEventChip[] }) {
   return (

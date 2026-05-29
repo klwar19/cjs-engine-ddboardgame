@@ -130,6 +130,47 @@ ok('CampaignShell no longer keeps its own renderTick state',
    !/renderTick/.test(shellSrc));
 ok('CampaignShell no longer double-binds a state-tick listener',
    !/addEventListener\("campaign:state-tick"/.test(shellSrc));
+ok('CampaignShell reads chrome via useCampaignSelector (value-stable across body commits)',
+   /useCampaignSelector\(selectChrome, deepEqual\)/.test(shellSrc));
+
+// ── Layer 3: memo boundaries (I.1) ─────────────────────────────────────────
+const memoPath = path.join(__dirname, 'src/campaign/util/memo.ts');
+ok('util/memo.ts exists', fs.existsSync(memoPath));
+const memoSrc = fs.readFileSync(memoPath, 'utf8');
+ok('memoDeep wraps React.memo with the deepEqual comparator',
+   /memo\(Component,\s*\(prev,\s*next\)\s*=>\s*deepEqual\(prev,\s*next\)\)/.test(memoSrc));
+ok('memoDeep imports deepEqual', /import \{ deepEqual \} from "\.\/equality"/.test(memoSrc));
+
+// Always-mounted chrome strips: each must be a memoDeep export so a body-only
+// change skips them. A regression here (dropping the wrap) silently
+// reintroduces a full chrome re-render on every state tick.
+const strips = [
+  ['Header', 'CampaignHeader'],
+  ['ModeBar', 'CampaignModeBar'],
+  ['SubTabs', 'CampaignSubTabs'],
+  ['RecentLog', 'CampaignRecentLog'],
+  ['CommandRail', 'CampaignCommandRail']
+];
+for (const [file, name] of strips) {
+  const src = fs.readFileSync(path.join(__dirname, `src/campaign/shell/${file}.tsx`), 'utf8');
+  ok(`${name} is exported as memoDeep`,
+     new RegExp(`export const ${name} = memoDeep\\(${name}View\\)`).test(src));
+  ok(`${file}.tsx imports memoDeep`, /import \{ memoDeep \} from "\.\.\/util\/memo"/.test(src));
+}
+
+// List-item / panel components rendered many times: memoized so one item's
+// change doesn't re-render its siblings.
+const listItems = [
+  ['tabs/QuestRow.tsx', 'QuestRow'],
+  ['tabs/WorldGateCard.tsx', 'WorldGateCard'],
+  ['tabs/SequenceNode.tsx', 'SequenceNodePanel'],
+  ['tabs/SequenceCard.tsx', 'SequenceShelfPanel']
+];
+for (const [rel, name] of listItems) {
+  const src = fs.readFileSync(path.join(__dirname, `src/campaign/${rel}`), 'utf8');
+  ok(`${name} is exported as memoDeep`,
+     new RegExp(`export const ${name} = memoDeep\\(${name}View\\)`).test(src));
+}
 
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');

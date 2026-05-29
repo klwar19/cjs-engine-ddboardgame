@@ -7,10 +7,11 @@
 // the shared typed `<QuestPill>` (G.15 + Phase G completion).
 
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
+import { memoDeep } from "../util/memo";
 import type { QuestRowData, QuestObjective, QuestVariant } from "./data/questRow";
 import { QuestPill } from "./ScenarioChips";
 
-export function QuestRow({ row }: { row: QuestRowData }) {
+function QuestRowView({ row }: { row: QuestRowData }) {
   return (
     <article className={`campaign-quest-card ${row.resolved ? "is-resolved" : ""}`}>
       <div className="campaign-quest-main">
@@ -48,6 +49,11 @@ export function QuestRow({ row }: { row: QuestRowData }) {
     </article>
   );
 }
+
+// List item rendered once per quest (up to 4 in QuestHome, all in
+// QuestsPanel). Memoized by value so editing one quest re-renders only that
+// row, not every sibling, when the parent tab rebuilds its list.
+export const QuestRow = memoDeep(QuestRowView);
 
 function VariantBlock({ variant }: { variant: QuestVariant }) {
   return (

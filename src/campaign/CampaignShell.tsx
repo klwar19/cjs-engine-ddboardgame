@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useCampaignState, type CampaignStateSnapshot } from "./store";
+import { useCampaignState, useCampaignSelector, type CampaignStateSnapshot } from "./store";
+import { deepEqual } from "./util/equality";
 import { CampaignHelpPopover } from "./HelpPopover";
 import { dispatchCampaignAction, importSaveFile, type CampaignActionName } from "./actions";
 import { CampaignHeader } from "./shell/Header";
@@ -191,6 +192,13 @@ const REACT_TAB_COMPONENTS: Readonly<
   overview: (props) => <CampaignOverviewTab {...props} />
 };
 
+// Stable selector identity (module-level) so useCampaignSelector keeps a
+// steady getSnapshot and never re-subscribes. Returns the typed chrome slice,
+// or null before a save is loaded.
+function selectChrome(state: CampaignStateSnapshot | null) {
+  return state ? getChromeData(state) : null;
+}
+
 // ── Shell ─────────────────────────────────────────────────────────
 export function CampaignShell() {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -200,6 +208,11 @@ export function CampaignShell() {
   // the `campaign:state-tick` / `campaign:rendered` superset signal. The
   // shell no longer needs its own state-tick listener (removed below).
   const { state } = useCampaignState();
+  // Chrome via a value-equality selector: when only body data changes, this
+  // returns the SAME ChromeData reference, so the memoized chrome strips skip
+  // re-render via their Object.is fast path. When chrome changes, a fresh
+  // object flows and each strip re-renders only if its own slice differs.
+  const chrome = useCampaignSelector(selectChrome, deepEqual);
 
   // One-time boot: enable the React-shell flag BEFORE init() so the
   // vanilla render() doesn't clobber our DOM. After init, subscribe to
@@ -266,7 +279,6 @@ export function CampaignShell() {
     );
   }
 
-  const chrome = getChromeData(state);
   if (!chrome) {
     return (
       <div ref={rootRef} id="campaign-root" className="campaign-root">

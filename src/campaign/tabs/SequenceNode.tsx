@@ -8,12 +8,13 @@
 // presentational.
 
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
+import { memoDeep } from "../util/memo";
 import type {
   SequenceNodeData,
   SequenceNodeChoice
 } from "./data/resultPanels";
 
-export function SequenceNodePanel({ node }: { node: SequenceNodeData }) {
+function SequenceNodePanelView({ node }: { node: SequenceNodeData }) {
   switch (node.type) {
     case "choice":
       return (
@@ -235,3 +236,8 @@ function ActionBtn({
     </button>
   );
 }
+
+// The active-sequence node body. Memoized by value so an unrelated state
+// change (e.g. a log line) doesn't re-render the whole node subtree when the
+// node snapshot is unchanged.
+export const SequenceNodePanel = memoDeep(SequenceNodePanelView);

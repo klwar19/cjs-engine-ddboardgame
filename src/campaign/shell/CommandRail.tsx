@@ -9,6 +9,7 @@
 // modal is migrated.
 
 import { dispatchCampaignAction } from "../actions";
+import { memoDeep } from "../util/memo";
 import { setActivePanel } from "./bridge";
 import type { CommandRailData, RailPanel } from "./types";
 
@@ -16,7 +17,7 @@ interface Props {
   readonly data: CommandRailData;
 }
 
-export function CampaignCommandRail({ data }: Props) {
+function CampaignCommandRailView({ data }: Props) {
   return (
     <>
       {data.panels.map((panel) => (
@@ -43,6 +44,10 @@ export function CampaignCommandRail({ data }: Props) {
     </>
   );
 }
+
+// Always-mounted chrome (in the command rail aside): memoized so it skips
+// unless the panel toggles or currency footer change.
+export const CampaignCommandRail = memoDeep(CampaignCommandRailView);
 
 function RailButton({ panel, active }: { panel: RailPanel; active: boolean }) {
   return (

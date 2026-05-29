@@ -9,6 +9,7 @@
 // via dispatchCampaignAction.
 
 import { dispatchCampaignAction } from "../actions";
+import { memoDeep } from "../util/memo";
 import { setActiveMode, setActiveTab } from "./bridge";
 import type { ModeBarData, ScenarioHudData } from "./types";
 
@@ -16,7 +17,7 @@ interface Props {
   readonly data: ModeBarData;
 }
 
-export function CampaignModeBar({ data }: Props) {
+function CampaignModeBarView({ data }: Props) {
   return (
     <div className="campaign-modes">
       <div className="campaign-modes-primary">
@@ -52,6 +53,10 @@ export function CampaignModeBar({ data }: Props) {
     </div>
   );
 }
+
+// Always-mounted chrome: memoized (value-equality) so it re-renders only when
+// the mode-bar slice (active mode/tab, scenario HUD) actually changes.
+export const CampaignModeBar = memoDeep(CampaignModeBarView);
 
 function ScenarioHud({ hud }: { hud: ScenarioHudData }) {
   return (
