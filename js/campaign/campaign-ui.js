@@ -5433,55 +5433,10 @@ window.CJS.CampaignUI = (() => {
   // reads pending solo hook + side-content consequence preview via the
   // same HubTab module bridge.
 
-  // Typed snapshot of state.lastEvent for the React EventResult panel.
-  // Returns null when no event has been rolled. Used by EventLog,
-  // EventTab, Overview, and Maps. Embedded sub-fragments (inline
-  // purpose, consequence preview, flavor trail) still come through
-  // closure-private helpers because their inner data shapes live in
-  // sibling modules (HubTab, Controls).
-  function getEventResultData(state = CS().getState()) {
-    if (!state) return null;
-    const event = state.lastEvent;
-    if (!event) return null;
-    const suggested = event.suggested || [];
-    const summary = _consequenceSummary(suggested, { hasText: !!(event.prompt || event.gmHook) });
-    const ideaLabels = {
-      new_char: '👤 New Character',
-      new_item: '🎁 Item idea',
-      weapon: '⚔ Weapon idea',
-      back_story: '📖 Backstory beat',
-      main_plot: '🌌 Main plot thread',
-      development: '✨ Character development',
-      faction: '🏛 Faction hook',
-      mystery: '🔮 Mystery hook'
-    };
-    const opsDesc = suggested.length ? Ops().describe(suggested).filter(Boolean) : [];
-    return {
-      title: event.title || event.id || 'Event',
-      subLabel: event.tableName || event.type || 'event',
-      tone: summary.tone,
-      summaryLabel: summary.label,
-      ideaPillLabel: event.gmIdea ? (ideaLabels[event.gmIdea] || event.gmIdea) : '',
-      prompt: event.prompt || '',
-      gmHook: event.gmHook || '',
-      inlinePurposeHtml: _renderInlinePurpose('event'),
-      manualSummary: event.manualSummary ? {
-        short: event.manualSummary.short || 'No short result written yet.',
-        main: event.manualSummary.main || '',
-        tags: (event.manualSummary.tags || []).filter(Boolean)
-      } : null,
-      consequencePreviewHtml: _renderConsequencePreview(suggested, {
-        emptyTitle: 'Flavor or plot text only',
-        emptyText: 'No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.'
-      }),
-      flavorTrailHtml: _renderFlavorTrail(event),
-      applyLabel: suggested.length ? 'Apply Listed Changes' : 'Log Flavor',
-      applyHint: opsDesc.length ? 'Commit: ' + opsDesc.join('; ') : 'Log the event with no stat changes',
-      hasManualSummary: !!event.manualSummary,
-      hasPlotSeedTrigger: !!(event.gmHook || event.gmIdea),
-      hasOracleTableId: !!event.oracleTableId
-    };
-  }
+  // `getEventResultData` moved to TS in Phase H.4
+  // (`src/campaign/tabs/data/resultPanels.ts`). Same shape, same HubTab
+  // module reads — the inline-purpose / consequence-preview / flavor-trail
+  // HTML fragments come from the typed HubTab bridge there.
 
   // `getOracleData` moved to TS in Phase H.4
   // (`src/campaign/tabs/data/resultPanels.ts`).
@@ -6131,7 +6086,6 @@ window.CJS.CampaignUI = (() => {
     getStoryHomeData,
     getWorldGateData,
     getStoryDirectorData,
-    getEventResultData,
     getScenarioSummaryData,
     getActiveSequenceData,
     getSequenceShelfData,

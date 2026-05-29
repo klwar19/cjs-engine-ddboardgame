@@ -459,7 +459,6 @@ export interface SoloNoticeData {
 }
 
 interface Bridge {
-  readonly getEventResultData: (state?: CampaignStateSnapshot) => EventResultData | null;
   readonly getScenarioSummaryData: (state?: CampaignStateSnapshot) => ScenarioSummaryData | null;
   readonly getActiveSequenceData: (
     state?: CampaignStateSnapshot,
@@ -475,8 +474,75 @@ function cjs(): Cjs {
   return (window as unknown as { CJS?: Cjs }).CJS ?? {};
 }
 
+// Phase H.4 inline port — typed snapshot of `state.lastEvent`. The HTML
+// fragments (inline purpose, consequence preview, flavor trail) still
+// come through the helpers above + the HubTab module bridge; the data
+// shape is fully typed for the JSX consumers.
+interface EventInput {
+  readonly id?: string;
+  readonly title?: string;
+  readonly type?: string;
+  readonly tableName?: string;
+  readonly prompt?: string;
+  readonly gmHook?: string;
+  readonly gmIdea?: string;
+  readonly oracleTableId?: string;
+  readonly suggested?: readonly unknown[];
+  readonly manualSummary?: { short?: string; main?: string; tags?: readonly string[] };
+}
+
+const EVENT_IDEA_LABELS: Readonly<Record<string, string>> = {
+  new_char: "👤 New Character",
+  new_item: "🎁 Item idea",
+  weapon: "⚔ Weapon idea",
+  back_story: "📖 Backstory beat",
+  main_plot: "🌌 Main plot thread",
+  development: "✨ Character development",
+  faction: "🏛 Faction hook",
+  mystery: "🔮 Mystery hook"
+};
+
 export function getEventResultData(state: CampaignStateSnapshot): EventResultData | null {
-  return cjs().CampaignUI?.getEventResultData(state) ?? null;
+  if (!state) return null;
+  const event = (state as { lastEvent?: EventInput }).lastEvent;
+  if (!event) return null;
+  const suggested = event.suggested || [];
+  const hub = hubTab();
+  const summary = hub?.consequenceSummary?.(suggested, {
+    hasText: !!(event.prompt || event.gmHook)
+  }) || { tone: "", label: "", short: "" };
+  const opsModule = ops();
+  const opsDesc = suggested.length
+    ? (opsModule?.describe?.(suggested) ?? []).filter(Boolean)
+    : [];
+  return {
+    title: event.title || event.id || "Event",
+    subLabel: event.tableName || event.type || "event",
+    tone: String(summary.tone || ""),
+    summaryLabel: String(summary.label || ""),
+    ideaPillLabel: event.gmIdea ? EVENT_IDEA_LABELS[event.gmIdea] || event.gmIdea : "",
+    prompt: event.prompt || "",
+    gmHook: event.gmHook || "",
+    inlinePurposeHtml: renderInlinePurpose("event"),
+    manualSummary: event.manualSummary
+      ? {
+          short: event.manualSummary.short || "No short result written yet.",
+          main: event.manualSummary.main || "",
+          tags: (event.manualSummary.tags || []).filter((tag): tag is string => Boolean(tag))
+        }
+      : null,
+    consequencePreviewHtml:
+      hub?.renderConsequencePreview?.(suggested, {
+        emptyTitle: "Flavor or plot text only",
+        emptyText: "No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it."
+      }) ?? "",
+    flavorTrailHtml: hub?.renderFlavorTrail?.(event) ?? "",
+    applyLabel: suggested.length ? "Apply Listed Changes" : "Log Flavor",
+    applyHint: opsDesc.length ? "Commit: " + opsDesc.join("; ") : "Log the event with no stat changes",
+    hasManualSummary: !!event.manualSummary,
+    hasPlotSeedTrigger: !!(event.gmHook || event.gmIdea),
+    hasOracleTableId: !!event.oracleTableId
+  };
 }
 
 // Phase H.4 inline port — `state.lastOracle` + the HubTab
