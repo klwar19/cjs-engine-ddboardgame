@@ -379,12 +379,11 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
   // and the React state stay in sync.
   const close = () => UI.setActivePanel(null);
 
-  // ESC binding: campaign-ui.js still calls `_bindEscapeForPanels` for
-  // the vanilla case, but in React-shell mode the drawer is rendered
-  // by this component, so we own the close path. The vanilla listener
-  // would still work (it calls _closePanel which now branches into the
-  // React path), but duplicating the listener here keeps the close
-  // contract self-contained while the drawer is mounted.
+  // ESC binding: shell/boot.ts also binds a document-level Escape handler
+  // (`bindEscapeForPanels`), but the drawer is rendered by this component,
+  // so we own the close path while it is mounted. Both close the panel
+  // through the chrome slice (idempotent), so the duplicate listener keeps
+  // the close contract self-contained.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;

@@ -98,21 +98,22 @@ ok('passPhase routes through CampaignOps.apply',
 ok('benchCharacter routes through CampaignOps.apply',
    /export function benchCharacter[\s\S]{0,200}ops\(\)\.apply\(\{\s*op:\s*"bench_character"/.test(source));
 
-// Phase H.3 — every name in the CampaignActionName union must be handled
-// by EITHER a `case '<name>':` in the vanilla `_handleAction` switch OR an
-// entry in the TS action registry (src/campaign/action-handlers/registry.ts).
-// Porting an action moves it from the switch to the registry, so the two
-// sets must stay disjoint and together cover the whole union — otherwise a
-// React onClick would compile yet no-op at runtime.
+// Phase H.3/H.4 — every name in the CampaignActionName union must be
+// handled by an entry in the TS action registry
+// (src/campaign/action-handlers/registry.ts). The vanilla `_handleAction`
+// switch is gone (campaign-ui.js deleted), so the registry is the sole
+// dispatch path — it must cover the whole union or a React onClick would
+// compile yet no-op at runtime.
 const namesSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/actionNames.ts'), 'utf8');
 const unionNames = (namesSrc.match(/^\s*\|\s*"([^"]+)"/gm) || [])
   .map((line) => line.replace(/^\s*\|\s*"/, '').replace(/"$/, ''));
 ok('actionNames union is non-empty', unionNames.length > 100, unionNames.length + ' names');
 
-const uiSrc = fs.readFileSync(path.join(__dirname, 'js/campaign/campaign-ui.js'), 'utf8');
-const switchCases = new Set(
-  (uiSrc.match(/case '([^']+)':/g) || []).map((c) => c.replace(/^case '/, '').replace(/':$/, ''))
-);
+// Phase H.4 — campaign-ui.js (and its now-empty `_handleAction` switch) is
+// deleted. Dispatch is 100% the TS registry, reached through boot.ts's
+// handleAction → window.CJS.CampaignActionsRuntime.
+ok('legacy campaign-ui.js _handleAction switch is gone',
+   !fs.existsSync(path.join(__dirname, 'js/campaign/campaign-ui.js')));
 
 // Registry keys live in the HANDLERS object literal of registry.ts.
 const regSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/action-handlers/registry.ts'), 'utf8');
@@ -122,16 +123,12 @@ const registryKeys = new Set(
 );
 ok('action registry is non-empty', registryKeys.size > 0, registryKeys.size + ' handlers');
 
-const uncovered = unionNames.filter((n) => !switchCases.has(n) && !registryKeys.has(n));
-ok('every CampaignActionName is handled (switch or registry)',
+// The registry is the only dispatch path now, so it alone must cover the
+// whole union — otherwise a React onClick would compile yet no-op.
+const uncovered = unionNames.filter((n) => !registryKeys.has(n));
+ok('registry covers every CampaignActionName',
    uncovered.length === 0,
-   uncovered.length ? 'uncovered: ' + uncovered.join(', ') : '');
-
-// A ported action's switch case is deleted — no dead duplicate.
-const dup = [...registryKeys].filter((n) => switchCases.has(n));
-ok('registry and switch are disjoint (ported cases removed from switch)',
-   dup.length === 0,
-   dup.length ? 'still in both: ' + dup.join(', ') : '');
+   uncovered.length ? 'uncovered: ' + uncovered.join(', ') : unionNames.length + '/' + unionNames.length);
 
 // Every registry key is a real action name.
 const bogus = [...registryKeys].filter((n) => !unionNames.includes(n));
@@ -139,21 +136,13 @@ ok('every registry key is a CampaignActionName',
    bogus.length === 0,
    bogus.length ? 'not in union: ' + bogus.join(', ') : '');
 
-// The registry installs the runtime bridge the vanilla switch reads, and
-// `_handleAction` consults it before falling through to the switch.
+// The registry installs the runtime; boot.ts's handleAction routes through
+// it (the single dispatch seam for React onClick + the shell forwarders).
 ok('registry installs CampaignActionsRuntime',
    /CampaignActionsRuntime\s*=\s*\{/.test(regSrc));
-ok('_handleAction consults the action runtime first',
-   /CampaignActionsRuntime[\s\S]{0,240}runtime\.run\(/.test(uiSrc));
-
-// Phase H.3 complete — every CampaignActionName resolves through the
-// TS registry on its own. The switch is defensively kept (as an
-// always-skipped no-op + the port history in comments), but it should
-// not be needed to cover the union.
-const registryUncovered = unionNames.filter((n) => !registryKeys.has(n));
-ok('registry alone covers every CampaignActionName (Phase H.3 done)',
-   registryUncovered.length === 0,
-   registryUncovered.length ? 'registry-uncovered: ' + registryUncovered.join(', ') : '246/246');
+const bootSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/shell/boot.ts'), 'utf8');
+ok('boot.ts handleAction routes through the action runtime',
+   /function handleAction[\s\S]{0,260}CampaignActionsRuntime[\s\S]{0,160}runtime\.run\(/.test(bootSrc));
 
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');

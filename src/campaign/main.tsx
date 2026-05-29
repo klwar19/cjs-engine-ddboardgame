@@ -84,22 +84,23 @@ import "../../js/campaign/ui/tabs/cui-party-tab.js";
 import "../../js/campaign/ui/tabs/cui-hub-tab.js";
 import "./util/cui-world-map-tab";
 import "./util/cui-react-bridge";
-// Phase H.4 — install window.CJS.CampaignChrome BEFORE campaign-ui.js so
-// the IIFE's bridge wrappers can read/write chrome state through the TS
-// canonical slice from the moment they run.
+// chrome-state + story-context install their window.CJS bridges; the boot
+// owner reads them. (They're imported directly by shell/boot.ts too, so
+// this is just an explicit ordering anchor.)
 import "./chrome-state";
-// Phase H.4 — install window.CJS.CampaignStoryContext BEFORE campaign-ui.js
-// so the IIFE's init/render/subscribe can prime the async story-context
-// cache through the TS port (the JS `_ensureStoryContext` cluster moved here).
 import "./story-context";
-import "../../js/campaign/campaign-ui.js";
+// Phase H.4 — campaign-ui.js is gone. The campaign shell orchestration
+// (init / render loop, combat-result return flow, drawer body, quest
+// narrative modal, action + chrome dispatch) now lives in TypeScript and
+// installs the same `window.CJS.CampaignUI` surface for the React shell +
+// the remaining JS callers (pocket-haven / scenario-runner / hot-reload).
+import "./shell/boot";
 import "../../js/ui/audio-manager.js";
 import "../../js/ui/l2d-avatar.js";
 import "../../js/ui/l2d-companion.js";
-// Phase H.3 — installs window.CJS.CampaignActionsRuntime so the vanilla
-// `_handleAction` switch routes ported actions to their TS handlers.
-// Must load after campaign-ui.js defines the switch (above), before the
-// React app mounts (below).
+// Phase H.3 — installs window.CJS.CampaignActionsRuntime so the action
+// dispatch seam (boot.ts handleAction) routes every action to its TS
+// handler. Loads after the boot install above, before the React app mounts.
 import "./action-handlers/registry";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { CampaignPage } from "./CampaignPage";

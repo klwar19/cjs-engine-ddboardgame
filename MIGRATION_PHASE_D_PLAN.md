@@ -668,13 +668,16 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
      contract is registry-backed even while the implementation
      stays JS — same pattern as `renderStoryDirectorCardHtml`,
      `renderPartySheetHtml`, etc.
-- [~] **H.4 — Migrate `get*Data` bridges to TS** under
-  `src/campaign/bridge/` (chrome, tabs, panels), backed by the typed
-  CampaignState surface, then **delete `js/campaign/campaign-ui.js` +
-  `js/campaign/ui/`**. Stable leaf helpers (`Utils.esc`, `Log.logKind`,
-  `Controls.actionBtn`, etc.) move to TS util modules first.
-  The roster detail row and external-module tabs stay bridged HTML
-  islands across the deletion (forwarded, like today).
+- [x] **H.4 — `get*Data` bridges to TS + `campaign-ui.js` DELETED.**
+  Every `get*Data` bridge, the chrome state + data builder, all leaf util
+  helpers, the render-bridge islands (quest-run-task → JSX, story-director
+  card → TS, roster cluster → cui-party-tab.js), and finally the shell
+  orchestration (`src/campaign/shell/boot.ts`) are TS. `campaign-ui.js`
+  (10,857 lines originally) is gone — boot.ts installs the same
+  `window.CJS.CampaignUI` surface so the React shell + the 3 JS callers are
+  unchanged. The two surviving JS islands (`cui-party-tab.js`,
+  `cui-hub-tab.js`) stay bridged, as do the external-module tabs + maps +
+  roster detail row (forwarded). See items 1-4 in the H.4 detail below.
 
   **Step 1 — Chrome state migration (done).** The closure-private
   `_activeMode` / `_activeTab` / `_activePanel` move to
@@ -721,13 +724,17 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
   builder bodies (`_openManualEventBuilder`, `_openQuestModal`,
   `_gmOverride`, `_openManualSceneBuilder`) port alongside their data
   builders.
-- [ ] **H.5 — Rewrite `test_campaign_ui_bootstrap.js`** against the
-  React tree; fold `test_campaign_shell_bridge.js` into a TS unit test.
-  **Blocked on H.4** (the bootstrap test loads `js/campaign/ui/`, which
-  H.4 deletes). When it lands, a Node-importable test can exercise the
-  registry directly — the `action-handlers/` rename (vs the old
-  `actions/` dir that clashed with `actions.ts`) was done so Node's ESM
-  resolver can import these modules without an `ERR_*_DIR_IMPORT`.
+- [x] **H.5 — Test surface retargeted to the React/boot tree.**
+  `test_campaign_shell_bridge.js` rewritten to assert the `boot.ts`
+  install surface + chrome-state single-source-of-truth + the React tab
+  coverage (139 assertions). `test_actions_bridge.js` updated: dispatch is
+  registry-only now (no `_handleAction` switch), and it asserts boot.ts's
+  `handleAction` routes through `CampaignActionsRuntime`.
+  `test_campaign_ui_bootstrap.js` still passes as-is — it only loads the
+  two surviving JS islands (`cui-party-tab.js` / `cui-hub-tab.js`) + the
+  registry, none of which H.4 deleted. (A future pass can fold these
+  source-grep tests into Node-importable unit tests now that the modules
+  are ESM-importable, but the contract coverage is in place.)
 
 ## Phase I — Performance (after H)
 
@@ -925,20 +932,28 @@ finishes the authoring loop:
 | After H.4 GM override modal to TS | 338 |
 | After H.4 manual event builder to TS | 316 |
 | After H.4 manual quest builder to TS | 293 |
+| After H.4 quest-run-task → JSX (item B) | 290 |
+| After H.4 storyDirector card + dead solo cluster (item C) | 284 |
+| After H.4 roster cluster → cui-party-tab.js (item A) | 282 |
+| After H.4 shell owner boot.ts; **campaign-ui.js deleted** | 271 |
 
-Cumulative Phase F+G+K.3+H-so-far: 641 KB → 293 KB. **Phase H.3 is
-complete**: 246/246 actions live in the TS registry, and the
-`_handleAction` switch is empty (kept as a defensive no-op with
-the port history in comments). **Phase H.4 in progress** —
-chrome state, every leaf util helper, the tab registry, the
-React-bridge tab list, the world-map stub, the chrome data builder,
-and **every `get*Data` bridge** are all TS. The seven
-`js/campaign/ui/cui-*.js` files and three `js/campaign/ui/tabs/cui-*`
-small files were deleted (cui-utils, cui-portraits, cui-log,
-cui-controls, cui-modals, cui-options, cui-equipment,
-cui-tabs-registry, cui-world-map-tab, cui-react-bridge — 10 files
-deleted, 11 TS modules created under `src/campaign/util/` + 1 under
-`src/campaign/`).
+Cumulative Phase F+G+K.3+H: 641 KB → 271 KB. **Phase H is COMPLETE.**
+H.3: 246/246 actions in the TS registry. **H.4: `campaign-ui.js` is
+deleted** — every `get*Data` bridge, the chrome state + data builder,
+all leaf util helpers, the render-bridge islands (quest-run-task → JSX,
+story-director card → TS, the roster member-math cluster →
+`cui-party-tab.js`), and the shell orchestration (boot + render loop,
+combat-result return flow, drawer body, quest narrative modal, the
+action + chrome dispatch seam) all live in TypeScript.
+`src/campaign/shell/boot.ts` installs the `window.CJS.CampaignUI`
+surface so the React shell + the three JS callers (pocket-haven /
+scenario-runner / data-hot-reload) are unchanged. H.5: the bridge /
+actions tests retargeted at the boot + registry surface. The only
+remaining campaign JS islands are the two intentional ones
+(`cui-party-tab.js` 1k lines — icon-heavy roster detail row +
+member-math; `cui-hub-tab.js` 162 lines — side-content primitives) plus
+the external-module tabs + maps + the world-map SVG, all forwarded
+through the React shell. Next: Phases I (performance) + J (AI authoring).
 
 **Data builders ported to TS so far:** travelSurprise, lastReport,
 combatResult, lastCombatResult, pendingBattle, eventLog, battleSets,
@@ -1094,51 +1109,54 @@ in three clusters — these are the item-3/4 work:
      read `CampaignUIInternal.PartyTab` / `.Portraits.icon` directly — the
      8 CampaignUI roster bridges + the whole portrait/modal/option/equipment
      alias block are gone from campaign-ui.js (2146 → 1719 lines).
-   - `getMainBody` → `_renderMain` (defensive fallback for an
-     unregistered tab id) and `renderDrawerBody` → `_renderDrawerBody`
-     (+ `_renderQuestsFallback` / `_renderLogFallback` / `_renderSoloNotice`
-     / `_renderInventorySnapshot` / `_renderNotesPanel`). Mostly
-     defensive/drawer bodies — likely stay as TS islands.
-   - Roster shared cluster (backs `renderPartySheetHtml`, the
-     `getTabHelpers` bundle, and `cui-party-tab.js`): `_tabHelpers`,
-     `_renderParty`, `_renderRankBar`, `_renderResistances`,
-     `_renderEquipmentLoadout`, `_renderJobChip` / `_renderPersonaChip` /
-     `_renderPersonaPill`, `_memberBase`, `_memberRankInfo`, `_memberStats`,
-     `_memberSkillEntries`, `_memberLearnedSkillIds`, `_skillEntryId`,
-     `_memberPassives`, `_characterOptions`, `_skillOptions`,
-     `_passiveOptions`, `_statusDef`, `_skillMeta`, `_statName`,
-     `_skillWeaponTypes`. Stays bridged with the `cui-party-tab.js` island
-     until an icon-as-data path exists (see the K.3 note above).
+   - [x] `getMainBody` / `renderDrawerBody` → **ported to TS in `boot.ts`**
+     (Phase H.4, item 4). `_renderMain` (defensive unregistered-tab
+     fallback) + `_renderDrawerBody` (+ `_renderQuestsFallback` /
+     `_renderLogFallback` / `_renderInventorySnapshot` / `_renderNotesPanel`
+     / `_renderQuestMini`) are TS HTML islands consumed by the React
+     `CampaignDrawer` / `VanillaBody`. The 'party' body delegates to
+     `PartyTab.renderParty`; the dead `_renderQuestPanel` ternary collapsed
+     to the fallback.
+   - [x] Roster shared cluster — **consolidated into `cui-party-tab.js`**
+     (item A above); stays a bridged JS island.
 
-4. **Shell-orchestration cluster + delete `campaign-ui.js`.** This is the
-   real blocker for deleting the file — it must move to a TS shell owner
-   (e.g. `src/campaign/shell/boot.ts`) that `CampaignPage`/`CampaignShell`
-   call instead of `CampaignUI.init` / `.render`:
-   - boot + render loop: `init`, `render`, `enableReactShell`,
-     `_normalizeActiveWorldUi` + the world-UI helpers (`_worldUiProfile` /
-     `_defaultTabForMode` / `_appModesForState` / `_tabsForMode` — thin
-     `CampaignChrome` delegates), the `CampaignState.subscribe` wiring,
-     and the `campaign:state-tick` emit.
-   - combat-result return flow: `_flashOnNewEncounter`, `_bindRunPanel`,
-     `_bindCombatResultListener`, `_storeCombatResult`,
-     `_bindCombatReturnEvents`, `_combatResultKey`, `_consumeCombatResult`.
-   - panel/drawer layer: `_bindEscapeForPanels`, `_openPanel`,
-     `_closePanel`, `_tearDownDrawer`, `_renderPanelLayer`,
-     `_panelDefsForState` (most are flag-guarded no-ops in shell mode).
-   - chrome setters + dispatch seam: `setActiveMode/Tab/Panel`,
-     `setActiveModeRaw/TabRaw`, `_modeForTab`, `_goto`, `handleAction`
-     (→ the now-empty `_handleAction` switch, deletable once `handleAction`
-     just forwards to `CampaignActionsRuntime`).
-   - leftover data: `showQuestNarrative`, `_pendingSoloHookCard`,
-     `_clearPendingSoloHook`.
+4. [x] **Shell-orchestration cluster + `campaign-ui.js` DELETED**
+   (Phase H.4). The whole remaining IIFE moved to
+   `src/campaign/shell/boot.ts`, a TS module that installs the same
+   `window.CJS.CampaignUI` surface — so the React shell + the three JS
+   callers (pocket-haven / scenario-runner / data-hot-reload) are unchanged
+   (drop-in). main.tsx imports `./shell/boot` instead of the IIFE.
+   - boot + render loop: `init`, `render`, `enableReactShell`. World-UI
+     normalize calls `normalizeForWorld` from `../chrome-state` directly;
+     the thin `_worldUiProfile`/`_defaultTabForMode`/`_appModesForState`/
+     `_tabsForMode` delegates were dropped (no callers — the TS chrome
+     slice + chromeData own them).
+   - combat-result return flow: `flashOnNewEncounter`, `bindRunPanel`,
+     `bindCombatResultListener`, `storeCombatResult`, `bindCombatReturnEvents`,
+     `combatResultKey`, `consumeCombatResult` — all ported 1:1.
+   - panel/drawer layer: only the reachable Escape-to-close path survives
+     (`bindEscapeForPanels` → `closePanel`). The imperative drawer DOM
+     (`_openPanel` / `_renderPanelLayer` / `_tearDownDrawer` /
+     `_panelDefsForState` / `PANEL_DEFS` / `RAIL_ORDER`) was **fully
+     orphaned** (nothing called `_openPanel`) once the React `CampaignDrawer`
+     took over — deleted, not ported.
+   - chrome setters + dispatch seam: `setActiveMode/Tab/Panel` (write the
+     chrome slice + render), `handleAction` (→ `CampaignActionsRuntime`).
+     `setActiveModeRaw/TabRaw` + `modeForTab` + `getActive*` are re-exported
+     straight from `../chrome-state` onto the install surface. `_goto` /
+     `_modeForTab` JS helpers dropped (TS callers use chrome-state).
+   - leftover data: `showQuestNarrative` ported; the dead
+     `_pendingSoloHookCard` / `_clearPendingSoloHook` were removed with the
+     solo-notice cluster (item C). `renderTabBody` kept as an empty stub.
 
-   Once the shell owner + the render-bridge islands have TS homes and
-   nothing imports `window.CJS.CampaignUI`, delete `campaign-ui.js` and the
-   `getTabHelpers` / `renderTabBody` bridges. Then **H.5** (rewrite
-   `test_campaign_ui_bootstrap.js` against the React tree; fold
-   `test_campaign_shell_bridge.js` into a TS unit test). Phases I/J pivot
-   from "remove HTML strings" to "optimize the React tree + open the
-   authoring loop for AI generators."
+   `campaign-ui.js` (10,857 lines originally) is **deleted**. **H.5** done
+   alongside: `test_campaign_shell_bridge.js` rewritten to assert the boot.ts
+   surface + chrome-state single-source + the React tab coverage (139
+   assertions); `test_actions_bridge.js` updated (dispatch is registry-only,
+   boot.ts handleAction routes through the runtime); `test_campaign_ui_bootstrap.js`
+   continues to exercise the two surviving JS islands (cui-party-tab /
+   cui-hub-tab) + the registry. Phases I/J pivot from "remove HTML strings"
+   to "optimize the React tree + open the authoring loop for AI generators."
 
 ## Done-when gate
 

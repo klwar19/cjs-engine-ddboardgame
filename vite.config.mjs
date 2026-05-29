@@ -91,10 +91,10 @@ export default defineConfig({
     })
   ],
   build: {
-    // The campaign-core chunk includes campaign-ui.js (~510 KB before
-    // minification), which is the next refactor target. Until that file
-    // splits, raise the warning to 700 KB so the CI signal still fires
-    // on accidental new bulk but does not noise on the known offender.
+    // The campaign-core chunk holds the React campaign tree (shell/boot,
+    // tabs, data builders, action handlers). campaign-ui.js is fully
+    // retired (Phase H.4) — the chunk is ~270 KB now. The 700 KB warning
+    // limit stays as headroom; Phase I re-baselines per-chunk sizes.
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: {
