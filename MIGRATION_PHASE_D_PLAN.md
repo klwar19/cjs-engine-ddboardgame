@@ -1106,8 +1106,8 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
     (`tabs/data/*.ts`) and the REAL leaf components (QuestRow, ResultPanels,
     SequenceNode, …) render inside them; only the bounded `window.CJS` engine
     surface is stubbed (`installEngine`), and the real TS util modules + the
-    two surviving JS islands (PartyTab / HubTab) are loaded so
-    `CampaignUIInternal.*` is the real namespace. The fixture is type-checked
+    surviving JS island (PartyTab; HubTab is now a TS util — K.3.1) are loaded
+    so `CampaignUIInternal.*` is the real namespace. The fixture is type-checked
     (tsconfig includes `cases.tsx`), so a `state=`/`data=` prop can't drift
     from the component contract.
   - **Deterministic across hosts.** `env.cjs` pins `toLocaleString` to
@@ -1121,12 +1121,33 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
     snapshots — so a new tab can't ship un-snapshotted. Scope boundaries
     (external-module island wrappers via a labeled sentinel; the world-map SVG
     + roster detail-row islands) are documented in the harness README.
-- [ ] **K.3 — Replace the legacy hub / party / world-map tabs.**
-  These tabs still mount HTML strings from `cui-hub-tab.js` /
-  `cui-party-tab.js` / `cui-world-map-tab.js`. They follow the same
-  Phase G pattern: typed bridge + JSX component. Lower priority
-  because their bodies are stable; Phase H targets the closure
-  helpers in campaign-ui.js first.
+- [~] **K.3 — Replace the last legacy JS islands.** The *tab bodies*
+  for hub / party / world-map were already JSX'd in the K.3-prerequisite
+  work (Phase H). What remains are the two shared HTML-string islands the
+  React tree still consumes through `dangerouslySetInnerHTML` /
+  imperative modals. This step ports them to TS/JSX so zero campaign
+  rendering lives in `js/`.
+  - [x] **K.3.1 — `cui-hub-tab.js` → `src/campaign/util/cui-hub-tab.ts`.**
+    The shared side-content primitives (operation tone / consequence
+    summary / card-choice ops / rumor open-filter + the two display-only
+    HTML emitters `renderConsequencePreview` / `renderFlavorTrail`) are
+    now a typed TS module that installs the **same**
+    `window.CJS.CampaignUIInternal.HubTab` surface the JS IIFE did — so
+    every consumer (the typed React data bridges `getEventResultData` /
+    `getOracleData` / `getSideForgeData` / `getTownSnapshotData` /
+    `getStoryDirectorData`, plus the imperative beat modal
+    `story-director-card.ts` and the manual event builder
+    `event-builder.ts`) keeps working unchanged. This is the
+    single-source-of-truth move (the primitives feed both the React tree
+    AND two imperative HTML modals), matching the H.4 leaf-helper ports
+    (cui-utils / cui-controls / cui-modals / …). Byte-identical HTML
+    output — the VR snapshots pass with zero diffs. `main.tsx`, the VR
+    harness, and `test_campaign_ui_bootstrap.js` updated; the JS file is
+    deleted. Only `cui-party-tab.js` (roster detail row) remains in `js/`.
+  - [ ] **K.3.2 — Icon-as-JSX foundation + `cui-party-tab.js` detail row.**
+    Build a typed `<Icon>` (the data path — `UIIcons.normalize` — already
+    exists) and port the roster detail-row cards (skills / passives /
+    statuses / equipment) to JSX, then retire `cui-party-tab.js`.
 
 ## Size progression (cjs-campaign-core chunk)
 

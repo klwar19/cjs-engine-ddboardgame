@@ -82,7 +82,7 @@ import "./util/cui-equipment";
 import "./util/cui-log";
 import "./util/cui-tabs-registry";
 import "../../js/campaign/ui/tabs/cui-party-tab.js";
-import "../../js/campaign/ui/tabs/cui-hub-tab.js";
+import "./util/cui-hub-tab";
 import "./util/cui-world-map-tab";
 import "./util/cui-react-bridge";
 // chrome-state + story-context install their window.CJS bridges; the boot
