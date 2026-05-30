@@ -1,0 +1,17 @@
+[
+  {
+    "id": "haven_oracle_frostbitten",
+    "name": "Frostbitten Oracle",
+    "world": "haven",
+    "zone": "haven_zon_frostbitten",
+    "defaultCanonRisk": "green",
+    "tableKeys": [
+      "adjectives",
+      "nouns",
+      "verbs",
+      "objects",
+      "twists"
+    ],
+    "prompts": 8
+  }
+]

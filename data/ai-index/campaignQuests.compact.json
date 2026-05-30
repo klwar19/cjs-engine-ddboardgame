@@ -1,0 +1,106 @@
+[
+  {
+    "id": "quest_clear_wolf_pack",
+    "title": "Clear the Wolf Pack",
+    "world": "haven",
+    "set": "haven_basic_quest_templates",
+    "status": "active",
+    "giver": "Frostbitten Guild",
+    "mapForm": "node_map",
+    "linkedScenario": "haven_scn_frostwood_short_run",
+    "objectives": 3,
+    "tags": [
+      "forest",
+      "wolf",
+      "starter"
+    ],
+    "summary": "Clear the wolf pack troubling the Frostwood road."
+  },
+  {
+    "id": "quest_frostcap_mushrooms",
+    "title": "Gather Frostcap Mushrooms",
+    "world": "haven",
+    "set": "haven_basic_quest_templates",
+    "status": "idea",
+    "giver": "Tessa",
+    "mapForm": "grid_map",
+    "linkedScenario": "haven_scn_frostwood_grid_patrol",
+    "objectives": 2,
+    "tags": [
+      "forest",
+      "forage",
+      "starter"
+    ],
+    "summary": "Gather mushrooms in Frostwood for a warm-up guild job."
+  },
+  {
+    "id": "quest_firemoss_cache_run",
+    "title": "Recover the Firemoss Cache",
+    "world": "haven",
+    "set": "haven_basic_quest_templates",
+    "status": "active",
+    "giver": "Tessa",
+    "mapForm": "node_map",
+    "linkedScenario": "haven_scn_frostwood_short_run",
+    "objectives": 3,
+    "tags": [
+      "forest",
+      "supply",
+      "starter"
+    ],
+    "summary": "Trace a broken sled route, recover the firemoss cache, and keep Frostbitten's burners lit."
+  },
+  {
+    "id": "quest_ironhand_pelt_wraps",
+    "title": "Ironhand Pelt Wraps",
+    "world": "haven",
+    "set": "haven_basic_quest_templates",
+    "status": "active",
+    "giver": "Hilda Ironhand",
+    "mapForm": "node_map",
+    "linkedScenario": "haven_scn_frostwood_short_run",
+    "objectives": 3,
+    "tags": [
+      "forest",
+      "crafting",
+      "starter"
+    ],
+    "summary": "Field-test winter grip wraps by tracking wolves, taking pelts, and returning by the shrine route."
+  },
+  {
+    "id": "quest_daily_notice_board_mix",
+    "title": "Notice Board Mixed Errand",
+    "world": "haven",
+    "set": "haven_basic_quest_templates",
+    "kind": "daily",
+    "status": "active",
+    "giver": "Frostbitten Guild Board",
+    "mapForm": "node_map",
+    "objectives": 2,
+    "tags": [
+      "daily",
+      "guild",
+      "repeatable",
+      "starter"
+    ],
+    "summary": "A light repeatable guild-paper job. Pick the logical objective for the current phase: hunt, harvest, hub errand, or puzzle room."
+  },
+  {
+    "id": "quest_dungeon_puzzle_chit",
+    "title": "Dungeon Puzzle Chit",
+    "world": "haven",
+    "set": "haven_basic_quest_templates",
+    "kind": "normal",
+    "status": "active",
+    "giver": "Corvin",
+    "mapForm": "grid_map",
+    "objectives": 2,
+    "tags": [
+      "normal",
+      "minigame",
+      "dungeon",
+      "starter"
+    ],
+    "summary": "Corvin needs one simple mechanism tested so he can file it as safe, unsafe, or personally insulting."
+  }
+]

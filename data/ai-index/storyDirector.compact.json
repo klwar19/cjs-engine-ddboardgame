@@ -1,0 +1,18 @@
+[
+  {
+    "id": "haven_story_director_v1",
+    "name": "Haven Arc 1 Story Director",
+    "world": "haven",
+    "zone": "haven_zon_frostbitten",
+    "stages": 5,
+    "sceneBeats": 15,
+    "metricIds": [
+      "peri_attention",
+      "earth_heat",
+      "frostwood_threat",
+      "guild_noise",
+      "pocket_haven_seed"
+    ],
+    "summary": "Arc-aware solo/GM guidance for Bin's Frostbitten return, Frostwood escalation, Chimera hunt, and Pocket Haven unlock."
+  }
+]

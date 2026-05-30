@@ -910,11 +910,39 @@ AI-generated content (skills, monsters, story files, events, items,
 worlds). Phase E set up the compact-index foundation; Phase J
 finishes the authoring loop:
 
-- [ ] **J.1 — Author/generator schemas extend.** `data/schemas/*`
-  today covers core entries. Add schemas for the remaining types
-  (campaignQuests, eventTables, oracleTables, worldActivityPacks,
-  travelMaps, storyDirector packs). Each schema is the canonical
-  contract — both the engine and the AI generator read it.
+- [x] **J.1 — Author/generator schemas extend.** Added six draft-07
+  schemas for the campaign-side collections the lint never covered:
+  `campaignQuests`, `campaignEvents` (event tables), `oracleTables`,
+  `travelMaps`, `worldActivityPacks`, `storyDirectorPacks`. Each is the
+  canonical contract derived from the **actual shipping data** (key-union
+  + deep-shape analysis, then verified by linting the real tree to 0
+  errors — e.g. `event.check.fail` is an op array, `activity.conditions.any`
+  is an OR-group, `sideQuestFlow.keep/promote/retire` are `{id,title,reason}`
+  refs). Integration points:
+  - **Category resolution.** Campaign files all declare
+    `format: "cjs-collection"` and distinguish by `_file.category`, so
+    `content-lint.mjs` gained `CATEGORY_TO_SCHEMA` + a `schemaNameFor`
+    resolver (format → category → filename precedence) and now **walks
+    `data/campaigns/`** (previously entirely unlinted). `--patch` accepts
+    a category as its `format` and stamps the synthetic envelope so
+    generators can validate a campaign upsert. The unschematized campaign
+    categories (questChains / battleSets / mapSeeds / hubs / scenarios /
+    maps / profiles / rules) report `info … skipped`, not errors.
+  - **TypeScript twins.** `src/content/types.ts` gained the matching
+    interfaces (QuestTemplateSet, EventTable, OracleTable, TravelMap,
+    WorldActivityPack, StoryDirectorPack + their nested shapes), plus the
+    shared `CampaignOp` (typed `op`, free payload — the engine's CampaignOps
+    registry stays the authority for verbs) and `CanonRisk`.
+  - **Compact indexes.** `build-ai-index.mjs` reads campaign content by
+    category and emits six new compact files (campaignQuests / campaignEvents
+    / oracleTables / travelMaps / worldActivities / storyDirector) so
+    generators see existing ids + cross-refs (quest→linkedScenario, travel
+    node ids, story arc shape) without the full tree. Committed index is now
+    14 files / 316 entries.
+  - `test_content_lint.js` (+13 assertions → 31): schema files exist,
+    category-based patch validation (good + broken campaignQuests patch),
+    a real campaign file lints by category, new compact files present.
+    `npm test` (16 files) + `typecheck` + `build` green.
 - [ ] **J.2 — Authoring CLI.** `tools/author/<type>.mjs` scripts
   scaffold a new entry, validate it against the schema, and write
   it into the right `data/` directory. AI generators call the same

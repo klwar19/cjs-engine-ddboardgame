@@ -1,0 +1,47 @@
+[
+  {
+    "id": "bazaar_tmap_central_ring_v1",
+    "name": "Central Bazaar Ring",
+    "world": "bazaar",
+    "zone": "bazaar_zon_central_ring",
+    "defaultLocationId": "bazaar_loc_gate_of_scales",
+    "nodeIds": [
+      "bazaar_loc_gate_of_scales",
+      "bazaar_loc_arena_ring",
+      "bazaar_loc_auction_house",
+      "bazaar_loc_lantern_food_row",
+      "bazaar_loc_contract_annex"
+    ],
+    "links": 5
+  },
+  {
+    "id": "earth_tmap_zhonghai_v1",
+    "name": "Zhonghai District",
+    "world": "earth",
+    "zone": "earth_zon_zhonghai",
+    "defaultLocationId": "earth_loc_apartment",
+    "nodeIds": [
+      "earth_loc_apartment",
+      "earth_loc_zhonghai_campus",
+      "earth_loc_hospital",
+      "earth_loc_old_zhou_books",
+      "earth_loc_delivery_route"
+    ],
+    "links": 5
+  },
+  {
+    "id": "zombie_tmap_last_light_v1",
+    "name": "Last Light City Slice",
+    "world": "zombie",
+    "zone": "zombie_zon_last_light",
+    "defaultLocationId": "zombie_loc_safehouse",
+    "nodeIds": [
+      "zombie_loc_safehouse",
+      "zombie_loc_mall_district",
+      "zombie_loc_clinic_block",
+      "zombie_loc_subway_line",
+      "zombie_loc_broadcast_tower"
+    ],
+    "links": 5
+  }
+]

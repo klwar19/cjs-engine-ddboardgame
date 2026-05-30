@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:storyDirectorPacks",
+  "title": "Story Director Packs File",
+  "description": "Authored solo/GM story-director guidance (data/campaigns/<world>/story_director/*.json, _file.category = storyDirectorPacks). Each entry is an arc guide: stages, rollable beats (scenes, Peri interruptions, memory shards, pressure ticks), protected truths, and side-quest flow.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "required": ["category"],
+      "properties": { "category": { "const": "storyDirectorPacks" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/StoryDirectorPack" }
+    }
+  },
+  "definitions": {
+    "idString": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "canonRisk": {
+      "description": "How safe a beat/result is to promote to canon: green = harmless, yellow = soft check, red = GM approval before it becomes truth.",
+      "type": "string",
+      "enum": ["green", "yellow", "red"]
+    },
+    "CampaignOp": {
+      "description": "A campaign op resolved by CampaignOps at runtime (e.g. give_jp, story_metric_change, story_clue_add, story_thread_status, start_quest_chain, add_rumor). `op` names the verb; remaining fields are its payload.",
+      "type": "object",
+      "required": ["op"],
+      "additionalProperties": true,
+      "properties": { "op": { "type": "string", "minLength": 1 } }
+    },
+    "SuggestedChoice": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "label": { "type": "string" },
+        "ops": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } }
+      }
+    },
+    "SideQuestRef": {
+      "description": "A reference to a quest chain / scenario the flow keeps, promotes, or retires for a stage.",
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "title": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "Beat": {
+      "description": "A rollable story beat. Shared shape for sceneBeats, periInterruptions, memoryShards, and pressureTicks.",
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "title": { "type": "string" },
+        "stageIds": { "type": "array", "items": { "type": "string" } },
+        "phaseTypes": { "type": "array", "items": { "type": "string" } },
+        "canonRisk": { "$ref": "#/definitions/canonRisk" },
+        "weight": { "type": "number", "minimum": 0 },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "prompt": { "type": "string" },
+        "gmNote": { "type": "string" },
+        "reviewReason": { "type": "string" },
+        "suggestedChoices": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SuggestedChoice" }
+        }
+      }
+    },
+    "StoryDirectorPack": {
+      "type": "object",
+      "required": ["id", "name", "stages", "sceneBeats"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "number", "minimum": 1 },
+        "world": { "type": "string" },
+        "zone": { "type": "string" },
+        "hubId": { "type": "string" },
+        "summary": { "type": "string" },
+        "pressureRule": { "type": "string" },
+        "defaultCanonRisk": { "$ref": "#/definitions/canonRisk" },
+        "tonePillars": { "type": "array", "items": { "type": "string" } },
+        "plotPolicy": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "editable": { "type": "boolean" },
+            "notes": { "type": "string" },
+            "doNotOverfocus": { "type": "array", "items": { "type": "string" } },
+            "preferredFeel": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "label": { "type": "string" },
+              "min": { "type": "number" },
+              "max": { "type": "number" }
+            }
+          }
+        },
+        "protectedTruths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "title": { "type": "string" },
+              "rule": { "type": "string" }
+            }
+          }
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "name": { "type": "string" },
+              "chapterMin": { "type": "number" },
+              "chapterMax": { "type": "number" },
+              "summary": { "type": "string" },
+              "tags": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "sceneBeats": { "type": "array", "items": { "$ref": "#/definitions/Beat" } },
+        "periInterruptions": { "type": "array", "items": { "$ref": "#/definitions/Beat" } },
+        "memoryShards": { "type": "array", "items": { "$ref": "#/definitions/Beat" } },
+        "pressureTicks": { "type": "array", "items": { "$ref": "#/definitions/Beat" } },
+        "sideQuestFlow": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "stageId": { "type": "string" },
+              "summary": { "type": "string" },
+              "keep": { "type": "array", "items": { "$ref": "#/definitions/SideQuestRef" } },
+              "promote": { "type": "array", "items": { "$ref": "#/definitions/SideQuestRef" } },
+              "retire": { "type": "array", "items": { "$ref": "#/definitions/SideQuestRef" } },
+              "ops": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

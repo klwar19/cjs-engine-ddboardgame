@@ -67,6 +67,44 @@ fs.unlinkSync(goodPatch);
 ok('content-lint accepts a valid patch', good.status === 0,
    good.status !== 0 ? (good.stdout + good.stderr).slice(-300) : 'good');
 
+// 3b. Campaign-side collections resolve their schema by `_file.category`
+//     (format alias = the category), so a patch can target them too.
+function runPatch(payload) {
+  const f = path.join(__dirname, `tmp_cat_patch_${Math.random().toString(36).slice(2)}.json`);
+  fs.writeFileSync(f, JSON.stringify(payload));
+  const res = spawnSync('node', ['tools/content-lint.mjs', '--quiet', '--patch', f], {
+    cwd: __dirname, encoding: 'utf8'
+  });
+  fs.unlinkSync(f);
+  return res;
+}
+
+const goodQuestPatch = runPatch({
+  target: { file: 'data/campaigns/haven/quests/haven_quest_templates.json', world: 'haven' },
+  format: 'campaignQuests',
+  upserts: [{
+    id: 'demo_quest_set',
+    name: 'Demo Quest Set',
+    templates: [{
+      id: 'demo_quest_smoke',
+      title: 'Demo Quest',
+      objectives: [{ id: 'demo_obj', label: 'Do the thing', required: 1 }],
+      rewards: [{ op: 'give_jp', amount: 1 }]
+    }]
+  }]
+});
+ok('content-lint accepts a campaignQuests patch (category resolution)', goodQuestPatch.status === 0,
+   goodQuestPatch.status !== 0 ? (goodQuestPatch.stdout + goodQuestPatch.stderr).slice(-300) : 'good');
+
+const badQuestPatch = runPatch({
+  target: { file: 'data/campaigns/haven/quests/haven_quest_templates.json', world: 'haven' },
+  format: 'campaignQuests',
+  // template missing required `title`, op missing required `op`.
+  upserts: [{ id: 'demo_quest_set', name: 'X', templates: [{ id: 'no_title' }] }]
+});
+ok('content-lint rejects a broken campaignQuests patch', badQuestPatch.status !== 0,
+   badQuestPatch.status === 0 ? 'expected non-zero exit' : 'good');
+
 // 4. build-ai-index runs without error and produces expected files.
 //    Write to a tmpdir so test runs don't dirty the committed indexes
 //    under data/ai-index/ (each run would otherwise bump the
@@ -79,7 +117,8 @@ try {
   ok('build-ai-index runs', idx.status === 0,
      idx.status !== 0 ? (idx.stdout + idx.stderr).slice(-300) : 'good');
 
-  const indexFiles = ['skills', 'passives', 'statuses', 'items', 'monsters', 'characters', 'worlds', 'encounters'];
+  const indexFiles = ['skills', 'passives', 'statuses', 'items', 'monsters', 'characters', 'worlds', 'encounters',
+    'campaignQuests', 'campaignEvents', 'oracleTables', 'travelMaps', 'worldActivities', 'storyDirector'];
   for (const name of indexFiles) {
     const p = path.join(tmpOut, `${name}.compact.json`);
     if (!fs.existsSync(p)) {
@@ -98,6 +137,21 @@ try {
     ok('manifest has generatedAt', typeof m.generatedAt === 'string');
     ok('manifest has files map', m.files && typeof m.files === 'object');
   }
+
+  // Campaign collection schemas (Phase J.1) must exist and a real
+  // campaign file must lint clean through category-based resolution.
+  const campaignSchemas = ['campaignQuests', 'campaignEvents', 'oracleTables',
+    'travelMaps', 'worldActivityPacks', 'storyDirectorPacks'];
+  for (const s of campaignSchemas) {
+    ok(`schema data/schemas/${s}.schema.json exists`,
+       fs.existsSync(path.join(__dirname, `data/schemas/${s}.schema.json`)));
+  }
+  const oneCampaignFile = spawnSync('node',
+    ['tools/content-lint.mjs', 'data/campaigns/haven/story_director/haven_story_director_v1.json'],
+    { cwd: __dirname, encoding: 'utf8' });
+  ok('content-lint validates a campaign file by category',
+     oneCampaignFile.status === 0 && /done/.test(oneCampaignFile.stdout),
+     oneCampaignFile.status !== 0 ? oneCampaignFile.stdout.slice(-200) : 'good');
 
   // Sanity check: the committed data/ai-index/ files must also exist
   // (someone may have generated them and committed; we don't regenerate

@@ -1,0 +1,178 @@
+[
+  {
+    "id": "bazaar_act_arena_seed_match",
+    "title": "Seeded Exhibition Match",
+    "world": "bazaar",
+    "pack": "bazaar_wap_arena_auction_v1",
+    "type": "arena",
+    "locationIds": [
+      "bazaar_loc_arena_ring"
+    ],
+    "summary": "A safe arena test: short fight, loud crowd, small payout, and a reputation hook for later systems."
+  },
+  {
+    "id": "bazaar_act_arena_haven_style_showcase",
+    "title": "Haven-Style Showcase",
+    "world": "bazaar",
+    "pack": "bazaar_wap_arena_auction_v1",
+    "type": "arena",
+    "locationIds": [
+      "bazaar_loc_arena_ring"
+    ],
+    "summary": "An exhibition that only appears after Haven proves Bin has a story worth advertising."
+  },
+  {
+    "id": "bazaar_act_auction_small_lot",
+    "title": "Small Mystery Lot",
+    "world": "bazaar",
+    "pack": "bazaar_wap_arena_auction_v1",
+    "type": "auction",
+    "locationIds": [
+      "bazaar_loc_auction_house"
+    ],
+    "summary": "Spend arena winnings on a cheap sealed lot. Mostly safe. Mostly."
+  },
+  {
+    "id": "bazaar_act_auction_zombie_med_lot",
+    "title": "Pre-Collapse Medical Lot",
+    "world": "bazaar",
+    "pack": "bazaar_wap_arena_auction_v1",
+    "type": "auction",
+    "locationIds": [
+      "bazaar_loc_auction_house"
+    ],
+    "summary": "A special auction lot unlocked by Zombie world scavenging. It can feed Earth hospital routes later."
+  },
+  {
+    "id": "bazaar_act_contract_recap_board",
+    "title": "Prize Board Recap",
+    "world": "bazaar",
+    "pack": "bazaar_wap_arena_auction_v1",
+    "type": "journal",
+    "locationIds": [
+      "bazaar_loc_contract_annex"
+    ],
+    "summary": "Read Bazaar's compact recap of what other worlds have made possible for arena, auctions, and trade."
+  },
+  {
+    "id": "earth_act_hospital_visit_lily",
+    "title": "Quiet Ward Visit",
+    "world": "earth",
+    "pack": "earth_wap_return_v1",
+    "type": "hospital",
+    "locationIds": [
+      "earth_loc_hospital"
+    ],
+    "summary": "Spend time with Lily. No cure, no grand speech, just showing up."
+  },
+  {
+    "id": "earth_act_hospital_crystal_support",
+    "title": "Crystal Stabilizer Test",
+    "world": "earth",
+    "pack": "earth_wap_return_v1",
+    "type": "hospital",
+    "locationIds": [
+      "earth_loc_hospital"
+    ],
+    "summary": "Spend a Haven memory shard or similar crystal material on a careful support treatment."
+  },
+  {
+    "id": "earth_act_hospital_zombie_medgel",
+    "title": "Med-Gel Analysis",
+    "world": "earth",
+    "pack": "earth_wap_return_v1",
+    "type": "hospital",
+    "locationIds": [
+      "earth_loc_hospital"
+    ],
+    "summary": "Use scavenged medical gel from Last Light to unlock a safer hospital support path."
+  },
+  {
+    "id": "earth_act_delivery_shift",
+    "title": "Delivery Shift",
+    "world": "earth",
+    "pack": "earth_wap_return_v1",
+    "type": "work",
+    "locationIds": [
+      "earth_loc_delivery_route"
+    ],
+    "summary": "Earn Earth money, risk attention, and collect ordinary-life texture."
+  },
+  {
+    "id": "zombie_act_mall_scavenge",
+    "title": "Mall Shelf Sweep",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "scavenge",
+    "locationIds": [
+      "zombie_loc_mall_district"
+    ],
+    "summary": "Search the safer shops for food, batteries, and trouble that has not stood up yet."
+  },
+  {
+    "id": "zombie_act_clinic_medical_run",
+    "title": "Clinic Medicine Run",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "scavenge",
+    "locationIds": [
+      "zombie_loc_clinic_block"
+    ],
+    "summary": "Search the clinic for sterile supplies and strange treatment gel."
+  },
+  {
+    "id": "zombie_act_build_barricade",
+    "title": "Build Barricade",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "build",
+    "locationIds": [
+      "zombie_loc_safehouse"
+    ],
+    "summary": "Turn scrap into a stronger safehouse door."
+  },
+  {
+    "id": "zombie_act_build_infirmary",
+    "title": "Build Infirmary Corner",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "build",
+    "locationIds": [
+      "zombie_loc_safehouse"
+    ],
+    "summary": "Use sterile wraps and scrap to make a small medical station."
+  },
+  {
+    "id": "zombie_act_burnice_flare_route",
+    "title": "Burnice's Flare Route",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "scavenge",
+    "locationIds": [
+      "zombie_loc_mall_district"
+    ],
+    "summary": "Run a rooftop scout with Burnice, mark clean ladders, and sweep the shelves before the noise doubles back on you."
+  },
+  {
+    "id": "zombie_act_burnice_clinic_cover_burn",
+    "title": "Clinic Cover Burn",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "scavenge",
+    "locationIds": [
+      "zombie_loc_clinic_block"
+    ],
+    "summary": "Burnice burns a narrow path through the ambulance line while you pull meds and wraps out of the clinic."
+  },
+  {
+    "id": "zombie_act_burnice_stairs_firebreak",
+    "title": "Mark Stair Firebreak",
+    "world": "zombie",
+    "pack": "zombie_wap_safehouse_v1",
+    "type": "build",
+    "locationIds": [
+      "zombie_loc_safehouse"
+    ],
+    "summary": "Help Burnice turn the roof access stair into a controlled choke point with fallback marks and burn zones."
+  }
+]

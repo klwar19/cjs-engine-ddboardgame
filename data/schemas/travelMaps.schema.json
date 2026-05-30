@@ -1,0 +1,157 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:travelMaps",
+  "title": "Travel Maps File",
+  "description": "Authored world/zone navigation maps (data/campaigns/<world>/travel_maps/*.json, _file.category = travelMaps). Each entry is a clickable node-and-link map with an optional VN backdrop and SVG decoration layers.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "required": ["category"],
+      "properties": { "category": { "const": "travelMaps" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/TravelMap" }
+    }
+  },
+  "definitions": {
+    "idString": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "CampaignOp": {
+      "type": "object",
+      "required": ["op"],
+      "additionalProperties": true,
+      "properties": { "op": { "type": "string", "minLength": 1 } }
+    },
+    "TravelMap": {
+      "type": "object",
+      "required": ["id", "name", "nodes"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "world": { "type": "string" },
+        "zone": { "type": "string" },
+        "defaultLocationId": { "type": "string" },
+        "visualMode": { "type": "string" },
+        "visualBackdrop": { "type": "string" },
+        "visualBackdropPrompt": { "type": "string" },
+        "visualBackdropFit": { "type": "string" },
+        "canvas": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "width": { "type": "number", "minimum": 0 },
+            "height": { "type": "number", "minimum": 0 }
+          }
+        },
+        "visualTheme": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "id": { "type": "string" },
+            "mood": { "type": "string" }
+          }
+        },
+        "areaButtons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "label": { "type": "string" },
+              "mapId": { "type": "string" },
+              "active": { "type": "boolean" },
+              "status": { "type": "string" },
+              "summary": { "type": "string" }
+            }
+          }
+        },
+        "legend": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "kind": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          }
+        },
+        "visualLayers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": true,
+            "properties": {
+              "type": { "type": "string" },
+              "kind": { "type": "string" },
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "cx": { "type": "number" },
+              "cy": { "type": "number" },
+              "rx": { "type": "number" },
+              "ry": { "type": "number" },
+              "width": { "type": "number" },
+              "height": { "type": "number" },
+              "d": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TravelNode" }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to"],
+            "additionalProperties": true,
+            "properties": {
+              "from": { "type": "string", "minLength": 1 },
+              "to": { "type": "string", "minLength": 1 },
+              "route": { "type": "string" },
+              "time": { "type": "number", "minimum": 0 },
+              "risk": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "TravelNode": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "zone": { "type": "string" },
+        "description": { "type": "string" },
+        "visual": { "type": "object", "additionalProperties": true },
+        "people": { "type": "array", "items": { "$ref": "#/definitions/TravelInteraction" } },
+        "actions": { "type": "array", "items": { "$ref": "#/definitions/TravelInteraction" } }
+      }
+    },
+    "TravelInteraction": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "label": { "type": "string" },
+        "summary": { "type": "string" },
+        "ops": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } }
+      }
+    }
+  }
+}

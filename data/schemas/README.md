@@ -16,9 +16,41 @@ contributor can pick up the rules without spelunking through TypeScript.
 | `items.schema.json` | `data/**/items.json`, `materials.json`, `food.json` |
 | `statuses.schema.json` | `data/system/statuses.json` (envelope or keyed-map form) |
 
+### Campaign collection schemas (resolved by `_file.category`)
+
+Campaign-side content lives under `data/campaigns/<world>/<type>/` and all
+declare `format: "cjs-collection"`, so they are matched on `_file.category`
+(mirroring `CATEGORY_TO_TYPE` in `js/core/content-manager.js`):
+
+| Schema | `_file.category` | Lives in |
+| --- | --- | --- |
+| `campaignQuests.schema.json` | `campaignQuests` | `campaigns/<world>/quests/*.json` |
+| `campaignEvents.schema.json` | `campaignEvents` | `campaigns/<world>/events/*.table.json` |
+| `oracleTables.schema.json` | `oracleTables` | `campaigns/<world>/oracles/*.json` |
+| `travelMaps.schema.json` | `travelMaps` | `campaigns/<world>/travel_maps/*.json` |
+| `worldActivityPacks.schema.json` | `worldActivityPacks` | `campaigns/<world>/activity_packs/*.json` |
+| `storyDirectorPacks.schema.json` | `storyDirectorPacks` | `campaigns/<world>/story_director/*.json` |
+
+The other campaign categories (`questChains`, `battleSets`, `mapSeeds`,
+`sideContentPacks`, `campaignHubs`, `scenarios`, `scenarioMaps`,
+`campaignProfiles`, `pocketHavenRules`) are not yet schematized; the lint
+reports them as `info … no schema mapping (skipped)`.
+
 `format` field aliases: schemas accept `cjs-collection` everywhere as the
 generic catch-all the legacy `_legacy_bundle.json` and per-world files
 sometimes use.
+
+### Campaign ops
+
+The `rewards` / `suggested` / `ops` / `failureConsequence` arrays in campaign
+content hold **campaign ops** — `{ "op": "<verb>", ...payload }`. The schema
+only requires a non-empty `op` string; the engine's `CampaignOps` registry is
+the authority for which verbs exist and what payload each takes (so a new
+engine op never has to wait on a schema bump). Common verbs:
+`give_money`, `give_jp`, `give_item`, `give_material`, `unlock_recipe`,
+`hub_stat_change`, `add_rumor`, `add_status`, `set_flag`, `log`,
+`story_metric_change`, `story_clue_add`, `story_thread_status`,
+`start_quest_chain`, `cross_pressure_change`, `journal_entry_add`.
 
 ## Effect shape
 

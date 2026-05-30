@@ -78,6 +78,36 @@ function dedupeById(arr) {
   return out;
 }
 
+// Campaign-side content lives under data/campaigns/<world>/<type>/*.json and
+// is tagged by `_file.category` rather than filename. Walk the tree and
+// return every top-level entry whose file matches the requested category,
+// stamping the resolved world so the compact index can group by world.
+function walkJsonFiles(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const name of fs.readdirSync(dir)) {
+    if (name.startsWith("_")) continue;
+    const p = path.join(dir, name);
+    const st = fs.statSync(p);
+    if (st.isDirectory()) walkJsonFiles(p, out);
+    else if (name.endsWith(".json")) out.push(p);
+  }
+  return out;
+}
+
+function readCampaignEntries(category) {
+  const out = [];
+  for (const file of walkJsonFiles(path.join(root, "data/campaigns"))) {
+    let data;
+    try { data = readJson(file); } catch { continue; }
+    if (data?._file?.category !== category) continue;
+    const world = data._file.world || path.basename(path.dirname(path.dirname(file)));
+    for (const entry of (data.entries || [])) {
+      if (entry && typeof entry === "object") out.push({ entry, world: entry.world || world });
+    }
+  }
+  return out;
+}
+
 // ── Skills ─────────────────────────────────────────────────────────
 function buildSkills() {
   const sources = [
@@ -287,6 +317,129 @@ function buildEncounters() {
   return dedupeById(all);
 }
 
+// ── Campaign quests (flattened to templates) ──────────────────────
+function buildCampaignQuests() {
+  const all = [];
+  for (const { entry, world } of readCampaignEntries("campaignQuests")) {
+    for (const t of (entry.templates || [])) {
+      if (!t?.id) continue;
+      all.push({
+        id: t.id,
+        title: t.title,
+        world,
+        set: entry.id,
+        kind: t.kind || undefined,
+        status: t.status || undefined,
+        giver: t.giver || undefined,
+        mapForm: t.mapForm || undefined,
+        linkedScenario: t.linkedScenario || undefined,
+        objectives: Array.isArray(t.objectives) ? t.objectives.length : 0,
+        tags: Array.isArray(t.tags) && t.tags.length ? t.tags : undefined,
+        summary: summarize(t.summary)
+      });
+    }
+  }
+  return dedupeById(all);
+}
+
+// ── Campaign events (flattened to rollable entries) ───────────────
+function buildCampaignEvents() {
+  const all = [];
+  for (const { entry, world } of readCampaignEntries("campaignEvents")) {
+    for (const ev of (entry.entries || [])) {
+      if (!ev?.id) continue;
+      all.push({
+        id: ev.id,
+        title: ev.title,
+        world,
+        table: entry.id,
+        type: ev.type || undefined,
+        weight: typeof ev.weight === "number" ? ev.weight : undefined,
+        oracleTableId: ev.oracleTableId || undefined,
+        tags: Array.isArray(ev.tags) && ev.tags.length ? ev.tags : undefined,
+        summary: summarize(ev.prompt)
+      });
+    }
+  }
+  return dedupeById(all);
+}
+
+// ── Oracle tables (pack-level: keyword banks + prompt count) ───────
+function buildOracleTables() {
+  const all = [];
+  for (const { entry, world } of readCampaignEntries("oracleTables")) {
+    if (!entry?.id) continue;
+    all.push({
+      id: entry.id,
+      name: entry.name,
+      world,
+      zone: entry.zone || undefined,
+      defaultCanonRisk: entry.defaultCanonRisk || undefined,
+      tableKeys: entry.tables && typeof entry.tables === "object" ? Object.keys(entry.tables) : undefined,
+      prompts: Array.isArray(entry.prompts) ? entry.prompts.length : 0
+    });
+  }
+  return dedupeById(all);
+}
+
+// ── Travel maps (pack-level: node ids + default location) ─────────
+function buildTravelMaps() {
+  const all = [];
+  for (const { entry, world } of readCampaignEntries("travelMaps")) {
+    if (!entry?.id) continue;
+    const nodes = Array.isArray(entry.nodes) ? entry.nodes : [];
+    all.push({
+      id: entry.id,
+      name: entry.name,
+      world,
+      zone: entry.zone || undefined,
+      defaultLocationId: entry.defaultLocationId || undefined,
+      nodeIds: nodes.map((n) => n?.id).filter(Boolean),
+      links: Array.isArray(entry.links) ? entry.links.length : 0
+    });
+  }
+  return dedupeById(all);
+}
+
+// ── World activities (flattened to addressable activities) ─────────
+function buildWorldActivities() {
+  const all = [];
+  for (const { entry, world } of readCampaignEntries("worldActivityPacks")) {
+    for (const a of (entry.activities || [])) {
+      if (!a?.id) continue;
+      all.push({
+        id: a.id,
+        title: a.title,
+        world,
+        pack: entry.id,
+        type: a.type || undefined,
+        locationIds: Array.isArray(a.locationIds) && a.locationIds.length ? a.locationIds : undefined,
+        summary: summarize(a.summary)
+      });
+    }
+  }
+  return dedupeById(all);
+}
+
+// ── Story director packs (pack-level: arc shape) ──────────────────
+function buildStoryDirector() {
+  const all = [];
+  for (const { entry, world } of readCampaignEntries("storyDirectorPacks")) {
+    if (!entry?.id) continue;
+    all.push({
+      id: entry.id,
+      name: entry.name,
+      world,
+      zone: entry.zone || undefined,
+      stages: Array.isArray(entry.stages) ? entry.stages.length : 0,
+      sceneBeats: Array.isArray(entry.sceneBeats) ? entry.sceneBeats.length : 0,
+      metricIds: Array.isArray(entry.metrics) ? entry.metrics.map((m) => m?.id).filter(Boolean) : undefined,
+      summary: summarize(entry.summary)
+    });
+  }
+  return dedupeById(all);
+}
+
 // ── Write outputs ──────────────────────────────────────────────────
 function writeJson(name, data) {
   const out = path.join(outDir, name);
@@ -303,6 +456,13 @@ const monsters = buildMonsters();
 const characters = buildCharacters();
 const worlds = buildWorlds();
 const encounters = buildEncounters();
+// Campaign-side content (one compact file per campaign collection category).
+const campaignQuests = buildCampaignQuests();
+const campaignEvents = buildCampaignEvents();
+const oracleTables = buildOracleTables();
+const travelMaps = buildTravelMaps();
+const worldActivities = buildWorldActivities();
+const storyDirector = buildStoryDirector();
 
 writeJson("skills.compact.json", skills);
 writeJson("passives.compact.json", passives);
@@ -312,6 +472,12 @@ writeJson("monsters.compact.json", monsters);
 writeJson("characters.compact.json", characters);
 writeJson("worlds.compact.json", worlds);
 writeJson("encounters.compact.json", encounters);
+writeJson("campaignQuests.compact.json", campaignQuests);
+writeJson("campaignEvents.compact.json", campaignEvents);
+writeJson("oracleTables.compact.json", oracleTables);
+writeJson("travelMaps.compact.json", travelMaps);
+writeJson("worldActivities.compact.json", worldActivities);
+writeJson("storyDirector.compact.json", storyDirector);
 
 const manifest = {
   generatedAt: new Date().toISOString(),
@@ -325,12 +491,16 @@ const manifest = {
     "monsters.compact.json": { count: monsters.length },
     "characters.compact.json": { count: characters.length },
     "worlds.compact.json": { count: worlds.length },
-    "encounters.compact.json": { count: encounters.length }
+    "encounters.compact.json": { count: encounters.length },
+    "campaignQuests.compact.json": { count: campaignQuests.length },
+    "campaignEvents.compact.json": { count: campaignEvents.length },
+    "oracleTables.compact.json": { count: oracleTables.length },
+    "travelMaps.compact.json": { count: travelMaps.length },
+    "worldActivities.compact.json": { count: worldActivities.length },
+    "storyDirector.compact.json": { count: storyDirector.length }
   }
 };
 writeJson("index.json", manifest);
 
-const total = skills.length + passives.length + statuses.length
-  + items.length + monsters.length + characters.length
-  + worlds.length + encounters.length;
+const total = Object.values(manifest.files).reduce((sum, f) => sum + f.count, 0);
 process.stdout.write(`build-ai-index: wrote ${Object.keys(manifest.files).length} files (${total} entries) → ${path.relative(root, outDir)}\n`);

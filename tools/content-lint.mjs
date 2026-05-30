@@ -54,6 +54,19 @@ const FILENAME_TO_FORMAT = {
   "statuses.json": "cjs-statuses"
 };
 
+// Campaign-side content files all declare `format: "cjs-collection"` and
+// distinguish their shape via `_file.category` (mirroring the engine's
+// CATEGORY_TO_TYPE map in js/core/content-manager.js). Resolve those by
+// category instead of by filename/format.
+const CATEGORY_TO_SCHEMA = {
+  "campaignQuests": "campaignQuests.schema.json",
+  "campaignEvents": "campaignEvents.schema.json",
+  "oracleTables": "oracleTables.schema.json",
+  "travelMaps": "travelMaps.schema.json",
+  "worldActivityPacks": "worldActivityPacks.schema.json",
+  "storyDirectorPacks": "storyDirectorPacks.schema.json"
+};
+
 const args = process.argv.slice(2);
 const quiet = args.includes("--quiet");
 const patchIdx = args.indexOf("--patch");
@@ -237,11 +250,20 @@ function walk(dir, out) {
   }
 }
 
-function formatFor(absPath, payload) {
+// Resolve the schema filename for a file. Precedence:
+//   1. a declared `_file.format` that maps to a schema (e.g. cjs-skills);
+//   2. a declared `_file.category` for campaign-side collections;
+//   3. the filename fallback (world files declare the generic
+//      cjs-collection format but are named skills.json / monsters.json / …).
+function schemaNameFor(absPath, payload) {
   const baseName = path.basename(absPath);
   const declared = payload?._file?.format;
-  if (declared && FORMAT_TO_SCHEMA[declared]) return declared;
-  return FILENAME_TO_FORMAT[baseName] || null;
+  if (declared && FORMAT_TO_SCHEMA[declared]) return FORMAT_TO_SCHEMA[declared];
+  const category = payload?._file?.category;
+  if (category && CATEGORY_TO_SCHEMA[category]) return CATEGORY_TO_SCHEMA[category];
+  const byName = FILENAME_TO_FORMAT[baseName];
+  if (byName && FORMAT_TO_SCHEMA[byName]) return FORMAT_TO_SCHEMA[byName];
+  return null;
 }
 
 function lintFile(absPath) {
@@ -259,13 +281,11 @@ function lintFile(absPath) {
     diag("error", absPath, `JSON parse failed: ${e.message}`);
     return;
   }
-  const fmt = formatFor(absPath, data);
-  if (!fmt) {
+  const schemaName = schemaNameFor(absPath, data);
+  if (!schemaName) {
     diag("info", absPath, "no schema mapping (skipped)");
     return;
   }
-  const schemaName = FORMAT_TO_SCHEMA[fmt];
-  if (!schemaName) return;
   const schemaPath = path.join(root, "data/schemas", schemaName);
   if (!fs.existsSync(schemaPath)) {
     diag("warn", absPath, `schema ${schemaName} not found`);
@@ -307,7 +327,10 @@ function lintPatch(patchPath) {
     diag("error", patchPath, "patch must declare target.file and format");
     return;
   }
-  const schemaName = FORMAT_TO_SCHEMA[patch.format];
+  // A patch's `format` may be a content format (cjs-skills) or, for
+  // campaign-side collections, a category (campaignQuests).
+  const isCategory = !!CATEGORY_TO_SCHEMA[patch.format];
+  const schemaName = FORMAT_TO_SCHEMA[patch.format] || CATEGORY_TO_SCHEMA[patch.format];
   if (!schemaName) {
     diag("error", patchPath, `unknown format "${patch.format}"`);
     return;
@@ -319,9 +342,10 @@ function lintPatch(patchPath) {
   // Materialise a synthetic file with the upserts to reuse the same schema.
   const fileMeta = {
     version: 1,
-    format: patch.format,
+    format: isCategory ? "cjs-collection" : patch.format,
     scope: patch.target.world ? "world" : "universal"
   };
+  if (isCategory) fileMeta.category = patch.format;
   if (patch.target.world) fileMeta.world = patch.target.world;
   const synthetic = {
     _file: fileMeta,
@@ -339,6 +363,7 @@ if (patchPath) {
   walk(path.join(root, "data/universal"), files);
   walk(path.join(root, "data/system"), files);
   walk(path.join(root, "data/worlds"), files);
+  walk(path.join(root, "data/campaigns"), files);
   for (const f of files) lintFile(f);
 } else {
   for (const t of targets) {

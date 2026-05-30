@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:campaignQuests",
+  "title": "Campaign Quest Templates File",
+  "description": "Authored campaign quest-template collections (data/campaigns/<world>/quests/*.json, _file.category = campaignQuests). Each entry is a named bundle of quest templates the GM/solo loop can instantiate.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "required": ["category"],
+      "properties": { "category": { "const": "campaignQuests" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/QuestTemplateSet" }
+    }
+  },
+  "definitions": {
+    "idString": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "CampaignOp": {
+      "description": "A campaign op resolved by CampaignOps at runtime. Shape is open on purpose: `op` names the verb (e.g. give_money, give_jp, hub_stat_change, unlock_recipe), and the remaining fields are the verb's payload. The engine's CampaignOps registry is the authority for which verbs exist; the schema only requires a non-empty `op`.",
+      "type": "object",
+      "required": ["op"],
+      "additionalProperties": true,
+      "properties": { "op": { "type": "string", "minLength": 1 } }
+    },
+    "QuestTemplateSet": {
+      "type": "object",
+      "required": ["id", "name", "templates"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "world": { "type": "string" },
+        "zone": { "type": "string" },
+        "hubId": { "type": "string" },
+        "notes": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "templates": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/QuestTemplate" }
+        }
+      }
+    },
+    "QuestTemplate": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "title": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string" },
+        "status": { "type": "string" },
+        "giver": { "type": "string" },
+        "summary": { "type": "string" },
+        "objectives": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/QuestObjective" }
+        },
+        "rewards": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } },
+        "failureConsequence": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } },
+        "timer": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": { "phasesRemaining": { "type": "number", "minimum": 0 } }
+        },
+        "mapType": { "type": "string" },
+        "mapSetting": { "type": "string" },
+        "mapForm": { "type": "string", "enum": ["node_map", "grid_map"] },
+        "linkedScenario": { "type": "string" },
+        "linkedMapNodes": { "type": "array", "items": { "type": "string" } },
+        "linkedMapCells": { "type": "array", "items": { "type": "string" } },
+        "battleSetIds": { "type": "array", "items": { "type": "string" } },
+        "contextTags": { "type": "array", "items": { "type": "string" } },
+        "monsterTags": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" },
+        "repeat": { "$ref": "#/definitions/QuestRepeat" }
+      }
+    },
+    "QuestObjective": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "label": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string" },
+        "current": { "type": "number", "minimum": 0 },
+        "required": { "type": "number", "minimum": 0 },
+        "minigame": { "$ref": "#/definitions/QuestMiniGame" },
+        "progressTriggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "outcome": { "type": "string" },
+              "amount": { "type": "number" },
+              "requiresAnyTags": { "type": "array", "items": { "type": "string" } },
+              "addTags": { "type": "array", "items": { "type": "string" } },
+              "log": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "QuestMiniGame": {
+      "type": "object",
+      "required": ["gameId"],
+      "additionalProperties": true,
+      "properties": {
+        "gameId": { "type": "string", "minLength": 1 },
+        "difficulty": { "type": "number" },
+        "theme": { "type": "string" },
+        "contextText": { "type": "string" },
+        "bonusText": { "type": "string" },
+        "conversation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "speaker": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "QuestRepeat": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "reset": { "type": "string" },
+        "refreshActive": { "type": "boolean" },
+        "timerPhases": { "type": "number", "minimum": 0 },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "label": { "type": "string" },
+              "summary": { "type": "string" },
+              "dialogue": { "type": "string" },
+              "tags": { "type": "array", "items": { "type": "string" } },
+              "contextTags": { "type": "array", "items": { "type": "string" } },
+              "monsterTags": { "type": "array", "items": { "type": "string" } },
+              "objectiveOverrides": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id"],
+                  "additionalProperties": true,
+                  "properties": {
+                    "id": { "$ref": "#/definitions/idString" },
+                    "kind": { "type": "string" },
+                    "label": { "type": "string" },
+                    "required": { "type": "number", "minimum": 0 },
+                    "minigame": { "$ref": "#/definitions/QuestMiniGame" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

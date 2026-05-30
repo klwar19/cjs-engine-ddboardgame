@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:oracleTables",
+  "title": "Oracle Tables File",
+  "description": "Authored oracle keyword/prompt tables (data/campaigns/<world>/oracles/*.json, _file.category = oracleTables). The solo/GM loop rolls a keyword bank or a pre-written prompt. No runtime AI is required.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "required": ["category"],
+      "properties": { "category": { "const": "oracleTables" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/OracleTable" }
+    }
+  },
+  "definitions": {
+    "idString": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "canonRisk": {
+      "description": "How safe a result is to promote to canon: green = harmless, yellow = needs a soft check, red = GM approval before it becomes truth.",
+      "type": "string",
+      "enum": ["green", "yellow", "red"]
+    },
+    "OracleTable": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "world": { "type": "string" },
+        "zone": { "type": "string" },
+        "hubId": { "type": "string" },
+        "notes": { "type": "string" },
+        "defaultCanonRisk": { "$ref": "#/definitions/canonRisk" },
+        "tables": {
+          "description": "Named keyword banks. Each value is a list of words/phrases the oracle composes (e.g. adjectives, nouns, verbs, objects, twists).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "prompts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "text"],
+            "additionalProperties": true,
+            "properties": {
+              "id": { "$ref": "#/definitions/idString" },
+              "text": { "type": "string", "minLength": 1 },
+              "suggestedUse": { "type": "string" },
+              "canonRisk": { "$ref": "#/definitions/canonRisk" },
+              "tags": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

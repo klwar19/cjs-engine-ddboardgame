@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-26T03:46:08.224Z",
+  "generatedAt": "2026-05-30T04:48:51.898Z",
   "generator": "tools/build-ai-index.mjs",
   "description": "Compact AI indexes. Use these to give an AI generator context about existing ids and tags without paying the token cost of full content files.",
   "files": {
@@ -26,6 +26,24 @@
     },
     "encounters.compact.json": {
       "count": 8
+    },
+    "campaignQuests.compact.json": {
+      "count": 6
+    },
+    "campaignEvents.compact.json": {
+      "count": 60
+    },
+    "oracleTables.compact.json": {
+      "count": 1
+    },
+    "travelMaps.compact.json": {
+      "count": 3
+    },
+    "worldActivities.compact.json": {
+      "count": 16
+    },
+    "storyDirector.compact.json": {
+      "count": 1
     }
   }
 }

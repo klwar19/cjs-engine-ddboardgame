@@ -1,0 +1,805 @@
+[
+  {
+    "id": "haven_evt_tracks_in_snow",
+    "title": "Tracks in the Snow",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "hybrid",
+    "weight": 28,
+    "tags": [
+      "outdoor",
+      "clue"
+    ],
+    "summary": "Fresh tracks cross the path, but one set walks backward."
+  },
+  {
+    "id": "haven_evt_weak_ice",
+    "title": "Weak Ice",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "trap",
+    "weight": 18,
+    "tags": [
+      "outdoor",
+      "trap"
+    ],
+    "summary": "Snow hides a thin ice shelf."
+  },
+  {
+    "id": "haven_evt_frost_herbs",
+    "title": "Frost Herbs",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "reward",
+    "weight": 22,
+    "tags": [
+      "outdoor",
+      "reward"
+    ],
+    "summary": "A blue herb cluster grows where sunlight breaks the canopy."
+  },
+  {
+    "id": "haven_evt_hungry_howl",
+    "title": "Hungry Howl",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "mechanical",
+    "weight": 22,
+    "tags": [
+      "outdoor",
+      "wolf"
+    ],
+    "summary": "A long howl rolls through the trees."
+  },
+  {
+    "id": "haven_evt_buried_cache",
+    "title": "Buried Cache",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "reward",
+    "weight": 12,
+    "tags": [
+      "outdoor",
+      "reward"
+    ],
+    "summary": "A frozen knot of rope leads to a buried trapper's cache."
+  },
+  {
+    "id": "haven_evt_lost_lantern",
+    "title": "Lost Lantern",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "social",
+    "weight": 10,
+    "tags": [
+      "outdoor",
+      "rescue"
+    ],
+    "summary": "A frostbitten traveler wanders the trees, missing a lantern."
+  },
+  {
+    "id": "haven_evt_wolf_kit",
+    "title": "Wolf Pup",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "encounter",
+    "weight": 12,
+    "tags": [
+      "outdoor",
+      "wolf"
+    ],
+    "summary": "A pup follows the party. Mother is somewhere nearby."
+  },
+  {
+    "id": "haven_evt_bowy_old_target",
+    "title": "Bowy's Old Target",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "social",
+    "weight": 10,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "outdoor",
+      "back_story"
+    ],
+    "summary": "An arrow with familiar fletching is buried in a trunk. Bowy did not fire it."
+  },
+  {
+    "id": "haven_evt_garr_clue",
+    "title": "Garr's Old Map Stone",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "social",
+    "weight": 10,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "outdoor",
+      "back_story"
+    ],
+    "summary": "A flat stone is scored with a route Garr used in another life. The end of the route is scratched out."
+  },
+  {
+    "id": "haven_evt_mitia_pull",
+    "title": "Frost That Listens",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "social",
+    "weight": 10,
+    "tags": [
+      "outdoor",
+      "magic"
+    ],
+    "summary": "Mitia feels the snow lean toward her like it wants to be told something."
+  },
+  {
+    "id": "haven_evt_sudden_storm",
+    "title": "Sudden Storm",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "trap",
+    "weight": 8,
+    "tags": [
+      "outdoor",
+      "weather"
+    ],
+    "summary": "Wind picks up. Visibility collapses."
+  },
+  {
+    "id": "haven_evt_old_shrine_glow",
+    "title": "Glow Through the Pines",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "social",
+    "weight": 8,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "outdoor",
+      "shrine",
+      "mystery"
+    ],
+    "summary": "A faint amber glow pulses through the trees in the direction of an unmarked shrine."
+  },
+  {
+    "id": "haven_evt_lost_recipe",
+    "title": "Hunter's Lost Recipe",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "reward",
+    "weight": 6,
+    "tags": [
+      "outdoor",
+      "cooking"
+    ],
+    "summary": "A wax-paper folded recipe sits inside a hollow log, half-frozen."
+  },
+  {
+    "id": "haven_evt_rival_camp",
+    "title": "Rival Hunters' Camp",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "encounter",
+    "weight": 5,
+    "tags": [
+      "outdoor",
+      "faction"
+    ],
+    "summary": "A small camp belongs to a rival hunting band. They are not here. Their gear is."
+  },
+  {
+    "id": "haven_evt_dropped_blade",
+    "title": "Dropped Blade",
+    "world": "haven",
+    "table": "haven_frostwood_events",
+    "type": "reward",
+    "weight": 4,
+    "tags": [
+      "outdoor",
+      "weapon"
+    ],
+    "summary": "A short blade lies half-buried near broken snow. Someone struggled here."
+  },
+  {
+    "id": "haven_evt_after_loot",
+    "title": "Quick Loot",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "reward",
+    "weight": 22,
+    "tags": [
+      "aftermath",
+      "reward"
+    ],
+    "summary": "The party rummages through the dead's effects."
+  },
+  {
+    "id": "haven_evt_after_wounded",
+    "title": "Lingering Wounds",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "mechanical",
+    "weight": 18,
+    "tags": [
+      "aftermath",
+      "injury"
+    ],
+    "summary": "The fight took more out of the party than expected."
+  },
+  {
+    "id": "haven_evt_after_field_kit",
+    "title": "Battlefield Kit",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "reward",
+    "weight": 16,
+    "tags": [
+      "aftermath",
+      "reward"
+    ],
+    "summary": "An enemy carried a small medical roll."
+  },
+  {
+    "id": "haven_evt_after_witness",
+    "title": "Witness in the Trees",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "social",
+    "weight": 12,
+    "tags": [
+      "aftermath",
+      "social"
+    ],
+    "summary": "A traveler watched the fight from cover. They want a word."
+  },
+  {
+    "id": "haven_evt_after_morale_high",
+    "title": "Morale Surge",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "mechanical",
+    "weight": 10,
+    "tags": [
+      "aftermath",
+      "rest"
+    ],
+    "summary": "The cleanly-won fight steadies the whole party."
+  },
+  {
+    "id": "haven_evt_after_trophy",
+    "title": "Worthy Trophy",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "reward",
+    "weight": 9,
+    "tags": [
+      "aftermath",
+      "guild"
+    ],
+    "summary": "One body has a marked sigil. A guildmaster will pay for proof."
+  },
+  {
+    "id": "haven_evt_after_cracked_blade",
+    "title": "Cracked Blade",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "mechanical",
+    "weight": 8,
+    "tags": [
+      "aftermath",
+      "weapon"
+    ],
+    "summary": "Someone's weapon took the hit instead of them. It needs reforging."
+  },
+  {
+    "id": "haven_evt_after_bowy_kill_count",
+    "title": "Tally on the Quiver",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "social",
+    "weight": 7,
+    "tags": [
+      "aftermath",
+      "back_story"
+    ],
+    "summary": "Bowy's quiver has more notches than he remembers carving."
+  },
+  {
+    "id": "haven_evt_after_garr_silent",
+    "title": "Garr Goes Silent",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "social",
+    "weight": 6,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "aftermath",
+      "back_story"
+    ],
+    "summary": "Garr cleans his blade longer than the wound deserves."
+  },
+  {
+    "id": "haven_evt_after_mitia_residue",
+    "title": "Frost Residue",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "social",
+    "weight": 6,
+    "tags": [
+      "aftermath",
+      "magic"
+    ],
+    "summary": "Frost lingers on Mitia's hands long after the fight ends."
+  },
+  {
+    "id": "haven_evt_after_strange_coin",
+    "title": "Strange Coin",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "reward",
+    "weight": 6,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "aftermath",
+      "mystery"
+    ],
+    "summary": "One enemy carried a coin that does not match any kingdom's mint."
+  },
+  {
+    "id": "haven_evt_after_letter",
+    "title": "Half-Burnt Letter",
+    "world": "haven",
+    "table": "haven_aftermath_events",
+    "type": "social",
+    "weight": 5,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "aftermath",
+      "clue"
+    ],
+    "summary": "A blackened scrap of letter survives in a glove. A name is half-readable."
+  },
+  {
+    "id": "haven_evt_kind_trader",
+    "title": "Kind Trader",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "hybrid",
+    "weight": 30,
+    "tags": [
+      "town",
+      "social"
+    ],
+    "summary": "A road trader offers a small favor if the party shares news from the south."
+  },
+  {
+    "id": "haven_evt_bad_weather",
+    "title": "Bad Weather",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "mechanical",
+    "weight": 22,
+    "tags": [
+      "travel",
+      "outdoor"
+    ],
+    "summary": "Freezing wind slows travel and drains morale."
+  },
+  {
+    "id": "haven_evt_forgotten_cache",
+    "title": "Forgotten Cache",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "reward",
+    "weight": 25,
+    "tags": [
+      "reward",
+      "cache"
+    ],
+    "summary": "A hidden cache sits under a loose stone."
+  },
+  {
+    "id": "haven_evt_tavern_rumor",
+    "title": "Tavern Rumor",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 18,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "town",
+      "rumor",
+      "tavern"
+    ],
+    "summary": "A drunk regular mutters about lights moving inside the old shrine."
+  },
+  {
+    "id": "haven_evt_courier_request",
+    "title": "Courier Request",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 14,
+    "tags": [
+      "town",
+      "quest_seed"
+    ],
+    "summary": "A travelling courier asks the party to deliver a thin wax-sealed letter on their next route."
+  },
+  {
+    "id": "haven_evt_merchant_argument",
+    "title": "Stalled Caravan",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 12,
+    "tags": [
+      "town",
+      "social"
+    ],
+    "summary": "Two merchant guards block the road over a weighing dispute. They want a third party to call it."
+  },
+  {
+    "id": "haven_evt_old_friend",
+    "title": "An Old Friend",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 10,
+    "tags": [
+      "town",
+      "bond"
+    ],
+    "summary": "Someone from before Bin's missing year recognises him by his walk and won't let him refuse a drink."
+  },
+  {
+    "id": "haven_evt_mitia_whisper",
+    "title": "Whisper Under the Bell",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 8,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "town",
+      "magic"
+    ],
+    "summary": "Mitia hears a whisper inside the temple bell that no one else does. The bell rings only for her."
+  },
+  {
+    "id": "haven_evt_garr_marker",
+    "title": "Garr's Old Mark",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 6,
+    "tags": [
+      "town",
+      "back_story"
+    ],
+    "summary": "A weathered post bears a hunter's mark Garr left years ago. The mark has been carved over."
+  },
+  {
+    "id": "haven_evt_bowy_old_bow",
+    "title": "Bowy's First Bow",
+    "world": "haven",
+    "table": "haven_generic_events",
+    "type": "social",
+    "weight": 6,
+    "tags": [
+      "town",
+      "weapon"
+    ],
+    "summary": "A pawnbroker shows Bowy a child's hunting bow with his initials scratched inside."
+  },
+  {
+    "id": "haven_evt_seed_new_npc_courier",
+    "title": "Plot Seed: A New Face",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 12,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "new_char"
+    ],
+    "summary": "A courier with a half-finished tattoo waits exactly where the party will pass. They have read the room before sitting down."
+  },
+  {
+    "id": "haven_evt_seed_new_npc_smith",
+    "title": "Plot Seed: Smith Without a Forge",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 10,
+    "tags": [
+      "plot_seed",
+      "new_char",
+      "weapon"
+    ],
+    "summary": "Hilda introduces a smith who lost their forge and is sleeping behind the alley. They ask for a small job."
+  },
+  {
+    "id": "haven_evt_seed_new_item_relic",
+    "title": "Plot Seed: A Relic in the Snow",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "reward",
+    "weight": 10,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "new_item"
+    ],
+    "summary": "A wax-wrapped object pokes out of fresh snow. Cold, heavy, a little wrong."
+  },
+  {
+    "id": "haven_evt_seed_weapon_named",
+    "title": "Plot Seed: A Weapon With a Name",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "reward",
+    "weight": 10,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "weapon"
+    ],
+    "summary": "An old weapon, signed in a smith's mark no one in town recognises."
+  },
+  {
+    "id": "haven_evt_seed_main_plot_prophecy",
+    "title": "Plot Seed: A Whispered Line",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 9,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "main_plot"
+    ],
+    "summary": "A fevered patient repeats a single line that none of the local clergy can place."
+  },
+  {
+    "id": "haven_evt_seed_back_story_letter",
+    "title": "Plot Seed: A Letter to Someone Here",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 9,
+    "tags": [
+      "plot_seed",
+      "back_story"
+    ],
+    "summary": "A sealed letter is addressed to one of the party. The handwriting is old."
+  },
+  {
+    "id": "haven_evt_seed_development_choice",
+    "title": "Plot Seed: A Choice That Stays",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 8,
+    "tags": [
+      "plot_seed",
+      "development"
+    ],
+    "summary": "The party is offered an easy out that costs someone a little of who they were."
+  },
+  {
+    "id": "haven_evt_seed_faction_third",
+    "title": "Plot Seed: A Third Faction",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 7,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "faction"
+    ],
+    "summary": "A messenger from a faction nobody tracks waits in the corner of the tavern."
+  },
+  {
+    "id": "haven_evt_seed_mystery_door",
+    "title": "Plot Seed: A Door That Was Not There",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 7,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "mystery"
+    ],
+    "summary": "A door appears in a wall the party walked past yesterday."
+  },
+  {
+    "id": "haven_evt_seed_bin_missing_year",
+    "title": "Plot Seed: A Year Bin Cannot Account For",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 6,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "plot_seed",
+      "main_plot",
+      "back_story"
+    ],
+    "summary": "Someone produces a contract in Bin's handwriting from a city Bin has never visited."
+  },
+  {
+    "id": "haven_evt_seed_party_bond",
+    "title": "Plot Seed: An Unfinished Conversation",
+    "world": "haven",
+    "table": "haven_plot_seeds",
+    "type": "social",
+    "weight": 5,
+    "tags": [
+      "plot_seed",
+      "development",
+      "bond"
+    ],
+    "summary": "Two party members realise they were both there, on different sides, of an event neither has talked about."
+  },
+  {
+    "id": "haven_evt_pickpocket",
+    "title": "Pickpocket Brush",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "encounter",
+    "weight": 18,
+    "tags": [
+      "urban",
+      "town"
+    ],
+    "summary": "A child in a thin coat bumps the lead member and is gone before anyone reacts."
+  },
+  {
+    "id": "haven_evt_bribe_offer",
+    "title": "Bribe Offered",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 14,
+    "tags": [
+      "town",
+      "social",
+      "faction"
+    ],
+    "summary": "A nervous clerk slides a small purse across a desk in exchange for looking the other way."
+  },
+  {
+    "id": "haven_evt_grate_drop",
+    "title": "Loose Grate",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "trap",
+    "weight": 12,
+    "tags": [
+      "urban",
+      "trap"
+    ],
+    "summary": "A rusted grate gives way underfoot."
+  },
+  {
+    "id": "haven_evt_lost_coin_pouch",
+    "title": "Lost Coin Pouch",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "reward",
+    "weight": 13,
+    "tags": [
+      "urban",
+      "reward"
+    ],
+    "summary": "A small pouch wedged between cobbles. Someone dropped it."
+  },
+  {
+    "id": "haven_evt_sewer_glow",
+    "title": "Phosphor Drip",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "mechanical",
+    "weight": 10,
+    "tags": [
+      "sewer",
+      "magic"
+    ],
+    "summary": "Glowing goo drips from the ceiling. Someone bottles it."
+  },
+  {
+    "id": "haven_evt_kind_innkeeper",
+    "title": "Kind Innkeeper",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 12,
+    "tags": [
+      "town",
+      "rest"
+    ],
+    "summary": "A weathered innkeeper waves the party to the back kitchen and ladles hot stew."
+  },
+  {
+    "id": "haven_evt_market_argument",
+    "title": "Market Argument",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 10,
+    "tags": [
+      "town",
+      "social"
+    ],
+    "summary": "Two stalls are screaming about a stolen scale. Both want the party to weigh in."
+  },
+  {
+    "id": "haven_evt_rooftop_runner",
+    "title": "Rooftop Runner",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "encounter",
+    "weight": 6,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "urban",
+      "mystery"
+    ],
+    "summary": "A figure leaps roof to roof above the party, trailing snow."
+  },
+  {
+    "id": "haven_evt_temple_question",
+    "title": "Temple Question",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 8,
+    "tags": [
+      "town",
+      "religion"
+    ],
+    "summary": "A novice asks the party an awkward theological question about miracles in wartime."
+  },
+  {
+    "id": "haven_evt_back_alley_smith",
+    "title": "Back-Alley Smith",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 7,
+    "tags": [
+      "urban",
+      "weapon"
+    ],
+    "summary": "A smith offers to engrave a name into a blade for cheap. The smith asks who hurt the bearer."
+  },
+  {
+    "id": "haven_evt_bin_double",
+    "title": "Someone Wearing Bin's Face",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 5,
+    "oracleTableId": "oracle_frostbitten",
+    "tags": [
+      "town",
+      "mystery"
+    ],
+    "summary": "Half a dozen witnesses swear they saw Bin in another part of town an hour ago."
+  },
+  {
+    "id": "haven_evt_corvin_paperwork",
+    "title": "Corvin's Paperwork",
+    "world": "haven",
+    "table": "haven_urban_events",
+    "type": "social",
+    "weight": 5,
+    "tags": [
+      "town",
+      "guild"
+    ],
+    "summary": "Corvin needs three signatures and at least one witness to confirm Bin is alive enough to sign for jobs."
+  }
+]

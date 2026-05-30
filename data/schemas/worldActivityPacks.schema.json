@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:worldActivityPacks",
+  "title": "World Activity Packs File",
+  "description": "Authored world activity loops (data/campaigns/<world>/activity_packs/*.json, _file.category = worldActivityPacks). Each entry is a pack of location-bound activities (scavenge, build, etc.) plus optional journal entries.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "required": ["category"],
+      "properties": { "category": { "const": "worldActivityPacks" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/WorldActivityPack" }
+    }
+  },
+  "definitions": {
+    "idString": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "CampaignOp": {
+      "type": "object",
+      "required": ["op"],
+      "additionalProperties": true,
+      "properties": { "op": { "type": "string", "minLength": 1 } }
+    },
+    "ResourceCost": {
+      "description": "A bucket of id -> quantity costs the activity deducts before its ops run.",
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "ActivityConditions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "requiresMilestones": { "type": "array", "items": { "type": "string" } },
+        "any": {
+          "description": "OR-group: the gate passes when ANY of the listed sub-condition groups is satisfied.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "requiresMilestones": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "WorldActivityPack": {
+      "type": "object",
+      "required": ["id", "name", "activities"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "number", "minimum": 1 },
+        "world": { "type": "string" },
+        "zone": { "type": "string" },
+        "hubId": { "type": "string" },
+        "activities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/WorldActivity" }
+        },
+        "journalEntries": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/JournalEntry" }
+        }
+      }
+    },
+    "WorldActivity": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "title": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "summary": { "type": "string" },
+        "buttonLabel": { "type": "string" },
+        "rewardText": { "type": "string" },
+        "locationIds": { "type": "array", "items": { "type": "string" } },
+        "conditions": { "$ref": "#/definitions/ActivityConditions" },
+        "cost": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "materials": { "$ref": "#/definitions/ResourceCost" },
+            "currencies": { "$ref": "#/definitions/ResourceCost" },
+            "imports": { "$ref": "#/definitions/ResourceCost" }
+          }
+        },
+        "ops": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } }
+      }
+    },
+    "JournalEntry": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "title": { "type": "string" },
+        "text": { "type": "string" },
+        "world": { "type": "string" },
+        "scope": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "conditions": { "$ref": "#/definitions/ActivityConditions" }
+      }
+    }
+  }
+}

@@ -350,6 +350,372 @@ export interface ItemCompact {
   readonly summary?: string;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// Campaign-side content contracts
+// ════════════════════════════════════════════════════════════════════
+// These mirror the campaign collection schemas in `data/schemas/` (one per
+// `_file.category`). They live under `data/campaigns/<world>/<type>/` and
+// all use `format: "cjs-collection"` + a `category` tag. The CampaignOps
+// verb set is open (the engine's CampaignOps registry is the authority), so
+// `CampaignOp` keeps `op` typed and the payload free-form.
+
+export type CanonRisk = "green" | "yellow" | "red";
+
+export interface CampaignOp {
+  readonly op: string;
+  readonly [key: string]: unknown;
+}
+
+// ── Campaign quests (category: campaignQuests) ─────────────────────
+export interface QuestMiniGame {
+  readonly gameId: string;
+  readonly difficulty?: number;
+  readonly theme?: string;
+  readonly contextText?: string;
+  readonly bonusText?: string;
+  readonly conversation?: ReadonlyArray<{ readonly speaker?: string; readonly text?: string }>;
+}
+
+export interface QuestProgressTrigger {
+  readonly id: string;
+  readonly outcome?: string;
+  readonly amount?: number;
+  readonly requiresAnyTags?: readonly string[];
+  readonly addTags?: readonly string[];
+  readonly log?: string;
+}
+
+export interface QuestObjective {
+  readonly id: string;
+  readonly label: string;
+  readonly kind?: string;
+  readonly current?: number;
+  readonly required?: number;
+  readonly minigame?: QuestMiniGame;
+  readonly progressTriggers?: readonly QuestProgressTrigger[];
+}
+
+export interface QuestObjectiveOverride {
+  readonly id: string;
+  readonly kind?: string;
+  readonly label?: string;
+  readonly required?: number;
+  readonly minigame?: QuestMiniGame;
+}
+
+export interface QuestVariant {
+  readonly id: string;
+  readonly label?: string;
+  readonly summary?: string;
+  readonly dialogue?: string;
+  readonly tags?: readonly string[];
+  readonly contextTags?: readonly string[];
+  readonly monsterTags?: readonly string[];
+  readonly objectiveOverrides?: readonly QuestObjectiveOverride[];
+}
+
+export interface QuestRepeat {
+  readonly reset?: string;
+  readonly refreshActive?: boolean;
+  readonly timerPhases?: number;
+  readonly variants?: readonly QuestVariant[];
+}
+
+export interface QuestTemplate {
+  readonly id: string;
+  readonly title: string;
+  readonly kind?: string;
+  readonly status?: string;
+  readonly giver?: string;
+  readonly summary?: string;
+  readonly objectives?: readonly QuestObjective[];
+  readonly rewards?: readonly CampaignOp[];
+  readonly failureConsequence?: readonly CampaignOp[];
+  readonly timer?: { readonly phasesRemaining?: number };
+  readonly mapType?: string;
+  readonly mapSetting?: string;
+  readonly mapForm?: "node_map" | "grid_map";
+  readonly linkedScenario?: string;
+  readonly linkedMapNodes?: readonly string[];
+  readonly linkedMapCells?: readonly string[];
+  readonly battleSetIds?: readonly string[];
+  readonly contextTags?: readonly string[];
+  readonly monsterTags?: readonly string[];
+  readonly tags?: readonly string[];
+  readonly notes?: string;
+  readonly repeat?: QuestRepeat;
+}
+
+export interface QuestTemplateSet {
+  readonly id: string;
+  readonly name: string;
+  readonly world?: string;
+  readonly zone?: string;
+  readonly hubId?: string;
+  readonly notes?: string;
+  readonly tags?: readonly string[];
+  readonly templates: readonly QuestTemplate[];
+}
+
+// ── Campaign events (category: campaignEvents) ─────────────────────
+export interface EventCheck {
+  readonly stat?: string;
+  readonly dc?: number;
+  readonly fail?: readonly CampaignOp[];
+}
+
+export interface EventEntry {
+  readonly id: string;
+  readonly title: string;
+  readonly weight?: number;
+  readonly type?: string;
+  readonly tags?: readonly string[];
+  readonly settings?: readonly string[];
+  readonly locationKinds?: readonly string[];
+  readonly prompt?: string;
+  readonly gmHook?: string;
+  readonly gmIdea?: string;
+  readonly requiresParty?: readonly string[];
+  readonly oracleTableId?: string;
+  readonly check?: EventCheck;
+  readonly suggested?: readonly CampaignOp[];
+}
+
+export interface EventTable {
+  readonly id: string;
+  readonly name: string;
+  readonly world?: string;
+  readonly zone?: string;
+  readonly hubId?: string;
+  readonly tags?: readonly string[];
+  readonly settings?: readonly string[];
+  readonly entries: readonly EventEntry[];
+}
+
+// ── Oracle tables (category: oracleTables) ─────────────────────────
+export interface OraclePrompt {
+  readonly id: string;
+  readonly text: string;
+  readonly suggestedUse?: string;
+  readonly canonRisk?: CanonRisk;
+  readonly tags?: readonly string[];
+}
+
+export interface OracleTable {
+  readonly id: string;
+  readonly name: string;
+  readonly world?: string;
+  readonly zone?: string;
+  readonly hubId?: string;
+  readonly notes?: string;
+  readonly defaultCanonRisk?: CanonRisk;
+  readonly tables?: Readonly<Record<string, readonly string[]>>;
+  readonly prompts?: readonly OraclePrompt[];
+}
+
+// ── Travel maps (category: travelMaps) ─────────────────────────────
+export interface TravelInteraction {
+  readonly id: string;
+  readonly label?: string;
+  readonly summary?: string;
+  readonly ops?: readonly CampaignOp[];
+}
+
+export interface TravelNode {
+  readonly id: string;
+  readonly name: string;
+  readonly type?: string;
+  readonly x?: number;
+  readonly y?: number;
+  readonly zone?: string;
+  readonly description?: string;
+  readonly visual?: Record<string, unknown>;
+  readonly people?: readonly TravelInteraction[];
+  readonly actions?: readonly TravelInteraction[];
+}
+
+export interface TravelLink {
+  readonly from: string;
+  readonly to: string;
+  readonly route?: string;
+  readonly time?: number;
+  readonly risk?: string;
+}
+
+export interface TravelAreaButton {
+  readonly id: string;
+  readonly label?: string;
+  readonly mapId?: string;
+  readonly active?: boolean;
+  readonly status?: string;
+  readonly summary?: string;
+}
+
+export interface TravelVisualLayer {
+  readonly type: string;
+  readonly kind?: string;
+  readonly x?: number;
+  readonly y?: number;
+  readonly cx?: number;
+  readonly cy?: number;
+  readonly rx?: number;
+  readonly ry?: number;
+  readonly width?: number;
+  readonly height?: number;
+  readonly d?: string;
+  readonly text?: string;
+}
+
+export interface TravelMap {
+  readonly id: string;
+  readonly name: string;
+  readonly world?: string;
+  readonly zone?: string;
+  readonly defaultLocationId?: string;
+  readonly visualMode?: string;
+  readonly visualBackdrop?: string;
+  readonly visualBackdropPrompt?: string;
+  readonly visualBackdropFit?: string;
+  readonly canvas?: { readonly width?: number; readonly height?: number };
+  readonly visualTheme?: { readonly id?: string; readonly mood?: string };
+  readonly areaButtons?: readonly TravelAreaButton[];
+  readonly legend?: ReadonlyArray<{ readonly id: string; readonly kind?: string; readonly label?: string }>;
+  readonly visualLayers?: readonly TravelVisualLayer[];
+  readonly nodes: readonly TravelNode[];
+  readonly links?: readonly TravelLink[];
+}
+
+// ── World activity packs (category: worldActivityPacks) ────────────
+export type ResourceCost = Readonly<Record<string, number>>;
+
+export interface ActivityConditions {
+  readonly requiresMilestones?: readonly string[];
+  readonly any?: ReadonlyArray<{ readonly requiresMilestones?: readonly string[] }>;
+}
+
+export interface JournalEntry {
+  readonly id: string;
+  readonly title?: string;
+  readonly text?: string;
+  readonly world?: string;
+  readonly scope?: string;
+  readonly tags?: readonly string[];
+  readonly conditions?: ActivityConditions;
+}
+
+export interface WorldActivity {
+  readonly id: string;
+  readonly title: string;
+  readonly type?: string;
+  readonly summary?: string;
+  readonly buttonLabel?: string;
+  readonly rewardText?: string;
+  readonly locationIds?: readonly string[];
+  readonly conditions?: ActivityConditions;
+  readonly cost?: {
+    readonly materials?: ResourceCost;
+    readonly currencies?: ResourceCost;
+    readonly imports?: ResourceCost;
+  };
+  readonly ops?: readonly CampaignOp[];
+}
+
+export interface WorldActivityPack {
+  readonly id: string;
+  readonly name: string;
+  readonly version?: number;
+  readonly world?: string;
+  readonly zone?: string;
+  readonly hubId?: string;
+  readonly activities: readonly WorldActivity[];
+  readonly journalEntries?: readonly JournalEntry[];
+}
+
+// ── Story director packs (category: storyDirectorPacks) ────────────
+export interface SuggestedChoice {
+  readonly label?: string;
+  readonly ops?: readonly CampaignOp[];
+}
+
+// Shared shape for sceneBeats / periInterruptions / memoryShards / pressureTicks.
+export interface StoryBeat {
+  readonly id: string;
+  readonly title?: string;
+  readonly stageIds?: readonly string[];
+  readonly phaseTypes?: readonly string[];
+  readonly canonRisk?: CanonRisk;
+  readonly weight?: number;
+  readonly tags?: readonly string[];
+  readonly prompt?: string;
+  readonly gmNote?: string;
+  readonly reviewReason?: string;
+  readonly suggestedChoices?: readonly SuggestedChoice[];
+}
+
+export interface StoryStage {
+  readonly id: string;
+  readonly name?: string;
+  readonly chapterMin?: number;
+  readonly chapterMax?: number;
+  readonly summary?: string;
+  readonly tags?: readonly string[];
+}
+
+export interface StoryMetric {
+  readonly id: string;
+  readonly label?: string;
+  readonly min?: number;
+  readonly max?: number;
+}
+
+export interface ProtectedTruth {
+  readonly id: string;
+  readonly title?: string;
+  readonly rule?: string;
+}
+
+export interface SideQuestRef {
+  readonly id: string;
+  readonly title?: string;
+  readonly reason?: string;
+}
+
+export interface SideQuestFlow {
+  readonly stageId?: string;
+  readonly summary?: string;
+  readonly keep?: readonly SideQuestRef[];
+  readonly promote?: readonly SideQuestRef[];
+  readonly retire?: readonly SideQuestRef[];
+  readonly ops?: readonly CampaignOp[];
+}
+
+export interface StoryDirectorPack {
+  readonly id: string;
+  readonly name: string;
+  readonly version?: number;
+  readonly world?: string;
+  readonly zone?: string;
+  readonly hubId?: string;
+  readonly summary?: string;
+  readonly pressureRule?: string;
+  readonly defaultCanonRisk?: CanonRisk;
+  readonly tonePillars?: readonly string[];
+  readonly plotPolicy?: {
+    readonly editable?: boolean;
+    readonly notes?: string;
+    readonly doNotOverfocus?: readonly string[];
+    readonly preferredFeel?: readonly string[];
+  };
+  readonly metrics?: readonly StoryMetric[];
+  readonly protectedTruths?: readonly ProtectedTruth[];
+  readonly stages: readonly StoryStage[];
+  readonly sceneBeats: readonly StoryBeat[];
+  readonly periInterruptions?: readonly StoryBeat[];
+  readonly memoryShards?: readonly StoryBeat[];
+  readonly pressureTicks?: readonly StoryBeat[];
+  readonly sideQuestFlow?: readonly SideQuestFlow[];
+}
+
 // ── Patch shape for AI generators ──────────────────────────────────
 // AI generators produce a `ContentPatch` rather than rewriting whole
 // files. The content-lint tool merges a patch against the current files,

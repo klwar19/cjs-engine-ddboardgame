@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cjs:campaignEvents",
+  "title": "Campaign Event Tables File",
+  "description": "Authored weighted event tables (data/campaigns/<world>/events/*.table.json, _file.category = campaignEvents). Each entry is a named table; its inner `entries` are the rollable events.",
+  "allOf": [{ "$ref": "_envelope.schema.json" }],
+  "type": "object",
+  "properties": {
+    "_file": {
+      "required": ["category"],
+      "properties": { "category": { "const": "campaignEvents" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/EventTable" }
+    }
+  },
+  "definitions": {
+    "idString": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "CampaignOp": {
+      "description": "A campaign op resolved by CampaignOps at runtime (e.g. give_money, give_item, add_rumor, add_status, set_flag, log). `op` names the verb; remaining fields are its payload. The engine is the authority for which verbs exist.",
+      "type": "object",
+      "required": ["op"],
+      "additionalProperties": true,
+      "properties": { "op": { "type": "string", "minLength": 1 } }
+    },
+    "EventTable": {
+      "type": "object",
+      "required": ["id", "name", "entries"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "name": { "type": "string", "minLength": 1 },
+        "world": { "type": "string" },
+        "zone": { "type": "string" },
+        "hubId": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "settings": { "type": "array", "items": { "type": "string" } },
+        "entries": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/EventEntry" }
+        }
+      }
+    },
+    "EventEntry": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/definitions/idString" },
+        "title": { "type": "string", "minLength": 1 },
+        "weight": { "type": "number", "minimum": 0 },
+        "type": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "settings": { "type": "array", "items": { "type": "string" } },
+        "locationKinds": { "type": "array", "items": { "type": "string" } },
+        "prompt": { "type": "string" },
+        "gmHook": { "type": "string" },
+        "gmIdea": { "type": "string" },
+        "requiresParty": { "type": "array", "items": { "type": "string" } },
+        "oracleTableId": { "type": "string" },
+        "check": {
+          "description": "Optional stat check. On failure the engine applies the `fail` consequence ops.",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "stat": { "type": "string" },
+            "dc": { "type": "number" },
+            "fail": { "type": "array", "items": { "$ref": "#/definitions/CampaignOp" } }
+          }
+        },
+        "suggested": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CampaignOp" }
+        }
+      }
+    }
+  }
+}
