@@ -1,5 +1,6 @@
 import type { CampaignStateSnapshot } from "../store";
 import * as CampaignActions from "../actions";
+import { VirtualList } from "../util/VirtualList";
 
 interface LogLine {
   readonly op?: string;
@@ -47,11 +48,14 @@ export function CampaignLogsTab({ state }: Props) {
         </div>
       </div>
       {hasLog ? (
-        <div className="campaign-log-list">
-          {lines.map((line, index) => (
-            <LogEntry key={index} line={line} helpers={helpers} />
-          ))}
-        </div>
+        <VirtualList
+          items={lines}
+          itemKey={(_, index) => index}
+          renderItem={(line) => <LogEntry line={line} helpers={helpers} />}
+          estimateHeight={44}
+          listClassName="campaign-log-list"
+          ariaLabel="Session log entries"
+        />
       ) : (
         <div className="campaign-empty">No log entries.</div>
       )}

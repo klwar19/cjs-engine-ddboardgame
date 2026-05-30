@@ -18,6 +18,7 @@ import {
   type EventLogEntry
 } from "./data/eventLog";
 import { EventResultPanel, OraclePanel } from "./ResultPanels";
+import { VirtualList } from "../util/VirtualList";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -137,7 +138,14 @@ function EventLedger({ data }: { data: EventLogData }) {
         )}
       </div>
       {data.entries.length ? (
-        data.entries.map((entry, i) => <EventLogEntryRow key={i} entry={entry} />)
+        <VirtualList
+          items={data.entries}
+          itemKey={(_, i) => i}
+          renderItem={(entry) => <EventLogEntryRow entry={entry} />}
+          estimateHeight={132}
+          listClassName="campaign-event-ledger-list"
+          ariaLabel="Event ledger entries"
+        />
       ) : (
         <div className="campaign-empty">
           No event ledger entries yet. Use Oracle Prompt, Manual Event, or an Event card and choose Event Log.

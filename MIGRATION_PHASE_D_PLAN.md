@@ -793,9 +793,28 @@ show become tractable:
   version-keyed cache can't memoize safely. All 31 call sites dropped the
   `state=` prop (typecheck-enumerated; JSX bodies untouched, verified by
   diff). `test_selector_store.js` +23 assertions (86 total).
-- [ ] **I.3 — Virtualize long lists.** Quest list, event ledger,
-  log entries panel, save slots — each can pass 100+ rows. Add
-  `react-window` or a tiny custom virtualizer.
+- [x] **I.3 — Virtualize long lists.** A tiny, dependency-free virtualizer
+  (`src/campaign/util/VirtualList.tsx`, with the pure windowing math split
+  into `util/virtual.ts`) now backs the four lists the plan flagged: session
+  log (`CampaignLogsTab`), event ledger (`CampaignEventLogTab`), quest list —
+  active + the long resolved list — (`CampaignQuestsPanelTab`), and save slots
+  (`CampaignSettingsTab`). Rows are VARIABLE height (quest cards nest
+  objectives, log/event lines wrap), so the component measures each rendered
+  row via `ResizeObserver`, keys the measurements by ITEM key (so a
+  measurement survives the append/reorder of a deep-cloned state tick), and
+  renders only the rows intersecting a bounded scroll viewport (+ overscan) at
+  their measured offsets inside a full-height spacer. Below a 40-row threshold
+  it renders the ORIGINAL inline markup (same `listClassName`, no scroll box,
+  no windowing hooks) so the common short-list case is byte-for-byte unchanged
+  — virtualization engages only where it pays. The per-row `memoDeep` (e.g.
+  `QuestRow`) is preserved: the virtualizer decides WHICH rows mount,
+  memoization decides whether a mounted row re-renders. `react-window` was
+  rejected — it would add a chunk and wants a known `itemSize` these
+  content-driven rows don't have (`VirtualList.js` is a hoisted 2.6 KB shared
+  chunk). The pure geometry (`buildOffsets` / `findIndexForOffset` /
+  `computeWindow`) is unit-tested by transpiling the TS (like `equality.ts`),
+  incl. a viewport-coverage property across a 200-row variable-height scroll;
+  the adoption is grep-contracted — `test_virtual_list.js`, 50 assertions.
 - [x] **I.4 — Lazy tab bodies (defer off-screen panels).** Every entry in
   `CampaignShell`'s `REACT_TAB_COMPONENTS` map is now `React.lazy(() =>
   import("./tabs/X"))` instead of an eager import, wrapped in a single
@@ -814,30 +833,63 @@ show become tractable:
   The Story Director support grid + Hub inner grids ride along inside their
   now-lazy tab chunks; a finer per-panel `Suspense` split can follow if a
   single tab chunk ever gets too big.
-- [ ] **I.5 — Service worker fine-tune.** Today the PWA precaches
-  every chunk on first visit. With domain-split chunks (combat /
-  campaign / minigames / qte / media), shift to a runtime-cache
-  policy keyed by mode so a Story-Mode-only player never downloads
-  the combat chunk's grid renderer.
-- [~] **I.6 — Image / asset budget.**
+- [x] **I.5 — Service-worker runtime caching.** The Workbox policy moved to
+  `pwa.config.mjs` — a single, testable data structure `vite.config.mjs`
+  imports. Precache dropped from "every chunk" (`globPatterns:
+  **/*.{js,...}` → 128 entries / 2.96 MB, so a first visit to ANY page
+  background-downloaded combat + editor + minigames) to the app SHELL only:
+  HTML/CSS/SVG/manifest + the universal React runtime (`react-vendor` + vite's
+  loader shims) — **56 entries / 1.17 MB, of which just 4 are JS**. Every
+  domain chunk is now fetched ON DEMAND into a per-mode `CacheFirst` bucket
+  (`cjs-code-combat` / `-minigames` / `-campaign` / `-shared`), keyed on the
+  stable `manualChunks` name prefixes. Hashed chunk names are immutable, so
+  `CacheFirst` is correct (a new build emits a new name → cache miss → fresh
+  fetch; superseded names age out via the `maxEntries` caps). Net: a
+  Story-Mode-only player's SW never requests `cjs-combat` / `cjs-grid`. The
+  multi-page `navigateFallback: null` + the embed/cachebust
+  `ignoreURLParametersMatching` are unchanged, and the precache route is still
+  registered first so the universal chunks are served from precache (not
+  double-stored by the shared `.js` catch-all). `test_pwa_config.js` (40
+  assertions) imports the real config and runs its actual urlPattern RegExps —
+  plus a small glob matcher — against real emitted chunk names to prove both
+  the per-mode routing and the precache exclusions.
+- [x] **I.6 — Image / asset budget.**
   - [x] **Build-time guard (done).** `build-size-check.mjs` now covers a
     second domain: the copied media payload (`dist/images`, `dist/audio`,
-    `dist/assets/live2d`, `dist/data` — **239.71 MB / 1,908 files** vs.
+    `dist/assets/live2d`, `dist/data` — was **239.71 MB / 1,908 files** vs.
     2.84 MB of code). It enforces a total-asset budget (5%), reports the
     per-group breakdown, and lists every asset ≥ 2 MB so outliers are
-    visible in CI. The audit it surfaces is stark: a **23 MB** 8192px
+    visible in CI. The audit it surfaced was stark: a **23 MB** 8192px
     live2d texture, a **22 MB** moc3, and ~9 MB character PNGs
     (`haven_mitia.png` 9.4 MB, etc.). Same baseline / re-baseline / CI
     wiring as I.7.
-  - [ ] **Art optimization (remaining — needs domain input + image
-    tooling).** Downscale the oversized textures/PNGs (an 8192px texture
-    and 9 MB character art are almost certainly mistakes), cap thumbnail
-    sizes, and move large story-mode VN art behind a per-world dynamic
-    import so a player only downloads the art for the world they're in.
-    Deliberately not done blind: re-encoding/removing game art needs the
-    author's call on quality, and the loaders (`<img>` / CSS / live2d)
-    need restructuring per world. The guard above makes the targets
-    concrete and stops the payload growing further meanwhile.
+  - [x] **Art optimization (done).** `tools/optimize-art.py` (Pillow)
+    downscales a curated manifest (`tools/art-budget.json` — the single
+    source of truth) of the oversized, safe-to-downscale art IN PLACE, same
+    path + format so NO `<img>` / CSS / data-JSON / live2d reference has to
+    change: live2d textures (the 8192px `peri` atlas → 2048; `peri-v2`'s
+    nineteen 4096px textures → 2048 — Cubism samples textures by NORMALIZED
+    UVs, so a uniform downscale only lowers resolution and the `.moc3` rig is
+    untouched), character portraits (→ 1280px long edge; the 9 MB
+    `haven_mitia` class, now ~2 MB), and story-mode backgrounds (→ 1920px;
+    several double as world-gate banners). Sprite sheets / tile atlases
+    (hardcoded pixel cells in the grid/minigame renderers) and `.moc3` rigs
+    are deliberately EXCLUDED. Result: the media payload **239.71 MB →
+    124.03 MB (−48%)**; the size baseline was re-captured. The optimizer is
+    idempotent (only files over their cap are touched, so a re-run is a no-op)
+    and re-runnable via `npm run art:optimize` (needs `pip install Pillow` — a
+    dev tool, not an npm/build dependency). `test_art_budget.js` (68
+    assertions; reads dimensions straight from PNG/JPEG headers, no Pillow at
+    test time) guards every budgeted image against its `maxEdge` so a re-added
+    HD asset fails CI. The plan's other half — per-world lazy art — is already
+    realized by the architecture: art is referenced by runtime string paths
+    (never statically imported/bundled), the world switch fetches only the
+    active world's data, and I.5's runtime image cache means a player only
+    downloads the art they actually view (reinforced now the world-gate
+    banners are ~half their former weight). Documented future lever: re-encode
+    the opaque backgrounds to JPEG/WebP for a further cut — deferred because it
+    needs the per-reference path updates (and quality call) the guard makes
+    safe to attempt later.
 - [x] **I.7 — Build-size budget guard.** `tools/build-size-check.mjs`
   compares every `dist/assets/*.{js,css}` chunk (hash stripped to a stable
   logical key) to the committed `tools/build-size-baseline.json` and exits
