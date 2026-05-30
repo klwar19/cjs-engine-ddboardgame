@@ -3431,6 +3431,35 @@ body.campaign-page::before {
   gap: 12px;
 }
 
+/* Phase I.3 — list virtualizer (src/campaign/util/VirtualList.tsx).
+   Below the row threshold these lists render inline exactly as before; past
+   it they become a bounded scroll panel whose rows are absolutely positioned
+   at measured offsets inside `.campaign-vlist-spacer` (max-height + overflow
+   are set inline by the component). */
+.campaign-vlist {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.campaign-vlist-row {
+  box-sizing: border-box;
+}
+/* Passthrough wrappers: keep the spacing the inline lists used. The save
+   manager spaced its slots with the grid gap; the event ledger stacked rows
+   with their own top border (no gap needed). */
+.campaign-save-slot-list {
+  display: grid;
+  gap: 14px;
+}
+.campaign-event-ledger-list {
+  display: block;
+}
+/* The resolved-quests list kept a small gap under its <summary>; preserve it
+   for the virtualized viewport too (the inline list got it via the rule below
+   on `.campaign-quest-list`). */
+.campaign-resolved-quests .campaign-vlist {
+  margin-top: 10px;
+}
+
 .campaign-quest-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);

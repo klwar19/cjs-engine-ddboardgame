@@ -1,0 +1,41 @@
+{
+  "_note": "Phase I.6 art budget — the SINGLE SOURCE OF TRUTH for the curated set of oversized images that get downscaled in place. `tools/optimize-art.py` reads this to shrink them (idempotently: only files whose long edge exceeds `maxEdge` are touched); `test_art_budget.js` reads it to GUARD that they stay within budget (a re-added HD asset fails CI). Only deliberately-chosen, safe-to-downscale art is listed — NOT sprite sheets / tile atlases (hardcoded pixel cells) or .moc3 rig data. `maxEdge` is the cap on the longer image dimension in px; aspect ratio is preserved.",
+  "tolerancePx": 2,
+  "targets": [
+    {
+      "group": "live2d-texture",
+      "glob": "assets/live2d/peri/*/texture_*.png",
+      "maxEdge": 2048,
+      "note": "peri model texture — was a single 8192px / 23 MB atlas (the plan's headline mistake). Live2D Cubism samples by NORMALIZED UVs, so downscaling the texture uniformly only lowers resolution; the rig (.moc3) is untouched."
+    },
+    {
+      "group": "live2d-texture",
+      "glob": "assets/live2d/peri-v2/*/texture_*.png",
+      "maxEdge": 2048,
+      "note": "peri-v2 model — 19 textures at 4096px (~53 MB) for an avatar rendered at scale 0.12. 2048px is ample; normalized UVs make this safe."
+    },
+    {
+      "group": "live2d-background",
+      "path": "assets/live2d/peri-v2/background.png",
+      "maxEdge": 1920,
+      "note": "Companion scene backdrop — a plain background image, not a UV texture."
+    },
+
+    { "group": "portrait", "path": "images/characters/bin.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/bin_normal.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/bin_angry.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/bin_happy.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/bin_sad.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/haven_bowy.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/haven_garr.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/haven_mitia.png", "maxEdge": 1280 },
+    { "group": "portrait", "path": "images/characters/zombie_burnice.png", "maxEdge": 1024,
+      "note": "Square 1254px / 2.5 MB portrait — well above what the VN (≤~850px) or roster (200×240) ever shows." },
+
+    { "group": "background", "path": "images/story-mode/bazaar/bazaar-theme.png", "maxEdge": 1920 },
+    { "group": "background", "path": "images/story-mode/bazaar/gavel-market-vn.jpg", "maxEdge": 1920 },
+    { "group": "background", "path": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png", "maxEdge": 1920,
+      "note": "Doubles as the zombie world-gate banner — downscaling it lightens the world-select screen too." },
+    { "group": "background", "path": "images/story-mode/zombie/rot-city-vn.png", "maxEdge": 1920 }
+  ]
+}

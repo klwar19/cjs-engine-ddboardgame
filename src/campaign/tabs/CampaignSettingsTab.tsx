@@ -1,5 +1,6 @@
 import type { CampaignStateSnapshot } from "../store";
 import * as CampaignActions from "../actions";
+import { VirtualList } from "../util/VirtualList";
 
 // Save metadata as the vanilla CampaignSave module exposes it. Anything
 // the settings panel doesn't read is left as `unknown`.
@@ -130,65 +131,90 @@ export function CampaignSettingsTab(_props: Props) {
             <strong>New Campaign Save</strong> below to start one.
           </div>
         ) : (
-          slots.map((slot) => {
-            const compatible = Save.isCompatible(slot);
-            const reason = compatible ? "" : Save.describeIncompatibility(slot);
-            const isActive = slot.saveId === activeId;
-            const chapter =
-              slot.storyMode?.currentChapterLabel || slot.currentChapter || "1.1";
-            return (
-              <div
-                key={slot.saveId}
-                className={`campaign-save-slot${isActive ? " is-active" : ""}${
-                  compatible ? "" : " is-incompatible"
-                }`}
-              >
-                <div>
-                  <h4>{slot.slotName || slot.saveId}</h4>
-                  <div className="campaign-save-meta">
-                    <span>World: {slot.currentWorld || "?"}</span>
-                    <span>Chapter {chapter}</span>
-                    <span>Saved {formatLogTime(slot.lastUpdated)}</span>
-                    <span>v{slot.saveVersion ?? 0}</span>
-                    {isActive ? <span>● Active</span> : null}
-                    {!compatible ? <span className="is-warn">Incompatible</span> : null}
-                  </div>
-                  {!compatible ? (
-                    <div className="campaign-muted" style={{ marginTop: 6 }}>
-                      {reason}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="campaign-save-row-actions">
-                  {compatible ? (
-                    <button
-                      className="campaign-action primary"
-                      onClick={() => CampaignActions.loadSlot(slot.saveId)}
-                      disabled={isActive}
-                    >
-                      {isActive ? "Loaded" : "Load"}
-                    </button>
-                  ) : (
-                    <button
-                      className="campaign-action"
-                      onClick={() => CampaignActions.exportSlot(slot.saveId)}
-                      title="Export the old save before deleting"
-                    >
-                      Export
-                    </button>
-                  )}
-                  <button
-                    className="campaign-action danger"
-                    onClick={() => CampaignActions.deleteSlot(slot.saveId)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          <VirtualList
+            items={slots}
+            itemKey={(slot) => slot.saveId}
+            renderItem={(slot) => {
+              const compatible = Save.isCompatible(slot);
+              return (
+                <SaveSlotRow
+                  slot={slot}
+                  isActive={slot.saveId === activeId}
+                  compatible={compatible}
+                  reason={compatible ? "" : Save.describeIncompatibility(slot)}
+                />
+              );
+            }}
+            estimateHeight={96}
+            gap={14}
+            listClassName="campaign-save-slot-list"
+            ariaLabel="Saved campaigns"
+          />
         )}
       </div>
     </section>
+  );
+}
+
+function SaveSlotRow({
+  slot,
+  isActive,
+  compatible,
+  reason
+}: {
+  readonly slot: CampaignSaveSlot;
+  readonly isActive: boolean;
+  readonly compatible: boolean;
+  readonly reason: string;
+}) {
+  const chapter = slot.storyMode?.currentChapterLabel || slot.currentChapter || "1.1";
+  return (
+    <div
+      className={`campaign-save-slot${isActive ? " is-active" : ""}${
+        compatible ? "" : " is-incompatible"
+      }`}
+    >
+      <div>
+        <h4>{slot.slotName || slot.saveId}</h4>
+        <div className="campaign-save-meta">
+          <span>World: {slot.currentWorld || "?"}</span>
+          <span>Chapter {chapter}</span>
+          <span>Saved {formatLogTime(slot.lastUpdated)}</span>
+          <span>v{slot.saveVersion ?? 0}</span>
+          {isActive ? <span>● Active</span> : null}
+          {!compatible ? <span className="is-warn">Incompatible</span> : null}
+        </div>
+        {!compatible ? (
+          <div className="campaign-muted" style={{ marginTop: 6 }}>
+            {reason}
+          </div>
+        ) : null}
+      </div>
+      <div className="campaign-save-row-actions">
+        {compatible ? (
+          <button
+            className="campaign-action primary"
+            onClick={() => CampaignActions.loadSlot(slot.saveId)}
+            disabled={isActive}
+          >
+            {isActive ? "Loaded" : "Load"}
+          </button>
+        ) : (
+          <button
+            className="campaign-action"
+            onClick={() => CampaignActions.exportSlot(slot.saveId)}
+            title="Export the old save before deleting"
+          >
+            Export
+          </button>
+        )}
+        <button
+          className="campaign-action danger"
+          onClick={() => CampaignActions.deleteSlot(slot.saveId)}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
   );
 }

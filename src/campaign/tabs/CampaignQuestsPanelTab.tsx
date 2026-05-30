@@ -12,6 +12,7 @@ import { getQuestPanelData, type QuestPanelData } from "./data/questPanel";
 import { QuestRow } from "./QuestRow";
 import { ZombieScavengeTracker } from "./ZombieScavenge";
 import { SoloNoticePanel } from "./ResultPanels";
+import { VirtualList } from "../util/VirtualList";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -62,19 +63,33 @@ function NormalQuestPanel({
         </div>
       </div>
       <SoloNoticePanel />
-      <div className="campaign-quest-list">
-        {data.activeQuestRows.length ? (
-          data.activeQuestRows.map((row) => <QuestRow key={row.id} row={row} />)
-        ) : (
+      {data.activeQuestRows.length ? (
+        <VirtualList
+          items={data.activeQuestRows}
+          itemKey={(row) => row.id}
+          renderItem={(row) => <QuestRow row={row} />}
+          estimateHeight={240}
+          gap={12}
+          listClassName="campaign-quest-list"
+          ariaLabel="Active quests"
+        />
+      ) : (
+        <div className="campaign-quest-list">
           <div className="campaign-empty">No active quests.</div>
-        )}
-      </div>
+        </div>
+      )}
       {data.finishedQuestRows.length > 0 && (
         <details className="campaign-resolved-quests">
           <summary>Resolved ({data.finishedCount})</summary>
-          <div className="campaign-quest-list">
-            {data.finishedQuestRows.map((row) => <QuestRow key={row.id} row={row} />)}
-          </div>
+          <VirtualList
+            items={data.finishedQuestRows}
+            itemKey={(row) => row.id}
+            renderItem={(row) => <QuestRow row={row} />}
+            estimateHeight={180}
+            gap={12}
+            listClassName="campaign-quest-list"
+            ariaLabel="Resolved quests"
+          />
         </details>
       )}
     </section>
