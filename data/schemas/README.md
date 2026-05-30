@@ -71,12 +71,34 @@ canonical going forward. The inline form is grandfathered in.
 
 ```
 npm run content:lint               # validate the whole data/ tree
-npm run content:lint -- data/worlds/haven
+npm run content:lint -- data/worlds/haven        # a subset (dir or file)
 node tools/content-lint.mjs --patch some-generated-patch.json
+node tools/content-lint.mjs --patch patch.json --json   # machine-readable report
 ```
 
 The lint runs as part of `npm test` via `test_content_lint.js`, so CI
 fails fast on a broken commit.
+
+### Patches (AI generators)
+
+A patch validates upserts/removes without mutating shipped data. It is
+either a single op or a batch:
+
+```jsonc
+{ "target": { "file": "data/worlds/haven/skills.json", "world": "haven" },
+  "format": "cjs-skills",            // a content format OR a campaign category
+  "upserts": [ /* entries */ ],
+  "removes": [ "old_skill_id" ] }
+```
+
+```jsonc
+{ "patches": [ /* several single-file ops, validated + impact-analysed together */ ] }
+```
+
+Beyond schema validation, the patch flow reports **downstream impact**: which
+entries reference an upserted id (the blast radius of a change) and — the key
+safety net — which references a `removes` would leave **dangling**. `--json`
+emits this as a structured report an agent can react to.
 
 ## How to add a new content type
 

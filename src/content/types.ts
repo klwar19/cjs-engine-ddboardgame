@@ -718,13 +718,41 @@ export interface StoryDirectorPack {
 
 // ── Patch shape for AI generators ──────────────────────────────────
 // AI generators produce a `ContentPatch` rather than rewriting whole
-// files. The content-lint tool merges a patch against the current files,
-// runs schema validation, and reports diagnostics so generators get a
-// fast feedback loop without ever mutating shipped data.
+// files. `content-lint.mjs --patch <file>` validates the upserts against
+// the schema (resolved by `format` — a content format like "cjs-skills" or
+// a campaign category like "campaignQuests") and reports a downstream-impact
+// summary (what a removal would dangle, what an update affects) without ever
+// mutating shipped data. Add `--json` for a machine-readable report.
 export interface ContentPatch {
   readonly target: { readonly world?: string; readonly file: string };
   readonly format: string;
   readonly upserts?: ReadonlyArray<Record<string, unknown>>;
   readonly removes?: readonly string[];
   readonly notes?: string;
+}
+
+// A multi-file patch: several single-file ops validated together (and
+// impact-analysed across each other — a referrer removed in the same batch
+// no longer counts as dangling). Either shape is accepted by `--patch`.
+export interface ContentPatchBatch {
+  readonly patches: readonly ContentPatch[];
+  readonly notes?: string;
+}
+
+// The `--json` report shape `content-lint --patch … --json` emits.
+export interface ContentPatchReport {
+  readonly ok: boolean;
+  readonly errors: readonly string[];
+  readonly warnings: readonly string[];
+  readonly patches: ReadonlyArray<{
+    readonly file: string;
+    readonly format: string;
+    readonly world: string | null;
+    readonly schemaErrors: number;
+    readonly added: readonly string[];
+    readonly updated: readonly string[];
+    readonly removed: readonly string[];
+    readonly affected: ReadonlyArray<{ readonly id: string; readonly references: ReadonlyArray<{ readonly relPath: string; readonly entryId: string; readonly path: string }> }>;
+    readonly dangling: ReadonlyArray<{ readonly id: string; readonly references: ReadonlyArray<{ readonly relPath: string; readonly entryId: string; readonly path: string }> }>;
+  }>;
 }

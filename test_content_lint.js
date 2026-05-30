@@ -204,6 +204,73 @@ try {
   fs.rmSync(tmpBriefs, { recursive: true, force: true });
 }
 
+// 6. Patch-and-validate flow (Phase J.4): multi-file patches, --json report,
+//    and downstream-impact (dangling-after-remove) analysis.
+function writePatch(obj) {
+  const f = path.join(__dirname, `tmp_patch_${Math.random().toString(36).slice(2)}.json`);
+  fs.writeFileSync(f, JSON.stringify(obj));
+  return f;
+}
+function runLint(extraArgs) {
+  return spawnSync('node', ['tools/content-lint.mjs', ...extraArgs], { cwd: __dirname, encoding: 'utf8' });
+}
+
+// Multi-file patch with two new ids -> --json report.
+const multiPatch = writePatch({ patches: [
+  { target: { file: 'data/worlds/haven/skills.json', world: 'haven' }, format: 'cjs-skills',
+    upserts: [{ id: 'demo_j4_skill', name: 'J4 Skill', power: 5, ap: 1, mp: 0 }] },
+  { target: { file: 'data/campaigns/haven/quests/_demo.json', world: 'haven' }, format: 'campaignQuests',
+    upserts: [{ id: 'demo_j4_quest_set', name: 'J4 Quests', templates: [{ id: 'demo_j4_quest', title: 'Q' }] }] }
+]});
+const multi = runLint(['--patch', multiPatch, '--json']);
+fs.unlinkSync(multiPatch);
+let report = null;
+try { report = JSON.parse(multi.stdout); } catch (e) { report = null; }
+ok('multi-file patch --json parses', report !== null, report === null ? multi.stdout.slice(-160) : '');
+ok('multi-file patch reports ok:true', report && report.ok === true);
+ok('multi-file patch lists both ops', report && Array.isArray(report.patches) && report.patches.length === 2);
+ok('multi-file patch records added ids', report && report.patches[0].added.includes('demo_j4_skill'));
+
+// One invalid op fails the whole patch (exit 1).
+const badMulti = writePatch({ patches: [
+  { target: { file: 'data/worlds/haven/skills.json', world: 'haven' }, format: 'cjs-skills',
+    upserts: [{ id: 'demo_ok', name: 'OK', power: 1, ap: 1, mp: 0 }] },
+  { target: { file: 'data/worlds/haven/skills.json', world: 'haven' }, format: 'cjs-skills',
+    upserts: [{ id: 'BadCase', name: 'X' }] } // bad id + missing power/ap/mp
+]});
+const badRun = runLint(['--patch', badMulti, '--quiet']);
+fs.unlinkSync(badMulti);
+ok('multi-file patch fails if any op is invalid', badRun.status !== 0);
+
+// Dangling-after-remove: derive a real skill referenced by a haven monster.
+let referencedSkill = null, referrer = null;
+try {
+  const mon = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/worlds/haven/monsters.json'), 'utf8'));
+  for (const m of (mon.entries || [])) {
+    const sk = (m.skills || []).map((s) => (typeof s === 'string' ? s : s && s.skillId)).filter(Boolean);
+    if (sk.length) { referencedSkill = sk[0]; referrer = m.id; break; }
+  }
+} catch (e) { /* leave null */ }
+if (referencedSkill) {
+  const rmPatch = writePatch({ target: { file: 'data/worlds/haven/skills.json', world: 'haven' }, format: 'cjs-skills', removes: [referencedSkill] });
+  const rm = runLint(['--patch', rmPatch, '--json']);
+  fs.unlinkSync(rmPatch);
+  let rmReport = null;
+  try { rmReport = JSON.parse(rm.stdout); } catch (e) { rmReport = null; }
+  const dangling = rmReport && rmReport.patches[0].dangling;
+  ok('remove of a referenced id reports dangling references',
+     Array.isArray(dangling) && dangling.length > 0 && dangling[0].id === referencedSkill,
+     dangling ? '' : 'no dangling report');
+  ok('dangling report names the referring entry',
+     dangling && dangling[0].references.some((r) => r.entryId === referrer));
+  const cleanPatch = writePatch({ target: { file: 'data/worlds/haven/skills.json', world: 'haven' }, format: 'cjs-skills', upserts: [{ id: 'demo_clean', name: 'C', power: 1, ap: 1, mp: 0 }] });
+  const cleanRun = runLint(['--patch', cleanPatch, '--quiet']);
+  fs.unlinkSync(cleanPatch);
+  ok('a clean patch (no removes) exits 0', cleanRun.status === 0);
+} else {
+  ok('found a referenced skill for the dangling test', false, 'no monster skills in haven');
+}
+
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);

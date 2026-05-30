@@ -34,9 +34,11 @@ import {
   schemaNameFor,
   validateDocument
 } from "./lib/content-schema.mjs";
+import { loadContentFiles, buildIdIndex, findReferences } from "./lib/content-refs.mjs";
 
 const args = process.argv.slice(2);
 const quiet = args.includes("--quiet");
+const jsonOut = args.includes("--json");
 const patchIdx = args.indexOf("--patch");
 const patchPath = patchIdx >= 0 ? args[patchIdx + 1] : null;
 // Positional targets are every non-flag arg, except the value that follows
@@ -112,6 +114,94 @@ function lintFile(absPath) {
   }
 }
 
+// Structured per-op report (for --json and the human impact summary).
+const patchReport = [];
+
+// A patch is either a single op ({ target, format, upserts, removes }) or a
+// multi-file batch ({ patches: [op, …] }).
+function normalizePatches(patch) {
+  if (Array.isArray(patch?.patches)) return patch.patches;
+  if (patch?.target && patch?.format) return [patch];
+  return null;
+}
+
+function lintOnePatch(patchPath, op, files, idIndex) {
+  if (!op?.target?.file || !op?.format) {
+    diag("error", patchPath, "each patch op must declare target.file and format");
+    return;
+  }
+  const targetRel = op.target.file;
+  // A patch's `format` may be a content format (cjs-skills) or, for
+  // campaign-side collections, a category (campaignQuests).
+  const isCategory = !!CATEGORY_TO_SCHEMA[op.format];
+  const schemaName = FORMAT_TO_SCHEMA[op.format] || CATEGORY_TO_SCHEMA[op.format];
+  if (!schemaName) {
+    diag("error", patchPath, `${targetRel}: unknown format "${op.format}"`);
+    return;
+  }
+  // Materialise a synthetic file with the upserts to reuse the same schema.
+  const fileMeta = {
+    version: 1,
+    format: isCategory ? "cjs-collection" : op.format,
+    scope: op.target.world ? "world" : "universal"
+  };
+  if (isCategory) fileMeta.category = op.format;
+  if (op.target.world) fileMeta.world = op.target.world;
+  const upserts = Array.isArray(op.upserts) ? op.upserts : [];
+  const removes = Array.isArray(op.removes) ? op.removes : [];
+  const errors = validateDocument({ _file: fileMeta, entries: upserts }, schemaName, "$patch");
+  for (const err of errors) diag("error", patchPath, `${targetRel}: ${err}`);
+
+  // The category this upsert lands in: the engine merges all files of a
+  // category into one bucket, so a same-category id elsewhere is a real
+  // collision — but the same id in a different category (a skill and a
+  // monster) is fine.
+  const tgtAbs = path.join(root, targetRel);
+  let targetCategory = isCategory ? op.format : null;
+  if (fs.existsSync(tgtAbs)) {
+    try { targetCategory = JSON.parse(fs.readFileSync(tgtAbs, "utf8"))?._file?.category || targetCategory; } catch { /* keep */ }
+  }
+
+  // ── Downstream impact (advisory — does not affect exit code) ──────
+  const added = [];
+  const updated = [];
+  const affected = [];
+  for (const u of upserts) {
+    const id = u?.id;
+    if (typeof id !== "string") continue;
+    const locs = idIndex.get(id) || [];
+    const here = locs.some((l) => l.relPath === targetRel);
+    const sameCatElsewhere = locs.filter((l) => l.relPath !== targetRel && l.category === targetCategory);
+    if (here) updated.push(id);
+    else if (sameCatElsewhere.length) {
+      updated.push(id);
+      diag("warn", patchPath, `${targetRel}: upsert "${id}" is also defined in ${sameCatElsewhere.map((l) => l.relPath).join(", ")} (same category — the engine merges these, so ids must stay unique)`);
+    } else added.push(id);
+    const refs = findReferences(id, files, { excludeFile: targetRel });
+    if (refs.length) {
+      affected.push({ id, references: refs });
+      diag("info", patchPath, `${targetRel}: "${id}" is referenced by ${refs.length} entr${refs.length === 1 ? "y" : "ies"} — review the blast radius`);
+    }
+  }
+
+  const dangling = [];
+  for (const id of removes) {
+    if (!idIndex.has(id)) diag("info", patchPath, `${targetRel}: remove "${id}" — not in the current tree`);
+    // References that survive the remove (a referrer also being removed is fine).
+    const refs = findReferences(id, files).filter((r) => !removes.includes(r.entryId));
+    if (refs.length) {
+      dangling.push({ id, references: refs });
+      const sample = refs.slice(0, 5).map((r) => `${r.relPath}:${r.entryId}.${r.path}`).join(", ");
+      diag("warn", patchPath, `${targetRel}: removing "${id}" leaves ${refs.length} dangling reference(s): ${sample}${refs.length > 5 ? ", …" : ""}`);
+    }
+  }
+
+  patchReport.push({
+    file: targetRel, format: op.format, world: op.target.world || null,
+    schemaErrors: errors.length, added, updated, removed: removes, affected, dangling
+  });
+}
+
 function lintPatch(patchPath) {
   const raw = fs.readFileSync(patchPath, "utf8");
   let patch;
@@ -119,32 +209,14 @@ function lintPatch(patchPath) {
     diag("error", patchPath, `JSON parse failed: ${e.message}`);
     return;
   }
-  if (!patch?.target?.file || !patch?.format) {
-    diag("error", patchPath, "patch must declare target.file and format");
+  const ops = normalizePatches(patch);
+  if (!ops) {
+    diag("error", patchPath, "patch must declare target.file + format, or a patches[] array");
     return;
   }
-  // A patch's `format` may be a content format (cjs-skills) or, for
-  // campaign-side collections, a category (campaignQuests).
-  const isCategory = !!CATEGORY_TO_SCHEMA[patch.format];
-  const schemaName = FORMAT_TO_SCHEMA[patch.format] || CATEGORY_TO_SCHEMA[patch.format];
-  if (!schemaName) {
-    diag("error", patchPath, `unknown format "${patch.format}"`);
-    return;
-  }
-  // Materialise a synthetic file with the upserts to reuse the same schema.
-  const fileMeta = {
-    version: 1,
-    format: isCategory ? "cjs-collection" : patch.format,
-    scope: patch.target.world ? "world" : "universal"
-  };
-  if (isCategory) fileMeta.category = patch.format;
-  if (patch.target.world) fileMeta.world = patch.target.world;
-  const synthetic = {
-    _file: fileMeta,
-    entries: Array.isArray(patch.upserts) ? patch.upserts : []
-  };
-  const errors = validateDocument(synthetic, schemaName, "$patch");
-  for (const err of errors) diag("error", patchPath, err);
+  const files = loadContentFiles();
+  const idIndex = buildIdIndex(files);
+  for (const op of ops) lintOnePatch(patchPath, op, files, idIndex);
 }
 
 // ── Run ────────────────────────────────────────────────────────────
@@ -174,6 +246,18 @@ if (patchPath) {
 const errors = diagnostics.filter((d) => d.level === "error");
 const warnings = diagnostics.filter((d) => d.level === "warn");
 const infos = diagnostics.filter((d) => d.level === "info");
+
+// Machine-readable patch report for AI agents: a diff summary they can react
+// to (what changed, what it affects, what a removal would break).
+if (patchPath && jsonOut) {
+  process.stdout.write(JSON.stringify({
+    ok: errors.length === 0,
+    errors: errors.map((d) => d.message),
+    warnings: warnings.map((d) => d.message),
+    patches: patchReport
+  }, null, 2) + "\n");
+  process.exit(errors.length > 0 ? 1 : 0);
+}
 
 if (!quiet) {
   for (const d of diagnostics) {

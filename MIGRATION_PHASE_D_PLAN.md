@@ -989,11 +989,31 @@ finishes the authoring loop:
     brief exists, is **byte-identical to a fresh regen** (drift guard), and
     its embedded JSON example **validates through the author CLI**. Full
     suite (17 files) + typecheck green.
-- [ ] **J.4 — Patch-and-validate flow.** `tools/content-lint.mjs
-  --patch <file>` already exists; widen it to support multi-file
-  patches and to report which downstream content is affected (e.g.
-  a new skill changes monster skill kits). Output a diff summary
-  an AI agent can react to.
+- [x] **J.4 — Patch-and-validate flow.** `--patch` now accepts a
+  **multi-file batch** (`{ patches: [ op, … ] }`) as well as a single op,
+  and reports **downstream impact** on top of schema validation:
+  - **Reference graph.** `tools/lib/content-refs.mjs` builds a generic
+    cross-reference index over the whole tree (every id, and where each id
+    appears as a *value* — works without per-type field wiring because
+    engine ids are snake_case/namespaced). `loadContentFiles` /
+    `buildIdIndex` / `findReferences`.
+  - **Dangling-after-remove** (the safety net): removing an id that other
+    content still references is surfaced with the exact `file:entry.path`
+    of each referrer (e.g. removing a skill still listed in a monster's
+    skill kit). **Affected-by-change**: an upserted id's referrers are
+    listed so a generator sees the blast radius. **Same-category collision**:
+    an upsert whose id already lives in another file of the *same* category
+    warns (the engine merges category files); a cross-category id reuse
+    (skill vs monster) does not.
+  - **`--json`** emits a structured `{ ok, errors, warnings, patches:[{ added,
+    updated, removed, affected, dangling }] }` report an agent can act on
+    (typed as `ContentPatchReport` in `src/content/types.ts`, alongside the
+    new `ContentPatchBatch`). Impact is advisory — exit code still tracks
+    schema validity only.
+  - `test_content_lint.js` (+8 → 71): multi-file --json report shape,
+    invalid-op-fails-batch, dangling-after-remove (derives a real
+    monster→skill reference from shipping data), referrer naming. Full
+    suite + typecheck green.
 - [ ] **J.5 — Hot-reload authoring.** When `data/` files change,
   the dev server invalidates DataStore caches in place so the
   React tabs re-read the new content without a page reload. Today
