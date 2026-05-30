@@ -1168,13 +1168,38 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
       `data-campaign-action`/`-id`/`-slot` for onClick). The island's detail
       renderers stay TEMPORARILY as the party-sheet modal's source (and the
       parity reference) until the next step.
-    - [ ] **Modal + drawer → React; delete island.** Migrate the
-      party-sheet modal (createRoot, like the editor pickers) and the
-      command-rail party block to render the shared JSX, then delete the
-      island's detail/sheet/card HTML renderers + move the residual
-      member-math / option-builders / pool-pickers to TS and retire
-      `cui-party-tab.js`. This removes the temporary tab-JSX/modal-HTML
-      duplication (and the roster chunk's interim +15 KB).
+    - [x] **Party-sheet modal → React; island detail/sheet renderers
+      deleted.** The full member sheet is one shared `<RosterMemberCard>`
+      (`src/campaign/tabs/RosterMember.tsx`) rendered by BOTH the roster tab
+      and the party-sheet modal. The modal now mounts `<PartySheet>`
+      (portrait hero + member card) via `createRoot` — the editor-picker
+      pattern, with `onClose` unmount; every button dispatches via onClick,
+      so the modal needs no click delegate. `getPartySheetData` /
+      `getPortraitHeroData` / `getRosterMemberData` added to `roster.ts`.
+      This let the icon-heavy island HTML renderers go: `renderPartySheetHtml`,
+      `renderRosterMember`, `_renderPortraitHero`, `_rosterDetailCardsHtml`,
+      the slot / pool / known-row renderers (`renderSkillSlotView` /
+      `renderPassiveSlotView` / `renderSkillPoolList` / `renderPassivePoolList`
+      / `renderKnownSkill` / `renderKnownPassive` / `renderKnownStatus` /
+      `renderKnownRecord` / `renderSelectionBudgetBadge`), `_renderEquipmentLoadout`,
+      and the now-orphaned `_memberLearnedSkillIds` / `_statusDef` / pool-count
+      helpers — all deleted (no external consumers; verified by grep +
+      typecheck). `rosterMemberData` no longer emits `detailCardsHtml`. The
+      tab-JSX/modal-HTML duplication is GONE — the detail row renders only
+      from `rosterDetail.ts` now. `test_roster_detail.js` became an
+      island-independent golden guard (data-builder + component vs committed
+      golden, the proven-correct output captured before deletion). **Net code
+      −16 KB** (`cjs-campaign-core` −18 KB; the shared `RosterMember.js` 14 KB
+      replaces the inline tab card + the deleted island HTML). `cui-party-tab.js`
+      shrank 1112 → ~600 lines.
+    - [ ] **Remaining island (`cui-party-tab.js`, ~600 lines).** Still bridged:
+      `rosterMemberData` (hero scalar data + the portrait / job-chip /
+      affinities HTML-bridge strings), the command-rail drawer party block
+      (`renderParty` / `renderPartyCard`), the option builders + member-math
+      the roster modal/picker handlers read, and the imperative pool-picker
+      modals. Retiring it fully = port the hero HTML bridges (portrait /
+      job-chip / affinities) to JSX, the drawer party block to JSX, and the
+      member-math / options / pickers to TS.
 
 ## Size progression (cjs-campaign-core chunk)
 
