@@ -149,9 +149,9 @@ try {
   const oneCampaignFile = spawnSync('node',
     ['tools/content-lint.mjs', 'data/campaigns/haven/story_director/haven_story_director_v1.json'],
     { cwd: __dirname, encoding: 'utf8' });
-  ok('content-lint validates a campaign file by category',
-     oneCampaignFile.status === 0 && /done/.test(oneCampaignFile.stdout),
-     oneCampaignFile.status !== 0 ? oneCampaignFile.stdout.slice(-200) : 'good');
+  ok('content-lint validates a single campaign file by category (targets fix)',
+     oneCampaignFile.status === 0 && /1 checked/.test(oneCampaignFile.stdout),
+     oneCampaignFile.status !== 0 ? oneCampaignFile.stdout.slice(-200) : oneCampaignFile.stdout.trim());
 
   // Sanity check: the committed data/ai-index/ files must also exist
   // (someone may have generated them and committed; we don't regenerate

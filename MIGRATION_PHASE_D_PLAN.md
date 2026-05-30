@@ -943,10 +943,35 @@ finishes the authoring loop:
     category-based patch validation (good + broken campaignQuests patch),
     a real campaign file lints by category, new compact files present.
     `npm test` (16 files) + `typecheck` + `build` green.
-- [ ] **J.2 — Authoring CLI.** `tools/author/<type>.mjs` scripts
-  scaffold a new entry, validate it against the schema, and write
-  it into the right `data/` directory. AI generators call the same
-  script with JSON on stdin so the validation runs identically.
+- [x] **J.2 — Authoring CLI.** `tools/author/index.mjs` (a `<type>
+  <command>` dispatcher, `npm run author`) scaffolds, validates, and
+  writes authored content. `scaffold` prints a schema-valid starter doc;
+  `validate` checks stdin/`--in` JSON (no writes); `add` upserts each
+  entry by `id` into the target file. AI generators pipe an entry on
+  stdin and get the **same verdict** the lint gives, because the validator
+  was extracted to a shared module:
+  - **Shared validator.** `tools/lib/content-schema.mjs` now owns the
+    format/category→schema maps, the draft-07 validator, schema
+    resolution (`schemaNameFor`), and `validateDocument`. `content-lint.mjs`
+    is a thin consumer of it (parity verified — full tree still 0 errors).
+    One validator, used by both the linter and the author CLI.
+  - **Manifest-aware writes.** The engine is manifest-first
+    (`data/_manifest.json` lists every file it loads and cross-checks
+    scope/world), so `add` also registers a new file's
+    `{ path, scope, category, world? }` entry (idempotent). Covers all 15
+    schematized types (9 core/system + the 6 campaign collections), with a
+    correct `_file` envelope per scope. `--dry-run` previews without
+    writing; `--no-manifest`/`--target` keep tests off the shipping tree.
+  - **Drive-by lint fix.** `content-lint.mjs <path>` was ignoring its
+    positional target (a `patchIdx + 1 === 0` filter bug) and always
+    linting the whole tree — the README's subset-lint never worked. Fixed;
+    the summary now reports "N checked" instead of a misleading
+    "nothing checked" for a cleanly-validated subset.
+  - `test_author_cli.js` (44 assertions): `--list`, scaffold|validate
+    round-trip for **every** type, broken-entry rejection, dry-run writes
+    nothing + leaves the manifest untouched, idempotent upsert, array
+    input, category-mismatch refusal. Wired into `npm test` (17 files).
+    `tools/author/README.md` documents the CLI.
 - [ ] **J.3 — AI-context bundles.** `tools/build-ai-index.mjs`
   already ships compact indices. Add per-type "AI brief" markdown
   files in `data/ai-briefs/` (one per content type) describing
