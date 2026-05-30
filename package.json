@@ -9,6 +9,7 @@
     "build": "vite build",
     "content:lint": "node tools/content-lint.mjs",
     "content:index": "node tools/build-ai-index.mjs",
+    "content:briefs": "node tools/build-ai-briefs.mjs",
     "author": "node tools/author/index.mjs",
     "size:check": "node tools/build-size-check.mjs",
     "size:baseline": "node tools/build-size-check.mjs --update",

@@ -163,6 +163,47 @@ try {
   fs.rmSync(tmpOut, { recursive: true, force: true });
 }
 
+// 5. AI briefs (Phase J.3): generate to tmp, assert each type's brief exists,
+//    is byte-identical to the committed copy (regenerate-clean, no drift), and
+//    its embedded example validates through the author CLI for that type.
+const briefTypes = ['skills', 'passives', 'items', 'materials', 'food', 'characters',
+  'monsters', 'encounters', 'statuses', 'campaignQuests', 'campaignEvents',
+  'oracleTables', 'travelMaps', 'worldActivityPacks', 'storyDirectorPacks'];
+const tmpBriefs = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cjs-ai-briefs-'));
+try {
+  const gen = spawnSync('node', ['tools/build-ai-briefs.mjs', '--out', tmpBriefs], {
+    cwd: __dirname, encoding: 'utf8'
+  });
+  ok('build-ai-briefs runs', gen.status === 0,
+     gen.status !== 0 ? (gen.stdout + gen.stderr).slice(-300) : 'good');
+  ok('briefs README generated', fs.existsSync(path.join(tmpBriefs, 'README.md')));
+
+  for (const t of briefTypes) {
+    const committedBrief = path.join(__dirname, `data/ai-briefs/${t}.md`);
+    const freshBrief = path.join(tmpBriefs, `${t}.md`);
+    if (!fs.existsSync(committedBrief) || !fs.existsSync(freshBrief)) {
+      ok(`ai-brief ${t}.md exists (committed + generated)`, false);
+      continue;
+    }
+    const committedTxt = fs.readFileSync(committedBrief, 'utf8');
+    const clean = committedTxt === fs.readFileSync(freshBrief, 'utf8');
+    ok(`ai-brief ${t}.md is regenerate-clean`, clean,
+       clean ? '' : 'committed brief is stale — run npm run content:briefs');
+
+    // The embedded ```json example must validate for that type.
+    const m = committedTxt.match(/```json\n([\s\S]*?)\n```/);
+    let entries = null;
+    try { const doc = JSON.parse(m[1]); entries = doc.entries || doc; } catch (e) { entries = null; }
+    if (!entries) { ok(`ai-brief ${t}.md example parses`, false); continue; }
+    const v = spawnSync('node', ['tools/author/index.mjs', t, 'validate', '--world', 'haven'],
+      { cwd: __dirname, encoding: 'utf8', input: JSON.stringify(entries) });
+    ok(`ai-brief ${t}.md example validates`, v.status === 0,
+       v.status !== 0 ? (v.stdout + v.stderr).slice(-200) : 'good');
+  }
+} finally {
+  fs.rmSync(tmpBriefs, { recursive: true, force: true });
+}
+
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);

@@ -972,12 +972,23 @@ finishes the authoring loop:
     nothing + leaves the manifest untouched, idempotent upsert, array
     input, category-mismatch refusal. Wired into `npm test` (17 files).
     `tools/author/README.md` documents the CLI.
-- [ ] **J.3 — AI-context bundles.** `tools/build-ai-index.mjs`
-  already ships compact indices. Add per-type "AI brief" markdown
-  files in `data/ai-briefs/` (one per content type) describing
-  exactly the contract the schema enforces, with a 200-token
-  example. AI generators read the brief + the compact index for
-  their context, not the full data tree.
+- [x] **J.3 — AI-context bundles.** `tools/build-ai-briefs.mjs`
+  generates `data/ai-briefs/<type>.md` (15 + a README) — one per
+  authorable type. Briefs are **generated, not hand-written**, so they
+  never drift: the required-field list is pulled straight from the schema,
+  the ~200-token example IS the author scaffold (guaranteed valid), and a
+  per-type guidance paragraph carries the authoring wisdom the schema
+  can't express (op model, cross-ref hints, gotchas). Each brief links its
+  schema + the matching compact index, so an AI generator's context for a
+  type = brief + compact index, never the full data tree.
+  - The type registry + scaffolds were extracted to
+    `tools/lib/content-registry.mjs` (shared by the author CLI and the
+    brief generator — a CLI script can't be imported without running, so
+    the registry is the shared seam). `npm run content:briefs` regenerates.
+  - `test_content_lint.js` (+32 → 63): build-ai-briefs runs, every type's
+    brief exists, is **byte-identical to a fresh regen** (drift guard), and
+    its embedded JSON example **validates through the author CLI**. Full
+    suite (17 files) + typecheck green.
 - [ ] **J.4 — Patch-and-validate flow.** `tools/content-lint.mjs
   --patch <file>` already exists; widen it to support multi-file
   patches and to report which downstream content is affected (e.g.
