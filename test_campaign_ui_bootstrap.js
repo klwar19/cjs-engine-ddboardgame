@@ -169,10 +169,11 @@ sandbox.window.CJS.CampaignUIInternal.WorldMapTab = Object.freeze({});
 
 // Load order mirrors src/campaign/main.tsx for the still-JS files only.
 // Anything ported to TS is pre-seeded above; the rest still self-registers
-// via IIFE on load.
+// via IIFE on load. Phase K.3 ported the hub side-content primitives
+// (HubTab) to src/campaign/util/cui-hub-tab.ts, so only the roster
+// detail-row island (cui-party-tab.js) remains as raw JS.
 const loadOrder = [
-  'campaign/ui/tabs/cui-party-tab.js',
-  'campaign/ui/tabs/cui-hub-tab.js'
+  'campaign/ui/tabs/cui-party-tab.js'
 ];
 
 for (const file of loadOrder) {
@@ -259,13 +260,15 @@ for (const id of REACT_TABS) {
      && html.indexOf('id="campaign-react-tab-' + id + '"') >= 0);
 }
 
-// 3. The tab modules also expose their public namespaces so the shell's
-//    closure delegators (HubTab.renderSideCard, PartyTab.openSkillPoolPicker,
-//    WorldMapTab.renderTravelMap) can keep calling into them by reference.
-//    The React tabs (CampaignRosterTab, CampaignWorldMapTab) also reach
-//    into these namespaces for the inner-card / inner-panel HTML.
+// 3. The surviving JS island exposes its public namespace so the shell's
+//    delegators (PartyTab.openSkillPoolPicker / rosterMemberData) can keep
+//    calling into it by reference. The React tab (CampaignRosterTab) also
+//    reaches into PartyTab for the detail-row HTML.
 ok('PartyTab namespace exposed', !!CJS.CampaignUIInternal.PartyTab);
-ok('HubTab namespace exposed', !!CJS.CampaignUIInternal.HubTab);
+//    HubTab (side-content primitives) + WorldMapTab were ported to TS; their
+//    install-on-window surface is exercised by the browser/VR run, not this
+//    raw-JS sandbox, so assert the TS source exists (mirrors cui-react-bridge).
+ok('cui-hub-tab ported to TS', fs.existsSync(path.join(__dirname, 'src/campaign/util/cui-hub-tab.ts')));
 ok('WorldMapTab namespace exposed', !!CJS.CampaignUIInternal.WorldMapTab);
 
 // 4. The registry call should be a no-op when the id is unknown — the

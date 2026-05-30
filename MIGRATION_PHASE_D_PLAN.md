@@ -1106,8 +1106,8 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
     (`tabs/data/*.ts`) and the REAL leaf components (QuestRow, ResultPanels,
     SequenceNode, …) render inside them; only the bounded `window.CJS` engine
     surface is stubbed (`installEngine`), and the real TS util modules + the
-    two surviving JS islands (PartyTab / HubTab) are loaded so
-    `CampaignUIInternal.*` is the real namespace. The fixture is type-checked
+    surviving JS island (PartyTab; HubTab is now a TS util — K.3.1) are loaded
+    so `CampaignUIInternal.*` is the real namespace. The fixture is type-checked
     (tsconfig includes `cases.tsx`), so a `state=`/`data=` prop can't drift
     from the component contract.
   - **Deterministic across hosts.** `env.cjs` pins `toLocaleString` to
@@ -1121,12 +1121,85 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
     snapshots — so a new tab can't ship un-snapshotted. Scope boundaries
     (external-module island wrappers via a labeled sentinel; the world-map SVG
     + roster detail-row islands) are documented in the harness README.
-- [ ] **K.3 — Replace the legacy hub / party / world-map tabs.**
-  These tabs still mount HTML strings from `cui-hub-tab.js` /
-  `cui-party-tab.js` / `cui-world-map-tab.js`. They follow the same
-  Phase G pattern: typed bridge + JSX component. Lower priority
-  because their bodies are stable; Phase H targets the closure
-  helpers in campaign-ui.js first.
+- [~] **K.3 — Replace the last legacy JS islands.** The *tab bodies*
+  for hub / party / world-map were already JSX'd in the K.3-prerequisite
+  work (Phase H). What remains are the two shared HTML-string islands the
+  React tree still consumes through `dangerouslySetInnerHTML` /
+  imperative modals. This step ports them to TS/JSX so zero campaign
+  rendering lives in `js/`.
+  - [x] **K.3.1 — `cui-hub-tab.js` → `src/campaign/util/cui-hub-tab.ts`.**
+    The shared side-content primitives (operation tone / consequence
+    summary / card-choice ops / rumor open-filter + the two display-only
+    HTML emitters `renderConsequencePreview` / `renderFlavorTrail`) are
+    now a typed TS module that installs the **same**
+    `window.CJS.CampaignUIInternal.HubTab` surface the JS IIFE did — so
+    every consumer (the typed React data bridges `getEventResultData` /
+    `getOracleData` / `getSideForgeData` / `getTownSnapshotData` /
+    `getStoryDirectorData`, plus the imperative beat modal
+    `story-director-card.ts` and the manual event builder
+    `event-builder.ts`) keeps working unchanged. This is the
+    single-source-of-truth move (the primitives feed both the React tree
+    AND two imperative HTML modals), matching the H.4 leaf-helper ports
+    (cui-utils / cui-controls / cui-modals / …). Byte-identical HTML
+    output — the VR snapshots pass with zero diffs. `main.tsx`, the VR
+    harness, and `test_campaign_ui_bootstrap.js` updated; the JS file is
+    deleted. Only `cui-party-tab.js` (roster detail row) remains in `js/`.
+  - [~] **K.3.2 — Icon-as-JSX foundation + `cui-party-tab.js` detail row.**
+    - [x] **Icon foundation.** `src/campaign/util/icon.ts` (typed token
+      seam over `UIIcons.normalize`/`iconSource` + className/alt helpers)
+      and `src/campaign/util/Icon.tsx` (the JSX twin of
+      `UIIcons.renderIcon`; image variant uses a React `onError` instead of
+      the inline `onerror=`). `test_icon.js` (26 assertions) renders the
+      REAL engine `ui-icons.js` and asserts byte-parity for glyph / letter /
+      default sources, structural parity for images.
+    - [x] **Detail row → JSX (tab).** `src/campaign/tabs/data/rosterDetail.ts`
+      (typed `RosterDetailData` mirroring the island's slot / pool /
+      known-row / equipment logic) + `src/campaign/tabs/RosterDetail.tsx`
+      (`<RosterDetailRow>` with `<Icon>` + onClick dispatch). The roster
+      TAB (`CampaignRosterTab.tsx`) now renders the JSX detail row instead
+      of the `detailCardsHtml` `dangerouslySetInnerHTML` island; `roster.ts`
+      carries typed `detail` on `RosterMemberData`. `test_roster_detail.js`
+      (18 assertions) is the parity oracle the VR fixture can't be: it
+      renders the JSX and compares it to the LIVE island output (action
+      attributes normalized away) for an EMPTY member (VR-fixture parity)
+      AND a RICH member (filled slots, known rows + perks, status, equipped
+      item) — byte-identical for both. The VR roster snapshot re-baselined
+      (the only diff: `status-char`/`equip-item` buttons dropping
+      `data-campaign-action`/`-id`/`-slot` for onClick). The island's detail
+      renderers stay TEMPORARILY as the party-sheet modal's source (and the
+      parity reference) until the next step.
+    - [x] **Party-sheet modal → React; island detail/sheet renderers
+      deleted.** The full member sheet is one shared `<RosterMemberCard>`
+      (`src/campaign/tabs/RosterMember.tsx`) rendered by BOTH the roster tab
+      and the party-sheet modal. The modal now mounts `<PartySheet>`
+      (portrait hero + member card) via `createRoot` — the editor-picker
+      pattern, with `onClose` unmount; every button dispatches via onClick,
+      so the modal needs no click delegate. `getPartySheetData` /
+      `getPortraitHeroData` / `getRosterMemberData` added to `roster.ts`.
+      This let the icon-heavy island HTML renderers go: `renderPartySheetHtml`,
+      `renderRosterMember`, `_renderPortraitHero`, `_rosterDetailCardsHtml`,
+      the slot / pool / known-row renderers (`renderSkillSlotView` /
+      `renderPassiveSlotView` / `renderSkillPoolList` / `renderPassivePoolList`
+      / `renderKnownSkill` / `renderKnownPassive` / `renderKnownStatus` /
+      `renderKnownRecord` / `renderSelectionBudgetBadge`), `_renderEquipmentLoadout`,
+      and the now-orphaned `_memberLearnedSkillIds` / `_statusDef` / pool-count
+      helpers — all deleted (no external consumers; verified by grep +
+      typecheck). `rosterMemberData` no longer emits `detailCardsHtml`. The
+      tab-JSX/modal-HTML duplication is GONE — the detail row renders only
+      from `rosterDetail.ts` now. `test_roster_detail.js` became an
+      island-independent golden guard (data-builder + component vs committed
+      golden, the proven-correct output captured before deletion). **Net code
+      −16 KB** (`cjs-campaign-core` −18 KB; the shared `RosterMember.js` 14 KB
+      replaces the inline tab card + the deleted island HTML). `cui-party-tab.js`
+      shrank 1112 → ~600 lines.
+    - [ ] **Remaining island (`cui-party-tab.js`, ~600 lines).** Still bridged:
+      `rosterMemberData` (hero scalar data + the portrait / job-chip /
+      affinities HTML-bridge strings), the command-rail drawer party block
+      (`renderParty` / `renderPartyCard`), the option builders + member-math
+      the roster modal/picker handlers read, and the imperative pool-picker
+      modals. Retiring it fully = port the hero HTML bridges (portrait /
+      job-chip / affinities) to JSX, the drawer party block to JSX, and the
+      member-math / options / pickers to TS.
 
 ## Size progression (cjs-campaign-core chunk)
 

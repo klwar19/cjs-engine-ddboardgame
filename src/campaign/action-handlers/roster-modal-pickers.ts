@@ -15,6 +15,7 @@
 
 import { applyOp, cs, ds, mod, toast } from "./context";
 import { esc, modals, widgets, type PickerOption } from "./modals";
+import { getPartySheetData } from "../tabs/data/roster";
 
 export interface MemberRankInfo {
   rank: string;
@@ -43,7 +44,6 @@ interface PartyTabBridge {
   passiveOptions?: (memberId: string) => PickerOption[];
   skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
   memberRankInfo?: (member: unknown) => MemberRankInfo;
-  renderPartySheetHtml?: (id: string, member: unknown) => string;
 }
 interface PortraitsBridge {
   icon?: (record: unknown, opts: { kind?: string; size?: string }) => string;
@@ -862,47 +862,59 @@ export function rankUpApplyModal(): void {
   });
 }
 
-// ── party-sheet (portrait hero + roster card in a form modal) ──────
+// ── party-sheet (portrait hero + roster card, React-mounted) ──────
 
-interface ActionsRuntime {
-  run?: (name: string, data?: Record<string, unknown>) => unknown;
+interface PartySheetUi {
+  openModal: (opts: {
+    title: string;
+    content: HTMLElement;
+    footer?: HTMLElement;
+    width?: string;
+    onClose?: () => void;
+  }) => unknown;
+  closeModal: (overlay: unknown) => void;
 }
 
-// Mirrors `_partySheetModal`. Body = portrait hero + full roster card
-// (built by the roster island and exposed as one HTML string via
-// `CampaignUIInternal.PartyTab.renderPartySheetHtml`). Local click
-// delegate routes every `data-campaign-action` button inside the modal
-// through the action runtime (matches the closure's
-// `_handleAction(action.dataset, action)` call).
+// Mirrors `_partySheetModal`. The body is the shared `<PartySheet>` JSX
+// (portrait hero + full member card incl. the detail row) mounted via
+// createRoot — the same pattern the editor pickers use. Every action
+// button inside dispatches via onClick (dispatchCampaignAction), so the
+// modal needs no click delegate; React unmounts on close. React + the
+// roster components are lazy-imported so they stay out of the boot chunk.
 export function partySheetModal(memberId: string): void {
   if (!memberId) return;
   const member = (cs().getState() as { party?: Record<string, Member & Record<string, unknown>> } | null)?.party?.[memberId];
   if (!member) return;
-  const html = partyTab()?.renderPartySheetHtml?.(memberId, member);
-  if (typeof html !== "string") return;
-  const m = modals();
-  if (!m) return;
-  const body = document.createElement("div");
-  body.innerHTML = html;
-  const runtime = mod<ActionsRuntime>("CampaignActionsRuntime");
-  body.addEventListener("click", (event) => {
-    const target = event.target as HTMLElement | null;
-    const actionBtn = target?.closest("[data-campaign-action]") as HTMLElement | null;
-    if (!actionBtn) return;
-    event.preventDefault();
-    const action = actionBtn.dataset.campaignAction;
-    if (!action) return;
-    const data: Record<string, string | undefined> = {};
-    for (const key of Object.keys(actionBtn.dataset)) {
-      if (key !== "campaignAction") data[key] = actionBtn.dataset[key];
-    }
-    runtime?.run?.(action, data);
-  });
-  m.formModal({
-    title: `${member.name || memberId} Sheet`,
-    body,
-    width: "820px",
-    primaryLabel: "Close",
-    onSubmit: () => true
+  const data = getPartySheetData(memberId, member as never);
+  if (!data) return;
+  void Promise.all([
+    import("react"),
+    import("react-dom/client"),
+    import("../tabs/RosterMember")
+  ]).then(([React, { createRoot }, { PartySheet }]) => {
+    const u = mod<PartySheetUi>("UI");
+    if (!u) return;
+    const mount = document.createElement("div");
+    const root = createRoot(mount);
+    root.render(React.createElement(PartySheet, data));
+    const footer = document.createElement("div");
+    const btn = document.createElement("button");
+    btn.className = "btn btn-primary";
+    btn.textContent = "Close";
+    footer.appendChild(btn);
+    const overlay = u.openModal({
+      title: `${member.name || memberId} Sheet`,
+      content: mount,
+      footer,
+      width: "820px",
+      onClose: () => {
+        try {
+          root.unmount();
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+    btn.onclick = () => u.closeModal(overlay);
   });
 }

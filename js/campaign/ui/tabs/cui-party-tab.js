@@ -1,19 +1,26 @@
-// cui-party-tab.js — Party / Roster tab rendering for Campaign UI.
+// cui-party-tab.js — Party roster DATA + drawer + pool-picker island.
 //
-// Owns the HTML for the two roster-shaped tabs:
-//   * `roster` — full sheet view (used in the main tab strip)
-//   * the sidebar `_renderParty` block (used inside the command rail)
+// What remains here after Phase K.3.2:
+//   * `rosterMemberData(id, member)` — typed hero / identity / rank /
+//     persona pill / job chip / vitals / stats / affinities for a member.
+//     The roster TAB and the party-sheet MODAL both render the shared
+//     `<RosterMemberCard>` JSX from this data; the detail row (skills /
+//     passives / statuses / equipment) is typed `RosterDetailData` from
+//     `src/campaign/tabs/data/rosterDetail.ts` rendered as JSX.
+//   * `renderParty` / `renderPartyCard` — the command-rail drawer party
+//     block (compact cards). Still HTML strings (drawer body bridge).
+//   * the option builders (`characterOptions` / `skillOptions` /
+//     `passiveOptions`) + member-math helpers consumed by the roster
+//     modal/picker action handlers (roster-modal-pickers.ts /
+//     gm-override.ts / roster-pickers.ts) via `CampaignUIInternal.PartyTab`.
+//   * the imperative pool-picker modals (`openSkillPoolPicker` /
+//     `openPassivePoolPicker`).
+//
+// The icon-heavy detail / sheet / known-row / equipment HTML renderers were
+// deleted in K.3.2 — the roster tab + party-sheet modal render JSX now.
 //
 // The render functions are pure: they read state + a frozen `helpers`
-// object passed in by the campaign-ui shell. Helpers contain the shell's
-// closure-bound math (member rank, equipment loadout, persona pills,
-// statName, etc.) so this module never has to reach into the shell's
-// private state.
-//
-// Rank/passive math helpers (`passiveRankInfo`, `passiveRankCostText`,
-// `passivePerkRank`) and the pool-picker modals live in this file too,
-// and are exposed via `window.CJS.CampaignUIInternal.PartyTab` so the
-// shell's action handler + rank-up modal can call them by reference.
+// object (`_tabHelpers()`) carrying the member-math.
 
 window.CJS = window.CJS || {};
 window.CJS.CampaignUIInternal = window.CJS.CampaignUIInternal || {};
@@ -25,7 +32,6 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
   // time. `cui-utils` etc. always exist by the time render fires.
   const _U = () => window.CJS.CampaignUIInternal.Utils;
   const _P = () => window.CJS.CampaignUIInternal.Portraits;
-  const _E = () => window.CJS.CampaignUIInternal.Equipment;
   const _M = () => window.CJS.CampaignUIInternal.Modals;
   const _DS = () => window.CJS.DataStore;
   const _CS = () => window.CJS.CampaignState;
@@ -56,14 +62,10 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     return _U().formatBundleText(cost);
   }
 
-  // ── Member math + sheet sub-renderers ──────────────────────────────
-  // Phase H.4 — these were the `_tabHelpers` cluster threaded into this
-  // module from campaign-ui.js. They now live here (the roster island is
-  // their only consumer) and are bundled by `_tabHelpers()` below, which
-  // the render functions default their `h` argument to. The party-sheet
-  // modal + GM-override / roster modals read the exposed surface on
-  // `CampaignUIInternal.PartyTab` (skillMetaText / memberRankInfo /
-  // characterOptions / skillOptions / passiveOptions / renderPartySheetHtml).
+  // ── Member math ────────────────────────────────────────────────────
+  // The `_tabHelpers` cluster (member rank / stats / resistances / job
+  // chip) feeding `rosterMemberData` + the drawer `renderPartyCard`, plus
+  // the option builders the roster modals read.
 
   function _memberBase(id, member = {}) {
     return _DS().get('characters', member.baseCharacterId || id) || {};
@@ -159,47 +161,6 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     return html;
   }
 
-  function _renderEquipmentLoadout(memberId, member = {}) {
-    const E = _E();
-    const P = _P();
-    const DS = _DS();
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const label = _U().label;
-    const slots = E.normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
-    const weaponTypes = E.allowedTypes(member, 'allowedWeaponTypes').map(label).join(', ') || 'Any';
-    const armorTypes = E.allowedTypes(member, 'allowedArmorTypes').map(label).join(', ') || 'Any';
-    const rows = ['weapon', 'armor', 'accessory1', 'accessory2'].map((slot) => {
-      const itemId = slots[slot];
-      const item = DS.get('items', itemId);
-      const itemName = item?.name || itemId || 'Empty';
-      const type = item ? E.equipmentType(item) : '';
-      const meta = item ? [type, item.rarity].filter(Boolean).join(' | ') : 'Empty';
-      const slotKind = E.slotKind(slot) || 'item';
-      const iconHtml = item
-        ? P.icon(item, { kind: slotKind, size: 'md', alt: itemName })
-        : `<span class="cjs-icon cjs-icon-md cjs-icon-${slotKind}" style="opacity:.4">+</span>`;
-      return `
-        <div class="campaign-equipment-line">
-          <div class="campaign-equipment-icon">${iconHtml}</div>
-          <div>
-            <strong>${esc(E.slotLabel(slot))}</strong>
-            <small>${esc(itemName)}${meta ? ` | ${esc(meta)}` : ''}</small>
-            ${item ? `<p>${esc(E.equipmentDesc(item))}</p>` : ''}
-          </div>
-          <div class="campaign-row-actions">
-            <button class="campaign-icon-btn" data-campaign-action="equip-item" data-id="${escAttr(memberId)}" data-slot="${escAttr(slot)}">Equip</button>
-            ${item ? `<button class="campaign-icon-btn danger" data-campaign-action="unequip-item" data-id="${escAttr(memberId)}" data-slot="${escAttr(slot)}">-</button>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-    return `
-      <div class="campaign-equipment-proficiency">Weapons: ${esc(weaponTypes)} | Armor: ${esc(armorTypes)} | Accessories: any two different types</div>
-      ${rows}
-    `;
-  }
-
   function _memberSkillEntries(id, member = _CS().getState()?.party?.[id] || {}) {
     const base = _memberBase(id, member);
     const out = [];
@@ -211,11 +172,6 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
       out.push(typeof entry === 'string' ? { skillId } : entry);
     }
     return out;
-  }
-
-  function _memberLearnedSkillIds(id) {
-    const member = _CS().getState()?.party?.[id] || {};
-    return (member.learnedSkills || []).map(_skillEntryId).filter(Boolean);
   }
 
   function _skillEntryId(entry) {
@@ -284,13 +240,6 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
       .sort(_M().sortOptionLabel);
   }
 
-  function _statusDef(statusId) {
-    const custom = _DS().get('statuses', statusId);
-    if (custom) return custom;
-    const builtins = _C()?.STATUS_DEFINITIONS || {};
-    return builtins[statusId] ? { id: statusId, ...builtins[statusId] } : null;
-  }
-
   function _renderJobChip(memberId, member = {}) {
     const F = _F();
     const DS = _DS();
@@ -347,41 +296,13 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
 
   function _skillWeaponTypes(skill = {}) {
     const raw = skill.requiredWeaponTypes || skill.requiredWeaponType || skill.weaponTypeRequired || [];
-    return (Array.isArray(raw) ? raw : [raw]).map(_E().cleanType).filter(Boolean);
-  }
-
-  // Portrait hero block for the party-sheet modal header. Pairs with
-  // `renderRosterMember` in `renderPartySheetHtml` below.
-  function _renderPortraitHero(id, member) {
-    const P = _P();
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const initial = (member.name || id || '?').trim().charAt(0).toUpperCase() || '?';
-    const portraitSrc = P.memberPortrait(member, id);
-    const portraitFocus = P.memberPortraitFocus(member, id);
-    const portrait = portraitSrc
-      ? `<img src="${escAttr(portraitSrc)}" alt="${escAttr(member.name || id)}" style="${escAttr(P.focusAttrStyle(portraitFocus))}">`
-      : `<div class="fallback">${esc(initial)}</div>`;
-    const lvl = member.level || 1;
-    const rank = member.rank || 'F';
-    const klass = member.class || member.archetype || '';
-    return `
-      <div class="campaign-portrait-hero">
-        <div class="campaign-portrait-frame is-large">${portrait}</div>
-        <div class="campaign-portrait-meta">
-          <h2>${esc(member.name || id)}</h2>
-          <div class="campaign-portrait-sub">${esc(klass || 'Adventurer')} · Lv ${lvl} · Rank ${esc(rank)}</div>
-          <div class="campaign-chip-row">
-            ${(member.tags || []).slice(0, 6).map((t) => `<span class="campaign-chip">${esc(t)}</span>`).join('')}
-          </div>
-        </div>
-      </div>
-    `;
+    return (Array.isArray(raw) ? raw : [raw]).map(window.CJS.CampaignUIInternal.Equipment.cleanType).filter(Boolean);
   }
 
   // Frozen helper bundle the render functions default their `h` arg to.
-  // Mirrors the old `CampaignUI._tabHelpers()` shape (minus the dead
-  // renderPersonaPill / renderSoloNotice / pendingSoloHookCard entries).
+  // Slimmed in K.3.2 to the member-math `rosterMemberData` + the drawer
+  // `renderPartyCard` consume (the detail / known-row / equipment helpers
+  // moved to JSX in `src/campaign/tabs/`).
   let _tabHelpersCache = null;
   function _tabHelpers() {
     if (_tabHelpersCache) return _tabHelpersCache;
@@ -391,30 +312,15 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
       renderRankBar: _renderRankBar,
       memberStats: _memberStats,
       renderResistances: _renderResistances,
-      renderEquipmentLoadout: _renderEquipmentLoadout,
-      memberSkillEntries: _memberSkillEntries,
-      memberPassives: _memberPassives,
-      memberLearnedSkillIds: _memberLearnedSkillIds,
       renderJobChip: _renderJobChip,
-      statName: _statName,
-      skillMeta: _skillMeta,
-      skillEntryId: _skillEntryId,
-      statusDef: _statusDef
+      statName: _statName
     });
     return _tabHelpersCache;
-  }
-
-  // Party-sheet modal body (portrait hero + full roster member sheet).
-  // The party-sheet modal (roster-modal-pickers.ts) has its own click
-  // delegate; it just needs the HTML body for both pieces.
-  function renderPartySheetHtml(id, member) {
-    return _renderPortraitHero(id, member) + renderRosterMember(id, member);
   }
 
   // ── Renderers ──────────────────────────────────────────────────────
 
   function renderParty(state, h = _tabHelpers()) {
-    const esc = _U().esc;
     const active = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') !== 'bench');
     const bench = Object.entries(state.party || {}).filter(([, member]) => (member.rosterRole || 'active') === 'bench');
     return `
@@ -468,18 +374,12 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     `;
   }
 
-  // The roster tab body (active / bench panels) is React-owned (K.3) —
-  // `src/campaign/tabs/CampaignRosterTab.tsx` reads typed `getRosterData`
-  // and renders each member from `rosterMemberData` below.
-
   // ── Roster member typed data (K.3) ─────────────────────────────────
-  // `rosterMemberData` powers the JSX roster card (hero + vitals + stats
-  // + affinities). The detail row (skills / passives / statuses /
-  // equipment) is a 2-column CSS grid; mixing JSX and bridged cards there
-  // breaks the row-height stretch, so its four cards stay one HTML island
-  // (`detailCardsHtml`) until their own K.3 step ports them. Every
-  // hero/action button moves to JSX onClick; the persona pill (the one
-  // hero element carrying data-campaign-action) becomes typed data.
+  // `rosterMemberData` powers the shared JSX roster card (hero + vitals +
+  // stats + affinities). The detail row (skills / passives / statuses /
+  // equipment) is typed `RosterDetailData` from
+  // `src/campaign/tabs/data/rosterDetail.ts` rendered as JSX (K.3.2). The
+  // portrait / job-chip / affinities arrive as small HTML-bridge strings.
 
   function _personaPillData(memberId, member = {}) {
     const personaId = member.activePersona || null;
@@ -496,47 +396,6 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
       tooltip: outOfWorld ? `${persona.name} (${worldName}) — out of world. ⚠` : `${persona.name} (${worldName})`,
       outOfWorld
     };
-  }
-
-  // Returns the four detail-row cards (skills / passives / statuses /
-  // equipment) WITHOUT the `.campaign-roster-detail-row` grid wrapper, so
-  // the JSX tab can own that grid div directly (exact DOM parity) while
-  // the party-sheet modal wraps it itself.
-  function _rosterDetailCardsHtml(id, member, h) {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const skills = h.memberSkillEntries(id, member);
-    const passives = h.memberPassives(id, member);
-    const statuses = member.statuses || [];
-    return `
-        <section class="campaign-roster-card campaign-roster-skills">
-          <div class="campaign-roster-card-title">
-            <span>Skills</span>
-            <small class="campaign-muted">${renderSelectionBudgetBadge(id, member, 'skill')}</small>
-          </div>
-          ${renderSkillSlotView(id, member)}
-          <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${memberSkillPoolCount(id, member)} in pool)</summary>${renderSkillPoolList(id, member, skills, h)}</details>
-        </section>
-        <section class="campaign-roster-card campaign-roster-passives">
-          <div class="campaign-roster-card-title">
-            <span>Passives</span>
-            <small class="campaign-muted">${renderSelectionBudgetBadge(id, member, 'passive')}</small>
-          </div>
-          ${renderPassiveSlotView(id, member)}
-          <details class="campaign-pool-details"><summary class="campaign-pool-summary">Manage Pool (${memberPassivePoolCount(id, member)} in pool)</summary>${renderPassivePoolList(id, member, passives, h)}</details>
-        </section>
-        <section class="campaign-roster-card campaign-roster-statuses">
-          <div class="campaign-roster-card-title">
-            <span>Statuses</span>
-            <button class="campaign-icon-btn" data-campaign-action="status-char" data-id="${escAttr(id)}">+</button>
-          </div>
-          ${statuses.length ? statuses.map((status) => renderKnownStatus(status, h)).join('') : '<div class="campaign-empty">No statuses.</div>'}
-        </section>
-        <section class="campaign-roster-card campaign-roster-equipment">
-          <div class="campaign-roster-card-title"><span>Equipment</span></div>
-          ${h.renderEquipmentLoadout(id, member)}
-        </section>
-    `;
   }
 
   function rosterMemberData(id, member, h = _tabHelpers()) {
@@ -590,225 +449,13 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
         name: h.statName(stat),
         value: Number(value || 0)
       })),
-      resistancesHtml: h.renderResistances(base, member, stats),
-      detailCardsHtml: _rosterDetailCardsHtml(id, member, h)
+      resistancesHtml: h.renderResistances(base, member, stats)
     };
   }
 
-  // renderRosterMember — HTML member sheet for the party-sheet modal
-  // (`_partySheetModal`, which has its own click delegation). The roster
-  // TAB renders JSX from `rosterMemberData`; this formatter derives from
-  // the same typed data so there is one source of truth.
-  function renderRosterMember(id, member, h = _tabHelpers()) {
-    const esc = _U().esc;
-    const escAttr = _U().escAttr;
-    const d = rosterMemberData(id, member, h);
-    const personaPill = d.persona
-      ? `<span class="${d.persona.outOfWorld ? 'campaign-pill is-blocked' : 'campaign-pill'}" title="${escAttr(d.persona.tooltip)}" data-campaign-action="change-persona" data-id="${escAttr(id)}" style="cursor:pointer">${esc(d.persona.icon)} ${esc(d.persona.label)}${d.persona.outOfWorld ? ' ⚠' : ''}</span>`
-      : '';
-    const rosterToggle = `<button class="campaign-action" data-campaign-action="${d.isBench ? 'activate-character' : 'bench-character'}" data-id="${escAttr(id)}">${d.isBench ? 'Activate' : 'Bench'}</button>`;
-    const gameplayActions = `
-      ${rosterToggle}
-      <button class="campaign-action" data-campaign-action="party-sheet" data-id="${escAttr(id)}">Sheet</button>
-      <button class="campaign-action" data-campaign-action="change-job" data-id="${escAttr(id)}">Job Change</button>
-      <button class="campaign-action" data-campaign-action="show-job-tree" data-id="${escAttr(id)}">Job Tree</button>
-      <button class="campaign-action" data-campaign-action="change-persona" data-id="${escAttr(id)}" title="Switch world persona">Persona</button>
-      <button class="campaign-action" data-campaign-action="rank-up-apply" title="Apply for a rank-up trial at the Adventurer Guild.">Rank Trial</button>
-      <button class="campaign-action" data-campaign-action="party-availability" data-id="${escAttr(id)}">Availability</button>
-    `;
-    const gmActions = `
-      <button class="campaign-action" data-campaign-action="gm-member-override" data-id="${escAttr(id)}">GM Edit</button>
-      <button class="campaign-action" data-campaign-action="level-char" data-id="${escAttr(id)}">Level</button>
-      <button class="campaign-action" data-campaign-action="grant-xp" data-id="${escAttr(id)}">+XP</button>
-      <button class="campaign-action" data-campaign-action="grant-job-xp" data-id="${escAttr(id)}">+Job XP</button>
-      <button class="campaign-action" data-campaign-action="stat-boost" data-id="${escAttr(id)}">Stats</button>
-      <button class="campaign-action" data-campaign-action="learn-skill" data-id="${escAttr(id)}">Learn Skill</button>
-      <button class="campaign-action" data-campaign-action="learn-passive" data-id="${escAttr(id)}">Learn Passive</button>
-      <button class="campaign-action" data-campaign-action="status-char" data-id="${escAttr(id)}">Status</button>
-      <button class="campaign-action danger" data-campaign-action="remove-character" data-id="${escAttr(id)}">Remove</button>
-    `;
-    return `
-      <article class="campaign-roster-member ${d.isBench ? 'is-bench' : 'is-active'} ${d.battleReady ? '' : 'is-unavailable'}">
-        <header class="campaign-roster-hero">
-          <div class="campaign-roster-portrait">${d.portraitHtml}</div>
-          <div class="campaign-roster-hero-info">
-            <div class="campaign-roster-hero-title">
-              <strong class="campaign-roster-name">${esc(d.name)}</strong>
-              <span class="campaign-pill ${d.battleReady ? 'is-current' : 'is-blocked'}">${esc(d.availLabel)}</span>
-              <span class="campaign-pill">${d.isBench ? 'Bench' : 'Active'}</span>
-              ${personaPill}
-            </div>
-            <div class="campaign-roster-hero-meta">
-              <span><b>Lv</b> ${d.level}</span>
-              <span title="${escAttr(d.rank.tooltip)}"><b>Rank</b> ${esc(d.rank.label)}${d.rank.trialPending ? ' <span class="campaign-chip">Trial!</span>' : ''}</span>
-              <span class="campaign-roster-hero-job">${d.jobChipHtml}</span>
-              <span title="${escAttr(d.charXpMeta)}"><b>XP</b> ${d.xp} <small>${esc(d.xpSmall)}</small></span>
-              <span class="campaign-muted">${esc(id)}${d.baseFrom ? ` from ${esc(d.baseFrom)}` : ''}</span>
-            </div>
-            <div class="campaign-roster-action-groups">
-              <div class="campaign-roster-action-block">
-                <span class="campaign-roster-actions-title">Gameplay</span>
-                <div class="campaign-roster-hero-actions campaign-row-actions">${gameplayActions}</div>
-              </div>
-              <details class="campaign-roster-action-block is-gm">
-                <summary class="campaign-roster-actions-title">GM Edit</summary>
-                <div class="campaign-roster-hero-actions campaign-row-actions">${gmActions}</div>
-              </details>
-            </div>
-          </div>
-        </header>
-
-        <div class="campaign-roster-vitals-row">
-          <section class="campaign-roster-card campaign-roster-vitals">
-            <div class="campaign-roster-card-title">Vitals</div>
-            <div class="campaign-bar"><span class="hp" style="width:${d.vitals.hpPct}%"></span><b>HP ${d.vitals.hp}/${d.vitals.maxHp}</b></div>
-            <div class="campaign-bar"><span class="mp" style="width:${d.vitals.mpPct}%"></span><b>MP ${d.vitals.mp}/${d.vitals.maxMp}</b></div>
-            <div class="campaign-roster-stats-grid">
-              ${d.stats.map((s) => `<div class="campaign-roster-stat"><span>${esc(s.name)}</span><strong>${s.value}</strong></div>`).join('')}
-            </div>
-          </section>
-          <section class="campaign-roster-card campaign-roster-affinities">
-            <div class="campaign-roster-card-title">Affinities</div>
-            ${d.resistancesHtml}
-          </section>
-        </div>
-
-        <div class="campaign-roster-detail-row">${d.detailCardsHtml}</div>
-      </article>
-    `;
-  }
-
-  // Selection budget chip — shows "X/Y slots · A/B SP" for a member.
-  function renderSelectionBudgetBadge(memberId, member, kind /* 'skill' | 'passive' */) {
-    const F = _F();
-    if (!F) return '';
-    const base = _DS().get('characters', member.baseCharacterId || memberId) || {};
-    const eqField = kind === 'skill' ? 'equippedSkills' : 'equippedPassives';
-    const slotCap = kind === 'skill'
-      ? (F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : member.skillSlots || 0)
-      : (F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : member.passiveSlots || 0);
-    const spCap = kind === 'skill'
-      ? (F.calcEffectiveSkillPoints ? F.calcEffectiveSkillPoints(member, base) : member.skillPoints || 0)
-      : (F.calcEffectivePassivePoints ? F.calcEffectivePassivePoints(member, base) : member.passivePoints || 0);
-    const equipped = member[eqField] || [];
-    const used = F.calcEquippedSpCost
-      ? F.calcEquippedSpCost(equipped, kind === 'skill' ? 'skills' : 'passives')
-      : equipped.length;
-    return `${equipped.length}/${slotCap} slots · ${used}/${spCap} SP`;
-  }
-
-  // Render the FULL skill pool for a member, with equip/unequip controls
-  // per row. authoredEntries: the merged list from base + learned (used by
-  // renderKnownSkill so per-skill overrides like authored level still apply).
-  function renderSkillPoolList(memberId, member, authoredEntries, h) {
-    const CS = _CS();
-    const DS = _DS();
-    const pool = CS.skillPoolIds ? CS.skillPoolIds(member, DS.get('characters', member.baseCharacterId || memberId) || {}) : [];
-    if (!pool.length) return '<div class="campaign-empty">No skills in pool. Use the + button to learn one.</div>';
-    const equippedSet = new Set(member.equippedSkills || []);
-    const entryById = new Map();
-    for (const e of authoredEntries || []) {
-      const sid = typeof e === 'string' ? e : e?.skillId;
-      if (sid) entryById.set(sid, e);
-    }
-    return pool.map((sid) => {
-      const entry = entryById.get(sid) || { skillId: sid };
-      return renderKnownSkill(memberId, entry, equippedSet.has(sid), h);
-    }).join('');
-  }
-
-  function renderPassivePoolList(memberId, member, authoredPassives, h) {
-    const CS = _CS();
-    const DS = _DS();
-    const pool = CS.passivePoolIds ? CS.passivePoolIds(member, DS.get('characters', member.baseCharacterId || memberId) || {}) : [];
-    if (!pool.length) return '<div class="campaign-empty">No passives in pool. Use the + button to learn one.</div>';
-    const equippedSet = new Set(member.equippedPassives || []);
-    return pool.map((pid) => renderKnownPassive(memberId, pid, equippedSet.has(pid), h)).join('');
-  }
-
-  // ── Slot-based equip views ──────────────────────────────────────────
-  // Show equipped items as filled slots, empty slots as [+] picker buttons.
-  function renderSkillSlotView(memberId, member) {
-    const U = _U();
-    const P = _P();
-    const F = _F();
-    const DS = _DS();
-    if (!F) return '';
-    const base = DS.get('characters', member.baseCharacterId || memberId) || {};
-    const slotCap = F.calcEffectiveSkillSlots ? F.calcEffectiveSkillSlots(member, base) : (member.skillSlots || 4);
-    const equipped = member.equippedSkills || [];
-    const esc = U.esc;
-    const escAttr = U.escAttr;
-    let html = '<div class="campaign-slot-grid">';
-    for (let i = 0; i < slotCap; i++) {
-      if (i < equipped.length) {
-        const sid = equipped[i];
-        const skill = DS.get('skills', sid);
-        const spCost = F.calcSpCost ? F.calcSpCost(skill) : 1;
-        html += `<div class="campaign-slot filled" title="${escAttr(skill?.name || sid)} (SP ${spCost})">
-          ${P.icon(skill, { kind: 'skill', size: 'md', alt: skill?.name || sid })}
-          <span class="campaign-slot-name">${esc(skill?.name || sid)}</span>
-          <button class="campaign-slot-remove" data-campaign-action="unequip-skill" data-id="${escAttr(memberId)}" data-skill-id="${escAttr(sid)}" title="Unequip">✕</button>
-        </div>`;
-      } else {
-        html += `<div class="campaign-slot empty" data-campaign-action="pick-equip-skill" data-id="${escAttr(memberId)}" title="Equip a skill from pool">
-          <span class="campaign-slot-plus">+</span>
-        </div>`;
-      }
-    }
-    html += '</div>';
-    return html;
-  }
-
-  function renderPassiveSlotView(memberId, member) {
-    const U = _U();
-    const P = _P();
-    const F = _F();
-    const DS = _DS();
-    if (!F) return '';
-    const base = DS.get('characters', member.baseCharacterId || memberId) || {};
-    const slotCap = F.calcEffectivePassiveSlots ? F.calcEffectivePassiveSlots(member, base) : (member.passiveSlots || 3);
-    const equipped = member.equippedPassives || [];
-    const esc = U.esc;
-    const escAttr = U.escAttr;
-    let html = '<div class="campaign-slot-grid">';
-    for (let i = 0; i < slotCap; i++) {
-      if (i < equipped.length) {
-        const pid = equipped[i];
-        const passive = DS.get('passives', pid) || DS.get('effects', pid);
-        const spCost = F.calcSpCost ? F.calcSpCost(passive) : 1;
-        const rankInfo = passiveRankInfo(memberId, pid, passive);
-        html += `<div class="campaign-slot filled" title="${escAttr(passive?.name || pid)} (SP ${spCost}, Rank ${rankInfo.rank}/${rankInfo.max})">
-          ${P.icon(passive, { kind: 'passive', size: 'md', alt: passive?.name || pid })}
-          <span class="campaign-slot-name">${esc(passive?.name || pid)} <small>R ${rankInfo.rank}/${rankInfo.max}</small></span>
-          <button class="campaign-slot-remove" data-campaign-action="unequip-passive" data-id="${escAttr(memberId)}" data-passive-id="${escAttr(pid)}" title="Unequip">✕</button>
-        </div>`;
-      } else {
-        html += `<div class="campaign-slot empty" data-campaign-action="pick-equip-passive" data-id="${escAttr(memberId)}" title="Equip a passive from pool">
-          <span class="campaign-slot-plus">+</span>
-        </div>`;
-      }
-    }
-    html += '</div>';
-    return html;
-  }
-
-  function memberSkillPoolCount(memberId, member) {
-    const CS = _CS();
-    const DS = _DS();
-    const pool = CS.skillPoolIds ? CS.skillPoolIds(member, DS.get('characters', member.baseCharacterId || memberId) || {}) : [];
-    return pool.length;
-  }
-
-  function memberPassivePoolCount(memberId, member) {
-    const CS = _CS();
-    const DS = _DS();
-    const pool = CS.passivePoolIds ? CS.passivePoolIds(member, DS.get('characters', member.baseCharacterId || memberId) || {}) : [];
-    return pool.length;
-  }
-
   // ── Pool picker modals ─────────────────────────────────────────────
-  // Imperative DOM modals invoked from the shell's action handler.
+  // Imperative DOM modals invoked from the shell's action handler
+  // (roster-pickers.ts → pick-equip-skill / pick-equip-passive).
 
   function openSkillPoolPicker(memberId) {
     const CS = _CS();
@@ -930,177 +577,24 @@ window.CJS.CampaignUIInternal.PartyTab = (function () {
     search.focus();
   }
 
-  // ── Known* rows ────────────────────────────────────────────────────
-
-  function renderKnownSkill(memberId, entry, isEquipped, h) {
-    const U = _U();
-    const M = window.CJS.CampaignUIInternal.Modals;
-    const F = _F();
-    const DS = _DS();
-    const CS = _CS();
-    const esc = U.esc;
-    const escAttr = U.escAttr;
-    const skillId = h.skillEntryId(entry);
-    const skill = DS.get('skills', skillId);
-    const learned = entry.source === 'campaign' || h.memberLearnedSkillIds(memberId).includes(skillId);
-    const member = CS.getState()?.party?.[memberId] || {};
-    const prog = member.skillProgress?.[skillId] || { ap: 0, level: 1 };
-    const cap = F?.getSkillMaxLevel ? F.getSkillMaxLevel(skill || {}) : 5;
-    const apTotal = Number(prog.ap || 0);
-    const level = Math.max(1, Number(prog.level || 1));
-    const apToNext = (skill && F?.calcSkillApToNextLevel) ? F.calcSkillApToNextLevel(skill, apTotal, level) : null;
-    const apMeta = level >= cap
-      ? `Lv ${level}/${cap} (max)`
-      : (apToNext != null ? `Lv ${level}/${cap} | ${apToNext} AbP to next` : `Lv ${level}/${cap}`);
-    const baseMeta = h.skillMeta(skill, entry);
-    const meta = [baseMeta, apMeta].filter(Boolean).join(' | ');
-    const apButton = (skill && level < cap)
-      ? `<button class="campaign-action" data-campaign-action="grant-skill-ap" data-id="${escAttr(memberId)}" data-skill-id="${escAttr(skillId)}" title="Grant AbP for this skill (edit-mode)">+AbP</button>`
-      : '';
-    const levelButton = (skill && level < cap)
-      ? `<button class="campaign-action" data-campaign-action="level-up-skill" data-id="${escAttr(memberId)}" data-skill-id="${escAttr(skillId)}" title="Force level-up (edit-mode)">+Lv</button>`
-      : '';
-    const detailButton = skill
-      ? `<button class="campaign-action" data-campaign-action="show-skill-detail" data-id="${escAttr(memberId)}" data-skill-id="${escAttr(skillId)}" title="Show full perk tree">Detail</button>`
-      : '';
-    const equippedFlag = isEquipped === true;
-    const spCost = (skill && F?.calcSpCost) ? F.calcSpCost(skill) : 1;
-    const equipButton = isEquipped == null
-      ? ''
-      : (equippedFlag
-          ? `<button class="campaign-action danger" data-campaign-action="unequip-skill" data-id="${escAttr(memberId)}" data-skill-id="${escAttr(skillId)}" title="Unequip (frees slot/SP)">Unequip</button>`
-          : `<button class="campaign-action" data-campaign-action="equip-skill" data-id="${escAttr(memberId)}" data-skill-id="${escAttr(skillId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
-    const extraActions = `${equipButton}${apButton}${levelButton}${detailButton}`;
-
-    const earned = (skill && F?.getEarnedSkillPerks) ? F.getEarnedSkillPerks(skill, level) : [];
-    const next = (skill && F?.getNextSkillPerk) ? F.getNextSkillPerk(skill, level) : null;
-    const earnedLine = earned.length
-      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `Lv${p.level} — ${esc(p.description || '...')}`).join(' • ')}</div>`
-      : '';
-    const nextLine = next
-      ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at Lv${next.level}: ${esc(next.description || '...')}</div>`
-      : '';
-    const baseDesc = M.desc(skill) || '';
-    const descriptionHtml = `<p>${esc(baseDesc || 'No description yet.')}</p>${earnedLine}${nextLine}`;
-    const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
-    return renderKnownRecord({
-      title: `${titlePrefix}${skill?.name || skillId}`,
-      meta: `SP ${spCost} | ${meta}`,
-      descriptionHtml,
-      removeAction: learned ? 'unlearn-skill' : '',
-      removeData: learned ? `data-id="${escAttr(memberId)}" data-skill-id="${escAttr(skillId)}"` : '',
-      extraActions
-    });
-  }
-
-  function renderKnownPassive(memberId, passiveId, isEquipped, h) {
-    const U = _U();
-    const M = window.CJS.CampaignUIInternal.Modals;
-    const F = _F();
-    const DS = _DS();
-    const CS = _CS();
-    const esc = U.esc;
-    const escAttr = U.escAttr;
-    const passiveRecord = DS.get('passives', passiveId);
-    const passive = passiveRecord || DS.get('effects', passiveId);
-    const learned = (CS.getState()?.party?.[memberId]?.learnedPassives || []).includes(passiveId);
-    const spCost = (passive && F?.calcSpCost) ? F.calcSpCost(passive) : 1;
-    const rankInfo = passiveRankInfo(memberId, passiveId, passive);
-    const rankCostText = passiveRankCostText(passive, rankInfo.rank);
-    const equippedFlag = isEquipped === true;
-    const equipButton = isEquipped == null
-      ? ''
-      : (equippedFlag
-          ? `<button class="campaign-action danger" data-campaign-action="unequip-passive" data-id="${escAttr(memberId)}" data-passive-id="${escAttr(passiveId)}" title="Unequip (frees slot/SP)">Unequip</button>`
-          : `<button class="campaign-action" data-campaign-action="equip-passive" data-id="${escAttr(memberId)}" data-passive-id="${escAttr(passiveId)}" title="Equip (uses ${spCost} SP)">Equip</button>`);
-    const rankButton = (passiveRecord && !rankInfo.isMax)
-      ? `<button class="campaign-action" data-campaign-action="rank-up-passive" data-id="${escAttr(memberId)}" data-passive-id="${escAttr(passiveId)}" title="Consumes ${escAttr(rankCostText || 'rank material')}">Rank Up</button>`
-      : '';
-    const earned = (passiveRecord && F?.getEarnedPassiveRankPerks) ? F.getEarnedPassiveRankPerks(passiveRecord, rankInfo.rank) : [];
-    const next = (passiveRecord && F?.getNextPassiveRankPerk) ? F.getNextPassiveRankPerk(passiveRecord, rankInfo.rank) : null;
-    const earnedLine = earned.length
-      ? `<div class="campaign-muted" style="font-size:0.8em">Perks: ${earned.map((p) => `R${passivePerkRank(p)} — ${esc(p.description || '...')}`).join(' | ')}</div>`
-      : '';
-    const nextLine = next
-      ? `<div class="campaign-muted" style="font-size:0.8em;color:var(--accent)">Next at R${passivePerkRank(next)}: ${esc(next.description || '...')}</div>`
-      : '';
-    const descriptionHtml = `<p>${esc(M.desc(passive) || 'No description yet.')}</p>${earnedLine}${nextLine}`;
-    const titlePrefix = isEquipped === true ? '✓ ' : (isEquipped === false ? '☐ ' : '');
-    return renderKnownRecord({
-      title: `${titlePrefix}${passive?.name || passiveId}`,
-      meta: `SP ${spCost} | Rank ${rankInfo.rank}/${rankInfo.max}${rankInfo.isMax ? ' (max)' : ''} | ${passive?.trigger || passive?.category || passiveId}`,
-      descriptionHtml,
-      removeAction: learned ? 'unlearn-passive' : '',
-      removeData: learned ? `data-id="${escAttr(memberId)}" data-passive-id="${escAttr(passiveId)}"` : '',
-      extraActions: `${equipButton}${rankButton}`
-    });
-  }
-
-  function renderKnownStatus(status, h) {
-    const M = window.CJS.CampaignUIInternal.Modals;
-    const def = h.statusDef(status.id);
-    return renderKnownRecord({
-      title: def?.name || status.label || status.id,
-      meta: `${status.duration || 'manual'} | stacks ${status.stacks || 1}`,
-      description: status.notes || M.desc(def)
-    });
-  }
-
-  function renderKnownRecord({ title, meta, description, descriptionHtml, removeAction, removeData, extraActions }) {
-    const esc = _U().esc;
-    const body = descriptionHtml != null
-      ? descriptionHtml
-      : `<p>${esc(description || 'No description yet.')}</p>`;
-    return `
-      <div class="campaign-record-line">
-        <div>
-          <strong>${esc(title || '')}</strong>
-          <small>${esc(meta || '')}</small>
-          ${body}
-        </div>
-        <div style="display:flex;gap:4px;align-items:center">
-          ${extraActions || ''}
-          ${removeAction ? `<button class="campaign-icon-btn danger" title="Remove" data-campaign-action="${removeAction}" ${removeData}>-</button>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
   // roster tab is React-owned (K.3) — registered as a React mount point
   // by cui-react-bridge.js, rendered as JSX by the shell from the typed
-  // getRosterData bridge.
+  // getRosterData bridge. The party-sheet modal renders the same shared
+  // `<PartySheet>` JSX (mounted via createRoot in roster-modal-pickers.ts).
 
   return Object.freeze({
-    // Sidebar party block (command-rail drawer) + party-sheet modal sheet.
+    // Sidebar party block (command-rail drawer).
     renderParty,
     renderPartyCard,
-    renderRosterMember,
-    // Party-sheet modal body (portrait hero + roster member sheet).
-    renderPartySheetHtml,
-    // Typed roster-tab data (K.3).
+    // Typed roster-tab + party-sheet data (K.3 / K.3.2).
     rosterMemberData,
-    // Member math + sheet helpers (Phase H.4 — moved here from
-    // campaign-ui.js's _tabHelpers cluster). The roster / GM modals read
-    // these instead of the old CampaignUI bridges.
+    // Member math + helpers (the roster / GM modals read these).
     getTabHelpers: _tabHelpers,
     memberRankInfo: _memberRankInfo,
     skillMetaText: _skillMeta,
     characterOptions: _characterOptions,
     skillOptions: _skillOptions,
     passiveOptions: _passiveOptions,
-    // Row renderers
-    renderKnownSkill,
-    renderKnownPassive,
-    renderKnownStatus,
-    renderKnownRecord,
-    // Slot views
-    renderSkillSlotView,
-    renderPassiveSlotView,
-    renderSelectionBudgetBadge,
-    renderSkillPoolList,
-    renderPassivePoolList,
-    memberSkillPoolCount,
-    memberPassivePoolCount,
     // Pool pickers (called from shell action handler)
     openSkillPoolPicker,
     openPassivePoolPicker,

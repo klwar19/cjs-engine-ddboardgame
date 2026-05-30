@@ -65,16 +65,17 @@ function loadHarness() {
   //    which alias those namespaces at their IIFE top.
   const utilModules = [
     "cui-utils", "cui-portraits", "cui-log", "cui-controls",
-    "cui-modals", "cui-options", "cui-equipment",
+    "cui-modals", "cui-options", "cui-equipment", "cui-hub-tab",
     "cui-tabs-registry", "cui-world-map-tab", "cui-react-bridge"
   ];
   for (const m of utilModules) load(path.join(SRC, "util", `${m}.ts`));
 
-  // 2. The two surviving vanilla islands (roster detail row + hub side-content
-  //    primitives). They are IIFEs that attach PartyTab / HubTab to
-  //    window.CJS.CampaignUIInternal; loading them through the same transform
-  //    runs the IIFE (no imports → no require calls).
-  for (const f of ["ui/tabs/cui-party-tab.js", "ui/tabs/cui-hub-tab.js"]) {
+  // 2. The surviving vanilla island (roster detail row + member math). It is
+  //    an IIFE that attaches PartyTab to window.CJS.CampaignUIInternal;
+  //    loading it through the same transform runs the IIFE (no imports → no
+  //    require calls). The hub side-content primitives (HubTab) are now a TS
+  //    util module loaded above (Phase K.3).
+  for (const f of ["ui/tabs/cui-party-tab.js"]) {
     load(path.join(JS_CAMPAIGN, f));
   }
 
