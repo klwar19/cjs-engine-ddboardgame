@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "node test_engine.js && node test_map_type_separation.js && node test_campaign_story_mode.js && node test_campaign_story_branching.js && node test_campaign_choice_consequences.js && node test_campaign_sequence_scenario_flow.js && node test_objectives_and_events.js && node test_phase_expansion.js && node test_campaign_ui_bootstrap.js && node test_campaign_shell_bridge.js && node test_content_lint.js && node test_author_cli.js && node test_data_hot_reload.js && node test_actions_bridge.js && node test_selector_store.js && node test_virtual_list.js && node test_icon.js && node test_pwa_config.js && node test_art_budget.js && node test_visual_regression.js",
+    "test": "node test_engine.js && node test_map_type_separation.js && node test_campaign_story_mode.js && node test_campaign_story_branching.js && node test_campaign_choice_consequences.js && node test_campaign_sequence_scenario_flow.js && node test_objectives_and_events.js && node test_phase_expansion.js && node test_campaign_ui_bootstrap.js && node test_campaign_shell_bridge.js && node test_content_lint.js && node test_author_cli.js && node test_data_hot_reload.js && node test_actions_bridge.js && node test_selector_store.js && node test_virtual_list.js && node test_icon.js && node test_roster_detail.js && node test_pwa_config.js && node test_art_budget.js && node test_visual_regression.js",
     "typecheck": "tsc --noEmit",
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",

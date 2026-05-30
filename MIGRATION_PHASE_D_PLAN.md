@@ -1144,10 +1144,37 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
     output — the VR snapshots pass with zero diffs. `main.tsx`, the VR
     harness, and `test_campaign_ui_bootstrap.js` updated; the JS file is
     deleted. Only `cui-party-tab.js` (roster detail row) remains in `js/`.
-  - [ ] **K.3.2 — Icon-as-JSX foundation + `cui-party-tab.js` detail row.**
-    Build a typed `<Icon>` (the data path — `UIIcons.normalize` — already
-    exists) and port the roster detail-row cards (skills / passives /
-    statuses / equipment) to JSX, then retire `cui-party-tab.js`.
+  - [~] **K.3.2 — Icon-as-JSX foundation + `cui-party-tab.js` detail row.**
+    - [x] **Icon foundation.** `src/campaign/util/icon.ts` (typed token
+      seam over `UIIcons.normalize`/`iconSource` + className/alt helpers)
+      and `src/campaign/util/Icon.tsx` (the JSX twin of
+      `UIIcons.renderIcon`; image variant uses a React `onError` instead of
+      the inline `onerror=`). `test_icon.js` (26 assertions) renders the
+      REAL engine `ui-icons.js` and asserts byte-parity for glyph / letter /
+      default sources, structural parity for images.
+    - [x] **Detail row → JSX (tab).** `src/campaign/tabs/data/rosterDetail.ts`
+      (typed `RosterDetailData` mirroring the island's slot / pool /
+      known-row / equipment logic) + `src/campaign/tabs/RosterDetail.tsx`
+      (`<RosterDetailRow>` with `<Icon>` + onClick dispatch). The roster
+      TAB (`CampaignRosterTab.tsx`) now renders the JSX detail row instead
+      of the `detailCardsHtml` `dangerouslySetInnerHTML` island; `roster.ts`
+      carries typed `detail` on `RosterMemberData`. `test_roster_detail.js`
+      (18 assertions) is the parity oracle the VR fixture can't be: it
+      renders the JSX and compares it to the LIVE island output (action
+      attributes normalized away) for an EMPTY member (VR-fixture parity)
+      AND a RICH member (filled slots, known rows + perks, status, equipped
+      item) — byte-identical for both. The VR roster snapshot re-baselined
+      (the only diff: `status-char`/`equip-item` buttons dropping
+      `data-campaign-action`/`-id`/`-slot` for onClick). The island's detail
+      renderers stay TEMPORARILY as the party-sheet modal's source (and the
+      parity reference) until the next step.
+    - [ ] **Modal + drawer → React; delete island.** Migrate the
+      party-sheet modal (createRoot, like the editor pickers) and the
+      command-rail party block to render the shared JSX, then delete the
+      island's detail/sheet/card HTML renderers + move the residual
+      member-math / option-builders / pool-pickers to TS and retire
+      `cui-party-tab.js`. This removes the temporary tab-JSX/modal-HTML
+      duplication (and the roster chunk's interim +15 KB).
 
 ## Size progression (cjs-campaign-core chunk)
 

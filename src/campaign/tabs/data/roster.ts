@@ -10,6 +10,7 @@
 // (defaulted internally), so no `getTabHelpers` bridge hop is needed.
 
 import type { CampaignStateSnapshot } from "../../store";
+import { getRosterDetailData, type RosterDetailData, type MemberRecord } from "./rosterDetail";
 
 export interface RosterPersona {
   readonly icon: string;
@@ -56,7 +57,12 @@ export interface RosterMemberData {
   readonly vitals: RosterVitals;
   readonly stats: readonly RosterStat[];
   readonly resistancesHtml: string;
-  readonly detailCardsHtml: string;
+  // K.3.2 — the skills/passives/statuses/equipment detail row is now typed
+  // data rendered as JSX (`<RosterDetailRow>`); `detailCardsHtml` (the old
+  // island HTML) is no longer consumed by the React tab. The party-sheet
+  // modal still uses the island's own `renderRosterMember` path until it
+  // migrates to React (a later K.3.2 step).
+  readonly detail: RosterDetailData;
 }
 
 export interface RosterData {
@@ -74,8 +80,11 @@ interface PartyMemberInput {
 
 interface PartyTabSurface {
   // Phase H.4 — the helper bundle now lives inside cui-party-tab.js and is
-  // the default for the 3rd arg, so callers omit it.
-  readonly rosterMemberData?: (id: string, member: PartyMemberInput) => RosterMemberData;
+  // the default for the 3rd arg, so callers omit it. The island still
+  // returns `detailCardsHtml` at runtime (the modal's `renderRosterMember`
+  // uses it); the TS tab reads the typed `detail` instead (K.3.2), so the
+  // surface type omits it.
+  readonly rosterMemberData?: (id: string, member: PartyMemberInput) => Omit<RosterMemberData, "detail">;
 }
 
 interface RosterCjs {
@@ -96,8 +105,10 @@ export function getRosterData(state: CampaignStateSnapshot): RosterData | null {
   const partyTab = c.CampaignUIInternal?.PartyTab;
   if (!partyTab?.rosterMemberData) return null;
   const entries = Object.entries((state as CampaignStateForRoster).party || {});
-  const toData = ([id, member]: [string, PartyMemberInput]): RosterMemberData =>
-    partyTab.rosterMemberData!(id, member);
+  const toData = ([id, member]: [string, PartyMemberInput]): RosterMemberData => ({
+    ...partyTab.rosterMemberData!(id, member),
+    detail: getRosterDetailData(id, member as MemberRecord)
+  });
   return {
     active: entries.filter(([, m]) => (m.rosterRole || "active") !== "bench").map(toData),
     bench: entries.filter(([, m]) => (m.rosterRole || "active") === "bench").map(toData)

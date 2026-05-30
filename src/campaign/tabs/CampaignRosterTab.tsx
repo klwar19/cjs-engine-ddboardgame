@@ -1,16 +1,16 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import { getRosterData, type RosterMemberData } from "./data/roster";
+import { RosterDetailRow } from "./RosterDetail";
 
 // Roster tab (K.3). The active / bench panel structure, member hero
 // (identity, rank, persona pill, job chip, availability), vitals + stats
 // + affinities, and every gameplay / GM action are JSX with direct
 // onClick dispatch. The skills / passives / statuses / equipment detail
-// row is a 2-column CSS grid whose four cards must be direct grid
-// children to stretch evenly, so they stay one `detailCardsHtml` island
-// (JSX owns the grid div) until their own K.3 step ports them. Those
-// cards' data-campaign-action buttons still bubble to campaign-root's
-// delegated listener (_bindEvents), unchanged from before this port.
+// row is now JSX too (K.3.2) — `<RosterDetailRow>` renders typed
+// `RosterDetailData` with `<Icon>` + onClick dispatch (no more
+// `dangerouslySetInnerHTML` island). The portrait / job-chip / affinities
+// remain small HTML bridges pending their own K.3.2 step.
 
 interface Props {
   readonly state: CampaignStateSnapshot;
@@ -190,7 +190,7 @@ function RosterMemberCard({ member }: { member: RosterMemberData }) {
         </section>
       </div>
 
-      <RosterDetailRow member={member} />
+      <RosterDetailRow data={member.detail} />
     </article>
   );
 }
@@ -215,19 +215,3 @@ function PersonaPill({
   );
 }
 
-// The detail row (skills / passives / statuses / equipment) is a
-// 2-column grid whose four cards must be direct children to stretch
-// evenly, so it stays one HTML island. JSX owns the actual
-// `.campaign-roster-detail-row` grid div (exact DOM parity); the cards'
-// data-campaign-action buttons bubble to campaign-root's delegated
-// listener (_bindEvents), unchanged from before this port. When H.2
-// removes _bindEvents, a single main-body forwarder in the shell will
-// catch these alongside the other bridged-module tabs.
-function RosterDetailRow({ member }: { member: RosterMemberData }) {
-  return (
-    <div
-      className="campaign-roster-detail-row"
-      dangerouslySetInnerHTML={{ __html: member.detailCardsHtml }}
-    />
-  );
-}
