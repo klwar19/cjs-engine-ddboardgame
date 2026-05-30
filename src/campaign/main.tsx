@@ -11,6 +11,7 @@ import "../../js/core/skill-resolver.js";
 import "../../js/services/persona-service.js";
 import "../../js/services/content-validator.js";
 import "../../js/services/data-hot-reload.js";
+import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
 import "../../js/services/dev-console.js";
 import "../../js/ui/touch-gestures.js";
 import "../../js/ui/ui-helpers.js";

@@ -1014,10 +1014,33 @@ finishes the authoring loop:
     invalid-op-fails-batch, dangling-after-remove (derives a real
     monster→skill reference from shipping data), referrer naming. Full
     suite + typecheck green.
-- [ ] **J.5 — Hot-reload authoring.** When `data/` files change,
-  the dev server invalidates DataStore caches in place so the
-  React tabs re-read the new content without a page reload. Today
-  every content change requires a refresh.
+- [x] **J.5 — Hot-reload authoring.** Editing a `data/*.json` file (a hand
+  edit, an import, or the authoring CLI) now updates the running dev app
+  with no page reload. Two halves:
+  - **Engine — in-place re-ingest.** `ContentManager.reloadFileDoc(relPath,
+    doc)` re-ingests ONE file into DataStore without resetting the store:
+    upserts the entries it now declares and removes entries it previously
+    contributed (tracked via each record's `_origin`) that are gone — so
+    add/change/**remove** all reflect. It preserves the store's dirty state
+    (only re-cleans if it was clean), enforces the world-id prefix guard, and
+    signals a full-reload fallback for aggregate collections (quips/quiz/
+    trivia). `reloadFile(relPath)` is the async fetch wrapper the client uses.
+    The resulting DataStore change events flow through the **existing**
+    `CJS.DataHotReload` broadcast → the active React/combat/editor surfaces
+    re-render (the in-memory-mutation half was already wired).
+  - **Dev server → browser.** A serve-only Vite plugin (`cjsDataHotReload`
+    in `vite.config.mjs`) watches `data/**/*.json` and pushes a custom
+    `cjs:data-change` HMR event (and suppresses Vite's default full-reload
+    for these non-module files). `src/dev/data-hot-reload-client.ts` (imported
+    by the campaign/combat/editor mains) calls `reloadFile` on that event.
+    It's **dead-code-eliminated in prod** — Vite replaces `import.meta.hot`
+    with `undefined`, verified by grepping the built bundle (0 hits).
+  - `test_data_hot_reload.js` (18 assertions, vm harness): first ingest,
+    update-in-place, add, remove-when-gone, other-origin isolation, change
+    events emitted, failure modes, prefix guard. `npm test` (18 files) +
+    typecheck + build green. (A live dev-server/browser round-trip isn't
+    automatable here; the ingestion core is unit-tested and prod-stripping
+    is build-verified.)
 - [ ] **J.6 — Slash-command authoring agent.** Add a Claude Code
   agent definition (`.claude/agents/content-author.md`) whose
   prompt embeds the AI brief + compact index for a type, and whose

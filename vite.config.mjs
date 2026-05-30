@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { resolve, relative, sep } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
@@ -7,10 +7,42 @@ import { pwaManifest, workboxOptions } from "./pwa.config.mjs";
 
 const root = process.cwd();
 
+// Dev-only: when a data/*.json content file changes on disk (a hand edit, an
+// import, or the authoring CLI), push a custom HMR event so the browser
+// re-ingests just that file into DataStore in place — no page reload (Phase
+// J.5). The browser side lives in src/dev/data-hot-reload-client.ts.
+function cjsDataHotReload() {
+  const DATA_RE = /^data\/.+\.json$/;
+  const toRel = (file) => relative(root, file).split(sep).join("/");
+  return {
+    name: "cjs-data-hot-reload",
+    apply: "serve",
+    configureServer(server) {
+      // data/*.json files aren't in the module graph — make sure they're watched.
+      server.watcher.add(resolve(root, "data"));
+      const notify = (file) => {
+        const rel = toRel(file);
+        if (!DATA_RE.test(rel)) return;
+        server.ws.send({ type: "custom", event: "cjs:data-change", data: { path: rel } });
+        server.config.logger.info(`[cjs] data change → ${rel}`, { timestamp: true });
+      };
+      server.watcher.on("change", notify);
+      server.watcher.on("add", notify);
+    },
+    handleHotUpdate(ctx) {
+      // We handle data JSON ourselves (custom event + in-place reload); don't
+      // let Vite trigger a full-page reload for a non-module file.
+      if (DATA_RE.test(toRel(ctx.file))) return [];
+      return undefined;
+    }
+  };
+}
+
 export default defineConfig({
   base: "./",
   plugins: [
     react(),
+    cjsDataHotReload(),
     // Static game content lives outside public/ for historical reasons.
     // Copy each folder into dist/ at build time so fetch('data/foo.json'),
     // <img src="images/...">, and audio paths keep resolving in production.

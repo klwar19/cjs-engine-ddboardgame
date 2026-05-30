@@ -1502,10 +1502,104 @@ window.CJS.ContentManager = (() => {
     } : null;
   }
 
+  // ── Hot-reload a single content file from disk (dev) ──────────────
+  // Re-ingest ONE file's entries into DataStore in place, without resetting
+  // the whole store: upsert the entries it now declares, and remove entries
+  // it previously contributed (tracked via `_origin`) that are gone. The
+  // resulting DataStore change events drive the existing DataHotReload →
+  // UI re-render. Used by the dev-server data watcher (Phase J.5) so editing
+  // data/*.json updates the running app without a page reload.
+  function reloadFileDoc(relPath, doc) {
+    _bindStore();
+    if (!doc || typeof doc !== 'object') return { success: false, reason: 'no-doc', path: relPath };
+
+    let entry = _findManifestEntry(relPath);
+    if (!entry) {
+      // A file not yet in the in-memory manifest (e.g. just created by the
+      // authoring CLI): derive its manifest entry from the file header.
+      const header = doc._file || {};
+      if (!header.category) return { success: false, reason: 'no-category', path: relPath };
+      entry = { path: relPath, scope: header.scope || 'world', category: header.category };
+      if (header.world) entry.world = header.world;
+      _fileEntries.push(entry);
+    }
+    _fileHeaders[relPath] = _clone(doc._file || _defaultHeader(entry));
+
+    // Aggregate collections (quips/quiz/trivia) are merged arrays across every
+    // source file, not per-id records — re-deriving one needs them all, so the
+    // caller should fall back to a full reload.
+    if (entry.category === 'quips' || entry.category === 'quizBank' || entry.category === 'triviaBank') {
+      return { success: false, reason: 'aggregate-category', category: entry.category, path: relPath };
+    }
+
+    const wasClean = !DS().isDirty();
+    _suspendDirtyTracking = true;
+    try {
+      if (entry.category === '_meta') {
+        const worldRecord = doc.world || { id: entry.world };
+        _safeReplace('worlds', worldRecord.id || entry.world, {
+          ...worldRecord, id: worldRecord.id || entry.world,
+          _scope: 'world', _world: entry.world, _origin: relPath
+        }, entry);
+        _dirtyFiles.delete(relPath);
+        if (wasClean) DS().markClean();
+        return { success: true, type: 'worlds', upserted: 1, removed: 0, path: relPath };
+      }
+
+      const type = CATEGORY_TO_TYPE[entry.category];
+      if (!type) return { success: false, reason: 'unknown-category', category: entry.category, path: relPath };
+
+      const entries = _entriesFromDocument(doc, entry);
+      const nextIds = new Set();
+      for (const obj of entries) {
+        if (!obj || obj.id == null) continue;
+        _ensurePrefixedId(entry, obj);
+        nextIds.add(obj.id);
+      }
+
+      // Remove entries this file previously owned that are now gone.
+      let removed = 0;
+      for (const rec of DS().getAllAsArray(type)) {
+        if (rec && rec._origin === relPath && !nextIds.has(rec.id)) {
+          DS().remove(type, rec.id);
+          removed += 1;
+        }
+      }
+
+      let upserted = 0;
+      for (const obj of entries) {
+        if (!obj || obj.id == null) continue;
+        _safeReplace(type, obj.id, {
+          ...obj, _scope: entry.scope, _world: entry.world || null, _origin: relPath
+        }, entry);
+        upserted += 1;
+      }
+
+      _dirtyFiles.delete(relPath);
+      if (wasClean) DS().markClean();
+      return { success: true, type, upserted, removed, path: relPath };
+    } catch (e) {
+      return { success: false, reason: 'ingest-error', error: String((e && e.message) || e), path: relPath };
+    } finally {
+      _suspendDirtyTracking = false;
+    }
+  }
+
+  async function reloadFile(relPath) {
+    try {
+      const doc = await _fetchJson(relPath);
+      return reloadFileDoc(relPath, doc);
+    } catch (e) {
+      return { success: false, reason: 'fetch-failed', error: String((e && e.message) || e), path: relPath };
+    }
+  }
+
   return Object.freeze({
     buildFileMap,
     buildNewRecord,
     createEntry,
+    reloadFile,
+    reloadFileDoc,
     formatValidationReport,
     getDirtyFiles,
     getEntityIssueCount,
