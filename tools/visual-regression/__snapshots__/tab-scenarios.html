@@ -1,0 +1,73 @@
+<div class="campaign-dashboard">
+  <section class="campaign-panel">
+    <div class="campaign-panel-head">
+      <h2>Run Setup</h2>
+      <span class="campaign-pill">Save-local</span>
+    </div>
+    <div class="campaign-generator-controls">
+      <label>Source<select id="campaign-gen-source">
+        <option value="random" selected="">Random</option>
+        <option value="active_quest">Active Quest</option>
+        <option value="quest_chain">Side Story</option>
+      </select>
+    </label>
+    <label>Movement<select id="campaign-gen-form">
+      <option value="node_map" selected="">Node Map</option>
+      <option value="grid_map">Grid Map</option>
+    </select>
+  </label>
+  <label>Setting / Context<select id="campaign-gen-map-type">
+    <option value="any" selected="">Any</option>
+    <option value="urban">Urban</option>
+    <option value="outdoor">Outdoor</option>
+    <option value="forest">Forest</option>
+    <option value="dungeon">Dungeon</option>
+    <option value="cave">Cave</option>
+    <option value="sewer">Sewer</option>
+    <option value="ruins">Ruins</option>
+    <option value="temple">Temple</option>
+    <option value="house">House</option>
+    <option value="tavern">Tavern</option>
+    <option value="castle">Castle</option>
+    <option value="mountain">Mountain</option>
+    <option value="arena">Arena</option>
+  </select>
+</label>
+<label>Size<select id="campaign-gen-size">
+  <option value="tiny">Tiny</option>
+  <option value="small" selected="">Small</option>
+  <option value="medium">Medium</option>
+  <option value="large">Large</option>
+  <option value="huge">Huge</option>
+  <option value="massive">Massive</option>
+</select>
+</label>
+<label>Layers<select id="campaign-gen-layers">
+  <option value="1" selected="">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+</select>
+</label>
+</div>
+<div class="campaign-action-grid">
+  <button class="campaign-action primary" disabled="">Generate &amp; Start</button>
+  <button class="campaign-action" disabled="">Quest-Based</button>
+</div>
+</section>
+<div class="campaign-tab-grid">
+  <section class="campaign-panel">
+    <div class="campaign-panel-head">
+      <h3>Tidewater Descent</h3>
+      <span class="campaign-pill">scenario</span>
+    </div>
+    <div class="campaign-chip-row">
+      <span class="campaign-chip">Movement: Freeform</span>
+    </div>
+    <div class="campaign-muted">A linear delve beneath the ruins.</div>
+    <div class="campaign-action-grid">
+      <button class="campaign-action" disabled="" title="Finish or cancel the current run before starting another.">Current Run Active</button>
+      <button class="campaign-action" title="Open a read-only sheet showing beats, danger budget, and rewards. Does not start it.">Inspect</button>
+    </div>
+  </section>
+</div>
+</div>
