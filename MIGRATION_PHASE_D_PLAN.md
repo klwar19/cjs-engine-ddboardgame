@@ -1041,12 +1041,46 @@ finishes the authoring loop:
     typecheck + build green. (A live dev-server/browser round-trip isn't
     automatable here; the ingestion core is unit-tested and prod-stripping
     is build-verified.)
-- [ ] **J.6 — Slash-command authoring agent.** Add a Claude Code
-  agent definition (`.claude/agents/content-author.md`) whose
-  prompt embeds the AI brief + compact index for a type, and whose
-  workflow ends with `npm run content:lint -- --patch` before
-  committing. This lets `/content-author skill new ice_lance` go
-  end-to-end without manual hand-holding.
+- [x] **J.6 — Slash-command authoring agent.** `.claude/agents/content-author.md`
+  is a focused subagent (tools: Bash/Read/Write/Edit/Grep/Glob) whose system
+  prompt embeds the **workflow**, not the data: it reads the type's brief
+  (`data/ai-briefs/<type>.md`) + compact index at runtime (token-cheap, always
+  in sync with the schema), scaffolds, fills with real/reused ids, validates
+  via the author CLI, writes with `add` (which manifest-registers), and
+  confirms with `content:lint`. `.claude/commands/content-author.md` is the
+  user-facing `/content-author <type> <intent> …` command — it forks
+  (`context: fork`, `agent: content-author`) into that subagent, passing
+  `$ARGUMENTS`, so `/content-author skill new ice_lance` runs end-to-end.
+  - **Integration gap fixed (found by the end-to-end dry run).** A custom-named
+    core file (the AI `--file` pattern, e.g. `skills.ai_generated.json`, plus
+    the existing `job_skills.json` / `ultimates.json` / `weather_skills.json`)
+    was silently **skipped** by the lint — core schema resolution was by
+    canonical filename only. `CATEGORY_TO_SCHEMA` now also maps the core
+    categories, so any file resolves by `_file.category`. Net: the full-tree
+    lint went from 69 → 74 files checked (the 5 non-canonical core files are
+    now covered, still 0 errors) and AI batches written to a custom `--file`
+    validate in CI.
+  - `test_content_lint.js` (+13 → 83): agent/command exist with the right
+    frontmatter, reference the real CLI + brief/index paths, fork into the
+    subagent; custom-named core file resolves by category. `npm test`
+    (18 files) + typecheck + build green.
+
+### Phase J — COMPLETE
+
+The AI authoring loop is closed end-to-end:
+
+1. **Contract** — six campaign schemas + the core ones, all resolved by
+   `_file.category` (J.1), with TS twins in `src/content/types.ts`.
+2. **Context** — compact indexes (J.1) + generated, never-drifting per-type
+   briefs (J.3) give a generator everything it needs without the full tree.
+3. **Author** — `npm run author` scaffolds/validates/writes + manifest-registers
+   via one shared validator (J.2); `content-lint --patch` validates batches and
+   reports downstream impact / dangling refs (J.4).
+4. **Live** — editing `data/*.json` hot-reloads into the running app (J.5).
+5. **Agent** — `/content-author` drives the whole loop (J.6).
+
+A new skill/quest/event/etc. goes request → validated entry → loaded content
+(and, in dev, on-screen) without hand-editing JSON or touching the engine.
 
 ## Phase K — Stretch goals
 

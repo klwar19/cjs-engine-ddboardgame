@@ -271,6 +271,43 @@ if (referencedSkill) {
   ok('found a referenced skill for the dangling test', false, 'no monster skills in haven');
 }
 
+// 6b. Category resolution covers core types under a non-canonical filename, so
+//     an AI batch written to a custom --file (e.g. skills.ai.json) still lints.
+const tmpCore = path.join(require('os').tmpdir(), `cjs_core_${Math.random().toString(36).slice(2)}.json`);
+fs.writeFileSync(tmpCore, JSON.stringify({
+  _file: { version: 1, format: 'cjs-collection', scope: 'universal', category: 'skills' },
+  entries: [{ id: 'tmp_demo_skill', name: 'Demo', power: 1, ap: 1, mp: 0 }]
+}));
+const coreByCat = spawnSync('node', ['tools/content-lint.mjs', tmpCore], { cwd: __dirname, encoding: 'utf8' });
+fs.unlinkSync(tmpCore);
+ok('content-lint resolves a custom-named core file by _file.category',
+   coreByCat.status === 0 && /1 checked/.test(coreByCat.stdout), coreByCat.stdout.trim());
+
+// 7. Authoring agent wiring (Phase J.6): the agent + slash command must exist
+//    and stay wired to the real tooling/paths (so they don't silently rot).
+const agentMd = path.join(__dirname, '.claude/agents/content-author.md');
+const cmdMd = path.join(__dirname, '.claude/commands/content-author.md');
+ok('content-author agent exists', fs.existsSync(agentMd));
+ok('content-author command exists', fs.existsSync(cmdMd));
+if (fs.existsSync(agentMd)) {
+  const a = fs.readFileSync(agentMd, 'utf8');
+  ok('agent frontmatter declares name: content-author', /^name:\s*content-author\s*$/m.test(a));
+  ok('agent frontmatter has a description', /^description:\s*\S/m.test(a));
+  ok('agent grants Bash (runs the CLI)', /^tools:.*\bBash\b/m.test(a));
+  ok('agent references the authoring CLI', /npm run author/.test(a));
+  ok('agent reads the briefs + compact index', /data\/ai-briefs/.test(a) && /data\/ai-index/.test(a));
+}
+if (fs.existsSync(cmdMd)) {
+  const c = fs.readFileSync(cmdMd, 'utf8');
+  ok('command passes $ARGUMENTS', /\$ARGUMENTS/.test(c));
+  ok('command forks into the content-author agent', /context:\s*fork/.test(c) && /agent:\s*content-author/.test(c));
+}
+// The paths the agent points authors at must actually exist.
+ok('agent target — data/ai-briefs/ is populated',
+   fs.existsSync(path.join(__dirname, 'data/ai-briefs/skills.md')));
+ok('agent target — data/ai-index/ is populated',
+   fs.existsSync(path.join(__dirname, 'data/ai-index/skills.compact.json')));
+
 console.log('');
 console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);

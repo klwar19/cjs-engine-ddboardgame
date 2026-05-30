@@ -44,10 +44,24 @@ export const FILENAME_TO_FORMAT = {
   "statuses.json": "cjs-statuses"
 };
 
-// Campaign-side content files all declare `format: "cjs-collection"` and
-// distinguish their shape via `_file.category` (mirroring the engine's
-// CATEGORY_TO_TYPE map in js/core/content-manager.js).
+// Content files all declare `format: "cjs-collection"` and distinguish their
+// shape via `_file.category` (mirroring the engine's CATEGORY_TO_TYPE map in
+// js/core/content-manager.js). Resolving by category — not just the canonical
+// filename — means a custom-named file (e.g. an AI batch written to
+// `skills.ai_generated.json`, or `job_skills.json` / `ultimates.json`) still
+// validates against the right schema.
 export const CATEGORY_TO_SCHEMA = {
+  // Core categories (also reachable by their canonical filename).
+  "skills": "skills.schema.json",
+  "passives": "passives.schema.json",
+  "statuses": "statuses.schema.json",
+  "items": "items.schema.json",
+  "materials": "items.schema.json",
+  "food": "items.schema.json",
+  "characters": "monsters.schema.json",
+  "monsters": "monsters.schema.json",
+  "encounters": "encounters.schema.json",
+  // Campaign-side collections (no single canonical filename).
   "campaignQuests": "campaignQuests.schema.json",
   "campaignEvents": "campaignEvents.schema.json",
   "oracleTables": "oracleTables.schema.json",
