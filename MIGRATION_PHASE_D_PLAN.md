@@ -1088,9 +1088,39 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
   typed JSX component reading a typed snapshot, mocking a snapshot
   in Storybook costs ~10 lines. Useful for UI review and AI agents
   that want a visual preview without booting the engine.
-- [ ] **K.2 — Visual regression harness.** Render every tab against
-  a fixed CampaignState fixture, snapshot the DOM tree, fail CI on
-  unexpected differences.
+- [x] **K.2 — Visual regression harness.** `tools/visual-regression/`
+  renders every chrome strip + every registered tab against ONE shared,
+  typed `CampaignState` fixture with `react-dom/server.renderToStaticMarkup`,
+  normalizes the DOM tree, and diffs it against a committed snapshot in
+  `__snapshots__/`. A diff fails CI (it rides `npm test`); intended UI
+  changes re-baseline with `npm run vr:update` (mirrors `size:baseline`).
+  - **No new dependency.** `load-tsx.cjs` is a recursive CJS loader that
+    transpiles the project's TS/TSX in-memory with the installed `typescript`
+    package (`jsx: react-jsx`, the transform vite uses) and resolves the
+    import graph, delegating bare `react` / `react-dom/server` to the one
+    installed package. This generalizes the existing `test_selector_store.js`
+    / `test_virtual_list.js` single-file transpile pattern. No jsdom — the
+    `env.cjs` `window`/`document`/`ResizeObserver` shims are inert because
+    `renderToStaticMarkup` never touches the DOM.
+  - **Faithful, not mocked.** Tabs pull data through the REAL typed bridges
+    (`tabs/data/*.ts`) and the REAL leaf components (QuestRow, ResultPanels,
+    SequenceNode, …) render inside them; only the bounded `window.CJS` engine
+    surface is stubbed (`installEngine`), and the real TS util modules + the
+    two surviving JS islands (PartyTab / HubTab) are loaded so
+    `CampaignUIInternal.*` is the real namespace. The fixture is type-checked
+    (tsconfig includes `cases.tsx`), so a `state=`/`data=` prop can't drift
+    from the component contract.
+  - **Deterministic across hosts.** `env.cjs` pins `toLocaleString` to
+    en-US + UTC (and `TZ=UTC`) so the timestamp-bearing tabs (session log,
+    event log, save slots) snapshot identically on any timezone/locale —
+    verified green under `TZ=Asia/Tokyo LANG=fr_FR`.
+  - **Coverage contract.** `test_visual_regression.js` (86 assertions) unit-
+    tests the HTML normalizer, renders all 38 cases asserting none throw +
+    all match their snapshot, and enforces that every tab in
+    `CampaignShell.REACT_TAB_COMPONENTS` has a `tab-<id>` case with no orphan
+    snapshots — so a new tab can't ship un-snapshotted. Scope boundaries
+    (external-module island wrappers via a labeled sentinel; the world-map SVG
+    + roster detail-row islands) are documented in the harness README.
 - [ ] **K.3 — Replace the legacy hub / party / world-map tabs.**
   These tabs still mount HTML strings from `cui-hub-tab.js` /
   `cui-party-tab.js` / `cui-world-map-tab.js`. They follow the same

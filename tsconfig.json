@@ -19,6 +19,7 @@
     "types/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "tools/visual-regression/cases.tsx",
     "js/campaign/campaign-alignment.js",
     "js/campaign/campaign-ops.js",
     "js/campaign/campaign-world-events.js",

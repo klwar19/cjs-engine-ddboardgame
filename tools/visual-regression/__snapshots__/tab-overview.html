@@ -1,0 +1,435 @@
+<div class="campaign-dashboard campaign-town-dashboard">
+  <section class="campaign-panel campaign-town-snapshot">
+    <div class="campaign-panel-head">
+      <div>
+        <h2>Town Overview</h2>
+        <div class="campaign-muted">Town phase command view.</div>
+      </div>
+      <span class="campaign-pill">Neutral</span>
+    </div>
+    <div class="campaign-town-summary">
+      <div class="campaign-stat-grid campaign-town-stats">
+        <span>Security <b>0</b>
+        </span>
+        <span>Prosperity <b>0</b>
+        </span>
+        <span>Warmth <b>0</b>
+        </span>
+        <span>Weirdness <b>0</b>
+        </span>
+      </div>
+      <div class="campaign-town-now">
+        <div class="campaign-town-kpi">
+          <b>2</b>
+          <span>Open quests</span>
+        </div>
+        <div class="campaign-town-kpi">
+          <b>0</b>
+          <span>Quest arcs</span>
+        </div>
+        <div class="campaign-town-kpi">
+          <b>0</b>
+          <span>Problems</span>
+        </div>
+        <div class="campaign-town-kpi">
+          <b>0</b>
+          <span>Rumors</span>
+        </div>
+      </div>
+    </div>
+    <div class="campaign-rumor-purpose">
+      <span class="campaign-impact-badge is-plot">Rumor purpose</span>
+      <span>Rumors are parked leads, not current events. Collect whispers now, check canon risk, then promote one later into a quest, event, map seed, character beat, oracle prompt, or hub problem when the party is ready.</span>
+    </div>
+    <div class="campaign-town-columns">
+      <div>
+        <div class="campaign-section-title">Pressure</div>
+        <div class="campaign-empty">No active hub problems.</div>
+      </div>
+      <div>
+        <div class="campaign-section-title">Places</div>
+        <div class="campaign-empty">No hub locations loaded.</div>
+      </div>
+    </div>
+  </section>
+  <div class="campaign-town-float-stack">
+    <section class="campaign-panel campaign-random-float">
+      <div class="campaign-floating-eyebrow">Roll Random</div>
+      <h3>Hub Pulse Box</h3>
+      <p>Click once, then deal with the result before rolling again.</p>
+      <div class="campaign-action-grid">
+        <button class="campaign-action primary campaign-roll-now">Roll Random</button>
+      </div>
+      <div class="campaign-impact-legend">
+        <span class="campaign-impact-badge is-reward">gain</span>
+        <span class="campaign-impact-badge is-risk">risk</span>
+        <span class="campaign-impact-badge is-quest">quest</span>
+        <span class="campaign-impact-badge is-plot">plot</span>
+        <span class="campaign-impact-badge is-flavor">text</span>
+      </div>
+    </section>
+  </div>
+  <section class="campaign-panel campaign-actions-panel campaign-town-actions">
+    <div class="campaign-panel-head">
+      <div>
+        <h2>Adventure Desk</h2>
+        <div class="campaign-muted">Roll something random, pick something specific, or run admin tools. Every result shows its consequence before it touches the save.</div>
+      </div>
+    </div>
+    <div class="campaign-control-stack">
+      <div class="campaign-control-group">
+        <div class="campaign-control-title">Roll Random</div>
+        <div class="campaign-control-help">Random outputs land in the floating box and result cards. Nothing is committed until you accept it.</div>
+        <div class="campaign-action-grid">
+          <button class="campaign-action has-hint primary" title="Hook card you can accept, make quest, plant as rumor, save, or ignore">
+            <span class="campaign-action-label">Story Offer</span>
+            <small class="campaign-action-hint">Hook card you can accept, make quest, plant as rumor, save, or ignore</small>
+          </button>
+          <button class="campaign-action has-hint" title="Pick a random quest template and auto-start its map run">
+            <span class="campaign-action-label">Quest Run</span>
+            <small class="campaign-action-hint">Pick a random quest template and auto-start its map run</small>
+          </button>
+          <button class="campaign-action has-hint" title="Create a marked lead bank item. No mechanics happen until you promote it later">
+            <span class="campaign-action-label">Rumor Hook</span>
+            <small class="campaign-action-hint">Create a marked lead bank item. No mechanics happen until you promote it later</small>
+          </button>
+          <button class="campaign-action has-hint" title="GM inspiration text only. No bonuses applied">
+            <span class="campaign-action-label">Roll GM Prompt</span>
+            <small class="campaign-action-hint">GM inspiration text only. No bonuses applied</small>
+          </button>
+        </div>
+      </div>
+      <div class="campaign-control-group">
+        <div class="campaign-control-title">Pick / Customize</div>
+        <div class="campaign-control-help">Same outputs as Roll Random but you choose what shows up. Rumors are saved leads, not automatic mechanics.</div>
+        <div class="campaign-action-grid">
+          <button class="campaign-action has-hint" title="Quest builder: pick template, edit fields, optionally start its run">
+            <span class="campaign-action-label">Add Quest</span>
+            <small class="campaign-action-hint">Quest builder: pick template, edit fields, optionally start its run</small>
+          </button>
+          <button class="campaign-action has-hint" title="Type a custom lead into the hub rumor bank">
+            <span class="campaign-action-label">Write Rumor</span>
+            <small class="campaign-action-hint">Type a custom lead into the hub rumor bank</small>
+          </button>
+          <button class="campaign-action has-hint" title="Choose a specific authored event from the catalog">
+            <span class="campaign-action-label">Pick Event</span>
+            <small class="campaign-action-hint">Choose a specific authored event from the catalog</small>
+          </button>
+          <button class="campaign-action has-hint" title="Write your own event with optional quick consequence">
+            <span class="campaign-action-label">Custom Event</span>
+            <small class="campaign-action-hint">Write your own event with optional quick consequence</small>
+          </button>
+          <button class="campaign-action has-hint" title="Pick a specific GM prompt from the catalog">
+            <span class="campaign-action-label">Pick GM Prompt</span>
+            <small class="campaign-action-hint">Pick a specific GM prompt from the catalog</small>
+          </button>
+          <button class="campaign-action has-hint" title="Type your own GM scene prompt">
+            <span class="campaign-action-label">Custom Prompt</span>
+            <small class="campaign-action-hint">Type your own GM scene prompt</small>
+          </button>
+        </div>
+      </div>
+      <div class="campaign-control-group">
+        <div class="campaign-control-title">Run Admin</div>
+        <div class="campaign-control-help">Game-state controls. These commit immediately.</div>
+        <div class="campaign-action-grid">
+          <button class="campaign-action has-hint" title="Advance the campaign phase: ticks timers, ages rumors, advances quests">
+            <span class="campaign-action-label">Pass Phase</span>
+            <small class="campaign-action-hint">Advance the campaign phase: ticks timers, ages rumors, advances quests</small>
+          </button>
+          <button class="campaign-action has-hint" title="Restore party HP/MP and clear non-permanent statuses">
+            <span class="campaign-action-label">Full Rest</span>
+            <small class="campaign-action-hint">Restore party HP/MP and clear non-permanent statuses</small>
+          </button>
+          <button class="campaign-action has-hint" title="Switch to a different world / region in your campaign">
+            <span class="campaign-action-label">Travel World</span>
+            <small class="campaign-action-hint">Switch to a different world / region in your campaign</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="campaign-panel">
+    <div class="campaign-panel-head">
+      <h2>Run</h2>
+      <span class="campaign-pill">Danger 3/10</span>
+      <span class="campaign-pill campaign-pill-link" title="This run is linked to a quest">📌 Quest: The Sunken Relic</span>
+    </div>
+    <div class="campaign-stat-grid">
+      <span>Node <b>-</b>
+      </span>
+      <span>Camp <b>1/3</b>
+      </span>
+      <span>Events <b>1/4</b>
+      </span>
+      <span>Battles <b>2/6</b>
+      </span>
+    </div>
+    <div class="campaign-quest-phase campaign-scenario-task">
+      <span>Phase 2/2</span>
+      <strong>Recover the relic</strong>
+      <small>Use the map branches to resolve it</small>
+    </div>
+    <div class="campaign-control-stack">
+      <div class="campaign-control-group">
+        <div class="campaign-control-title">Run Tools</div>
+        <div class="campaign-action-grid">
+          <button class="campaign-action">Map</button>
+          <button class="campaign-action primary">Movement Surprise</button>
+          <button class="campaign-action">Camp Rest</button>
+        </div>
+      </div>
+      <div class="campaign-control-group">
+        <div class="campaign-control-title">Manual Control</div>
+        <div class="campaign-action-grid">
+          <button class="campaign-action">Manual Battle Result</button>
+          <button class="campaign-action danger">End Run</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="campaign-panel campaign-travel-notice">
+    <div class="campaign-panel-head">
+      <h2>Ambush at the Ford</h2>
+      <span class="campaign-pill">Danger</span>
+    </div>
+    <p>Bandits spring from the reeds.</p>
+    <div class="campaign-chip-row">
+      <span class="campaign-chip">Tidewater Ford</span>
+      <span class="campaign-chip">New route</span>
+      <span class="campaign-chip">Ford</span>
+    </div>
+    <div class="campaign-action-grid" style="margin-top:12px">
+      <button class="campaign-action">Roll Another</button>
+    </div>
+  </section>
+  <section class="campaign-panel battle-ready">
+    <div class="campaign-panel-head">
+      <h2>Battle Ready</h2>
+      <span class="campaign-pill">scenario</span>
+    </div>
+    <strong>Tidewater Lurkers</strong>
+    <div class="campaign-muted">enc_lurkers</div>
+    <div class="campaign-muted">Auto map: Coast</div>
+    <div class="campaign-battle-party-summary-bridge">
+      <div class="campaign-preview">
+        <b>Battle Party</b>
+        <br>
+        Ready: none<br>
+        Unavailable: Lyra Vane: Unavailable; Bram Holt: Unavailable
+      </div>
+    </div>
+    <div class="campaign-control-help">Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.</div>
+    <div class="campaign-action-grid campaign-battle-primary-actions">
+      <button class="campaign-action has-hint primary" title="Open the tactical combat screen with this encounter">
+        <span class="campaign-action-label">Run in Combat App</span>
+        <small class="campaign-action-hint">Open the tactical combat screen with this encounter</small>
+      </button>
+      <button class="campaign-action has-hint" title="Type a custom outcome and rewards">
+        <span class="campaign-action-label">Resolve Manually</span>
+        <small class="campaign-action-hint">Type a custom outcome and rewards</small>
+      </button>
+      <details class="campaign-action-menu">
+        <summary class="campaign-action-menu-trigger">
+          <span>Battle Options</span>
+        </summary>
+        <div class="campaign-action-menu-panel">
+          <button class="campaign-action has-hint" title="Pick a specific encounter from the catalog">
+            <span class="campaign-action-label">Override</span>
+            <small class="campaign-action-hint">Pick a specific encounter from the catalog</small>
+          </button>
+          <button class="campaign-action has-hint" title="Skip the fight as a win (basic rewards)">
+            <span class="campaign-action-label">Manual Victory</span>
+            <small class="campaign-action-hint">Skip the fight as a win (basic rewards)</small>
+          </button>
+          <button class="campaign-action has-hint" title="Skip as a loss (default: danger +2 and 10% currency loss)">
+            <span class="campaign-action-label">Manual Defeat</span>
+            <small class="campaign-action-hint">Skip as a loss (default: danger +2 and 10% currency loss)</small>
+          </button>
+          <button class="campaign-action has-hint danger" title="Remove pending battle, no effect">
+            <span class="campaign-action-label">Cancel Battle</span>
+            <small class="campaign-action-hint">Remove pending battle, no effect</small>
+          </button>
+        </div>
+      </details>
+    </div>
+  </section>
+  <section class="campaign-panel battle-result">
+    <div class="campaign-panel-head">
+      <h2>Returned From Combat</h2>
+      <span class="campaign-pill">victory</span>
+    </div>
+    <div class="campaign-muted">enc_lurkers | 4 rounds</div>
+    <div class="campaign-loot-summary-bridge">
+      <div class="campaign-empty">No loot in this result.</div>
+    </div>
+    <div class="campaign-action-grid">
+      <button class="campaign-action primary">Apply to Campaign</button>
+      <button class="campaign-action danger">Ignore</button>
+    </div>
+  </section>
+  <section class="campaign-panel battle-result applied">
+    <div class="campaign-panel-head">
+      <h2>Combat Applied</h2>
+      <span class="campaign-pill">victory</span>
+    </div>
+    <div class="campaign-muted">enc_lurkers | 4 rounds</div>
+    <p>Cleared the flooded stair.</p>
+    <div class="campaign-loot-summary-bridge">
+      <div class="campaign-empty">No loot in this result.</div>
+    </div>
+  </section>
+  <section class="campaign-panel campaign-event-result campaign-result-card is-flavor">
+    <div class="campaign-panel-head">
+      <div>
+        <h2>A Stranger at the Docks</h2>
+        <div class="campaign-muted">Harbor Events</div>
+      </div>
+      <div class="campaign-impact-row">
+        <span class="campaign-impact-badge is-flavor">Flavor Only</span>
+        <span class="campaign-pill">🌌 Main plot thread</span>
+      </div>
+    </div>
+    <div class="campaign-inline-purpose-bridge">
+      <div class="campaign-purpose-inline">
+        <span class="campaign-impact-badge is-mixed">Authored Event</span>
+        <span>
+          <b>Immediate happening.</b> Roll/pick event → Review rewards/risks/text → Apply, edit, note only, pin, or ignore. May change rewards, danger, flags, rumors, quests, or notes.</span>
+          </div>
+        </div>
+        <div class="campaign-manual-summary">
+          <div>
+            <strong>Event Summary</strong>
+            <span>Got a sea chart; owe a favor.</span>
+          </div>
+          <div>
+            <strong>Main Story</strong>
+            <span>The stranger vanished into the fog.</span>
+          </div>
+          <div class="campaign-manual-summary-tags">
+            <span>intrigue</span>
+          </div>
+        </div>
+        <p>A hooded figure offers a sea chart for a price.</p>
+        <div class="campaign-warning">
+          <b>GM hook:</b> The chart marks the relic.</div>
+            <div class="campaign-consequence-preview-bridge">
+              <div class="campaign-consequence is-flavor">
+                <div class="campaign-consequence-head">
+                  <span class="campaign-impact-badge is-flavor">Flavor Only</span>
+                  <strong>Flavor or plot text only</strong>
+                </div>
+                <span>No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it.</span>
+              </div>
+            </div>
+            <div class="campaign-control-help">Pick one: <b>Apply</b> commits listed ops and writes the event ledger. <b>Edit Rewards/Consequences</b> lets you tweak ops. <b>Event Log</b> records summary only. <b>To Quest</b> promotes the hook into the quest tracker.</div>
+            <div class="campaign-action-grid">
+              <button class="campaign-action has-hint primary" title="Log the event with no stat changes">
+                <span class="campaign-action-label">Log Flavor</span>
+                <small class="campaign-action-hint">Log the event with no stat changes</small>
+              </button>
+              <button class="campaign-action has-hint" title="Tweak the ops, then apply">
+                <span class="campaign-action-label">Edit Rewards/Consequences</span>
+                <small class="campaign-action-hint">Tweak the ops, then apply</small>
+              </button>
+              <button class="campaign-action has-hint" title="Create a tracked quest from this event">
+                <span class="campaign-action-label">To Quest</span>
+                <small class="campaign-action-hint">Create a tracked quest from this event</small>
+              </button>
+              <button class="campaign-action has-hint" title="Summarize this event without applying mechanics">
+                <span class="campaign-action-label">Event Log</span>
+                <small class="campaign-action-hint">Summarize this event without applying mechanics</small>
+              </button>
+              <button class="campaign-action has-hint" title="Tag this event in the campaign ledger">
+                <span class="campaign-action-label">Add Tags</span>
+                <small class="campaign-action-hint">Tag this event in the campaign ledger</small>
+              </button>
+              <button class="campaign-action has-hint manual" title="Copy the event summary and separate main-story notes for outside writing">
+                <span class="campaign-action-label">Copy Summary</span>
+                <small class="campaign-action-hint">Copy the event summary and separate main-story notes for outside writing</small>
+              </button>
+              <button class="campaign-action has-hint" title="Save as a future plot hook in pinned notes">
+                <span class="campaign-action-label">Pin Plot Seed</span>
+                <small class="campaign-action-hint">Save as a future plot hook in pinned notes</small>
+              </button>
+              <button class="campaign-action has-hint danger" title="Discard this event with no log entry">
+                <span class="campaign-action-label">Ignore</span>
+                <small class="campaign-action-hint">Discard this event with no log entry</small>
+              </button>
+              <button class="campaign-action has-hint" title="Replace with a specific event from the catalog">
+                <span class="campaign-action-label">Pick Different</span>
+                <small class="campaign-action-hint">Replace with a specific event from the catalog</small>
+              </button>
+            </div>
+          </section>
+          <section class="campaign-panel oracle campaign-result-card is-flavor">
+            <div class="campaign-panel-head">
+              <h2>GM Prompt</h2>
+              <span class="campaign-impact-badge is-flavor">Text only</span>
+            </div>
+            <div class="campaign-inline-purpose-bridge">
+              <div class="campaign-purpose-inline">
+                <span class="campaign-impact-badge is-flavor">Oracle</span>
+                <span>
+                  <b>GM prompt / keywords.</b> Text only → Save Note → Make Rumor/Event if you want it to matter later. No mechanics by default.</span>
+                  </div>
+                </div>
+                <p>The Tower — sudden upheaval; what you built is tested.</p>
+                <div class="campaign-consequence-preview-bridge">
+                  <div class="campaign-consequence is-flavor">
+                    <div class="campaign-consequence-head">
+                      <span class="campaign-impact-badge is-flavor">Flavor Only</span>
+                      <strong>Flavor prompt</strong>
+                    </div>
+                    <span>Use as narration now, save it as a note, or reroll for a sharper prompt.</span>
+                  </div>
+                </div>
+                <div class="campaign-control-help">Pure narrative until promoted. Turn it into a quest, summarize it into Event Log, or open the event builder when you want rewards, consequences, or tags.</div>
+                <div class="campaign-action-grid">
+                  <button class="campaign-action has-hint primary" title="Summarize this prompt into the event ledger">
+                    <span class="campaign-action-label">Event Log</span>
+                    <small class="campaign-action-hint">Summarize this prompt into the event ledger</small>
+                  </button>
+                  <button class="campaign-action has-hint" title="Create a tracked quest from this prompt">
+                    <span class="campaign-action-label">To Quest</span>
+                    <small class="campaign-action-hint">Create a tracked quest from this prompt</small>
+                  </button>
+                  <button class="campaign-action has-hint" title="Add rewards, consequences, tags, or a main-story note">
+                    <span class="campaign-action-label">Event Builder</span>
+                    <small class="campaign-action-hint">Add rewards, consequences, tags, or a main-story note</small>
+                  </button>
+                  <button class="campaign-action has-hint" title="Tag this oracle result">
+                    <span class="campaign-action-label">Add Tags</span>
+                    <small class="campaign-action-hint">Tag this oracle result</small>
+                  </button>
+                  <button class="campaign-action has-hint" title="Roll a different prompt">
+                    <span class="campaign-action-label">Reroll Prompt</span>
+                    <small class="campaign-action-hint">Roll a different prompt</small>
+                  </button>
+                  <button class="campaign-action has-hint" title="Pick a specific prompt from the catalog">
+                    <span class="campaign-action-label">Pick Different</span>
+                    <small class="campaign-action-hint">Pick a specific prompt from the catalog</small>
+                  </button>
+                </div>
+              </section>
+              <section class="campaign-panel">
+                <div class="campaign-panel-head">
+                  <h2>Last Scenario Report</h2>
+                  <span class="campaign-pill">complete</span>
+                </div>
+                <div class="campaign-stat-grid">
+                  <span>Danger <b>3</b>
+                  </span>
+                  <span>Camp <b>1</b>
+                  </span>
+                  <span>Events <b>1</b>
+                  </span>
+                  <span>Battles <b>1</b>
+                  </span>
+                </div>
+                <pre class="campaign-report">{
+                  &quot;gold&quot;: 120,
+                  &quot;xp&quot;: 300
+                  }</pre>
+                </section>
+              </div>
