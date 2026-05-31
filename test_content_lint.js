@@ -169,6 +169,9 @@ try {
 const briefTypes = ['skills', 'passives', 'items', 'materials', 'food', 'characters',
   'monsters', 'encounters', 'statuses', 'campaignQuests', 'campaignEvents',
   'oracleTables', 'travelMaps', 'worldActivityPacks', 'storyDirectorPacks'];
+function readBriefText(file) {
+  return fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+}
 const tmpBriefs = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cjs-ai-briefs-'));
 try {
   const gen = spawnSync('node', ['tools/build-ai-briefs.mjs', '--out', tmpBriefs], {
@@ -185,8 +188,8 @@ try {
       ok(`ai-brief ${t}.md exists (committed + generated)`, false);
       continue;
     }
-    const committedTxt = fs.readFileSync(committedBrief, 'utf8');
-    const clean = committedTxt === fs.readFileSync(freshBrief, 'utf8');
+    const committedTxt = readBriefText(committedBrief);
+    const clean = committedTxt === readBriefText(freshBrief);
     ok(`ai-brief ${t}.md is regenerate-clean`, clean,
        clean ? '' : 'committed brief is stale — run npm run content:briefs');
 

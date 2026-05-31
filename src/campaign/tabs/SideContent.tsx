@@ -6,8 +6,8 @@
 // arrive pre-rendered as HTML through the typed bridge and are inserted
 // via <HtmlBridge> — the same display-bridge pattern ResultPanels uses.
 // Those fragments carry no data-campaign-action; they get a full JSX
-// port when cui-hub-tab.js is deleted in the remaining H.4 work
-// (cui-controls.js was ported to TS in Phase H.4).
+// port when the TS HubTab display helpers are replaced with JSX
+// (`cui-controls.js` was ported to TS in Phase H.4).
 
 import { dispatchCampaignAction } from "../actions";
 import type { SideCardData, RumorRowData } from "./data/hub";

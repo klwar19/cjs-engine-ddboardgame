@@ -2,7 +2,7 @@
 //
 // The roster detail row (and the slot / pool / equipment views) emit
 // icons through `UIIcons.renderIcon` HTML strings. K.3.2 replaces those
-// with the JSX `<Icon>` (Icon.tsx) reading the typed `icon.ts` token. This
+// with the JSX `<Icon>` (IconView.tsx) reading the typed `icon.ts` token. This
 // test proves the JSX renders the SAME DOM the HTML string did, so the
 // detail-row port is byte-compatible — the single intentional difference
 // is the image variant swapping the inline `onerror=` attribute for a
@@ -11,7 +11,7 @@
 // Two layers (mirrors test_virtual_list.js / test_selector_store.js):
 //   1. Pure logic — transpile + eval icon.ts, test className composition,
 //      the UIIcons-less fallback token, and the alt precedence.
-//   2. Parity render — load the REAL js/ui/ui-icons.js + Icon.tsx through
+//   2. Parity render — load the REAL js/ui/ui-icons.js + IconView.tsx through
 //      the project's own TS loader and compare `renderToStaticMarkup(<Icon/>)`
 //      to `UIIcons.renderIcon(...)` for glyph / letter / image sources.
 //
@@ -60,7 +60,7 @@ function loadTsModule(relPath, sandboxWindow) {
 
 const iconPath = "src/campaign/util/icon.ts";
 ok("icon.ts exists", fs.existsSync(path.join(__dirname, iconPath)));
-ok("Icon.tsx exists", fs.existsSync(path.join(__dirname, "src/campaign/util/Icon.tsx")));
+ok("IconView.tsx exists", fs.existsSync(path.join(__dirname, "src/campaign/util/IconView.tsx")));
 
 // (a) No UIIcons on the route → plain-glyph fallback (matches cui-portraits).
 const noUiIcons = { CJS: {} };
@@ -102,12 +102,12 @@ ok("resolveIconToken delegates: long ASCII label → letter",
 ok("resolveIconToken delegates: emoji → glyph",
    pure.resolveIconToken({ icon: "🔮" }, "oracle").kind === "glyph");
 
-// ── Layer 2: parity render (Icon.tsx vs UIIcons.renderIcon) ─────────────────
+// ── Layer 2: parity render (IconView.tsx vs UIIcons.renderIcon) ─────────────
 const { createLoader } = require("./tools/visual-regression/load-tsx.cjs");
 const { load } = createLoader();
 const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
-const { Icon } = load(path.join(__dirname, "src/campaign/util/Icon.tsx"));
+const { Icon } = load(path.join(__dirname, "src/campaign/util/IconView.tsx"));
 ok("Icon is a function component", typeof Icon === "function");
 
 function jsx(props) {

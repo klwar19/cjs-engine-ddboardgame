@@ -9,7 +9,7 @@
 // normalized away) for empty AND rich members.
 
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
-import { Icon } from "../util/Icon";
+import { Icon } from "../util/IconView";
 import type {
   RosterDetailData,
   SkillSlot,

@@ -111,6 +111,10 @@ function snapshotPath(name) {
   return path.join(SNAP_DIR, `${name}.html`);
 }
 
+function readSnapshot(file) {
+  return fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
+}
+
 function main() {
   const args = process.argv.slice(2);
   const update = args.includes("--update");
@@ -160,7 +164,7 @@ function main() {
       console.log(`  XX  ${c.name} — NO SNAPSHOT (run with --update)`);
       continue;
     }
-    const expected = fs.readFileSync(file, "utf8");
+    const expected = readSnapshot(file);
     if (expected === actual) {
       pass += 1;
       console.log(`  OK  ${c.name}`);
@@ -188,4 +192,4 @@ if (require.main === module) {
   process.exit(main());
 }
 
-module.exports = { main, renderAll, normalizeHtml, loadHarness, snapshotPath, SNAP_DIR };
+module.exports = { main, renderAll, normalizeHtml, loadHarness, snapshotPath, readSnapshot, SNAP_DIR };

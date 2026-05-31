@@ -5,12 +5,9 @@
 // `data-campaign-action`; the React tree now reads this structured data
 // and renders JSX with direct onClick dispatch.
 //
-// Phase H.4 — `getBattleSetsData` and `getMapSeedsData` ported inline
-// (pure reads of `CampaignBattleSetForge` / `CampaignMapSeedForge`).
-// The remaining `getSideForgeData` / `getOracleForgeData` /
-// `getQuestChainsData` still bridge to `CampaignUI.*` while their
-// deep closure-private helpers (`_sideCardData`, `_questChainActiveData`,
-// etc.) wait on the side-card port.
+// Phase H.4/K.3 — all hub-family get*Data builders are inline TS now. The
+// only remaining HubTab dependency is the shared display-helper surface
+// installed by `src/campaign/util/cui-hub-tab.ts`.
 
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestChainActiveData, QuestChainTemplateData } from "./eventTab";
@@ -76,9 +73,9 @@ function mapForge(): MapSeedForgeSurface | undefined {
   return (window as unknown as { CJS?: CjsHubExtras }).CJS?.CampaignMapSeedForge;
 }
 
-// HubTab module (still-JS bridged island in `js/campaign/ui/tabs/cui-hub-tab.js`)
-// exposes the consequence-preview / flavor-trail HTML builders that the
-// side-card data builder embeds.
+// HubTab module (`src/campaign/util/cui-hub-tab.ts`) exposes the
+// consequence-preview / flavor-trail HTML builders that the side-card data
+// builder embeds.
 interface HubTabSurface {
   readonly cardChoiceOps?: (card: unknown) => readonly unknown[];
   readonly renderConsequencePreview?: (ops: readonly unknown[], options?: {

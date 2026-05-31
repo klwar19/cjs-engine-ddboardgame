@@ -1147,7 +1147,7 @@ A new skill/quest/event/etc. goes request → validated entry → loaded content
   - [~] **K.3.2 — Icon-as-JSX foundation + `cui-party-tab.js` detail row.**
     - [x] **Icon foundation.** `src/campaign/util/icon.ts` (typed token
       seam over `UIIcons.normalize`/`iconSource` + className/alt helpers)
-      and `src/campaign/util/Icon.tsx` (the JSX twin of
+      and `src/campaign/util/IconView.tsx` (the JSX twin of
       `UIIcons.renderIcon`; image variant uses a React `onError` instead of
       the inline `onerror=`). `test_icon.js` (26 assertions) renders the
       REAL engine `ui-icons.js` and asserts byte-parity for glyph / letter /

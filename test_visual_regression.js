@@ -21,6 +21,7 @@ const {
   renderAll,
   normalizeHtml,
   snapshotPath,
+  readSnapshot,
   SNAP_DIR
 } = require("./tools/visual-regression/run.cjs");
 
@@ -83,7 +84,7 @@ for (const r of results) {
     ok("snapshot exists for " + r.name, false, "run `npm run vr:update`");
     continue;
   }
-  const expected = fs.readFileSync(file, "utf8");
+  const expected = readSnapshot(file);
   if (expected === r.html) {
     matched += 1;
   } else {

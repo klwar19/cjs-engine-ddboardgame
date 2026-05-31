@@ -1,8 +1,8 @@
 // overview.ts — Phase F / G bridge for the Overview (Town) tab.
 //
 // Phase H.4 — `getTownSnapshotData` and `getTownRollFloatData` ported
-// inline. The HubTab module (cui-hub-tab.js — still-JS bridged island)
-// still owns `openRumors` and `consequenceSummary`; the TS port reaches
+// inline. The HubTab module (`src/campaign/util/cui-hub-tab.ts`) still owns
+// `openRumors` and `consequenceSummary`; the TS port reaches
 // them via the same `window.CJS.CampaignUIInternal.HubTab` surface the
 // JS originals used.
 

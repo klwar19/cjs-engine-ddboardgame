@@ -38,8 +38,8 @@ every tab in `CampaignShell`'s `REACT_TAB_COMPONENTS` map must have a
   data bridges read). Because `tsconfig` includes this file, every `state={…}`
   / `data={…}` prop is verified against the real component contract, so a
   fixture cannot drift from the shape it stands in for.
-- `run.cjs` — loads the real TS util modules + the two surviving JS islands
-  (PartyTab / HubTab), installs the engine stub, renders each case, normalizes
+- `run.cjs` — loads the real TS util modules + the surviving PartyTab JS island,
+  installs the engine stub, renders each case, normalizes
   the HTML, and writes (`--update`) or diffs (`--list`/default) the snapshots.
 
 ## Adding a tab or component
@@ -62,6 +62,6 @@ tabs can't ship un-snapshotted.
   SVG is an explicit out-of-scope bridged island (`campaign-world-map.js`), so
   the fixture does not synthesize SVG geometry. The snapshot still pins the
   React wrapper's empty branch.
-- The **roster detail row** card body comes from the `cui-party-tab.js` island;
-  the snapshot exercises the migrated hero / vitals / stats JSX with a fixture
-  member (base character/job records resolve to graceful fallbacks).
+- The **roster detail row** is now JSX. The snapshot exercises the migrated
+  hero / vitals / stats / detail-card tree with a fixture member (base
+  character/job records resolve to graceful fallbacks).

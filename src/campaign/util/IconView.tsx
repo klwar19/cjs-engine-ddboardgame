@@ -1,4 +1,4 @@
-// Icon.tsx — Phase K.3.2 JSX icon, the React twin of `UIIcons.renderIcon`.
+// IconView.tsx — Phase K.3.2 JSX icon, the React twin of `UIIcons.renderIcon`.
 //
 // Maps the structured token from `resolveIconToken` (icon.ts) to the SAME
 // markup `js/ui/ui-icons.js::renderIcon` emits, so JSX icons in the roster

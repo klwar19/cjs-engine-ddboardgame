@@ -5,7 +5,7 @@
 // `UIIcons.normalize` — the data path the JSX `<Icon>` needs. This module is
 // the thin typed seam over it: resolve a token for an entity (delegating to
 // UIIcons so classification stays single-source) and compose the className
-// the same way `UIIcons.renderIcon` does. `<Icon>` (Icon.tsx) maps the token
+// the same way `UIIcons.renderIcon` does. `<Icon>` (IconView.tsx) maps the token
 // to the SAME markup `renderIcon` emits, so JSX icons are DOM-compatible with
 // the HTML strings they replace — the only intentional difference is the
 // image variant swapping the inline `onerror=` attribute for a React
