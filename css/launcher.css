@@ -242,9 +242,26 @@ html, body { width: 100%; height: 100%; }
   height: 100%;
   border: 0;
   background: var(--launcher-bg);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
-.launcher-frame[hidden] { display: none; }
+.launcher-frame.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.launcher-frame-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--launcher-text-dim);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
 
 /* ── Welcome screen ───────────────────────────────────── */
 .launcher-welcome {
@@ -315,17 +332,6 @@ html, body { width: 100%; height: 100%; }
   font-size: 0.8rem;
   color: var(--launcher-text-dim);
   line-height: 1.4;
-}
-
-/* ── Loading state ────────────────────────────────────── */
-.launcher-frame-wrap.is-loading::after {
-  content: 'Loading…';
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--launcher-text-dim);
-  font-size: 0.9rem;
-  pointer-events: none;
 }
 
 /* ── Mobile ───────────────────────────────────────────── */

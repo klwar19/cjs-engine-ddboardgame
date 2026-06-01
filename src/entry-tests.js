@@ -11,3 +11,6 @@ import "../js/effects/conditions.js";
 import "../js/effects/effect-registry.js";
 import "../js/ui/audio-manager.js";
 import "../js/ui/animation-bus.js";
+import { markEmbeddedIfNeeded } from "./shared/embed";
+
+markEmbeddedIfNeeded();

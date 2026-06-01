@@ -3,10 +3,11 @@ import { MODE_IDS, MODES, type ModeId } from "../modes";
 interface SidebarProps {
   readonly activeMode: ModeId | null;
   readonly onSelect: (mode: ModeId) => void;
+  readonly onPreload: (mode: ModeId) => void;
   readonly onToggleCollapsed: () => void;
 }
 
-export function Sidebar({ activeMode, onSelect, onToggleCollapsed }: SidebarProps) {
+export function Sidebar({ activeMode, onSelect, onPreload, onToggleCollapsed }: SidebarProps) {
   return (
     <aside className="launcher-sidebar" id="launcher-sidebar" aria-label="App navigation">
       <header className="launcher-brand">
@@ -36,6 +37,8 @@ export function Sidebar({ activeMode, onSelect, onToggleCollapsed }: SidebarProp
               type="button"
               className={`launcher-nav-item${isActive ? " is-active" : ""}`}
               data-mode={id}
+              onFocus={() => onPreload(id)}
+              onMouseEnter={() => onPreload(id)}
               onClick={() => onSelect(id)}
             >
               <span className="launcher-nav-icon" aria-hidden="true">{cfg.icon}</span>

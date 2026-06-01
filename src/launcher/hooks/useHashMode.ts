@@ -57,13 +57,18 @@ export function useHashMode(): UseHashModeResult {
   }, []);
 
   useEffect(() => {
-    const onHashChange = () => {
+    const syncFromLocation = () => {
       if (suppressRef.current) return;
       const next = readHash();
       setModeState(next);
+      writeStored(next);
     };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    window.addEventListener("hashchange", syncFromLocation);
+    window.addEventListener("popstate", syncFromLocation);
+    return () => {
+      window.removeEventListener("hashchange", syncFromLocation);
+      window.removeEventListener("popstate", syncFromLocation);
+    };
   }, []);
 
   return { mode, setMode };

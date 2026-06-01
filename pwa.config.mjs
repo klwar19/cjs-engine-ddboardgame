@@ -103,13 +103,12 @@ export const workboxOptions = {
   ignoreURLParametersMatching: [/^embed$/, /^t$/, /^v$/],
   // PRECACHE = the app shell only. HTML/CSS/SVG/manifest (small, shared by
   // every page) + the universal React runtime every page boots with
-  // (react-vendor) and vite's tiny loader shims. Domain JS is deliberately
+  // (react-vendor) and the tiny loader shims Vite emits. Domain JS is deliberately
   // NOT here — it is runtime-cached per mode below.
   globPatterns: [
     "**/*.{css,html,svg,webmanifest}",
     "assets/react-vendor-*.js",
     "assets/rolldown-runtime-*.js",
-    "assets/modulepreload-polyfill-*.js",
     "assets/preload-helper-*.js"
   ],
   maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
