@@ -25,6 +25,43 @@ each step (`npm test`).
 
 ## Status
 
+### Remaining Work (not done yet)
+
+The campaign React migration is mostly complete, but the following items are
+still open and should be treated as active work. Historical notes below still
+mention `campaign-ui.js` while describing completed migration steps; that file
+is deleted and is no longer an active bridge or extension point.
+
+- [ ] **Persistence migrations before IndexedDB.** Add
+  `src/persistence/migrations.ts` with versioned save and AI-draft migration
+  helpers, tests for old/current/future versions, and a compatibility wrapper
+  around the current `CampaignSave` path before any storage backend changes.
+- [ ] **IndexedDB persistence.** Move large campaign save slots and AI draft /
+  generated-content payloads out of localStorage into IndexedDB (Dexie or
+  `idb`), keep localStorage for small settings / active-slot ids, and include
+  a one-time localStorage-to-IndexedDB migration.
+- [ ] **Phase B Engine TS.** Plan and execute the engine conversion as its own
+  phase: TS module first, `window.CJS.*` compatibility wrapper second, tests
+  third, JS deletion last. Order: core/data-store/content-validator, effects,
+  combat engine, AI, grid/QTE, then campaign systems.
+- [ ] **Full action-string removal.** The typed registry is done, but
+  remaining vanilla / HTML islands still emit `data-campaign-action` and rely
+  on the shell forwarder. Replace drawer HTML, campaign maps, inventory /
+  economy, farming, Pocket Haven, and relationships actions with typed
+  handlers or JSX `onClick` calls, then remove the compatibility forwarders.
+- [ ] **Hard bundle targets.** `tools/build-size-check.mjs` currently guards
+  regressions against a baseline. Add explicit ceilings too: campaign initial
+  chunk under 300 KB, editor under 150 KB, combat under 200 KB.
+- [ ] **PNG PWA icons.** Add generated PNG icons (at least 192px and 512px,
+  plus maskable if needed), list them in `pwa.config.mjs`, include them in the
+  PWA asset list, and test that the manifest references real files.
+- [ ] **Live browser regression.** The static visual-regression harness is not
+  a substitute for a running-browser smoke pass. Add or run a browser test that
+  loads index/campaign/editor/combat, switches campaign modes/tabs, opens and
+  closes the drawer, exercises one typed action and any remaining compatibility
+  action, verifies the combat grid renders, and verifies PWA manifest/icon
+  paths return 200.
+
 ### Done
 
 - [x] **Phase B AI fix — multi-cell movement candidate ring.**
@@ -889,7 +926,8 @@ show become tractable:
   `.github/workflows/ci.yml` runs the full gate (typecheck + test + build
   + size:check) on every pull request — previously PRs had no CI at all.
   Baseline captured post-I.1/I.2 (52 chunks, ~2.85 MB; campaign entry
-  457 KB).
+  457 KB). This is a regression guard only; explicit campaign/editor/combat
+  bundle ceilings are tracked in Remaining Work.
 
 ## Phase J — AI-friendly authoring (after H, parallel with I)
 
@@ -1531,28 +1569,26 @@ For every tab/panel migration commit:
 
 ## Architecture invariants (do not break)
 
-These are the contracts every Phase F+G+H commit upholds:
+These are the current contracts for future campaign work:
 
-1. **One bridge boundary.** All cross-language reads go through
-   `CampaignUI.get<X>Data(state)` in campaign-ui.js. Components in
-   `src/campaign/` never reach into `window.CJS.*` modules
-   directly except via the typed bridge file in
-   `src/campaign/shell/bridge.ts` or per-tab data files in
-   `src/campaign/tabs/data/`.
-2. **Direct onClick > data attribute.** Migrated buttons use
-   `onClick={() => dispatchCampaignAction(name, payload)}` or a
-   typed wrapper in `src/campaign/actions.ts`. Stamping
-   `data-campaign-action` into JSX is reserved for the legacy
-   bubble-delegated path that ports later.
-3. **JSX > dangerouslySetInnerHTML.** Every JSX component that
-   still uses `dangerouslySetInnerHTML` carries a comment naming
-   the closure helper it's bridging to, and the comment names the
-   Phase G entry that ports it.
-4. **No new HTML-string renderers.** Adding a new panel ships as
-   JSX from day one, with a typed `get<X>Data` bridge if it needs
-   data the React tree can't compute. campaign-ui.js gains no new
-   `_render*` helpers.
-5. **Tests track contracts.** `test_campaign_shell_bridge.js` lists
-   every bridge function the React shell consumes. Adding a
-   `get<X>Data` adds an entry. Adding a JSX shell component adds
-   a presence check.
+1. **No `campaign-ui.js` bridge.** `campaign-ui.js` is deleted. Historical
+   mentions above are migration log entries, not an active integration point.
+   Cross-language reads must go through the TS shell bridge, boot surface, or
+   per-tab data files (`src/campaign/shell/bridge.ts`,
+   `src/campaign/shell/boot.ts`, `src/campaign/tabs/data/`). Components in
+   `src/campaign/` should not reach into `window.CJS.*` directly except
+   through those typed boundaries or action-handler context helpers.
+2. **Direct onClick > data attribute.** New or migrated buttons use
+   `onClick={() => dispatchCampaignAction(name, payload)}` or a typed wrapper
+   in `src/campaign/actions.ts`. Existing `data-campaign-action` markup is
+   compatibility-only for the remaining vanilla / HTML islands listed in
+   Remaining Work; do not add new JSX that emits it.
+3. **JSX > dangerouslySetInnerHTML.** Every remaining `dangerouslySetInnerHTML`
+   use must identify the current island it is hosting and the removal path.
+   Do not introduce new bridges to deleted campaign UI closure helpers.
+4. **No new HTML-string renderers.** Adding a new panel ships as JSX from day
+   one, with typed data builders if it needs data the React tree cannot compute.
+   Do not recreate `campaign-ui.js` or add new `_render*` HTML-string helpers.
+5. **Tests track contracts.** `test_campaign_shell_bridge.js` lists every
+   bridge function the React shell consumes. Adding a `get<X>Data` adds an
+   entry. Adding a JSX shell component adds a presence check.
