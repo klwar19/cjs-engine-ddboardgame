@@ -91,9 +91,9 @@ window.CJS.FarmingMode = (() => {
             <div class="campaign-muted">Slots ${_esc(farm.unlockedCropSlots)}/${_esc(farm.maxCropSlots)} | Seeds ${_esc(seedQty)} | Fertilizer ${_esc(fertilizerQty)}${farm.bonusHarvests ? ` | Harvest bonus +${_esc(farm.bonusHarvests)}` : ''}</div>
           </div>
           <div class="campaign-panel-actions farm-head-actions">
-            <button class="campaign-action ${farm.qte?.available ? 'primary' : ''}" data-campaign-action="farm-qte-open" ${farm.qte?.available ? '' : 'disabled'}>${farm.qte?.available ? 'Focus Bonus' : 'No Bonus'}</button>
-            <button class="campaign-action" data-campaign-action="farm-tick">Tick Growth</button>
-            <button class="campaign-action primary" data-campaign-action="pass-phase">Pass Phase</button>
+            <button class="campaign-action ${farm.qte?.available ? 'primary' : ''}" data-farm-qte-open="1" ${farm.qte?.available ? '' : 'disabled'}>${farm.qte?.available ? 'Focus Bonus' : 'No Bonus'}</button>
+            <button class="campaign-action" data-farm-tick="1">Tick Growth</button>
+            <button class="campaign-action primary" data-pass-phase="1">Pass Phase</button>
           </div>
         </div>
 
@@ -121,23 +121,23 @@ window.CJS.FarmingMode = (() => {
             </label>
 
             <div class="farm-action-strip">
-              <button class="campaign-action primary farm-main-action" data-campaign-action="farm-interact">
+              <button class="campaign-action primary farm-main-action" data-farm-interact="1">
                 ${_esc(_actionLabel(farm, targetTile, target))}
               </button>
-              <button class="campaign-action farm-bonus-action ${farm.qte?.available ? 'primary' : ''}" data-campaign-action="farm-qte-open" ${farm.qte?.available ? '' : 'disabled'}>
+              <button class="campaign-action farm-bonus-action ${farm.qte?.available ? 'primary' : ''}" data-farm-qte-open="1" ${farm.qte?.available ? '' : 'disabled'}>
                 ${farm.qte?.available ? 'Focus Bonus' : 'No Bonus'}
               </button>
             </div>
 
             <div class="farm-dpad" aria-label="Move farmer">
               <span></span>
-              <button data-campaign-action="farm-move" data-dir="up" aria-label="Move up">Up</button>
+              <button data-farm-move="up" aria-label="Move up">Up</button>
               <span></span>
-              <button data-campaign-action="farm-move" data-dir="left" aria-label="Move left">Left</button>
-              <button data-campaign-action="farm-interact" aria-label="Use selected tool">Act</button>
-              <button data-campaign-action="farm-move" data-dir="right" aria-label="Move right">Right</button>
+              <button data-farm-move="left" aria-label="Move left">Left</button>
+              <button data-farm-interact="1" aria-label="Use selected tool">Act</button>
+              <button data-farm-move="right" aria-label="Move right">Right</button>
               <span></span>
-              <button data-campaign-action="farm-move" data-dir="down" aria-label="Move down">Down</button>
+              <button data-farm-move="down" aria-label="Move down">Down</button>
               <span></span>
             </div>
 
@@ -602,7 +602,7 @@ window.CJS.FarmingMode = (() => {
           slotIndex >= 0 && !locked ? 'is-crop-slot' : ''
         ].filter(Boolean).join(' ');
         cells.push(`
-          <button class="${classes}" data-campaign-action="farm-tile" data-x="${x}" data-y="${y}" title="${_escAttr(_tileLabel(tile, crop, locked))}" aria-label="${_escAttr(_tileLabel(tile, crop, locked))}">
+          <button class="${classes}" data-farm-tile="1" data-x="${x}" data-y="${y}" title="${_escAttr(_tileLabel(tile, crop, locked))}" aria-label="${_escAttr(_tileLabel(tile, crop, locked))}">
             <span class="farm-ground"></span>
             ${tile.grass ? '<span class="farm-grass"></span>' : ''}
             ${tile.seedId ? `<span class="farm-crop crop-stage-${_escAttr(cropStage)}">${_esc(_cropGlyph(tile, crop))}</span>` : ''}
@@ -618,7 +618,7 @@ window.CJS.FarmingMode = (() => {
     const active = farm.selectedTool === tool.id;
     const level = farm.tools?.[tool.id]?.level || 1;
     return `
-      <button class="farm-tool ${active ? 'is-active' : ''}" data-campaign-action="farm-select-tool" data-tool="${_escAttr(tool.id)}" aria-pressed="${active ? 'true' : 'false'}">
+      <button class="farm-tool ${active ? 'is-active' : ''}" data-farm-select-tool="${_escAttr(tool.id)}" aria-pressed="${active ? 'true' : 'false'}">
         <span class="farm-tool-glyph tool-${_className(tool.id)}">${_esc(tool.glyph)}</span>
         <span>${_esc(tool.label)}</span>
         <small>Lv ${_esc(level)}</small>
@@ -645,7 +645,7 @@ window.CJS.FarmingMode = (() => {
               <strong>${_esc(title)}</strong>
               <div class="campaign-muted">${locked ? 'Locked crop slot' : `Tile ${_esc(menu.x + 1)},${_esc(menu.y + 1)}`}</div>
             </div>
-            <button class="campaign-icon-btn" data-campaign-action="farm-tile-menu-close" aria-label="Close tile actions">Close</button>
+            <button class="campaign-icon-btn" data-farm-tile-menu-close="1" aria-label="Close tile actions">Close</button>
           </div>
           <div class="farm-tile-menu-meta">
             ${crop ? `<span>Growth ${_esc(Math.min(tile.progress || 0, tile.required || crop.growthTicks || 3))}/${_esc(tile.required || crop.growthTicks || 3)}</span>` : ''}
@@ -655,7 +655,7 @@ window.CJS.FarmingMode = (() => {
           </div>
           <div class="farm-tile-menu-actions">
             ${options.map((option) => `
-              <button class="campaign-action ${option.primary ? 'primary' : ''}" data-campaign-action="farm-tile-action" data-tile-action="${_escAttr(option.id)}" data-x="${_escAttr(menu.x)}" data-y="${_escAttr(menu.y)}" ${option.enabled ? '' : 'disabled'} title="${_escAttr(option.hint || option.label)}">
+              <button class="campaign-action ${option.primary ? 'primary' : ''}" data-farm-tile-action="${_escAttr(option.id)}" data-x="${_escAttr(menu.x)}" data-y="${_escAttr(menu.y)}" ${option.enabled ? '' : 'disabled'} title="${_escAttr(option.hint || option.label)}">
                 <span>${_esc(option.label)}</span>
                 ${option.hint ? `<small>${_esc(option.hint)}</small>` : ''}
               </button>
@@ -677,15 +677,15 @@ window.CJS.FarmingMode = (() => {
         <div class="farm-qte-window" role="dialog" aria-label="Farm focus bonus">
           <div class="farm-qte-head">
             <strong>Focus Bonus</strong>
-            <button class="campaign-icon-btn" data-campaign-action="farm-qte-close" aria-label="Close focus bonus">Close</button>
+            <button class="campaign-icon-btn" data-farm-qte-close="1" aria-label="Close focus bonus">Close</button>
           </div>
           <div class="farm-qte-lane" style="--qte-target-start:${_escAttr(targetStart)}%; --qte-target-width:${_escAttr(targetWidth)}%; --qte-duration:${_escAttr(duration)}ms">
             <span class="farm-qte-target"></span>
             <span class="farm-qte-marker"></span>
           </div>
           <div class="farm-qte-actions">
-            <button class="campaign-action primary farm-qte-hit" data-campaign-action="farm-qte-hit">Hit</button>
-            <button class="campaign-action" data-campaign-action="farm-qte-close">Close</button>
+            <button class="campaign-action primary farm-qte-hit" data-farm-qte-hit="1">Hit</button>
+            <button class="campaign-action" data-farm-qte-close="1">Close</button>
           </div>
         </div>
       </div>

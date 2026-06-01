@@ -16,7 +16,7 @@ window.CJS.PocketHaven = (() => {
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h3>Farm</h3>
-          <button class="campaign-action" data-campaign-action="farm-tick">Tick Growth</button>
+          <button class="campaign-action" data-farm-tick="1">Tick Growth</button>
         </div>
         ${plots.length ? plots.map(_renderPlot).join('') : '<div class="campaign-empty">No plots yet.</div>'}
       </section>
@@ -33,8 +33,8 @@ window.CJS.PocketHaven = (() => {
           <div class="campaign-meter"><span style="width:${Math.min(100, pct)}%"></span></div>
         </div>
         <div class="campaign-row-actions">
-          ${plot.ready ? `<button class="campaign-action" data-campaign-action="harvest-plot" data-plot-id="${_escAttr(plot.id)}">Harvest</button>` : ''}
-          <button class="campaign-action" data-campaign-action="plant-seed" data-plot-id="${_escAttr(plot.id)}">Plant</button>
+          ${plot.ready ? `<button class="campaign-action" data-harvest-plot="${_escAttr(plot.id)}">Harvest</button>` : ''}
+          <button class="campaign-action" data-plant-seed-plot="${_escAttr(plot.id)}">Plant</button>
         </div>
       </div>
     `;
@@ -73,10 +73,10 @@ window.CJS.PocketHaven = (() => {
       : '';
     const canMake = _bundleAvailable(state, inputs);
     const dataAttr = idAttr === 'food'
-      ? `data-food-id="${_escAttr(recipe.id)}"`
-      : `data-recipe-id="${_escAttr(recipe.id)}"`;
+      ? `data-cook-food-id="${_escAttr(recipe.id)}"`
+      : `data-craft-recipe-id="${_escAttr(recipe.id)}"`;
     const btn = canMake
-      ? `<button class="campaign-action" data-campaign-action="${actionId}" ${dataAttr}>${actionId === 'cook-food' ? 'Cook' : 'Craft'}</button>`
+      ? `<button class="campaign-action" ${dataAttr}>${actionId === 'cook-food' ? 'Cook' : 'Craft'}</button>`
       : `<button class="campaign-action" disabled title="Missing ingredients">Need Ingredients</button>`;
     return `
       <div class="campaign-row">
@@ -155,7 +155,7 @@ window.CJS.PocketHaven = (() => {
         <section class="campaign-panel">
           <div class="campaign-panel-head">
             <h3>Notes</h3>
-            <button class="campaign-action" data-campaign-action="add-pocket-note">Add Note</button>
+            <button class="campaign-action" data-add-pocket-note="1">Add Note</button>
           </div>
           ${(haven.notes || []).map((note) => `<div class="campaign-log-line">${_esc(note.text || note)}</div>`).join('') || '<div class="campaign-empty">No Pocket Haven notes.</div>'}
         </section>
@@ -183,7 +183,7 @@ window.CJS.PocketHaven = (() => {
           <strong>${_esc(g.title || g.id)}</strong>
           <div class="campaign-muted">${_esc(g.description || 'Pocket Haven training drill.')}</div>
         </div>
-        <button class="campaign-action primary" data-campaign-action="haven-play-minigame" data-game="${_escAttr(g.id)}">Play</button>
+        <button class="campaign-action primary" data-haven-play-minigame="${_escAttr(g.id)}">Play</button>
       </div>
     `).join('');
     const triviaTile = triviaAvailable ? `
@@ -192,7 +192,7 @@ window.CJS.PocketHaven = (() => {
           <strong>🍺 Guild Trivia Night</strong>
           <div class="campaign-muted">Tavern event. Answer lore and history questions for JP and relationship points.</div>
         </div>
-        <button class="campaign-action primary" data-campaign-action="haven-open-trivia" data-world="${_escAttr(state.currentWorld || 'haven')}">Host Round</button>
+        <button class="campaign-action primary" data-haven-open-trivia="${_escAttr(state.currentWorld || 'haven')}">Host Round</button>
       </div>
     ` : '';
     return `
@@ -229,8 +229,8 @@ window.CJS.PocketHaven = (() => {
       const action = built
         ? (maxedOut
             ? '<span class="campaign-pill">Maxed</span>'
-            : `<button class="campaign-action" data-campaign-action="haven-upgrade-facility" data-facility="${_escAttr(def.id)}" title="Cost: ${_escAttr(upgradeCost)}">Upgrade (${_esc(upgradeCost)})</button>`)
-        : `<button class="campaign-action primary" data-campaign-action="haven-build-facility" data-facility="${_escAttr(def.id)}" title="Cost: ${_escAttr(buildCost)}">Build (${_esc(buildCost)})</button>`;
+            : `<button class="campaign-action" data-haven-upgrade-facility="${_escAttr(def.id)}" title="Cost: ${_escAttr(upgradeCost)}">Upgrade (${_esc(upgradeCost)})</button>`)
+        : `<button class="campaign-action primary" data-haven-build-facility="${_escAttr(def.id)}" title="Cost: ${_escAttr(buildCost)}">Build (${_esc(buildCost)})</button>`;
       const useBtn = _facilityActionButtons(def, inst);
       const usageLine = built
         ? `<div class="campaign-muted" style="font-size:0.82em">Lv ${level} · Uses left this phase: ${uses}${cap ? ` · Capacity: ${cap}` : ''}</div>`
@@ -264,13 +264,13 @@ window.CJS.PocketHaven = (() => {
     if (!inst) return '';
     if (def.kind === 'training') {
       const disabled = (inst.usesRemaining || 0) <= 0 ? 'disabled' : '';
-      return `<button class="campaign-action" data-campaign-action="haven-train-skill" data-facility="${_escAttr(def.id)}" ${disabled}>Train Skill</button>`;
+      return `<button class="campaign-action" data-haven-train-skill="${_escAttr(def.id)}" ${disabled}>Train Skill</button>`;
     }
     if (def.kind === 'ranch') {
       const collectDisabled = (inst.usesRemaining || 0) <= 0 ? 'disabled' : '';
       return `
-        <button class="campaign-action" data-campaign-action="haven-ranch-assign" data-facility="${_escAttr(def.id)}">Assign</button>
-        <button class="campaign-action" data-campaign-action="haven-ranch-collect" data-facility="${_escAttr(def.id)}" ${collectDisabled}>Collect</button>
+        <button class="campaign-action" data-haven-ranch-assign="${_escAttr(def.id)}">Assign</button>
+        <button class="campaign-action" data-haven-ranch-collect="${_escAttr(def.id)}" ${collectDisabled}>Collect</button>
       `;
     }
     if (def.kind === 'craft') {
@@ -309,7 +309,7 @@ window.CJS.PocketHaven = (() => {
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h3>🎣 Fishing</h3>
-          <button class="campaign-action" data-campaign-action="open-fishing" ${buttonDisabled}>Cast Line</button>
+          <button class="campaign-action" data-open-fishing="1" ${buttonDisabled}>Cast Line</button>
         </div>
         <div class="campaign-row">
           <div>

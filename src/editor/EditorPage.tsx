@@ -709,6 +709,10 @@ export function EditorPage() {
       const UI = c.UI;
       const Save = c.SaveManager;
       if (!CM || !DS || !UI || !Save) return;
+      const draftHydration = Save.hydrate?.().catch((error) => {
+        console.warn("Draft persistence hydrate failed:", error);
+        return null;
+      });
 
       try {
         const result = await CM.loadDefaultData();
@@ -740,6 +744,7 @@ export function EditorPage() {
       resetAllPanels();
       syncState.current.lastGitHubSavedJson = DS.exportJSON();
       setStatusMessage(`Ready (${getLoadMode()})`);
+      await draftHydration;
       refreshSyncBadge();
 
       // Offer draft restore

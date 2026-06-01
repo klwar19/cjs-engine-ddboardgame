@@ -88,6 +88,27 @@ ok('CampaignSettingsTab.tsx has no inline data-campaign-action',
 ok('CampaignLogsTab.tsx has no inline data-campaign-action',
    !/data-campaign-action=/.test(stripComments(LOGS)));
 
+// Phase K follow-through: these remaining HTML islands now emit local,
+// semantic markers handled by typed dispatch wrappers instead of the generic
+// `data-campaign-action` bridge. The bridge stays for compatibility only.
+const MIGRATED_ISLANDS = [
+  'src/campaign/shell/boot.ts',
+  'js/campaign/campaign-map.js',
+  'js/campaign/campaign-inventory.js',
+  'js/campaign/campaign-economy.js',
+  'js/campaign/farming-mode.js',
+  'js/campaign/pocket-haven.js',
+  'js/ui/relationships-tab.js'
+];
+for (const rel of MIGRATED_ISLANDS) {
+  const src = fs.readFileSync(path.join(__dirname, rel), 'utf8');
+  ok(rel + ' has no generic data-campaign-action attributes',
+     !/data-campaign-action=/.test(stripComments(src)));
+}
+const externalTabsSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/tabs/CampaignExternalTabs.tsx'), 'utf8');
+ok('CampaignExternalTabs routes island markers through typed helper',
+   /dispatchHtmlIslandAction/.test(externalTabsSrc));
+
 // Every wrapper that mutates state should route through CampaignOps or
 // CampaignSave. That keeps undo/log/save behaviour identical to the
 // vanilla path.

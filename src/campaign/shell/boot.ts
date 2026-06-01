@@ -73,6 +73,7 @@ interface CampaignStateModule {
   subscribe: (fn: () => void) => void;
 }
 interface SaveModule {
+  hydrate?: () => Promise<unknown>;
   loadActive: () => SaveLoadResult | null | undefined;
   saveCurrent?: () => void;
 }
@@ -208,6 +209,7 @@ export async function init(root: HTMLElement): Promise<void> {
     await c.CampaignPartyChat?.load?.();
     const CS = c.CampaignState!;
     CS.loadContentFromDataStore();
+    await c.CampaignSave?.hydrate?.();
     const loadResult = c.CampaignSave?.loadActive();
     if (!loadResult) {
       CS.createNewSave(Object.values(CS.getContent().campaigns)[0]?.id);
@@ -224,8 +226,8 @@ export async function init(root: HTMLElement): Promise<void> {
     await c.CampaignSequences?.loadWorld?.(CS.getState()?.currentWorld || "haven");
     await c.CampaignStoryContext?.ensureStoryContext?.(CS.getState()?.currentWorld || "haven");
     // No campaign-root click delegate (Phase H.2): the React shell forwards
-    // every bridged-body data-campaign-action / -mode / -tab / -panel
-    // through its <main> + drawer forwarders to handleAction / setActive*.
+    // bridged body clicks through its typed React wrappers; the generic
+    // shell forwarder remains only as a compatibility bridge.
     bindEscapeForPanels();
     bindCombatResultListener();
     bindCombatReturnEvents();
@@ -474,7 +476,7 @@ function renderInventorySnapshot(state: CampaignStateLike, opts: { full?: boolea
   const visible = opts.full ? rows : rows.slice(0, 8);
   return `
       <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Inventory</h2><button class="campaign-icon-btn" data-campaign-action="open-inventory-tab">Open Full</button></div>
+        <div class="campaign-panel-head"><h2>Inventory</h2><button class="campaign-icon-btn" data-open-inventory-tab="1">Open Full</button></div>
         ${
           visible.length
             ? visible
@@ -499,7 +501,7 @@ function renderNotesPanel(state: CampaignStateLike): string {
       <section class="campaign-side-section">
         <div class="campaign-panel-head">
           <h2>Pinned Notes</h2>
-          <button class="campaign-icon-btn" data-campaign-action="add-note">+ Add</button>
+          <button class="campaign-icon-btn" data-add-note="1">+ Add</button>
         </div>
         ${
           notes.length

@@ -39,6 +39,7 @@ export interface SaveManagerApi {
   saveGitHubConfig: (config: SaveManagerConfig) => void;
   clearGitHubConfig: () => void;
   isGitHubReady: (config: SaveManagerConfig) => boolean;
+  hydrate?: () => Promise<unknown>;
   saveDraft: (json: string, meta?: { source?: string }) => void;
   getDraft: () => { json?: string; savedAt?: number } | null;
   clearDraft: () => void;

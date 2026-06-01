@@ -8,6 +8,8 @@
 // or delete this slot" instead of silently mutating the old save into an
 // undefined state.
 
+import { CURRENT_SAVE_SCHEMA_VERSION, migrateSavePayload } from "../../src/persistence/migrations";
+
 window.CJS = window.CJS || {};
 
 window.CJS.CampaignSave = (() => {
@@ -15,6 +17,7 @@ window.CJS.CampaignSave = (() => {
 
   const CS = () => window.CJS.CampaignState;
   const Save = () => window.CJS.SaveManager;
+  const Persistence = () => window.CJS.Persistence;
 
   const SLOTS_KEY = 'cjs.campaign.slots.v1';
   const ACTIVE_KEY = 'cjs.campaign.activeSlot.v1';
@@ -24,6 +27,10 @@ window.CJS.CampaignSave = (() => {
   // rework reset the storyMode bookkeeping, so 4 -> 5.
   const CURRENT_SAVE_VERSION = 5;
   const MIN_COMPATIBLE_VERSION = 5;
+
+  let _slots = {};
+  let _hydrated = false;
+  let _hydratePromise = null;
 
   function _storage() {
     try { return window.localStorage; }
@@ -42,12 +49,92 @@ window.CJS.CampaignSave = (() => {
   function _write(key, value) {
     const store = _storage();
     if (!store) return false;
-    store.setItem(key, JSON.stringify(value));
-    return true;
+    try {
+      store.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function _migrate(value) {
+    return migrateSavePayload(value);
+  }
+
+  function _cacheFromList(list) {
+    const out = {};
+    for (const save of list || []) {
+      const migrated = _migrate(save);
+      if (migrated?.saveId) out[migrated.saveId] = migrated;
+    }
+    return out;
+  }
+
+  function _legacySlots() {
+    return _cacheFromList(Object.values(_read(SLOTS_KEY, {}) || {}));
+  }
+
+  async function hydrate() {
+    if (_hydrated) return _slots;
+    if (!_hydratePromise) {
+      _hydratePromise = (async () => {
+        const persistence = Persistence();
+        if (persistence?.migrateLocalStorageToIndexedDb && persistence?.readAllCampaignSaves) {
+          await persistence.migrateLocalStorageToIndexedDb();
+          _slots = _cacheFromList(await persistence.readAllCampaignSaves());
+        } else {
+          _slots = _legacySlots();
+        }
+        _hydrated = true;
+        return _slots;
+      })().catch((error) => {
+        console.warn('Campaign save IndexedDB hydrate failed; falling back to localStorage:', error);
+        _slots = _legacySlots();
+        _hydrated = true;
+        return _slots;
+      });
+    }
+    return _hydratePromise;
+  }
+
+  function _persistSlot(save) {
+    const persistence = Persistence();
+    if (persistence?.putCampaignSave) {
+      persistence.putCampaignSave(save).catch((error) => {
+        console.warn('Campaign save IndexedDB write failed; mirroring to localStorage:', error);
+        _write(SLOTS_KEY, _slots);
+      });
+      return;
+    }
+    _write(SLOTS_KEY, _slots);
+  }
+
+  function _deletePersistedSlot(slotId) {
+    const persistence = Persistence();
+    if (persistence?.deleteCampaignSave) {
+      persistence.deleteCampaignSave(slotId).catch((error) => {
+        console.warn('Campaign save IndexedDB delete failed; mirroring to localStorage:', error);
+        _write(SLOTS_KEY, _slots);
+      });
+      return;
+    }
+    _write(SLOTS_KEY, _slots);
+  }
+
+  function _clearPersistedSlots() {
+    const persistence = Persistence();
+    if (persistence?.clearCampaignSaves) {
+      persistence.clearCampaignSaves().catch((error) => {
+        console.warn('Campaign save IndexedDB clear failed; mirroring to localStorage:', error);
+        _write(SLOTS_KEY, _slots);
+      });
+      return;
+    }
+    _write(SLOTS_KEY, _slots);
   }
 
   function getSlots() {
-    return _read(SLOTS_KEY, {});
+    return _hydrated ? _slots : _legacySlots();
   }
 
   function getActiveSlotId() {
@@ -83,9 +170,11 @@ window.CJS.CampaignSave = (() => {
     const save = CS().clone(state);
     if (slotName) save.slotName = slotName;
     save.saveVersion = CURRENT_SAVE_VERSION;
+    save.saveSchemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
     save.lastUpdated = new Date().toISOString();
-    slots[save.saveId] = save;
-    _write(SLOTS_KEY, slots);
+    slots[save.saveId] = _migrate(save);
+    _slots = slots;
+    _persistSlot(slots[save.saveId]);
     setActiveSlotId(save.saveId);
     return save;
   }
@@ -116,12 +205,14 @@ window.CJS.CampaignSave = (() => {
   function deleteSlot(slotId) {
     const slots = getSlots();
     delete slots[slotId];
-    _write(SLOTS_KEY, slots);
+    _slots = slots;
+    _deletePersistedSlot(slotId);
     if (getActiveSlotId() === slotId) setActiveSlotId('');
   }
 
   function deleteAllSlots() {
-    _write(SLOTS_KEY, {});
+    _slots = {};
+    _clearPersistedSlots();
     setActiveSlotId('');
   }
 
@@ -132,6 +223,7 @@ window.CJS.CampaignSave = (() => {
     clone.saveId = `save_${Date.now()}`;
     clone.slotName = label || `${state.slotName || 'Campaign'} Fork`;
     clone.saveVersion = CURRENT_SAVE_VERSION;
+    clone.saveSchemaVersion = CURRENT_SAVE_SCHEMA_VERSION;
     clone.createdAt = new Date().toISOString();
     clone.lastUpdated = clone.createdAt;
     CS().setState(clone, { source: 'fork' });
@@ -143,6 +235,7 @@ window.CJS.CampaignSave = (() => {
     if (!state || !Save()) return null;
     const filename = `${_safeName(state.slotName || state.saveId)}.save.json`;
     state.saveVersion = state.saveVersion || CURRENT_SAVE_VERSION;
+    state.saveSchemaVersion = state.saveSchemaVersion || CURRENT_SAVE_SCHEMA_VERSION;
     Save().downloadTextFile(filename, `${JSON.stringify(state, null, 2)}\n`, 'application/json');
     return filename;
   }
@@ -150,7 +243,7 @@ window.CJS.CampaignSave = (() => {
   async function importFile(file) {
     if (!file) return null;
     const text = await file.text();
-    const parsed = JSON.parse(text);
+    const parsed = _migrate(JSON.parse(text));
     if (!isCompatible(parsed)) {
       const error = new Error(describeIncompatibility(parsed) || 'Incompatible save file.');
       error.incompatible = true;
@@ -166,6 +259,8 @@ window.CJS.CampaignSave = (() => {
     if (!state || !Save()) return null;
     const file = `${_safeName(state.slotName || state.saveId)}.save.json`;
     const path = `data/campaign_saves/${file}`;
+    state.saveVersion = state.saveVersion || CURRENT_SAVE_VERSION;
+    state.saveSchemaVersion = state.saveSchemaVersion || CURRENT_SAVE_SCHEMA_VERSION;
     return Save().saveTextFileToGitHub(path, `${JSON.stringify(state, null, 2)}\n`, {
       message: `Update campaign save ${file}`
     });
@@ -181,6 +276,7 @@ window.CJS.CampaignSave = (() => {
   }
 
   return Object.freeze({
+    hydrate,
     getSlots,
     getActiveSlotId,
     setActiveSlotId,

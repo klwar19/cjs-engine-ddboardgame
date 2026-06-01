@@ -110,9 +110,8 @@ window.CJS.RelationshipsTab = (() => {
               : `${a.hint} with this character`;
             return `
               <button class="rel-activity-btn"
-                      data-campaign-action="rel-activity"
-                      data-character-id="${_esc(charId)}"
-                      data-activity-id="${_esc(a.id)}"
+                      data-rel-activity-character="${_esc(charId)}"
+                      data-rel-activity-id="${_esc(a.id)}"
                       title="${_esc(title)}"
                       ${blocked ? 'disabled' : ''}>
                 <span class="rel-activity-icon" aria-hidden="true">${_esc(a.icon)}</span>
@@ -187,7 +186,7 @@ window.CJS.RelationshipsTab = (() => {
               <span>${_esc(_eventStatusText(event))}</span>
             </div>
             ${event.unlocked
-              ? `<button class="campaign-action primary" data-campaign-action="sequence-start" data-id="${_esc(event.id)}">Start</button>`
+              ? `<button class="campaign-action primary" data-sequence-start-id="${_esc(event.id)}">Start</button>`
               : `<span class="campaign-pill">${event.completed ? 'Done' : 'Locked'}</span>`}
           </div>
         `).join('')}

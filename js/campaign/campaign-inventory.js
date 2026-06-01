@@ -32,7 +32,7 @@ window.CJS.CampaignInventory = (() => {
       <section class="campaign-panel">
         <div class="campaign-panel-head">
           <h3>${_esc(label)}</h3>
-          <button class="campaign-icon-btn" title="Add ${_esc(label)}" data-campaign-action="quick-add-inventory" data-bucket="${_escAttr(bucket)}">+</button>
+          <button class="campaign-icon-btn" title="Add ${_esc(label)}" data-inventory-add-bucket="${_escAttr(bucket)}">+</button>
         </div>
         ${entries.length ? entries.map(([id, qty]) => `
           <div class="campaign-row">
@@ -43,8 +43,8 @@ window.CJS.CampaignInventory = (() => {
             </div>
             <div class="campaign-row-actions">
               <span class="campaign-pill">x${qty}</span>
-              <button class="campaign-icon-btn" title="Add one" data-campaign-action="inventory-delta" data-bucket="${_escAttr(bucket)}" data-id="${_escAttr(id)}" data-delta="1">+</button>
-              <button class="campaign-icon-btn" title="Remove one" data-campaign-action="inventory-delta" data-bucket="${_escAttr(bucket)}" data-id="${_escAttr(id)}" data-delta="-1">-</button>
+              <button class="campaign-icon-btn" title="Add one" data-inventory-delta-bucket="${_escAttr(bucket)}" data-inventory-delta-id="${_escAttr(id)}" data-inventory-delta="1">+</button>
+              <button class="campaign-icon-btn" title="Remove one" data-inventory-delta-bucket="${_escAttr(bucket)}" data-inventory-delta-id="${_escAttr(id)}" data-inventory-delta="-1">-</button>
             </div>
           </div>
         `).join('') : '<div class="campaign-empty">Empty.</div>'}

@@ -5,6 +5,7 @@ import "../../js/core/dice.js";
 import "../../js/core/undo-manager.js";
 import "../../js/core/state-tools.js";
 import "../../js/core/data-store.js";
+import "../persistence/indexedDb";
 import "../../js/core/save-manager.js";
 import "../../js/core/content-manager.js";
 import "../../js/core/skill-resolver.js";

@@ -1,6 +1,8 @@
 // campaign-map.js
 // Node-map renderer for Campaign Mode.
 
+import { dispatchCampaignAction } from "../../src/campaign/actions";
+
 window.CJS = window.CJS || {};
 
 window.CJS.CampaignMap = (() => {
@@ -104,6 +106,7 @@ window.CJS.CampaignMap = (() => {
         </div>
       </div>
     `;
+    bindMapActions(container);
 
     container.querySelectorAll('[data-node-id]').forEach((el) => {
       el.addEventListener('click', () => renderSelectedNode(container, el.dataset.nodeId));
@@ -155,7 +158,7 @@ window.CJS.CampaignMap = (() => {
           : (fog.scouted ? '<span class="campaign-grid-cell-label campaign-grid-cell-fog">?</span>' : '');
         cells.push(`
           <button class="campaign-grid-cell v2 kind-${kindClass} ${isCurrent ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''} ${fog.scouted ? 'is-scouted' : ''} ${isRevealed ? '' : 'is-hidden'} ${passable ? '' : 'is-blocked'} ${objective ? (objectiveDone ? 'has-objective is-objective-done' : 'has-objective') : ''} ${threat ? 'has-threat' : ''}"
-            data-campaign-action="move-cell" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(_cellTitleText(cell, key, objective, objectiveTitle, threat, fog.known))}">
+            data-map-move-cell="1" data-x="${x}" data-y="${y}" ${canMove || isCurrent ? '' : 'disabled'} title="${_escAttr(_cellTitleText(cell, key, objective, objectiveTitle, threat, fog.known))}">
             ${nodeBadgeClass && isRevealed ? `<span class="campaign-grid-cell-node ${nodeBadgeClass}" aria-hidden="true"></span>` : ''}
             ${threatMarkup}
             ${playerMarkup}
@@ -190,6 +193,49 @@ window.CJS.CampaignMap = (() => {
         </div>
       </div>
     `;
+    bindMapActions(container);
+  }
+
+  function bindMapActions(container) {
+    if (!container || container.__cjsMapActionsBound) return;
+    container.__cjsMapActionsBound = true;
+    container.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest('[data-map-move-cell], [data-map-layer], [data-map-move-node], [data-map-reveal-node], [data-map-clear-node], [data-map-camp-rest], [data-map-open-tab]');
+      if (!btn || !container.contains(btn) || btn.disabled) return;
+      event.preventDefault();
+      if (btn.dataset.mapMoveCell) {
+        dispatchCampaignAction('move-cell', { x: btn.dataset.x, y: btn.dataset.y });
+        return;
+      }
+      if (btn.dataset.mapLayer) {
+        dispatchCampaignAction('map-layer', { layer: btn.dataset.mapLayer });
+        return;
+      }
+      if (btn.dataset.mapMoveNode) {
+        dispatchCampaignAction('move-node', { nodeId: btn.dataset.mapMoveNode });
+        return;
+      }
+      if (btn.dataset.mapRevealNode) {
+        dispatchCampaignAction('reveal-node', { nodeId: btn.dataset.mapRevealNode });
+        return;
+      }
+      if (btn.dataset.mapClearNode) {
+        dispatchCampaignAction('clear-node', { nodeId: btn.dataset.mapClearNode });
+        return;
+      }
+      if (btn.dataset.mapCampRest) {
+        dispatchCampaignAction('camp-rest');
+        return;
+      }
+      const navAction = {
+        cook: 'open-cook-tab',
+        craft: 'open-craft-tab',
+        inventory: 'open-inventory-tab'
+      }[btn.dataset.mapOpenTab || ''];
+      if (navAction) dispatchCampaignAction(navAction);
+    });
   }
 
   function _renderTerrainLegend(terrainSeen) {
@@ -252,7 +298,7 @@ window.CJS.CampaignMap = (() => {
     return `
       <div class="campaign-map-layers" role="tablist" aria-label="Grid levels">
         ${layers.map((layer) => `
-          <button class="campaign-map-layer ${layer.id === active ? 'is-active' : ''}" data-campaign-action="map-layer" data-layer="${_escAttr(layer.id)}" role="tab" aria-selected="${layer.id === active ? 'true' : 'false'}">
+          <button class="campaign-map-layer ${layer.id === active ? 'is-active' : ''}" data-map-layer="${_escAttr(layer.id)}" role="tab" aria-selected="${layer.id === active ? 'true' : 'false'}">
             ${_esc(layer.name)}
           </button>
         `).join('')}
@@ -690,7 +736,7 @@ window.CJS.CampaignMap = (() => {
         </div>
         <div class="campaign-muted">Your party can travel this way, but the exact terrain, encounter, and objective details are still under fog.</div>
         <div class="campaign-node-actions">
-          <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>
+          <button class="campaign-action" data-map-move-node="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>
         </div>
       `;
     }
@@ -703,7 +749,7 @@ window.CJS.CampaignMap = (() => {
       const targetFog = target ? _nodeFogState(target, mapState, run) : { known: false };
       const exitLabel = targetFog.known ? (exit.label || target?.title || exit.to) : (exit.scoutedLabel || 'Unmapped route');
       return `
-        <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
+        <button class="campaign-action" data-map-move-node="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
           ${_esc(exitLabel)}
         </button>
       `;
@@ -721,18 +767,18 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-muted">${_esc(node.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
       <div class="campaign-node-actions">
-        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
+        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-map-move-node="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
         ${captured ? `<span class="campaign-pill is-current">Captured</span>` : ''}
         ${entryResolved && !captured ? `<span class="campaign-pill">Story Resolved</span>` : ''}
-        <button class="campaign-action" data-campaign-action="reveal-node" data-node-id="${_escAttr(node.id)}">Reveal</button>
-        <button class="campaign-action" data-campaign-action="clear-node" data-node-id="${_escAttr(node.id)}">Clear</button>
+        <button class="campaign-action" data-map-reveal-node="${_escAttr(node.id)}">Reveal</button>
+        <button class="campaign-action" data-map-clear-node="${_escAttr(node.id)}">Clear</button>
       </div>
       ${node.campfire && isCurrent ? `
         <div class="campaign-node-actions">
-          <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-          <button class="campaign-action" data-campaign-tab="cook">Cook</button>
-          <button class="campaign-action" data-campaign-tab="craft">Craft</button>
-          <button class="campaign-action" data-campaign-tab="inventory">Inventory</button>
+          <button class="campaign-action" data-map-camp-rest="1">Camp Rest</button>
+          <button class="campaign-action" data-map-open-tab="cook">Cook</button>
+          <button class="campaign-action" data-map-open-tab="craft">Craft</button>
+          <button class="campaign-action" data-map-open-tab="inventory">Inventory</button>
         </div>
       ` : ''}
       ${captured?.incomeOps?.length ? `<div class="campaign-muted">Income: ${_esc(captured.incomeOps.map((op) => op.op || 'op').join(', '))}</div>` : ''}
@@ -839,7 +885,7 @@ window.CJS.CampaignMap = (() => {
       const target = Runner().findNode(map, exit.to);
       const locked = mapState.locked?.[exit.to] || exit.locked;
       return `
-        <button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
+        <button class="campaign-action" data-map-move-node="${_escAttr(exit.to)}" ${locked || !isCurrent ? 'disabled' : ''}>
           ${_esc(exit.label || target?.title || exit.to)}
         </button>
       `;
@@ -856,18 +902,18 @@ window.CJS.CampaignMap = (() => {
       <div class="campaign-muted">${_esc(node.notes || '')}</div>
       <div class="campaign-chip-row">${tags}</div>
       <div class="campaign-node-actions">
-        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-campaign-action="move-node" data-node-id="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
+        ${isCurrent ? '<span class="campaign-pill is-current">Current</span>' : `<button class="campaign-action" data-map-move-node="${_escAttr(node.id)}" ${canMove ? '' : 'disabled'}>Move Here</button>`}
         ${captured ? `<span class="campaign-pill is-current">Captured</span>` : ''}
         ${entryResolved && !captured ? `<span class="campaign-pill">Story Resolved</span>` : ''}
-        <button class="campaign-action" data-campaign-action="reveal-node" data-node-id="${_escAttr(node.id)}">Reveal</button>
-        <button class="campaign-action" data-campaign-action="clear-node" data-node-id="${_escAttr(node.id)}">Clear</button>
+        <button class="campaign-action" data-map-reveal-node="${_escAttr(node.id)}">Reveal</button>
+        <button class="campaign-action" data-map-clear-node="${_escAttr(node.id)}">Clear</button>
       </div>
       ${node.campfire && isCurrent ? `
         <div class="campaign-node-actions">
-          <button class="campaign-action" data-campaign-action="camp-rest">Camp Rest</button>
-          <button class="campaign-action" data-campaign-tab="cook">Cook</button>
-          <button class="campaign-action" data-campaign-tab="craft">Craft</button>
-          <button class="campaign-action" data-campaign-tab="inventory">Inventory</button>
+          <button class="campaign-action" data-map-camp-rest="1">Camp Rest</button>
+          <button class="campaign-action" data-map-open-tab="cook">Cook</button>
+          <button class="campaign-action" data-map-open-tab="craft">Craft</button>
+          <button class="campaign-action" data-map-open-tab="inventory">Inventory</button>
         </div>
       ` : ''}
       ${captured?.incomeOps?.length ? `<div class="campaign-muted">Income: ${_esc(captured.incomeOps.map((op) => op.op || 'op').join(', '))}</div>` : ''}
@@ -1152,7 +1198,7 @@ window.CJS.CampaignMap = (() => {
     return `
       <div class="campaign-map-layers" role="tablist" aria-label="Map layers">
         ${layers.map((layer) => `
-          <button class="campaign-map-layer ${layer.id === activeLayer ? 'is-active' : ''}" data-campaign-action="map-layer" data-layer="${_escAttr(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer ? 'true' : 'false'}">
+          <button class="campaign-map-layer ${layer.id === activeLayer ? 'is-active' : ''}" data-map-layer="${_escAttr(layer.id)}" role="tab" aria-selected="${layer.id === activeLayer ? 'true' : 'false'}">
             ${_esc(layer.name)}
           </button>
         `).join('')}

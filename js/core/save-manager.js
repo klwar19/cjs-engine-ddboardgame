@@ -2,6 +2,8 @@
 // Browser-side save helpers: local draft recovery plus GitHub Contents API sync.
 // Stores editor draft data and GitHub sync settings in browser storage.
 
+import { CURRENT_CONTENT_DRAFT_SCHEMA_VERSION, migrateContentDraft } from "../../src/persistence/migrations";
+
 window.CJS = window.CJS || {};
 
 window.CJS.SaveManager = (() => {
@@ -13,6 +15,11 @@ window.CJS.SaveManager = (() => {
     githubToken: 'cjs.editor.github.token',
     githubTokenSession: 'cjs.editor.github.token.session'
   };
+  const EDITOR_DRAFT_ID = 'editor-local-draft';
+
+  let _draftCache = null;
+  let _draftHydrated = false;
+  let _draftHydratePromise = null;
 
   const DEFAULT_GITHUB_CONFIG = {
     owner: '',
@@ -34,6 +41,10 @@ window.CJS.SaveManager = (() => {
     catch (_) { return null; }
   }
 
+  function _persistence() {
+    return window.CJS && window.CJS.Persistence;
+  }
+
   function _readJSON(storage, key, fallback) {
     if (!storage) return fallback;
     try {
@@ -52,6 +63,37 @@ window.CJS.SaveManager = (() => {
     } catch (_) {
       return false;
     }
+  }
+
+  function _readLegacyDraft() {
+    const draft = _readJSON(_localStorage(), STORAGE_KEYS.draft, null);
+    if (!draft) return null;
+    try { return migrateContentDraft(draft); }
+    catch (_) { return draft; }
+  }
+
+  async function hydrate() {
+    if (_draftHydrated) return _draftCache;
+    if (!_draftHydratePromise) {
+      _draftHydratePromise = (async () => {
+        const persistence = _persistence();
+        if (persistence?.migrateLocalStorageToIndexedDb) {
+          await persistence.migrateLocalStorageToIndexedDb();
+        }
+        if (persistence?.getContentDraft) {
+          _draftCache = await persistence.getContentDraft(EDITOR_DRAFT_ID);
+        }
+        if (!_draftCache) _draftCache = _readLegacyDraft();
+        _draftHydrated = true;
+        return _draftCache;
+      })().catch((error) => {
+        console.warn('SaveManager draft IndexedDB hydrate failed; falling back to localStorage:', error);
+        _draftCache = _readLegacyDraft();
+        _draftHydrated = true;
+        return _draftCache;
+      });
+    }
+    return _draftHydratePromise;
   }
 
   function _normalizeConfig(config) {
@@ -147,21 +189,36 @@ window.CJS.SaveManager = (() => {
 
   function saveDraft(json, meta = {}) {
     const payload = {
+      contentDraftSchemaVersion: CURRENT_CONTENT_DRAFT_SCHEMA_VERSION,
+      kind: 'editor-local-draft',
       json: String(json || ''),
       savedAt: new Date().toISOString(),
       source: meta.source || 'autosave'
     };
-    _writeJSON(_localStorage(), STORAGE_KEYS.draft, payload);
+    _draftCache = payload;
+    const persistence = _persistence();
+    if (persistence?.putContentDraft) {
+      persistence.putContentDraft(EDITOR_DRAFT_ID, payload).catch((error) => {
+        console.warn('SaveManager draft IndexedDB write failed; mirroring to localStorage:', error);
+        _writeJSON(_localStorage(), STORAGE_KEYS.draft, payload);
+      });
+    } else {
+      _writeJSON(_localStorage(), STORAGE_KEYS.draft, payload);
+    }
     return payload;
   }
 
   function getDraft() {
-    return _readJSON(_localStorage(), STORAGE_KEYS.draft, null);
+    return _draftCache || _readLegacyDraft();
   }
 
   function clearDraft() {
+    _draftCache = null;
     const local = _localStorage();
     if (local) local.removeItem(STORAGE_KEYS.draft);
+    _persistence()?.deleteContentDraft?.(EDITOR_DRAFT_ID).catch((error) => {
+      console.warn('SaveManager draft IndexedDB delete failed:', error);
+    });
   }
 
   function _encodePath(path) {
@@ -603,6 +660,7 @@ window.CJS.SaveManager = (() => {
     saveGitHubConfig,
     clearGitHubConfig,
     isGitHubReady,
+    hydrate,
     saveDraft,
     getDraft,
     clearDraft,

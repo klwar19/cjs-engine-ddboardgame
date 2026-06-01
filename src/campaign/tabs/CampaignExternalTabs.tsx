@@ -1,11 +1,12 @@
 import type { CampaignStateSnapshot } from "../store";
+import { dispatchHtmlIslandAction } from "../htmlIslandActions";
 
 // Wrappers for tabs whose body comes from a sibling vanilla module
 // (CampaignInventory / CampaignEconomy / PocketHaven / RelationshipsTab).
 // Same hybrid migration pattern as the hub family — React owns the
-// mount, vanilla produces the inner HTML, the legacy event delegation
-// keeps handling `data-campaign-action` clicks. Per-tab JSX ports land
-// later as the inner content of each module moves to TypeScript.
+// mount, vanilla produces the inner HTML, and this wrapper translates
+// island-local data markers into typed dispatch calls. Per-tab JSX ports
+// land later as the inner content of each module moves to TypeScript.
 
 interface InventoryMod   { readonly render: () => string }
 interface EconomyMod     { readonly renderRest: () => string; readonly renderShops: () => string }
@@ -47,7 +48,16 @@ function safeWrap(label: string, fn: () => string, mountClass: string) {
     console.error(`${label} failed:`, error);
     html = `<section class="campaign-panel"><div class="campaign-empty">${label} render failed.</div></section>`;
   }
-  return <div className={mountClass} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div
+      className={mountClass}
+      onClick={(event) => {
+        const result = dispatchHtmlIslandAction(event.target as HTMLElement | null);
+        if (result.handled) event.preventDefault();
+      }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 export function CampaignInventoryTab(_props: Props) {

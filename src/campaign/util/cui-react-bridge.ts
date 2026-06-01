@@ -51,7 +51,8 @@ const REACT_TABS: readonly string[] = [
   // these into CampaignInventory / CampaignEconomy / PocketHaven /
   // RelationshipsTab. The matching React wrappers in
   // `src/campaign/tabs/CampaignExternalTabs.tsx` call into those same
-  // modules, so the data-campaign-action wiring inside is unchanged.
+  // modules and translate their local action markers through the typed
+  // dispatch helper.
   "inventory",
   "shops",
   "craft",

@@ -13,6 +13,7 @@ import { deepEqual } from "./util/equality";
 import { ErrorBoundary } from "./util/ErrorBoundary";
 import { CampaignHelpPopover } from "./HelpPopover";
 import { dispatchCampaignAction, importSaveFile, type CampaignActionName } from "./actions";
+import { dispatchHtmlIslandAction } from "./htmlIslandActions";
 import { CampaignHeader } from "./shell/Header";
 import { CampaignModeBar } from "./shell/ModeBar";
 import { CampaignSubTabs } from "./shell/SubTabs";
@@ -414,6 +415,12 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
           if (target.closest("[data-campaign-panel-close]")) {
             e.stopPropagation();
             close();
+            return;
+          }
+          const islandResult = dispatchHtmlIslandAction(target);
+          if (islandResult.handled) {
+            e.preventDefault();
+            if (islandResult.closesPanel) close();
             return;
           }
           const actionBtn = target.closest("[data-campaign-action]") as HTMLElement | null;

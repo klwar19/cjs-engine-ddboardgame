@@ -44,8 +44,8 @@ window.CJS.CampaignEconomy = (() => {
             </div>
             <div class="campaign-row-actions">
               <span class="campaign-pill">${Number(item.price || 0)} ${_esc(_currencyLabel(itemCurrency))}</span>
-              <button class="campaign-action" data-campaign-action="shop-buy" data-shop-id="${_escAttr(shop.id)}" data-stock-index="${index}" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Number(item.price || 0)}" data-currency="${_escAttr(itemCurrency)}" ${canBuy ? '' : 'disabled'}>Buy</button>
-              ${farmStock ? '' : `<button class="campaign-action" data-campaign-action="shop-sell" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Math.floor(Number(item.price || 0) / 2)}" data-currency="${_escAttr(itemCurrency)}">Sell</button>`}
+              <button class="campaign-action" data-shop-buy="1" data-shop-id="${_escAttr(shop.id)}" data-stock-index="${index}" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Number(item.price || 0)}" data-currency="${_escAttr(itemCurrency)}" ${canBuy ? '' : 'disabled'}>Buy</button>
+              ${farmStock ? '' : `<button class="campaign-action" data-shop-sell="1" data-id="${_escAttr(item.id)}" data-type="${_escAttr(item.type || 'item')}" data-price="${Math.floor(Number(item.price || 0) / 2)}" data-currency="${_escAttr(itemCurrency)}">Sell</button>`}
             </div>
           </div>
         `; }).join('') : '<div class="campaign-empty">No stock yet.</div>'}
@@ -59,8 +59,8 @@ window.CJS.CampaignEconomy = (() => {
       <section class="campaign-panel">
         <div class="campaign-panel-head"><h3>Rest</h3></div>
         <div class="campaign-action-grid">
-          <button class="campaign-action" data-campaign-action="full-rest">Full Rest</button>
-          <button class="campaign-action" data-campaign-action="camp-rest" ${run ? '' : 'disabled'}>Camp Rest</button>
+          <button class="campaign-action" data-full-rest="1">Full Rest</button>
+          <button class="campaign-action" data-camp-rest="1" ${run ? '' : 'disabled'}>Camp Rest</button>
         </div>
         <div class="campaign-muted">Camp rest consumes one scenario rest use, restores partial HP/MP, and can increase danger.</div>
       </section>
