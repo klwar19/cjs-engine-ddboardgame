@@ -56,6 +56,7 @@ const hash = read("src/launcher/hooks/useHashMode.ts");
 const sidebar = read("src/launcher/components/Sidebar.tsx");
 const topbar = read("src/launcher/components/TopBar.tsx");
 const embed = read("src/shared/embed.ts");
+const visibility = read("src/shared/launcherVisibility.ts");
 const css = read("css/launcher.css");
 const pkg = JSON.parse(read("package.json"));
 const vite = read("vite.config.mjs");
@@ -63,6 +64,7 @@ const index = read("index.html");
 
 const modesMod = loadTsModule("src/launcher/modes.ts");
 const switchingMod = loadTsModule("src/launcher/switching.ts", { "./modes": modesMod });
+const visibilityMod = loadTsModule("src/shared/launcherVisibility.ts");
 
 ok("index.html boots the launcher entry", index.includes("./src/launcher/main.tsx"));
 ok("vite builds index.html as the app shell", /index:\s*resolve\(root,\s*"index\.html"\)/.test(vite));
@@ -128,6 +130,9 @@ ok("App keeps one FrameView per visited mode", /visited\.map\(\(m\) =>[\s\S]*<Fr
 ok("App prefetches mode documents on intent", /rel = "prefetch"/.test(app) && /as = "document"/.test(app));
 ok("Sidebar receives preload hook and collapsed state",
    /<Sidebar[\s\S]*collapsed=\{collapsed\}[\s\S]*onPreload=\{preloadMode\}/.test(app));
+ok("Sidebar receives explicit mobile-open state",
+   /<Sidebar[\s\S]*mobileOpen=\{mobileOpen\}/.test(app) &&
+   /launcher-sidebar\$\{mobileOpen \? " is-mobile-open" : ""\}/.test(sidebar));
 ok("WelcomeScreen receives preload hook", /<WelcomeScreen[\s\S]*onPreload=\{preloadMode\}/.test(app));
 
 ok("Sidebar collapse affordance has active labels",
@@ -136,6 +141,7 @@ ok("TopBar uses readable ASCII action text",
    />\s*Open in tab\s*</.test(topbar) && />\s*Menu\s*</.test(topbar));
 
 ok("FrameView posts launcher visibility messages", frame.includes("postMessage") && frame.includes("LAUNCHER_VISIBILITY_EVENT"));
+ok("FrameView imports the lightweight visibility contract", frame.includes("../../shared/launcherVisibility"));
 ok("FrameView posts after load and active changes", /onLoad=\{handleLoad\}/.test(frame) && /loaded\) postVisibility\(active\)/.test(frame));
 ok("FrameView marks active state on the iframe", frame.includes('data-active={active ? "1" : "0"}'));
 ok("FrameView keeps inactive iframe out of tab order", frame.includes("tabIndex={active ? 0 : -1}"));
@@ -150,10 +156,16 @@ ok("mobile shell keeps the main frame on a full-width column",
    /@media \(max-width: 720px\)[\s\S]*\.launcher-shell\s*\{\s*grid-template-columns:\s*1fr;/.test(css) &&
    !/grid-template-columns:\s*0 1fr/.test(css) &&
    /\.launcher-main\s*\{\s*grid-column:\s*1;/.test(css));
+ok("mobile sidebar has direct open-state transform",
+   /\.launcher-sidebar\.is-mobile-open\s*\{[\s\S]*transform:\s*none/.test(css));
 
 ok("embed helper detects iframe or embed query", /window\.top !== window\.self/.test(embed) && /get\("embed"\) === "launcher"/.test(embed));
+ok("visibility event constant lives in a tiny shared module",
+   visibility.includes("LAUNCHER_VISIBILITY_EVENT") &&
+   visibilityMod.LAUNCHER_VISIBILITY_EVENT === "cjs:launcher-visibility");
+ok("embed helper imports the shared visibility contract", embed.includes("./launcherVisibility"));
 ok("embed helper installs cjs-embedded marker", /classList\.add\("cjs-embedded"\)/.test(embed));
-ok("embed helper dispatches visibility CustomEvent", embed.includes("CustomEvent<LauncherVisibilityDetail>") && embed.includes("cjs:launcher-visibility"));
+ok("embed helper dispatches visibility CustomEvent", embed.includes("CustomEvent<LauncherVisibilityDetail>") && embed.includes("LAUNCHER_VISIBILITY_EVENT"));
 ok("embed helper exposes current visibility", /export function getLauncherVisibility/.test(embed));
 ok("embed helper exposes a subscription helper", /export function onLauncherVisibilityChange/.test(embed));
 for (const entry of ["src/campaign/main.tsx", "src/combat/main.tsx", "src/editor/main.tsx", "src/minigames/main.tsx", "src/entry-tests.js"]) {
@@ -168,6 +180,7 @@ ok("hash hook persists externally-driven mode changes", /syncFromLocation[\s\S]*
 ok("hash hook preserves path/query when pushing mode changes", /launcherUrlForMode\(window\.location\.pathname/.test(hash));
 
 ok("npm test includes launcher switching test", pkg.scripts.test.includes("node test_launcher_switching.js"));
+ok("npm test includes launcher live regression", pkg.scripts.test.includes("node test_launcher_live.js"));
 
 console.log("");
 console.log("RESULTS: " + pass + " passed, " + fail + " failed");

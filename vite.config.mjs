@@ -87,24 +87,30 @@ export default defineConfig({
         // manualChunks here are loaded eagerly (static imports), but
         // they cache separately. Async lazy-loading for the campaign
         // tab families happens via React.lazy in the React shell.
+        //
+        // Persistence gets its own shared chunk so the Vite preload helper
+        // stays a tiny app-shell loader instead of absorbing idb + migrations
+        // and being precached for every mode.
         manualChunks: (id) => {
-          if (id.includes("node_modules/react")) return "react-vendor";
-          if (id.includes("/js/minigames/")) return "cjs-minigames";
-          if (id.includes("/js/qte/")) return "cjs-qte";
-          if (id.includes("/js/ui/l2d") || id.includes("/js/ui/audio")) return "cjs-media";
-          if (id.includes("/js/campaign/campaign-scenario-generator")) return "cjs-campaign-generators";
-          if (id.includes("/js/campaign/campaign-story-")) return "cjs-campaign-story";
-          if (id.includes("/js/campaign/campaign-sequence-")) return "cjs-campaign-sequences";
-          if (id.includes("/js/campaign/campaign-world-map") || id.includes("/js/campaign/campaign-map.js")) return "cjs-campaign-maps";
-          if (id.includes("/js/campaign/farming-mode") || id.includes("/js/campaign/pocket-haven")) return "cjs-campaign-haven";
-          if (id.includes("/js/campaign/scenario-runner")) return "cjs-campaign-scenario-runner";
-          if (id.includes("/js/campaign/")) return "cjs-campaign-core";
-          if (id.includes("/js/combat/")) return "cjs-combat";
-          if (id.includes("/js/grid/")) return "cjs-grid";
-          if (id.includes("/js/ai/")) return "cjs-ai";
-          if (id.includes("/js/effects/")) return "cjs-effects";
-          if (id.includes("/js/core/")) return "cjs-core";
-          if (id.includes("/js/services/")) return "cjs-services";
+          const normalizedId = id.split("\\").join("/");
+          if (normalizedId.includes("node_modules/react")) return "react-vendor";
+          if (normalizedId.includes("/src/persistence/") || normalizedId.includes("/node_modules/idb/")) return "cjs-persistence";
+          if (normalizedId.includes("/js/minigames/")) return "cjs-minigames";
+          if (normalizedId.includes("/js/qte/")) return "cjs-qte";
+          if (normalizedId.includes("/js/ui/l2d") || normalizedId.includes("/js/ui/audio")) return "cjs-media";
+          if (normalizedId.includes("/js/campaign/campaign-scenario-generator")) return "cjs-campaign-generators";
+          if (normalizedId.includes("/js/campaign/campaign-story-")) return "cjs-campaign-story";
+          if (normalizedId.includes("/js/campaign/campaign-sequence-")) return "cjs-campaign-sequences";
+          if (normalizedId.includes("/js/campaign/campaign-world-map") || normalizedId.includes("/js/campaign/campaign-map.js")) return "cjs-campaign-maps";
+          if (normalizedId.includes("/js/campaign/farming-mode") || normalizedId.includes("/js/campaign/pocket-haven")) return "cjs-campaign-haven";
+          if (normalizedId.includes("/js/campaign/scenario-runner")) return "cjs-campaign-scenario-runner";
+          if (normalizedId.includes("/js/campaign/")) return "cjs-campaign-core";
+          if (normalizedId.includes("/js/combat/")) return "cjs-combat";
+          if (normalizedId.includes("/js/grid/")) return "cjs-grid";
+          if (normalizedId.includes("/js/ai/")) return "cjs-ai";
+          if (normalizedId.includes("/js/effects/")) return "cjs-effects";
+          if (normalizedId.includes("/js/core/")) return "cjs-core";
+          if (normalizedId.includes("/js/services/")) return "cjs-services";
           return undefined;
         }
       }

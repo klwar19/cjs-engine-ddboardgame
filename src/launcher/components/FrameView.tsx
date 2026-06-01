@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MODES, buildIframeUrl, type ModeId } from "../modes";
-import { LAUNCHER_VISIBILITY_EVENT } from "../../shared/embed";
+import { LAUNCHER_VISIBILITY_EVENT } from "../../shared/launcherVisibility";
 
 interface FrameViewProps {
   readonly mode: ModeId;

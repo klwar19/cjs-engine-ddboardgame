@@ -114,12 +114,14 @@ function routeFor(rules, url) {
   const QTE_JS = 'assets/cjs-qte-DVDcfODz.js';
   const CORE_JS = 'assets/cjs-core-DPBJnge1.js';
   const MEDIA_JS = 'assets/cjs-media-Cs6FIZIU.js';
+  const PERSISTENCE_JS = 'assets/cjs-persistence-A1b2C3d4.js';
   const EDITOR_JS = 'assets/MonsterEditor-B9V5wZdJ.js';
 
   ok('precache INCLUDES the universal React runtime (react-vendor)', precaches(globs, SHELL_JS));
   ok('precache EXCLUDES the combat engine chunk', !precaches(globs, COMBAT_JS));
   ok('precache EXCLUDES the combat grid renderer', !precaches(globs, GRID_JS));
   ok('precache EXCLUDES the campaign core chunk', !precaches(globs, CAMPAIGN_CORE_JS));
+  ok('precache EXCLUDES the persistence adapter chunk', !precaches(globs, PERSISTENCE_JS));
   ok('precache EXCLUDES the minigames chunk', !precaches(globs, MINIGAMES_JS));
   ok('precache EXCLUDES the editor builder chunks', !precaches(globs, EDITOR_JS));
 
@@ -152,6 +154,7 @@ function routeFor(rules, url) {
   ok('lazy CampaignXxxTab → cjs-code-campaign', routeFor(rc, req(CAMPAIGN_TAB_JS)) === 'cjs-code-campaign');
   ok('shared engine core → cjs-code-shared', routeFor(rc, req(CORE_JS)) === 'cjs-code-shared');
   ok('media chunk → cjs-code-shared', routeFor(rc, req(MEDIA_JS)) === 'cjs-code-shared');
+  ok('persistence adapter → cjs-code-shared', routeFor(rc, req(PERSISTENCE_JS)) === 'cjs-code-shared');
   ok('editor builder → cjs-code-shared', routeFor(rc, req(EDITOR_JS)) === 'cjs-code-shared');
   // Combat bucket must NOT swallow non-combat chunks.
   ok('combat bucket does not match campaign chunks',

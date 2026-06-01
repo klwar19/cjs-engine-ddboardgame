@@ -363,7 +363,11 @@ html, body { width: 100%; height: 100%; }
     box-shadow: 0 0 24px rgba(0,0,0,0.6);
   }
   .launcher-shell.is-mobile-open .launcher-sidebar {
-    transform: translateX(0);
+    transform: none;
+  }
+  .launcher-sidebar.is-mobile-open {
+    transition: none;
+    transform: none;
   }
   .launcher-menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
   .launcher-collapse { display: none; }

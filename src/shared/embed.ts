@@ -2,13 +2,7 @@
 // Adds the same .cjs-embedded marker the legacy inline scripts used so the
 // .cjs-embed-hide CSS rule (links back to the launcher, etc.) still works.
 
-export const LAUNCHER_VISIBILITY_EVENT = "cjs:launcher-visibility";
-
-export interface LauncherVisibilityDetail {
-  readonly active: boolean;
-  readonly mode?: string;
-  readonly source: "launcher";
-}
+import { LAUNCHER_VISIBILITY_EVENT, type LauncherVisibilityDetail } from "./launcherVisibility";
 
 let visibilityBridgeInstalled = false;
 let latestVisibility: LauncherVisibilityDetail = {

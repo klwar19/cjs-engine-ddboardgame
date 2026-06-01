@@ -3,16 +3,18 @@ import { MODE_IDS, MODES, type ModeId } from "../modes";
 interface SidebarProps {
   readonly activeMode: ModeId | null;
   readonly collapsed: boolean;
+  readonly mobileOpen: boolean;
   readonly onSelect: (mode: ModeId) => void;
   readonly onPreload: (mode: ModeId) => void;
   readonly onToggleCollapsed: () => void;
 }
 
-export function Sidebar({ activeMode, collapsed, onSelect, onPreload, onToggleCollapsed }: SidebarProps) {
+export function Sidebar({ activeMode, collapsed, mobileOpen, onSelect, onPreload, onToggleCollapsed }: SidebarProps) {
   const collapseLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  const className = `launcher-sidebar${mobileOpen ? " is-mobile-open" : ""}`;
 
   return (
-    <aside className="launcher-sidebar" id="launcher-sidebar" aria-label="App navigation">
+    <aside className={className} id="launcher-sidebar" aria-label="App navigation">
       <header className="launcher-brand">
         <button
           className="launcher-collapse"

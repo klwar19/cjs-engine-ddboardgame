@@ -82,6 +82,7 @@ export function App() {
       <Sidebar
         activeMode={mode}
         collapsed={collapsed}
+        mobileOpen={mobileOpen}
         onSelect={handleSelect}
         onPreload={preloadMode}
         onToggleCollapsed={toggleCollapsed}
