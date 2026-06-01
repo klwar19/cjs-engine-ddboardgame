@@ -6,6 +6,7 @@ import { FxLayer } from "../fxLayer";
 import { WeatherFx } from "../weatherFx";
 import type { CombatController } from "../combatController";
 import { useCombatVersion } from "../store";
+import { getLauncherVisibility, onLauncherVisibilityChange } from "../../shared/embed";
 
 interface CjsAny {
   GridRenderer?: {
@@ -17,6 +18,7 @@ interface CjsAny {
     resetZoom: () => number;
     getZoom: () => number;
     getZoomBounds: () => { min: number; max: number };
+    setPaused?: (paused: boolean) => void;
     setSelectedUnit?: (id: string | null) => void;
     clearMoveAnimations?: () => void;
     setTheme?: (opts: { image?: string }) => void;
@@ -69,6 +71,7 @@ export function CombatGrid({ controller, fxLayer, weatherFx, themeImage, onLog }
     });
     cjs().GridRenderer?.resize();
     cjs().GridRenderer?.clearMoveAnimations?.();
+    cjs().GridRenderer?.setPaused?.(!getLauncherVisibility().active);
     fxLayer.attach(fxEl, canvas, wrap);
     weatherFx.attach(weatherEl);
 
@@ -87,6 +90,22 @@ export function CombatGrid({ controller, fxLayer, weatherFx, themeImage, onLog }
     };
     // The controller / fxLayer instances are stable for the screen's lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Launcher iframes stay mounted after switching away. Stop the canvas RAF
+  // while hidden, then resize on resume in case the frame was restored on a
+  // different viewport or sidebar width.
+  useEffect(() => {
+    const applyVisibility = (active: boolean) => {
+      const renderer = cjs().GridRenderer;
+      renderer?.setPaused?.(!active);
+      if (active) {
+        renderer?.resize?.();
+        updateZoomLabel();
+      }
+    };
+    applyVisibility(getLauncherVisibility().active);
+    return onLauncherVisibilityChange((detail) => applyVisibility(detail.active));
   }, []);
 
   // Apply theme image when it changes.

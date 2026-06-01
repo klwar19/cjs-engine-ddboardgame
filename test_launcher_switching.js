@@ -58,6 +58,9 @@ const topbar = read("src/launcher/components/TopBar.tsx");
 const embed = read("src/shared/embed.ts");
 const visibility = read("src/shared/launcherVisibility.ts");
 const css = read("css/launcher.css");
+const combatGrid = read("src/combat/components/CombatGrid.tsx");
+const campaignBoot = read("src/campaign/shell/boot.ts");
+const gridRenderer = read("js/grid/grid-renderer.js");
 const pkg = JSON.parse(read("package.json"));
 const vite = read("vite.config.mjs");
 const index = read("index.html");
@@ -101,6 +104,11 @@ ok("modeHash formats null and active modes",
    switchingMod.modeHash(null) === "" && switchingMod.modeHash("editor") === "#editor");
 ok("launcherUrlForMode preserves path and query",
    switchingMod.launcherUrlForMode("/index.html", "?dev=1", "tests") === "/index.html?dev=1#tests");
+ok("shouldReplaceModeHash only replaces missing or stale hashes",
+   switchingMod.shouldReplaceModeHash("", "campaign") === true &&
+   switchingMod.shouldReplaceModeHash("#campaign", "campaign") === false &&
+   switchingMod.shouldReplaceModeHash("#combat", "campaign") === true &&
+   switchingMod.shouldReplaceModeHash("", null) === false);
 {
   const store = new Map();
   const storage = {
@@ -178,6 +186,24 @@ ok("hash hook listens to popstate", /addEventListener\("popstate"/.test(hash));
 ok("hash hook reads URL hash through helper", /readModeHash\(window\.location\.hash\)/.test(hash));
 ok("hash hook persists externally-driven mode changes", /syncFromLocation[\s\S]*writeStoredMode\(localStorage, next\)/.test(hash));
 ok("hash hook preserves path/query when pushing mode changes", /launcherUrlForMode\(window\.location\.pathname/.test(hash));
+ok("hash hook replaces initial stored-mode URL without pushing history",
+   hash.includes("shouldReplaceModeHash(window.location.hash, mode)") &&
+   /history\.replaceState\([\s\S]*launcherUrlForMode\(window\.location\.pathname/.test(hash));
+
+ok("combat grid pauses renderer from launcher visibility",
+   combatGrid.includes("../../shared/embed") &&
+   combatGrid.includes("onLauncherVisibilityChange") &&
+   combatGrid.includes("GridRenderer?.setPaused") &&
+   combatGrid.includes("!getLauncherVisibility().active"));
+ok("grid renderer exposes a pausable RAF loop",
+   gridRenderer.includes("function setPaused(paused)") &&
+   gridRenderer.includes("function isPaused()") &&
+   gridRenderer.includes("if (_loopPaused || _animFrame || !_canvas) return") &&
+   /setZoom, zoomIn, zoomOut, resetZoom, getZoom, getZoomBounds,\s*setPaused, isPaused/.test(gridRenderer));
+ok("campaign combat-return poll sleeps while launcher frame is inactive",
+   campaignBoot.includes("../../shared/embed") &&
+   campaignBoot.includes("onLauncherVisibilityChange") &&
+   /if \(!getLauncherVisibility\(\)\.active\) return/.test(campaignBoot));
 
 ok("npm test includes launcher switching test", pkg.scripts.test.includes("node test_launcher_switching.js"));
 ok("npm test includes launcher live regression", pkg.scripts.test.includes("node test_launcher_live.js"));

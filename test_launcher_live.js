@@ -81,27 +81,8 @@ function frameByMode(document, mode) {
   return document.querySelector(`iframe[data-mode="${mode}"]`);
 }
 
-(async () => {
-  console.log("Launcher live switching regression");
-
-  let Window;
-  try {
-    ({ Window } = await import("happy-dom"));
-  } catch (error) {
-    ok("happy-dom imports", false, String(error));
-    console.log("\nRESULTS: " + pass + " passed, " + (fail || 1) + " failed");
-    process.exit(1);
-    return;
-  }
-
-  const window = new Window({
-    url: "http://127.0.0.1:5173/index.html",
-    width: 390,
-    height: 844
-  });
+function installWindowGlobals(window) {
   const { document } = window;
-  document.body.innerHTML = '<div id="launcher-root"></div>';
-
   for (const [key, value] of Object.entries({
     window,
     document,
@@ -124,6 +105,29 @@ function frameByMode(document, mode) {
       value
     });
   }
+}
+
+(async () => {
+  console.log("Launcher live switching regression");
+
+  let Window;
+  try {
+    ({ Window } = await import("happy-dom"));
+  } catch (error) {
+    ok("happy-dom imports", false, String(error));
+    console.log("\nRESULTS: " + pass + " passed, " + (fail || 1) + " failed");
+    process.exit(1);
+    return;
+  }
+
+  const window = new Window({
+    url: "http://127.0.0.1:5173/index.html",
+    width: 390,
+    height: 844
+  });
+  const { document } = window;
+  document.body.innerHTML = '<div id="launcher-root"></div>';
+  installWindowGlobals(window);
 
   const posted = [];
   Object.defineProperty(window.HTMLIFrameElement.prototype, "contentWindow", {
@@ -211,6 +215,25 @@ function frameByMode(document, mode) {
 
   root.unmount();
   window.close();
+
+  const restoredWindow = new Window({
+    url: "http://127.0.0.1:5173/index.html?dev=1",
+    width: 1024,
+    height: 768
+  });
+  installWindowGlobals(restoredWindow);
+  const restoredDocument = restoredWindow.document;
+  restoredDocument.body.innerHTML = '<div id="launcher-root"></div>';
+  restoredWindow.localStorage.setItem("cjs.launcher.lastMode", "editor");
+  const restoredRoot = createRoot(restoredDocument.getElementById("launcher-root"));
+  restoredRoot.render(React.createElement(App));
+  await wait(30);
+  ok("stored mode restores a mounted frame",
+     !!frameByMode(restoredDocument, "editor") && restoredWindow.location.hash === "#editor");
+  ok("stored mode URL restore preserves query string",
+     restoredWindow.location.search === "?dev=1");
+  restoredRoot.unmount();
+  restoredWindow.close();
 
   console.log("\nRESULTS: " + pass + " passed, " + fail + " failed");
   process.exit(fail === 0 ? 0 : 1);

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ModeId } from "../modes";
-import { launcherUrlForMode, modeHash, readModeHash, readStoredMode, writeStoredMode } from "../switching";
+import {
+  launcherUrlForMode,
+  modeHash,
+  readModeHash,
+  readStoredMode,
+  shouldReplaceModeHash,
+  writeStoredMode
+} from "../switching";
 
 export interface UseHashModeResult {
   readonly mode: ModeId | null;
@@ -14,6 +21,7 @@ export interface UseHashModeResult {
  */
 export function useHashMode(): UseHashModeResult {
   const [mode, setModeState] = useState<ModeId | null>(() => readModeHash(window.location.hash) ?? readStoredMode(localStorage));
+  const initialHashSyncedRef = useRef(false);
   const suppressRef = useRef(false);
 
   const setMode = useCallback((next: ModeId | null) => {
@@ -32,6 +40,17 @@ export function useHashMode(): UseHashModeResult {
       suppressRef.current = false;
     }, 0);
   }, []);
+
+  useEffect(() => {
+    if (initialHashSyncedRef.current) return;
+    initialHashSyncedRef.current = true;
+    if (!shouldReplaceModeHash(window.location.hash, mode)) return;
+    history.replaceState(
+      { mode },
+      "",
+      launcherUrlForMode(window.location.pathname, window.location.search, mode)
+    );
+  }, [mode]);
 
   useEffect(() => {
     const syncFromLocation = () => {

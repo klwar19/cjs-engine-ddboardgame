@@ -940,6 +940,11 @@ show become tractable:
   shared embed bridge so future mode code can pause work cleanly when hidden.
   `test_launcher_switching.js` now transpiles and exercises the real helpers
   (70 assertions) in addition to the DOM/iframe source contracts.
+  Follow-up hardening wires that visibility contract into the combat canvas
+  renderer and campaign combat-return poll: inactive launcher frames stop the
+  combat RAF loop and skip the campaign's 750 ms result poll until the frame is
+  visible again. Stored-mode restores now replace the initial URL hash while
+  preserving path/query, so refresh/bookmark/back behavior stays predictable.
 
 ## Phase J — AI-friendly authoring (after H, parallel with I)
 

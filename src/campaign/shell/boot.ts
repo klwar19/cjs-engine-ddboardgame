@@ -38,6 +38,7 @@ import {
   modeForTab,
   normalizeForWorld
 } from "../chrome-state";
+import { getLauncherVisibility, onLauncherVisibilityChange } from "../../shared/embed";
 
 // ── Boot-incompatible notice ───────────────────────────────────────────
 export interface BootIncompatibleNotice {
@@ -403,12 +404,19 @@ function bindCombatReturnEvents(): void {
   if (_combatReturnEventsBound) return;
   _combatReturnEventsBound = true;
   const consume = () => consumeCombatResult();
-  window.addEventListener("focus", consume);
-  window.addEventListener("pageshow", consume);
+  const consumeWhenVisible = () => {
+    if (getLauncherVisibility().active) consume();
+  };
+  window.addEventListener("focus", consumeWhenVisible);
+  window.addEventListener("pageshow", consumeWhenVisible);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) consume();
+    if (!document.hidden) consumeWhenVisible();
+  });
+  onLauncherVisibilityChange((detail) => {
+    if (detail.active) consume();
   });
   window.setInterval(() => {
+    if (!getLauncherVisibility().active) return;
     const state = cjs().CampaignState?.getState?.();
     if (state?.pendingBattle || cjs().CampaignCombatBridge?.readResult?.()) consume();
   }, 750);

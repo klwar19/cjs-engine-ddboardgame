@@ -18,6 +18,10 @@ export function launcherUrlForMode(pathname: string, search: string, mode: ModeI
   return `${pathname || "/"}${search || ""}${modeHash(mode)}`;
 }
 
+export function shouldReplaceModeHash(hash: string, mode: ModeId | null): boolean {
+  return !!mode && readModeHash(hash) !== mode;
+}
+
 export function readStoredMode(storage: ModeStorage | null | undefined): ModeId | null {
   if (!storage) return null;
   try {

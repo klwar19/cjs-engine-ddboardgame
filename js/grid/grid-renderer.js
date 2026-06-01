@@ -41,6 +41,7 @@ window.CJS.GridRenderer = (() => {
   let _tileAtlasImg = null;    // generated combat terrain atlas
   let _tileAtlasReady = false;
   let _tileAtlasFailed = false;
+  let _loopPaused = false;
 
   const TILE_ATLAS_SRC = 'assets/combat/combat_tile_atlas.png';
   const TILE_ATLAS_MAP = {
@@ -80,6 +81,7 @@ window.CJS.GridRenderer = (() => {
     _zoom = 1.0;
     _onCellClick = opts?.onCellClick || null;
     _onCellHover = opts?.onCellHover || null;
+    _loopPaused = false;
     _ensureTileAtlas();
 
     // Attach events
@@ -166,7 +168,7 @@ window.CJS.GridRenderer = (() => {
   function getZoomBounds() { return { min: ZOOM_MIN, max: ZOOM_MAX, step: ZOOM_STEP }; }
 
   function destroy() {
-    if (_animFrame) cancelAnimationFrame(_animFrame);
+    setPaused(true);
     if (_canvas) {
       _canvas.removeEventListener('click', _handleClick);
       _canvas.removeEventListener('mousemove', _handleHover);
@@ -182,7 +184,28 @@ window.CJS.GridRenderer = (() => {
     }
     _canvas = null;
     _ctx = null;
+    _ready = false;
+    _loopPaused = false;
     _moveAnims.clear();
+  }
+
+  function setPaused(paused) {
+    const next = !!paused;
+    if (next) {
+      _loopPaused = true;
+      if (_animFrame) {
+        cancelAnimationFrame(_animFrame);
+        _animFrame = null;
+      }
+      return;
+    }
+    if (!_loopPaused && _animFrame) return;
+    _loopPaused = false;
+    _startLoop();
+  }
+
+  function isPaused() {
+    return _loopPaused;
   }
 
   // ── HIGHLIGHT API ─────────────────────────────────────────────────
@@ -260,7 +283,10 @@ window.CJS.GridRenderer = (() => {
 
   // ── RENDER LOOP ───────────────────────────────────────────────────
   function _startLoop() {
+    if (_loopPaused || _animFrame || !_canvas) return;
     function frame(ts) {
+      _animFrame = null;
+      if (_loopPaused || !_canvas) return;
       _pulsePhase = (ts / 600) % (Math.PI * 2);
       _render(ts);
       _animFrame = requestAnimationFrame(frame);
@@ -1202,6 +1228,7 @@ window.CJS.GridRenderer = (() => {
     getCellSize,
     setTheme,
     setZoom, zoomIn, zoomOut, resetZoom, getZoom, getZoomBounds,
+    setPaused, isPaused,
     animateUnitMove, clearMoveAnimations
   });
 })();
