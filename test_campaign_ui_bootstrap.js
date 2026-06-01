@@ -1,10 +1,7 @@
 // Smoke test for the campaign UI tab boundary.
 //
-// Loads the tab registry + the three tab modules in isolation and asserts
-// that the canonical tabs (roster, sideForge, oracleForge, worldMap,
-// worldActivities) self-register. Also exercises the world-map adapter's
-// defensive fallback to prove a tab can render end-to-end through the
-// registry without a full CampaignState wiring.
+// Builds a raw-JS sandbox around the tab registry compatibility surface and
+// asserts that every React-owned tab id is registered as a mount point.
 //
 // This is the guard rail for the campaign-ui.js -> tab modules split:
 // if a tab file gets dropped from src/campaign/main.tsx (or its IIFE throws
@@ -17,7 +14,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 
 const sandbox = {
   window: { CJS: {} },
@@ -45,17 +41,10 @@ sandbox.document = {
 sandbox.window.document = sandbox.document;
 sandbox.window.addEventListener = () => {};
 
-vm.createContext(sandbox);
-
-// Phase H.4 — the leaf util helpers are migrating from `js/campaign/ui/*.js`
-// to `src/campaign/util/*.ts` one file at a time. The TS modules install
-// onto `window.CJS.CampaignUIInternal.<Namespace>` the same way the JS
-// originals did, so vanilla consumers (campaign-ui.js + the still-JS
-// helper files) don't need to change. This test loads only the remaining
-// JS files; for ported namespaces it pre-seeds a minimal stub on the
-// sandbox so the still-JS dependents (which look up Utils lazily inside
-// function bodies) don't throw at load time. The full bootstrap test
-// gets rewritten against the React tree in H.5.
+// The leaf util helpers are TS-owned now and install onto
+// `window.CJS.CampaignUIInternal.<Namespace>` in the browser. This raw-JS
+// smoke test pre-seeds minimal namespace stubs and verifies the registry
+// contract without booting the TS entry graph.
 sandbox.window.CJS.CampaignUIInternal = sandbox.window.CJS.CampaignUIInternal || {};
 const id = (v) => v;
 // Utils: ported to src/campaign/util/cui-utils.ts. The cui-*.js files
@@ -166,31 +155,13 @@ sandbox.window.CJS.CampaignUIInternal.Tabs = {
 // namespace stub — the actual rendering moved to React via the typed
 // getTravelMapData / getActivitiesData bridges).
 sandbox.window.CJS.CampaignUIInternal.WorldMapTab = Object.freeze({});
-
-// Load order mirrors src/campaign/main.tsx for the still-JS files only.
-// Anything ported to TS is pre-seeded above; the rest still self-registers
-// via IIFE on load. Phase K.3 ported the hub side-content primitives
-// (HubTab) to src/campaign/util/cui-hub-tab.ts, so only the roster
-// detail-row island (cui-party-tab.js) remains as raw JS.
-const loadOrder = [
-  'campaign/ui/tabs/cui-party-tab.js'
-];
-
-for (const file of loadOrder) {
-  const code = fs.readFileSync(path.join(__dirname, 'js', file), 'utf8');
-  try {
-    vm.runInContext(code, sandbox, { filename: file });
-  } catch (e) {
-    console.error('FAILED to load ' + file + ': ' + e.message);
-    process.exit(1);
-  }
-}
+// PartyTab: ported to src/campaign/util/cui-party-tab.ts. Roster rendering
+// is React/TS-owned; this namespace is now compatibility-only.
+sandbox.window.CJS.CampaignUIInternal.PartyTab = Object.freeze({});
 
 // React-bridge: ported to src/campaign/util/cui-react-bridge.ts. It
 // registers a mount-point placeholder for every React-owned tab. This
-// must run AFTER cui-party-tab.js / cui-hub-tab.js so the Map.set
-// override semantics still hold (the React bridge wins on the shared
-// ids: roster / worldMap / worldActivities / sideForge / ...).
+// sandbox mirrors that registry surface without executing TS.
 function mount(tabId) {
   return '<div class="campaign-react-tab-mount" data-react-tab="' + tabId + '" id="campaign-react-tab-' + tabId + '"></div>';
 }
@@ -260,11 +231,9 @@ for (const id of REACT_TABS) {
      && html.indexOf('id="campaign-react-tab-' + id + '"') >= 0);
 }
 
-// 3. The surviving JS island exposes its public namespace so the shell's
-//    delegators (PartyTab.openSkillPoolPicker / rosterMemberData) can keep
-//    calling into it by reference. The React tab (CampaignRosterTab) also
-//    reaches into PartyTab for the detail-row HTML.
-ok('PartyTab namespace exposed', !!CJS.CampaignUIInternal.PartyTab);
+// 3. The helper namespaces expose their public compatibility surfaces.
+ok('PartyTab compatibility namespace exposed', !!CJS.CampaignUIInternal.PartyTab);
+ok('cui-party-tab ported to TS', fs.existsSync(path.join(__dirname, 'src/campaign/util/cui-party-tab.ts')));
 //    HubTab (side-content primitives) + WorldMapTab were ported to TS; their
 //    install-on-window surface is exercised by the browser/VR run, not this
 //    raw-JS sandbox, so assert the TS source exists (mirrors cui-react-bridge).
@@ -284,9 +253,8 @@ ok('Tabs.render returns null for an unknown tab id',
 //    documented in `src/campaign/CampaignShell.tsx` and exercised
 //    end-to-end in `test_campaign_shell_bridge.js`.
 //
-//    cui-react-bridge ported to TS in H.4 — the React tabs are
-//    registered inline above (after the still-JS tab modules) so the
-//    Map.set override still wins.
+//    cui-react-bridge ported to TS in H.4; the React tabs are registered
+//    inline above.
 ok('cui-react-bridge ported to TS', fs.existsSync(path.join(__dirname, 'src/campaign/util/cui-react-bridge.ts')));
 
 console.log('\nRESULTS: ' + pass + ' passed, ' + fail + ' failed');

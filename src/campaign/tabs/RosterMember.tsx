@@ -1,25 +1,21 @@
-// RosterMember.tsx — Phase K.3.2 shared roster member JSX.
+// RosterMember.tsx - shared roster member JSX.
 //
-// The full member sheet (hero identity / rank / persona / job chip /
-// availability, vitals + stats + affinities, and the skills / passives /
-// statuses / equipment detail row) rendered as ONE component reused by
-// BOTH the roster tab (`CampaignRosterTab`) and the party-sheet modal
-// (`roster-modal-pickers.ts`, mounted via createRoot — the editor picker
-// pattern). This retires the island's `renderRosterMember` /
-// `renderPartySheetHtml` / `_renderPortraitHero` HTML strings: one JSX
-// source, no duplication, every action a direct onClick dispatch.
-//
-// The portrait / job-chip / affinities are still tiny HTML bridges
-// (`portraitHtml` / `jobChipHtml` / `resistancesHtml` from the island's
-// `rosterMemberData`) — icon-as-data lets the detail row go full JSX, but
-// these three carry inline focus-style strings / the affinity grid and
-// stay bridged until their own step.
+// The full member sheet is reused by the roster tab and party-sheet modal.
+// Portraits, job chips, affinities, and the detail row now render from typed
+// data instead of HTML bridge strings.
 
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
+import { Icon } from "../util/IconView";
+import { cssTextToReactStyle } from "../util/react-style";
 import { RosterDetailRow } from "./RosterDetail";
-import type { RosterMemberData, PortraitHeroData } from "./data/roster";
+import type {
+  RosterAffinities,
+  RosterJobChipData,
+  RosterMemberData,
+  RosterPortraitData,
+  PortraitHeroData
+} from "./data/roster";
 
-// Hero / GM action button. All take the member id as the payload.
 function MemberActionBtn({
   member,
   action,
@@ -44,6 +40,29 @@ function MemberActionBtn({
   );
 }
 
+function PortraitFallback({
+  portrait,
+  className
+}: {
+  portrait: RosterPortraitData;
+  className: string;
+}) {
+  return <span className={className}>{portrait.fallback}</span>;
+}
+
+export function RosterPortrait({
+  portrait,
+  fallbackClass = "campaign-roster-portrait-fallback"
+}: {
+  portrait: RosterPortraitData;
+  fallbackClass?: string;
+}) {
+  if (portrait.src) {
+    return <img src={portrait.src} alt={portrait.alt} style={cssTextToReactStyle(portrait.focusStyle)} />;
+  }
+  return <PortraitFallback portrait={portrait} className={fallbackClass} />;
+}
+
 function PersonaPill({
   member,
   persona
@@ -59,8 +78,71 @@ function PersonaPill({
       onClick={() => dispatchCampaignAction("change-persona", { id: member.id })}
     >
       {persona.icon} {persona.label}
-      {persona.outOfWorld ? " ⚠" : ""}
+      {persona.outOfWorld ? " !" : ""}
     </span>
+  );
+}
+
+function JobChip({ data }: { data: RosterJobChipData }) {
+  if (data.state === "none") return <span className="campaign-muted">No job</span>;
+  if (data.state === "unknown") return <span className="campaign-muted">Unknown job: {data.unknownId}</span>;
+  const job = data.job || {};
+  return (
+    <>
+      <Icon entity={job} kind="job" size="xs" /> {job.name || job.id} Lv {data.level}/{data.cap} | XP {data.xp} {data.meta}
+      {data.persona ? (
+        <>
+          {" "}
+          <span className="campaign-muted">/</span>{" "}
+          <span title={data.persona.tooltip} style={data.persona.outOfWorld ? { color: "#f59e0b" } : undefined}>
+            {data.persona.icon} {data.persona.label}
+            {data.persona.outOfWorld ? " !" : ""}
+          </span>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+function Affinities({ data }: { data: RosterAffinities }) {
+  return (
+    <>
+      <div className="campaign-affinity-grid">
+        {data.elements.map((affinity) => (
+          <div
+            key={affinity.slug}
+            className={`campaign-affinity-pill el-${affinity.slug} is-${affinity.state}`}
+            data-element={affinity.slug}
+            title={affinity.title}
+          >
+            <span className="campaign-affinity-name">{affinity.element}</span>
+            {affinity.state === "neutral" ? (
+              <span className="campaign-affinity-state">{affinity.code}</span>
+            ) : (
+              <strong className="campaign-affinity-state">{affinity.code}</strong>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="campaign-affinity-subheading">Damage Reduction</div>
+      <div className="campaign-dr-row">
+        <span className="campaign-dr-chip" title="Reduces incoming Physical damage">
+          <b className="campaign-dr-icon">P</b>
+          <span className="campaign-dr-label">Phys</span>
+          <b className="campaign-dr-value">{data.damageReduction.physical}</b>
+        </span>
+        <span className="campaign-dr-chip" title="Reduces incoming Magical damage">
+          <b className="campaign-dr-icon">M</b>
+          <span className="campaign-dr-label">Magic</span>
+          <b className="campaign-dr-value">{data.damageReduction.magic}</b>
+        </span>
+        <span className="campaign-dr-chip" title="Reduces incoming Chaos damage">
+          <b className="campaign-dr-icon">C</b>
+          <span className="campaign-dr-label">Chaos</span>
+          <b className="campaign-dr-value">{data.damageReduction.chaos}</b>
+        </span>
+      </div>
+    </>
   );
 }
 
@@ -75,10 +157,9 @@ export function RosterMemberCard({ member }: { member: RosterMemberData }) {
   return (
     <article className={cls}>
       <header className="campaign-roster-hero">
-        <div
-          className="campaign-roster-portrait"
-          dangerouslySetInnerHTML={{ __html: member.portraitHtml }}
-        />
+        <div className="campaign-roster-portrait">
+          <RosterPortrait portrait={member.portrait} />
+        </div>
         <div className="campaign-roster-hero-info">
           <div className="campaign-roster-hero-title">
             <strong className="campaign-roster-name">{member.name}</strong>
@@ -96,10 +177,9 @@ export function RosterMemberCard({ member }: { member: RosterMemberData }) {
               <b>Rank</b> {member.rank.label}
               {member.rank.trialPending && <span className="campaign-chip"> Trial!</span>}
             </span>
-            <span
-              className="campaign-roster-hero-job"
-              dangerouslySetInnerHTML={{ __html: member.jobChipHtml }}
-            />
+            <span className="campaign-roster-hero-job">
+              <JobChip data={member.job} />
+            </span>
             <span title={member.charXpMeta}>
               <b>XP</b> {member.xp} <small>{member.xpSmall}</small>
             </span>
@@ -171,7 +251,7 @@ export function RosterMemberCard({ member }: { member: RosterMemberData }) {
         </section>
         <section className="campaign-roster-card campaign-roster-affinities">
           <div className="campaign-roster-card-title">Affinities</div>
-          <div dangerouslySetInnerHTML={{ __html: member.resistancesHtml }} />
+          <Affinities data={member.affinities} />
         </section>
       </div>
 
@@ -180,16 +260,16 @@ export function RosterMemberCard({ member }: { member: RosterMemberData }) {
   );
 }
 
-// Portrait-hero header for the party-sheet modal (mirrors the island's
-// `_renderPortraitHero`). The portrait img/fallback carries an inline
-// focus-style string, so it stays a tiny HTML bridge; the meta is JSX.
 function PortraitHero({ data }: { data: PortraitHeroData }) {
   return (
     <div className="campaign-portrait-hero">
-      <div
-        className="campaign-portrait-frame is-large"
-        dangerouslySetInnerHTML={{ __html: data.portraitHtml }}
-      />
+      <div className="campaign-portrait-frame is-large">
+        {data.portrait.src ? (
+          <img src={data.portrait.src} alt={data.portrait.alt} style={cssTextToReactStyle(data.portrait.focusStyle)} />
+        ) : (
+          <div className="fallback">{data.portrait.fallback}</div>
+        )}
+      </div>
       <div className="campaign-portrait-meta">
         <h2>{data.name}</h2>
         <div className="campaign-portrait-sub">{data.sub}</div>
@@ -205,9 +285,6 @@ function PortraitHero({ data }: { data: PortraitHeroData }) {
   );
 }
 
-// Full party-sheet body (portrait hero + member card). Mounted into the
-// modal via createRoot — every action button inside dispatches via onClick,
-// so the modal needs no click delegate.
 export function PartySheet({ hero, member }: { hero: PortraitHeroData; member: RosterMemberData }) {
   return (
     <>

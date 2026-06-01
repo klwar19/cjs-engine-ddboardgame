@@ -12,9 +12,9 @@
 // Chrome state (mode / tab / panel) is read + written through the canonical
 // TS slice in `../chrome-state` directly (no `window.CJS.CampaignChrome`
 // hop). Actions dispatch through `window.CJS.CampaignActionsRuntime`
-// (installed by `action-handlers/registry.ts`). The drawer 'party' body
-// comes from the `cui-party-tab.js` island; the leaf HTML helpers
-// (esc / recordName / renderLogEntry) are imported from the util modules.
+// (installed by `action-handlers/registry.ts`). The drawer party body is
+// React-owned; the leaf HTML helpers (esc / recordName / renderLogEntry)
+// are imported from the util modules.
 //
 // The vanilla render fallback was deleted back in H.2 (the React shell is
 // always enabled), and the imperative drawer DOM (`_openPanel` /
@@ -121,12 +121,8 @@ interface TabsRegistry {
   has: (id: string) => boolean;
   render: (id: string, state: unknown) => string | null | undefined;
 }
-interface PartyTabModule {
-  renderParty: (state: unknown) => string;
-}
 interface CuiInternal {
   Tabs?: TabsRegistry;
-  PartyTab?: PartyTabModule;
 }
 
 interface BootCjs {
@@ -460,9 +456,9 @@ function closePanel(): void {
 }
 
 // ── Command-rail drawer body (HTML island) ─────────────────────────────
-// Consumed by the React `CampaignDrawer` via renderDrawerBody() →
-// dangerouslySetInnerHTML. The 'party' body comes from the cui-party-tab.js
-// island; the rest are small inventory / quests / log / notes fallbacks.
+// Consumed by the React `CampaignDrawer` via renderDrawerBody() for panels
+// that still use dangerouslySetInnerHTML. The party panel is React-owned;
+// the rest are small inventory / quests / log / notes fallbacks.
 function renderInventorySnapshot(state: CampaignStateLike, opts: { full?: boolean } = {}): string {
   const buckets: ReadonlyArray<[string, string]> = [
     ["items", "Items"],
@@ -553,7 +549,7 @@ function renderLogFallback(state: CampaignStateLike): string {
 function renderDrawerBodyInternal(panelId: string, state: CampaignStateLike): string {
   switch (panelId) {
     case "party":
-      return cjs().CampaignUIInternal?.PartyTab?.renderParty(state) ?? "";
+      return "";
     case "inventory":
       try {
         const html = cjs().CampaignInventory?.render?.();

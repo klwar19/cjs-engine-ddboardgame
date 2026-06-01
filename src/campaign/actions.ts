@@ -394,7 +394,7 @@ export function passPhase(): void {
 // (the public boundary over the `_handleAction` switch) — no synthetic
 // DOM-button click. The legacy delegated listener in campaign-ui.js
 // still feeds `_handleAction` for buttons inside the remaining
-// HTML-bridge tabs (HubTab / PartyTab / WorldMapTab, ported in K.3).
+// HTML-bridge tabs (HubTab / WorldMapTab, ported in K.3).
 //
 // `data` keys must be camelCase — they mirror the dataset names each
 // `_handleAction` case reads (id, choice, worldId, targetTab, tab,

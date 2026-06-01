@@ -14,7 +14,7 @@
 //   • Bare imports (`react`, `react-dom/server`, `react/jsx-runtime`) delegate
 //     to Node's real `require`, so every component shares the ONE installed
 //     React instance (a hard requirement for hooks + renderToStaticMarkup).
-//   • Plain `.js` files (the surviving vanilla islands, e.g. cui-party-tab.js)
+//   • Plain `.js` files (legacy vanilla helpers, when a test loads them)
 //     load through Node's own require — they are CommonJS-free IIFEs that
 //     attach to `window.CJS`, so they're handled by `loadVanillaGlobal`.
 //

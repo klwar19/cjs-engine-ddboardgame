@@ -1,12 +1,11 @@
 // RosterDetail.tsx — Phase K.3.2 JSX for the roster detail row.
 //
 // The skills / passives / statuses / equipment cards, ported from the
-// `cui-party-tab.js` HTML island to JSX reading typed `RosterDetailData`
+// the former party HTML island to JSX reading typed `RosterDetailData`
 // (rosterDetail.ts). Icons render through `<Icon>` (the icon-as-JSX twin of
 // UIIcons.renderIcon); every action button uses a direct onClick dispatch
 // instead of a `data-campaign-action` attribute. `test_roster_detail.js`
-// proves this renders the same DOM the island did (action-wiring attributes
-// normalized away) for empty AND rich members.
+// keeps a golden guard for the empty and rich member states.
 
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import { Icon } from "../util/IconView";

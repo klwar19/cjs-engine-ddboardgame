@@ -28,11 +28,9 @@ function mount(tabId: string): string {
 const REACT_TABS: readonly string[] = [
   "settings",
   "logs",
-  // `roster` is also registered by `cui-party-tab.js` at module-load
-  // time; this entry overwrites that registration (Map.set semantics)
-  // so the React-side bridge wins. The PartyTab module remains loaded
-  // — CampaignRosterTab.tsx calls into it to render each member's body
-  // until the full per-card JSX port lands in a follow-up.
+  // Roster is fully React-owned. The small PartyTab compatibility
+  // namespace now only exposes picker/member-math helpers for older
+  // bridge-style callers.
   "roster",
   // World Map + World Activities follow the same override pattern.
   // CampaignWorldMap produces both panels' inner HTML; the React

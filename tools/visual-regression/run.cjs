@@ -18,7 +18,6 @@ const { createLoader } = require("./load-tsx.cjs");
 
 const SNAP_DIR = path.join(__dirname, "__snapshots__");
 const SRC = path.resolve(__dirname, "../../src/campaign");
-const JS_CAMPAIGN = path.resolve(__dirname, "../../js/campaign");
 
 // ── HTML normalization ───────────────────────────────────────────────────────
 // renderToStaticMarkup emits one long line. Put each tag on its own line and
@@ -61,25 +60,16 @@ function loadHarness() {
   const { load } = createLoader();
 
   // 1. Real TS leaf-util modules self-install on window.CJS.CampaignUIInternal.*
-  //    (the same surface the browser sees). Load them before the JS islands,
-  //    which alias those namespaces at their IIFE top.
+  //    (the same surface the browser sees).
   const utilModules = [
     "cui-utils", "cui-portraits", "cui-log", "cui-controls",
     "cui-modals", "cui-options", "cui-equipment", "cui-hub-tab",
-    "cui-tabs-registry", "cui-world-map-tab", "cui-react-bridge"
+    "cui-tabs-registry", "cui-world-map-tab", "cui-party-tab",
+    "cui-react-bridge"
   ];
   for (const m of utilModules) load(path.join(SRC, "util", `${m}.ts`));
 
-  // 2. The surviving vanilla island (roster detail row + member math). It is
-  //    an IIFE that attaches PartyTab to window.CJS.CampaignUIInternal;
-  //    loading it through the same transform runs the IIFE (no imports → no
-  //    require calls). The hub side-content primitives (HubTab) are now a TS
-  //    util module loaded above (Phase K.3).
-  for (const f of ["ui/tabs/cui-party-tab.js"]) {
-    load(path.join(JS_CAMPAIGN, f));
-  }
-
-  // 3. The cases + engine stub (depends on the namespaces above being present).
+  // 2. The cases + engine stub (depends on the namespaces above being present).
   const mod = load(path.join(__dirname, "cases.tsx"));
   mod.installEngine();
   return mod.cases;

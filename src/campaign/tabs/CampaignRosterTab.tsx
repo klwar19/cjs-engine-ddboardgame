@@ -7,9 +7,7 @@ import { RosterMemberCard } from "./RosterMember";
 // card (hero identity / rank / persona / job chip / availability, vitals +
 // stats + affinities, and the skills / passives / statuses / equipment
 // detail row) are JSX with direct onClick dispatch. The member card
-// (`RosterMemberCard`) is shared with the party-sheet modal (K.3.2). The
-// portrait / job-chip / affinities remain small HTML bridges inside the
-// card pending their own step.
+// (`RosterMemberCard`) is shared with the party-sheet modal (K.3.2).
 
 interface Props {
   readonly state: CampaignStateSnapshot;

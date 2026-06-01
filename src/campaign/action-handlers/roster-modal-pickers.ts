@@ -1,13 +1,9 @@
 // roster-modal-pickers.ts — Phase H.3 roster modal picker handlers.
 //
 // recruit-character / learn-skill / learn-passive are op-picker modals
-// over option lists the roster island builds. Phase H.4 — the option
-// builders + member math moved into `cui-party-tab.js` (the roster
-// island), exposed on `CampaignUIInternal.PartyTab`
-// (characterOptions / skillOptions / passiveOptions / skillMetaText /
-// memberRankInfo / renderPartySheetHtml). The record-icon HTML comes
-// from `CampaignUIInternal.Portraits.icon`. show-skill-detail opens a
-// small skill perk-list info modal.
+// over option lists the typed roster data module builds. The record-icon
+// HTML comes from `CampaignUIInternal.Portraits.icon`. show-skill-detail
+// opens a small skill perk-list info modal.
 //
 // Modal copy, op names, payload keys and the `ui` source mirror the
 // deleted closures (`_recruitCharacterModal`, `_learnSkillModal`,
@@ -15,42 +11,27 @@
 
 import { applyOp, cs, ds, mod, toast } from "./context";
 import { esc, modals, widgets, type PickerOption } from "./modals";
-import { getPartySheetData } from "../tabs/data/roster";
+import {
+  characterOptions,
+  getPartySheetData,
+  memberRankInfo,
+  passiveOptions,
+  skillMetaText,
+  skillOptions
+} from "../tabs/data/roster";
 
-export interface MemberRankInfo {
-  rank: string;
-  effective: string;
-  capped: boolean;
-  ceiling: string | null;
-  label: string;
-  next: string | null;
-  threshold: number;
-  rp: number;
-  pct: number;
-  atMax: boolean;
-}
-
-// Equipment / PartyTab / Portraits helpers live on
-// `window.CJS.CampaignUIInternal` — stable shared islands. Typed
-// accessors here so the handlers don't re-declare them.
+// Equipment / Portraits helpers live on `window.CJS.CampaignUIInternal`.
+// Typed accessors here so the handlers don't re-declare them.
 interface EquipmentApi {
   slotLabel: (slot: string) => string;
   equipmentOptions: (member: Record<string, unknown>, slot: string) => PickerOption[];
   equipmentPickerItem: (option: PickerOption) => string;
-}
-interface PartyTabBridge {
-  characterOptions?: () => PickerOption[];
-  skillOptions?: (memberId: string) => PickerOption[];
-  passiveOptions?: (memberId: string) => PickerOption[];
-  skillMetaText?: (skill: unknown, entry: { level?: number } | undefined) => string;
-  memberRankInfo?: (member: unknown) => MemberRankInfo;
 }
 interface PortraitsBridge {
   icon?: (record: unknown, opts: { kind?: string; size?: string }) => string;
 }
 interface CuiInternal {
   Equipment?: EquipmentApi;
-  PartyTab?: PartyTabBridge;
   Portraits?: PortraitsBridge;
 }
 function cuiInternal(): CuiInternal | undefined {
@@ -58,9 +39,6 @@ function cuiInternal(): CuiInternal | undefined {
 }
 function equipmentApi(): EquipmentApi | undefined {
   return cuiInternal()?.Equipment;
-}
-function partyTab(): PartyTabBridge | undefined {
-  return cuiInternal()?.PartyTab;
 }
 function portraits(): PortraitsBridge | undefined {
   return cuiInternal()?.Portraits;
@@ -78,7 +56,7 @@ function statName(stat: string): string {
 }
 
 export function recruitCharacterModal(): void {
-  const options = partyTab()?.characterOptions?.() ?? [];
+  const options = characterOptions();
   if (!options.length) {
     toast("No unrecruited characters found in Edit Mode", "info");
     return;
@@ -96,7 +74,7 @@ export function recruitCharacterModal(): void {
 
 export function learnSkillModal(memberId: string): void {
   if (!memberId) return;
-  const options = partyTab()?.skillOptions?.(memberId) ?? [];
+  const options = skillOptions(memberId);
   if (!options.length) {
     toast("No unlearned skills found in Edit Mode", "info");
     return;
@@ -114,7 +92,7 @@ export function learnSkillModal(memberId: string): void {
 
 export function learnPassiveModal(memberId: string): void {
   if (!memberId) return;
-  const options = partyTab()?.passiveOptions?.(memberId) ?? [];
+  const options = passiveOptions(memberId);
   if (!options.length) {
     toast("No unlearned passives found in Edit Mode", "info");
     return;
@@ -166,7 +144,7 @@ interface UiSimpleModal {
 // description, skill meta line + Lv X/cap + AbP X (Y to next)) and
 // per-level perk rows (earned ✔ or unlocks-at hint, modifiers, added
 // effects). The skill meta + icon HTML come from the roster island
-// (PartyTab.skillMetaText + Portraits.icon) so the modal stays in sync
+// (skillMetaText + Portraits.icon) so the modal stays in sync
 // with the roster card.
 export function showSkillDetailModal(memberId: string, skillId: string): void {
   if (!memberId || !skillId) return;
@@ -186,7 +164,7 @@ export function showSkillDetailModal(memberId: string, skillId: string): void {
   const apToNext = F?.calcSkillApToNextLevel?.(skill, ap, level) ?? null;
 
   const iconHtml = portraits()?.icon?.(skill, { kind: "skill", size: "sm" }) ?? "";
-  const metaText = partyTab()?.skillMetaText?.(skill, { level }) ?? "";
+  const metaText = skillMetaText(skill, { level });
 
   const body = document.createElement("div");
   body.innerHTML = `
@@ -779,8 +757,6 @@ export function rankUpApplyModal(): void {
   const state = (cs().getState() as Record<string, unknown>) || {};
   const F = mod<FormulasModuleRank>("Formulas");
   const world = (ds()?.get("worlds", (state as { currentWorld?: string }).currentWorld || "") as WorldDef | undefined) || {};
-  const rankInfo = partyTab()?.memberRankInfo;
-
   const body = document.createElement("div");
   body.innerHTML = `<div class="hint-box hint-info" style="margin-bottom:10px">
       <b>Adventurer Guild — ${esc(world.displayName || (state as { currentWorld?: string }).currentWorld || "")}</b><br>
@@ -794,8 +770,7 @@ export function rankUpApplyModal(): void {
   const party = ((state as { party?: Record<string, MemberWithAdventurer> }).party) || {};
   for (const [id, member] of Object.entries(party)) {
     if ((member.rosterRole || "active") === "bench") continue;
-    const info = rankInfo?.(member);
-    if (!info) continue;
+    const info = memberRankInfo(member);
     const gates = F?.rankUpGates?.(member, null, state) || null;
     const blockedByCeiling = !!(
       world.ceiling &&

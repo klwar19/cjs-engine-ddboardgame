@@ -2,18 +2,14 @@
 // (skills / passives / statuses / equipment cards).
 //
 // These four cards were the last icon-heavy HTML island
-// (`cui-party-tab.js::_rosterDetailCardsHtml` + its slot / pool / known-row
+// (formerly `cui-party-tab.js::_rosterDetailCardsHtml` plus slot / pool / known-row
 // / equipment sub-renderers). This builder mirrors that logic exactly but
 // returns typed data the JSX `<RosterDetailCards>` (RosterDetail.tsx)
 // renders with `<Icon>` + onClick dispatch — no `data-campaign-action`,
 // no `dangerouslySetInnerHTML`.
 //
-// Single source of truth: `test_roster_detail.js` renders the JSX and
-// compares it (action-wiring attributes normalized away) to the live
-// island's `rosterMemberData().detailCardsHtml` for empty AND rich members,
-// so the port is verified for the states the VR fixture can't reach. The
-// island stays as that reference until the party-sheet modal migrates to
-// React (a later K.3.2 step), at which point its detail renderers drop.
+// Single source of truth: `test_roster_detail.js` renders the JSX against
+// controlled empty and rich members and compares it to committed goldens.
 
 import { label, formatBundleText } from "../../util/cui-utils";
 import { desc as recordDesc } from "../../util/cui-modals";
@@ -80,7 +76,7 @@ function cjs(): DetailCjs {
   return (window as unknown as { CJS?: DetailCjs }).CJS ?? {};
 }
 
-// ── Member record + small helpers (mirror cui-party-tab.js) ──────────────
+// ── Member record + small helpers ─────────────────────────────────────────
 export interface MemberRecord {
   readonly baseCharacterId?: string;
   readonly equipmentSlots?: Record<string, string | null>;
@@ -291,7 +287,7 @@ export interface RosterDetailData {
   readonly equipment: EquipmentSection;
 }
 
-// ── Section builders (mirror cui-party-tab.js) ───────────────────────────
+// ── Section builders ─────────────────────────────────────────────────────
 function selectionBudgetBadge(memberId: string, member: MemberRecord, kind: "skill" | "passive"): string {
   const F = cjs().Formulas;
   if (!F) return "";

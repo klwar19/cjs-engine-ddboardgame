@@ -19,6 +19,7 @@ import { CampaignSubTabs } from "./shell/SubTabs";
 import { CampaignRecentLog } from "./shell/RecentLog";
 import { CampaignCommandRail } from "./shell/CommandRail";
 import { getChromeData, setActiveMode, setActiveTab, setActivePanel } from "./shell/bridge";
+import { PartyDrawer } from "./shell/PartyDrawer";
 // Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
 // only the chrome + the active tab; the rest download on first visit (and the
 // PWA precaches them in the background). Multi-export files
@@ -353,12 +354,15 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
   const def = defs[panelId];
   if (!def) return null;
 
+  const isPartyPanel = panelId === "party";
   let bodyHtml = "";
-  try {
-    bodyHtml = UI.renderDrawerBody(panelId, state);
-  } catch (error) {
-    console.error(`renderDrawerBody(${panelId}) failed:`, error);
-    bodyHtml = `<div class="campaign-empty">Panel render failed.</div>`;
+  if (!isPartyPanel) {
+    try {
+      bodyHtml = UI.renderDrawerBody(panelId, state);
+    } catch (error) {
+      console.error(`renderDrawerBody(${panelId}) failed:`, error);
+      bodyHtml = `<div class="campaign-empty">Panel render failed.</div>`;
+    }
   }
 
   // Close the drawer through the bridge so the closure-private flag
@@ -449,10 +453,9 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
             ×
           </button>
         </header>
-        <div
-          className="campaign-drawer-body"
-          dangerouslySetInnerHTML={{ __html: bodyHtml }}
-        />
+        <div className="campaign-drawer-body">
+          {isPartyPanel ? <PartyDrawer state={state} /> : <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />}
+        </div>
       </aside>
     </>
   );

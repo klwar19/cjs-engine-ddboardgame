@@ -4,20 +4,20 @@
 // remove-character / level-up-skill / rank-up-passive /
 // unlock-job-from-tree / switch-job-from-tree / grant-skill-ap /
 // pick-equip-skill / pick-equip-passive are the cleanly-separable roster
-// actions: each is a confirm dialog, a number modal, or a thin delegation
-// to a PartyTab primitive. Op names, payload keys, modal copy and the
+// actions: each is a confirm dialog, a number modal, or an imperative pool
+// picker. Op names, payload keys, modal copy and the
 // `ui` source mirror the deleted closures.
 //
 // The bigger roster modals (party-sheet, recruit-character, change-job,
 // show-job-tree, change-persona, equip-item, learn-skill / learn-passive,
 // stat-boost, show-skill-detail, rank-up-apply, party-availability,
-// gm-override, gm-member-override) stay in the switch — they own large
-// option/render helpers (`_skillOptions` / `_passiveOptions` /
-// `_memberSkillEntries` / `_memberPassives` / `_renderJobChip`, etc.) that
-// the render/data side of the roster still consumes.
+// gm-override, gm-member-override) live in their focused TS modules.
 
 import { applyOp, confirmDialog, cs, ds, mod, ops, toast } from "./context";
 import { modals, widgets } from "./modals";
+import { esc } from "../util/cui-utils";
+import { icon } from "../util/cui-portraits";
+import { memberBase, passiveRankCostText, passiveRankInfo } from "../tabs/data/roster";
 
 interface Member {
   name?: string;
@@ -32,21 +32,17 @@ interface FormulasModule {
   calcSkillApToNextLevel?: (skill: unknown, ap: number, level: number) => number | null;
 }
 
-interface PartyTabModule {
-  passiveRankInfo?: (memberId: string, passiveId: string, passive?: unknown) => { rank: number; isMax: boolean };
-  passiveRankCostText?: (passive: unknown, currentRank: number) => string | undefined;
-  openSkillPoolPicker?: (memberId: string) => unknown;
-  openPassivePoolPicker?: (memberId: string) => unknown;
-}
-
 function member(id: string): Member | undefined {
   return (cs().getState()?.party as Record<string, Member> | undefined)?.[id];
 }
 function formulas(): FormulasModule | undefined {
   return mod<FormulasModule>("Formulas");
 }
-function partyTab(): PartyTabModule | undefined {
-  return mod<{ PartyTab?: PartyTabModule }>("CampaignUIInternal")?.PartyTab;
+
+interface PoolUi {
+  toast?: (message: string, kind?: string) => void;
+  openModal?: (opts: { title: string; content: HTMLElement; width?: string }) => unknown;
+  closeModal?: (overlay: unknown) => void;
 }
 
 export function removeCharacter(id: string): void {
@@ -77,13 +73,12 @@ export function rankUpPassiveConfirm(memberId: string, passiveId: string): void 
   const m = member(memberId);
   const passive = ds()?.get("passives", passiveId) as { name?: string } | undefined;
   if (!m || !passive) return;
-  const info = partyTab()?.passiveRankInfo?.(memberId, passiveId, passive);
-  if (!info) return;
+  const info = passiveRankInfo(memberId, passiveId, passive);
   if (info.isMax) {
     toast("Passive is already at max rank.", "info");
     return;
   }
-  const costText = partyTab()?.passiveRankCostText?.(passive, info.rank) || "rank material";
+  const costText = passiveRankCostText(passive, info.rank) || "rank material";
   confirmDialog(
     `Rank up ${passive.name || passiveId} to Rank ${info.rank + 1}? Consumes ${costText}.`,
     () => {
@@ -134,11 +129,119 @@ export function grantSkillApModal(memberId: string, skillId: string): void {
 }
 
 export function openSkillPoolPicker(memberId: string): void {
-  partyTab()?.openSkillPoolPicker?.(memberId);
+  const memberRecord = member(memberId);
+  if (!memberRecord) return;
+  const UI = mod<PoolUi>("UI");
+  const stateApi = mod<{ skillPoolIds?: (m: Record<string, unknown>, base: Record<string, unknown>) => readonly string[] }>("CampaignState");
+  const store = ds();
+  const base = memberBase(memberId, memberRecord as never);
+  const pool = stateApi?.skillPoolIds?.(memberRecord as never, base) || [];
+  const equippedSet = new Set((memberRecord as { equippedSkills?: string[] }).equippedSkills || []);
+  const available = pool.filter((sid) => !equippedSet.has(sid));
+  if (!available.length) {
+    UI?.toast?.("No unequipped skills in pool.", "info");
+    return;
+  }
+
+  const body = document.createElement("div");
+  const search = document.createElement("input");
+  search.type = "search";
+  search.placeholder = "Search skills...";
+  search.style.cssText = "width:100%;margin-bottom:8px";
+  body.appendChild(search);
+
+  const list = document.createElement("div");
+  list.className = "data-list";
+  list.style.maxHeight = "400px";
+  body.appendChild(list);
+
+  let overlay: unknown;
+  const renderList = (q = ""): void => {
+    list.innerHTML = "";
+    const query = q.toLowerCase();
+    for (const sid of available) {
+      const skill = store?.get("skills", sid) as Record<string, unknown> | undefined;
+      if (!skill) continue;
+      const name = String(skill.name || sid);
+      if (query && !name.toLowerCase().includes(query) && !sid.toLowerCase().includes(query)) continue;
+      const spCost = mod<FormulasModule & { calcSpCost?: (thing: unknown) => number }>("Formulas")?.calcSpCost?.(skill) ?? 1;
+      const prog = (memberRecord.skillProgress as Record<string, { level?: number }> | undefined)?.[sid] || { level: 1 };
+      const row = document.createElement("div");
+      row.className = "data-list-item";
+      row.style.cursor = "pointer";
+      row.innerHTML = `${icon(skill, { kind: "skill", size: "sm" })}<div><div class="item-name">${esc(name)}</div><div class="item-sub">SP ${spCost} | Lv ${prog.level || 1} | ${esc(String(skill.description || "").substring(0, 60))}</div></div>`;
+      row.onclick = () => {
+        applyOp({ op: "equip_skill", target: memberId, skillId: sid });
+        UI?.closeModal?.(overlay);
+      };
+      list.appendChild(row);
+    }
+    if (!list.children.length) list.innerHTML = '<div class="data-list-empty">No matching skills.</div>';
+  };
+
+  search.oninput = () => renderList(search.value);
+  renderList("");
+  overlay = UI?.openModal?.({ title: "Equip Skill from Pool", content: body, width: "500px" });
+  search.focus();
 }
 
 export function openPassivePoolPicker(memberId: string): void {
-  partyTab()?.openPassivePoolPicker?.(memberId);
+  const memberRecord = member(memberId);
+  if (!memberRecord) return;
+  const UI = mod<PoolUi>("UI");
+  const stateApi = mod<{ passivePoolIds?: (m: Record<string, unknown>, base: Record<string, unknown>) => readonly string[] }>("CampaignState");
+  const store = ds();
+  const base = memberBase(memberId, memberRecord as never);
+  const pool = stateApi?.passivePoolIds?.(memberRecord as never, base) || [];
+  const equippedSet = new Set((memberRecord as { equippedPassives?: string[] }).equippedPassives || []);
+  const available = pool.filter((pid) => !equippedSet.has(pid));
+  if (!available.length) {
+    UI?.toast?.("No unequipped passives in pool.", "info");
+    return;
+  }
+
+  const body = document.createElement("div");
+  const search = document.createElement("input");
+  search.type = "search";
+  search.placeholder = "Search passives...";
+  search.style.cssText = "width:100%;margin-bottom:8px";
+  body.appendChild(search);
+
+  const list = document.createElement("div");
+  list.className = "data-list";
+  list.style.maxHeight = "400px";
+  body.appendChild(list);
+
+  let overlay: unknown;
+  const renderList = (q = ""): void => {
+    list.innerHTML = "";
+    const query = q.toLowerCase();
+    for (const pid of available) {
+      const passive =
+        (store?.get("passives", pid) as Record<string, unknown> | undefined) ||
+        (store?.get("effects", pid) as Record<string, unknown> | undefined);
+      if (!passive) continue;
+      const name = String(passive.name || pid);
+      if (query && !name.toLowerCase().includes(query) && !pid.toLowerCase().includes(query)) continue;
+      const spCost = mod<FormulasModule & { calcSpCost?: (thing: unknown) => number }>("Formulas")?.calcSpCost?.(passive) ?? 1;
+      const rank = passiveRankInfo(memberId, pid, passive);
+      const row = document.createElement("div");
+      row.className = "data-list-item";
+      row.style.cursor = "pointer";
+      row.innerHTML = `${icon(passive, { kind: "passive", size: "sm" })}<div><div class="item-name">${esc(name)}</div><div class="item-sub">SP ${spCost} | Rank ${rank.rank}/${rank.max} | ${esc(String(passive.trigger || passive.category || ""))} | ${esc(String(passive.description || "").substring(0, 60))}</div></div>`;
+      row.onclick = () => {
+        applyOp({ op: "equip_passive", target: memberId, passiveId: pid });
+        UI?.closeModal?.(overlay);
+      };
+      list.appendChild(row);
+    }
+    if (!list.children.length) list.innerHTML = '<div class="data-list-empty">No matching passives.</div>';
+  };
+
+  search.oninput = () => renderList(search.value);
+  renderList("");
+  overlay = UI?.openModal?.({ title: "Equip Passive from Pool", content: body, width: "500px" });
+  search.focus();
 }
 
 export function partyAvailabilityModal(id: string): void {

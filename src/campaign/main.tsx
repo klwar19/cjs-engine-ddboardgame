@@ -81,7 +81,7 @@ import "./util/cui-controls";
 import "./util/cui-equipment";
 import "./util/cui-log";
 import "./util/cui-tabs-registry";
-import "../../js/campaign/ui/tabs/cui-party-tab.js";
+import "./util/cui-party-tab";
 import "./util/cui-hub-tab";
 import "./util/cui-world-map-tab";
 import "./util/cui-react-bridge";

@@ -7,24 +7,14 @@
 // Apply it builds the op payload and runs it through CampaignOps with the
 // `gm_override` source.
 //
-// Shares the roster option builders (`characterOptions` / `skillOptions`
-// / `passiveOptions`) with the roster island, read through
-// `CampaignUIInternal.PartyTab` (same as roster-modal-pickers.ts).
+// Shares the typed roster option builders (`characterOptions` /
+// `skillOptions` / `passiveOptions`) with roster-modal-pickers.ts.
 // Behaviour parity with the closure — same op list, same widgets, same
 // validation toasts + op payloads.
 
 import { cs, ds, ops, mod } from "./context";
 import { modals, options, widgets, type PickerOption, type SliderEl, type SearchableSelectEl } from "./modals";
-
-interface PartyTabBridge {
-  characterOptions?: () => PickerOption[];
-  skillOptions?: (memberId: string) => PickerOption[];
-  passiveOptions?: (memberId: string) => PickerOption[];
-}
-
-function partyTab(): PartyTabBridge | undefined {
-  return mod<{ PartyTab?: PartyTabBridge }>("CampaignUIInternal")?.PartyTab;
-}
+import { characterOptions, skillOptions, passiveOptions } from "../tabs/data/roster";
 
 interface ConstModule {
   RANKS?: string[];
@@ -233,7 +223,7 @@ export function openGmOverride(defaultTarget = ""): void {
       fields.appendChild(active.amount);
     } else if (def.kind === "recruit") {
       active.character = ui!.createSearchableSelect({
-        options: partyTab()?.characterOptions?.() || [],
+        options: characterOptions(),
         placeholder: "Search characters...",
         renderItem: m!.pickerItem
       });
@@ -256,7 +246,7 @@ export function openGmOverride(defaultTarget = ""): void {
       fields.appendChild(active.target);
       fields.appendChild(m!.formLabel("Skill"));
       active.skill = ui!.createSearchableSelect({
-        options: partyTab()?.skillOptions?.(active.target.value) || [],
+        options: skillOptions(active.target.value),
         placeholder: "Search skills...",
         renderItem: m!.pickerItem
       });
@@ -267,7 +257,7 @@ export function openGmOverride(defaultTarget = ""): void {
       fields.appendChild(active.target);
       fields.appendChild(m!.formLabel("Passive"));
       active.passive = ui!.createSearchableSelect({
-        options: partyTab()?.passiveOptions?.(active.target.value) || [],
+        options: passiveOptions(active.target.value),
         placeholder: "Search passives...",
         renderItem: m!.pickerItem
       });

@@ -38,7 +38,7 @@ every tab in `CampaignShell`'s `REACT_TAB_COMPONENTS` map must have a
   data bridges read). Because `tsconfig` includes this file, every `state={…}`
   / `data={…}` prop is verified against the real component contract, so a
   fixture cannot drift from the shape it stands in for.
-- `run.cjs` — loads the real TS util modules + the surviving PartyTab JS island,
+- `run.cjs` — loads the real TS util modules,
   installs the engine stub, renders each case, normalizes
   the HTML, and writes (`--update`) or diffs (`--list`/default) the snapshots.
 

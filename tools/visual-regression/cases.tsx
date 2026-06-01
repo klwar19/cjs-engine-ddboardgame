@@ -31,6 +31,7 @@ import { CampaignModeBar } from "../../src/campaign/shell/ModeBar";
 import { CampaignSubTabs } from "../../src/campaign/shell/SubTabs";
 import { CampaignRecentLog } from "../../src/campaign/shell/RecentLog";
 import { CampaignCommandRail } from "../../src/campaign/shell/CommandRail";
+import { PartyDrawer } from "../../src/campaign/shell/PartyDrawer";
 import type { ChromeData } from "../../src/campaign/shell/types";
 
 import { CampaignSettingsTab } from "../../src/campaign/tabs/CampaignSettingsTab";
@@ -117,9 +118,9 @@ const fixtureQuests: Record<string, Record<string, unknown>> = {
   }
 };
 
-// One active + one benched roster member, with the full field surface the
-// (still-JS) PartyTab.rosterMemberData island reads, so the React roster
-// hero/vitals/stats cards (the migrated JSX) render real data.
+// One active + one benched roster member, with the field surface the typed
+// roster data builders read, so the React roster hero/vitals/stats/detail
+// cards render real data.
 const fixtureParty: Record<string, Record<string, unknown>> = {
   char_lyra: {
     name: "Lyra Vane", baseCharacterId: "lyra", icon: "", rarity: "SR",
@@ -497,6 +498,7 @@ export const cases: readonly VrCase[] = [
   tab("chrome-subtabs", <CampaignSubTabs tabs={chromeData.subTabs} activeTab={chromeData.activeTab} isUtility={chromeData.isUtility} />),
   tab("chrome-recentlog", <CampaignRecentLog data={chromeData.recentLog} />),
   tab("chrome-commandrail", <CampaignCommandRail data={chromeData.commandRail} />),
+  tab("chrome-partydrawer", <PartyDrawer state={campaignState} />),
 
   // Every registered tab, against the shared fixture.
   tab("tab-settings", <CampaignSettingsTab state={campaignState} />),
