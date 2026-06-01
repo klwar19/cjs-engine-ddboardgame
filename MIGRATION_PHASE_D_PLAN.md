@@ -929,6 +929,18 @@ show become tractable:
   457 KB). This is a regression guard only; explicit campaign/editor/combat
   bundle ceilings are tracked in Remaining Work.
 
+- [x] **I.8 - Launcher switching hardening.** The unified launcher now keeps
+  mode switching rules in small typed helpers (`src/launcher/switching.ts`):
+  hash parsing, last-mode storage, path/query-preserving history URLs, and
+  bounded visited-frame tracking. The iframe URL builder now handles existing
+  query strings, stale `embed` values, absolute paths, and hash fragments
+  without ad hoc string concatenation. The launcher uses a stable visited-ref
+  for prefetch decisions, passes real collapsed state into the sidebar, and
+  exposes `getLauncherVisibility` / `onLauncherVisibilityChange` from the
+  shared embed bridge so future mode code can pause work cleanly when hidden.
+  `test_launcher_switching.js` now transpiles and exercises the real helpers
+  (70 assertions) in addition to the DOM/iframe source contracts.
+
 ## Phase J — AI-friendly authoring (after H, parallel with I)
 
 The migration's other goal: make the codebase easy to extend with

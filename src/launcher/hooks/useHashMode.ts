@@ -1,29 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import { isModeId, type ModeId } from "../modes";
-
-const STORAGE_KEY = "cjs.launcher.lastMode";
-
-function readStored(): ModeId | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return isModeId(raw) ? raw : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStored(mode: ModeId | null) {
-  try {
-    if (mode) localStorage.setItem(STORAGE_KEY, mode);
-  } catch {
-    /* ignore */
-  }
-}
-
-function readHash(): ModeId | null {
-  const raw = window.location.hash.slice(1);
-  return isModeId(raw) ? raw : null;
-}
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ModeId } from "../modes";
+import { launcherUrlForMode, modeHash, readModeHash, readStoredMode, writeStoredMode } from "../switching";
 
 export interface UseHashModeResult {
   readonly mode: ModeId | null;
@@ -36,20 +13,20 @@ export interface UseHashModeResult {
  * the last-active mode for next visit.
  */
 export function useHashMode(): UseHashModeResult {
-  const [mode, setModeState] = useState<ModeId | null>(() => readHash() ?? readStored());
+  const [mode, setModeState] = useState<ModeId | null>(() => readModeHash(window.location.hash) ?? readStoredMode(localStorage));
   const suppressRef = useRef(false);
 
   const setMode = useCallback((next: ModeId | null) => {
     setModeState(next);
-    writeStored(next);
+    writeStoredMode(localStorage, next);
     suppressRef.current = true;
-    const targetHash = next ? `#${next}` : "";
+    const targetHash = modeHash(next);
     if (window.location.hash !== targetHash) {
-      if (next) {
-        history.pushState({ mode: next }, "", targetHash);
-      } else {
-        history.pushState({ mode: null }, "", window.location.pathname + window.location.search);
-      }
+      history.pushState(
+        { mode: next },
+        "",
+        launcherUrlForMode(window.location.pathname, window.location.search, next)
+      );
     }
     setTimeout(() => {
       suppressRef.current = false;
@@ -59,9 +36,9 @@ export function useHashMode(): UseHashModeResult {
   useEffect(() => {
     const syncFromLocation = () => {
       if (suppressRef.current) return;
-      const next = readHash();
+      const next = readModeHash(window.location.hash);
       setModeState(next);
-      writeStored(next);
+      writeStoredMode(localStorage, next);
     };
     window.addEventListener("hashchange", syncFromLocation);
     window.addEventListener("popstate", syncFromLocation);

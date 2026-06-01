@@ -20,7 +20,7 @@ export function TopBar({ mode, onToggleMobile }: TopBarProps) {
         title="Open menu"
         onClick={onToggleMobile}
       >
-        <span aria-hidden="true">☰</span>
+        <span aria-hidden="true">Menu</span>
       </button>
       <h1 className="launcher-current-title" id="launcher-current-title">{title}</h1>
       <div className="launcher-topbar-actions">
@@ -33,7 +33,7 @@ export function TopBar({ mode, onToggleMobile }: TopBarProps) {
           title="Open current mode in a new tab"
           aria-disabled={popOutDisabled || undefined}
         >
-          ↗ Open in tab
+          Open in tab
         </a>
       </div>
     </header>

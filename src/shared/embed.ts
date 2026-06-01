@@ -11,6 +11,10 @@ export interface LauncherVisibilityDetail {
 }
 
 let visibilityBridgeInstalled = false;
+let latestVisibility: LauncherVisibilityDetail = {
+  active: !isLauncherEmbed(),
+  source: "launcher"
+};
 
 export function isLauncherEmbed(): boolean {
   if (typeof window === "undefined") return false;
@@ -44,6 +48,22 @@ export function installLauncherVisibilityBridge(): void {
       mode: typeof data.mode === "string" ? data.mode : undefined,
       source: "launcher"
     };
+    latestVisibility = detail;
     window.dispatchEvent(new CustomEvent<LauncherVisibilityDetail>(LAUNCHER_VISIBILITY_EVENT, { detail }));
   });
+}
+
+export function getLauncherVisibility(): LauncherVisibilityDetail {
+  return latestVisibility;
+}
+
+export function onLauncherVisibilityChange(
+  listener: (detail: LauncherVisibilityDetail) => void
+): () => void {
+  if (typeof window === "undefined") return () => {};
+  const handler = (event: Event) => {
+    listener((event as CustomEvent<LauncherVisibilityDetail>).detail);
+  };
+  window.addEventListener(LAUNCHER_VISIBILITY_EVENT, handler);
+  return () => window.removeEventListener(LAUNCHER_VISIBILITY_EVENT, handler);
 }

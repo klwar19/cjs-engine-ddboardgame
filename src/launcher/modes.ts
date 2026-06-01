@@ -14,7 +14,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     id: "campaign",
     title: "Campaign Mode",
     file: "campaign.html",
-    icon: "🗺️",
+    icon: "CM",
     label: "Campaign",
     description: "Story Director, world map, quests, party"
   },
@@ -22,7 +22,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     id: "combat",
     title: "Combat Simulator",
     file: "combat.html",
-    icon: "⚔️",
+    icon: "BT",
     label: "Combat",
     description: "Tactical battle simulator with AI & QTEs"
   },
@@ -30,7 +30,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     id: "editor",
     title: "Content Editor",
     file: "editor.html",
-    icon: "🛠️",
+    icon: "ED",
     label: "Editor",
     description: "Author skills, monsters, items, scenes"
   },
@@ -38,7 +38,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     id: "minigames",
     title: "Minigames",
     file: "minigames.html",
-    icon: "🎮",
+    icon: "MG",
     label: "Minigames",
     description: "Puzzle, maze, push-box test harness"
   },
@@ -46,7 +46,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     id: "tests",
     title: "System Tests",
     file: "tests.html",
-    icon: "🧪",
+    icon: "TS",
     label: "Tests",
     description: "Engine sanity tests & effect library"
   }
@@ -59,8 +59,20 @@ export function isModeId(value: string | null | undefined): value is ModeId {
 }
 
 export const EMBED_FLAG = "embed=launcher";
+export const EMBED_PARAM = "embed";
+export const EMBED_VALUE = "launcher";
+
+export function appendLauncherEmbedFlag(file: string): string {
+  const hashIndex = file.indexOf("#");
+  const beforeHash = hashIndex === -1 ? file : file.slice(0, hashIndex);
+  const hash = hashIndex === -1 ? "" : file.slice(hashIndex);
+  const keepLeadingSlash = beforeHash.startsWith("/");
+  const url = new URL(beforeHash || ".", "https://cjs.local/");
+  url.searchParams.set(EMBED_PARAM, EMBED_VALUE);
+  const path = keepLeadingSlash || !url.pathname.startsWith("/") ? url.pathname : url.pathname.slice(1);
+  return `${path}${url.search}${hash}`;
+}
 
 export function buildIframeUrl(mode: ModeId): string {
-  const file = MODES[mode].file;
-  return file + (file.includes("?") ? "&" : "?") + EMBED_FLAG;
+  return appendLauncherEmbedFlag(MODES[mode].file);
 }

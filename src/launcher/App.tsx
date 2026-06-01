@@ -5,29 +5,30 @@ import { TopBar } from "./components/TopBar";
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { useCollapsedSidebar } from "./hooks/useCollapsedSidebar";
 import { useHashMode } from "./hooks/useHashMode";
-import { buildIframeUrl, type ModeId } from "./modes";
+import { MODE_IDS, buildIframeUrl, type ModeId } from "./modes";
+import { rememberVisitedMode } from "./switching";
 
 export function App() {
   const { mode, setMode } = useHashMode();
   const [collapsed, toggleCollapsed] = useCollapsedSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [visited, setVisited] = useState<Set<ModeId>>(() => (mode ? new Set([mode]) : new Set()));
+  const [visited, setVisited] = useState<ReadonlyArray<ModeId>>(() => (mode ? [mode] : []));
   const prefetchedRef = useRef<Set<ModeId>>(new Set());
+  const visitedRef = useRef<Set<ModeId>>(new Set(visited));
 
-  // Track every mode the user has visited so the iframe stays mounted after
-  // they switch away — preserves audio playback, in-memory state, modals.
+  useEffect(() => {
+    visitedRef.current = new Set(visited);
+  }, [visited]);
+
+  // Keep visited mode iframes mounted after switching away. This preserves
+  // audio playback, in-memory mode state, and open modals.
   useEffect(() => {
     if (!mode) return;
-    setVisited((prev) => {
-      if (prev.has(mode)) return prev;
-      const next = new Set(prev);
-      next.add(mode);
-      return next;
-    });
+    setVisited((prev) => rememberVisitedMode(prev, mode, MODE_IDS.length));
   }, [mode]);
 
   const preloadMode = useCallback((next: ModeId) => {
-    if (visited.has(next) || prefetchedRef.current.has(next)) return;
+    if (visitedRef.current.has(next) || prefetchedRef.current.has(next)) return;
     const link = document.createElement("link");
     link.rel = "prefetch";
     link.as = "document";
@@ -35,7 +36,7 @@ export function App() {
     link.dataset.cjsLauncherPrefetch = next;
     document.head.appendChild(link);
     prefetchedRef.current.add(next);
-  }, [visited]);
+  }, []);
 
   const handleSelect = useCallback(
     (next: ModeId) => {
@@ -80,6 +81,7 @@ export function App() {
     <div ref={shellRef} className={shellClass}>
       <Sidebar
         activeMode={mode}
+        collapsed={collapsed}
         onSelect={handleSelect}
         onPreload={preloadMode}
         onToggleCollapsed={toggleCollapsed}
@@ -88,7 +90,7 @@ export function App() {
         <TopBar mode={mode} onToggleMobile={handleToggleMobile} />
         <div className="launcher-frame-wrap">
           <WelcomeScreen visible={showWelcome} onSelect={handleSelect} onPreload={preloadMode} />
-          {[...visited].map((m) => (
+          {visited.map((m) => (
             <FrameView key={m} mode={m} active={mode === m} />
           ))}
         </div>

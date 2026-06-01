@@ -2,12 +2,15 @@ import { MODE_IDS, MODES, type ModeId } from "../modes";
 
 interface SidebarProps {
   readonly activeMode: ModeId | null;
+  readonly collapsed: boolean;
   readonly onSelect: (mode: ModeId) => void;
   readonly onPreload: (mode: ModeId) => void;
   readonly onToggleCollapsed: () => void;
 }
 
-export function Sidebar({ activeMode, onSelect, onPreload, onToggleCollapsed }: SidebarProps) {
+export function Sidebar({ activeMode, collapsed, onSelect, onPreload, onToggleCollapsed }: SidebarProps) {
+  const collapseLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
+
   return (
     <aside className="launcher-sidebar" id="launcher-sidebar" aria-label="App navigation">
       <header className="launcher-brand">
@@ -15,11 +18,11 @@ export function Sidebar({ activeMode, onSelect, onPreload, onToggleCollapsed }: 
           className="launcher-collapse"
           id="launcher-collapse"
           type="button"
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
+          aria-label={collapseLabel}
+          title={collapseLabel}
           onClick={onToggleCollapsed}
         >
-          <span className="launcher-collapse-icon" aria-hidden="true">≡</span>
+          <span className="launcher-collapse-icon" aria-hidden="true">{collapsed ? ">" : "<"}</span>
         </button>
         <div className="launcher-brand-text">
           <div className="launcher-brand-name">CJS Engine</div>
@@ -55,7 +58,7 @@ export function Sidebar({ activeMode, onSelect, onPreload, onToggleCollapsed }: 
           target="_blank"
           rel="noopener"
         >
-          GitHub ↗
+          GitHub
         </a>
       </footer>
     </aside>

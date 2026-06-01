@@ -10,7 +10,7 @@ if (window.top && window.top !== window.self) {
   try {
     window.top.location.replace(window.location.href);
   } catch {
-    // Cross-origin top — can't escape, fall through and render anyway.
+    // Cross-origin top: cannot escape, fall through and render anyway.
   }
 }
 
