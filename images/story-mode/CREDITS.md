@@ -18,6 +18,7 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 - Original file: `C:\Users\klwar\Desktop\earth.webp`
 
 - `earth/earth-map.webp`
+- `earth/earth-map.png` is a compressed compatibility alias for cached builds that still request the old filename.
 - Source: user-provided project asset
 - Intended use: Earth/Zhonghai clickable travel-map backdrop
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\map_earth.png`
@@ -32,11 +33,13 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 ## Zombie
 
 - `zombie/zombie-bin-burnice-horizontal.webp`
+- `zombie/zombie-bin-burnice-horizontal.png` is a compressed compatibility alias for cached builds that still request the old filename.
 - Source: user-provided project asset
 - Intended use: Zombie World theme/banner backdrop
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\zombie_bin and burnice_horizontal.png`
 
 - `zombie/rot-city-vn.webp`
+- `zombie/rot-city-vn.png` is a compressed compatibility alias for cached builds that still request the old filename.
 - Source: "Abandon City Seamless Background" by acasas on OpenGameArt
 - License: CC0
 - Original file used: `Background city Seamless.png` from `Abandon-City-Background-TheGameAssetsMine.com-.zip`
@@ -45,6 +48,7 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 ## Bazaar
 
 - `bazaar/bazaar-theme.webp`
+- `bazaar/bazaar-theme.png` is a compressed compatibility alias for cached builds that still request the old filename.
 - User-provided project asset.
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\bazaar.png`
 

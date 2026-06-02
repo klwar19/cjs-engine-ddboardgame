@@ -111,14 +111,20 @@ export function formatBundleText(bundle: RewardBundle | null | undefined): strin
 
 // ── Asset path resolution ────────────────────────────────────────────
 // Asset paths in `data/*.json` are stored relative to the project root.
-// The campaign page lives one directory deep, so naked paths need the
-// `../` prefix to resolve correctly. URLs, absolute paths, and
-// data-URLs pass through untouched.
+// Resolve them against the current app document instead of relying on CSS or
+// DOM relative-path quirks; GitHub Pages serves the app under a repo subpath.
+// URLs, absolute paths, and data/blob URLs pass through untouched.
 export function cssVarAssetUrl(path: unknown): string {
   const value = String(path || "").trim();
   if (!value) return "";
-  if (/^(data:|https?:|\/|\.\/|\.\.)/i.test(value)) return value;
-  return `../${value}`;
+  if (/^(data:|blob:|https?:|\/)/i.test(value)) return value;
+
+  const normalized = value.replace(/^(?:\.\.?\/)+(?=(?:assets|images|audio|data)\/)/i, "");
+  try {
+    return new URL(normalized, window.location.href).href;
+  } catch {
+    return normalized;
+  }
 }
 
 // ── Legacy namespace install ─────────────────────────────────────────

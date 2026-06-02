@@ -37,6 +37,12 @@
     },
 
     { "group": "background", "path": "images/story-mode/bazaar/bazaar-theme.webp", "maxEdge": 1920 },
+    {
+      "group": "legacy-background-fallback",
+      "path": "images/story-mode/bazaar/bazaar-theme.png",
+      "maxEdge": 1280,
+      "note": "Compressed PNG alias retained for older cached app chunks that still request the old filename."
+    },
     { "group": "background", "path": "images/story-mode/bazaar/gavel-market-vn.jpg", "maxEdge": 1920 },
     {
       "group": "background",
@@ -44,8 +50,32 @@
       "maxEdge": 1920,
       "note": "Also serves as the zombie world-gate banner."
     },
+    {
+      "group": "legacy-background-fallback",
+      "path": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png",
+      "maxEdge": 1280,
+      "note": "Compressed PNG alias retained for older cached app chunks that still request the old filename."
+    },
     { "group": "background", "path": "images/story-mode/zombie/rot-city-vn.webp", "maxEdge": 1920 },
-    { "group": "background", "path": "images/story-mode/earth/earth-map.webp", "maxEdge": 1920 }
+    {
+      "group": "legacy-background-fallback",
+      "path": "images/story-mode/zombie/rot-city-vn.png",
+      "maxEdge": 1280,
+      "note": "Compressed PNG alias retained for older cached app chunks that still request the old filename."
+    },
+    { "group": "background", "path": "images/story-mode/earth/earth-map.webp", "maxEdge": 1920 },
+    {
+      "group": "legacy-background-fallback",
+      "path": "images/story-mode/earth/earth-map.png",
+      "maxEdge": 1280,
+      "note": "Compressed PNG alias retained for older cached app chunks that still request the old filename."
+    },
+    {
+      "group": "legacy-live2d-background-fallback",
+      "path": "assets/live2d/peri-v2/background.png",
+      "maxEdge": 1280,
+      "note": "Compressed PNG alias retained for older cached registry/chunks that still request the old filename."
+    }
   ],
   "categoryCaps": [
     {

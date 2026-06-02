@@ -75,7 +75,12 @@ function installEnv() {
     cancelAnimationFrame: noop,
     matchMedia: () => ({ matches: false, addEventListener: noop, removeEventListener: noop, addListener: noop, removeListener: noop }),
     getComputedStyle: () => ({ getPropertyValue: () => "" }),
-    location: { href: "http://localhost/campaign.html", search: "", hash: "", pathname: "/campaign.html" },
+    location: {
+      href: "http://localhost/cjs-engine-ddboardgame/campaign.html",
+      search: "",
+      hash: "",
+      pathname: "/cjs-engine-ddboardgame/campaign.html"
+    },
     navigator: { userAgent: "node-vr", clipboard: { writeText: () => Promise.resolve() } },
     devicePixelRatio: 1
   };
