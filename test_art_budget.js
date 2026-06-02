@@ -175,6 +175,10 @@ function matchesCategoryCap(rel, cap) {
   return extensions.some((ext) => lower.endsWith(String(ext).toLowerCase()));
 }
 
+function stripQuery(rel) {
+  return String(rel || '').split('?')[0].split('#')[0];
+}
+
 // ── run ─────────────────────────────────────────────────────────────────────
 console.log('Art-budget guard (Phase I.6)');
 
@@ -249,6 +253,58 @@ for (const cap of categoryCaps) {
     `${(total / 1048576).toFixed(2)} MB / ${(cap.maxTotalBytes / 1048576).toFixed(2)} MB`
   );
 }
+
+const worldMetaDir = path.join(ROOT, 'data', 'worlds');
+const worldIds = fs.readdirSync(worldMetaDir)
+  .filter((name) => fs.existsSync(path.join(worldMetaDir, name, '_meta.json')))
+  .sort();
+ok('world metadata directories found', worldIds.length > 0, `${worldIds.length} world(s)`);
+
+for (const worldId of worldIds) {
+  const file = path.join(worldMetaDir, worldId, '_meta.json');
+  const meta = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const theme = meta.world && meta.world.storyModeTheme;
+  if (!theme) continue;
+  for (const field of ['backdrop', 'bannerImage', 'homeBackdrop']) {
+    const raw = theme[field];
+    if (!raw) continue;
+    const assetPath = stripQuery(raw);
+    const expectedPrefix = `images/story-mode/${worldId}/`;
+    ok(
+      `world theme ${worldId}.${field} stays in its world folder`,
+      assetPath.startsWith(expectedPrefix),
+      assetPath
+    );
+    ok(
+      `world theme ${worldId}.${field} asset exists`,
+      fs.existsSync(path.join(ROOT, assetPath)),
+      assetPath
+    );
+  }
+  if (theme.bannerVideo) {
+    const videoPath = stripQuery(theme.bannerVideo);
+    ok(
+      `world theme ${worldId}.bannerVideo uses banner video folder`,
+      videoPath.startsWith('assets/videos/story-mode/banners/'),
+      videoPath
+    );
+    ok(
+      `world theme ${worldId}.bannerVideo asset exists`,
+      fs.existsSync(path.join(ROOT, videoPath)),
+      videoPath
+    );
+  }
+}
+
+const worldGateSource = fs.readFileSync(path.join(ROOT, 'src/campaign/tabs/data/worldGate.ts'), 'utf8');
+ok(
+  'World Gate menu defs do not hardcode banner images',
+  !/^\s+bannerImage:\s*["']/m.test(worldGateSource)
+);
+ok(
+  'World Gate prefers metadata banner art before code fallbacks',
+  /world\.storyModeTheme\?\.bannerImage\s*\|\|\s*world\.storyModeTheme\?\.backdrop\s*\|\|\s*def\.bannerImage/.test(worldGateSource)
+);
 
 console.log('');
 console.log(

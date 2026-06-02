@@ -18,10 +18,10 @@
     "storyModeTheme": {
       "id": "earth",
       "className": "story-theme-earth",
-      "backdrop": "images/story-mode/earth/earth-theme.webp",
-      "bannerImage": "images/story-mode/earth/earth-theme.webp",
+      "backdrop": "images/story-mode/earth/earth-map.webp",
+      "bannerImage": "images/story-mode/earth/earth-map.webp",
       "bannerVideo": "assets/videos/story-mode/banners/earth-return-banner.mp4",
-      "homeBackdrop": "images/story-mode/earth/earth-theme.webp",
+      "homeBackdrop": "images/story-mode/earth/earth-map.webp",
       "accent": "#7dd3fc",
       "danger": "#fb7185",
       "motif": "city"

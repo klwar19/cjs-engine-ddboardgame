@@ -14,13 +14,13 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 
 - `earth/earth-theme.webp`
 - Source: user-provided project asset
-- Intended use: Earth overall story/event/activity theme backdrop
+- Intended use: reserved Earth story illustration / future scene art
 - Original file: `C:\Users\klwar\Desktop\earth.webp`
 
 - `earth/earth-map.webp`
 - `earth/earth-map.png` is a compressed compatibility alias for cached builds that still request the old filename.
 - Source: user-provided project asset
-- Intended use: Earth/Zhonghai clickable travel-map backdrop
+- Intended use: Earth/Zhonghai clickable travel-map backdrop and canonical static Earth world banner/backdrop
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\map_earth.png`
 - Current file is a lightly cleaned derivative of the same source with reduced watermark/text clutter for UI readability.
 

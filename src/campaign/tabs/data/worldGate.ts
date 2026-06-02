@@ -76,7 +76,6 @@ const WORLD_MENU_DEFS: Readonly<Record<string, WorldMenuDef>> = {
     summary:
       "Earth loads ordinary-life story scenes, the Zhonghai visual city map, hospital support item pumping, diary/recap memories, and social scenes.",
     features: ["Story", "VN city map", "Hospital", "Diaries"],
-    bannerImage: "images/story-mode/earth/earth-theme.webp",
     defaultMode: "activities",
     defaultTab: "worldMap",
     openLabel: "Open Earth Map",
@@ -101,7 +100,6 @@ const WORLD_MENU_DEFS: Readonly<Record<string, WorldMenuDef>> = {
     summary:
       "Zombie world loads the Last Light visual ruined-city map, scavenging tasks, safehouse building, medical salvage, and future survival pressure events.",
     features: ["Story", "Ruined city map", "Scavenge", "Build"],
-    bannerImage: "images/story-mode/zombie/zombie-bin-burnice-horizontal.webp",
     defaultMode: "activities",
     defaultTab: "worldMap",
     openLabel: "Open Zombie Map",
@@ -114,7 +112,6 @@ const WORLD_MENU_DEFS: Readonly<Record<string, WorldMenuDef>> = {
     summary:
       "Bazaar loads optional activity systems first: arena matches, auction lots, prize boards, and future economy experiments.",
     features: ["Arena", "Auction House", "Prize Board", "Rewards"],
-    bannerImage: "images/story-mode/bazaar/bazaar-theme.webp",
     defaultMode: "activities",
     defaultTab: "worldMap",
     openLabel: "Open Bazaar",
@@ -217,7 +214,7 @@ function worldGateCardData(
   const def = worldMenuDef(worldId);
   const isCurrent = worldId === state.currentWorld;
   const bannerImage =
-    def.bannerImage || world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || "";
+    world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || def.bannerImage || "";
   const bannerImageUrl = bannerImage ? String(cssVarAssetUrl(bannerImage) || bannerImage) : "";
   const ds = cjs().DataStore;
   const maps = (ds?.getAllAsArray?.("travelMaps") || []) as readonly TravelMap[];
