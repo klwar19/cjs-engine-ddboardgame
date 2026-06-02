@@ -18,9 +18,9 @@
     "storyModeTheme": {
       "id": "bazaar",
       "className": "story-theme-bazaar",
-      "backdrop": "images/story-mode/bazaar/bazaar-theme.png",
-      "bannerImage": "images/story-mode/bazaar/bazaar-theme.png",
-      "homeBackdrop": "images/story-mode/bazaar/bazaar-theme.png",
+      "backdrop": "images/story-mode/bazaar/bazaar-theme.webp",
+      "bannerImage": "images/story-mode/bazaar/bazaar-theme.webp",
+      "homeBackdrop": "images/story-mode/bazaar/bazaar-theme.webp",
       "accent": "#fbbf24",
       "danger": "#ef4444",
       "motif": "chains"

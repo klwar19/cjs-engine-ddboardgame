@@ -30,6 +30,7 @@ const root = path.resolve(__dirname, "..");
 const dist = path.join(root, "dist");
 const distAssets = path.join(dist, "assets");
 const baselinePath = path.join(__dirname, "build-size-baseline.json");
+const artBudgetPath = path.join(__dirname, "art-budget.json");
 
 const THRESHOLD_PCT = 5; // a chunk/total may not grow more than this %
 const FLOOR_BYTES = 1024; // ...and must also clear this absolute delta to fail
@@ -38,6 +39,7 @@ const LARGEST_N = 15; // how many of the biggest assets to record/report
 
 const CODE_RE = /\.(js|css|html|map|webmanifest)$/;
 const HASH_RE = /^(.*)-[A-Za-z0-9_-]{8}\.(js|css)$/;
+const SOURCE_CAP_SKIP_DIRS = new Set([".git", "dist", "node_modules", "tmp"]);
 
 const args = process.argv.slice(2);
 const update = args.includes("--update") || args.includes("--baseline");
@@ -112,6 +114,115 @@ function collectAssets() {
   return { total, groups, largest: largest.slice(0, LARGEST_N) };
 }
 
+function readArtBudget() {
+  if (!fs.existsSync(artBudgetPath)) return {};
+  return JSON.parse(fs.readFileSync(artBudgetPath, "utf8"));
+}
+
+function collectSourceFilesForCaps() {
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const abs = path.join(dir, entry.name);
+      const rel = path.relative(root, abs);
+      const first = rel.split(path.sep)[0];
+      if (SOURCE_CAP_SKIP_DIRS.has(first)) continue;
+      if (entry.isDirectory()) {
+        walk(abs);
+      } else if (entry.isFile()) {
+        files.push({
+          path: rel.split(path.sep).join("/"),
+          bytes: fs.statSync(abs).size
+        });
+      }
+    }
+  };
+  walk(root);
+  return files;
+}
+
+function matchesCategoryCap(file, cap) {
+  const prefix = String(cap.pathPrefix || "");
+  if (!prefix || !file.path.startsWith(prefix)) return false;
+  const extensions = Array.isArray(cap.extensions) ? cap.extensions : [];
+  if (!extensions.length) return true;
+  const lower = file.path.toLowerCase();
+  return extensions.some((ext) => lower.endsWith(String(ext).toLowerCase()));
+}
+
+function collectCategoryCapStatus() {
+  const budget = readArtBudget();
+  const caps = Array.isArray(budget.categoryCaps) ? budget.categoryCaps : [];
+  if (!caps.length) return { results: [], violations: [] };
+
+  const files = collectSourceFilesForCaps();
+  const results = [];
+  const violations = [];
+  for (const cap of caps) {
+    const group = String(cap.group || cap.pathPrefix || "unknown");
+    const matches = files.filter((file) => matchesCategoryCap(file, cap));
+    const total = matches.reduce((sum, file) => sum + file.bytes, 0);
+    const largest = [...matches].sort((a, b) => b.bytes - a.bytes).slice(0, 5);
+    const maxFileBytes = Number(cap.maxFileBytes || 0);
+    const maxTotalBytes = Number(cap.maxTotalBytes || 0);
+    const overFiles = maxFileBytes > 0
+      ? largest.filter((file) => file.bytes > maxFileBytes)
+      : [];
+    const totalOver = maxTotalBytes > 0 && total > maxTotalBytes;
+
+    const result = {
+      group,
+      count: matches.length,
+      total,
+      largest,
+      maxFileBytes,
+      maxTotalBytes,
+      overFiles,
+      totalOver
+    };
+    results.push(result);
+    if (!matches.length || overFiles.length || totalOver) violations.push(result);
+  }
+  return { results, violations };
+}
+
+function reportCategoryCaps(status) {
+  if (!status.results.length) return false;
+
+  console.log("\nbuild-size-check: source media category caps");
+  for (const r of status.results) {
+    const biggest = r.largest[0];
+    const biggestText = biggest ? `${fmtMB(biggest.bytes)} ${biggest.path}` : "no files";
+    const fileFlag = r.overFiles.length ? "  <= file cap" : "";
+    const totalFlag = r.totalOver ? "  <= total cap" : "";
+    console.log(
+      `    ${r.group.padEnd(21)} ${fmtMB(r.total).padStart(10)} / ${fmtMB(r.maxTotalBytes).padStart(10)} ` +
+        `(${r.count} files; largest ${biggestText})${fileFlag}${totalFlag}`
+    );
+  }
+
+  if (!status.violations.length) return false;
+
+  console.log("\nSource media category cap(s) EXCEEDED:");
+  for (const r of status.violations) {
+    if (!r.count) {
+      console.log(`  XX ${r.group}: no files matched its art-budget category cap.`);
+    }
+    for (const file of r.overFiles) {
+      console.log(
+        `  XX ${r.group}: ${file.path} is ${fmtMB(file.bytes)} ` +
+          `(cap ${fmtMB(r.maxFileBytes)})`
+      );
+    }
+    if (r.totalOver) {
+      console.log(
+        `  XX ${r.group}: total ${fmtMB(r.total)} exceeds cap ${fmtMB(r.maxTotalBytes)}`
+      );
+    }
+  }
+  return true;
+}
+
 function snapshot() {
   ensureBuild();
   const chunks = collectChunks();
@@ -127,7 +238,8 @@ function writeBaseline(snap) {
       "hash-stripped chunk names (bytes); `assets` is the copied media payload " +
       "(bytes) grouped by top-level dir. Regenerate with `npm run size:baseline` " +
       `after an intentional size change. Threshold: ${THRESHOLD_PCT}% per chunk ` +
-      `(and ${FLOOR_BYTES}B floor) and ${THRESHOLD_PCT}% per total.`,
+      `(and ${FLOOR_BYTES}B floor) and ${THRESHOLD_PCT}% per total. Source media ` +
+      "category caps live in tools/art-budget.json and cannot be re-baselined here.",
     thresholdPct: THRESHOLD_PCT,
     floorBytes: FLOOR_BYTES,
     generated: new Date().toISOString().slice(0, 10),
@@ -153,8 +265,13 @@ function writeBaseline(snap) {
 }
 
 const snap = snapshot();
+const categoryCapStatus = collectCategoryCapStatus();
 
 if (update) {
+  if (reportCategoryCaps(categoryCapStatus)) {
+    console.log("\nbuild-size-check: refusing to write a baseline while source media category caps fail.");
+    process.exit(1);
+  }
   writeBaseline(snap);
   process.exit(0);
 }
@@ -238,8 +355,10 @@ if (oversized.length) {
   for (const a of oversized) console.log(`  !  ${fmtMB(a.bytes).padStart(10)}  ${a.path}`);
 }
 
+const categoryCapFailed = reportCategoryCaps(categoryCapStatus);
+
 // ── verdict ─────────────────────────────────────────────────────────────────
-if (chunkRegressions.length || codeTotalRegressed || assetRegressed) {
+if (chunkRegressions.length || codeTotalRegressed || assetRegressed || categoryCapFailed) {
   failed = true;
   console.log("\nSize budget EXCEEDED:");
   for (const r of chunkRegressions.sort((a, b) => b.delta - a.delta)) {
@@ -254,12 +373,16 @@ if (chunkRegressions.length || codeTotalRegressed || assetRegressed) {
   if (assetRegressed) {
     console.log(`  XX assets total: +${fmtMB(assetDelta)} (+${pct(assetDelta, assetBaseTotal).toFixed(1)}% > ${THRESHOLD_PCT}%)`);
   }
+  if (categoryCapFailed) {
+    console.log("  XX source media category caps: see details above");
+  }
   console.log(
     "\nIf this growth is intended, re-baseline with `npm run size:baseline` " +
-      "and commit tools/build-size-baseline.json."
+      "and commit tools/build-size-baseline.json. Category cap failures must be fixed " +
+      "or intentionally adjusted in tools/art-budget.json."
   );
 }
 
 if (failed) process.exit(1);
-console.log("\nbuild-size-check: OK — code + assets within budget.");
+console.log("\nbuild-size-check: OK — code + assets + source media within budget.");
 process.exit(0);

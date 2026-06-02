@@ -30,7 +30,7 @@ background paintings that live elsewhere in the repository:
 | File | License | Source / Author |
 |---|---|---|
 | `images/story-mode/haven/frostwood-vn.png` | CC0 | OpenGameArt — see `images/story-mode/CREDITS.md`. |
-| `images/story-mode/zombie/rot-city-vn.png` | CC0 | OpenGameArt — see `images/story-mode/CREDITS.md`. |
+| `images/story-mode/zombie/rot-city-vn.webp` | CC0 | OpenGameArt — see `images/story-mode/CREDITS.md`. |
 
 These backdrops are pulled in as `background-image` for:
 

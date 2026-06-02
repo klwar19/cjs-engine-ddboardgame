@@ -336,7 +336,7 @@
       "lockedParameters": {
         "Param106": 1
       },
-      "backgroundImage": "assets/live2d/peri-v2/background.png",
+      "backgroundImage": "assets/live2d/peri-v2/background.webp",
       "backgroundFit": "cover",
       "backgroundPosition": "center",
       "expressionSets": {

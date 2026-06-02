@@ -1,24 +1,24 @@
 {
-  "_note": "Phase I.6 art budget — the SINGLE SOURCE OF TRUTH for the curated set of oversized images that get downscaled in place. `tools/optimize-art.py` reads this to shrink them (idempotently: only files whose long edge exceeds `maxEdge` are touched); `test_art_budget.js` reads it to GUARD that they stay within budget (a re-added HD asset fails CI). Only deliberately-chosen, safe-to-downscale art is listed — NOT sprite sheets / tile atlases (hardcoded pixel cells) or .moc3 rig data. `maxEdge` is the cap on the longer image dimension in px; aspect ratio is preserved.",
+  "_note": "Art budget is the single source of truth for curated image downscale targets and source media category caps. `tools/optimize-art.py` uses `targets` to cap image dimensions; `test_art_budget.js` and `npm run size:check` use this file to stop oversized media from creeping back in. Do not list sprite sheets, tile atlases, or Live2D .moc3 rigs as image downscale targets unless the renderer has been audited for that format/size change.",
   "tolerancePx": 2,
   "targets": [
     {
       "group": "live2d-texture",
       "glob": "assets/live2d/peri/*/texture_*.png",
       "maxEdge": 2048,
-      "note": "peri model texture — was a single 8192px / 23 MB atlas (the plan's headline mistake). Live2D Cubism samples by NORMALIZED UVs, so downscaling the texture uniformly only lowers resolution; the rig (.moc3) is untouched."
+      "note": "Peri model texture. Live2D Cubism samples by normalized UVs, so uniform downscaling only lowers texture resolution; the rig is untouched."
     },
     {
       "group": "live2d-texture",
       "glob": "assets/live2d/peri-v2/*/texture_*.png",
       "maxEdge": 2048,
-      "note": "peri-v2 model — 19 textures at 4096px (~53 MB) for an avatar rendered at scale 0.12. 2048px is ample; normalized UVs make this safe."
+      "note": "Peri v2 model textures. 2048px is ample for the current companion scale; normalized UVs make this safe."
     },
     {
       "group": "live2d-background",
-      "path": "assets/live2d/peri-v2/background.png",
+      "path": "assets/live2d/peri-v2/background.webp",
       "maxEdge": 1920,
-      "note": "Companion scene backdrop — a plain background image, not a UV texture."
+      "note": "Companion scene backdrop. This is a plain opaque background image, not a UV texture."
     },
 
     { "group": "portrait", "path": "images/characters/bin.png", "maxEdge": 1280 },
@@ -29,13 +29,80 @@
     { "group": "portrait", "path": "images/characters/haven_bowy.png", "maxEdge": 1280 },
     { "group": "portrait", "path": "images/characters/haven_garr.png", "maxEdge": 1280 },
     { "group": "portrait", "path": "images/characters/haven_mitia.png", "maxEdge": 1280 },
-    { "group": "portrait", "path": "images/characters/zombie_burnice.png", "maxEdge": 1024,
-      "note": "Square 1254px / 2.5 MB portrait — well above what the VN (≤~850px) or roster (200×240) ever shows." },
+    {
+      "group": "portrait",
+      "path": "images/characters/zombie_burnice.png",
+      "maxEdge": 1024,
+      "note": "Square portrait shown far smaller in VN/roster contexts."
+    },
 
-    { "group": "background", "path": "images/story-mode/bazaar/bazaar-theme.png", "maxEdge": 1920 },
+    { "group": "background", "path": "images/story-mode/bazaar/bazaar-theme.webp", "maxEdge": 1920 },
     { "group": "background", "path": "images/story-mode/bazaar/gavel-market-vn.jpg", "maxEdge": 1920 },
-    { "group": "background", "path": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png", "maxEdge": 1920,
-      "note": "Doubles as the zombie world-gate banner — downscaling it lightens the world-select screen too." },
-    { "group": "background", "path": "images/story-mode/zombie/rot-city-vn.png", "maxEdge": 1920 }
+    {
+      "group": "background",
+      "path": "images/story-mode/zombie/zombie-bin-burnice-horizontal.webp",
+      "maxEdge": 1920,
+      "note": "Also serves as the zombie world-gate banner."
+    },
+    { "group": "background", "path": "images/story-mode/zombie/rot-city-vn.webp", "maxEdge": 1920 },
+    { "group": "background", "path": "images/story-mode/earth/earth-map.webp", "maxEdge": 1920 }
+  ],
+  "categoryCaps": [
+    {
+      "group": "story-backgrounds",
+      "pathPrefix": "images/story-mode/",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"],
+      "maxFileBytes": 900000,
+      "maxTotalBytes": 4000000,
+      "note": "World gate banners, VN backdrops, and visual travel-map art should stay web-friendly."
+    },
+    {
+      "group": "character-portraits",
+      "pathPrefix": "images/characters/",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"],
+      "maxFileBytes": 2500000,
+      "maxTotalBytes": 25000000,
+      "note": "Portraits may remain PNG when authored for alpha/focus workflows, but HD exports should not return."
+    },
+    {
+      "group": "live2d-models",
+      "pathPrefix": "assets/live2d/",
+      "extensions": [".moc3", ".model3.json", ".json", ".png", ".webp"],
+      "maxFileBytes": 25000000,
+      "maxTotalBytes": 50000000,
+      "note": "Live2D rigs/textures are intentionally larger; cap the category instead of re-encoding rig files."
+    },
+    {
+      "group": "combat-atlases",
+      "pathPrefix": "assets/combat/",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"],
+      "maxFileBytes": 3300000,
+      "maxTotalBytes": 3500000,
+      "note": "Tile atlas pixel cells are renderer-dependent; optimize only after a grid-renderer audit."
+    },
+    {
+      "group": "icon-sheets",
+      "pathPrefix": "assets/icons/",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"],
+      "maxFileBytes": 3300000,
+      "maxTotalBytes": 5500000,
+      "note": "Loose skill/passive icon art may grow, but sheets should stay bounded."
+    },
+    {
+      "group": "story-video-banners",
+      "pathPrefix": "assets/videos/story-mode/banners/",
+      "extensions": [".mp4", ".webm", ".ogv"],
+      "maxFileBytes": 2700000,
+      "maxTotalBytes": 5000000,
+      "note": "Story banners are loaded in campaign story surfaces; new clips need compression."
+    },
+    {
+      "group": "bgm",
+      "pathPrefix": "audio/bgm/",
+      "extensions": [".mp3", ".ogg", ".wav"],
+      "maxFileBytes": 2600000,
+      "maxTotalBytes": 4000000,
+      "note": "BGM is runtime media and should stay deliberate."
+    }
   ]
 }

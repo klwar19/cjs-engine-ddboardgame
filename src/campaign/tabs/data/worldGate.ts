@@ -101,7 +101,7 @@ const WORLD_MENU_DEFS: Readonly<Record<string, WorldMenuDef>> = {
     summary:
       "Zombie world loads the Last Light visual ruined-city map, scavenging tasks, safehouse building, medical salvage, and future survival pressure events.",
     features: ["Story", "Ruined city map", "Scavenge", "Build"],
-    bannerImage: "images/story-mode/zombie/zombie-bin-burnice-horizontal.png",
+    bannerImage: "images/story-mode/zombie/zombie-bin-burnice-horizontal.webp",
     defaultMode: "activities",
     defaultTab: "worldMap",
     openLabel: "Open Zombie Map",
@@ -114,7 +114,7 @@ const WORLD_MENU_DEFS: Readonly<Record<string, WorldMenuDef>> = {
     summary:
       "Bazaar loads optional activity systems first: arena matches, auction lots, prize boards, and future economy experiments.",
     features: ["Arena", "Auction House", "Prize Board", "Rewards"],
-    bannerImage: "images/story-mode/bazaar/bazaar-theme.png",
+    bannerImage: "images/story-mode/bazaar/bazaar-theme.webp",
     defaultMode: "activities",
     defaultTab: "worldMap",
     openLabel: "Open Bazaar",

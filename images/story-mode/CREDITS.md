@@ -17,7 +17,7 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 - Intended use: Earth overall story/event/activity theme backdrop
 - Original file: `C:\Users\klwar\Desktop\earth.webp`
 
-- `earth/earth-map.png`
+- `earth/earth-map.webp`
 - Source: user-provided project asset
 - Intended use: Earth/Zhonghai clickable travel-map backdrop
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\map_earth.png`
@@ -31,12 +31,12 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 
 ## Zombie
 
-- `zombie/zombie-bin-burnice-horizontal.png`
+- `zombie/zombie-bin-burnice-horizontal.webp`
 - Source: user-provided project asset
 - Intended use: Zombie World theme/banner backdrop
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\zombie_bin and burnice_horizontal.png`
 
-- `zombie/rot-city-vn.png`
+- `zombie/rot-city-vn.webp`
 - Source: "Abandon City Seamless Background" by acasas on OpenGameArt
 - License: CC0
 - Original file used: `Background city Seamless.png` from `Abandon-City-Background-TheGameAssetsMine.com-.zip`
@@ -44,7 +44,7 @@ These files are intentionally replaceable Story Mode backdrop slots. Future gene
 
 ## Bazaar
 
-- `bazaar/bazaar-theme.png`
+- `bazaar/bazaar-theme.webp`
 - User-provided project asset.
 - Original file: `C:\Users\klwar\Desktop\tai lieu nhap hoc sp\CJS\pic and vid\bazaar.png`
 

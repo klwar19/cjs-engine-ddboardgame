@@ -17,7 +17,7 @@
       "canvas": { "width": 760, "height": 380 },
       "visualMode": "vn_travel",
       "visualTheme": { "id": "earth", "mood": "warm_city_evening" },
-      "visualBackdrop": "images/story-mode/earth/earth-map.png?v=earth-map-v3-20260521",
+      "visualBackdrop": "images/story-mode/earth/earth-map.webp?v=earth-map-v3-20260601",
       "visualBackdropFit": "none",
       "visualMarkerScale": 0.42,
       "visualActiveMarkerScale": 0.48,

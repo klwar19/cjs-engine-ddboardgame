@@ -4,9 +4,10 @@
 // asserts every budgeted image is within its `maxEdge` cap — so a re-added or
 // re-exported HD asset (the 8192px texture / 9 MB portrait class of mistake)
 // fails here instead of silently re-bloating the payload. Dimensions are read
-// straight from the PNG/JPEG headers (no Pillow at test time), so this runs in
-// plain `npm test` / CI. The image bytes are also sanity-checked (a corrupt
-// re-encode would yield no parseable header).
+// straight from PNG/JPEG/WebP headers (no Pillow at test time), so this runs in
+// plain `npm test` / CI. Category caps are checked here too, independent of a
+// production build, while `npm run size:check` enforces the same caps alongside
+// the built payload budget.
 //
 // Run: node test_art_budget.js
 
@@ -55,11 +56,55 @@ function jpegDims(buf) {
   }
   return null;
 }
+function webpDims(buf) {
+  if (
+    buf.length < 30 ||
+    buf.toString('ascii', 0, 4) !== 'RIFF' ||
+    buf.toString('ascii', 8, 12) !== 'WEBP'
+  ) {
+    return null;
+  }
+  let i = 12;
+  while (i + 8 <= buf.length) {
+    const fourcc = buf.toString('ascii', i, i + 4);
+    const size = buf.readUInt32LE(i + 4);
+    const data = i + 8;
+    if (data + size > buf.length) return null;
+    if (fourcc === 'VP8X' && size >= 10) {
+      return {
+        w: 1 + buf.readUIntLE(data + 4, 3),
+        h: 1 + buf.readUIntLE(data + 7, 3)
+      };
+    }
+    if (fourcc === 'VP8L' && size >= 5 && buf[data] === 0x2f) {
+      const bits = buf.readUInt32LE(data + 1);
+      return {
+        w: 1 + (bits & 0x3fff),
+        h: 1 + ((bits >> 14) & 0x3fff)
+      };
+    }
+    if (
+      fourcc === 'VP8 ' &&
+      size >= 10 &&
+      buf[data + 3] === 0x9d &&
+      buf[data + 4] === 0x01 &&
+      buf[data + 5] === 0x2a
+    ) {
+      return {
+        w: buf.readUInt16LE(data + 6) & 0x3fff,
+        h: buf.readUInt16LE(data + 8) & 0x3fff
+      };
+    }
+    i = data + size + (size % 2);
+  }
+  return null;
+}
 function readDims(file) {
   const buf = fs.readFileSync(file);
   const ext = path.extname(file).toLowerCase();
   if (ext === '.png') return pngDims(buf);
   if (ext === '.jpg' || ext === '.jpeg') return jpegDims(buf);
+  if (ext === '.webp') return webpDims(buf);
   return null;
 }
 
@@ -103,6 +148,33 @@ function resolveTarget(target) {
   return [];
 }
 
+const SKIP_SOURCE_DIRS = new Set(['.git', 'dist', 'node_modules', 'tmp']);
+
+function walkSourceFiles(dir = ROOT, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const abs = path.join(dir, entry.name);
+    const rel = path.relative(ROOT, abs);
+    const first = rel.split(path.sep)[0];
+    if (SKIP_SOURCE_DIRS.has(first)) continue;
+    if (entry.isDirectory()) {
+      walkSourceFiles(abs, out);
+    } else if (entry.isFile()) {
+      out.push(abs);
+    }
+  }
+  return out;
+}
+
+function matchesCategoryCap(rel, cap) {
+  const normalized = rel.split(path.sep).join('/');
+  const prefix = String(cap.pathPrefix || '');
+  if (!prefix || !normalized.startsWith(prefix)) return false;
+  const extensions = Array.isArray(cap.extensions) ? cap.extensions : [];
+  if (!extensions.length) return true;
+  const lower = normalized.toLowerCase();
+  return extensions.some((ext) => lower.endsWith(String(ext).toLowerCase()));
+}
+
 // ── run ─────────────────────────────────────────────────────────────────────
 console.log('Art-budget guard (Phase I.6)');
 
@@ -129,7 +201,7 @@ for (const target of budget.targets) {
     const rel = path.relative(ROOT, file);
     const dims = readDims(file);
     if (!dims) {
-      ok(`readable image header: ${rel}`, false, 'no parseable PNG/JPEG header (corrupt?)');
+      ok(`readable image header: ${rel}`, false, 'no parseable PNG/JPEG/WebP header (corrupt?)');
       continue;
     }
     const longEdge = Math.max(dims.w, dims.h);
@@ -137,6 +209,45 @@ for (const target of budget.targets) {
     if (!within) worstOver = Math.max(worstOver, longEdge - target.maxEdge);
     ok(`within ${target.maxEdge}px cap: ${rel}`, within, `${dims.w}x${dims.h}`);
   }
+}
+
+const categoryCaps = Array.isArray(budget.categoryCaps) ? budget.categoryCaps : [];
+ok('budget has categoryCaps array', categoryCaps.length > 0);
+const sourceFiles = categoryCaps.length ? walkSourceFiles() : [];
+
+for (const cap of categoryCaps) {
+  const label = cap.group || cap.pathPrefix || '?';
+  ok(`category cap has a group: ${label}`, typeof cap.group === 'string' && cap.group.length > 0);
+  ok(`category cap has a pathPrefix: ${label}`, typeof cap.pathPrefix === 'string' && cap.pathPrefix.length > 0);
+  ok(`category cap has extensions: ${label}`, Array.isArray(cap.extensions) && cap.extensions.length > 0);
+  ok(
+    `category cap has a positive maxFileBytes: ${label}`,
+    Number.isFinite(cap.maxFileBytes) && cap.maxFileBytes > 0
+  );
+  ok(
+    `category cap has a positive maxTotalBytes: ${label}`,
+    Number.isFinite(cap.maxTotalBytes) && cap.maxTotalBytes > 0
+  );
+
+  const files = sourceFiles.filter((file) => matchesCategoryCap(path.relative(ROOT, file), cap));
+  ok(`category cap resolves files: ${label}`, files.length > 0, `${files.length} file(s)`);
+  const sized = files.map((file) => ({ file, bytes: fs.statSync(file).size }));
+  const total = sized.reduce((sum, entry) => sum + entry.bytes, 0);
+  const overFiles = sized
+    .filter((entry) => entry.bytes > cap.maxFileBytes)
+    .sort((a, b) => b.bytes - a.bytes);
+  ok(
+    `category file-size cap: ${label}`,
+    overFiles.length === 0,
+    overFiles.length
+      ? overFiles.slice(0, 3).map((entry) => `${path.relative(ROOT, entry.file)} ${(entry.bytes / 1048576).toFixed(2)} MB`).join('; ')
+      : `${files.length} file(s)`
+  );
+  ok(
+    `category total-size cap: ${label}`,
+    total <= cap.maxTotalBytes,
+    `${(total / 1048576).toFixed(2)} MB / ${(cap.maxTotalBytes / 1048576).toFixed(2)} MB`
+  );
 }
 
 console.log('');

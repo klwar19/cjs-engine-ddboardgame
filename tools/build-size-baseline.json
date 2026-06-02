@@ -1,15 +1,15 @@
 {
-  "_note": "Build size budget for tools/build-size-check.mjs. `code.chunks` keys are hash-stripped chunk names (bytes); `assets` is the copied media payload (bytes) grouped by top-level dir. Regenerate with `npm run size:baseline` after an intentional size change. Threshold: 5% per chunk (and 1024B floor) and 5% per total.",
+  "_note": "Build size budget for tools/build-size-check.mjs. `code.chunks` keys are hash-stripped chunk names (bytes); `assets` is the copied media payload (bytes) grouped by top-level dir. Regenerate with `npm run size:baseline` after an intentional size change. Threshold: 5% per chunk (and 1024B floor) and 5% per total. Source media category caps live in tools/art-budget.json and cannot be re-baselined here.",
   "thresholdPct": 5,
   "floorBytes": 1024,
   "generated": "2026-06-01",
   "code": {
-    "total": 2953461,
+    "total": 2954466,
     "chunks": {
       "animation-bus.js": 509,
       "AudioLibrary.js": 6361,
-      "campaign.css": 554743,
-      "campaign.js": 288214,
+      "campaign.css": 554745,
+      "campaign.js": 288295,
       "CampaignEditor.js": 7121,
       "CampaignEventLogTab.js": 4650,
       "CampaignEventTab.js": 6167,
@@ -41,7 +41,7 @@
       "cjs-combat.js": 108734,
       "cjs-core.js": 103208,
       "cjs-effects.js": 30072,
-      "cjs-grid.js": 39504,
+      "cjs-grid.js": 39679,
       "cjs-media.js": 32436,
       "cjs-minigames.js": 47779,
       "cjs-persistence.js": 5916,
@@ -49,17 +49,17 @@
       "cjs-services.js": 16211,
       "cjs.js": 1044,
       "combat.css": 290991,
-      "combat.js": 95036,
+      "combat.js": 95241,
       "cui-utils.js": 1890,
       "DataBrowser.js": 6811,
       "editor.js": 28398,
       "EffectEditor.js": 25964,
-      "embed.js": 926,
+      "embed.js": 1139,
       "EncounterEditor.js": 14569,
       "hooks.js": 351,
       "hub.js": 8236,
-      "index.css": 6582,
-      "index.js": 8053,
+      "index.css": 6638,
+      "index.js": 8326,
       "ItemEditor.js": 11715,
       "JobEditor.js": 11604,
       "launcherVisibility.js": 745,
@@ -93,30 +93,18 @@
     }
   },
   "assets": {
-    "total": 132937910,
+    "total": 113937926,
     "groups": {
-      "assets": 84508704,
+      "assets": 78245056,
       "audio": 5618959,
-      "data": 1696745,
+      "data": 1697018,
       "icon.svg": 1083,
-      "images": 41112419
+      "images": 28375810
     },
     "largest": [
       {
         "path": "assets/live2d/peri-v2/ｷﾛﾉｫﾐ｡ﾌ・ｹ.moc3",
         "bytes": 23536000
-      },
-      {
-        "path": "images/story-mode/bazaar/bazaar-theme.png",
-        "bytes": 4470846
-      },
-      {
-        "path": "images/story-mode/zombie/zombie-bin-burnice-horizontal.png",
-        "bytes": 4058985
-      },
-      {
-        "path": "assets/live2d/peri-v2/background.png",
-        "bytes": 3912463
       },
       {
         "path": "assets/icons/bowy/bowy_skill_passive_sheet.png",
@@ -125,18 +113,6 @@
       {
         "path": "assets/combat/combat_tile_atlas.png",
         "bytes": 2972907
-      },
-      {
-        "path": "images/story-mode/earth/earth-map.png",
-        "bytes": 2783548
-      },
-      {
-        "path": "assets/rot-city-vn-BtO-AQyu.png",
-        "bytes": 2721808
-      },
-      {
-        "path": "images/story-mode/zombie/rot-city-vn.png",
-        "bytes": 2721808
       },
       {
         "path": "assets/videos/story-mode/banners/3 fìght chimera_reduced.mp4",
@@ -161,6 +137,30 @@
       {
         "path": "assets/live2d/peri/mianyin.moc3",
         "bytes": 1994560
+      },
+      {
+        "path": "images/characters/haven_bowy.png",
+        "bytes": 1983245
+      },
+      {
+        "path": "images/characters/zombie_burnice.png",
+        "bytes": 1817615
+      },
+      {
+        "path": "assets/live2d/peri-v2/ｷﾛﾉｫﾐ｡ﾌ・ｹ.4096/texture_07.png",
+        "bytes": 1792089
+      },
+      {
+        "path": "assets/shadow_stalker-CDGt5xHC.png",
+        "bytes": 1749557
+      },
+      {
+        "path": "images/characters/shadow_mask_move_sheet_v2.png",
+        "bytes": 1749557
+      },
+      {
+        "path": "images/monsters/shadow_stalker.png",
+        "bytes": 1749557
       }
     ]
   }

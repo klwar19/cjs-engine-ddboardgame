@@ -4,8 +4,9 @@
 Shrinks the curated set of oversized images listed in tools/art-budget.json by
 capping each one's longer edge (aspect preserved) and re-encoding it IN PLACE,
 keeping the same path + format so no `<img>` / CSS / data-JSON / live2d
-reference has to change. Idempotent: a file already within its `maxEdge` is
-left untouched, so re-running is a no-op and never compounds quality loss.
+reference has to change. Supports PNG, JPEG, and WebP. Idempotent: a file
+already within its `maxEdge` is left untouched, so re-running is a no-op and
+never compounds quality loss.
 
 Only deliberately-chosen art is in the budget — character portraits, story-mode
 backgrounds, and live2d textures (Cubism samples textures by NORMALIZED UVs, so
@@ -73,7 +74,7 @@ def downscale(path, max_edge):
     with Image.open(path) as im:
         im.load()
         w, h = im.size
-        fmt = im.format  # "PNG" / "JPEG" — preserve it
+        fmt = im.format  # "PNG" / "JPEG" / "WEBP" — preserve it
         long_edge = max(w, h)
         if long_edge <= max_edge:
             return (False, before, before, f"within cap ({w}x{h})")
@@ -98,6 +99,10 @@ def downscale(path, max_edge):
             if resized.mode in ("RGBA", "P", "LA"):
                 resized = resized.convert("RGB")
             save_kwargs = {"quality": 85, "optimize": True, "progressive": True}
+        elif fmt == "WEBP":
+            if resized.mode == "P":
+                resized = resized.convert("RGBA")
+            save_kwargs = {"quality": 84, "method": 6}
 
         # Re-encode in place, same format + path. No metadata carried over.
         resized.save(path, format=fmt, **save_kwargs)

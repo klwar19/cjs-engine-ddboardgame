@@ -66,7 +66,7 @@ function pickGridThemeImage(
     setting.includes("rot") ||
     setting.includes("city")
   ) {
-    return "images/story-mode/zombie/rot-city-vn.png";
+    return "images/story-mode/zombie/rot-city-vn.webp";
   }
   return "";
 }
