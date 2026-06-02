@@ -12,6 +12,7 @@
 
 import { label, cssVarAssetUrl } from "../../util/cui-utils";
 import { formatLogTime } from "../../util/cui-log";
+import { worldThemeHomeBackdrop } from "./worldThemeAssets";
 import type { CampaignStateSnapshot } from "../../store";
 
 export interface EventLogEntry {
@@ -49,7 +50,9 @@ interface CampaignStateForEventLog {
 
 interface CampaignStateModule {
   readonly getCurrentWorld?: () => {
+    readonly id?: string;
     readonly storyModeTheme?: {
+      readonly id?: string;
       readonly homeBackdrop?: string;
       readonly bannerImage?: string;
       readonly backdrop?: string;
@@ -71,7 +74,7 @@ function cjs(): Cjs {
 function worldHomeBackdropUrl(): string | null {
   const world = cjs().CampaignState?.getCurrentWorld?.() || {};
   const theme = world.storyModeTheme || {};
-  const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || "";
+  const backdrop = worldThemeHomeBackdrop(world.id || theme.id || "", theme);
   if (!backdrop) return null;
   return cssVarAssetUrl(backdrop);
 }

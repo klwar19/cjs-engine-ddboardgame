@@ -6,6 +6,7 @@
 // `getStoryHomeData` and `getStoryDirectorData` consume them.
 
 import { cssVarAssetUrl } from "../../util/cui-utils";
+import { normalizeWorldThemeImage, worldThemeBannerImage } from "./worldThemeAssets";
 import type { CampaignActionName } from "../../actionNames";
 
 export interface StoryActionButton {
@@ -88,12 +89,12 @@ function cjs(): StoryCjs {
 export function storyTheme(state: CampaignStateForTheme = {}): StoryTheme {
   const world = cjs().CampaignState?.getCurrentWorld?.() || {};
   const cfg = world.storyModeTheme || {};
-  const currentWorld = state.currentWorld || world.id || "";
+  const currentWorld = state.currentWorld || world.id || cfg.id || "";
   return {
     id: cfg.id || "default",
     className: cfg.className || "",
-    backdrop: cfg.backdrop || "",
-    bannerImage: cfg.bannerImage || cfg.backdrop || "",
+    backdrop: normalizeWorldThemeImage(currentWorld, cfg.backdrop || ""),
+    bannerImage: worldThemeBannerImage(currentWorld, cfg),
     bannerVideo:
       cfg.bannerVideo ||
       (currentWorld === "haven"

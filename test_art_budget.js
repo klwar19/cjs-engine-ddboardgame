@@ -302,8 +302,55 @@ ok(
   !/^\s+bannerImage:\s*["']/m.test(worldGateSource)
 );
 ok(
-  'World Gate prefers metadata banner art before code fallbacks',
-  /world\.storyModeTheme\?\.bannerImage\s*\|\|\s*world\.storyModeTheme\?\.backdrop\s*\|\|\s*def\.bannerImage/.test(worldGateSource)
+  'World Gate resolves metadata banner art through the world theme helper',
+  /worldThemeBannerImage\(worldId,\s*world\.storyModeTheme\)\s*\|\|\s*def\.bannerImage/.test(worldGateSource)
+);
+
+const worldThemeAssetSource = fs.readFileSync(
+  path.join(ROOT, 'src/campaign/tabs/data/worldThemeAssets.ts'),
+  'utf8'
+);
+ok(
+  'world theme resolver repairs legacy Earth static theme art',
+  /earth\|images\/story-mode\/earth\/earth-theme\.webp[\s\S]+images\/story-mode\/earth\/earth-map\.webp/.test(worldThemeAssetSource)
+);
+ok(
+  'world theme resolver strips cache suffixes before alias lookup',
+  /split\("\?"\)[\s\S]+split\("#"\)/.test(worldThemeAssetSource)
+);
+
+const storySharedSource = fs.readFileSync(path.join(ROOT, 'src/campaign/tabs/data/storyShared.ts'), 'utf8');
+ok(
+  'Story theme normalizes stale backdrop paths',
+  /normalizeWorldThemeImage\(currentWorld,\s*cfg\.backdrop/.test(storySharedSource)
+);
+ok(
+  'Story theme resolves banner art through the world theme helper',
+  /worldThemeBannerImage\(currentWorld,\s*cfg\)/.test(storySharedSource)
+);
+
+const eventLogSource = fs.readFileSync(path.join(ROOT, 'src/campaign/tabs/data/eventLog.ts'), 'utf8');
+ok(
+  'Event hero resolves world backdrop through the world theme helper',
+  /worldThemeHomeBackdrop\(world\.id\s*\|\|\s*theme\.id/.test(eventLogSource)
+);
+
+const zombieSource = fs.readFileSync(path.join(ROOT, 'src/campaign/tabs/data/zombie.ts'), 'utf8');
+ok(
+  'Zombie scavenge hero resolves world backdrop through the world theme helper',
+  /worldThemeHomeBackdrop\(world\.id\s*\|\|\s*theme\.id/.test(zombieSource)
+);
+
+const worldMapSource = fs.readFileSync(path.join(ROOT, 'js/campaign/campaign-world-map.js'), 'utf8');
+ok(
+  'legacy travel-map fallback repairs stale Earth theme art',
+  /_worldThemeImage\(\s*worldId,\s*map\.visualBackdrop/.test(worldMapSource)
+);
+
+const storyScenesSource = fs.readFileSync(path.join(ROOT, 'js/campaign/campaign-story-scenes.js'), 'utf8');
+ok(
+  'legacy VN scene fallback repairs stale Earth theme art',
+  /_worldThemeImage\(worldId,\s*world\?\.storyModeTheme\?\.backdrop/.test(storyScenesSource)
 );
 
 console.log('');

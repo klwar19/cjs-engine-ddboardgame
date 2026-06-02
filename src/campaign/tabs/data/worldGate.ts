@@ -10,6 +10,7 @@
 import { cssVarAssetUrl, label } from "../../util/cui-utils";
 import { worldOptions } from "../../util/cui-options";
 import { modeForTab } from "../../chrome-state";
+import { worldThemeBannerImage } from "./worldThemeAssets";
 import type { CampaignStateSnapshot } from "../../store";
 import type { CampaignActionName } from "../../actionNames";
 
@@ -213,8 +214,7 @@ function worldGateCardData(
 ): WorldGateCardEntry {
   const def = worldMenuDef(worldId);
   const isCurrent = worldId === state.currentWorld;
-  const bannerImage =
-    world.storyModeTheme?.bannerImage || world.storyModeTheme?.backdrop || def.bannerImage || "";
+  const bannerImage = worldThemeBannerImage(worldId, world.storyModeTheme) || def.bannerImage || "";
   const bannerImageUrl = bannerImage ? String(cssVarAssetUrl(bannerImage) || bannerImage) : "";
   const ds = cjs().DataStore;
   const maps = (ds?.getAllAsArray?.("travelMaps") || []) as readonly TravelMap[];

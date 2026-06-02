@@ -937,7 +937,17 @@ window.CJS.CampaignStoryScenes = (() => {
 
   function _storyThemeBackdrop() {
     const world = CS().getCurrentWorld?.();
-    return world?.storyModeTheme?.backdrop || '';
+    const worldId = world?.id || world?.storyModeTheme?.id || '';
+    return _worldThemeImage(worldId, world?.storyModeTheme?.backdrop || '');
+  }
+
+  function _worldThemeImage(worldId, path = '') {
+    const text = String(path || '').trim();
+    const clean = text.split('?')[0].split('#')[0].replace(/^\.?\//, '').toLowerCase();
+    if (String(worldId || '').toLowerCase() === 'earth' && clean === 'images/story-mode/earth/earth-theme.webp') {
+      return 'images/story-mode/earth/earth-map.webp';
+    }
+    return text;
   }
 
   function _lineStyle(line = {}) {

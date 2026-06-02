@@ -10,6 +10,7 @@
 import { cssVarAssetUrl } from "../../util/cui-utils";
 import { isQuestResolved, type QuestLike } from "../../util/state-helpers";
 import { getQuestRowData, type QuestRowData, type QuestRowInput } from "./questRow";
+import { worldThemeHomeBackdrop } from "./worldThemeAssets";
 
 export interface WorldActivityPreview {
   readonly id: string;
@@ -63,7 +64,9 @@ function cjs(): ZombieCjs {
 }
 
 interface CurrentWorld {
+  readonly id?: string;
   readonly storyModeTheme?: {
+    readonly id?: string;
     readonly homeBackdrop?: string;
     readonly bannerImage?: string;
     readonly backdrop?: string;
@@ -133,7 +136,7 @@ export function getZombieScavengeHomeData(state: ZombieStateShape): ZombieScaven
     .filter((pressure) => String(pressure.id || "").startsWith("zombie_"));
   const world = cjs().CampaignState?.getCurrentWorld?.() || {};
   const theme = world.storyModeTheme || {};
-  const backdrop = theme.homeBackdrop || theme.bannerImage || theme.backdrop || "";
+  const backdrop = worldThemeHomeBackdrop(world.id || theme.id || "", theme);
   return {
     scavengeCount: scavenge.length,
     buildCount: build.length,

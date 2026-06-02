@@ -403,7 +403,19 @@ window.CJS.CampaignWorldMap = (() => {
     const worldId = map.world || state.currentWorld || '';
     const world = DS().get('worlds', worldId) || {};
     const theme = world.storyModeTheme || {};
-    return map.visualBackdrop || theme.mapBackdrop || theme.homeBackdrop || theme.bannerImage || theme.backdrop || '';
+    return _worldThemeImage(
+      worldId,
+      map.visualBackdrop || theme.mapBackdrop || theme.homeBackdrop || theme.bannerImage || theme.backdrop || ''
+    );
+  }
+
+  function _worldThemeImage(worldId, path = '') {
+    const text = String(path || '').trim();
+    const clean = text.split('?')[0].split('#')[0].replace(/^\.?\//, '').toLowerCase();
+    if (String(worldId || '').toLowerCase() === 'earth' && clean === 'images/story-mode/earth/earth-theme.webp') {
+      return 'images/story-mode/earth/earth-map.webp';
+    }
+    return text;
   }
 
   function _assetUrlForCss(path = '') {
