@@ -86,6 +86,10 @@ function routeFor(rules, url) {
   }
   const { pwaManifest, workboxOptions } = mod;
   ok('pwa.config exports pwaManifest + workboxOptions', !!pwaManifest && !!workboxOptions);
+  ok('service worker activates updates immediately',
+     workboxOptions.skipWaiting === true && workboxOptions.clientsClaim === true);
+  ok('service worker cleans outdated precache entries',
+     workboxOptions.cleanupOutdatedCaches === true);
 
   // ── Manifest ──────────────────────────────────────────────────────────
   ok('manifest names the app', pwaManifest.name === 'CJS Engine');
@@ -166,10 +170,18 @@ function routeFor(rules, url) {
   ok('image runtime cache preserved', !!rc.find((r) => r.options && r.options.cacheName === 'cjs-images'));
   ok('audio runtime cache preserved', !!rc.find((r) => r.options && r.options.cacheName === 'cjs-audio'));
   ok('data (json) runtime cache preserved', !!rc.find((r) => r.options && r.options.cacheName === 'cjs-data'));
+  ok('mutable image cache is network-first to avoid stale art',
+     rc.find((r) => r.options && r.options.cacheName === 'cjs-images')?.handler === 'NetworkFirst');
+  ok('mutable video cache is network-first to avoid missing/stale banners',
+     rc.find((r) => r.options && r.options.cacheName === 'cjs-video')?.handler === 'NetworkFirst');
+  ok('manifest/data json is network-first to avoid stale world metadata',
+     rc.find((r) => r.options && r.options.cacheName === 'cjs-data')?.handler === 'NetworkFirst');
   ok('multi-page navigateFallback stays disabled', workboxOptions.navigateFallback === null);
   ok('embed/cachebust query params still ignored for precache matching',
      Array.isArray(workboxOptions.ignoreURLParametersMatching) &&
      workboxOptions.ignoreURLParametersMatching.length === 3);
+  ok('iframe cb query is NOT ignored so mode HTML bypasses stale precache',
+     !workboxOptions.ignoreURLParametersMatching.some((re) => re.test('cb')));
 
   console.log('');
   console.log('RESULTS: ' + pass + ' passed, ' + fail + ' failed');

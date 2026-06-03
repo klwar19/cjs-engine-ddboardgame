@@ -95,6 +95,12 @@ ok("appendLauncherEmbedFlag replaces stale embed and keeps hash",
    })());
 ok("buildIframeUrl uses appendLauncherEmbedFlag",
    modesMod.buildIframeUrl("campaign") === "campaign.html?embed=launcher");
+ok("buildIframeUrl propagates cache-bust stamps into iframes",
+   modesMod.buildIframeUrl("campaign", "abc123") === "campaign.html?embed=launcher&cb=abc123");
+ok("buildIframeUrl sanitizes cache-bust stamps",
+   modesMod.buildIframeUrl("combat", "bad value?!") === "combat.html?embed=launcher&cb=badvalue");
+ok("launcher cache-bust helper reads the loaded launcher chunk hash",
+   modes.includes("launcherCacheBustFromPage") && modes.includes("assets\\/index-"));
 
 ok("switching helper module exists", fs.existsSync(path.join(__dirname, "src/launcher/switching.ts")));
 ok("readModeHash accepts normal mode hashes", switchingMod.readModeHash("#campaign") === "campaign");

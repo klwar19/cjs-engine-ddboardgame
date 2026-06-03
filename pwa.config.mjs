@@ -93,6 +93,9 @@ const codeRuntimeCaching = [
 ];
 
 export const workboxOptions = {
+  skipWaiting: true,
+  clientsClaim: true,
+  cleanupOutdatedCaches: true,
   // This is a multi-page app, not an SPA. Disable the SPA navigation
   // fallback so an unmatched URL doesn't silently get served index.html —
   // that was making iframe requests like combat.html?embed=launcher render
@@ -116,9 +119,10 @@ export const workboxOptions = {
     ...codeRuntimeCaching,
     {
       urlPattern: /\.(?:png|jpg|jpeg|webp|gif)$/,
-      handler: "CacheFirst",
+      handler: "NetworkFirst",
       options: {
         cacheName: "cjs-images",
+        networkTimeoutSeconds: 8,
         expiration: { maxEntries: 200, maxAgeSeconds: THIRTY_DAYS }
       }
     },
@@ -132,16 +136,20 @@ export const workboxOptions = {
     },
     {
       urlPattern: /\.(?:mp4|webm)$/,
-      handler: "CacheFirst",
+      handler: "NetworkFirst",
       options: {
         cacheName: "cjs-video",
+        networkTimeoutSeconds: 10,
         expiration: { maxEntries: 30, maxAgeSeconds: THIRTY_DAYS }
       }
     },
     {
       urlPattern: /\.json$/,
-      handler: "StaleWhileRevalidate",
-      options: { cacheName: "cjs-data" }
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "cjs-data",
+        networkTimeoutSeconds: 6
+      }
     }
   ]
 };

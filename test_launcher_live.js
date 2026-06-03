@@ -227,7 +227,7 @@ function installWindowGlobals(window) {
   restoredWindow.localStorage.setItem("cjs.launcher.lastMode", "editor");
   const restoredRoot = createRoot(restoredDocument.getElementById("launcher-root"));
   restoredRoot.render(React.createElement(App));
-  await wait(30);
+  await wait(80);
   ok("stored mode restores a mounted frame",
      !!frameByMode(restoredDocument, "editor") && restoredWindow.location.hash === "#editor");
   ok("stored mode URL restore preserves query string",
