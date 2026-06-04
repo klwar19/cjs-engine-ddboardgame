@@ -70,7 +70,10 @@ import "./util/cui-utils";
 import "./util/cui-portraits";
 import "./util/cui-modals";
 import "./util/cui-options";
-import "./util/cui-controls";
+// cui-controls is a pure util now (purpose taxonomy + display-only inline
+// blurb) — no namespace to install — so it's pulled in via named imports by
+// the typed data builders (tabs/data/hub.ts, tabs/data/resultPanels.ts)
+// rather than eager-imported here.
 import "./util/cui-equipment";
 import "./util/cui-log";
 import "./util/cui-tabs-registry";

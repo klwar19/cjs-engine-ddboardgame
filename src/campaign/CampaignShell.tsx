@@ -12,14 +12,14 @@ import { useCampaignState, useCampaignSelector, type CampaignStateSnapshot } fro
 import { deepEqual } from "./util/equality";
 import { ErrorBoundary } from "./util/ErrorBoundary";
 import { CampaignHelpPopover } from "./HelpPopover";
-import { dispatchCampaignAction, importSaveFile, type CampaignActionName } from "./actions";
+import { importSaveFile } from "./actions";
 import { dispatchHtmlIslandAction } from "./htmlIslandActions";
 import { CampaignHeader } from "./shell/Header";
 import { CampaignModeBar } from "./shell/ModeBar";
 import { CampaignSubTabs } from "./shell/SubTabs";
 import { CampaignRecentLog } from "./shell/RecentLog";
 import { CampaignCommandRail } from "./shell/CommandRail";
-import { getChromeData, setActiveMode, setActiveTab, setActivePanel } from "./shell/bridge";
+import { getChromeData } from "./shell/bridge";
 import { PartyDrawer } from "./shell/PartyDrawer";
 // Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
 // only the chrome + the active tab; the rest download on first visit (and the
@@ -67,73 +67,25 @@ interface SeqAttach {
   readonly init?: () => void;
 }
 
-interface FarmingModeModule {
-  readonly selectSeed?: (value: string) => void;
-}
-
 interface ShellCjs {
   readonly CampaignUI?: CampaignUIShell;
   readonly ScenePlayer?: SceneAttach;
   readonly CampaignSequenceVN?: SeqAttach;
   readonly L2DCompanion?: L2dAttach;
-  readonly FarmingMode?: FarmingModeModule;
 }
 
 function cjs(): ShellCjs {
   return (window as unknown as { CJS?: ShellCjs }).CJS ?? {};
 }
 
-// Main-body click/change forwarder. The bridged HTML tabs — the external
-// modules (inventory/shops/craft/cook/farm/relationships), the maps tab,
-// and the roster detail row — still emit `data-campaign-action` /
-// `-mode` / `-tab` / `-panel`. With the legacy `_bindEvents` delegate
-// removed (H.2), this forwarder routes those to the typed dispatch /
-// setters, mirroring `_bindEvents` exactly (panel → mode → tab → action).
-// JSX buttons use onClick directly and carry no `data-*` attribute, so
-// they never match here — no double-fire. Lives on `<main>`; the drawer
-// keeps its own forwarder (it is portaled outside this subtree).
-function forwardBridgedClick(e: React.MouseEvent<HTMLElement>) {
-  const target = e.target as HTMLElement | null;
-  if (!target) return;
-  const panelBtn = target.closest("[data-campaign-panel]") as HTMLElement | null;
-  if (panelBtn) {
-    e.preventDefault();
-    setActivePanel(panelBtn.dataset.campaignPanel ?? null);
-    return;
-  }
-  const modeBtn = target.closest("[data-campaign-mode]") as HTMLElement | null;
-  if (modeBtn) {
-    const id = modeBtn.dataset.campaignMode;
-    if (id) setActiveMode(id);
-    return;
-  }
-  const tabBtn = target.closest("[data-campaign-tab]") as HTMLElement | null;
-  if (tabBtn) {
-    const id = tabBtn.dataset.campaignTab;
-    if (id) setActiveTab(id);
-    return;
-  }
-  const actionBtn = target.closest("[data-campaign-action]") as HTMLElement | null;
-  if (!actionBtn) return;
-  e.preventDefault();
-  const action = actionBtn.dataset.campaignAction;
-  if (!action) return;
-  const payload: Record<string, string | number | undefined> = {};
-  for (const k of Object.keys(actionBtn.dataset)) {
-    if (k === "campaignAction") continue;
-    payload[k] = actionBtn.dataset[k];
-  }
-  dispatchCampaignAction(action as CampaignActionName, payload);
-}
-
-function forwardBridgedChange(e: React.ChangeEvent<HTMLElement>) {
-  const farmSelect = (e.target as HTMLElement | null)?.closest?.(
-    "[data-farm-select]"
-  ) as HTMLSelectElement | null;
-  if (farmSelect && farmSelect.dataset.farmSelect === "seed") {
-    cjs().FarmingMode?.selectSeed?.(farmSelect.value);
-  }
-}
+// The `<main>` body used to carry a click/change forwarder that translated
+// bridged `data-campaign-action` / `-mode` / `-tab` / `-panel` attributes into
+// typed dispatch. That surface is gone: every React tab uses typed `onClick`,
+// the still-vanilla island bodies (external tabs / map) bind their own
+// dispatch (`dispatchHtmlIslandAction` on the external-tab wrappers, a private
+// listener inside `campaign-map`), and nothing emits the mode/tab/panel
+// attributes any more. The one change-driven island (the farm seed `<select>`)
+// is now owned by the Farm tab wrapper, so the `<main>` forwarder was removed.
 
 // Registry of React-owned tabs. Mirrors the vanilla
 // `cui-react-bridge.js` registrations, but instead of a mount-point div
@@ -289,11 +241,7 @@ export function CampaignShell() {
         />
         <CampaignRecentLog data={chrome.recentLog} />
         <div className="campaign-body">
-          <main
-            className="campaign-main"
-            onClick={forwardBridgedClick}
-            onChange={forwardBridgedChange}
-          >
+          <main className="campaign-main">
             {/* ErrorBoundary (keyed by tab so a switch clears a stale error)
                 catches a failed lazy chunk; Suspense covers the chunk fetch so
                 the chrome stays painted while a not-yet-loaded tab streams in. */}
@@ -402,14 +350,15 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
         aria-label={def.title}
         data-panel-id={panelId}
         onClick={(e) => {
-          // The drawer lives in a React portal under document.body, so
-          // it is OUTSIDE the campaign-root event-delegation tree. The
-          // vanilla shell's click listener on `_root` never sees these
-          // events. We replicate the drawer's old in-place click
-          // handler here: close buttons close the panel, and every
-          // other `data-campaign-action` button is forwarded to the
-          // vanilla dispatch via dispatchCampaignAction (which routes
-          // through campaign-root's listener).
+          // The drawer lives in a React portal under document.body, so it is
+          // OUTSIDE the campaign-root subtree and owns its own click handling.
+          // The close button closes the panel; the still-vanilla island bodies
+          // (the inventory panel, the notes "+ Add" button, …) emit local
+          // semantic markers (data-add-note, data-inventory-*, …) that
+          // `dispatchHtmlIslandAction` translates into typed dispatch, returning
+          // `closesPanel` for the tab-switch actions (its DRAWER_CLOSE_ACTIONS).
+          // No drawer body emits `data-campaign-action`, so there is no generic
+          // string fallback here.
           const target = e.target as HTMLElement | null;
           if (!target) return;
           if (target.closest("[data-campaign-panel-close]")) {
@@ -421,33 +370,7 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
           if (islandResult.handled) {
             e.preventDefault();
             if (islandResult.closesPanel) close();
-            return;
           }
-          const actionBtn = target.closest("[data-campaign-action]") as HTMLElement | null;
-          if (!actionBtn) return;
-          e.preventDefault();
-          const action = actionBtn.dataset.campaignAction;
-          if (!action) return;
-          // Tab-switch actions auto-close the panel (matches the legacy
-          // drawer's _closePanel pre-step).
-          const closesPanel = new Set([
-            "open-inventory-tab", "open-roster-tab", "open-scenarios-tab",
-            "open-maps-tab", "open-quests-tab", "open-shops-tab",
-            "open-sideforge-tab", "open-story-home", "open-quest-home",
-            "open-event-home", "open-farm-tab", "open-event-stories-tab",
-            "open-event-battles-tab", "open-event-log"
-          ]);
-          if (closesPanel.has(action)) close();
-          // Forward to the vanilla dispatcher with the same dataset
-          // payload the original delegate would have seen. `action` is a
-          // runtime DOM string from the HTML-bridge drawer body, so it
-          // crosses the typed boundary via a cast.
-          const payload: Record<string, string | number | undefined> = {};
-          for (const k of Object.keys(actionBtn.dataset)) {
-            if (k === "campaignAction") continue;
-            payload[k] = actionBtn.dataset[k];
-          }
-          dispatchCampaignAction(action as CampaignActionName, payload);
         }}
       >
         <header className="campaign-drawer-head">

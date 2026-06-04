@@ -16,12 +16,14 @@ interface HavenMod       {
   readonly renderFarm: () => string;
 }
 interface RelationshipsMod { readonly render: (state: CampaignStateSnapshot) => string }
+interface FarmingMod { readonly selectSeed?: (value: string) => void }
 
 interface Cjs {
   readonly CampaignInventory?: InventoryMod;
   readonly CampaignEconomy?: EconomyMod;
   readonly PocketHaven?: HavenMod;
   readonly RelationshipsTab?: RelationshipsMod;
+  readonly FarmingMode?: FarmingMod;
 }
 
 function cjs(): Cjs {
@@ -40,7 +42,12 @@ function fallback(label: string) {
   );
 }
 
-function safeWrap(label: string, fn: () => string, mountClass: string) {
+function safeWrap(
+  label: string,
+  fn: () => string,
+  mountClass: string,
+  onChange?: React.ChangeEventHandler<HTMLDivElement>
+) {
   let html: string;
   try {
     html = fn();
@@ -55,9 +62,22 @@ function safeWrap(label: string, fn: () => string, mountClass: string) {
         const result = dispatchHtmlIslandAction(event.target as HTMLElement | null);
         if (result.handled) event.preventDefault();
       }}
+      onChange={onChange}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
+}
+
+// The farm body renders a `<select data-farm-select="seed">` whose change was
+// previously caught by the shell `<main>` onChange forwarder. With that
+// forwarder gone, the Farm tab owns the only change-driven island marker:
+// it routes the seed pick straight to the vanilla FarmingMode, exactly as the
+// old forwarder did.
+function onFarmSeedChange(event: React.ChangeEvent<HTMLDivElement>) {
+  const select = (event.target as HTMLElement | null)?.closest?.(
+    "[data-farm-select='seed']"
+  ) as HTMLSelectElement | null;
+  if (select) cjs().FarmingMode?.selectSeed?.(select.value);
 }
 
 export function CampaignInventoryTab(_props: Props) {
@@ -91,7 +111,7 @@ export function CampaignCookTab(_props: Props) {
 export function CampaignFarmTab(_props: Props) {
   const mod = cjs().PocketHaven;
   if (!mod?.renderFarm) return fallback("Pocket Haven farm UI not loaded.");
-  return safeWrap("PocketHaven.renderFarm", () => mod.renderFarm(), "campaign-farm-react");
+  return safeWrap("PocketHaven.renderFarm", () => mod.renderFarm(), "campaign-farm-react", onFarmSeedChange);
 }
 
 export function CampaignRelationshipsTab({ state }: Props) {

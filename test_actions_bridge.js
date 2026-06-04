@@ -88,6 +88,14 @@ ok('CampaignSettingsTab.tsx has no inline data-campaign-action',
 ok('CampaignLogsTab.tsx has no inline data-campaign-action',
    !/data-campaign-action=/.test(stripComments(LOGS)));
 
+// cui-controls.ts held the last two `data-campaign-action` emitters in the
+// whole `src` tree (`actionBtn` / `renderTownActionButton`); both were dead
+// (zero callers) and were removed, so no React-rendered surface emits the
+// stringly-typed attribute any more — typed onClick is the only path.
+ok('cui-controls.ts emits no data-campaign-action (last src emitter removed)',
+   !/data-campaign-action=/.test(stripComments(
+     fs.readFileSync(path.join(__dirname, 'src/campaign/util/cui-controls.ts'), 'utf8'))));
+
 // Phase K follow-through: these remaining HTML islands now emit local,
 // semantic markers handled by typed dispatch wrappers instead of the generic
 // `data-campaign-action` bridge. The bridge stays for compatibility only.

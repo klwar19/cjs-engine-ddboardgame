@@ -11,8 +11,8 @@
 //   • drawer: a command-rail panel button opens the React PORTAL drawer
 //     (createPortal to document.body) and the close button tears it down
 //   • typed action: the GM rail button's onClick routes to CampaignUI.handleAction
-//   • bridged forwarder: a data-campaign-action button inside a bridged HTML
-//     island tab bubbles to the <main> forwarder and routes to handleAction
+//   • island marker: a data-* marker button inside a still-vanilla external-tab
+//     body routes through the tab wrapper's dispatchHtmlIslandAction → handleAction
 //   • PWA: the built dist (if present) ships the PNG icons + a manifest
 //
 // It reuses the visual-regression loader (in-memory TS/TSX transpile, no
@@ -110,8 +110,10 @@ function installGlobals(window) {
   const VR = path.resolve(__dirname, "tools", "visual-regression");
 
   // 1. Real TS leaf-util modules self-install on CampaignUIInternal.* (browser parity).
+  //    (cui-controls is no longer here: it's a pure util now — no namespace to
+  //    install — pulled in via named imports by the tab data builders instead.)
   for (const m of [
-    "cui-utils", "cui-portraits", "cui-log", "cui-controls", "cui-modals",
+    "cui-utils", "cui-portraits", "cui-log", "cui-modals",
     "cui-options", "cui-equipment", "cui-hub-tab", "cui-tabs-registry",
     "cui-world-map-tab", "cui-party-tab", "cui-react-bridge"
   ]) {
@@ -136,18 +138,20 @@ function installGlobals(window) {
     render() { fireRendered(); },
     getMainBody() { return '<div class="campaign-empty">[vanilla fallback]</div>'; },
     renderDrawerBody() {
-      return '<div class="campaign-drawer-island"><button class="island-act" data-campaign-action="full-rest" data-id="d1">Rest</button></div>';
+      return '<div class="campaign-drawer-island"><button class="island-act" data-add-note="1">+ Add note</button></div>';
     },
     setActivePanel(id) { chromeState.setActivePanel(id == null ? null : id); fireRendered(); },
     handleAction(name, data) { dispatched.push({ name, data }); },
     getBootIncompatibleNotice() { return null; },
     clearBootIncompatibleNotice() {}
   };
-  // A bridged island tab whose HTML carries a data-campaign-action button, so
-  // we can exercise the <main> forwarder (forwardBridgedClick) end to end.
+  // A still-vanilla external-tab body whose HTML carries a local island marker
+  // (the real production pattern — these bodies emit data-* markers, never
+  // data-campaign-action), so we can exercise the external-tab wrapper's
+  // dispatchHtmlIslandAction onClick end to end.
   CJS.CampaignInventory = {
     render() {
-      return '<section class="campaign-panel"><button class="island-act" data-campaign-action="full-rest" data-id="inv1">Rest party</button></section>';
+      return '<section class="campaign-panel"><button class="island-act" data-full-rest="1">Rest party</button></section>';
     }
   };
 
@@ -227,20 +231,21 @@ function installGlobals(window) {
      dispatched.length > beforeGm && dispatched.some((d) => d.name === "gm-override"),
      dispatched.map((d) => d.name).join(","));
 
-  // ── Bridged forwarder: data-campaign-action in a bridged island tab body ─────
-  // Switch to the inventory tab (a deliberately-vanilla HTML island) and click
-  // its action button — it must bubble to the <main> forwarder → handleAction.
+  // ── Island marker: data-* marker in a still-vanilla external-tab body ────────
+  // Switch to the inventory tab (a still-vanilla HTML island) and click its
+  // marker button — the external-tab wrapper's own onClick must translate it via
+  // dispatchHtmlIslandAction → handleAction (there is no <main> forwarder now).
   chromeState.setActiveTab("inventory");
   CJS.CampaignUI.render();
   await nudge();
-  const islandBtn = document.querySelector("main.campaign-main [data-campaign-action='full-rest']");
-  ok("bridged island tab body rendered inside <main>", !!islandBtn);
+  const islandBtn = document.querySelector("main.campaign-main [data-full-rest]");
+  ok("still-vanilla external-tab body rendered inside <main>", !!islandBtn);
   const beforeIsland = dispatched.length;
   if (islandBtn) {
     click(window, islandBtn);
     await settle();
   }
-  ok("bridged data-campaign-action bubbles to the <main> forwarder → handleAction",
+  ok("island data-* marker routes via the tab wrapper's dispatchHtmlIslandAction → handleAction",
      dispatched.length > beforeIsland && dispatched.some((d) => d.name === "full-rest"),
      dispatched.map((d) => d.name).join(","));
 

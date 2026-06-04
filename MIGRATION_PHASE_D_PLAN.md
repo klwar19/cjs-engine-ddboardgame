@@ -40,21 +40,101 @@ file is deleted and is no longer an active bridge or extension point.
   remaining effort: ~50k lines of engine JS still live in `js/` (campaign-ops
   ~3.4k, scenario-runner ~2.9k, campaign-state ~1.3k, …); `src/engine/` is
   currently only ~150 lines of type stubs, so the conversion is barely started.
-- [ ] **Full action-string removal.** The typed registry is done (246/246
-  actions in `src/campaign/action-handlers/`) and **zero `.tsx` files emit
-  `data-campaign-action`** — the only remaining emitters are the deliberately-
-  bridged HTML islands (`util/cui-hub-tab.ts`, `util/cui-controls.ts`,
-  `action-handlers/story-director-card.ts`, the external-module tabs
-  inventory/shops/craft/cook/farm/relationships, and the maps tab), routed via
-  the shell `<main>` forwarder (`CampaignShell.tsx`) and the drawer's
-  `htmlIslandActions.ts`. Replace those island bodies with JSX `onClick`, then
-  remove the two forwarders.
+- [x] **Full `data-campaign-action` removal + `<main>` forwarder deleted.** The
+  typed registry is done (246/246 actions in `src/campaign/action-handlers/`) and
+  **nothing in the repo emits `data-campaign-action` any more.** The last emitters
+  were two dead helpers in `util/cui-controls.ts` (`actionBtn` /
+  `renderTownActionButton`, zero callers); removing them means a React-rendered
+  button can only reach the dispatcher through a typed `onClick`. The shell
+  `<main>` click/change forwarder (`forwardBridgedClick` / `forwardBridgedChange`)
+  is **deleted**: nothing emits `-mode`/`-tab`/`-panel`, `campaign-map` binds its
+  own private click listener, and the one change-driven island (the farm seed
+  `<select>`) moved to the Farm tab wrapper (`CampaignExternalTabs.tsx`). The
+  drawer's parallel `data-campaign-action` fallback is gone too (no drawer body
+  emits it). `test_actions_bridge` locks in "no `src` emitter"; the
+  `test_campaign_shell_live` bridged-island assertion was retargeted to the real
+  production marker path.
+
+  Plan-text corrections (these were stale): `util/cui-hub-tab.ts` emits **no**
+  actions — it is display-only HTML (consequence preview / flavor trail) + pure
+  tone math, consumed via `dangerouslySetInnerHTML` by the typed data bridges;
+  the maps tab (`CampaignMapsTab.tsx`) is **already** JSX with typed `onClick`;
+  `action-handlers/story-director-card.ts` emits `data-story-modal-choice`
+  (wired by the imperative beat modal `story-director-modals.ts`, **not** either
+  forwarder — and a JSX path already exists in `StoryDirectorPanels.tsx`).
+
+- [ ] **Delete the drawer's `htmlIslandActions.ts` (gated on the feature-module
+  port).** This is the one surviving forwarder, and it is NOT a
+  `data-campaign-action` router: it translates local, typed semantic markers
+  (`data-shop-buy`, `data-farm-*`, `data-inventory-*`, `data-haven-*`,
+  `data-craft-recipe-id`, `data-cook-food-id`, `data-rel-activity-*`,
+  `data-add-note`, …) into typed dispatch and returns `closesPanel` for the
+  drawer tab-switch actions. Those markers are emitted by the still-vanilla
+  feature modules behind the external-module tabs — `campaign-inventory.js`
+  (105), `campaign-economy.js` (136), `pocket-haven.js` (424),
+  `relationships-tab.js` (323), and `farming-mode.js` (1,295 — a stateful
+  tile-grid + QTE system) — plus the drawer body builders in `boot.ts`. Deleting
+  `htmlIslandActions.ts` therefore requires React-porting those ~2,300 lines (the
+  "per-tab JSX ports land later" note in `CampaignExternalTabs.tsx`): it is its
+  own incremental migration phase, not island cleanup. Until then the markers
+  stay routed through this single typed helper, which is a far safer surface for
+  AI-generated UI than a free-form `data-campaign-action` string was (it returns
+  a typed result and only matches a fixed marker set).
+
+  **Next steps to retire `htmlIslandActions.ts` (its own phase, one module per
+  commit). The helper can only be DELETED once the last marker emitter is gone,
+  so it shrinks across commits and is removed in the final one:**
+
+  1. **Inventory** (`js/campaign/campaign-inventory.js`, 105) → `CampaignInventoryTab`
+     JSX. Markers: `data-inventory-delta-bucket`, `data-inventory-add-bucket`,
+     `data-open-inventory-tab`, `data-add-note`, `data-add-pocket-note`. The drawer
+     also renders this body (`renderDrawerBodyInternal` `inventory` case +
+     `renderInventorySnapshot` / `renderNotesPanel` in `boot.ts`), so port those
+     drawer-side emitters in the same pass.
+  2. **Economy** (`campaign-economy.js`, 136) → `CampaignShopsTab` JSX. Markers:
+     `data-shop-buy`, `data-shop-sell`, `data-full-rest`, `data-camp-rest`.
+  3. **Relationships** (`js/ui/relationships-tab.js`, 323) → `CampaignRelationshipsTab`
+     JSX. Markers: `data-rel-activity-*`, `data-sequence-start-id`.
+  4. **Pocket Haven craft/cook** (`pocket-haven.js`, 424) → `CampaignCraftTab` /
+     `CampaignCookTab` JSX. Markers: `data-craft-recipe-id`, `data-cook-food-id`,
+     `data-haven-*` (build/upgrade/train/ranch-assign/ranch-collect),
+     `data-haven-play-minigame`, `data-haven-open-trivia`, `data-open-fishing`.
+  5. **Farming** (`farming-mode.js`, 1,295 — HARDEST) → `CampaignFarmTab` JSX. A
+     stateful tile grid + timed QTE window + keyboard controls. Markers:
+     `data-farm-tick/-move/-tile/-interact/-pass-phase`,
+     `data-farm-qte-open/-hit/-close`, `data-farm-tile-action`,
+     `data-farm-select-tool`, `data-farm-tile-menu-close`, `data-harvest-plot`,
+     `data-plant-seed-plot`, plus the seed `<select data-farm-select="seed">`
+     onChange now owned by the Farm tab wrapper (`onFarmSeedChange`). Highest
+     regression risk — needs real-browser manual verification (QTE timing,
+     keyboard movement, growth tick), not just `npm test`.
+  6. **Delete `htmlIslandActions.ts`** once steps 1–5 leave no marker emitters:
+     remove the `dispatchHtmlIslandAction` onClick in `CampaignExternalTabs.safeWrap`
+     (and the whole `dangerouslySetInnerHTML` `safeWrap`, since each tab is real JSX
+     now) and the drawer onClick branch in `CampaignShell`. Update
+     `test_actions_bridge` (the `MIGRATED_ISLANDS` + `dispatchHtmlIslandAction`
+     assertions) and `test_campaign_shell_live` (the island-marker assertion).
+
+  Each step keeps the app working at every commit: port the tab body to JSX with
+  typed `onClick` / `dispatchCampaignAction`, delete the vanilla module, drop the
+  now-unused marker branches from `htmlIslandActions.ts`, then `npm test` + `tsc
+  --noEmit` + `npm run build` + `npm run size:check` before committing.
+
+  **Independent, lower-value cleanup (no action strings involved):** the remaining
+  display-only HTML-string islands can move to JSX for consistency —
+  `cui-hub-tab.ts` (`renderConsequencePreview` / `renderFlavorTrail`),
+  `cui-controls.ts` (`renderInlinePurpose`), and the story-director beat modal
+  (`story-director-modals.ts` + `renderStoryDirectorCardHtml`, wired by
+  `data-story-modal-choice`). These are consumed via `dangerouslySetInnerHTML` by
+  typed bridges, so each port also touches its consumers; none of them emit
+  `data-campaign-action`, so they do not affect the action-string surface.
 - [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
   (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
   react-dom/client and drives the live wiring: boot, chrome render, sub-tab
   switch + body swap, the createPortal drawer open/close, a typed onClick →
-  handleAction, and a bridged `data-campaign-action` → `<main>` forwarder →
-  handleAction (24 assertions, in `npm test`). This is DOM-backed, not a real
+  handleAction, and a still-vanilla external-tab island marker →
+  dispatchHtmlIslandAction → handleAction (19 assertions, in `npm test`). This is
+  DOM-backed, not a real
   pixel browser (no Playwright/Chromium dep — matches `test_launcher_live.js`),
   and the engine is the bounded VR stub. Still open: a true running-browser
   pass (real layout/paint/canvas) over index/campaign/editor/combat that also
