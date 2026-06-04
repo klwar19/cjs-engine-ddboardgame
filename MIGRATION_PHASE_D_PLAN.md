@@ -168,14 +168,35 @@ file is deleted and is no longer an active bridge or extension point.
   now-unused marker branches from `htmlIslandActions.ts`, then `npm test` + `tsc
   --noEmit` + `npm run build` + `npm run size:check` before committing.
 
-  **Independent, lower-value cleanup (no action strings involved):** the remaining
-  display-only HTML-string islands can move to JSX for consistency —
-  `cui-hub-tab.ts` (`renderConsequencePreview` / `renderFlavorTrail`),
-  `cui-controls.ts` (`renderInlinePurpose`), and the story-director beat modal
+  **Independent, lower-value cleanup (no action strings involved) — NOT YET DONE,
+  deliberately deferred as a cohesive unit.** The remaining display-only
+  HTML-string islands could move to JSX for consistency — `cui-hub-tab.ts`
+  (`renderConsequencePreview` / `renderFlavorTrail`), `cui-controls.ts`
+  (`renderInlinePurpose`), and the story-director beat modal
   (`story-director-modals.ts` + `renderStoryDirectorCardHtml`, wired by
-  `data-story-modal-choice`). These are consumed via `dangerouslySetInnerHTML` by
-  typed bridges, so each port also touches its consumers; none of them emit
-  `data-campaign-action`, so they do not affect the action-string surface.
+  `data-story-modal-choice`). This is purely cosmetic: none emit
+  `data-campaign-action`, so it does NOT affect the action-string / forwarder
+  surface (Part A above already fully retired both forwarders).
+
+  **Consumer audit (why this is all-or-nothing):**
+  - `renderInlinePurpose` and `renderFlavorTrail` are **React-only** (consumed as
+    `*Html` fields by `tabs/data/hub.ts` + `tabs/data/resultPanels.ts`, rendered
+    via `dangerouslySetInnerHTML` in the panels). Cleanly portable on their own.
+  - `renderConsequencePreview` is **shared**: the same React data bridges AND the
+    **imperative** beat modal (`action-handlers/story-director-card.ts`
+    `renderStoryDirectorCardHtml` → `story-director-modals.ts`, plus the manual
+    event builder) consume its HTML. So it can't become a pure JSX component
+    without also React-ifying those imperative modals (the third bullet).
+  - Because all three fields render side-by-side in `ResultPanels` /
+    `StoryDirectorPanels` / `HubTabs` / `SideContent`, porting only the React-only
+    two would leave a sibling field still on `dangerouslySetInnerHTML` — messier
+    than today's uniform HTML-string seam. Recommended as one focused commit:
+    add `<ConsequencePreview>` / `<FlavorTrail>` / `<InlinePurpose>` JSX, have the
+    `tabs/data/*` builders emit their structured props instead of `*Html`, convert
+    the consuming panels, React-ify the beat modal + manual-event builder to a
+    portal that reuses the existing `StoryDirectorPanels` card JSX, then delete the
+    HTML helpers. Verify via VR snapshot parity (the rendered DOM should be
+    byte-identical) + a real-browser pass on the story/quest/event panels.
 - [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
   (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
   react-dom/client and drives the live wiring: boot, chrome render, sub-tab
