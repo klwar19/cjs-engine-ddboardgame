@@ -80,12 +80,61 @@ file is deleted and is no longer an active bridge or extension point.
   stay routed through this single typed helper, which is a far safer surface for
   AI-generated UI than a free-form `data-campaign-action` string was (it returns
   a typed result and only matches a fixed marker set).
+
+  **Next steps to retire `htmlIslandActions.ts` (its own phase, one module per
+  commit). The helper can only be DELETED once the last marker emitter is gone,
+  so it shrinks across commits and is removed in the final one:**
+
+  1. **Inventory** (`js/campaign/campaign-inventory.js`, 105) → `CampaignInventoryTab`
+     JSX. Markers: `data-inventory-delta-bucket`, `data-inventory-add-bucket`,
+     `data-open-inventory-tab`, `data-add-note`, `data-add-pocket-note`. The drawer
+     also renders this body (`renderDrawerBodyInternal` `inventory` case +
+     `renderInventorySnapshot` / `renderNotesPanel` in `boot.ts`), so port those
+     drawer-side emitters in the same pass.
+  2. **Economy** (`campaign-economy.js`, 136) → `CampaignShopsTab` JSX. Markers:
+     `data-shop-buy`, `data-shop-sell`, `data-full-rest`, `data-camp-rest`.
+  3. **Relationships** (`js/ui/relationships-tab.js`, 323) → `CampaignRelationshipsTab`
+     JSX. Markers: `data-rel-activity-*`, `data-sequence-start-id`.
+  4. **Pocket Haven craft/cook** (`pocket-haven.js`, 424) → `CampaignCraftTab` /
+     `CampaignCookTab` JSX. Markers: `data-craft-recipe-id`, `data-cook-food-id`,
+     `data-haven-*` (build/upgrade/train/ranch-assign/ranch-collect),
+     `data-haven-play-minigame`, `data-haven-open-trivia`, `data-open-fishing`.
+  5. **Farming** (`farming-mode.js`, 1,295 — HARDEST) → `CampaignFarmTab` JSX. A
+     stateful tile grid + timed QTE window + keyboard controls. Markers:
+     `data-farm-tick/-move/-tile/-interact/-pass-phase`,
+     `data-farm-qte-open/-hit/-close`, `data-farm-tile-action`,
+     `data-farm-select-tool`, `data-farm-tile-menu-close`, `data-harvest-plot`,
+     `data-plant-seed-plot`, plus the seed `<select data-farm-select="seed">`
+     onChange now owned by the Farm tab wrapper (`onFarmSeedChange`). Highest
+     regression risk — needs real-browser manual verification (QTE timing,
+     keyboard movement, growth tick), not just `npm test`.
+  6. **Delete `htmlIslandActions.ts`** once steps 1–5 leave no marker emitters:
+     remove the `dispatchHtmlIslandAction` onClick in `CampaignExternalTabs.safeWrap`
+     (and the whole `dangerouslySetInnerHTML` `safeWrap`, since each tab is real JSX
+     now) and the drawer onClick branch in `CampaignShell`. Update
+     `test_actions_bridge` (the `MIGRATED_ISLANDS` + `dispatchHtmlIslandAction`
+     assertions) and `test_campaign_shell_live` (the island-marker assertion).
+
+  Each step keeps the app working at every commit: port the tab body to JSX with
+  typed `onClick` / `dispatchCampaignAction`, delete the vanilla module, drop the
+  now-unused marker branches from `htmlIslandActions.ts`, then `npm test` + `tsc
+  --noEmit` + `npm run build` + `npm run size:check` before committing.
+
+  **Independent, lower-value cleanup (no action strings involved):** the remaining
+  display-only HTML-string islands can move to JSX for consistency —
+  `cui-hub-tab.ts` (`renderConsequencePreview` / `renderFlavorTrail`),
+  `cui-controls.ts` (`renderInlinePurpose`), and the story-director beat modal
+  (`story-director-modals.ts` + `renderStoryDirectorCardHtml`, wired by
+  `data-story-modal-choice`). These are consumed via `dangerouslySetInnerHTML` by
+  typed bridges, so each port also touches its consumers; none of them emit
+  `data-campaign-action`, so they do not affect the action-string surface.
 - [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
   (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
   react-dom/client and drives the live wiring: boot, chrome render, sub-tab
   switch + body swap, the createPortal drawer open/close, a typed onClick →
-  handleAction, and a bridged `data-campaign-action` → `<main>` forwarder →
-  handleAction (24 assertions, in `npm test`). This is DOM-backed, not a real
+  handleAction, and a still-vanilla external-tab island marker →
+  dispatchHtmlIslandAction → handleAction (19 assertions, in `npm test`). This is
+  DOM-backed, not a real
   pixel browser (no Playwright/Chromium dep — matches `test_launcher_live.js`),
   and the engine is the bounded VR stub. Still open: a true running-browser
   pass (real layout/paint/canvas) over index/campaign/editor/combat that also
