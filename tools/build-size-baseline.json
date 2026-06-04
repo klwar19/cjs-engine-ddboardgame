@@ -4,15 +4,15 @@
   "floorBytes": 1024,
   "generated": "2026-06-04",
   "code": {
-    "total": 2943827,
+    "total": 2944141,
     "chunks": {
       "animation-bus.js": 509,
       "AudioLibrary.js": 6361,
       "campaign.css": 554689,
-      "campaign.js": 279952,
+      "campaign.js": 272731,
       "CampaignCraftCookTabs.js": 4101,
       "CampaignEditor.js": 7121,
-      "CampaignEventLogTab.js": 4672,
+      "CampaignEventLogTab.js": 4628,
       "CampaignEventTab.js": 6167,
       "CampaignFarmTab.js": 14709,
       "CampaignHubTabs.js": 12348,
@@ -28,8 +28,8 @@
       "CampaignScenariosTab.js": 4883,
       "CampaignSettingsTab.js": 3861,
       "CampaignShopsTab.js": 4851,
-      "CampaignStoryDirectorTab.js": 2653,
-      "CampaignStoryHomeTab.js": 15650,
+      "CampaignStoryDirectorTab.js": 2677,
+      "CampaignStoryHomeTab.js": 15689,
       "CampaignStorySummaryTab.js": 4966,
       "CampaignWorldGateTab.js": 2919,
       "CampaignWorldMapTab.js": 7795,
@@ -91,14 +91,15 @@
       "SkillEditor.js": 16503,
       "StatusEditor.js": 15219,
       "StoryBeatModal.js": 438,
+      "storyDirector.js": 6357,
       "StoryDirectorPanels.js": 9209,
+      "storyShared.js": 1722,
       "storySummary.js": 1775,
       "StoryVn.js": 4858,
       "tests.js": 9284,
       "VirtualList.js": 2666,
       "widgets.js": 11779,
-      "worldThemeAssets.js": 514,
-      "ZombieScavenge.js": 15019
+      "ZombieScavenge.js": 14970
     }
   },
   "assets": {

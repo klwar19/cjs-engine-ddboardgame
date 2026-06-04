@@ -15,7 +15,9 @@
 // generators (~290 lines), each shared with render/data code.
 
 import { cs, mod, rerender, setActiveModeRaw, setActiveTabRaw, toast } from "./context";
-import { storyDirectorCardData, type CardInput } from "../tabs/data/storyDirector";
+// Type-only — erased at compile so the data builder stays OUT of the eager
+// action-handler boot chunk; it is lazy-imported with the modal below.
+import type { CardInput } from "../tabs/data/storyDirector";
 
 type StoryBeatCard = CardInput;
 
@@ -51,19 +53,20 @@ function footerButton(label: string, className: string): HTMLButtonElement {
 
 export function openStoryBeatModal(card: StoryBeatCard | null | undefined): void {
   if (!card) return;
-  const data = storyDirectorCardData(card);
-  if (!data) return;
   const ui = mod<UiModalApi>("UI");
   if (!ui?.openModal) return;
 
-  // React (+ the beat-card JSX) is lazy-loaded so it stays out of the boot
-  // chunk; the modal only opens on a user roll. Same pattern as the
-  // party-sheet modal.
+  // React, the beat-card JSX, AND the card data builder are all lazy-loaded so
+  // they stay out of the eager boot chunk; the modal only opens on a user roll.
+  // Same pattern as the party-sheet modal.
   void Promise.all([
     import("react"),
     import("react-dom/client"),
-    import("../tabs/StoryBeatModal")
-  ]).then(([React, { createRoot }, { StoryBeatModalBody }]) => {
+    import("../tabs/StoryBeatModal"),
+    import("../tabs/data/storyDirector")
+  ]).then(([React, { createRoot }, { StoryBeatModalBody }, { storyDirectorCardData }]) => {
+    const data = storyDirectorCardData(card);
+    if (!data) return;
     const runtime = actionsRuntime();
     const mount = document.createElement("div");
     mount.className = "campaign-story-modal-body";
