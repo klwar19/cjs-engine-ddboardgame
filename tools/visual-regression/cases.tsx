@@ -46,8 +46,8 @@ import {
   CampaignMapSeedsTab
 } from "../../src/campaign/tabs/CampaignHubTabs";
 import { CampaignInventoryTab } from "../../src/campaign/tabs/CampaignInventoryTab";
+import { CampaignShopsTab } from "../../src/campaign/tabs/CampaignShopsTab";
 import {
-  CampaignShopsTab,
   CampaignCraftTab,
   CampaignCookTab,
   CampaignFarmTab,
@@ -158,6 +158,8 @@ const campaignState = {
   phase: 5,
   gold: 1840,
   jp: 12,
+  // Spendable currencies — drives the Shops tab `canBuy` (affordability) path.
+  currencies: { haven_gold: 200, jp: 12 },
   party: fixtureParty,
   // Inventory slice — drives the ported CampaignInventoryTab JSX (DataStore.get
   // returns null in the stub, so names fall back to ids, exercising that path).
@@ -260,6 +262,31 @@ const contentFixture = {
     haven_quests: { templates: [{ id: "t1" }, { id: "t2" }, { id: "t3" }] }
   }
 };
+
+// Shops the DataStore stub serves to the ported CampaignShopsTab via
+// getAllAsArray("shops"). Covers: an affordable item (Buy enabled + Sell),
+// a seed (farm stock — no Sell), and an item with requires/consumes bundles.
+const shopsFixture = [
+  {
+    id: "haven_general",
+    name: "Harbor General Store",
+    description: "Everyday gear for adventurers.",
+    currency: "haven_gold",
+    world: "haven",
+    stock: [
+      { id: "potion_heal", type: "item", qty: 9, price: 25, currency: "haven_gold" },
+      { id: "moon_seed", type: "seed", qty: 5, price: 12 },
+      {
+        id: "warded_charm",
+        type: "item",
+        qty: 1,
+        price: 60,
+        requires: { items: { potion_heal: 1 } },
+        costs: { materials: { iron_ore: 2 } }
+      }
+    ]
+  }
+];
 
 // Save slots for the Settings tab (the shape CampaignSave.getSlots returns).
 const saveSlots: Record<string, Record<string, unknown>> = {
@@ -431,7 +458,11 @@ export function installEngine(): void {
       { id: "cooking", name: "Cooking", category: "craft" }
     ]
   };
-  CJS.DataStore = { get: () => null, getAll: () => ({}), getAllAsArray: () => [] };
+  CJS.DataStore = {
+    get: () => null,
+    getAll: () => ({}),
+    getAllAsArray: (bucket: string) => (bucket === "shops" ? shopsFixture : [])
+  };
   CJS.CampaignWorldMap = {
     getTravelMapData: () => null,
     getActivitiesData: () => null,
@@ -475,8 +506,7 @@ export function installEngine(): void {
   CJS.CONST = { STATUS_DEFINITIONS: {} };
 
   // External-module island wrappers (still-vanilla HTML; ported one at a time).
-  // Inventory is now JSX (reads state.inventory + DataStore) — no island stub.
-  CJS.CampaignEconomy = { renderRest: () => ISLAND("rest"), renderShops: () => ISLAND("shops") };
+  // Inventory + Shops are now JSX (read state + DataStore) — no island stub.
   CJS.PocketHaven = {
     renderCraft: () => ISLAND("craft"),
     renderCook: () => ISLAND("cook"),

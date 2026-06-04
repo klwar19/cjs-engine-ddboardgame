@@ -98,8 +98,13 @@ file is deleted and is no longer an active bridge or extension point.
      `main.tsx` import + `boot.ts` `CampaignInventory` surface removed. Gated:
      `npm test` + `tsc` + `build` + `size:check` all green (campaign initial JS
      354.2 → 353.5 KB gz).
-  2. **Economy** (`campaign-economy.js`, 136) → `CampaignShopsTab` JSX. Markers:
-     `data-shop-buy`, `data-shop-sell`, `data-full-rest`, `data-camp-rest`.
+  2. **Economy** ✅ DONE. (`campaign-economy.js`, 136) → `CampaignShopsTab` JSX
+     (`src/campaign/tabs/CampaignShopsTab.tsx` + typed `tabs/data/shops.ts`
+     builder that ports `_renderShop` / `_shopOpen` / `_canBuy` / `_hasBundle` /
+     `_formatBundle` / `_recordName`). Markers retired: `data-shop-buy`,
+     `data-shop-sell`, `data-full-rest`, `data-camp-rest`. Module deleted, import
+     + `CampaignEconomy` surface removed. Gate green; campaign initial JS
+     353.5 → 352.3 KB gz.
   3. **Relationships** (`js/ui/relationships-tab.js`, 323) → `CampaignRelationshipsTab`
      JSX. Markers: `data-rel-activity-*`, `data-sequence-start-id`.
   4. **Pocket Haven craft/cook** (`pocket-haven.js`, 424) → `CampaignCraftTab` /

@@ -43,33 +43,6 @@ export function dispatchHtmlIslandAction(target: HTMLElement | null): HtmlIsland
 
   if (closest(target, "[data-add-pocket-note]")) return run("add-pocket-note");
 
-  const shopBuy = closest(target, "[data-shop-buy]");
-  if (shopBuy) {
-    const d = shopBuy.dataset;
-    return run("shop-buy", {
-      shopId: d.shopId,
-      stockIndex: d.stockIndex,
-      id: d.id,
-      type: d.type,
-      price: d.price,
-      currency: d.currency
-    });
-  }
-
-  const shopSell = closest(target, "[data-shop-sell]");
-  if (shopSell) {
-    const d = shopSell.dataset;
-    return run("shop-sell", {
-      id: d.id,
-      type: d.type,
-      price: d.price,
-      currency: d.currency
-    });
-  }
-
-  if (closest(target, "[data-full-rest]")) return run("full-rest");
-  if (closest(target, "[data-camp-rest]")) return run("camp-rest");
-
   if (closest(target, "[data-farm-tick]")) return run("farm-tick");
   if (closest(target, "[data-farm-qte-open]")) return run("farm-qte-open");
   if (closest(target, "[data-farm-qte-hit]")) return run("farm-qte-hit");

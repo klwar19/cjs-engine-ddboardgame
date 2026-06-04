@@ -41,7 +41,6 @@ import "../../js/campaign/campaign-oracle.js";
 import "../../js/campaign/campaign-combat-bridge.js";
 import "../../js/campaign/campaign-party-chat.js";
 import "../../js/campaign/campaign-map.js";
-import "../../js/campaign/campaign-economy.js";
 import "../../js/campaign/pocket-haven-facilities.js";
 import "../../js/campaign/pocket-haven.js";
 import "../../js/campaign/guild-trivia.js";

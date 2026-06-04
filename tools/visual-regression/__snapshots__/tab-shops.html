@@ -1,8 +1,53 @@
-<div class="campaign-shops-react">
+<section class="campaign-panel">
+  <div class="campaign-panel-head">
+    <h3>Rest</h3>
+  </div>
+  <div class="campaign-action-grid">
+    <button class="campaign-action">Full Rest</button>
+    <button class="campaign-action">Camp Rest</button>
+  </div>
+  <div class="campaign-muted">Camp rest consumes one scenario rest use, restores partial HP/MP, and can increase danger.</div>
+</section>
+<div class="campaign-tab-grid">
   <section class="campaign-panel">
-    <div class="campaign-island" data-island="rest">[rest island body]</div>
-  </section>
-  <section class="campaign-panel">
-    <div class="campaign-island" data-island="shops">[shops island body]</div>
+    <div class="campaign-panel-head">
+      <h3>Harbor General Store</h3>
+      <span class="campaign-pill">Haven Gold</span>
+    </div>
+    <div class="campaign-muted">Everyday gear for adventurers.</div>
+    <div class="campaign-row">
+      <div>
+        <strong>potion_heal</strong>
+        <div class="campaign-muted">potion_heal | stock 9</div>
+      </div>
+      <div class="campaign-row-actions">
+        <span class="campaign-pill">25 Haven Gold</span>
+        <button class="campaign-action">Buy</button>
+        <button class="campaign-action">Sell</button>
+      </div>
+    </div>
+    <div class="campaign-row">
+      <div>
+        <strong>moon_seed</strong>
+        <div class="campaign-muted">moon_seed | stock 5</div>
+      </div>
+      <div class="campaign-row-actions">
+        <span class="campaign-pill">12 Haven Gold</span>
+        <button class="campaign-action">Buy</button>
+      </div>
+    </div>
+    <div class="campaign-row">
+      <div>
+        <strong>warded_charm</strong>
+        <div class="campaign-muted">warded_charm | stock 1</div>
+        <div class="campaign-muted">Needs: 1 potion_heal</div>
+        <div class="campaign-muted">Consumes: 2 iron_ore</div>
+      </div>
+      <div class="campaign-row-actions">
+        <span class="campaign-pill">60 Haven Gold</span>
+        <button class="campaign-action">Buy</button>
+        <button class="campaign-action">Sell</button>
+      </div>
+    </div>
   </section>
 </div>

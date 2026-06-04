@@ -102,7 +102,6 @@ ok('cui-controls.ts emits no data-campaign-action (last src emitter removed)',
 const MIGRATED_ISLANDS = [
   'src/campaign/shell/boot.ts',
   'js/campaign/campaign-map.js',
-  'js/campaign/campaign-economy.js',
   'js/campaign/farming-mode.js',
   'js/campaign/pocket-haven.js',
   'js/ui/relationships-tab.js'

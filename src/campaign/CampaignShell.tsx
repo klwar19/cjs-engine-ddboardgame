@@ -105,7 +105,7 @@ const REACT_TAB_COMPONENTS: Readonly<Record<string, TabComponent>> = {
   battleSets: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignBattleSetsTab }))),
   mapSeeds: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignMapSeedsTab }))),
   inventory: lazy(() => import("./tabs/CampaignInventoryTab").then((m) => ({ default: m.CampaignInventoryTab }))),
-  shops: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignShopsTab }))),
+  shops: lazy(() => import("./tabs/CampaignShopsTab").then((m) => ({ default: m.CampaignShopsTab }))),
   craft: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCraftTab }))),
   cook: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCookTab }))),
   farm: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignFarmTab }))),

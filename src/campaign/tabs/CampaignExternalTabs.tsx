@@ -2,13 +2,13 @@ import type { CampaignStateSnapshot } from "../store";
 import { dispatchHtmlIslandAction } from "../htmlIslandActions";
 
 // Wrappers for tabs whose body comes from a sibling vanilla module
-// (CampaignEconomy / PocketHaven / RelationshipsTab).
+// (PocketHaven / RelationshipsTab).
 // Same hybrid migration pattern as the hub family — React owns the
 // mount, vanilla produces the inner HTML, and this wrapper translates
 // island-local data markers into typed dispatch calls. Per-tab JSX ports
-// land one at a time (Inventory is already ported — see CampaignInventoryTab).
+// land one at a time (Inventory + Shops are already ported — see
+// CampaignInventoryTab / CampaignShopsTab).
 
-interface EconomyMod     { readonly renderRest: () => string; readonly renderShops: () => string }
 interface HavenMod       {
   readonly renderCraft: () => string;
   readonly renderCook: () => string;
@@ -18,7 +18,6 @@ interface RelationshipsMod { readonly render: (state: CampaignStateSnapshot) => 
 interface FarmingMod { readonly selectSeed?: (value: string) => void }
 
 interface Cjs {
-  readonly CampaignEconomy?: EconomyMod;
   readonly PocketHaven?: HavenMod;
   readonly RelationshipsTab?: RelationshipsMod;
   readonly FarmingMode?: FarmingMod;
@@ -76,16 +75,6 @@ function onFarmSeedChange(event: React.ChangeEvent<HTMLDivElement>) {
     "[data-farm-select='seed']"
   ) as HTMLSelectElement | null;
   if (select) cjs().FarmingMode?.selectSeed?.(select.value);
-}
-
-export function CampaignShopsTab(_props: Props) {
-  const mod = cjs().CampaignEconomy;
-  if (!mod?.renderRest || !mod?.renderShops) return fallback("Economy UI not loaded.");
-  return safeWrap(
-    "CampaignEconomy.shops",
-    () => `${mod.renderRest()}${mod.renderShops()}`,
-    "campaign-shops-react"
-  );
 }
 
 export function CampaignCraftTab(_props: Props) {
