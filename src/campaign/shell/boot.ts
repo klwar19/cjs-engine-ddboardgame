@@ -12,8 +12,8 @@
 // Chrome state (mode / tab / panel) is read + written through the canonical
 // TS slice in `../chrome-state` directly (no `window.CJS.CampaignChrome`
 // hop). Actions dispatch through `window.CJS.CampaignActionsRuntime`
-// (installed by `action-handlers/registry.ts`). The drawer party body is
-// React-owned; the leaf HTML helpers (esc / recordName / renderLogEntry)
+// (installed by `action-handlers/registry.ts`). The drawer party / inventory /
+// notes bodies are React-owned; the leaf HTML helpers (esc / renderLogEntry)
 // are imported from the util modules.
 //
 // The vanilla render fallback was deleted back in H.2 (the React shell is
@@ -23,7 +23,7 @@
 // Escape-to-close path survives (the drawer can be open without re-running
 // `init`, and the document-level listener mirrors the React drawer's own).
 
-import { esc, recordName } from "../util/cui-utils";
+import { esc } from "../util/cui-utils";
 import { renderLogEntry, type LogLine } from "../util/cui-log";
 import {
   getActiveMode,
@@ -116,9 +116,6 @@ interface ActionsRuntime {
   has?: (name: string) => boolean;
   run: (name: string, data?: Record<string, unknown>) => unknown;
 }
-interface InventoryModule {
-  render?: () => string | undefined;
-}
 interface TabsRegistry {
   has: (id: string) => boolean;
   render: (id: string, state: unknown) => string | null | undefined;
@@ -142,7 +139,6 @@ interface BootCjs {
   CampaignStoryScenes?: StoryScenesModule;
   FarmingMode?: FarmingModeModule;
   CampaignActionsRuntime?: ActionsRuntime;
-  CampaignInventory?: InventoryModule;
   CampaignUIInternal?: CuiInternal;
 }
 
@@ -467,61 +463,9 @@ function closePanel(): void {
 
 // ── Command-rail drawer body (HTML island) ─────────────────────────────
 // Consumed by the React `CampaignDrawer` via renderDrawerBody() for panels
-// that still use dangerouslySetInnerHTML. The party panel is React-owned;
-// the rest are small inventory / quests / log / notes fallbacks.
-function renderInventorySnapshot(state: CampaignStateLike, opts: { full?: boolean } = {}): string {
-  const buckets: ReadonlyArray<[string, string]> = [
-    ["items", "Items"],
-    ["materials", "Materials"],
-    ["food", "Food"],
-    ["questItems", "Quest Items"]
-  ];
-  const rows = buckets.flatMap(([bucket, label]) =>
-    Object.entries(state.inventory?.[bucket] || {})
-      .filter(([, qty]) => qty > 0)
-      .map(([id, qty]) => ({ bucket, label, id, qty }))
-  );
-  const visible = opts.full ? rows : rows.slice(0, 8);
-  return `
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Inventory</h2><button class="campaign-icon-btn" data-open-inventory-tab="1">Open Full</button></div>
-        ${
-          visible.length
-            ? visible
-                .map(
-                  (row) => `
-          <div class="campaign-log-line">
-            <span>${esc(recordName(row.bucket, row.id))}</span>
-            <small>${esc(row.label)} x${row.qty}</small>
-          </div>
-        `
-                )
-                .join("")
-            : '<div class="campaign-empty">No inventory yet.</div>'
-        }
-      </section>
-    `;
-}
-
-function renderNotesPanel(state: CampaignStateLike): string {
-  const notes = state.pinnedNotes || [];
-  return `
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head">
-          <h2>Pinned Notes</h2>
-          <button class="campaign-icon-btn" data-add-note="1">+ Add</button>
-        </div>
-        ${
-          notes.length
-            ? notes
-                .map((note) => `<div class="campaign-log-line">${esc(typeof note === "string" ? note : note.text || "")}</div>`)
-                .join("")
-            : '<div class="campaign-empty">No pinned notes yet.</div>'
-        }
-      </section>
-    `;
-}
-
+// that still use dangerouslySetInnerHTML. The party / inventory / notes panels
+// are React-owned (see CampaignShell `DrawerBody`); only the quests / log
+// fallbacks remain HTML strings here.
 function renderQuestMini(quest: QuestMini): string {
   const first = quest.objectives?.[0];
   return `
@@ -558,24 +502,14 @@ function renderLogFallback(state: CampaignStateLike): string {
 
 function renderDrawerBodyInternal(panelId: string, state: CampaignStateLike): string {
   switch (panelId) {
-    case "party":
-      return "";
-    case "inventory":
-      try {
-        const html = cjs().CampaignInventory?.render?.();
-        if (typeof html === "string" && html.length) return html;
-      } catch {
-        /* fall through to the snapshot */
-      }
-      return renderInventorySnapshot(state, { full: true });
+    // party / inventory / notes are React-owned (CampaignShell `DrawerBody`) —
+    // they never reach this HTML-string path.
     case "quests":
       return renderQuestsFallback(state);
     case "log":
       // Drawer side-panel keeps the compact fallback — the React Logs tab
       // owns the main-panel variant.
       return renderLogFallback(state);
-    case "notes":
-      return renderNotesPanel(state);
     default:
       return '<div class="campaign-empty">Panel not implemented.</div>';
   }

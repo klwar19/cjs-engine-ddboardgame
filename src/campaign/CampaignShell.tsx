@@ -21,6 +21,7 @@ import { CampaignRecentLog } from "./shell/RecentLog";
 import { CampaignCommandRail } from "./shell/CommandRail";
 import { getChromeData } from "./shell/bridge";
 import { PartyDrawer } from "./shell/PartyDrawer";
+import { NotesPanel } from "./shell/NotesPanel";
 // Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
 // only the chrome + the active tab; the rest download on first visit (and the
 // PWA precaches them in the background). Multi-export files
@@ -103,7 +104,7 @@ const REACT_TAB_COMPONENTS: Readonly<Record<string, TabComponent>> = {
   oracleForge: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignOracleForgeTab }))),
   battleSets: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignBattleSetsTab }))),
   mapSeeds: lazy(() => import("./tabs/CampaignHubTabs").then((m) => ({ default: m.CampaignMapSeedsTab }))),
-  inventory: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignInventoryTab }))),
+  inventory: lazy(() => import("./tabs/CampaignInventoryTab").then((m) => ({ default: m.CampaignInventoryTab }))),
   shops: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignShopsTab }))),
   craft: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCraftTab }))),
   cook: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCookTab }))),
@@ -290,6 +291,37 @@ function VanillaBody({ state, tab }: { state: CampaignStateSnapshot; tab: string
   return <div className="campaign-main-body" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+// Drawer panels rendered by React components rather than an HTML-string
+// island. Party has always been React; inventory + notes moved to JSX with
+// the inventory tab port (their `data-*` markers retired from boot.ts).
+const JSX_DRAWER_PANELS: ReadonlySet<string> = new Set(["party", "inventory", "notes"]);
+
+// Picks the drawer body: the React-owned panels render their component (the
+// inventory tab reuses the same lazy chunk as the main tab, so opening the
+// drawer doesn't pull it into the shell entry); everything else is the
+// bridge's display-only HTML string.
+function DrawerBody({
+  panelId,
+  state,
+  html
+}: {
+  panelId: string;
+  state: CampaignStateSnapshot;
+  html: string;
+}) {
+  if (panelId === "party") return <PartyDrawer state={state} />;
+  if (panelId === "notes") return <NotesPanel state={state} />;
+  if (panelId === "inventory") {
+    const InventoryTab = REACT_TAB_COMPONENTS.inventory;
+    return (
+      <Suspense fallback={<div className="campaign-loading">Loading…</div>}>
+        <InventoryTab state={state} />
+      </Suspense>
+    );
+  }
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 // ── Drawer (React portal to document.body) ────────────────────────
 // Replaces the imperative `_drawerEl` flow in campaign-ui.js. The
 // drawer is a controlled component now — open if `panelId` is set,
@@ -303,9 +335,11 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
   const def = defs[panelId];
   if (!def) return null;
 
-  const isPartyPanel = panelId === "party";
+  // Party / inventory / notes panels are React-owned (no HTML-string island).
+  // The rest (quests / log) are still display-only HTML strings from the bridge.
+  const isJsxPanel = JSX_DRAWER_PANELS.has(panelId);
   let bodyHtml = "";
-  if (!isPartyPanel) {
+  if (!isJsxPanel) {
     try {
       bodyHtml = UI.renderDrawerBody(panelId, state);
     } catch (error) {
@@ -384,7 +418,7 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
           </button>
         </header>
         <div className="campaign-drawer-body">
-          {isPartyPanel ? <PartyDrawer state={state} /> : <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />}
+          <DrawerBody panelId={panelId} state={state} html={bodyHtml} />
         </div>
       </aside>
     </>

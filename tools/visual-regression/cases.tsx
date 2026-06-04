@@ -45,8 +45,8 @@ import {
   CampaignBattleSetsTab,
   CampaignMapSeedsTab
 } from "../../src/campaign/tabs/CampaignHubTabs";
+import { CampaignInventoryTab } from "../../src/campaign/tabs/CampaignInventoryTab";
 import {
-  CampaignInventoryTab,
   CampaignShopsTab,
   CampaignCraftTab,
   CampaignCookTab,
@@ -159,6 +159,16 @@ const campaignState = {
   gold: 1840,
   jp: 12,
   party: fixtureParty,
+  // Inventory slice — drives the ported CampaignInventoryTab JSX (DataStore.get
+  // returns null in the stub, so names fall back to ids, exercising that path).
+  inventory: {
+    items: { potion_heal: 3, smoke_bomb: 1 },
+    materials: { iron_ore: 12 },
+    food: { trail_ration: 5 },
+    questItems: { sea_chart: 1 },
+    equipment: {}
+  },
+  pinnedNotes: [{ at: "2026-05-30T08:00:00Z", text: "Ask the harbor master about the relic." }],
   log: [
     { op: "phase-advance", text: "Phase 5 begins.", at: "2026-05-30T09:00:00Z", phase: 5 },
     { op: "quest-progress", text: "Recovered a moonpetal.", at: "2026-05-30T09:02:00Z", phase: 5 },
@@ -464,8 +474,8 @@ export function installEngine(): void {
   CJS.CampaignCombatBridge = { readResult: () => null, openBattle: () => {}, applyResult: () => {} };
   CJS.CONST = { STATUS_DEFINITIONS: {} };
 
-  // External-module island wrappers (out-of-scope vanilla HTML).
-  CJS.CampaignInventory = { render: () => ISLAND("inventory") };
+  // External-module island wrappers (still-vanilla HTML; ported one at a time).
+  // Inventory is now JSX (reads state.inventory + DataStore) — no island stub.
   CJS.CampaignEconomy = { renderRest: () => ISLAND("rest"), renderShops: () => ISLAND("shops") };
   CJS.PocketHaven = {
     renderCraft: () => ISLAND("craft"),

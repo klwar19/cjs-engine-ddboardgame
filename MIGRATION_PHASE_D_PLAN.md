@@ -85,12 +85,19 @@ file is deleted and is no longer an active bridge or extension point.
   commit). The helper can only be DELETED once the last marker emitter is gone,
   so it shrinks across commits and is removed in the final one:**
 
-  1. **Inventory** (`js/campaign/campaign-inventory.js`, 105) → `CampaignInventoryTab`
-     JSX. Markers: `data-inventory-delta-bucket`, `data-inventory-add-bucket`,
-     `data-open-inventory-tab`, `data-add-note`, `data-add-pocket-note`. The drawer
-     also renders this body (`renderDrawerBodyInternal` `inventory` case +
-     `renderInventorySnapshot` / `renderNotesPanel` in `boot.ts`), so port those
-     drawer-side emitters in the same pass.
+  1. **Inventory** ✅ DONE. (`js/campaign/campaign-inventory.js`, 105) →
+     `CampaignInventoryTab` JSX (`src/campaign/tabs/CampaignInventoryTab.tsx` +
+     typed `tabs/data/inventory.ts` record-lookup builder). Markers retired:
+     `data-inventory-delta-bucket`, `data-inventory-add-bucket`,
+     `data-open-inventory-tab`, `data-add-note` (NOT `data-add-pocket-note` —
+     that one is emitted by `pocket-haven.js`, retired in step 4). The drawer
+     inventory + notes panels moved to React too (CampaignShell `DrawerBody`
+     renders `CampaignInventoryTab` for the inventory panel and a new
+     `shell/NotesPanel` for notes; `renderInventorySnapshot` / `renderNotesPanel`
+     deleted from `boot.ts`). `js/campaign/campaign-inventory.js` deleted, its
+     `main.tsx` import + `boot.ts` `CampaignInventory` surface removed. Gated:
+     `npm test` + `tsc` + `build` + `size:check` all green (campaign initial JS
+     354.2 → 353.5 KB gz).
   2. **Economy** (`campaign-economy.js`, 136) → `CampaignShopsTab` JSX. Markers:
      `data-shop-buy`, `data-shop-sell`, `data-full-rest`, `data-camp-rest`.
   3. **Relationships** (`js/ui/relationships-tab.js`, 323) → `CampaignRelationshipsTab`

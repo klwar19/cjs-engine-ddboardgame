@@ -148,12 +148,12 @@ function installGlobals(window) {
   // A still-vanilla external-tab body whose HTML carries a local island marker
   // (the real production pattern — these bodies emit data-* markers, never
   // data-campaign-action), so we can exercise the external-tab wrapper's
-  // dispatchHtmlIslandAction onClick end to end.
-  CJS.CampaignInventory = {
-    render() {
-      return '<section class="campaign-panel"><button class="island-act" data-full-rest="1">Rest party</button></section>';
-    }
-  };
+  // dispatchHtmlIslandAction onClick end to end. The Farm tab is the LAST
+  // external island still rendered as vanilla HTML (inventory/economy/etc.
+  // migrate to JSX ahead of it), so the marker-routing check rides on it.
+  CJS.PocketHaven = CJS.PocketHaven || {};
+  CJS.PocketHaven.renderFarm = () =>
+    '<section class="campaign-panel"><button class="island-act" data-farm-tick="1">Advance farm</button></section>';
 
   // 5. Mount the REAL shell.
   const React = require("react");
@@ -232,13 +232,13 @@ function installGlobals(window) {
      dispatched.map((d) => d.name).join(","));
 
   // ── Island marker: data-* marker in a still-vanilla external-tab body ────────
-  // Switch to the inventory tab (a still-vanilla HTML island) and click its
+  // Switch to the farm tab (the last still-vanilla HTML island) and click its
   // marker button — the external-tab wrapper's own onClick must translate it via
   // dispatchHtmlIslandAction → handleAction (there is no <main> forwarder now).
-  chromeState.setActiveTab("inventory");
+  chromeState.setActiveTab("farm");
   CJS.CampaignUI.render();
   await nudge();
-  const islandBtn = document.querySelector("main.campaign-main [data-full-rest]");
+  const islandBtn = document.querySelector("main.campaign-main [data-farm-tick]");
   ok("still-vanilla external-tab body rendered inside <main>", !!islandBtn);
   const beforeIsland = dispatched.length;
   if (islandBtn) {
@@ -246,7 +246,7 @@ function installGlobals(window) {
     await settle();
   }
   ok("island data-* marker routes via the tab wrapper's dispatchHtmlIslandAction → handleAction",
-     dispatched.length > beforeIsland && dispatched.some((d) => d.name === "full-rest"),
+     dispatched.length > beforeIsland && dispatched.some((d) => d.name === "farm-tick"),
      dispatched.map((d) => d.name).join(","));
 
   // ── PWA: built artifact ships the PNG icons + a manifest ─────────────────────

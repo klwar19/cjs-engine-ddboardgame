@@ -7,7 +7,6 @@ export interface HtmlIslandDispatchResult {
 }
 
 const DRAWER_CLOSE_ACTIONS = new Set<CampaignActionName>([
-  "open-inventory-tab",
   "open-roster-tab",
   "open-scenarios-tab",
   "open-maps-tab",
@@ -42,23 +41,6 @@ function closest(target: HTMLElement | null, selector: string): HTMLElement | nu
 export function dispatchHtmlIslandAction(target: HTMLElement | null): HtmlIslandDispatchResult {
   if (!target) return { handled: false };
 
-  const inventoryDelta = closest(target, "[data-inventory-delta-bucket]");
-  if (inventoryDelta) {
-    const d = inventoryDelta.dataset;
-    return run("inventory-delta", {
-      bucket: d.inventoryDeltaBucket,
-      id: d.inventoryDeltaId,
-      delta: d.inventoryDelta
-    });
-  }
-
-  const inventoryAdd = closest(target, "[data-inventory-add-bucket]");
-  if (inventoryAdd) {
-    return run("quick-add-inventory", { bucket: inventoryAdd.dataset.inventoryAddBucket });
-  }
-
-  if (closest(target, "[data-open-inventory-tab]")) return run("open-inventory-tab");
-  if (closest(target, "[data-add-note]")) return run("add-note");
   if (closest(target, "[data-add-pocket-note]")) return run("add-pocket-note");
 
   const shopBuy = closest(target, "[data-shop-buy]");
