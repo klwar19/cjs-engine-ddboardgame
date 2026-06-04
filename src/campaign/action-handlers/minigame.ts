@@ -21,6 +21,7 @@
 import { cs, mod, ops, rerender, toast } from "./context";
 import { modals, utils, widgets } from "./modals";
 import { activeQuestById, questMiniGameObjective } from "./quest";
+import { ensureMinigameEngine } from "../lazy-minigames";
 
 interface MiniGameNodeLike {
   id?: string;
@@ -361,6 +362,9 @@ function showMiniGameBriefing(storyContext: StoryContext, launch: () => unknown)
 }
 
 export async function openMiniGameSession(config: MiniGameConfig, context: SessionContext = {}): Promise<unknown> {
+  // The minigame + QTE engine is deferred off the campaign boot path (Tier 1
+  // perf); ensure it is loaded before opening a session.
+  await ensureMinigameEngine();
   const mg = minigames();
   if (!mg?.openMiniGame) {
     toast("Mini-game module is not loaded", "error");

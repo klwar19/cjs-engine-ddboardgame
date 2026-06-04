@@ -49,23 +49,31 @@ file is deleted and is no longer an active bridge or extension point.
   the shell `<main>` forwarder (`CampaignShell.tsx`) and the drawer's
   `htmlIslandActions.ts`. Replace those island bodies with JSX `onClick`, then
   remove the two forwarders.
-- [ ] **Live browser regression.** The static visual-regression harness is not
-  a substitute for a running-browser smoke pass. Add or run a browser test that
-  loads index/campaign/editor/combat, switches campaign modes/tabs, opens and
-  closes the drawer, exercises one typed action and any remaining compatibility
-  action, verifies the combat grid renders, and verifies PWA manifest/icon
-  paths return 200.
+- [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
+  (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
+  react-dom/client and drives the live wiring: boot, chrome render, sub-tab
+  switch + body swap, the createPortal drawer open/close, a typed onClick →
+  handleAction, and a bridged `data-campaign-action` → `<main>` forwarder →
+  handleAction (24 assertions, in `npm test`). This is DOM-backed, not a real
+  pixel browser (no Playwright/Chromium dep — matches `test_launcher_live.js`),
+  and the engine is the bounded VR stub. Still open: a true running-browser
+  pass (real layout/paint/canvas) over index/campaign/editor/combat that also
+  verifies the combat grid renders and PWA paths return 200 over HTTP.
 
 **Performance opportunities surfaced (now budgeted, reductions deferred):**
 
-- [ ] **Shrink the campaign initial *download* (not just the entry chunk).** The
-  entry chunk meets the < 300 KB target (~282 KB raw), but `campaign.html`
-  eagerly `modulepreload`s ~22 chunks — every `cjs-campaign-*` engine domain
-  **plus `cjs-minigames` and `cjs-qte`** — so the real initial JS download is
-  ~377 KB gz / ~1.24 MB raw. The React.lazy *tabs* are correctly absent from
-  that set; the bloat is the statically-imported engine. Move minigames / qte /
-  generators / scenario-runner to dynamic-import-on-first-use to cut it. The new
-  per-page `initialJsGzipKB` ceiling guards it from getting worse.
+- [~] **Shrink the campaign initial *download* (not just the entry chunk).**
+  PARTIAL (Tier 1). The entry chunk meets the < 300 KB target (~282 KB raw),
+  but `campaign.html` eagerly `modulepreload`ed the whole engine. **Done:**
+  `cjs-minigames` + `cjs-qte` are deferred behind `lazy-minigames.ts` (warmed
+  after boot, awaited by the minigame/QTE/fishing launch handlers), dropping
+  the campaign initial JS from **377 → 356 KB gz** (preload chunks 22 → 20).
+  **Still open:** `cjs-campaign-generators` / `-scenario-runner` / `-maps` are
+  bigger but more entangled — `campaign-scenario-generator` feeds the core
+  scenarios tab's render path (defensively, but with downstream `genOptions`
+  usage that needs the live-browser check above), so those are left for that
+  pass rather than deferred blind. The per-page `initialJsGzipKB` ceiling
+  guards the whole metric from regressing.
 - [ ] **Render-blocking CSS.** `campaign.css` is ~541 KB raw / ~167 KB gz — the
   single largest first-paint cost, now budgeted by the per-page `initialCssGzipKB`
   ceiling. Note: rolldown-vite's CSS minifier under-performs here (emitted output

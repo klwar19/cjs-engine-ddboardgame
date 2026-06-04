@@ -7,6 +7,7 @@
 // the same loosely-typed dataset values the bubbling delegate fed it.
 
 import { applyOp, mod } from "./context";
+import { ensureMinigameEngine } from "../lazy-minigames";
 
 type Coord = string | number | undefined;
 
@@ -64,7 +65,10 @@ export function farmCloseTileMenu(): void {
 }
 
 export function farmOpenQte(): void {
-  farming()?.openQte?.();
+  // The QTE engine is deferred off the campaign boot path (Tier 1 perf); ensure
+  // it is loaded before the harvest QTE opens. (hit/close run mid-QTE, after
+  // this has loaded it, so they need no gate.)
+  void ensureMinigameEngine().then(() => farming()?.openQte?.());
 }
 
 export function farmHitQte(): void {
@@ -80,5 +84,6 @@ export function harvestPlot(plotId: Coord): void {
 }
 
 export function openFishing(): void {
-  haven()?.openFishing?.();
+  // Fishing runs the deferred minigame/QTE engine; ensure it is loaded first.
+  void ensureMinigameEngine().then(() => haven()?.openFishing?.());
 }

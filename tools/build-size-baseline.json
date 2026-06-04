@@ -4,12 +4,12 @@
   "floorBytes": 1024,
   "generated": "2026-06-04",
   "code": {
-    "total": 2956107,
+    "total": 2956463,
     "chunks": {
       "animation-bus.js": 509,
       "AudioLibrary.js": 6361,
       "campaign.css": 554689,
-      "campaign.js": 288592,
+      "campaign.js": 288882,
       "CampaignEditor.js": 7121,
       "CampaignEventLogTab.js": 4628,
       "CampaignEventTab.js": 6167,
@@ -63,6 +63,7 @@
       "ItemEditor.js": 11715,
       "JobEditor.js": 11604,
       "launcherVisibility.js": 745,
+      "minigames-bundle.js": 66,
       "minigames.js": 8687,
       "MonsterEditor.js": 23781,
       "PassiveEditor.js": 11357,
