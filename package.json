@@ -15,7 +15,8 @@
     "author": "node tools/author/index.mjs",
     "size:check": "node tools/build-size-check.mjs",
     "size:baseline": "node tools/build-size-check.mjs --update",
-    "art:optimize": "python3 tools/optimize-art.py"
+    "art:optimize": "python3 tools/optimize-art.py",
+    "icons": "node tools/make-pwa-icons.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.15",

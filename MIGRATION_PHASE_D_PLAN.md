@@ -27,40 +27,80 @@ each step (`npm test`).
 
 ### Remaining Work (not done yet)
 
-The campaign React migration is mostly complete, but the following items are
-still open and should be treated as active work. Historical notes below still
-mention `campaign-ui.js` while describing completed migration steps; that file
-is deleted and is no longer an active bridge or extension point.
+The campaign React migration is structurally complete. Historical notes below
+still mention `campaign-ui.js` while describing completed migration steps; that
+file is deleted and is no longer an active bridge or extension point.
 
-- [ ] **Persistence migrations before IndexedDB.** Add
-  `src/persistence/migrations.ts` with versioned save and AI-draft migration
-  helpers, tests for old/current/future versions, and a compatibility wrapper
-  around the current `CampaignSave` path before any storage backend changes.
-- [ ] **IndexedDB persistence.** Move large campaign save slots and AI draft /
-  generated-content payloads out of localStorage into IndexedDB (Dexie or
-  `idb`), keep localStorage for small settings / active-slot ids, and include
-  a one-time localStorage-to-IndexedDB migration.
+**Genuinely open work:**
+
 - [ ] **Phase B Engine TS.** Plan and execute the engine conversion as its own
   phase: TS module first, `window.CJS.*` compatibility wrapper second, tests
   third, JS deletion last. Order: core/data-store/content-validator, effects,
-  combat engine, AI, grid/QTE, then campaign systems.
-- [ ] **Full action-string removal.** The typed registry is done, but
-  remaining vanilla / HTML islands still emit `data-campaign-action` and rely
-  on the shell forwarder. Replace drawer HTML, campaign maps, inventory /
-  economy, farming, Pocket Haven, and relationships actions with typed
-  handlers or JSX `onClick` calls, then remove the compatibility forwarders.
-- [ ] **Hard bundle targets.** `tools/build-size-check.mjs` currently guards
-  regressions against a baseline. Add explicit ceilings too: campaign initial
-  chunk under 300 KB, editor under 150 KB, combat under 200 KB.
-- [ ] **PNG PWA icons.** Add generated PNG icons (at least 192px and 512px,
-  plus maskable if needed), list them in `pwa.config.mjs`, include them in the
-  PWA asset list, and test that the manifest references real files.
+  combat engine, AI, grid/QTE, then campaign systems. This is by far the largest
+  remaining effort: ~50k lines of engine JS still live in `js/` (campaign-ops
+  ~3.4k, scenario-runner ~2.9k, campaign-state ~1.3k, …); `src/engine/` is
+  currently only ~150 lines of type stubs, so the conversion is barely started.
+- [ ] **Full action-string removal.** The typed registry is done (246/246
+  actions in `src/campaign/action-handlers/`) and **zero `.tsx` files emit
+  `data-campaign-action`** — the only remaining emitters are the deliberately-
+  bridged HTML islands (`util/cui-hub-tab.ts`, `util/cui-controls.ts`,
+  `action-handlers/story-director-card.ts`, the external-module tabs
+  inventory/shops/craft/cook/farm/relationships, and the maps tab), routed via
+  the shell `<main>` forwarder (`CampaignShell.tsx`) and the drawer's
+  `htmlIslandActions.ts`. Replace those island bodies with JSX `onClick`, then
+  remove the two forwarders.
 - [ ] **Live browser regression.** The static visual-regression harness is not
   a substitute for a running-browser smoke pass. Add or run a browser test that
   loads index/campaign/editor/combat, switches campaign modes/tabs, opens and
   closes the drawer, exercises one typed action and any remaining compatibility
   action, verifies the combat grid renders, and verifies PWA manifest/icon
   paths return 200.
+
+**Performance opportunities surfaced (now budgeted, reductions deferred):**
+
+- [ ] **Shrink the campaign initial *download* (not just the entry chunk).** The
+  entry chunk meets the < 300 KB target (~282 KB raw), but `campaign.html`
+  eagerly `modulepreload`s ~22 chunks — every `cjs-campaign-*` engine domain
+  **plus `cjs-minigames` and `cjs-qte`** — so the real initial JS download is
+  ~377 KB gz / ~1.24 MB raw. The React.lazy *tabs* are correctly absent from
+  that set; the bloat is the statically-imported engine. Move minigames / qte /
+  generators / scenario-runner to dynamic-import-on-first-use to cut it. The new
+  per-page `initialJsGzipKB` ceiling guards it from getting worse.
+- [ ] **Render-blocking CSS.** `campaign.css` is ~541 KB raw / ~167 KB gz — the
+  single largest first-paint cost, now budgeted by the per-page `initialCssGzipKB`
+  ceiling. Note: rolldown-vite's CSS minifier under-performs here (emitted output
+  is *larger* than the source concat). A Lightning CSS post-bundle pass was tried
+  and **rejected** — it shrinks clean *source* (484→355 KB) but does ~nothing to
+  the already-emitted bytes (541→541), so adopting it would have been a no-op
+  dependency. A real reduction needs either a fix to the rolldown CSS pipeline or
+  deferring the feature sheets (visual-novel / minigames / l2d-avatar) off the
+  critical path; both need the live-browser visual check above, so they ride with
+  it.
+
+**Completed in this pass (were previously mislisted here as not-done):**
+
+- [x] **Persistence migrations + IndexedDB.** `src/persistence/migrations.ts`
+  (versioned v0→v1 save + AI-draft migrations, future-version rejection,
+  no-mutation tests) and `src/persistence/indexedDb.ts` (`idb`-backed
+  saves/drafts/meta stores + a one-time, gated localStorage→IndexedDB migration)
+  shipped. `campaign-save.js` / `save-manager.js` are IndexedDB-primary with a
+  localStorage fallback; small settings (active-slot id, GitHub config) stay in
+  localStorage. `idb` is a dependency; `test_persistence_migrations.js` is wired
+  into `npm test`. (This section had stalely tracked both as open.)
+- [x] **PNG PWA icons.** `tools/make-pwa-icons.mjs` (uses `sharp`; a dev tool,
+  not a build/runtime dependency — same posture as `optimize-art.py` + Pillow)
+  rasterizes `public/icon.svg` into committed `icon-192.png`, `icon-512.png`,
+  and a full-bleed `icon-maskable-512.png`. `pwa.config.mjs` lists all four (SVG
+  `any` + the three PNGs + a `maskable`); `vite.config.mjs` `includeAssets`
+  precaches them; `test_pwa_config.js` asserts the manifest entries AND that each
+  referenced file exists in `public/`.
+- [x] **Hard bundle targets + CSS budget.** `tools/build-size-check.mjs` now
+  enforces absolute, non-re-baselineable per-page ceilings (`PAGE_BUDGETS`) on
+  three honest metrics: entry-chunk raw (campaign < 300 / combat < 200 / editor
+  < 150 KB), initial-JS gzip (entry + modulepreload closure — the real
+  download), and initial-CSS gzip. Parsed from the built HTML's
+  entry/modulepreload/stylesheet tags. Runs in the existing `size:check`
+  (CI on every PR via `ci.yml`, and on main via `deploy.yml`).
 
 ### Done
 
@@ -255,24 +295,15 @@ campaign shell is React-owned at the entry point.
   Event tabs. JSX component handles VN-mode + inline-mode wrappers.
   Node body still HTML bridge.
 
-### Next — Phase G (remaining sub-renderers)
+### Done — Phase G (sub-renderers — all ported)
 
-Each entry is one commit. The pattern is uniform: expose a typed
+Every entry below was one commit. The pattern was uniform: expose a typed
 `get<Thing>Data(state, ...)` bridge that returns structured data,
 write a JSX component in `src/campaign/tabs/` that maps that data
 to markup with direct onClick handlers, swap the consumers from
 HTML-bridge to JSX, delete the closure-private `_render*` helper
-and any sub-helpers it owned exclusively.
+and any sub-helpers it owned exclusively. G.8–G.17 are all complete.
 
-- [ ] **G.8 — `_renderSequenceNode` (7 variants).** Discriminated
-  union: `choice` (per-choice eligibility + alignment hint),
-  `stat_check` (pass/fail), `combat` (queue battle / manual win/lose,
-  replay aware), `minigame` (play / manual clear/fail), `scenario`
-  (start / continue / abort), `end` (Complete), default narration
-  (continue with `condition→sequence-resolve` or `ops→Apply&Continue`
-  label rewrites). Ported alongside this drops `_renderActiveSequence`
-  too — the wrapper already moved in G.7 but still calls the node
-  helper.
 - [x] **G.8 — `_renderSequenceNode` (7 variants).** Typed
   `SequenceNodeData` discriminated union + `SequenceNodePanel` JSX.
   `_renderActiveSequence`, `_renderSequenceNode`, `_sequenceNodeMeta`
@@ -1574,7 +1605,8 @@ in three clusters — these are the item-3/4 work:
 
 For every tab/panel migration commit:
 
-- `npm test` is green (currently 901 assertions across 12 files).
+- `npm test` is green (the suite is now 23 test files — see the `test`
+  script in `package.json`; each file prints its own assertion tally).
 - `npm run typecheck` is clean.
 - `npm run build` succeeds.
 - The migrated tab/panel renders identical content to the vanilla

@@ -31,13 +31,15 @@ export const pwaManifest = {
   orientation: "any",
   background_color: "#0a1024",
   theme_color: "#1a2540",
+  // SVG for crisp desktop/Chrome installs; PNG 192/512 for Android home-screen
+  // + iOS apple-touch-icon (iOS ignores SVG icons); a dedicated full-bleed
+  // maskable PNG for adaptive launchers. Regenerate the PNGs from icon.svg with
+  // `node tools/make-pwa-icons.mjs` (needs sharp; see that file).
   icons: [
-    {
-      src: "icon.svg",
-      sizes: "any",
-      type: "image/svg+xml",
-      purpose: "any maskable"
-    }
+    { src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+    { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: "icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
   ]
 };
 

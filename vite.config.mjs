@@ -57,7 +57,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
-      includeAssets: ["icon.svg"],
+      includeAssets: ["icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png"],
       // Manifest + Workbox policy live in pwa.config.mjs (a single, testable
       // data structure — see test_pwa_config.js). Phase I.5 shifted precache
       // from "every chunk" to "app shell + universal runtime", with the domain

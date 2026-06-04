@@ -97,6 +97,26 @@ function routeFor(rules, url) {
      pwaManifest.start_url === './index.html' && pwaManifest.scope === './');
   ok('manifest ships the icon', Array.isArray(pwaManifest.icons) && pwaManifest.icons.length > 0);
 
+  // ── PWA icons: SVG + real PNG files (192/512 + maskable) ─────────────────
+  // iOS ignores SVG icons and adaptive launchers want a full-bleed maskable
+  // raster, so the manifest must list PNGs and those files must actually exist
+  // in public/ (regenerate with `node tools/make-pwa-icons.mjs`).
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const icons = Array.isArray(pwaManifest.icons) ? pwaManifest.icons : [];
+  const iconSrc = icons.map((i) => i && i.src);
+  ok('manifest keeps the scalable SVG icon', iconSrc.includes('icon.svg'));
+  ok('manifest declares a 192px PNG',
+     icons.some((i) => i.src === 'icon-192.png' && i.sizes === '192x192' && i.type === 'image/png'));
+  ok('manifest declares a 512px PNG',
+     icons.some((i) => i.src === 'icon-512.png' && i.sizes === '512x512' && i.type === 'image/png'));
+  ok('manifest declares a maskable PNG (adaptive launchers)',
+     icons.some((i) => i.type === 'image/png' && /\bmaskable\b/.test(String(i.purpose || ''))));
+  for (const src of iconSrc.filter(Boolean)) {
+    const file = path.join(__dirname, 'public', src);
+    ok('icon file exists in public/: ' + src, fs.existsSync(file));
+  }
+
   // ── Precache = shell only ────────────────────────────────────────────────
   const globs = workboxOptions.globPatterns;
   ok('globPatterns is an array', Array.isArray(globs));

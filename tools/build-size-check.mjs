@@ -23,6 +23,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +37,34 @@ const THRESHOLD_PCT = 5; // a chunk/total may not grow more than this %
 const FLOOR_BYTES = 1024; // ...and must also clear this absolute delta to fail
 const LARGE_ASSET_BYTES = 2 * 1024 * 1024; // assets above this are listed/noted
 const LARGEST_N = 15; // how many of the biggest assets to record/report
+
+// Absolute per-page load ceilings. Unlike the chunk baseline above (which only
+// guards against *regression* and is re-baselineable), these are hard product
+// targets that `npm run size:baseline` does NOT touch — a build that blows a
+// ceiling fails CI until the code is fixed or the ceiling is deliberately
+// raised here. Three metrics, because "bundle size" is ambiguous and the entry
+// chunk alone hides the real download (the campaign page eagerly modulepreloads
+// most of the engine):
+//   • entryMaxKB      — the entry chunk alone, RAW KB. Matches the plan's
+//                       tracked metric and the stated "campaign < 300 / combat
+//                       < 200 / editor < 150" targets.
+//   • initialJsGzipKB — entry + its static-import (modulepreload) closure,
+//                       GZIPPED — what the browser actually pulls before the
+//                       app is interactive. This is the honest figure; it is
+//                       2–4× the entry chunk because the engine domains are
+//                       statically imported (a tracked reduction opportunity:
+//                       lazy-load minigames / qte / generators off the campaign
+//                       boot path).
+//   • initialCssGzipKB— the render-blocking stylesheets, GZIPPED. campaign.css
+//                       is the single largest first-paint cost, so it gets an
+//                       explicit budget even though it is not JS.
+// Headroom is intentionally small (≈5–10% over current) so drift is caught
+// early. Pages not listed here are unbudgeted (index/minigames are tiny).
+const PAGE_BUDGETS = {
+  "campaign.html": { entryMaxKB: 300, initialJsGzipKB: 400, initialCssGzipKB: 200 },
+  "combat.html": { entryMaxKB: 200, initialJsGzipKB: 300, initialCssGzipKB: 150 },
+  "editor.html": { entryMaxKB: 150, initialJsGzipKB: 230, initialCssGzipKB: 30 }
+};
 
 const CODE_RE = /\.(js|css|html|map|webmanifest)$/;
 const HASH_RE = /^(.*)-[A-Za-z0-9_-]{8}\.(js|css)$/;
@@ -231,6 +260,76 @@ function snapshot() {
   return { chunks, codeTotal, assets };
 }
 
+// ── PAGE LOADS: per-entry initial-download budget ──────────────────────────
+function gzipBytes(file) {
+  try {
+    return zlib.gzipSync(fs.readFileSync(path.join(distAssets, file))).length;
+  } catch {
+    return 0;
+  }
+}
+function assetBytes(file) {
+  try {
+    return fs.statSync(path.join(distAssets, file)).size;
+  } catch {
+    return 0;
+  }
+}
+
+// Parse a built HTML entry for the chunks the browser fetches up front: the
+// module entry script, its modulepreload closure (Vite injects one <link
+// rel="modulepreload"> per statically-imported chunk, so this set IS the
+// initial JS download), and the render-blocking stylesheets.
+function collectPageLoads() {
+  const pages = {};
+  for (const html of Object.keys(PAGE_BUDGETS)) {
+    const htmlPath = path.join(dist, html);
+    if (!fs.existsSync(htmlPath)) continue;
+    const src = fs.readFileSync(htmlPath, "utf8");
+    const entry = (src.match(/<script[^>]*\bsrc="\.\/assets\/([^"]+\.js)"/) || [])[1] || null;
+    const preloads = [...src.matchAll(/rel="modulepreload"[^>]*href="\.\/assets\/([^"]+\.js)"/g)].map((m) => m[1]);
+    const styles = [...src.matchAll(/rel="stylesheet"[^>]*href="\.\/assets\/([^"]+\.css)"/g)].map((m) => m[1]);
+    const js = [entry, ...preloads].filter(Boolean);
+    pages[html] = {
+      entry,
+      entryBytes: entry ? assetBytes(entry) : 0,
+      jsCount: js.length,
+      jsGzip: js.reduce((a, f) => a + gzipBytes(f), 0),
+      cssCount: styles.length,
+      cssGzip: styles.reduce((a, f) => a + gzipBytes(f), 0)
+    };
+  }
+  return pages;
+}
+
+// Report each budgeted page and flag any metric over its ceiling. Returns the
+// list of violations (empty = all within budget).
+function reportPageLoads(pages) {
+  const names = Object.keys(pages);
+  if (!names.length) return [];
+  console.log("\nbuild-size-check: per-page load budgets (entry raw · initial JS gz · initial CSS gz)");
+  const violations = [];
+  for (const html of names) {
+    const p = pages[html];
+    const b = PAGE_BUDGETS[html];
+    const entryKB = p.entryBytes / 1024;
+    const jsKB = p.jsGzip / 1024;
+    const cssKB = p.cssGzip / 1024;
+    const over = [];
+    if (entryKB > b.entryMaxKB) over.push("entry");
+    if (jsKB > b.initialJsGzipKB) over.push("initJS");
+    if (cssKB > b.initialCssGzipKB) over.push("initCSS");
+    console.log(
+      `    ${html.padEnd(14)} entry ${entryKB.toFixed(1).padStart(6)}/${b.entryMaxKB} KB · ` +
+        `JS ${jsKB.toFixed(1).padStart(6)}/${b.initialJsGzipKB} gz (${p.jsCount}) · ` +
+        `CSS ${cssKB.toFixed(1).padStart(6)}/${b.initialCssGzipKB} gz (${p.cssCount})` +
+        (over.length ? `  <= over: ${over.join(", ")}` : "")
+    );
+    if (over.length) violations.push({ html, entryKB, jsKB, cssKB, b, over });
+  }
+  return violations;
+}
+
 function writeBaseline(snap) {
   const payload = {
     _note:
@@ -266,10 +365,17 @@ function writeBaseline(snap) {
 
 const snap = snapshot();
 const categoryCapStatus = collectCategoryCapStatus();
+const pageLoads = collectPageLoads();
 
 if (update) {
   if (reportCategoryCaps(categoryCapStatus)) {
     console.log("\nbuild-size-check: refusing to write a baseline while source media category caps fail.");
+    process.exit(1);
+  }
+  // Page budgets are absolute (not baselined), but a re-baseline that left a
+  // page over its ceiling would be misleading — surface it, and refuse.
+  if (reportPageLoads(pageLoads).length) {
+    console.log("\nbuild-size-check: refusing to write a baseline while a per-page load budget is exceeded.");
     process.exit(1);
   }
   writeBaseline(snap);
@@ -356,9 +462,16 @@ if (oversized.length) {
 }
 
 const categoryCapFailed = reportCategoryCaps(categoryCapStatus);
+const pageBudgetViolations = reportPageLoads(pageLoads);
 
 // ── verdict ─────────────────────────────────────────────────────────────────
-if (chunkRegressions.length || codeTotalRegressed || assetRegressed || categoryCapFailed) {
+if (
+  chunkRegressions.length ||
+  codeTotalRegressed ||
+  assetRegressed ||
+  categoryCapFailed ||
+  pageBudgetViolations.length
+) {
   failed = true;
   console.log("\nSize budget EXCEEDED:");
   for (const r of chunkRegressions.sort((a, b) => b.delta - a.delta)) {
@@ -376,13 +489,22 @@ if (chunkRegressions.length || codeTotalRegressed || assetRegressed || categoryC
   if (categoryCapFailed) {
     console.log("  XX source media category caps: see details above");
   }
+  for (const v of pageBudgetViolations) {
+    console.log(
+      `  XX ${v.html}: over per-page ceiling (${v.over.join(", ")}) — ` +
+        `entry ${v.entryKB.toFixed(1)}/${v.b.entryMaxKB} KB, ` +
+        `initial JS ${v.jsKB.toFixed(1)}/${v.b.initialJsGzipKB} gz, ` +
+        `initial CSS ${v.cssKB.toFixed(1)}/${v.b.initialCssGzipKB} gz`
+    );
+  }
   console.log(
-    "\nIf this growth is intended, re-baseline with `npm run size:baseline` " +
+    "\nIf chunk/asset growth is intended, re-baseline with `npm run size:baseline` " +
       "and commit tools/build-size-baseline.json. Category cap failures must be fixed " +
-      "or intentionally adjusted in tools/art-budget.json."
+      "or intentionally adjusted in tools/art-budget.json. Per-page ceilings are hard " +
+      "targets in tools/build-size-check.mjs (PAGE_BUDGETS) — fix the code or raise them deliberately."
   );
 }
 
 if (failed) process.exit(1);
-console.log("\nbuild-size-check: OK — code + assets + source media within budget.");
+console.log("\nbuild-size-check: OK — code + assets + media + per-page budgets within limits.");
 process.exit(0);
