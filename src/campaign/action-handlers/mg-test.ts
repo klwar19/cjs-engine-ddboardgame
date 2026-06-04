@@ -13,6 +13,7 @@
 
 import { cs, mod, rerender, toast } from "./context";
 import { setMinigameTestGame } from "../tabs/data/minigameTest";
+import { ensureMinigameEngine } from "../lazy-minigames";
 
 interface MinigameResult {
   gameId?: string;
@@ -51,6 +52,9 @@ export interface MgTestPlayInput {
 }
 
 export async function mgTestPlay({ gameId, levelId, difficulty }: MgTestPlayInput): Promise<void> {
+  // The minigame + QTE engine is deferred off the campaign boot path (Tier 1
+  // perf); ensure it is loaded before opening the test session.
+  await ensureMinigameEngine();
   const mg = minigames();
   if (!mg?.openMiniGame) {
     toast("Mini-game module is not loaded", "error");

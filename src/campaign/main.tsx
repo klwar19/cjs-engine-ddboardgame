@@ -56,19 +56,11 @@ import "../../js/campaign/campaign-map-seed-forge.js";
 import "../../js/campaign/campaign-scenario-generator.js";
 import "../../js/campaign/campaign-idea-forge.js";
 import "../../js/campaign/campaign-world-map.js";
-import "../../js/minigames/minigame-registry.js";
-import "../../js/minigames/minigame-sprites.js";
-import "../../js/minigames/mummy-maze.js";
-import "../../js/minigames/push-box.js";
-import "../../js/qte/qte-quickpress.js";
-import "../../js/qte/qte-mash.js";
-import "../../js/qte/qte-fishing.js";
-import "../../js/qte/qte-rhythm.js";
-import "../../js/qte/qte-quiz.js";
-import "../../js/qte/qte-manager.js";
-import "../../js/minigames/fishing-minigame.js";
-import "../../js/minigames/cooking-minigame.js";
-import "../../js/minigames/minigame-host.js";
+// The minigame + QTE engine (js/minigames/*, js/qte/*) is no longer imported
+// here — it is deferred behind ./lazy-minigames (Tier 1 perf) so cjs-minigames
+// + cjs-qte drop out of the campaign page's eager modulepreload set. It is
+// warmed in the background after boot (below) and awaited by the launch action
+// handlers (minigame.ts / mg-test.ts / farm openFishing).
 import "../../js/ui/relationships-tab.js";
 // Phase H.4 — leaf util helpers ported to TS. The TS modules install
 // the same `window.CJS.CampaignUIInternal.<Namespace>` surface so
@@ -105,6 +97,7 @@ import "../../js/ui/l2d-companion.js";
 // handler. Loads after the boot install above, before the React app mounts.
 import "./action-handlers/registry";
 import { markEmbeddedIfNeeded } from "../shared/embed";
+import { ensureMinigameEngine } from "./lazy-minigames";
 import { CampaignPage } from "./CampaignPage";
 
 markEmbeddedIfNeeded();
@@ -118,3 +111,14 @@ if (!container) {
 // to CampaignState imperatively, which would double-fire under
 // StrictMode's dev double-mount.
 createRoot(container).render(<CampaignPage />);
+
+// Warm the deferred minigame + QTE engine in the background once the shell has
+// painted (Tier 1 perf): it is off the boot path now, so kick the dynamic
+// import after first paint and re-render when ready, so the minigame-test tab's
+// game list fills in if that tab is already open. Action handlers await the
+// same promise before launching, so this is purely a head start.
+window.setTimeout(() => {
+  void ensureMinigameEngine().then(() => {
+    (window as unknown as { CJS?: { CampaignUI?: { render?: () => void } } }).CJS?.CampaignUI?.render?.();
+  });
+}, 0);
