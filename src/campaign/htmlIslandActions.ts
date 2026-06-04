@@ -37,8 +37,6 @@ function closest(target: HTMLElement | null, selector: string): HTMLElement | nu
 export function dispatchHtmlIslandAction(target: HTMLElement | null): HtmlIslandDispatchResult {
   if (!target) return { handled: false };
 
-  if (closest(target, "[data-add-pocket-note]")) return run("add-pocket-note");
-
   if (closest(target, "[data-farm-tick]")) return run("farm-tick");
   if (closest(target, "[data-farm-qte-open]")) return run("farm-qte-open");
   if (closest(target, "[data-farm-qte-hit]")) return run("farm-qte-hit");
@@ -71,35 +69,6 @@ export function dispatchHtmlIslandAction(target: HTMLElement | null): HtmlIsland
 
   const plantSeed = closest(target, "[data-plant-seed-plot]");
   if (plantSeed) return run("plant-seed", { plotId: plantSeed.dataset.plantSeedPlot });
-
-  const craftRecipe = closest(target, "[data-craft-recipe-id]");
-  if (craftRecipe) return run("craft-recipe", { recipeId: craftRecipe.dataset.craftRecipeId });
-
-  const cookFood = closest(target, "[data-cook-food-id]");
-  if (cookFood) return run("cook-food", { foodId: cookFood.dataset.cookFoodId });
-
-  const minigame = closest(target, "[data-haven-play-minigame]");
-  if (minigame) return run("haven-play-minigame", { game: minigame.dataset.havenPlayMinigame });
-
-  const trivia = closest(target, "[data-haven-open-trivia]");
-  if (trivia) return run("haven-open-trivia", { world: trivia.dataset.havenOpenTrivia });
-
-  const buildFacility = closest(target, "[data-haven-build-facility]");
-  if (buildFacility) return run("haven-build-facility", { facility: buildFacility.dataset.havenBuildFacility });
-
-  const upgradeFacility = closest(target, "[data-haven-upgrade-facility]");
-  if (upgradeFacility) return run("haven-upgrade-facility", { facility: upgradeFacility.dataset.havenUpgradeFacility });
-
-  const trainSkill = closest(target, "[data-haven-train-skill]");
-  if (trainSkill) return run("haven-train-skill", { facility: trainSkill.dataset.havenTrainSkill });
-
-  const ranchAssign = closest(target, "[data-haven-ranch-assign]");
-  if (ranchAssign) return run("haven-ranch-assign", { facility: ranchAssign.dataset.havenRanchAssign });
-
-  const ranchCollect = closest(target, "[data-haven-ranch-collect]");
-  if (ranchCollect) return run("haven-ranch-collect", { facility: ranchCollect.dataset.havenRanchCollect });
-
-  if (closest(target, "[data-open-fishing]")) return run("open-fishing");
 
   return { handled: false };
 }

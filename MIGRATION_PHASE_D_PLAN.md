@@ -114,10 +114,22 @@ file is deleted and is no longer an active bridge or extension point.
      now imports it directly (TS) instead of reading `window.CJS.RelationshipsTab`,
      so the module could be deleted cleanly. Gate green; campaign initial JS
      352.3 → 351.1 KB gz (entry chunk 275.9 → 271.5 KB).
-  4. **Pocket Haven craft/cook** (`pocket-haven.js`, 424) → `CampaignCraftTab` /
-     `CampaignCookTab` JSX. Markers: `data-craft-recipe-id`, `data-cook-food-id`,
-     `data-haven-*` (build/upgrade/train/ranch-assign/ranch-collect),
-     `data-haven-play-minigame`, `data-haven-open-trivia`, `data-open-fishing`.
+  4. **Pocket Haven craft/cook** ✅ DONE. (`pocket-haven.js`, 424) →
+     `CampaignCraftTab` / `CampaignCookTab` JSX (`tabs/CampaignCraftCookTabs.tsx`
+     + shared `tabs/data/recipes.ts` porting `_renderRecipeRow` /
+     `_renderIngredientLine` / `_renderOutputLine` / `_bundleAvailable`). Retired
+     `data-craft-recipe-id`, `data-cook-food-id`. **Audit finding:** the
+     `renderPocket` / `renderFacilities` / `renderMiniGames` / `renderFishing`
+     panels (which emit `data-haven-*`, `data-haven-play-minigame`,
+     `data-haven-open-trivia`, `data-open-fishing`, `data-add-pocket-note`) had
+     **no consumers** — there is no pocket/haven tab in the registry — so they were
+     dead code; deleted outright (markers retired without a JSX port). The
+     matching registry actions stay (still covered) but were already unreachable.
+     `pocket-haven.js` shrank 424 → ~120 lines, keeping `renderFarm` (the still-
+     vanilla Farm tab uses it until step 5) + the handler-invoked ops
+     `plantSeed` / `harvestPlot` / `openFishing` (+ `_detectBiome`). Farm markers
+     (`data-farm-*`, `data-harvest-plot`, `data-plant-seed-plot`) stay for step 5.
+     Gate green; campaign initial JS 351.1 → 348.5 KB gz (entry 271.5 → 270.4 KB).
   5. **Farming** (`farming-mode.js`, 1,295 — HARDEST) → `CampaignFarmTab` JSX. A
      stateful tile grid + timed QTE window + keyboard controls. Markers:
      `data-farm-tick/-move/-tile/-interact/-pass-phase`,

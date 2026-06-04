@@ -48,11 +48,8 @@ import {
 import { CampaignInventoryTab } from "../../src/campaign/tabs/CampaignInventoryTab";
 import { CampaignShopsTab } from "../../src/campaign/tabs/CampaignShopsTab";
 import { CampaignRelationshipsTab } from "../../src/campaign/tabs/CampaignRelationshipsTab";
-import {
-  CampaignCraftTab,
-  CampaignCookTab,
-  CampaignFarmTab
-} from "../../src/campaign/tabs/CampaignExternalTabs";
+import { CampaignCraftTab, CampaignCookTab } from "../../src/campaign/tabs/CampaignCraftCookTabs";
+import { CampaignFarmTab } from "../../src/campaign/tabs/CampaignExternalTabs";
 import { CampaignWorldGateTab } from "../../src/campaign/tabs/CampaignWorldGateTab";
 import { CampaignStoryHomeTab } from "../../src/campaign/tabs/CampaignStoryHomeTab";
 import { CampaignStorySummaryTab } from "../../src/campaign/tabs/CampaignStorySummaryTab";
@@ -275,6 +272,48 @@ const contentFixture = {
   }
 };
 
+// Crafting recipes the DataStore stub serves to CampaignCraftTab via
+// getAllAsArray("crafting"). Covers an affordable recipe (Craft enabled, green
+// ingredients, buff) and an unaffordable one (disabled, red ingredients).
+const craftingFixture = [
+  {
+    id: "iron_blade",
+    name: "Iron Blade",
+    icon: "🗡️",
+    description: "A sturdy starter weapon.",
+    _world: "haven",
+    inputs: { materials: { iron_ore: 4 } },
+    outputs: { items: { iron_blade: 1 } },
+    buff: { stat: "atk", amount: 2 },
+    duration: "next_battle"
+  },
+  {
+    id: "mythic_charm",
+    name: "Mythic Charm",
+    icon: "✨",
+    description: "Requires rare materials.",
+    _world: "haven",
+    inputs: { materials: { mythril: 3 }, currencies: { haven_gold: 500 } },
+    outputs: { items: { mythic_charm: 1 } }
+  }
+];
+
+// Food recipes for CampaignCookTab via getAllAsArray("food"). Food-only inputs
+// don't surface as ingredient chips (island quirk), so this exercises the
+// "No ingredients required." + canMake-via-food-stock path.
+const foodFixture = [
+  {
+    id: "hearty_stew",
+    name: "Hearty Stew",
+    icon: "🍲",
+    description: "Warm food for the road.",
+    inputs: { food: { trail_ration: 2 } },
+    outputs: { food: { hearty_stew: 1 } },
+    buff: { stat: "hp", amount: 10 },
+    duration: "next_battle"
+  }
+];
+
 // Shops the DataStore stub serves to the ported CampaignShopsTab via
 // getAllAsArray("shops"). Covers: an affordable item (Buy enabled + Sell),
 // a seed (farm stock — no Sell), and an item with requires/consumes bundles.
@@ -473,7 +512,8 @@ export function installEngine(): void {
   CJS.DataStore = {
     get: () => null,
     getAll: () => ({}),
-    getAllAsArray: (bucket: string) => (bucket === "shops" ? shopsFixture : [])
+    getAllAsArray: (bucket: string) =>
+      bucket === "shops" ? shopsFixture : bucket === "crafting" ? craftingFixture : bucket === "food" ? foodFixture : []
   };
   CJS.CampaignWorldMap = {
     getTravelMapData: () => null,
@@ -528,11 +568,8 @@ export function installEngine(): void {
 
   // External-module island wrappers (still-vanilla HTML; ported one at a time).
   // Inventory + Shops are now JSX (read state + DataStore) — no island stub.
-  CJS.PocketHaven = {
-    renderCraft: () => ISLAND("craft"),
-    renderCook: () => ISLAND("cook"),
-    renderFarm: () => ISLAND("farm")
-  };
+  // Farm is the last still-vanilla external island (FarmingMode tab port pending).
+  CJS.PocketHaven = { renderFarm: () => ISLAND("farm") };
 
   // Seed the campaign store so self-subscribing panels (ResultPanels via
   // useCampaignSelector) read the fixture through their getServerSnapshot

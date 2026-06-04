@@ -1,16 +1,14 @@
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchHtmlIslandAction } from "../htmlIslandActions";
 
-// Wrappers for tabs whose body comes from a sibling vanilla module
-// (PocketHaven craft/cook/farm).
-// Same hybrid migration pattern as the hub family — React owns the
-// mount, vanilla produces the inner HTML, and this wrapper translates
-// island-local data markers into typed dispatch calls. Per-tab JSX ports
-// land one at a time (Inventory + Shops + Relationships are already ported).
+// Wrapper for the Farm tab, whose body still comes from the sibling vanilla
+// PocketHaven/FarmingMode modules (the stateful tile-grid port is the last
+// external-island migration). Same hybrid pattern as the hub family — React
+// owns the mount, vanilla produces the inner HTML, and this wrapper translates
+// island-local data markers into typed dispatch calls. Inventory + Shops +
+// Relationships + Craft/Cook are already ported to JSX.
 
 interface HavenMod       {
-  readonly renderCraft: () => string;
-  readonly renderCook: () => string;
   readonly renderFarm: () => string;
 }
 interface FarmingMod { readonly selectSeed?: (value: string) => void }
@@ -72,18 +70,6 @@ function onFarmSeedChange(event: React.ChangeEvent<HTMLDivElement>) {
     "[data-farm-select='seed']"
   ) as HTMLSelectElement | null;
   if (select) cjs().FarmingMode?.selectSeed?.(select.value);
-}
-
-export function CampaignCraftTab(_props: Props) {
-  const mod = cjs().PocketHaven;
-  if (!mod?.renderCraft) return fallback("Pocket Haven craft UI not loaded.");
-  return safeWrap("PocketHaven.renderCraft", () => mod.renderCraft(), "campaign-craft-react");
-}
-
-export function CampaignCookTab(_props: Props) {
-  const mod = cjs().PocketHaven;
-  if (!mod?.renderCook) return fallback("Pocket Haven cook UI not loaded.");
-  return safeWrap("PocketHaven.renderCook", () => mod.renderCook(), "campaign-cook-react");
 }
 
 export function CampaignFarmTab(_props: Props) {
