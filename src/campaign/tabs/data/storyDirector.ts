@@ -7,14 +7,15 @@
 // none of them are shared with `getStoryHomeData`.
 
 import { cssVarAssetUrl, label } from "../../util/cui-utils";
+import { consequencePreviewData, type ConsequencePreviewData } from "../../util/cui-hub-tab";
 import { storyTheme, storyVnHeroData, type StoryVnHeroData } from "./storyShared";
 import type { CampaignStateSnapshot } from "../../store";
 
 export type { StoryVnHeroData, StoryNextStep, StoryActionButton } from "./storyShared";
 
-// G.11b — typed stage rail + director card. The route consequence
-// preview is still an HTML bridge (`HubTab.renderConsequencePreview`)
-// until K.3 ports the HubTab renderers.
+// G.11b — typed stage rail + director card. The route consequence preview is
+// structured `ConsequencePreviewData` (Part B) the JSX `<ConsequencePreview>`
+// renders — in the storyDirector tab and the React story beat modal alike.
 export interface StoryStageEntry {
   readonly id: string;
   readonly name: string;
@@ -29,7 +30,7 @@ export interface StoryRouteChoice {
   readonly label: string;
   readonly cardId: string;
   readonly isRecommended: boolean;
-  readonly consequencePreviewHtml: string;
+  readonly consequencePreview: ConsequencePreviewData;
 }
 
 export interface StoryDirectorCardData {
@@ -219,7 +220,9 @@ interface TruthInput {
   readonly rule?: string;
 }
 
-interface CardInput {
+// Exported so the React story beat modal can type the raw beat card it passes
+// to `storyDirectorCardData`.
+export interface CardInput {
   readonly id?: string;
   readonly title?: string;
   readonly stageId?: string;
@@ -259,20 +262,12 @@ interface StoryDirectorModule {
   readonly snapshot?: () => DirectorSnapshot;
 }
 
-interface HubTabSurface {
-  readonly renderConsequencePreview?: (
-    ops: readonly unknown[],
-    options?: { title?: string; emptyTitle?: string; emptyText?: string }
-  ) => string;
-}
-
 interface SideContentSurface {
   readonly riskClass?: (risk: string | undefined) => string;
 }
 
 interface DirectorCjs {
   readonly CampaignStoryDirector?: StoryDirectorModule;
-  readonly CampaignUIInternal?: { readonly HubTab?: HubTabSurface };
   readonly CampaignSideContent?: SideContentSurface;
 }
 
@@ -410,10 +405,12 @@ function storyStageRailData(stages: readonly StageInput[], stage: StageInput = {
 }
 
 // ── Story director card ────────────────────────────────────────────
-function storyDirectorCardData(card: CardInput | null | undefined): StoryDirectorCardData | null {
+// Exported so the React story beat modal (`tabs/StoryBeatModal.tsx`, opened
+// by `action-handlers/story-director-modals.ts`) renders the SAME typed card
+// data the storyDirector tab does.
+export function storyDirectorCardData(card: CardInput | null | undefined): StoryDirectorCardData | null {
   if (!card) return null;
   const sx = cjs().CampaignSideContent;
-  const hub = cjs().CampaignUIInternal?.HubTab;
   const kindLabel = label(card.kind || "story");
   const stageLabel = card.stageName || card.stageId || "";
   const choices = card.suggestedChoices || [];
@@ -435,12 +432,11 @@ function storyDirectorCardData(card: CardInput | null | undefined): StoryDirecto
     label: String(choice.label || `Choice ${index + 1}`),
     cardId: String(card.id || ""),
     isRecommended: index === 0,
-    consequencePreviewHtml:
-      hub?.renderConsequencePreview?.(choice.ops || [], {
-        title: choice.label || `Choice ${index + 1}`,
-        emptyTitle: choice.label || `Choice ${index + 1}`,
-        emptyText: "Story-only route. Choose it if it fits the current scene."
-      }) ?? ""
+    consequencePreview: consequencePreviewData(choice.ops || [], {
+      title: choice.label || `Choice ${index + 1}`,
+      emptyTitle: choice.label || `Choice ${index + 1}`,
+      emptyText: "Story-only route. Choose it if it fits the current scene."
+    })
   }));
   return {
     id: String(card.id || ""),

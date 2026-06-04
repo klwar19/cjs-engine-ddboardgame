@@ -8,7 +8,15 @@
 // "HTML helpers" section below.
 
 import { esc, lootLine, label } from "../../util/cui-utils";
-import { renderInlinePurpose, purposeKeyForCard, type CardLike } from "../../util/cui-controls";
+import { purposeKeyForCard, type CardLike, type ToolPurposeKey } from "../../util/cui-controls";
+import {
+  consequenceSummary,
+  cardChoiceOps,
+  consequencePreviewData,
+  flavorTrailData,
+  type ConsequencePreviewData,
+  type FlavorTrailData
+} from "../../util/cui-hub-tab";
 import {
   pendingSoloHookCard,
   activeRunQuestId,
@@ -25,25 +33,11 @@ import {
   type ObjectiveLike
 } from "./scenarioShared";
 
-// HubTab module (still-JS bridged island) renders the consequence
-// preview / flavor trail HTML the side panels embed.
-interface HubTabSurface {
-  readonly renderConsequencePreview?: (
-    ops: readonly unknown[],
-    options?: { title?: string; emptyTitle?: string; emptyText?: string }
-  ) => string;
-  readonly renderFlavorTrail?: (entry: unknown) => string;
-  readonly cardChoiceOps?: (card: unknown) => readonly unknown[];
-  readonly consequenceSummary?: (
-    ops: readonly unknown[],
-    options?: { hasText?: boolean }
-  ) => { tone?: string; label?: string; short?: string };
-}
-
-function hubTab(): HubTabSurface | undefined {
-  return (window as unknown as { CJS?: { CampaignUIInternal?: { HubTab?: HubTabSurface } } })
-    .CJS?.CampaignUIInternal?.HubTab;
-}
+// The consequence-preview / flavor-trail / tone-summary math is imported
+// directly from `util/cui-hub-tab.ts` (Part B retired the HubTab HTML-string
+// emitters in favour of the structured `consequencePreviewData` /
+// `flavorTrailData` builders the JSX `<ConsequencePreview>` / `<FlavorTrail>`
+// components render).
 
 // CampaignSideContent — risk classification + label.
 interface SideContentSurface {
@@ -275,10 +269,10 @@ export interface EventResultData {
   readonly ideaPillLabel: string;
   readonly prompt: string;
   readonly gmHook: string;
-  readonly inlinePurposeHtml: string;
+  readonly inlinePurpose: ToolPurposeKey;
   readonly manualSummary: ManualSummary | null;
-  readonly consequencePreviewHtml: string;
-  readonly flavorTrailHtml: string;
+  readonly consequencePreview: ConsequencePreviewData;
+  readonly flavorTrail: FlavorTrailData | null;
   readonly applyLabel: string;
   readonly applyHint: string;
   readonly hasManualSummary: boolean;
@@ -288,8 +282,8 @@ export interface EventResultData {
 
 export interface OracleData {
   readonly text: string;
-  readonly inlinePurposeHtml: string;
-  readonly consequencePreviewHtml: string;
+  readonly inlinePurpose: ToolPurposeKey;
+  readonly consequencePreview: ConsequencePreviewData;
 }
 
 export interface TravelSurpriseData {
@@ -472,9 +466,9 @@ export interface SoloNoticeData {
   readonly riskClass: string;
   readonly title: string;
   readonly prompt: string;
-  readonly inlinePurposeHtml: string;
-  readonly consequencePreviewHtml: string;
-  readonly flavorTrailHtml: string;
+  readonly inlinePurpose: ToolPurposeKey;
+  readonly consequencePreview: ConsequencePreviewData;
+  readonly flavorTrail: FlavorTrailData | null;
   readonly acceptLabel: string;
   readonly acceptHint: string;
 }
@@ -515,10 +509,9 @@ export function getEventResultData(state: CampaignStateSnapshot): EventResultDat
   const event = (state as { lastEvent?: EventInput }).lastEvent;
   if (!event) return null;
   const suggested = event.suggested || [];
-  const hub = hubTab();
-  const summary = hub?.consequenceSummary?.(suggested, {
+  const summary = consequenceSummary(suggested, {
     hasText: !!(event.prompt || event.gmHook)
-  }) || { tone: "", label: "", short: "" };
+  });
   const opsModule = ops();
   const opsDesc = suggested.length
     ? (opsModule?.describe?.(suggested) ?? []).filter(Boolean)
@@ -526,12 +519,12 @@ export function getEventResultData(state: CampaignStateSnapshot): EventResultDat
   return {
     title: event.title || event.id || "Event",
     subLabel: event.tableName || event.type || "event",
-    tone: String(summary.tone || ""),
-    summaryLabel: String(summary.label || ""),
+    tone: summary.tone,
+    summaryLabel: summary.label,
     ideaPillLabel: event.gmIdea ? EVENT_IDEA_LABELS[event.gmIdea] || event.gmIdea : "",
     prompt: event.prompt || "",
     gmHook: event.gmHook || "",
-    inlinePurposeHtml: renderInlinePurpose("event"),
+    inlinePurpose: "event",
     manualSummary: event.manualSummary
       ? {
           short: event.manualSummary.short || "No short result written yet.",
@@ -539,12 +532,11 @@ export function getEventResultData(state: CampaignStateSnapshot): EventResultDat
           tags: (event.manualSummary.tags || []).filter((tag): tag is string => Boolean(tag))
         }
       : null,
-    consequencePreviewHtml:
-      hub?.renderConsequencePreview?.(suggested, {
-        emptyTitle: "Flavor or plot text only",
-        emptyText: "No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it."
-      }) ?? "",
-    flavorTrailHtml: hub?.renderFlavorTrail?.(event) ?? "",
+    consequencePreview: consequencePreviewData(suggested, {
+      emptyTitle: "Flavor or plot text only",
+      emptyText: "No reward or damage is applied. Save the text, pin it as a plot seed, or ignore it."
+    }),
+    flavorTrail: flavorTrailData(event),
     applyLabel: suggested.length ? "Apply Listed Changes" : "Log Flavor",
     applyHint: opsDesc.length ? "Commit: " + opsDesc.join("; ") : "Log the event with no stat changes",
     hasManualSummary: !!event.manualSummary,
@@ -566,11 +558,11 @@ export function getOracleData(state: CampaignStateSnapshot): OracleData | null {
   if (!oracle) return null;
   return {
     text: oracle.text || "",
-    inlinePurposeHtml: renderInlinePurpose("oracle"),
-    consequencePreviewHtml: hubTab()?.renderConsequencePreview?.([], {
+    inlinePurpose: "oracle",
+    consequencePreview: consequencePreviewData([], {
       emptyTitle: "Flavor prompt",
       emptyText: "Use as narration now, save it as a note, or reroll for a sharper prompt."
-    }) ?? ""
+    })
   };
 }
 
@@ -590,7 +582,7 @@ interface SoloHookCard {
   readonly canonRisk?: string;
   readonly questTemplate?: unknown;
   readonly questChainTemplateId?: string;
-  readonly suggestedChoices?: ReadonlyArray<{ label?: string }>;
+  readonly suggestedChoices?: ReadonlyArray<{ label?: string; ops?: readonly unknown[] }>;
   readonly [key: string]: unknown;
 }
 
@@ -607,9 +599,8 @@ export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData 
   const sx = side();
   const risk = sx?.risk?.(card.canonRisk) ?? "";
   const prompt = card.prompt || card.summary || card.gmHook || card.notes || "";
-  const hub = hubTab();
-  const choiceOps = hub?.cardChoiceOps?.(card) || [];
-  const summary = hub?.consequenceSummary?.(choiceOps, { hasText: !!prompt }) || {};
+  const choiceOps = cardChoiceOps(card);
+  const summary = consequenceSummary(choiceOps, { hasText: !!prompt });
   const firstChoice = card.suggestedChoices?.[0];
   const choiceLabel = firstChoice?.label || "Apply the first suggested choice";
   const isQuestOffer = !!(card.questTemplate || card.questChainTemplateId || card.type === "quest_offer");
@@ -620,20 +611,20 @@ export function getSoloNoticeData(state: CampaignStateSnapshot): SoloNoticeData 
       ? `Apply: ${(opsModule?.describe?.(choiceOps) ?? []).join("; ")}`
       : "Create a quest from this story-only hook");
   return {
-    tone: String(summary.tone || ""),
-    summaryLabel: String(summary.label || ""),
+    tone: summary.tone,
+    summaryLabel: summary.label,
     kindLabel: label(kind),
     choiceLabel,
     risk,
     riskClass: sx?.riskClass?.(risk) ?? "",
     title: String(card.title || card.name || card.id || ""),
     prompt,
-    inlinePurposeHtml: renderInlinePurpose(kind === "rumor_offer" ? "rumor" : purposeKeyForCard(card as CardLike)),
-    consequencePreviewHtml: hub?.renderConsequencePreview?.(choiceOps, {
+    inlinePurpose: kind === "rumor_offer" ? "rumor" : purposeKeyForCard(card as CardLike),
+    consequencePreview: consequencePreviewData(choiceOps, {
       emptyTitle: "Flavor only",
       emptyText: "No mechanical change yet. Save it as text, make it a rumor, or turn it into a quest."
-    }) ?? "",
-    flavorTrailHtml: hub?.renderFlavorTrail?.(card) ?? "",
+    }),
+    flavorTrail: flavorTrailData(card),
     acceptLabel: choiceOps.length ? "Accept & Apply" : "Accept as Quest",
     acceptHint
   };

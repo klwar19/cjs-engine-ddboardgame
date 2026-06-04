@@ -562,7 +562,7 @@ Core files:
   - `cui-portraits.js` - `icon`, `memberPortrait`, `memberPortraitFocus`, `focusAttrStyle`
   - `cui-modals.js` - `formModal`, `opPickerModal`, `textareaModal`, `numberModal`, `formLabel`, `pickerItem`, `sortOptionLabel`, `desc`
   - `cui-options.js` - searchable-select option builders (`bucketOptions`, `statusOptions`, `seedOptions`, `worldOptions`, `tentOptions`)
-  - `cui-controls.js` - HTML control builders (`actionBtn`, `actionMenu`, `controlGroup`, `renderInlinePurpose`, etc.)
+  - `cui-controls.js` (now `src/campaign/util/cui-controls.ts`) - purpose taxonomy (`purposeTone`, `purposeKeyForCard`, `toolPurpose`); the old HTML control builders + `renderInlinePurpose` were removed (superseded by JSX components, e.g. `tabs/ConsequenceViews.tsx`)
   - `cui-equipment.js` - equipment loadout helpers (slot kinds, type inference, picker options, change descriptions)
   - `cui-log.js` - event-log entry rendering (`logKind`, `logMeta`, `formatLogTime`, `renderLogEntry`)
 

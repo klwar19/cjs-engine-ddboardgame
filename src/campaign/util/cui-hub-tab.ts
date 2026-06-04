@@ -4,20 +4,18 @@
 // The hub-family tab bodies (sideForge, questChains, oracleForge,
 // battleSets, mapSeeds) are JSX (Phase K.3 prerequisite) — this module
 // renders no tab and registers nothing. What remains is the shared
-// side-content math + the two display-only HTML emitters
-// (consequence preview, flavor trail). They are consumed by BOTH the
-// typed React data bridges (getEventResultData / getOracleData /
-// getSideForgeData / getTownSnapshotData / getStoryDirectorData …) AND
-// the imperative story-director beat modal (story-director-card.ts) and
-// the manual event builder (event-builder.ts), so the single source of
-// truth is one TS module that installs the same
-// `window.CJS.CampaignUIInternal.HubTab` surface the JS island did —
-// every existing consumer keeps working unchanged.
+// side-content tone/consequence math: `operationTone`,
+// `consequenceSummary`, `cardChoiceOps`, and the rumor helpers, plus the
+// HTML-free `consequencePreviewData` / `flavorTrailData` builders.
 //
-// The consequence-preview / flavor-trail strings carry no
-// `data-campaign-action`; they are display-only.
-
-import { esc, escAttr } from "./cui-utils";
+// Part B retired the `renderConsequencePreview` / `renderFlavorTrail`
+// HTML-string emitters: the JSX `<ConsequencePreview>` / `<FlavorTrail>`
+// components (`src/campaign/tabs/ConsequenceViews.tsx`) render the
+// structured data the builders return. The pure math still installs the
+// same `window.CJS.CampaignUIInternal.HubTab` surface for the two
+// remaining cross-module callers (overview's town-roll float + the manual
+// event builder's rumor list); the typed React data builders import the
+// data functions directly.
 
 // ── Types ────────────────────────────────────────────────────────────
 export interface CampaignOpLike {
@@ -43,20 +41,43 @@ export interface ConsequencePreviewOptions {
   readonly hasText?: boolean;
 }
 
+// Permissive input — the card data is loosely-typed JSON state, so every
+// field is `unknown` and coerced at read time. No index signature, so any
+// concrete card interface (with or without its own index sig) is assignable.
 export interface FlavorTrailEntry {
-  readonly suggestedUse?: string;
-  readonly objective?: string;
-  readonly gimmick?: string;
-  readonly followUpHooks?: readonly string[];
-  readonly oracleTableId?: string;
-  readonly [key: string]: unknown;
+  readonly suggestedUse?: unknown;
+  readonly objective?: unknown;
+  readonly gimmick?: unknown;
+  readonly followUpHooks?: unknown;
+  readonly oracleTableId?: unknown;
+}
+
+// Structured (HTML-free) data the JSX `<ConsequencePreview>` / `<FlavorTrail>`
+// components render. Part B retired the `render*` HTML-string emitters; the
+// tone/summary math below stays as the single source of truth feeding both
+// the React data builders (tabs/data/*) and the story beat modal.
+export interface ConsequencePreviewData {
+  readonly tone: ConsequenceTone;
+  readonly label: string;
+  readonly title: string;
+  readonly text: string;
+  readonly lines: readonly string[];
+}
+
+export interface FlavorTrailLine {
+  readonly label: string;
+  readonly text: string;
+}
+
+export interface FlavorTrailData {
+  readonly lines: readonly FlavorTrailLine[];
 }
 
 interface CardOpsSource {
-  readonly suggestedChoices?: ReadonlyArray<{ readonly ops?: readonly CampaignOpLike[] }>;
-  readonly suggested?: readonly CampaignOpLike[];
-  readonly suggestedOps?: readonly CampaignOpLike[];
-  readonly rewardOps?: readonly CampaignOpLike[];
+  readonly suggestedChoices?: ReadonlyArray<{ readonly ops?: readonly unknown[] }>;
+  readonly suggested?: readonly unknown[];
+  readonly suggestedOps?: readonly unknown[];
+  readonly rewardOps?: readonly unknown[];
   readonly [key: string]: unknown;
 }
 
@@ -92,10 +113,10 @@ export function operationTone(op: CampaignOpLike = {}): Exclude<ConsequenceTone,
 }
 
 export function consequenceSummary(
-  opsList: readonly CampaignOpLike[] = [],
+  opsList: readonly unknown[] = [],
   options: { hasText?: boolean } = {}
 ): ConsequenceSummary {
-  const list = Array.isArray(opsList) ? opsList.filter(Boolean) : [];
+  const list = (Array.isArray(opsList) ? opsList.filter(Boolean) : []) as CampaignOpLike[];
   const counts = { reward: 0, risk: 0, quest: 0, plot: 0, flavor: 0 };
   for (const op of list) counts[operationTone(op)] += 1;
   let tone: ConsequenceTone = "flavor";
@@ -141,60 +162,45 @@ export function consequenceSummary(
   return { tone, label: labels[tone], title: titles[tone], detail: details[tone], short: shorts[tone] };
 }
 
-export function cardChoiceOps(card: CardOpsSource = {}): readonly CampaignOpLike[] {
+export function cardChoiceOps(card: CardOpsSource = {}): readonly unknown[] {
   const firstChoice = card.suggestedChoices?.[0]?.ops;
   const list = firstChoice || card.suggested || card.suggestedOps || card.rewardOps || [];
   return Array.isArray(list) ? list : [];
 }
 
-// ── Consequence preview / flavor trail (display-only HTML) ──────────────
-// No data-campaign-action; consumed by the typed bridges (ResultPanels,
-// SideContent, SoloNotice, StoryDirectorPanels) as a dangerouslySetInnerHTML
-// island and by the imperative beat modal / manual event builder.
+// ── Consequence preview / flavor trail (structured data) ────────────────
+// No HTML — these return typed data the JSX `<ConsequencePreview>` /
+// `<FlavorTrail>` components (`src/campaign/tabs/ConsequenceViews.tsx`)
+// render. Consumed by the typed data builders (ResultPanels, SideContent,
+// SoloNotice, Story Director routes) and the React story beat modal.
 
-export function renderConsequencePreview(
-  opsList: readonly CampaignOpLike[] = [],
+export function consequencePreviewData(
+  opsList: readonly unknown[] = [],
   options: ConsequencePreviewOptions = {}
-): string {
-  const list = Array.isArray(opsList) ? opsList.filter(Boolean) : [];
+): ConsequencePreviewData {
+  const list = (Array.isArray(opsList) ? opsList.filter(Boolean) : []) as CampaignOpLike[];
   const summary = consequenceSummary(list, { hasText: options.hasText });
   const title = options.title || (list.length ? summary.title : options.emptyTitle) || summary.title;
   const text = list.length ? summary.detail : (options.emptyText || summary.detail);
   const lines = list.length ? ops().describe?.(list) || [] : [];
-  return `
-      <div class="campaign-consequence is-${escAttr(summary.tone)}">
-        <div class="campaign-consequence-head">
-          <span class="campaign-impact-badge is-${escAttr(summary.tone)}">${esc(summary.label)}</span>
-          <strong>${esc(title)}</strong>
-        </div>
-        <span>${esc(text)}</span>
-        ${lines.length ? `<ul>${lines.map((line) => `<li>${esc(line)}</li>`).join("")}</ul>` : ""}
-      </div>
-    `;
+  return { tone: summary.tone, label: summary.label, title, text, lines };
 }
 
-export function renderFlavorTrail(entry: FlavorTrailEntry = {}): string {
-  const lines: Array<[string, string]> = [];
-  if (entry.suggestedUse) lines.push(["Use", entry.suggestedUse]);
-  if (entry.objective) lines.push(["Objective", entry.objective]);
-  if (entry.gimmick) lines.push(["Scene logic", entry.gimmick]);
-  if (entry.followUpHooks?.length) lines.push(["Follow-up", entry.followUpHooks.join(" / ")]);
-  if (entry.oracleTableId) lines.push(["Oracle", "Roll a linked prompt if the text needs a sharper direction."]);
-  if (!lines.length) return "";
-  return `
-      <div class="campaign-flavor-trail">
-        ${lines
-          .map(
-            ([label, text]) => `
-          <div>
-            <b>${esc(label)}</b>
-            <span>${esc(text)}</span>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-    `;
+export function flavorTrailData(entry: unknown): FlavorTrailData | null {
+  const e = (entry ?? {}) as FlavorTrailEntry;
+  const lines: FlavorTrailLine[] = [];
+  if (e.suggestedUse) lines.push({ label: "Use", text: String(e.suggestedUse) });
+  if (e.objective) lines.push({ label: "Objective", text: String(e.objective) });
+  if (e.gimmick) lines.push({ label: "Scene logic", text: String(e.gimmick) });
+  const hooks = e.followUpHooks;
+  if (Array.isArray(hooks) && hooks.length) {
+    lines.push({ label: "Follow-up", text: hooks.map(String).join(" / ") });
+  }
+  if (e.oracleTableId) {
+    lines.push({ label: "Oracle", text: "Roll a linked prompt if the text needs a sharper direction." });
+  }
+  if (!lines.length) return null;
+  return { lines };
 }
 
 // ── Rumor helpers ──────────────────────────────────────────────────────
@@ -214,8 +220,6 @@ export interface CuiHubTab {
   readonly operationTone: typeof operationTone;
   readonly consequenceSummary: typeof consequenceSummary;
   readonly cardChoiceOps: typeof cardChoiceOps;
-  readonly renderConsequencePreview: typeof renderConsequencePreview;
-  readonly renderFlavorTrail: typeof renderFlavorTrail;
   readonly openRumors: typeof openRumors;
   readonly isRumorOpen: typeof isRumorOpen;
 }
@@ -224,8 +228,6 @@ const NAMESPACE: CuiHubTab = Object.freeze({
   operationTone,
   consequenceSummary,
   cardChoiceOps,
-  renderConsequencePreview,
-  renderFlavorTrail,
   openRumors,
   isRumorOpen
 });
