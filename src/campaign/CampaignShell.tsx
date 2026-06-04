@@ -109,7 +109,7 @@ const REACT_TAB_COMPONENTS: Readonly<Record<string, TabComponent>> = {
   craft: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCraftTab }))),
   cook: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignCookTab }))),
   farm: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignFarmTab }))),
-  relationships: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignRelationshipsTab }))),
+  relationships: lazy(() => import("./tabs/CampaignRelationshipsTab").then((m) => ({ default: m.CampaignRelationshipsTab }))),
   worldGate: lazy(() => import("./tabs/CampaignWorldGateTab").then((m) => ({ default: m.CampaignWorldGateTab }))),
   storyHome: lazy(() => import("./tabs/CampaignStoryHomeTab").then((m) => ({ default: m.CampaignStoryHomeTab }))),
   storySummary: lazy(() => import("./tabs/CampaignStorySummaryTab").then((m) => ({ default: m.CampaignStorySummaryTab }))),

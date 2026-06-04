@@ -103,8 +103,7 @@ const MIGRATED_ISLANDS = [
   'src/campaign/shell/boot.ts',
   'js/campaign/campaign-map.js',
   'js/campaign/farming-mode.js',
-  'js/campaign/pocket-haven.js',
-  'js/ui/relationships-tab.js'
+  'js/campaign/pocket-haven.js'
 ];
 for (const rel of MIGRATED_ISLANDS) {
   const src = fs.readFileSync(path.join(__dirname, rel), 'utf8');

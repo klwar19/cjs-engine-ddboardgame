@@ -47,11 +47,11 @@ import {
 } from "../../src/campaign/tabs/CampaignHubTabs";
 import { CampaignInventoryTab } from "../../src/campaign/tabs/CampaignInventoryTab";
 import { CampaignShopsTab } from "../../src/campaign/tabs/CampaignShopsTab";
+import { CampaignRelationshipsTab } from "../../src/campaign/tabs/CampaignRelationshipsTab";
 import {
   CampaignCraftTab,
   CampaignCookTab,
-  CampaignFarmTab,
-  CampaignRelationshipsTab
+  CampaignFarmTab
 } from "../../src/campaign/tabs/CampaignExternalTabs";
 import { CampaignWorldGateTab } from "../../src/campaign/tabs/CampaignWorldGateTab";
 import { CampaignStoryHomeTab } from "../../src/campaign/tabs/CampaignStoryHomeTab";
@@ -171,6 +171,18 @@ const campaignState = {
     equipment: {}
   },
   pinnedNotes: [{ at: "2026-05-30T08:00:00Z", text: "Ask the harbor master about the relic." }],
+  // Relationship bonds + acts — drive the ported CampaignRelationshipsTab JSX
+  // (DataStore.get('characters') is null in the stub, so names fall back to ids
+  // and romance stays ineligible; romance shows only where a bond romance > 0).
+  bonds: {
+    char_lyra: { trust: 4, respect: 2 },
+    npc_mara: { trust: 1, respect: 0, romance: 2 }
+  },
+  relationshipActs: {
+    remaining: 2,
+    max: 3,
+    history: [{ characterId: "char_lyra", activityId: "hang_out", amount: 1, field: "trust" }]
+  },
   log: [
     { op: "phase-advance", text: "Phase 5 begins.", at: "2026-05-30T09:00:00Z", phase: 5 },
     { op: "quest-progress", text: "Recovered a moonpetal.", at: "2026-05-30T09:02:00Z", phase: 5 },
@@ -469,6 +481,15 @@ export function installEngine(): void {
     handleAction: () => {}
   };
   CJS.CampaignSideContent = { riskClass: () => "campaign-risk-amber" };
+  CJS.RelationshipTiers = {
+    computeTier: (bond: { trust?: number; respect?: number; romance?: number } | undefined) => {
+      const score = Number(bond?.trust || 0) * 5 + Number(bond?.respect || 0) * 3 + Number(bond?.romance || 0) * 4;
+      return score >= 20
+        ? { id: "ally", label: "Ally", icon: "♥", score }
+        : { id: "acquaintance", label: "Acquaintance", icon: "•", score };
+    },
+    getKnownCharacters: (state: { bonds?: Record<string, unknown> } | undefined) => Object.keys(state?.bonds || {})
+  };
   CJS.CampaignQuestChains = { getAvailable: () => [], getActive: () => [], toQuest: () => ({}) };
   CJS.CampaignStoryDirector = { snapshot: () => directorSnapshot };
   CJS.CampaignBattleSetForge = {
@@ -512,7 +533,6 @@ export function installEngine(): void {
     renderCook: () => ISLAND("cook"),
     renderFarm: () => ISLAND("farm")
   };
-  CJS.RelationshipsTab = { render: () => ISLAND("relationships") };
 
   // Seed the campaign store so self-subscribing panels (ResultPanels via
   // useCampaignSelector) read the fixture through their getServerSnapshot

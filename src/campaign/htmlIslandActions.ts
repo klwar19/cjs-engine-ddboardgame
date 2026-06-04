@@ -22,10 +22,6 @@ const DRAWER_CLOSE_ACTIONS = new Set<CampaignActionName>([
   "open-event-log"
 ]);
 
-function str(value: string | undefined): string {
-  return value == null ? "" : value;
-}
-
 function run(
   action: CampaignActionName,
   data: Record<string, string | number | undefined> = {}
@@ -104,18 +100,6 @@ export function dispatchHtmlIslandAction(target: HTMLElement | null): HtmlIsland
   if (ranchCollect) return run("haven-ranch-collect", { facility: ranchCollect.dataset.havenRanchCollect });
 
   if (closest(target, "[data-open-fishing]")) return run("open-fishing");
-
-  const relActivity = closest(target, "[data-rel-activity-character]");
-  if (relActivity) {
-    const d = relActivity.dataset;
-    return run("rel-activity", {
-      characterId: d.relActivityCharacter,
-      activityId: d.relActivityId
-    });
-  }
-
-  const sequenceStart = closest(target, "[data-sequence-start-id]");
-  if (sequenceStart) return run("sequence-start", { id: str(sequenceStart.dataset.sequenceStartId) });
 
   return { handled: false };
 }

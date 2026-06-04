@@ -59,7 +59,6 @@ import "../../js/campaign/campaign-world-map.js";
 // + cjs-qte drop out of the campaign page's eager modulepreload set. It is
 // warmed in the background after boot (below) and awaited by the launch action
 // handlers (minigame.ts / mg-test.ts / farm openFishing).
-import "../../js/ui/relationships-tab.js";
 // Phase H.4 — leaf util helpers ported to TS. The TS modules install
 // the same `window.CJS.CampaignUIInternal.<Namespace>` surface so
 // vanilla JS callers (campaign-ui.js + the other cui-*.js helpers)

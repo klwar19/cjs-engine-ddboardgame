@@ -8,12 +8,9 @@
 // deleted `_doRelActivity` / `_relationshipNarrativeModal` / `_campRestModal`
 // closures.
 
-import { applyOp, cs, ds, mod, toast } from "./context";
+import { applyOp, cs, ds, toast } from "./context";
 import { esc, modals, options, widgets } from "./modals";
-
-interface RelationshipsTabModule {
-  ACTIVITIES?: Array<{ id?: string; label?: string; hint?: string }>;
-}
+import { ACTIVITIES } from "../tabs/data/relationships";
 
 interface Narrative {
   characterId?: string;
@@ -66,7 +63,7 @@ export function doRelActivity(characterId: string, activityId: string): void {
     relationshipNarrativeModal(narrative);
     return;
   }
-  const def = (mod<RelationshipsTabModule>("RelationshipsTab")?.ACTIVITIES || []).find((a) => a.id === activityId);
+  const def = ACTIVITIES.find((a) => a.id === activityId);
   if (def) {
     const charBase = ds()?.get("characters", characterId) as { name?: string } | undefined;
     const name = charBase?.name || characterId;

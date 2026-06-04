@@ -105,8 +105,15 @@ file is deleted and is no longer an active bridge or extension point.
      `data-shop-sell`, `data-full-rest`, `data-camp-rest`. Module deleted, import
      + `CampaignEconomy` surface removed. Gate green; campaign initial JS
      353.5 → 352.3 KB gz.
-  3. **Relationships** (`js/ui/relationships-tab.js`, 323) → `CampaignRelationshipsTab`
-     JSX. Markers: `data-rel-activity-*`, `data-sequence-start-id`.
+  3. **Relationships** ✅ DONE. (`js/ui/relationships-tab.js`, 323) →
+     `CampaignRelationshipsTab` JSX (`src/campaign/tabs/CampaignRelationshipsTab.tsx`
+     + a faithful `tabs/data/relationships.ts` port of the tier / simple-stats /
+     activity / character-event / acts-banner logic). Markers retired:
+     `data-rel-activity-*`, `data-sequence-start-id`. The shared `ACTIVITIES`
+     table moved into `tabs/data/relationships.ts`; `action-handlers/downtime.ts`
+     now imports it directly (TS) instead of reading `window.CJS.RelationshipsTab`,
+     so the module could be deleted cleanly. Gate green; campaign initial JS
+     352.3 → 351.1 KB gz (entry chunk 275.9 → 271.5 KB).
   4. **Pocket Haven craft/cook** (`pocket-haven.js`, 424) → `CampaignCraftTab` /
      `CampaignCookTab` JSX. Markers: `data-craft-recipe-id`, `data-cook-food-id`,
      `data-haven-*` (build/upgrade/train/ranch-assign/ranch-collect),
