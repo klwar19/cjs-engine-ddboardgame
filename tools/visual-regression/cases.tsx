@@ -49,7 +49,7 @@ import { CampaignInventoryTab } from "../../src/campaign/tabs/CampaignInventoryT
 import { CampaignShopsTab } from "../../src/campaign/tabs/CampaignShopsTab";
 import { CampaignRelationshipsTab } from "../../src/campaign/tabs/CampaignRelationshipsTab";
 import { CampaignCraftTab, CampaignCookTab } from "../../src/campaign/tabs/CampaignCraftCookTabs";
-import { CampaignFarmTab } from "../../src/campaign/tabs/CampaignExternalTabs";
+import { CampaignFarmTab } from "../../src/campaign/tabs/CampaignFarmTab";
 import { CampaignWorldGateTab } from "../../src/campaign/tabs/CampaignWorldGateTab";
 import { CampaignStoryHomeTab } from "../../src/campaign/tabs/CampaignStoryHomeTab";
 import { CampaignStorySummaryTab } from "../../src/campaign/tabs/CampaignStorySummaryTab";
@@ -314,6 +314,55 @@ const foodFixture = [
   }
 ];
 
+// Crops served via getAllAsArray("crops") — populate the Farm tab seed picker.
+const cropsFixture = [
+  { id: "haven_frostcap_seed", name: "Frostcap Seed", _world: "haven", growthTicks: 3 },
+  { id: "haven_emberbloom_seed", name: "Emberbloom Seed", _world: "haven", growthTicks: 4 }
+];
+
+// A normalized Pocket Haven farm — drives the ported CampaignFarmTab JSX.
+// Player faces a growing crop (target detail), one tile is ready, one crop slot
+// is locked, a tile action-menu is open, and a focus bonus is available.
+const farmFixture = {
+  width: 8,
+  height: 6,
+  player: { x: 1, y: 3, facing: "right" },
+  selectedTool: "seed",
+  selectedSeed: "haven_frostcap_seed",
+  selectedFertilizer: "haven_basic_fertilizer",
+  cropSlots: ["2,3", "3,3", "2,2"],
+  unlockedCropSlots: 2,
+  maxCropSlots: 3,
+  seedStock: { haven_frostcap_seed: 6 },
+  fertilizerStock: { haven_basic_fertilizer: 2 },
+  tools: {
+    hand: { level: 1 }, hoe: { level: 1 }, seed: { level: 2 },
+    water: { level: 1 }, fertilizer: { level: 1 }, scythe: { level: 1 }
+  },
+  tiles: {
+    "2,3": { terrain: "soil", tilled: true, seedId: "haven_frostcap_seed", cropId: "frostcap", progress: 1, required: 3, ready: false, watered: true },
+    "3,3": { terrain: "soil", tilled: true, seedId: "haven_frostcap_seed", cropId: "frostcap", progress: 3, required: 3, ready: true }
+  },
+  recent: ["Planted Frostcap Seed.", "Watered the soil."],
+  qte: { available: true, active: false, streak: 0, startedAt: 0, duration: 1500, targetStart: 40, targetWidth: 18 },
+  bonusHarvests: 1,
+  lastClickedTile: null,
+  actionMenu: { x: 2, y: 3 }
+};
+
+// Variant farm with the focus-bonus QTE window open (active) and no tile menu —
+// drives the leaf-farm-qte snapshot for the CSS-animated QTE lane structure.
+const farmQteActive = {
+  ...farmFixture,
+  qte: { ...farmFixture.qte, available: false, active: true, startedAt: 1, duration: 1500, targetStart: 42, targetWidth: 18 },
+  actionMenu: null
+};
+
+// Dedicated farm states (kept off the shared campaignState so the farm slice
+// doesn't perturb other tabs' snapshots).
+const farmState = { ...campaignState, pocketHaven: { farm: farmFixture } } as unknown as CampaignStateSnapshot;
+const farmQteState = { ...campaignState, pocketHaven: { farm: farmQteActive } } as unknown as CampaignStateSnapshot;
+
 // Shops the DataStore stub serves to the ported CampaignShopsTab via
 // getAllAsArray("shops"). Covers: an affordable item (Buy enabled + Sell),
 // a seed (farm stock — no Sell), and an item with requires/consumes bundles.
@@ -509,11 +558,23 @@ export function installEngine(): void {
       { id: "cooking", name: "Cooking", category: "craft" }
     ]
   };
+  const cropsById = Object.fromEntries(cropsFixture.map((c) => [c.id, c]));
   CJS.DataStore = {
-    get: () => null,
+    // Only the crops bucket is served (drives the Farm tab crop name / progress
+    // / stage branches); every other bucket stays null so the inventory / shop /
+    // recipe tabs keep exercising their id-fallback paths.
+    get: (bucket: string, id: string) => (bucket === "crops" ? cropsById[id] || null : null),
     getAll: () => ({}),
     getAllAsArray: (bucket: string) =>
-      bucket === "shops" ? shopsFixture : bucket === "crafting" ? craftingFixture : bucket === "food" ? foodFixture : []
+      bucket === "shops"
+        ? shopsFixture
+        : bucket === "crafting"
+          ? craftingFixture
+          : bucket === "food"
+            ? foodFixture
+            : bucket === "crops"
+              ? cropsFixture
+              : []
   };
   CJS.CampaignWorldMap = {
     getTravelMapData: () => null,
@@ -568,8 +629,9 @@ export function installEngine(): void {
 
   // External-module island wrappers (still-vanilla HTML; ported one at a time).
   // Inventory + Shops are now JSX (read state + DataStore) — no island stub.
-  // Farm is the last still-vanilla external island (FarmingMode tab port pending).
-  CJS.PocketHaven = { renderFarm: () => ISLAND("farm") };
+  // All external-module tabs (inventory / shops / craft / cook / farm /
+  // relationships) are now JSX; no PocketHaven/Economy/RelationshipsTab render
+  // islands remain. The farm tab reads its slice from state.pocketHaven.farm.
 
   // Seed the campaign store so self-subscribing panels (ResultPanels via
   // useCampaignSelector) read the fixture through their getServerSnapshot
@@ -612,7 +674,7 @@ export const cases: readonly VrCase[] = [
   tab("tab-shops", <CampaignShopsTab state={campaignState} />),
   tab("tab-craft", <CampaignCraftTab state={campaignState} />),
   tab("tab-cook", <CampaignCookTab state={campaignState} />),
-  tab("tab-farm", <CampaignFarmTab state={campaignState} />),
+  tab("tab-farm", <CampaignFarmTab state={farmState} />),
   tab("tab-relationships", <CampaignRelationshipsTab state={campaignState} />),
   tab("tab-worldGate", <CampaignWorldGateTab state={campaignState} />),
   tab("tab-storyHome", <CampaignStoryHomeTab state={campaignState} />),
@@ -632,5 +694,7 @@ export const cases: readonly VrCase[] = [
 
   // Leaf branch variants the shared fixture doesn't otherwise pin.
   tab("leaf-questrow-active", <QuestRow row={getQuestRowData(fixtureQuests.q_relic)} />),
-  tab("leaf-questrow-resolved", <QuestRow row={getQuestRowData(fixtureQuests.q_bandits, { resolved: true })} />)
+  tab("leaf-questrow-resolved", <QuestRow row={getQuestRowData(fixtureQuests.q_bandits, { resolved: true })} />),
+  // Farm focus-bonus QTE window (active) — the CSS-animated lane structure.
+  tab("leaf-farm-qte", <CampaignFarmTab state={farmQteState} />)
 ];

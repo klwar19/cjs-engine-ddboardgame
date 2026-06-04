@@ -96,9 +96,10 @@ ok('cui-controls.ts emits no data-campaign-action (last src emitter removed)',
    !/data-campaign-action=/.test(stripComments(
      fs.readFileSync(path.join(__dirname, 'src/campaign/util/cui-controls.ts'), 'utf8'))));
 
-// Phase K follow-through: these remaining HTML islands now emit local,
-// semantic markers handled by typed dispatch wrappers instead of the generic
-// `data-campaign-action` bridge. The bridge stays for compatibility only.
+// These source files (campaign-map binds its own private click listener; the
+// farm/pocket-haven modules are now JSX-rendered + op-only) must never
+// reintroduce the generic `data-campaign-action` attribute — typed onClick is
+// the only dispatch path.
 const MIGRATED_ISLANDS = [
   'src/campaign/shell/boot.ts',
   'js/campaign/campaign-map.js',
@@ -110,9 +111,15 @@ for (const rel of MIGRATED_ISLANDS) {
   ok(rel + ' has no generic data-campaign-action attributes',
      !/data-campaign-action=/.test(stripComments(src)));
 }
-const externalTabsSrc = fs.readFileSync(path.join(__dirname, 'src/campaign/tabs/CampaignExternalTabs.tsx'), 'utf8');
-ok('CampaignExternalTabs routes island markers through typed helper',
-   /dispatchHtmlIslandAction/.test(externalTabsSrc));
+
+// The two HTML-island forwarders are fully retired: the `<main>` action
+// forwarder (removed earlier) and now the typed-marker bridge
+// `htmlIslandActions.ts` + the `CampaignExternalTabs` safeWrap. Every former
+// island tab is real JSX with typed onClick → CampaignUI.handleAction.
+ok('htmlIslandActions.ts forwarder is fully retired',
+   !fs.existsSync(path.join(__dirname, 'src/campaign/htmlIslandActions.ts')));
+ok('CampaignExternalTabs safeWrap is fully retired',
+   !fs.existsSync(path.join(__dirname, 'src/campaign/tabs/CampaignExternalTabs.tsx')));
 
 // Every wrapper that mutates state should route through CampaignOps or
 // CampaignSave. That keeps undo/log/save behaviour identical to the

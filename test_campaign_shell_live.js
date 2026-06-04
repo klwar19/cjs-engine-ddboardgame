@@ -11,8 +11,8 @@
 //   • drawer: a command-rail panel button opens the React PORTAL drawer
 //     (createPortal to document.body) and the close button tears it down
 //   • typed action: the GM rail button's onClick routes to CampaignUI.handleAction
-//   • island marker: a data-* marker button inside a still-vanilla external-tab
-//     body routes through the tab wrapper's dispatchHtmlIslandAction → handleAction
+//   • farm tab: the ported (JSX) Farm tab renders its tile board and a tile's
+//     typed onClick routes to CampaignUI.handleAction (no island forwarder)
 //   • PWA: the built dist (if present) ships the PNG icons + a manifest
 //
 // It reuses the visual-regression loader (in-memory TS/TSX transpile, no
@@ -145,15 +145,6 @@ function installGlobals(window) {
     getBootIncompatibleNotice() { return null; },
     clearBootIncompatibleNotice() {}
   };
-  // A still-vanilla external-tab body whose HTML carries a local island marker
-  // (the real production pattern — these bodies emit data-* markers, never
-  // data-campaign-action), so we can exercise the external-tab wrapper's
-  // dispatchHtmlIslandAction onClick end to end. The Farm tab is the LAST
-  // external island still rendered as vanilla HTML (inventory/economy/etc.
-  // migrate to JSX ahead of it), so the marker-routing check rides on it.
-  CJS.PocketHaven = CJS.PocketHaven || {};
-  CJS.PocketHaven.renderFarm = () =>
-    '<section class="campaign-panel"><button class="island-act" data-farm-tick="1">Advance farm</button></section>';
 
   // 5. Mount the REAL shell.
   const React = require("react");
@@ -231,22 +222,24 @@ function installGlobals(window) {
      dispatched.length > beforeGm && dispatched.some((d) => d.name === "gm-override"),
      dispatched.map((d) => d.name).join(","));
 
-  // ── Island marker: data-* marker in a still-vanilla external-tab body ────────
-  // Switch to the farm tab (the last still-vanilla HTML island) and click its
-  // marker button — the external-tab wrapper's own onClick must translate it via
-  // dispatchHtmlIslandAction → handleAction (there is no <main> forwarder now).
+  // ── Farm tab: ported JSX renders + typed onClick (no island forwarder) ───────
+  // Switch to the Farm tab (the last external island, now JSX). It renders its
+  // tile board directly; clicking a tile dispatches a typed farm-tile action
+  // straight to CampaignUI.handleAction — no data-* marker / forwarder hop.
   chromeState.setActiveTab("farm");
   CJS.CampaignUI.render();
   await nudge();
-  const islandBtn = document.querySelector("main.campaign-main [data-farm-tick]");
-  ok("still-vanilla external-tab body rendered inside <main>", !!islandBtn);
-  const beforeIsland = dispatched.length;
-  if (islandBtn) {
-    click(window, islandBtn);
+  const farmBoard = document.querySelector("main.campaign-main .farm-board");
+  ok("Farm tab renders its JSX tile board", !!farmBoard);
+  const farmTile = document.querySelector("main.campaign-main .farm-board .farm-tile");
+  ok("Farm tab renders tile buttons", !!farmTile);
+  const beforeFarm = dispatched.length;
+  if (farmTile) {
+    click(window, farmTile);
     await settle();
   }
-  ok("island data-* marker routes via the tab wrapper's dispatchHtmlIslandAction → handleAction",
-     dispatched.length > beforeIsland && dispatched.some((d) => d.name === "farm-tick"),
+  ok("a farm tile's typed onClick routes to handleAction",
+     dispatched.length > beforeFarm && dispatched.some((d) => d.name === "farm-tile"),
      dispatched.map((d) => d.name).join(","));
 
   // ── PWA: built artifact ships the PNG icons + a manifest ─────────────────────

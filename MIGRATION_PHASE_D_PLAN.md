@@ -63,9 +63,13 @@ file is deleted and is no longer an active bridge or extension point.
   (wired by the imperative beat modal `story-director-modals.ts`, **not** either
   forwarder — and a JSX path already exists in `StoryDirectorPanels.tsx`).
 
-- [ ] **Delete the drawer's `htmlIslandActions.ts` (gated on the feature-module
-  port).** This is the one surviving forwarder, and it is NOT a
-  `data-campaign-action` router: it translates local, typed semantic markers
+- [x] **Delete the drawer's `htmlIslandActions.ts` (gated on the feature-module
+  port).** ✅ DONE — all six external-island tabs (inventory / shops /
+  relationships / craft / cook / farm) are now real JSX with typed onClick, the
+  drawer inventory/notes bodies moved to React, and `htmlIslandActions.ts` +
+  `CampaignExternalTabs.tsx` are deleted. Per-step detail below.
+  This was the one surviving forwarder, and it was NOT a
+  `data-campaign-action` router: it translated local, typed semantic markers
   (`data-shop-buy`, `data-farm-*`, `data-inventory-*`, `data-haven-*`,
   `data-craft-recipe-id`, `data-cook-food-id`, `data-rel-activity-*`,
   `data-add-note`, …) into typed dispatch and returns `closesPanel` for the
@@ -130,21 +134,34 @@ file is deleted and is no longer an active bridge or extension point.
      `plantSeed` / `harvestPlot` / `openFishing` (+ `_detectBiome`). Farm markers
      (`data-farm-*`, `data-harvest-plot`, `data-plant-seed-plot`) stay for step 5.
      Gate green; campaign initial JS 351.1 → 348.5 KB gz (entry 271.5 → 270.4 KB).
-  5. **Farming** (`farming-mode.js`, 1,295 — HARDEST) → `CampaignFarmTab` JSX. A
-     stateful tile grid + timed QTE window + keyboard controls. Markers:
-     `data-farm-tick/-move/-tile/-interact/-pass-phase`,
-     `data-farm-qte-open/-hit/-close`, `data-farm-tile-action`,
+  5. **Farming** ✅ DONE. (`farming-mode.js`, 1,295 — HARDEST) → `CampaignFarmTab`
+     JSX (`tabs/CampaignFarmTab.tsx` + `tabs/data/farm.ts`, a faithful read-side
+     port of renderFarm + the tile/tool/tile-menu/QTE/detail sub-renderers and
+     the tile/crop/slot read helpers). Retired all the farm markers
+     (`data-farm-*`, `data-farm-qte-*`, `data-farm-tile-action`,
      `data-farm-select-tool`, `data-farm-tile-menu-close`, `data-harvest-plot`,
-     `data-plant-seed-plot`, plus the seed `<select data-farm-select="seed">`
-     onChange now owned by the Farm tab wrapper (`onFarmSeedChange`). Highest
-     regression risk — needs real-browser manual verification (QTE timing,
-     keyboard movement, growth tick), not just `npm test`.
-  6. **Delete `htmlIslandActions.ts`** once steps 1–5 leave no marker emitters:
-     remove the `dispatchHtmlIslandAction` onClick in `CampaignExternalTabs.safeWrap`
-     (and the whole `dangerouslySetInnerHTML` `safeWrap`, since each tab is real JSX
-     now) and the drawer onClick branch in `CampaignShell`. Update
-     `test_actions_bridge` (the `MIGRATED_ISLANDS` + `dispatchHtmlIslandAction`
-     assertions) and `test_campaign_shell_live` (the island-marker assertion).
+     `data-plant-seed-plot`) and the seed `<select>` onChange (now a direct
+     FarmingMode.selectSeed call in the tab). Keyboard controls moved from
+     `bindControls` into a component `useEffect` (boot.ts no longer binds them).
+     **De-risked:** all stateful ops, QTE-hit timing, growth ticks and
+     `normalizeFarm` stay in `farming-mode.js` (invoked via the farm.ts action
+     handlers) — only rendering + keyboard moved. The QTE bar is CSS-animated
+     (`--qte-duration`), so the static view is enough. `farming-mode.js` pruned
+     1,295 → 881 lines (render-only helpers removed, ops verified intact);
+     `pocket-haven.js` lost its now-dead `renderFarm`. VR: a normalized farm
+     fixture drives `tab-farm` (tiles / tools / tile-menu / detail) + a new
+     `leaf-farm-qte` snapshot (the QTE lane). `test_campaign_shell_live` now
+     renders the JSX farm and asserts a tile's typed onClick reaches
+     handleAction. **Still recommended:** a real-browser smoke (QTE visual
+     timing, keyboard movement, growth tick) — automated coverage is DOM-backed,
+     not a pixel browser.
+  6. **Delete `htmlIslandActions.ts`** ✅ DONE (folded into step 5, since the Farm
+     tab was the last `safeWrap` consumer — splitting would leave a broken
+     intermediate). Deleted `htmlIslandActions.ts` + `CampaignExternalTabs.tsx`
+     (the whole `safeWrap`) and removed the drawer onClick island branch in
+     `CampaignShell` (now close-button only). `test_actions_bridge` asserts both
+     forwarders are gone (file-not-exists); `test_campaign_shell_live` swapped its
+     island-marker assertion for the JSX-farm render + typed-dispatch check.
 
   Each step keeps the app working at every commit: port the tab body to JSX with
   typed `onClick` / `dispatchCampaignAction`, delete the vanilla module, drop the

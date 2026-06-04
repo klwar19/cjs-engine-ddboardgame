@@ -47,12 +47,11 @@ const REACT_TABS: readonly string[] = [
   "oracleForge",
   "battleSets",
   "mapSeeds",
-  // External-module tabs: vanilla campaign-ui shell used to switch-case
-  // these into CampaignInventory / CampaignEconomy / PocketHaven /
-  // RelationshipsTab. The matching React wrappers in
-  // `src/campaign/tabs/CampaignExternalTabs.tsx` call into those same
-  // modules and translate their local action markers through the typed
-  // dispatch helper.
+  // Former external-module tabs (vanilla campaign-ui switch-cased these into
+  // CampaignInventory / CampaignEconomy / PocketHaven / RelationshipsTab).
+  // They are now real JSX tab components (CampaignInventoryTab /
+  // CampaignShopsTab / CampaignCraftCookTabs / CampaignFarmTab /
+  // CampaignRelationshipsTab) that dispatch via typed onClick.
   "inventory",
   "shops",
   "craft",

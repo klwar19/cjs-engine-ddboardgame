@@ -13,7 +13,6 @@ import { deepEqual } from "./util/equality";
 import { ErrorBoundary } from "./util/ErrorBoundary";
 import { CampaignHelpPopover } from "./HelpPopover";
 import { importSaveFile } from "./actions";
-import { dispatchHtmlIslandAction } from "./htmlIslandActions";
 import { CampaignHeader } from "./shell/Header";
 import { CampaignModeBar } from "./shell/ModeBar";
 import { CampaignSubTabs } from "./shell/SubTabs";
@@ -25,7 +24,7 @@ import { NotesPanel } from "./shell/NotesPanel";
 // Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
 // only the chrome + the active tab; the rest download on first visit (and the
 // PWA precaches them in the background). Multi-export files
-// (CampaignWorldMapTab / CampaignHubTabs / CampaignExternalTabs /
+// (CampaignWorldMapTab / CampaignHubTabs / CampaignCraftCookTabs /
 // CampaignEventTab) are imported via the SAME specifier per export, so each
 // resolves to ONE shared "tab family" chunk. This realizes the vite config's
 // stated intent and mirrors the editor's lazy-builder split (Phase E).
@@ -81,12 +80,11 @@ function cjs(): ShellCjs {
 
 // The `<main>` body used to carry a click/change forwarder that translated
 // bridged `data-campaign-action` / `-mode` / `-tab` / `-panel` attributes into
-// typed dispatch. That surface is gone: every React tab uses typed `onClick`,
-// the still-vanilla island bodies (external tabs / map) bind their own
-// dispatch (`dispatchHtmlIslandAction` on the external-tab wrappers, a private
-// listener inside `campaign-map`), and nothing emits the mode/tab/panel
-// attributes any more. The one change-driven island (the farm seed `<select>`)
-// is now owned by the Farm tab wrapper, so the `<main>` forwarder was removed.
+// typed dispatch, and a second typed-marker bridge (`htmlIslandActions`) routed
+// the external-tab islands. Both are gone: every tab — including the former
+// island tabs (inventory / shops / craft / cook / farm / relationships) — is
+// real JSX with typed `onClick`, and `campaign-map` binds its own private
+// click listener. Nothing emits the mode/tab/panel attributes any more.
 
 // Registry of React-owned tabs. Mirrors the vanilla
 // `cui-react-bridge.js` registrations, but instead of a mount-point div
@@ -108,7 +106,7 @@ const REACT_TAB_COMPONENTS: Readonly<Record<string, TabComponent>> = {
   shops: lazy(() => import("./tabs/CampaignShopsTab").then((m) => ({ default: m.CampaignShopsTab }))),
   craft: lazy(() => import("./tabs/CampaignCraftCookTabs").then((m) => ({ default: m.CampaignCraftTab }))),
   cook: lazy(() => import("./tabs/CampaignCraftCookTabs").then((m) => ({ default: m.CampaignCookTab }))),
-  farm: lazy(() => import("./tabs/CampaignExternalTabs").then((m) => ({ default: m.CampaignFarmTab }))),
+  farm: lazy(() => import("./tabs/CampaignFarmTab").then((m) => ({ default: m.CampaignFarmTab }))),
   relationships: lazy(() => import("./tabs/CampaignRelationshipsTab").then((m) => ({ default: m.CampaignRelationshipsTab }))),
   worldGate: lazy(() => import("./tabs/CampaignWorldGateTab").then((m) => ({ default: m.CampaignWorldGateTab }))),
   storyHome: lazy(() => import("./tabs/CampaignStoryHomeTab").then((m) => ({ default: m.CampaignStoryHomeTab }))),
@@ -386,24 +384,14 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
         onClick={(e) => {
           // The drawer lives in a React portal under document.body, so it is
           // OUTSIDE the campaign-root subtree and owns its own click handling.
-          // The close button closes the panel; the still-vanilla island bodies
-          // (the inventory panel, the notes "+ Add" button, …) emit local
-          // semantic markers (data-add-note, data-inventory-*, …) that
-          // `dispatchHtmlIslandAction` translates into typed dispatch, returning
-          // `closesPanel` for the tab-switch actions (its DRAWER_CLOSE_ACTIONS).
-          // No drawer body emits `data-campaign-action`, so there is no generic
-          // string fallback here.
+          // Every drawer body is now React-owned (party / inventory / notes) or
+          // display-only HTML (quests / log) with no action markers, so the only
+          // delegated concern left here is the close button.
           const target = e.target as HTMLElement | null;
           if (!target) return;
           if (target.closest("[data-campaign-panel-close]")) {
             e.stopPropagation();
             close();
-            return;
-          }
-          const islandResult = dispatchHtmlIslandAction(target);
-          if (islandResult.handled) {
-            e.preventDefault();
-            if (islandResult.closesPanel) close();
           }
         }}
       >

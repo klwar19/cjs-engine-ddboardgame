@@ -109,9 +109,6 @@ interface CampaignMapModule {
 interface StoryScenesModule {
   openPendingNodeEntry?: () => void;
 }
-interface FarmingModeModule {
-  bindControls?: (root: HTMLElement) => void;
-}
 interface ActionsRuntime {
   has?: (name: string) => boolean;
   run: (name: string, data?: Record<string, unknown>) => unknown;
@@ -137,7 +134,6 @@ interface BootCjs {
   CampaignCombatPopup?: CombatPopupModule;
   CampaignMap?: CampaignMapModule;
   CampaignStoryScenes?: StoryScenesModule;
-  FarmingMode?: FarmingModeModule;
   CampaignActionsRuntime?: ActionsRuntime;
   CampaignUIInternal?: CuiInternal;
 }
@@ -299,7 +295,6 @@ export function render(): void {
     if (mapRegion) cjs().CampaignMap?.render(mapRegion);
     bindRunPanel();
     cjs().CampaignStoryScenes?.openPendingNodeEntry?.();
-    if (getActiveTab() === "farm") cjs().FarmingMode?.bindControls?.(root);
   }, 0);
 }
 

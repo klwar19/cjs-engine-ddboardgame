@@ -1,11 +1,11 @@
-<section class="campaign-panel farm-mode has-tile-menu" tabindex="0" aria-label="Pocket Haven farm">
+<section class="campaign-panel farm-mode has-qte-active" tabindex="0" aria-label="Pocket Haven farm">
   <div class="campaign-panel-head farm-head">
     <div>
       <h2>Pocket Haven Farm</h2>
       <div class="campaign-muted">Slots 2/3 | Seeds 6 | Fertilizer 2 | Harvest bonus +1</div>
     </div>
     <div class="campaign-panel-actions farm-head-actions">
-      <button class="campaign-action primary">Focus Bonus</button>
+      <button class="campaign-action" disabled="">No Bonus</button>
       <button class="campaign-action">Tick Growth</button>
       <button class="campaign-action primary">Pass Phase</button>
     </div>
@@ -275,7 +275,7 @@
       </label>
       <div class="farm-action-strip">
         <button class="campaign-action primary farm-main-action">Plant</button>
-        <button class="campaign-action farm-bonus-action primary">Focus Bonus</button>
+        <button class="campaign-action farm-bonus-action" disabled="">No Bonus</button>
       </div>
       <div class="farm-dpad" aria-label="Move farmer">
         <span>
@@ -314,44 +314,21 @@
       </div>
     </aside>
   </div>
-  <div class="farm-tile-menu-backdrop" role="presentation">
-    <div class="farm-tile-menu" role="dialog" aria-label="Tile actions">
-      <div class="farm-tile-menu-head">
-        <div>
-          <strong>Frostcap Seed</strong>
-          <div class="campaign-muted">Tile 3,4</div>
-        </div>
-        <button class="campaign-icon-btn" aria-label="Close tile actions">Close</button>
+  <div class="farm-qte-backdrop" role="presentation">
+    <div class="farm-qte-window" role="dialog" aria-label="Farm focus bonus">
+      <div class="farm-qte-head">
+        <strong>Focus Bonus</strong>
+        <button class="campaign-icon-btn" aria-label="Close focus bonus">Close</button>
       </div>
-      <div class="farm-tile-menu-meta">
-        <span>Growth 1/3</span>
-        <span>Prepared soil</span>
-        <span>Watered</span>
+      <div class="farm-qte-lane" style="--qte-target-start:42%;--qte-target-width:18%;--qte-duration:1500ms">
+        <span class="farm-qte-target">
+        </span>
+        <span class="farm-qte-marker">
+        </span>
       </div>
-      <div class="farm-tile-menu-actions">
-        <button class="campaign-action" title="Move Here">
-          <span>Move Here</span>
-        </button>
-        <button class="campaign-action" title="Reset neglect">
-          <span>Take Care</span>
-          <small>Reset neglect</small>
-        </button>
-        <button class="campaign-action" disabled="" title="Already planted">
-          <span>Plant Seed</span>
-          <small>Already planted</small>
-        </button>
-        <button class="campaign-action" disabled="" title="Already watered">
-          <span>Water</span>
-          <small>Already watered</small>
-        </button>
-        <button class="campaign-action" title="Stock 2">
-          <span>Fertilize</span>
-          <small>Stock 2</small>
-        </button>
-        <button class="campaign-action" disabled="" title="No tall grass">
-          <span>Cut Grass</span>
-          <small>No tall grass</small>
-        </button>
+      <div class="farm-qte-actions">
+        <button class="campaign-action primary farm-qte-hit">Hit</button>
+        <button class="campaign-action">Close</button>
       </div>
     </div>
   </div>

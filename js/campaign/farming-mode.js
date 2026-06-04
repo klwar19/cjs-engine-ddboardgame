@@ -30,9 +30,6 @@ window.CJS.FarmingMode = (() => {
     { id: 'scythe', label: 'Scythe', glyph: 'C' }
   ];
 
-  let _boundRoot = null;
-  let _keyboardBound = false;
-
   function normalizeFarm(rawFarm = {}, options = {}) {
     const farm = rawFarm && typeof rawFarm === 'object' ? rawFarm : {};
     const rule = options.rule?.farm || _defaultRule()?.farm || {};
@@ -71,137 +68,6 @@ window.CJS.FarmingMode = (() => {
     _migrateLegacyPlots(farm, rule);
     _nudgePlayerOffLockedSlot(farm);
     return farm;
-  }
-
-  function renderFarm() {
-    const state = CS().getState();
-    const farm = state?.pocketHaven?.farm || normalizeFarm({});
-    const target = _targetCell(farm);
-    const targetTile = _tileAt(farm, target.x, target.y);
-    const targetKey = _key(target.x, target.y);
-    const selectedCrop = _crop(farm.selectedSeed);
-    const seedQty = _stockQty(farm.seedStock, farm.selectedSeed);
-    const fertilizerQty = _fertilizerAvailable(state, farm);
-
-    return `
-      <section class="campaign-panel farm-mode ${farm.qte?.active ? 'has-qte-active' : ''} ${farm.actionMenu ? 'has-tile-menu' : ''}" tabindex="0" aria-label="Pocket Haven farm">
-        <div class="campaign-panel-head farm-head">
-          <div>
-            <h2>Pocket Haven Farm</h2>
-            <div class="campaign-muted">Slots ${_esc(farm.unlockedCropSlots)}/${_esc(farm.maxCropSlots)} | Seeds ${_esc(seedQty)} | Fertilizer ${_esc(fertilizerQty)}${farm.bonusHarvests ? ` | Harvest bonus +${_esc(farm.bonusHarvests)}` : ''}</div>
-          </div>
-          <div class="campaign-panel-actions farm-head-actions">
-            <button class="campaign-action ${farm.qte?.available ? 'primary' : ''}" data-farm-qte-open="1" ${farm.qte?.available ? '' : 'disabled'}>${farm.qte?.available ? 'Focus Bonus' : 'No Bonus'}</button>
-            <button class="campaign-action" data-farm-tick="1">Tick Growth</button>
-            <button class="campaign-action primary" data-pass-phase="1">Pass Phase</button>
-          </div>
-        </div>
-
-        <div class="farm-layout">
-          <div class="farm-stage">
-            <div class="farm-board" style="--farm-cols:${_escAttr(farm.width)}">
-              ${_renderTiles(farm, targetKey)}
-            </div>
-          </div>
-
-          <aside class="farm-controls" aria-label="Farm controls">
-            <div class="farm-tool-grid" role="toolbar" aria-label="Tools">
-              ${TOOLS.map((tool) => _renderTool(tool, farm)).join('')}
-            </div>
-
-            <label class="farm-select-label">
-              <span>Seed</span>
-              <select class="farm-select" data-farm-select="seed">
-                ${_seedOptions(state.currentWorld).map((seed) => `
-                  <option value="${_escAttr(seed.id)}" ${seed.id === farm.selectedSeed ? 'selected' : ''}>
-                    ${_esc(seed.name || seed.id)} (${_stockQty(farm.seedStock, seed.id)})
-                  </option>
-                `).join('')}
-              </select>
-            </label>
-
-            <div class="farm-action-strip">
-              <button class="campaign-action primary farm-main-action" data-farm-interact="1">
-                ${_esc(_actionLabel(farm, targetTile, target))}
-              </button>
-              <button class="campaign-action farm-bonus-action ${farm.qte?.available ? 'primary' : ''}" data-farm-qte-open="1" ${farm.qte?.available ? '' : 'disabled'}>
-                ${farm.qte?.available ? 'Focus Bonus' : 'No Bonus'}
-              </button>
-            </div>
-
-            <div class="farm-dpad" aria-label="Move farmer">
-              <span></span>
-              <button data-farm-move="up" aria-label="Move up">Up</button>
-              <span></span>
-              <button data-farm-move="left" aria-label="Move left">Left</button>
-              <button data-farm-interact="1" aria-label="Use selected tool">Act</button>
-              <button data-farm-move="right" aria-label="Move right">Right</button>
-              <span></span>
-              <button data-farm-move="down" aria-label="Move down">Down</button>
-              <span></span>
-            </div>
-
-            <div class="farm-detail">
-              ${_renderTileDetail(farm, targetTile, target)}
-            </div>
-
-            <div class="farm-recent">
-              ${(farm.recent || []).slice(0, 4).map((line) => `<div>${_esc(line)}</div>`).join('') || '<div class="campaign-muted">No farm actions yet.</div>'}
-            </div>
-          </aside>
-        </div>
-        ${_renderTileMenu(state, farm)}
-        ${_renderQteWindow(farm)}
-      </section>
-    `;
-  }
-
-  function bindControls(root) {
-    _boundRoot = root || _boundRoot;
-    if (_keyboardBound) return;
-    _keyboardBound = true;
-    document.addEventListener('keydown', (event) => {
-      const rootEl = _boundRoot || document;
-      if (!rootEl.querySelector?.('.farm-mode')) return;
-      const active = document.activeElement;
-      if (active && ['INPUT', 'SELECT', 'TEXTAREA'].includes(active.tagName)) return;
-      const key = String(event.key || '').toLowerCase();
-      const farm = CS()?.getState?.()?.pocketHaven?.farm;
-      if (farm?.actionMenu && key === 'escape') {
-        event.preventDefault();
-        closeTileMenu();
-        return;
-      }
-      if (farm?.qte?.active) {
-        if (key === ' ' || key === 'enter') {
-          event.preventDefault();
-          hitQte();
-        } else if (key === 'escape') {
-          event.preventDefault();
-          closeQte();
-        }
-        return;
-      }
-      const dir = {
-        arrowup: 'up',
-        w: 'up',
-        arrowdown: 'down',
-        s: 'down',
-        arrowleft: 'left',
-        a: 'left',
-        arrowright: 'right',
-        d: 'right'
-      }[key];
-      if (dir) {
-        event.preventDefault();
-        move(dir);
-        return;
-      }
-      if (key === ' ' || key === 'enter') {
-        event.preventDefault();
-        interact();
-      }
-    });
   }
 
   function move(direction) {
@@ -573,231 +439,6 @@ window.CJS.FarmingMode = (() => {
     _afterFarmAction(state, farm, 'harvest');
   }
 
-  function _renderTiles(farm, targetKey) {
-    const cells = [];
-    const playerKey = _key(farm.player.x, farm.player.y);
-    for (let y = 0; y < farm.height; y++) {
-      for (let x = 0; x < farm.width; x++) {
-        const key = _key(x, y);
-        const tile = _tileAt(farm, x, y);
-        const crop = tile.seedId ? _crop(tile.seedId) : null;
-        const cropStage = crop ? _cropStage(tile, crop) : '';
-        const distance = Math.abs(farm.player.x - x) + Math.abs(farm.player.y - y);
-        const slotIndex = farm.cropSlots.indexOf(key);
-        const locked = slotIndex >= 0 && slotIndex >= farm.unlockedCropSlots;
-        const classes = [
-          'farm-tile',
-          `terrain-${_className(tile.terrain || 'grass')}`,
-          tile.tilled ? 'is-tilled' : '',
-          tile.watered ? 'is-watered' : '',
-          tile.fertilized ? 'is-fertilized' : '',
-          tile.grass ? 'has-grass' : '',
-          tile.seedId ? 'has-crop' : '',
-          tile.ready ? 'is-ready' : '',
-          key === targetKey ? 'is-target' : '',
-          key === farm.lastClickedTile ? 'is-click-goal' : '',
-          distance === 1 ? 'is-neighbor' : '',
-          key === playerKey ? `is-player facing-${_className(farm.player.facing)}` : '',
-          locked ? 'is-locked-slot' : '',
-          slotIndex >= 0 && !locked ? 'is-crop-slot' : ''
-        ].filter(Boolean).join(' ');
-        cells.push(`
-          <button class="${classes}" data-farm-tile="1" data-x="${x}" data-y="${y}" title="${_escAttr(_tileLabel(tile, crop, locked))}" aria-label="${_escAttr(_tileLabel(tile, crop, locked))}">
-            <span class="farm-ground"></span>
-            ${tile.grass ? '<span class="farm-grass"></span>' : ''}
-            ${tile.seedId ? `<span class="farm-crop crop-stage-${_escAttr(cropStage)}">${_esc(_cropGlyph(tile, crop))}</span>` : ''}
-            ${key === playerKey ? '<span class="farm-player"><span></span></span>' : ''}
-          </button>
-        `);
-      }
-    }
-    return cells.join('');
-  }
-
-  function _renderTool(tool, farm) {
-    const active = farm.selectedTool === tool.id;
-    const level = farm.tools?.[tool.id]?.level || 1;
-    return `
-      <button class="farm-tool ${active ? 'is-active' : ''}" data-farm-select-tool="${_escAttr(tool.id)}" aria-pressed="${active ? 'true' : 'false'}">
-        <span class="farm-tool-glyph tool-${_className(tool.id)}">${_esc(tool.glyph)}</span>
-        <span>${_esc(tool.label)}</span>
-        <small>Lv ${_esc(level)}</small>
-      </button>
-    `;
-  }
-
-  function _renderTileMenu(state, farm) {
-    const menu = farm.actionMenu;
-    if (!menu || !_inside(farm, menu.x, menu.y)) return '';
-    const tile = _tileAt(farm, menu.x, menu.y);
-    const crop = tile.seedId ? _crop(tile.seedId) : null;
-    const key = _key(menu.x, menu.y);
-    const slotIndex = farm.cropSlots.indexOf(key);
-    const locked = _isLockedCropSlot(farm, key);
-    const unlocked = _isUnlockedCropSlot(farm, key);
-    const title = crop ? (crop.name || crop.id) : _tileKind(tile, slotIndex, unlocked);
-    const options = _tileActionOptions(state, farm, tile, menu);
-    return `
-      <div class="farm-tile-menu-backdrop" role="presentation">
-        <div class="farm-tile-menu" role="dialog" aria-label="Tile actions">
-          <div class="farm-tile-menu-head">
-            <div>
-              <strong>${_esc(title)}</strong>
-              <div class="campaign-muted">${locked ? 'Locked crop slot' : `Tile ${_esc(menu.x + 1)},${_esc(menu.y + 1)}`}</div>
-            </div>
-            <button class="campaign-icon-btn" data-farm-tile-menu-close="1" aria-label="Close tile actions">Close</button>
-          </div>
-          <div class="farm-tile-menu-meta">
-            ${crop ? `<span>Growth ${_esc(Math.min(tile.progress || 0, tile.required || crop.growthTicks || 3))}/${_esc(tile.required || crop.growthTicks || 3)}</span>` : ''}
-            ${tile.tilled ? '<span>Prepared soil</span>' : '<span>Wild ground</span>'}
-            ${tile.watered ? '<span>Watered</span>' : '<span>Dry</span>'}
-            ${tile.fertilized ? '<span>Fertilized</span>' : ''}
-          </div>
-          <div class="farm-tile-menu-actions">
-            ${options.map((option) => `
-              <button class="campaign-action ${option.primary ? 'primary' : ''}" data-farm-tile-action="${_escAttr(option.id)}" data-x="${_escAttr(menu.x)}" data-y="${_escAttr(menu.y)}" ${option.enabled ? '' : 'disabled'} title="${_escAttr(option.hint || option.label)}">
-                <span>${_esc(option.label)}</span>
-                ${option.hint ? `<small>${_esc(option.hint)}</small>` : ''}
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderQteWindow(farm) {
-    const qte = farm.qte || {};
-    if (!qte.active) return '';
-    const targetStart = _clampInt(qte.targetStart || 40, 0, 90);
-    const targetWidth = _clampInt(qte.targetWidth || QTE_TARGET_WIDTH, 8, 34);
-    const duration = _clampInt(qte.duration || QTE_DEFAULT_DURATION, 900, 2400);
-    return `
-      <div class="farm-qte-backdrop" role="presentation">
-        <div class="farm-qte-window" role="dialog" aria-label="Farm focus bonus">
-          <div class="farm-qte-head">
-            <strong>Focus Bonus</strong>
-            <button class="campaign-icon-btn" data-farm-qte-close="1" aria-label="Close focus bonus">Close</button>
-          </div>
-          <div class="farm-qte-lane" style="--qte-target-start:${_escAttr(targetStart)}%; --qte-target-width:${_escAttr(targetWidth)}%; --qte-duration:${_escAttr(duration)}ms">
-            <span class="farm-qte-target"></span>
-            <span class="farm-qte-marker"></span>
-          </div>
-          <div class="farm-qte-actions">
-            <button class="campaign-action primary farm-qte-hit" data-farm-qte-hit="1">Hit</button>
-            <button class="campaign-action" data-farm-qte-close="1">Close</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function _renderTileDetail(farm, tile, target) {
-    const crop = tile.seedId ? _crop(tile.seedId) : null;
-    const slotKey = _key(target.x, target.y);
-    const slotIndex = farm.cropSlots.indexOf(slotKey);
-    const unlocked = _isUnlockedCropSlot(farm, slotKey);
-    const progress = crop ? `${Math.min(tile.progress || 0, tile.required || crop.growthTicks || 3)}/${tile.required || crop.growthTicks || 3}` : 'none';
-    return `
-      <div class="farm-detail-title">
-        <strong>${crop ? _esc(crop.name || crop.id) : _esc(_tileKind(tile, slotIndex, unlocked))}</strong>
-        <span class="campaign-pill">${_esc(DIRECTIONS[farm.player.facing]?.label || 'Target')}</span>
-      </div>
-      <div class="farm-detail-grid">
-        <span>Progress</span><b>${_esc(progress)}</b>
-        <span>Soil</span><b>${tile.tilled ? 'Ready' : 'Wild'}</b>
-        <span>Water</span><b>${tile.watered ? 'Wet' : 'Dry'}</b>
-        <span>Fertilizer</span><b>${tile.fertilized ? 'Mixed' : 'None'}</b>
-      </div>
-    `;
-  }
-
-  function _actionLabel(farm, tile, target) {
-    const tool = farm.selectedTool || 'hand';
-    if (tool === 'hand' && tile.seedId && tile.ready) return 'Harvest';
-    if (tool === 'hand') return 'Take Care';
-    if (tool === 'hoe') return 'Plough';
-    if (tool === 'seed') return 'Plant';
-    if (tool === 'water') return 'Water';
-    if (tool === 'fertilizer') return 'Fertilize';
-    if (tool === 'scythe') return 'Cut';
-    return _toolLabel(tool);
-  }
-
-  function _tileActionOptions(state, farm, tile, target) {
-    const key = _key(target.x, target.y);
-    const locked = _isLockedCropSlot(farm, key);
-    const crop = tile.seedId ? _crop(tile.seedId) : null;
-    const distance = Math.abs(target.x - farm.player.x) + Math.abs(target.y - farm.player.y);
-    const seedId = farm.selectedSeed;
-    const seedName = _name('crops', seedId);
-    const seedQty = _stockQty(farm.seedStock, seedId);
-    const fertilizerQty = _fertilizerAvailable(state, farm);
-    const adjacent = distance === 1;
-    const out = [];
-
-    out.push({
-      id: 'move',
-      label: 'Move Here',
-      enabled: adjacent && _canStandOnTile(farm, target.x, target.y),
-      hint: locked ? 'Slot locked' : adjacent ? '' : 'Stand next to it'
-    });
-
-    if (locked) {
-      out.push({ id: 'hoe', label: 'Locked Slot', enabled: false, hint: 'Unlock more crop slots first' });
-      return out;
-    }
-
-    if (tile.seedId) {
-      out.push({
-        id: tile.ready ? 'harvest' : 'care',
-        label: tile.ready ? 'Harvest' : 'Take Care',
-        enabled: adjacent,
-        primary: tile.ready,
-        hint: adjacent ? (tile.ready ? 'Collect crop' : 'Reset neglect') : 'Stand next to it'
-      });
-    } else {
-      out.push({
-        id: 'hoe',
-        label: 'Plough',
-        enabled: adjacent && _isUnlockedCropSlot(farm, key) && !tile.tilled,
-        primary: !tile.tilled && _isUnlockedCropSlot(farm, key),
-        hint: !_isCropSlot(farm, key) ? 'Not a crop slot' : tile.tilled ? 'Already prepared' : ''
-      });
-    }
-
-    out.push({
-      id: 'seed',
-      label: 'Plant Seed',
-      enabled: adjacent && _isUnlockedCropSlot(farm, key) && tile.tilled && !tile.seedId && seedQty > 0,
-      primary: adjacent && tile.tilled && !tile.seedId && seedQty > 0,
-      hint: seedQty <= 0 ? `Need ${seedName}` : !tile.tilled ? 'Plough first' : tile.seedId ? 'Already planted' : `${seedName} x${seedQty}`
-    });
-
-    out.push({
-      id: 'water',
-      label: 'Water',
-      enabled: adjacent && (tile.tilled || tile.seedId) && !tile.watered,
-      hint: tile.watered ? 'Already watered' : (!tile.tilled && !tile.seedId) ? 'Needs prepared soil' : ''
-    });
-
-    out.push({
-      id: 'fertilizer',
-      label: 'Fertilize',
-      enabled: adjacent && (tile.tilled || tile.seedId) && !tile.fertilized && fertilizerQty > 0,
-      hint: fertilizerQty <= 0 ? 'Craft or find fertilizer' : tile.fertilized ? 'Already fertilized' : `Stock ${fertilizerQty}`
-    });
-
-    out.push({
-      id: 'scythe',
-      label: 'Cut Grass',
-      enabled: adjacent && tile.grass && !tile.seedId,
-      hint: tile.grass ? 'Gives clippings' : 'No tall grass'
-    });
-
-    return out;
-  }
-
   function _normalizePlayer(player = {}, width, height) {
     return {
       x: _clampInt(player.x ?? 1, 0, width - 1),
@@ -1069,31 +710,8 @@ window.CJS.FarmingMode = (() => {
     return all.filter((crop) => !crop._world || !world || crop._world === world);
   }
 
-  function _seedOptions(world) {
-    const crops = _cropOptions(world);
-    if (crops.length) return crops;
-    return [{ id: 'haven_frostcap_seed', name: 'Frostcap Seed', growthTicks: 3 }];
-  }
-
   function _crop(seedId) {
     return seedId ? DS()?.get?.('crops', seedId) : null;
-  }
-
-  function _cropStage(tile, crop) {
-    const stages = crop?.stages || [];
-    if (!stages.length) return tile.ready ? 'ready' : 'growing';
-    if (tile.ready) return stages[stages.length - 1]?.id || 'ready';
-    const pct = Number(tile.progress || 0) / Math.max(1, Number(tile.required || crop.growthTicks || 3));
-    const index = Math.min(stages.length - 1, Math.floor(pct * stages.length));
-    return stages[index]?.id || `stage-${index + 1}`;
-  }
-
-  function _cropGlyph(tile, crop) {
-    if (tile.ready) return crop?.readyGlyph || '!';
-    const pct = Number(tile.progress || 0) / Math.max(1, Number(tile.required || crop?.growthTicks || 3));
-    if (pct >= 0.66) return crop?.midGlyph || 'o';
-    if (pct >= 0.33) return crop?.sproutGlyph || 'v';
-    return '.';
   }
 
   function _isUnlockedCropSlot(farm, key) {
@@ -1108,11 +726,6 @@ window.CJS.FarmingMode = (() => {
 
   function _isCropSlot(farm, key) {
     return farm.cropSlots.indexOf(key) >= 0;
-  }
-
-  function _fertilizerAvailable(state, farm) {
-    const id = farm.selectedFertilizer || DEFAULT_FERTILIZER_ID;
-    return _stockQty(farm.fertilizerStock, id) + Number(state.inventory?.materials?.[id] || 0);
   }
 
   function _consumeFertilizer(state, farm, id) {
@@ -1241,41 +854,13 @@ window.CJS.FarmingMode = (() => {
     return TOOLS.find((tool) => tool.id === id)?.label || id;
   }
 
-  function _tileKind(tile, slotIndex, unlocked) {
-    if (slotIndex >= 0) return unlocked ? 'Open Crop Slot' : 'Locked Crop Slot';
-    if (tile.grass) return 'Tall Grass';
-    return tile.tilled ? 'Prepared Soil' : 'Farm Ground';
-  }
-
-  function _tileLabel(tile, crop, locked) {
-    if (locked) return 'Locked crop slot';
-    if (crop) return `${crop.name || crop.id} ${tile.ready ? 'ready' : 'growing'}`;
-    if (tile.grass) return 'Tall grass';
-    if (tile.tilled) return 'Prepared soil';
-    return 'Farm ground';
-  }
-
   function _name(type, id) {
     return DS()?.get?.(type, id)?.name || id;
-  }
-
-  function _className(value) {
-    return String(value || '').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
-  }
-
-  function _esc(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-  }
-
-  function _escAttr(value) {
-    return _esc(value);
   }
 
   return Object.freeze({
     TOOLS,
     normalizeFarm,
-    renderFarm,
-    bindControls,
     move,
     faceOrUseTile,
     interact,
