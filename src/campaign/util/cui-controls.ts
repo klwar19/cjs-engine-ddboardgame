@@ -1,14 +1,25 @@
-// cui-controls.ts — Phase H.4 TypeScript port of the Controls helpers.
+// cui-controls.ts — campaign "purpose taxonomy" helpers.
 //
-// `js/campaign/ui/cui-controls.js` exported a frozen `Controls` namespace
-// on `window.CJS.CampaignUIInternal.Controls`. The TS port installs the
-// same surface for both the vanilla JS callers (still-JS tab modules,
-// the modal builders in campaign-ui.js) and the TS modules.
+// History: the original `js/campaign/ui/cui-controls.js` exported a frozen
+// `Controls` namespace of stateless HTML builders (action button, menu,
+// control group, town action button) on
+// `window.CJS.CampaignUIInternal.Controls`. Every one of those HTML-string
+// builders has since been superseded by JSX components that dispatch through
+// `onClick` (e.g. `shell/Header.tsx`'s action menu, `CampaignOverviewTab`'s
+// control group, `CampaignMapsTab`'s ControlGroup/ActionButton), so the
+// builders — and the namespace nothing reads anymore — were removed. The two
+// that stamped `data-campaign-action` (`actionBtn` / `renderTownActionButton`)
+// were the last `data-campaign-action` emitters in the whole `src` tree and
+// had zero callers; dropping them removes the stringly-typed action surface.
 //
-// Stateless HTML builders for small reusable widgets: action button,
-// menu, control group, inline purpose chip, town action button.
+// What remains is the "purpose" taxonomy: it classifies a hub-pulse / oracle /
+// event / rumor card by the kind of commitment it represents to the GM, and
+// renders the display-only inline-purpose blurb. These are consumed via ESM
+// named imports by the typed data builders (`tabs/data/hub.ts`,
+// `tabs/data/resultPanels.ts`). `renderInlinePurpose` returns a display-only
+// HTML string (no actions) surfaced through `dangerouslySetInnerHTML`.
 
-import { esc, escAttr, label } from "./cui-utils";
+import { esc, escAttr } from "./cui-utils";
 
 // ── Tool / purpose taxonomy ─────────────────────────────────────────
 // The "purpose" classifies a hub-pulse / oracle / event / rumor card by
@@ -88,6 +99,9 @@ export function purposeKeyForCard(card: CardLike = {}): ToolPurposeKey {
   return "hubPulse";
 }
 
+// Display-only inline-purpose blurb (no actions). Consumed via
+// `dangerouslySetInnerHTML` by the typed data builders that previously
+// reached for `Controls.renderInlinePurpose`.
 export function renderInlinePurpose(key: string): string {
   const item = TOOL_PURPOSES[key as ToolPurposeKey] || TOOL_PURPOSES.oracle;
   return `
@@ -100,125 +114,8 @@ export function renderInlinePurpose(key: string): string {
 
 // `renderRumorPurpose` removed in Phase K.3 — the rumor-purpose blurb
 // is now static JSX in CampaignHubTabs.tsx / TownPanels.tsx.
-
-export function impactLegendItem(tone: string, text: string): string {
-  return `<span class="campaign-impact-badge is-${escAttr(tone)}">${esc(text)}</span>`;
-}
-
-export function controlGroup(title: string, buttons: string, description = ""): string {
-  return `
-      <div class="campaign-control-group">
-        <div class="campaign-control-title">${esc(title)}</div>
-        ${description ? `<div class="campaign-control-help">${esc(description)}</div>` : ""}
-        <div class="campaign-action-grid">${buttons}</div>
-      </div>
-    `;
-}
-
-export interface ActionMenuOptions {
-  readonly align?: "start" | "end";
-  readonly compact?: boolean;
-}
-
-export function actionMenu(menuLabel: string, buttons: string, options: ActionMenuOptions = {}): string {
-  const cls = ["campaign-action-menu"];
-  if (options.align === "end") cls.push("align-end");
-  if (options.compact) cls.push("is-compact");
-  return `
-      <details class="${cls.join(" ")}">
-        <summary class="campaign-action-menu-trigger">
-          <span>${esc(menuLabel)}</span>
-        </summary>
-        <div class="campaign-action-menu-panel">
-          ${buttons}
-        </div>
-      </details>
-    `;
-}
-
-export interface ActionBtnProps {
-  readonly action: string;
-  readonly label: string;
-  readonly hint?: string;
-  readonly kind?: string;
-  readonly data?: Readonly<Record<string, string | number | boolean | null | undefined>>;
-  readonly disabled?: boolean;
-}
-
-export function actionBtn(props: ActionBtnProps): string {
-  const { action, label: btnLabel, hint, kind = "", data = {}, disabled = false } = props;
-  const cls = ["campaign-action"];
-  if (kind) cls.push(kind);
-  if (hint) cls.push("has-hint");
-  const dataAttrs = Object.entries(data)
-    .filter(([, v]) => v !== undefined && v !== null && v !== "")
-    .map(([k, v]) => `data-${k}="${escAttr(String(v))}"`)
-    .join(" ");
-  const disable = disabled ? "disabled" : "";
-  const titleAttr = hint ? ` title="${escAttr(hint)}"` : "";
-  return `
-      <button class="${cls.join(" ")}" data-campaign-action="${escAttr(action)}" ${dataAttrs}${titleAttr} ${disable}>
-        <span class="campaign-action-label">${esc(btnLabel)}</span>
-        ${hint ? `<small class="campaign-action-hint">${esc(hint)}</small>` : ""}
-      </button>
-    `;
-}
-
-export interface TownActionButtonProps {
-  readonly action: string;
-  readonly tone: string;
-  readonly title: string;
-  readonly meta: string;
-  readonly text: string;
-}
-
-export function renderTownActionButton(props: TownActionButtonProps): string {
-  const { action, tone, title, meta, text } = props;
-  return `
-      <button class="campaign-town-option is-${escAttr(tone)}" data-campaign-action="${escAttr(action)}">
-        <span class="campaign-impact-badge is-${escAttr(tone)}">${esc(meta)}</span>
-        <strong>${esc(title)}</strong>
-        <span>${esc(text)}</span>
-      </button>
-    `;
-}
-
-// ── Legacy namespace install ─────────────────────────────────────────
-export interface CuiControls {
-  readonly purposeTone: typeof purposeTone;
-  readonly purposeKeyForCard: typeof purposeKeyForCard;
-  readonly renderInlinePurpose: typeof renderInlinePurpose;
-  readonly impactLegendItem: typeof impactLegendItem;
-  readonly controlGroup: typeof controlGroup;
-  readonly actionMenu: typeof actionMenu;
-  readonly actionBtn: typeof actionBtn;
-  readonly renderTownActionButton: typeof renderTownActionButton;
-}
-
-const NAMESPACE: CuiControls = Object.freeze({
-  purposeTone,
-  purposeKeyForCard,
-  renderInlinePurpose,
-  impactLegendItem,
-  controlGroup,
-  actionMenu,
-  actionBtn,
-  renderTownActionButton
-});
-
-interface CuiInternalWindow {
-  CJS?: {
-    CampaignUIInternal?: { Controls?: CuiControls; [key: string]: unknown };
-    [key: string]: unknown;
-  };
-}
-const w = window as unknown as CuiInternalWindow;
-w.CJS = w.CJS || {};
-w.CJS.CampaignUIInternal = w.CJS.CampaignUIInternal || {};
-w.CJS.CampaignUIInternal.Controls = NAMESPACE;
-
-// `label` is exported by `./cui-utils`; the legacy `cui-controls.js`
-// imported it but didn't re-export. Mark it as used so TS doesn't warn.
-void label;
-
-export default NAMESPACE;
+//
+// `impactLegendItem` / `controlGroup` / `actionMenu` / `actionBtn` /
+// `renderTownActionButton` and the `CampaignUIInternal.Controls` namespace
+// install were removed: the HTML-string builders are superseded by JSX, and
+// the two action-string emitters had no callers.

@@ -78,16 +78,15 @@ sandbox.window.CJS.CampaignUIInternal.Log = {
   logMeta: () => '',
   renderLogEntry: () => ''
 };
-// Controls: ported to src/campaign/util/cui-controls.ts.
+// Controls: ported to src/campaign/util/cui-controls.ts — now a pure
+// purpose-taxonomy util (the HTML-string builders + the data-campaign-action
+// emitters were removed). It no longer installs a CampaignUIInternal.Controls
+// namespace, but the stub mirrors the surviving exports for any sandboxed
+// caller that still reaches for it.
 sandbox.window.CJS.CampaignUIInternal.Controls = {
   purposeTone: () => 'flavor',
   purposeKeyForCard: () => 'hubPulse',
-  renderInlinePurpose: () => '',
-  impactLegendItem: () => '',
-  controlGroup: () => '',
-  actionMenu: () => '',
-  actionBtn: () => '',
-  renderTownActionButton: () => ''
+  renderInlinePurpose: () => ''
 };
 // Modals: ported to src/campaign/util/cui-modals.ts.
 sandbox.window.CJS.CampaignUIInternal.Modals = {

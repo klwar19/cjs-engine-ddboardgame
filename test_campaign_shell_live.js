@@ -110,8 +110,10 @@ function installGlobals(window) {
   const VR = path.resolve(__dirname, "tools", "visual-regression");
 
   // 1. Real TS leaf-util modules self-install on CampaignUIInternal.* (browser parity).
+  //    (cui-controls is no longer here: it's a pure util now — no namespace to
+  //    install — pulled in via named imports by the tab data builders instead.)
   for (const m of [
-    "cui-utils", "cui-portraits", "cui-log", "cui-controls", "cui-modals",
+    "cui-utils", "cui-portraits", "cui-log", "cui-modals",
     "cui-options", "cui-equipment", "cui-hub-tab", "cui-tabs-registry",
     "cui-world-map-tab", "cui-party-tab", "cui-react-bridge"
   ]) {
