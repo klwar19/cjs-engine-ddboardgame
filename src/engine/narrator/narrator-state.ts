@@ -1,4 +1,5 @@
 // narrator-state.js
+// Tier 3 TS port -> src/engine/narrator/narrator-state.ts (exports NarratorState + installs window.CJS.NarratorState). Body verbatim.
 // State machines that track combat drama and produce tags for the
 // narrator-engine fragment picker. These run silently — they consume
 // CombatLog entries and add/remove contextual tags to each event.
@@ -16,7 +17,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.NarratorState = (() => {
+export const NarratorState = (() => {
   'use strict';
 
   // ── TRACKER STATE ──────────────────────────────────────────────────
@@ -366,3 +367,6 @@ window.CJS.NarratorState = (() => {
     getBinMisses
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.NarratorState = NarratorState;

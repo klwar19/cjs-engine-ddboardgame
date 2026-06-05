@@ -1,4 +1,5 @@
 // narrator-data.js
+// Tier 3 TS port -> src/engine/narrator/narrator-data.ts (exports NarratorData + installs window.CJS.NarratorData). Body verbatim.
 // Loads quips.json and builds a fast search index by tag.
 // Each fragment lives in one of four narrative layers:
 //   action       — "Bin slashes at the Ice Wolf!"
@@ -12,7 +13,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.NarratorData = (() => {
+export const NarratorData = (() => {
   'use strict';
 
   // ── STATE ──────────────────────────────────────────────────────────
@@ -133,3 +134,6 @@ window.CJS.NarratorData = (() => {
     LAYERS
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.NarratorData = NarratorData;

@@ -1,4 +1,5 @@
 // narrator-engine.js
+// Tier 3 TS port -> src/engine/narrator/narrator-engine.ts (exports NarratorEngine + installs window.CJS.NarratorEngine). Body verbatim.
 // The CJS Commentary Engine. Subscribes to CombatLog, feeds events
 // through NarratorState (drama trackers), then picks the best fragment
 // from NarratorData for each narrative layer and stitches them together.
@@ -12,7 +13,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.NarratorEngine = (() => {
+export const NarratorEngine = (() => {
   'use strict';
 
   const NS   = () => window.CJS.NarratorState;
@@ -87,7 +88,7 @@ window.CJS.NarratorEngine = (() => {
   // ── FRAGMENT PICKER ───────────────────────────────────────────────
   function _pickNarration(tagSet, entry) {
     const layers = ND().LAYERS; // ['action', 'damage', 'context', 'cjs_editorial']
-    const parts = {};
+    const parts: any = {};
 
     for (const layer of layers) {
       const matches = ND().findMatches(layer, tagSet);
@@ -179,7 +180,7 @@ window.CJS.NarratorEngine = (() => {
     };
 
     let result = text;
-    for (const [key, val] of Object.entries(vars)) {
+    for (const [key, val] of Object.entries<any>(vars)) {
       result = result.replaceAll(key, String(val));
     }
     return result;
@@ -236,3 +237,6 @@ window.CJS.NarratorEngine = (() => {
     subscribePersistent
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.NarratorEngine = NarratorEngine;
