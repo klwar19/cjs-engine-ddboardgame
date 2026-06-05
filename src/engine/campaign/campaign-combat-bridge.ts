@@ -1,9 +1,12 @@
-// campaign-combat-bridge.js
-// Handoff between campaign.html and combat.html.
+// campaign-combat-bridge.ts — Tier 3 TS port of js/campaign/campaign-combat-bridge.js
+// (engine cluster: campaign). Handoff between campaign.html and combat.html:
+// battle request/result read+write, build-result-from-combat, apply-result,
+// member battle-readiness, loot summary. Reads window.CJS.* lazily. Exports
+// `CampaignCombatBridge` and installs window.CJS.CampaignCombatBridge. Body verbatim.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignCombatBridge = (() => {
+export const CampaignCombatBridge = (() => {
   'use strict';
 
   const REQUEST_KEY = 'cjs.campaign.battle.request.v1';
@@ -120,7 +123,7 @@ window.CJS.CampaignCombatBridge = (() => {
   function buildRequestFromState(pendingBattle) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
-    const partyEntries = Object.entries(state.party || {});
+    const partyEntries = Object.entries<any>(state.party || {});
     const availableParty = partyEntries.filter(([, member]) => isMemberBattleReady(member));
     const excludedParty = partyEntries.filter(([, member]) => !isMemberBattleReady(member));
     return {
@@ -176,7 +179,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return request;
   }
 
-  function _calcSkillApAward(skillId, entry = {}) {
+  function _calcSkillApAward(skillId, entry: any = {}) {
     const skill = DS().get('skills', skillId);
     if (!skill) return 0;
     const F = window.CJS.Formulas;
@@ -202,7 +205,7 @@ window.CJS.CampaignCombatBridge = (() => {
   function _cloneSkillUseLog(log) {
     if (!log || typeof log !== 'object') return {};
     const out = {};
-    for (const [skillId, entry] of Object.entries(log)) {
+    for (const [skillId, entry] of Object.entries<any>(log)) {
       if (!entry) continue;
       out[skillId] = {
         count: Number(entry.count || 0),
@@ -217,7 +220,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return out;
   }
 
-  function _campaignUnitSnapshot(id, member = {}) {
+  function _campaignUnitSnapshot(id, member: any = {}) {
     const baseId = member.baseCharacterId || id;
     const base = DS().get('characters', baseId) || {};
     const currentWorld = CS()?.getState?.()?.currentWorld || '';
@@ -229,7 +232,7 @@ window.CJS.CampaignCombatBridge = (() => {
       ? PS().computeSnapshotStats(base.stats || {}, member, currentWorld)
       : (() => {
           const s = { ...(base.stats || {}) };
-          for (const [stat, amount] of Object.entries(member.statOverrides || {})) {
+          for (const [stat, amount] of Object.entries<any>(member.statOverrides || {})) {
             s[stat] = Number(s[stat] || 0) + Number(amount || 0);
           }
           return s;
@@ -351,13 +354,13 @@ window.CJS.CampaignCombatBridge = (() => {
     }
   }
 
-  function _installCampaignPartyUnits(request = {}) {
-    for (const patch of Object.values(request.partyOverlay || {})) {
+  function _installCampaignPartyUnits(request: any = {}) {
+    for (const patch of Object.values<any>(request.partyOverlay || {})) {
       if (patch?.unit?.id) DS().replace('characters', patch.unit.id, _clone(patch.unit));
     }
   }
 
-  function _mergeSkillEntries(baseSkills = [], learnedSkills = []) {
+  function _mergeSkillEntries(baseSkills: any[] = [], learnedSkills: any[] = []) {
     const out = [];
     const seen = new Set();
     for (const entry of [...baseSkills, ...learnedSkills]) {
@@ -403,7 +406,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return out;
   }
 
-  function _requestCombatContext(request = {}, base = {}, card = null) {
+  function _requestCombatContext(request: any = {}, base: any = {}, card = null) {
     const questContext = request.questContext || {};
     const tags = _mergeTags(
       base.tags || [],
@@ -424,7 +427,7 @@ window.CJS.CampaignCombatBridge = (() => {
     };
   }
 
-  function _procModifierChanceForRequest(request = {}, tags = []) {
+  function _procModifierChanceForRequest(request: any = {}, tags: any[] = []) {
     if (request.procModifierChance != null) return Number(request.procModifierChance);
     const set = new Set((tags || []).map((tag) => String(tag).toLowerCase()));
     if (set.has('story') || set.has('quest')) return 0.16;
@@ -432,7 +435,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return null;
   }
 
-  function _procModifierMaxForRequest(request = {}, tags = []) {
+  function _procModifierMaxForRequest(request: any = {}, tags: any[] = []) {
     if (request.procModifierMax != null) return Number(request.procModifierMax);
     const set = new Set((tags || []).map((tag) => String(tag).toLowerCase()));
     if (set.has('story') || set.has('quest')) return 1;
@@ -485,13 +488,13 @@ window.CJS.CampaignCombatBridge = (() => {
     return runtimeId;
   }
 
-  function _fallbackPlayerPos(encounter = {}, index = 0) {
+  function _fallbackPlayerPos(encounter: any = {}, index = 0) {
     const width = Math.max(2, Number(encounter.width || 8));
     const height = Math.max(2, Number(encounter.height || 8));
     return [width - 2, Math.min(height - 1, 1 + index)];
   }
 
-  function _createProceduralEncounterFromRequest(request = {}) {
+  function _createProceduralEncounterFromRequest(request: any = {}) {
     _installCampaignPartyUnits(request);
     const card = request.battleSetCard || _battleSetCard(request.battleSetId);
     const runtimeContext = _requestCombatContext(request, {}, card);
@@ -553,7 +556,7 @@ window.CJS.CampaignCombatBridge = (() => {
   }
 
   function buildResultFromCombat(request, combatState) {
-    const units = Object.values(combatState?.units || {});
+    const units = Object.values<any>(combatState?.units || {});
     const partyAfter = {};
     for (const unit of units.filter((entry) => entry.team === 'player')) {
       const id = unit.campaignPartyId || unit.baseId || unit.id || unit.instanceId;
@@ -640,7 +643,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return null;
   }
 
-  function _battleQuestContext(state = {}, pendingBattle = {}) {
+  function _battleQuestContext(state: any = {}, pendingBattle: any = {}) {
     const run = state.activeScenarioRun || {};
     const questId = pendingBattle?.questId || pendingBattle?.questContext?.questId || run.questId || null;
     const quest = questId ? state.quests?.[questId] : null;
@@ -675,7 +678,7 @@ window.CJS.CampaignCombatBridge = (() => {
     };
   }
 
-  function _enemyIdsForRequest(card, request = {}) {
+  function _enemyIdsForRequest(card, request: any = {}) {
     const explicit = (request.monsterIds || []).filter((id) => DS().exists('monsters', id));
     return explicit.length ? explicit : _enemyIdsFromBattleCard(card, request);
   }
@@ -685,7 +688,7 @@ window.CJS.CampaignCombatBridge = (() => {
   // HP/stats/skills/RP all scale together. Called once per enemy
   // placement; deterministic given the same inputs except for the
   // built-in danger jitter.
-  function _attachMonsterLevel(placement, monster, request = {}) {
+  function _attachMonsterLevel(placement, monster, request: any = {}) {
     if (!placement) return placement;
     // If a placement already carries a level (e.g. authored encounter),
     // respect it — story battles often hand-tune monster levels.
@@ -694,7 +697,7 @@ window.CJS.CampaignCombatBridge = (() => {
     if (!F?.pickMonsterLevel) return placement;
     const state = CS()?.getState?.() || {};
     const world = DS().get('worlds', request.world || state.currentWorld) || {};
-    const partyLevels = Object.values(state.party || {})
+    const partyLevels = Object.values<any>(state.party || {})
       .filter((m) => (m.rosterRole || 'active') !== 'bench')
       .map((m) => Number(m.level || 1));
     const partyAvg = partyLevels.length
@@ -706,7 +709,7 @@ window.CJS.CampaignCombatBridge = (() => {
     let recPenalty = 0;
     const recRank = world.recommendedRank;
     if (recRank) {
-      const partyTop = Object.values(state.party || {}).reduce((best, m) => {
+      const partyTop = Object.values<any>(state.party || {}).reduce((best, m) => {
         const r = m.adventurer?.rank || m.rank || 'F';
         return (F.rankIndex(r) > F.rankIndex(best)) ? r : best;
       }, 'F');
@@ -721,7 +724,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return { ...placement, level };
   }
 
-  function _enemyIdsFromBattleCard(card, request = {}) {
+  function _enemyIdsFromBattleCard(card, request: any = {}) {
     const ids = [];
     for (const mix of card?.enemyMix || []) {
       if (mix.optional && Math.random() < 0.5) continue;
@@ -733,7 +736,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return ids.length ? ids : _fallbackEnemyIds(card, request);
   }
 
-  function _monsterIdForMix(mix = {}) {
+  function _monsterIdForMix(mix: any = {}) {
     if (mix.id && DS().exists('monsters', mix.id)) return mix.id;
     const label = _normalize([mix.id, mix.name, mix.label].filter(Boolean).join(' '));
     if (!label) return null;
@@ -764,7 +767,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return DS().getAllAsArray('monsters').find((monster) => _normalize(`${monster.id} ${monster.name || ''} ${monster.type || ''}`).includes(alias))?.id || null;
   }
 
-  function _fallbackEnemyIds(card, request = {}) {
+  function _fallbackEnemyIds(card, request: any = {}) {
     const world = request.world || card?.world || '';
     const monsters = DS().getAllAsArray('monsters')
       .filter((monster) => !world || !monster._world || monster._world === world)
@@ -777,7 +780,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return Array.from({ length: count }, (_, index) => pool[index % pool.length]);
   }
 
-  function _monsterScore(monster, card = {}, request = {}) {
+  function _monsterScore(monster, card: any = {}, request: any = {}) {
     const context = request.questContext || {};
     const text = _normalize([
       request.setting,
@@ -825,7 +828,7 @@ window.CJS.CampaignCombatBridge = (() => {
       .filter(Boolean)));
   }
 
-  function _battleMapConfig(card = {}, request = {}) {
+  function _battleMapConfig(card: any = {}, request: any = {}) {
     card = card || {};
     const source = request.battleMap || card.battleMap || {};
     const grid = card.grid || {};
@@ -876,7 +879,7 @@ window.CJS.CampaignCombatBridge = (() => {
     const outcome = _resultOutcome(result);
     const allowRecovery = _allowResultRecovery(outcome, result, pending);
     const ops = [];
-    for (const [id, member] of Object.entries(result.partyAfter || {})) {
+    for (const [id, member] of Object.entries<any>(result.partyAfter || {})) {
       const current = state.party[id];
       if (!current) continue;
       const importedHp = Number(member.currentHp ?? current.currentHp ?? 0);
@@ -905,7 +908,7 @@ window.CJS.CampaignCombatBridge = (() => {
       // also awarded a small amount per skill use; character XP is awarded
       // a small amount per skill use plus an outcome bonus below.
       let skillUseTotal = 0;
-      for (const [skillId, entry] of Object.entries(member.skillUseLog || {})) {
+      for (const [skillId, entry] of Object.entries<any>(member.skillUseLog || {})) {
         const apAmount = _calcSkillApAward(skillId, entry);
         if (apAmount > 0) {
           ops.push({ op: 'gain_skill_ap', target: id, skillId, amount: apAmount });
@@ -1023,12 +1026,12 @@ window.CJS.CampaignCombatBridge = (() => {
     return ['victory', 'defeat', 'draw'].includes(outcome) ? outcome : 'draw';
   }
 
-  function _allowResultRecovery(outcome, result = {}, pending = {}) {
+  function _allowResultRecovery(outcome, result: any = {}, pending: any = {}) {
     if (!['defeat', 'draw'].includes(outcome)) return false;
     return !(result.defeatNoRecovery || result.noDefeatRecovery || pending.defeatNoRecovery || pending.noDefeatRecovery);
   }
 
-  function _resultRecoveryHp(member = {}, outcome) {
+  function _resultRecoveryHp(member: any = {}, outcome) {
     const maxHp = Math.max(1, Number(member.maxHp || 1));
     const rate = outcome === 'draw' ? 0.25 : 0.10;
     return Math.max(1, Math.floor(maxHp * rate));
@@ -1045,7 +1048,7 @@ window.CJS.CampaignCombatBridge = (() => {
     return (member?.rosterRole || 'active') !== 'bench' && availability.status === 'available' && Number(member?.currentHp ?? 1) > 0;
   }
 
-  function normalizeAvailability(member = {}) {
+  function normalizeAvailability(member: any = {}) {
     const raw = member.availability || {};
     const status = String(raw.status || raw.state || (member.available === false ? 'unavailable' : 'available')).toLowerCase();
     return {
@@ -1093,3 +1096,6 @@ window.CJS.CampaignCombatBridge = (() => {
     summarizeLoot
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignCombatBridge = CampaignCombatBridge;

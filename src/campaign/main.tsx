@@ -38,7 +38,7 @@ import "../engine/campaign/campaign-story-scenes";
 import "../engine/campaign/campaign-sequence-runner";
 import "../engine/campaign/campaign-sequence-vn";
 import "../engine/campaign/campaign-oracle";
-import "../../js/campaign/campaign-combat-bridge.js";
+import "../engine/campaign/campaign-combat-bridge";
 import "../engine/campaign/campaign-party-chat";
 import "../../js/campaign/campaign-map.js";
 import "../engine/campaign/pocket-haven-facilities";
