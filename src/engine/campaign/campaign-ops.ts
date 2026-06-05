@@ -1,9 +1,16 @@
-// campaign-ops.js
-// Shared operation dispatcher for Campaign Mode state changes.
+// campaign-ops.ts — Tier 3 TS port of js/campaign/campaign-ops.js (engine
+// cluster: campaign). Shared operation dispatcher for Campaign Mode state
+// changes: the `apply`/`describe`/`passPhase` core that every campaign mutation
+// routes through (party, economy, quests, tags, alignment, world events, side
+// content, ...). DOM-free; reads window.CJS.* lazily.
+//
+// Exports `CampaignOps` and installs window.CJS.CampaignOps. Body verbatim from
+// the legacy IIFE; only `: any` annotations added where tsc (strict:false)
+// requires them.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignOps = (() => {
+export const CampaignOps = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -24,7 +31,7 @@ window.CJS.CampaignOps = (() => {
     take_quest_item: 'questItems'
   };
 
-  function apply(input, options = {}) {
+  function apply(input, options: any = {}) {
     const ops = Array.isArray(input) ? input : [input];
     const applied = [];
     CS().mutate((state) => {
@@ -341,7 +348,7 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
-  function passPhase(state, op = {}) {
+  function passPhase(state, op: any = {}) {
     const rule = CS().getPhaseRule(op.toType || state.phase.type);
     state.phase.number = (state.phase.number || 1) + 1;
     if (op.toType) {
@@ -412,7 +419,7 @@ window.CJS.CampaignOps = (() => {
     return `${state.currentWorld || 'haven'}_gold`;
   }
 
-  function _log(state, text, op = {}) {
+  function _log(state, text, op: any = {}) {
     if (!text) return;
     state.log.unshift({
       id: `log_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
@@ -425,12 +432,12 @@ window.CJS.CampaignOps = (() => {
     state.log = state.log.slice(0, 500);
   }
 
-  function _alignmentChange(state, op = {}) {
+  function _alignmentChange(state, op: any = {}) {
     const entry = Align()?.applyChange?.(state, op);
     if (entry) _log(state, `Alignment shifted: ${entry.label || Align()?.describeDeltas?.(entry.deltas) || 'choice consequence'}.`, op);
   }
 
-  function _choiceConsequenceRecord(state, op = {}) {
+  function _choiceConsequenceRecord(state, op: any = {}) {
     const entry = Align()?.recordChoice?.(state, op);
     if (entry) {
       const details = Align()?.describeDeltas?.(entry.deltas);
@@ -438,7 +445,7 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
-  function _alignmentPotentialAdd(state, op = {}) {
+  function _alignmentPotentialAdd(state, op: any = {}) {
     const entry = Align()?.addPotential?.(state, op);
     if (entry) _log(state, `Future alignment noted: ${entry.label || Align()?.describeDeltas?.(entry.deltas) || 'potential path'}.`, op);
   }
@@ -447,7 +454,7 @@ window.CJS.CampaignOps = (() => {
   // that may fire later when fireWhen conditions are met. Hooks accept
   // chapterMin / partResolved / flag / phaseMin / worldOnly gates and
   // run their fireOps (and optionally set flags) when due.
-  function _recordConsequence(state, op = {}) {
+  function _recordConsequence(state, op: any = {}) {
     const hook = Align()?.recordConsequenceHook?.(state, op);
     if (!hook) return;
     _log(state, `Tracked future consequence: ${hook.label || hook.choiceId || hook.id}.`, op);
@@ -456,7 +463,7 @@ window.CJS.CampaignOps = (() => {
   // Scans the consequence ledger, runs ops + flag changes for any
   // hooks whose conditions are now satisfied, and marks them fired.
   // Safe to call repeatedly — fired hooks won't re-trigger.
-  function _fireDueConsequences(state, op = {}, options = {}) {
+  function _fireDueConsequences(state, op: any = {}, options: any = {}) {
     const due = Align()?.dueConsequenceHooks?.(state) || [];
     if (!due.length) return [];
     const fired = [];
@@ -493,7 +500,7 @@ window.CJS.CampaignOps = (() => {
     return fired;
   }
 
-  function _eventLogAdd(state, op = {}) {
+  function _eventLogAdd(state, op: any = {}) {
     const raw = op.entry || op;
     const title = raw.title || raw.label || raw.id || 'Event';
     const summary = raw.summary || raw.text || raw.prompt || raw.note || raw.short || '';
@@ -521,7 +528,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Event log added: ${title}.`, { op: 'event_log_add' });
   }
 
-  function _setFlag(state, flag, enabled, value) {
+  function _setFlag(state, flag, enabled, value?) {
     if (!flag) return;
     if (enabled) state.flags[flag] = value === undefined ? true : value;
     else delete state.flags[flag];
@@ -568,7 +575,7 @@ window.CJS.CampaignOps = (() => {
     return state.mapState[id];
   }
 
-  function _mapNote(state, op = {}) {
+  function _mapNote(state, op: any = {}) {
     const mapId = op.mapId || state.activeScenarioRun?.mapId || 'freeform';
     const nodeId = op.nodeId || state.activeScenarioRun?.currentNode || op.cellKey || 'freeform';
     const map = _mapState(state, mapId);
@@ -584,7 +591,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Map note added: ${op.title || nodeId}.`);
   }
 
-  function _mapLayerSet(state, op = {}) {
+  function _mapLayerSet(state, op: any = {}) {
     if (!state.activeScenarioRun) {
       _log(state, `Map layer change ignored outside active run (${op.layer || op.layerId || ''}).`);
       return;
@@ -593,7 +600,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Map layer set: ${state.activeScenarioRun.mapLayer}.`);
   }
 
-  function _captureNode(state, op = {}) {
+  function _captureNode(state, op: any = {}) {
     const nodeId = op.nodeId || op.id;
     if (!nodeId) return;
     const mapId = op.mapId || state.activeScenarioRun?.mapId || 'freeform';
@@ -621,7 +628,7 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _applyIncomeNodes(state) {
-    const nodes = Object.values(state.pocketHaven?.incomeNodes || {});
+    const nodes = Object.values<any>(state.pocketHaven?.incomeNodes || {});
     if (!nodes.length) return;
     for (const node of nodes) {
       const ops = _asOps(node.incomeOps || node.dailyOps);
@@ -943,14 +950,14 @@ window.CJS.CampaignOps = (() => {
     slots[open] = itemId;
   }
 
-  function _normalizeEquipmentSlots(rawSlots, equipment = []) {
+  function _normalizeEquipmentSlots(rawSlots, equipment: any[] = []) {
     const slots = {
       weapon: rawSlots?.weapon || null,
       armor: rawSlots?.armor || null,
       accessory1: rawSlots?.accessory1 || null,
       accessory2: rawSlots?.accessory2 || null
     };
-    const used = new Set(Object.values(slots).filter(Boolean));
+    const used = new Set(Object.values<any>(slots).filter(Boolean));
     for (const itemId of equipment || []) {
       if (!itemId || used.has(itemId)) continue;
       const item = DS().get('items', itemId);
@@ -973,7 +980,7 @@ window.CJS.CampaignOps = (() => {
     ].filter(Boolean);
   }
 
-  function _equipmentKind(item = {}) {
+  function _equipmentKind(item: any = {}) {
     const slot = item?.slot || '';
     if (item?.equipmentCategory) return item.equipmentCategory;
     if (slot === 'weapon' || slot === 'offhand') return 'weapon';
@@ -995,7 +1002,7 @@ window.CJS.CampaignOps = (() => {
   // Active-job awareness: when a job is set, its weaponTypes/armorTypes
   // narrow the character's authored allow-list. If the job is empty/missing,
   // we fall back to the character's authored lists (existing behavior).
-  function _effectiveAllowedWeaponTypes(member = {}) {
+  function _effectiveAllowedWeaponTypes(member: any = {}) {
     const base = DS().get('characters', member.baseCharacterId) || {};
     const charList = _uniqueTypes([...(base.allowedWeaponTypes || []), ...(member.allowedWeaponTypes || [])]);
     const job = member.currentJob ? DS().get('jobs', member.currentJob) : null;
@@ -1005,7 +1012,7 @@ window.CJS.CampaignOps = (() => {
     return jobList.filter((t) => charList.includes(t));
   }
 
-  function _effectiveAllowedArmorTypes(member = {}) {
+  function _effectiveAllowedArmorTypes(member: any = {}) {
     const base = DS().get('characters', member.baseCharacterId) || {};
     const charList = _uniqueTypes([...(base.allowedArmorTypes || []), ...(member.allowedArmorTypes || [])]);
     const job = member.currentJob ? DS().get('jobs', member.currentJob) : null;
@@ -1015,19 +1022,19 @@ window.CJS.CampaignOps = (() => {
     return jobList.filter((t) => charList.includes(t));
   }
 
-  function _uniqueTypes(values = []) {
+  function _uniqueTypes(values: any[] = []) {
     return Array.from(new Set(values.map(_cleanType).filter(Boolean)));
   }
 
-  function _weaponType(item = {}) {
+  function _weaponType(item: any = {}) {
     return _cleanType(item.weaponType || item.weaponData?.weaponType || item.type || _inferType(item, window.CJS.CONST?.WEAPON_TYPES || []));
   }
 
-  function _armorType(item = {}) {
+  function _armorType(item: any = {}) {
     return _cleanType(item.armorType || item.type || _inferType(item, window.CJS.CONST?.ARMOR_TYPES || []));
   }
 
-  function _accessoryType(item = {}) {
+  function _accessoryType(item: any = {}) {
     return _cleanType(item.accessoryType || item.type || _inferType(item, window.CJS.CONST?.ACCESSORY_TYPES || []));
   }
 
@@ -1042,7 +1049,7 @@ window.CJS.CampaignOps = (() => {
       leather: 'light', cloak: 'light', boots: 'light', cloth: 'robe', mail: 'heavy', plate: 'heavy',
       pendant: 'amulet', necklace: 'amulet', coin: 'charm', core: 'trinket'
     };
-    for (const [alias, type] of Object.entries(aliases)) {
+    for (const [alias, type] of Object.entries<any>(aliases)) {
       if ((types || []).includes(type) && text.includes(alias)) return type;
     }
     return (types || []).find((type) => text.includes(type)) || '';
@@ -1056,7 +1063,7 @@ window.CJS.CampaignOps = (() => {
     return typeof entry === 'string' ? entry : entry?.skillId || null;
   }
 
-  function _skillEntries(entries = []) {
+  function _skillEntries(entries: any[] = []) {
     return entries.map(_skillEntryId).filter(Boolean);
   }
 
@@ -1682,7 +1689,7 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
-  function _addQuest(state, quest, options = {}) {
+  function _addQuest(state, quest, options: any = {}) {
     if (!quest.id) quest.id = `quest_${Date.now()}`;
     const prepared = QuestPulse()?.prepareQuest?.(quest, state) || CS().clone(quest);
     state.quests[prepared.id] = {
@@ -1707,7 +1714,7 @@ window.CJS.CampaignOps = (() => {
     }
   }
 
-  function _completeQuest(state, questId, options = {}) {
+  function _completeQuest(state, questId, options: any = {}) {
     const quest = state.quests[questId];
     if (!quest || quest.status === 'complete') return;
     quest.status = 'complete';
@@ -1725,7 +1732,7 @@ window.CJS.CampaignOps = (() => {
     const fallbackRp = (PROG.rpPerQuestRank || {})[quest.rank || 'F'] || 0;
     const baseRp = Number(authoredRp != null ? authoredRp : fallbackRp);
     if (baseRp > 0) {
-      for (const [id, member] of Object.entries(state.party || {})) {
+      for (const [id, member] of Object.entries<any>(state.party || {})) {
         if ((member.rosterRole || 'active') === 'bench') continue;
         _addRankPoints(state, {
           target: id,
@@ -1756,7 +1763,7 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _clearDuration(state, duration) {
-    for (const member of Object.values(state.party)) {
+    for (const member of Object.values<any>(state.party)) {
       member.statuses = (member.statuses || []).filter((status) => status.duration !== duration);
       member.buffs = (member.buffs || []).filter((buff) => buff.duration !== duration);
       if (member.availability?.expires === duration) {
@@ -1766,7 +1773,7 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _tickQuestTimers(state) {
-    for (const quest of Object.values(state.quests)) {
+    for (const quest of Object.values<any>(state.quests)) {
       if (!quest.timer || quest.status !== 'active') continue;
       quest.timer.phasesRemaining = Math.max(0, (quest.timer.phasesRemaining || 0) - 1);
       if (quest.timer.phasesRemaining === 0 && quest.failureConsequence) {
@@ -1789,7 +1796,7 @@ window.CJS.CampaignOps = (() => {
     if (op.consumeItem) _inventory(state, 'items', op.consumeItem, -1);
     const hpPercent = Number(op.hpPercent ?? 50) / 100;
     const mpPercent = Number(op.mpPercent ?? 35) / 100;
-    for (const member of Object.values(state.party)) {
+    for (const member of Object.values<any>(state.party)) {
       member.currentHp = Math.min(member.maxHp, member.currentHp + Math.ceil((member.maxHp - member.currentHp) * hpPercent));
       member.currentMp = Math.min(member.maxMp, member.currentMp + Math.ceil((member.maxMp - member.currentMp) * mpPercent));
     }
@@ -1797,8 +1804,8 @@ window.CJS.CampaignOps = (() => {
     _log(state, 'Camp rest used.');
   }
 
-  function _fullRest(state, op = {}) {
-    for (const member of Object.values(state.party)) {
+  function _fullRest(state, op: any = {}) {
+    for (const member of Object.values<any>(state.party)) {
       member.currentHp = member.maxHp;
       member.currentMp = member.maxMp;
       member.statuses = (member.statuses || []).filter((status) => ['campaign', 'manual'].includes(status.duration));
@@ -1906,14 +1913,14 @@ window.CJS.CampaignOps = (() => {
 
   // Stringified list of ingredients/materials/items the player is short on,
   // used in the cook/craft refusal logs.
-  function _missingBundleSummary(state, bundle = {}) {
+  function _missingBundleSummary(state, bundle: any = {}) {
     const out = [];
-    for (const [id, qty] of Object.entries(bundle.currencies || {})) {
+    for (const [id, qty] of Object.entries<any>(bundle.currencies || {})) {
       const have = state.currencies[id] || 0;
       if (have < Number(qty || 0)) out.push(`${qty - have} ${id}`);
     }
     for (const bucket of ['items', 'materials', 'food', 'questItems']) {
-      for (const [id, qty] of Object.entries(bundle[bucket] || {})) {
+      for (const [id, qty] of Object.entries<any>(bundle[bucket] || {})) {
         const have = state.inventory?.[bucket]?.[id] || 0;
         if (have < Number(qty || 0)) {
           const label = _recordName(bucket, id) || id;
@@ -1925,34 +1932,34 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _consumeBundle(state, bundle) {
-    for (const [id, qty] of Object.entries(bundle.currencies || {})) _money(state, id, -qty);
-    for (const [id, qty] of Object.entries(bundle.items || {})) _inventory(state, 'items', id, -qty);
-    for (const [id, qty] of Object.entries(bundle.materials || {})) _inventory(state, 'materials', id, -qty);
-    for (const [id, qty] of Object.entries(bundle.food || {})) _inventory(state, 'food', id, -qty);
-    for (const [id, qty] of Object.entries(bundle.questItems || {})) _inventory(state, 'questItems', id, -qty);
+    for (const [id, qty] of Object.entries<any>(bundle.currencies || {})) _money(state, id, -qty);
+    for (const [id, qty] of Object.entries<any>(bundle.items || {})) _inventory(state, 'items', id, -qty);
+    for (const [id, qty] of Object.entries<any>(bundle.materials || {})) _inventory(state, 'materials', id, -qty);
+    for (const [id, qty] of Object.entries<any>(bundle.food || {})) _inventory(state, 'food', id, -qty);
+    for (const [id, qty] of Object.entries<any>(bundle.questItems || {})) _inventory(state, 'questItems', id, -qty);
   }
 
   function _grantBundle(state, bundle) {
-    for (const [id, qty] of Object.entries(bundle.currencies || {})) _money(state, id, qty);
-    for (const [id, qty] of Object.entries(bundle.items || {})) _inventory(state, 'items', id, qty);
-    for (const [id, qty] of Object.entries(bundle.materials || {})) _inventory(state, 'materials', id, qty);
-    for (const [id, qty] of Object.entries(bundle.food || {})) _inventory(state, 'food', id, qty);
-    for (const [id, qty] of Object.entries(bundle.questItems || {})) _inventory(state, 'questItems', id, qty);
-    for (const [id, qty] of Object.entries(bundle.seeds || {})) window.CJS.FarmingMode?.grantSeed?.(state, id, qty);
-    for (const [id, qty] of Object.entries(bundle.farmFertilizer || {})) window.CJS.FarmingMode?.addFertilizer?.(state, id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.currencies || {})) _money(state, id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.items || {})) _inventory(state, 'items', id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.materials || {})) _inventory(state, 'materials', id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.food || {})) _inventory(state, 'food', id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.questItems || {})) _inventory(state, 'questItems', id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.seeds || {})) window.CJS.FarmingMode?.grantSeed?.(state, id, qty);
+    for (const [id, qty] of Object.entries<any>(bundle.farmFertilizer || {})) window.CJS.FarmingMode?.addFertilizer?.(state, id, qty);
   }
 
   function _hasBundle(state, bundle) {
-    for (const [id, qty] of Object.entries(bundle.currencies || {})) {
+    for (const [id, qty] of Object.entries<any>(bundle.currencies || {})) {
       if ((state.currencies[id] || 0) < Number(qty || 0)) return false;
     }
-    for (const [bucket, records] of Object.entries({
+    for (const [bucket, records] of Object.entries<any>({
       items: bundle.items || {},
       materials: bundle.materials || {},
       food: bundle.food || {},
       questItems: bundle.questItems || {}
     })) {
-      for (const [id, qty] of Object.entries(records)) {
+      for (const [id, qty] of Object.entries<any>(records)) {
         if ((state.inventory?.[bucket]?.[id] || 0) < Number(qty || 0)) return false;
       }
     }
@@ -1961,9 +1968,9 @@ window.CJS.CampaignOps = (() => {
 
   function _scaleBundle(bundle, qty) {
     const out = {};
-    for (const [bucket, records] of Object.entries(bundle || {})) {
+    for (const [bucket, records] of Object.entries<any>(bundle || {})) {
       out[bucket] = {};
-      for (const [id, amount] of Object.entries(records || {})) out[bucket][id] = Number(amount || 0) * qty;
+      for (const [id, amount] of Object.entries<any>(records || {})) out[bucket][id] = Number(amount || 0) * qty;
     }
     return out;
   }
@@ -2107,7 +2114,7 @@ window.CJS.CampaignOps = (() => {
       const need = dest.requiredRank;
       if (need) {
         const F = window.CJS.Formulas;
-        const active = Object.values(state.party || {})
+        const active = Object.values<any>(state.party || {})
           .filter((m) => (m.rosterRole || 'active') !== 'bench');
         const topRank = active.reduce((best, m) => {
           const r = m.adventurer?.rank || m.rank || 'F';
@@ -2168,7 +2175,7 @@ window.CJS.CampaignOps = (() => {
   function _autoSwitchPersonasForWorld(state, worldId) {
     const PS = window.CJS.PersonaService;
     if (!PS) return;
-    for (const [id, member] of Object.entries(state.party || {})) {
+    for (const [id, member] of Object.entries<any>(state.party || {})) {
       const charId = member.baseCharacterId || id;
       const personas = PS.personasForCharacterInWorld(charId, worldId);
       if (!personas.length) continue;
@@ -2244,7 +2251,7 @@ window.CJS.CampaignOps = (() => {
     if (!state.hubState[id]) {
       const def = _hubDefinition(id) || {};
       const hubStats = {};
-      for (const [stat, config] of Object.entries(def.hubStats || {})) {
+      for (const [stat, config] of Object.entries<any>(def.hubStats || {})) {
         hubStats[stat] = Number(config.default || 0);
       }
       const npcMoods = {};
@@ -2363,7 +2370,7 @@ window.CJS.CampaignOps = (() => {
     return 'green';
   }
 
-  function _worldEventStart(state, op = {}) {
+  function _worldEventStart(state, op: any = {}) {
     const eventId = op.eventId || op.id;
     if (!eventId) {
       _log(state, 'world_event_start ignored: no eventId provided.');
@@ -2379,7 +2386,7 @@ window.CJS.CampaignOps = (() => {
     setTimeout(() => WE.start(eventId, { durationPhases: op.durationPhases }), 0);
   }
 
-  function _worldEventEnd(state, op = {}) {
+  function _worldEventEnd(state, op: any = {}) {
     const eventId = op.eventId || op.id;
     if (!eventId) {
       _log(state, 'world_event_end ignored: no eventId provided.');
@@ -2446,7 +2453,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Side idea ${id} marked ${status}.`);
   }
 
-  function _sideIdeaPromote(state, op, options = {}) {
+  function _sideIdeaPromote(state, op, options: any = {}) {
     const sc = _sideContentState(state);
     const id = op.contentId || op.id;
     const idea = sc.generatedIdeas[id];
@@ -2829,7 +2836,7 @@ window.CJS.CampaignOps = (() => {
     return state.crossWorld;
   }
 
-  function _worldProgressSet(state, op = {}) {
+  function _worldProgressSet(state, op: any = {}) {
     const progress = _worldProgress(state, op.world || state.currentWorld);
     const key = op.key || op.field;
     if (key) progress[key] = op.value;
@@ -2846,7 +2853,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `World progress updated: ${progress.world}.`);
   }
 
-  function _travelLocation(state, op = {}) {
+  function _travelLocation(state, op: any = {}) {
     const worldId = op.world || state.currentWorld || 'haven';
     const progress = _worldProgress(state, worldId);
     const locationId = op.locationId || op.nodeId || op.id;
@@ -2860,7 +2867,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Travel: ${op.title || locationId}.`, op);
   }
 
-  function _crossMilestoneSet(state, op = {}) {
+  function _crossMilestoneSet(state, op: any = {}) {
     const id = op.milestoneId || op.id;
     if (!id) return;
     const cross = _crossWorld(state);
@@ -2879,7 +2886,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Milestone set: ${cross.milestones[id].title}.`, op);
   }
 
-  function _crossPressureChange(state, op = {}) {
+  function _crossPressureChange(state, op: any = {}) {
     const id = op.pressureId || op.id;
     if (!id) return;
     const cross = _crossWorld(state);
@@ -2893,7 +2900,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Cross-world pressure ${id} ${Number(op.amount || 0) >= 0 ? '+' : ''}${op.amount || 0}.`, op);
   }
 
-  function _crossImportChange(state, op = {}, sign = 1) {
+  function _crossImportChange(state, op: any = {}, sign = 1) {
     const cross = _crossWorld(state);
     const bucket = op.bucket || op.type || (op.currency ? 'currencies' : 'materials');
     if (!cross.imports[bucket]) cross.imports[bucket] = {};
@@ -2906,7 +2913,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `${delta >= 0 ? 'Imported' : 'Spent imported'} ${Math.abs(delta)} ${id} (${bucket}).`, op);
   }
 
-  function _journalEntryAdd(state, op = {}) {
+  function _journalEntryAdd(state, op: any = {}) {
     const id = op.entryId || op.id || `journal_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const cross = _crossWorld(state);
     cross.journal.unshift({
@@ -2923,7 +2930,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Journal updated: ${op.title || id}.`, op);
   }
 
-  function _worldActivityRecord(state, op = {}) {
+  function _worldActivityRecord(state, op: any = {}) {
     const activityId = op.activityId || op.id;
     if (!activityId) return;
     const progress = _worldProgress(state, op.world || state.currentWorld);
@@ -3003,7 +3010,7 @@ window.CJS.CampaignOps = (() => {
     compete:    { field: 'rivalry',    amount: 1, label: 'Competed against',     verb: 'competed with', legacy: true, tone: 'rivalry' }
   };
 
-  function _relationshipActivity(state, op = {}) {
+  function _relationshipActivity(state, op: any = {}) {
     const charId = op.characterId || op.npcId || op.target || op.id;
     const activityId = op.activityId || op.kind || 'hang_out';
     const def = ACTIVITY_DEFS[activityId];
@@ -3064,7 +3071,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `${def.label} ${charLabel} (+${def.amount} ${def.field}).`, op);
   }
 
-  function _relationshipActsReset(state, op = {}) {
+  function _relationshipActsReset(state, op: any = {}) {
     state.relationshipActs = state.relationshipActs || { remaining: 3, max: 3, lastResetPhase: 1, history: [] };
     const target = Number(op.value ?? op.max ?? state.relationshipActs.max ?? 3);
     state.relationshipActs.max = target;
@@ -3091,7 +3098,7 @@ window.CJS.CampaignOps = (() => {
     );
   }
 
-  function _relationshipNarrative(charId, def = {}) {
+  function _relationshipNarrative(charId, def: any = {}) {
     const name = _characterDisplayName(charId);
     if (def.tone === 'romance') return `${name} lets the pause linger, and the conversation turns softer than usual.`;
     if (def.tone === 'respect') return `${name} watches your follow-through and gives a small, approving nod.`;
@@ -3100,7 +3107,7 @@ window.CJS.CampaignOps = (() => {
   }
 
   function _rollCheck(state, op) {
-    const d20 = D().d20 ? /** @type {any} */ (D().d20()) : Math.floor(Math.random() * 20) + 1;
+    const d20 = D().d20 ? (D().d20() as any) : Math.floor(Math.random() * 20) + 1;
     const roll = typeof d20 === 'number' ? d20 : d20.total;
     const stat = op.stat || 'L';
     const best = _bestPartyStat(state, stat);
@@ -3113,7 +3120,7 @@ window.CJS.CampaignOps = (() => {
 
   function _bestPartyStat(state, stat) {
     let best = { id: null, name: 'party', value: 0 };
-    for (const [id, member] of Object.entries(state.party)) {
+    for (const [id, member] of Object.entries<any>(state.party)) {
       const base = DS().get('characters', member.baseCharacterId || id);
       const value = (base?.stats?.[stat] || 0) + (member.statOverrides?.[stat] || 0);
       if (value > best.value) best = { id, name: member.name || id, value };
@@ -3182,7 +3189,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Battle ready: ${state.pendingBattle.label}.`);
   }
 
-  function _manualBattleResult(state, op, options = {}) {
+  function _manualBattleResult(state, op, options: any = {}) {
     const outcome = String(op.result || 'victory').toLowerCase();
     const pending = state.pendingBattle || {};
     const pendingSnapshot = CS().clone ? CS().clone(pending) : JSON.parse(JSON.stringify(pending || {}));
@@ -3260,7 +3267,7 @@ window.CJS.CampaignOps = (() => {
     }, 0);
   }
 
-  function _syntheticCombatPulse(state, pending = {}, outcome = 'victory') {
+  function _syntheticCombatPulse(state, pending: any = {}, outcome = 'victory') {
     const tags = new Set();
     const add = (values) => {
       for (const value of Array.isArray(values) ? values : [values]) {
@@ -3307,7 +3314,7 @@ window.CJS.CampaignOps = (() => {
     return null;
   }
 
-  function _applyBattleSetback(state, outcome, op = {}) {
+  function _applyBattleSetback(state, outcome, op: any = {}) {
     if (!['defeat', 'draw'].includes(outcome) || op.penaltyApplied || op.applyDefaultPenalty === false) return;
     const pending = state.pendingBattle || {};
     const badEnding = outcome === 'defeat' && _isBadEndingDefeat(op, pending);
@@ -3327,7 +3334,7 @@ window.CJS.CampaignOps = (() => {
     return Array.isArray(value) ? value.filter(Boolean) : [value];
   }
 
-  function _isBadEndingDefeat(op = {}, pending = {}) {
+  function _isBadEndingDefeat(op: any = {}, pending: any = {}) {
     return !!(
       op.badEnding ||
       op.badEndingOnDefeat ||
@@ -3339,7 +3346,7 @@ window.CJS.CampaignOps = (() => {
     );
   }
 
-  function _markBadEndingBranch(state, op = {}, pending = {}) {
+  function _markBadEndingBranch(state, op: any = {}, pending: any = {}) {
     const flag = op.badEndingFlag || pending.badEndingFlag || 'bad_ending_pending';
     _setFlag(state, flag, true, {
       encounterId: op.encounterId || pending.encounterId || null,
@@ -3350,7 +3357,7 @@ window.CJS.CampaignOps = (() => {
     _log(state, `Defeat opened a bad-ending branch: ${pending.label || op.encounterId || 'battle'}.`);
   }
 
-  function _applyDefaultBattleSetback(state, outcome, op = {}) {
+  function _applyDefaultBattleSetback(state, outcome, op: any = {}) {
     const recovered = op.defeatNoRecovery || op.noDefeatRecovery ? 0 : _recoverPartyAfterSetback(state, outcome);
     const dangerApplied = !!state.activeScenarioRun;
     if (dangerApplied) _danger(state, outcome === 'draw' ? 1 : 2);
@@ -3367,7 +3374,7 @@ window.CJS.CampaignOps = (() => {
 
   function _recoverPartyAfterSetback(state, outcome) {
     let recovered = 0;
-    for (const member of Object.values(state.party || {})) {
+    for (const member of Object.values<any>(state.party || {})) {
       if (Number(member.currentHp || 0) > 0) continue;
       member.currentHp = _setbackRecoveryHp(member, outcome);
       recovered += 1;
@@ -3375,7 +3382,7 @@ window.CJS.CampaignOps = (() => {
     return recovered;
   }
 
-  function _setbackRecoveryHp(member = {}, outcome) {
+  function _setbackRecoveryHp(member: any = {}, outcome) {
     const maxHp = Math.max(1, Number(member.maxHp || 1));
     const rate = outcome === 'draw' ? 0.25 : 0.10;
     return Math.max(1, Math.floor(maxHp * rate));
@@ -3387,3 +3394,6 @@ window.CJS.CampaignOps = (() => {
     passPhase
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignOps = CampaignOps;

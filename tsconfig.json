@@ -20,7 +20,6 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "tools/visual-regression/cases.tsx",
-    "js/campaign/campaign-ops.js",
     "js/campaign/guild-trivia.js",
     "js/grid/grid-renderer.js",
     "js/minigames/cooking-minigame.js",
