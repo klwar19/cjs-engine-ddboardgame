@@ -2480,12 +2480,10 @@ console.log('\n── TEST 42: Barrel explosion damage ──');
 console.log('\n── TEST 43: GridEngine env interactions ──');
 {
   // Load the REAL grid engine for this section
-  const gridEnginePath = path.join(__dirname, 'js', 'grid', 'grid-engine.js');
-  const pfPath = path.join(__dirname, 'js', 'grid', 'pathfinding.js');
   const savedGE = CJS.GridEngine;
   const savedPF = CJS.Pathfinding;
-  vm.runInContext(fs.readFileSync(pfPath, 'utf8'), sandbox);
-  vm.runInContext(fs.readFileSync(gridEnginePath, 'utf8'), sandbox);
+  vm.runInContext(loadEngineSource('grid/pathfinding'), sandbox);
+  vm.runInContext(loadEngineSource('grid/grid-engine'), sandbox);
   const GE = CJS.GridEngine;
   assert('Real GridEngine loaded', typeof GE.igniteCell === 'function');
 
@@ -2579,10 +2577,8 @@ console.log('\n── TEST 44: Flanking in computeAttack ──');
   // resolve flanking via GE.getFlankPosition.
   const savedGE = CJS.GridEngine;
   const savedPF = CJS.Pathfinding;
-  const gridEnginePath = path.join(__dirname, 'js', 'grid', 'grid-engine.js');
-  const pfPath = path.join(__dirname, 'js', 'grid', 'pathfinding.js');
-  vm.runInContext(fs.readFileSync(pfPath, 'utf8'), sandbox);
-  vm.runInContext(fs.readFileSync(gridEnginePath, 'utf8'), sandbox);
+  vm.runInContext(loadEngineSource('grid/pathfinding'), sandbox);
+  vm.runInContext(loadEngineSource('grid/grid-engine'), sandbox);
   const GE = CJS.GridEngine;
 
   const baseStats = { S: 10, P: 8, E: 5, C: 5, I: 5, A: 5, L: 0 };
@@ -2634,10 +2630,8 @@ console.log('\n── TEST 45: Elevation in computeAttack & getAttackRange ─�
 {
   const savedGE = CJS.GridEngine;
   const savedPF = CJS.Pathfinding;
-  const gridEnginePath = path.join(__dirname, 'js', 'grid', 'grid-engine.js');
-  const pfPath = path.join(__dirname, 'js', 'grid', 'pathfinding.js');
-  vm.runInContext(fs.readFileSync(pfPath, 'utf8'), sandbox);
-  vm.runInContext(fs.readFileSync(gridEnginePath, 'utf8'), sandbox);
+  vm.runInContext(loadEngineSource('grid/pathfinding'), sandbox);
+  vm.runInContext(loadEngineSource('grid/grid-engine'), sandbox);
   const GE = CJS.GridEngine;
   const AH = CJS.ActionHandler;
 
