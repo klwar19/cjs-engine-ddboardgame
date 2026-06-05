@@ -1,9 +1,12 @@
-// campaign-story-director.js
-// Table-driven story beat director for solo/GM play.
+// campaign-story-director.ts — Tier 3 TS port of js/campaign/campaign-story-director.js
+// (engine cluster: campaign). Table-driven story-beat director for solo/GM
+// play: roll/save/reject beats, choice apply, stage set, side-quest flow sync.
+// Reads window.CJS.* lazily. Exports `CampaignStoryDirector` and installs
+// window.CJS.CampaignStoryDirector. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignStoryDirector = (() => {
+export const CampaignStoryDirector = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -20,7 +23,7 @@ window.CJS.CampaignStoryDirector = (() => {
     pressure: 'pressureTicks'
   };
 
-  function getPack(packId) {
+  function getPack(packId?) {
     const state = CS().getState();
     const world = state?.currentWorld || CS().getCurrentCampaign()?.world || 'haven';
     return Loader().getStoryDirectorPack(packId, world) || null;
@@ -51,16 +54,16 @@ window.CJS.CampaignStoryDirector = (() => {
       stage,
       mode: sd.mode || 'solo_gm',
       metrics: sd.metrics || {},
-      queue: Object.values(sd.storyQueue || {}),
-      clues: Object.values(sd.clueLedger || {}),
-      facts: Object.values(sd.revealedFacts || {}),
-      threads: Object.values(sd.threadStatus || {}),
+      queue: Object.values<any>(sd.storyQueue || {}),
+      clues: Object.values<any>(sd.clueLedger || {}),
+      facts: Object.values<any>(sd.revealedFacts || {}),
+      threads: Object.values<any>(sd.threadStatus || {}),
       flow: sideQuestFlowForStage(stage?.id, pack),
       last: state?.lastStoryDirectorBeat || null
     };
   }
 
-  function roll(kind = 'scene', options = {}) {
+  function roll(kind = 'scene', options: any = {}) {
     const state = CS().getState();
     const pack = getPack(options.packId);
     const stage = getStage(pack, state);
@@ -171,7 +174,7 @@ window.CJS.CampaignStoryDirector = (() => {
     state.storyDirector.sideQuestSync = state.storyDirector.sideQuestSync || {};
   }
 
-  function _context(pack, stage, state, kind, options = {}) {
+  function _context(pack, stage, state, kind, options: any = {}) {
     const activeScenario = CS().getActiveScenario?.();
     const activeMap = CS().getActiveMap?.();
     const run = state?.activeScenarioRun || null;
@@ -210,7 +213,7 @@ window.CJS.CampaignStoryDirector = (() => {
     if (!PS || !state?.party) return [];
     const out = [];
     const currentWorld = state.currentWorld;
-    for (const member of Object.values(state.party)) {
+    for (const member of Object.values<any>(state.party)) {
       const persona = PS.getActivePersona(member);
       if (!persona) continue;
       for (const tag of persona.tags || []) out.push(tag);
@@ -226,7 +229,7 @@ window.CJS.CampaignStoryDirector = (() => {
 
   function _activePersonaIds(state) {
     const out = [];
-    for (const member of Object.values(state?.party || {})) {
+    for (const member of Object.values<any>(state?.party || {})) {
       if (member.activePersona) out.push(member.activePersona);
     }
     return out;
@@ -337,3 +340,6 @@ window.CJS.CampaignStoryDirector = (() => {
     syncSideQuestFlow
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignStoryDirector = CampaignStoryDirector;
