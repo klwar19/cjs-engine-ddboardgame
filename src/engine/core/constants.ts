@@ -1,0 +1,869 @@
+// constants.ts — Tier 3 TS port of js/core/constants.js (engine cluster: core).
+// All enums, rank tables, element lists, stat names, terrain types.
+// Pure data — no logic, no imports, no side effects beyond the window install.
+// Read by: every other module. Edit here to add new elements, ranks, etc.
+//
+// This module exports a typed `CONST` API (so future TS consumers can import it
+// directly) AND installs `window.CJS.CONST` as a side effect, so the existing
+// window.CJS.* consumers and the vanilla engine keep working unchanged. The
+// data below is preserved verbatim from the legacy module — these are
+// game-balance constants, so values are transcribed exactly, not "tidied".
+
+// ── SPECIAL STATS ──────────────────────────────────────────────────
+const STATS = ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
+
+const STAT_NAMES = {
+  S: 'Strength',
+  P: 'Perception',
+  E: 'Endurance',
+  C: 'Charisma',
+  I: 'Intelligence',
+  A: 'Agility',
+  L: 'Luck'
+};
+
+// ── RANKS ──────────────────────────────────────────────────────────
+const RANKS = ['F', 'E', 'D', 'C', 'B', 'A', 'S', 'SR', 'SSR'];
+
+const RANK_DATA = {
+  F:   { statMin: 3,  statMax: 8,  totalSpecial: 35,  hpBonus: 18,  mpBonus: 14,  hpBase: 18,  mpBase: 14  },
+  E:   { statMin: 6,  statMax: 12, totalSpecial: 55,  hpBonus: 34,  mpBonus: 28,  hpBase: 34,  mpBase: 28  },
+  D:   { statMin: 9,  statMax: 16, totalSpecial: 80,  hpBonus: 54,  mpBonus: 44,  hpBase: 54,  mpBase: 44  },
+  C:   { statMin: 12, statMax: 22, totalSpecial: 110, hpBonus: 78,  mpBonus: 64,  hpBase: 78,  mpBase: 64  },
+  B:   { statMin: 16, statMax: 30, totalSpecial: 150, hpBonus: 108, mpBonus: 88,  hpBase: 108, mpBase: 88  },
+  A:   { statMin: 22, statMax: 40, totalSpecial: 200, hpBonus: 142, mpBonus: 116, hpBase: 142, mpBase: 116 },
+  S:   { statMin: 30, statMax: 55, totalSpecial: 270, hpBonus: 182, mpBonus: 148, hpBase: 182, mpBase: 148 },
+  SR:  { statMin: 40, statMax: 75, totalSpecial: 360, hpBonus: 230, mpBonus: 186, hpBase: 230, mpBase: 186 },
+  SSR: { statMin: 55, statMax: 99, totalSpecial: 480, hpBonus: 286, mpBonus: 230, hpBase: 286, mpBase: 230 }
+};
+
+// QTE difficulty distribution by area rank
+const QTE_DIFFICULTY_BY_RANK = {
+  tutorial: { EASY: 1.0, MEDIUM: 0,   HARD: 0,   INSANE: 0   },
+  F:        { EASY: 0.7, MEDIUM: 0.3, HARD: 0,   INSANE: 0   },
+  E:        { EASY: 0.3, MEDIUM: 0.5, HARD: 0.2, INSANE: 0   },
+  D:        { EASY: 0.1, MEDIUM: 0.4, HARD: 0.4, INSANE: 0.1 },
+  C:        { EASY: 0,   MEDIUM: 0.2, HARD: 0.5, INSANE: 0.3 },
+  B:        { EASY: 0,   MEDIUM: 0.1, HARD: 0.5, INSANE: 0.4 },
+  A:        { EASY: 0,   MEDIUM: 0,   HARD: 0.4, INSANE: 0.6 },
+  S:        { EASY: 0,   MEDIUM: 0,   HARD: 0.3, INSANE: 0.7 },
+  SR:       { EASY: 0,   MEDIUM: 0,   HARD: 0.2, INSANE: 0.8 },
+  SSR:      { EASY: 0,   MEDIUM: 0,   HARD: 0.1, INSANE: 0.9 }
+};
+
+// ── ELEMENTS ───────────────────────────────────────────────────────
+const ELEMENTS = [
+  'Physical', 'Fire', 'Water', 'Lightning', 'Earth',
+  'Wind', 'Nature', 'Light', 'Dark', 'Chaos'
+];
+
+const ELEMENT_COLORS = {
+  Physical:  '#9ca3af',
+  Fire:      '#ef4444',
+  Water:     '#3b82f6',
+  Lightning: '#eab308',
+  Earth:     '#a16207',
+  Wind:      '#6ee7b7',
+  Nature:    '#22c55e',
+  Light:     '#fbbf24',
+  Dark:      '#7c3aed',
+  Chaos:     '#ec4899'
+};
+
+// ── DAMAGE TYPES ───────────────────────────────────────────────────
+const DAMAGE_TYPES = ['Physical', 'Magic', 'Chaos', 'True'];
+
+// ── UNIT TYPES ─────────────────────────────────────────────────────
+const UNIT_TYPES = [
+  'humanoid', 'beast', 'undead', 'demon', 'dragon',
+  'elemental', 'construct', 'plant', 'insect', 'spirit',
+  'fae', 'angel', 'slime', 'aquatic'
+];
+
+// ── EQUIPMENT SLOTS ────────────────────────────────────────────────
+const EQUIPMENT_SLOTS = [
+  'weapon', 'armor', 'accessory',
+  'offhand', 'head', 'body', 'legs', 'feet', 'accessory1', 'accessory2'
+];
+
+const WEAPON_TYPES = [
+  'sword', 'bow', 'staff', 'knuckles', 'dagger', 'axe',
+  'spear', 'mace', 'crossbow', 'gun', 'wand', 'shield', 'unarmed'
+];
+
+const ARMOR_TYPES = [
+  'light', 'heavy', 'robe', 'medium', 'cloth', 'leather', 'plate'
+];
+
+const ACCESSORY_TYPES = [
+  'ring', 'amulet', 'charm', 'belt', 'cloak', 'talisman', 'trinket', 'earring'
+];
+
+// ── RARITY ─────────────────────────────────────────────────────────
+const RARITIES = ['Junk', 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+
+const RARITY_COLORS = {
+  Junk:      '#6b7280',
+  Common:    '#9ca3af',
+  Uncommon:  '#22c55e',
+  Rare:      '#3b82f6',
+  Epic:      '#a855f7',
+  Legendary: '#f59e0b'
+};
+
+// ── TERRAIN ────────────────────────────────────────────────────────
+// moveCost: how many movement points to enter (1 = normal, 2 = difficult, 999 = impassable)
+// blocksLoS: whether this terrain blocks line of sight for ranged attacks
+// elevation: 0 = ground level (default), 1+ = raised (high_ground). Affects ranged accuracy/range.
+// flammable: 'grass' — Fire damage ignites this cell.
+// freezable: 'water' — Water/Ice damage freezes this cell.
+// lethal: 'cliff' — units knocked into this cell are killed instantly.
+// destructible: 'barrel' — explodes on attack/Fire/collision, dealing Fire AoE.
+const TERRAIN_TYPES = {
+  empty:      { passable: true,  moveCost: 1, blocksLoS: false, effect: null,                     icon: '',  color: '#1a1a2e' },
+  obstacle:   { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🪨', color: '#374151' },
+  fire_zone:  { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_burn',           icon: '🔥', color: '#7f1d1d' },
+  ice_zone:   { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_slow',           icon: '🧊', color: '#1e3a5f' },
+  poison_zone:{ passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_poison',         icon: '☠️', color: '#14532d' },
+  heal_zone:  { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_heal',           icon: '💚', color: '#064e3b' },
+  high_ground:{ passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_high_ground',    icon: '⬆️', color: '#4a3728', elevation: 1 },
+  water:      { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_water',          icon: '🌊', color: '#1e40af', freezable: true },
+  lava:       { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_lava',           icon: '🌋', color: '#9a3412' },
+  mud:        { passable: true,  moveCost: 3, blocksLoS: false, effect: 'terrain_mud',            icon: '🟤', color: '#78350f' },
+  thorns:     { passable: true,  moveCost: 2, blocksLoS: false, effect: 'terrain_thorns',         icon: '🌿', color: '#365314' },
+  electric:   { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_shock',          icon: '⚡', color: '#854d0e' },
+  holy:       { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_holy',           icon: '✨', color: '#fef3c7' },
+  dark:       { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_dark',           icon: '🌑', color: '#1e1b4b' },
+  wind:       { passable: true,  moveCost: 1, blocksLoS: false, effect: 'terrain_wind_push',      icon: '💨', color: '#ecfdf5' },
+  wall:       { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🧱', color: '#44403c' },
+  pillar:     { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🏛️', color: '#57534e' },
+  tree:       { passable: false, moveCost: 999, blocksLoS: true,  effect: null,                     icon: '🌲', color: '#14532d' },
+  rubble:     { passable: true,  moveCost: 3, blocksLoS: false, effect: null,                     icon: '🪨', color: '#57534e' },
+  // ── INTERACTIVE TERRAIN (env interactions) ──────────────────────
+  grass:      { passable: true,  moveCost: 1, blocksLoS: false, effect: null,                     icon: '🌱', color: '#1f3d1f', flammable: true },
+  cliff:      { passable: false, moveCost: 999, blocksLoS: false, effect: null,                    icon: '🕳️', color: '#0a0a0f', lethal: true },
+  barrel:     { passable: false, moveCost: 999, blocksLoS: false, effect: null,                    icon: '🛢️', color: '#5b3a1d', destructible: true, explodes: true }
+};
+
+// ── UNIT SIZES ──────────────────────────────────────────────────────
+// Units occupy a rectangular footprint on the grid.
+// Position (pos) is always the top-left corner of the footprint.
+// w = columns, h = rows the unit occupies.
+const UNIT_SIZES = {
+  '1x1': { w: 1, h: 1, label: 'Small (1×1)' },
+  '2x1': { w: 2, h: 1, label: 'Wide (2×1)' },
+  '1x2': { w: 1, h: 2, label: 'Tall (1×2)' },
+  '2x2': { w: 2, h: 2, label: 'Large (2×2)' },
+  '3x3': { w: 3, h: 3, label: 'Huge (3×3)' }
+};
+
+// ── MOVEMENT RULES ──────────────────────────────────────────────────
+// Movement is a FLAT number per unit. Not derived from stats.
+// Only modifiable by passives, items, effects, skills, statuses.
+const MOVEMENT_DEFAULTS = {
+  humanoid: 3,     // default for player characters
+  beast:    3,
+  undead:   2,
+  demon:    3,
+  dragon:   2,     // big, compensated by range/AoE
+  elemental:3,
+  construct:2,
+  plant:    1,
+  insect:   4,
+  spirit:   4,     // floaty, fast
+  fae:      3,
+  angel:    3,
+  slime:    2,
+  aquatic:  2
+};
+
+// ── COLLISION RULES (knockback / push) ─────────────────────────────
+// When a unit is knocked back into something, what happens?
+const COLLISION = {
+  // Knocked into obstacle/wall/off-grid:
+  // → Stop at last valid cell, take collision damage
+  wallDamageFlat:    5,       // flat damage for hitting a wall/obstacle
+  wallDamagePercent: 0,       // % of knockback source damage
+
+  // Knocked into another unit:
+  // → Both units take collision damage, knockback stops
+  unitCollisionDamageFlat:    3,
+  unitCollisionDamagePercent: 0,
+  // The "blocker" unit also takes damage and is pushed 0 cells (stands firm)
+  // If blocker is smaller size than the pushed unit → blocker is ALSO pushed 1 cell
+  sizeMatters: true,          // larger units push smaller ones on collision
+
+  // Knockback distance reduced by:
+  // - Target END/5 (rounded down) → "heavy" units resist knockback
+  knockbackResistPerEnd: 5    // every X points of END reduces knockback by 1
+};
+
+// ── LINE OF SIGHT RULES ────────────────────────────────────────────
+const LINE_OF_SIGHT = {
+  // What blocks LoS for ranged attacks:
+  obstaclesBlock: true,       // terrain with blocksLoS: true
+  unitsBlock:     false,      // other units do NOT block LoS by default
+  // (can be overridden per-unit: large/boss units may block LoS)
+  largeUnitsBlock: true,      // 2x2+ units block LoS
+  highGroundIgnoresBlock: true // attacker on high ground ignores LoS blockers 1 cell away
+};
+
+// ── FLANKING RULES ─────────────────────────────────────────────────
+// Position relative to target's facing affects crit chance.
+// Geometry: compute the unit vector from target→attacker, dot with the
+// target's facing vector. Three arcs split 360°:
+//
+//   FRONT  cos ≥  0.5   → 120° arc, no bonus (target can see attacker)
+//   SIDE   cos in (-0.5, 0.5)  → 60° wedge each side (peripheral)
+//   REAR   cos ≤ -0.5   → 120° arc behind target, full crit bonus
+//
+// Bonuses are flat additions to the crit% roll BEFORE Luck etc. By
+// default only the rear arc gives a bonus — exactly the +15% rule. The
+// side wedge is detected (so UI can label it) but grants 0% so we don't
+// sneak extra rules in. Set sideCritBonus > 0 to opt in.
+const FLANKING = {
+  enabled: true,
+  rearCritBonus: 15,           // % crit chance from attacking the rear arc
+  sideCritBonus: 0,            // 0 by default — side hits are not bonused
+  rearArcCosThreshold:  -0.5,  // dot ≤ this  → rear
+  sideArcCosUpper:       0.5,  // dot in (-0.5, 0.5)  → side
+  // Crit damage stays the same — only chance is boosted.
+};
+
+// ── ELEVATION RULES ────────────────────────────────────────────────
+// Standing on a tile with elevation > target's elevation grants:
+//   - bonus accuracy
+//   - bonus range for ranged attacks (skills/basic attacks where range > 1)
+//   - high ground also helps LoS (already handled in LINE_OF_SIGHT)
+const ELEVATION = {
+  enabled: true,
+  accuracyBonusPerStep: 15,    // accuracy bonus per elevation step above target
+  rangeBonusPerStep:    1,     // range bonus per elevation step (ranged only)
+  // Reverse: punished when attacking up at a higher target
+  accuracyPenaltyPerStep: 0    // intentionally 0; just a flat upside for now
+};
+
+// ── ENVIRONMENTAL INTERACTIONS ─────────────────────────────────────
+// Fire damage landing on a flammable tile (grass) converts it to fire_zone.
+// Water/Ice damage landing on a freezable tile (water) converts it to ice_zone.
+// Knockback collision into a lethal tile (cliff) instantly kills the pushed unit.
+// Destructible tiles (barrel) explode when attacked, hit by fire, or collided into.
+const ENVIRONMENTAL_INTERACTIONS = {
+  enabled: true,
+  // Fire → grass = fire_zone. Spreads to adjacent grass cells too.
+  fireIgnitesGrass:        true,
+  fireGrassSpreadRadius:   1,  // adjacent grass cells also catch
+  fireGrassSpreadChance:   100,// % chance per neighbour
+  // Water/Ice → water = ice_zone.
+  coldFreezesWater:        true,
+  // Ice damage type counts; Water element does NOT freeze on its own (water
+  // boosts water — only "cold" or freezing elements should freeze).
+  freezeElements:          ['Water'],
+  freezeRequiresColdTag:   false, // set true to require skill.tags include 'cold'/'ice'
+  // Knockback collisions
+  cliffsInstantKill:       true,
+  // Barrels
+  barrelExplosionRadius:   1,
+  barrelExplosionDamage:   25,  // base, scales with the kicker's STR; see Formulas.calcBarrelExplosionDamage
+  barrelExplosionElement:  'Fire',
+  barrelKickAPCost:        1,
+  barrelKickRange:         1,
+  // Knockback into a barrel sets it off
+  barrelCollisionExplodes: true
+};
+
+// ── EFFECT SYSTEM ENUMS ────────────────────────────────────────────
+
+const EFFECT_TRIGGERS = {
+  // Passive (always active)
+  passive: [
+    'stat_mod', 'dr_mod', 'element_mod', 'crit_mod', 'evasion_mod',
+    'accuracy_mod', 'ap_mod', 'movement_mod', 'range_mod', 'cost_mod',
+    'cooldown_mod', 'damage_mod', 'hp_mod', 'mp_mod',
+    'status_resist_mod', 'double_action', 'triple_action'
+  ],
+  // Event-triggered
+  event: [
+    'on_hit', 'on_take_damage', 'on_kill', 'on_death',
+    'on_turn_start', 'on_turn_end', 'on_battle_start', 'on_battle_end',
+    'on_low_hp', 'on_dodge', 'on_move', 'on_status_applied',
+    'on_ally_hit', 'on_crit', 'on_status_tick', 'on_miss',
+    'on_heal_received', 'on_buff_received', 'on_debuff_received',
+    'on_skill_use', 'on_item_use', 'on_counter',
+    'on_hp_threshold'  // generic: fires at configurable HP %
+  ]
+};
+
+const EFFECT_ACTIONS = [
+  // Damage / Heal
+  'damage', 'heal', 'mp_restore', 'mp_drain', 'hp_drain',
+  // Status
+  'status_apply', 'status_remove', 'status_resist',
+  'dispel_buffs', 'dispel_debuffs', 'purge_all',
+  // Defensive
+  'reflect', 'absorb', 'counter', 'revive', 'damage_block',
+  'spell_immunity', 'link_share_damage',
+  // Positional
+  'knockback', 'pull', 'teleport', 'swap_position', 'phase_movement',
+  // Terrain
+  'terrain_create', 'terrain_remove',
+  // Summon
+  'summon', 'summon_persistent', 'clone',
+  // Utility
+  'steal_buff', 'steal_debuff', 'transform', 'cooldown_reset',
+  'ap_grant', 'mp_burn', 'silence_apply',
+  'taunt_apply', 'fear_apply', 'charm_apply',
+  'break_passives', 'mute_items',
+  // Special
+  'execute',           // instant kill below HP threshold
+  'sacrifice',         // consume allied unit for effect
+  'resurrect_as_ally', // raise dead enemy as ally
+  'copy_skill',        // use target's last skill
+  'randomize_target',  // confuse: random target selection
+  'extra_action',      // grant another main action this turn
+  'delay_damage',      // damage applies X turns later (doom-style)
+  'store_damage',      // absorb damage, release later
+  'aura_toggle',       // toggle an aura on/off
+  // Environment / weather
+  'environment_set',   // set battlefield weather: { weatherId, duration }
+  'environment_clear', // clear weather back to normal
+  // Ultimate meter
+  'ultimate_grant',    // add to a unit's ultimate meter
+  'ultimate_consume',  // drain a unit's ultimate meter
+  'ultimate_reroll'    // re-roll the last dice result (used by ult_reroll)
+];
+
+const EFFECT_TARGETS = [
+  // Single
+  'self', 'target', 'attacker', 'host',
+  // Group
+  'all_allies', 'all_enemies', 'all',
+  // Smart
+  'random_enemy', 'random_ally',
+  'lowest_hp_ally', 'lowest_hp_enemy',
+  'highest_hp_ally', 'highest_hp_enemy',
+  'adjacent_to_self', 'adjacent_to_target',
+  'furthest_enemy', 'nearest_enemy',
+  // AoE (parametric — size defined in effect)
+  'aoe_radius', 'aoe_line', 'aoe_cone', 'aoe_cross',
+  'same_row', 'same_column',
+  // Special
+  'last_attacker', 'random_any', 'all_summoned',
+  'all_with_status'   // targets all units that have a specific status
+];
+
+const VALUE_SOURCES = [
+  'flat', 'percent',
+  'max_hp', 'current_hp', 'missing_hp',
+  'max_mp', 'current_mp', 'missing_mp',
+  'caster_S', 'caster_P', 'caster_E', 'caster_C',
+  'caster_I', 'caster_A', 'caster_L',
+  'target_max_hp', 'target_current_hp', 'target_missing_hp',
+  'target_max_mp',
+  'target_S', 'target_P', 'target_E', 'target_C',
+  'target_I', 'target_A', 'target_L',
+  'damage_dealt', 'damage_received', 'overkill',
+  'stack_count', 'turn_number', 'units_alive_ally', 'units_alive_enemy'
+  // Also: "dice:XdY", "dice:XdY+Z", "stored:varname" — parsed dynamically
+];
+
+// ── STATUS CATEGORIES (for UI grouping) ────────────────────────────
+const STATUS_CATEGORIES = {
+  dot:      { name: 'Damage Over Time', color: '#ef4444' },
+  control:  { name: 'Control / Disable', color: '#f97316' },
+  movement: { name: 'Movement Debuff', color: '#a16207' },
+  statdown: { name: 'Stat Debuff', color: '#dc2626' },
+  buff:     { name: 'Buff', color: '#22c55e' },
+  exotic:   { name: 'Exotic / Unique', color: '#a855f7' }
+};
+
+// ── STATUS DEFINITIONS (mechanical behavior of each status) ────────
+// These define what each status actually DOES in combat.
+// preventsAction: can't attack/use skills
+// preventsMovement: can't move
+// breaksOnDamage: removed when unit takes damage
+// breaksOnAction: removed after unit acts
+// tickEffect: effect ID to fire each turn (DoT/HoT)
+// statMod: {stat: amount} while active
+// forcedTarget: must target this ('source'=taunter)
+// randomTarget: attacks random instead of chosen
+// absorbHP: damage shield (absorbs X before real HP takes damage)
+// reflectPercent: reflects X% damage to attacker
+// invisible: can't be targeted by enemies
+const STATUS_DEFINITIONS = {
+  // ── DoTs ──
+  burn:      { name:'Burn',      icon:'🔥', category:'dot',      desc:'Takes fire damage each turn.',        tickDamageType:'Fire',     stackable:true,  maxStacks:3 },
+  poison:    { name:'Poison',    icon:'☠️', category:'dot',      desc:'Takes nature damage each turn. Stacks.', tickDamageType:'Nature', stackable:true,  maxStacks:5 },
+  bleed:     { name:'Bleed',     icon:'🩸', category:'dot',      desc:'Takes physical damage each turn. Worse when moving.', tickDamageType:'Physical', stackable:true, maxStacks:3 },
+  frostbite: { name:'Frostbite', icon:'🥶', category:'dot',      desc:'Takes water damage each turn. Slows movement by 1.', tickDamageType:'Water', statMod:{A:-2}, moveMod:-1 },
+  shock:     { name:'Shock',     icon:'⚡', category:'dot',      desc:'Takes lightning damage each turn. QTE difficulty +1.', tickDamageType:'Lightning' },
+  curse:     { name:'Curse',     icon:'💀', category:'dot',      desc:'Takes dark damage each turn. Cannot be healed.', tickDamageType:'Dark', preventsHealing:true },
+  corrode:   { name:'Corrode',   icon:'🧪', category:'dot',      desc:'Takes damage each turn. Reduces DR by 2 per stack.', tickDamageType:'Physical', stackable:true, maxStacks:5, drMod:-2 },
+
+  // ── Control / Disable ──
+  stun:      { name:'Stun',      icon:'💫', category:'control',  desc:'Cannot act or move. Does NOT break on damage.', preventsAction:true, preventsMovement:true },
+  freeze:    { name:'Freeze',    icon:'🧊', category:'control',  desc:'Cannot act or move. Takes 50% extra from Fire.', preventsAction:true, preventsMovement:true, elementWeak:'Fire' },
+  sleep:     { name:'Sleep',     icon:'💤', category:'control',  desc:'Cannot act or move. BREAKS when taking damage.', preventsAction:true, preventsMovement:true, breaksOnDamage:true },
+  petrify:   { name:'Petrify',   icon:'🪨', category:'control',  desc:'Cannot act or move. +10 Physical DR while petrified.', preventsAction:true, preventsMovement:true, drMod:10 },
+  charm:     { name:'Charm',     icon:'💕', category:'control',  desc:'Attacks own allies instead of enemies. Breaks if ally damages you.', forcedTarget:'ally', breaksOnAllyDamage:true },
+  confuse:   { name:'Confuse',   icon:'😵', category:'control',  desc:'Actions target randomly (friend or foe).', randomTarget:true },
+  silence:   { name:'Silence',   icon:'🤐', category:'control',  desc:'Cannot use skills (only basic attack/move/defend). Quiz QTE auto-fails.', preventsSkills:true },
+  blind:     { name:'Blind',     icon:'🌑', category:'control',  desc:'Accuracy reduced by 50%. Fishing/quickpress QTE harder.', accuracyMod:-50 },
+  taunt:     { name:'Taunt',     icon:'😤', category:'control',  desc:'Must target the taunter with attacks.', forcedTarget:'source' },
+  fear:      { name:'Fear',      icon:'😨', category:'control',  desc:'Must move away from the source. Cannot attack the source.', forcedMovement:'away', cannotTarget:'source' },
+
+  // ── Movement Debuffs ──
+  slow:      { name:'Slow',      icon:'🐌', category:'movement', desc:'Movement reduced by 2.', moveMod:-2 },
+  root:      { name:'Root',      icon:'🌿', category:'movement', desc:'Cannot move. Can still attack and use skills.', preventsMovement:true },
+  immobilize:{ name:'Immobilize', icon:'🔗', category:'movement', desc:'Cannot move. Same as Root but doesn\'t break.', preventsMovement:true },
+  web:       { name:'Web',       icon:'🕸️', category:'movement', desc:'Cannot move. Breaks on taking fire damage.', preventsMovement:true, breaksOnElement:'Fire' },
+
+  // ── Stat Debuffs ──
+  weakness:  { name:'Weakness',  icon:'📉', category:'statdown', desc:'Strength reduced.', statMod:{S:-3} },
+  fragile:   { name:'Fragile',   icon:'💔', category:'statdown', desc:'Endurance and DR reduced.', statMod:{E:-3}, drMod:-3 },
+  dull:      { name:'Dull',      icon:'🧠', category:'statdown', desc:'Intelligence reduced.', statMod:{I:-3} },
+  clumsy:    { name:'Clumsy',    icon:'🦶', category:'statdown', desc:'Agility reduced.', statMod:{A:-3} },
+  unlucky:   { name:'Unlucky',   icon:'🍀', category:'statdown', desc:'Luck reduced. Crit chance down.', statMod:{L:-3} },
+  exposed:   { name:'Exposed',   icon:'🎯', category:'statdown', desc:'All DR reduced by 5.', drMod:-5 },
+
+  // ── Buffs ──
+  haste:     { name:'Haste',     icon:'⚡', category:'buff',     desc:'Movement +2, Agility +3.', moveMod:2, statMod:{A:3} },
+  regen:     { name:'Regen',     icon:'💚', category:'buff',     desc:'Heals HP each turn.', tickHeal:true },
+  shield:    { name:'Shield',    icon:'🛡️', category:'buff',     desc:'Absorbs damage before HP. Shield has its own HP pool that depletes.', absorbHP:true },
+  barrier:   { name:'Barrier',   icon:'🔮', category:'buff',     desc:'Absorbs magic damage only.', absorbHP:true, absorbType:'Magic' },
+  berserk:   { name:'Berserk',   icon:'😡', category:'buff',     desc:'Damage +30%, but DR reduced by 5.', damageMod:30, drMod:-5 },
+  stealth:   { name:'Stealth',   icon:'👤', category:'buff',     desc:'Cannot be targeted. Breaks on attacking or taking AoE damage.', invisible:true, breaksOnAction:true },
+  focus:     { name:'Focus',     icon:'🎯', category:'buff',     desc:'Next attack has +50% crit chance.', critMod:50, breaksOnAction:true },
+  protect:   { name:'Protect',   icon:'🛡️', category:'buff',     desc:'Redirects attacks from adjacent allies to self.', redirectDamage:true },
+  counter_stance:{ name:'Counter Stance', icon:'⚔️', category:'buff', desc:'Automatically counter-attacks when hit.', autoCounter:true },
+
+  // ── Exotic ──
+  doom:      { name:'Doom',      icon:'💀', category:'exotic',   desc:'Dies when duration expires. Can be cleansed.', killOnExpire:true },
+  transform: { name:'Transform', icon:'🔄', category:'exotic',   desc:'Changed into another form. Stats replaced temporarily.' },
+  mark:      { name:'Mark',      icon:'🎯', category:'exotic',   desc:'Marked target takes bonus damage from the marker.' },
+  adapt:     { name:'Adapt',     icon:'🧬', category:'exotic',   desc:'Gains resistance to the last element that hit this unit.' },
+  link:      { name:'Link',      icon:'🔗', category:'exotic',   desc:'Damage taken is split between linked units.' },
+
+  // ── Weather-aware / ultimate flags ──
+  wet:       { name:'Wet',       icon:'💧', category:'exotic',   desc:'Soaked — Water damage taken increases.' },
+  negate_next_damage: { name:'Aegis Burst', icon:'🛡️', category:'buff', desc:'Fully negates the next incoming damage instance, then expires.' }
+};
+
+// ── CONDITION DEFINITIONS (for dropdown builders) ──────────────────
+// Each has: value (engine string), label (human), group, hasParam (needs number input), paramLabel
+const CONDITION_DEFS = [
+  // HP / MP / AP
+  { v:'hp_below',        l:'HP below X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:30 },
+  { v:'hp_above',        l:'HP above X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:50 },
+  { v:'is_full_hp',      l:'HP is full (100%)',           g:'HP / MP / AP' },
+  { v:'mp_below',        l:'MP below X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:30 },
+  { v:'mp_above',        l:'MP above X%',                g:'HP / MP / AP', hasParam:true, paramLabel:'%', paramDefault:50 },
+  { v:'ap_remaining_gte',l:'AP remaining ≥ X',           g:'HP / MP / AP', hasParam:true, paramLabel:'AP', paramDefault:2 },
+
+  // Chance / Probability
+  { v:'chance',          l:'X% chance to trigger',        g:'Chance',       hasParam:true, paramLabel:'%', paramDefault:25 },
+
+  // Stats
+  { v:'caster_stat_gte', l:'Caster [stat] ≥ X',          g:'Stats',        hasParam:true, paramLabel:'value', paramDefault:10, hasStat:true },
+  { v:'target_stat_gte', l:'Target [stat] ≥ X',          g:'Stats',        hasParam:true, paramLabel:'value', paramDefault:10, hasStat:true },
+  { v:'stat_higher',     l:'My [stat] > Target [stat]',  g:'Stats',        hasStat:true },
+
+  // Status
+  { v:'has_status',      l:'Has status [pick]',           g:'Status',       hasStatus:true },
+  { v:'not_has_status',  l:'Does NOT have status [pick]', g:'Status',       hasStatus:true },
+  { v:'target_has_status',l:'Target has status [pick]',   g:'Status',       hasStatus:true },
+  { v:'has_any_buff',    l:'Has any buff',                g:'Status' },
+  { v:'has_any_debuff',  l:'Has any debuff',              g:'Status' },
+  { v:'no_buffs',        l:'Has no buffs',                g:'Status' },
+  { v:'no_debuffs',      l:'Has no debuffs',              g:'Status' },
+
+  // Combat Situation
+  { v:'took_damage_this_turn',     l:'Took damage this turn',         g:'Combat' },
+  { v:'not_took_damage_this_turn', l:'Has NOT taken damage this turn',g:'Combat' },
+  { v:'has_killed_this_combat',    l:'Has killed an enemy this fight',g:'Combat' },
+  { v:'enemies_dead_gte',          l:'X+ enemies are dead',           g:'Combat', hasParam:true, paramLabel:'count', paramDefault:1 },
+  { v:'allies_dead_gte',           l:'X+ allies are dead',            g:'Combat', hasParam:true, paramLabel:'count', paramDefault:1 },
+  { v:'is_first_turn',             l:'First turn of combat',          g:'Combat' },
+  { v:'round_gte',                 l:'Round ≥ X',                     g:'Combat', hasParam:true, paramLabel:'round', paramDefault:3 },
+  { v:'moved_this_turn',           l:'Has moved this turn',           g:'Combat' },
+  { v:'not_moved_this_turn',       l:'Has NOT moved this turn',       g:'Combat' },
+
+  // Position / Range
+  { v:'any_adjacent_enemy',  l:'Any enemy adjacent (1 cell)',    g:'Position' },
+  { v:'no_adjacent_enemy',   l:'No enemy adjacent',              g:'Position' },
+  { v:'target_adjacent',     l:'Target is adjacent (melee)',     g:'Position' },
+  { v:'target_range_gte',    l:'Target is ≥ X cells away',      g:'Position', hasParam:true, paramLabel:'cells', paramDefault:3 },
+  { v:'isolated',            l:'No allies within 2 cells',       g:'Position' },
+  { v:'surrounded',          l:'3+ enemies within 2 cells',      g:'Position' },
+  { v:'on_terrain',          l:'Standing on [terrain type]',     g:'Position', hasTerrain:true },
+
+  // Turn Order
+  { v:'acted_first',    l:'Acted first this round',        g:'Turn Order' },
+  { v:'acted_last',     l:'Acted last this round',         g:'Turn Order' },
+  { v:'acted_before_target', l:'Acted before target this round', g:'Turn Order' },
+
+  // Target Type
+  { v:'target_type',    l:'Target is [type]',              g:'Target',       hasUnitType:true },
+  { v:'target_team_enemy', l:'Target is an enemy',         g:'Target' },
+  { v:'target_team_ally',  l:'Target is an ally',          g:'Target' },
+  { v:'target_hp_above_0', l:'Target is alive',            g:'Target' }
+];
+
+// ── CLEANSE LABELS (human-readable) ────────────────────────────────
+const CLEANSE_LABELS = {
+  Fire:          { icon:'🔥', label:'Fire damage removes this' },
+  Water:         { icon:'💧', label:'Water damage removes this' },
+  Lightning:     { icon:'⚡', label:'Lightning damage removes this' },
+  Earth:         { icon:'🪨', label:'Earth damage removes this' },
+  Wind:          { icon:'💨', label:'Wind damage removes this' },
+  Nature:        { icon:'🌿', label:'Nature damage removes this' },
+  Light:         { icon:'✨', label:'Light damage removes this' },
+  Dark:          { icon:'🌑', label:'Dark damage removes this' },
+  Physical:      { icon:'⚔️', label:'Physical damage removes this' },
+  Chaos:         { icon:'🌀', label:'Chaos damage removes this' },
+  purify:        { icon:'✨', label:'Any purify/cleanse skill removes this' },
+  dispel:        { icon:'💨', label:'Dispel removes this (targets buffs)' },
+  cleanse_dot:   { icon:'🧹', label:'"Cleanse DoTs" skills remove this' },
+  cleanse_cc:    { icon:'🧹', label:'"Cleanse CC" skills remove this' },
+  cleanse_all:   { icon:'🧹', label:'Any cleanse removes this' },
+  taking_damage: { icon:'💥', label:'Taking any damage removes this' },
+  moving:        { icon:'🦶', label:'Moving removes this' },
+  end_of_turn:   { icon:'⏰', label:'Auto-removed at end of turn' },
+  attacking:     { icon:'⚔️', label:'Attacking removes this' },
+  using_skill:   { icon:'✦', label:'Using any skill removes this' }
+};
+
+// ── AI BEHAVIOR ARCHETYPES ─────────────────────────────────────────
+const AI_ARCHETYPES = [
+  'aggressive', 'defensive', 'sniper', 'berserker',
+  'support', 'tactical', 'tactician', 'coward', 'boss',
+  'summoner', 'tank', 'swarmer'
+];
+
+const AI_ARCHETYPE_INFO = {
+  aggressive: { label: 'Aggressive', desc: 'Presses the nearest enemy and uses damage skills when available.' },
+  defensive: { label: 'Defensive', desc: 'Stays alive longer, favors safer targets, and guards when pressured.' },
+  sniper: { label: 'Sniper', desc: 'Keeps distance, prefers ranged pressure, and avoids being pinned down.' },
+  berserker: { label: 'Berserker', desc: 'Charges into the strongest fight and prioritizes direct damage.' },
+  support: { label: 'Support', desc: 'Looks for wounded allies and useful support skills before attacking.' },
+  tactical: { label: 'Tactical', desc: 'Chooses high-value targets such as healers, support units, and major threats.' },
+  tactician: { label: 'Tactician', desc: 'Alias for tactical; kept for authored content compatibility.' },
+  coward: { label: 'Coward', desc: 'Avoids danger, moves away from enemies, and attacks only when safe.' },
+  boss: { label: 'Boss', desc: 'Uses broad target priorities and keeps pressure up when authored rules do not fire.' },
+  summoner: { label: 'Summoner', desc: 'Prefers self or support skills, then falls back to safe pressure.' },
+  tank: { label: 'Tank', desc: 'Draws attention toward the highest-threat enemy and holds the front.' },
+  swarmer: { label: 'Swarmer', desc: 'Groups with allies and focuses pack-friendly targets.' }
+};
+
+const AI_TARGET_TYPES = [
+  'nearest_enemy', 'lowest_hp_enemy', 'highest_hp_enemy',
+  'lowest_hp_adjacent', 'most_clustered', 'random_enemy',
+  'lowest_hp_ally', 'squishiest', 'most_threatening',
+  'furthest_enemy', 'lowest_dr_enemy', 'highest_damage_enemy',
+  'highest_threat_enemy', 'healer_enemy', 'support_enemy',
+  'nearest_ally', 'adjacent_ally', 'pack_anchor_ally',
+  'pack_target_enemy', 'self'
+];
+
+const AI_TARGET_INFO = {
+  nearest_enemy: { label: 'Nearest enemy', desc: 'Closest enemy by grid distance.' },
+  lowest_hp_enemy: { label: 'Lowest HP enemy', desc: 'Enemy with the least current HP.' },
+  highest_hp_enemy: { label: 'Highest HP enemy', desc: 'Enemy with the most current HP.' },
+  lowest_hp_adjacent: { label: 'Lowest HP adjacent', desc: 'Adjacent enemy with the least current HP.' },
+  most_clustered: { label: 'Most clustered', desc: 'Enemy with the most allies nearby; useful for AoE.' },
+  random_enemy: { label: 'Random enemy', desc: 'Random living enemy.' },
+  lowest_hp_ally: { label: 'Lowest HP ally', desc: 'Ally with the least current HP.' },
+  squishiest: { label: 'Squishiest enemy', desc: 'Enemy with low HP and low defenses.' },
+  most_threatening: { label: 'Most threatening enemy', desc: 'Enemy with strong offensive stats and HP.' },
+  furthest_enemy: { label: 'Furthest enemy', desc: 'Enemy farthest from this unit.' },
+  lowest_dr_enemy: { label: 'Lowest DR enemy', desc: 'Enemy with the weakest combined damage reduction.' },
+  highest_damage_enemy: { label: 'Highest damage enemy', desc: 'Enemy with the strongest rough damage score.' },
+  highest_threat_enemy: { label: 'Highest threat enemy', desc: 'Alias-style threat scorer used by tactical and tank AI.' },
+  healer_enemy: { label: 'Healer enemy', desc: 'Enemy that appears to carry healing behavior or skills.' },
+  support_enemy: { label: 'Support enemy', desc: 'Enemy that appears to carry support behavior or skills.' },
+  nearest_ally: { label: 'Nearest ally', desc: 'Closest living ally.' },
+  adjacent_ally: { label: 'Adjacent ally', desc: 'Living ally already next to this unit.' },
+  pack_anchor_ally: { label: 'Pack anchor ally', desc: 'Ally that helps swarmer units group up.' },
+  pack_target_enemy: { label: 'Pack target enemy', desc: 'Enemy already pressured by nearby allies.' },
+  self: { label: 'Self', desc: 'The acting unit.' }
+};
+
+// ── QTE TYPES ──────────────────────────────────────────────────────
+const QTE_TYPES = ['fishing', 'rhythm', 'quickpress', 'mash', 'quiz', 'none'];
+
+const QTE_DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'INSANE'];
+
+const QTE_MULTIPLIERS = {
+  perfect: 1.5,
+  good:    1.25,
+  ok:      1.0,
+  fail:    0.75
+};
+
+// ── GRID DEFAULTS ──────────────────────────────────────────────────
+const GRID_DEFAULTS = {
+  width: 8,
+  height: 8,
+  maxWidth: 16,
+  maxHeight: 16,
+  cellSizePx: 56
+};
+
+// ── ACTION ECONOMY ─────────────────────────────────────────────────
+const ACTION_ECONOMY = {
+  baseAP: 2,
+  turnStartAP: 1,         // AP granted at the start of every turn
+  defendAPBonus: 1,        // AP gained next turn from defending
+  endTurnAPBonus: 2,       // AP banked for choosing to end turn early
+  defendDRBonus: 5,        // flat DR boost during defend round
+  movesPerTurn: 1,         // free moves allowed per turn
+  mainActionsPerTurn: 1    // main actions per turn (can be increased by effects)
+};
+
+// ── ELEMENTAL INTERACTION TABLE ────────────────────────────────────
+// Key = attacking element, value = { weakAgainst: [], strongAgainst: [] }
+const ELEMENT_CHART = {
+  Physical:  { weakAgainst: [],            strongAgainst: [] },
+  Fire:      { weakAgainst: ['Water'],     strongAgainst: ['Nature', 'Wind'] },
+  Water:     { weakAgainst: ['Lightning'], strongAgainst: ['Fire', 'Earth'] },
+  Lightning: { weakAgainst: ['Earth'],     strongAgainst: ['Water', 'Wind'] },
+  Earth:     { weakAgainst: ['Nature'],    strongAgainst: ['Lightning', 'Fire'] },
+  Wind:      { weakAgainst: ['Fire'],      strongAgainst: ['Earth', 'Nature'] },
+  Nature:    { weakAgainst: ['Fire'],      strongAgainst: ['Water', 'Earth'] },
+  Light:     { weakAgainst: ['Dark'],      strongAgainst: ['Dark'] },    // mutual
+  Dark:      { weakAgainst: ['Light'],     strongAgainst: ['Light'] },   // mutual
+  Chaos:     { weakAgainst: [],            strongAgainst: [] }           // neutral to all
+};
+
+const ELEMENT_MULTIPLIERS = {
+  weak:   1.5,
+  resist: 0.5,
+  immune: 0,
+  normal: 1.0
+};
+
+// ── ID PREFIXES ────────────────────────────────────────────────────
+const ID_PREFIXES = {
+  effect:    'eff',
+  skill:     'skl',
+  item:      'itm',
+  food:      'fod',
+  material:  'mat',
+  crafting:  'rcp',
+  crop:      'crp',
+  shop:      'shp',
+  zone:      'zon',
+  story:     'sto',
+  campaign:  'cmp',
+  scenario:  'scn',
+  scenarioMap: 'map',
+  travelMap: 'tmap',
+  campaignEvent: 'evt',
+  campaignQuest: 'qst',
+  campaignProfile: 'cpf',
+  pocketHavenRule: 'phr',
+  sideContentPack: 'scp',
+  campaignHub: 'hub',
+  questChain: 'qch',
+  battleSet: 'bst',
+  mapSeed: 'msd',
+  oracleTable: 'orc',
+  storyDirectorPack: 'sdp',
+  worldActivityPack: 'wap',
+  world:     'wld',
+  character: 'chr',
+  monster:   'mon',
+  encounter: 'enc',
+  passive:   'pas',
+  status:    'sts',
+  quip:      'qip',
+  job:       'job',
+  persona:   'prs',
+  weather:   'wth',
+  weathers:  'wth',
+  worldEvent: 'wev',
+  worldEvents: 'wev',
+  fish:      'fsh',
+  fishCatalog: 'fsh'
+};
+
+// ── PROGRESSION (skill AP + character/job XP) ─────────────────────
+// Skill ability points: each (member, skill) pair tracks an AP pool.
+// Successfully using a skill in combat awards skill.apGain (default 1)
+// points; once enough points are banked, the skill levels up.
+// Different skills can author their own thresholds per level.
+//
+// Curve design (rebalanced 2026-05): early levels ramp faster so new
+// players see frequent rewards; mid/late levels stretch so endgame
+// milestones still feel earned. Net total ≈ same as previous curve.
+const PROGRESSION = {
+  // Default AP needed to reach the indexed level (level 1 needs 0).
+  // Old: [0, 6, 16, 32, 56, 90]  — first level took 6 uses.
+  // New: faster first two levels, larger gap into mastery (5→max).
+  skillApThresholds: [0, 4, 12, 26, 50, 88],
+  // Default per-level XP needed for character level-up.
+  // Old: 50→120→220→360… too slow in early game.
+  // New: 30→80→160 early ramp, then quadratic so 20→20 still feels
+  // big. Curve crosses old curve around level 10.
+  charXpThresholds: [0, 30, 80, 160, 280, 440, 650, 920, 1260, 1680, 2180, 2780, 3480, 4280, 5180, 6180, 7280, 8480, 9780, 11180, 12680],
+  // Default per-level XP needed for job level-up. Steeper than char
+  // XP so jobs require dedicated training. Same shape as char XP but
+  // ~1.7x the magnitude.
+  jobXpThresholds:  [0, 50, 140, 280, 480, 760, 1120, 1580, 2160, 2880, 3760, 4800, 6000, 7380, 8940, 10680, 12600, 14720, 17040, 19560, 22300],
+  // Default skill cap when authors don't supply levelScaling.maxLevel.
+  skillMaxLevelDefault: 5,
+  // Hard ceiling: even if a skill authors a higher maxLevel it is clamped
+  // to this for now. Set to null to disable the clamp.
+  skillMaxLevelCap: 5,
+  // Passive ranks are upgraded with materials in Campaign Mode. Rank 1 is
+  // the authored baseline; higher ranks strengthen passive effect values.
+  passiveMaxRankDefault: 5,
+  passiveMaxRankCap: 5,
+  passiveRankValuePerRank: 0.15,
+  passiveRankMaterialDefault: 'haven_memory_shard',
+  // Default char cap when not overridden anywhere.
+  charMaxLevel: 20,
+  // Default job cap when authors don't supply maxLevel.
+  jobMaxLevelDefault: 5,
+  // QTE grade multipliers applied to apGain on a single skill use.
+  // 'fail' bumped from 0.5 → 0.6 so first-time learners still make
+  // measurable progress; 'perfect' lifted from 1.5 → 1.6 to reward
+  // mastery and offset the steeper late-game curve.
+  apGainQteMultipliers: { perfect: 1.6, good: 1.3, ok: 1.0, fail: 0.6 },
+  // Default jobs slot cap per character (Bin / Bowy use this).
+  maxJobsDefault: 3,
+  // How many distinct weapon types a player character may know by default
+  // (informational; the authoritative cap is allowedWeaponTypes.length).
+  weaponSlotsDefault: 2,
+  // Per-rank stat points granted by a character level-up. Higher ranks
+  // gain more so that the gap with monsters scales with level.
+  statPointsPerCharLevelByRank: {
+    F: 1, E: 2, D: 2, C: 3, B: 3, A: 4, S: 4, SR: 5, SSR: 6
+  },
+  // XP awarded for defeating an enemy of the given rank. Split among the
+  // surviving party members at the end of a battle.
+  xpPerEnemyRank: {
+    F:  20, E:  35, D:  60, C:  95,
+    B: 150, A: 220, S: 320, SR: 460, SSR: 640
+  },
+  // Job XP awarded per defeated enemy of given rank (smaller than char
+  // XP — job mastery is intentionally slower).
+  jobXpPerEnemyRank: {
+    F:  10, E:  18, D:  30, C:  50,
+    B:  80, A: 120, S: 175, SR: 250, SSR: 350
+  },
+  // ── Skill / Passive selection budget ────────────────────────────
+  // Each character has two budgets:
+  //   * a SLOT cap (count of equipped entries)
+  //   * a POINT budget (sum of spCost across equipped entries)
+  // Both apply — equipping fails if either is exceeded.
+  defaultSkillSlots: 4,
+  defaultPassiveSlots: 3,
+  defaultSkillPoints: 10,
+  defaultPassivePoints: 10,
+  defaultSpCost: 1,
+  // Long-term progression cadence:
+  //   POINTS grow smoothly so players keep learning new options across
+  //   the whole campaign — every 3 levels = +1 SP.
+  //   SLOTS are intentionally precious — gain about every 8–10 levels
+  //   so the choice of WHICH skills to slot stays meaningful end-game.
+  skillSlotsPerCharLevel:    { every: 10, amount: 1 },
+  passiveSlotsPerCharLevel:  { every: 12, amount: 1 },
+  skillPointsPerCharLevel:   { every: 3,  amount: 1 },
+  passivePointsPerCharLevel: { every: 3,  amount: 1 },
+  // Per-rank bonuses (cumulative across the rank order F→SSR).
+  // Slots grow slowly across ranks; points grow more generously so
+  // higher-rank characters can field more powerful skill loadouts.
+  rankSkillSlotBonus:       { F: 0, E: 0, D: 0, C: 1, B: 1, A: 1, S: 2, SR: 2, SSR: 3 },
+  rankPassiveSlotBonus:     { F: 0, E: 0, D: 0, C: 0, B: 1, A: 1, S: 1, SR: 2, SSR: 2 },
+  rankSkillPointBonus:      { F: 0, E: 2, D: 4, C: 6, B: 9, A: 12, S: 15, SR: 19, SSR: 24 },
+  rankPassivePointBonus:    { F: 0, E: 2, D: 3, C: 5, B: 7, A: 10, S: 13, SR: 17, SSR: 22 },
+
+  // ── ADVENTURER RANK PROGRESSION ─────────────────────────────────
+  // Each character accumulates Rank Points (RP) toward the NEXT rank
+  // from combat, quests, story beats, and out-of-combat checks. Once
+  // RP meets the threshold for the next rank AND all gates are met,
+  // a rank-up trial unlocks; completing it promotes the member.
+  //
+  // Thresholds[targetRank] = RP needed to reach that rank from below.
+  // F is the starting rank so it has no threshold.
+  rpThresholds: {
+    E: 60, D: 160, C: 360, B: 720, A: 1300, S: 2200, SR: 3500, SSR: 5500
+  },
+  // Minimum character level required to attempt rank-up to target.
+  minLevelByRank: {
+    E: 3, D: 6, C: 9, B: 12, A: 14, S: 16, SR: 18, SSR: 20
+  },
+  // For C and above, at least one job must be at this level.
+  minJobLevelByRank: {
+    C: 3, B: 3, A: 4, S: 4, SR: 5, SSR: 5
+  },
+  // For A and above, at least this chapter must be reached.
+  minChapterByRank: {
+    A: 3, S: 3, SR: 4, SSR: 5
+  },
+  // RP awarded per defeated enemy of the given rank. Scales with the
+  // enemy's effective level via MONSTER_LEVEL_SCALING.perLevel.
+  rpPerEnemyRank: {
+    F:  4, E:  7, D: 12, C: 20,
+    B: 32, A: 50, S: 75, SR: 110, SSR: 160
+  },
+  // Flat RP awarded on quest completion. Quests may override with
+  // quest.rankPoints; this is the per-rank default.
+  rpPerQuestRank: {
+    F:  12, E:  24, D:  44, C:  72,
+    B: 120, A: 180, S: 280, SR: 420, SSR: 620
+  },
+  // RP awarded on story-part / chapter advance (one-shot per part).
+  rpPerStoryPart: 40,
+  // One-time RP grant when a job reaches its tier milestones.
+  rpPerJobTier: { 3: 20, 5: 60 }
+};
+
+// ── MONSTER LEVEL SCALING ──────────────────────────────────────────
+// When a monster spawns at level N (where N >= 1), its compiled stats
+// and HP/MP are multiplied by 1 + (N-1) * perLevel. XP/RP rewards from
+// defeating it scale by the same multiplier. Levels above the world's
+// ceiling rank's max are clamped — a low-ceiling world stays low-stakes
+// for even high-rank parties.
+const MONSTER_LEVEL_SCALING = {
+  perLevel: 0.06,
+  maxLevel: 30,
+  // Max monster level per rank tier (used by Formulas.maxLevelForRank).
+  // Roughly mirrors the character level curve but slightly above.
+  levelBandByRank: {
+    F:  { min: 1,  max: 4  },
+    E:  { min: 2,  max: 7  },
+    D:  { min: 4,  max: 10 },
+    C:  { min: 6,  max: 13 },
+    B:  { min: 8,  max: 16 },
+    A:  { min: 11, max: 19 },
+    S:  { min: 14, max: 22 },
+    SR: { min: 17, max: 26 },
+    SSR:{ min: 20, max: 30 }
+  }
+};
+
+// ── PUBLIC API ─────────────────────────────────────────────────────
+export const CONST: CJSConstants = Object.freeze({
+  STATS, STAT_NAMES, RANKS, RANK_DATA,
+  QTE_DIFFICULTY_BY_RANK,
+  ELEMENTS, ELEMENT_COLORS, ELEMENT_CHART, ELEMENT_MULTIPLIERS,
+  DAMAGE_TYPES, UNIT_TYPES, EQUIPMENT_SLOTS, WEAPON_TYPES, ARMOR_TYPES, ACCESSORY_TYPES,
+  RARITIES, RARITY_COLORS,
+  TERRAIN_TYPES, UNIT_SIZES, MOVEMENT_DEFAULTS, COLLISION, LINE_OF_SIGHT,
+  FLANKING, ELEVATION, ENVIRONMENTAL_INTERACTIONS,
+  EFFECT_TRIGGERS, EFFECT_ACTIONS, EFFECT_TARGETS, VALUE_SOURCES,
+  STATUS_CATEGORIES, STATUS_DEFINITIONS, CONDITION_DEFS, CLEANSE_LABELS,
+  AI_ARCHETYPES, AI_ARCHETYPE_INFO, AI_TARGET_TYPES, AI_TARGET_INFO,
+  QTE_TYPES, QTE_DIFFICULTIES, QTE_MULTIPLIERS,
+  GRID_DEFAULTS, ACTION_ECONOMY,
+  ID_PREFIXES,
+  PROGRESSION,
+  MONSTER_LEVEL_SCALING
+});
+
+// Runtime compatibility install — keep window.CJS.CONST identical to the legacy
+// IIFE so every existing consumer (and the vanilla engine) is unchanged.
+window.CJS = window.CJS || ({} as CJSNamespace);
+window.CJS.CONST = CONST;
