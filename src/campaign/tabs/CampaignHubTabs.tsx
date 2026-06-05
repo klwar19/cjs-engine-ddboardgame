@@ -2,7 +2,8 @@ import { Fragment } from "react";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { QuestChainActiveCard, QuestChainTemplateCard } from "./QuestChain";
-import { SideCard, RumorRow, HtmlBridge } from "./SideContent";
+import { SideCard, RumorRow } from "./SideContent";
+import { InlinePurpose } from "./ConsequenceViews";
 import { SoloNoticePanel } from "./ResultPanels";
 import {
   getSideForgeData,
@@ -79,7 +80,7 @@ export function CampaignSideForgeTab({ state }: Props) {
           <h3>Hub Problems</h3>
           <span className="campaign-muted">Pressure cards on this hub. Resolve them by spending phases or addressing the cause.</span>
         </div>
-        <HtmlBridge html={data.problemPurposeHtml} className="campaign-inline-purpose-bridge" />
+        <div className="campaign-inline-purpose-bridge"><InlinePurpose purpose={data.problemPurpose} /></div>
         {data.problems.length === 0 ? (
           <div className="campaign-empty">No active hub problems.</div>
         ) : (
@@ -180,7 +181,7 @@ export function CampaignOracleForgeTab({ state }: Props) {
     <div className="campaign-dashboard">
       <section className="campaign-panel">
         <div className="campaign-panel-head"><h2>Oracle / Keyword Forge</h2></div>
-        <HtmlBridge html={data.purposeHtml} className="campaign-inline-purpose-bridge" />
+        <div className="campaign-inline-purpose-bridge"><InlinePurpose purpose={data.purpose} /></div>
         <div className="campaign-muted">{data.tableNames}</div>
         <div className="campaign-action-grid">
           <button className="campaign-action primary" onClick={() => dispatchCampaignAction("roll-forge-oracle")}>Roll Oracle</button>

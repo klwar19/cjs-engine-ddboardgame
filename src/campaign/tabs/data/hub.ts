@@ -6,8 +6,11 @@
 // and renders JSX with direct onClick dispatch.
 //
 // Phase H.4/K.3 — all hub-family get*Data builders are inline TS now. The
-// only remaining HubTab dependency is the shared display-helper surface
-// installed by `src/campaign/util/cui-hub-tab.ts`.
+// tone/consequence math + structured `consequencePreviewData` / `flavorTrailData`
+// builders are imported directly from `src/campaign/util/cui-hub-tab.ts`
+// (Part B retired the HTML-string emitters); the side cards emit a purpose key,
+// a flavor-trail data object, and a consequence-preview list that the JSX
+// `<InlinePurpose>` / `<FlavorTrail>` / `<ConsequencePreview>` components render.
 
 import type { CampaignStateSnapshot } from "../../store";
 import type { QuestChainActiveData, QuestChainTemplateData } from "./eventTab";
@@ -73,23 +76,11 @@ function mapForge(): MapSeedForgeSurface | undefined {
   return (window as unknown as { CJS?: CjsHubExtras }).CJS?.CampaignMapSeedForge;
 }
 
-// HubTab module (`src/campaign/util/cui-hub-tab.ts`) exposes the
-// consequence-preview / flavor-trail HTML builders that the side-card data
-// builder embeds.
-interface HubTabSurface {
-  readonly cardChoiceOps?: (card: unknown) => readonly unknown[];
-  readonly renderConsequencePreview?: (ops: readonly unknown[], options?: {
-    title?: string;
-    emptyTitle?: string;
-    emptyText?: string;
-  }) => string;
-  readonly renderFlavorTrail?: (entry: unknown) => string;
-  readonly consequenceSummary?: (
-    ops: readonly unknown[],
-    options?: { hasText?: boolean }
-  ) => { tone?: string; label?: string };
-  readonly openRumors?: (hubState: unknown) => readonly RumorInput[];
-}
+// The consequence-preview / flavor-trail / tone-summary builders + the rumor
+// helper are imported directly from `util/cui-hub-tab.ts` (Part B retired the
+// HubTab HTML-string emitters for the structured `consequencePreviewData` /
+// `flavorTrailData` builders the JSX `<ConsequencePreview>` / `<FlavorTrail>`
+// components render).
 
 interface CampaignHubSurface {
   readonly getCurrentHubId?: () => string;
@@ -109,20 +100,15 @@ interface CampaignHubSurface {
   } | null | undefined;
 }
 
-function hubTab(): HubTabSurface | undefined {
-  return (window as unknown as { CJS?: { CampaignUIInternal?: { HubTab?: HubTabSurface } } }).CJS?.CampaignUIInternal?.HubTab;
-}
-
 function campaignHub(): CampaignHubSurface | undefined {
   return (window as unknown as { CJS?: { CampaignHub?: CampaignHubSurface } }).CJS?.CampaignHub;
 }
 
 // ── Side-content card + rumor row builders ──────────────────────────
 // Used by the Side Forge / Oracle Forge / Town snapshot data builders.
-// Display-only sub-pieces (inline purpose, flavor trail, choice
-// consequence preview) arrive pre-rendered as HTML via HubTab — the
-// JSX consumer threads them through `<HtmlBridge>` divs (same pattern
-// ResultPanels uses).
+// Display-only sub-pieces are structured data (a purpose key, a flavor-trail
+// data object, a consequence-preview list) the `<SideCard>` JSX renders via
+// the `<InlinePurpose>` / `<FlavorTrail>` / `<ConsequencePreview>` components.
 interface SideCardInput {
   readonly id?: string;
   readonly title?: string;
@@ -148,40 +134,48 @@ interface RumorInput {
 }
 
 import { label } from "../../util/cui-utils";
-import { renderInlinePurpose, purposeKeyForCard } from "../../util/cui-controls";
+import { purposeKeyForCard, type ToolPurposeKey } from "../../util/cui-controls";
+import {
+  consequenceSummary,
+  cardChoiceOps,
+  consequencePreviewData,
+  flavorTrailData,
+  openRumors,
+  type ConsequencePreviewData,
+  type FlavorTrailData
+} from "../../util/cui-hub-tab";
 
 export function sideCardData(card: SideCardInput = {}, options: { compact?: boolean; mode?: string } = {}): SideCardData {
   const compact = !!options.compact;
   const choices = card.suggestedChoices || [];
-  const hub = hubTab();
-  const primaryOps = hub?.cardChoiceOps?.(card) || [];
-  const summary = hub?.consequenceSummary?.(primaryOps, {
+  const primaryOps = cardChoiceOps(card);
+  const summary = consequenceSummary(primaryOps, {
     hasText: !!(card.prompt || card.text || card.summary)
-  }) || {};
+  });
   const sx = side();
   return {
     id: String(card.id || ""),
     title: String(card.title || card.name || card.id || ""),
     subtitle: `${card.type || "side content"} | ${card.source || ""} | ${card.status || "idea"}`,
-    tone: String(summary.tone || "flavor"),
-    toneLabel: String(summary.label || ""),
+    tone: summary.tone,
+    toneLabel: summary.label,
     canonRisk: String(card.canonRisk || "green"),
     canonRiskClass: sx?.riskClass?.(card.canonRisk) ?? "",
     compact,
-    purposeHtml: compact ? "" : renderInlinePurpose(purposeKeyForCard(card)),
+    purpose: compact ? null : purposeKeyForCard(card),
     prompt: String(card.prompt || ""),
     text: String(card.text || ""),
     summary: (!compact && card.summary) ? String(card.summary) : "",
-    flavorTrailHtml: compact ? "" : (hub?.renderFlavorTrail?.(card) ?? ""),
+    flavorTrail: compact ? null : flavorTrailData(card),
     gmKeywords: (!compact && Array.isArray(card.gmKeywords)) ? card.gmKeywords.map(String) : [],
     gmNote: compact ? "" : String(card.gmNote || ""),
-    choiceStackHtml: (!compact && choices.length)
-      ? choices.map((choice, index) => hub?.renderConsequencePreview?.(choice.ops || [], {
+    choiceStack: (!compact && choices.length)
+      ? choices.map((choice, index) => consequencePreviewData(choice.ops || [], {
           title: choice.label || `Choice ${index + 1}`,
           emptyTitle: choice.label || `Choice ${index + 1}`,
           emptyText: "Flavor choice only. Save it as text or use it to steer the next scene."
-        }) ?? "").join("")
-      : "",
+        }))
+      : [],
     choiceButtons: choices.map((choice, index) => ({
       index,
       label: String(choice.label || `Choice ${index + 1}`)
@@ -257,14 +251,14 @@ export interface SideCardData {
   readonly canonRisk: string;
   readonly canonRiskClass: string;
   readonly compact: boolean;
-  readonly purposeHtml: string;
+  readonly purpose: ToolPurposeKey | null;
   readonly prompt: string;
   readonly text: string;
   readonly summary: string;
-  readonly flavorTrailHtml: string;
+  readonly flavorTrail: FlavorTrailData | null;
   readonly gmKeywords: readonly string[];
   readonly gmNote: string;
-  readonly choiceStackHtml: string;
+  readonly choiceStack: readonly ConsequencePreviewData[];
   readonly choiceButtons: readonly SideCardChoiceButton[];
   readonly showDismiss: boolean;
 }
@@ -313,7 +307,7 @@ export interface SideForgeData {
   readonly hubId: string;
   readonly moodLabel: string;
   readonly stats: SideForgeStats;
-  readonly problemPurposeHtml: string;
+  readonly problemPurpose: ToolPurposeKey;
   readonly problems: readonly SideForgeProblem[];
   readonly lastCard: SideCardData | null;
   readonly rumors: readonly RumorRowData[];
@@ -324,7 +318,7 @@ export interface SideForgeData {
 
 // ── Oracle Forge tab ───────────────────────────────────────────────
 export interface OracleForgeData {
-  readonly purposeHtml: string;
+  readonly purpose: ToolPurposeKey;
   readonly tableNames: string;
   readonly lastCard: SideCardData | null;
 }
@@ -420,7 +414,7 @@ export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | 
   const review = typed.sideContent?.reviewQueue || [];
   const history = typed.sideContent?.contentHistory || [];
   const sx = side();
-  const rumors = hubTab()?.openRumors?.(hubState) || [];
+  const rumors = openRumors(hubState);
   return {
     hubName: String(hub.name || "Living Hub"),
     hubDescription: String(hub.description || "Town pulse, rumors, problems, and content review queue."),
@@ -432,13 +426,13 @@ export function getSideForgeData(state: CampaignStateSnapshot): SideForgeData | 
       warmth: Number(hubState.warmth ?? 0),
       weirdness: Number(hubState.weirdness ?? 0)
     },
-    problemPurposeHtml: renderInlinePurpose("problem"),
+    problemPurpose: "problem",
     problems: (hubState.activeProblems || []).map((problem) => ({
       id: String(problem),
       label: label(problem)
     })),
     lastCard: last ? sideCardData(last, { mode: "last" }) : null,
-    rumors: rumors.slice(0, 6).map((rumor) => rumorRowData(rumor)),
+    rumors: rumors.slice(0, 6).map((rumor) => rumorRowData(rumor as RumorInput)),
     savedIdeas: saved.slice(0, 8).map((idea) => sideCardData(idea, { compact: true })),
     review: review.slice(0, 8).map((item) => ({
       id: String(item.id || ""),
@@ -466,7 +460,7 @@ export function getOracleForgeData(state: CampaignStateSnapshot): OracleForgeDat
   const last = cardSlot && cardSlot.type === "oracle_prompt" ? cardSlot : null;
   const tables = dataLoader()?.getOracleTables?.() || [];
   return {
-    purposeHtml: renderInlinePurpose("oracle"),
+    purpose: "oracle",
     tableNames: tables.map((table) => String(table.name || table.id || "")).join(", ") || "No oracle tables loaded.",
     lastCard: last ? sideCardData(last, { mode: "oracle" }) : null
   };

@@ -11,9 +11,11 @@
 // `ActiveSequencePanel` stays prop-driven because its selector depends on the
 // `scopes` prop, which the version-keyed selector cache can't memoize safely.
 //
-// Sub-fragments that depend on cross-module renderers (inline purpose chip,
-// consequence preview, flavor trail) still come through HTML bridges because
-// their inner data shapes live in sibling modules (HubTab / Controls).
+// The inline-purpose chip / consequence preview / flavor trail are JSX
+// components (`ConsequenceViews.tsx`) reading typed data (Part B). The
+// remaining `HtmlBridge` uses below host the loot / combat-consequence /
+// combat-pulse / pending-battle-context / battle-party islands, whose builders
+// still emit HTML strings.
 
 import { memo } from "react";
 import { useCampaignSelector, type CampaignStateSnapshot } from "../store";
@@ -39,6 +41,7 @@ import {
 } from "./data/resultPanels";
 import { SequenceNodePanel } from "./SequenceNode";
 import { QuestPill } from "./ScenarioChips";
+import { InlinePurpose, ConsequencePreview, FlavorTrail } from "./ConsequenceViews";
 
 // Module-level stable selectors so `useCampaignSelector` keeps a steady
 // getSnapshot and never re-subscribes. Each is a pure function of state.
@@ -68,14 +71,16 @@ export const EventResultPanel = memo(function EventResultPanel() {
           {data.ideaPillLabel && <span className="campaign-pill">{data.ideaPillLabel}</span>}
         </div>
       </div>
-      <HtmlBridge html={data.inlinePurposeHtml} className="campaign-inline-purpose-bridge" />
+      <div className="campaign-inline-purpose-bridge"><InlinePurpose purpose={data.inlinePurpose} /></div>
       {data.manualSummary && <ManualSummaryBlock summary={data.manualSummary} />}
       <p>{data.prompt}</p>
       {data.gmHook && (
         <div className="campaign-warning"><b>GM hook:</b> {data.gmHook}</div>
       )}
-      <HtmlBridge html={data.consequencePreviewHtml} className="campaign-consequence-preview-bridge" />
-      <HtmlBridge html={data.flavorTrailHtml} className="campaign-flavor-trail-bridge" />
+      <div className="campaign-consequence-preview-bridge"><ConsequencePreview data={data.consequencePreview} /></div>
+      {data.flavorTrail && (
+        <div className="campaign-flavor-trail-bridge"><FlavorTrail data={data.flavorTrail} /></div>
+      )}
       <div className="campaign-control-help">
         Pick one: <b>Apply</b> commits listed ops and writes the event ledger. <b>Edit Rewards/Consequences</b> lets you tweak ops. <b>Event Log</b> records summary only. <b>To Quest</b> promotes the hook into the quest tracker.
       </div>
@@ -144,9 +149,9 @@ export const OraclePanel = memo(function OraclePanel() {
         <h2>GM Prompt</h2>
         <span className="campaign-impact-badge is-flavor">Text only</span>
       </div>
-      <HtmlBridge html={data.inlinePurposeHtml} className="campaign-inline-purpose-bridge" />
+      <div className="campaign-inline-purpose-bridge"><InlinePurpose purpose={data.inlinePurpose} /></div>
       <p>{data.text}</p>
-      <HtmlBridge html={data.consequencePreviewHtml} className="campaign-consequence-preview-bridge" />
+      <div className="campaign-consequence-preview-bridge"><ConsequencePreview data={data.consequencePreview} /></div>
       <div className="campaign-control-help">
         Pure narrative until promoted. Turn it into a quest, summarize it into Event Log, or open the event builder when you want rewards, consequences, or tags.
       </div>
@@ -180,11 +185,13 @@ export const SoloNoticePanel = memo(function SoloNoticePanel() {
           <span className={`campaign-risk ${data.riskClass}`}>{data.risk}</span>
         </div>
       </div>
-      <HtmlBridge html={data.inlinePurposeHtml} className="campaign-inline-purpose-bridge" />
+      <div className="campaign-inline-purpose-bridge"><InlinePurpose purpose={data.inlinePurpose} /></div>
       <strong>{data.title}</strong>
       {data.prompt && <p>{data.prompt}</p>}
-      <HtmlBridge html={data.consequencePreviewHtml} className="campaign-consequence-preview-bridge" />
-      <HtmlBridge html={data.flavorTrailHtml} className="campaign-flavor-trail-bridge" />
+      <div className="campaign-consequence-preview-bridge"><ConsequencePreview data={data.consequencePreview} /></div>
+      {data.flavorTrail && (
+        <div className="campaign-flavor-trail-bridge"><FlavorTrail data={data.flavorTrail} /></div>
+      )}
       <div className="campaign-control-help">
         Pick one: <b>Accept</b> commits the suggested choice. <b>Make Quest</b> only adds it to the Quest Tracker when possible. <b>Make Rumor</b> plants it in the hub lead bank. <b>Save</b> stores the card as a saved idea. <b>Ignore</b> drops it.
       </div>

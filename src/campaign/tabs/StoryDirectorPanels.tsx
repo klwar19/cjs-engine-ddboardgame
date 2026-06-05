@@ -3,11 +3,14 @@
 // empty fallback, and the five support-grid panels (pressure /
 // clues / queue / truths / side-flow).
 //
-// The route consequence preview is still an HTML bridge
-// (`HubTab.renderConsequencePreview`) until K.3 ports the HubTab
-// renderers.
+// The route consequence preview is the JSX `<ConsequencePreview>` (Part B).
+// `StoryCardBody` is shared by the tab's `StoryDirectorCard` and the React
+// story beat modal's `StoryBeatCard` (the `is-modal` variant) — both render
+// the same head / dialogue / route map; `onChoose` lets the modal close
+// before dispatching `story-apply-choice`.
 
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
+import { ConsequencePreview } from "./ConsequenceViews";
 import type {
   StoryStageEntry,
   StoryDirectorCardData,
@@ -48,34 +51,56 @@ export function StoryStageRail({ stages }: { stages: readonly StoryStageEntry[] 
   );
 }
 
-export function StoryDirectorCard({ card }: { card: StoryDirectorCardData | null }) {
-  if (!card) return <StoryDirectorEmptyCard />;
+// Shared card body — head + dialogue + gmNote + tags + route map. The tab
+// card and the modal beat card render it identically; only the outer section
+// (is-modal class) and the trailing action grid differ.
+function StoryCardBody({
+  data,
+  onChoose
+}: {
+  data: StoryDirectorCardData;
+  onChoose: (index: number) => void;
+}) {
   return (
-    <section className="campaign-panel campaign-side-card campaign-result-card campaign-story-card campaign-story-dialogue">
+    <>
       <div className="campaign-story-dialogue-head">
         <div>
-          <h3>{card.title}</h3>
+          <h3>{data.title}</h3>
           <div className="campaign-muted">
-            {card.stageLabel} | {card.kindLabel}
+            {data.stageLabel} | {data.kindLabel}
           </div>
         </div>
-        <span className={`campaign-risk ${card.canonRiskClass}`}>{card.canonRisk}</span>
+        <span className={`campaign-risk ${data.canonRiskClass}`}>{data.canonRisk}</span>
       </div>
       <div className="campaign-story-dialogue-box">
-        <div className="campaign-story-speaker">{card.kindLabel}</div>
-        {card.prompt && <p>{card.prompt}</p>}
-        {card.text && <p>{card.text}</p>}
-        {card.summary && <p className="campaign-muted">{card.summary}</p>}
+        <div className="campaign-story-speaker">{data.kindLabel}</div>
+        {data.prompt && <p>{data.prompt}</p>}
+        {data.text && <p>{data.text}</p>}
+        {data.summary && <p className="campaign-muted">{data.summary}</p>}
       </div>
-      {card.gmNote && <div className="campaign-warning">{card.gmNote}</div>}
-      {card.tags.length > 0 && (
+      {data.gmNote && <div className="campaign-warning">{data.gmNote}</div>}
+      {data.tags.length > 0 && (
         <div className="campaign-chip-row">
-          {card.tags.map((tag, i) => (
+          {data.tags.map((tag, i) => (
             <span key={i} className="campaign-chip">{tag}</span>
           ))}
         </div>
       )}
-      <StoryRouteMap routes={card.routes} />
+      <StoryRouteMap routes={data.routes} onChoose={onChoose} />
+    </>
+  );
+}
+
+export function StoryDirectorCard({ card }: { card: StoryDirectorCardData | null }) {
+  if (!card) return <StoryDirectorEmptyCard />;
+  return (
+    <section className="campaign-panel campaign-side-card campaign-result-card campaign-story-card campaign-story-dialogue">
+      <StoryCardBody
+        data={card}
+        onChoose={(index) =>
+          dispatchCampaignAction("story-apply-choice", { id: card.id, choice: index })
+        }
+      />
       <div className="campaign-action-grid">
         <CardActionBtn
           action="story-open-last"
@@ -108,6 +133,23 @@ export function StoryDirectorCard({ card }: { card: StoryDirectorCardData | null
   );
 }
 
+// Story beat modal card (`is-modal` variant; no action grid — the modal footer
+// owns Hold/Skip). Route clicks call `onChoose` so the imperative modal can
+// close before applying the choice. Shared by `tabs/StoryBeatModal.tsx`.
+export function StoryBeatCard({
+  data,
+  onChoose
+}: {
+  data: StoryDirectorCardData;
+  onChoose: (index: number) => void;
+}) {
+  return (
+    <section className="campaign-panel campaign-side-card campaign-result-card campaign-story-card campaign-story-dialogue is-modal">
+      <StoryCardBody data={data} onChoose={onChoose} />
+    </section>
+  );
+}
+
 function StoryDirectorEmptyCard() {
   return (
     <section className="campaign-panel campaign-wide-panel campaign-solo-notice campaign-story-card campaign-story-dialogue is-empty">
@@ -125,18 +167,30 @@ function StoryDirectorEmptyCard() {
   );
 }
 
-function StoryRouteMap({ routes }: { routes: readonly StoryRouteChoice[] }) {
+function StoryRouteMap({
+  routes,
+  onChoose
+}: {
+  routes: readonly StoryRouteChoice[];
+  onChoose: (index: number) => void;
+}) {
   return (
     <div className="campaign-story-route-map">
       <div className="campaign-section-title">Route Choices</div>
       {routes.map((route) => (
-        <StoryRouteCard key={route.index} route={route} />
+        <StoryRouteCard key={route.index} route={route} onChoose={onChoose} />
       ))}
     </div>
   );
 }
 
-function StoryRouteCard({ route }: { route: StoryRouteChoice }) {
+function StoryRouteCard({
+  route,
+  onChoose
+}: {
+  route: StoryRouteChoice;
+  onChoose: (index: number) => void;
+}) {
   const cls = ["campaign-story-route"];
   if (route.isRecommended) cls.push("is-recommended");
   const indexLabel = String(route.index + 1).padStart(2, "0");
@@ -147,19 +201,13 @@ function StoryRouteCard({ route }: { route: StoryRouteChoice }) {
         <strong>{route.label}</strong>
         {route.isRecommended && <small>Suggested</small>}
       </div>
-      <div
-        className="campaign-consequence-preview-bridge"
-        dangerouslySetInnerHTML={{ __html: route.consequencePreviewHtml }}
-      />
+      <div className="campaign-consequence-preview-bridge">
+        <ConsequencePreview data={route.consequencePreview} />
+      </div>
       <button
         className={`campaign-action ${route.isRecommended ? "primary" : "quest"}`}
         title="Choose this route and commit its listed consequences"
-        onClick={() =>
-          dispatchCampaignAction("story-apply-choice", {
-            id: route.cardId,
-            choice: route.index
-          })
-        }
+        onClick={() => onChoose(route.index)}
       >
         Choose Route {route.index + 1}
       </button>

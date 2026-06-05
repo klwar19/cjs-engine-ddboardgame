@@ -168,35 +168,61 @@ file is deleted and is no longer an active bridge or extension point.
   now-unused marker branches from `htmlIslandActions.ts`, then `npm test` + `tsc
   --noEmit` + `npm run build` + `npm run size:check` before committing.
 
-  **Independent, lower-value cleanup (no action strings involved) — NOT YET DONE,
-  deliberately deferred as a cohesive unit.** The remaining display-only
-  HTML-string islands could move to JSX for consistency — `cui-hub-tab.ts`
-  (`renderConsequencePreview` / `renderFlavorTrail`), `cui-controls.ts`
-  (`renderInlinePurpose`), and the story-director beat modal
-  (`story-director-modals.ts` + `renderStoryDirectorCardHtml`, wired by
-  `data-story-modal-choice`). This is purely cosmetic: none emit
-  `data-campaign-action`, so it does NOT affect the action-string / forwarder
-  surface (Part A above already fully retired both forwarders).
+  **Part B — display-only HTML-string island cleanup** ✅ DONE (one cohesive
+  commit). The three display-only islands this section scoped (inline purpose,
+  consequence preview, flavor trail — plus the story beat modal card that
+  embedded them) are now JSX components reading typed data; the HTML-string
+  emitters are deleted. None emitted `data-campaign-action`, so this never
+  touched the action-string / forwarder surface (Part A retired both
+  forwarders). (Other `dangerouslySetInnerHTML` islands remain by design — the
+  ResultPanels loot / combat-consequence / pulse / battle-context / party-summary
+  fragments and the world-map SVG; those are out of this section's scope.)
 
-  **Consumer audit (why this is all-or-nothing):**
-  - `renderInlinePurpose` and `renderFlavorTrail` are **React-only** (consumed as
-    `*Html` fields by `tabs/data/hub.ts` + `tabs/data/resultPanels.ts`, rendered
-    via `dangerouslySetInnerHTML` in the panels). Cleanly portable on their own.
-  - `renderConsequencePreview` is **shared**: the same React data bridges AND the
-    **imperative** beat modal (`action-handlers/story-director-card.ts`
-    `renderStoryDirectorCardHtml` → `story-director-modals.ts`, plus the manual
-    event builder) consume its HTML. So it can't become a pure JSX component
-    without also React-ifying those imperative modals (the third bullet).
-  - Because all three fields render side-by-side in `ResultPanels` /
-    `StoryDirectorPanels` / `HubTabs` / `SideContent`, porting only the React-only
-    two would leave a sibling field still on `dangerouslySetInnerHTML` — messier
-    than today's uniform HTML-string seam. Recommended as one focused commit:
-    add `<ConsequencePreview>` / `<FlavorTrail>` / `<InlinePurpose>` JSX, have the
-    `tabs/data/*` builders emit their structured props instead of `*Html`, convert
-    the consuming panels, React-ify the beat modal + manual-event builder to a
-    portal that reuses the existing `StoryDirectorPanels` card JSX, then delete the
-    HTML helpers. Verify via VR snapshot parity (the rendered DOM should be
-    byte-identical) + a real-browser pass on the story/quest/event panels.
+  - **New JSX (`src/campaign/tabs/ConsequenceViews.tsx`).** `<InlinePurpose>` /
+    `<ConsequencePreview>` / `<FlavorTrail>` render the exact element tree /
+    classes / text the old emitters produced (all three containers are
+    grid/flex with `gap`, so the whitespace-free JSX is layout-identical).
+  - **Structured data, not `*Html` strings.** The tone/consequence math stays in
+    `util/cui-hub-tab.ts` as HTML-free builders: `consequencePreviewData` →
+    `ConsequencePreviewData` (tone/label/title/text/lines) and `flavorTrailData`
+    → `FlavorTrailData | null`; `util/cui-controls.ts` exposes `toolPurpose` (the
+    purpose taxonomy lookup). `renderConsequencePreview` / `renderFlavorTrail` /
+    `renderInlinePurpose` are **deleted**. The typed data builders
+    (`tabs/data/resultPanels.ts` EventResult/Oracle/SoloNotice,
+    `tabs/data/hub.ts` SideCard/SideForge/OracleForge, `tabs/data/storyDirector.ts`
+    routes) now emit a purpose **key**, a `FlavorTrailData`, and a
+    `ConsequencePreviewData` (list), importing the builders directly instead of
+    the `window.CJS.CampaignUIInternal.HubTab` namespace hop. The `HubTab`
+    namespace keeps only the pure math still read cross-module by overview's
+    town-roll float + the manual event builder's rumor list (`operationTone` /
+    `consequenceSummary` / `cardChoiceOps` / `openRumors` / `isRumorOpen`).
+  - **Consumers (`ResultPanels` / `SideContent` / `CampaignHubTabs` /
+    `StoryDirectorPanels`)** render the components inside the SAME structural
+    wrapper divs (`campaign-inline-purpose-bridge` etc.) — kept deliberately so
+    the DOM stays byte-identical and no flex/grid-`gap` layout shifts (the outer
+    result panels are block-flow and unverified for child-combinator CSS). The
+    nullable cases (compact side cards, empty flavor trails) guard on the data,
+    matching the old `HtmlBridge`'s "render nothing when empty" semantics.
+  - **Story beat modal React-ified.** `action-handlers/story-director-modals.ts`
+    now mounts the JSX `<StoryBeatModalBody>` (`tabs/StoryBeatModal.tsx`) via
+    `createRoot` into the shared `CJS.UI.openModal` (the party-sheet / editor-picker
+    pattern; `onClose` unmounts; react + the card JSX are lazy-imported so they
+    stay out of the boot chunk). It reuses `<StoryBeatCard>` — the `is-modal`
+    variant of the storyDirector tab's `<StoryDirectorCard>`, factored onto a
+    shared `StoryCardBody`; route clicks call `onChoose(index)` so the modal
+    closes before dispatching `story-apply-choice` through the runtime. The
+    `renderStoryDirectorCardHtml` island (`action-handlers/story-director-card.ts`)
+    + the `data-story-modal-choice` click delegate are **deleted**. (The manual
+    event builder was NOT a consumer — it only reads `HubTab.openRumors` — so it
+    was untouched, narrowing the original "+ manual-event builder" scope.)
+  - **Verification.** All 40 VR snapshots pass **byte-identical** (no re-baseline)
+    — the shared normalizer converges the old HTML-island output and the new JSX
+    output, proving DOM parity across storyDirector / overview / event tabs /
+    side+oracle forge / maps. `npm test` (24 files), `tsc --noEmit`, `npm run build`
+    (campaign entry 273 KB < 300), and `npm run size:check` are green (baseline
+    refreshed for the 2 new chunks + Part A's tab chunks). **Still recommended:**
+    a real-browser pass on the story beat modal — it is opened imperatively and is
+    not VR-covered (same caveat as combat canvas / QTE timing).
 - [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
   (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
   react-dom/client and drives the live wiring: boot, chrome render, sub-tab

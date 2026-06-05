@@ -70,6 +70,8 @@ import { CampaignOverviewTab } from "../../src/campaign/tabs/CampaignOverviewTab
 
 import { QuestRow } from "../../src/campaign/tabs/QuestRow";
 import { getQuestRowData } from "../../src/campaign/tabs/data/questRow";
+import { StoryBeatModalBody } from "../../src/campaign/tabs/StoryBeatModal";
+import { storyDirectorCardData } from "../../src/campaign/tabs/data/storyDirector";
 
 import { campaignStore } from "../../src/campaign/store";
 import type { CampaignStateSnapshot } from "../../src/campaign/store";
@@ -696,5 +698,9 @@ export const cases: readonly VrCase[] = [
   tab("leaf-questrow-active", <QuestRow row={getQuestRowData(fixtureQuests.q_relic)} />),
   tab("leaf-questrow-resolved", <QuestRow row={getQuestRowData(fixtureQuests.q_bandits, { resolved: true })} />),
   // Farm focus-bonus QTE window (active) — the CSS-animated lane structure.
-  tab("leaf-farm-qte", <CampaignFarmTab state={farmQteState} />)
+  tab("leaf-farm-qte", <CampaignFarmTab state={farmQteState} />),
+  // Story beat modal body (Part B) — pins the `is-modal` card variant + hint
+  // that only the imperative modal renders (no tab covers it). Reuses the same
+  // beat fixture the storyDirector tab's last card does.
+  tab("leaf-storybeat-modal", <StoryBeatModalBody data={storyDirectorCardData(directorSnapshot.last)!} onChoose={() => undefined} />)
 ];

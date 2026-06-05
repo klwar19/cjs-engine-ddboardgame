@@ -13,13 +13,12 @@
 // had zero callers; dropping them removes the stringly-typed action surface.
 //
 // What remains is the "purpose" taxonomy: it classifies a hub-pulse / oracle /
-// event / rumor card by the kind of commitment it represents to the GM, and
-// renders the display-only inline-purpose blurb. These are consumed via ESM
-// named imports by the typed data builders (`tabs/data/hub.ts`,
-// `tabs/data/resultPanels.ts`). `renderInlinePurpose` returns a display-only
-// HTML string (no actions) surfaced through `dangerouslySetInnerHTML`.
-
-import { esc, escAttr } from "./cui-utils";
+// event / rumor card by the kind of commitment it represents to the GM. These
+// are consumed via ESM named imports by the typed data builders
+// (`tabs/data/hub.ts`, `tabs/data/resultPanels.ts`), which emit a purpose key;
+// the JSX `<InlinePurpose>` component (`tabs/ConsequenceViews.tsx`) resolves
+// it via `toolPurpose` and renders the blurb. Part B retired the
+// `renderInlinePurpose` HTML-string emitter (display-only, no actions).
 
 // ── Tool / purpose taxonomy ─────────────────────────────────────────
 // The "purpose" classifies a hub-pulse / oracle / event / rumor card by
@@ -99,17 +98,11 @@ export function purposeKeyForCard(card: CardLike = {}): ToolPurposeKey {
   return "hubPulse";
 }
 
-// Display-only inline-purpose blurb (no actions). Consumed via
-// `dangerouslySetInnerHTML` by the typed data builders that previously
-// reached for `Controls.renderInlinePurpose`.
-export function renderInlinePurpose(key: string): string {
-  const item = TOOL_PURPOSES[key as ToolPurposeKey] || TOOL_PURPOSES.oracle;
-  return `
-      <div class="campaign-purpose-inline">
-        <span class="campaign-impact-badge is-${escAttr(purposeTone(key))}">${esc(item.label)}</span>
-        <span><b>${esc(item.role)}.</b> ${esc(item.flow)} ${esc(item.commit)}</span>
-      </div>
-    `;
+// Resolve a purpose key to its taxonomy entry (defaults to oracle). The JSX
+// `<InlinePurpose>` component renders the label/role/flow/commit blurb; this
+// replaced the `renderInlinePurpose` HTML-string emitter in Part B.
+export function toolPurpose(key: string): ToolPurpose {
+  return TOOL_PURPOSES[key as ToolPurposeKey] || TOOL_PURPOSES.oracle;
 }
 
 // `renderRumorPurpose` removed in Phase K.3 — the rumor-purpose blurb

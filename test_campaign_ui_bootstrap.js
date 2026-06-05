@@ -86,7 +86,7 @@ sandbox.window.CJS.CampaignUIInternal.Log = {
 sandbox.window.CJS.CampaignUIInternal.Controls = {
   purposeTone: () => 'flavor',
   purposeKeyForCard: () => 'hubPulse',
-  renderInlinePurpose: () => ''
+  toolPurpose: () => ({ label: '', role: '', use: '', flow: '', commit: '' })
 };
 // Modals: ported to src/campaign/util/cui-modals.ts.
 sandbox.window.CJS.CampaignUIInternal.Modals = {
