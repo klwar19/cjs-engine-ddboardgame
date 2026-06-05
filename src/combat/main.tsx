@@ -15,7 +15,7 @@ import "../../js/services/dev-console.js";
 import "../engine/effects/value-calc";
 import "../engine/effects/conditions";
 import "../engine/effects/effect-registry";
-import "../../js/effects/effect-resolver.js";
+import "../engine/effects/effect-resolver";
 import "../../js/grid/grid-engine.js";
 import "../../js/grid/pathfinding.js";
 import "../../js/grid/aoe.js";
