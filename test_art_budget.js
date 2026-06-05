@@ -13,6 +13,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+// Tier 3: engine modules move js/<area>/<mod>.js -> src/engine/<area>/<mod>.ts
+// one at a time. Resolve source-text reads through the shared resolver so a
+// port is transparent to these regex checks.
+const { resolveEngine } = require('./tools/test/engine-source.cjs');
 
 let pass = 0;
 let fail = 0;
@@ -341,13 +345,13 @@ ok(
   /worldThemeHomeBackdrop\(world\.id\s*\|\|\s*theme\.id/.test(zombieSource)
 );
 
-const worldMapSource = fs.readFileSync(path.join(ROOT, 'js/campaign/campaign-world-map.js'), 'utf8');
+const worldMapSource = fs.readFileSync(resolveEngine('campaign/campaign-world-map').path, 'utf8');
 ok(
   'legacy travel-map fallback repairs stale Earth theme art',
   /_worldThemeImage\(\s*worldId,\s*map\.visualBackdrop/.test(worldMapSource)
 );
 
-const storyScenesSource = fs.readFileSync(path.join(ROOT, 'js/campaign/campaign-story-scenes.js'), 'utf8');
+const storyScenesSource = fs.readFileSync(resolveEngine('campaign/campaign-story-scenes').path, 'utf8');
 ok(
   'legacy VN scene fallback repairs stale Earth theme art',
   /_worldThemeImage\(worldId,\s*world\?\.storyModeTheme\?\.backdrop/.test(storyScenesSource)

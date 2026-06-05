@@ -1,9 +1,15 @@
-// campaign-story-scenes.js
-// Full-screen VN scenes and deferred scenario-node entry handling.
+// campaign-story-scenes.ts — Tier 3 TS port of js/campaign/campaign-story-scenes.js
+// (engine cluster: campaign). Full-screen VN scenes and deferred scenario-node
+// entry handling: scene rendering, choice availability/preview, pending-node
+// entry, and after-battle node capture. Reads window.CJS.* lazily.
+//
+// Exports `CampaignStoryScenes` and installs window.CJS.CampaignStoryScenes. Body
+// verbatim from the legacy IIFE; only `: any` / DOM casts added where tsc
+// (strict:false) requires them.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignStoryScenes = (() => {
+export const CampaignStoryScenes = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -43,7 +49,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return false;
   }
 
-  function _showSmallEvent(scene, context = {}) {
+  function _showSmallEvent(scene, context: any = {}) {
     const lines = Array.isArray(scene.lines) ? scene.lines : [];
     const text = lines.map((line) => {
       const speaker = (line.speaker || '').trim();
@@ -61,7 +67,7 @@ window.CJS.CampaignStoryScenes = (() => {
     }
   }
 
-  function normalizeScene(scene = {}) {
+  function normalizeScene(scene: any = {}) {
     const lines = Array.isArray(scene.lines) ? scene.lines : (Array.isArray(scene.story_sequence) ? scene.story_sequence : []);
     const choices = Array.isArray(scene.choices) ? scene.choices : [];
     return {
@@ -105,7 +111,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return scene ? normalizeScene(scene) : null;
   }
 
-  function playScene(sceneInput, options = {}) {
+  function playScene(sceneInput, options: any = {}) {
     if (_ui.active || typeof document === 'undefined' || !document.body) return false;
     const scene = typeof sceneInput === 'string' ? getScene(sceneInput) : normalizeScene(sceneInput);
     if (!scene) return false;
@@ -118,18 +124,18 @@ window.CJS.CampaignStoryScenes = (() => {
     return true;
   }
 
-  function playSceneById(sceneId, options = {}) {
+  function playSceneById(sceneId, options: any = {}) {
     return playScene(getScene(sceneId), options);
   }
 
-  function shouldDeferNodeEntry(node = {}, mapId = '') {
+  function shouldDeferNodeEntry(node: any = {}, mapId = '') {
     if (!node?.id) return false;
     if (!_nodeHasEntryFlow(node)) return false;
     if (_entryPolicy(node) === 'repeat') return true;
     return !isNodeEntryResolved(mapId, node.id, node);
   }
 
-  function prepareNodeEntry(node = {}, map = {}, options = {}) {
+  function prepareNodeEntry(node: any = {}, map: any = {}, options: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     const mapId = options.mapId || run?.mapId || map?.id;
@@ -180,7 +186,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return true;
   }
 
-  function finishPendingNodeEntry(options = {}) {
+  function finishPendingNodeEntry(options: any = {}) {
     const pending = CS().getState()?.activeScenarioRun?.pendingNodeEntry;
     if (!pending) return false;
     const node = _nodeForPending(pending);
@@ -218,7 +224,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return true;
   }
 
-  function choiceAvailability(choice = {}, state = CS().getState()) {
+  function choiceAvailability(choice: any = {}, state = CS().getState()) {
     const reasons = [];
     const flags = state?.flags || {};
     for (const flag of _flagList(choice.requiresFlags || choice.requiresFlag)) {
@@ -234,7 +240,7 @@ window.CJS.CampaignStoryScenes = (() => {
     const blocksPersonas = _flagList(choice.blocksPersonas || choice.blocksPersona);
     if (requiresPersonas.length || blocksPersonas.length) {
       const active = new Set();
-      for (const member of Object.values(state?.party || {})) {
+      for (const member of Object.values<any>(state?.party || {})) {
         if (member.activePersona) active.add(member.activePersona);
       }
       if (requiresPersonas.length && !requiresPersonas.some((pid) => active.has(pid))) {
@@ -249,13 +255,13 @@ window.CJS.CampaignStoryScenes = (() => {
     return { ok: reasons.length === 0, reasons };
   }
 
-  function previewChoiceOps(sceneInput = {}, choiceInput = {}) {
+  function previewChoiceOps(sceneInput: any = {}, choiceInput: any = {}) {
     const scene = normalizeScene(sceneInput);
     const choice = normalizeScene({ choices: [choiceInput] }).choices[0] || choiceInput;
     return _choiceOps(scene, choice);
   }
 
-  function captureNodeAfterBattle(state, pending = {}, outcome = 'victory') {
+  function captureNodeAfterBattle(state, pending: any = {}, outcome = 'victory') {
     if (String(outcome || '').toLowerCase() !== 'victory') return false;
     const nodeId = pending.nodeId;
     const mapId = pending.mapId || state.activeScenarioRun?.mapId;
@@ -267,7 +273,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return _captureNodeMutable(state, mapId, node, { source: 'battle_victory' });
   }
 
-  function _showScene(scene, context = {}) {
+  function _showScene(scene, context: any = {}) {
     const normalized = normalizeScene(scene);
     _ui.active = true;
     _ui.scene = normalized;
@@ -310,7 +316,7 @@ window.CJS.CampaignStoryScenes = (() => {
 
     const backdrop = overlay.querySelector('.campaign-vn-backdrop');
     const bg = normalized.background || _storyThemeBackdrop();
-    if (bg) backdrop.style.backgroundImage = `url('${_cssUrl(bg)}')`;
+    if (bg) (backdrop as HTMLElement).style.backgroundImage = `url('${_cssUrl(bg)}')`;
 
     document.body.appendChild(overlay);
     _ui.overlay = overlay;
@@ -345,9 +351,10 @@ window.CJS.CampaignStoryScenes = (() => {
       });
     }
     overlay.addEventListener('click', (event) => {
-      if (event.target.closest('button')) return;
-      if (event.target.closest('.campaign-vn-choices')) return;
-      if (event.target.closest('.campaign-vn-history')) return;
+      const t = event.target as HTMLElement;
+      if (t.closest('button')) return;
+      if (t.closest('.campaign-vn-choices')) return;
+      if (t.closest('.campaign-vn-history')) return;
       advance();
     });
     overlay.addEventListener('keydown', (event) => {
@@ -473,7 +480,7 @@ window.CJS.CampaignStoryScenes = (() => {
     });
   }
 
-  function _applySceneChoice(scene, choice = {}, context = {}) {
+  function _applySceneChoice(scene, choice: any = {}, context: any = {}) {
     const availability = choiceAvailability(choice);
     if (!availability.ok) return;
     const ops = _choiceOps(scene, choice);
@@ -503,7 +510,7 @@ window.CJS.CampaignStoryScenes = (() => {
     else _completeStandaloneScene(context, { reason: 'choice', sceneId: scene.id, choiceId: choice.id || '' });
   }
 
-  function _choiceOps(scene, choice = {}) {
+  function _choiceOps(scene, choice: any = {}) {
     const ops = [];
     const cost = Number(choice.jpCost || choice.cost?.jp || 0);
     if (cost > 0) ops.push({ op: 'take_jp', amount: cost });
@@ -613,7 +620,7 @@ window.CJS.CampaignStoryScenes = (() => {
     }, { source: 'node_capture' });
   }
 
-  function _captureNodeMutable(state, mapId, node, meta = {}) {
+  function _captureNodeMutable(state, mapId, node, meta: any = {}) {
     const mapState = _ensureMapState(state, mapId);
     if (mapState.captured?.[node.id]) return false;
     const capture = node.capture || {};
@@ -651,14 +658,14 @@ window.CJS.CampaignStoryScenes = (() => {
     }, { chance: node.campfire ? 0.85 : 0.35 });
   }
 
-  function _logObjectiveIfReached(node, pending = {}) {
+  function _logObjectiveIfReached(node, pending: any = {}) {
     return window.CJS.ScenarioRunner?.handleLocationEntry?.('node', node, {
       mapId: pending.mapId,
       nodeId: node.id
     });
   }
 
-  function _completeStandaloneScene(context = {}, details = {}) {
+  function _completeStandaloneScene(context: any = {}, details: any = {}) {
     if (typeof context.onComplete !== 'function') return;
     try {
       context.onComplete({
@@ -671,7 +678,7 @@ window.CJS.CampaignStoryScenes = (() => {
     }
   }
 
-  function _recordStoryChoice(scene, choice = {}) {
+  function _recordStoryChoice(scene, choice: any = {}) {
     CS().mutate((state) => {
       state.storyChoices = state.storyChoices || [];
       state.storyChoices.unshift({
@@ -713,7 +720,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return null;
   }
 
-  function _campfireScene(node = {}) {
+  function _campfireScene(node: any = {}) {
     return normalizeScene({
       id: `campfire_${node.id}`,
       title: node.title || 'Campfire',
@@ -728,7 +735,7 @@ window.CJS.CampaignStoryScenes = (() => {
     });
   }
 
-  function _nodeHasEntryFlow(node = {}) {
+  function _nodeHasEntryFlow(node: any = {}) {
     return !!(
       node.storySceneId ||
       node.entryPolicy ||
@@ -740,18 +747,18 @@ window.CJS.CampaignStoryScenes = (() => {
     );
   }
 
-  function _entryPolicy(node = {}) {
+  function _entryPolicy(node: any = {}) {
     return node.entryPolicy || ((node.capture || node.storySceneId || ONCE_KINDS.has(node.kind)) ? 'once' : 'repeat');
   }
 
-  function isNodeEntryResolved(mapId, nodeId, node = {}, state = CS().getState()) {
+  function isNodeEntryResolved(mapId, nodeId, node: any = {}, state = CS().getState()) {
     if (!mapId || !nodeId) return false;
     if (_entryPolicy(node) === 'repeat') return false;
     const mapState = state?.mapState?.[mapId] || {};
     return !!(mapState.entryResolved?.[nodeId] || mapState.captured?.[nodeId]);
   }
 
-  function _nodeHasBattle(node = {}) {
+  function _nodeHasBattle(node: any = {}) {
     return !!(node.randomBattle || node.battleSetIds?.length || node.encounterIds?.length || node.encounterId);
   }
 
@@ -782,9 +789,9 @@ window.CJS.CampaignStoryScenes = (() => {
     return map;
   }
 
-  function _findEventById(ids = []) {
+  function _findEventById(ids: any[] = []) {
     const wanted = new Set(ids.filter(Boolean));
-    for (const table of Object.values(CS().getContent?.().campaignEvents || {})) {
+    for (const table of Object.values<any>(CS().getContent?.().campaignEvents || {})) {
       for (const entry of table.entries || []) {
         if (!wanted.has(entry.id)) continue;
         return {
@@ -829,7 +836,7 @@ window.CJS.CampaignStoryScenes = (() => {
     void scene;
   }
 
-  function _portraitForLine(line = {}, character = null) {
+  function _portraitForLine(line: any = {}, character = null) {
     if (line.portrait) return line.portrait;
     const spriteId = String(line.sprite || '').trim();
     const expression = String(line.expression || line.mood || '').trim();
@@ -851,7 +858,7 @@ window.CJS.CampaignStoryScenes = (() => {
     return character?.portrait || '';
   }
 
-  function _portraitFromPool(pool = {}, candidateKeys = [], context = {}) {
+  function _portraitFromPool(pool: any = {}, candidateKeys: any[] = [], context: any = {}) {
     for (const key of candidateKeys) {
       if (typeof pool[key] === 'string') return pool[key];
       const nested = pool[key];
@@ -950,11 +957,11 @@ window.CJS.CampaignStoryScenes = (() => {
     return text;
   }
 
-  function _lineStyle(line = {}) {
+  function _lineStyle(line: any = {}) {
     return String(line.style || '').toLowerCase();
   }
 
-  function _checkToOperation(check = {}) {
+  function _checkToOperation(check: any = {}) {
     return {
       op: check.type === 'qte_or_dice' ? 'run_qte_or_dice' : 'roll_check',
       stat: check.stat,
@@ -985,7 +992,7 @@ window.CJS.CampaignStoryScenes = (() => {
     if (!value) return [];
     if (Array.isArray(value)) return value.filter(Boolean);
     if (typeof value === 'string') return [value];
-    if (typeof value === 'object') return Object.entries(value).filter(([, enabled]) => !!enabled).map(([flag]) => flag);
+    if (typeof value === 'object') return Object.entries<any>(value).filter(([, enabled]) => !!enabled).map(([flag]) => flag);
     return [];
   }
 
@@ -1026,3 +1033,6 @@ window.CJS.CampaignStoryScenes = (() => {
     captureNodeAfterBattle
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignStoryScenes = CampaignStoryScenes;
