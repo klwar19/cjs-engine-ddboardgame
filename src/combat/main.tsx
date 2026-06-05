@@ -16,7 +16,7 @@ import "../engine/effects/value-calc";
 import "../engine/effects/conditions";
 import "../engine/effects/effect-registry";
 import "../engine/effects/effect-resolver";
-import "../../js/grid/grid-engine.js";
+import "../engine/grid/grid-engine";
 import "../engine/grid/pathfinding";
 import "../engine/grid/aoe";
 import "../engine/grid/map-generator";

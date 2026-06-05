@@ -25,7 +25,6 @@
     "js/campaign/campaign-world-events.js",
     "js/campaign/guild-trivia.js",
     "js/campaign/pocket-haven-facilities.js",
-    "js/grid/grid-engine.js",
     "js/grid/grid-renderer.js",
     "js/minigames/cooking-minigame.js",
     "js/minigames/fishing-minigame.js",
