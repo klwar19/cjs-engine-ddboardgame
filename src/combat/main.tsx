@@ -4,7 +4,7 @@ import "../engine/core/formulas";
 import "../engine/core/dice";
 import "../engine/core/undo-manager";
 import "../engine/core/state-tools";
-import "../../js/core/data-store.js";
+import "../engine/core/data-store";
 import "../../js/core/content-manager.js";
 import "../engine/core/skill-resolver";
 import "../../js/services/persona-service.js";

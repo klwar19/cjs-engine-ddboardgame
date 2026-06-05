@@ -1,0 +1,899 @@
+// data-store.ts — Tier 3 TS port of js/core/data-store.js (engine cluster:
+// core). Central data manager: single source of truth for all game data.
+// Handles CRUD for all entity types, ID generation, cross-reference
+// validation, import/export JSON, dirty tracking.
+// Reads: window.CJS.CONST (ID_PREFIXES), window.CJS.UndoManager,
+//        window.CJS.StateTools, window.CJS.ContentManager, window.CJS.SkillResolver.
+// Used by: all editor modules, combat startup, stat-compiler.
+//
+// Exports the typed `DataStore: CJSDataStore` AND installs window.CJS.DataStore
+// as a side effect. The store is a dynamic content bag (entity type → id →
+// record), so `_data` is typed Record<string, any>; bodies are verbatim.
+
+const C  = () => window.CJS.CONST;
+const UM = () => window.CJS.UndoManager;
+const ST = () => window.CJS.StateTools;
+
+// Push to undo stack if manager is loaded and enabled.
+// Skips array types (quips, quizBank) — those aren't undoable entities.
+function _undo(action, type, id, before, after) {
+  if (!UM() || Array.isArray(_data[type])) return;
+  UM().push(action, type, id, before, after);
+}
+
+// ── INTERNAL STATE ─────────────────────────────────────────────────
+let _data: Record<string, any> = {
+  effects:    {},   // id → effect object
+  skills:     {},   // id → skill object
+  personas:   {},   // id → persona (world-specific character skin)
+  items:      {},   // id → item object
+  food:       {},   // id -> food object
+  materials:  {},   // id -> material object
+  crafting:   {},   // id -> crafting recipe object
+  crops:      {},   // id -> crop object
+  shops:      {},   // id -> shop object
+  zones:      {},   // id -> zone object
+  stories:    {},   // id -> story object
+  campaigns:  {},   // id -> authored campaign definition
+  scenarios:  {},   // id -> authored campaign scenario
+  scenarioMaps: {}, // id -> authored campaign map
+  travelMaps: {}, // id -> authored world/zone navigation map
+  campaignEvents: {}, // id -> campaign event table
+  campaignQuests: {}, // id -> campaign quest template collection
+  campaignProfiles: {}, // id -> world/chapter carryover profile
+  pocketHavenRules: {}, // id -> portable base rules
+  sideContentPacks: {}, // id -> side content pack index
+  campaignHubs: {}, // id -> living hub definition
+  questChains: {}, // id -> side quest chain template set
+  battleSets: {}, // id -> GM battle set card collection
+  mapSeeds: {}, // id -> node map seed collection
+  oracleTables: {}, // id -> oracle keyword/prompt table
+  storyDirectorPacks: {}, // id -> story director arc/beat/clue pack
+  worldActivityPacks: {}, // id -> world-specific activity loops
+  worlds:     {},   // id -> world meta object
+  passives:   {},   // id → passive object
+  jobs:       {},   // id → job (class) object
+  characters: {},   // id → character object
+  monsters:   {},   // id → monster object
+  encounters: {},   // id → encounter object
+  statuses:   {},   // id → status definition
+  weathers:   {},   // id → weather definition (global battlefield environment)
+  worldEvents: {},  // id → rotating world event (drives shop / farming / drop modifiers)
+  fishCatalog: {},  // id → fish definition (biome-tagged catchable item)
+  quips:      [],   // array of quip fragments
+  quizBank:   [],   // array of quiz questions
+  triviaBank: []    // array of lore / world history / character trivia questions
+};
+
+let _dirty = false;
+let _counters: Record<string, number> = {};  // { eff: 1, skl: 1, ... } for ID generation
+let _listeners: Array<(change: any) => void> = [];
+
+function _stripMeta(value) {
+  if (Array.isArray(value)) return value.map(_stripMeta);
+  if (!value || typeof value !== 'object') return value;
+
+  const out = {};
+  for (const [key, val] of Object.entries(value)) {
+    if (key.startsWith('_')) continue;
+    out[key] = _stripMeta(val);
+  }
+  return out;
+}
+
+function _emitChange(change) {
+  for (const listener of _listeners) {
+    try { listener(change); }
+    catch (error) { console.error('DataStore listener error:', error); }
+  }
+}
+
+function _clone(value) {
+  return ST()?.clone ? ST().clone(value) : JSON.parse(JSON.stringify(value));
+}
+
+function _applyManifestDefaults(type, record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return record;
+  if (record._origin !== undefined) return record;
+
+  const CM = window.CJS.ContentManager;
+  if (!CM || !CM.getManifest || !CM.buildNewRecord) return record;
+  if (CM.getLoadMode?.() !== 'manifest' || !CM.getManifest()) return record;
+
+  return CM.buildNewRecord(type, record);
+}
+
+function _preserveMetaFields(previous, next) {
+  if (!previous || !next || typeof next !== 'object' || Array.isArray(next)) return next;
+
+  const merged = { ...next };
+  for (const [key, value] of Object.entries(previous)) {
+    if (!key.startsWith('_')) continue;
+    if (merged[key] === undefined) merged[key] = value;
+  }
+  return merged;
+}
+
+// ── NORMALIZATION ──────────────────────────────────────────────────
+// Phase 9: accept legacy string-form skill refs on load/import,
+// but keep canonical object form in store/export.
+function _normalizeSkillEntry(entry) {
+  const SR = window.CJS.SkillResolver;
+  if (SR && SR.normalize) return SR.normalize(entry);
+
+  if (!entry) return null;
+  if (typeof entry === 'string') {
+    return { skillId: entry, overrides: {}, level: 1 };
+  }
+  if (typeof entry === 'object' && entry.skillId) {
+    return {
+      skillId: entry.skillId,
+      overrides: entry.overrides || {},
+      level: entry.level || 1
+    };
+  }
+  return null;
+}
+
+function _normalizeSkillEntries(skills) {
+  if (!Array.isArray(skills)) return skills;
+  return skills.map(_normalizeSkillEntry).filter(Boolean);
+}
+
+function _normalizeForStorage(type, obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+
+  const normalized = { ...obj };
+  if (type === 'characters' || type === 'monsters') {
+    normalized.skills = _normalizeSkillEntries(normalized.skills || []);
+  }
+  return normalized;
+}
+
+function _normalizeCollection(type, collection) {
+  const out = {};
+  for (const [id, obj] of Object.entries(collection || {})) {
+    const normalized = _normalizeForStorage(type, obj);
+    if (normalized && typeof normalized === 'object' && !Array.isArray(normalized)) {
+      normalized.id = normalized.id || id;
+    }
+    out[id] = _stripMeta(normalized);
+  }
+  return out;
+}
+
+function _exportSnapshot() {
+  return {
+    effects:    _stripMeta({ ..._data.effects }),
+    skills:     _stripMeta({ ..._data.skills }),
+    items:      _stripMeta({ ..._data.items }),
+    food:       _stripMeta({ ..._data.food }),
+    materials:  _stripMeta({ ..._data.materials }),
+    crafting:   _stripMeta({ ..._data.crafting }),
+    crops:      _stripMeta({ ..._data.crops }),
+    shops:      _stripMeta({ ..._data.shops }),
+    zones:      _stripMeta({ ..._data.zones }),
+    stories:    _stripMeta({ ..._data.stories }),
+    campaigns:  _stripMeta({ ..._data.campaigns }),
+    scenarios:  _stripMeta({ ..._data.scenarios }),
+    scenarioMaps: _stripMeta({ ..._data.scenarioMaps }),
+    travelMaps: _stripMeta({ ..._data.travelMaps }),
+    campaignEvents: _stripMeta({ ..._data.campaignEvents }),
+    campaignQuests: _stripMeta({ ..._data.campaignQuests }),
+    campaignProfiles: _stripMeta({ ..._data.campaignProfiles }),
+    pocketHavenRules: _stripMeta({ ..._data.pocketHavenRules }),
+    sideContentPacks: _stripMeta({ ..._data.sideContentPacks }),
+    campaignHubs: _stripMeta({ ..._data.campaignHubs }),
+    questChains: _stripMeta({ ..._data.questChains }),
+    battleSets: _stripMeta({ ..._data.battleSets }),
+    mapSeeds: _stripMeta({ ..._data.mapSeeds }),
+    oracleTables: _stripMeta({ ..._data.oracleTables }),
+    storyDirectorPacks: _stripMeta({ ..._data.storyDirectorPacks }),
+    worldActivityPacks: _stripMeta({ ..._data.worldActivityPacks }),
+    worlds:     _stripMeta({ ..._data.worlds }),
+    passives:   _stripMeta({ ..._data.passives }),
+    jobs:       _stripMeta({ ..._data.jobs }),
+    personas:   _stripMeta({ ..._data.personas }),
+    characters: _normalizeCollection('characters', _data.characters),
+    monsters:   _normalizeCollection('monsters', _data.monsters),
+    encounters: _stripMeta({ ..._data.encounters }),
+    statuses:   _stripMeta({ ..._data.statuses }),
+    weathers:   _stripMeta({ ..._data.weathers }),
+    quips:      _stripMeta([..._data.quips]),
+    quizBank:   _stripMeta([..._data.quizBank]),
+    triviaBank: _stripMeta([..._data.triviaBank])
+  };
+}
+
+// ── ID GENERATION ──────────────────────────────────────────────────
+function _nextId(prefix) {
+  if (!_counters[prefix]) _counters[prefix] = 1;
+
+  // Find next available ID
+  const collection = _getCollectionByPrefix(prefix);
+  let id;
+  do {
+    id = `${prefix}_${String(_counters[prefix]).padStart(3, '0')}`;
+    _counters[prefix]++;
+  } while (collection && collection[id]);
+
+  return id;
+}
+
+function _getCollectionByPrefix(prefix) {
+  const map = {
+    eff: _data.effects,
+    skl: _data.skills,
+    itm: _data.items,
+    fod: _data.food,
+    mat: _data.materials,
+    rcp: _data.crafting,
+    crp: _data.crops,
+    shp: _data.shops,
+    zon: _data.zones,
+    sto: _data.stories,
+    cmp: _data.campaigns,
+    scn: _data.scenarios,
+    map: _data.scenarioMaps,
+    tmap: _data.travelMaps,
+    evt: _data.campaignEvents,
+    qst: _data.campaignQuests,
+    cpf: _data.campaignProfiles,
+    phr: _data.pocketHavenRules,
+    scp: _data.sideContentPacks,
+    hub: _data.campaignHubs,
+    qch: _data.questChains,
+    bst: _data.battleSets,
+    msd: _data.mapSeeds,
+    orc: _data.oracleTables,
+    sdp: _data.storyDirectorPacks,
+    wap: _data.worldActivityPacks,
+    wld: _data.worlds,
+    pas: _data.passives,
+    prs: _data.personas,
+    chr: _data.characters,
+    mon: _data.monsters,
+    enc: _data.encounters,
+    sts: _data.statuses,
+    wth: _data.weathers,
+    wev: _data.worldEvents,
+    fsh: _data.fishCatalog
+  };
+  return map[prefix] || null;
+}
+
+function _getPrefixForType(type) {
+  return C().ID_PREFIXES[type] || type.substring(0, 3);
+}
+
+// ── GENERIC CRUD ───────────────────────────────────────────────────
+
+function getAll(type) {
+  if (!_data[type]) return {};
+  return { ..._data[type] };
+}
+
+function getAllAsArray(type) {
+  if (!_data[type]) return [];
+  if (Array.isArray(_data[type])) return [..._data[type]];
+  return Object.values(_data[type]);
+}
+
+function get(type, id) {
+  if (!_data[type]) return null;
+  return _data[type][id] || null;
+}
+
+function snapshot(type, id) {
+  if (!type) return _clone(_exportSnapshot());
+  if (!_data[type]) return null;
+  if (arguments.length === 1) return _clone(_data[type]);
+  const value = Array.isArray(_data[type])
+    ? (_data[type][id] ?? null)
+    : (_data[type][id] || null);
+  return _clone(value);
+}
+
+function exists(type, id) {
+  return _data[type] && !!_data[type][id];
+}
+
+function _resolveOwnedSkillAlias(rawSkillId, ownedSkillIds) {
+  const raw = String(rawSkillId || '').trim();
+  if (!raw) return '';
+  const ids = (ownedSkillIds || []).filter(Boolean);
+  if (ids.includes(raw)) return raw;
+  return ids.find((id) => String(id).endsWith(`_${raw}`)) || raw;
+}
+
+// Create: auto-generates ID if not provided. Returns the new ID.
+function create(type, obj) {
+  if (!_data[type]) {
+    console.error(`DataStore.create: unknown type "${type}"`);
+    return null;
+  }
+  if (Array.isArray(_data[type])) {
+    // For arrays (quips, quizBank), just push
+    _data[type].push(obj);
+    _dirty = true;
+    _emitChange({ action: 'create', type, id: _data[type].length - 1, before: null, after: JSON.parse(JSON.stringify(obj)) });
+    return _data[type].length - 1;
+  }
+
+  const singularType = type.replace(/s$/, ''); // "effects" → "effect"
+  const prefix = _getPrefixForType(singularType);
+  const id = obj.id || _nextId(prefix);
+  const withDefaults = _applyManifestDefaults(type, { ...obj, id });
+  const normalized = _normalizeForStorage(type, withDefaults);
+  normalized.id = id;
+  _data[type][id] = normalized;
+  _dirty = true;
+  _undo('create', type, id, null, normalized);
+  _emitChange({ action: 'create', type, id, before: null, after: JSON.parse(JSON.stringify(normalized)) });
+  return id;
+}
+
+// Update: merges new fields into existing object
+function update(type, id, changes) {
+  if (!_data[type] || !_data[type][id]) {
+    console.error(`DataStore.update: ${type}/${id} not found`);
+    return false;
+  }
+  const before = JSON.parse(JSON.stringify(_data[type][id]));
+  const merged = _normalizeForStorage(type, {
+    ..._data[type][id],
+    ...changes,
+    id
+  });
+  merged.id = id; // never allow ID change
+  _data[type][id] = merged;
+  _dirty = true;
+  _undo('update', type, id, before, _data[type][id]);
+  _emitChange({ action: 'update', type, id, before, after: JSON.parse(JSON.stringify(_data[type][id])) });
+  return true;
+}
+
+// Replace: wholesale replace the object (keeps ID)
+function replace(type, id, obj) {
+  if (!_data[type]) return false;
+  const before = _data[type][id] ? JSON.parse(JSON.stringify(_data[type][id])) : null;
+  const seeded = before
+    ? _preserveMetaFields(before, { ...obj, id })
+    : _applyManifestDefaults(type, { ...obj, id });
+  const normalized = _normalizeForStorage(type, seeded);
+  normalized.id = id;
+  _data[type][id] = normalized;
+  _dirty = true;
+  _undo('replace', type, id, before, normalized);
+  _emitChange({ action: 'replace', type, id, before, after: JSON.parse(JSON.stringify(normalized)) });
+  return true;
+}
+
+function remove(type, id) {
+  if (!_data[type] || !_data[type][id]) return false;
+  const before = JSON.parse(JSON.stringify(_data[type][id]));
+  delete _data[type][id];
+  _dirty = true;
+  _undo('remove', type, id, before, null);
+  _emitChange({ action: 'remove', type, id, before, after: null });
+  return true;
+}
+
+// Duplicate: clone an object with a new ID
+function duplicate(type, id) {
+  const original = get(type, id);
+  if (!original) return null;
+  const clone = JSON.parse(JSON.stringify(original));
+  delete clone.id;
+  clone.name = (clone.name || id) + ' (Copy)';
+  return create(type, clone);
+}
+
+// ── SEARCH / FILTER ────────────────────────────────────────────────
+
+function search(type, query) {
+  const items = getAllAsArray(type);
+  if (!query) return items;
+  const q = query.toLowerCase();
+  return items.filter(item => {
+    const searchable = [
+      item.name, item.id, item.description,
+      ...(item.tags || []),
+      item.category, item.trigger, item.action
+    ].filter(Boolean).join(' ').toLowerCase();
+    return searchable.includes(q);
+  });
+}
+
+function filterByTags(type, tags) {
+  if (!tags || tags.length === 0) return getAllAsArray(type);
+  const items = getAllAsArray(type);
+  return items.filter(item =>
+    item.tags && tags.some(t => item.tags.includes(t))
+  );
+}
+
+function filterByCategory(type, category) {
+  const items = getAllAsArray(type);
+  return items.filter(item => item.category === category);
+}
+
+// ── REFERENCE RESOLUTION ───────────────────────────────────────────
+// Get full objects for a list of IDs (with override merging for effects)
+
+function resolveEffectRefs(effectRefs) {
+  // effectRefs = [{ effectId: "burn_dot", overrides: { value: 8 } }, ...]
+  return effectRefs.map(ref => {
+    const master = get('effects', ref.effectId);
+    if (!master) {
+      console.warn(`Effect "${ref.effectId}" not found in master library`);
+      return null;
+    }
+    if (!ref.overrides || Object.keys(ref.overrides).length === 0) {
+      return { ...master };
+    }
+    // Merge overrides
+    return { ...master, ...ref.overrides, id: master.id };
+  }).filter(Boolean);
+}
+
+function resolveSkillRefs(skillIds) {
+  return skillIds.map(id => get('skills', id)).filter(Boolean);
+}
+
+function resolveItemRefs(itemIds) {
+  return itemIds.map(id => get('items', id)).filter(Boolean);
+}
+
+// ── CROSS-REFERENCE VALIDATION ─────────────────────────────────────
+// Checks that all references point to existing entries.
+
+function validate() {
+  const errors = [];
+  const warnings = [];
+  const _effectId = (ref) => typeof ref === 'string' ? ref : (ref?.effectId || ref?.inline?.id);
+  const _hasInlineEffect = (ref, effectId) => {
+    const inline = typeof ref === 'object' ? ref?.inline : null;
+    return !!(inline && (!inline.id || !effectId || inline.id === effectId));
+  };
+  const _hasEffectRef = (ref) => {
+    const effectId = _effectId(ref);
+    return !!(effectId && (exists('effects', effectId) || _hasInlineEffect(ref, effectId)));
+  };
+  const _hasBattleSetRef = (battleSetId) => {
+    if (!battleSetId) return false;
+    if (exists('battleSets', battleSetId)) return true;
+    return Object.values(_data.battleSets || {}).some((set: any) =>
+      (set.cards || []).some((card) => card.id === battleSetId)
+    );
+  };
+
+  // Validate skills → effects
+  for (const [id, skill] of Object.entries(_data.skills)) {
+    if ((skill as any).effects) {
+      for (const ref of (skill as any).effects) {
+        if (!_hasEffectRef(ref)) {
+          errors.push(`Skill "${id}" references missing effect "${_effectId(ref)}"`);
+        }
+      }
+    }
+  }
+
+  // Validate items → effects
+  for (const [id, item] of Object.entries(_data.items)) {
+    if ((item as any).effects) {
+      for (const ref of (item as any).effects) {
+        if (!_hasEffectRef(ref)) {
+          errors.push(`Item "${id}" references missing effect "${_effectId(ref)}"`);
+        }
+      }
+    }
+  }
+
+  // Validate passives → effects
+  for (const [id, passive] of Object.entries(_data.passives)) {
+    if ((passive as any).effects) {
+      for (const ref of (passive as any).effects) {
+        if (!_hasEffectRef(ref)) {
+          errors.push(`Passive "${id}" references missing effect "${_effectId(ref)}"`);
+        }
+      }
+    }
+  }
+
+  // Helper: extract skillId from string or { skillId, overrides } format
+  const _sid = (entry) => typeof entry === 'string' ? entry : (entry?.skillId || null);
+
+  // Validate characters → skills, items, passives
+  for (const [id, char] of Object.entries(_data.characters) as Array<[string, any]>) {
+    (char.skills || []).forEach(entry => {
+      const sid = _sid(entry);
+      if (sid && !exists('skills', sid)) {
+        errors.push(`Character "${id}" references missing skill "${sid}"`);
+      }
+    });
+    (char.equipment || []).forEach(iid => {
+      if (!exists('items', iid)) {
+        errors.push(`Character "${id}" references missing item "${iid}"`);
+      }
+    });
+    (char.innatePassives || []).forEach(pid => {
+      if (!exists('passives', pid) && !exists('effects', pid)) {
+        warnings.push(`Character "${id}" references unknown passive/effect "${pid}"`);
+      }
+    });
+  }
+
+  // Validate monsters → same as characters + AI skill refs
+  for (const [id, mon] of Object.entries(_data.monsters) as Array<[string, any]>) {
+    (mon.skills || []).forEach(entry => {
+      const sid = _sid(entry);
+      if (sid && !exists('skills', sid)) {
+        errors.push(`Monster "${id}" references missing skill "${sid}"`);
+      }
+    });
+    (mon.aiRules || []).forEach((rule, i) => {
+      if (rule.action && rule.action.startsWith('use_skill:')) {
+        const skillId = rule.action.split(':')[1];
+        const monSkillIds = (mon.skills || []).map(_sid).filter(Boolean);
+        const resolvedSkillId = _resolveOwnedSkillAlias(skillId, monSkillIds);
+        if (!exists('skills', resolvedSkillId)) {
+          errors.push(`Monster "${id}" AI rule ${i} references non-existent skill "${skillId}"`);
+        } else if (!monSkillIds.includes(resolvedSkillId)) {
+          warnings.push(`Monster "${id}" AI rule ${i} references skill "${skillId}" not in its skill list`);
+        }
+      }
+    });
+  }
+
+  // Validate personas → characters, skills, items, passives, jobs
+  for (const [id, persona] of Object.entries(_data.personas) as Array<[string, any]>) {
+    if (persona.characterId && !exists('characters', persona.characterId)) {
+      warnings.push(`Persona "${id}" references missing character "${persona.characterId}"`);
+    }
+    (persona.skills || []).forEach((entry) => {
+      const sid = typeof entry === 'string' ? entry : entry?.skillId;
+      if (sid && !exists('skills', sid)) {
+        warnings.push(`Persona "${id}" references missing skill "${sid}"`);
+      }
+    });
+    (persona.equipment || []).forEach((iid) => {
+      if (iid && !exists('items', iid)) {
+        warnings.push(`Persona "${id}" references missing item "${iid}"`);
+      }
+    });
+    (persona.innatePassives || []).forEach((pid) => {
+      if (pid && !exists('passives', pid) && !exists('effects', pid)) {
+        warnings.push(`Persona "${id}" references unknown passive/effect "${pid}"`);
+      }
+    });
+    (persona.availableJobs || []).forEach((jid) => {
+      if (jid && !exists('jobs', jid)) {
+        warnings.push(`Persona "${id}" references missing job "${jid}"`);
+      }
+    });
+    if (persona.defaultJob && !exists('jobs', persona.defaultJob)) {
+      warnings.push(`Persona "${id}" defaultJob "${persona.defaultJob}" not found`);
+    }
+  }
+
+  // Validate encounters → characters/monsters
+  for (const [id, enc] of Object.entries(_data.encounters) as Array<[string, any]>) {
+    (enc.units || []).forEach(u => {
+      if (!exists('characters', u.id) && !exists('monsters', u.id)) {
+        errors.push(`Encounter "${id}" references missing unit "${u.id}"`);
+      }
+    });
+  }
+
+  // Validate authored campaign references. These warnings keep Campaign Mode
+  // readable without making freeform GM content impossible to save.
+  for (const [id, campaign] of Object.entries(_data.campaigns) as Array<[string, any]>) {
+    (campaign.scenarios || []).forEach(sid => {
+      if (sid && !exists('scenarios', sid)) warnings.push(`Campaign "${id}" references missing scenario "${sid}"`);
+    });
+    (campaign.maps || []).forEach(mid => {
+      if (mid && !exists('scenarioMaps', mid)) warnings.push(`Campaign "${id}" references missing map "${mid}"`);
+    });
+    (campaign.eventTables || []).forEach(tid => {
+      if (tid && !exists('campaignEvents', tid)) warnings.push(`Campaign "${id}" references missing event table "${tid}"`);
+    });
+    (campaign.questTemplates || []).forEach(qid => {
+      if (qid && !exists('campaignQuests', qid)) warnings.push(`Campaign "${id}" references missing quest template set "${qid}"`);
+    });
+    (campaign.carryoverProfiles || []).forEach(pid => {
+      if (pid && !exists('campaignProfiles', pid)) warnings.push(`Campaign "${id}" references missing carryover profile "${pid}"`);
+    });
+    (campaign.sideContentPacks || []).forEach(pid => {
+      if (pid && !exists('sideContentPacks', pid)) warnings.push(`Campaign "${id}" references missing side content pack "${pid}"`);
+    });
+    (campaign.hubs || []).forEach(hid => {
+      if (hid && !exists('campaignHubs', hid)) warnings.push(`Campaign "${id}" references missing hub "${hid}"`);
+    });
+  }
+
+  for (const [id, scenario] of Object.entries(_data.scenarios) as Array<[string, any]>) {
+    if (scenario.mapId && !exists('scenarioMaps', scenario.mapId)) {
+      warnings.push(`Scenario "${id}" references missing map "${scenario.mapId}"`);
+    }
+    (scenario.setBattles || []).forEach((battle) => {
+      const encounterId = battle.encounterId;
+      if (encounterId && !exists('encounters', encounterId)) {
+        warnings.push(`Scenario "${id}" references missing encounter "${encounterId}"`);
+      }
+      const battleSetId = battle.battleSetId;
+      if (battleSetId && !_hasBattleSetRef(battleSetId)) {
+        warnings.push(`Scenario "${id}" references missing battle set "${battleSetId}"`);
+      }
+      if (!encounterId && !battleSetId) {
+        warnings.push(`Scenario "${id}" battle "${battle.id || '(unnamed)'}" has no encounterId or battleSetId`);
+      }
+    });
+  }
+
+  for (const [id, pack] of Object.entries(_data.sideContentPacks) as Array<[string, any]>) {
+    const refs = pack.contentRefs || {};
+    if (refs.hub && !exists('campaignHubs', refs.hub)) warnings.push(`Side content pack "${id}" references missing hub "${refs.hub}"`);
+    (refs.questChains || []).forEach(qid => {
+      if (qid && !exists('questChains', qid)) warnings.push(`Side content pack "${id}" references missing quest chain set "${qid}"`);
+    });
+    (refs.battleSets || []).forEach(bid => {
+      if (bid && !exists('battleSets', bid)) warnings.push(`Side content pack "${id}" references missing battle set "${bid}"`);
+    });
+    (refs.mapSeeds || []).forEach(mid => {
+      if (mid && !exists('mapSeeds', mid)) warnings.push(`Side content pack "${id}" references missing map seed "${mid}"`);
+    });
+    (refs.oracle || []).forEach(oid => {
+      if (oid && !exists('oracleTables', oid)) warnings.push(`Side content pack "${id}" references missing oracle table "${oid}"`);
+    });
+  }
+
+  for (const [id, hub] of Object.entries(_data.campaignHubs) as Array<[string, any]>) {
+    for (const [slot, tableId] of Object.entries(hub.eventTables || {})) {
+      const packHasTable = Object.values(_data.sideContentPacks).some((pack: any) =>
+        (pack.hubEvents || pack.events || []).some((event) => event.table === tableId || (event.tables || []).includes(tableId))
+      );
+      if (tableId && !exists('campaignEvents', tableId as string) && !packHasTable) {
+        warnings.push(`Hub "${id}" ${slot} table "${tableId}" is not in campaignEvents or side content packs`);
+      }
+    }
+  }
+
+  for (const [id, set] of Object.entries(_data.battleSets) as Array<[string, any]>) {
+    for (const card of set.cards || []) {
+      for (const enemy of card.enemyMix || []) {
+        const unitId = enemy.id || enemy.monsterId;
+        if (unitId && !exists('monsters', unitId) && !exists('characters', unitId)) {
+          warnings.push(`Battle set "${id}" card "${card.id || card.name}" references missing unit "${unitId}"`);
+        }
+      }
+    }
+  }
+
+  return { errors, warnings, valid: errors.length === 0 };
+}
+
+// ── IMPORT / EXPORT ────────────────────────────────────────────────
+
+function exportJSON() {
+  return JSON.stringify(_exportSnapshot(), null, 2);
+}
+
+function exportBlob() {
+  const json = exportJSON();
+  return new Blob([json], { type: 'application/json' });
+}
+
+function downloadJSON(filename) {
+  const blob = exportBlob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'cjs-gamedata.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  _dirty = false;
+}
+
+function importJSON(jsonString) {
+  try {
+    const parsed = JSON.parse(jsonString);
+    return loadData(parsed);
+  } catch (e) {
+    console.error('Import failed:', e);
+    return { success: false, error: e.message };
+  }
+}
+
+function loadData(obj) {
+  // Disable undo during bulk load
+  if (UM()) UM().disable();
+
+  // Merge or replace each collection
+  const collections = [
+    'effects', 'skills', 'items', 'food', 'materials', 'crafting',
+    'crops', 'shops', 'zones', 'stories', 'worlds', 'passives', 'jobs', 'personas',
+    'campaigns', 'scenarios', 'scenarioMaps', 'travelMaps', 'campaignEvents',
+    'campaignQuests', 'campaignProfiles', 'pocketHavenRules',
+    'sideContentPacks', 'campaignHubs', 'questChains', 'battleSets',
+    'mapSeeds', 'oracleTables', 'storyDirectorPacks', 'worldActivityPacks',
+    'characters', 'monsters', 'encounters', 'statuses', 'weathers'
+  ];
+  for (const col of collections) {
+    if (obj[col]) {
+      if (typeof obj[col] === 'object' && !Array.isArray(obj[col])) {
+        _data[col] = { ..._data[col], ..._normalizeCollection(col, obj[col]) };
+      }
+    }
+  }
+  // Arrays: replace entirely
+  if (obj.quips) _data.quips = obj.quips;
+  if (obj.quizBank) _data.quizBank = obj.quizBank;
+  if (obj.triviaBank) _data.triviaBank = obj.triviaBank;
+
+  // Rebuild ID counters
+  _rebuildCounters();
+
+  // Validate
+  const validation = validate();
+  _dirty = false;
+
+  // Re-enable undo and clear stack (fresh start after load)
+  if (UM()) { UM().enable(); UM().clear(); }
+
+  return { success: true, validation };
+}
+
+function _rebuildCounters() {
+  _counters = {};
+  const collections = {
+    eff: _data.effects,
+    skl: _data.skills,
+    itm: _data.items,
+    fod: _data.food,
+    mat: _data.materials,
+    rcp: _data.crafting,
+    crp: _data.crops,
+    shp: _data.shops,
+    zon: _data.zones,
+    sto: _data.stories,
+    cmp: _data.campaigns,
+    scn: _data.scenarios,
+    map: _data.scenarioMaps,
+    tmap: _data.travelMaps,
+    evt: _data.campaignEvents,
+    qst: _data.campaignQuests,
+    cpf: _data.campaignProfiles,
+    phr: _data.pocketHavenRules,
+    scp: _data.sideContentPacks,
+    hub: _data.campaignHubs,
+    qch: _data.questChains,
+    bst: _data.battleSets,
+    msd: _data.mapSeeds,
+    orc: _data.oracleTables,
+    sdp: _data.storyDirectorPacks,
+    wap: _data.worldActivityPacks,
+    wld: _data.worlds,
+    pas: _data.passives,
+    job: _data.jobs,
+    prs: _data.personas,
+    chr: _data.characters,
+    mon: _data.monsters,
+    enc: _data.encounters,
+    sts: _data.statuses,
+    wth: _data.weathers
+  };
+
+  for (const [prefix, col] of Object.entries(collections)) {
+    let maxNum = 0;
+    for (const id of Object.keys(col)) {
+      const match = id.match(new RegExp(`^${prefix}_(\\d+)$`));
+      if (match) {
+        maxNum = Math.max(maxNum, parseInt(match[1], 10));
+      }
+    }
+    _counters[prefix] = maxNum + 1;
+  }
+}
+
+// ── RESET / STATE ──────────────────────────────────────────────────
+
+function reset() {
+  _data = {
+    effects: {}, skills: {}, items: {}, food: {}, materials: {}, crafting: {},
+    crops: {}, shops: {}, zones: {}, stories: {}, worlds: {}, passives: {}, jobs: {}, personas: {},
+    campaigns: {}, scenarios: {}, scenarioMaps: {}, campaignEvents: {},
+    travelMaps: {},
+    campaignQuests: {}, campaignProfiles: {}, pocketHavenRules: {},
+    sideContentPacks: {}, campaignHubs: {}, questChains: {},
+    battleSets: {}, mapSeeds: {}, oracleTables: {}, storyDirectorPacks: {},
+    worldActivityPacks: {},
+    characters: {}, monsters: {}, encounters: {}, statuses: {}, weathers: {},
+    worldEvents: {}, fishCatalog: {},
+    quips: [], quizBank: [], triviaBank: []
+  };
+  _counters = {};
+  _dirty = false;
+  if (UM()) UM().clear();
+}
+
+function isDirty() { return _dirty; }
+function markDirty() { _dirty = true; }
+function markClean() { _dirty = false; }
+
+function getCounts() {
+  return {
+    effects:    Object.keys(_data.effects).length,
+    skills:     Object.keys(_data.skills).length,
+    items:      Object.keys(_data.items).length,
+    food:       Object.keys(_data.food).length,
+    materials:  Object.keys(_data.materials).length,
+    crafting:   Object.keys(_data.crafting).length,
+    crops:      Object.keys(_data.crops).length,
+    shops:      Object.keys(_data.shops).length,
+    zones:      Object.keys(_data.zones).length,
+    stories:    Object.keys(_data.stories).length,
+    campaigns:  Object.keys(_data.campaigns).length,
+    scenarios:  Object.keys(_data.scenarios).length,
+    scenarioMaps: Object.keys(_data.scenarioMaps).length,
+    travelMaps: Object.keys(_data.travelMaps).length,
+    campaignEvents: Object.keys(_data.campaignEvents).length,
+    campaignQuests: Object.keys(_data.campaignQuests).length,
+    campaignProfiles: Object.keys(_data.campaignProfiles).length,
+    pocketHavenRules: Object.keys(_data.pocketHavenRules).length,
+    sideContentPacks: Object.keys(_data.sideContentPacks).length,
+    campaignHubs: Object.keys(_data.campaignHubs).length,
+    questChains: Object.keys(_data.questChains).length,
+    battleSets: Object.keys(_data.battleSets).length,
+    mapSeeds: Object.keys(_data.mapSeeds).length,
+    oracleTables: Object.keys(_data.oracleTables).length,
+    storyDirectorPacks: Object.keys(_data.storyDirectorPacks).length,
+    worldActivityPacks: Object.keys(_data.worldActivityPacks).length,
+    worlds:     Object.keys(_data.worlds).length,
+    passives:   Object.keys(_data.passives).length,
+    jobs:       Object.keys(_data.jobs).length,
+    personas:   Object.keys(_data.personas).length,
+    characters: Object.keys(_data.characters).length,
+    monsters:   Object.keys(_data.monsters).length,
+    encounters: Object.keys(_data.encounters).length,
+    statuses:   Object.keys(_data.statuses).length,
+    weathers:   Object.keys(_data.weathers).length,
+    worldEvents: Object.keys(_data.worldEvents || {}).length,
+    fishCatalog: Object.keys(_data.fishCatalog || {}).length,
+    quips:      _data.quips.length,
+    quizBank:   _data.quizBank.length
+  };
+}
+
+function subscribe(listener) {
+  if (typeof listener !== 'function') return () => {};
+  _listeners.push(listener);
+  return () => {
+    const index = _listeners.indexOf(listener);
+    if (index >= 0) _listeners.splice(index, 1);
+  };
+}
+
+// ── PUBLIC API ─────────────────────────────────────────────────────
+export const DataStore: CJSDataStore = Object.freeze({
+  // CRUD
+  getAll, getAllAsArray, get, snapshot, exists,
+  create, update, replace, remove, duplicate,
+  // Search
+  search, filterByTags, filterByCategory,
+  // References
+  resolveEffectRefs, resolveSkillRefs, resolveItemRefs,
+  // Validation
+  validate,
+  // Import/Export
+  exportJSON, exportBlob, downloadJSON, importJSON, loadData,
+  // State
+  reset, isDirty, markDirty, markClean, getCounts,
+  // Events
+  subscribe
+});
+
+// Runtime compatibility install — keep window.CJS.DataStore identical to the
+// legacy IIFE so every existing consumer (and the vanilla engine) is unchanged.
+window.CJS = window.CJS || ({} as CJSNamespace);
+window.CJS.DataStore = DataStore;
