@@ -8,11 +8,17 @@
 // or delete this slot" instead of silently mutating the old save into an
 // undefined state.
 
-import { CURRENT_SAVE_SCHEMA_VERSION, migrateSavePayload } from "../../src/persistence/migrations";
+// campaign-save.ts — Tier 3 TS port of js/campaign/campaign-save.js (engine
+// cluster: campaign). Browser slots, import/export, fork, and GitHub save
+// helpers for Campaign Mode (IndexedDB-primary via window.CJS.Persistence, with
+// a localStorage fallback) + save-version compatibility gating. Exports
+// `CampaignSave` and installs window.CJS.CampaignSave. Body verbatim from the
+// legacy IIFE; import path adjusted for the src/engine/ location.
+import { CURRENT_SAVE_SCHEMA_VERSION, migrateSavePayload } from "../../persistence/migrations";
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignSave = (() => {
+export const CampaignSave = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -163,7 +169,7 @@ window.CJS.CampaignSave = (() => {
   function currentSaveVersion() { return CURRENT_SAVE_VERSION; }
   function minCompatibleVersion() { return MIN_COMPATIBLE_VERSION; }
 
-  function saveCurrent(slotName) {
+  function saveCurrent(slotName?) {
     const state = CS().getState();
     if (!state) return null;
     const slots = getSlots();
@@ -179,7 +185,7 @@ window.CJS.CampaignSave = (() => {
     return save;
   }
 
-  function loadSlot(slotId, options = {}) {
+  function loadSlot(slotId, options: any = {}) {
     const save = getSlots()[slotId];
     if (!save) return null;
     if (!options.force && !isCompatible(save)) {
@@ -245,7 +251,7 @@ window.CJS.CampaignSave = (() => {
     const text = await file.text();
     const parsed = _migrate(JSON.parse(text));
     if (!isCompatible(parsed)) {
-      const error = new Error(describeIncompatibility(parsed) || 'Incompatible save file.');
+      const error: any = new Error(describeIncompatibility(parsed) || 'Incompatible save file.');
       error.incompatible = true;
       throw error;
     }
@@ -295,3 +301,6 @@ window.CJS.CampaignSave = (() => {
     minCompatibleVersion
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignSave = CampaignSave;

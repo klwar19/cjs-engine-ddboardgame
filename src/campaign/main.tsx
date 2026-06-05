@@ -28,7 +28,7 @@ import "../engine/campaign/campaign-alignment";
 import "../engine/campaign/campaign-conditions";
 import "../engine/campaign/campaign-quest-pulse";
 import "../engine/campaign/campaign-ops";
-import "../../js/campaign/campaign-save.js";
+import "../engine/campaign/campaign-save";
 import "../engine/campaign/campaign-events";
 import "../engine/campaign/campaign-world-events";
 import "../engine/campaign/campaign-story-branch";
