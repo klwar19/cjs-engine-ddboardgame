@@ -1,9 +1,15 @@
-// campaign-events.js
-// Weighted event table rolling and apply/edit/ignore handoff.
+// campaign-events.ts — Tier 3 TS port of js/campaign/campaign-events.js (engine
+// cluster: campaign). Weighted event-table rolling (table pick by tag/setting
+// score, entry filter by party/flags/tags, weighted pick) plus apply / ignore /
+// pin-as-plot-seed handoff. DOM-free; reads window.CJS.* (CampaignState/Ops/
+// PartyChat/Oracle) lazily.
+//
+// Exports `CampaignEvents` and installs window.CJS.CampaignEvents. Body verbatim
+// from the legacy IIFE; only `: any` added to the `{}`-default option params.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignEvents = (() => {
+export const CampaignEvents = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -14,7 +20,7 @@ window.CJS.CampaignEvents = (() => {
     return CS().getContent().campaignEvents[tableId] || null;
   }
 
-  function pickTable(tableIds, context = {}) {
+  function pickTable(tableIds, context: any = {}) {
     const ids = (tableIds || []).filter(Boolean);
     if (!ids.length) return null;
     const world = context.world || CS().getState()?.currentWorld;
@@ -48,7 +54,7 @@ window.CJS.CampaignEvents = (() => {
     return score;
   }
 
-  function roll(tableId, options = {}) {
+  function roll(tableId, options: any = {}) {
     if (options.chance !== undefined && Math.random() > Number(options.chance)) {
       return null;
     }
@@ -86,7 +92,7 @@ window.CJS.CampaignEvents = (() => {
     return result;
   }
 
-  function _filterEntries(entries, context = {}) {
+  function _filterEntries(entries, context: any = {}) {
     const state = CS().getState();
     const partyIds = new Set(Object.keys(state?.party || {}));
     const ctxTags = new Set((context.tags || []).map((t) => String(t).toLowerCase()));
@@ -146,7 +152,7 @@ window.CJS.CampaignEvents = (() => {
     }, { source: 'event' });
   }
 
-  function _eventLogEntry(event = {}, ops = [], status = 'noted') {
+  function _eventLogEntry(event: any = {}, ops: any = [], status = 'noted') {
     const summary = event.manualSummary?.short
       || event.summary
       || event.prompt
@@ -201,3 +207,6 @@ window.CJS.CampaignEvents = (() => {
     pinAsPlotSeed
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignEvents = CampaignEvents;

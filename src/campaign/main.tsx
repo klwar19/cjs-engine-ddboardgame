@@ -29,7 +29,7 @@ import "../engine/campaign/campaign-conditions";
 import "../../js/campaign/campaign-quest-pulse.js";
 import "../../js/campaign/campaign-ops.js";
 import "../../js/campaign/campaign-save.js";
-import "../../js/campaign/campaign-events.js";
+import "../engine/campaign/campaign-events";
 import "../../js/campaign/campaign-world-events.js";
 import "../../js/campaign/campaign-story-branch.js";
 import "../../js/campaign/campaign-combat-popup.js";
