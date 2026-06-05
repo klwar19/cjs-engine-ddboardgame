@@ -1,4 +1,5 @@
 // qte-quiz.js
+// Tier 3 TS port -> src/engine/qte/qte-quiz.ts (exports QteQuiz + installs window.CJS.QteQuiz). Body verbatim.
 // "Quiz" — English C1/C2 grammar multiple choice question. Pick the right
 // answer before the timer runs out. Thematic fit for "wisdom"-themed skills,
 // or when the attacker has Silence / Confuse status.
@@ -21,7 +22,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.QteQuiz = (() => {
+export const QteQuiz = (() => {
   'use strict';
 
   const DIFFICULTY = {
@@ -59,8 +60,8 @@ window.CJS.QteQuiz = (() => {
       }
 
       const root = _buildUI(container, skill, cfg, question);
-      const timerEl = root.querySelector('.qte-quiz-timer');
-      const optionEls = root.querySelectorAll('.qte-quiz-option');
+      const timerEl = root.querySelector<any>('.qte-quiz-timer');
+      const optionEls = root.querySelectorAll<any>('.qte-quiz-option');
 
       const startTime = performance.now();
       let cleanedUp = false;
@@ -207,3 +208,6 @@ window.CJS.QteQuiz = (() => {
 
   return Object.freeze({ start, DIFFICULTY, resetHistory });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.QteQuiz = QteQuiz;

@@ -1,4 +1,5 @@
 // qte-fishing.js
+// Tier 3 TS port -> src/engine/qte/qte-fishing.ts (exports QteFishing + installs window.CJS.QteFishing). Body verbatim.
 // "Fishing" — a marker sweeps left-right along a bar. Player taps space
 // (or clicks the bar) to stop it. Success depends on which zone it lands in.
 //
@@ -19,7 +20,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.QteFishing = (() => {
+export const QteFishing = (() => {
   'use strict';
 
   const DIFFICULTY = {
@@ -40,10 +41,10 @@ window.CJS.QteFishing = (() => {
       const okPadding = 0.03;  // ±3% outside green is OK zone
 
       const root = _buildUI(container, skill, cfg);
-      const bar       = root.querySelector('.qte-fishing-bar');
-      const zoneEl    = root.querySelector('.qte-fishing-zone');
-      const perfectEl = root.querySelector('.qte-fishing-zone-perfect');
-      const markerEl  = root.querySelector('.qte-fishing-marker');
+      const bar       = root.querySelector<any>('.qte-fishing-bar');
+      const zoneEl    = root.querySelector<any>('.qte-fishing-zone');
+      const perfectEl = root.querySelector<any>('.qte-fishing-zone-perfect');
+      const markerEl  = root.querySelector<any>('.qte-fishing-marker');
 
       let cleanedUp = false;
       let keyHandler = null;
@@ -148,3 +149,6 @@ window.CJS.QteFishing = (() => {
 
   return Object.freeze({ start, DIFFICULTY });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.QteFishing = QteFishing;

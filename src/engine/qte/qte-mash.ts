@@ -1,4 +1,5 @@
 // qte-mash.js
+// Tier 3 TS port -> src/engine/qte/qte-mash.ts (exports QteMash + installs window.CJS.QteMash). Body verbatim.
 // "Quick Repeated Hit" — mash a button N times within a time window.
 // Thematic fit for power skills, charge attacks, berserker abilities.
 //
@@ -19,7 +20,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.QteMash = (() => {
+export const QteMash = (() => {
   'use strict';
 
   const DIFFICULTY = {
@@ -40,10 +41,10 @@ window.CJS.QteMash = (() => {
       let keyHandler = null;
 
       const root = _buildUI(container, skill, cfg);
-      const counterEl = root.querySelector('.qte-mash-counter');
-      const fillEl    = root.querySelector('.qte-fill-meter > div');
-      const btn       = root.querySelector('.qte-mash-btn');
-      const timerEl   = root.querySelector('.qte-mash-time');
+      const counterEl = root.querySelector<any>('.qte-mash-counter');
+      const fillEl    = root.querySelector<any>('.qte-fill-meter > div');
+      const btn       = root.querySelector<any>('.qte-mash-btn');
+      const timerEl   = root.querySelector<any>('.qte-mash-time');
 
       const startTime = performance.now();
 
@@ -134,3 +135,6 @@ window.CJS.QteMash = (() => {
 
   return Object.freeze({ start, DIFFICULTY });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.QteMash = QteMash;

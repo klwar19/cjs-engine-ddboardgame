@@ -1,4 +1,5 @@
 // qte-quickpress.js
+// Tier 3 TS port -> src/engine/qte/qte-quickpress.ts (exports QteQuickPress + installs window.CJS.QteQuickPress). Body verbatim.
 // "Quick Press" — a highlighted button appears; tap it before the timer
 // expires. Deliberately lenient — this is the "easy" QTE for basic attacks
 // and low-cost skills.
@@ -20,7 +21,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.QteQuickPress = (() => {
+export const QteQuickPress = (() => {
   'use strict';
 
   const DIFFICULTY = {
@@ -113,7 +114,7 @@ window.CJS.QteQuickPress = (() => {
       document.addEventListener('keydown', keyHandler);
 
       // Also support tap/click on the button itself (for mobile/touch)
-      root.querySelectorAll('.qte-qp-btn').forEach(btn => {
+      root.querySelectorAll<any>('.qte-qp-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const syntheticKey = btn.dataset.key;
           if (keyHandler) keyHandler({ key: syntheticKey });
@@ -162,7 +163,7 @@ window.CJS.QteQuickPress = (() => {
     _injectStyles();
 
     // Animate the timer bar from 100% → 0% over windowMs
-    const fill = root.querySelector('.qte-timer-fill');
+    const fill = root.querySelector<any>('.qte-timer-fill');
     fill.style.transition = `width ${cfg.windowMs}ms linear`;
     // Trigger reflow then animate
     requestAnimationFrame(() => { fill.style.width = '0%'; });
@@ -306,3 +307,6 @@ window.CJS.QteQuickPress = (() => {
 
   return Object.freeze({ start, DIFFICULTY });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.QteQuickPress = QteQuickPress;

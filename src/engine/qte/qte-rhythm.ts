@@ -1,4 +1,5 @@
 // qte-rhythm.js
+// Tier 3 TS port -> src/engine/qte/qte-rhythm.ts (exports QteRhythm + installs window.CJS.QteRhythm). Body verbatim.
 // "Rhythm" — notes scroll right-to-left toward a hit line. Player presses
 // the matching key when the note is near the line.
 //
@@ -19,7 +20,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.QteRhythm = (() => {
+export const QteRhythm = (() => {
   'use strict';
 
   const DIFFICULTY = {
@@ -53,7 +54,7 @@ window.CJS.QteRhythm = (() => {
       const totalMs = notes[notes.length - 1].hitTime + cfg.scrollMs + 500;
 
       const root = _buildUI(container, skill, cfg, notes);
-      const track = root.querySelector('.qte-rhythm-track');
+      const track = root.querySelector<any>('.qte-rhythm-track');
       const noteEls = {};
       // Create DOM for each note
       notes.forEach((note, i) => {
@@ -182,3 +183,6 @@ window.CJS.QteRhythm = (() => {
 
   return Object.freeze({ start, DIFFICULTY });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.QteRhythm = QteRhythm;
