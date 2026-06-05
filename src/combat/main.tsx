@@ -6,7 +6,7 @@ import "../engine/core/undo-manager";
 import "../engine/core/state-tools";
 import "../../js/core/data-store.js";
 import "../../js/core/content-manager.js";
-import "../../js/core/skill-resolver.js";
+import "../engine/core/skill-resolver";
 import "../../js/services/persona-service.js";
 import "../../js/services/content-validator.js";
 import "../../js/services/data-hot-reload.js";

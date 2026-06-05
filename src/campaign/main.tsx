@@ -8,7 +8,7 @@ import "../../js/core/data-store.js";
 import "../persistence/indexedDb";
 import "../../js/core/save-manager.js";
 import "../../js/core/content-manager.js";
-import "../../js/core/skill-resolver.js";
+import "../engine/core/skill-resolver";
 import "../../js/services/persona-service.js";
 import "../../js/services/content-validator.js";
 import "../../js/services/data-hot-reload.js";
