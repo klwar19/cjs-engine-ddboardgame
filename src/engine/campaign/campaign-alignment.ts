@@ -1,10 +1,16 @@
-// campaign-alignment.js
-// Soft choice-consequence tracking for story branches, dialogue, NPC reactions,
-// and future route planning.
+// campaign-alignment.ts — Tier 3 TS port of js/campaign/campaign-alignment.js
+// (engine cluster: campaign). Soft choice-consequence tracking for story
+// branches, dialogue, NPC reactions, and route planning: axis state, deltas,
+// choice recording, potential collection, prompt formatting, condition
+// evaluation, tags-for-state, and deferred consequence hooks. DOM-free.
+//
+// Exports `CampaignAlignment` and installs window.CJS.CampaignAlignment. Body
+// verbatim from the legacy IIFE; only `: any` annotations were added where tsc
+// (strict:false) would otherwise reject reads on `{}`-default / unknown values.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignAlignment = (() => {
+export const CampaignAlignment = (() => {
   'use strict';
 
   const DEFAULT_ACTOR = 'bin';
@@ -42,12 +48,12 @@ window.CJS.CampaignAlignment = (() => {
     };
   }
 
-  function normalizeState(state = {}) {
+  function normalizeState(state: any = {}) {
     state.choiceConsequences = _normalizeLedger(state.choiceConsequences || {});
     return state.choiceConsequences;
   }
 
-  function _normalizeLedger(ledger = {}) {
+  function _normalizeLedger(ledger: any = {}) {
     const next = {
       version: Number(ledger.version || 1),
       actors: ledger.actors && typeof ledger.actors === 'object' ? ledger.actors : {},
@@ -70,12 +76,12 @@ window.CJS.CampaignAlignment = (() => {
     };
   }
 
-  function _normalizeActor(actor = {}) {
+  function _normalizeActor(actor: any = {}) {
     actor.axes = _normalizeAxes(actor.axes);
     actor.worlds = actor.worlds && typeof actor.worlds === 'object' ? actor.worlds : {};
     actor.history = Array.isArray(actor.history) ? actor.history : [];
     actor.potential = Array.isArray(actor.potential) ? actor.potential : [];
-    for (const worldState of Object.values(actor.worlds)) {
+    for (const worldState of Object.values<any>(actor.worlds)) {
       worldState.axes = _normalizeAxes(worldState.axes);
       worldState.history = Array.isArray(worldState.history) ? worldState.history : [];
     }
@@ -88,7 +94,7 @@ window.CJS.CampaignAlignment = (() => {
     return Object.fromEntries(Object.keys(AXES).map((axis) => [axis, 0]));
   }
 
-  function _normalizeAxes(value = {}) {
+  function _normalizeAxes(value: any = {}) {
     const axes = _zeroAxes();
     for (const axis of Object.keys(AXES)) {
       axes[axis] = _clamp(Number(value?.[axis] || 0));
@@ -110,7 +116,7 @@ window.CJS.CampaignAlignment = (() => {
     return actor.worlds[id];
   }
 
-  function applyChange(state = {}, op = {}) {
+  function applyChange(state: any = {}, op: any = {}) {
     const ledger = normalizeState(state);
     const actorId = op.actor || op.characterId || op.target || DEFAULT_ACTOR;
     const world = op.world || state.currentWorld || 'global';
@@ -135,7 +141,7 @@ window.CJS.CampaignAlignment = (() => {
     return entry;
   }
 
-  function recordChoice(state = {}, op = {}) {
+  function recordChoice(state: any = {}, op: any = {}) {
     const ledger = normalizeState(state);
     const actorId = op.actor || op.characterId || DEFAULT_ACTOR;
     const world = op.world || state.currentWorld || 'global';
@@ -171,7 +177,7 @@ window.CJS.CampaignAlignment = (() => {
     return entry;
   }
 
-  function addPotential(state = {}, op = {}) {
+  function addPotential(state: any = {}, op: any = {}) {
     const ledger = normalizeState(state);
     const actorId = op.actor || op.characterId || DEFAULT_ACTOR;
     const world = op.world || state.currentWorld || 'global';
@@ -217,7 +223,7 @@ window.CJS.CampaignAlignment = (() => {
     return deltas;
   }
 
-  function snapshot(state = {}, options = {}) {
+  function snapshot(state: any = {}, options: any = {}) {
     const ledger = state.choiceConsequences || initialState();
     const actorId = options.actor || DEFAULT_ACTOR;
     const world = options.world || state.currentWorld || 'global';
@@ -238,7 +244,7 @@ window.CJS.CampaignAlignment = (() => {
     };
   }
 
-  function collectPotential(state = {}, options = {}) {
+  function collectPotential(state: any = {}, options: any = {}) {
     const ledger = state.choiceConsequences || {};
     const actorId = _cleanId(options.actor || DEFAULT_ACTOR) || DEFAULT_ACTOR;
     const world = _cleanId(options.world || state.currentWorld || 'global') || 'global';
@@ -287,7 +293,7 @@ window.CJS.CampaignAlignment = (() => {
       .slice(0, POTENTIAL_LIMIT);
   }
 
-  function formatForPrompt(state = {}, options = {}) {
+  function formatForPrompt(state: any = {}, options: any = {}) {
     const snap = snapshot(state, options);
     const axisLine = Object.keys(AXES)
       .map((axis) => `${AXES[axis].label} ${_signed(snap.axes[axis])} (${_tone(axis, snap.axes[axis])})`)
@@ -327,7 +333,7 @@ window.CJS.CampaignAlignment = (() => {
     ].join('\n');
   }
 
-  function evaluateConditions(cond = {}, state = {}, context = {}) {
+  function evaluateConditions(cond: any = {}, state: any = {}, context: any = {}) {
     if (!CONDITION_KEYS.some((key) => cond[key] != null)) return null;
     const actorId = context.actor || cond.actor || cond.characterId || DEFAULT_ACTOR;
     const world = context.world || cond.world || state.currentWorld || 'global';
@@ -364,7 +370,7 @@ window.CJS.CampaignAlignment = (() => {
     return { ok: blockers.length === 0, score, reasons, blockers };
   }
 
-  function tagsForState(state = {}) {
+  function tagsForState(state: any = {}) {
     const snap = snapshot(state, { includePotential: false });
     const tags = [];
     for (const [axis, meta] of Object.entries(AXES)) {
@@ -374,7 +380,7 @@ window.CJS.CampaignAlignment = (() => {
     return tags;
   }
 
-  function choiceEligibility(choice = {}, node = {}, state = {}, context = {}) {
+  function choiceEligibility(choice: any = {}, node: any = {}, state: any = {}, context: any = {}) {
     if (!choice) return { ok: false, blockers: ['Missing choice.'], reasons: [], hidden: true };
     const cond = _choiceConditions(choice);
     const hasConditions = Object.keys(cond).length > 0;
@@ -414,7 +420,7 @@ window.CJS.CampaignAlignment = (() => {
     worldState.history = worldState.history.slice(0, HISTORY_LIMIT);
   }
 
-  function _queueSideEffects(ledger, entry, op = {}) {
+  function _queueSideEffects(ledger, entry, op: any = {}) {
     for (const reaction of _asArray(op.npcReactions || op.reactions)) {
       ledger.reactionQueue.unshift({
         id: reaction.id || `reaction_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
@@ -444,7 +450,7 @@ window.CJS.CampaignAlignment = (() => {
     ledger.futureHooks = ledger.futureHooks.slice(0, HISTORY_LIMIT);
   }
 
-  function _historyEntry(input = {}) {
+  function _historyEntry(input: any = {}) {
     return {
       id: input.id || `${input.type || 'alignment'}_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
       type: input.type || 'alignment',
@@ -462,7 +468,7 @@ window.CJS.CampaignAlignment = (() => {
     };
   }
 
-  function _entryPotential(entry = {}, world, state = {}) {
+  function _entryPotential(entry: any = {}, world, state: any = {}) {
     const deltas = normalizeDeltas(entry.potentialAlignment ?? entry.alignmentPotential ?? entry.karmaPotential);
     if (!_hasDeltas(deltas)) return null;
     return {
@@ -502,7 +508,7 @@ window.CJS.CampaignAlignment = (() => {
     });
   }
 
-  function _simpleReachable(entry = {}, state = {}) {
+  function _simpleReachable(entry: any = {}, state: any = {}) {
     for (const flag of _asArray(entry.requiresFlags || entry.flags)) {
       if (!state.flags?.[flag]) return false;
     }
@@ -522,7 +528,7 @@ window.CJS.CampaignAlignment = (() => {
     return true;
   }
 
-  function _potentialRange(currentAxes = {}, entries = []) {
+  function _potentialRange(currentAxes: any = {}, entries: any[] = []) {
     const grouped = {};
     for (const entry of entries) {
       if (entry.reachable === false) continue;
@@ -579,7 +585,7 @@ window.CJS.CampaignAlignment = (() => {
     }
   }
 
-  function _choiceConditions(choice = {}) {
+  function _choiceConditions(choice: any = {}) {
     const cond = { ...(choice.conditions || choice.requires || {}) };
     for (const key of CONDITION_KEYS) {
       if (choice[key] != null && cond[key] == null) cond[key] = choice[key];
@@ -605,7 +611,7 @@ window.CJS.CampaignAlignment = (() => {
     target[axis] += _boundedStep(value.amount ?? value.value ?? value.delta ?? 0);
   }
 
-  function _singleDelta(op = {}) {
+  function _singleDelta(op: any = {}) {
     if (!op.axis && !op.id) return null;
     return { axis: op.axis || op.id, amount: op.amount ?? op.value ?? op.delta ?? 0 };
   }
@@ -622,11 +628,11 @@ window.CJS.CampaignAlignment = (() => {
     return Math.max(-AXIS_LIMIT, Math.min(AXIS_LIMIT, amount));
   }
 
-  function _hasDeltas(deltas = {}) {
+  function _hasDeltas(deltas: any = {}) {
     return Object.keys(AXES).some((axis) => Number(deltas?.[axis] || 0) !== 0);
   }
 
-  function _deltaText(deltas = {}) {
+  function _deltaText(deltas: any = {}) {
     return Object.keys(AXES)
       .map((axis) => Number(deltas?.[axis] || 0) ? `${AXES[axis].label} ${_signed(deltas[axis])}` : '')
       .filter(Boolean)
@@ -676,7 +682,7 @@ window.CJS.CampaignAlignment = (() => {
   //     label, summary, fireWhen: { chapterMin, partResolved, flag,
   //       worldOnly, phase }, fireOps: [ ... ], flagsToSet: [ ... ],
   //     tags: [ ... ] }
-  function recordConsequenceHook(state = {}, op = {}) {
+  function recordConsequenceHook(state: any = {}, op: any = {}) {
     const ledger = normalizeState(state);
     const id = op.id || op.hookId || `consequence_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const hook = {
@@ -703,7 +709,7 @@ window.CJS.CampaignAlignment = (() => {
 
   // Returns the list of hook ids that became eligible THIS check. The
   // caller (campaign-ops) is responsible for actually firing the ops.
-  function dueConsequenceHooks(state = {}) {
+  function dueConsequenceHooks(state: any = {}) {
     const ledger = normalizeState(state);
     const due = [];
     for (const hook of ledger.futureHooks || []) {
@@ -715,7 +721,7 @@ window.CJS.CampaignAlignment = (() => {
   }
 
   // Mark a hook as fired so it won't repeat. Returns the updated hook.
-  function markHookFired(state = {}, hookId, firedAt) {
+  function markHookFired(state: any = {}, hookId, firedAt) {
     const ledger = normalizeState(state);
     const hook = (ledger.futureHooks || []).find((h) => h.id === hookId);
     if (!hook) return null;
@@ -723,7 +729,7 @@ window.CJS.CampaignAlignment = (() => {
     return hook;
   }
 
-  function _normalizeFireWhen(input = {}) {
+  function _normalizeFireWhen(input: any = {}) {
     if (!input || typeof input !== 'object') return {};
     const source = /** @type {any} */ (input);
     return {
@@ -737,7 +743,7 @@ window.CJS.CampaignAlignment = (() => {
     };
   }
 
-  function _isFireWhenMet(when, state = {}, hook = {}) {
+  function _isFireWhenMet(when, state: any = {}, hook: any = {}) {
     if (!when) return false;
     if (when.chapterMin && (Number(state.currentChapter || 1) < when.chapterMin)) return false;
     if (when.partResolved && !state.storyMode?.partResults?.[when.partResolved]) return false;
@@ -771,3 +777,6 @@ window.CJS.CampaignAlignment = (() => {
     markHookFired
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignAlignment = CampaignAlignment;
