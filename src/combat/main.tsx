@@ -27,7 +27,7 @@ import "../../js/combat/damage-calc.js";
 import "../../js/combat/dice-service.js";
 import "../../js/combat/status-manager.js";
 import "../../js/combat/action-handler.js";
-import "../../js/combat/combat-log.js";
+import "../engine/combat/combat-log";
 import "../../js/combat/combat-settings.js";
 import "../../js/combat/combat-objectives.js";
 import "../../js/combat/combat-manager.js";
