@@ -8,7 +8,7 @@ import "../engine/core/data-store";
 import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../../js/services/persona-service.js";
-import "../../js/services/content-validator.js";
+import "../engine/services/content-validator";
 import "../../js/services/data-hot-reload.js";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
 import "../../js/services/dev-console.js";

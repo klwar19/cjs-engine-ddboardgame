@@ -113,7 +113,7 @@ export default defineConfig({
           // module at a time; both map to the stable cjs-core chunk so the port
           // doesn't shuffle chunk boundaries.
           if (normalizedId.includes("/js/core/") || normalizedId.includes("/src/engine/core/")) return "cjs-core";
-          if (normalizedId.includes("/js/services/")) return "cjs-services";
+          if (normalizedId.includes("/js/services/") || normalizedId.includes("/src/engine/services/")) return "cjs-services";
           return undefined;
         }
       }

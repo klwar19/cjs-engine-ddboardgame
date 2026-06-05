@@ -17,7 +17,7 @@ import "../../js/ui/ui-icons.js";
 import "../../js/ui/portrait-picker.js";
 import "../../js/ui/audio-manager.js";
 import "../../js/services/persona-service.js";
-import "../../js/services/content-validator.js";
+import "../engine/services/content-validator";
 import "../../js/services/data-hot-reload.js";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
 import "../../js/services/dev-console.js";
