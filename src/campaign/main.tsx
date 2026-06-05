@@ -22,7 +22,7 @@ import "../../js/ui/scene-player.js";
 import "../../js/campaign/campaign-state.js";
 import "../../js/campaign/farming-mode.js";
 import "../../js/campaign/campaign-data-loader.js";
-import "../../js/campaign/campaign-tags.js";
+import "../engine/campaign/campaign-tags";
 import "../engine/campaign/relationship-tiers";
 import "../../js/campaign/campaign-alignment.js";
 import "../../js/campaign/campaign-conditions.js";

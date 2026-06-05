@@ -1,9 +1,14 @@
-// campaign-tags.js
-// Lightweight campaign tag ledger for story, quest, and combat echoes.
+// campaign-tags.ts — Tier 3 TS port of js/campaign/campaign-tags.js (engine
+// cluster: campaign). Lightweight campaign tag ledger for story / quest / combat
+// echoes: add (with dedupe), resolve / archive / remove, strength changes,
+// phase-expiry, and active-tag queries. State-mutating but DOM-free.
+// Reads: nothing. Used by: campaign-ops, campaign-conditions, story/quest flows.
+//
+// Exports `CampaignTags` and installs window.CJS.CampaignTags. Body verbatim
+// from the legacy IIFE; the only change is `: any` on the `= {}`-default option
+// params (TS infers `{}` and would reject the property reads otherwise).
 
-window.CJS = window.CJS || {};
-
-window.CJS.CampaignTags = (() => {
+export const CampaignTags = (() => {
   'use strict';
 
   function ensure(state) {
@@ -13,7 +18,7 @@ window.CJS.CampaignTags = (() => {
     return state.tagLedger;
   }
 
-  function addTag(state, op = {}) {
+  function addTag(state, op: any = {}) {
     const tag = cleanTag(op.tag || op.id);
     if (!state || !tag) return null;
     const ledger = ensure(state);
@@ -22,7 +27,7 @@ window.CJS.CampaignTags = (() => {
     const targetId = op.targetId || op.target || null;
     const dedupe = op.dedupe !== false;
     const existing = dedupe
-      ? Object.values(ledger.entries).find((entry) => (
+      ? Object.values<any>(ledger.entries).find((entry) => (
         entry.tag === tag
         && entry.status === 'active'
         && entry.scope === scope
@@ -64,22 +69,22 @@ window.CJS.CampaignTags = (() => {
     return ledger.entries[id];
   }
 
-  function resolveTag(state, op = {}) {
+  function resolveTag(state, op: any = {}) {
     return _setStatus(state, op, 'resolved');
   }
 
-  function archiveTag(state, op = {}) {
+  function archiveTag(state, op: any = {}) {
     return _setStatus(state, op, 'archived');
   }
 
-  function removeTag(state, op = {}) {
+  function removeTag(state, op: any = {}) {
     const ledger = ensure(state);
     const ids = _matchingIds(ledger, op);
     for (const id of ids) delete ledger.entries[id];
     return ids.length;
   }
 
-  function changeStrength(state, op = {}) {
+  function changeStrength(state, op: any = {}) {
     const ledger = ensure(state);
     const delta = Number(op.amount ?? op.delta ?? 0);
     let changed = 0;
@@ -96,7 +101,7 @@ window.CJS.CampaignTags = (() => {
     const ledger = ensure(state);
     const phase = Number(state?.phase?.number || 1);
     const expired = [];
-    for (const entry of Object.values(ledger.entries)) {
+    for (const entry of Object.values<any>(ledger.entries)) {
       if (entry.status !== 'active') continue;
       if (entry.expires === 'phase' || (entry.expiresAtPhase != null && Number(entry.expiresAtPhase) <= phase)) {
         entry.status = 'expired';
@@ -107,8 +112,8 @@ window.CJS.CampaignTags = (() => {
     return expired;
   }
 
-  function getActiveTags(state, filter = {}) {
-    return Object.values(ensure(state).entries).filter((entry) => (
+  function getActiveTags(state, filter: any = {}) {
+    return Object.values<any>(ensure(state).entries).filter((entry) => (
       entry.status === 'active'
       && (!filter.scope || entry.scope === filter.scope)
       && (!filter.targetType || entry.targetType === filter.targetType)
@@ -116,12 +121,12 @@ window.CJS.CampaignTags = (() => {
     ));
   }
 
-  function hasTag(state, tag, filter = {}) {
+  function hasTag(state, tag, filter: any = {}) {
     const wanted = cleanTag(tag);
     return !!wanted && getActiveTags(state, filter).some((entry) => entry.tag === wanted);
   }
 
-  function tagSet(state, filter = {}) {
+  function tagSet(state, filter: any = {}) {
     return new Set(getActiveTags(state, filter).map((entry) => entry.tag));
   }
 
@@ -129,7 +134,7 @@ window.CJS.CampaignTags = (() => {
     return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_:-]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
-  function _setStatus(state, op = {}, status) {
+  function _setStatus(state, op: any = {}, status) {
     const ledger = ensure(state);
     const ids = _matchingIds(ledger, op);
     const now = new Date().toISOString();
@@ -141,14 +146,14 @@ window.CJS.CampaignTags = (() => {
     return ids.length;
   }
 
-  function _matchingIds(ledger, op = {}) {
+  function _matchingIds(ledger, op: any = {}) {
     const direct = op.entryId || op.ledgerId;
     if (direct && ledger.entries[direct]) return [direct];
     const tag = cleanTag(op.tag || op.id);
     const scope = op.scope || op.targetScope || null;
     const targetType = op.targetType || op.type || null;
     const targetId = op.targetId || op.target || null;
-    return Object.values(ledger.entries)
+    return Object.values<any>(ledger.entries)
       .filter((entry) => (
         (!tag || entry.tag === tag)
         && (!scope || entry.scope === scope)
@@ -173,3 +178,7 @@ window.CJS.CampaignTags = (() => {
     cleanTag
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS = window.CJS || ({} as CJSNamespace);
+window.CJS.CampaignTags = CampaignTags;

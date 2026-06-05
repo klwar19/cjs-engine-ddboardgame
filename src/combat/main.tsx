@@ -56,7 +56,7 @@ import "../../js/ui/gm-controls.js";
 import "../../js/ui/loot-roller.js";
 import "../../js/ui/l2d-avatar.js";
 import "../../js/ui/l2d-companion.js";
-import "../../js/campaign/campaign-tags.js";
+import "../engine/campaign/campaign-tags";
 import "../../js/campaign/campaign-conditions.js";
 import "../../js/campaign/campaign-quest-pulse.js";
 import "../../js/campaign/campaign-combat-bridge.js";
