@@ -8,7 +8,7 @@ import "./engine/core/skill-resolver";
 import "../js/services/persona-service.js";
 import "./engine/effects/value-calc";
 import "./engine/effects/conditions";
-import "../js/effects/effect-registry.js";
+import "./engine/effects/effect-registry";
 import "../js/ui/audio-manager.js";
 import "../js/ui/animation-bus.js";
 import { markEmbeddedIfNeeded } from "./shared/embed";

@@ -14,7 +14,7 @@ import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.js
 import "../../js/services/dev-console.js";
 import "../engine/effects/value-calc";
 import "../engine/effects/conditions";
-import "../../js/effects/effect-registry.js";
+import "../engine/effects/effect-registry";
 import "../../js/effects/effect-resolver.js";
 import "../../js/grid/grid-engine.js";
 import "../../js/grid/pathfinding.js";

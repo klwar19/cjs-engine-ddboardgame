@@ -11,7 +11,7 @@ import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../engine/effects/value-calc";
 import "../engine/effects/conditions";
-import "../../js/effects/effect-registry.js";
+import "../engine/effects/effect-registry";
 import "../../js/ui/ui-helpers.js";
 import "../../js/ui/ui-icons.js";
 import "../../js/ui/portrait-picker.js";
