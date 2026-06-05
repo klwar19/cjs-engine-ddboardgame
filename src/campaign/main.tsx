@@ -31,7 +31,7 @@ import "../engine/campaign/campaign-ops";
 import "../../js/campaign/campaign-save.js";
 import "../engine/campaign/campaign-events";
 import "../engine/campaign/campaign-world-events";
-import "../../js/campaign/campaign-story-branch.js";
+import "../engine/campaign/campaign-story-branch";
 import "../engine/campaign/campaign-combat-popup";
 import "../engine/campaign/campaign-objective-banner";
 import "../engine/campaign/campaign-story-scenes";

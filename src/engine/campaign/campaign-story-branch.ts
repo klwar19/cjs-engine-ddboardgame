@@ -4,9 +4,13 @@
 // in state.storyMode.manualBranches, merged into the Story Controls
 // chapter tree, and played through the VN scene system.
 
+// Tier 3 TS port of js/campaign/campaign-story-branch.js (engine cluster:
+// campaign). GM-authored runtime "branch" chapters (1.4 -> 1.4.a/1.4.b): create/
+// remove/list/play, suffix allocation, chapter-tree merge. Reads window.CJS.*
+// lazily. Exports `CampaignStoryBranch` and installs window.CJS.CampaignStoryBranch.
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignStoryBranch = (() => {
+export const CampaignStoryBranch = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -17,7 +21,7 @@ window.CJS.CampaignStoryBranch = (() => {
     return CS()?.getState?.() || {};
   }
 
-  function getBranches(world) {
+  function getBranches(world?) {
     const state = _state();
     const list = state.storyMode?.manualBranches || [];
     return world ? list.filter((b) => !b.world || b.world === world) : list.slice();
@@ -47,7 +51,7 @@ window.CJS.CampaignStoryBranch = (() => {
     return `${base}.${cleanSuffix}`;
   }
 
-  function createBranch(input = {}) {
+  function createBranch(input: any = {}) {
     const world = input.world || _state().currentWorld || 'haven';
     const parentSequenceId = input.parentSequenceId || _state().storyMode?.currentPartId || '';
     if (!parentSequenceId) return { ok: false, reason: 'no_parent' };
@@ -107,7 +111,7 @@ window.CJS.CampaignStoryBranch = (() => {
     return removed;
   }
 
-  function playBranch(branchId, options = {}) {
+  function playBranch(branchId, options: any = {}) {
     const branch = getBranch(branchId);
     if (!branch) return false;
     const scene = branch.scene || {};
@@ -141,7 +145,7 @@ window.CJS.CampaignStoryBranch = (() => {
   // Merge branches into the chapter tree from CampaignSequences.chapterTree(),
   // returning a new tree object that includes branch entries as children of
   // their parent part nodes (or as roots if the parent is missing).
-  function applyToTree(tree = { roots: [], byPartId: {}, nodes: [] }, world) {
+  function applyToTree(tree: any = { roots: [], byPartId: {}, nodes: [] }, world) {
     const branches = getBranches(world);
     if (!branches.length) return tree;
     const next = {
@@ -214,7 +218,7 @@ window.CJS.CampaignStoryBranch = (() => {
     return { speaker: '', text: paragraph };
   }
 
-  function _normalizeLine(line = {}) {
+  function _normalizeLine(line: any = {}) {
     return {
       speaker: line.speaker || line.name || '',
       speakerId: line.speakerId || line.characterId || '',
@@ -249,3 +253,6 @@ window.CJS.CampaignStoryBranch = (() => {
     applyToTree
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignStoryBranch = CampaignStoryBranch;
