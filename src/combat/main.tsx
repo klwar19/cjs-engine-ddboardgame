@@ -33,7 +33,7 @@ import "../engine/combat/combat-objectives";
 import "../engine/combat/combat-manager";
 import "../engine/combat/battle-setup";
 import "../engine/ai/ai-conditions";
-import "../../js/ai/ai-targeting.js";
+import "../engine/ai/ai-targeting";
 import "../../js/ai/ai-controller.js";
 import "../../js/qte/qte-quickpress.js";
 import "../../js/qte/qte-mash.js";
