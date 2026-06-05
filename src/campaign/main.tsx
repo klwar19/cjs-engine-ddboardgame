@@ -50,7 +50,7 @@ import "../../js/campaign/campaign-story-director.js";
 import "../../js/campaign/campaign-hub.js";
 import "../../js/campaign/campaign-quest-chains.js";
 import "../../js/campaign/campaign-battle-set-forge.js";
-import "../../js/campaign/campaign-map-seed-forge.js";
+import "../engine/campaign/campaign-map-seed-forge";
 import "../../js/campaign/campaign-scenario-generator.js";
 import "../../js/campaign/campaign-idea-forge.js";
 import "../../js/campaign/campaign-world-map.js";

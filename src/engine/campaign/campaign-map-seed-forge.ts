@@ -1,15 +1,18 @@
-// campaign-map-seed-forge.js
-// Node-map seed lookup and idea helpers.
+// campaign-map-seed-forge.ts — Tier 3 TS port of
+// js/campaign/campaign-map-seed-forge.js (engine cluster: campaign). Node-map
+// seed lookup + idea helpers (getSeeds/getSeed/saveSeed). DOM-free; reads
+// window.CJS.* lazily. Exports `CampaignMapSeedForge` and installs
+// window.CJS.CampaignMapSeedForge. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignMapSeedForge = (() => {
+export const CampaignMapSeedForge = (() => {
   'use strict';
 
   const Loader = () => window.CJS.CampaignDataLoader;
   const Side = () => window.CJS.CampaignSideContent;
 
-  function getSeeds(filters = {}) {
+  function getSeeds(filters: any = {}) {
     return Loader().getMapSeeds(filters.world, filters.zone, filters.hubId)
       .filter((seed) => !filters.risk || Side().risk(seed.canonRisk) === Side().risk(filters.risk))
       .filter((seed) => !filters.tag || (seed.tags || []).includes(filters.tag));
@@ -37,3 +40,6 @@ window.CJS.CampaignMapSeedForge = (() => {
     saveSeed
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignMapSeedForge = CampaignMapSeedForge;
