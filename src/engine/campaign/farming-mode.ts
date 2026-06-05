@@ -1,9 +1,12 @@
-// farming-mode.js
-// Playable Pocket Haven farming grid, tool actions, and farm save migration.
+// farming-mode.ts — Tier 3 TS port of js/campaign/farming-mode.js (engine
+// cluster: campaign). Playable Pocket Haven farming grid: stateful tile/tool/
+// QTE ops, growth ticks, farm save migration (rendering is React JSX). Reads
+// window.CJS.* lazily. Exports `FarmingMode` and installs window.CJS.FarmingMode.
+// Body verbatim from the legacy IIFE; ': any' / casts added for tsc.
 
 window.CJS = window.CJS || {};
 
-window.CJS.FarmingMode = (() => {
+export const FarmingMode = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -30,7 +33,7 @@ window.CJS.FarmingMode = (() => {
     { id: 'scythe', label: 'Scythe', glyph: 'C' }
   ];
 
-  function normalizeFarm(rawFarm = {}, options = {}) {
+  function normalizeFarm(rawFarm: any = {}, options: any = {}) {
     const farm = rawFarm && typeof rawFarm === 'object' ? rawFarm : {};
     const rule = options.rule?.farm || _defaultRule()?.farm || {};
     const world = options.world || CS()?.getState?.()?.currentWorld || '';
@@ -294,7 +297,7 @@ window.CJS.FarmingMode = (() => {
     if (tool === 'scythe') return _scytheAction(state, farm, tile, target);
   }
 
-  function _handAction(state, farm, tile) {
+  function _handAction(state, farm, tile, _target?) {
     if (tile.seedId && tile.ready) return _harvestTile(state, farm, tile);
     if (tile.seedId) {
       tile.cared = true;
@@ -439,7 +442,7 @@ window.CJS.FarmingMode = (() => {
     _afterFarmAction(state, farm, 'harvest');
   }
 
-  function _normalizePlayer(player = {}, width, height) {
+  function _normalizePlayer(player: any = {}, width, height) {
     return {
       x: _clampInt(player.x ?? 1, 0, width - 1),
       y: _clampInt(player.y ?? Math.floor(height / 2), 0, height - 1),
@@ -451,13 +454,13 @@ window.CJS.FarmingMode = (() => {
     const source = stock && typeof stock === 'object' ? stock : {};
     const hasAny = Object.keys(source).length > 0;
     const out = {};
-    for (const [id, qty] of Object.entries(hasAny ? source : fallback || {})) {
+    for (const [id, qty] of Object.entries<any>(hasAny ? source : fallback || {})) {
       if (id) out[id] = Math.max(0, Number(qty || 0));
     }
     return out;
   }
 
-  function _normalizeTools(tools = {}) {
+  function _normalizeTools(tools: any = {}) {
     const out = {};
     for (const tool of TOOLS) {
       out[tool.id] = {
@@ -468,7 +471,7 @@ window.CJS.FarmingMode = (() => {
     return out;
   }
 
-  function _normalizeQte(qte = {}) {
+  function _normalizeQte(qte: any = {}) {
     return {
       available: !!qte.available,
       active: !!qte.active,
@@ -511,7 +514,7 @@ window.CJS.FarmingMode = (() => {
         farm.player.y = next.y;
         return;
       }
-      for (const delta of Object.values(DIRECTIONS)) {
+      for (const delta of Object.values<any>(DIRECTIONS)) {
         const nx = next.x + delta.x;
         const ny = next.y + delta.y;
         if (_inside(farm, nx, ny) && !seen.has(_key(nx, ny))) queue.push({ x: nx, y: ny });
@@ -521,9 +524,9 @@ window.CJS.FarmingMode = (() => {
     farm.player.y = Math.min(farm.height - 1, Math.max(0, farm.player.y));
   }
 
-  function _normalizeTiles(tiles = {}, width, height) {
+  function _normalizeTiles(tiles: any = {}, width, height) {
     const out = {};
-    for (const [key, raw] of Object.entries(tiles || {})) {
+    for (const [key, raw] of Object.entries<any>(tiles || {})) {
       const [x, y] = _xy(key);
       if (!_coordsInside(width, height, x, y)) continue;
       out[key] = _normalizeTile(raw, x, y);
@@ -531,7 +534,7 @@ window.CJS.FarmingMode = (() => {
     return out;
   }
 
-  function _normalizeTile(raw = {}, x, y) {
+  function _normalizeTile(raw: any = {}, x, y) {
     const base = _defaultTile(x, y);
     const tile = { ...base, ...(raw || {}) };
     tile.terrain = tile.terrain || (tile.tilled ? 'soil' : 'grass');
@@ -565,7 +568,7 @@ window.CJS.FarmingMode = (() => {
     return slots;
   }
 
-  function _migrateLegacyPlots(farm) {
+  function _migrateLegacyPlots(farm, _rule?) {
     if (farm.gridMigratedFromPlots || !Array.isArray(farm.plots) || !farm.plots.length) return;
     farm.plots.forEach((plot, index) => {
       if (!plot?.seedId) return;
@@ -615,7 +618,7 @@ window.CJS.FarmingMode = (() => {
     _stepToward(state, farm, x, y);
   }
 
-  function _tryMove(state, farm, direction, options = {}) {
+  function _tryMove(state, farm, direction, options: any = {}) {
     const delta = DIRECTIONS[direction];
     if (!delta) return false;
     const next = { x: farm.player.x + delta.x, y: farm.player.y + delta.y };
@@ -742,17 +745,17 @@ window.CJS.FarmingMode = (() => {
     return false;
   }
 
-  function _grantBundle(state, bundle = {}) {
+  function _grantBundle(state, bundle: any = {}) {
     state.inventory = state.inventory || {};
     for (const bucket of ['items', 'materials', 'food', 'questItems']) {
       state.inventory[bucket] = state.inventory[bucket] || {};
-      for (const [id, qty] of Object.entries(bundle[bucket] || {})) {
+      for (const [id, qty] of Object.entries<any>(bundle[bucket] || {})) {
         state.inventory[bucket][id] = Math.max(0, Number(state.inventory[bucket][id] || 0) + Number(qty || 0));
         if (state.inventory[bucket][id] <= 0) delete state.inventory[bucket][id];
       }
     }
     state.currencies = state.currencies || {};
-    for (const [id, qty] of Object.entries(bundle.currencies || {})) {
+    for (const [id, qty] of Object.entries<any>(bundle.currencies || {})) {
       state.currencies[id] = Math.max(0, Number(state.currencies[id] || 0) + Number(qty || 0));
     }
   }
@@ -772,17 +775,17 @@ window.CJS.FarmingMode = (() => {
     }
   }
 
-  function _singleHarvestBonus(bundle = {}) {
+  function _singleHarvestBonus(bundle: any = {}) {
     for (const bucket of ['materials', 'items', 'food', 'questItems', 'currencies']) {
-      const entry = Object.entries(bundle[bucket] || {}).find(([, qty]) => Number(qty || 0) > 0);
+      const entry = Object.entries<any>(bundle[bucket] || {}).find(([, qty]) => Number(qty || 0) > 0);
       if (entry) return { [bucket]: { [entry[0]]: 1 } };
     }
     return {};
   }
 
-  function _bundleHasAny(bundle = {}) {
+  function _bundleHasAny(bundle: any = {}) {
     return ['materials', 'items', 'food', 'questItems', 'currencies'].some((bucket) => (
-      Object.values(bundle[bucket] || {}).some((qty) => Number(qty || 0) > 0)
+      Object.values<any>(bundle[bucket] || {}).some((qty) => Number(qty || 0) > 0)
     ));
   }
 
@@ -813,19 +816,19 @@ window.CJS.FarmingMode = (() => {
     return Math.max(0, Number(stock?.[id] || 0));
   }
 
-  function _firstPositiveStock(stock = {}) {
+  function _firstPositiveStock(stock: any = {}) {
     return Object.keys(stock).find((id) => Number(stock[id] || 0) > 0) || Object.keys(stock)[0] || '';
   }
 
   function _normalizerContext(state) {
     return {
       world: state?.currentWorld,
-      rule: Object.values(CS()?.getContent?.()?.pocketHavenRules || {})[0] || {}
+      rule: Object.values<any>(CS()?.getContent?.()?.pocketHavenRules || {})[0] || {}
     };
   }
 
   function _defaultRule() {
-    return Object.values(CS()?.getContent?.()?.pocketHavenRules || {})[0] || {};
+    return Object.values<any>(CS()?.getContent?.()?.pocketHavenRules || {})[0] || {};
   }
 
   function _inside(farm, x, y) {
@@ -878,3 +881,6 @@ window.CJS.FarmingMode = (() => {
     upgradeTool
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.FarmingMode = FarmingMode;

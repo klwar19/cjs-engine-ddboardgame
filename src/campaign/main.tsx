@@ -20,7 +20,7 @@ import "../../js/ui/ui-icons.js";
 import "../../js/ui/portrait-picker.js";
 import "../../js/ui/scene-player.js";
 import "../engine/campaign/campaign-state";
-import "../../js/campaign/farming-mode.js";
+import "../engine/campaign/farming-mode";
 import "../engine/campaign/campaign-data-loader";
 import "../engine/campaign/campaign-tags";
 import "../engine/campaign/relationship-tiers";
