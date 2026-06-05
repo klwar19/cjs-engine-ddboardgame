@@ -20,7 +20,7 @@ import "../../js/grid/grid-engine.js";
 import "../../js/grid/pathfinding.js";
 import "../../js/grid/aoe.js";
 import "../../js/grid/map-generator.js";
-import "../../js/combat/weather-manager.js";
+import "../engine/combat/weather-manager";
 import "../../js/combat/enemy-modifiers.js";
 import "../../js/combat/stat-compiler.js";
 import "../../js/combat/damage-calc.js";
