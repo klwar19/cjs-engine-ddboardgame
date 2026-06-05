@@ -22,7 +22,7 @@ import "../../js/grid/aoe.js";
 import "../../js/grid/map-generator.js";
 import "../engine/combat/weather-manager";
 import "../../js/combat/enemy-modifiers.js";
-import "../../js/combat/stat-compiler.js";
+import "../engine/combat/stat-compiler";
 import "../../js/combat/damage-calc.js";
 import "../../js/combat/dice-service.js";
 import "../../js/combat/status-manager.js";
