@@ -1,4 +1,5 @@
 // data-hot-reload.js
+// Tier 3 TS port -> src/engine/services/data-hot-reload.ts (exports DataHotReload + installs window.CJS.DataHotReload). Body verbatim.
 // Bridges DataStore mutations to active UI surfaces so devs can edit content
 // (via the editor, an import, or the debug console) and see updates without
 // reloading the page. The DataStore already broadcasts changes via subscribe;
@@ -17,7 +18,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.DataHotReload = (() => {
+export const DataHotReload = (() => {
   'use strict';
 
   let _unsub = null;
@@ -26,7 +27,7 @@ window.CJS.DataHotReload = (() => {
   let _pendingChanges = [];
   let _enabled = false;
 
-  function init(options = {}) {
+  function init(options: any = {}) {
     if (_enabled) return;
     _delayMs = Number(options.delayMs || 120);
     const DS = window.CJS.DataStore;
@@ -70,7 +71,7 @@ window.CJS.DataHotReload = (() => {
     _enabled = false;
   }
 
-  const _listeners = new Set();
+  const _listeners = new Set<any>();
 
   function onBatch(fn) {
     if (typeof fn !== 'function') return () => {};
@@ -90,3 +91,6 @@ if (typeof document !== 'undefined') {
     window.CJS.DataHotReload.init();
   }
 }
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.DataHotReload = DataHotReload;

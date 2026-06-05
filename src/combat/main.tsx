@@ -9,9 +9,9 @@ import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../engine/services/persona-service";
 import "../engine/services/content-validator";
-import "../../js/services/data-hot-reload.js";
+import "../engine/services/data-hot-reload";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
-import "../../js/services/dev-console.js";
+import "../engine/services/dev-console";
 import "../engine/effects/value-calc";
 import "../engine/effects/conditions";
 import "../engine/effects/effect-registry";

@@ -1,4 +1,5 @@
 // dev-console.js
+// Tier 3 TS port -> src/engine/services/dev-console.ts (exports DevConsole + installs window.CJS.DevConsole). Body verbatim.
 // In-app developer console. Toggle with backtick (`) on any CJS page.
 // Lets developers inspect live state, run quick expressions against the
 // CJS namespace, and trigger common dev actions without reloading.
@@ -17,7 +18,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.DevConsole = (() => {
+export const DevConsole = (() => {
   'use strict';
 
   let _root = null;
@@ -48,7 +49,7 @@ window.CJS.DevConsole = (() => {
     document.addEventListener('keydown', (ev) => {
       // Backtick (and ~) toggles. Ignore when typing in an input.
       if (ev.key !== '`' && ev.key !== '~') return;
-      const target = /** @type {HTMLElement | null} */ (ev.target);
+      const target = ev.target as HTMLElement | null;
       const tag = (target?.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
       ev.preventDefault();
@@ -211,7 +212,7 @@ window.CJS.DevConsole = (() => {
       counts[t] = arr.length;
     }
     _bodyEl.textContent = 'DataStore content counts:\n\n' +
-      Object.entries(counts).map(([k, v]) => `  ${k.padEnd(20, ' ')} ${v}`).join('\n');
+      Object.entries<any>(counts).map(([k, v]) => `  ${k.padEnd(20, ' ')} ${v}`).join('\n');
   }
 
   function _renderEvents() {
@@ -340,3 +341,6 @@ if (typeof document !== 'undefined') {
     window.CJS.DevConsole.init();
   }
 }
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.DevConsole = DevConsole;

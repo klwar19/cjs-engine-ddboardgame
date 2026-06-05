@@ -24,8 +24,6 @@
     "js/grid/grid-renderer.js",
     "js/minigames/cooking-minigame.js",
     "js/minigames/fishing-minigame.js",
-    "js/services/data-hot-reload.js",
-    "js/services/dev-console.js",
     "js/ui/touch-gestures.js"
   ]
 }
