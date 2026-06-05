@@ -19,7 +19,7 @@ import "../../js/ui/ui-helpers.js";
 import "../../js/ui/ui-icons.js";
 import "../../js/ui/portrait-picker.js";
 import "../../js/ui/scene-player.js";
-import "../../js/campaign/campaign-state.js";
+import "../engine/campaign/campaign-state";
 import "../../js/campaign/farming-mode.js";
 import "../../js/campaign/campaign-data-loader.js";
 import "../engine/campaign/campaign-tags";

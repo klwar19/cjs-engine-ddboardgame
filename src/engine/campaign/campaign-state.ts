@@ -1,9 +1,15 @@
-// campaign-state.js
-// Campaign save state, authored campaign content index, and pub/sub.
+// campaign-state.ts — Tier 3 TS port of js/campaign/campaign-state.js (engine
+// cluster: campaign). Campaign save state store, authored campaign-content
+// index, mutate/clone, and pub/sub. The campaign-side analogue of the combat
+// engine's state core. DOM-free; reads window.CJS.* lazily.
+//
+// Exports `CampaignState` and installs window.CJS.CampaignState. Body verbatim
+// from the legacy IIFE; only `: any` annotations added where tsc (strict:false)
+// requires them.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignState = (() => {
+export const CampaignState = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -78,14 +84,14 @@ window.CJS.CampaignState = (() => {
     return _state;
   }
 
-  function setState(nextState, meta = {}) {
+  function setState(nextState, meta: any = {}) {
     _state = normalizeSave(nextState);
     ST()?.freezeDev?.(_state);
     _emit({ type: meta.type || 'replace', source: meta.source || 'state' });
     return _state;
   }
 
-  function mutate(mutator, meta = {}) {
+  function mutate(mutator, meta: any = {}) {
     if (!_state) return null;
     const next = ST()?.produce ? ST().produce(_state, mutator) : (() => {
       const draft = clone(_state);
@@ -154,8 +160,8 @@ window.CJS.CampaignState = (() => {
       || null;
   }
 
-  function createNewSave(campaignId, options = {}) {
-    const campaign = _content.campaigns[campaignId] || Object.values(_content.campaigns)[0];
+  function createNewSave(campaignId, options: any = {}) {
+    const campaign = _content.campaigns[campaignId] || Object.values<any>(_content.campaigns)[0];
     if (!campaign) throw new Error('No campaign definitions loaded.');
 
     const save = buildInitialSave(campaign, options);
@@ -163,7 +169,7 @@ window.CJS.CampaignState = (() => {
     return save;
   }
 
-  function buildInitialSave(campaign, options = {}) {
+  function buildInitialSave(campaign, options: any = {}) {
     const start = campaign.startingState || {};
     const phaseRule = (campaign.phaseRules || []).find((rule) => rule.id === campaign.startPhase) || campaign.phaseRules?.[0] || null;
     const party = {};
@@ -173,7 +179,7 @@ window.CJS.CampaignState = (() => {
       if (member) party[charId] = member;
     }
 
-    const rule = Object.values(_content.pocketHavenRules)[0] || {};
+    const rule = Object.values<any>(_content.pocketHavenRules)[0] || {};
     const plotCount = rule.farm?.startingPlots || 1;
 
     return normalizeSave({
@@ -432,13 +438,13 @@ window.CJS.CampaignState = (() => {
     return out;
   }
 
-  function _activePersonaForPool(member = {}, persona = null) {
+  function _activePersonaForPool(member: any = {}, persona = null) {
     if (persona) return persona;
     if (member.activePersona && PS()) return PS().getPersona(member.activePersona);
     return null;
   }
 
-  function _skillPoolIds(member = {}, base = {}, persona = null) {
+  function _skillPoolIds(member: any = {}, base: any = {}, persona = null) {
     const activePersona = _activePersonaForPool(member, persona);
     const ids = new Set();
     const authoredSkills = activePersona && Array.isArray(activePersona.skills)
@@ -462,7 +468,7 @@ window.CJS.CampaignState = (() => {
     return Array.from(ids);
   }
 
-  function _passivePoolIds(member = {}, base = {}, persona = null) {
+  function _passivePoolIds(member: any = {}, base: any = {}, persona = null) {
     const activePersona = _activePersonaForPool(member, persona);
     const ids = new Set();
     const authoredPassives = activePersona && Array.isArray(activePersona.innatePassives)
@@ -482,7 +488,7 @@ window.CJS.CampaignState = (() => {
   // Build a baseline skillProgress map from the character's authored skill
   // list. Each skill starts at level 1 with 0 AP and is auto-extended later
   // when new skills are learned in campaign mode.
-  function _initialSkillProgress(base = {}) {
+  function _initialSkillProgress(base: any = {}) {
     const out = {};
     for (const entry of base.skills || []) {
       const id = typeof entry === 'string' ? entry : entry?.skillId;
@@ -492,7 +498,7 @@ window.CJS.CampaignState = (() => {
     return out;
   }
 
-  function _initialPassiveProgress(base = {}) {
+  function _initialPassiveProgress(base: any = {}) {
     const out = {};
     for (const id of base.innatePassives || []) {
       if (id) out[id] = { rank: 1 };
@@ -521,7 +527,7 @@ window.CJS.CampaignState = (() => {
     }
   }
 
-  function _persistJobGrants(member, base = {}, jobId) {
+  function _persistJobGrants(member, base: any = {}, jobId) {
     if (!member || !jobId || !window.CJS.Formulas?.collectJobGrants) return;
     const job = DS().get('jobs', jobId);
     const level = Math.max(1, Number(member.jobProgress?.[jobId]?.level || 1));
@@ -551,7 +557,7 @@ window.CJS.CampaignState = (() => {
     }
   }
 
-  function _partyHpContext(base = {}, id = '') {
+  function _partyHpContext(base: any = {}, id = '') {
     return {
       team: base.team || 'player',
       type: base.type || 'humanoid',
@@ -560,7 +566,7 @@ window.CJS.CampaignState = (() => {
     };
   }
 
-  function _syncPartyMaxHp(id, member = {}) {
+  function _syncPartyMaxHp(id, member: any = {}) {
     const store = DS();
     if (!store?.get || !F()?.calcMaxHP || !F()?.calcMaxMP) return;
     const base = store.get('characters', member.baseCharacterId || id);
@@ -571,10 +577,10 @@ window.CJS.CampaignState = (() => {
     _syncResource(member, 'maxMp', 'currentMp', F().calcMaxMP(stats, rank));
   }
 
-  function _partyStats(base = {}, member = {}) {
+  function _partyStats(base: any = {}, member: any = {}) {
     const stats = { ...(base.stats || {}) };
     const overrides = member.statOverrides || {};
-    for (const [stat, amount] of Object.entries(overrides)) {
+    for (const [stat, amount] of Object.entries<any>(overrides)) {
       stats[stat] = Number(stats[stat] || 0) + Number(amount || 0);
     }
     return stats;
@@ -592,14 +598,14 @@ window.CJS.CampaignState = (() => {
     }
   }
 
-  function _normalizeEquipmentSlots(rawSlots, equipment = []) {
+  function _normalizeEquipmentSlots(rawSlots, equipment: any[] = []) {
     const slots = {
       weapon: rawSlots?.weapon || null,
       armor: rawSlots?.armor || null,
       accessory1: rawSlots?.accessory1 || null,
       accessory2: rawSlots?.accessory2 || null
     };
-    const used = new Set(Object.values(slots).filter(Boolean));
+    const used = new Set(Object.values<any>(slots).filter(Boolean));
     for (const itemId of equipment || []) {
       if (!itemId || used.has(itemId)) continue;
       const item = DS().get('items', itemId);
@@ -613,15 +619,15 @@ window.CJS.CampaignState = (() => {
     return slots;
   }
 
-  function _equipmentSlotsFromList(equipment = []) {
+  function _equipmentSlotsFromList(equipment: any[] = []) {
     return _normalizeEquipmentSlots({}, equipment);
   }
 
-  function _equipmentListFromSlots(slots = {}) {
+  function _equipmentListFromSlots(slots: any = {}) {
     return [slots.weapon, slots.armor, slots.accessory1, slots.accessory2].filter(Boolean);
   }
 
-  function _equipmentKind(item = {}) {
+  function _equipmentKind(item: any = {}) {
     const slot = item?.slot || '';
     if (item?.equipmentCategory) return item.equipmentCategory;
     if (slot === 'weapon' || slot === 'offhand') return 'weapon';
@@ -632,7 +638,7 @@ window.CJS.CampaignState = (() => {
 
   function buildInitialHubState(campaign) {
     const result = {};
-    const hubIds = campaign.hubs || Object.values(_content.campaignHubs)
+    const hubIds = campaign.hubs || Object.values<any>(_content.campaignHubs)
       .filter((hub) => hub.world === campaign.world || hub._world === campaign.world)
       .map((hub) => hub.id);
 
@@ -640,7 +646,7 @@ window.CJS.CampaignState = (() => {
       const hub = _content.campaignHubs[hubId];
       if (!hub) continue;
       const hubStats = {};
-      for (const [stat, config] of Object.entries(hub.hubStats || {})) {
+      for (const [stat, config] of Object.entries<any>(hub.hubStats || {})) {
         hubStats[stat] = Number(config.default || 0);
       }
       const npcMoods = {};
@@ -664,7 +670,7 @@ window.CJS.CampaignState = (() => {
     return result;
   }
 
-  function buildInitialWorldProgress(campaign = {}) {
+  function buildInitialWorldProgress(campaign: any = {}) {
     const worldId = campaign.world || 'haven';
     return {
       [worldId]: {
@@ -740,7 +746,7 @@ window.CJS.CampaignState = (() => {
     }
     next.scenarioHistory = next.scenarioHistory || [];
     next.mapState = next.mapState || {};
-    for (const map of Object.values(next.mapState)) {
+    for (const map of Object.values<any>(next.mapState)) {
       map.visited = map.visited || {};
       map.revealed = map.revealed || {};
       map.locked = map.locked || {};
@@ -757,7 +763,7 @@ window.CJS.CampaignState = (() => {
     const campaign = _content.campaigns[next.campaignId];
     if (campaign) {
       const hubDefaults = buildInitialHubState(campaign);
-      for (const [hubId, hubState] of Object.entries(hubDefaults)) {
+      for (const [hubId, hubState] of Object.entries<any>(hubDefaults)) {
         next.hubState[hubId] = {
           ...hubState,
           ...(next.hubState[hubId] || {}),
@@ -830,7 +836,7 @@ window.CJS.CampaignState = (() => {
     next.pocketHaven.farm = next.pocketHaven.farm || { plots: [] };
     next.pocketHaven.farm.plots = next.pocketHaven.farm.plots || [];
     if (window.CJS.FarmingMode?.normalizeFarm) {
-      const rule = Object.values(_content.pocketHavenRules || {})[0] || {};
+      const rule = Object.values<any>(_content.pocketHavenRules || {})[0] || {};
       next.pocketHaven.farm = window.CJS.FarmingMode.normalizeFarm(next.pocketHaven.farm, {
         rule,
         world: next.currentWorld
@@ -856,7 +862,7 @@ window.CJS.CampaignState = (() => {
     next.pinnedNotes = next.pinnedNotes || [];
     next.log = next.log || [];
     next.settings = next.settings || {};
-    for (const [id, member] of Object.entries(next.party || {})) {
+    for (const [id, member] of Object.entries<any>(next.party || {})) {
       member.baseCharacterId = member.baseCharacterId || id;
       member.level = Number(member.level || 1);
       member.xp = Number(member.xp || 0);
@@ -890,7 +896,7 @@ window.CJS.CampaignState = (() => {
     return next;
   }
 
-  function normalizeWorldProgress(progress, currentWorld = 'haven', worlds = {}) {
+  function normalizeWorldProgress(progress, currentWorld = 'haven', worlds: any = {}) {
     const next = progress && typeof progress === 'object' ? progress : {};
     const ids = new Set([currentWorld || 'haven', ...Object.keys(worlds || {}), ...Object.keys(next || {})].filter(Boolean));
     for (const worldId of ids) {
@@ -927,7 +933,7 @@ window.CJS.CampaignState = (() => {
     return next;
   }
 
-  function normalizeAvailability(raw = {}, member = {}) {
+  function normalizeAvailability(raw: any = {}, member: any = {}) {
     const status = String(raw.status || raw.state || (member.available === false ? 'unavailable' : 'available')).toLowerCase();
     const valid = ['available', 'unavailable', 'busy', 'injured', 'story_locked'];
     return {
@@ -942,7 +948,7 @@ window.CJS.CampaignState = (() => {
   // Backfill the adventurer ledger on legacy saves. `rank` mirrors
   // member.rank so old code paths that read member.rank keep working;
   // rankPoints / trialPending start fresh if absent.
-  function _normalizeAdventurer(member, base = {}) {
+  function _normalizeAdventurer(member, base: any = {}) {
     const memberRank = member.rank || base.rank || 'F';
     member.adventurer = member.adventurer && typeof member.adventurer === 'object'
       ? member.adventurer
@@ -956,7 +962,7 @@ window.CJS.CampaignState = (() => {
     if (member.rank !== member.adventurer.rank) member.rank = member.adventurer.rank;
   }
 
-  function _normalizeUltimate(member, base = {}) {
+  function _normalizeUltimate(member, base: any = {}) {
     const skillId = member.ultimateSkillId || base.ultimateSkillId || null;
     const max = Math.max(1, Number(member.ultimateMax || base.ultimateMax || 100) || 100);
     member.ultimateSkillId = skillId;
@@ -969,7 +975,7 @@ window.CJS.CampaignState = (() => {
   // Backfill skillProgress / job fields onto a party member loaded from
   // an existing save (or freshly-recruited). Existing data is preserved;
   // only missing entries are added so old saves keep working.
-  function _normalizeProgression(member, base = {}) {
+  function _normalizeProgression(member, base: any = {}) {
     const PROG = (window.CJS.CONST?.PROGRESSION) || {};
     member.skillProgress = (member.skillProgress && typeof member.skillProgress === 'object')
       ? member.skillProgress
@@ -1082,7 +1088,7 @@ window.CJS.CampaignState = (() => {
   // current world, the first qualifying default-unlocked persona is
   // auto-activated and seeded so existing characters smoothly adopt
   // a Haven/Zombie/etc. skin without breaking older saves.
-  function _normalizePersona(member, base = {}, save = {}) {
+  function _normalizePersona(member, base: any = {}, save: any = {}) {
     if (!PS()) return;
     const charId = member.baseCharacterId || base.id;
     const allPersonas = PS().personasForCharacter(charId);
@@ -1182,9 +1188,9 @@ window.CJS.CampaignState = (() => {
     return true;
   }
 
-  function _mergePersonaSeedWithExisting(seeded = {}, existing = {}) {
+  function _mergePersonaSeedWithExisting(seeded: any = {}, existing: any = {}) {
     const statOverrides = { ...(seeded.statOverrides || {}) };
-    for (const [stat, value] of Object.entries(existing.statOverrides || {})) {
+    for (const [stat, value] of Object.entries<any>(existing.statOverrides || {})) {
       statOverrides[stat] = Number(statOverrides[stat] || 0) + Number(value || 0);
     }
     const seededEquipment = Array.isArray(seeded.equipment) ? seeded.equipment.filter(Boolean) : [];
@@ -1211,12 +1217,12 @@ window.CJS.CampaignState = (() => {
     };
   }
 
-  function _syncEquipmentSlots(member = {}) {
+  function _syncEquipmentSlots(member: any = {}) {
     member.equipmentSlots = _normalizeEquipmentSlots(member.equipmentSlots, member.equipment);
     member.equipment = _equipmentListFromSlots(member.equipmentSlots);
   }
 
-  function _baseLoadoutFromCharacter(base = {}) {
+  function _baseLoadoutFromCharacter(base: any = {}) {
     const PROG = window.CJS.CONST?.PROGRESSION || {};
     const currentJob = base.defaultJob || null;
     const jobProgress = {};
@@ -1262,7 +1268,7 @@ window.CJS.CampaignState = (() => {
   }
 
   function getGeneratedIdeas() {
-    return Object.values(_state?.sideContent?.generatedIdeas || {});
+    return Object.values<any>(_state?.sideContent?.generatedIdeas || {});
   }
 
   function getSavedIdeas() {
@@ -1270,11 +1276,11 @@ window.CJS.CampaignState = (() => {
   }
 
   function getGeneratedScenarios() {
-    return Object.values(_state?.sideContent?.generatedScenarios || {});
+    return Object.values<any>(_state?.sideContent?.generatedScenarios || {});
   }
 
   function getActiveQuestChains() {
-    return Object.values(_state?.sideContent?.activeQuestChains || {});
+    return Object.values<any>(_state?.sideContent?.activeQuestChains || {});
   }
 
   function getSideContentHistory() {
@@ -1319,3 +1325,6 @@ window.CJS.CampaignState = (() => {
     getSideContentHistory
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignState = CampaignState;
