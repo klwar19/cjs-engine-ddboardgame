@@ -29,7 +29,7 @@ import "../engine/combat/status-manager";
 import "../../js/combat/action-handler.js";
 import "../engine/combat/combat-log";
 import "../engine/combat/combat-settings";
-import "../../js/combat/combat-objectives.js";
+import "../engine/combat/combat-objectives";
 import "../../js/combat/combat-manager.js";
 import "../../js/combat/battle-setup.js";
 import "../../js/ai/ai-conditions.js";
