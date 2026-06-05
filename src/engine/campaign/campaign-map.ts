@@ -1,11 +1,15 @@
-// campaign-map.js
-// Node-map renderer for Campaign Mode.
+// campaign-map.ts — Tier 3 TS port of js/campaign/campaign-map.js (engine
+// cluster: campaign). Node-map renderer for Campaign Mode (render/renderGrid/
+// renderSelectedNode/renderNodeDetail/renderGridCellDetail), binding its own
+// private click listener that dispatches typed campaign actions. Exports
+// `CampaignMap` and installs window.CJS.CampaignMap. Body verbatim from the
+// legacy IIFE; import path adjusted for the src/engine/ location.
 
-import { dispatchCampaignAction } from "../../src/campaign/actions";
+import { dispatchCampaignAction } from "../../campaign/actions";
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignMap = (() => {
+export const CampaignMap = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -202,7 +206,7 @@ window.CJS.CampaignMap = (() => {
     container.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      const btn = target.closest('[data-map-move-cell], [data-map-layer], [data-map-move-node], [data-map-reveal-node], [data-map-clear-node], [data-map-camp-rest], [data-map-open-tab]');
+      const btn: any = target.closest('[data-map-move-cell], [data-map-layer], [data-map-move-node], [data-map-reveal-node], [data-map-clear-node], [data-map-camp-rest], [data-map-open-tab]');
       if (!btn || !container.contains(btn) || btn.disabled) return;
       event.preventDefault();
       if (btn.dataset.mapMoveCell) {
@@ -265,7 +269,7 @@ window.CJS.CampaignMap = (() => {
     ).join('');
   }
 
-  function _renderThreatStrip(threats = [], current = {}) {
+  function _renderThreatStrip(threats: any[] = [], current: any = {}) {
     if (!threats.length) return '';
     const items = threats.map((threat) => {
       const mode = _threatModeKey(threat);
@@ -283,7 +287,7 @@ window.CJS.CampaignMap = (() => {
     return `<div class="campaign-grid-threat-strip" role="status" aria-live="polite">${items}</div>`;
   }
 
-  function _gridLevelTabs(map = {}) {
+  function _gridLevelTabs(map: any = {}) {
     const levels = Array.isArray(map?.levels) ? map.levels : [];
     if (!levels.length) return [];
     return levels.map((level, index) => ({
@@ -313,7 +317,7 @@ window.CJS.CampaignMap = (() => {
       _normalizeLayerId(threat.levelId || target) === target);
   }
 
-  function _nodeFogState(node = {}, mapState = {}, run = {}) {
+  function _nodeFogState(node: any = {}, mapState: any = {}, run: any = {}) {
     const id = node?.id;
     const current = !!(id && run?.currentNode === id);
     const visited = !!(id && (mapState.visited?.[id] || (run?.visitedNodes || []).includes(id)));
@@ -335,7 +339,7 @@ window.CJS.CampaignMap = (() => {
     return { current, visited, visible, known, scouted: visible && !known };
   }
 
-  function _cellFogState(cell = {}, key = '', mapState = {}, run = {}, current = {}) {
+  function _cellFogState(cell: any = {}, key = '', mapState: any = {}, run: any = {}, current: any = {}) {
     const cellKey = key || _cellKey(cell.x, cell.y, cell.levelId || run?.mapLayer || null);
     const currentKey = current ? _cellKey(current.x, current.y, run?.mapLayer || cell.levelId || null) : '';
     const isCurrent = !!(cellKey && currentKey && cellKey === currentKey);
@@ -356,7 +360,7 @@ window.CJS.CampaignMap = (() => {
     return { current: isCurrent, visited, visible, known, scouted: visible && !known };
   }
 
-  function _visibleLevelThreats(run, map, activeLevelId, mapState = {}, current = {}) {
+  function _visibleLevelThreats(run, map, activeLevelId, mapState: any = {}, current: any = {}) {
     return _activeLevelThreats(run, map, activeLevelId).filter((threat) => {
       const key = _cellKey(threat.x, threat.y, threat.levelId || activeLevelId || null);
       const cell = Runner().findCell?.(map, threat.x, threat.y, threat.levelId || activeLevelId)
@@ -365,7 +369,7 @@ window.CJS.CampaignMap = (() => {
     });
   }
 
-  function _mapSetting(map = {}) {
+  function _mapSetting(map: any = {}) {
     const scenario = CS().getActiveScenario?.();
     const raw = String(
       map.setting
@@ -400,7 +404,7 @@ window.CJS.CampaignMap = (() => {
   // Returns the CSS modifier class used to pick the tile background.
   // Purpose kinds (battle, shop, rest, etc.) get the underlying terrain
   // class so the tile floor still reads correctly under the node badge.
-  function _gridKindClass(cell = {}) {
+  function _gridKindClass(cell: any = {}) {
     const PURPOSE_KINDS = new Set([
       'battle', 'event_battle', 'boss', 'rest', 'camp', 'campfire',
       'shop', 'story', 'event', 'special_event', 'treasure', 'reward',
@@ -431,7 +435,7 @@ window.CJS.CampaignMap = (() => {
     return raw.replace(/[^a-z0-9_-]/g, '_');
   }
 
-  function _gridNodeBadge(cell = {}, objective = null) {
+  function _gridNodeBadge(cell: any = {}, objective = null) {
     const kind = String(cell.kind || '').toLowerCase();
     const tags = (cell.tags || []).map((t) => String(t).toLowerCase());
     if (kind === 'boss' || tags.includes('boss')) return 'is-boss';
@@ -445,7 +449,7 @@ window.CJS.CampaignMap = (() => {
     return '';
   }
 
-  function _playerMarkupV2(run = {}) {
+  function _playerMarkupV2(run: any = {}) {
     const facing = _normalizeFacing(run?.facing || 'down');
     const moving = _recentMotionClass(run?.playerMotionAt);
     return `
@@ -458,7 +462,7 @@ window.CJS.CampaignMap = (() => {
   // Bin's marker drawn over the current node on the node-map SVG. Uses
   // foreignObject so we can reuse the same CSS-driven sprite sheet as the
   // grid map, keeping the player's identity consistent across views.
-  function _nodeMapPlayerMarkup(node = {}, run = {}) {
+  function _nodeMapPlayerMarkup(node: any = {}, run: any = {}) {
     const cx = Number(node.x) || 0;
     const cy = Number(node.y) || 0;
     const size = 56;
@@ -482,7 +486,7 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
-  function _threatMarkupV2(threat = {}, adjacent = false, current = null) {
+  function _threatMarkupV2(threat: any = {}, adjacent = false, current = null) {
     const mode = _threatModeKey(threat);
     const modeText = _threatModeText(mode);
     const distance = current ? _manhattan(current, threat) : null;
@@ -498,7 +502,7 @@ window.CJS.CampaignMap = (() => {
     const inlineSprite = sprite ? `style="--threat-sprite:url('${_escAttr(sprite)}');"` : '';
     const moving = _recentMotionClass(threat._motionAt);
     const spriteMode = sprite ? (_isThreatSheet(sprite) ? 'has-sheet' : 'has-sprite') : '';
-    const isChasing = mode === 'chase' || mode === 'pursue';
+    const isChasing = (mode as string) === 'chase' || (mode as string) === 'pursue';
     const closeIn = distance !== null && distance <= 2;
     const cls = [
       'campaign-grid-threat v2',
@@ -535,7 +539,7 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
-  function _threatModeKey(threat = {}) {
+  function _threatModeKey(threat: any = {}) {
     const raw = String(threat.moveMode || threat.move || 'random').toLowerCase();
     if (raw === 'chase' || raw === 'pursue' || raw === 'hunt') return 'chase';
     if (raw === 'patrol' || raw === 'route') return 'patrol';
@@ -550,7 +554,7 @@ window.CJS.CampaignMap = (() => {
     return 'roaming the area';
   }
 
-  function _manhattan(a = {}, b = {}) {
+  function _manhattan(a: any = {}, b: any = {}) {
     if (!a || !b) return null;
     const ax = Number(a.x); const ay = Number(a.y);
     const bx = Number(b.x); const by = Number(b.y);
@@ -558,7 +562,7 @@ window.CJS.CampaignMap = (() => {
     return Math.abs(ax - bx) + Math.abs(ay - by);
   }
 
-  function _threatFacing(threat = {}, current = null) {
+  function _threatFacing(threat: any = {}, current = null) {
     const last = String(threat._lastDir || '').toLowerCase();
     if (['up', 'down', 'left', 'right'].includes(last)) return last;
     if (current && Number.isFinite(Number(current.x)) && Number.isFinite(Number(current.y))) {
@@ -586,14 +590,14 @@ window.CJS.CampaignMap = (() => {
       : '';
   }
 
-  function _isAdjacent(current = {}, threat = {}) {
+  function _isAdjacent(current: any = {}, threat: any = {}) {
     if (!current || !threat) return false;
     const dx = Math.abs(Number(current.x) - Number(threat.x));
     const dy = Math.abs(Number(current.y) - Number(threat.y));
     return (dx + dy) <= 1;
   }
 
-  function _threatMarkup(threat = {}, adjacent = false) {
+  function _threatMarkup(threat: any = {}, adjacent = false) {
     const sprite = _threatSprite(threat);
     const icon = _threatIcon(threat);
     const title = _escAttr(`${threat.label || threat.id || 'Threat'} — close to engage`);
@@ -604,7 +608,7 @@ window.CJS.CampaignMap = (() => {
     return `<span class="${cls}" title="${title}">${_esc(icon)}</span>`;
   }
 
-  function _threatSprite(threat = {}) {
+  function _threatSprite(threat: any = {}) {
     if (threat.sprite) return threat.sprite;
     if (threat.portrait) return threat.portrait;
     const monsterIds = _threatMonsterIds(threat);
@@ -621,7 +625,7 @@ window.CJS.CampaignMap = (() => {
     return value.includes('sheet') || value.includes('shadow_stalker') || value.includes('move_');
   }
 
-  function _threatIcon(threat = {}) {
+  function _threatIcon(threat: any = {}) {
     if (threat.icon && threat.icon !== '!' && threat.icon !== '?') return threat.icon;
     const monsterIds = _threatMonsterIds(threat);
     for (const id of monsterIds) {
@@ -631,7 +635,7 @@ window.CJS.CampaignMap = (() => {
     return threat.icon || '👹';
   }
 
-  function _threatMonsterIds(threat = {}) {
+  function _threatMonsterIds(threat: any = {}) {
     const ids = [];
     if (Array.isArray(threat.monsterIds)) ids.push(...threat.monsterIds);
     if (threat.encounterId) {
@@ -660,7 +664,7 @@ window.CJS.CampaignMap = (() => {
     return ids.filter(Boolean);
   }
 
-  function _glyphForCell(cell = {}, opts = {}) {
+  function _glyphForCell(cell: any = {}, opts: any = {}) {
     if (!opts.passable) {
       return `<span class="campaign-grid-glyph is-blocked">#</span>`;
     }
@@ -673,7 +677,7 @@ window.CJS.CampaignMap = (() => {
     return `<span class="campaign-grid-glyph">${_gridIcon(cell, true)}</span>`;
   }
 
-  function _cellTitleText(cell = {}, key = '', objective = null, objectiveTitle = '', threat = null, known = true) {
+  function _cellTitleText(cell: any = {}, key = '', objective = null, objectiveTitle = '', threat = null, known = true) {
     if (!known) return 'Scouted nearby ground - details hidden by fog';
     const base = cell.title || key;
     const parts = [];
@@ -687,7 +691,7 @@ window.CJS.CampaignMap = (() => {
     return parts.join(' — ');
   }
 
-  function renderGridCellDetail(cell, mapState = {}) {
+  function renderGridCellDetail(cell, mapState: any = {}) {
     if (!cell) return '<div class="campaign-empty">No current cell.</div>';
     const state = CS().getState();
     const map = CS().getActiveMap();
@@ -720,7 +724,7 @@ window.CJS.CampaignMap = (() => {
     if (detail) detail.innerHTML = renderNodeDetailSafe(node, state.mapState[map.id] || {});
   }
 
-  function renderNodeDetail(node, mapState = {}) {
+  function renderNodeDetail(node, mapState: any = {}) {
     if (!node) return '<div class="campaign-empty">Select a node.</div>';
     const state = CS().getState();
     const run = state?.activeScenarioRun;
@@ -797,7 +801,7 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
-  function renderGridCellDetailSafe(cell, mapState = {}) {
+  function renderGridCellDetailSafe(cell, mapState: any = {}) {
     if (!cell) return '<div class="campaign-empty">No current cell.</div>';
     const state = CS().getState();
     const map = CS().getActiveMap();
@@ -871,7 +875,7 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
-  function renderNodeDetailSafe(node, mapState = {}) {
+  function renderNodeDetailSafe(node, mapState: any = {}) {
     if (!node) return '<div class="campaign-empty">Select a node.</div>';
     const state = CS().getState();
     const run = state?.activeScenarioRun;
@@ -953,7 +957,7 @@ window.CJS.CampaignMap = (() => {
     return map[node.kind] || '.';
   }
 
-  function _nodeIconSymbolId(node = {}) {
+  function _nodeIconSymbolId(node: any = {}) {
     if (node.capture) return 'cjs-node-icon-resource';
     if (node.campfire) return 'cjs-node-icon-campfire';
     const kind = String(node.kind || 'event').toLowerCase();
@@ -1049,7 +1053,7 @@ window.CJS.CampaignMap = (() => {
     `;
   }
 
-  function _mapTheme(map = {}) {
+  function _mapTheme(map: any = {}) {
     const w = String(map.theme || map.world || CS().getState()?.currentWorld || '').toLowerCase();
     if (w.includes('haven')) return 'haven';
     if (w.includes('zombie') || w.includes('rot')) return 'zombie';
@@ -1130,7 +1134,7 @@ window.CJS.CampaignMap = (() => {
     }
   }
 
-  function _objectiveIcon(objective = {}) {
+  function _objectiveIcon(objective: any = {}) {
     const icons = {
       defeat: '⚔',
       recover: '★',
@@ -1146,7 +1150,7 @@ window.CJS.CampaignMap = (() => {
     return icons[objective.kind] || '★';
   }
 
-  function _objectiveTag(objective = {}) {
+  function _objectiveTag(objective: any = {}) {
     const short = String(objective.label || '').slice(0, 18);
     return short.length === 18 ? `${short}…` : short;
   }
@@ -1175,7 +1179,7 @@ window.CJS.CampaignMap = (() => {
   // Compute the SVG viewBox dimensions for a node map. Prefers explicit
   // canvasWidth/Height (set by the generator). Otherwise falls back to the
   // smallest box that fits every node's x/y, with a minimum of 680x420.
-  function _nodeCanvasSize(map = {}) {
+  function _nodeCanvasSize(map: any = {}) {
     const w = Number(map.canvasWidth || 0);
     const h = Number(map.canvasHeight || 0);
     if (w >= 200 && h >= 200) return { width: w, height: h };
@@ -1303,7 +1307,7 @@ window.CJS.CampaignMap = (() => {
 
   // levelId arg accepted but only used when it differs from the default level
   // (kept compatible with prior callers that pass map as the 4th arg — we ignore it).
-  function _cellKey(x, y, levelId = null /*, map */) {
+  function _cellKey(x, y, levelId = null, _map?) {
     const base = `${Number(x)},${Number(y)}`;
     const level = levelId ? _normalizeLayerId(levelId) : '';
     return level && level !== 'level_1' ? `${level}:${base}` : base;
@@ -1325,3 +1329,6 @@ window.CJS.CampaignMap = (() => {
     renderGridCellDetail
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignMap = CampaignMap;

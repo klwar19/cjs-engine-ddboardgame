@@ -40,7 +40,7 @@ import "../engine/campaign/campaign-sequence-vn";
 import "../engine/campaign/campaign-oracle";
 import "../engine/campaign/campaign-combat-bridge";
 import "../engine/campaign/campaign-party-chat";
-import "../../js/campaign/campaign-map.js";
+import "../engine/campaign/campaign-map";
 import "../engine/campaign/pocket-haven-facilities";
 import "../engine/campaign/pocket-haven";
 import "../../js/campaign/guild-trivia.js";
