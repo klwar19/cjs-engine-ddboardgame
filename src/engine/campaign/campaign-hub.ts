@@ -1,9 +1,11 @@
-// campaign-hub.js
-// Living hub helpers for Side Content Forge.
+// campaign-hub.ts — Tier 3 TS port of js/campaign/campaign-hub.js (engine
+// cluster: campaign). Living-hub helpers for the Side Content Forge (hub def/id/
+// state, hub events, pulse roll, choice apply, save/reject). DOM-free; reads
+// window.CJS.* lazily. Exports `CampaignHub` and installs window.CJS.CampaignHub.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignHub = (() => {
+export const CampaignHub = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -53,7 +55,7 @@ window.CJS.CampaignHub = (() => {
     return card;
   }
 
-  function applyChoice(cardId, choiceIndex = 0, options = {}) {
+  function applyChoice(cardId, choiceIndex = 0, options: any = {}) {
     const idea = CS().getState()?.sideContent?.generatedIdeas?.[cardId] || CS().getState()?.lastSideContentCard;
     if (!idea) return;
     if (idea.canonRisk === 'red' && !options.approved) {
@@ -98,3 +100,6 @@ window.CJS.CampaignHub = (() => {
     rejectLastPulse
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignHub = CampaignHub;

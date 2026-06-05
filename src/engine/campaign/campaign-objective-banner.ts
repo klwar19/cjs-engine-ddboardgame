@@ -3,9 +3,13 @@
 // from hidden to visible (e.g. once the player passes the 60% reveal
 // threshold). Also surfaces force_reveal_objective triggers.
 
+// Tier 3 TS port of js/campaign/campaign-objective-banner.js (engine cluster:
+// campaign). Brief banner shown when an active scenario's objective flips
+// hidden→visible. Exports `CampaignObjectiveBanner` and installs
+// window.CJS.CampaignObjectiveBanner. Body verbatim from the legacy IIFE.
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignObjectiveBanner = (() => {
+export const CampaignObjectiveBanner = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -27,7 +31,7 @@ window.CJS.CampaignObjectiveBanner = (() => {
     if (_unsub) { _unsub(); _unsub = null; }
   }
 
-  function show(objective = {}, opts = {}) {
+  function show(objective: any = {}, opts: any = {}) {
     if (!objective?.label) return;
     if (typeof document === 'undefined' || !document.body) return;
     _clear();
@@ -92,3 +96,6 @@ window.CJS.CampaignObjectiveBanner = (() => {
 
   return Object.freeze({ init, dispose, show });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignObjectiveBanner = CampaignObjectiveBanner;
