@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "../engine/core/constants";
-import "../../js/core/formulas.js";
+import "../engine/core/formulas";
 import "../engine/core/dice";
 import "../../js/core/undo-manager.js";
 import "../engine/core/state-tools";
