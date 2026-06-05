@@ -17,9 +17,13 @@
 // Daily limits are tracked per-phase: every phase pass resets the
 // `usesRemaining` for each facility to its rule-defined daily cap.
 
+// Tier 3 TS port of js/campaign/pocket-haven-facilities.js (engine cluster:
+// campaign). Exports `PocketHavenFacilities` and installs
+// window.CJS.PocketHavenFacilities. Body verbatim from the legacy IIFE; only
+// `: any` annotations added where tsc (strict:false) requires them.
 window.CJS = window.CJS || {};
 
-window.CJS.PocketHavenFacilities = (() => {
+export const PocketHavenFacilities = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -104,7 +108,7 @@ window.CJS.PocketHavenFacilities = (() => {
 
   function listFacilities() {
     const catalog = getCatalog();
-    return Object.values(catalog).map((f) => ({ ...f }));
+    return Object.values<any>(catalog).map((f) => ({ ...f }));
   }
 
   // State accessors — `ensureState` normalizes a fresh facilities map.
@@ -123,7 +127,7 @@ window.CJS.PocketHavenFacilities = (() => {
   }
 
   // build_facility — pay cost, create instance at level 1.
-  function build(state, op = {}, opsApply = null) {
+  function build(state, op: any = {}, opsApply = null) {
     const id = op.facilityId || op.id;
     const def = getFacilityDef(id);
     if (!def) return { ok: false, reason: 'unknown_facility' };
@@ -136,7 +140,7 @@ window.CJS.PocketHavenFacilities = (() => {
   }
 
   // upgrade_facility — pay tiered cost, bump level.
-  function upgrade(state, op = {}) {
+  function upgrade(state, op: any = {}) {
     const id = op.facilityId || op.id;
     const inst = getInstance(state, id);
     const def = getFacilityDef(id);
@@ -157,7 +161,7 @@ window.CJS.PocketHavenFacilities = (() => {
 
   // train_skill — spend a daily slot to grant AP to a skill.
   // op: { memberId, skillId, facilityId? }
-  function trainSkill(state, op = {}) {
+  function trainSkill(state, op: any = {}) {
     const id = op.facilityId || 'training_ground';
     const inst = getInstance(state, id);
     const def = getFacilityDef(id);
@@ -176,7 +180,7 @@ window.CJS.PocketHavenFacilities = (() => {
   }
 
   // ranch_assign — put a beast id into the ranch.
-  function ranchAssign(state, op = {}) {
+  function ranchAssign(state, op: any = {}) {
     const inst = getInstance(state, 'ranch');
     const def = getFacilityDef('ranch');
     if (!inst || !def) return { ok: false, reason: 'not_built' };
@@ -189,7 +193,7 @@ window.CJS.PocketHavenFacilities = (() => {
     return { ok: true, beastId: op.beastId, slotsRemaining: capacity - inst.assigned.length };
   }
 
-  function ranchRelease(state, op = {}) {
+  function ranchRelease(state, op: any = {}) {
     const inst = getInstance(state, 'ranch');
     if (!inst) return { ok: false, reason: 'not_built' };
     if (!op.beastId) return { ok: false, reason: 'missing_beast' };
@@ -262,7 +266,7 @@ window.CJS.PocketHavenFacilities = (() => {
     return map;
   }
 
-  function _costBundle(input = {}) {
+  function _costBundle(input: any = {}) {
     return {
       currencies: input.currencies || {},
       items: input.items || {},
@@ -296,7 +300,7 @@ window.CJS.PocketHavenFacilities = (() => {
     }
   }
 
-  function describeCost(bundle = {}) {
+  function describeCost(bundle: any = {}) {
     const parts = [];
     for (const [id, qty] of Object.entries(bundle.currencies || {})) parts.push(`${qty} ${id}`);
     for (const bucket of ['items', 'materials', 'food']) {
@@ -326,3 +330,6 @@ window.CJS.PocketHavenFacilities = (() => {
     DEFAULT_CATALOG
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.PocketHavenFacilities = PocketHavenFacilities;
