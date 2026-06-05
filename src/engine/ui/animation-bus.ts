@@ -1,4 +1,5 @@
 // animation-bus.js
+// Tier 3 TS port -> src/engine/ui/animation-bus.ts (exports AnimationBus + installs window.CJS.AnimationBus). Body verbatim.
 // Tiny pub/sub used by combat code to announce visual events
 // (move, damage, ko, skill cast, turn start). Combat-ui subscribes.
 //
@@ -13,7 +14,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.AnimationBus = (() => {
+export const AnimationBus = (() => {
   'use strict';
 
   const _subs = Object.create(null);  // { eventName: [fn, ...] }
@@ -47,3 +48,6 @@ window.CJS.AnimationBus = (() => {
 
   return Object.freeze({ on, off, emit, clearAll });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.AnimationBus = AnimationBus;

@@ -9,8 +9,8 @@ import "./engine/services/persona-service";
 import "./engine/effects/value-calc";
 import "./engine/effects/conditions";
 import "./engine/effects/effect-registry";
-import "../js/ui/audio-manager.js";
-import "../js/ui/animation-bus.js";
+import "./engine/ui/audio-manager";
+import "./engine/ui/animation-bus";
 import { markEmbeddedIfNeeded } from "./shared/embed";
 
 markEmbeddedIfNeeded();

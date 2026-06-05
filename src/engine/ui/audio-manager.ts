@@ -1,4 +1,5 @@
 // audio-manager.js
+// Tier 3 TS port -> src/engine/ui/audio-manager.ts (exports AudioManager + installs window.CJS.AudioManager). Body verbatim.
 // Singleton audio layer for combat SFX + BGM. Mirrors PortraitPicker:
 // loads a manifest, caches assets, exposes play/stop/volume helpers.
 // Audio is presentation-only — combat math never depends on it, and a
@@ -11,7 +12,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.AudioManager = (() => {
+export const AudioManager = (() => {
   'use strict';
 
   const SFX_POOL_SIZE = 12;
@@ -19,7 +20,7 @@ window.CJS.AudioManager = (() => {
   const LS_BGM_VOL = 'cjs.audio.bgmVol';
   const LS_MUTED   = 'cjs.audio.muted';
 
-  let _manifest = { sfx: {}, bgm: {} };
+  let _manifest: any = { sfx: {}, bgm: {} };
   let _loaded = false;
 
   let _sfxPool = [];
@@ -41,7 +42,7 @@ window.CJS.AudioManager = (() => {
   let _bgmStopTimer = 0;
   let _lastBgmError = null;
 
-  const _subs = new Set();
+  const _subs = new Set<any>();
   const SFX_VARIATION = {
     default:               { min: 0.985, max: 1.015 },
     ui_click:              { min: 0.99,  max: 1.03  },
@@ -327,7 +328,7 @@ window.CJS.AudioManager = (() => {
 
   function _ensureAudioCtx() {
     if (_audioCtx) return _audioCtx;
-    const Ctor = window.AudioContext || window.webkitAudioContext;
+    const Ctor = window.AudioContext || (window as any).webkitAudioContext;
     if (!Ctor) return null;
     try { _audioCtx = new Ctor(); } catch (e) { _audioCtx = null; }
     return _audioCtx;
@@ -465,7 +466,7 @@ window.CJS.AudioManager = (() => {
 
   function getManifest() { return _manifest; }
 
-  function _normalize(value) {
+  function _normalize(value?) {
     return {
       sfx: _normalizeBucket(value?.sfx),
       bgm: _normalizeBucket(value?.bgm),
@@ -476,7 +477,7 @@ window.CJS.AudioManager = (() => {
   function _normalizeBucket(bucket) {
     const out = {};
     if (!bucket || typeof bucket !== 'object') return out;
-    for (const [id, raw] of Object.entries(bucket)) {
+    for (const [id, raw] of Object.entries<any>(bucket)) {
       const entry = _normalizeEntry(raw);
       if (entry) out[id] = entry;
     }
@@ -499,11 +500,11 @@ window.CJS.AudioManager = (() => {
 
   function _normalizeSlotBucket(bucket) {
     const out = {};
-    for (const [id, slot] of Object.entries(DEFAULT_SFX_SLOTS)) {
+    for (const [id, slot] of Object.entries<any>(DEFAULT_SFX_SLOTS)) {
       out[id] = { ...slot };
     }
     if (!bucket || typeof bucket !== 'object') return out;
-    for (const [id, raw] of Object.entries(bucket)) {
+    for (const [id, raw] of Object.entries<any>(bucket)) {
       const key = String(id || '').trim();
       if (!key) continue;
       if (typeof raw === 'string') {
@@ -891,3 +892,6 @@ window.CJS.AudioManager = (() => {
     isMuted
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.AudioManager = AudioManager;

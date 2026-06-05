@@ -1,4 +1,5 @@
 // ui-helpers.js
+// Tier 3 TS port -> src/engine/ui/ui-helpers.ts (exports UI + installs window.CJS.UI). Body verbatim.
 // Shared UI components: searchable dropdowns, tag chips, number sliders,
 // form validation, toast notifications, modal dialogs, data list rendering.
 // Reads: constants.js (for enums)
@@ -7,7 +8,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.UI = (() => {
+export const UI = (() => {
   'use strict';
 
   const C = () => window.CJS.CONST;
@@ -35,7 +36,7 @@ window.CJS.UI = (() => {
   }
 
   // ── MODAL DIALOGS ──────────────────────────────────────────────
-  function openModal({ title, content, onClose, footer, width }) {
+  function openModal({ title, content, onClose, footer, width }: any) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) closeModal(overlay, onClose); };
@@ -75,7 +76,7 @@ window.CJS.UI = (() => {
     return overlay;
   }
 
-  function closeModal(overlay, onClose) {
+  function closeModal(overlay, onClose?) {
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
     if (typeof onClose === 'function') onClose();
   }
@@ -103,9 +104,9 @@ window.CJS.UI = (() => {
 
   // ── SEARCHABLE SELECT / DROPDOWN ───────────────────────────────
   // Creates a text input that filters a dropdown list
-  function createSearchableSelect({ options, value, onChange, placeholder, groupBy, renderItem }) {
+  function createSearchableSelect({ options, value, onChange, placeholder, groupBy, renderItem }: any) {
     // options: [{ value, label, group?, icon?, sub? }]
-    const wrapper = document.createElement('div');
+    const wrapper: any = document.createElement('div');
     wrapper.style.position = 'relative';
 
     const input = document.createElement('input');
@@ -145,7 +146,7 @@ window.CJS.UI = (() => {
           groups[g].push(o);
         }
         dropdown.innerHTML = '';
-        for (const [groupName, items] of Object.entries(groups)) {
+        for (const [groupName, items] of Object.entries<any>(groups)) {
           const gh = document.createElement('div');
           gh.style.cssText = 'padding:4px 10px;font-size:0.75rem;color:var(--text-mute);font-weight:600;text-transform:uppercase;';
           gh.textContent = groupName;
@@ -218,8 +219,8 @@ window.CJS.UI = (() => {
   }
 
   // ── TAG INPUT ──────────────────────────────────────────────────
-  function createTagInput({ tags, onChange, placeholder, suggestions }) {
-    const wrapper = document.createElement('div');
+  function createTagInput({ tags, onChange, placeholder, suggestions }: any) {
+    const wrapper: any = document.createElement('div');
     const list = document.createElement('div');
     list.className = 'tag-list';
     list.style.marginBottom = '4px';
@@ -237,7 +238,7 @@ window.CJS.UI = (() => {
         const tag = document.createElement('span');
         tag.className = 'tag';
         tag.innerHTML = `${t} <button class="tag-remove" title="Remove">&times;</button>`;
-        tag.querySelector('.tag-remove').onclick = () => {
+        (tag.querySelector('.tag-remove') as HTMLElement).onclick = () => {
           currentTags = currentTags.filter(x => x !== t);
           render();
           if (onChange) onChange(currentTags);
@@ -268,8 +269,8 @@ window.CJS.UI = (() => {
   }
 
   // ── NUMBER INPUT WITH SLIDER ───────────────────────────────────
-  function createNumberSlider({ value, min, max, step, onChange, label }) {
-    const wrapper = document.createElement('div');
+  function createNumberSlider({ value, min, max, step, onChange, label }: any) {
+    const wrapper: any = document.createElement('div');
     wrapper.className = 'flex items-center gap-sm';
 
     if (label) {
@@ -314,8 +315,8 @@ window.CJS.UI = (() => {
   }
 
   // ── SIMPLE SELECT ──────────────────────────────────────────────
-  function createSelect({ options, value, onChange, includeEmpty, emptyLabel }) {
-    const sel = document.createElement('select');
+  function createSelect({ options, value, onChange, includeEmpty, emptyLabel }: any) {
+    const sel: any = document.createElement('select');
     if (includeEmpty) {
       const opt = document.createElement('option');
       opt.value = '';
@@ -397,12 +398,12 @@ window.CJS.UI = (() => {
     const grouped = ER.getEffectsGroupedByCategory();
     const all = ER.getAllEffects();
     filterBar.innerHTML = `<button class="filter-btn active" data-cat="all">All (${all.length})</button>`;
-    for (const [cat, items] of Object.entries(grouped)) {
+    for (const [cat, items] of Object.entries<any>(grouped)) {
       if (items.length === 0) continue;
       filterBar.innerHTML += `<button class="filter-btn" data-cat="${cat}">${cat} (${items.length})</button>`;
     }
     filterBar.onclick = (e) => {
-      const btn = e.target.closest('.filter-btn');
+      const btn = (e.target as HTMLElement).closest('.filter-btn') as HTMLElement;
       if (!btn) return;
       filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -424,7 +425,7 @@ window.CJS.UI = (() => {
   // ── EFFECT OVERRIDE FORM ───────────────────────────────────────
   // Given an effect, show editable overridable fields
   function createOverrideForm(effect, overrides, onChange) {
-    const form = document.createElement('div');
+    const form: any = document.createElement('div');
     const overridable = effect.overridable || ['value', 'duration'];
     const current = { ...(overrides || {}) };
 
@@ -446,7 +447,7 @@ window.CJS.UI = (() => {
       } else if (field === 'duration') {
         const inp = document.createElement('input');
         inp.type = 'number';
-        inp.min = 0; inp.max = 20;
+        inp.min = '0'; inp.max = '20';
         inp.value = current.duration ?? effect.duration ?? 0;
         inp.onchange = () => { current.duration = Number(inp.value) || null; if (onChange) onChange(current); };
         group.appendChild(inp);
@@ -499,8 +500,8 @@ window.CJS.UI = (() => {
 
   // ── EFFECT LIST BUILDER ────────────────────────────────────────
   // Reusable "add effects from library" component used by passive/skill/item editors
-  function createEffectListBuilder({ effects, onChange }) {
-    const container = document.createElement('div');
+  function createEffectListBuilder({ effects, onChange }: any) {
+    const container: any = document.createElement('div');
     let currentEffects = [...(effects || [])]; // [{ effectId, overrides }]
 
     function render() {
@@ -569,7 +570,7 @@ window.CJS.UI = (() => {
     }
 
     function _openOverrideEditor(index, ref, master) {
-      const form = createOverrideForm(master, ref.overrides, (ov) => {
+      const form: any = createOverrideForm(master, ref.overrides, (ov) => {
         currentEffects[index].overrides = ov;
         if (onChange) onChange(currentEffects);
       });
@@ -601,7 +602,7 @@ window.CJS.UI = (() => {
   }
 
   // ── DATA LIST RENDERER ────────────────────────────────────────
-  function renderDataList({ container, items, activeId, onSelect, renderItem }) {
+  function renderDataList({ container, items, activeId, onSelect, renderItem }: any) {
     container.innerHTML = '';
     if (items.length === 0) {
       container.innerHTML = '<div class="data-list-empty">No items yet</div>';
@@ -657,3 +658,6 @@ window.CJS.UI = (() => {
     renderDataList, enumOptions, statOptions
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.UI = UI;

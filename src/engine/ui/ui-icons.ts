@@ -1,4 +1,5 @@
 // ui-icons.js
+// Tier 3 TS port -> src/engine/ui/ui-icons.ts (exports UIIcons + installs window.CJS.UIIcons). Body verbatim.
 // Centralized icon/symbol rendering for skills, passives, items, jobs, etc.
 //
 // Each entity may carry an `icon` field that is one of:
@@ -17,7 +18,7 @@
 //
 window.CJS = window.CJS || {};
 
-window.CJS.UIIcons = (() => {
+export const UIIcons = (() => {
   'use strict';
 
   const DEFAULTS = {
@@ -96,7 +97,7 @@ window.CJS.UIIcons = (() => {
   //   alt:    accessibility text (default entity.name)
   //   title:  tooltip text
   //   className: extra CSS class
-  function renderIcon(entity, options = {}) {
+  function renderIcon(entity, options: any = {}) {
     const kind = options.kind || 'generic';
     const size = options.size || 'md';
     const tok = normalize(iconSource(entity, kind), kind);
@@ -184,8 +185,8 @@ window.CJS.UIIcons = (() => {
       for (const e of entries) {
         for (const node of e.addedNodes || []) {
           if (node && node.nodeType === 1) {
-            if (node.matches && node.matches('[data-icon-upload]')) bindUploadWidget(node);
-            if (node.querySelectorAll) bindAll(node);
+            if ((node as any).matches && (node as any).matches('[data-icon-upload]')) bindUploadWidget(node as any);
+            if ((node as any).querySelectorAll) bindAll(node as any);
           }
         }
       }
@@ -209,3 +210,6 @@ window.CJS.UIIcons = (() => {
     DEFAULTS
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.UIIcons = UIIcons;

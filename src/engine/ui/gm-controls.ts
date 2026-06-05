@@ -1,4 +1,5 @@
 // gm-controls.js
+// Tier 3 TS port -> src/engine/ui/gm-controls.ts (exports GMControls + installs window.CJS.GMControls). Body verbatim.
 // Game Master live-edit panel for combat. Lets the operator add, remove,
 // move, damage, heal, status-fy, or terrain-paint anything on the
 // battlefield while the encounter is running.
@@ -11,7 +12,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.GMControls = (() => {
+export const GMControls = (() => {
   'use strict';
 
   const CM = () => window.CJS.CombatManager;
@@ -30,7 +31,7 @@ window.CJS.GMControls = (() => {
   let _movingUnitId = null;  // mid-move selection
 
   // ── PUBLIC: mount the panel into a host element ───────────────────
-  function mount(hostEl, opts = {}) {
+  function mount(hostEl, opts: any = {}) {
     if (!hostEl) return;
     _refreshFn = opts.onRefresh || null;
     _hintFn = opts.onHint || null;
@@ -141,7 +142,7 @@ window.CJS.GMControls = (() => {
         <option value="sunny">🔆 Harsh Sunlight</option>
       `;
 
-    const sizeOptions = Object.entries(C().UNIT_SIZES || { '1x1': { label: '1×1' } })
+    const sizeOptions = Object.entries<any>(C().UNIT_SIZES || { '1x1': { label: '1×1' } })
       .map(([k, v]) => `<option value="${_esc(k)}">${_esc(v.label || k)}</option>`)
       .join('');
 
@@ -351,7 +352,7 @@ window.CJS.GMControls = (() => {
         _hintFn?.(`Unknown weather "${id}".`);
         return;
       }
-      for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
+      for (const u of Object.values<any>(state.units || {})) WX.applyStatModsToUnit(u, state);
       cm.notify?.();
       _refreshFn?.();
       _hintFn?.(`Weather set: ${def.name || def.id} (${dur} turns).`);
@@ -370,7 +371,7 @@ window.CJS.GMControls = (() => {
         return;
       }
       WX.clearEnvironment(state);
-      for (const u of Object.values(state.units || {})) WX.applyStatModsToUnit(u, state);
+      for (const u of Object.values<any>(state.units || {})) WX.applyStatModsToUnit(u, state);
       cm.notify?.();
       _refreshFn?.();
       _hintFn?.('Weather cleared.');
@@ -638,3 +639,6 @@ window.CJS.GMControls = (() => {
     handleCellClick, cancelTool
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.GMControls = GMControls;

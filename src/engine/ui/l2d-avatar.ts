@@ -1,4 +1,5 @@
 // l2d-avatar.js
+// Tier 3 TS port -> src/engine/ui/l2d-avatar.ts (exports L2DAvatar + installs window.CJS.L2DAvatar). Body verbatim.
 // Live2D Cubism 4 viewer wrapper. Lazy-loads PIXI v6 + Live2D Cubism Core +
 // pixi-live2d-display from CDN, mounts the model into a target element, and
 // exposes a tiny imperative API:
@@ -15,7 +16,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.L2DAvatar = (() => {
+export const L2DAvatar = (() => {
   'use strict';
 
   const CDN = {
@@ -30,10 +31,10 @@ window.CJS.L2DAvatar = (() => {
 
   // ── Library loaders ─────────────────────────────────────────────
   function _loadScript(src) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       // Re-use existing tag if present
       const existing = document.querySelector(`script[data-l2d-src="${src}"]`);
-      if (existing && existing.dataset.l2dLoaded === '1') return resolve();
+      if (existing && (existing as any).dataset.l2dLoaded === '1') return resolve();
       if (existing) {
         existing.addEventListener('load', () => resolve());
         existing.addEventListener('error', () => reject(new Error('script load failed: ' + src)));
@@ -56,13 +57,13 @@ window.CJS.L2DAvatar = (() => {
       await _loadScript(CDN.pixi);
       await _loadScript(CDN.core);
       await _loadScript(CDN.display);
-      if (!window.PIXI) throw new Error('PIXI failed to load');
-      if (!window.Live2DCubismCore) throw new Error('Live2D Cubism Core failed to load');
-      const Live2DModel = window.PIXI.live2d?.Live2DModel;
+      if (!(window as any).PIXI) throw new Error('PIXI failed to load');
+      if (!(window as any).Live2DCubismCore) throw new Error('Live2D Cubism Core failed to load');
+      const Live2DModel = (window as any).PIXI.live2d?.Live2DModel;
       if (!Live2DModel) throw new Error('pixi-live2d-display failed to load');
       // pixi-live2d-display ticker registration
-      Live2DModel.registerTicker(window.PIXI.Ticker);
-      return { PIXI: window.PIXI, Live2DModel };
+      Live2DModel.registerTicker((window as any).PIXI.Ticker);
+      return { PIXI: (window as any).PIXI, Live2DModel };
     })();
     return _libsPromise;
   }
@@ -102,7 +103,7 @@ window.CJS.L2DAvatar = (() => {
   }
 
   // ── Public: create() returns an instance bound to a DOM target ──
-  async function create(targetEl, opts = {}) {
+  async function create(targetEl, opts: any = {}) {
     if (!targetEl) throw new Error('L2DAvatar.create: targetEl required');
 
     const reg = await _loadRegistry();
@@ -150,7 +151,7 @@ window.CJS.L2DAvatar = (() => {
     function applyParameters(parameters) {
       if (!parameters || typeof parameters !== 'object') return;
       const coreModel = model.internalModel?.coreModel;
-      for (const [id, value] of Object.entries(parameters)) {
+      for (const [id, value] of Object.entries<any>(parameters)) {
         const n = Number(value);
         if (coreModel && Number.isFinite(n)) {
           try { coreModel.setParameterValueById(id, n); } catch (_) {}
@@ -168,9 +169,9 @@ window.CJS.L2DAvatar = (() => {
       setTimeout(applyConfiguredParameters, 150);
     }
     if (hasLockedParameters) {
-      const priority = window.PIXI.UPDATE_PRIORITY?.LOW ?? -25;
+      const priority = (window as any).PIXI.UPDATE_PRIORITY?.LOW ?? -25;
       app.ticker.add(applyLockedParameters, undefined, priority);
-      window.PIXI.Ticker.shared.add(applyLockedParameters, undefined, priority);
+      (window as any).PIXI.Ticker.shared.add(applyLockedParameters, undefined, priority);
     }
 
     // Layout: scale model so its height ~= 95% of target height, anchored to
@@ -230,7 +231,7 @@ window.CJS.L2DAvatar = (() => {
       try {
         const m = motionMap[key];
         if (!m) return;
-        model.motion(m.group ?? '', m.index ?? 0, window.PIXI.live2d.MotionPriority?.NORMAL ?? 2);
+        model.motion(m.group ?? '', m.index ?? 0, (window as any).PIXI.live2d.MotionPriority?.NORMAL ?? 2);
       } catch (e) { console.warn('[L2D] playMotion failed:', e); }
       applyConfiguredParameters();
     }
@@ -276,7 +277,7 @@ window.CJS.L2DAvatar = (() => {
       window.removeEventListener('pointermove', onPointerMove);
       if (hasLockedParameters) {
         try { app.ticker.remove(applyLockedParameters); } catch (_) {}
-        try { window.PIXI.Ticker.shared.remove(applyLockedParameters); } catch (_) {}
+        try { (window as any).PIXI.Ticker.shared.remove(applyLockedParameters); } catch (_) {}
       }
       silence();
       try { app.destroy(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
@@ -313,3 +314,6 @@ window.CJS.L2DAvatar = (() => {
 
   return Object.freeze({ create, getRegistrySync, _loadRegistry: _loadRegistry });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.L2DAvatar = L2DAvatar;

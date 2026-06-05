@@ -1,4 +1,5 @@
 // touch-gestures.js
+// Tier 3 TS port -> src/engine/ui/touch-gestures.ts (exports TouchGestures + installs window.CJS.TouchGestures). Body verbatim.
 // Lightweight, dependency-free touch gesture support. Use it to add tap,
 // long-press, swipe, and pinch-zoom recognition to any element. Designed
 // for the combat grid + campaign cards on iPad and other touch tablets.
@@ -18,7 +19,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.TouchGestures = (() => {
+export const TouchGestures = (() => {
   'use strict';
 
   const TAP_MAX_MS = 250;
@@ -29,7 +30,7 @@ window.CJS.TouchGestures = (() => {
   const SWIPE_MAX_OFFAXIS = 0.6;  // ratio
   const DOUBLE_TAP_MS = 280;
 
-  function attach(element, handlers = {}) {
+  function attach(element, handlers: any = {}) {
     if (!element || typeof element.addEventListener !== 'function') return () => {};
 
     const state = {
@@ -201,3 +202,6 @@ window.CJS.TouchGestures = (() => {
 
   return Object.freeze({ attach });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.TouchGestures = TouchGestures;

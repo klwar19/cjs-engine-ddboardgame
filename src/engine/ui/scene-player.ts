@@ -1,9 +1,10 @@
 // scene-player.js
+// Tier 3 TS port -> src/engine/ui/scene-player.ts (exports ScenePlayer + installs window.CJS.ScenePlayer). Body verbatim.
 // Lightweight fixed-size video overlay for brief campaign/combat cut-ins.
 
 window.CJS = window.CJS || {};
 
-window.CJS.ScenePlayer = (() => {
+export const ScenePlayer = (() => {
   'use strict';
 
   const MANIFEST_URL = 'data/scene-manifest.json';
@@ -111,7 +112,7 @@ window.CJS.ScenePlayer = (() => {
     return _entryWorldValues(entry).includes(world);
   }
 
-  function _sceneEntries(manifest, sceneKey, context = {}) {
+  function _sceneEntries(manifest, sceneKey, context: any = {}) {
     const cfg = _sceneConfig(manifest, sceneKey);
     const raw = Array.isArray(cfg?.clips) ? cfg.clips : (Array.isArray(cfg?.entries) ? cfg.entries : []);
     const world = String(context.world || context.state?.currentWorld || '').toLowerCase();
@@ -252,7 +253,7 @@ window.CJS.ScenePlayer = (() => {
     });
   }
 
-  async function play(sceneKey, context = {}, opts = {}) {
+  async function play(sceneKey, context: any = {}, opts: any = {}) {
     if (!_canShow() || !sceneKey) return false;
 
     const now = performance.now();
@@ -324,7 +325,7 @@ window.CJS.ScenePlayer = (() => {
     }, 180);
   }
 
-  async function preload(sceneKeys = []) {
+  async function preload(sceneKeys: any[] = []) {
     const manifest = await loadManifest();
     for (const key of sceneKeys) {
       const entry = _pickSceneEntry(_sceneEntries(manifest, key));
@@ -338,7 +339,7 @@ window.CJS.ScenePlayer = (() => {
     }
   }
 
-  async function playForCampaignSource(source, context = {}) {
+  async function playForCampaignSource(source, context: any = {}) {
     const manifest = await loadManifest();
     const sceneKey = _campaignSceneForSource(manifest, source);
     return sceneKey ? play(sceneKey, { ...context, functionKey: source }) : false;
@@ -349,7 +350,7 @@ window.CJS.ScenePlayer = (() => {
     const CS = window.CJS.CampaignState;
     if (!CS?.subscribe) return () => {};
 
-    _state.campaignUnsub = CS.subscribe((nextState, change = {}) => {
+    _state.campaignUnsub = CS.subscribe((nextState, change: any = {}) => {
       playForCampaignSource(change.source, {
         change,
         state: nextState,
@@ -359,7 +360,7 @@ window.CJS.ScenePlayer = (() => {
     return _state.campaignUnsub;
   }
 
-  async function playForCombatLog(entry = {}) {
+  async function playForCombatLog(entry: any = {}) {
     const manifest = await loadManifest();
     const sceneKey = _combatSceneForEntry(manifest, entry);
     return sceneKey ? play(sceneKey, { entry, functionKey: entry.type }) : false;
@@ -370,7 +371,7 @@ window.CJS.ScenePlayer = (() => {
     const Log = window.CJS.CombatLog;
     if (!Log?.subscribe) return () => {};
 
-    _state.combatUnsub = Log.subscribe((entry = {}) => {
+    _state.combatUnsub = Log.subscribe((entry: any = {}) => {
       playForCombatLog(entry);
     });
     return _state.combatUnsub;
@@ -405,3 +406,6 @@ window.CJS.ScenePlayer = (() => {
     dispose
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.ScenePlayer = ScenePlayer;

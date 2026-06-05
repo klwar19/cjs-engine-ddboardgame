@@ -21,6 +21,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
+const { loadEngineSource } = require("./tools/test/engine-source.cjs");
 
 let pass = 0;
 let fail = 0;
@@ -88,8 +89,8 @@ void noUiIcons;
 // (b) With the real UIIcons installed, resolveIconToken delegates to it.
 const env = require("./tools/visual-regression/env.cjs").installEnv();
 // Load the real engine icon module (an IIFE attaching to window.CJS.UIIcons).
-vm.runInThisContext(fs.readFileSync(path.join(__dirname, "js/ui/ui-icons.js"), "utf8"), {
-  filename: "ui-icons.js"
+vm.runInThisContext(loadEngineSource("ui/ui-icons"), {
+  filename: "ui-icons.ts"
 });
 const UIIcons = env.CJS.UIIcons;
 ok("real UIIcons installed", !!UIIcons && typeof UIIcons.renderIcon === "function");

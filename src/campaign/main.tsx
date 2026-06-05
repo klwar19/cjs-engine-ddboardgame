@@ -14,11 +14,11 @@ import "../engine/services/content-validator";
 import "../engine/services/data-hot-reload";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
 import "../engine/services/dev-console";
-import "../../js/ui/touch-gestures.js";
-import "../../js/ui/ui-helpers.js";
-import "../../js/ui/ui-icons.js";
-import "../../js/ui/portrait-picker.js";
-import "../../js/ui/scene-player.js";
+import "../engine/ui/touch-gestures";
+import "../engine/ui/ui-helpers";
+import "../engine/ui/ui-icons";
+import "../engine/ui/portrait-picker";
+import "../engine/ui/scene-player";
 import "../engine/campaign/campaign-state";
 import "../engine/campaign/farming-mode";
 import "../engine/campaign/campaign-data-loader";
@@ -89,9 +89,9 @@ import "./story-context";
 // installs the same `window.CJS.CampaignUI` surface for the React shell +
 // the remaining JS callers (pocket-haven / scenario-runner / hot-reload).
 import "./shell/boot";
-import "../../js/ui/audio-manager.js";
-import "../../js/ui/l2d-avatar.js";
-import "../../js/ui/l2d-companion.js";
+import "../engine/ui/audio-manager";
+import "../engine/ui/l2d-avatar";
+import "../engine/ui/l2d-companion";
 // Phase H.3 — installs window.CJS.CampaignActionsRuntime so the action
 // dispatch seam (boot.ts handleAction) routes every action to its TS
 // handler. Loads after the boot install above, before the React app mounts.

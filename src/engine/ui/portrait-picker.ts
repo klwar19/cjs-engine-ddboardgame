@@ -1,9 +1,10 @@
 // portrait-picker.js
+// Tier 3 TS port -> src/engine/ui/portrait-picker.ts (exports PortraitPicker + installs window.CJS.PortraitPicker). Body verbatim.
 // Shared portrait selection widget and image cache for editor/combat UI.
 
 window.CJS = window.CJS || {};
 
-window.CJS.PortraitPicker = (() => {
+export const PortraitPicker = (() => {
   'use strict';
 
   let _manifest = { characters: [], monsters: [], items: [] };
@@ -97,7 +98,7 @@ window.CJS.PortraitPicker = (() => {
   // Returns HTML markup that renders a portrait with focus applied. Falls
   // back to an inline icon span when there is no path. Caller controls
   // sizing via the wrapping element's CSS.
-  function renderPortraitHTML(path, opts = {}) {
+  function renderPortraitHTML(path, opts: any = {}) {
     const focus = normalizeFocus(opts.focus);
     const imageClass = opts.imageClass || 'cjs-portrait';
     const fallbackClass = opts.fallbackClass || 'cjs-portrait-fallback';
@@ -174,10 +175,10 @@ window.CJS.PortraitPicker = (() => {
     } catch (e) { /* ignore */ }
     _applySize(W, H);
     if (typeof document !== 'undefined') {
-      document.querySelectorAll('.portrait-size-w-select').forEach(sel => {
+      document.querySelectorAll('.portrait-size-w-select').forEach((sel: any) => {
         if (parseInt(sel.value, 10) !== W) sel.value = String(W);
       });
-      document.querySelectorAll('.portrait-size-h-select').forEach(sel => {
+      document.querySelectorAll('.portrait-size-h-select').forEach((sel: any) => {
         if (parseInt(sel.value, 10) !== H) sel.value = String(H);
       });
     }
@@ -225,7 +226,7 @@ window.CJS.PortraitPicker = (() => {
     return _manifest;
   }
 
-  function createWidget(opts = {}) {
+  function createWidget(opts: any = {}) {
     const root = document.createElement('div');
     root.className = 'portrait-widget';
 
@@ -431,7 +432,7 @@ window.CJS.PortraitPicker = (() => {
       _updateFocusFrame();
     }
 
-    function _setFocus(next, source) {
+    function _setFocus(next, source?) {
       const norm = normalizeFocus(next);
       if (norm.x === currentFocus.x && norm.y === currentFocus.y && norm.zoom === currentFocus.zoom) {
         return;
@@ -506,7 +507,7 @@ window.CJS.PortraitPicker = (() => {
     statusEl.style.minHeight = '1em';
 
     let busy = false;
-    function setStatus(text, kind) {
+    function setStatus(text, kind?) {
       statusEl.textContent = text || '';
       statusEl.style.color = kind === 'error' ? 'var(--danger, #f88)'
         : kind === 'success' ? 'var(--success, #7c7)'
@@ -781,7 +782,7 @@ window.CJS.PortraitPicker = (() => {
     body.querySelectorAll('.portrait-grid-item').forEach((item) => {
       item.addEventListener('click', () => {
         UI.closeModal(overlay);
-        if (typeof onPick === 'function') onPick(item.dataset.path || '');
+        if (typeof onPick === 'function') onPick((item as any).dataset.path || '');
       });
     });
 
@@ -819,7 +820,7 @@ window.CJS.PortraitPicker = (() => {
       .replace(/^-+|-+$/g, '');
   }
 
-  function _normalizeManifest(value) {
+  function _normalizeManifest(value?) {
     return {
       characters: Array.isArray(value?.characters) ? value.characters : [],
       monsters: Array.isArray(value?.monsters) ? value.monsters : [],
@@ -827,6 +828,7 @@ window.CJS.PortraitPicker = (() => {
     };
   }
 
+  function _escAttr(value) { return _escHtml(value); }
   function _escHtml(value) {
     return String(value).replace(/[&<>"']/g, (ch) => ({
       '&': '&amp;',
@@ -858,3 +860,6 @@ window.CJS.PortraitPicker = (() => {
     FOCUS_DEFAULT
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.PortraitPicker = PortraitPicker;

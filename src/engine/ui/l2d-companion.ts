@@ -1,4 +1,5 @@
 // l2d-companion.js
+// Tier 3 TS port -> src/engine/ui/l2d-companion.ts (exports L2DCompanion + installs window.CJS.L2DCompanion). Body verbatim.
 // Mounts the always-visible Live2D avatar dock and wires it to game events.
 // One instance per page (combat or campaign).
 //
@@ -18,7 +19,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.L2DCompanion = (() => {
+export const L2DCompanion = (() => {
   'use strict';
 
   const STATE = {
@@ -67,7 +68,7 @@ window.CJS.L2DCompanion = (() => {
   }
 
   // ── Speech bubble ───────────────────────────────────────────────
-  function _showLine(text, holdMs) {
+  function _showLine(text, holdMs?) {
     if (!STATE.bubble || !text) return;
     const ms = Math.max(1500, holdMs || (1200 + (text.length || 0) * 35));
     const el = STATE.bubble.querySelector('.l2d-bubble-text');
@@ -101,7 +102,7 @@ window.CJS.L2DCompanion = (() => {
     STATE.history.scrollTop = STATE.history.scrollHeight;
   }
 
-  function _reactionTags(key, override = {}) {
+  function _reactionTags(key, override: any = {}) {
     const tags = ['l2d', key, `l2d_mode_${STATE.mode}`];
     if (key && !String(key).startsWith('l2d_')) tags.push(`l2d_${key}`);
     if (override.entry?.tags) tags.push(...override.entry.tags);
@@ -119,7 +120,7 @@ window.CJS.L2DCompanion = (() => {
     }
   }
 
-  function _pickCjsQuip(tags, context = {}) {
+  function _pickCjsQuip(tags, context: any = {}) {
     const tagSet = new Set((tags || []).filter(Boolean).map(String));
     const matches = [];
 
@@ -149,7 +150,7 @@ window.CJS.L2DCompanion = (() => {
     return line ? { line, expression: picked.expression, fragmentId: picked.id } : null;
   }
 
-  function _substituteQuip(text, context = {}) {
+  function _substituteQuip(text, context: any = {}) {
     const entry = context.entry || context;
     const actor = entry.actor || {};
     const target = entry.target || {};
@@ -210,7 +211,7 @@ window.CJS.L2DCompanion = (() => {
 
   // Pick + show a line for a registry "reactions" key (used outside combat
   // narrator, e.g. campaign + click + turn_start).
-  function _react(key, override = {}) {
+  function _react(key, override: any = {}) {
     if (!_throttle(key)) return;
     const reactions = STATE.cfg?.reactions || {};
     const r = reactions[key];
@@ -324,7 +325,7 @@ window.CJS.L2DCompanion = (() => {
     return null;
   }
 
-  function _playVoice(entry, line, holdMs) {
+  function _playVoice(entry, line, holdMs?) {
     if (STATE.voiceMuted) return;
     // Respect a global audio mute if AudioManager exposes one.
     const AM = window.CJS.AudioManager;
@@ -508,7 +509,7 @@ window.CJS.L2DCompanion = (() => {
   }
 
   // ── Init ────────────────────────────────────────────────────────
-  async function init(opts = {}) {
+  async function init(opts: any = {}) {
     if (STATE.avatar) return STATE.avatar;
     STATE.mode = opts.mode || 'combat';
     STATE.expressionCycles = Object.create(null);
@@ -585,7 +586,7 @@ window.CJS.L2DCompanion = (() => {
   }
 
   // External API for other modules to push a custom line.
-  function say(text, opts = {}) {
+  function say(text, opts: any = {}) {
     if (!_throttle('_custom')) return;
     _setExpression(opts.expression);
     _showLine(text, opts.holdMs);
@@ -597,3 +598,6 @@ window.CJS.L2DCompanion = (() => {
 
   return Object.freeze({ init, dispose, say, setVoiceVolume, setVoiceMuted });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.L2DCompanion = L2DCompanion;

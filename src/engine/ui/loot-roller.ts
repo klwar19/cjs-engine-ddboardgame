@@ -1,10 +1,11 @@
 // loot-roller.js
+// Tier 3 TS port -> src/engine/ui/loot-roller.ts (exports LootRoller + installs window.CJS.LootRoller). Body verbatim.
 // Post-combat loot system. Rolls drops from defeated enemy loot tables,
 // applies Luck bonuses, and displays results.
 
 window.CJS = window.CJS || {};
 
-window.CJS.LootRoller = (() => {
+export const LootRoller = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -78,7 +79,7 @@ window.CJS.LootRoller = (() => {
     const state = window.CJS.CombatManager?.getState?.();
     let maxLuck = 5;
     if (state) {
-      for (const unit of Object.values(state.units || {})) {
+      for (const unit of Object.values<any>(state.units || {})) {
         if (unit.team === 'player' && unit.currentHP > 0) {
           const luck = unit.compiledStats?.L || 5;
           if (luck > maxLuck) maxLuck = luck;
@@ -163,3 +164,6 @@ window.CJS.LootRoller = (() => {
     rollAndDisplay
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.LootRoller = LootRoller;

@@ -18,6 +18,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { loadEngineSource } = require("./tools/test/engine-source.cjs");
 
 const UPDATE = process.argv.includes("--update");
 const GOLDEN_DIR = path.join(__dirname, "tools/roster-detail-golden");
@@ -38,8 +39,8 @@ console.log("Campaign roster detail-row regression guard (Phase K.3.2)");
 
 // ── Harness: env + real utils + UIIcons (no island needed) ──────────────────
 const env = require("./tools/visual-regression/env.cjs").installEnv();
-vm.runInThisContext(fs.readFileSync(path.join(__dirname, "js/ui/ui-icons.js"), "utf8"), {
-  filename: "ui-icons.js"
+vm.runInThisContext(loadEngineSource("ui/ui-icons"), {
+  filename: "ui-icons.ts"
 });
 
 const { createLoader } = require("./tools/visual-regression/load-tsx.cjs");
