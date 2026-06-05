@@ -1,9 +1,12 @@
-// campaign-world-map.js
-// Shared travel-map and world-activity renderer for multi-world campaign play.
+// campaign-world-map.ts — Tier 3 TS port of js/campaign/campaign-world-map.js
+// (engine cluster: campaign). Shared travel-map + world-activity data/renderer
+// for multi-world campaign play (getTravelMapData/getActivitiesData/handleAction/
+// travelToLocation/useActivity). Reads window.CJS.* lazily. Exports
+// `CampaignWorldMap` and installs window.CJS.CampaignWorldMap. Body verbatim.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignWorldMap = (() => {
+export const CampaignWorldMap = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -20,7 +23,7 @@ window.CJS.CampaignWorldMap = (() => {
   // (_renderVisualLayers / _renderVisualRoads / _renderMarkerShape /
   // node + label math) stay — the typed builders reuse them.
 
-  function handleAction(data = {}) {
+  function handleAction(data: any = {}) {
     switch (data.campaignAction) {
       case 'world-map-travel': return travelToLocation(data.mapId, data.nodeId);
       case 'world-map-switch-map': return switchTravelMap(data.mapId);
@@ -64,7 +67,7 @@ window.CJS.CampaignWorldMap = (() => {
       return false;
     }
     const nodeId = map.defaultLocationId || map.nodes?.[0]?.id || null;
-    const ops = [{ op: 'world_progress_set', world: map.world || state.currentWorld, currentTravelMap: map.id }];
+    const ops: any[] = [{ op: 'world_progress_set', world: map.world || state.currentWorld, currentTravelMap: map.id }];
     if (nodeId) {
       const node = (map.nodes || []).find((entry) => entry.id === nodeId) || {};
       ops.push({
@@ -159,7 +162,7 @@ window.CJS.CampaignWorldMap = (() => {
     }).join('');
   }
 
-  function _nodeLabelPosition(node = {}, x = 0, y = 0, width = 760, map = {}) {
+  function _nodeLabelPosition(node: any = {}, x = 0, y = 0, width = 760, map: any = {}) {
     const visual = node.visual || {};
     const labelWidth = Number(visual.labelWidth || node.labelWidth || map.visualLabelWidth || 148);
     const dx = Number(visual.labelDx ?? node.labelDx ?? 0);
@@ -309,14 +312,14 @@ window.CJS.CampaignWorldMap = (() => {
     const missing = [];
     const inv = state?.inventory || {};
     for (const bucket of ['items', 'materials', 'food', 'questItems']) {
-      for (const [id, qty] of Object.entries(cost?.[bucket] || {})) {
+      for (const [id, qty] of Object.entries<any>(cost?.[bucket] || {})) {
         const have = Number(inv[bucket]?.[id] || 0);
         const need = Number(qty || 0);
         if (have < need) missing.push(`${id} x${need}`);
         else ops.push({ op: _takeOp(bucket), id, qty: need });
       }
     }
-    for (const [currency, amount] of Object.entries(cost?.currencies || {})) {
+    for (const [currency, amount] of Object.entries<any>(cost?.currencies || {})) {
       const have = Number(state?.currencies?.[currency] || 0);
       const need = Number(amount || 0);
       if (have < need) missing.push(`${currency} ${need}`);
@@ -325,14 +328,14 @@ window.CJS.CampaignWorldMap = (() => {
     const imports = cost?.imports || cost?.crossWorld || {};
     const importStore = state?.crossWorld?.imports || {};
     for (const bucket of ['items', 'materials', 'food', 'questItems']) {
-      for (const [id, qty] of Object.entries(imports?.[bucket] || {})) {
+      for (const [id, qty] of Object.entries<any>(imports?.[bucket] || {})) {
         const have = Number(importStore[bucket]?.[id] || 0);
         const need = Number(qty || 0);
         if (have < need) missing.push(`import ${id} x${need}`);
         else ops.push({ op: 'cross_import_take', bucket, id, qty: need });
       }
     }
-    for (const [currency, amount] of Object.entries(imports?.currencies || {})) {
+    for (const [currency, amount] of Object.entries<any>(imports?.currencies || {})) {
       const have = Number(importStore.currencies?.[currency] || 0);
       const need = Number(amount || 0);
       if (have < need) missing.push(`import ${currency} ${need}`);
@@ -350,17 +353,17 @@ window.CJS.CampaignWorldMap = (() => {
     }[bucket] || 'take_item';
   }
 
-  function _costText(cost = {}) {
+  function _costText(cost: any = {}) {
     const parts = [];
     for (const bucket of ['items', 'materials', 'food', 'questItems']) {
-      for (const [id, qty] of Object.entries(cost[bucket] || {})) parts.push(`${id} x${qty}`);
+      for (const [id, qty] of Object.entries<any>(cost[bucket] || {})) parts.push(`${id} x${qty}`);
     }
-    for (const [id, qty] of Object.entries(cost.currencies || {})) parts.push(`${id} ${qty}`);
+    for (const [id, qty] of Object.entries<any>(cost.currencies || {})) parts.push(`${id} ${qty}`);
     const imports = cost.imports || cost.crossWorld || {};
     for (const bucket of ['items', 'materials', 'food', 'questItems']) {
-      for (const [id, qty] of Object.entries(imports[bucket] || {})) parts.push(`import ${id} x${qty}`);
+      for (const [id, qty] of Object.entries<any>(imports[bucket] || {})) parts.push(`import ${id} x${qty}`);
     }
-    for (const [id, qty] of Object.entries(imports.currencies || {})) parts.push(`import ${id} ${qty}`);
+    for (const [id, qty] of Object.entries<any>(imports.currencies || {})) parts.push(`import ${id} ${qty}`);
     return parts.join(', ');
   }
 
@@ -391,7 +394,7 @@ window.CJS.CampaignWorldMap = (() => {
     }, {});
   }
 
-  function _layerClass(layer = {}) {
+  function _layerClass(layer: any = {}) {
     const parts = ['campaign-world-layer'];
     if (layer.kind) parts.push(`layer-${_slug(layer.kind)}`);
     if (layer.className) parts.push(...String(layer.className).split(/\s+/).filter(Boolean).map(_slug));
@@ -399,7 +402,7 @@ window.CJS.CampaignWorldMap = (() => {
     return parts.join(' ');
   }
 
-  function _travelMapBackdrop(map = {}, state = {}) {
+  function _travelMapBackdrop(map: any = {}, state: any = {}) {
     const worldId = map.world || state.currentWorld || '';
     const world = DS().get('worlds', worldId) || {};
     const theme = world.storyModeTheme || {};
@@ -674,12 +677,12 @@ window.CJS.CampaignWorldMap = (() => {
     return {
       worldName: _worldName(state),
       locationName: _locationName(progress.currentLocation) || 'Choose a location on World Map',
-      pressures: Object.values(state.crossWorld?.pressures || {}).slice(0, 4).map((p) => ({
+      pressures: Object.values<any>(state.crossWorld?.pressures || {}).slice(0, 4).map((p) => ({
         id: String(p.id || ''),
         title: String(p.title || p.id || ''),
         value: Number(p.value || 0)
       })),
-      groups: Object.entries(grouped).map(([type, rows]) => ({
+      groups: Object.entries<any>(grouped).map(([type, rows]) => ({
         type,
         label: _ACTIVITY_GROUP_LABELS[type] || _title(type),
         activities: rows.map((activity) => _activityCardData(activity, state))
@@ -700,3 +703,6 @@ window.CJS.CampaignWorldMap = (() => {
     useActivity
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignWorldMap = CampaignWorldMap;

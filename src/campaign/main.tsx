@@ -53,7 +53,7 @@ import "../engine/campaign/campaign-battle-set-forge";
 import "../engine/campaign/campaign-map-seed-forge";
 import "../../js/campaign/campaign-scenario-generator.js";
 import "../engine/campaign/campaign-idea-forge";
-import "../../js/campaign/campaign-world-map.js";
+import "../engine/campaign/campaign-world-map";
 // The minigame + QTE engine (js/minigames/*, js/qte/*) is no longer imported
 // here — it is deferred behind ./lazy-minigames (Tier 1 perf) so cjs-minigames
 // + cjs-qte drop out of the campaign page's eager modulepreload set. It is
