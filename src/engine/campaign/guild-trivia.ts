@@ -1,4 +1,5 @@
 // guild-trivia.js
+// Tier 3 TS port -> src/engine/campaign/guild-trivia.ts (exports GuildTrivia + installs window.CJS.GuildTrivia). Body verbatim.
 // Guild Trivia Nights — tavern event using the qte-quiz UI for short
 // trivia rounds. Questions ask about world lore, history, and party
 // member backstories. Winners earn JP and small relationship boosts
@@ -20,7 +21,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.GuildTrivia = (() => {
+export const GuildTrivia = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -36,7 +37,7 @@ window.CJS.GuildTrivia = (() => {
     flawlessBonus: { jp: 20, relationship: 3 }
   };
 
-  async function run(opts = {}) {
+  async function run(opts: any = {}) {
     const state = CS().getState();
     const world = opts.world || state.currentWorld || 'haven';
     const total = Math.max(1, Math.min(10, Number(opts.questionCount || 5)));
@@ -49,10 +50,10 @@ window.CJS.GuildTrivia = (() => {
 
     const root = _buildHostUI(world, total);
     document.body.appendChild(root);
-    const stage = root.querySelector('[data-trivia="stage"]');
-    const progress = root.querySelector('[data-trivia="progress"]');
-    const score = root.querySelector('[data-trivia="score"]');
-    const closeBtn = root.querySelector('[data-trivia="close"]');
+    const stage = root.querySelector<any>('[data-trivia="stage"]');
+    const progress = root.querySelector<any>('[data-trivia="progress"]');
+    const score = root.querySelector<any>('[data-trivia="score"]');
+    const closeBtn = root.querySelector<any>('[data-trivia="close"]');
 
     const used = new Set();
     let correct = 0;
@@ -75,7 +76,7 @@ window.CJS.GuildTrivia = (() => {
       // Reuse QteQuiz by temporarily injecting our question into the
       // recent-ids history so the picker doesn't repeat. We give it a
       // single-question fake skill so the timer overlay shows.
-      const result = await _askOne(stage, question, difficulty);
+      const result: any = await _askOne(stage, question, difficulty);
       answered++;
       if (result?.grade === 'perfect' || result?.grade === 'good') correct++;
     }
@@ -95,7 +96,7 @@ window.CJS.GuildTrivia = (() => {
     if (relGain > 0) {
       // Distribute relationship bumps across currently-present party
       // members. Bin always counts; others split evenly.
-      const presentIds = Object.entries(state.party || {})
+      const presentIds = Object.entries<any>(state.party || {})
         .filter(([, m]) => (m.rosterRole || 'active') !== 'bench')
         .map(([id]) => id);
       for (const npcId of presentIds) {
@@ -128,8 +129,8 @@ window.CJS.GuildTrivia = (() => {
         <button data-trivia="final-close" class="campaign-action primary" style="margin-top:14px">Close</button>
       </div>
     `;
-    await new Promise((resolve) => {
-      root.querySelector('[data-trivia="final-close"]')?.addEventListener('click', () => resolve());
+    await new Promise<void>((resolve) => {
+      root.querySelector<any>('[data-trivia="final-close"]')?.addEventListener('click', () => resolve());
       closeBtn.addEventListener('click', () => resolve());
     });
     if (root.parentNode) root.parentNode.removeChild(root);
@@ -266,3 +267,6 @@ window.CJS.GuildTrivia = (() => {
 
   return Object.freeze({ run, REWARD });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.GuildTrivia = GuildTrivia;

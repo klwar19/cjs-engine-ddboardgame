@@ -1,12 +1,13 @@
 // save-manager.js
+// Tier 3 TS port -> src/engine/core/save-manager.ts (exports SaveManager + installs window.CJS.SaveManager). Body verbatim; migrations import path adjusted.
 // Browser-side save helpers: local draft recovery plus GitHub Contents API sync.
 // Stores editor draft data and GitHub sync settings in browser storage.
 
-import { CURRENT_CONTENT_DRAFT_SCHEMA_VERSION, migrateContentDraft } from "../../src/persistence/migrations";
+import { CURRENT_CONTENT_DRAFT_SCHEMA_VERSION, migrateContentDraft } from "../../persistence/migrations";
 
 window.CJS = window.CJS || {};
 
-window.CJS.SaveManager = (() => {
+export const SaveManager = (() => {
   'use strict';
 
   const STORAGE_KEYS = {
@@ -187,7 +188,7 @@ window.CJS.SaveManager = (() => {
     return !!(cfg.owner && cfg.repo && cfg.branch && cfg.path && getGitHubToken());
   }
 
-  function saveDraft(json, meta = {}) {
+  function saveDraft(json, meta: any = {}) {
     const payload = {
       contentDraftSchemaVersion: CURRENT_CONTENT_DRAFT_SCHEMA_VERSION,
       kind: 'editor-local-draft',
@@ -358,14 +359,14 @@ window.CJS.SaveManager = (() => {
   }
 
   function _normalizeFileMap(fileMap) {
-    const entries = Object.entries(fileMap || {})
+    const entries = Object.entries<any>(fileMap || {})
       .filter(([path]) => !!String(path || '').trim())
       .map(([path, content]) => [String(path).trim().replace(/^\/+/, ''), String(content ?? '')]);
     entries.sort((a, b) => a[0].localeCompare(b[0]));
     return entries;
   }
 
-  async function testGitHubConnection(overrides = {}) {
+  async function testGitHubConnection(overrides: any = {}) {
     const config = _normalizeConfig({ ...getGitHubConfig(), ...(overrides.config || overrides) });
     const token = String(overrides.token !== undefined ? overrides.token : getGitHubToken()).trim();
 
@@ -385,11 +386,11 @@ window.CJS.SaveManager = (() => {
     };
   }
 
-  async function saveJSONToGitHub(json, options = {}) {
+  async function saveJSONToGitHub(json, options: any = {}) {
     return saveTextFileToGitHub(options.path || (options.config && options.config.path) || getGitHubConfig().path, json, options);
   }
 
-  async function saveTextFileToGitHub(path, text, options = {}) {
+  async function saveTextFileToGitHub(path, text, options: any = {}) {
     const config = _normalizeConfig({ ...getGitHubConfig(), ...(options.config || {}) });
     const token = String(options.token !== undefined ? options.token : getGitHubToken()).trim();
     config.path = String(path || config.path || DEFAULT_GITHUB_CONFIG.path).trim().replace(/^\/+/, '');
@@ -403,7 +404,7 @@ window.CJS.SaveManager = (() => {
 
     const saveOnce = async () => {
       const existing = await _getRemoteFile(config, token);
-      const payload = {
+      const payload: any = {
         message: options.message || config.commitMessage || DEFAULT_GITHUB_CONFIG.commitMessage,
         branch: config.branch,
         content: _toBase64(String(text || ''))
@@ -435,7 +436,7 @@ window.CJS.SaveManager = (() => {
 
   // Upload a pre-base64-encoded binary blob (e.g. MP3 or OGG) to GitHub.
   // base64Content must be the raw base64 payload (no data: prefix).
-  async function uploadBinaryFileToGitHub(path, base64Content, options = {}) {
+  async function uploadBinaryFileToGitHub(path, base64Content, options: any = {}) {
     const config = _normalizeConfig({ ...getGitHubConfig(), ...(options.config || {}) });
     const token = String(options.token !== undefined ? options.token : getGitHubToken()).trim();
     config.path = String(path || '').trim().replace(/^\/+/, '');
@@ -455,7 +456,7 @@ window.CJS.SaveManager = (() => {
 
     const saveOnce = async () => {
       const existing = await _getRemoteFile(config, token);
-      const payload = {
+      const payload: any = {
         message: options.message || config.commitMessage || `upload ${config.path}`,
         branch: config.branch,
         content: base64Content
@@ -484,7 +485,7 @@ window.CJS.SaveManager = (() => {
     }
   }
 
-  async function saveFilesSeparatelyToGitHub(fileMap, options = {}) {
+  async function saveFilesSeparatelyToGitHub(fileMap, options: any = {}) {
     const config = _normalizeConfig({ ...getGitHubConfig(), ...(options.config || {}) });
     const token = String(options.token !== undefined ? options.token : getGitHubToken()).trim();
     const entries = _normalizeFileMap(fileMap);
@@ -511,7 +512,7 @@ window.CJS.SaveManager = (() => {
     return { saved };
   }
 
-  async function saveFilesAsSingleCommit(fileMap, options = {}) {
+  async function saveFilesAsSingleCommit(fileMap, options: any = {}) {
     const config = _normalizeConfig({ ...getGitHubConfig(), ...(options.config || {}) });
     const token = String(options.token !== undefined ? options.token : getGitHubToken()).trim();
     const entries = _normalizeFileMap(fileMap);
@@ -588,18 +589,18 @@ window.CJS.SaveManager = (() => {
     };
   }
 
-  async function exportFilesToDirectory(fileMap, options = {}) {
+  async function exportFilesToDirectory(fileMap, options: any = {}) {
     const entries = _normalizeFileMap(fileMap);
     if (entries.length === 0) {
       return { skipped: true, written: [] };
     }
-    if (typeof window.showDirectoryPicker !== 'function') {
+    if (typeof (window as any).showDirectoryPicker !== 'function') {
       throw new Error('Folder export is not available in this browser context');
     }
 
     let rootHandle;
     try {
-      rootHandle = await window.showDirectoryPicker({
+      rootHandle = await (window as any).showDirectoryPicker({
         id: options.pickerId || 'cjs-export',
         mode: 'readwrite'
       });
@@ -640,7 +641,7 @@ window.CJS.SaveManager = (() => {
     return { filename };
   }
 
-  function downloadFileBundle(fileMap, options = {}) {
+  function downloadFileBundle(fileMap, options: any = {}) {
     const entries = _normalizeFileMap(fileMap);
     const payload = {
       kind: 'cjs-file-export',
@@ -676,3 +677,6 @@ window.CJS.SaveManager = (() => {
     downloadFileBundle
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.SaveManager = SaveManager;

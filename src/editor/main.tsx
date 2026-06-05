@@ -6,7 +6,7 @@ import "../engine/core/undo-manager";
 import "../engine/core/state-tools";
 import "../engine/core/data-store";
 import "../persistence/indexedDb";
-import "../../js/core/save-manager.js";
+import "../engine/core/save-manager";
 import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../engine/effects/value-calc";
