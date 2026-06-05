@@ -1,9 +1,12 @@
-// scenario-runner.js
-// Starts, moves, ends, and reports campaign scenario runs.
+// scenario-runner.ts — Tier 3 TS port of js/campaign/scenario-runner.js (engine
+// cluster: campaign). Starts, moves, ends, and reports campaign scenario runs
+// (exploration, battle-outcome handling, party availability, report builder).
+// Reads window.CJS.* lazily. Exports `ScenarioRunner` and installs
+// window.CJS.ScenarioRunner. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.ScenarioRunner = (() => {
+export const ScenarioRunner = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -186,7 +189,7 @@ window.CJS.ScenarioRunner = (() => {
     }
   };
 
-  function startScenario(scenarioId, options = {}) {
+  function startScenario(scenarioId, options: any = {}) {
     const content = CS().getContent();
     const scenario = CS().getScenarioById(scenarioId);
     if (!scenario) throw new Error(`Scenario not found: ${scenarioId}`);
@@ -275,7 +278,7 @@ window.CJS.ScenarioRunner = (() => {
       };
       if (mapId) {
         const mapState = state.mapState[mapId] = state.mapState[mapId] || { visited: {}, revealed: {}, locked: {}, cleared: {}, notes: {} };
-        for (const nodeId of revealed) mapState.revealed[nodeId] = true;
+        for (const nodeId of revealed) mapState.revealed[nodeId as string] = true;
         if (startNode) mapState.visited[startNode] = true;
         mapState.revealedCells = mapState.revealedCells || {};
         mapState.visitedCells = mapState.visitedCells || {};
@@ -365,7 +368,7 @@ window.CJS.ScenarioRunner = (() => {
   // begin and end narrative box rather than a fullscreen VN at every node.
   // The runner just composes the text; CampaignUI.showQuestNarrative owns
   // the actual DOM/modal (so this module stays headless and testable).
-  function _showQuestNarrative(payload = {}) {
+  function _showQuestNarrative(payload: any = {}) {
     try {
       window.CJS.CampaignUI?.showQuestNarrative?.(payload);
     } catch (err) {
@@ -373,7 +376,7 @@ window.CJS.ScenarioRunner = (() => {
     }
   }
 
-  function _composeBeginNarrative(scenario = {}, run = {}) {
+  function _composeBeginNarrative(scenario: any = {}, run: any = {}) {
     const parts = [];
     if (run.questTitle) parts.push(`Quest: ${run.questTitle}`);
     const summary = scenario?.notes || scenario?.summary || '';
@@ -384,7 +387,7 @@ window.CJS.ScenarioRunner = (() => {
     return parts.join('\n\n') || 'The quest begins.';
   }
 
-  function _composeEndNarrative(outcome = 'success', scenario = {}, report = {}, snapshot = {}) {
+  function _composeEndNarrative(outcome = 'success', scenario: any = {}, report: any = {}, snapshot: any = {}) {
     const verdict = String(outcome || 'success').toLowerCase();
     const heading = (verdict === 'success' || verdict === 'win' || verdict === 'victory')
       ? 'The quest is wrapped up.'
@@ -602,7 +605,7 @@ window.CJS.ScenarioRunner = (() => {
     return objective.nodeId === nodeId ? objective : null;
   }
 
-  function objectiveForCell(cell = {}, state = CS().getState(), map = CS().getActiveMap()) {
+  function objectiveForCell(cell: any = {}, state = CS().getState(), map = CS().getActiveMap()) {
     const objective = currentObjective(state);
     const run = state?.activeScenarioRun;
     if (!objective || objective.marker === false || (!objective.visible && !objective.completed) || !cell || !run) return null;
@@ -610,7 +613,7 @@ window.CJS.ScenarioRunner = (() => {
     return objective.cellKey === key ? objective : null;
   }
 
-  function handleLocationEntry(kind, location, meta = {}) {
+  function handleLocationEntry(kind, location, meta: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     const scenario = CS().getActiveScenario();
@@ -656,7 +659,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function handleBattleOutcome(outcome = 'victory', pending = {}, result = {}) {
+  function handleBattleOutcome(outcome = 'victory', pending: any = {}, result: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     const scenario = CS().getActiveScenario();
@@ -696,7 +699,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _normalizeObjective(scenario = {}, map = null, options = {}) {
+  function _normalizeObjective(scenario: any = {}, map = null, options: any = {}) {
     const raw = scenario.objective || scenario.questObjective || null;
     const fallback = !raw
       ? (scenario.successConditions || []).find((cond) => cond.type === 'reach_node' || cond.type === 'reach_cell')
@@ -737,7 +740,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _objectiveRevealConfig(source = {}, scenario = {}, map = null, options = {}) {
+  function _objectiveRevealConfig(source: any = {}, scenario: any = {}, map = null, options: any = {}) {
     const explicitVisible = source.visible ?? source.revealed;
     const levelCount = _gridLevels(map).length;
     const totalExplorable = _totalExplorableCount(map);
@@ -768,7 +771,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _objectiveRevealHint(map = null, config = {}) {
+  function _objectiveRevealHint(map = null, config: any = {}) {
     const bits = [];
     if (Number(config.revealAtPercent || 0) > 0) bits.push(`reveal near ${Number(config.revealAtPercent)}% explored`);
     if (config.revealAtLevelId) bits.push(`or reach ${_gridLevelName(map, config.revealAtLevelId)}`);
@@ -776,7 +779,7 @@ window.CJS.ScenarioRunner = (() => {
     return bits.join(' | ');
   }
 
-  function _refreshObjectiveVisibility(state = CS().getState(), map = CS().getActiveMap(), context = {}) {
+  function _refreshObjectiveVisibility(state = CS().getState(), map = CS().getActiveMap(), context: any = {}) {
     const run = state?.activeScenarioRun;
     const objective = run?.objectiveState;
     if (!run || !objective || objective.marker === false || objective.completed || objective.visible) return objective;
@@ -810,7 +813,7 @@ window.CJS.ScenarioRunner = (() => {
     return CS().getState()?.activeScenarioRun?.objectiveState || objective;
   }
 
-  function _objectiveLabel(source = {}, fallback = null, map = null) {
+  function _objectiveLabel(source: any = {}, fallback = null, map = null) {
     if (fallback?.type === 'reach_node') {
       const node = findNode(map, fallback.nodeId);
       return node?.title || 'Reach the target node';
@@ -821,12 +824,12 @@ window.CJS.ScenarioRunner = (() => {
     return source.label || source.title || 'Resolve the objective';
   }
 
-  function _objectiveNeedsBattle(objective = {}) {
+  function _objectiveNeedsBattle(objective: any = {}) {
     const kind = String(objective?.kind || '').toLowerCase();
     return !!(objective?.encounterId || objective?.battleSetId || ['defeat', 'defeat_boss', 'boss', 'battle'].includes(kind));
   }
 
-  function _objectiveLocationMatch(objective = null, kind = '', location = {}, map = null, run = null) {
+  function _objectiveLocationMatch(objective = null, kind = '', location: any = {}, map = null, run = null) {
     if (!objective || objective.completed) return false;
     if (kind === 'node' && objective.nodeId) return objective.nodeId === location.id;
     if (kind === 'cell' && objective.cellKey) {
@@ -836,7 +839,7 @@ window.CJS.ScenarioRunner = (() => {
     return false;
   }
 
-  function _objectiveBattleMatch(objective = null, pending = {}, result = {}, map = null, run = null) {
+  function _objectiveBattleMatch(objective = null, pending: any = {}, result: any = {}, map = null, run = null) {
     if (!objective || objective.completed || !_objectiveNeedsBattle(objective)) return false;
     if (objective.battleSetId && objective.battleSetId === pending?.battleSetId) return true;
     if (objective.encounterId && objective.encounterId === (pending?.encounterId || result?.encounterId)) return true;
@@ -870,12 +873,12 @@ window.CJS.ScenarioRunner = (() => {
     return Math.max(0, Math.min(100, Math.round((visited / total) * 100)));
   }
 
-  function _visitedExplorableCount(run = {}) {
+  function _visitedExplorableCount(run: any = {}) {
     if (run.travelMode === 'grid_map') return new Set(run.visitedCells || []).size;
     return new Set(run.visitedNodes || []).size;
   }
 
-  function _totalExplorableCount(map = {}) {
+  function _totalExplorableCount(map: any = {}) {
     if (!map) return 0;
     if (map.type === 'grid_map') {
       if (_usesGridLevels(map)) {
@@ -886,7 +889,7 @@ window.CJS.ScenarioRunner = (() => {
     return Array.isArray(map.nodes) ? map.nodes.length : 0;
   }
 
-  function _countPassableCells(grid = [], width = 0, height = 0) {
+  function _countPassableCells(grid: any[] = [], width = 0, height = 0) {
     let total = 0;
     const cols = Number(width || 0);
     const rows = Number(height || 0);
@@ -899,7 +902,7 @@ window.CJS.ScenarioRunner = (() => {
     return total;
   }
 
-  function _runProgressTriggers(context = {}) {
+  function _runProgressTriggers(context: any = {}) {
     const scenario = context.scenario || CS().getActiveScenario();
     const run = context.run || CS().getState()?.activeScenarioRun;
     if (!scenario || !run) return;
@@ -913,7 +916,7 @@ window.CJS.ScenarioRunner = (() => {
     }
   }
 
-  function _normalizeProgressTriggers(scenario = {}) {
+  function _normalizeProgressTriggers(scenario: any = {}) {
     return (scenario.progressTriggers || []).map((trigger, index) => {
       const when = typeof trigger.when === 'string'
         ? { type: trigger.when }
@@ -970,7 +973,7 @@ window.CJS.ScenarioRunner = (() => {
     });
   }
 
-  function _triggerMatches(trigger = {}, context = {}) {
+  function _triggerMatches(trigger: any = {}, context: any = {}) {
     const when = trigger.when || {};
     const type = String(when.type || '').toLowerCase();
     if (!type) return false;
@@ -1023,7 +1026,7 @@ window.CJS.ScenarioRunner = (() => {
     }, { source: 'scenario_progress_trigger' });
   }
 
-  function _executeProgressTrigger(trigger = {}, context = {}, index = 0) {
+  function _executeProgressTrigger(trigger: any = {}, context: any = {}, index = 0) {
     const action = (trigger.actions || [])[index];
     if (!action) return;
     const next = () => _executeProgressTrigger(trigger, context, index + 1);
@@ -1090,7 +1093,7 @@ window.CJS.ScenarioRunner = (() => {
     if (!eventId) return;
     const wanted = String(eventId || '');
     let found = null;
-    for (const table of Object.values(CS().getContent?.().campaignEvents || {})) {
+    for (const table of Object.values<any>(CS().getContent?.().campaignEvents || {})) {
       for (const entry of table.entries || []) {
         if (entry.id !== wanted) continue;
         found = {
@@ -1110,7 +1113,7 @@ window.CJS.ScenarioRunner = (() => {
     _incrementScenarioEventsUsed();
   }
 
-  function _rollScenarioEventTable(tableId, context = {}) {
+  function _rollScenarioEventTable(tableId, context: any = {}) {
     if (!tableId || !window.CJS.CampaignEvents?.roll) return;
     const run = CS().getState()?.activeScenarioRun;
     const scenario = CS().getActiveScenario?.();
@@ -1129,7 +1132,7 @@ window.CJS.ScenarioRunner = (() => {
     }, { source: 'scenario_progress_event_count' });
   }
 
-  function _openTriggerMiniGame(action = {}, context = {}, done = () => {}) {
+  function _openTriggerMiniGame(action: any = {}, context: any = {}, done = () => {}) {
     const MG = window.CJS.Minigames;
     if (!MG?.openMiniGame || !action.gameId) return done();
     Promise.resolve(MG.openMiniGame({
@@ -1164,7 +1167,7 @@ window.CJS.ScenarioRunner = (() => {
     if (Array.isArray(flags)) {
       return flags.filter(Boolean).map((flag) => ({ op: 'set_flag', flag, value: true }));
     }
-    return Object.entries(flags).map(([flag, value]) => ({
+    return Object.entries<any>(flags).map(([flag, value]) => ({
       op: value === false ? 'clear_flag' : 'set_flag',
       flag,
       value: value === false ? undefined : value
@@ -1396,7 +1399,7 @@ window.CJS.ScenarioRunner = (() => {
     return list[Math.floor(Math.random() * list.length)].id;
   }
 
-  function rollTravelSurprise(context = {}) {
+  function rollTravelSurprise(context: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     if (!run) return null;
@@ -1417,7 +1420,7 @@ window.CJS.ScenarioRunner = (() => {
     }, { force: context.force !== false, manual: true });
   }
 
-  function _maybeTravelSurprise(context = {}, options = {}) {
+  function _maybeTravelSurprise(context: any = {}, options: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     if (!run) return null;
@@ -1502,7 +1505,7 @@ window.CJS.ScenarioRunner = (() => {
     weights.interaction *= modifiers.interaction || 1;
     weights.branch *= (modifiers.branchRate || 1) * (modifiers.branch || 1);
 
-    return _weightedPick(Object.entries(weights).map(([id, weight]) => ({ id, weight })))?.id || null;
+    return _weightedPick(Object.entries<any>(weights).map(([id, weight]) => ({ id, weight })))?.id || null;
   }
 
   function _resolveTravelSurprise(category, profile, context) {
@@ -1537,7 +1540,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _battleFromScenarioTable(profile, context = {}) {
+  function _battleFromScenarioTable(profile, context: any = {}) {
     const scenario = CS().getActiveScenario();
     const tables = scenario?.randomBattleTables || [];
     if (!tables.length) return null;
@@ -1557,12 +1560,12 @@ window.CJS.ScenarioRunner = (() => {
     return picked ? { ...picked, tableId: table.id, battleMap: picked.battleMap || _battleMapForProfile(profile, context), setting: profile.key } : null;
   }
 
-  function _monsterBattleEntry(context = {}) {
+  function _monsterBattleEntry(context: any = {}) {
     const profile = context.profile || _surpriseProfileForContext(context);
     const pool = _monsterPoolForContext(context, profile);
     if (!pool.length) return null;
     const state = CS().getState();
-    const ready = Object.values(state?.party || {}).filter((member) => _memberCanTravel(member)).length;
+    const ready = Object.values<any>(state?.party || {}).filter((member) => _memberCanTravel(member)).length;
     const count = Math.max(1, Math.min(5, Math.ceil(Math.max(ready, 1) * 0.75) + (Math.random() < 0.45 ? 1 : 0)));
     const top = pool.slice(0, Math.min(8, pool.length));
     const monsterIds = [];
@@ -1640,7 +1643,7 @@ window.CJS.ScenarioRunner = (() => {
     return { op: 'give_money', currency: _activeCurrency(), amount: 6 + Math.floor(Math.random() * 13) };
   }
 
-  function _travelStatSurprise(profile) {
+  function _travelStatSurprise(profile, context?) {
     const stat = _pick(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
     const delta = Math.random() < 0.72 ? 1 : -1;
     const hint = _pick(profile.statHints || DEFAULT_SURPRISE_PROFILE.statHints);
@@ -1665,7 +1668,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _travelRumorSurprise(profile) {
+  function _travelRumorSurprise(profile, context?) {
     const text = _pick(profile.rumors || DEFAULT_SURPRISE_PROFILE.rumors);
     const op = {
       op: 'add_rumor',
@@ -1730,7 +1733,7 @@ window.CJS.ScenarioRunner = (() => {
     return _travelPromptSurprise(profile, context, 'branch');
   }
 
-  function _appendRuntimeBranchNode(profile, context = {}) {
+  function _appendRuntimeBranchNode(profile, context: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     const sourceMap = context.map || CS().getActiveMap();
@@ -1777,7 +1780,7 @@ window.CJS.ScenarioRunner = (() => {
     return created;
   }
 
-  function _revealGridBranch(profile, context = {}) {
+  function _revealGridBranch(profile, context: any = {}) {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     const map = context.map || CS().getActiveMap();
@@ -1842,7 +1845,7 @@ window.CJS.ScenarioRunner = (() => {
     return notice;
   }
 
-  function _surpriseProfileForContext(context = {}) {
+  function _surpriseProfileForContext(context: any = {}) {
     const key = _areaKeyFromContext(context);
     const raw = AREA_SURPRISE_PROFILES[key] || {};
     return {
@@ -1860,7 +1863,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _areaKeyFromContext(context = {}) {
+  function _areaKeyFromContext(context: any = {}) {
     const scenario = CS().getActiveScenario();
     const map = context.map || CS().getActiveMap();
     const location = context.location || {};
@@ -1882,14 +1885,14 @@ window.CJS.ScenarioRunner = (() => {
       context.mode,
       context.travelLink?.label
     ].join(' '));
-    for (const [key, profile] of Object.entries(AREA_SURPRISE_PROFILES)) {
+    for (const [key, profile] of Object.entries<any>(AREA_SURPRISE_PROFILES)) {
       if (text.includes(key)) return key;
       if ((profile.aliases || []).some((alias) => text.includes(_normalizeText(alias)))) return key;
     }
     return scenario?.setting && AREA_SURPRISE_PROFILES[scenario.setting] ? scenario.setting : 'outdoor';
   }
 
-  function _profileTokens(profile, context = {}) {
+  function _profileTokens(profile, context: any = {}) {
     const location = context.location || {};
     return Array.from(new Set([
       profile.key,
@@ -1901,7 +1904,7 @@ window.CJS.ScenarioRunner = (() => {
     ].map(_normalizeText).filter(Boolean)));
   }
 
-  function _campaignTravelModifiers(state, context = {}) {
+  function _campaignTravelModifiers(state, context: any = {}) {
     const mods = {
       baseRate: 1,
       revisitRate: 1,
@@ -1920,7 +1923,7 @@ window.CJS.ScenarioRunner = (() => {
     };
     const DS = window.CJS.DataStore;
     if (!DS) return mods;
-    for (const [id, member] of Object.entries(state?.party || {})) {
+    for (const [id, member] of Object.entries<any>(state?.party || {})) {
       if (!_memberCanTravel(member)) continue;
       const base = DS.get('characters', member.baseCharacterId || id) || {};
       for (const record of _travelModifierRecords(member, base)) {
@@ -1931,7 +1934,7 @@ window.CJS.ScenarioRunner = (() => {
     return mods;
   }
 
-  function _travelModifierRecords(member = {}, base = {}) {
+  function _travelModifierRecords(member: any = {}, base: any = {}) {
     const DS = window.CJS.DataStore;
     const records = [base];
     const skillIds = [...(base.skills || []), ...(member.skills || [])];
@@ -1943,7 +1946,7 @@ window.CJS.ScenarioRunner = (() => {
     return records.filter(Boolean);
   }
 
-  function _applyTravelModifierRecord(mods, record = {}) {
+  function _applyTravelModifierRecord(mods, record: any = {}) {
     const bags = [
       record,
       record.campaignMap,
@@ -1999,12 +2002,12 @@ window.CJS.ScenarioRunner = (() => {
     return 1;
   }
 
-  function _memberCanTravel(member = {}) {
+  function _memberCanTravel(member: any = {}) {
     const availability = String(member.availability?.status || 'available').toLowerCase();
     return Number(member.currentHp ?? member.maxHp ?? 1) > 0 && !['unavailable', 'busy', 'story_locked'].includes(availability);
   }
 
-  function _pickWorldRecord(type, profile, context = {}) {
+  function _pickWorldRecord(type, profile, context: any = {}) {
     const DS = window.CJS.DataStore;
     if (!DS) return null;
     const world = CS().getState()?.currentWorld;
@@ -2025,7 +2028,7 @@ window.CJS.ScenarioRunner = (() => {
     return _weightedPick(pool.map((entry) => ({ id: entry.record.id, weight: entry.score, record: entry.record })))?.record || pool[0].record;
   }
 
-  function _battleMapForProfile(profile, context = {}) {
+  function _battleMapForProfile(profile, context: any = {}) {
     const key = profile?.key || _areaKeyFromContext(context);
     const text = _normalizeText([
       key,
@@ -2042,7 +2045,7 @@ window.CJS.ScenarioRunner = (() => {
     return { theme, width: 8 + Math.floor(Math.random() * 3), height: 8 + Math.floor(Math.random() * 3) };
   }
 
-  function _travelCheckDc(context = {}) {
+  function _travelCheckDc(context: any = {}) {
     const run = CS().getState()?.activeScenarioRun;
     const danger = Number(run?.danger || 0);
     const repeat = Number(context.visitCount || 1) > 1 ? 1 : 0;
@@ -2051,7 +2054,7 @@ window.CJS.ScenarioRunner = (() => {
 
   function _activePartyRankValue() {
     const state = CS().getState();
-    const ranks = Object.values(state?.party || {})
+    const ranks = Object.values<any>(state?.party || {})
       .filter(_memberCanTravel)
       .map((member) => _rankValue(member.rank));
     if (!ranks.length) return 1;
@@ -2062,7 +2065,7 @@ window.CJS.ScenarioRunner = (() => {
     return RANK_ORDER[String(rank || 'F').toUpperCase()] || 1;
   }
 
-  function _weightedPick(entries = []) {
+  function _weightedPick(entries: any[] = []) {
     const weighted = entries
       .map((entry) => ({ entry, weight: Number(entry.weight ?? 1) }))
       .filter(({ weight }) => Number.isFinite(weight) && weight > 0);
@@ -2076,7 +2079,7 @@ window.CJS.ScenarioRunner = (() => {
     return weighted[weighted.length - 1]?.entry || null;
   }
 
-  function _locationTitle(location = {}) {
+  function _locationTitle(location: any = {}) {
     return location.title || location.name || location.id || '';
   }
 
@@ -2140,11 +2143,11 @@ window.CJS.ScenarioRunner = (() => {
     return _queueBattleEntry(entry, { source: 'random', tableId: table.id });
   }
 
-  function _queueBattleEntry(entry, meta = {}) {
+  function _queueBattleEntry(entry, meta: any = {}) {
     const normalized = _normalizeBattleEntry(entry);
     if (!normalized.encounterId && !normalized.battleSetId && !normalized.monsterIds?.length) return null;
     const run = CS().getState().activeScenarioRun;
-    const pending = {
+    const pending: any = {
       encounterId: normalized.encounterId || null,
       battleSetId: normalized.battleSetId || null,
       monsterIds: normalized.monsterIds || [],
@@ -2191,7 +2194,7 @@ window.CJS.ScenarioRunner = (() => {
     return pending;
   }
 
-  function _normalizeBattleEntry(entry = {}) {
+  function _normalizeBattleEntry(entry: any = {}) {
     if (typeof entry === 'string') return _battleEntryFromRef(entry);
     if (entry.battleSetId) {
       const card = _battleCardById(entry.battleSetId);
@@ -2234,7 +2237,7 @@ window.CJS.ScenarioRunner = (() => {
     return entry;
   }
 
-  function _defeatFields(entry = {}, card = {}) {
+  function _defeatFields(entry: any = {}, card: any = {}) {
     const defeatOutcome = entry.defeatOutcome || card?.defeatOutcome || null;
     const defeatMode = entry.defeatMode || card?.defeatMode || null;
     return {
@@ -2249,7 +2252,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _monsterIdsFromEntry(entry = {}) {
+  function _monsterIdsFromEntry(entry: any = {}) {
     const ids = entry.monsterIds || entry.enemyIds || entry.enemies || (entry.monsterId ? [entry.monsterId] : []);
     return (Array.isArray(ids) ? ids : [ids]).map((id) => String(id || '').trim()).filter((id) => id && window.CJS.DataStore?.exists?.('monsters', id));
   }
@@ -2294,7 +2297,7 @@ window.CJS.ScenarioRunner = (() => {
     return node.battleSetIds?.[0] || node.encounterIds?.[0] || node.encounterId || null;
   }
 
-  function _battleMapForCard(card = {}) {
+  function _battleMapForCard(card: any = {}) {
     if (!card) return null;
     const text = [card.name, card.objective, card.gimmick, ...(card.tags || [])].join(' ').toLowerCase();
     let theme = 'forest';
@@ -2348,7 +2351,7 @@ window.CJS.ScenarioRunner = (() => {
     return {
       currencies: CS().clone(state.currencies || {}),
       inventory: CS().clone(state.inventory || {}),
-      party: Object.fromEntries(Object.entries(state.party || {}).map(([id, member]) => [id, {
+      party: Object.fromEntries(Object.entries<any>(state.party || {}).map(([id, member]) => [id, {
         currentHp: member.currentHp,
         maxHp: member.maxHp,
         currentMp: member.currentMp,
@@ -2359,7 +2362,7 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function _diffMap(before = {}, after = {}) {
+  function _diffMap(before: any = {}, after: any = {}) {
     const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
     const out = {};
     for (const key of keys) {
@@ -2376,7 +2379,7 @@ window.CJS.ScenarioRunner = (() => {
       materials: _diffMap(before.inventory?.materials, after.inventory?.materials),
       food: _diffMap(before.inventory?.food, after.inventory?.food),
       questItems: _diffMap(before.inventory?.questItems, after.inventory?.questItems),
-      party: Object.fromEntries(Object.entries(after.party || {}).map(([id, member]) => {
+      party: Object.fromEntries(Object.entries<any>(after.party || {}).map(([id, member]) => {
         const prev = before.party?.[id] || {};
         return [id, {
           hp: (member.currentHp || 0) - (prev.currentHp || 0),
@@ -2519,11 +2522,11 @@ window.CJS.ScenarioRunner = (() => {
     return base;
   }
 
-  function _usesGridLevels(map = {}) {
+  function _usesGridLevels(map: any = {}) {
     return Array.isArray(map?.levels) && map.levels.length > 0;
   }
 
-  function _gridLevels(map = {}) {
+  function _gridLevels(map: any = {}) {
     if (_usesGridLevels(map)) return map.levels;
     return [{
       id: map.defaultLevelId || 'level_1',
@@ -2535,12 +2538,12 @@ window.CJS.ScenarioRunner = (() => {
     }];
   }
 
-  function _gridLevel(map = {}, levelId = null) {
+  function _gridLevel(map: any = {}, levelId = null) {
     const wanted = _defaultGridLevelId(map, levelId);
     return _gridLevels(map).find((level) => _normalizeLayerId(level.id || level.layerId || 'level_1') === wanted) || _gridLevels(map)[0] || null;
   }
 
-  function _defaultGridLevelId(map = {}, preferred = null) {
+  function _defaultGridLevelId(map: any = {}, preferred = null) {
     const wanted = preferred ? _normalizeLayerId(preferred) : '';
     if (_usesGridLevels(map) && wanted) return wanted;
     if (_usesGridLevels(map)) {
@@ -2549,30 +2552,30 @@ window.CJS.ScenarioRunner = (() => {
     return wanted || _normalizeLayerId(map.defaultLevelId || 'level_1');
   }
 
-  function _gridLevelDefaultStartCell(map = {}, levelId = null) {
+  function _gridLevelDefaultStartCell(map: any = {}, levelId = null) {
     const level = _gridLevel(map, levelId);
     return level?.defaultStartCell || level?.startCell || null;
   }
 
-  function _gridLevelName(map = {}, levelId = null) {
+  function _gridLevelName(map: any = {}, levelId = null) {
     const level = _gridLevel(map, levelId);
     return level?.name || level?.label || String(levelId || 'Level').replace(/_/g, ' ');
   }
 
-  function _gridCellsForLevel(map = {}, levelId = null) {
+  function _gridCellsForLevel(map: any = {}, levelId = null) {
     const level = _gridLevel(map, levelId);
     if (_usesGridLevels(map)) return level?.cells || [];
     return map.cells || [];
   }
 
-  function _gridLevelIndex(map = {}, levelId = null) {
+  function _gridLevelIndex(map: any = {}, levelId = null) {
     const wanted = _defaultGridLevelId(map, levelId);
     const levels = _gridLevels(map);
     const index = levels.findIndex((level) => _normalizeLayerId(level.id || level.layerId || 'level_1') === wanted);
     return index >= 0 ? index + 1 : 1;
   }
 
-  function _normalizeMovingThreats(scenario = {}, map = null, options = {}) {
+  function _normalizeMovingThreats(scenario: any = {}, map = null, options: any = {}) {
     const raw = [
       ...((Array.isArray(scenario?.movingThreats) ? scenario.movingThreats : [])),
       ...((Array.isArray(map?.movingThreats) ? map.movingThreats : []))
@@ -2642,7 +2645,7 @@ window.CJS.ScenarioRunner = (() => {
     return null;
   }
 
-  function _stepMovingThreats(map, target = {}, targetKey = '') {
+  function _stepMovingThreats(map, target: any = {}, targetKey = '') {
     const state = CS().getState();
     const run = state?.activeScenarioRun;
     if (!run || run.travelMode !== 'grid_map' || !map) return null;
@@ -2666,7 +2669,7 @@ window.CJS.ScenarioRunner = (() => {
       if (Math.random() > Math.max(0, Math.min(1, Number(threat.moveChance ?? 1)))) continue;
       const fromKey = _cellKey(threat.x, threat.y, threat.levelId, map);
       occupied.delete(fromKey);
-      let neighbors = _adjacentCells(map, threat.x, threat.y, threat.levelId)
+      let neighbors: any[] = _adjacentCells(map, threat.x, threat.y, threat.levelId)
         .filter((cell) => !occupied.has(_cellKey(cell.x, cell.y, cell.levelId || threat.levelId, map))
                        || (cell.x === targetX && cell.y === targetY));
       // If totally walled in, allow staying put.
@@ -2724,7 +2727,7 @@ window.CJS.ScenarioRunner = (() => {
     return null;
   }
 
-  function _queueMovingThreatBattle(threat = {}, map = null, cellKey = '') {
+  function _queueMovingThreatBattle(threat: any = {}, map = null, cellKey = '') {
     if (!threat) return null;
     Ops().apply({ op: 'log', text: `Moving threat intercepts the party: ${threat.label || threat.id}.` }, { source: 'moving_threat' });
     return _queueBattleEntry(threat, {
@@ -2734,7 +2737,7 @@ window.CJS.ScenarioRunner = (() => {
     });
   }
 
-  function _resolveMovingThreatBattle(outcome = 'victory', pending = {}) {
+  function _resolveMovingThreatBattle(outcome = 'victory', pending: any = {}) {
     if (pending?.source !== 'moving_threat' || !pending?.threatId) return;
     const normalized = String(outcome || '').toLowerCase();
     if (!['victory', 'win', 'success'].includes(normalized)) return;
@@ -2746,7 +2749,7 @@ window.CJS.ScenarioRunner = (() => {
     Ops().apply({ op: 'log', text: `Moving threat cleared: ${pending.label || pending.threatId}.` }, { source: 'moving_threat' });
   }
 
-  function _forceRevealObjective(action = {}, context = {}) {
+  function _forceRevealObjective(action: any = {}, context: any = {}) {
     const map = context.map || CS().getActiveMap();
     let changed = false;
     CS().mutate((state) => {
@@ -2763,7 +2766,7 @@ window.CJS.ScenarioRunner = (() => {
     return map;
   }
 
-  function _transitionGridLevel(map, cell = {}) {
+  function _transitionGridLevel(map, cell: any = {}) {
     const nextLevelId = _defaultGridLevelId(map, cell.nextLevelId);
     if (!nextLevelId) return null;
     const arrival = _normalizeCell(cell.nextCell || _gridLevelDefaultStartCell(map, nextLevelId) || [0, 0]);
@@ -2828,9 +2831,9 @@ window.CJS.ScenarioRunner = (() => {
     };
   }
 
-  function applyAutomaticPartyAvailability(scenario = {}) {
+  function applyAutomaticPartyAvailability(scenario: any = {}) {
     CS().mutate((state) => {
-      for (const [id, member] of Object.entries(state.party || {})) {
+      for (const [id, member] of Object.entries<any>(state.party || {})) {
         if (Number(member.currentHp || 0) <= 0) {
           member.availability = {
             status: 'injured',
@@ -2858,7 +2861,7 @@ window.CJS.ScenarioRunner = (() => {
   }
 
   function _clearScenarioAvailability(state) {
-    for (const member of Object.values(state.party || {})) {
+    for (const member of Object.values<any>(state.party || {})) {
       if (member.availability?.expires === 'scenario') {
         member.availability = {
           status: 'available',
@@ -2899,3 +2902,6 @@ window.CJS.ScenarioRunner = (() => {
     buildReport
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.ScenarioRunner = ScenarioRunner;

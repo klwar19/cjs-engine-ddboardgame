@@ -44,7 +44,7 @@ import "../engine/campaign/campaign-map";
 import "../engine/campaign/pocket-haven-facilities";
 import "../engine/campaign/pocket-haven";
 import "../../js/campaign/guild-trivia.js";
-import "../../js/campaign/scenario-runner.js";
+import "../engine/campaign/scenario-runner";
 import "../engine/campaign/campaign-side-content";
 import "../engine/campaign/campaign-story-director";
 import "../engine/campaign/campaign-hub";
