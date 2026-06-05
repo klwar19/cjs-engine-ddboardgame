@@ -7,7 +7,7 @@ import "./engine/core/data-store";
 import "./engine/core/skill-resolver";
 import "../js/services/persona-service.js";
 import "./engine/effects/value-calc";
-import "../js/effects/conditions.js";
+import "./engine/effects/conditions";
 import "../js/effects/effect-registry.js";
 import "../js/ui/audio-manager.js";
 import "../js/ui/animation-bus.js";

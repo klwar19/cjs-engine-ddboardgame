@@ -13,7 +13,7 @@ import "../../js/services/data-hot-reload.js";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
 import "../../js/services/dev-console.js";
 import "../engine/effects/value-calc";
-import "../../js/effects/conditions.js";
+import "../engine/effects/conditions";
 import "../../js/effects/effect-registry.js";
 import "../../js/effects/effect-resolver.js";
 import "../../js/grid/grid-engine.js";

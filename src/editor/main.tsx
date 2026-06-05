@@ -10,7 +10,7 @@ import "../../js/core/save-manager.js";
 import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../engine/effects/value-calc";
-import "../../js/effects/conditions.js";
+import "../engine/effects/conditions";
 import "../../js/effects/effect-registry.js";
 import "../../js/ui/ui-helpers.js";
 import "../../js/ui/ui-icons.js";
