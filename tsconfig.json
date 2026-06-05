@@ -19,7 +19,6 @@
     "types/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "tools/visual-regression/cases.tsx",
-    "js/ui/touch-gestures.js"
+    "tools/visual-regression/cases.tsx"
   ]
 }
