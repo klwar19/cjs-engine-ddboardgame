@@ -21,7 +21,6 @@
     "src/**/*.tsx",
     "tools/visual-regression/cases.tsx",
     "js/campaign/campaign-ops.js",
-    "js/campaign/campaign-world-events.js",
     "js/campaign/guild-trivia.js",
     "js/campaign/pocket-haven-facilities.js",
     "js/grid/grid-renderer.js",

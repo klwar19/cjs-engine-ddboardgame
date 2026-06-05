@@ -19,9 +19,13 @@
 // Used by: campaign-ops (passPhase tick), inventory/farm/shop modifiers,
 //          fishing minigame, encounter biasing.
 
+// Tier 3 TS port of js/campaign/campaign-world-events.js (engine cluster:
+// campaign). Exports `CampaignWorldEvents` and installs
+// window.CJS.CampaignWorldEvents. Body verbatim from the legacy IIFE; only
+// `: any` annotations added where tsc (strict:false) requires them.
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignWorldEvents = (() => {
+export const CampaignWorldEvents = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -167,7 +171,7 @@ window.CJS.CampaignWorldEvents = (() => {
    * Start a specific event by id. Returns the active record or null on failure.
    * Used by ops and dev console.
    */
-  function start(eventId, options = {}) {
+  function start(eventId, options: any = {}) {
     const def = DS()?.get?.('worldEvents', eventId);
     if (!def) return null;
     /** @type {any} */
@@ -309,3 +313,6 @@ window.CJS.CampaignWorldEvents = (() => {
     MAX_ACTIVE
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignWorldEvents = CampaignWorldEvents;
