@@ -1,9 +1,11 @@
-// campaign-idea-forge.js
-// Oracle and keyword prompt helpers for no-runtime-AI side content.
+// campaign-idea-forge.ts — Tier 3 TS port of js/campaign/campaign-idea-forge.js
+// (engine cluster: campaign). Oracle + keyword prompt helpers for no-runtime-AI
+// side content (rollOracle). DOM-free; reads window.CJS.* lazily. Exports
+// `CampaignIdeaForge` and installs window.CJS.CampaignIdeaForge. Body verbatim.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignIdeaForge = (() => {
+export const CampaignIdeaForge = (() => {
   'use strict';
 
   const Loader = () => window.CJS.CampaignDataLoader;
@@ -57,3 +59,6 @@ window.CJS.CampaignIdeaForge = (() => {
     rollOracle
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignIdeaForge = CampaignIdeaForge;

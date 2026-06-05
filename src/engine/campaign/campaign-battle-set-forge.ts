@@ -1,16 +1,20 @@
-// campaign-battle-set-forge.js
-// GM-ready battle cards and bridge handoff helpers.
+// campaign-battle-set-forge.ts — Tier 3 TS port of
+// js/campaign/campaign-battle-set-forge.js (engine cluster: campaign). GM-ready
+// battle cards + bridge handoff (getCards/getCard/saveCard/queueBattle/
+// victoryOps). DOM-free; reads window.CJS.* lazily. Exports
+// `CampaignBattleSetForge` and installs window.CJS.CampaignBattleSetForge.
+// Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignBattleSetForge = (() => {
+export const CampaignBattleSetForge = (() => {
   'use strict';
 
   const Ops = () => window.CJS.CampaignOps;
   const Loader = () => window.CJS.CampaignDataLoader;
   const Side = () => window.CJS.CampaignSideContent;
 
-  function getCards(filters = {}) {
+  function getCards(filters: any = {}) {
     return Loader().getBattleSetCards(filters.world, filters.zone, filters.hubId)
       .filter((card) => !filters.rank || String(card.rank || '').includes(filters.rank))
       .filter((card) => !filters.tag || (card.tags || []).includes(filters.tag));
@@ -53,7 +57,7 @@ window.CJS.CampaignBattleSetForge = (() => {
     return card?.rewardOps || [];
   }
 
-  function _battleMapForCard(card = {}) {
+  function _battleMapForCard(card: any = {}) {
     const text = [card.name, card.objective, card.gimmick, ...(card.tags || [])].join(' ').toLowerCase();
     let theme = 'forest';
     if (/temple|shrine|holy/.test(text)) theme = 'temple';
@@ -76,3 +80,6 @@ window.CJS.CampaignBattleSetForge = (() => {
     victoryOps
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignBattleSetForge = CampaignBattleSetForge;

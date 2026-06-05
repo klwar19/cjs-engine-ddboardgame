@@ -37,7 +37,7 @@ import "../../js/campaign/campaign-objective-banner.js";
 import "../engine/campaign/campaign-story-scenes";
 import "../engine/campaign/campaign-sequence-runner";
 import "../../js/campaign/campaign-sequence-vn.js";
-import "../../js/campaign/campaign-oracle.js";
+import "../engine/campaign/campaign-oracle";
 import "../../js/campaign/campaign-combat-bridge.js";
 import "../../js/campaign/campaign-party-chat.js";
 import "../../js/campaign/campaign-map.js";
@@ -49,10 +49,10 @@ import "../../js/campaign/campaign-side-content.js";
 import "../../js/campaign/campaign-story-director.js";
 import "../../js/campaign/campaign-hub.js";
 import "../../js/campaign/campaign-quest-chains.js";
-import "../../js/campaign/campaign-battle-set-forge.js";
+import "../engine/campaign/campaign-battle-set-forge";
 import "../engine/campaign/campaign-map-seed-forge";
 import "../../js/campaign/campaign-scenario-generator.js";
-import "../../js/campaign/campaign-idea-forge.js";
+import "../engine/campaign/campaign-idea-forge";
 import "../../js/campaign/campaign-world-map.js";
 // The minigame + QTE engine (js/minigames/*, js/qte/*) is no longer imported
 // here — it is deferred behind ./lazy-minigames (Tier 1 perf) so cjs-minigames

@@ -1,9 +1,11 @@
-// campaign-oracle.js
-// Non-AI random prompt generator for GM inspiration.
+// campaign-oracle.ts — Tier 3 TS port of js/campaign/campaign-oracle.js (engine
+// cluster: campaign). Non-AI random prompt generator for GM inspiration (roll).
+// DOM-free; reads window.CJS.* lazily. Exports `CampaignOracle` and installs
+// window.CJS.CampaignOracle. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignOracle = (() => {
+export const CampaignOracle = (() => {
   'use strict';
 
   const TABLES = {
@@ -28,7 +30,7 @@ window.CJS.CampaignOracle = (() => {
     return tables[0] || null;
   }
 
-  function roll(overrides = {}) {
+  function roll(overrides: any = {}) {
     const worldTable = _activeWorldTable();
     if (worldTable && Math.random() < 0.5 && Array.isArray(worldTable.prompts) && worldTable.prompts.length) {
       const prompt = pick(worldTable.prompts);
@@ -51,7 +53,7 @@ window.CJS.CampaignOracle = (() => {
       ...(worldTable?.tables || {}),
       ...(overrides.tables || {})
     };
-    const result = {
+    const result: any = {
       adjective: pick(merged.adjectives),
       noun: pick(merged.nouns),
       verb: pick(merged.verbs),
@@ -69,3 +71,6 @@ window.CJS.CampaignOracle = (() => {
 
   return Object.freeze({ roll });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignOracle = CampaignOracle;
