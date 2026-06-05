@@ -10,6 +10,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
+// Tier 3: resolve engine source-text reads through the shared resolver so a
+// JS->TS port is transparent to the regex checks below.
+const { resolveEngine } = require("./tools/test/engine-source.cjs");
 
 let pass = 0;
 let fail = 0;
@@ -60,7 +63,7 @@ const visibility = read("src/shared/launcherVisibility.ts");
 const css = read("css/launcher.css");
 const combatGrid = read("src/combat/components/CombatGrid.tsx");
 const campaignBoot = read("src/campaign/shell/boot.ts");
-const gridRenderer = read("js/grid/grid-renderer.js");
+const gridRenderer = fs.readFileSync(resolveEngine("grid/grid-renderer").path, "utf8");
 const pkg = JSON.parse(read("package.json"));
 const vite = read("vite.config.mjs");
 const index = read("index.html");

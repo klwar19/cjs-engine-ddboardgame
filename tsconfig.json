@@ -21,7 +21,6 @@
     "src/**/*.tsx",
     "tools/visual-regression/cases.tsx",
     "js/campaign/guild-trivia.js",
-    "js/grid/grid-renderer.js",
     "js/ui/touch-gestures.js"
   ]
 }

@@ -1,4 +1,5 @@
 // grid-renderer.js
+// Tier 3 TS port -> src/engine/grid/grid-renderer.ts (exports GridRenderer + installs window.CJS.GridRenderer). Body verbatim.
 // Draws the combat grid, units, terrain, movement highlights, AoE
 // previews, and handles click/tap for movement and targeting.
 //
@@ -11,7 +12,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.GridRenderer = (() => {
+export const GridRenderer = (() => {
   'use strict';
 
   const GE = () => window.CJS.GridEngine;
@@ -1163,7 +1164,7 @@ window.CJS.GridRenderer = (() => {
     ctx.stroke();
   }
 
-  function setTheme(opts = {}) {
+  function setTheme(opts: any = {}) {
     if (opts.image) {
       const img = new Image();
       img.onload = () => { _themeImg = img; };
@@ -1232,3 +1233,6 @@ window.CJS.GridRenderer = (() => {
     animateUnitMove, clearMoveAnimations
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.GridRenderer = GridRenderer;

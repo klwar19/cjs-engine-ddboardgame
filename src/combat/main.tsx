@@ -45,7 +45,7 @@ import "../engine/narrator/narrator-state";
 import "../engine/narrator/narrator-data";
 import "../engine/narrator/narrator-engine";
 import "../engine/ui/touch-gestures";
-import "../../js/grid/grid-renderer.js";
+import "../engine/grid/grid-renderer";
 import "../engine/ui/ui-helpers";
 import "../engine/ui/ui-icons";
 import "../engine/ui/portrait-picker";
