@@ -1,9 +1,12 @@
-// campaign-scenario-generator.js
-// Save-local scenario and layered node-map generator for Campaign Mode.
+// campaign-scenario-generator.ts — Tier 3 TS port of
+// js/campaign/campaign-scenario-generator.js (engine cluster: campaign).
+// Save-local scenario + layered node-map generator (generate/generateAndStart/
+// options). Reads window.CJS.* lazily. Exports `CampaignScenarioGenerator` and
+// installs window.CJS.CampaignScenarioGenerator. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignScenarioGenerator = (() => {
+export const CampaignScenarioGenerator = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -95,7 +98,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }
   };
 
-  function generateAndStart(options = {}) {
+  function generateAndStart(options: any = {}) {
     if (CS().getState()?.activeScenarioRun) return { error: 'active_run' };
     const result = generate(options);
     if (result.error) return result;
@@ -103,7 +106,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return result;
   }
 
-  function generate(options = {}) {
+  function generate(options: any = {}) {
     const state = CS().getState();
     if (!state) throw new Error('No campaign save loaded.');
     const world = state.currentWorld || CS().getCurrentCampaign()?.world || 'haven';
@@ -157,11 +160,11 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return { source, mapType: mapSetting, mapSetting, mapForm, size, layers, questId: options.questId || null, questChainId: options.questChainId || null };
   }
 
-  function _sourceContext(source, world, opts = {}) {
+  function _sourceContext(source, world, opts: any = {}) {
     const state = CS().getState();
     if (source === 'active_quest') {
       const quest = (opts.questId ? state.quests?.[opts.questId] : null)
-        || Object.values(state.quests || {}).find((entry) => !['complete', 'completed', 'failed'].includes(String(entry.status || 'active')))
+        || Object.values<any>(state.quests || {}).find((entry) => !['complete', 'completed', 'failed'].includes(String(entry.status || 'active')))
         || null;
       if (!quest || ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'))) return { error: 'no_active_quest', source };
       return {
@@ -185,7 +188,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }
 
     if (source === 'quest_chain') {
-      const activeChains = Object.values(state.sideContent?.activeQuestChains || {})
+      const activeChains = Object.values<any>(state.sideContent?.activeQuestChains || {})
         .filter((entry) => String(entry.status || 'active') === 'active');
       const activeState = (opts.questChainId
         ? activeChains.find((entry) => entry.templateId === opts.questChainId)
@@ -319,7 +322,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
   // from the start so the player isn't ambushed in the first step. Each threat
   // pulls a monster identity from the scenario's battle pool so the sprite
   // matches the encounter the chase resolves into.
-  function _seedGridMovingThreats(map = {}, opts = {}, context = {}, world = '', battlePool = [], setBattles = []) {
+  function _seedGridMovingThreats(map: any = {}, opts: any = {}, context: any = {}, world = '', battlePool: any[] = [], setBattles: any[] = []) {
     if (!map || map.type !== 'grid_map') return [];
     const size = opts.size || 'small';
     const baseChasers = Math.max(1, GRID_CHASE_COUNTS[size] || 1);
@@ -404,7 +407,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return ids.slice(0, 2);
   }
 
-  function _gridStart(map = {}) {
+  function _gridStart(map: any = {}) {
     if (Array.isArray(map.defaultStartCell) && map.defaultStartCell.length >= 2) {
       return { x: Number(map.defaultStartCell[0]), y: Number(map.defaultStartCell[1]) };
     }
@@ -431,7 +434,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return `${context.title}: ${base}`;
   }
 
-  function _ensurePointBattles(points, pool, context = {}) {
+  function _ensurePointBattles(points, pool, context: any = {}) {
     if (!Array.isArray(points) || !points.length || !pool.length) return;
     const shuffled = _shuffle(pool);
     let index = 0;
@@ -455,7 +458,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }
   }
 
-  function _ensureBattleDensity(points, pool, context = {}) {
+  function _ensureBattleDensity(points, pool, context: any = {}) {
     if (!Array.isArray(points) || !points.length || !pool.length) return;
     const target = Math.min(_battleTarget(context.size, context.setting), Math.max(1, points.length - 2));
     let current = _battlePointCount(points);
@@ -505,7 +508,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return bySize[size] || 0.6;
   }
 
-  function _attachBattleToPoint(point, entry, context = {}) {
+  function _attachBattleToPoint(point, entry, context: any = {}) {
     if (entry.battleSetId) point.battleSetIds = _unique([...(point.battleSetIds || []), entry.battleSetId]);
     if (entry.encounterId) point.encounterIds = _unique([...(point.encounterIds || []), entry.encounterId]);
     point.randomBattle = {
@@ -520,7 +523,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
   // Distribute quest objectives across map points so the player can see what each
   // node represents. The first objective lands on a meaningful early-to-mid node,
   // the final objective lands on (or near) the exit, and any extras spread evenly.
-  function _attachQuestObjectivesToPoints(points, context = {}) {
+  function _attachQuestObjectivesToPoints(points, context: any = {}) {
     const objectives = Array.isArray(context.objectives) ? context.objectives.filter(Boolean) : [];
     if (!Array.isArray(points) || !points.length || !objectives.length) return;
     const total = points.length;
@@ -568,7 +571,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }
   }
 
-  function _worldBattlePool(world, area = {}, context = {}, seed = {}) {
+  function _worldBattlePool(world, area: any = {}, context: any = {}, seed: any = {}) {
     const cards = Loader().getBattleSetCards(world) || [];
     const entries = cards
       .map((card) => ({
@@ -1148,7 +1151,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     ]);
   }
 
-  function _battleMapSuggestion(record = {}, setting) {
+  function _battleMapSuggestion(record: any = {}, setting?) {
     const theme = _themeForArea(setting || _firstMatchingArea(record) || 'outdoor', record);
     const grid = record.grid || {};
     return {
@@ -1158,7 +1161,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     };
   }
 
-  function _rankedBattles(entries, context = {}) {
+  function _rankedBattles(entries, context: any = {}) {
     const scored = (entries || [])
       .filter(Boolean)
       .map((entry) => ({ entry, score: _battleScore(entry, context) }))
@@ -1169,7 +1172,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     }));
   }
 
-  function _battleScore(entry, context = {}) {
+  function _battleScore(entry, context: any = {}) {
     const setting = context.setting === 'any' ? '' : context.setting;
     const profile = _areaProfile(setting);
     const haystack = _tokensFor(entry).join(' ');
@@ -1214,7 +1217,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return AREA_PROFILES[key] || AREA_PROFILES.outdoor;
   }
 
-  function _themeForArea(area, record = {}) {
+  function _themeForArea(area, record: any = {}) {
     const profile = _areaProfile(area);
     const haystack = _tokensFor(record).join(' ');
     if (haystack.includes('temple') || haystack.includes('shrine')) return 'temple';
@@ -1224,7 +1227,7 @@ window.CJS.CampaignScenarioGenerator = (() => {
     return profile.themes?.[0] || 'forest';
   }
 
-  function _tokensFor(record = {}) {
+  function _tokensFor(record: any = {}) {
     return [
       record.id,
       record.name,
@@ -1378,3 +1381,6 @@ window.CJS.CampaignScenarioGenerator = (() => {
     options
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignScenarioGenerator = CampaignScenarioGenerator;

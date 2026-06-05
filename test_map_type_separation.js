@@ -5,6 +5,9 @@
 
 const fs = require('fs');
 const vm = require('vm');
+// Tier 3: load the generator through the shared resolver so a JS->TS port is
+// transparent (it transpiles a .ts port to a sandbox-runnable script).
+const { loadEngineSource } = require('./tools/test/engine-source.cjs');
 
 function makeSandbox() {
   const sandbox = { window: {}, console, Math, Date, Object, Array, Number, JSON, Boolean, String };
@@ -31,7 +34,7 @@ function makeSandbox() {
     ScenarioRunner: {}
   };
   vm.createContext(sandbox);
-  vm.runInContext(fs.readFileSync('js/campaign/campaign-scenario-generator.js', 'utf8'), sandbox);
+  vm.runInContext(loadEngineSource('campaign/campaign-scenario-generator'), sandbox);
   return sandbox;
 }
 
