@@ -16,9 +16,14 @@
 // Writes:  Nothing in state. All state mutations go through CampaignSequences
 //          and Ops. The overlay is rebuilt every time the active node changes.
 
+// Tier 3 TS port of js/campaign/campaign-sequence-vn.js (engine cluster:
+// campaign). Fullscreen visual-novel renderer wrapping the sequence runner
+// (background, speaker portrait/expression, typed text, choice buttons, Auto/
+// Skip/Log). Exports `CampaignSequenceVN` and installs window.CJS.CampaignSequenceVN.
+// Body verbatim from the legacy IIFE; ': any' / DOM casts added for tsc.
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignSequenceVN = (() => {
+export const CampaignSequenceVN = (() => {
   'use strict';
 
   const Seq = () => window.CJS.CampaignSequences;
@@ -134,10 +139,11 @@ window.CJS.CampaignSequenceVN = (() => {
     div.querySelector('[data-vn-history-close]').addEventListener('click', _toggleHistory);
 
     div.addEventListener('click', (event) => {
-      if (event.target.closest('button')) return;
-      if (event.target.closest('.campaign-seq-vn-choices')) return;
-      if (event.target.closest('.campaign-seq-vn-history')) return;
-      _onAdvanceClick(event);
+      const t = event.target as HTMLElement;
+      if (t.closest('button')) return;
+      if (t.closest('.campaign-seq-vn-choices')) return;
+      if (t.closest('.campaign-seq-vn-history')) return;
+      _onAdvanceClick();
     });
 
     void sequence;
@@ -358,7 +364,7 @@ window.CJS.CampaignSequenceVN = (() => {
     ) || null;
   }
 
-  function _renderChoices(choices = [], node = {}) {
+  function _renderChoices(choices: any[] = [], node: any = {}) {
     const el = _overlay?.querySelector('[data-vn-choices]');
     if (!el) return;
     el.hidden = false;
@@ -406,7 +412,7 @@ window.CJS.CampaignSequenceVN = (() => {
     });
   }
 
-  function _renderActionButtons(buttons = [], node) {
+  function _renderActionButtons(buttons: any[] = [], node) {
     const el = _overlay?.querySelector('[data-vn-choices]');
     if (!el) return;
     el.hidden = false;
@@ -615,3 +621,6 @@ window.CJS.CampaignSequenceVN = (() => {
 
   return Object.freeze({ init, setEnabled, isEnabled, close });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignSequenceVN = CampaignSequenceVN;

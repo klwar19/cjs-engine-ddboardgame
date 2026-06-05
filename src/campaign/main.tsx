@@ -36,7 +36,7 @@ import "../engine/campaign/campaign-combat-popup";
 import "../engine/campaign/campaign-objective-banner";
 import "../engine/campaign/campaign-story-scenes";
 import "../engine/campaign/campaign-sequence-runner";
-import "../../js/campaign/campaign-sequence-vn.js";
+import "../engine/campaign/campaign-sequence-vn";
 import "../engine/campaign/campaign-oracle";
 import "../../js/campaign/campaign-combat-bridge.js";
 import "../engine/campaign/campaign-party-chat";
