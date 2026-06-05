@@ -178,7 +178,7 @@ for (const [rel, name] of listItems) {
 const rp = fs.readFileSync(path.join(__dirname, 'src/campaign/tabs/ResultPanels.tsx'), 'utf8');
 ok('ResultPanels imports useCampaignSelector', /import \{ useCampaignSelector,/.test(rp));
 ok('ResultPanels imports deepEqual + memo',
-   /import \{ deepEqual \}/.test(rp) && /import \{ memo \} from "react"/.test(rp));
+   /import \{ deepEqual \}/.test(rp) && /import \{[^}]*\bmemo\b[^}]*\} from "react"/.test(rp));
 const SELF_SUB_PANELS = [
   'EventResultPanel', 'OraclePanel', 'SoloNoticePanel', 'TravelSurprisePanel',
   'CombatResultPanel', 'LastCombatResultPanel', 'LastReportPanel',

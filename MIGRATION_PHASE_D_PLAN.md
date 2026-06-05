@@ -174,9 +174,10 @@ file is deleted and is no longer an active bridge or extension point.
   embedded them) are now JSX components reading typed data; the HTML-string
   emitters are deleted. None emitted `data-campaign-action`, so this never
   touched the action-string / forwarder surface (Part A retired both
-  forwarders). (Other `dangerouslySetInnerHTML` islands remain by design — the
-  ResultPanels loot / combat-consequence / pulse / battle-context / party-summary
-  fragments and the world-map SVG; those are out of this section's scope.)
+  forwarders). (The ResultPanels loot / combat-consequence / pulse /
+  battle-context / party-summary fragments were out of Part B's scope — they are
+  retired in **Part C** below. The world-map SVG geometry stays a raw-SVG island
+  by design.)
 
   - **New JSX (`src/campaign/tabs/ConsequenceViews.tsx`).** `<InlinePurpose>` /
     `<ConsequencePreview>` / `<FlavorTrail>` render the exact element tree /
@@ -223,6 +224,44 @@ file is deleted and is no longer an active bridge or extension point.
     refreshed for the 2 new chunks + Part A's tab chunks). **Still recommended:**
     a real-browser pass on the story beat modal — it is opened imperatively and is
     not VR-covered (same caveat as combat canvas / QTE timing).
+
+  **Part C — combat-result HTML-string island cleanup** ✅ DONE (one cohesive
+  commit). The five fragments Part B deferred — loot, combat-consequence,
+  combat-pulse, pending-battle-context, battle-party — are now JSX components
+  reading typed data; the `render*` HTML-string emitters and the `HtmlBridge`
+  helper they fed are deleted. The `ResultPanels` family now has **zero**
+  `dangerouslySetInnerHTML`. None emitted `data-campaign-action`, so this is
+  display-only (no action-surface change).
+
+  - **Structured data, not `*Html` strings (`tabs/data/resultPanels.ts`).**
+    `renderLootSummary` → `lootSummaryData` (`LootSummaryData = { lines }`),
+    `renderCombatPulseSummary` → `combatPulseData` (`CombatPulseData | null`),
+    `renderCombatConsequenceNotice` → `combatConsequenceData` (`string[] | null`),
+    `renderBattlePartySummary` → `battlePartyData` (`BattlePartyData`),
+    `renderPendingBattleContext` → `pendingBattleContextData`
+    (`PendingBattleContextData | null`), and the shared `renderContextTags` →
+    `contextTagLabels` (returns the deduped/capped/humanized chip list). The
+    `CombatResultData` / `LastCombatResultData` / `PendingBattleData` snapshots
+    carry the structured fields (`loot` / `consequenceNotice` / `pulse` /
+    `context` / `partySummary`) instead of `*Html`. The `esc` import dropped
+    (React auto-escapes); `lootLine` / `label` stay (string transforms).
+  - **JSX fragments (bottom of `ResultPanels.tsx`).** `<LootSummary>` /
+    `<CombatPulse>` / `<CombatConsequenceNotice>` / `<BattlePartySummary>` /
+    `<PendingBattleContext>` / `<ContextTags>` render the same element tree the
+    emitters produced. The consumers keep the `campaign-*-bridge` wrapper divs
+    (kept deliberately, same as Part B — block-flow panels, unverified
+    child-combinator CSS) and render the component inside; the nullable islands
+    (consequence / pulse / context) guard on the data so an empty result renders
+    **no wrapper**, matching the old `HtmlBridge`'s "render nothing when empty".
+  - **Verification.** The 8 VR snapshots that render these panels (overview,
+    maps, storyHome, questHome, the four event tabs) re-baselined; the change is
+    **content-identical** — verified by diffing old vs new with whitespace and
+    `<br>`/`<br/>` normalized away (zero content delta). The only differences are
+    the inert `<br/>` serialization and the VR pretty-printer's indentation (a
+    pre-existing normalizer trait the `gmHook` line already triggers). `npm test`
+    (25 files), `tsc --noEmit`, `npm run build` (campaign entry 266 KB < 300), and
+    `npm run size:check` are green. `test_selector_store.js`'s `import { memo }`
+    regex was relaxed to tolerate the added `Fragment` import.
 - [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
   (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
   react-dom/client and drives the live wiring: boot, chrome render, sub-tab

@@ -7,7 +7,7 @@
 // `renderCombatConsequenceNotice`, etc.) are ported alongside in the
 // "HTML helpers" section below.
 
-import { esc, lootLine, label } from "../../util/cui-utils";
+import { lootLine, label } from "../../util/cui-utils";
 import { purposeKeyForCard, type CardLike, type ToolPurposeKey } from "../../util/cui-controls";
 import {
   consequenceSummary,
@@ -59,21 +59,17 @@ function ops(): OpsSurface | undefined {
   return (window as unknown as { CJS?: { CampaignOps?: OpsSurface } }).CJS?.CampaignOps;
 }
 
-// ── HTML helpers (Phase H.4 — ported from campaign-ui.js) ────────────
-// These build small HTML fragments that the data builders below embed
-// in their typed snapshots. They are intentionally still HTML strings
-// rather than JSX because the consumers (`ResultPanels.tsx` etc.)
-// render them via `dangerouslySetInnerHTML` — the React-side bridge
-// pattern Phase G established.
+// ── Display-data helpers (switch plan Part C) ────────────────────────
+// Structured builders for the combat-result / loot / pulse / pending-battle
+// fragments. They return typed data (no HTML strings) for the JSX components
+// in `ResultPanels.tsx`. Part C retired the `render*` HTML-string emitters and
+// the `HtmlBridge` they fed; the consequence / flavor / purpose fragments went
+// the same way in Part B (`ConsequenceViews.tsx`).
 
-function renderContextTags(tags: readonly string[] = []): string {
-  const list = Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8);
-  if (!list.length) return "";
-  return `
-      <div class="campaign-chip-row campaign-context-tags">
-        ${list.map((tag) => `<span class="campaign-chip">${esc(label(tag))}</span>`).join("")}
-      </div>
-    `;
+// Deduped, capped, humanized chip labels for a context-tag row. The JSX
+// `<ContextTags>` component renders the returned list (or nothing when empty).
+function contextTagLabels(tags: readonly string[] = []): readonly string[] {
+  return Array.from(new Set((tags || []).filter(Boolean))).slice(0, 8).map((tag) => label(tag));
 }
 
 interface LootDrop {
@@ -85,14 +81,13 @@ interface LootDrop {
   readonly currency?: string;
 }
 
-function renderLootSummary(drops: readonly LootDrop[]): string {
-  if (!drops.length) return '<div class="campaign-empty">No loot in this result.</div>';
-  return `
-      <div class="campaign-preview">
-        <b>Loot</b><br>
-        ${drops.map((drop) => esc(lootLine(drop))).join("<br>")}
-      </div>
-    `;
+// One humanized line per drop; an empty list renders the "no loot" empty state.
+export interface LootSummaryData {
+  readonly lines: readonly string[];
+}
+
+function lootSummaryData(drops: readonly LootDrop[]): LootSummaryData {
+  return { lines: drops.map((drop) => lootLine(drop)) };
 }
 
 interface CombatPulse {
@@ -100,17 +95,18 @@ interface CombatPulse {
   readonly tags?: readonly string[];
 }
 
-function renderCombatPulseSummary(pulse: CombatPulse | null | undefined): string {
-  if (!pulse) return "";
+export interface CombatPulseData {
+  readonly summary: string;
+  readonly tags: readonly string[];
+}
+
+function combatPulseData(pulse: CombatPulse | null | undefined): CombatPulseData | null {
+  if (!pulse) return null;
   const tags = (pulse.tags || [])
     .filter((tag) => /^(behavior|defeated_tag|status|skill):/.test(tag))
-    .slice(0, 8);
-  return `
-      <div class="campaign-combat-pulse">
-        ${pulse.summary ? `<span>${esc(pulse.summary)}</span>` : ""}
-        ${renderContextTags(tags.map((tag) => tag.replace(/^[^:]+:/, "")))}
-      </div>
-    `;
+    .slice(0, 8)
+    .map((tag) => tag.replace(/^[^:]+:/, ""));
+  return { summary: pulse.summary || "", tags: contextTagLabels(tags) };
 }
 
 interface CombatResultInput {
@@ -142,12 +138,12 @@ interface PendingBattleLike {
   readonly battleMap?: { readonly theme?: string };
 }
 
-function renderCombatConsequenceNotice(
+function combatConsequenceData(
   result: CombatResultInput,
   state: { pendingBattle?: PendingBattleLike }
-): string {
+): readonly string[] | null {
   const outcome = String(result?.result || "").toLowerCase();
-  if (!["defeat", "draw"].includes(outcome)) return "";
+  if (!["defeat", "draw"].includes(outcome)) return null;
   const battle = state.pendingBattle || {};
   const hasCustom = outcome === "defeat"
     ? !!(
@@ -174,12 +170,7 @@ function renderCombatConsequenceNotice(
   if (!(result.defeatNoRecovery || battle.defeatNoRecovery || battle.noDefeatRecovery)) {
     lines.push("KO party members recover to low HP instead of an instant wipeout.");
   }
-  return `
-      <div class="campaign-preview">
-        <b>Campaign Consequence</b><br>
-        ${lines.map((line) => esc(line)).join("<br>")}
-      </div>
-    `;
+  return lines;
 }
 
 function battleSourceLabel(battle: PendingBattleLike): string {
@@ -220,7 +211,12 @@ interface PartyMemberLike {
   readonly name?: string;
 }
 
-function renderBattlePartySummary(state: { party?: Record<string, PartyMemberLike> }): string {
+export interface BattlePartyData {
+  readonly ready: string;
+  readonly blocked: string;
+}
+
+function battlePartyData(state: { party?: Record<string, PartyMemberLike> }): BattlePartyData {
   const ready: string[] = [];
   const blocked: string[] = [];
   const bridge = combatBridge();
@@ -231,28 +227,28 @@ function renderBattlePartySummary(state: { party?: Record<string, PartyMemberLik
       blocked.push(`${member.name || id}: ${bridge?.availabilityLabel?.(member) || "Unavailable"}`);
     }
   }
-  return `
-      <div class="campaign-preview">
-        <b>Battle Party</b><br>
-        Ready: ${esc(ready.join(", ") || "none")}<br>
-        ${blocked.length ? `Unavailable: ${esc(blocked.join("; "))}` : "Unavailable: none"}
-      </div>
-    `;
+  return {
+    ready: ready.join(", ") || "none",
+    blocked: blocked.length ? `Unavailable: ${blocked.join("; ")}` : "Unavailable: none"
+  };
 }
 
-function renderPendingBattleContext(state: unknown, battle: PendingBattleLike = {}): string {
+export interface PendingBattleContextData {
+  readonly questTitle: string;
+  readonly tags: readonly string[];
+}
+
+function pendingBattleContextData(
+  state: unknown,
+  battle: PendingBattleLike = {}
+): PendingBattleContextData | null {
   const ctx = questPulse()?.battleContextForPending?.(state, battle);
   const tags = [
     ...(ctx?.contextTags || []),
     ...(ctx?.monsterTags || [])
   ];
-  if (!ctx?.questId && !tags.length) return "";
-  return `
-      <div class="campaign-battle-context">
-        ${ctx?.questTitle ? `<strong>${esc(ctx.questTitle)}</strong>` : ""}
-        ${renderContextTags(tags)}
-      </div>
-    `;
+  if (!ctx?.questId && !tags.length) return null;
+  return { questTitle: ctx?.questTitle || "", tags: contextTagLabels(tags) };
 }
 
 export interface ManualSummary {
@@ -299,8 +295,8 @@ export interface CombatResultData {
   readonly resultLabel: string;
   readonly encounterId: string;
   readonly rounds: number;
-  readonly lootHtml: string;
-  readonly consequenceNoticeHtml: string;
+  readonly loot: LootSummaryData;
+  readonly consequenceNotice: readonly string[] | null;
 }
 
 export interface LastCombatResultData {
@@ -308,8 +304,8 @@ export interface LastCombatResultData {
   readonly label: string;
   readonly rounds: number;
   readonly summary: string;
-  readonly pulseHtml: string;
-  readonly lootHtml: string;
+  readonly pulse: CombatPulseData | null;
+  readonly loot: LootSummaryData;
 }
 
 export interface LastReportData {
@@ -326,8 +322,8 @@ export interface PendingBattleData {
   readonly label: string;
   readonly subLabel: string;
   readonly autoMapLabel: string;
-  readonly contextHtml: string;
-  readonly partySummaryHtml: string;
+  readonly context: PendingBattleContextData | null;
+  readonly partySummary: BattlePartyData;
   readonly canRun: boolean;
   readonly isRandom: boolean;
 }
@@ -678,8 +674,8 @@ export function getCombatResultData(state: CampaignStateSnapshot): CombatResultD
     resultLabel: result.result || "resolved",
     encounterId: result.encounterId || "",
     rounds: result.rounds || 0,
-    lootHtml: renderLootSummary(result.loot || []),
-    consequenceNoticeHtml: renderCombatConsequenceNotice(
+    loot: lootSummaryData(result.loot || []),
+    consequenceNotice: combatConsequenceData(
       result,
       state as { pendingBattle?: PendingBattleLike }
     )
@@ -705,8 +701,8 @@ export function getLastCombatResultData(state: CampaignStateSnapshot): LastComba
     label: result.encounterId || result.label || "Campaign battle",
     rounds: result.rounds || 0,
     summary: result.summary || "",
-    pulseHtml: renderCombatPulseSummary(result.combatPulse) || "",
-    lootHtml: renderLootSummary(result.loot || [])
+    pulse: combatPulseData(result.combatPulse),
+    loot: lootSummaryData(result.loot || [])
   };
 }
 
@@ -745,8 +741,8 @@ export function getPendingBattleData(state: CampaignStateSnapshot): PendingBattl
     label: battle.label || battle.encounterId || "",
     subLabel: battle.encounterId || battle.battleSetId || (battle.monsterIds || []).join(", ") || "",
     autoMapLabel: battle.battleMap?.theme ? label(battle.battleMap.theme) : "",
-    contextHtml: renderPendingBattleContext(state, battle) || "",
-    partySummaryHtml: renderBattlePartySummary(state as { party?: Record<string, PartyMemberLike> }) || "",
+    context: pendingBattleContextData(state, battle),
+    partySummary: battlePartyData(state as { party?: Record<string, PartyMemberLike> }),
     canRun,
     isRandom
   };

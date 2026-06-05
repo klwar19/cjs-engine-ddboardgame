@@ -12,12 +12,13 @@
 // `scopes` prop, which the version-keyed selector cache can't memoize safely.
 //
 // The inline-purpose chip / consequence preview / flavor trail are JSX
-// components (`ConsequenceViews.tsx`) reading typed data (Part B). The
-// remaining `HtmlBridge` uses below host the loot / combat-consequence /
-// combat-pulse / pending-battle-context / battle-party islands, whose builders
-// still emit HTML strings.
+// components (`ConsequenceViews.tsx`) reading typed data (Part B). The loot /
+// combat-consequence / combat-pulse / pending-battle-context / battle-party
+// fragments are JSX too (Part C — the `*Data` builders in `data/resultPanels.ts`
+// + the fragment components at the bottom of this file), so this panel family
+// has no `dangerouslySetInnerHTML` left.
 
-import { memo } from "react";
+import { Fragment, memo } from "react";
 import { useCampaignSelector, type CampaignStateSnapshot } from "../store";
 import { deepEqual } from "../util/equality";
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
@@ -37,7 +38,11 @@ import {
   type SoloNoticeData,
   type PendingBattleData,
   type ScenarioSummaryRun,
-  type SequenceScope
+  type SequenceScope,
+  type LootSummaryData,
+  type CombatPulseData,
+  type BattlePartyData,
+  type PendingBattleContextData
 } from "./data/resultPanels";
 import { SequenceNodePanel } from "./SequenceNode";
 import { QuestPill } from "./ScenarioChips";
@@ -251,8 +256,12 @@ export const CombatResultPanel = memo(function CombatResultPanel() {
         <span className="campaign-pill">{data.resultLabel}</span>
       </div>
       <div className="campaign-muted">{data.encounterId} | {data.rounds} rounds</div>
-      <HtmlBridge html={data.lootHtml} className="campaign-loot-summary-bridge" />
-      <HtmlBridge html={data.consequenceNoticeHtml} className="campaign-combat-consequence-bridge" />
+      <div className="campaign-loot-summary-bridge"><LootSummary data={data.loot} /></div>
+      {data.consequenceNotice && (
+        <div className="campaign-combat-consequence-bridge">
+          <CombatConsequenceNotice lines={data.consequenceNotice} />
+        </div>
+      )}
       <div className="campaign-action-grid">
         <button
           className="campaign-action primary"
@@ -283,8 +292,10 @@ export const LastCombatResultPanel = memo(function LastCombatResultPanel() {
       </div>
       <div className="campaign-muted">{data.label} | {data.rounds} rounds</div>
       {data.summary && <p>{data.summary}</p>}
-      <HtmlBridge html={data.pulseHtml} className="campaign-combat-pulse-bridge" />
-      <HtmlBridge html={data.lootHtml} className="campaign-loot-summary-bridge" />
+      {data.pulse && (
+        <div className="campaign-combat-pulse-bridge"><CombatPulse data={data.pulse} /></div>
+      )}
+      <div className="campaign-loot-summary-bridge"><LootSummary data={data.loot} /></div>
     </section>
   );
 });
@@ -325,8 +336,14 @@ export const PendingBattlePanel = memo(function PendingBattlePanel() {
       {data.autoMapLabel && (
         <div className="campaign-muted">Auto map: {data.autoMapLabel}</div>
       )}
-      <HtmlBridge html={data.contextHtml} className="campaign-pending-battle-context-bridge" />
-      <HtmlBridge html={data.partySummaryHtml} className="campaign-battle-party-summary-bridge" />
+      {data.context && (
+        <div className="campaign-pending-battle-context-bridge">
+          <PendingBattleContext data={data.context} />
+        </div>
+      )}
+      <div className="campaign-battle-party-summary-bridge">
+        <BattlePartySummary data={data.partySummary} />
+      </div>
       <div className="campaign-control-help">
         Choose how this battle resolves. <b>Run in Combat App</b> = full tactical fight (loot returns to campaign). <b>Resolve Manually</b> = type a free-form result. <b>Manual Victory/Defeat</b> = skip the fight with default rewards or penalty. Cancel removes the pending battle without effect.
       </div>
@@ -538,10 +555,73 @@ export function ActiveSequencePanel({
   );
 }
 
-// ── helpers ───────────────────────────────────────────────────────
-function HtmlBridge({ html, className }: { html: string; className: string }) {
-  if (!html) return null;
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+// ── Combat-result display fragments (switch plan Part C) ──────────────
+// JSX replacements for the old `render*` HTML-string emitters in
+// `data/resultPanels.ts` (loot / combat-consequence / combat-pulse /
+// pending-battle-context / battle-party). Each renders the same element tree
+// the emitter produced; the wrapping `campaign-*-bridge` div stays in the panel
+// so the DOM structure is unchanged. React auto-escapes text, so the explicit
+// `esc()` the emitters used is no longer needed.
+function ContextTags({ tags }: { tags: readonly string[] }) {
+  if (!tags.length) return null;
+  return (
+    <div className="campaign-chip-row campaign-context-tags">
+      {tags.map((tag, i) => (
+        <span key={i} className="campaign-chip">{tag}</span>
+      ))}
+    </div>
+  );
+}
+
+function LootSummary({ data }: { data: LootSummaryData }) {
+  if (!data.lines.length) return <div className="campaign-empty">No loot in this result.</div>;
+  return (
+    <div className="campaign-preview">
+      <b>Loot</b><br />
+      {data.lines.map((line, i) => (
+        <Fragment key={i}>{i > 0 && <br />}{line}</Fragment>
+      ))}
+    </div>
+  );
+}
+
+function CombatPulse({ data }: { data: CombatPulseData }) {
+  return (
+    <div className="campaign-combat-pulse">
+      {data.summary && <span>{data.summary}</span>}
+      <ContextTags tags={data.tags} />
+    </div>
+  );
+}
+
+function CombatConsequenceNotice({ lines }: { lines: readonly string[] }) {
+  return (
+    <div className="campaign-preview">
+      <b>Campaign Consequence</b><br />
+      {lines.map((line, i) => (
+        <Fragment key={i}>{i > 0 && <br />}{line}</Fragment>
+      ))}
+    </div>
+  );
+}
+
+function BattlePartySummary({ data }: { data: BattlePartyData }) {
+  return (
+    <div className="campaign-preview">
+      <b>Battle Party</b><br />
+      Ready: {data.ready}<br />
+      {data.blocked}
+    </div>
+  );
+}
+
+function PendingBattleContext({ data }: { data: PendingBattleContextData }) {
+  return (
+    <div className="campaign-battle-context">
+      {data.questTitle && <strong>{data.questTitle}</strong>}
+      <ContextTags tags={data.tags} />
+    </div>
+  );
 }
 
 function ActionBtn({
