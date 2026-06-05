@@ -18,7 +18,7 @@ import "../engine/effects/effect-registry";
 import "../engine/effects/effect-resolver";
 import "../../js/grid/grid-engine.js";
 import "../engine/grid/pathfinding";
-import "../../js/grid/aoe.js";
+import "../engine/grid/aoe";
 import "../../js/grid/map-generator.js";
 import "../engine/combat/weather-manager";
 import "../engine/combat/enemy-modifiers";
