@@ -1,16 +1,24 @@
-// campaign-conditions.js
-// Shared campaign-side condition evaluator for story and quest availability.
+// campaign-conditions.ts — Tier 3 TS port of js/campaign/campaign-conditions.js
+// (engine cluster: campaign). Shared campaign-side condition evaluator for story
+// and quest availability: tags / personas / flags / story parts / world+rank /
+// chapter / bonds / metrics / alignment / cross-world milestones+pressures /
+// stat checks. DOM-free; reads window.CJS.* (CampaignState/Tags/Sequences/
+// Alignment/PersonaService/RelationshipTiers/Formulas/DataStore) lazily.
+//
+// Exports `CampaignConditions` and installs window.CJS.CampaignConditions. Body
+// verbatim from the legacy IIFE; only `: any` annotations added to the
+// `{}`/`null`-default params so tsc accepts the property reads.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignConditions = (() => {
+export const CampaignConditions = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
   const Tags = () => window.CJS.CampaignTags;
   const Seq = () => window.CJS.CampaignSequences;
 
-  function evaluate(conditions = {}, state = null, context = {}) {
+  function evaluate(conditions: any = {}, state: any = null, context: any = {}) {
     state = state || CS()?.getState?.() || {};
     const cond = Array.isArray(conditions) ? { all: conditions } : (conditions || {});
     const reasons = [];
@@ -72,7 +80,7 @@ window.CJS.CampaignConditions = (() => {
     if (cond.memberRankMin) {
       const F = window.CJS.Formulas;
       const party = Object.values(state.party || {});
-      const anyMeets = party.some((member) => F?.meetsRank?.(member.adventurer?.rank || member.rank, cond.memberRankMin));
+      const anyMeets = party.some((member: any) => F?.meetsRank?.(member.adventurer?.rank || member.rank, cond.memberRankMin));
       if (!anyMeets) blockers.push(`Needs a party member at rank ${cond.memberRankMin} or higher.`);
     }
     if (cond.chapterMin != null && Number(state.currentChapter || 1) < Number(cond.chapterMin)) blockers.push(`Needs chapter ${cond.chapterMin}.`);
@@ -163,7 +171,7 @@ window.CJS.CampaignConditions = (() => {
     return { ok: blockers.length === 0, score, reasons, blockers };
   }
 
-  function evaluateStatChecks(statChecks, state = {}, context = {}) {
+  function evaluateStatChecks(statChecks, state: any = {}, context: any = {}) {
     const checks = Array.isArray(statChecks)
       ? statChecks
       : Object.entries(statChecks || {}).map(([stat, min]) => ({ stat, min }));
@@ -272,14 +280,14 @@ window.CJS.CampaignConditions = (() => {
     return 0;
   }
 
-  function personaIds(state = {}) {
+  function personaIds(state: any = {}) {
     return new Set(Object.values(state.party || {})
-      .map((member) => member.activePersona)
+      .map((member: any) => member.activePersona)
       .filter(Boolean)
       .map(cleanTag));
   }
 
-  function personaTags(state = {}) {
+  function personaTags(state: any = {}) {
     const PS = window.CJS.PersonaService;
     if (!PS) return [];
     const currentWorld = state.currentWorld || '';
@@ -312,3 +320,6 @@ window.CJS.CampaignConditions = (() => {
     evaluateStatChecks
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignConditions = CampaignConditions;

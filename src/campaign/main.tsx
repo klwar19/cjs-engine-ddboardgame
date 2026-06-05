@@ -25,7 +25,7 @@ import "../../js/campaign/campaign-data-loader.js";
 import "../engine/campaign/campaign-tags";
 import "../engine/campaign/relationship-tiers";
 import "../../js/campaign/campaign-alignment.js";
-import "../../js/campaign/campaign-conditions.js";
+import "../engine/campaign/campaign-conditions";
 import "../../js/campaign/campaign-quest-pulse.js";
 import "../../js/campaign/campaign-ops.js";
 import "../../js/campaign/campaign-save.js";
