@@ -1,6 +1,6 @@
 import "../js/core/constants.js";
 import "../js/core/formulas.js";
-import "../js/core/dice.js";
+import "./engine/core/dice";
 import "../js/core/undo-manager.js";
 import "./engine/core/state-tools";
 import "../js/core/data-store.js";
