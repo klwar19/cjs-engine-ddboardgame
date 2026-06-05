@@ -262,6 +262,37 @@ file is deleted and is no longer an active bridge or extension point.
     (25 files), `tsc --noEmit`, `npm run build` (campaign entry 266 KB < 300), and
     `npm run size:check` are green. `test_selector_store.js`'s `import { memo }`
     regex was relaxed to tolerate the added `Fragment` import.
+
+  **Part D — drawer + main-body island cleanup** ✅ DONE (one cohesive commit).
+  The last shell `dangerouslySetInnerHTML` paths are retired: the command-rail
+  drawer `quests` / `log` side panels and the defensive main-body fallback.
+  After Part D the **only** `dangerouslySetInnerHTML` left in `src/campaign/` is
+  the world-map SVG geometry (`CampaignWorldMapTab.tsx`), kept by design.
+
+  - **Drawer quests / log → JSX (`shell/DrawerPanels.tsx`).** `QuestsDrawerPanel`
+    + `LogDrawerPanel` render the same element tree the boot.ts emitters did.
+    `boot.ts`'s `renderDrawerBody` / `renderDrawerBodyInternal` /
+    `renderQuestsFallback` / `renderLogFallback` / `renderQuestMini` are
+    **deleted** (and `renderDrawerBody` dropped from the `window.CJS.CampaignUI`
+    install surface). `CampaignShell`'s `DrawerBody` now routes every panel to a
+    component (party / inventory / notes / quests / log), with a typed
+    `campaign-empty` default — no `html` prop, no bridge call.
+  - **Shared `LogLineView` (`tabs/LogLine.tsx`).** One log-line component renders
+    both the Logs tab (full meta) and the log drawer (`compact`), so there's a
+    single source for the line markup. It's its own module so the eager shell
+    drawer importing it doesn't pull the lazy `CampaignLogsTab` chunk; `tab-logs`
+    stays byte-identical (VR unchanged).
+  - **Defensive main-body fallback → typed JSX.** `VanillaBody` renders a typed
+    `campaign-empty` state for an unregistered tab id instead of calling
+    `getMainBody`; `boot.ts`'s `getMainBody` / `renderMain` are **deleted** (and
+    dropped from the install surface). Every real tab is in
+    `REACT_TAB_COMPONENTS`, so this path is defensive only.
+  - **Verification.** Two new VR cases (`chrome-drawer-quests` / `chrome-drawer-log`)
+    pin the ported panels; `test_campaign_shell_bridge` drops `getMainBody` /
+    `renderDrawerBody` from its `BRIDGE_FUNCS` / `SHELL_USES` lists and adds a
+    guard that `CampaignShell.tsx` has no `dangerouslySetInnerHTML={`;
+    `test_campaign_shell_live` drops the now-dead bridge stubs. `npm test`
+    (25 files), `tsc`, `build` (campaign entry 266 KB), and `size:check` green.
 - [~] **Live browser regression.** PARTIAL — `test_campaign_shell_live.js`
   (Tier 0) now mounts the REAL `<CampaignShell/>` into happy-dom with
   react-dom/client and drives the live wiring: boot, chrome render, sub-tab
@@ -1854,9 +1885,16 @@ These are the current contracts for future campaign work:
    in `src/campaign/actions.ts`. Existing `data-campaign-action` markup is
    compatibility-only for the remaining vanilla / HTML islands listed in
    Remaining Work; do not add new JSX that emits it.
-3. **JSX > dangerouslySetInnerHTML.** Every remaining `dangerouslySetInnerHTML`
-   use must identify the current island it is hosting and the removal path.
-   Do not introduce new bridges to deleted campaign UI closure helpers.
+3. **JSX > dangerouslySetInnerHTML.** The switch-plan island ports (Parts A–D)
+   retired every display-only HTML-string island in `src/campaign/`. The **only**
+   sanctioned `dangerouslySetInnerHTML` left is the world-map SVG geometry in
+   `CampaignWorldMapTab.tsx` (`backdropImageHtml` / `layersHtml` / `roadsHtml` /
+   `linksHtml` / node `innerSvg`) — kept by design because converting the intricate
+   inner SVG to JSX risks attribute-conversion bugs for ~zero benefit; its removal
+   path is a future SVG-attribute port if ever needed. Any NEW
+   `dangerouslySetInnerHTML` must identify the island it hosts and its removal path,
+   and must not bridge to deleted campaign UI closure helpers.
+   (`test_campaign_shell_bridge.js` guards that `CampaignShell.tsx` has none.)
 4. **No new HTML-string renderers.** Adding a new panel ships as JSX from day
    one, with typed data builders if it needs data the React tree cannot compute.
    Do not recreate `campaign-ui.js` or add new `_render*` HTML-string helpers.

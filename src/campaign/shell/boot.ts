@@ -12,9 +12,10 @@
 // Chrome state (mode / tab / panel) is read + written through the canonical
 // TS slice in `../chrome-state` directly (no `window.CJS.CampaignChrome`
 // hop). Actions dispatch through `window.CJS.CampaignActionsRuntime`
-// (installed by `action-handlers/registry.ts`). The drawer party / inventory /
-// notes bodies are React-owned; the leaf HTML helpers (esc / renderLogEntry)
-// are imported from the util modules.
+// (installed by `action-handlers/registry.ts`). Every drawer panel body is
+// React-owned (party / inventory / notes + quests / log via the shell), so
+// boot.ts emits no main-body or drawer HTML; `esc` is kept only for the init
+// error fallback.
 //
 // The vanilla render fallback was deleted back in H.2 (the React shell is
 // always enabled), and the imperative drawer DOM (`_openPanel` /
@@ -24,7 +25,7 @@
 // `init`, and the document-level listener mirrors the React drawer's own).
 
 import { esc } from "../util/cui-utils";
-import { renderLogEntry, type LogLine } from "../util/cui-log";
+import type { LogLine } from "../util/cui-log";
 import {
   getActiveMode,
   getActiveTab,
@@ -456,90 +457,13 @@ function closePanel(): void {
   render();
 }
 
-// ── Command-rail drawer body (HTML island) ─────────────────────────────
-// Consumed by the React `CampaignDrawer` via renderDrawerBody() for panels
-// that still use dangerouslySetInnerHTML. The party / inventory / notes panels
-// are React-owned (see CampaignShell `DrawerBody`); only the quests / log
-// fallbacks remain HTML strings here.
-function renderQuestMini(quest: QuestMini): string {
-  const first = quest.objectives?.[0];
-  return `
-      <div class="campaign-quest-mini">
-        <strong>${esc(quest.title || quest.id)}</strong>
-        <div class="campaign-muted">${
-          first ? `${esc(first.label)} ${first.current || 0}/${first.required || 1}` : esc(quest.summary || "")
-        }</div>
-      </div>
-    `;
-}
-
-function renderQuestsFallback(state: CampaignStateLike): string {
-  const quests = Object.values(state.quests || {});
-  if (!quests.length) return '<div class="campaign-empty">No quests.</div>';
-  return `
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>All Quests</h2></div>
-        ${quests.map(renderQuestMini).join("")}
-      </section>
-    `;
-}
-
-function renderLogFallback(state: CampaignStateLike): string {
-  const log = state.log || [];
-  if (!log.length) return '<div class="campaign-empty">No log entries.</div>';
-  return `
-      <section class="campaign-side-section">
-        <div class="campaign-panel-head"><h2>Campaign Log</h2></div>
-        ${log.map((line) => renderLogEntry(line, { compact: true })).join("")}
-      </section>
-    `;
-}
-
-function renderDrawerBodyInternal(panelId: string, state: CampaignStateLike): string {
-  switch (panelId) {
-    // party / inventory / notes are React-owned (CampaignShell `DrawerBody`) —
-    // they never reach this HTML-string path.
-    case "quests":
-      return renderQuestsFallback(state);
-    case "log":
-      // Drawer side-panel keeps the compact fallback — the React Logs tab
-      // owns the main-panel variant.
-      return renderLogFallback(state);
-    default:
-      return '<div class="campaign-empty">Panel not implemented.</div>';
-  }
-}
-
-// ── Main-area body fallback (defensive — every tab is React-registered) ─
-function renderMain(state: CampaignStateLike): string {
-  const Tabs = cjs().CampaignUIInternal?.Tabs;
-  if (Tabs?.has?.(getActiveTab())) {
-    const html = Tabs.render(getActiveTab(), state);
-    if (html != null) return html;
-  }
-  return '<div class="campaign-empty">Tab body is JSX-only. Run with the React shell enabled.</div>';
-}
-
 // ── Public React-shell bridge surface ──────────────────────────────────
+// Every campaign tab body + drawer panel is React-owned (Phase D–F + the
+// switch-plan island ports). The shell renders tabs via REACT_TAB_COMPONENTS
+// and the drawer panels via `CampaignShell` `DrawerBody` / `shell/DrawerPanels`,
+// so boot.ts no longer emits any main-body or drawer HTML string.
 export function enableReactShell(): void {
   _reactShellEnabled = true;
-}
-
-export function getMainBody(state: CampaignStateLike | null | undefined = cjs().CampaignState?.getState()): string {
-  if (!state) return "";
-  const Tabs = cjs().CampaignUIInternal?.Tabs;
-  if (Tabs && Tabs.has(getActiveTab())) {
-    return Tabs.render(getActiveTab(), state) ?? "";
-  }
-  return renderMain(state);
-}
-
-export function renderDrawerBody(
-  panelId: string,
-  state: CampaignStateLike | null | undefined = cjs().CampaignState?.getState()
-): string {
-  if (!state || !panelId) return "";
-  return renderDrawerBodyInternal(panelId, state);
 }
 
 // renderTabBody — kept on the bridge for backward compatibility. Phase F
@@ -634,8 +558,6 @@ w.CJS = w.CJS || {};
   clearBootIncompatibleNotice,
   renderTabBody,
   enableReactShell,
-  getMainBody,
-  renderDrawerBody,
   handleAction,
   setActiveMode,
   setActiveTab,

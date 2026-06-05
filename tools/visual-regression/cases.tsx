@@ -32,6 +32,7 @@ import { CampaignSubTabs } from "../../src/campaign/shell/SubTabs";
 import { CampaignRecentLog } from "../../src/campaign/shell/RecentLog";
 import { CampaignCommandRail } from "../../src/campaign/shell/CommandRail";
 import { PartyDrawer } from "../../src/campaign/shell/PartyDrawer";
+import { QuestsDrawerPanel, LogDrawerPanel } from "../../src/campaign/shell/DrawerPanels";
 import type { ChromeData } from "../../src/campaign/shell/types";
 
 import { CampaignSettingsTab } from "../../src/campaign/tabs/CampaignSettingsTab";
@@ -660,6 +661,10 @@ export const cases: readonly VrCase[] = [
   tab("chrome-recentlog", <CampaignRecentLog data={chromeData.recentLog} />),
   tab("chrome-commandrail", <CampaignCommandRail data={chromeData.commandRail} />),
   tab("chrome-partydrawer", <PartyDrawer state={campaignState} />),
+  // The quests / log command-rail drawer side panels (switch-plan Part D —
+  // ported from boot.ts renderQuestsFallback / renderLogFallback HTML strings).
+  tab("chrome-drawer-quests", <QuestsDrawerPanel state={campaignState} />),
+  tab("chrome-drawer-log", <LogDrawerPanel state={campaignState} />),
 
   // Every registered tab, against the shared fixture.
   tab("tab-settings", <CampaignSettingsTab state={campaignState} />),

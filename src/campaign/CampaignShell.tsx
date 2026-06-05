@@ -21,6 +21,7 @@ import { CampaignCommandRail } from "./shell/CommandRail";
 import { getChromeData } from "./shell/bridge";
 import { PartyDrawer } from "./shell/PartyDrawer";
 import { NotesPanel } from "./shell/NotesPanel";
+import { QuestsDrawerPanel, LogDrawerPanel } from "./shell/DrawerPanels";
 // Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
 // only the chrome + the active tab; the rest download on first visit (and the
 // PWA precaches them in the background). Multi-export files
@@ -34,25 +35,23 @@ import { NotesPanel } from "./shell/NotesPanel";
 // in real React. Each chrome strip is its own JSX component in
 // `./shell/`, reading typed data via `getChromeData(state)`.
 //
-// The body area renders React tab components directly. Tabs not yet
-// migrated to JSX fall back to `getMainBody()` (vanilla HTML).
+// The body area renders React tab components directly via
+// `REACT_TAB_COMPONENTS`; an unregistered tab id renders a typed empty
+// state (the defensive `VanillaBody` below — no HTML-string bridge).
 //
 // The drawer is portaled to document.body via React, replacing the
 // imperative `_drawerEl`/`_drawerBackdropEl` flow in campaign-ui.js.
+// Every drawer panel is React-owned now (party / inventory / notes via
+// their own components; quests / log via `shell/DrawerPanels`), so the
+// shell holds no `dangerouslySetInnerHTML` outside the world-map SVG.
 
 // ── Bridge surface (mirror of campaign-ui.js bridge) ───────────────
 // Panel defs + order come from the TS chrome data builder (Phase H.4).
-// `getMainBody` + `renderDrawerBody` still return HTML strings from
-// the still-JS render paths (the registered React tabs are rendered
-// inline above via `REACT_TAB_COMPONENTS`; getMainBody is only reached
-// when a tab id has no registered React component).
 import { panelDefsForState } from "./shell/chromeData";
 
 interface CampaignUIShell {
   readonly enableReactShell: () => void;
   readonly init: (root: HTMLElement) => Promise<void> | void;
-  readonly getMainBody: (state?: CampaignStateSnapshot) => string;
-  readonly renderDrawerBody: (panelId: string, state?: CampaignStateSnapshot) => string;
   readonly setActivePanel: (panelId: string | null) => void;
   readonly getBootIncompatibleNotice?: () => { readonly slotName: string; readonly reason: string; readonly slotId: string } | null;
 }
@@ -246,7 +245,7 @@ export function CampaignShell() {
                 the chrome stays painted while a not-yet-loaded tab streams in. */}
             <ErrorBoundary key={activeTab}>
               <Suspense fallback={<div className="campaign-loading">Loading…</div>}>
-                {ReactTab ? <ReactTab state={state} /> : <VanillaBody state={state} tab={activeTab} />}
+                {ReactTab ? <ReactTab state={state} /> : <VanillaBody tab={activeTab} />}
               </Suspense>
             </ErrorBoundary>
           </main>
@@ -271,44 +270,27 @@ export function CampaignShell() {
   );
 }
 
-// Renders the body of a non-migrated tab via `getMainBody`. The HTML
-// string can include mount-point divs (the cui-react-bridge places
-// `campaign-react-tab-<id>` divs there for tabs handled by the React
-// registry); when a registered tab's React component is present in
-// REACT_TAB_COMPONENTS above, we render it directly instead and this
-// fallback isn't reached.
-function VanillaBody({ state, tab }: { state: CampaignStateSnapshot; tab: string }) {
-  const UI = cjs().CampaignUI;
-  let html = "";
-  try {
-    html = UI?.getMainBody(state) ?? "";
-  } catch (error) {
-    console.error(`getMainBody(${tab}) failed:`, error);
-    html = `<div class="campaign-empty">${tab} render failed.</div>`;
-  }
-  return <div className="campaign-main-body" dangerouslySetInnerHTML={{ __html: html }} />;
+// Defensive fallback for an active tab id with no registered React
+// component. Every real tab is in REACT_TAB_COMPONENTS, so this is not
+// reached in normal operation; it renders a typed empty state (no
+// HTML-string bridge) rather than blanking the body.
+function VanillaBody({ tab }: { tab: string }) {
+  return (
+    <div className="campaign-main-body">
+      <div className="campaign-empty">No body registered for the “{tab}” tab.</div>
+    </div>
+  );
 }
 
-// Drawer panels rendered by React components rather than an HTML-string
-// island. Party has always been React; inventory + notes moved to JSX with
-// the inventory tab port (their `data-*` markers retired from boot.ts).
-const JSX_DRAWER_PANELS: ReadonlySet<string> = new Set(["party", "inventory", "notes"]);
-
-// Picks the drawer body: the React-owned panels render their component (the
-// inventory tab reuses the same lazy chunk as the main tab, so opening the
-// drawer doesn't pull it into the shell entry); everything else is the
-// bridge's display-only HTML string.
-function DrawerBody({
-  panelId,
-  state,
-  html
-}: {
-  panelId: string;
-  state: CampaignStateSnapshot;
-  html: string;
-}) {
+// Every drawer panel is React-owned. Party / inventory / notes have their own
+// components; quests / log are the small side panels in `shell/DrawerPanels`.
+// The inventory drawer reuses the SAME lazy chunk as the inventory tab, so
+// opening the drawer doesn't pull it into the shell entry chunk.
+function DrawerBody({ panelId, state }: { panelId: string; state: CampaignStateSnapshot }) {
   if (panelId === "party") return <PartyDrawer state={state} />;
   if (panelId === "notes") return <NotesPanel state={state} />;
+  if (panelId === "quests") return <QuestsDrawerPanel state={state} />;
+  if (panelId === "log") return <LogDrawerPanel state={state} />;
   if (panelId === "inventory") {
     const InventoryTab = REACT_TAB_COMPONENTS.inventory;
     return (
@@ -317,7 +299,7 @@ function DrawerBody({
       </Suspense>
     );
   }
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div className="campaign-empty">Panel not implemented.</div>;
 }
 
 // ── Drawer (React portal to document.body) ────────────────────────
@@ -332,19 +314,6 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
   const defs = panelDefsForState(state);
   const def = defs[panelId];
   if (!def) return null;
-
-  // Party / inventory / notes panels are React-owned (no HTML-string island).
-  // The rest (quests / log) are still display-only HTML strings from the bridge.
-  const isJsxPanel = JSX_DRAWER_PANELS.has(panelId);
-  let bodyHtml = "";
-  if (!isJsxPanel) {
-    try {
-      bodyHtml = UI.renderDrawerBody(panelId, state);
-    } catch (error) {
-      console.error(`renderDrawerBody(${panelId}) failed:`, error);
-      bodyHtml = `<div class="campaign-empty">Panel render failed.</div>`;
-    }
-  }
 
   // Close the drawer through the bridge so the closure-private flag
   // and the React state stay in sync.
@@ -406,7 +375,7 @@ function CampaignDrawer({ panelId, state }: { panelId: string; state: CampaignSt
           </button>
         </header>
         <div className="campaign-drawer-body">
-          <DrawerBody panelId={panelId} state={state} html={bodyHtml} />
+          <DrawerBody panelId={panelId} state={state} />
         </div>
       </aside>
     </>

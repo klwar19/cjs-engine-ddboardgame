@@ -58,8 +58,6 @@ const BRIDGE_FUNCS = [
   'init',
   'render',
   'enableReactShell',
-  'getMainBody',
-  'renderDrawerBody',
   'handleAction',
   'showQuestNarrative',
   'setActiveMode',
@@ -82,8 +80,7 @@ for (const name of BRIDGE_FUNCS) {
 // up correctly. `getChromeData` lives behind `src/campaign/shell/bridge.ts`
 // (and resolves to the TS chromeData builder); `panelDefsForState` comes
 // from the same TS module.
-const SHELL_USES = ['enableReactShell', 'getMainBody', 'panelDefsForState',
-  'renderDrawerBody', 'setActivePanel'];
+const SHELL_USES = ['enableReactShell', 'panelDefsForState', 'setActivePanel'];
 for (const name of SHELL_USES) {
   ok('CampaignShell.tsx uses ' + name, shell.indexOf(name) >= 0);
 }
@@ -113,13 +110,15 @@ for (const name of CHROME_COMPONENTS) {
   ok('CampaignShell.tsx renders ' + name, shell.indexOf('<' + name) >= 0);
 }
 
-// The shell must NOT use dangerouslySetInnerHTML to render the chrome
-// strip after Phase F. The drawer body + the getMainBody fallback still
-// do, so we look for the chrome-specific `fragments.` pattern the old
-// shell used.
+// The shell must NOT use dangerouslySetInnerHTML at all. Phase F retired the
+// chrome `fragments.` strips; the switch-plan island ports retired the main-body
+// fallback (now a typed empty state) and the drawer quests/log panels (now JSX
+// in shell/DrawerPanels). The only sanctioned campaign island, the world-map
+// SVG, lives in CampaignWorldMapTab.tsx — not the shell.
 ok('CampaignShell.tsx does not render fragments.header via dangerouslySetInnerHTML',
    shell.indexOf('fragments.header') < 0 && shell.indexOf('fragments.modeBar') < 0
    && shell.indexOf('fragments.commandRail') < 0);
+ok('CampaignShell.tsx has no dangerouslySetInnerHTML', shell.indexOf('dangerouslySetInnerHTML={') < 0);
 
 // CampaignPage.tsx delegates to CampaignShell with no other Shell logic.
 ok('CampaignPage renders CampaignShell', /<CampaignShell\s*\/?>/.test(page));

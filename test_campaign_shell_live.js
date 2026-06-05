@@ -136,10 +136,8 @@ function installGlobals(window) {
     enableReactShell() {},
     init() { return Promise.resolve(); },
     render() { fireRendered(); },
-    getMainBody() { return '<div class="campaign-empty">[vanilla fallback]</div>'; },
-    renderDrawerBody() {
-      return '<div class="campaign-drawer-island"><button class="island-act" data-add-note="1">+ Add note</button></div>';
-    },
+    // getMainBody / renderDrawerBody bridges were retired with the switch-plan
+    // island ports — the shell renders tab bodies + every drawer panel as JSX.
     setActivePanel(id) { chromeState.setActivePanel(id == null ? null : id); fireRendered(); },
     handleAction(name, data) { dispatched.push({ name, data }); },
     getBootIncompatibleNotice() { return null; },

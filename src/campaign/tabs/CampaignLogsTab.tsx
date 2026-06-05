@@ -1,34 +1,13 @@
 import type { CampaignStateSnapshot } from "../store";
 import * as CampaignActions from "../actions";
 import { VirtualList } from "../util/VirtualList";
-
-interface LogLine {
-  readonly op?: string;
-  readonly text?: string;
-  readonly at?: string;
-  readonly phase?: string | number;
-}
-
-interface LogKindModule {
-  readonly logKind: (line: LogLine) => { key: string; label: string };
-  readonly formatLogTime: (value: string | undefined, compact?: boolean) => string;
-  readonly logMeta: (line: LogLine, compact?: boolean) => string;
-}
-
-interface Cjs {
-  readonly CampaignUIInternal?: { readonly Log?: LogKindModule };
-}
-
-function cjs(): Cjs {
-  return (window as unknown as { CJS?: Cjs }).CJS ?? {};
-}
+import { LogLineView, type LogLine } from "./LogLine";
 
 interface Props {
   readonly state: CampaignStateSnapshot;
 }
 
 export function CampaignLogsTab({ state }: Props) {
-  const helpers = cjs().CampaignUIInternal?.Log;
   const lines: readonly LogLine[] = ((state.log as readonly LogLine[] | undefined) ?? []);
   const hasLog = lines.length > 0;
 
@@ -51,7 +30,7 @@ export function CampaignLogsTab({ state }: Props) {
         <VirtualList
           items={lines}
           itemKey={(_, index) => index}
-          renderItem={(line) => <LogEntry line={line} helpers={helpers} />}
+          renderItem={(line) => <LogLineView line={line} />}
           estimateHeight={44}
           listClassName="campaign-log-list"
           ariaLabel="Session log entries"
@@ -60,24 +39,5 @@ export function CampaignLogsTab({ state }: Props) {
         <div className="campaign-empty">No log entries.</div>
       )}
     </section>
-  );
-}
-
-interface EntryProps {
-  readonly line: LogLine;
-  readonly helpers?: LogKindModule;
-}
-
-function LogEntry({ line, helpers }: EntryProps) {
-  const kind = helpers?.logKind?.(line) ?? { key: "system", label: "Log" };
-  const meta = helpers?.logMeta?.(line, false) ?? "";
-  return (
-    <div className={`campaign-log-line campaign-log-${kind.key}`}>
-      <div className="campaign-log-main">
-        <span className="campaign-log-type">{kind.label}</span>
-        <span>{line.text ?? ""}</span>
-      </div>
-      <small>{meta}</small>
-    </div>
   );
 }
