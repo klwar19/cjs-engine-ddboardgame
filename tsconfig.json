@@ -22,8 +22,6 @@
     "tools/visual-regression/cases.tsx",
     "js/campaign/guild-trivia.js",
     "js/grid/grid-renderer.js",
-    "js/minigames/cooking-minigame.js",
-    "js/minigames/fishing-minigame.js",
     "js/ui/touch-gestures.js"
   ]
 }

@@ -1,10 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "../../js/minigames/minigame-registry.js";
-import "../../js/minigames/minigame-sprites.js";
-import "../../js/minigames/mummy-maze.js";
-import "../../js/minigames/push-box.js";
-import "../../js/minigames/minigame-host.js";
+import "../engine/minigames/minigame-registry";
+import "../engine/minigames/minigame-sprites";
+import "../engine/minigames/mummy-maze";
+import "../engine/minigames/push-box";
+import "../engine/minigames/minigame-host";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { MinigameHarness } from "./MinigameHarness";
 

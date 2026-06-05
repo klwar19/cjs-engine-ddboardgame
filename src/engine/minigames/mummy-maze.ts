@@ -1,4 +1,5 @@
 // mummy-maze.js
+// Tier 3 TS port -> src/engine/minigames/mummy-maze.ts (self-registers on window.CJS.MinigameRegistry). Body verbatim.
 // Turn-based tomb chase. Inspired by Theseus and the Minotaur / Mummy Maze
 // Deluxe. The player moves one orthogonal step or waits, then every mummy
 // moves up to "speed" steps using a greedy axis-first AI.
@@ -65,7 +66,7 @@
     };
   }
 
-  function mergeCells(a = [], b = []) {
+  function mergeCells(a: any[] = [], b: any[] = []) {
     const seen = new Set();
     const out = [];
     for (const cell of [...a, ...b]) {
@@ -334,8 +335,8 @@
       }
       hintBubble.textContent = text;
       hintBubble.classList.add('is-visible');
-      clearTimeout(flashHint._t);
-      flashHint._t = setTimeout(() => hintBubble?.classList.remove('is-visible'), 1800);
+      clearTimeout((flashHint as any)._t);
+      (flashHint as any)._t = setTimeout(() => hintBubble?.classList.remove('is-visible'), 1800);
     }
 
     function solveNext(fromState) {
@@ -738,3 +739,5 @@
     window.CJS._pendingMinigames.push([META, createMummyMaze]);
   }
 })();
+
+export {}; // Tier 3: ES-module marker (side-effect module; registers on MinigameRegistry).

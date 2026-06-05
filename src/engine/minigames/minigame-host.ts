@@ -1,10 +1,11 @@
 // minigame-host.js
+// Tier 3 TS port -> src/engine/minigames/minigame-host.ts (exports Minigames + installs window.CJS.Minigames). Body verbatim.
 // Hosts a mini-game instance inside a modal overlay (or any container) and
 // translates the game's onComplete callback into the shared CJS result object.
 
 window.CJS = window.CJS || {};
 
-window.CJS.Minigames = (() => {
+export const Minigames = (() => {
   'use strict';
 
   const Registry = () => window.CJS.MinigameRegistry;
@@ -130,7 +131,7 @@ window.CJS.Minigames = (() => {
     }[ch]));
   }
 
-  function _bonusTextForLevel(level = {}) {
+  function _bonusTextForLevel(level: any = {}) {
     const narrative = level?.narrative || {};
     const buff = narrative.buffName ? `Next-battle buff: ${narrative.buffName}` : '';
     const jp = (level?.onWinOps || [])
@@ -201,7 +202,7 @@ window.CJS.Minigames = (() => {
     return Math.max(10, Math.round(base * Math.min(1, ratio) - hintPenalty));
   }
 
-  async function openMiniGame(opts = {}) {
+  async function openMiniGame(opts: any = {}) {
     if (activeSession) {
       try { activeSession.close(); } catch (_) {}
       activeSession = null;
@@ -240,14 +241,14 @@ window.CJS.Minigames = (() => {
     const root = buildScaffold(entry.meta, level, opts);
     container.appendChild(root);
 
-    const stage = root.querySelector('[data-mg="stage"]');
-    const canvas = root.querySelector('[data-mg="canvas"]');
-    const turnsEl = root.querySelector('[data-mg="turns"]');
-    const hintsEl = root.querySelector('[data-mg="hints"]');
-    const statusEl = root.querySelector('[data-mg="status"]');
-    const resultPane = root.querySelector('[data-mg="result"]');
-    const resultTitle = root.querySelector('[data-mg="result-title"]');
-    const resultJson = root.querySelector('[data-mg="result-json"]');
+    const stage = root.querySelector<any>('[data-mg="stage"]');
+    const canvas = root.querySelector<any>('[data-mg="canvas"]');
+    const turnsEl = root.querySelector<any>('[data-mg="turns"]');
+    const hintsEl = root.querySelector<any>('[data-mg="hints"]');
+    const statusEl = root.querySelector<any>('[data-mg="status"]');
+    const resultPane = root.querySelector<any>('[data-mg="result"]');
+    const resultTitle = root.querySelector<any>('[data-mg="result-title"]');
+    const resultJson = root.querySelector<any>('[data-mg="result-json"]');
 
     function setStats(s) {
       if (turnsEl) turnsEl.textContent = `Turns: ${s.turns || 0}`;
@@ -365,3 +366,6 @@ window.CJS.Minigames = (() => {
 
   return { listGames, getGame, openMiniGame, useSpriteMap };
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.Minigames = Minigames;

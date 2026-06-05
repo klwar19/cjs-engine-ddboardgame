@@ -1,4 +1,5 @@
 // cooking-minigame.js
+// Tier 3 TS port -> src/engine/minigames/cooking-minigame.ts (exports CookingMinigame + installs window.CJS.CookingMinigame). Body verbatim.
 // Timing-based cooking minigame. Mirrors the fishing flow: a moving
 // "heat marker" sweeps a temperature bar, and the player presses to
 // stop it. Where the marker lands decides:
@@ -21,7 +22,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.CookingMinigame = (() => {
+export const CookingMinigame = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -41,7 +42,7 @@ window.CJS.CookingMinigame = (() => {
     burntHigh:  { from: 86,  to: 100, grade: 'burnt' }
   };
 
-  function open(opts = {}) {
+  function open(opts: any = {}) {
     return new Promise((resolve) => {
       _close();
       const foodId = opts.foodId || '';
@@ -57,10 +58,10 @@ window.CJS.CookingMinigame = (() => {
       document.body.appendChild(root);
       _sessionRoot = root;
 
-      const marker = /** @type {HTMLElement} */ (root.querySelector('[data-cm="marker"]'));
-      const result = /** @type {HTMLElement} */ (root.querySelector('[data-cm="result"]'));
-      const stopBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-cm="stop"]'));
-      const cancelBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-cm="cancel"]'));
+      const marker = /** @type {HTMLElement} */ (root.querySelector<any>('[data-cm="marker"]'));
+      const result = /** @type {HTMLElement} */ (root.querySelector<any>('[data-cm="result"]'));
+      const stopBtn = /** @type {HTMLButtonElement} */ (root.querySelector<any>('[data-cm="stop"]'));
+      const cancelBtn = /** @type {HTMLButtonElement} */ (root.querySelector<any>('[data-cm="cancel"]'));
 
       // Animation: marker sweeps left → right and back. Single full
       // pass takes ~2.4s; speed ramps up for higher difficulties.
@@ -170,7 +171,7 @@ window.CJS.CookingMinigame = (() => {
   }
 
   function _zoneAt(pct) {
-    for (const zone of Object.values(ZONE_TEMP)) {
+    for (const zone of Object.values<any>(ZONE_TEMP)) {
       if (pct >= zone.from && pct < zone.to) return zone;
     }
     return ZONE_TEMP.overcooked;
@@ -207,7 +208,7 @@ window.CJS.CookingMinigame = (() => {
     return null;
   }
 
-  function _inputsMatch(a = {}, b = {}) {
+  function _inputsMatch(a: any = {}, b: any = {}) {
     const buckets = ['items', 'materials', 'food'];
     for (const bucket of buckets) {
       const aa = a[bucket] || {};
@@ -271,3 +272,6 @@ window.CJS.CookingMinigame = (() => {
 
   return Object.freeze({ open, GRADE_MULT });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CookingMinigame = CookingMinigame;

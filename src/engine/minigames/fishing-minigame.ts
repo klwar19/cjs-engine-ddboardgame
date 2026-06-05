@@ -1,4 +1,5 @@
 // fishing-minigame.js
+// Tier 3 TS port -> src/engine/minigames/fishing-minigame.ts (exports FishingMinigame + installs window.CJS.FishingMinigame). Body verbatim.
 // Full fishing minigame (distinct from the in-combat QTE). Three-step loop:
 //   1. CAST — quickpress QTE to land the lure in the strike zone
 //   2. WAIT — visualised bobber; random bite delay
@@ -22,7 +23,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.FishingMinigame = (() => {
+export const FishingMinigame = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -113,7 +114,7 @@ window.CJS.FishingMinigame = (() => {
    * @param {{ biome?: string, container?: HTMLElement }} opts
    * @returns {Promise<{ caught: boolean, fish?: object, reason?: string, message?: string, qte?: object, error?: string }>}
    */
-  async function open(opts = {}) {
+  async function open(opts: any = {}) {
     const state = CS()?.getState?.() || {};
     const biome = String(opts.biome || _inferBiome(state) || 'lake').toLowerCase();
     const rod = _findEquippedRod(state);
@@ -125,7 +126,7 @@ window.CJS.FishingMinigame = (() => {
       return { caught: false, reason: 'no_fish', message: `No fish bite in ${biome}.` };
     }
     const container = opts.container || _ensureRootContainer();
-    const overlay = _buildOverlay(container, { biome, rod, pool });
+    const overlay: any = _buildOverlay(container, { biome, rod, pool });
 
     try {
       // ── Step 1: cast (quickpress) ─────────────────────────────────
@@ -324,11 +325,11 @@ window.CJS.FishingMinigame = (() => {
     `;
     host.appendChild(root);
 
-    const phaseLabel = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-phase-label'));
-    const message = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-message'));
-    const bobber = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-bobber'));
-    const qteHost = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-qte-host'));
-    const scene = /** @type {HTMLElement} */ (root.querySelector('.cjs-fishing-scene'));
+    const phaseLabel = /** @type {HTMLElement} */ (root.querySelector<any>('.cjs-fishing-phase-label'));
+    const message = /** @type {HTMLElement} */ (root.querySelector<any>('.cjs-fishing-message'));
+    const bobber = /** @type {HTMLElement} */ (root.querySelector<any>('.cjs-fishing-bobber'));
+    const qteHost = /** @type {HTMLElement} */ (root.querySelector<any>('.cjs-fishing-qte-host'));
+    const scene = /** @type {HTMLElement} */ (root.querySelector<any>('.cjs-fishing-scene'));
     let bobberAnim = null;
     let bailHandler = null;
 
@@ -396,3 +397,6 @@ window.CJS.FishingMinigame = (() => {
     ROD_TIERS
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.FishingMinigame = FishingMinigame;

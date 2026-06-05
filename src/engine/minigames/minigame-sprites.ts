@@ -1,4 +1,5 @@
 // minigame-sprites.js
+// Tier 3 TS port -> src/engine/minigames/minigame-sprites.ts (exports MinigameSprites + installs window.CJS.MinigameSprites). Body verbatim.
 // Loads `assets/minigames/spritesheet.json`, fetches the referenced sheets,
 // and resolves logical sprite names into a draw helper.
 //
@@ -13,7 +14,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.MinigameSprites = (() => {
+export const MinigameSprites = (() => {
   'use strict';
 
   let mapUrl = 'assets/minigames/spritesheet.json';
@@ -151,3 +152,6 @@ window.CJS.MinigameSprites = (() => {
 
   return { setMap, get };
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.MinigameSprites = MinigameSprites;

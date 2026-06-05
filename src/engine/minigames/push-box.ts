@@ -1,4 +1,5 @@
 // push-box.js
+// Tier 3 TS port -> src/engine/minigames/push-box.ts (self-registers on window.CJS.MinigameRegistry). Body verbatim.
 // Sokoban-style crate puzzle. Player pushes boxes onto goal tiles.
 // Cannot pull. Only one box pushed at a time. Win when all goals covered.
 
@@ -48,7 +49,7 @@
     };
   }
 
-  function mergeCells(a = [], b = []) {
+  function mergeCells(a: any[] = [], b: any[] = []) {
     const seen = new Set();
     const out = [];
     for (const cell of [...a, ...b]) {
@@ -274,8 +275,8 @@
       }
       hintBubble.textContent = text;
       hintBubble.classList.add('is-visible');
-      clearTimeout(flashHint._t);
-      flashHint._t = setTimeout(() => hintBubble?.classList.remove('is-visible'), 1800);
+      clearTimeout((flashHint as any)._t);
+      (flashHint as any)._t = setTimeout(() => hintBubble?.classList.remove('is-visible'), 1800);
     }
 
     function pushBoxKey(s) {
@@ -624,3 +625,5 @@
     window.CJS._pendingMinigames.push([META, createPushBox]);
   }
 })();
+
+export {}; // Tier 3: ES-module marker (side-effect module; registers on MinigameRegistry).

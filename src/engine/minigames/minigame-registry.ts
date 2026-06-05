@@ -1,9 +1,10 @@
 // minigame-registry.js
+// Tier 3 TS port -> src/engine/minigames/minigame-registry.ts (exports MinigameRegistry + installs window.CJS.MinigameRegistry). Body verbatim.
 // Registry of mini-game factories. Games self-register on script load.
 
 window.CJS = window.CJS || {};
 
-window.CJS.MinigameRegistry = (() => {
+export const MinigameRegistry = (() => {
   'use strict';
 
   const games = new Map();
@@ -28,3 +29,6 @@ window.CJS.MinigameRegistry = (() => {
 
   return { register, getGame, listGames, has };
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.MinigameRegistry = MinigameRegistry;
