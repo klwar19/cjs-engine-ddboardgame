@@ -32,7 +32,7 @@ import "../engine/combat/combat-settings";
 import "../engine/combat/combat-objectives";
 import "../engine/combat/combat-manager";
 import "../engine/combat/battle-setup";
-import "../../js/ai/ai-conditions.js";
+import "../engine/ai/ai-conditions";
 import "../../js/ai/ai-targeting.js";
 import "../../js/ai/ai-controller.js";
 import "../../js/qte/qte-quickpress.js";
