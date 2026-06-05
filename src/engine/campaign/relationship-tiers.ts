@@ -1,25 +1,16 @@
-// relationship-tiers.js
-// Reads existing state.bonds entries and maps them to display tiers.
-// The bond store (state.bonds[characterId][field]) is owned by campaign-ops;
-// this is a pure read-only helper for UI and condition checks.
+// relationship-tiers.ts — Tier 3 TS port of js/campaign/relationship-tiers.js
+// (engine cluster: campaign). Pure read-only helper: maps a state.bonds entry to
+// a display tier (stranger → acquaintance → friend → close → bonded, plus the
+// special rival tier) and answers tier-threshold checks.
+//   Score = trust + respect + romance + legacy positive fields − rivalry.
+//   rivalry ≥ 25 AND rivalry > positive sum → rival.
+// Reads: nothing (pure). Used by: relationships data builder (UI),
+// campaign-conditions (tierMin).
 //
-// Tier mapping (default):
-//   score < 10    → stranger
-//   10–24         → acquaintance
-//   25–49         → friend
-//   50–74         → close
-//   ≥ 75          → bonded
-//   rivalry ≥ 25 AND rivalry > positive sum → rival
-//
-// Score = trust + friendship + empathy + confidence + morale + value − rivalry.
-//
-// Reads: nothing (pure)
-// Used by: relationships-tab.js (UI), campaign-conditions.js (tierMin)
-// ─────────────────────────────────────────────────────────────────────
+// Exports `RelationshipTiers` and installs window.CJS.RelationshipTiers (rides
+// the CJSNamespace index signature). Body verbatim from the legacy IIFE.
 
-window.CJS = window.CJS || {};
-
-window.CJS.RelationshipTiers = (() => {
+export const RelationshipTiers = (() => {
   'use strict';
 
   const SIMPLE_FIELDS = ['trust', 'respect', 'romance'];
@@ -90,3 +81,8 @@ window.CJS.RelationshipTiers = (() => {
     NEGATIVE_FIELDS
   };
 })();
+
+// Runtime compatibility install — keep window.CJS.RelationshipTiers identical to
+// the legacy IIFE so every existing consumer (and the vanilla engine) is unchanged.
+window.CJS = window.CJS || ({} as CJSNamespace);
+window.CJS.RelationshipTiers = RelationshipTiers;
