@@ -28,7 +28,7 @@ import "../engine/combat/dice-service";
 import "../engine/combat/status-manager";
 import "../../js/combat/action-handler.js";
 import "../engine/combat/combat-log";
-import "../../js/combat/combat-settings.js";
+import "../engine/combat/combat-settings";
 import "../../js/combat/combat-objectives.js";
 import "../../js/combat/combat-manager.js";
 import "../../js/combat/battle-setup.js";
