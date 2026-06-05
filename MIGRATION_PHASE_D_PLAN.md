@@ -33,13 +33,30 @@ file is deleted and is no longer an active bridge or extension point.
 
 **Genuinely open work:**
 
-- [ ] **Phase B Engine TS.** Plan and execute the engine conversion as its own
-  phase: TS module first, `window.CJS.*` compatibility wrapper second, tests
-  third, JS deletion last. Order: core/data-store/content-validator, effects,
-  combat engine, AI, grid/QTE, then campaign systems. This is by far the largest
-  remaining effort: ~50k lines of engine JS still live in `js/` (campaign-ops
-  ~3.4k, scenario-runner ~2.9k, campaign-state ~1.3k, …); `src/engine/` is
-  currently only ~150 lines of type stubs, so the conversion is barely started.
+- [~] **Phase B / Tier 3 — Engine JS → TS.** IN PROGRESS. The conversion pattern
+  is established and proven on the first module; ~47k lines of engine JS remain.
+  - **Per-module recipe (proven):** write `src/engine/<area>/<mod>.ts` as an ES
+    module that exports a typed API **and** installs `window.CJS.<Name>` as a side
+    effect (so every existing `window.CJS.*` consumer + the vanilla engine are
+    unchanged); update the side-effect imports (`src/*/main.tsx`, `src/entry-tests.js`)
+    from `js/<area>/<mod>.js` to `engine/<area>/<mod>`; keep the vite `manualChunks`
+    mapping stable (both `js/<area>/` and `src/engine/<area>/` → the same chunk);
+    delete the `.js`. Gate: `tsc` + `npm test` + `build` + `size:check`.
+  - **Test harness (the prerequisite, DONE):** `tools/test/engine-source.cjs` is the
+    shared loader the ~8 Node harnesses use — it prefers a TS port in `src/engine/`,
+    transpiles it to CommonJS and wraps it so `exports`/`module`/`require` are
+    sandbox-locals while the `window.CJS.*` install runs against the sandbox global,
+    and otherwise returns the legacy `.js` verbatim. So a port is transparent to the
+    harnesses. Engine modules read each other via `window.CJS.*` (never ESM imports)
+    in dependency order, so the script-style sandbox model is preserved.
+  - **Done:** `js/core/state-tools.js` → `src/engine/core/state-tools.ts` (typed
+    `StateToolsApi`; `clone`/`produce`/`deepFreeze`/`freezeDev`/`isDevFreezeEnabled`),
+    landing in the stable `cjs-core` chunk. First module of the **core** cluster.
+  - **Remaining order:** finish **core** (`dice`, `constants`, `formulas`,
+    `undo-manager`, `skill-resolver`, `data-store`, `content-manager`) +
+    `services/content-validator`, then **effects**, **combat engine**, **AI**,
+    **grid/QTE**, then **campaign systems** (campaign-ops ~3.4k, scenario-runner
+    ~2.9k, campaign-state ~1.3k, …). One module per commit, green at each.
 - [x] **Full `data-campaign-action` removal + `<main>` forwarder deleted.** The
   typed registry is done (246/246 actions in `src/campaign/action-handlers/`) and
   **nothing in the repo emits `data-campaign-action` any more.** The last emitters

@@ -2,7 +2,7 @@ import "../js/core/constants.js";
 import "../js/core/formulas.js";
 import "../js/core/dice.js";
 import "../js/core/undo-manager.js";
-import "../js/core/state-tools.js";
+import "./engine/core/state-tools";
 import "../js/core/data-store.js";
 import "../js/core/skill-resolver.js";
 import "../js/services/persona-service.js";

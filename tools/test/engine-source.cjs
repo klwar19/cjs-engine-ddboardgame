@@ -30,19 +30,31 @@ function resolveEngine(name) {
 }
 
 // Runnable script source for an engine module: legacy `.js` verbatim, or a TS
-// port transpiled to a wrapper-free script (types stripped, no module system).
+// port transpiled + wrapped so it runs in the bare vm/eval sandbox. The ports
+// are ES modules (so they satisfy `isolatedModules` and can export typed APIs
+// for TS consumers) but install `window.CJS.*` as a side effect. We transpile to
+// CommonJS and wrap it so `exports` / `module` / `require` are function-locals in
+// the sandbox; the install side effect runs against the sandbox's global
+// `window`. Engine modules read each other via `window.CJS.*`, never ESM imports,
+// so `require` throws to flag an accidental value import.
 function loadEngineSource(name) {
   const { path: filePath, isTs } = resolveEngine(name);
   const src = fs.readFileSync(filePath, "utf8");
   if (!isTs) return src;
   if (!ts) ts = require("typescript");
-  return ts.transpileModule(src, {
+  const js = ts.transpileModule(src, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2020,
-      module: ts.ModuleKind.None
+      module: ts.ModuleKind.CommonJS
     },
     fileName: filePath
   }).outputText;
+  return (
+    "(function(){var module={exports:{}};var exports=module.exports;" +
+    'function require(n){throw new Error("engine module cannot require: "+n);}\n' +
+    js +
+    "\n})();"
+  );
 }
 
 module.exports = { loadEngineSource, resolveEngine };
