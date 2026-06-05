@@ -7,7 +7,7 @@ import "../engine/core/state-tools";
 import "../engine/core/data-store";
 import "../persistence/indexedDb";
 import "../../js/core/save-manager.js";
-import "../../js/core/content-manager.js";
+import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../../js/effects/value-calc.js";
 import "../../js/effects/conditions.js";

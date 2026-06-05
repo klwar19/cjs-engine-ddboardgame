@@ -23,7 +23,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const { loadEngineSource } = require('./tools/test/engine-source.cjs');
+const { loadEngineSource, resolveEngine } = require('./tools/test/engine-source.cjs');
 
 // ── SETUP ────────────────────────────────────────────────────────────
 const sandbox = {
@@ -2193,7 +2193,7 @@ assert('DataStore loadData imports weathers', !!DS.get('weathers', 'wth_loaded_w
 // TEST 31: ContentManager TYPE_TO_CATEGORY includes weathers
 // ────────────────────────────────────────────────────────────────────
 console.log('\n── TEST 31: ContentManager category mapping ──');
-const cmCode = fs2.readFileSync(path2.join(__dirname, 'js/core/content-manager.js'), 'utf8');
+const cmCode = fs2.readFileSync(resolveEngine('core/content-manager').path, 'utf8');
 assert('TYPE_TO_CATEGORY includes weathers', /weathers:\s*['"]weathers['"]/.test(cmCode));
 assert('TYPE_ORDER lists weathers', /'weathers'/.test(cmCode));
 

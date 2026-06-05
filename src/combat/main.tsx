@@ -5,7 +5,7 @@ import "../engine/core/dice";
 import "../engine/core/undo-manager";
 import "../engine/core/state-tools";
 import "../engine/core/data-store";
-import "../../js/core/content-manager.js";
+import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
 import "../../js/services/persona-service.js";
 import "../../js/services/content-validator.js";
