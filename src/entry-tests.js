@@ -5,7 +5,7 @@ import "./engine/core/undo-manager";
 import "./engine/core/state-tools";
 import "./engine/core/data-store";
 import "./engine/core/skill-resolver";
-import "../js/services/persona-service.js";
+import "./engine/services/persona-service";
 import "./engine/effects/value-calc";
 import "./engine/effects/conditions";
 import "./engine/effects/effect-registry";

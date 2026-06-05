@@ -9,7 +9,7 @@ import "../persistence/indexedDb";
 import "../../js/core/save-manager.js";
 import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
-import "../../js/services/persona-service.js";
+import "../engine/services/persona-service";
 import "../engine/services/content-validator";
 import "../../js/services/data-hot-reload.js";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)

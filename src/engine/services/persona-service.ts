@@ -1,4 +1,5 @@
 // persona-service.js
+// Tier 3 TS port -> src/engine/services/persona-service.ts (exports PersonaService + installs window.CJS.PersonaService). Body verbatim.
 // World-specific character "skin" service.
 //
 // A persona reshapes how a character is played in a specific world:
@@ -31,7 +32,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.PersonaService = (() => {
+export const PersonaService = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -122,7 +123,7 @@ window.CJS.PersonaService = (() => {
 
   // Seed an empty persona progress slot from the persona template + the base
   // character record. The returned shape mirrors captureLoadoutFromMember.
-  function seedLoadoutFromPersona(persona, base = {}) {
+  function seedLoadoutFromPersona(persona, base: any = {}) {
     if (!persona) return {};
     const PROG = C().PROGRESSION || {};
     const defaultJob = persona.defaultJob || base.defaultJob || null;
@@ -182,7 +183,7 @@ window.CJS.PersonaService = (() => {
   // a saved progress slot (preferred for switch-back) or a freshly seeded
   // template (for first-time switch). Sets activePersona and refreshes the
   // member fields that combat / snapshot rely on.
-  function applyLoadoutToMember(member, loadout = {}, persona = null, base = {}) {
+  function applyLoadoutToMember(member, loadout: any = {}, persona = null, base: any = {}) {
     if (!member) return;
     member.currentJob = loadout.currentJob || persona?.defaultJob || base.defaultJob || null;
     member.jobProgress = _clone(loadout.jobProgress || {});
@@ -244,7 +245,7 @@ window.CJS.PersonaService = (() => {
   // Returns the SPECIAL stats with persona overrides + cross-world penalty
   // applied. baseStats are the character's universal stats (carry-over);
   // statOverrides are already-banked progression deltas (char level / job).
-  function computeSnapshotStats(baseStats = {}, member = {}, currentWorld = '') {
+  function computeSnapshotStats(baseStats: any = {}, member: any = {}, currentWorld = '') {
     const stats = { ...(baseStats || {}) };
     const STATS = C().STATS || ['S', 'P', 'E', 'C', 'I', 'A', 'L'];
 
@@ -300,3 +301,6 @@ window.CJS.PersonaService = (() => {
     computeSnapshotStats
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.PersonaService = PersonaService;
