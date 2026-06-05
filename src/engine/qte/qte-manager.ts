@@ -20,7 +20,7 @@
 
 window.CJS = window.CJS || {};
 
-window.CJS.QteManager = (() => {
+export const QteManager = (() => {
   'use strict';
 
   const C  = () => window.CJS.CONST;
@@ -172,3 +172,6 @@ window.CJS.QteManager = (() => {
     previewDifficultyFor
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.QteManager = QteManager;

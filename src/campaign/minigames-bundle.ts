@@ -13,7 +13,7 @@ import "../../js/qte/qte-mash.js";
 import "../../js/qte/qte-fishing.js";
 import "../../js/qte/qte-rhythm.js";
 import "../../js/qte/qte-quiz.js";
-import "../../js/qte/qte-manager.js";
+import "../engine/qte/qte-manager";
 import "../../js/minigames/fishing-minigame.js";
 import "../../js/minigames/cooking-minigame.js";
 import "../../js/minigames/minigame-host.js";

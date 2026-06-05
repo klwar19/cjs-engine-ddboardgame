@@ -40,7 +40,7 @@ import "../../js/qte/qte-mash.js";
 import "../../js/qte/qte-fishing.js";
 import "../../js/qte/qte-rhythm.js";
 import "../../js/qte/qte-quiz.js";
-import "../../js/qte/qte-manager.js";
+import "../engine/qte/qte-manager";
 import "../../js/narrator/narrator-state.js";
 import "../../js/narrator/narrator-data.js";
 import "../../js/narrator/narrator-engine.js";
