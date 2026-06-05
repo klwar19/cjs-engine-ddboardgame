@@ -1,9 +1,12 @@
-// campaign-side-content.js
-// Shared side-content card helpers. Mutations are routed through CampaignOps.
+// campaign-side-content.ts — Tier 3 TS port of js/campaign/campaign-side-content.js
+// (engine cluster: campaign). Shared side-content card helpers (risk class,
+// normalize/save/reject/archive/promote/review, markdown export+copy, pack
+// import); mutations route through CampaignOps. Reads window.CJS.* lazily.
+// Exports `CampaignSideContent` and installs window.CJS.CampaignSideContent.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignSideContent = (() => {
+export const CampaignSideContent = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -26,7 +29,7 @@ window.CJS.CampaignSideContent = (() => {
     return RISK_ORDER[risk(value)] >= RISK_ORDER[risk(threshold)];
   }
 
-  function normalizeCard(card, defaults = {}) {
+  function normalizeCard(card, defaults: any = {}) {
     const next = CS().clone({
       ...defaults,
       ...(card || {})
@@ -41,7 +44,7 @@ window.CJS.CampaignSideContent = (() => {
     return next;
   }
 
-  function saveCard(card, options = {}) {
+  function saveCard(card, options: any = {}) {
     const normalized = normalizeCard(card, options.defaults || {});
     Ops().apply({
       op: 'side_idea_save',
@@ -154,3 +157,6 @@ window.CJS.CampaignSideContent = (() => {
     importPack
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignSideContent = CampaignSideContent;

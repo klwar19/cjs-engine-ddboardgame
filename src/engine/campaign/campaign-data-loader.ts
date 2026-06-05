@@ -1,9 +1,13 @@
-// campaign-data-loader.js
-// Small read-only facade over DataStore for Campaign Mode side content.
+// campaign-data-loader.ts — Tier 3 TS port of js/campaign/campaign-data-loader.js
+// (engine cluster: campaign). Small read-only facade over DataStore for Campaign
+// Mode side content (packs / hubs / quest chains / battle sets / map seeds /
+// oracle / story-director / travel maps / world activities), with world/zone/hub
+// matching + id-or-alias lookup. DOM-free; reads window.CJS.* lazily. Exports
+// `CampaignDataLoader` and installs window.CJS.CampaignDataLoader. Body verbatim.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignDataLoader = (() => {
+export const CampaignDataLoader = (() => {
   'use strict';
 
   const DS = () => window.CJS.DataStore;
@@ -13,7 +17,7 @@ window.CJS.CampaignDataLoader = (() => {
     return CS().getState()?.currentWorld || CS().getCurrentCampaign()?.world || 'haven';
   }
 
-  function _matchesWorld(record, worldId) {
+  function _matchesWorld(record, worldId?) {
     const world = worldId || _currentWorld();
     return !world || record.world === world || record._world === world;
   }
@@ -33,12 +37,12 @@ window.CJS.CampaignDataLoader = (() => {
     return DS().getAllAsArray(type).find((record) => (record.aliases || []).includes(id)) || null;
   }
 
-  function getSideContentPacks(worldId, zoneId, hubId) {
+  function getSideContentPacks(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('sideContentPacks')
       .filter((pack) => _matchesWorld(pack, worldId) && _matchesZone(pack, zoneId) && _matchesHub(pack, hubId));
   }
 
-  function getSideContentPack(worldId, zoneId, hubId) {
+  function getSideContentPack(worldId?, zoneId?, hubId?) {
     const campaign = CS().getCurrentCampaign();
     const preferredIds = campaign?.sideContentPacks || [];
     for (const id of preferredIds) {
@@ -56,12 +60,12 @@ window.CJS.CampaignDataLoader = (() => {
     return DS().getAllAsArray('campaignHubs').find((hub) => _matchesWorld(hub)) || null;
   }
 
-  function getQuestChainSets(worldId, zoneId, hubId) {
+  function getQuestChainSets(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('questChains')
       .filter((set) => _matchesWorld(set, worldId) && _matchesZone(set, zoneId) && _matchesHub(set, hubId));
   }
 
-  function getQuestChainTemplates(worldId, zoneId, hubId) {
+  function getQuestChainTemplates(worldId?, zoneId?, hubId?) {
     return getQuestChainSets(worldId, zoneId, hubId).flatMap((set) =>
       (set.chains || set.templates || []).map((chain) => ({
         ...chain,
@@ -77,7 +81,7 @@ window.CJS.CampaignDataLoader = (() => {
     return getQuestChainTemplates().find((chain) => chain.id === templateId) || null;
   }
 
-  function getBattleSetCards(worldId, zoneId, hubId) {
+  function getBattleSetCards(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('battleSets')
       .filter((set) => _matchesWorld(set, worldId) && _matchesZone(set, zoneId) && _matchesHub(set, hubId))
       .flatMap((set) => (set.cards || []).map((card) => ({ ...card, sourceSetId: set.id, world: card.world || set.world, zone: card.zone || set.zone, hubId: card.hubId || set.hubId })));
@@ -87,7 +91,7 @@ window.CJS.CampaignDataLoader = (() => {
     return getBattleSetCards().find((card) => card.id === cardId) || null;
   }
 
-  function getMapSeeds(worldId, zoneId, hubId) {
+  function getMapSeeds(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('mapSeeds')
       .filter((set) => _matchesWorld(set, worldId) && _matchesZone(set, zoneId) && _matchesHub(set, hubId))
       .flatMap((set) => (set.seeds || set.cards || []).map((seed) => ({ ...seed, sourceSetId: set.id, world: seed.world || set.world, zone: seed.zone || set.zone, hubId: seed.hubId || set.hubId })));
@@ -97,7 +101,7 @@ window.CJS.CampaignDataLoader = (() => {
     return getMapSeeds().find((seed) => seed.id === seedId) || null;
   }
 
-  function getOracleTables(worldId, zoneId, hubId) {
+  function getOracleTables(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('oracleTables')
       .filter((table) => _matchesWorld(table, worldId) && _matchesZone(table, zoneId) && _matchesHub(table, hubId));
   }
@@ -107,7 +111,7 @@ window.CJS.CampaignDataLoader = (() => {
     return getOracleTables()[0] || null;
   }
 
-  function getStoryDirectorPacks(worldId, zoneId, hubId) {
+  function getStoryDirectorPacks(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('storyDirectorPacks')
       .filter((pack) => _matchesWorld(pack, worldId) && _matchesZone(pack, zoneId) && _matchesHub(pack, hubId));
   }
@@ -123,7 +127,7 @@ window.CJS.CampaignDataLoader = (() => {
     return getStoryDirectorPacks(worldId, zoneId, hubId)[0] || null;
   }
 
-  function getTravelMaps(worldId, zoneId, hubId) {
+  function getTravelMaps(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('travelMaps')
       .filter((map) => _matchesWorld(map, worldId) && _matchesZone(map, zoneId) && _matchesHub(map, hubId));
   }
@@ -133,12 +137,12 @@ window.CJS.CampaignDataLoader = (() => {
     return getTravelMaps(worldId, zoneId, hubId)[0] || null;
   }
 
-  function getWorldActivityPacks(worldId, zoneId, hubId) {
+  function getWorldActivityPacks(worldId?, zoneId?, hubId?) {
     return DS().getAllAsArray('worldActivityPacks')
       .filter((pack) => _matchesWorld(pack, worldId) && _matchesZone(pack, zoneId) && _matchesHub(pack, hubId));
   }
 
-  function getWorldActivities(worldId, zoneId, hubId) {
+  function getWorldActivities(worldId?, zoneId?, hubId?) {
     return getWorldActivityPacks(worldId, zoneId, hubId).flatMap((pack) =>
       (pack.activities || []).map((activity) => ({
         ...activity,
@@ -176,3 +180,6 @@ window.CJS.CampaignDataLoader = (() => {
     getWorldActivity
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignDataLoader = CampaignDataLoader;

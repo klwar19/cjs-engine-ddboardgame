@@ -1,9 +1,12 @@
-// campaign-quest-chains.js
-// Side quest chain lookup and operation wrappers.
+// campaign-quest-chains.ts — Tier 3 TS port of js/campaign/campaign-quest-chains.js
+// (engine cluster: campaign). Side quest-chain lookup + op wrappers (available/
+// active/finished, start/advance/complete/fail, save-as-idea, promote, toQuest).
+// DOM-free; reads window.CJS.* lazily. Exports `CampaignQuestChains` and installs
+// window.CJS.CampaignQuestChains. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignQuestChains = (() => {
+export const CampaignQuestChains = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -107,7 +110,7 @@ window.CJS.CampaignQuestChains = (() => {
     }, { source: 'quest_chain' });
   }
 
-  function toQuest(chain = {}) {
+  function toQuest(chain: any = {}) {
     return {
       id: `quest_${chain.id}`,
       title: chain.title || chain.name || chain.id,
@@ -173,3 +176,6 @@ window.CJS.CampaignQuestChains = (() => {
     toQuest
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignQuestChains = CampaignQuestChains;
