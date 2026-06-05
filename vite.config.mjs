@@ -92,7 +92,12 @@ export default defineConfig({
         // stays a tiny app-shell loader instead of absorbing idb + migrations
         // and being precached for every mode.
         manualChunks: (id) => {
-          const normalizedId = id.split("\\").join("/");
+          // Tier 3 (engine JS→TS) moves js/<area>/<mod>.js to
+          // src/engine/<area>/<mod>.ts one module at a time. Normalize a TS
+          // port's path back onto its js/ area so a SINGLE set of area rules
+          // keeps the ported module in the same chunk as the legacy file — the
+          // port never shuffles a chunk boundary and never needs a rule here.
+          const normalizedId = id.split("\\").join("/").replace("/src/engine/", "/js/");
           if (normalizedId.includes("node_modules/react")) return "react-vendor";
           if (normalizedId.includes("/src/persistence/") || normalizedId.includes("/node_modules/idb/")) return "cjs-persistence";
           if (normalizedId.includes("/js/minigames/")) return "cjs-minigames";
@@ -101,19 +106,18 @@ export default defineConfig({
           if (normalizedId.includes("/js/campaign/campaign-scenario-generator")) return "cjs-campaign-generators";
           if (normalizedId.includes("/js/campaign/campaign-story-")) return "cjs-campaign-story";
           if (normalizedId.includes("/js/campaign/campaign-sequence-")) return "cjs-campaign-sequences";
-          if (normalizedId.includes("/js/campaign/campaign-world-map") || normalizedId.includes("/js/campaign/campaign-map.js")) return "cjs-campaign-maps";
+          // `campaign-map.` (with the dot) matches campaign-map.js / .ts but not
+          // campaign-map-seed-forge (which stays in cjs-campaign-core).
+          if (normalizedId.includes("/js/campaign/campaign-world-map") || normalizedId.includes("/js/campaign/campaign-map.")) return "cjs-campaign-maps";
           if (normalizedId.includes("/js/campaign/farming-mode") || normalizedId.includes("/js/campaign/pocket-haven")) return "cjs-campaign-haven";
           if (normalizedId.includes("/js/campaign/scenario-runner")) return "cjs-campaign-scenario-runner";
           if (normalizedId.includes("/js/campaign/")) return "cjs-campaign-core";
-          if (normalizedId.includes("/js/combat/") || normalizedId.includes("/src/engine/combat/")) return "cjs-combat";
-          if (normalizedId.includes("/js/grid/") || normalizedId.includes("/src/engine/grid/")) return "cjs-grid";
-          if (normalizedId.includes("/js/ai/") || normalizedId.includes("/src/engine/ai/")) return "cjs-ai";
-          if (normalizedId.includes("/js/effects/") || normalizedId.includes("/src/engine/effects/")) return "cjs-effects";
-          // Tier 3 (engine JS→TS) moves js/core/* to src/engine/core/* one
-          // module at a time; both map to the stable cjs-core chunk so the port
-          // doesn't shuffle chunk boundaries.
-          if (normalizedId.includes("/js/core/") || normalizedId.includes("/src/engine/core/")) return "cjs-core";
-          if (normalizedId.includes("/js/services/") || normalizedId.includes("/src/engine/services/")) return "cjs-services";
+          if (normalizedId.includes("/js/combat/")) return "cjs-combat";
+          if (normalizedId.includes("/js/grid/")) return "cjs-grid";
+          if (normalizedId.includes("/js/ai/")) return "cjs-ai";
+          if (normalizedId.includes("/js/effects/")) return "cjs-effects";
+          if (normalizedId.includes("/js/core/")) return "cjs-core";
+          if (normalizedId.includes("/js/services/")) return "cjs-services";
           return undefined;
         }
       }
