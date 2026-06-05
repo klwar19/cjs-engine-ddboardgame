@@ -35,7 +35,7 @@ import "../../js/campaign/campaign-story-branch.js";
 import "../../js/campaign/campaign-combat-popup.js";
 import "../../js/campaign/campaign-objective-banner.js";
 import "../../js/campaign/campaign-story-scenes.js";
-import "../../js/campaign/campaign-sequence-runner.js";
+import "../engine/campaign/campaign-sequence-runner";
 import "../../js/campaign/campaign-sequence-vn.js";
 import "../../js/campaign/campaign-oracle.js";
 import "../../js/campaign/campaign-combat-bridge.js";

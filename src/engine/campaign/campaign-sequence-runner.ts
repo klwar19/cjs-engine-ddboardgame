@@ -1,9 +1,16 @@
-// campaign-sequence-runner.js
-// Lightweight state-machine runtime for Story/Event/Quest sequence files.
+// campaign-sequence-runner.ts — Tier 3 TS port of
+// js/campaign/campaign-sequence-runner.js (engine cluster: campaign). Lightweight
+// state-machine runtime for Story/Event/Quest sequence files: node resolution,
+// choice eligibility, advance, scenario resume, battle-outcome handling,
+// completion. DOM-free; reads window.CJS.* lazily.
+//
+// Exports `CampaignSequences` and installs window.CJS.CampaignSequences. Body
+// verbatim from the legacy IIFE; only `: any` annotations added where tsc
+// (strict:false) requires them.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignSequences = (() => {
+export const CampaignSequences = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -135,7 +142,7 @@ window.CJS.CampaignSequences = (() => {
     };
   }
 
-  async function start(sequenceId, options = {}) {
+  async function start(sequenceId, options: any = {}) {
     const state = CS()?.getState?.();
     const world = options.world || state?.currentWorld || _activeWorld || 'haven';
     const indexEntry = entry(sequenceId, world);
@@ -226,7 +233,7 @@ window.CJS.CampaignSequences = (() => {
     };
   }
 
-  function findNode(sequence = {}, nodeId) {
+  function findNode(sequence: any = {}, nodeId) {
     return (sequence.nodes || []).find((node) => node.id === nodeId) || null;
   }
 
@@ -317,7 +324,7 @@ window.CJS.CampaignSequences = (() => {
     return { ok: true, nodeId: nextNode.id };
   }
 
-  async function resumeFromScenario(outcome = 'success', details = {}) {
+  async function resumeFromScenario(outcome = 'success', details: any = {}) {
     const state = CS()?.getState?.();
     const bundle = await activeBundle(state);
     if (!bundle?.node) return { ok: false, reason: 'no_active_node' };
@@ -360,7 +367,7 @@ window.CJS.CampaignSequences = (() => {
     return { ok: true, nodeId: nextNode.id };
   }
 
-  function handleBattleOutcome(outcome = 'victory', context = {}) {
+  function handleBattleOutcome(outcome = 'victory', context: any = {}) {
     const state = CS()?.getState?.();
     const current = active(state);
     if (!current) return { ok: false, handled: false, reason: 'no_active_sequence' };
@@ -444,7 +451,7 @@ window.CJS.CampaignSequences = (() => {
     return { ok: true, complete: true };
   }
 
-  async function _prepareStoryStart(sequence, world, options = {}) {
+  async function _prepareStoryStart(sequence, world, options: any = {}) {
     const state = CS()?.getState?.() || {};
     const status = storyStatus(sequence.id, state, world);
     const defaultedRecords = [];
@@ -547,7 +554,7 @@ window.CJS.CampaignSequences = (() => {
     return record;
   }
 
-  function _commitStoryRecord(record = {}, options = {}) {
+  function _commitStoryRecord(record: any = {}, options: any = {}) {
     CS().mutate((next) => {
       next.storyMode = next.storyMode || {};
       next.storyMode.completedParts = next.storyMode.completedParts || {};
@@ -582,7 +589,7 @@ window.CJS.CampaignSequences = (() => {
     }, { source: options.source || 'story_record_commit' });
   }
 
-  function _revealChapter(state, { chapterId = '', chapterLabel = '', chapterOrderKey = '', partId = '' } = {}) {
+  function _revealChapter(state, { chapterId = '', chapterLabel = '', chapterOrderKey = '', partId = '' }: any = {}) {
     if (!chapterId && !chapterLabel) return;
     state.storyMode = state.storyMode || {};
     state.storyMode.revealedChapters = state.storyMode.revealedChapters || {};
@@ -601,7 +608,7 @@ window.CJS.CampaignSequences = (() => {
     };
   }
 
-  function _defaultPlan(node = {}) {
+  function _defaultPlan(node: any = {}) {
     const type = String(node.type || '').toLowerCase();
     if (type === 'choice') {
       const choice = _defaultChoice(node);
@@ -625,7 +632,7 @@ window.CJS.CampaignSequences = (() => {
     return { action: 'next', value: null };
   }
 
-  function _defaultChoice(node = {}) {
+  function _defaultChoice(node: any = {}) {
     const choices = node.choices || [];
     if (!choices.length) return null;
     return choices.find((item) => item.id === node.defaultChoiceId)
@@ -740,7 +747,7 @@ window.CJS.CampaignSequences = (() => {
     return { next: node.next || null, ops: node.ops || [], result: action };
   }
 
-  function choiceEligibility(choice = {}, node = {}, state = CS()?.getState?.(), context = {}) {
+  function choiceEligibility(choice: any = {}, node: any = {}, state = CS()?.getState?.(), context: any = {}) {
     return Align()?.choiceEligibility?.(choice, node, state || {}, context) || {
       ok: true,
       blockers: [],
@@ -749,7 +756,7 @@ window.CJS.CampaignSequences = (() => {
     };
   }
 
-  function _choiceOps(node = {}, choice = {}, state = CS()?.getState?.()) {
+  function _choiceOps(node: any = {}, choice: any = {}, state = CS()?.getState?.()) {
     const authoredOps = _asArray(choice.ops);
     if (!choice) return authoredOps;
     if (authoredOps.some((op) => op?.op === 'choice_consequence_record')) return authoredOps;
@@ -799,13 +806,13 @@ window.CJS.CampaignSequences = (() => {
     };
   }
 
-  function _storySummaryText(sequence = {}, log = [], mode = 'played') {
+  function _storySummaryText(sequence: any = {}, log: any[] = [], mode = 'played') {
     if (mode === 'defaulted' && sequence.summary?.default) return sequence.summary.default;
     const short = (log || []).map((line) => line.summary).filter(Boolean).slice(-3).join(' | ');
     return short || sequence.summary?.short || sequence.summary?.default || sequence.title || sequence.id || 'Story part recorded.';
   }
 
-  function _entryEligible(indexEntry = {}, state = CS()?.getState?.()) {
+  function _entryEligible(indexEntry: any = {}, state = CS()?.getState?.()) {
     if (!indexEntry || indexEntry.disabled) return false;
     const entryConditions = _entryConditions(indexEntry);
     if (Object.keys(entryConditions).length && Cond()?.evaluate && !Cond().evaluate(entryConditions, state || {}, {
@@ -836,7 +843,7 @@ window.CJS.CampaignSequences = (() => {
     return true;
   }
 
-  function _eligibilityReasons(indexEntry = {}, state = CS()?.getState?.() || {}) {
+  function _eligibilityReasons(indexEntry: any = {}, state = CS()?.getState?.() || {}) {
     const reasons = [];
     if (!indexEntry) return reasons;
     const entryConditions = _entryConditions(indexEntry);
@@ -870,7 +877,7 @@ window.CJS.CampaignSequences = (() => {
     return reasons;
   }
 
-  function _entryConditions(indexEntry = {}) {
+  function _entryConditions(indexEntry: any = {}) {
     const cond = { ...(indexEntry.conditions || {}) };
     for (const key of [
       'alignmentMin',
@@ -946,7 +953,7 @@ window.CJS.CampaignSequences = (() => {
   }
 
   function currentRouteChoices(state = CS()?.getState?.() || {}, world = _activeWorld) {
-    const records = Object.values(state?.storyMode?.partResults || {});
+    const records = Object.values<any>(state?.storyMode?.partResults || {});
     return records
       .filter((record) => record.scope === 'story')
       .sort((a, b) => _compareOrderValues(a.storyOrderKey || '', b.storyOrderKey || ''))
@@ -967,7 +974,7 @@ window.CJS.CampaignSequences = (() => {
       });
   }
 
-  function _compareStoryEntries(a = {}, b = {}) {
+  function _compareStoryEntries(a: any = {}, b: any = {}) {
     const aMeta = storyMeta(a);
     const bMeta = storyMeta(b);
     const byOrder = _compareOrderValues(aMeta.orderKey, bMeta.orderKey);
@@ -1006,7 +1013,7 @@ window.CJS.CampaignSequences = (() => {
       });
   }
 
-  function _chapterNumber(sequence = {}, indexEntry = {}) {
+  function _chapterNumber(sequence: any = {}, indexEntry: any = {}) {
     sequence = sequence || {};
     indexEntry = indexEntry || {};
     const raw = sequence.chapterNumber
@@ -1035,12 +1042,12 @@ window.CJS.CampaignSequences = (() => {
     return normalized || 'ready';
   }
 
-  function _deliveryBlocked(value = {}) {
+  function _deliveryBlocked(value: any = {}) {
     const status = _deliveryStatus(value?.deliveryStatus);
     return status === 'in_update' || status === 'blocked';
   }
 
-  function _completionOps(sequence = {}, mode = 'played') {
+  function _completionOps(sequence: any = {}, mode = 'played') {
     if (!sequence) return [];
     const preferred = mode === 'defaulted'
       ? (sequence.defaultCompletionOps ?? sequence.completionOps)
@@ -1048,7 +1055,7 @@ window.CJS.CampaignSequences = (() => {
     return _asArray(preferred);
   }
 
-  function _syncSummary(sequence = {}, meta = {}, mode = 'played') {
+  function _syncSummary(sequence: any = {}, meta: any = {}, mode = 'played') {
     const preferred = mode === 'defaulted'
       ? (sequence?.defaultSyncSummary ?? sequence?.syncSummary ?? meta?.syncSummary)
       : (sequence?.syncSummary ?? meta?.syncSummary);
@@ -1060,7 +1067,7 @@ window.CJS.CampaignSequences = (() => {
     if (Array.isArray(value)) return value.map((line) => String(line || '').trim()).filter(Boolean);
     if (typeof value === 'string') return [value].filter(Boolean);
     if (typeof value === 'object') {
-      return Object.values(value).map((line) => String(line || '').trim()).filter(Boolean);
+      return Object.values<any>(value).map((line) => String(line || '').trim()).filter(Boolean);
     }
     return [];
   }
@@ -1094,3 +1101,6 @@ window.CJS.CampaignSequences = (() => {
     complete
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignSequences = CampaignSequences;
