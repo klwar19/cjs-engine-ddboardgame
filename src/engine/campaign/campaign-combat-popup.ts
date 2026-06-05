@@ -3,9 +3,14 @@
 // and confirms before handing off to combat.html. Replaces the silent
 // "writeRequest then navigate" handoff for queued battles.
 
+// Tier 3 TS port of js/campaign/campaign-combat-popup.js (engine cluster:
+// campaign). Pre-battle popup (shake-in, pause, confirm, hand off to combat).
+// Exports `CampaignCombatPopup` and installs window.CJS.CampaignCombatPopup.
+// Body verbatim from the legacy IIFE; ': any' on {}-default params + a focus()
+// cast.
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignCombatPopup = (() => {
+export const CampaignCombatPopup = (() => {
   'use strict';
 
   const Bridge = () => window.CJS.CampaignCombatBridge;
@@ -14,7 +19,7 @@ window.CJS.CampaignCombatPopup = (() => {
   let _activeOverlay = null;
   let _pendingNav = null;
 
-  function show(pendingBattle, opts = {}) {
+  function show(pendingBattle, opts: any = {}) {
     if (typeof document === 'undefined' || !document.body) return false;
     close({ silent: true });
 
@@ -63,7 +68,7 @@ window.CJS.CampaignCombatPopup = (() => {
     setTimeout(() => root.classList.remove('combat-popup-shake'), 600);
 
     // Focus the engage button so Enter works immediately.
-    setTimeout(() => overlay.querySelector('[data-combat-popup-engage]')?.focus(), 50);
+    setTimeout(() => (overlay.querySelector('[data-combat-popup-engage]') as HTMLElement)?.focus(), 50);
     return true;
   }
 
@@ -79,7 +84,7 @@ window.CJS.CampaignCombatPopup = (() => {
     Bridge()?.openBattle?.(pendingBattle);
   }
 
-  function close(opts = {}) {
+  function close(opts: any = {}) {
     if (!_activeOverlay) return;
     const overlay = _activeOverlay;
     _activeOverlay = null;
@@ -95,15 +100,15 @@ window.CJS.CampaignCombatPopup = (() => {
     if (opts.reason === 'cancel') _pendingNav = null;
   }
 
-  function _defaultSubtitle(p = {}) {
+  function _defaultSubtitle(p: any = {}) {
     if (p.source === 'moving_threat') return 'A roaming shadow closes in.';
     if (p.source === 'node') return 'The path ahead bristles with hostile shapes.';
     if (p.source === 'random') return 'Unexpected enemies strike from the dark.';
     return 'Prepare yourselves.';
   }
 
-  function _resolveMonsters(pending = {}) {
-    const ids = new Set();
+  function _resolveMonsters(pending: any = {}) {
+    const ids = new Set<any>();
     (pending.monsterIds || []).forEach((id) => id && ids.add(id));
     if (pending.battleSetCard?.monsterIds) {
       pending.battleSetCard.monsterIds.forEach((id) => id && ids.add(id));
@@ -161,3 +166,6 @@ window.CJS.CampaignCombatPopup = (() => {
 
   return Object.freeze({ show, engage, close });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignCombatPopup = CampaignCombatPopup;
