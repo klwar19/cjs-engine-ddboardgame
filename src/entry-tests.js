@@ -6,7 +6,7 @@ import "./engine/core/state-tools";
 import "./engine/core/data-store";
 import "./engine/core/skill-resolver";
 import "../js/services/persona-service.js";
-import "../js/effects/value-calc.js";
+import "./engine/effects/value-calc";
 import "../js/effects/conditions.js";
 import "../js/effects/effect-registry.js";
 import "../js/ui/audio-manager.js";

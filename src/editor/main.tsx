@@ -9,7 +9,7 @@ import "../persistence/indexedDb";
 import "../../js/core/save-manager.js";
 import "../engine/core/content-manager";
 import "../engine/core/skill-resolver";
-import "../../js/effects/value-calc.js";
+import "../engine/effects/value-calc";
 import "../../js/effects/conditions.js";
 import "../../js/effects/effect-registry.js";
 import "../../js/ui/ui-helpers.js";

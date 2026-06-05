@@ -108,7 +108,7 @@ export default defineConfig({
           if (normalizedId.includes("/js/combat/")) return "cjs-combat";
           if (normalizedId.includes("/js/grid/")) return "cjs-grid";
           if (normalizedId.includes("/js/ai/")) return "cjs-ai";
-          if (normalizedId.includes("/js/effects/")) return "cjs-effects";
+          if (normalizedId.includes("/js/effects/") || normalizedId.includes("/src/engine/effects/")) return "cjs-effects";
           // Tier 3 (engine JS→TS) moves js/core/* to src/engine/core/* one
           // module at a time; both map to the stable cjs-core chunk so the port
           // doesn't shuffle chunk boundaries.

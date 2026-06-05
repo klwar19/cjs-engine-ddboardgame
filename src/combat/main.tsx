@@ -12,7 +12,7 @@ import "../engine/services/content-validator";
 import "../../js/services/data-hot-reload.js";
 import "../dev/data-hot-reload-client"; // dev-only: re-ingest changed data/*.json (stripped in prod)
 import "../../js/services/dev-console.js";
-import "../../js/effects/value-calc.js";
+import "../engine/effects/value-calc";
 import "../../js/effects/conditions.js";
 import "../../js/effects/effect-registry.js";
 import "../../js/effects/effect-resolver.js";
