@@ -9,6 +9,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+// Tier 3: engine modules move js/<area>/<mod>.js -> src/engine/<area>/<mod>.ts
+// one at a time. Resolve source-text reads through the shared resolver so a
+// port is transparent to these regex checks.
+const { resolveEngine } = require('./tools/test/engine-source.cjs');
 
 let pass = 0;
 let fail = 0;
@@ -100,14 +104,17 @@ ok('cui-controls.ts emits no data-campaign-action (last src emitter removed)',
 // farm/pocket-haven modules are now JSX-rendered + op-only) must never
 // reintroduce the generic `data-campaign-action` attribute — typed onClick is
 // the only dispatch path.
+// boot.ts is a src/ file; the three campaign modules are engine-resolved
+// (js/ today, src/engine/ once ported) so the check follows the Tier 3 port.
 const MIGRATED_ISLANDS = [
-  'src/campaign/shell/boot.ts',
-  'js/campaign/campaign-map.js',
-  'js/campaign/farming-mode.js',
-  'js/campaign/pocket-haven.js'
+  path.join(__dirname, 'src/campaign/shell/boot.ts'),
+  resolveEngine('campaign/campaign-map').path,
+  resolveEngine('campaign/farming-mode').path,
+  resolveEngine('campaign/pocket-haven').path
 ];
-for (const rel of MIGRATED_ISLANDS) {
-  const src = fs.readFileSync(path.join(__dirname, rel), 'utf8');
+for (const abs of MIGRATED_ISLANDS) {
+  const rel = path.relative(__dirname, abs);
+  const src = fs.readFileSync(abs, 'utf8');
   ok(rel + ' has no generic data-campaign-action attributes',
      !/data-campaign-action=/.test(stripComments(src)));
 }

@@ -4,9 +4,13 @@
 // mini-game / fishing / notes panels) is now React JSX or was retired in the
 // htmlIslandActions migration; only these state-mutating ops remain here.
 
+// Tier 3 TS port of js/campaign/pocket-haven.js (engine cluster: campaign).
+// The seed/harvest/fishing state-mutating ops the campaign farm action handlers
+// call (rendering is React JSX). Exports `PocketHaven` and installs
+// window.CJS.PocketHaven. Body verbatim from the legacy IIFE.
 window.CJS = window.CJS || {};
 
-window.CJS.PocketHaven = (() => {
+export const PocketHaven = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -67,3 +71,6 @@ window.CJS.PocketHaven = (() => {
     openFishing
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.PocketHaven = PocketHaven;

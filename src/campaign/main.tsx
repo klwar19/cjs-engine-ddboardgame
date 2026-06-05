@@ -42,7 +42,7 @@ import "../../js/campaign/campaign-combat-bridge.js";
 import "../../js/campaign/campaign-party-chat.js";
 import "../../js/campaign/campaign-map.js";
 import "../engine/campaign/pocket-haven-facilities";
-import "../../js/campaign/pocket-haven.js";
+import "../engine/campaign/pocket-haven";
 import "../../js/campaign/guild-trivia.js";
 import "../../js/campaign/scenario-runner.js";
 import "../engine/campaign/campaign-side-content";
