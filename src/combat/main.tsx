@@ -19,7 +19,7 @@ import "../engine/effects/effect-resolver";
 import "../../js/grid/grid-engine.js";
 import "../engine/grid/pathfinding";
 import "../engine/grid/aoe";
-import "../../js/grid/map-generator.js";
+import "../engine/grid/map-generator";
 import "../engine/combat/weather-manager";
 import "../engine/combat/enemy-modifiers";
 import "../engine/combat/stat-compiler";
