@@ -33,30 +33,42 @@ file is deleted and is no longer an active bridge or extension point.
 
 **Genuinely open work:**
 
-- [~] **Phase B / Tier 3 — Engine JS → TS.** IN PROGRESS. The conversion pattern
-  is established and proven on the first module; ~47k lines of engine JS remain.
-  - **Per-module recipe (proven):** write `src/engine/<area>/<mod>.ts` as an ES
-    module that exports a typed API **and** installs `window.CJS.<Name>` as a side
-    effect (so every existing `window.CJS.*` consumer + the vanilla engine are
-    unchanged); update the side-effect imports (`src/*/main.tsx`, `src/entry-tests.js`)
-    from `js/<area>/<mod>.js` to `engine/<area>/<mod>`; keep the vite `manualChunks`
-    mapping stable (both `js/<area>/` and `src/engine/<area>/` → the same chunk);
-    delete the `.js`. Gate: `tsc` + `npm test` + `build` + `size:check`.
-  - **Test harness (the prerequisite, DONE):** `tools/test/engine-source.cjs` is the
-    shared loader the ~8 Node harnesses use — it prefers a TS port in `src/engine/`,
-    transpiles it to CommonJS and wraps it so `exports`/`module`/`require` are
-    sandbox-locals while the `window.CJS.*` install runs against the sandbox global,
-    and otherwise returns the legacy `.js` verbatim. So a port is transparent to the
-    harnesses. Engine modules read each other via `window.CJS.*` (never ESM imports)
-    in dependency order, so the script-style sandbox model is preserved.
-  - **Done:** `js/core/state-tools.js` → `src/engine/core/state-tools.ts` (typed
-    `StateToolsApi`; `clone`/`produce`/`deepFreeze`/`freezeDev`/`isDevFreezeEnabled`),
-    landing in the stable `cjs-core` chunk. First module of the **core** cluster.
-  - **Remaining order:** finish **core** (`dice`, `constants`, `formulas`,
-    `undo-manager`, `skill-resolver`, `data-store`, `content-manager`) +
-    `services/content-validator`, then **effects**, **combat engine**, **AI**,
-    **grid/QTE**, then **campaign systems** (campaign-ops ~3.4k, scenario-runner
-    ~2.9k, campaign-state ~1.3k, …). One module per commit, green at each.
+- [x] **Phase B / Tier 3 — Engine JS → TS.** ✅ COMPLETE. Every `js/**/*.js`
+  module is ported to `src/engine/**/*.ts`; the `js/` tree is deleted. 105 TS
+  engine modules across core / effects / combat / ai / grid / qte / minigames /
+  narrator / services / campaign. tsc + npm test (25 files) + build + size:check
+  green throughout; chunk boundaries and per-page download budgets unchanged
+  (campaign entry 266.1 KB, initial JS ~344 gz).
+  - **Per-module recipe (used):** write `src/engine/<area>/<mod>.ts` as an ES
+    module that exports the API **and** installs `window.CJS.<Name>` as a side
+    effect (so every existing `window.CJS.*` consumer is unchanged); repoint the
+    side-effect imports (`src/*/main.tsx`, `src/entry-tests.js`,
+    `src/campaign/minigames-bundle.ts`) from `js/<area>/<mod>.js` to
+    `engine/<area>/<mod>`; delete the `.js` (via `git mv`, so the body stays
+    byte-identical and history is preserved). Bodies are verbatim; the only edits
+    are the IIFE wrapper (`window.CJS.X = (() => {…})()` → `export const X =
+    (() => {…})(); window.CJS.X = X;`) and **type-only** loosening that `tsc`
+    (strict:false) requires: `: any` on `{}`/`null`/destructured-default params,
+    `Object.values<any>`/`Object.entries<any>`/`Set<any>` where an iterator
+    element is read, `as HTMLElement`/`as any` DOM casts (querySelector/closest/
+    dataset/value/style), `(window as any).<PIXI|Live2DCubismCore|…>`,
+    `Promise<void>`, and optional trailing params where a JS caller passed fewer/
+    more args. All runtime behaviour is identical.
+  - **vite `manualChunks`:** refactored once to normalise a TS port's
+    `/src/engine/<area>/` path back onto `/js/<area>/` up front, so a single set
+    of area rules keeps every ported module in the same chunk as its legacy file
+    — no per-port vite edit, and a port can never shuffle a chunk boundary.
+  - **Test harness:** `tools/test/engine-source.cjs` prefers the TS port in
+    `src/engine/`, transpiles it to a sandbox-runnable script, and the ~8 Node
+    harnesses load through it, so a port is transparent. Source-text test reads
+    that hard-coded `js/<area>/<mod>.js` (`test_art_budget`, `test_actions_bridge`,
+    `test_map_type_separation`, `test_icon`, `test_roster_detail`,
+    `test_launcher_switching`) were switched to `resolveEngine`/`loadEngineSource`.
+  - **One latent bug fixed in passing:** `js/ui/portrait-picker.js` referenced an
+    **undefined** `_escAttr` (only `_escHtml` was defined) — a `ReferenceError` the
+    ESM migration surfaces (bare globals are no longer shared across `<script>`s).
+    Added a local `_escAttr` aliasing `_escHtml`, matching the clear attr-escaping
+    intent.
 - [x] **Full `data-campaign-action` removal + `<main>` forwarder deleted.** The
   typed registry is done (246/246 actions in `src/campaign/action-handlers/`) and
   **nothing in the repo emits `data-campaign-action` any more.** The last emitters

@@ -54,9 +54,10 @@ import "../engine/campaign/campaign-map-seed-forge";
 import "../engine/campaign/campaign-scenario-generator";
 import "../engine/campaign/campaign-idea-forge";
 import "../engine/campaign/campaign-world-map";
-// The minigame + QTE engine (js/minigames/*, js/qte/*) is no longer imported
-// here — it is deferred behind ./lazy-minigames (Tier 1 perf) so cjs-minigames
-// + cjs-qte drop out of the campaign page's eager modulepreload set. It is
+// The minigame + QTE engine (engine/minigames/*, engine/qte/*) is no longer
+// imported here — it is deferred behind ./lazy-minigames (Tier 1 perf) so
+// cjs-minigames + cjs-qte drop out of the campaign page's eager modulepreload
+// set. It is
 // warmed in the background after boot (below) and awaited by the launch action
 // handlers (minigame.ts / mg-test.ts / farm openFishing).
 // Phase H.4 — leaf util helpers ported to TS. The TS modules install
