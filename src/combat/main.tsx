@@ -58,7 +58,7 @@ import "../../js/ui/l2d-avatar.js";
 import "../../js/ui/l2d-companion.js";
 import "../engine/campaign/campaign-tags";
 import "../engine/campaign/campaign-conditions";
-import "../../js/campaign/campaign-quest-pulse.js";
+import "../engine/campaign/campaign-quest-pulse";
 import "../../js/campaign/campaign-combat-bridge.js";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { CombatPage } from "./CombatPage";

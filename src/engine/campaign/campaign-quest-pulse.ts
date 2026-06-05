@@ -1,9 +1,16 @@
-// campaign-quest-pulse.js
-// Converts combat and phase facts into light quest progress.
+// campaign-quest-pulse.ts — Tier 3 TS port of js/campaign/campaign-quest-pulse.js
+// (engine cluster: campaign). Converts combat + phase facts into light quest
+// progress: repeatable-quest prep/reset + variant picking, combat-pulse tag
+// extraction, quest-objective trigger matching, and battle-context builders.
+// DOM-free; reads window.CJS.* (CampaignState/DataStore/Conditions/Tags) lazily.
+//
+// Exports `CampaignQuestPulse` and installs window.CJS.CampaignQuestPulse. Body
+// verbatim from the legacy IIFE; only `: any` added to the {}/null/destructured
+// default params (and Object.values<any> where the element is read).
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignQuestPulse = (() => {
+export const CampaignQuestPulse = (() => {
   'use strict';
 
   const CS = () => window.CJS.CampaignState;
@@ -32,7 +39,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return quest;
   }
 
-  function isRepeatable(quest = {}) {
+  function isRepeatable(quest: any = {}) {
     const repeat = quest.repeat || {};
     return !!(quest.repeatable || repeat.reset || repeat.resetOnPhase || repeat.frequency || repeat.variants?.length || quest.repeatVariants?.length);
   }
@@ -40,7 +47,7 @@ window.CJS.CampaignQuestPulse = (() => {
   function resetRepeatableQuests(state) {
     const summaries = [];
     if (!state?.quests) return summaries;
-    for (const quest of Object.values(state.quests)) {
+    for (const quest of Object.values<any>(state.quests)) {
       if (!isRepeatable(quest)) continue;
       const repeat = quest.repeat || {};
       const reset = String(repeat.reset || repeat.resetOnPhase || repeat.frequency || '').toLowerCase();
@@ -69,7 +76,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return summaries;
   }
 
-  function pickVariant(quest = {}, state = null) {
+  function pickVariant(quest: any = {}, state: any = null) {
     const variants = [
       ...(quest.repeat?.variants || []),
       ...(quest.repeatVariants || [])
@@ -103,7 +110,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return clone(weighted[0].variant);
   }
 
-  function applyVariant(quest = {}, variant = null) {
+  function applyVariant(quest: any = {}, variant: any = null) {
     if (!variant) return quest;
     if (variant.summary) quest.variantSummary = variant.summary;
     if (variant.dialogue) quest.variantDialogue = variant.dialogue;
@@ -117,7 +124,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return quest;
   }
 
-  function buildCombatPulse({ request = {}, combatState = {}, entries = [] } = {}) {
+  function buildCombatPulse({ request = {}, combatState = {}, entries = [] }: any = {}) {
     const tags = new Set();
     const playerActionTags = new Set();
     const skillUse = {};
@@ -148,7 +155,7 @@ window.CJS.CampaignQuestPulse = (() => {
       }
     }
 
-    const units = Object.values(combatState?.units || {});
+    const units = Object.values<any>(combatState?.units || {});
     for (const unit of units.filter((entry) => entry.team === 'enemy' && Number(entry.currentHP || 0) <= 0)) {
       const id = unit.baseId || unit.id || unit.instanceId;
       const monster = DS()?.get?.('monsters', id) || {};
@@ -165,7 +172,7 @@ window.CJS.CampaignQuestPulse = (() => {
       for (const tag of defeated.tags) tags.add(`defeated_tag:${tag}`);
     }
 
-    for (const [skillId, count] of Object.entries(skillUse)) {
+    for (const [skillId, count] of Object.entries<any>(skillUse)) {
       tags.add(`skill:${skillId}`);
       tags.add(`skill_${skillId}`);
       const skill = DS()?.get?.('skills', skillId);
@@ -191,14 +198,14 @@ window.CJS.CampaignQuestPulse = (() => {
     };
   }
 
-  function opsForCombatResult(state, result = {}) {
+  function opsForCombatResult(state, result: any = {}) {
     const pulse = result.combatPulse || result.pulse || {};
     const pulseTags = new Set((pulse.tags || []).map(cleanTag));
     if (result.result) pulseTags.add(`outcome:${String(result.result).toLowerCase()}`);
     const ops = [];
     const progressed = new Set();
 
-    for (const quest of Object.values(state?.quests || {})) {
+    for (const quest of Object.values<any>(state?.quests || {})) {
       if (!quest || ['complete', 'completed', 'failed'].includes(String(quest.status || 'active'))) continue;
       for (const objective of quest.objectives || []) {
         if ((objective.current || 0) >= (objective.required || 1)) continue;
@@ -223,7 +230,7 @@ window.CJS.CampaignQuestPulse = (() => {
       }
     }
 
-    for (const chain of Object.values(state?.sideContent?.activeQuestChains || {})) {
+    for (const chain of Object.values<any>(state?.sideContent?.activeQuestChains || {})) {
       if (!chain || String(chain.status || 'active') !== 'active') continue;
       const quest = state.quests?.[chain.questId];
       const objective = quest?.objectives?.find((entry) => entry.id === chain.currentStepId);
@@ -236,7 +243,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return ops;
   }
 
-  function triggerMatches(trigger = {}, ctx = {}) {
+  function triggerMatches(trigger: any = {}, ctx: any = {}) {
     const { pulse, pulseTags, result, state, quest, objective } = ctx;
     const blockers = [];
     if (trigger.outcome && String(trigger.outcome).toLowerCase() !== String(result.result || '').toLowerCase()) blockers.push('outcome');
@@ -259,7 +266,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return { ok: blockers.length === 0, blockers };
   }
 
-  function battleContextForQuest(quest = {}) {
+  function battleContextForQuest(quest: any = {}) {
     return {
       questId: quest.id || null,
       questTitle: quest.title || quest.id || '',
@@ -271,7 +278,7 @@ window.CJS.CampaignQuestPulse = (() => {
     };
   }
 
-  function battleContextForPending(state = null, pendingBattle = null) {
+  function battleContextForPending(state: any = null, pendingBattle: any = null) {
     state = state || CS()?.getState?.() || {};
     pendingBattle = pendingBattle || state.pendingBattle || {};
     const questId = pendingBattle.questId || state.activeScenarioRun?.questId || pendingBattle.questContext?.questId;
@@ -287,18 +294,18 @@ window.CJS.CampaignQuestPulse = (() => {
     };
   }
 
-  function pulseSummary({ tags, skillUse, statusIds, defeatedEnemies }) {
+  function pulseSummary({ tags, skillUse, statusIds, defeatedEnemies }: any) {
     const bits = [];
     const skills = Object.keys(skillUse || {});
     if (skills.length) bits.push(`Skills: ${skills.slice(0, 3).join(', ')}`);
     if (statusIds?.size || statusIds?.length) bits.push(`Statuses: ${Array.from(statusIds).slice(0, 3).join(', ')}`);
     if (defeatedEnemies?.length) bits.push(`Defeated: ${defeatedEnemies.map((enemy) => enemy.name || enemy.id).slice(0, 3).join(', ')}`);
     const behavior = Array.from(tags || []).filter((tag) => String(tag).startsWith('behavior:')).slice(0, 3);
-    if (behavior.length) bits.push(`Behavior: ${behavior.map((tag) => tag.replace('behavior:', '')).join(', ')}`);
+    if (behavior.length) bits.push(`Behavior: ${behavior.map((tag: any) => tag.replace('behavior:', '')).join(', ')}`);
     return bits.join(' | ') || 'Combat facts recorded.';
   }
 
-  function monsterTags(monster = {}) {
+  function monsterTags(monster: any = {}) {
     const text = [monster.id, monster.name, monster.type, monster.rank, monster.description, ...(monster.tags || [])].join(' ');
     return uniqueTags([
       ...(monster.tags || []),
@@ -312,7 +319,7 @@ window.CJS.CampaignQuestPulse = (() => {
     return found ? found.slice(prefix.length) : null;
   }
 
-  function isPlayerEntry(entry = {}) {
+  function isPlayerEntry(entry: any = {}) {
     return entry.actor?.team === 'player' || (entry.tags || []).includes('actor_team_player');
   }
 
@@ -368,3 +375,6 @@ window.CJS.CampaignQuestPulse = (() => {
     monsterTags
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignQuestPulse = CampaignQuestPulse;
