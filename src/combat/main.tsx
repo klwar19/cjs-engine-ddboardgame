@@ -31,7 +31,7 @@ import "../engine/combat/combat-log";
 import "../engine/combat/combat-settings";
 import "../engine/combat/combat-objectives";
 import "../../js/combat/combat-manager.js";
-import "../../js/combat/battle-setup.js";
+import "../engine/combat/battle-setup";
 import "../../js/ai/ai-conditions.js";
 import "../../js/ai/ai-targeting.js";
 import "../../js/ai/ai-controller.js";
