@@ -1,9 +1,12 @@
-// campaign-party-chat.js
-// Context-aware party banter for Campaign Mode.
+// campaign-party-chat.ts — Tier 3 TS port of js/campaign/campaign-party-chat.js
+// (engine cluster: campaign). Context-aware party banter: load+normalize banter
+// docs, context-keyed pool selection, weighted pick, commit to log. Reads
+// window.CJS.* lazily. Exports `CampaignPartyChat` and installs
+// window.CJS.CampaignPartyChat. Body verbatim from the legacy IIFE.
 
 window.CJS = window.CJS || {};
 
-window.CJS.CampaignPartyChat = (() => {
+export const CampaignPartyChat = (() => {
   'use strict';
 
   const DEFAULT_PATHS = ['data/campaigns/haven/side_content/party_banter.json'];
@@ -37,7 +40,7 @@ window.CJS.CampaignPartyChat = (() => {
     return _rows.slice();
   }
 
-  function roll(context = {}) {
+  function roll(context: any = {}) {
     if (!_loaded) return null;
     const state = CS()?.getState?.();
     const party = state?.party || {};
@@ -52,7 +55,7 @@ window.CJS.CampaignPartyChat = (() => {
 
   // Collect persona tags from every battle-ready party member so authored
   // beats can key off active personas without every caller passing those tags.
-  function _withPersonaTags(context = {}, state) {
+  function _withPersonaTags(context: any = {}, state) {
     const PS = window.CJS.PersonaService;
     if (!PS || !state?.party) return context;
     const currentWorld = state.currentWorld;
@@ -72,7 +75,7 @@ window.CJS.CampaignPartyChat = (() => {
     return { ...context, tags: Array.from(tags) };
   }
 
-  function auto(context = {}, options = {}) {
+  function auto(context: any = {}, options: any = {}) {
     const chance = Number(options.chance ?? 0.35);
     if (Math.random() > chance) return null;
     const chat = roll(context);
@@ -105,7 +108,7 @@ window.CJS.CampaignPartyChat = (() => {
     return [];
   }
 
-  function setKeys(context = {}) {
+  function setKeys(context: any = {}) {
     const keys = [];
     const add = (key) => {
       const normalized = setKey(key);
@@ -170,11 +173,11 @@ window.CJS.CampaignPartyChat = (() => {
     };
   }
 
-  function normalizeDocument(raw = {}, sourcePath = '') {
+  function normalizeDocument(raw: any = {}, sourcePath = '') {
     const sets = raw.sets || { normal: raw.entries || [] };
     const globalDefaults = raw.defaults || {};
     const rows = [];
-    for (const [setId, spec] of Object.entries(sets || {})) {
+    for (const [setId, spec] of Object.entries<any>(sets || {})) {
       const entries = Array.isArray(spec) ? spec : (spec.entries || []);
       const setDefaults = Array.isArray(spec) ? {} : (spec.defaults || {});
       for (const entry of entries) {
@@ -214,7 +217,7 @@ window.CJS.CampaignPartyChat = (() => {
     };
   }
 
-  function normalizeContext(context = {}) {
+  function normalizeContext(context: any = {}) {
     return {
       ...context,
       world: context.world || CS()?.getState?.()?.currentWorld || '',
@@ -285,3 +288,6 @@ window.CJS.CampaignPartyChat = (() => {
     auto
   });
 })();
+
+// Runtime compatibility install — identical to the legacy IIFE.
+window.CJS.CampaignPartyChat = CampaignPartyChat;

@@ -39,7 +39,7 @@ import "../engine/campaign/campaign-sequence-runner";
 import "../../js/campaign/campaign-sequence-vn.js";
 import "../engine/campaign/campaign-oracle";
 import "../../js/campaign/campaign-combat-bridge.js";
-import "../../js/campaign/campaign-party-chat.js";
+import "../engine/campaign/campaign-party-chat";
 import "../../js/campaign/campaign-map.js";
 import "../engine/campaign/pocket-haven-facilities";
 import "../engine/campaign/pocket-haven";
