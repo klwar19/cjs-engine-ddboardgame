@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { loadEngineSource } = require('./tools/test/engine-source.cjs');
 
 const sandbox = {
   window: { CJS: {} },
@@ -26,7 +27,7 @@ vm.createContext(sandbox);
 for (const file of ['core/constants.js', 'core/formulas.js', 'core/dice.js',
   'core/undo-manager.js', 'core/state-tools.js', 'core/data-store.js', 'core/content-manager.js']) {
   try {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, 'js', file), 'utf8'), sandbox);
+    vm.runInContext(loadEngineSource(file), sandbox);
   } catch (e) {
     console.error(`LOAD ERROR: ${file}:`, e.message);
     process.exit(1);

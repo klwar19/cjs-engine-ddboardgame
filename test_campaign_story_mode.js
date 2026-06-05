@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { loadEngineSource } = require('./tools/test/engine-source.cjs');
 
 const mockFiles = {
   'data/campaigns/test/sequences/_sequence_index.json': {
@@ -305,7 +306,7 @@ const loadOrder = [
 ];
 
 for (const file of loadOrder) {
-  const code = fs.readFileSync(path.join(__dirname, 'js', file), 'utf8');
+  const code = loadEngineSource(file);
   vm.runInContext(code, sandbox);
 }
 

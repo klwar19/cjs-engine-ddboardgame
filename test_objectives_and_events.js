@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { loadEngineSource } = require('./tools/test/engine-source.cjs');
 
 const sandbox = {
   window: { CJS: {} },
@@ -62,9 +63,8 @@ const loadOrder = [
 ];
 
 for (const file of loadOrder) {
-  const filepath = path.join(__dirname, 'js', file);
   try {
-    const code = fs.readFileSync(filepath, 'utf8');
+    const code = loadEngineSource(file);
     vm.runInContext(code, sandbox);
   } catch (e) {
     console.error(`LOAD ERROR: ${file}:`, e.message);

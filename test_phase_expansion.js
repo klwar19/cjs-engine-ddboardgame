@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { loadEngineSource } = require('./tools/test/engine-source.cjs');
 
 global.window = { CJS: {} };
 
@@ -31,7 +32,7 @@ global.requestAnimationFrame = () => 0;
 global.cancelAnimationFrame = () => {};
 
 function loadScript(rel) {
-  const src = fs.readFileSync(path.join(__dirname, rel), 'utf8');
+  const src = loadEngineSource(rel);
   // eslint-disable-next-line no-eval
   eval.call(global, src);
 }
