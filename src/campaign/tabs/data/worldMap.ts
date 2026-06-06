@@ -7,11 +7,66 @@ import type { CampaignStateSnapshot } from "../../store";
 import type { CampaignActionName } from "../../actionNames";
 
 // ── Travel map (worldMap tab) ──────────────────────────────────────
-export interface TravelMapNode {
+// The travel-map SVG geometry is delivered as typed primitive objects (not raw
+// SVG strings): React renders each as a real <rect>/<path>/<circle>/… element in
+// CampaignWorldMapTab.tsx, so there is no dangerouslySetInnerHTML and attributes
+// diff on re-render. The engine (src/engine/campaign/campaign-world-map.ts)
+// produces these via _markerShapes / _visualLayers / _visualRoads.
+export type SvgPrim =
+  | { readonly t: "rect"; readonly className?: string; readonly x: number; readonly y: number; readonly width: number; readonly height: number; readonly rx?: number }
+  | { readonly t: "ellipse"; readonly className?: string; readonly cx: number; readonly cy: number; readonly rx: number; readonly ry: number }
+  | { readonly t: "line"; readonly className?: string; readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number }
+  | { readonly t: "polygon"; readonly className?: string; readonly points: string }
+  | { readonly t: "polyline"; readonly className?: string; readonly points: string }
+  | { readonly t: "text"; readonly className?: string; readonly x: number; readonly y: number; readonly textAnchor?: "start" | "middle" | "end" | "inherit"; readonly text: string }
+  | { readonly t: "path"; readonly className?: string; readonly d: string }
+  | { readonly t: "circle"; readonly className?: string; readonly cx: number; readonly cy: number; readonly r: number }
+  | { readonly t: "image"; readonly className?: string; readonly href: string; readonly x: number; readonly y: number; readonly width: number; readonly height: number; readonly preserveAspectRatio: string };
+
+// A visual node = a marker group (scaled/faded shape primitives) plus two
+// <foreignObject> HTML panels (the always-on label box and the hover preview).
+export interface TravelMarker {
+  readonly className: string;
+  readonly transform?: string;
+  readonly opacity?: number;
+  readonly shapes: readonly SvgPrim[];
+}
+
+export interface TravelNodeLabel {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly transform?: string;
+  readonly opacity?: number;
+  readonly text: string;
+}
+
+export interface TravelNodePreview {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly name: string;
+  readonly description: string;
+  readonly activityText: string;
+}
+
+export interface TravelMapNodeVisual {
   readonly mapId: string;
   readonly nodeId: string;
   readonly classes: string;
-  readonly innerSvg: string;
+  readonly marker: TravelMarker;
+  readonly label: TravelNodeLabel;
+  readonly preview: TravelNodePreview;
+}
+
+export interface TravelMapNodeClassic {
+  readonly mapId: string;
+  readonly nodeId: string;
+  readonly classes: string;
+  readonly circle: { readonly cx: number; readonly cy: number; readonly r: number };
+  readonly label: { readonly x: number; readonly y: number; readonly text: string };
 }
 
 export interface TravelNodeButton {
@@ -62,21 +117,22 @@ interface TravelMapBase {
   readonly progress: { readonly zone: string; readonly visited: number };
   readonly canvas: { readonly width: number; readonly height: number };
   readonly detail: TravelLocationDetail | null;
-  readonly nodes: readonly TravelMapNode[];
 }
 
 export interface TravelMapClassic extends TravelMapBase {
   readonly mode: "classic";
-  readonly linksHtml: string;
+  readonly links: readonly SvgPrim[];
+  readonly nodes: readonly TravelMapNodeClassic[];
 }
 
 export interface TravelMapVisual extends TravelMapBase {
   readonly mode: "visual";
-  readonly backdropImageHtml: string;
-  readonly layersHtml: string;
-  readonly roadsHtml: string;
+  readonly backdrop: readonly SvgPrim[];
+  readonly layers: readonly SvgPrim[];
+  readonly roads: readonly SvgPrim[];
   readonly legend: ReadonlyArray<{ readonly kind: string; readonly label: string }>;
   readonly areaSwitcher: TravelAreaSwitcher | null;
+  readonly nodes: readonly TravelMapNodeVisual[];
 }
 
 export type TravelMapData = TravelMapClassic | TravelMapVisual | { readonly hasMap: false };

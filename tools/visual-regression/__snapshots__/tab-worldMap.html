@@ -1,3 +1,137 @@
-<section class="campaign-panel">
-  <div class="campaign-empty">World map UI not loaded.</div>
-</section>
+<section class="campaign-panel campaign-world-map-panel is-visual-map theme-haven" style="--world-map-backdrop:url(&#x27;images/story-mode/haven/haven-map.webp&#x27;)">
+  <div class="campaign-panel-head">
+    <div>
+      <h2>Haven Travel Map</h2>
+      <span class="campaign-muted">Haven / Tidewater Commons</span>
+    </div>
+    <div class="campaign-panel-actions">
+      <span class="campaign-pill">Zone harbor</span>
+      <span class="campaign-pill">Visited 3</span>
+    </div>
+  </div>
+  <div class="campaign-world-area-switcher">
+    <button class="campaign-world-area-btn is-active" disabled="" title="You are here.">
+      <span>Harbor Ward</span>
+      <small>Current</small>
+    </button>
+    <button class="campaign-world-area-btn" title="A day&#x27;s climb north.">
+      <span>Highland Pass</span>
+      <small>Travel</small>
+    </button>
+    <button class="campaign-world-area-btn is-dev" disabled="" title="Planned for a later update.">
+      <span>Sunken Vault</span>
+      <small>Future</small>
+    </button>
+  </div>
+  <div class="campaign-world-dev-notes">
+    <span>
+      <strong>Sunken Vault:</strong> Planned for a later update.</span>
+      </div>
+      <div class="campaign-world-map-layout">
+        <div class="campaign-world-map-stage">
+          <svg class="campaign-world-map-canvas is-visual" viewBox="0 0 760 430" role="img" aria-label="Haven Travel Map">
+            <rect x="0" y="0" width="760" height="430" rx="18" class="campaign-world-map-bg">
+            </rect>
+            <g>
+              <image class="campaign-world-map-image" href="images/story-mode/haven/haven-map.webp" x="0" y="0" width="760" height="430" preserveAspectRatio="xMidYMid slice">
+              </image>
+              <rect class="campaign-world-map-image-shade" x="0" y="0" width="760" height="430" rx="18">
+              </rect>
+            </g>
+            <g>
+              <rect class="campaign-world-layer layer-water layer-type-rect" x="40" y="300" width="680" height="90" rx="12">
+              </rect>
+              <ellipse class="campaign-world-layer layer-isle layer-type-ellipse" cx="180" cy="140" rx="60" ry="38">
+              </ellipse>
+              <line class="campaign-world-layer layer-border layer-type-line" x1="0" y1="215" x2="760" y2="215">
+              </line>
+              <polygon class="campaign-world-layer layer-ridge layer-type-polygon" points="300,80 360,40 420,80">
+              </polygon>
+              <polyline class="campaign-world-layer layer-trail layer-type-polyline" points="120,360 240,330 380,350">
+              </polyline>
+              <text class="campaign-world-layer layer-label layer-type-text" x="120" y="60">North Reach</text>
+              <path class="campaign-world-layer layer-coast layer-type-path" d="M 0 260 Q 380 230 760 270">
+              </path>
+            </g>
+            <g>
+              <path class="campaign-world-road route-coastal risk-amber" d="M 200 200 Q 360 175 520 150">
+              </path>
+            </g>
+            <g class="campaign-world-node campaign-world-visual-node is-home is-active is-visited" data-world-node="n_commons" style="cursor:pointer">
+              <g class="campaign-world-node-marker" transform="translate(200 200) scale(1.15) translate(-200 -200)" opacity="0.95">
+                <rect class="node-building node-building-main" x="163" y="185" width="74" height="46" rx="5">
+                </rect>
+                <polygon class="node-building node-building-roof" points="200,174 237,192 163,192">
+                </polygon>
+                <rect class="node-window" x="176" y="198" width="10" height="10">
+                </rect>
+                <rect class="node-window" x="214" y="198" width="10" height="10">
+                </rect>
+              </g>
+              <foreignObject class="campaign-world-node-label-wrap" x="126" y="234" width="148" height="34" transform="translate(200 251) scale(1.1) translate(-200 -251)" opacity="1">
+                <div class="campaign-world-node-label-box">Tidewater Commons</div>
+              </foreignObject>
+              <foreignObject class="campaign-world-node-preview-wrap" x="218" y="88" width="214" height="98">
+                <div class="campaign-world-node-preview">
+                  <strong>Tidewater Commons</strong>
+                  <span>The salt-worn plaza where every road in Haven meets.</span>
+                  <em>2 activities here</em>
+                </div>
+              </foreignObject>
+            </g>
+            <g class="campaign-world-node campaign-world-visual-node is-route is-visited" data-world-node="n_crossing" style="cursor:pointer">
+              <g class="campaign-world-node-marker">
+                <circle class="node-route-ring" cx="520" cy="150" r="24">
+                </circle>
+                <path class="node-route-line" d="M 497 155 C 512 137, 528 169, 544 150">
+                </path>
+                <circle class="node-route-dot" cx="520" cy="150" r="5">
+                </circle>
+              </g>
+              <foreignObject class="campaign-world-node-label-wrap" x="446" y="184" width="148" height="34">
+                <div class="campaign-world-node-label-box">Old Crossing</div>
+              </foreignObject>
+              <foreignObject class="campaign-world-node-preview-wrap" x="538" y="38" width="214" height="98">
+                <div class="campaign-world-node-preview">
+                  <strong>Old Crossing</strong>
+                  <span>A weathered junction of three trade roads.</span>
+                  <em>Story / future activity slot</em>
+                </div>
+              </foreignObject>
+            </g>
+          </svg>
+          <div class="campaign-world-map-legend">
+            <span>
+              <i class="legend-dot safe">
+              </i>Safe route</span>
+              <span>
+                <i class="legend-dot amber">
+                </i>Caution</span>
+              </div>
+            </div>
+            <div class="campaign-world-location">
+              <div class="campaign-world-location-head">
+                <h3>Tidewater Commons</h3>
+                <span class="campaign-pill">hub</span>
+              </div>
+              <p>The salt-worn plaza where every road in Haven meets.</p>
+              <div class="campaign-world-location-activities">
+                <strong>Available here</strong>
+                <span>Barter at the docks</span>
+                <span>Listen for rumors</span>
+              </div>
+              <div class="campaign-panel-actions">
+                <button class="campaign-action primary" disabled="">Here</button>
+                <button class="campaign-action">Open Activities</button>
+              </div>
+              <h4>People</h4>
+              <div class="campaign-world-action-list">
+                <button class="campaign-action primary" title="Trade routes and tides.">Harbormaster Vell</button>
+              </div>
+              <h4>Local Actions</h4>
+              <div class="campaign-world-action-list">
+                <button class="campaign-action " title="Pin a job to the board.">Post a bounty</button>
+              </div>
+            </div>
+          </div>
+        </section>

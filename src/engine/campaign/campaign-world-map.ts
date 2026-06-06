@@ -17,11 +17,13 @@ export const CampaignWorldMap = (() => {
   const UI = () => window.CJS.UI;
 
   // renderTravelMap / renderActivities and their classic + visual SVG
-  // assemblers ported to JSX in Phase K.3. React reads typed
-  // getTravelMapData / getActivitiesData (below) and renders
-  // src/campaign/tabs/CampaignWorldMapTab.tsx. The SVG geometry helpers
-  // (_renderVisualLayers / _renderVisualRoads / _renderMarkerShape /
-  // node + label math) stay — the typed builders reuse them.
+  // assemblers ported to JSX in Phase K.3, then fully de-stringified in the
+  // switch-plan island closeout: the geometry helpers (_visualLayers /
+  // _visualRoads / _markerShapes / classic + visual node builders) now emit
+  // typed SVG-primitive objects ({ t: 'rect' | 'path' | … }) instead of raw
+  // SVG strings, so React renders real elements (no dangerouslySetInnerHTML)
+  // and diffs attributes on re-render. The only consumer is the typed bridge
+  // src/campaign/tabs/data/worldMap.ts → CampaignWorldMapTab.tsx.
 
   function handleAction(data: any = {}) {
     switch (data.campaignAction) {
@@ -127,39 +129,42 @@ export const CampaignWorldMap = (() => {
     return true;
   }
 
-  function _renderVisualLayers(map) {
+  function _visualLayers(map) {
     return (map.visualLayers || []).map((layer) => {
-      const cls = _layerClass(layer);
-      const common = `class="${_escAttr(cls)}"`;
+      const className = _layerClass(layer);
       switch (layer.type) {
         case 'rect':
-          return `<rect ${common} x="${Number(layer.x || 0)}" y="${Number(layer.y || 0)}" width="${Number(layer.width || layer.w || 0)}" height="${Number(layer.height || layer.h || 0)}" rx="${Number(layer.rx || 0)}"></rect>`;
+          return { t: 'rect', className, x: Number(layer.x || 0), y: Number(layer.y || 0), width: Number(layer.width || layer.w || 0), height: Number(layer.height || layer.h || 0), rx: Number(layer.rx || 0) };
         case 'ellipse':
-          return `<ellipse ${common} cx="${Number(layer.cx || layer.x || 0)}" cy="${Number(layer.cy || layer.y || 0)}" rx="${Number(layer.rx || layer.w || 0)}" ry="${Number(layer.ry || layer.h || 0)}"></ellipse>`;
+          return { t: 'ellipse', className, cx: Number(layer.cx || layer.x || 0), cy: Number(layer.cy || layer.y || 0), rx: Number(layer.rx || layer.w || 0), ry: Number(layer.ry || layer.h || 0) };
         case 'line':
-          return `<line ${common} x1="${Number(layer.x1 || 0)}" y1="${Number(layer.y1 || 0)}" x2="${Number(layer.x2 || 0)}" y2="${Number(layer.y2 || 0)}"></line>`;
+          return { t: 'line', className, x1: Number(layer.x1 || 0), y1: Number(layer.y1 || 0), x2: Number(layer.x2 || 0), y2: Number(layer.y2 || 0) };
         case 'polygon':
-          return `<polygon ${common} points="${_escAttr(layer.points || '')}"></polygon>`;
+          return { t: 'polygon', className, points: String(layer.points || '') };
         case 'polyline':
-          return `<polyline ${common} points="${_escAttr(layer.points || '')}"></polyline>`;
+          return { t: 'polyline', className, points: String(layer.points || '') };
         case 'text':
-          return `<text ${common} x="${Number(layer.x || 0)}" y="${Number(layer.y || 0)}">${_esc(layer.text || '')}</text>`;
+          return { t: 'text', className, x: Number(layer.x || 0), y: Number(layer.y || 0), text: String(layer.text || '') };
         case 'path':
         default:
-          return `<path ${common} d="${_escAttr(layer.d || '')}"></path>`;
+          return { t: 'path', className, d: String(layer.d || '') };
       }
-    }).join('');
+    });
   }
 
-  function _renderVisualRoads(map, nodeById) {
+  function _visualRoads(map, nodeById) {
     return (map.links || []).map((link) => {
       const from = nodeById[link.from];
       const to = nodeById[link.to];
-      if (!from || !to) return '';
+      if (!from || !to) return null;
       const midX = (Number(from.x || 0) + Number(to.x || 0)) / 2;
       const midY = (Number(from.y || 0) + Number(to.y || 0)) / 2;
-      return `<path d="M ${Number(from.x || 0)} ${Number(from.y || 0)} Q ${midX} ${midY} ${Number(to.x || 0)} ${Number(to.y || 0)}" class="campaign-world-road route-${_escAttr(_slug(link.route || 'road'))} risk-${_escAttr(_slug(link.risk || 'safe'))}"></path>`;
-    }).join('');
+      return {
+        t: 'path',
+        className: `campaign-world-road route-${_slug(link.route || 'road')} risk-${_slug(link.risk || 'safe')}`,
+        d: `M ${Number(from.x || 0)} ${Number(from.y || 0)} Q ${midX} ${midY} ${Number(to.x || 0)} ${Number(to.y || 0)}`
+      };
+    }).filter(Boolean);
   }
 
   function _nodeLabelPosition(node: any = {}, x = 0, y = 0, width = 760, map: any = {}) {
@@ -183,19 +188,19 @@ export const CampaignWorldMap = (() => {
     return Number.isFinite(num) && num > 0 ? num : fallback;
   }
 
-  function _opacityAttr(value) {
-    if (value == null) return '';
+  function _opacityValue(value) {
+    if (value == null) return null;
     const num = Number(value);
-    if (!Number.isFinite(num)) return '';
-    return ` opacity="${Math.min(1, Math.max(0, num))}"`;
+    if (!Number.isFinite(num)) return null;
+    return Math.min(1, Math.max(0, num));
   }
 
-  function _scaleTransform(cx, cy, scale = 1) {
-    if (!Number.isFinite(scale) || Math.abs(scale - 1) < 0.001) return '';
-    return ` transform="translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})"`;
+  function _scaleTransformValue(cx, cy, scale = 1) {
+    if (!Number.isFinite(scale) || Math.abs(scale - 1) < 0.001) return null;
+    return `translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`;
   }
 
-  function _renderMarkerShape(shape, x, y, active) {
+  function _markerShapes(shape, x, y, active) {
     const w = active ? 74 : 66;
     const h = active ? 52 : 46;
     const left = x - w / 2;
@@ -203,52 +208,70 @@ export const CampaignWorldMap = (() => {
     switch (shape) {
       case 'home':
       case 'apartment':
-        return `<rect class="node-building node-building-main" x="${left}" y="${top + 11}" width="${w}" height="${h - 6}" rx="5"></rect>
-          <polygon class="node-building node-building-roof" points="${x},${top} ${left + w},${top + 18} ${left},${top + 18}"></polygon>
-          <rect class="node-window" x="${left + 13}" y="${top + 24}" width="10" height="10"></rect>
-          <rect class="node-window" x="${left + w - 23}" y="${top + 24}" width="10" height="10"></rect>`;
+        return [
+          { t: 'rect', className: 'node-building node-building-main', x: left, y: top + 11, width: w, height: h - 6, rx: 5 },
+          { t: 'polygon', className: 'node-building node-building-roof', points: `${x},${top} ${left + w},${top + 18} ${left},${top + 18}` },
+          { t: 'rect', className: 'node-window', x: left + 13, y: top + 24, width: 10, height: 10 },
+          { t: 'rect', className: 'node-window', x: left + w - 23, y: top + 24, width: 10, height: 10 }
+        ];
       case 'campus':
-        return `<rect class="node-building node-building-main" x="${left}" y="${top + 12}" width="${w}" height="${h - 10}" rx="4"></rect>
-          <polygon class="node-building node-building-roof" points="${left + 6},${top + 15} ${x},${top} ${left + w - 6},${top + 15}"></polygon>
-          <line class="node-column" x1="${left + 17}" y1="${top + 21}" x2="${left + 17}" y2="${top + h - 3}"></line>
-          <line class="node-column" x1="${x}" y1="${top + 21}" x2="${x}" y2="${top + h - 3}"></line>
-          <line class="node-column" x1="${left + w - 17}" y1="${top + 21}" x2="${left + w - 17}" y2="${top + h - 3}"></line>`;
+        return [
+          { t: 'rect', className: 'node-building node-building-main', x: left, y: top + 12, width: w, height: h - 10, rx: 4 },
+          { t: 'polygon', className: 'node-building node-building-roof', points: `${left + 6},${top + 15} ${x},${top} ${left + w - 6},${top + 15}` },
+          { t: 'line', className: 'node-column', x1: left + 17, y1: top + 21, x2: left + 17, y2: top + h - 3 },
+          { t: 'line', className: 'node-column', x1: x, y1: top + 21, x2: x, y2: top + h - 3 },
+          { t: 'line', className: 'node-column', x1: left + w - 17, y1: top + 21, x2: left + w - 17, y2: top + h - 3 }
+        ];
       case 'hospital':
       case 'medical':
       case 'clinic':
-        return `<rect class="node-building node-building-main" x="${left}" y="${top}" width="${w}" height="${h}" rx="7"></rect>
-          <rect class="node-plus" x="${x - 6}" y="${top + 12}" width="12" height="${h - 24}"></rect>
-          <rect class="node-plus" x="${left + 15}" y="${y - 6}" width="${w - 30}" height="12"></rect>`;
+        return [
+          { t: 'rect', className: 'node-building node-building-main', x: left, y: top, width: w, height: h, rx: 7 },
+          { t: 'rect', className: 'node-plus', x: x - 6, y: top + 12, width: 12, height: h - 24 },
+          { t: 'rect', className: 'node-plus', x: left + 15, y: y - 6, width: w - 30, height: 12 }
+        ];
       case 'bookstore':
-        return `<rect class="node-building node-building-main" x="${left}" y="${top + 4}" width="${w}" height="${h}" rx="5"></rect>
-          <rect class="node-awning" x="${left + 6}" y="${top + 8}" width="${w - 12}" height="9"></rect>
-          <line class="node-column" x1="${left + 18}" y1="${top + 20}" x2="${left + 18}" y2="${top + h - 2}"></line>
-          <line class="node-column" x1="${left + w - 18}" y1="${top + 20}" x2="${left + w - 18}" y2="${top + h - 2}"></line>`;
+        return [
+          { t: 'rect', className: 'node-building node-building-main', x: left, y: top + 4, width: w, height: h, rx: 5 },
+          { t: 'rect', className: 'node-awning', x: left + 6, y: top + 8, width: w - 12, height: 9 },
+          { t: 'line', className: 'node-column', x1: left + 18, y1: top + 20, x2: left + 18, y2: top + h - 2 },
+          { t: 'line', className: 'node-column', x1: left + w - 18, y1: top + 20, x2: left + w - 18, y2: top + h - 2 }
+        ];
       case 'street':
       case 'route':
       case 'subway':
-        return `<circle class="node-route-ring" cx="${x}" cy="${y}" r="${active ? 28 : 24}"></circle>
-          <path class="node-route-line" d="M ${x - 23} ${y + 5} C ${x - 8} ${y - 13}, ${x + 8} ${y + 19}, ${x + 24} ${y}"></path>
-          <circle class="node-route-dot" cx="${x}" cy="${y}" r="5"></circle>`;
+        return [
+          { t: 'circle', className: 'node-route-ring', cx: x, cy: y, r: active ? 28 : 24 },
+          { t: 'path', className: 'node-route-line', d: `M ${x - 23} ${y + 5} C ${x - 8} ${y - 13}, ${x + 8} ${y + 19}, ${x + 24} ${y}` },
+          { t: 'circle', className: 'node-route-dot', cx: x, cy: y, r: 5 }
+        ];
       case 'base':
       case 'safehouse':
-        return `<rect class="node-building node-building-main" x="${left}" y="${top + 8}" width="${w}" height="${h - 2}" rx="6"></rect>
-          <path class="node-tarp" d="M ${left + 3} ${top + 17} L ${x - 6} ${top + 2} L ${left + w - 3} ${top + 17} Z"></path>
-          <rect class="node-window" x="${x - 5}" y="${y + 1}" width="10" height="14"></rect>`;
+        return [
+          { t: 'rect', className: 'node-building node-building-main', x: left, y: top + 8, width: w, height: h - 2, rx: 6 },
+          { t: 'path', className: 'node-tarp', d: `M ${left + 3} ${top + 17} L ${x - 6} ${top + 2} L ${left + w - 3} ${top + 17} Z` },
+          { t: 'rect', className: 'node-window', x: x - 5, y: y + 1, width: 10, height: 14 }
+        ];
       case 'scavenge':
       case 'mall':
-        return `<rect class="node-building node-building-main" x="${left}" y="${top + 6}" width="${w}" height="${h}" rx="6"></rect>
-          <rect class="node-awning" x="${left + 5}" y="${top + 10}" width="${w - 10}" height="11"></rect>
-          <rect class="node-window" x="${left + 12}" y="${top + 27}" width="14" height="12"></rect>
-          <rect class="node-window" x="${left + w - 26}" y="${top + 27}" width="14" height="12"></rect>`;
+        return [
+          { t: 'rect', className: 'node-building node-building-main', x: left, y: top + 6, width: w, height: h, rx: 6 },
+          { t: 'rect', className: 'node-awning', x: left + 5, y: top + 10, width: w - 10, height: 11 },
+          { t: 'rect', className: 'node-window', x: left + 12, y: top + 27, width: 14, height: 12 },
+          { t: 'rect', className: 'node-window', x: left + w - 26, y: top + 27, width: 14, height: 12 }
+        ];
       case 'objective':
       case 'tower':
-        return `<path class="node-tower" d="M ${x} ${top} L ${left + w - 10} ${top + h} L ${left + 10} ${top + h} Z"></path>
-          <line class="node-column" x1="${x}" y1="${top + 8}" x2="${x}" y2="${top + h}"></line>
-          <circle class="node-beacon" cx="${x}" cy="${top + 5}" r="8"></circle>`;
+        return [
+          { t: 'path', className: 'node-tower', d: `M ${x} ${top} L ${left + w - 10} ${top + h} L ${left + 10} ${top + h} Z` },
+          { t: 'line', className: 'node-column', x1: x, y1: top + 8, x2: x, y2: top + h },
+          { t: 'circle', className: 'node-beacon', cx: x, cy: top + 5, r: 8 }
+        ];
       default:
-        return `<circle class="node-route-ring" cx="${x}" cy="${y}" r="${active ? 25 : 21}"></circle>
-          <circle class="node-route-dot" cx="${x}" cy="${y}" r="9"></circle>`;
+        return [
+          { t: 'circle', className: 'node-route-ring', cx: x, cy: y, r: active ? 25 : 21 },
+          { t: 'circle', className: 'node-route-dot', cx: x, cy: y, r: 9 }
+        ];
     }
   }
 
@@ -441,14 +464,6 @@ export const CampaignWorldMap = (() => {
     return text.length > max ? `${text.slice(0, max - 1)}...` : text;
   }
 
-  function _esc(value) {
-    return String(value || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-  }
-
-  function _escAttr(value) {
-    return _esc(value);
-  }
-
   // ── K.3 typed bridges ──────────────────────────────────────────────
   // Structured data for the React World Activities tab. The travel-map
   // SVG ports separately; the activity / journal / pressure logic lives
@@ -547,8 +562,8 @@ export const CampaignWorldMap = (() => {
       nodeId: String(node.id || ''),
       classes: ['campaign-world-node', active ? 'is-active' : '', visited ? 'is-visited' : '']
         .filter(Boolean).join(' '),
-      innerSvg: `<circle cx="${x}" cy="${y}" r="${active ? 20 : 16}"></circle>`
-        + `<text x="${x}" y="${y + 34}" text-anchor="middle">${_esc(_short(node.name || node.id, 18))}</text>`
+      circle: { cx: x, cy: y, r: active ? 20 : 16 },
+      label: { x, y: y + 34, text: _short(node.name || node.id, 18) }
     };
   }
 
@@ -566,48 +581,58 @@ export const CampaignWorldMap = (() => {
     const markerScale = _scaleValue(active
       ? (visual.activeMarkerScale ?? map.visualActiveMarkerScale ?? visual.markerScale ?? map.visualMarkerScale)
       : (visual.markerScale ?? map.visualMarkerScale), 1);
-    const markerOpacity = _opacityAttr(active
+    const markerOpacity = _opacityValue(active
       ? (visual.activeMarkerOpacity ?? map.visualActiveMarkerOpacity ?? visual.markerOpacity ?? map.visualMarkerOpacity)
       : (visual.markerOpacity ?? map.visualMarkerOpacity));
     const labelScale = _scaleValue(active
       ? (visual.activeLabelScale ?? map.visualActiveLabelScale ?? visual.labelScale ?? map.visualLabelScale)
       : (visual.labelScale ?? map.visualLabelScale), 1);
-    const labelOpacity = _opacityAttr(active
+    const labelOpacity = _opacityValue(active
       ? (visual.activeLabelOpacity ?? map.visualActiveLabelOpacity ?? visual.labelOpacity ?? map.visualLabelOpacity)
       : (visual.labelOpacity ?? map.visualLabelOpacity));
     const labelHeight = _scaleValue(visual.labelHeight ?? map.visualLabelHeight, 34);
-    const markerTransform = _scaleTransform(x, y, markerScale);
-    const labelTransform = _scaleTransform(label.x + label.width / 2, label.y + labelHeight / 2, labelScale);
     const activityText = activities.length
       ? `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} here`
       : 'Story / future activity slot';
-    const innerSvg = `<g class="campaign-world-node-marker"${markerTransform}${markerOpacity}>
-        ${_renderMarkerShape(shape, x, y, active)}
-      </g>
-      <foreignObject class="campaign-world-node-label-wrap" x="${label.x}" y="${label.y}" width="${label.width}" height="${labelHeight}"${labelTransform}${labelOpacity}>
-        <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-label-box">${_esc(_short(node.name || node.id, 24))}</div>
-      </foreignObject>
-      <foreignObject class="campaign-world-node-preview-wrap" x="${previewX}" y="${previewY}" width="214" height="98">
-        <div xmlns="http://www.w3.org/1999/xhtml" class="campaign-world-node-preview">
-          <strong>${_esc(node.name || node.id)}</strong>
-          <span>${_esc(node.description || 'No notes yet.')}</span>
-          <em>${_esc(activityText)}</em>
-        </div>
-      </foreignObject>`;
     return {
       mapId: String(map.id || ''),
       nodeId: String(node.id || ''),
       classes: ['campaign-world-node', 'campaign-world-visual-node', `is-${shape}`,
         active ? 'is-active' : '', visited ? 'is-visited' : ''].filter(Boolean).join(' '),
-      innerSvg
+      marker: {
+        className: 'campaign-world-node-marker',
+        transform: _scaleTransformValue(x, y, markerScale) ?? undefined,
+        opacity: markerOpacity ?? undefined,
+        shapes: _markerShapes(shape, x, y, active)
+      },
+      label: {
+        x: label.x,
+        y: label.y,
+        width: label.width,
+        height: labelHeight,
+        transform: _scaleTransformValue(label.x + label.width / 2, label.y + labelHeight / 2, labelScale) ?? undefined,
+        opacity: labelOpacity ?? undefined,
+        text: _short(node.name || node.id, 24)
+      },
+      preview: {
+        x: previewX,
+        y: previewY,
+        width: 214,
+        height: 98,
+        name: String(node.name || node.id || ''),
+        description: String(node.description || 'No notes yet.'),
+        activityText
+      }
     };
   }
 
-  // K.3 — typed travel-map data. The intricate SVG geometry (markers,
-  // labels, layers, roads) stays as raw-SVG strings (no JSX attribute
-  // conversion risk); React owns the <section>, <svg>, the interactive
-  // <g> node wrappers (onClick travel), location-detail panel, and area
-  // buttons. Discriminated by `mode`.
+  // Typed travel-map data. The intricate SVG geometry (markers, labels,
+  // layers, roads, links, backdrop) is emitted as typed SVG-primitive objects
+  // ({ t: 'rect' | 'line' | 'path' | … }) — React renders them as real
+  // elements (CampaignWorldMapTab.tsx), so there is no dangerouslySetInnerHTML
+  // and attributes diff on re-render. React owns the <section>, <svg>, the
+  // interactive <g> node wrappers (onClick travel), location-detail panel,
+  // and area buttons. Discriminated by `mode`.
   function getTravelMapData(state = CS().getState()) {
     if (!state) return { hasMap: false };
     const map = _currentTravelMap(state);
@@ -642,23 +667,26 @@ export const CampaignWorldMap = (() => {
     if (!visual) {
       return {
         ...base,
-        linksHtml: (map.links || []).map((link) => {
+        links: (map.links || []).map((link) => {
           const from = nodeById[link.from];
           const to = nodeById[link.to];
-          if (!from || !to) return '';
-          return `<line x1="${Number(from.x || 0)}" y1="${Number(from.y || 0)}" x2="${Number(to.x || 0)}" y2="${Number(to.y || 0)}" class="campaign-world-link" />`;
-        }).join(''),
+          if (!from || !to) return null;
+          return { t: 'line', className: 'campaign-world-link', x1: Number(from.x || 0), y1: Number(from.y || 0), x2: Number(to.x || 0), y2: Number(to.y || 0) };
+        }).filter(Boolean),
         nodes: (map.nodes || []).map((node) => _classicNodeData(map, node, currentId, progress))
       };
     }
     const backdropUrl = backdrop;
     return {
       ...base,
-      backdropImageHtml: backdropUrl
-        ? `<image class="campaign-world-map-image" href="${_escAttr(_assetUrlForCss(backdropUrl))}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="${_escAttr(map.visualBackdropFit || 'xMidYMid slice')}"></image><rect x="0" y="0" width="${width}" height="${height}" rx="18" class="campaign-world-map-image-shade"></rect>`
-        : '',
-      layersHtml: _renderVisualLayers(map),
-      roadsHtml: _renderVisualRoads(map, nodeById),
+      backdrop: backdropUrl
+        ? [
+            { t: 'image', className: 'campaign-world-map-image', href: _assetUrlForCss(backdropUrl), x: 0, y: 0, width, height, preserveAspectRatio: String(map.visualBackdropFit || 'xMidYMid slice') },
+            { t: 'rect', className: 'campaign-world-map-image-shade', x: 0, y: 0, width, height, rx: 18 }
+          ]
+        : [],
+      layers: _visualLayers(map),
+      roads: _visualRoads(map, nodeById),
       legend: (map.legend || []).map((item) => ({
         kind: _slug(item.kind || item.id || 'dot'),
         label: String(item.label || item.name || item.id || '')

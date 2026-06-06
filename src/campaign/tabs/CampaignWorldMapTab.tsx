@@ -10,8 +10,11 @@ import { setActiveTab } from "../shell/bridge";
 import {
   getTravelMapData,
   getWorldActivitiesData,
-  type TravelMapData,
-  type TravelMapNode,
+  type TravelMapVisual,
+  type TravelMapClassic,
+  type TravelMapNodeVisual,
+  type TravelMapNodeClassic,
+  type SvgPrim,
   type TravelNodeButton,
   type TravelLocationDetail,
   type TravelAreaSwitcher,
@@ -24,12 +27,12 @@ interface Props {
   readonly state: CampaignStateSnapshot;
 }
 
-// World Map tab — K.3 JSX port (`renderTravelMap`). React owns the
-// <section>, <svg>, interactive node <g> wrappers (onClick travel),
-// location-detail panel, and area buttons; the intricate inner SVG
-// geometry (markers, labels, layers, roads, links) arrives as raw-SVG
-// strings via the typed bridge and is inserted with dangerouslySetInnerHTML
-// (no JSX attribute-conversion risk).
+// World Map tab — full JSX. React owns the <section>, <svg>, interactive node
+// <g> wrappers (onClick travel), location-detail panel, and area buttons. The
+// SVG geometry (markers, labels, layers, roads, links, backdrop) arrives from
+// the typed bridge as `SvgPrim` objects and is rendered as real elements by
+// <SvgPrimEl> — no dangerouslySetInnerHTML, and React diffs attributes on
+// re-render instead of re-parsing an HTML string.
 export function CampaignWorldMapTab({ state }: Props) {
   const data = getTravelMapData(state);
   if (!data) {
@@ -98,38 +101,129 @@ export function CampaignWorldMapTab({ state }: Props) {
   );
 }
 
-function TravelSvg({ data }: { data: Extract<TravelMapData, { hasMap: true }> }) {
+function TravelSvg({ data }: { data: TravelMapVisual | TravelMapClassic }) {
   const { width, height } = data.canvas;
   const cls = data.mode === "visual" ? "campaign-world-map-canvas is-visual" : "campaign-world-map-canvas";
   const bgRx = data.mode === "visual" ? 18 : 8;
   return (
     <svg className={cls} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={data.title}>
-      <rect x="0" y="0" width={width} height={height} rx={bgRx} className="campaign-world-map-bg" />
+      <rect x={0} y={0} width={width} height={height} rx={bgRx} className="campaign-world-map-bg" />
       {data.mode === "visual" ? (
         <>
-          {data.backdropImageHtml && <g dangerouslySetInnerHTML={{ __html: data.backdropImageHtml }} />}
-          {data.layersHtml && <g dangerouslySetInnerHTML={{ __html: data.layersHtml }} />}
-          {data.roadsHtml && <g dangerouslySetInnerHTML={{ __html: data.roadsHtml }} />}
+          {data.backdrop.length > 0 && <g>{data.backdrop.map((el, i) => <SvgPrimEl key={i} el={el} />)}</g>}
+          {data.layers.length > 0 && <g>{data.layers.map((el, i) => <SvgPrimEl key={i} el={el} />)}</g>}
+          {data.roads.length > 0 && <g>{data.roads.map((el, i) => <SvgPrimEl key={i} el={el} />)}</g>}
+          {data.nodes.map((node) => (
+            <TravelNodeVisual key={node.nodeId} node={node} />
+          ))}
         </>
       ) : (
-        data.linksHtml && <g dangerouslySetInnerHTML={{ __html: data.linksHtml }} />
+        <>
+          {data.links.length > 0 && <g>{data.links.map((el, i) => <SvgPrimEl key={i} el={el} />)}</g>}
+          {data.nodes.map((node) => (
+            <TravelNodeClassic key={node.nodeId} node={node} />
+          ))}
+        </>
       )}
-      {data.nodes.map((node) => (
-        <TravelNode key={node.nodeId} node={node} />
-      ))}
     </svg>
   );
 }
 
-function TravelNode({ node }: { node: TravelMapNode }) {
+// Render one typed SVG primitive as a real element. This single seam replaced
+// the world-map dangerouslySetInnerHTML islands; the discriminated union keeps
+// adding a new shape a compile-time-checked change.
+function SvgPrimEl({ el }: { el: SvgPrim }) {
+  switch (el.t) {
+    case "rect":
+      return <rect className={el.className} x={el.x} y={el.y} width={el.width} height={el.height} rx={el.rx} />;
+    case "ellipse":
+      return <ellipse className={el.className} cx={el.cx} cy={el.cy} rx={el.rx} ry={el.ry} />;
+    case "line":
+      return <line className={el.className} x1={el.x1} y1={el.y1} x2={el.x2} y2={el.y2} />;
+    case "polygon":
+      return <polygon className={el.className} points={el.points} />;
+    case "polyline":
+      return <polyline className={el.className} points={el.points} />;
+    case "text":
+      return (
+        <text className={el.className} x={el.x} y={el.y} textAnchor={el.textAnchor}>
+          {el.text}
+        </text>
+      );
+    case "path":
+      return <path className={el.className} d={el.d} />;
+    case "circle":
+      return <circle className={el.className} cx={el.cx} cy={el.cy} r={el.r} />;
+    case "image":
+      return (
+        <image
+          className={el.className}
+          href={el.href}
+          x={el.x}
+          y={el.y}
+          width={el.width}
+          height={el.height}
+          preserveAspectRatio={el.preserveAspectRatio}
+        />
+      );
+  }
+}
+
+function TravelNodeVisual({ node }: { node: TravelMapNodeVisual }) {
+  const { marker, label, preview } = node;
   return (
     <g
       className={node.classes}
       data-world-node={node.nodeId}
       style={{ cursor: "pointer" }}
       onClick={() => dispatchCampaignAction("world-map-travel", { mapId: node.mapId, nodeId: node.nodeId })}
-      dangerouslySetInnerHTML={{ __html: node.innerSvg }}
-    />
+    >
+      <g className={marker.className} transform={marker.transform} opacity={marker.opacity}>
+        {marker.shapes.map((el, i) => (
+          <SvgPrimEl key={i} el={el} />
+        ))}
+      </g>
+      <foreignObject
+        className="campaign-world-node-label-wrap"
+        x={label.x}
+        y={label.y}
+        width={label.width}
+        height={label.height}
+        transform={label.transform}
+        opacity={label.opacity}
+      >
+        <div className="campaign-world-node-label-box">{label.text}</div>
+      </foreignObject>
+      <foreignObject
+        className="campaign-world-node-preview-wrap"
+        x={preview.x}
+        y={preview.y}
+        width={preview.width}
+        height={preview.height}
+      >
+        <div className="campaign-world-node-preview">
+          <strong>{preview.name}</strong>
+          <span>{preview.description}</span>
+          <em>{preview.activityText}</em>
+        </div>
+      </foreignObject>
+    </g>
+  );
+}
+
+function TravelNodeClassic({ node }: { node: TravelMapNodeClassic }) {
+  return (
+    <g
+      className={node.classes}
+      data-world-node={node.nodeId}
+      style={{ cursor: "pointer" }}
+      onClick={() => dispatchCampaignAction("world-map-travel", { mapId: node.mapId, nodeId: node.nodeId })}
+    >
+      <circle cx={node.circle.cx} cy={node.circle.cy} r={node.circle.r} />
+      <text x={node.label.x} y={node.label.y} textAnchor="middle">
+        {node.label.text}
+      </text>
+    </g>
   );
 }
 
