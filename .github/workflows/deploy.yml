@@ -40,6 +40,10 @@ jobs:
       # we publish it to Pages.
       - run: npm run smoke:http
 
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run smoke:browser
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

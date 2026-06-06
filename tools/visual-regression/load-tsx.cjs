@@ -51,6 +51,12 @@ function createLoader() {
   function load(absPath) {
     if (cache.has(absPath)) return cache.get(absPath);
 
+    if (/\.css$/i.test(absPath)) {
+      const cssModule = {};
+      cache.set(absPath, cssModule);
+      return cssModule;
+    }
+
     const source = fs.readFileSync(absPath, "utf8");
     const { outputText } = ts.transpileModule(source, {
       compilerOptions: {

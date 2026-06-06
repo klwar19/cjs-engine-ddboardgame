@@ -3,13 +3,13 @@
 
 @font-face {
   font-family: "Kenney Future";
-  src: url("../assets/ui/kenney-scifi/font/Kenney%20Future.ttf") format("truetype");
+  src: url("/assets/ui/kenney-scifi/font/Kenney%20Future.ttf") format("truetype");
   font-display: swap;
 }
 
 @font-face {
   font-family: "Kenney Future Narrow";
-  src: url("../assets/ui/kenney-scifi/font/Kenney%20Future%20Narrow.ttf") format("truetype");
+  src: url("/assets/ui/kenney-scifi/font/Kenney%20Future%20Narrow.ttf") format("truetype");
   font-display: swap;
 }
 
@@ -2190,7 +2190,7 @@ body {
   font-weight: 800;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(225, 244, 255, 0.54)),
-    url("../assets/ui/kenney-scifi/png/button_square_header_notch_rectangle.png");
+    url("/assets/ui/kenney-scifi/png/button_square_header_notch_rectangle.png");
   background-size: 100% 100%;
   background-blend-mode: screen;
 }

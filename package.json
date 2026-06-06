@@ -16,10 +16,12 @@
     "size:check": "node tools/build-size-check.mjs",
     "size:baseline": "node tools/build-size-check.mjs --update",
     "smoke:http": "node test_http_smoke.js",
+    "smoke:browser": "playwright test tests/real-paint.spec.cjs --browser=chromium",
     "art:optimize": "python3 tools/optimize-art.py",
     "icons": "node tools/make-pwa-icons.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",

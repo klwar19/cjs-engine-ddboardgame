@@ -2,6 +2,7 @@
 // visual-novel hero, solo guide ladder, and control deck. Shared
 // between StoryHome and StoryDirector tabs.
 
+import "../../../css/visual-novel.css";
 import { dispatchCampaignAction } from "../actions";
 import type {
   StoryVnHeroData,

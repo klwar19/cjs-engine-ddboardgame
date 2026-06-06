@@ -99,8 +99,6 @@ import "./story-context";
 // the remaining JS callers (pocket-haven / scenario-runner / hot-reload).
 import "./shell/boot";
 import "../engine/ui/audio-manager";
-import "../engine/ui/l2d-avatar";
-import "../engine/ui/l2d-companion";
 // Phase H.3 — installs window.CJS.CampaignActionsRuntime so the action
 // dispatch seam (boot.ts handleAction) routes every action to its TS
 // handler. Loads after the boot install above, before the React app mounts.

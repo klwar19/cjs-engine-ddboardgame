@@ -6,6 +6,14 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 import { pwaManifest, workboxOptions } from "./pwa.config.mjs";
 
 const root = process.cwd();
+const cssTarget = (major, minor = 0, patch = 0) => (major << 16) | (minor << 8) | patch;
+const cssTargets = {
+  chrome: cssTarget(91),
+  edge: cssTarget(91),
+  firefox: cssTarget(90),
+  safari: cssTarget(14, 1),
+  ios_saf: cssTarget(14, 5)
+};
 
 // Dev-only: when a data/*.json content file changes on disk (a hand edit, an
 // import, or the authoring CLI), push a custom HMR event so the browser
@@ -40,6 +48,12 @@ function cjsDataHotReload() {
 
 export default defineConfig({
   base: "./",
+  css: {
+    transformer: "lightningcss",
+    lightningcss: {
+      targets: cssTargets
+    }
+  },
   plugins: [
     react(),
     cjsDataHotReload(),

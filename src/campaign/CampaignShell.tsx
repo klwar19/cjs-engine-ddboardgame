@@ -22,6 +22,7 @@ import { getChromeData } from "./shell/bridge";
 import { PartyDrawer } from "./shell/PartyDrawer";
 import { NotesPanel } from "./shell/NotesPanel";
 import { QuestsDrawerPanel, LogDrawerPanel } from "./shell/DrawerPanels";
+import { ensureCampaignL2d } from "./lazy-l2d";
 // Tab bodies are React.lazy'd (Phase I.4) so the campaign entry chunk ships
 // only the chrome + the active tab; the rest download on first visit (and the
 // PWA precaches them in the background). Multi-export files
@@ -177,11 +178,12 @@ export function CampaignShell() {
         await UI.init(mount);
         c.ScenePlayer?.wireCampaign?.();
         c.CampaignSequenceVN?.init?.();
-        if (c.L2DCompanion?.init) {
-          c.L2DCompanion
-            .init({ mode: "campaign" })
-            .catch((err: unknown) => console.warn("L2D init:", err));
-        }
+        ensureCampaignL2d()
+          .then(() => {
+            if (cancelled) return undefined;
+            return cjs().L2DCompanion?.init?.({ mode: "campaign" });
+          })
+          .catch((err: unknown) => console.warn("L2D init:", err));
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         console.error("Campaign init failed:", error);

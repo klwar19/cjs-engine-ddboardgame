@@ -15,6 +15,7 @@
 // only ever called against this tab's #campaign-map-region, so importing it
 // from the lazy Maps tab loads the chunk exactly when (and only when) it's
 // needed — with no render-timing window.
+import "../../../css/visual-novel.css";
 import "../../engine/campaign/campaign-map";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";

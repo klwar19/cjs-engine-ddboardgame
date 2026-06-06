@@ -1041,11 +1041,11 @@ body.combat-popup-open .campaign-root > :not(.combat-popup-shell) {
 }
 
 /* Map theme backdrops, applied via JS through inline style attribute */
-.campaign-map-canvas[data-theme="haven"]   { --map-theme-bg: url('../images/story-mode/haven/frostwood-vn.png'); }
-.campaign-map-canvas[data-theme="zombie"]  { --map-theme-bg: url('../images/story-mode/zombie/rot-city-vn.webp'); }
+.campaign-map-canvas[data-theme="haven"]   { --map-theme-bg: url('/images/story-mode/haven/frostwood-vn.png'); }
+.campaign-map-canvas[data-theme="zombie"]  { --map-theme-bg: url('/images/story-mode/zombie/rot-city-vn.webp'); }
 
-.campaign-grid-map:not(.v2)[data-theme="haven"]   { --grid-theme-bg: linear-gradient(180deg, rgba(20, 30, 22, 0.85), rgba(8, 14, 10, 0.92)), url('../images/story-mode/haven/frostwood-vn.png'); }
-.campaign-grid-map:not(.v2)[data-theme="zombie"]  { --grid-theme-bg: linear-gradient(180deg, rgba(28, 18, 18, 0.85), rgba(10, 6, 6, 0.92)), url('../images/story-mode/zombie/rot-city-vn.webp'); }
+.campaign-grid-map:not(.v2)[data-theme="haven"]   { --grid-theme-bg: linear-gradient(180deg, rgba(20, 30, 22, 0.85), rgba(8, 14, 10, 0.92)), url('/images/story-mode/haven/frostwood-vn.png'); }
+.campaign-grid-map:not(.v2)[data-theme="zombie"]  { --grid-theme-bg: linear-gradient(180deg, rgba(28, 18, 18, 0.85), rgba(10, 6, 6, 0.92)), url('/images/story-mode/zombie/rot-city-vn.webp'); }
 
 /* ──────────────────────────────────────────────────────────────
    Branching chapter UI in Story Controls

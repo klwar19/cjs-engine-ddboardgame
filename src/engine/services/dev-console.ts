@@ -332,6 +332,8 @@ export const DevConsole = (() => {
   return Object.freeze({ init, toggle });
 })();
 
+window.CJS.DevConsole = DevConsole;
+
 // Auto-init: bind the keyboard shortcut. The console itself stays hidden
 // until the developer toggles it.
 if (typeof document !== 'undefined') {
@@ -343,4 +345,3 @@ if (typeof document !== 'undefined') {
 }
 
 // Runtime compatibility install — identical to the legacy IIFE.
-window.CJS.DevConsole = DevConsole;

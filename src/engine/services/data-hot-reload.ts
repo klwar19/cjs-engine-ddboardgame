@@ -82,6 +82,8 @@ export const DataHotReload = (() => {
   return Object.freeze({ init, dispose, onBatch });
 })();
 
+window.CJS.DataHotReload = DataHotReload;
+
 // Auto-init when the page loads. Pages can call CJS.DataHotReload.dispose()
 // during teardown if they need to.
 if (typeof document !== 'undefined') {
@@ -93,4 +95,3 @@ if (typeof document !== 'undefined') {
 }
 
 // Runtime compatibility install — identical to the legacy IIFE.
-window.CJS.DataHotReload = DataHotReload;

@@ -4,6 +4,7 @@
 // main.tsx exactly, so the registration sequence is unchanged. Importing this
 // single module pulls the whole set (Vite groups them into the cjs-minigames /
 // cjs-qte chunks). Loaded on demand via ./lazy-minigames, never at boot.
+import "../../css/minigames.css";
 import "../engine/minigames/minigame-registry";
 import "../engine/minigames/minigame-sprites";
 import "../engine/minigames/mummy-maze";

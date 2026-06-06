@@ -1,12 +1,12 @@
 @font-face {
   font-family: "Kenney Future";
-  src: url("../assets/ui/kenney-scifi/font/Kenney%20Future.ttf") format("truetype");
+  src: url("/assets/ui/kenney-scifi/font/Kenney%20Future.ttf") format("truetype");
   font-display: swap;
 }
 
 @font-face {
   font-family: "Kenney Future Narrow";
-  src: url("../assets/ui/kenney-scifi/font/Kenney%20Future%20Narrow.ttf") format("truetype");
+  src: url("/assets/ui/kenney-scifi/font/Kenney%20Future%20Narrow.ttf") format("truetype");
   font-display: swap;
 }
 
@@ -2163,7 +2163,7 @@ summary.campaign-roster-actions-title {
   display: block;
   width: 100%;
   height: 100%;
-  background-image: url('../images/characters/bin_sprite.png');
+  background-image: url('/images/characters/bin_sprite.png');
   background-repeat: no-repeat;
   background-size: 400% 400%;
   background-position: 0% 0%;
@@ -3906,7 +3906,7 @@ body.campaign-page::before {
   position: absolute;
   inset: 4px;
   border-radius: 4px;
-  background-image: url("../images/farming/farm-sprite-atlas.png"), linear-gradient(135deg, rgba(255,255,255,0.06), rgba(0,0,0,0.08));
+  background-image: url("/images/farming/farm-sprite-atlas.png"), linear-gradient(135deg, rgba(255,255,255,0.06), rgba(0,0,0,0.08));
   background-size: 480px 480px, auto;
   background-position: -32px -32px, center;
   image-rendering: pixelated;
@@ -3975,7 +3975,7 @@ body.campaign-page::before {
   height: 56%;
   border-radius: 50% 50% 44% 44%;
   background:
-    url("../images/farming/farm-sprite-atlas.png"),
+    url("/images/farming/farm-sprite-atlas.png"),
     radial-gradient(circle at 50% 35%, #dff5b0, #7aae52 56%, #355d34 58%);
   background-size: 480px 480px, auto;
   background-position: -128px -32px, center;
@@ -3988,7 +3988,7 @@ body.campaign-page::before {
 .farm-crop.crop-stage-ready,
 .farm-tile.is-ready .farm-crop {
   background:
-    url("../images/farming/farm-sprite-atlas.png"),
+    url("/images/farming/farm-sprite-atlas.png"),
     radial-gradient(circle at 50% 34%, #eef7ff, #9bc9e8 48%, #586b96 56%);
   background-size: 480px 480px, auto;
   background-position: -192px -32px, center;
@@ -4008,7 +4008,7 @@ body.campaign-page::before {
   height: 100%;
   border-radius: 48% 48% 38% 38%;
   background:
-    url("../images/farming/farm-sprite-atlas.png"),
+    url("/images/farming/farm-sprite-atlas.png"),
     linear-gradient(180deg, #f6ecd1 0 24%, #76d3b1 25% 62%, #26393a 63%);
   background-size: 480px 480px, auto;
   background-position: -32px -128px, center;
@@ -4281,26 +4281,26 @@ body.campaign-page::before {
   --farm-grass: #3f7a45;
   --farm-grass-hi: #9ed36d;
   --farm-water: #57b5d4;
-  --farm-player-sprite: url("../images/farming/farmer-from-atlas.png");
+  --farm-player-sprite: url("/images/farming/farmer-from-atlas.png");
   --farm-player-frame-down: 0 0;
   --farm-player-frame-up: 33.333% 0;
   --farm-player-frame-left: 66.666% 0;
   --farm-player-frame-right: 100% 0;
-  --farm-tile-grass: url("../images/farming/tile-grass.png");
-  --farm-tile-soil: url("../images/farming/tile-soil.png");
-  --farm-tile-watered-soil: url("../images/farming/tile-watered-soil.png");
-  --farm-tile-tall-grass: url("../images/farming/tile-tall-grass.png");
-  --farm-crop-seed: url("../images/farming/crop-seed.png");
-  --farm-crop-sprout: url("../images/farming/crop-sprout.png");
-  --farm-crop-leaf: url("../images/farming/crop-leaf.png");
-  --farm-crop-mushroom: url("../images/farming/crop-mushroom.png");
-  --farm-crop-ready-mushroom: url("../images/farming/crop-ready-mushroom.png");
-  --farm-tool-hand: url("../images/farming/tool-hand.png");
-  --farm-tool-hoe: url("../images/farming/tool-hoe.png");
-  --farm-tool-seed: url("../images/farming/tool-seed.png");
-  --farm-tool-water: url("../images/farming/tool-water.png");
-  --farm-tool-fertilizer: url("../images/farming/tool-fertilizer.png");
-  --farm-tool-scythe: url("../images/farming/tool-scythe.png");
+  --farm-tile-grass: url("/images/farming/tile-grass.png");
+  --farm-tile-soil: url("/images/farming/tile-soil.png");
+  --farm-tile-watered-soil: url("/images/farming/tile-watered-soil.png");
+  --farm-tile-tall-grass: url("/images/farming/tile-tall-grass.png");
+  --farm-crop-seed: url("/images/farming/crop-seed.png");
+  --farm-crop-sprout: url("/images/farming/crop-sprout.png");
+  --farm-crop-leaf: url("/images/farming/crop-leaf.png");
+  --farm-crop-mushroom: url("/images/farming/crop-mushroom.png");
+  --farm-crop-ready-mushroom: url("/images/farming/crop-ready-mushroom.png");
+  --farm-tool-hand: url("/images/farming/tool-hand.png");
+  --farm-tool-hoe: url("/images/farming/tool-hoe.png");
+  --farm-tool-seed: url("/images/farming/tool-seed.png");
+  --farm-tool-water: url("/images/farming/tool-water.png");
+  --farm-tool-fertilizer: url("/images/farming/tool-fertilizer.png");
+  --farm-tool-scythe: url("/images/farming/tool-scythe.png");
   position: relative;
 }
 
@@ -6021,7 +6021,7 @@ body.campaign-page {
   user-select: none;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(225, 244, 255, 0.54)),
-    url("../assets/ui/kenney-scifi/png/button_square_header_notch_rectangle.png");
+    url("/assets/ui/kenney-scifi/png/button_square_header_notch_rectangle.png");
   background-size: 100% 100%;
   background-blend-mode: screen;
 }
@@ -6500,7 +6500,7 @@ body.campaign-page {
   border-radius: 8px;
   background:
     linear-gradient(115deg, rgba(14, 31, 39, 0.5), rgba(37, 47, 36, 0.26)),
-    var(--campaign-home-backdrop, url("../images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
+    var(--campaign-home-backdrop, url("/images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
 }
 
@@ -6516,13 +6516,13 @@ body.campaign-page {
   border-color: rgba(127, 185, 255, 0.44);
   background:
     linear-gradient(115deg, rgba(20, 35, 44, 0.52), rgba(32, 49, 47, 0.3)),
-    var(--campaign-home-backdrop, url("../images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
+    var(--campaign-home-backdrop, url("/images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
 }
 
 .campaign-gacha-hero.is-activities {
   background:
     linear-gradient(110deg, rgba(15, 27, 24, 0.48), rgba(39, 47, 31, 0.24)),
-    var(--campaign-home-backdrop, url("../images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
+    var(--campaign-home-backdrop, url("/images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
 }
 
 .campaign-sequence-grid {
@@ -6601,7 +6601,7 @@ body.campaign-page {
   padding: 18px 20px;
   background:
     linear-gradient(180deg, rgba(8, 16, 28, 0.62), rgba(6, 14, 24, 0.62)),
-    var(--story-backdrop, url("../images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
+    var(--story-backdrop, url("/images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
   background-blend-mode: normal;
 }
 
@@ -6638,7 +6638,7 @@ body.campaign-page {
   border-color: rgba(243, 220, 146, 0.48);
   background:
     linear-gradient(115deg, rgba(37, 28, 32, 0.52), rgba(31, 47, 46, 0.28)),
-    var(--campaign-home-backdrop, url("../images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
+    var(--campaign-home-backdrop, url("/images/story-mode/haven/frostwood-vn.png")) center / cover no-repeat;
 }
 
 .campaign-gacha-hero-copy,
@@ -7706,7 +7706,7 @@ body.campaign-page {
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background-image: var(--seq-vn-speaker-avatar, url('../assets/sprites/bin_marker.svg'));
+  background-image: var(--seq-vn-speaker-avatar, url('/assets/sprites/bin_marker.svg'));
   background-position: center 18%;
   background-size: 180% auto;
   background-repeat: no-repeat;
@@ -7967,45 +7967,45 @@ body.campaign-page {
   margin: 0;
   border: none;
   background:
-    var(--tile-bg, url('../assets/grid/tile_snow.svg')) center / cover no-repeat;
+    var(--tile-bg, url('/assets/grid/tile_snow.svg')) center / cover no-repeat;
   cursor: pointer;
   overflow: visible;
   outline: 1px solid rgba(0, 0, 0, 0.35);
   transition: transform 120ms ease, filter 160ms ease;
 }
 
-.campaign-grid-cell.v2.kind-grass    { --tile-bg: url('../assets/grid/tile_grass.svg'); }
-.campaign-grid-cell.v2.kind-forest   { --tile-bg: url('../assets/grid/tile_forest.svg'); }
+.campaign-grid-cell.v2.kind-grass    { --tile-bg: url('/assets/grid/tile_grass.svg'); }
+.campaign-grid-cell.v2.kind-forest   { --tile-bg: url('/assets/grid/tile_forest.svg'); }
 .campaign-grid-cell.v2.kind-dirt,
-.campaign-grid-cell.v2.kind-mud      { --tile-bg: url('../assets/grid/tile_dirt.svg'); }
-.campaign-grid-cell.v2.kind-stone    { --tile-bg: url('../assets/grid/tile_stone.svg'); }
+.campaign-grid-cell.v2.kind-mud      { --tile-bg: url('/assets/grid/tile_dirt.svg'); }
+.campaign-grid-cell.v2.kind-stone    { --tile-bg: url('/assets/grid/tile_stone.svg'); }
 /* "floor" is a setting-flexible generic — defaults to stone but per-setting
    overrides below remap it. */
-.campaign-grid-cell.v2.kind-floor    { --tile-bg: url('../assets/grid/tile_stone.svg'); }
+.campaign-grid-cell.v2.kind-floor    { --tile-bg: url('/assets/grid/tile_stone.svg'); }
 .campaign-grid-cell.v2.kind-wall,
 .campaign-grid-cell.v2.kind-obstacle,
 .campaign-grid-cell.v2.kind-rock,
-.campaign-grid-cell.v2.kind-pillar   { --tile-bg: url('../assets/grid/tile_wall.svg'); }
-.campaign-grid-cell.v2.kind-water    { --tile-bg: url('../assets/grid/tile_water.svg'); }
+.campaign-grid-cell.v2.kind-pillar   { --tile-bg: url('/assets/grid/tile_wall.svg'); }
+.campaign-grid-cell.v2.kind-water    { --tile-bg: url('/assets/grid/tile_water.svg'); }
 .campaign-grid-cell.v2.kind-path,
-.campaign-grid-cell.v2.kind-road     { --tile-bg: url('../assets/grid/tile_path.svg'); }
+.campaign-grid-cell.v2.kind-road     { --tile-bg: url('/assets/grid/tile_path.svg'); }
 .campaign-grid-cell.v2.kind-snow,
-.campaign-grid-cell.v2.kind-frost    { --tile-bg: url('../assets/grid/tile_snow.svg'); }
-.campaign-grid-cell.v2.kind-ice      { --tile-bg: url('../assets/grid/tile_ice.svg'); }
+.campaign-grid-cell.v2.kind-frost    { --tile-bg: url('/assets/grid/tile_snow.svg'); }
+.campaign-grid-cell.v2.kind-ice      { --tile-bg: url('/assets/grid/tile_ice.svg'); }
 .campaign-grid-cell.v2.kind-rubble,
-.campaign-grid-cell.v2.kind-broken   { --tile-bg: url('../assets/grid/tile_rubble.svg'); }
+.campaign-grid-cell.v2.kind-broken   { --tile-bg: url('/assets/grid/tile_rubble.svg'); }
 .campaign-grid-cell.v2.kind-sand,
-.campaign-grid-cell.v2.kind-dune     { --tile-bg: url('../assets/grid/tile_sand.svg'); }
+.campaign-grid-cell.v2.kind-dune     { --tile-bg: url('/assets/grid/tile_sand.svg'); }
 .campaign-grid-cell.v2.kind-swamp,
 .campaign-grid-cell.v2.kind-bog,
-.campaign-grid-cell.v2.kind-marsh    { --tile-bg: url('../assets/grid/tile_swamp.svg'); }
+.campaign-grid-cell.v2.kind-marsh    { --tile-bg: url('/assets/grid/tile_swamp.svg'); }
 .campaign-grid-cell.v2.kind-lava,
-.campaign-grid-cell.v2.kind-magma    { --tile-bg: url('../assets/grid/tile_lava.svg'); }
-.campaign-grid-cell.v2.kind-sewer    { --tile-bg: url('../assets/grid/tile_sewer.svg'); }
+.campaign-grid-cell.v2.kind-magma    { --tile-bg: url('/assets/grid/tile_lava.svg'); }
+.campaign-grid-cell.v2.kind-sewer    { --tile-bg: url('/assets/grid/tile_sewer.svg'); }
 .campaign-grid-cell.v2.kind-cave,
-.campaign-grid-cell.v2.kind-cavern   { --tile-bg: url('../assets/grid/tile_cave.svg'); }
-.campaign-grid-cell.v2.kind-brick    { --tile-bg: url('../assets/grid/tile_brick.svg'); }
-.campaign-grid-cell.v2.kind-unknown  { --tile-bg: url('../assets/grid/tile_stone.svg'); }
+.campaign-grid-cell.v2.kind-cavern   { --tile-bg: url('/assets/grid/tile_cave.svg'); }
+.campaign-grid-cell.v2.kind-brick    { --tile-bg: url('/assets/grid/tile_brick.svg'); }
+.campaign-grid-cell.v2.kind-unknown  { --tile-bg: url('/assets/grid/tile_stone.svg'); }
 
 /* Per-setting overrides for the generic "floor" tile so the same author
    data ("floor") reads as the appropriate ground per setting without
@@ -8013,46 +8013,46 @@ body.campaign-page {
    etc.) keep their specific art. */
 .campaign-grid-map.v2[data-setting="forest"]    .campaign-grid-cell.v2.kind-floor,
 .campaign-grid-map.v2[data-setting="forest"]    .campaign-grid-cell.v2.kind-stone {
-  --tile-bg: url('../assets/grid/tile_dirt.svg');
+  --tile-bg: url('/assets/grid/tile_dirt.svg');
 }
 /* Haven-themed outdoor maps default to snow ground; non-haven outdoor
    stays as the default stone/grass mix. */
 .campaign-grid-map.v2[data-theme="haven"][data-setting="outdoor"]   .campaign-grid-cell.v2.kind-floor,
 .campaign-grid-map.v2[data-setting="snowfield"]                     .campaign-grid-cell.v2.kind-floor,
 .campaign-grid-map.v2[data-setting="snowfield"]                     .campaign-grid-cell.v2.kind-stone {
-  --tile-bg: url('../assets/grid/tile_snow.svg');
+  --tile-bg: url('/assets/grid/tile_snow.svg');
 }
 .campaign-grid-map.v2[data-theme="zombie"][data-setting="outdoor"]  .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_rubble.svg');
+  --tile-bg: url('/assets/grid/tile_rubble.svg');
 }
 .campaign-grid-map.v2[data-setting="outdoor"]:not([data-theme="haven"]):not([data-theme="zombie"]) .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_grass.svg');
+  --tile-bg: url('/assets/grid/tile_grass.svg');
 }
 .campaign-grid-map.v2[data-setting="urban"]    .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_brick.svg');
+  --tile-bg: url('/assets/grid/tile_brick.svg');
 }
 .campaign-grid-map.v2[data-setting="sewer"]    .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_sewer.svg');
+  --tile-bg: url('/assets/grid/tile_sewer.svg');
 }
 .campaign-grid-map.v2[data-setting="cave"]     .campaign-grid-cell.v2.kind-floor,
 .campaign-grid-map.v2[data-setting="cave"]     .campaign-grid-cell.v2.kind-stone {
-  --tile-bg: url('../assets/grid/tile_cave.svg');
+  --tile-bg: url('/assets/grid/tile_cave.svg');
 }
 .campaign-grid-map.v2[data-setting="volcano"]  .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_lava.svg');
+  --tile-bg: url('/assets/grid/tile_lava.svg');
 }
 .campaign-grid-map.v2[data-setting="ruins"]    .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_rubble.svg');
+  --tile-bg: url('/assets/grid/tile_rubble.svg');
 }
 .campaign-grid-map.v2[data-setting="desert"]   .campaign-grid-cell.v2.kind-floor,
 .campaign-grid-map.v2[data-setting="desert"]   .campaign-grid-cell.v2.kind-stone {
-  --tile-bg: url('../assets/grid/tile_sand.svg');
+  --tile-bg: url('/assets/grid/tile_sand.svg');
 }
 .campaign-grid-map.v2[data-setting="swamp"]    .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_swamp.svg');
+  --tile-bg: url('/assets/grid/tile_swamp.svg');
 }
 .campaign-grid-map.v2[data-setting="arena"]    .campaign-grid-cell.v2.kind-floor {
-  --tile-bg: url('../assets/grid/tile_sand.svg');
+  --tile-bg: url('/assets/grid/tile_sand.svg');
 }
 /* Mountain, dungeon, castle, temple, house, tavern keep stone as floor. */
 
@@ -8255,13 +8255,13 @@ body.campaign-page {
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
 }
 
-.campaign-grid-cell-node.is-battle  { background-image: url('../assets/nodes/node_battle.svg'); }
-.campaign-grid-cell-node.is-boss    { background-image: url('../assets/nodes/node_boss.svg'); }
-.campaign-grid-cell-node.is-rest    { background-image: url('../assets/nodes/node_rest.svg'); }
-.campaign-grid-cell-node.is-shop    { background-image: url('../assets/nodes/node_shop.svg'); }
-.campaign-grid-cell-node.is-story   { background-image: url('../assets/nodes/node_story.svg'); }
-.campaign-grid-cell-node.is-treasure{ background-image: url('../assets/nodes/node_treasure.svg'); }
-.campaign-grid-cell-node.is-event   { background-image: url('../assets/nodes/node_event.svg'); }
+.campaign-grid-cell-node.is-battle  { background-image: url('/assets/nodes/node_battle.svg'); }
+.campaign-grid-cell-node.is-boss    { background-image: url('/assets/nodes/node_boss.svg'); }
+.campaign-grid-cell-node.is-rest    { background-image: url('/assets/nodes/node_rest.svg'); }
+.campaign-grid-cell-node.is-shop    { background-image: url('/assets/nodes/node_shop.svg'); }
+.campaign-grid-cell-node.is-story   { background-image: url('/assets/nodes/node_story.svg'); }
+.campaign-grid-cell-node.is-treasure{ background-image: url('/assets/nodes/node_treasure.svg'); }
+.campaign-grid-cell-node.is-event   { background-image: url('/assets/nodes/node_event.svg'); }
 
 /* Player marker -uses bin_sprite.png 4x4 sprite sheet.
    Row layout (per data/universal/characters.json):
@@ -8273,7 +8273,7 @@ body.campaign-page {
   inset: 0;
   pointer-events: none;
   z-index: 7;
-  background-image: url('../images/characters/bin_sprite.png');
+  background-image: url('/images/characters/bin_sprite.png');
   background-repeat: no-repeat;
   background-size: 400% 400%;
   /* Default: facing down, col 0 (idle) */
@@ -8360,7 +8360,7 @@ body.campaign-page {
 
 /* Fallback when the PNG can't load (renderer adds .no-sprite). */
 .campaign-grid-player.no-sprite {
-  background-image: url('../assets/sprites/bin_marker.svg');
+  background-image: url('/assets/sprites/bin_marker.svg');
   background-size: 92% auto;
   background-position: center 38%;
   animation: none;
@@ -8422,7 +8422,7 @@ body.campaign-page {
   inset: 0;
   width: auto;
   height: auto;
-  background-image: url('../images/monsters/shadow_stalker.png');
+  background-image: url('/images/monsters/shadow_stalker.png');
   background-repeat: no-repeat;
   background-size: 400% 400%;
   background-position: 0% 0%;
@@ -8561,14 +8561,14 @@ body.campaign-page {
    overrides the default sheet but loses directional frames (single image).
    Animation stays on so chase/idle bob still plays. */
 .campaign-grid-threat.v2.has-sprite {
-  background-image: var(--threat-sprite, url('../images/monsters/shadow_stalker.png'));
+  background-image: var(--threat-sprite, url('/images/monsters/shadow_stalker.png'));
   background-size: 92% auto;
   background-position: center 40%;
   background-repeat: no-repeat;
 }
 
 .campaign-grid-threat.v2.has-sheet {
-  background-image: var(--threat-sprite, url('../images/monsters/shadow_stalker.png'));
+  background-image: var(--threat-sprite, url('/images/monsters/shadow_stalker.png'));
   background-size: 400% 400%;
   background-repeat: no-repeat;
 }
@@ -8576,7 +8576,7 @@ body.campaign-page {
 /* Fallback if the PNG fails: renderer adds .no-sprite. Animation stays on
    so the chase/idle bob is still visible on the SVG marker. */
 .campaign-grid-threat.v2.no-sprite {
-  background-image: url('../assets/sprites/shadow_marker.svg');
+  background-image: url('/assets/sprites/shadow_marker.svg');
   background-size: 92% auto;
   background-position: center 40%;
 }
@@ -8718,11 +8718,11 @@ body.campaign-page {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.75));
 }
 .campaign-grid-threat-sigil.is-chasing {
-  background-image: url('../assets/sprites/chase_eye.svg');
+  background-image: url('/assets/sprites/chase_eye.svg');
   animation: campaign-grid-threat-sigil-pulse 1s ease-in-out infinite;
 }
 .campaign-grid-threat-sigil.is-patrol {
-  background-image: url('../assets/sprites/patrol_arrow.svg');
+  background-image: url('/assets/sprites/patrol_arrow.svg');
   opacity: 0.85;
   animation: campaign-grid-threat-sigil-patrol 2.4s ease-in-out infinite;
 }

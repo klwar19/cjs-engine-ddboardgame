@@ -27,6 +27,15 @@ function wait(ms = 0) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitFor(predicate, timeoutMs = 1000, intervalMs = 20) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) return true;
+    await wait(intervalMs);
+  }
+  return predicate();
+}
+
 function resolveModuleFile(base) {
   const candidates = [
     base,
@@ -151,7 +160,7 @@ function installWindowGlobals(window) {
   window.localStorage.clear();
   const root = createRoot(document.getElementById("launcher-root"));
   root.render(React.createElement(App));
-  await wait(20);
+  await waitFor(() => !!document.querySelector(".launcher-shell") && !!document.getElementById("launcher-menu-toggle"));
 
   const shell = document.querySelector(".launcher-shell");
   ok("launcher shell renders", !!shell);
@@ -163,6 +172,7 @@ function installWindowGlobals(window) {
   await wait(20);
   ok("mobile menu opens shell drawer state", shell.classList.contains("is-mobile-open"));
 
+  await waitFor(() => !!document.querySelector('.launcher-nav-item[data-mode="campaign"]'));
   const campaignNav = document.querySelector('.launcher-nav-item[data-mode="campaign"]');
   ok("campaign nav button exists", !!campaignNav);
   click(window, campaignNav);
@@ -227,9 +237,11 @@ function installWindowGlobals(window) {
   restoredWindow.localStorage.setItem("cjs.launcher.lastMode", "editor");
   const restoredRoot = createRoot(restoredDocument.getElementById("launcher-root"));
   restoredRoot.render(React.createElement(App));
-  await wait(80);
+  await waitFor(() => !!frameByMode(restoredDocument, "editor") && restoredWindow.location.hash === "#editor");
+  const restoredFrame = frameByMode(restoredDocument, "editor");
   ok("stored mode restores a mounted frame",
-     !!frameByMode(restoredDocument, "editor") && restoredWindow.location.hash === "#editor");
+     !!restoredFrame && restoredWindow.location.hash === "#editor",
+     `frame=${!!restoredFrame}; hash=${restoredWindow.location.hash || "(empty)"}; stored=${restoredWindow.localStorage.getItem("cjs.launcher.lastMode") || "(empty)"}`);
   ok("stored mode URL restore preserves query string",
      restoredWindow.location.search === "?dev=1");
   restoredRoot.unmount();

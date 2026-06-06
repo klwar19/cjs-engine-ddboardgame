@@ -7,11 +7,11 @@
   --scene-player-height: 316px;
   --scene-player-frame-blue: #08769c;
   --scene-player-frame-cream: #fff7e6;
-  --scene-msgwindow: url("../assets/ui/kuusou-blue/01-message-window/messagewindow.png");
-  --scene-pagebreak: url("../assets/ui/kuusou-blue/01-message-window/asset/uiset-13-blue-pagebreak.png");
-  --scene-close: url("../assets/ui/kuusou-blue/04-common-buttons/button-close.png");
-  --scene-close-hover: url("../assets/ui/kuusou-blue/04-common-buttons/button-close-hover.png");
-  --scene-nametag: url("../assets/ui/kuusou-blue/01-message-window/nametag.png");
+  --scene-msgwindow: url("/assets/ui/kuusou-blue/01-message-window/messagewindow.png");
+  --scene-pagebreak: url("/assets/ui/kuusou-blue/01-message-window/asset/uiset-13-blue-pagebreak.png");
+  --scene-close: url("/assets/ui/kuusou-blue/04-common-buttons/button-close.png");
+  --scene-close-hover: url("/assets/ui/kuusou-blue/04-common-buttons/button-close-hover.png");
+  --scene-nametag: url("/assets/ui/kuusou-blue/01-message-window/nametag.png");
 }
 
 .scene-player-overlay {

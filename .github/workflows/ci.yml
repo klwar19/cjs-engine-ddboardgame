@@ -35,3 +35,7 @@ jobs:
       # Post-build HTTP smoke (Tier 0): serve dist/ and assert every page's
       # referenced asset graph + the PWA manifest/icons/SW resolve 200.
       - run: npm run smoke:http
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run smoke:browser
