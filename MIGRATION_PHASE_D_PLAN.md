@@ -99,6 +99,27 @@ file is deleted and is no longer an active bridge or extension point.
     `js/` fallback branch is now unreachable but **deliberately kept** as
     harmless, self-documenting defensive test infra (every caller resolves to a
     TS port; none check `isTs`).
+- [x] **Switch-plan island closeout — world-map travel SVG → typed JSX.** ✅
+  DONE. The world-map travel SVG was the last sanctioned
+  `dangerouslySetInnerHTML` in `src/campaign/` (Part D kept it "by design" —
+  intricate inner SVG, no faithful render test, ~zero believed benefit). It is
+  now real JSX with no string island: `campaign-world-map.ts`'s geometry helpers
+  (`_visualLayers` / `_visualRoads` / `_markerShapes` + the classic/visual node
+  builders) emit typed `SvgPrim` objects instead of SVG strings (math
+  byte-identical — only the output format changed; the dead `_esc`/`_escAttr`
+  string-escapers were removed), the typed bridge (`tabs/data/worldMap.ts`)
+  exposes the `SvgPrim` union + structured node types, and `CampaignWorldMapTab`
+  renders them via one `<SvgPrimEl>` switch (markers, labels via
+  `<foreignObject>`, layers, roads, links, backdrop). **Benefit (the deferral's
+  "~zero" was wrong):** React now diffs SVG attributes on every map re-render
+  instead of re-parsing + replacing the whole `innerHTML` subtree, and adding a
+  shape is compile-time-checked. **Coverage the deferral lacked:** a new
+  `test_world_map_geometry.js` (38 assertions) feeds the engine a visual +
+  classic fixture and locks the exact primitive geometry (coords, classes,
+  transforms) for both modes, and the `tab-worldMap` VR snapshot — previously the
+  honest empty state because `getTravelMapData` was stubbed to `null` — now
+  renders a faithful visual map exercising every `SvgPrimEl` branch. tsc + npm
+  test + build + size:check green; bundle unchanged.
 - [x] **Full `data-campaign-action` removal + `<main>` forwarder deleted.** The
   typed registry is done (246/246 actions in `src/campaign/action-handlers/`) and
   **nothing in the repo emits `data-campaign-action` any more.** The last emitters
@@ -235,8 +256,9 @@ file is deleted and is no longer an active bridge or extension point.
   touched the action-string / forwarder surface (Part A retired both
   forwarders). (The ResultPanels loot / combat-consequence / pulse /
   battle-context / party-summary fragments were out of Part B's scope — they are
-  retired in **Part C** below. The world-map SVG geometry stays a raw-SVG island
-  by design.)
+  retired in **Part C** below. The world-map SVG geometry stayed a raw-SVG island
+  at this point — later ported to typed-primitive JSX in the island closeout; see
+  invariant #3.)
 
   - **New JSX (`src/campaign/tabs/ConsequenceViews.tsx`).** `<InlinePurpose>` /
     `<ConsequencePreview>` / `<FlavorTrail>` render the exact element tree /
@@ -325,8 +347,10 @@ file is deleted and is no longer an active bridge or extension point.
   **Part D — drawer + main-body island cleanup** ✅ DONE (one cohesive commit).
   The last shell `dangerouslySetInnerHTML` paths are retired: the command-rail
   drawer `quests` / `log` side panels and the defensive main-body fallback.
-  After Part D the **only** `dangerouslySetInnerHTML` left in `src/campaign/` is
-  the world-map SVG geometry (`CampaignWorldMapTab.tsx`), kept by design.
+  After Part D the **only** `dangerouslySetInnerHTML` left in `src/campaign/` was
+  the world-map SVG geometry (`CampaignWorldMapTab.tsx`) — since retired by the
+  island closeout (typed-primitive JSX; see invariant #3), so `src/campaign/`
+  now has none.
 
   - **Drawer quests / log → JSX (`shell/DrawerPanels.tsx`).** `QuestsDrawerPanel`
     + `LogDrawerPanel` render the same element tree the boot.ts emitters did.
@@ -785,9 +809,11 @@ cannot be removed. So the remaining Phase H steps are gated on K.3:
     owns the `<section>`, `<svg>`, interactive node `<g>` wrappers
     (onClick travel), location-detail panel, and area buttons; the
     intricate inner SVG geometry (markers, labels, layers, roads, links)
-    arrives as raw-SVG strings (no JSX attribute-conversion risk). All
-    vanilla `renderTravelMap` / `renderActivities` + sub-renderers
-    deleted; `campaign-world-map.js` emits zero `data-campaign-action`;
+    arrived as raw-SVG strings at K.3 (no JSX attribute-conversion risk) —
+    later emitted as typed `SvgPrim` objects and rendered as real JSX in the
+    island closeout (see invariant #3). All vanilla `renderTravelMap` /
+    `renderActivities` + sub-renderers deleted; `campaign-world-map` emits
+    zero `data-campaign-action`;
     `cui-world-map-tab.js` is a namespace stub.
 
   > **Architectural finding (refines H.2/H.3).** "Removes the *last*
@@ -2004,15 +2030,20 @@ These are the current contracts for future campaign work:
    compatibility-only for the remaining vanilla / HTML islands listed in
    Remaining Work; do not add new JSX that emits it.
 3. **JSX > dangerouslySetInnerHTML.** The switch-plan island ports (Parts A–D)
-   retired every display-only HTML-string island in `src/campaign/`. The **only**
-   sanctioned `dangerouslySetInnerHTML` left is the world-map SVG geometry in
-   `CampaignWorldMapTab.tsx` (`backdropImageHtml` / `layersHtml` / `roadsHtml` /
-   `linksHtml` / node `innerSvg`) — kept by design because converting the intricate
-   inner SVG to JSX risks attribute-conversion bugs for ~zero benefit; its removal
-   path is a future SVG-attribute port if ever needed. Any NEW
-   `dangerouslySetInnerHTML` must identify the island it hosts and its removal path,
-   and must not bridge to deleted campaign UI closure helpers.
-   (`test_campaign_shell_bridge.js` guards that `CampaignShell.tsx` has none.)
+   retired every display-only HTML-string island in `src/campaign/`, and the
+   island closeout finished the job: the world-map travel SVG — the last
+   sanctioned `dangerouslySetInnerHTML` — is now typed-primitive JSX. The engine
+   (`campaign-world-map.ts`) emits geometry as `SvgPrim` objects
+   (`{ t: 'rect' | 'line' | 'path' | 'circle' | 'image' | … }`) for markers,
+   labels, layers, roads, links, and backdrop, and `<SvgPrimEl>` renders each as
+   a real element — so **there is no `dangerouslySetInnerHTML` anywhere in
+   `src/campaign/`.** Adding a shape is a compile-time-checked union case, and
+   React diffs attributes on re-render instead of re-parsing an HTML string.
+   Any NEW `dangerouslySetInnerHTML` must identify the island it hosts and its
+   removal path, and must not bridge to deleted campaign UI closure helpers.
+   (`test_campaign_shell_bridge.js` guards that `CampaignShell.tsx` has none;
+   `test_world_map_geometry.js` locks the travel-map primitive geometry for both
+   visual + classic modes; the `tab-worldMap` VR snapshot pins the rendered JSX.)
 4. **No new HTML-string renderers.** Adding a new panel ships as JSX from day
    one, with typed data builders if it needs data the React tree cannot compute.
    Do not recreate `campaign-ui.js` or add new `_render*` HTML-string helpers.

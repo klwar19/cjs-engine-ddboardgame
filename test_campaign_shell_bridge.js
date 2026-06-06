@@ -113,8 +113,9 @@ for (const name of CHROME_COMPONENTS) {
 // The shell must NOT use dangerouslySetInnerHTML at all. Phase F retired the
 // chrome `fragments.` strips; the switch-plan island ports retired the main-body
 // fallback (now a typed empty state) and the drawer quests/log panels (now JSX
-// in shell/DrawerPanels). The only sanctioned campaign island, the world-map
-// SVG, lives in CampaignWorldMapTab.tsx — not the shell.
+// in shell/DrawerPanels). The last campaign island, the world-map SVG, is now
+// typed `SvgPrim` JSX in CampaignWorldMapTab.tsx — there are no sanctioned
+// `dangerouslySetInnerHTML` islands left in src/campaign/.
 ok('CampaignShell.tsx does not render fragments.header via dangerouslySetInnerHTML',
    shell.indexOf('fragments.header') < 0 && shell.indexOf('fragments.modeBar') < 0
    && shell.indexOf('fragments.commandRail') < 0);

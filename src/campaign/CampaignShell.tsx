@@ -44,7 +44,8 @@ import { ensureCampaignL2d } from "./lazy-l2d";
 // imperative `_drawerEl`/`_drawerBackdropEl` flow in campaign-ui.js.
 // Every drawer panel is React-owned now (party / inventory / notes via
 // their own components; quests / log via `shell/DrawerPanels`), so the
-// shell holds no `dangerouslySetInnerHTML` outside the world-map SVG.
+// shell holds no `dangerouslySetInnerHTML` — and with the world-map SVG
+// now rendered from typed `SvgPrim` JSX, no campaign tab does either.
 
 // ── Bridge surface (mirror of campaign-ui.js bridge) ───────────────
 // Panel defs + order come from the TS chrome data builder (Phase H.4).

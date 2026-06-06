@@ -39,6 +39,7 @@ import { CampaignSettingsTab } from "../../src/campaign/tabs/CampaignSettingsTab
 import { CampaignLogsTab } from "../../src/campaign/tabs/CampaignLogsTab";
 import { CampaignRosterTab } from "../../src/campaign/tabs/CampaignRosterTab";
 import { CampaignWorldMapTab, CampaignWorldActivitiesTab } from "../../src/campaign/tabs/CampaignWorldMapTab";
+import type { TravelMapData } from "../../src/campaign/tabs/data/worldMap";
 import {
   CampaignSideForgeTab,
   CampaignQuestChainsTab,
@@ -579,8 +580,125 @@ export function installEngine(): void {
               ? cropsFixture
               : []
   };
+  // A faithful visual travel map. The travel-map SVG is now real JSX
+  // (SvgPrim → <rect>/<path>/<circle>/<image>/<foreignObject>…), so the
+  // snapshot exercises every SvgPrimEl branch (rect/ellipse/line/polygon/
+  // polyline/text/path/circle/image), both node markers (with and without a
+  // scale transform + opacity), the label/preview foreignObjects, the area
+  // switcher, the legend, and the location-detail panel. (Before the island
+  // closeout this stub returned null and the tab rendered its empty state.)
+  const travelMapFixture: TravelMapData = {
+    hasMap: true,
+    mode: "visual",
+    themeClass: "theme-haven",
+    backdropVar: "url('images/story-mode/haven/haven-map.webp')",
+    title: "Haven Travel Map",
+    worldName: "Haven",
+    currentLocationName: "Tidewater Commons",
+    progress: { zone: "harbor", visited: 3 },
+    canvas: { width: 760, height: 430 },
+    detail: {
+      name: "Tidewater Commons",
+      type: "hub",
+      description: "The salt-worn plaza where every road in Haven meets.",
+      isCurrent: true,
+      hasActivities: true,
+      activityPreviewNames: ["Barter at the docks", "Listen for rumors"],
+      mapId: "tm_haven",
+      nodeId: "n_commons",
+      people: [
+        { action: "world-map-interaction", mapId: "tm_haven", nodeId: "n_commons", entryId: "p_harbormaster", label: "Harbormaster Vell", primary: true, disabled: false, title: "Trade routes and tides." }
+      ],
+      actions: [
+        { action: "world-map-node-action", mapId: "tm_haven", nodeId: "n_commons", entryId: "a_postbill", label: "Post a bounty", primary: false, disabled: false, title: "Pin a job to the board." }
+      ]
+    },
+    backdrop: [
+      { t: "image", className: "campaign-world-map-image", href: "images/story-mode/haven/haven-map.webp", x: 0, y: 0, width: 760, height: 430, preserveAspectRatio: "xMidYMid slice" },
+      { t: "rect", className: "campaign-world-map-image-shade", x: 0, y: 0, width: 760, height: 430, rx: 18 }
+    ],
+    layers: [
+      { t: "rect", className: "campaign-world-layer layer-water layer-type-rect", x: 40, y: 300, width: 680, height: 90, rx: 12 },
+      { t: "ellipse", className: "campaign-world-layer layer-isle layer-type-ellipse", cx: 180, cy: 140, rx: 60, ry: 38 },
+      { t: "line", className: "campaign-world-layer layer-border layer-type-line", x1: 0, y1: 215, x2: 760, y2: 215 },
+      { t: "polygon", className: "campaign-world-layer layer-ridge layer-type-polygon", points: "300,80 360,40 420,80" },
+      { t: "polyline", className: "campaign-world-layer layer-trail layer-type-polyline", points: "120,360 240,330 380,350" },
+      { t: "text", className: "campaign-world-layer layer-label layer-type-text", x: 120, y: 60, text: "North Reach" },
+      { t: "path", className: "campaign-world-layer layer-coast layer-type-path", d: "M 0 260 Q 380 230 760 270" }
+    ],
+    roads: [
+      { t: "path", className: "campaign-world-road route-coastal risk-amber", d: "M 200 200 Q 360 175 520 150" }
+    ],
+    legend: [
+      { kind: "safe", label: "Safe route" },
+      { kind: "amber", label: "Caution" }
+    ],
+    areaSwitcher: {
+      buttons: [
+        { label: "Harbor Ward", sublabel: "Current", active: true, dev: false, switchMapId: null, title: "You are here." },
+        { label: "Highland Pass", sublabel: "Travel", active: false, dev: false, switchMapId: "tm_highland", title: "A day's climb north." },
+        { label: "Sunken Vault", sublabel: "Future", active: false, dev: true, switchMapId: null, title: "Planned for a later update." }
+      ],
+      devNotes: [
+        { label: "Sunken Vault", text: "Planned for a later update." }
+      ]
+    },
+    nodes: [
+      {
+        mapId: "tm_haven",
+        nodeId: "n_commons",
+        classes: "campaign-world-node campaign-world-visual-node is-home is-active is-visited",
+        marker: {
+          className: "campaign-world-node-marker",
+          transform: "translate(200 200) scale(1.15) translate(-200 -200)",
+          opacity: 0.95,
+          shapes: [
+            { t: "rect", className: "node-building node-building-main", x: 163, y: 185, width: 74, height: 46, rx: 5 },
+            { t: "polygon", className: "node-building node-building-roof", points: "200,174 237,192 163,192" },
+            { t: "rect", className: "node-window", x: 176, y: 198, width: 10, height: 10 },
+            { t: "rect", className: "node-window", x: 214, y: 198, width: 10, height: 10 }
+          ]
+        },
+        label: {
+          x: 126, y: 234, width: 148, height: 34,
+          transform: "translate(200 251) scale(1.1) translate(-200 -251)",
+          opacity: 1,
+          text: "Tidewater Commons"
+        },
+        preview: {
+          x: 218, y: 88, width: 214, height: 98,
+          name: "Tidewater Commons",
+          description: "The salt-worn plaza where every road in Haven meets.",
+          activityText: "2 activities here"
+        }
+      },
+      {
+        mapId: "tm_haven",
+        nodeId: "n_crossing",
+        classes: "campaign-world-node campaign-world-visual-node is-route is-visited",
+        marker: {
+          className: "campaign-world-node-marker",
+          shapes: [
+            { t: "circle", className: "node-route-ring", cx: 520, cy: 150, r: 24 },
+            { t: "path", className: "node-route-line", d: "M 497 155 C 512 137, 528 169, 544 150" },
+            { t: "circle", className: "node-route-dot", cx: 520, cy: 150, r: 5 }
+          ]
+        },
+        label: {
+          x: 446, y: 184, width: 148, height: 34,
+          text: "Old Crossing"
+        },
+        preview: {
+          x: 538, y: 38, width: 214, height: 98,
+          name: "Old Crossing",
+          description: "A weathered junction of three trade roads.",
+          activityText: "Story / future activity slot"
+        }
+      }
+    ]
+  };
   CJS.CampaignWorldMap = {
-    getTravelMapData: () => null,
+    getTravelMapData: () => travelMapFixture,
     getActivitiesData: () => null,
     handleAction: () => {}
   };

@@ -58,10 +58,14 @@ tabs can't ship un-snapshotted.
   plan keeps out of the JSX migration. Their modules return a clearly-labeled
   `[<name> island body]` sentinel, so the snapshot pins the **wrapper** (the
   migrated React part), not fabricated island content.
-- **World map / activities** render their honest empty-state: the travel-map
-  SVG is an explicit out-of-scope bridged island (`campaign-world-map.js`), so
-  the fixture does not synthesize SVG geometry. The snapshot still pins the
-  React wrapper's empty branch.
+- **World map** renders a faithful visual travel map. The SVG geometry is now
+  real JSX (the engine emits typed `SvgPrim` objects that render as
+  `<rect>`/`<path>`/`<circle>`/`<image>`/`<foreignObject>`… — no
+  `dangerouslySetInnerHTML`), so the `tab-worldMap` fixture exercises every
+  `SvgPrimEl` branch, both node markers (with and without a scale transform +
+  opacity), the label / preview panels, the area switcher, and the
+  location-detail panel. **World activities** still renders its empty-state
+  (its `getActivitiesData` stub returns null).
 - The **roster detail row** is now JSX. The snapshot exercises the migrated
   hero / vitals / stats / detail-card tree with a fixture member (base
   character/job records resolve to graceful fallbacks).
