@@ -5,7 +5,21 @@
 // `CampaignMap` and installs window.CJS.CampaignMap. Body verbatim from the
 // legacy IIFE; import path adjusted for the src/engine/ location.
 
-import { dispatchCampaignAction } from "../../campaign/actions";
+// Engine layer: dispatch through the same window.CJS.CampaignUI.handleAction
+// boundary the React `dispatchCampaignAction` wraps, instead of importing the
+// React action module (`src/campaign/actions`). That import is a layering
+// violation (engine → React) AND it anchored the whole shared React action
+// cluster into this engine chunk (cjs-campaign-maps), forcing it eager and
+// blocking the Tier 1 deferral of the maps chunk off the boot path. Routing via
+// the runtime bridge keeps this chunk a clean leaf — matching the legacy IIFE,
+// which reached the dispatcher as a cross-`<script>` global, not an import.
+function dispatchCampaignAction(
+  action: string,
+  data: Record<string, string | number | undefined> = {}
+): void {
+  (window as unknown as { CJS?: { CampaignUI?: { handleAction?: (a: string, d?: unknown) => void } } })
+    .CJS?.CampaignUI?.handleAction?.(action, data);
+}
 
 window.CJS = window.CJS || {};
 

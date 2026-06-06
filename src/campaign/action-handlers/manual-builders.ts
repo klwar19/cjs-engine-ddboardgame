@@ -75,7 +75,9 @@ export function oracleToEventBuilder(): void {
 // ── add-quest ──────────────────────────────────────────────────────
 
 export function addQuest(): void {
-  openQuestModal();
+  // openQuestModal is async (it awaits the deferred generator chunk before
+  // building the modal); fire-and-forget — the action dispatch ignores returns.
+  void openQuestModal();
 }
 
 // ── gm-override / gm-member-override ───────────────────────────────

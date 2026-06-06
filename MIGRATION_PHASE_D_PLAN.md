@@ -337,18 +337,46 @@ file is deleted and is no longer an active bridge or extension point.
 **Performance opportunities surfaced (now budgeted, reductions deferred):**
 
 - [~] **Shrink the campaign initial *download* (not just the entry chunk).**
-  PARTIAL (Tier 1). The entry chunk meets the < 300 KB target (~282 KB raw),
+  PARTIAL (Tier 1). The entry chunk meets the < 300 KB target (~271 KB raw),
   but `campaign.html` eagerly `modulepreload`ed the whole engine. **Done:**
-  `cjs-minigames` + `cjs-qte` are deferred behind `lazy-minigames.ts` (warmed
-  after boot, awaited by the minigame/QTE/fishing launch handlers), dropping
-  the campaign initial JS from **377 → 356 KB gz** (preload chunks 22 → 20).
-  **Still open:** `cjs-campaign-generators` / `-scenario-runner` / `-maps` are
-  bigger but more entangled — `campaign-scenario-generator` feeds the core
-  scenarios tab's render path (defensively, but with downstream `genOptions`
-  usage that needs the live-browser check above), so those are left for that
-  pass rather than deferred blind. The per-page `initialJsGzipKB` ceiling
-  guards the whole metric from regressing.
-- [ ] **Render-blocking CSS.** `campaign.css` is ~541 KB raw / ~167 KB gz — the
+  - `cjs-minigames` + `cjs-qte` are deferred behind `lazy-minigames.ts` (warmed
+    after boot, awaited by the minigame/QTE/fishing launch handlers), dropping
+    the campaign initial JS from **377 → 356 KB gz** (preload chunks 22 → 20).
+  - `cjs-campaign-maps` (campaign-map + campaign-world-map) is deferred by
+    **co-locating** each engine module with its lazy React tab (CampaignMapsTab
+    imports campaign-map; CampaignWorldMapTab imports campaign-world-map). Every
+    consumer is map-tab-scoped — the boot render loop's `CampaignMap.render` is
+    gated on the maps tab's `#campaign-map-region`, and the travel/activity
+    actions dispatch only from the world-map tabs — so opening a map tab loads
+    the chunk with zero render window (no warm needed). **This required fixing a
+    layering violation the Tier 3 verbatim port introduced:** `campaign-map.ts`
+    (an `engine/` module) statically `import`ed `dispatchCampaignAction` from
+    the React `src/campaign/actions` layer, which anchored that whole shared
+    React action cluster *into* `cjs-campaign-maps` and forced it eager. It now
+    dispatches through the same `window.CJS.CampaignUI.handleAction` boundary
+    the React wrapper uses (matching the legacy IIFE's cross-`<script>` global),
+    so the chunk is a clean leaf.
+  - `cjs-campaign-generators` (campaign-scenario-generator) is deferred via
+    `lazy-campaign-engine.ts` (`ensureScenarioGenerator`): co-located with the
+    lazy Scenarios tab for its render path, awaited by the cross-tab generate
+    handlers (`scenario.ts::generateScenario` covers every `generate-*` incl.
+    QuestHome's `generate-quest-scenario`; `quest-builder.ts::openQuestModal`
+    covers add-quest), and warmed after boot. This also made the VR Scenarios
+    snapshot **faithful** — it previously captured the `DEFAULT_MAP_TYPES`
+    fallback (14 biomes) because the harness never loaded the generator;
+    production always rendered the generator's 18, so the snapshot was
+    re-baselined to match reality.
+
+  Net: campaign initial JS **356 → 317 KB gz**, preload chunks 20 → 18, total
+  code +1.3 KB (no `actions` duplication — it stays in one shared chunk).
+  **Still open:** `cjs-campaign-scenario-runner` (~23 KB gz) stays eager *by
+  design* — unlike maps/generators (consumed only by their own lazy tabs),
+  `ScenarioRunner` is read by core gameplay engine modules (`campaign-ops`'
+  start/end-scenario, `campaign-story-scenes`, `campaign-sequence-runner`) and
+  the broadly-rendered ScenarioSummary panel, so deferring it would need every
+  one of those paths to await a warm — too invasive for the gain. The per-page
+  `initialJsGzipKB` ceiling guards the whole metric from regressing.
+- [ ] **Render-blocking CSS.** `campaign.css` is ~555 KB raw / ~171 KB gz — the
   single largest first-paint cost, now budgeted by the per-page `initialCssGzipKB`
   ceiling. Note: rolldown-vite's CSS minifier under-performs here (emitted output
   is *larger* than the source concat). A Lightning CSS post-bundle pass was tried

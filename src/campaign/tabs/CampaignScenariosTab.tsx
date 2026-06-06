@@ -11,6 +11,11 @@
 // Per-card quest pill, shape pill row, and Start/Continue/Inspect
 // actions are full JSX (Phase G.15).
 
+// Tier 1 perf: the CampaignScenarioGenerator engine (cjs-campaign-generators
+// chunk) is deferred off the campaign boot path and co-located here for this
+// tab's render path (getScenariosData reads the generator's map-type options).
+// The cross-tab generate handlers await it via ./lazy-campaign-engine instead.
+import "../../engine/campaign/campaign-scenario-generator";
 import { useState } from "react";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";

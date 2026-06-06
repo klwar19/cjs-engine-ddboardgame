@@ -10,6 +10,12 @@
 //
 // Action buttons use direct onClick handlers via dispatchCampaignAction.
 
+// Tier 1 perf: the CampaignMap engine (cjs-campaign-maps chunk) is deferred off
+// the campaign boot path and co-located here instead. CampaignMap.render is
+// only ever called against this tab's #campaign-map-region, so importing it
+// from the lazy Maps tab loads the chunk exactly when (and only when) it's
+// needed — with no render-timing window.
+import "../../engine/campaign/campaign-map";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction, type CampaignActionName } from "../actions";
 import {

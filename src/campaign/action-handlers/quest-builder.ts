@@ -19,6 +19,7 @@ import { cs, ops, mod } from "./context";
 import { widgets } from "./modals";
 import { esc, escAttr, label, safe } from "../util/cui-utils";
 import { questMapForm, questMapType } from "./quest";
+import { ensureScenarioGenerator } from "../lazy-campaign-engine";
 
 interface MiniGame {
   gameId?: string;
@@ -259,9 +260,13 @@ function inferObjectiveKind(text = ""): string {
 }
 
 // ── Modal ───────────────────────────────────────────────────────────
-export function openQuestModal(prefill: { template?: string } = {}): void {
+export async function openQuestModal(prefill: { template?: string } = {}): Promise<void> {
   const ui = widgets();
   if (!ui?.openModal) return;
+  // The generator chunk (cjs-campaign-generators) is deferred (Tier 1 perf);
+  // the quest builder reads its map-type options below, and add-quest can fire
+  // from tabs that don't pull the chunk, so load it first (warmed after boot).
+  await ensureScenarioGenerator();
   const campaignQuests = (cs().getContent().campaignQuests as Record<string, { templates?: QuestRecord[] }>) || {};
   const templates: QuestRecord[] = Object.values(campaignQuests).flatMap((record) => record.templates || []);
   const body = document.createElement("div");

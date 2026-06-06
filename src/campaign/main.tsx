@@ -22,6 +22,13 @@ import "../engine/ui/scene-player";
 import "../engine/campaign/campaign-state";
 import "../engine/campaign/farming-mode";
 import "../engine/campaign/campaign-data-loader";
+// campaign-map / campaign-world-map (the cjs-campaign-maps chunk) are NOT
+// imported here — they are deferred (Tier 1 perf) and co-located with the lazy
+// map tabs (CampaignMapsTab imports campaign-map, CampaignWorldMapTab imports
+// campaign-world-map). Every CampaignMap/CampaignWorldMap consumer is map-tab-
+// scoped (the boot render loop's CampaignMap.render is gated on the maps tab's
+// #campaign-map-region; the travel/activity actions dispatch only from the
+// world-map tabs), so opening a map tab loads the chunk with zero render window.
 import "../engine/campaign/campaign-tags";
 import "../engine/campaign/relationship-tiers";
 import "../engine/campaign/campaign-alignment";
@@ -40,7 +47,6 @@ import "../engine/campaign/campaign-sequence-vn";
 import "../engine/campaign/campaign-oracle";
 import "../engine/campaign/campaign-combat-bridge";
 import "../engine/campaign/campaign-party-chat";
-import "../engine/campaign/campaign-map";
 import "../engine/campaign/pocket-haven-facilities";
 import "../engine/campaign/pocket-haven";
 import "../engine/campaign/guild-trivia";
@@ -51,9 +57,11 @@ import "../engine/campaign/campaign-hub";
 import "../engine/campaign/campaign-quest-chains";
 import "../engine/campaign/campaign-battle-set-forge";
 import "../engine/campaign/campaign-map-seed-forge";
-import "../engine/campaign/campaign-scenario-generator";
+// campaign-scenario-generator (the cjs-campaign-generators chunk) is deferred
+// (Tier 1 perf): co-located with the lazy Scenarios tab for its render path,
+// awaited by the cross-tab generate handlers via ./lazy-campaign-engine, and
+// warmed in the background after first paint (below).
 import "../engine/campaign/campaign-idea-forge";
-import "../engine/campaign/campaign-world-map";
 // The minigame + QTE engine (engine/minigames/*, engine/qte/*) is no longer
 // imported here — it is deferred behind ./lazy-minigames (Tier 1 perf) so
 // cjs-minigames + cjs-qte drop out of the campaign page's eager modulepreload
@@ -99,6 +107,7 @@ import "../engine/ui/l2d-companion";
 import "./action-handlers/registry";
 import { markEmbeddedIfNeeded } from "../shared/embed";
 import { ensureMinigameEngine } from "./lazy-minigames";
+import { ensureScenarioGenerator } from "./lazy-campaign-engine";
 import { CampaignPage } from "./CampaignPage";
 
 markEmbeddedIfNeeded();
@@ -119,7 +128,15 @@ createRoot(container).render(<CampaignPage />);
 // game list fills in if that tab is already open. Action handlers await the
 // same promise before launching, so this is purely a head start.
 window.setTimeout(() => {
-  void ensureMinigameEngine().then(() => {
+  const rerenderShell = () =>
     (window as unknown as { CJS?: { CampaignUI?: { render?: () => void } } }).CJS?.CampaignUI?.render?.();
-  });
+  // Minigame + QTE engine (cjs-minigames / cjs-qte): re-render so the
+  // minigame-test tab's game list fills in if that tab is already open.
+  void ensureMinigameEngine().then(rerenderShell);
+  // Scenario generator (cjs-campaign-generators): warm so a generate action
+  // from a tab that doesn't pull the generator chunk (QuestHome's
+  // generate-quest-scenario, the quest builder) finds it loaded; re-render so
+  // an already-open Scenarios tab swaps its fallback map-type list for the
+  // generator's real options.
+  void ensureScenarioGenerator().then(rerenderShell);
 }, 0);

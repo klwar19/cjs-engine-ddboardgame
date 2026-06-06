@@ -18,6 +18,7 @@
 import { applyOp, confirmDialog, cs, mod, ops, rerender, setActiveModeRaw, setActiveTabRaw, toast } from "./context";
 import { esc, widgets } from "./modals";
 import { goto } from "./nav";
+import { ensureScenarioGenerator } from "../lazy-campaign-engine";
 import { shapePillsData, type ScenarioForShape } from "../tabs/data/scenarioShared";
 
 interface RunnerModule {
@@ -95,14 +96,21 @@ const GEN_ERROR_TOASTS: Record<string, string> = {
   no_active_chain: "No active quest arc. Start one from the Quests tab first."
 };
 
-export function generateScenario(payload: GeneratePayload = {}): GeneratorResult | null {
+export async function generateScenario(payload: GeneratePayload = {}): Promise<GeneratorResult | null> {
   // Mirror the early-out the closure used so the toast fires before the
   // generator does its own active-run check (preserves the original copy).
+  // (Runs synchronously — async functions execute up to the first `await` —
+  // so an active-run no-op never triggers the deferred generator load.)
   const active = (cs().getState() as { activeScenarioRun?: unknown } | null)?.activeScenarioRun;
   if (active) {
     toast("End the active scenario before generating another", "info");
     return null;
   }
+  // The generator chunk (cjs-campaign-generators) is deferred (Tier 1 perf) and
+  // is not co-located with every tab that can fire a generate action (e.g.
+  // QuestHome's generate-quest-scenario, the quest builder), so make sure it's
+  // loaded before calling into it. Warmed after boot, so this is a head start.
+  await ensureScenarioGenerator();
   // Defaults first, payload wins. Mirrors the old `{ source: form ||
   // 'random', ..., ...overrides }` order — the React form passes the
   // chosen values in the payload (no more DOM reads), JS launchers

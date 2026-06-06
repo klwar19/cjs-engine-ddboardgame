@@ -1,3 +1,9 @@
+// Tier 1 perf: the CampaignWorldMap engine (cjs-campaign-maps chunk) is
+// deferred off the campaign boot path and co-located here. Both this tab's data
+// builders (getTravelMapData / getWorldActivitiesData) and the travel/activity
+// actions it dispatches read CampaignWorldMap, so importing it from these lazy
+// world-map tabs loads the chunk exactly when needed — with no render window.
+import "../../engine/campaign/campaign-world-map";
 import type { CampaignStateSnapshot } from "../store";
 import { dispatchCampaignAction } from "../actions";
 import { setActiveTab } from "../shell/bridge";
