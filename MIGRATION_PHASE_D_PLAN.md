@@ -753,8 +753,11 @@ vanilla chrome. Until K.3 ports them to JSX (typed bridge + onClick),
 `_bindEvents`, `_handleAction`, and the chrome `_render*` helpers
 cannot be removed. So the remaining Phase H steps are gated on K.3:
 
-- [~] **K.3 (prerequisite) — port HubTab / PartyTab / WorldMapTab**
-  tab bodies to typed bridges + JSX (same pattern as Phase G).
+- [x] **K.3 (prerequisite) — port HubTab / PartyTab / WorldMapTab**
+  tab bodies to typed bridges + JSX (same pattern as Phase G). ✅ COMPLETE — all
+  four sub-items below shipped (Phase H depended on this; it is done), and the
+  H.2 main-body forwarder the architectural finding called for landed with the
+  `_bindEvents` deletion.
   - [x] **Hub family fully ported.** `battleSets` / `mapSeeds` /
     `questChains` / `sideForge` / `oracleForge` are JSX
     (`CampaignHubTabs.tsx` + `SideContent.tsx`, reusing `QuestChain.tsx`),
