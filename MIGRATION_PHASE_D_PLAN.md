@@ -69,6 +69,36 @@ file is deleted and is no longer an active bridge or extension point.
     ESM migration surfaces (bare globals are no longer shared across `<script>`s).
     Added a local `_escAttr` aliasing `_escHtml`, matching the clear attr-escaping
     intent.
+- [x] **Tier 4 — Final cleanup (after Tier 3).** ✅ COMPLETE. Removed the dead
+  artifacts the completed engine port exposed; typecheck + npm test (1714
+  assertions) + build + size:check green.
+  - **Dead `window.CJS` global removed.** `window.CJS._pendingMinigames` was a
+    `<script>`-era register-or-queue fallback: if `MinigameRegistry` wasn't
+    installed yet, `push-box`/`mummy-maze` queued themselves for a later drain.
+    But **both** loaders (the campaign `minigames-bundle` and the standalone
+    minigames page) import `minigame-registry` *first*, so the `else` branch was
+    unreachable — and nothing ever drained the queue anyway (the registry has no
+    drain logic). Dropped the dead `else` from both modules (kept the defensive
+    `if` guard); behaviour-identical. (Audit note: `window.CJS.DevConsole` reads
+    0 in code but is **NOT** dead — it's the in-app dev console, a human-facing
+    devtools surface bound to the backtick key and callable from the console;
+    kept.)
+  - **Dead engine barrel cluster deleted (6 files).** `src/engine/{index,types,
+    effects,grid,saves,combat-state}.ts` were a Phase-E type scaffold
+    (`import { CombatUnit } from "../engine"`) that the actual migration bypassed
+    — the ports install `window.CJS.*` and the React/combat layers read typed
+    per-area accessors (`combat/types.ts`, the `cjs()` helpers), not this barrel.
+    Verified 0 importers (the barrel, the type files, and the re-exported names)
+    before deleting; typecheck stays clean. This also removed a **confusing
+    duplicate**: `saves.ts`'s `SAVE_SCHEMA_VERSION` shadowed the live
+    `CURRENT_SAVE_SCHEMA_VERSION` in `src/persistence/migrations.ts` (the one
+    `campaign-save` actually uses).
+  - **Retired vanilla files:** none remain — Tier 3 already deleted the whole
+    `js/` tree, no HTML references it, and the only `src/**/*.js` is the
+    intentional `entry-tests.js`. The test resolver's (`tools/test/engine-source.cjs`)
+    `js/` fallback branch is now unreachable but **deliberately kept** as
+    harmless, self-documenting defensive test infra (every caller resolves to a
+    TS port; none check `isTs`).
 - [x] **Full `data-campaign-action` removal + `<main>` forwarder deleted.** The
   typed registry is done (246/246 actions in `src/campaign/action-handlers/`) and
   **nothing in the repo emits `data-campaign-action` any more.** The last emitters

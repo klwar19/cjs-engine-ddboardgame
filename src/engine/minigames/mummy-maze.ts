@@ -731,12 +731,13 @@
     };
   }
 
+  // The minigame registry is installed before this module in every loader (the
+  // campaign minigames-bundle and the standalone minigames page both import
+  // minigame-registry first), so registration always takes this direct path.
+  // The legacy `<script>`-era `_pendingMinigames` queue fallback was dead code —
+  // nothing ever drained it — and was removed in Tier 4 cleanup.
   if (window.CJS && window.CJS.MinigameRegistry) {
     window.CJS.MinigameRegistry.register(META, createMummyMaze);
-  } else {
-    window.CJS = window.CJS || {};
-    window.CJS._pendingMinigames = window.CJS._pendingMinigames || [];
-    window.CJS._pendingMinigames.push([META, createMummyMaze]);
   }
 })();
 
