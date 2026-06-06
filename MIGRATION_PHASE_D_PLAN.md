@@ -360,9 +360,23 @@ file is deleted and is no longer an active bridge or extension point.
   dispatchHtmlIslandAction → handleAction (19 assertions, in `npm test`). This is
   DOM-backed, not a real
   pixel browser (no Playwright/Chromium dep — matches `test_launcher_live.js`),
-  and the engine is the bounded VR stub. Still open: a true running-browser
-  pass (real layout/paint/canvas) over index/campaign/editor/combat that also
-  verifies the combat grid renders and PWA paths return 200 over HTTP.
+  and the engine is the bounded VR stub.
+  **Done — the HTTP-servability slice (`test_http_smoke.js`, `npm run smoke:http`).**
+  A dependency-free static server serves the built `dist/` and asserts 200 for
+  the full reference graph of all six HTML entries (every emitted
+  script / modulepreload / stylesheet / icon a page links resolves — catching a
+  stale chunk name, a missing precache asset, or a base-path break that
+  typecheck / tests / size:check all pass but 404s in a browser), plus the PWA
+  surface end-to-end: `manifest.webmanifest` parses and every icon + `start_url`
+  resolves, `sw.js` + its Workbox runtime chunk + `registerSW.js` resolve, and
+  the four precached top-level icons serve as images (33 assertions). It is a
+  **post-build** check, so — like `size:check` — it is NOT in `npm test` (which
+  runs before `build` in CI); it runs as its own step after `npm run build` in
+  both `ci.yml` and `deploy.yml`, and skips cleanly if `dist/` is absent.
+  **Still open:** a true running-browser pass (real layout/paint/canvas) over
+  index/campaign/editor/combat that verifies the combat grid actually renders —
+  this fundamentally needs a headless Chromium (Playwright), which this
+  environment does not provide.
 
 **Performance opportunities surfaced (now budgeted, reductions deferred):**
 
@@ -406,16 +420,30 @@ file is deleted and is no longer an active bridge or extension point.
   the broadly-rendered ScenarioSummary panel, so deferring it would need every
   one of those paths to await a warm — too invasive for the gain. The per-page
   `initialJsGzipKB` ceiling guards the whole metric from regressing.
-- [ ] **Render-blocking CSS.** `campaign.css` is ~555 KB raw / ~171 KB gz — the
-  single largest first-paint cost, now budgeted by the per-page `initialCssGzipKB`
-  ceiling. Note: rolldown-vite's CSS minifier under-performs here (emitted output
-  is *larger* than the source concat). A Lightning CSS post-bundle pass was tried
-  and **rejected** — it shrinks clean *source* (484→355 KB) but does ~nothing to
-  the already-emitted bytes (541→541), so adopting it would have been a no-op
-  dependency. A real reduction needs either a fix to the rolldown CSS pipeline or
-  deferring the feature sheets (visual-novel / minigames / l2d-avatar) off the
-  critical path; both need the live-browser visual check above, so they ride with
-  it.
+- [ ] **Render-blocking CSS.** The built campaign CSS is one ~555 KB raw /
+  ~171 KB gz monolith — the single largest first-paint cost, budgeted by the
+  per-page `initialCssGzipKB` ceiling. Two reduction levers were investigated
+  this pass and **both confirmed blocked without the live-browser check**, so the
+  item stays open with precise findings (not just "it's hard"):
+  - **Minifier swap is a no-op.** `build.cssMinify: "lightningcss"` produced a
+    **byte-identical** output (same chunk hash) — rolldown-vite's CSS pipeline
+    (the `vite:css` / `vite:css-post` plugins) owns minification and ignores the
+    standard `cssMinify` override. (The earlier Lightning-CSS *post-bundle* pass
+    was likewise a no-op on the already-emitted bytes; it only shrinks clean
+    *source* 484→355 KB.)
+  - **Transformer swap fails the build.** `css.transformer: "lightningcss"`
+    (which bypasses rolldown's pipeline and *would* minify from source) **errors
+    out**: Lightning CSS rejects the source's relative `url()` inside CSS custom
+    properties — `--x: url('../assets/...')` — as ambiguous (resolved from the
+    `var()` use-site, not the definition), 5 occurrences across
+    `kuusou-blue-ui` / `campaign` / VN / farming backgrounds. Adopting it needs
+    those URLs rewritten to absolute paths first — a semantic change that must be
+    visually verified.
+  - The other lever — **deferring the feature sheets** (visual-novel ~7.6 /
+    minigames ~4.1 / l2d-avatar ~2 KB gz) off the critical path — is a load-*timing*
+    change (FOUC risk) that the **DOM-only VR harness cannot catch** (it renders
+    with `renderToStaticMarkup`, never applies CSS). So all three need the
+    real-browser visual pass above and ride with it.
 
 **Completed in this pass (were previously mislisted here as not-done):**
 

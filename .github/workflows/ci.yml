@@ -31,3 +31,7 @@ jobs:
       - run: npm run build
 
       - run: npm run size:check
+
+      # Post-build HTTP smoke (Tier 0): serve dist/ and assert every page's
+      # referenced asset graph + the PWA manifest/icons/SW resolve 200.
+      - run: npm run smoke:http

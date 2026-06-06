@@ -15,6 +15,7 @@
     "author": "node tools/author/index.mjs",
     "size:check": "node tools/build-size-check.mjs",
     "size:baseline": "node tools/build-size-check.mjs --update",
+    "smoke:http": "node test_http_smoke.js",
     "art:optimize": "python3 tools/optimize-art.py",
     "icons": "node tools/make-pwa-icons.mjs"
   },
